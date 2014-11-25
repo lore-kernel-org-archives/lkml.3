@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608AbaKYLGx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:06:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58902 "EHLO
+	id S932066AbaKYLHP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:07:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58898 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753806AbaKYKmt (ORCPT
+	with ESMTP id S1753755AbaKYKmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Nov 2014 05:42:49 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 179/254] drm/radeon: use gart for DMA IB tests
-Date: Tue, 25 Nov 2014 10:38:49 +0000
-Message-Id: <1416912004-5928-180-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 178/254] drm/radeon: make sure mode init is complete in bandwidth_update
+Date: Tue, 25 Nov 2014 10:38:48 +0000
+Message-Id: <1416912004-5928-179-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -29,122 +29,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 0b021c5802fbe5addf6f89f5030f684adf04f7b7 upstream.
+commit 8efe82ca908400785253c8f0dfcf301e6bd93488 upstream.
 
-Use gart rather than vram to avoid having to deal with
-the HDP cache.
+The power management code calls into the display code for
+certain things.  If certain power management sysfs attributes
+are called before the driver has finished initializing all of
+the hardware we can run into problems with uninitialized
+modesetting state.  Add a check to make sure modesetting
+init has completed to the bandwidth update callbacks to
+fix this.  Can be triggered by the tlp and laptop start
+up scripts depending on the timing.
 
-Port of adfed2b0587289013f8143c54913ddfd44ac1fd3
-(drm/radeon: use gart memory for DMA ring tests)
-to the IB tests.
+bugs:
+https://bugzilla.kernel.org/show_bug.cgi?id=83611
+https://bugs.freedesktop.org/show_bug.cgi?id=85771
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/cik_sdma.c | 21 ++++++++++++---------
- drivers/gpu/drm/radeon/r600_dma.c | 20 ++++++++++----------
- 2 files changed, 22 insertions(+), 19 deletions(-)
+ drivers/gpu/drm/radeon/cik.c       | 3 +++
+ drivers/gpu/drm/radeon/evergreen.c | 3 +++
+ drivers/gpu/drm/radeon/r100.c      | 3 +++
+ drivers/gpu/drm/radeon/rs600.c     | 3 +++
+ drivers/gpu/drm/radeon/rs690.c     | 3 +++
+ drivers/gpu/drm/radeon/rv515.c     | 3 +++
+ drivers/gpu/drm/radeon/si.c        | 3 +++
+ 7 files changed, 21 insertions(+)
 
-diff --git a/drivers/gpu/drm/radeon/cik_sdma.c b/drivers/gpu/drm/radeon/cik_sdma.c
-index f54d45bad01d..fc9177194c7c 100644
---- a/drivers/gpu/drm/radeon/cik_sdma.c
-+++ b/drivers/gpu/drm/radeon/cik_sdma.c
-@@ -636,17 +636,20 @@ int cik_sdma_ib_test(struct radeon_device *rdev, struct radeon_ring *ring)
- {
- 	struct radeon_ib ib;
- 	unsigned i;
-+	unsigned index;
- 	int r;
--	void __iomem *ptr = (void *)rdev->vram_scratch.ptr;
- 	u32 tmp = 0;
-+	u64 gpu_addr;
+diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
+index 180f2638c9cc..6f015436e51d 100644
+--- a/drivers/gpu/drm/radeon/cik.c
++++ b/drivers/gpu/drm/radeon/cik.c
+@@ -9060,6 +9060,9 @@ void dce8_bandwidth_update(struct radeon_device *rdev)
+ 	u32 num_heads = 0, lb_size;
+ 	int i;
  
--	if (!ptr) {
--		DRM_ERROR("invalid vram scratch pointer\n");
--		return -EINVAL;
--	}
-+	if (ring->idx == R600_RING_TYPE_DMA_INDEX)
-+		index = R600_WB_DMA_RING_TEST_OFFSET;
-+	else
-+		index = CAYMAN_WB_DMA1_RING_TEST_OFFSET;
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
 +
-+	gpu_addr = rdev->wb.gpu_addr + index;
+ 	radeon_update_display_priority(rdev);
  
- 	tmp = 0xCAFEDEAD;
--	writel(tmp, ptr);
-+	rdev->wb.wb[index/4] = cpu_to_le32(tmp);
+ 	for (i = 0; i < rdev->num_crtc; i++) {
+diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
+index 15e4f28015e1..cd620bca6dd6 100644
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -2346,6 +2346,9 @@ void evergreen_bandwidth_update(struct radeon_device *rdev)
+ 	u32 num_heads = 0, lb_size;
+ 	int i;
  
- 	r = radeon_ib_get(rdev, ring->idx, &ib, NULL, 256);
- 	if (r) {
-@@ -655,8 +658,8 @@ int cik_sdma_ib_test(struct radeon_device *rdev, struct radeon_ring *ring)
- 	}
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
  
- 	ib.ptr[0] = SDMA_PACKET(SDMA_OPCODE_WRITE, SDMA_WRITE_SUB_OPCODE_LINEAR, 0);
--	ib.ptr[1] = rdev->vram_scratch.gpu_addr & 0xfffffffc;
--	ib.ptr[2] = upper_32_bits(rdev->vram_scratch.gpu_addr);
-+	ib.ptr[1] = lower_32_bits(gpu_addr);
-+	ib.ptr[2] = upper_32_bits(gpu_addr);
- 	ib.ptr[3] = 1;
- 	ib.ptr[4] = 0xDEADBEEF;
- 	ib.length_dw = 5;
-@@ -673,7 +676,7 @@ int cik_sdma_ib_test(struct radeon_device *rdev, struct radeon_ring *ring)
- 		return r;
- 	}
- 	for (i = 0; i < rdev->usec_timeout; i++) {
--		tmp = readl(ptr);
-+		tmp = le32_to_cpu(rdev->wb.wb[index/4]);
- 		if (tmp == 0xDEADBEEF)
- 			break;
- 		DRM_UDELAY(1);
-diff --git a/drivers/gpu/drm/radeon/r600_dma.c b/drivers/gpu/drm/radeon/r600_dma.c
-index 964c32031059..f1c584f21419 100644
---- a/drivers/gpu/drm/radeon/r600_dma.c
-+++ b/drivers/gpu/drm/radeon/r600_dma.c
-@@ -338,17 +338,17 @@ int r600_dma_ib_test(struct radeon_device *rdev, struct radeon_ring *ring)
- {
- 	struct radeon_ib ib;
- 	unsigned i;
-+	unsigned index;
- 	int r;
--	void __iomem *ptr = (void *)rdev->vram_scratch.ptr;
- 	u32 tmp = 0;
-+	u64 gpu_addr;
+ 	for (i = 0; i < rdev->num_crtc; i++) {
+diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
+index 1544efcf1c3a..7f64a30b50cd 100644
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -3197,6 +3197,9 @@ void r100_bandwidth_update(struct radeon_device *rdev)
+ 	uint32_t pixel_bytes1 = 0;
+ 	uint32_t pixel_bytes2 = 0;
  
--	if (!ptr) {
--		DRM_ERROR("invalid vram scratch pointer\n");
--		return -EINVAL;
--	}
-+	if (ring->idx == R600_RING_TYPE_DMA_INDEX)
-+		index = R600_WB_DMA_RING_TEST_OFFSET;
-+	else
-+		index = CAYMAN_WB_DMA1_RING_TEST_OFFSET;
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
  
--	tmp = 0xCAFEDEAD;
--	writel(tmp, ptr);
-+	gpu_addr = rdev->wb.gpu_addr + index;
+ 	if (rdev->mode_info.crtcs[0]->base.enabled) {
+diff --git a/drivers/gpu/drm/radeon/rs600.c b/drivers/gpu/drm/radeon/rs600.c
+index d1a35cb1c91d..d6e64b93d8b1 100644
+--- a/drivers/gpu/drm/radeon/rs600.c
++++ b/drivers/gpu/drm/radeon/rs600.c
+@@ -874,6 +874,9 @@ void rs600_bandwidth_update(struct radeon_device *rdev)
+ 	u32 d1mode_priority_a_cnt, d2mode_priority_a_cnt;
+ 	/* FIXME: implement full support */
  
- 	r = radeon_ib_get(rdev, ring->idx, &ib, NULL, 256);
- 	if (r) {
-@@ -357,8 +357,8 @@ int r600_dma_ib_test(struct radeon_device *rdev, struct radeon_ring *ring)
- 	}
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
  
- 	ib.ptr[0] = DMA_PACKET(DMA_PACKET_WRITE, 0, 0, 1);
--	ib.ptr[1] = rdev->vram_scratch.gpu_addr & 0xfffffffc;
--	ib.ptr[2] = upper_32_bits(rdev->vram_scratch.gpu_addr) & 0xff;
-+	ib.ptr[1] = lower_32_bits(gpu_addr);
-+	ib.ptr[2] = upper_32_bits(gpu_addr) & 0xff;
- 	ib.ptr[3] = 0xDEADBEEF;
- 	ib.length_dw = 4;
+ 	if (rdev->mode_info.crtcs[0]->base.enabled)
+diff --git a/drivers/gpu/drm/radeon/rs690.c b/drivers/gpu/drm/radeon/rs690.c
+index 3462b64369bf..0a2d36e81108 100644
+--- a/drivers/gpu/drm/radeon/rs690.c
++++ b/drivers/gpu/drm/radeon/rs690.c
+@@ -579,6 +579,9 @@ void rs690_bandwidth_update(struct radeon_device *rdev)
+ 	u32 d1mode_priority_a_cnt, d1mode_priority_b_cnt;
+ 	u32 d2mode_priority_a_cnt, d2mode_priority_b_cnt;
  
-@@ -374,7 +374,7 @@ int r600_dma_ib_test(struct radeon_device *rdev, struct radeon_ring *ring)
- 		return r;
- 	}
- 	for (i = 0; i < rdev->usec_timeout; i++) {
--		tmp = readl(ptr);
-+		tmp = le32_to_cpu(rdev->wb.wb[index/4]);
- 		if (tmp == 0xDEADBEEF)
- 			break;
- 		DRM_UDELAY(1);
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	if (rdev->mode_info.crtcs[0]->base.enabled)
+diff --git a/drivers/gpu/drm/radeon/rv515.c b/drivers/gpu/drm/radeon/rv515.c
+index 3e21e869015f..76c790c947b6 100644
+--- a/drivers/gpu/drm/radeon/rv515.c
++++ b/drivers/gpu/drm/radeon/rv515.c
+@@ -1277,6 +1277,9 @@ void rv515_bandwidth_update(struct radeon_device *rdev)
+ 	struct drm_display_mode *mode0 = NULL;
+ 	struct drm_display_mode *mode1 = NULL;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	if (rdev->mode_info.crtcs[0]->base.enabled)
+diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
+index 6c17d3b0be8b..79fa0d13a3ca 100644
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -2228,6 +2228,9 @@ void dce6_bandwidth_update(struct radeon_device *rdev)
+ 	u32 num_heads = 0, lb_size;
+ 	int i;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	for (i = 0; i < rdev->num_crtc; i++) {
 -- 
 2.1.0
 
