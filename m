@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496AbaKYLD1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:03:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58969 "EHLO
+	id S1754790AbaKYLDq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:03:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58961 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753897AbaKYKnD (ORCPT
+	with ESMTP id S1753894AbaKYKnB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:43:03 -0500
+	Tue, 25 Nov 2014 05:43:01 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peng Tao <tao.peng@primarydata.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
+Cc: Miklos Szeredi <mszeredi@suse.cz>, Paul Moore <pmoore@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 194/254] nfs: fix pnfs direct write memory leak
-Date: Tue, 25 Nov 2014 10:39:04 +0000
-Message-Id: <1416912004-5928-195-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 192/254] audit: keep inode pinned
+Date: Tue, 25 Nov 2014 10:39:02 +0000
+Message-Id: <1416912004-5928-193-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,64 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peng Tao <tao.peng@primarydata.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 8c393f9a721c30a030049a680e1bf896669bb279 upstream.
+commit 799b601451b21ebe7af0e6e8f6e2ccd4683c5064 upstream.
 
-For pNFS direct writes, layout driver may dynamically allocate ds_cinfo.buckets.
-So we need to take care to free them when freeing dreq.
+Audit rules disappear when an inode they watch is evicted from the cache.
+This is likely not what we want.
 
-Ideally this needs to be done inside layout driver where ds_cinfo.buckets
-are allocated. But buckets are attached to dreq and reused across LD IO iterations.
-So I feel it's OK to free them in the generic layer.
+The guilty commit is "fsnotify: allow marks to not pin inodes in core",
+which didn't take into account that audit_tree adds watches with a zero
+mask.
 
-Signed-off-by: Peng Tao <tao.peng@primarydata.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Adding any mask should fix this.
+
+Fixes: 90b1e7a57880 ("fsnotify: allow marks to not pin inodes in core")
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfs/direct.c         |  1 +
- include/linux/nfs_xdr.h | 11 +++++++++++
- 2 files changed, 12 insertions(+)
+ kernel/audit_tree.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c
-index 1b34eeb0d8de..73a3023e2702 100644
---- a/fs/nfs/direct.c
-+++ b/fs/nfs/direct.c
-@@ -270,6 +270,7 @@ static void nfs_direct_req_free(struct kref *kref)
- {
- 	struct nfs_direct_req *dreq = container_of(kref, struct nfs_direct_req, kref);
+diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
+index 135944a7b28a..a79db03990db 100644
+--- a/kernel/audit_tree.c
++++ b/kernel/audit_tree.c
+@@ -154,6 +154,7 @@ static struct audit_chunk *alloc_chunk(int count)
+ 		chunk->owners[i].index = i;
+ 	}
+ 	fsnotify_init_mark(&chunk->mark, audit_tree_destroy_watch);
++	chunk->mark.mask = FS_IN_IGNORED;
+ 	return chunk;
+ }
  
-+	nfs_free_pnfs_ds_cinfo(&dreq->ds_cinfo);
- 	if (dreq->l_ctx != NULL)
- 		nfs_put_lock_context(dreq->l_ctx);
- 	if (dreq->ctx != NULL)
-diff --git a/include/linux/nfs_xdr.h b/include/linux/nfs_xdr.h
-index 2c35d524ffc6..a8f111be79a0 100644
---- a/include/linux/nfs_xdr.h
-+++ b/include/linux/nfs_xdr.h
-@@ -1231,11 +1231,22 @@ struct nfs41_free_stateid_res {
- 	unsigned int			status;
- };
- 
-+static inline void
-+nfs_free_pnfs_ds_cinfo(struct pnfs_ds_commit_info *cinfo)
-+{
-+	kfree(cinfo->buckets);
-+}
-+
- #else
- 
- struct pnfs_ds_commit_info {
- };
- 
-+static inline void
-+nfs_free_pnfs_ds_cinfo(struct pnfs_ds_commit_info *cinfo)
-+{
-+}
-+
- #endif /* CONFIG_NFS_V4_1 */
- 
- struct nfs_page;
 -- 
 2.1.0
 
