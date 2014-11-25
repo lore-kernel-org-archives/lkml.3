@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932179AbaKYL5T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:57:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58158 "EHLO
+	id S1754762AbaKYL5k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:57:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58153 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752781AbaKYKkp (ORCPT
+	with ESMTP id S1752774AbaKYKko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:40:45 -0500
+	Tue, 25 Nov 2014 05:40:44 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peter Hurley <peter@hurleysoftware.com>,
+Cc: Oussama Ghorbel <ghorbel@pivasoftware.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 040/254] tty: Prevent "read/write wait queue active!" log flooding
-Date: Tue, 25 Nov 2014 10:36:30 +0000
-Message-Id: <1416912004-5928-41-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 037/254] phy: omap-usb2: Enable runtime PM of omap-usb2 phy properly
+Date: Tue, 25 Nov 2014 10:36:27 +0000
+Message-Id: <1416912004-5928-38-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,46 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Hurley <peter@hurleysoftware.com>
+From: Oussama Ghorbel <ghorbel@pivasoftware.com>
 
-commit 494c1eac7e73f719af9d474a96ec8494c33efd6a upstream.
+commit f20531a9aae0c7378d9fa75b4b5d99b7eecab066 upstream.
 
-Only print one warning when a task is on the read_wait or write_wait
-wait queue at final tty release.
+The USB OTG port does not work since v3.16 on omap platform.
+This is a regression introduced by the commit
+eb82a3d846fa (phy: omap-usb2: Balance pm_runtime_enable() on probe failure
+ and remove).
+This because the call to pm_runtime_enable() function is moved after the
+call to devm_phy_create() function, which has side effect since later in
+the subsequent calls of devm_phy_create() there is a check with
+pm_runtime_enabled() to configure few things.
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Fixes: eb82a3d846fa
+Signed-off-by: Oussama Ghorbel <ghorbel@pivasoftware.com>
+Tested-by: Rabin Vincent <rabin@rab.in>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.16: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/tty/tty_io.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/phy/phy-omap-usb2.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index fd682252bbac..fd4095cd4bd6 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1702,6 +1702,7 @@ int tty_release(struct inode *inode, struct file *filp)
- 	int	idx;
- 	char	buf[64];
- 	long	timeout = 0;
-+	int	once = 1;
+diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
+index 34b396146c8a..3fb92937f29b 100644
+--- a/drivers/phy/phy-omap-usb2.c
++++ b/drivers/phy/phy-omap-usb2.c
+@@ -262,14 +262,16 @@ static int omap_usb2_probe(struct platform_device *pdev)
+ 	otg->phy		= &phy->phy;
  
- 	if (tty_paranoia_check(tty, inode, __func__))
- 		return 0;
-@@ -1782,8 +1783,11 @@ int tty_release(struct inode *inode, struct file *filp)
- 		if (!do_sleep)
- 			break;
+ 	platform_set_drvdata(pdev, phy);
++	pm_runtime_enable(phy->dev);
  
--		printk(KERN_WARNING "%s: %s: read/write wait queue active!\n",
--				__func__, tty_name(tty, buf));
-+		if (once) {
-+			once = 0;
-+			printk(KERN_WARNING "%s: %s: read/write wait queue active!\n",
-+			       __func__, tty_name(tty, buf));
-+		}
- 		tty_unlock_pair(tty, o_tty);
- 		mutex_unlock(&tty_mutex);
- 		schedule_timeout_killable(timeout);
+ 	generic_phy = devm_phy_create(phy->dev, &ops, NULL);
+-	if (IS_ERR(generic_phy))
++	if (IS_ERR(generic_phy)) {
++		pm_runtime_disable(phy->dev);
+ 		return PTR_ERR(generic_phy);
++	}
+ 
+ 	phy_set_drvdata(generic_phy, phy);
+ 
+-	pm_runtime_enable(phy->dev);
+ 	phy_provider = devm_of_phy_provider_register(phy->dev,
+ 			of_phy_simple_xlate);
+ 	if (IS_ERR(phy_provider)) {
 -- 
 2.1.0
 
