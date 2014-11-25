@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642AbaKYKxh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:53:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59126 "EHLO
+	id S1754621AbaKYKxg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:53:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59130 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754075AbaKYKn3 (ORCPT
+	with ESMTP id S1754079AbaKYKn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Nov 2014 05:43:29 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Borkmann <dborkman@redhat.com>, Vlad Yasevich <vyasevich@gmail.com>,
+Cc: Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 221/254] net: sctp: fix NULL pointer dereference in af->from_addr_param on malformed packet
-Date: Tue, 25 Nov 2014 10:39:31 +0000
-Message-Id: <1416912004-5928-222-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 223/254] ipv6: fix IPV6_PKTINFO with v4 mapped
+Date: Tue, 25 Nov 2014 10:39:33 +0000
+Message-Id: <1416912004-5928-224-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,80 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit e40607cbe270a9e8360907cb1e62ddf0736e4864 upstream.
+commit 5337b5b75cd9bd3624a6820e3c2a084d2480061c upstream.
 
-An SCTP server doing ASCONF will panic on malformed INIT ping-of-death
-in the form of:
+Use IS_ENABLED(CONFIG_IPV6), to enable this code if IPv6 is
+a module.
 
-  ------------ INIT[PARAM: SET_PRIMARY_IP] ------------>
-
-While the INIT chunk parameter verification dissects through many things
-in order to detect malformed input, it misses to actually check parameters
-inside of parameters. E.g. RFC5061, section 4.2.4 proposes a 'set primary
-IP address' parameter in ASCONF, which has as a subparameter an address
-parameter.
-
-So an attacker may send a parameter type other than SCTP_PARAM_IPV4_ADDRESS
-or SCTP_PARAM_IPV6_ADDRESS, param_type2af() will subsequently return 0
-and thus sctp_get_af_specific() returns NULL, too, which we then happily
-dereference unconditionally through af->from_addr_param().
-
-The trace for the log:
-
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000078
-IP: [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
-PGD 0
-Oops: 0000 [#1] SMP
-[...]
-Pid: 0, comm: swapper Not tainted 2.6.32-504.el6.x86_64 #1 Bochs Bochs
-RIP: 0010:[<ffffffffa01e9c62>]  [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
-[...]
-Call Trace:
- <IRQ>
- [<ffffffffa01f2add>] ? sctp_bind_addr_copy+0x5d/0xe0 [sctp]
- [<ffffffffa01e1fcb>] sctp_sf_do_5_1B_init+0x21b/0x340 [sctp]
- [<ffffffffa01e3751>] sctp_do_sm+0x71/0x1210 [sctp]
- [<ffffffffa01e5c09>] ? sctp_endpoint_lookup_assoc+0xc9/0xf0 [sctp]
- [<ffffffffa01e61f6>] sctp_endpoint_bh_rcv+0x116/0x230 [sctp]
- [<ffffffffa01ee986>] sctp_inq_push+0x56/0x80 [sctp]
- [<ffffffffa01fcc42>] sctp_rcv+0x982/0xa10 [sctp]
- [<ffffffffa01d5123>] ? ipt_local_in_hook+0x23/0x28 [iptable_filter]
- [<ffffffff8148bdc9>] ? nf_iterate+0x69/0xb0
- [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
- [<ffffffff8148bf86>] ? nf_hook_slow+0x76/0x120
- [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
-[...]
-
-A minimal way to address this is to check for NULL as we do on all
-other such occasions where we know sctp_get_af_specific() could
-possibly return with NULL.
-
-Fixes: d6de3097592b ("[SCTP]: Add the handling of "Set Primary IP Address" parameter to INIT")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: c8e6ad0829a7 ("ipv6: honor IPV6_PKTINFO with v4 mapped addresses on sendmsg")
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/sctp/sm_make_chunk.c | 3 +++
- 1 file changed, 3 insertions(+)
+ net/ipv4/ip_sockglue.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/sctp/sm_make_chunk.c b/net/sctp/sm_make_chunk.c
-index ab734be8cb20..9f32741abb1c 100644
---- a/net/sctp/sm_make_chunk.c
-+++ b/net/sctp/sm_make_chunk.c
-@@ -2609,6 +2609,9 @@ do_addr_param:
- 		addr_param = param.v + sizeof(sctp_addip_param_t);
- 
- 		af = sctp_get_af_specific(param_type2af(param.p->type));
-+		if (af == NULL)
-+			break;
-+
- 		af->from_addr_param(&addr, addr_param,
- 				    htons(asoc->peer.port), 0);
- 
+diff --git a/net/ipv4/ip_sockglue.c b/net/ipv4/ip_sockglue.c
+index 64741b938632..94f1f15cf834 100644
+--- a/net/ipv4/ip_sockglue.c
++++ b/net/ipv4/ip_sockglue.c
+@@ -195,7 +195,7 @@ int ip_cmsg_send(struct net *net, struct msghdr *msg, struct ipcm_cookie *ipc,
+ 	for (cmsg = CMSG_FIRSTHDR(msg); cmsg; cmsg = CMSG_NXTHDR(msg, cmsg)) {
+ 		if (!CMSG_OK(msg, cmsg))
+ 			return -EINVAL;
+-#if defined(CONFIG_IPV6)
++#if IS_ENABLED(CONFIG_IPV6)
+ 		if (allow_ipv6 &&
+ 		    cmsg->cmsg_level == SOL_IPV6 &&
+ 		    cmsg->cmsg_type == IPV6_PKTINFO) {
 -- 
 2.1.0
 
