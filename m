@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965AbaKYLtp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:49:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58253 "EHLO
+	id S1752951AbaKYKk6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:40:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58224 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752960AbaKYKlB (ORCPT
+	with ESMTP id S1752904AbaKYKk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:41:01 -0500
+	Tue, 25 Nov 2014 05:40:56 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>,
+Cc: Ben Skeggs <bskeggs@redhat.com>, Sven Joachim <svenjoac@gmx.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 058/254] cpufreq: intel_pstate: Add CPU ID for Braswell processor
-Date: Tue, 25 Nov 2014 10:36:48 +0000
-Message-Id: <1416912004-5928-59-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 052/254] drm/nvc0-/fb/ram: fix use of non-existant ram if partitions aren't uniform
+Date: Tue, 25 Nov 2014 10:36:42 +0000
+Message-Id: <1416912004-5928-53-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -29,35 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+From: Ben Skeggs <bskeggs@redhat.com>
 
-commit 16405f98bca8eb39a23b3ce03e241ca19e7af370 upstream.
+commit 3d9e3921f4d77bcaeea913c48b894d1208f0cb06 upstream.
 
-This is pretty much the same as Intel Baytrail, only the CPU ID is
-different. Add the new ID to the supported CPU list.
+Likely a large part of the GK106 woes..
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Acked-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Cc: Sven Joachim <svenjoac@gmx.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/cpufreq/intel_pstate.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/nouveau/core/subdev/fb/ramnvc0.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 4598b8731b55..fafc7d05e1f9 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -755,6 +755,7 @@ static const struct x86_cpu_id intel_pstate_cpu_ids[] = {
- 	ICPU(0x3f, core_params),
- 	ICPU(0x45, core_params),
- 	ICPU(0x46, core_params),
-+	ICPU(0x4c, byt_params),
- 	ICPU(0x4f, core_params),
- 	ICPU(0x56, core_params),
- 	{}
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/fb/ramnvc0.c b/drivers/gpu/drm/nouveau/core/subdev/fb/ramnvc0.c
+index 5a6a5027f749..cd9920591a21 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/fb/ramnvc0.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/fb/ramnvc0.c
+@@ -554,13 +554,13 @@ nvc0_ram_create_(struct nouveau_object *parent, struct nouveau_object *engine,
+ 	} else {
+ 		/* otherwise, address lowest common amount from 0GiB */
+ 		ret = nouveau_mm_init(&pfb->vram, rsvd_head,
+-				      (bsize << 8) * parts, 1);
++				      (bsize << 8) * parts - rsvd_head, 1);
+ 		if (ret)
+ 			return ret;
+ 
+ 		/* and the rest starting from (8GiB + common_size) */
+ 		offset = (0x0200000000ULL >> 12) + (bsize << 8);
+-		length = (ram->size >> 12) - (bsize << 8) - rsvd_tail;
++		length = (ram->size >> 12) - ((bsize * parts) << 8) - rsvd_tail;
+ 
+ 		ret = nouveau_mm_init(&pfb->vram, offset, length, 0);
+ 		if (ret)
 -- 
 2.1.0
 
