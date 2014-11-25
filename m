@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135AbaKYIE3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 03:04:29 -0500
-Received: from mailgw02.mediatek.com ([210.61.82.184]:35342 "EHLO
+	id S1752201AbaKYIEp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 03:04:45 -0500
+Received: from mailgw02.mediatek.com ([210.61.82.184]:35402 "EHLO
 	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752029AbaKYIE1 (ORCPT
+	with ESMTP id S1752041AbaKYIEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 03:04:27 -0500
+	Tue, 25 Nov 2014 03:04:43 -0500
 X-Listener-Flag: 11101
 From: Yingjoe Chen <yingjoe.chen@mediatek.com>
 To: Mark Rutland <mark.rutland@arm.com>, Jason Cooper <jason@lakedaemon.net>,
@@ -25,10 +25,12 @@ CC: Boris BREZILLON <boris.brezillon@free-electrons.com>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Sascha Hauer <kernel@pengutronix.de>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v8 0/4] ARM: mediatek: Add support for interrupt polarity
-Date: Tue, 25 Nov 2014 16:04:18 +0800
-Message-ID: <1416902662-19281-1-git-send-email-yingjoe.chen@mediatek.com>
+Subject: [PATCH v8 1/4] irqchip: gic: Support hierarchy irq domain.
+Date: Tue, 25 Nov 2014 16:04:19 +0800
+Message-ID: <1416902662-19281-2-git-send-email-yingjoe.chen@mediatek.com>
 X-Mailer: git-send-email 1.8.1.1.dirty
+In-Reply-To: <1416902662-19281-1-git-send-email-yingjoe.chen@mediatek.com>
+References: <1416902662-19281-1-git-send-email-yingjoe.chen@mediatek.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-MTK: N
@@ -36,86 +38,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is 8th version of interrupt polarity support for MediaTek SoCs.
+Add support to use gic as a parent for stacked irq domain.
 
-I rebased previous version to latest tip/irq/irqdomain, and fix issues
-raised by Marc & Mark. The interrupt & irq free work fine on mt8135 board.
+Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
+---
+ drivers/irqchip/Kconfig   |  1 +
+ drivers/irqchip/irq-gic.c | 77 ++++++++++++++++++++++++++++++++---------------
+ 2 files changed, 54 insertions(+), 24 deletions(-)
 
-Simplified block diagram for interrupt on my system:
+diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+index b21f12f..7f34138 100644
+--- a/drivers/irqchip/Kconfig
++++ b/drivers/irqchip/Kconfig
+@@ -5,6 +5,7 @@ config IRQCHIP
+ config ARM_GIC
+ 	bool
+ 	select IRQ_DOMAIN
++	select IRQ_DOMAIN_HIERARCHY
+ 	select MULTI_IRQ_HANDLER
+ 
+ config GIC_NON_BANKED
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 38493ff..ab6069b 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -788,17 +788,16 @@ static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
+ {
+ 	if (hw < 32) {
+ 		irq_set_percpu_devid(irq);
+-		irq_set_chip_and_handler(irq, &gic_chip,
+-					 handle_percpu_devid_irq);
++		irq_domain_set_info(d, irq, hw, &gic_chip, d->host_data,
++				    handle_percpu_devid_irq, NULL, NULL);
+ 		set_irq_flags(irq, IRQF_VALID | IRQF_NOAUTOEN);
+ 	} else {
+-		irq_set_chip_and_handler(irq, &gic_chip,
+-					 handle_fasteoi_irq);
++		irq_domain_set_info(d, irq, hw, &gic_chip, d->host_data,
++				    handle_fasteoi_irq, NULL, NULL);
+ 		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
+ 
+ 		gic_routable_irq_domain_ops->map(d, irq, hw);
+ 	}
+-	irq_set_chip_data(irq, d->host_data);
+ 	return 0;
+ }
+ 
+@@ -858,6 +857,31 @@ static struct notifier_block gic_cpu_notifier = {
+ };
+ #endif
+ 
++static int gic_irq_domain_alloc(struct irq_domain *domain, unsigned int virq,
++				unsigned int nr_irqs, void *arg)
++{
++	int i, ret;
++	irq_hw_number_t hwirq;
++	unsigned int type = IRQ_TYPE_NONE;
++	struct of_phandle_args *irq_data = arg;
++
++	ret = gic_irq_domain_xlate(domain, irq_data->np, irq_data->args,
++				   irq_data->args_count, &hwirq, &type);
++	if (ret)
++		return ret;
++
++	for (i = 0; i < nr_irqs; i++)
++		gic_irq_domain_map(domain, virq + i, hwirq + i);
++
++	return 0;
++}
++
++static const struct irq_domain_ops gic_irq_domain_hierarchy_ops = {
++	.xlate = gic_irq_domain_xlate,
++	.alloc = gic_irq_domain_alloc,
++	.free = irq_domain_free_irqs_top,
++};
++
+ static const struct irq_domain_ops gic_irq_domain_ops = {
+ 	.map = gic_irq_domain_map,
+ 	.unmap = gic_irq_domain_unmap,
+@@ -948,18 +972,6 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+ 		gic_cpu_map[i] = 0xff;
+ 
+ 	/*
+-	 * For primary GICs, skip over SGIs.
+-	 * For secondary GICs, skip over PPIs, too.
+-	 */
+-	if (gic_nr == 0 && (irq_start & 31) > 0) {
+-		hwirq_base = 16;
+-		if (irq_start != -1)
+-			irq_start = (irq_start & ~31) + 16;
+-	} else {
+-		hwirq_base = 32;
+-	}
+-
+-	/*
+ 	 * Find out how many interrupts are supported.
+ 	 * The GIC only supports up to 1020 interrupt sources.
+ 	 */
+@@ -969,10 +981,31 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+ 		gic_irqs = 1020;
+ 	gic->gic_irqs = gic_irqs;
+ 
+-	gic_irqs -= hwirq_base; /* calculate # of irqs to allocate */
++	if (node) {		/* DT case */
++		const struct irq_domain_ops *ops = &gic_irq_domain_hierarchy_ops;
++
++		if (!of_property_read_u32(node, "arm,routable-irqs",
++					  &nr_routable_irqs)) {
++			ops = &gic_irq_domain_ops;
++			gic_irqs = nr_routable_irqs;
++		}
++
++		gic->domain = irq_domain_add_linear(node, gic_irqs, ops, gic);
++	} else {		/* Non-DT case */
++		/*
++		 * For primary GICs, skip over SGIs.
++		 * For secondary GICs, skip over PPIs, too.
++		 */
++		if (gic_nr == 0 && (irq_start & 31) > 0) {
++			hwirq_base = 16;
++			if (irq_start != -1)
++				irq_start = (irq_start & ~31) + 16;
++		} else {
++			hwirq_base = 32;
++		}
++
++		gic_irqs -= hwirq_base; /* calculate # of irqs to allocate */
+ 
+-	if (of_property_read_u32(node, "arm,routable-irqs",
+-				 &nr_routable_irqs)) {
+ 		irq_base = irq_alloc_descs(irq_start, 16, gic_irqs,
+ 					   numa_node_id());
+ 		if (IS_ERR_VALUE(irq_base)) {
+@@ -983,10 +1016,6 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+ 
+ 		gic->domain = irq_domain_add_legacy(node, gic_irqs, irq_base,
+ 					hwirq_base, &gic_irq_domain_ops, gic);
+-	} else {
+-		gic->domain = irq_domain_add_linear(node, nr_routable_irqs,
+-						    &gic_irq_domain_ops,
+-						    gic);
+ 	}
+ 
+ 	if (WARN_ON(!gic->domain))
+-- 
+1.8.1.1.dirty
 
-    +-------+      +-------+
- ---| SYSIRQ|------|ARM GIC|
- ---|       |------|       |
- ---|       |------|       |
- ---|       |------|       |
- ---|       |------|       |
-    +-------+      +-------+
-
-In device tree, interrupt-parent for other devices is sysirq, child of gic.
-This describe HW better and allow device to specify polarity as it is sent
-by the device.
-
-When using hierarchy irq domain, gic will use irq_domain_add_linear to
-create irqdomain and all interrupt numbers must come from device tree. My
-/proc/interrupts looks like this now:
-
-# cat /proc/interrupts
-           CPU0
- 16:     149578  MT_SYSIRQ 113  mtk_timer
- 20:       1082  MT_SYSIRQ  54  serial
-
-Changes in v8:
- - Rebased to new tip/irq/irqdomain
- - Update mediatek,sysirq.txt bindinds to document interrupt-cells format
-   and interrupt-parents
- - Change interrupt-cells format check in mtk_sysirq.
- - Minor coding style fix
-
-Changes in v7:
- - Discussed in [1]
- - Rebased to tip/irq/irqdomain
- - In mtk_sysirq_domain_alloc, use copy of irq_data to workaound of_node
-   check in gic_irq_domain_xlate.
-
-Changes in v6:
- - Discussed in [2]
- - Rebased to tip/irq/irqdomain
-
-Changes in v5:
- - Discussed in [3]
- - Fix bug on mt6589 reported by Matthias
- - Fix bug for irq_find_mapping in irq_create_of_mapping
- - Merge Marc's change to proper handle non-DT case in gic_init_bases
-
-Changes in v4:
- - Discussed in [4]
- - Remove arm,hierarchy-irq-domain. When GIC is probed by DT, it will
-support hierarchy irqdomain.
-
-Changes in v3:
- - Discussed in [5]
- - First implementation using hierarchy irqdomain
-
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/304119.html
-[2] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/302221.html
-[3] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/298161.html
-[4] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/296911.html
-[5] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/293766.html
-
-Yingjoe Chen (4):
-  irqchip: gic: Support hierarchy irq domain.
-  ARM: mediatek: Add sysirq interrupt polarity support
-  ARM: mediatek: Add sysirq in mt6589/mt8135/mt8127 dtsi
-  dt-bindings: add bindings for mediatek sysirq
-
- .../bindings/arm/mediatek/mediatek,sysirq.txt      |  28 ++++
- arch/arm/boot/dts/mt6589.dtsi                      |  14 +-
- arch/arm/boot/dts/mt8127.dtsi                      |  14 +-
- arch/arm/boot/dts/mt8135.dtsi                      |  14 +-
- drivers/irqchip/Kconfig                            |   1 +
- drivers/irqchip/Makefile                           |   1 +
- drivers/irqchip/irq-gic.c                          |  77 +++++++---
- drivers/irqchip/irq-mtk-sysirq.c                   | 163 +++++++++++++++++++++
- 8 files changed, 282 insertions(+), 30 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/mediatek/mediatek,sysirq.txt
- create mode 100644 drivers/irqchip/irq-mtk-sysirq.c
