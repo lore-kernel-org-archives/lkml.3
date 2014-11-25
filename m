@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676AbaKYK4Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:56:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59069 "EHLO
+	id S1754569AbaKYK4W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:56:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59070 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754021AbaKYKnU (ORCPT
+	with ESMTP id S1754016AbaKYKnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Nov 2014 05:43:20 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+Cc: Tang Chen <tangchen@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 213/254] firewire: cdev: prevent kernel stack leaking into ioctl arguments
-Date: Tue, 25 Nov 2014 10:39:23 +0000
-Message-Id: <1416912004-5928-214-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 210/254] mem-hotplug: reset node managed pages when hot-adding a new pgdat
+Date: Tue, 25 Nov 2014 10:39:20 +0000
+Message-Id: <1416912004-5928-211-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,62 +30,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+From: Tang Chen <tangchen@cn.fujitsu.com>
 
-commit eaca2d8e75e90a70a63a6695c9f61932609db212 upstream.
+commit f784a3f19613901ca4539a5b0eed3bdc700e6ee7 upstream.
 
-Found by the UC-KLEE tool:  A user could supply less input to
-firewire-cdev ioctls than write- or write/read-type ioctl handlers
-expect.  The handlers used data from uninitialized kernel stack then.
+In free_area_init_core(), zone->managed_pages is set to an approximate
+value for lowmem, and will be adjusted when the bootmem allocator frees
+pages into the buddy system.
 
-This could partially leak back to the user if the kernel subsequently
-generated fw_cdev_event_'s (to be read from the firewire-cdev fd)
-which notably would contain the _u64 closure field which many of the
-ioctl argument structures contain.
+But free_area_init_core() is also called by hotadd_new_pgdat() when
+hot-adding memory.  As a result, zone->managed_pages of the newly added
+node's pgdat is set to an approximate value in the very beginning.
 
-The fact that the handlers would act on random garbage input is a
-lesser issue since all handlers must check their input anyway.
+Even if the memory on that node has node been onlined,
+/sys/device/system/node/nodeXXX/meminfo has wrong value:
 
-The fix simply always null-initializes the entire ioctl argument buffer
-regardless of the actual length of expected user input.  That is, a
-runtime overhead of memset(..., 40) is added to each firewirew-cdev
-ioctl() call.  [Comment from Clemens Ladisch:  This part of the stack is
-most likely to be already in the cache.]
+  hot-add node2 (memory not onlined)
+  cat /sys/device/system/node/node2/meminfo
+  Node 2 MemTotal:       33554432 kB
+  Node 2 MemFree:               0 kB
+  Node 2 MemUsed:        33554432 kB
+  Node 2 Active:                0 kB
 
-Remarks:
-  - There was never any leak from kernel stack to the ioctl output
-    buffer itself.  IOW, it was not possible to read kernel stack by a
-    read-type or write/read-type ioctl alone; the leak could at most
-    happen in combination with read()ing subsequent event data.
-  - The actual expected minimum user input of each ioctl from
-    include/uapi/linux/firewire-cdev.h is, in bytes:
-    [0x00] = 32, [0x05] =  4, [0x0a] = 16, [0x0f] = 20, [0x14] = 16,
-    [0x01] = 36, [0x06] = 20, [0x0b] =  4, [0x10] = 20, [0x15] = 20,
-    [0x02] = 20, [0x07] =  4, [0x0c] =  0, [0x11] =  0, [0x16] =  8,
-    [0x03] =  4, [0x08] = 24, [0x0d] = 20, [0x12] = 36, [0x17] = 12,
-    [0x04] = 20, [0x09] = 24, [0x0e] =  4, [0x13] = 40, [0x18] =  4.
+This patch fixes this problem by reset node managed pages to 0 after
+hot-adding a new node.
 
-Reported-by: David Ramos <daramos@stanford.edu>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+1. Move reset_managed_pages_done from reset_node_managed_pages() to
+   reset_all_zones_managed_pages()
+2. Make reset_node_managed_pages() non-static
+3. Call reset_node_managed_pages() in hotadd_new_pgdat() after pgdat
+   is initialized
+
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/firewire/core-cdev.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ include/linux/bootmem.h | 1 +
+ mm/bootmem.c            | 9 +++++----
+ mm/memory_hotplug.c     | 9 +++++++++
+ mm/nobootmem.c          | 8 +++++---
+ 4 files changed, 20 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/firewire/core-cdev.c b/drivers/firewire/core-cdev.c
-index d7d5c8af92b9..6d4456898007 100644
---- a/drivers/firewire/core-cdev.c
-+++ b/drivers/firewire/core-cdev.c
-@@ -1637,8 +1637,7 @@ static int dispatch_ioctl(struct client *client,
- 	    _IOC_SIZE(cmd) > sizeof(buffer))
- 		return -ENOTTY;
+diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
+index 4e2bd4c95b66..0995c2de8162 100644
+--- a/include/linux/bootmem.h
++++ b/include/linux/bootmem.h
+@@ -46,6 +46,7 @@ extern unsigned long init_bootmem_node(pg_data_t *pgdat,
+ extern unsigned long init_bootmem(unsigned long addr, unsigned long memend);
  
--	if (_IOC_DIR(cmd) == _IOC_READ)
--		memset(&buffer, 0, _IOC_SIZE(cmd));
-+	memset(&buffer, 0, sizeof(buffer));
+ extern unsigned long free_all_bootmem(void);
++extern void reset_node_managed_pages(pg_data_t *pgdat);
+ extern void reset_all_zones_managed_pages(void);
  
- 	if (_IOC_DIR(cmd) & _IOC_WRITE)
- 		if (copy_from_user(&buffer, arg, _IOC_SIZE(cmd)))
+ extern void free_bootmem_node(pg_data_t *pgdat,
+diff --git a/mm/bootmem.c b/mm/bootmem.c
+index 90bd3507b413..6603a7c4b136 100644
+--- a/mm/bootmem.c
++++ b/mm/bootmem.c
+@@ -243,13 +243,10 @@ static unsigned long __init free_all_bootmem_core(bootmem_data_t *bdata)
+ 
+ static int reset_managed_pages_done __initdata;
+ 
+-static inline void __init reset_node_managed_pages(pg_data_t *pgdat)
++void reset_node_managed_pages(pg_data_t *pgdat)
+ {
+ 	struct zone *z;
+ 
+-	if (reset_managed_pages_done)
+-		return;
+-
+ 	for (z = pgdat->node_zones; z < pgdat->node_zones + MAX_NR_ZONES; z++)
+ 		z->managed_pages = 0;
+ }
+@@ -258,8 +255,12 @@ void __init reset_all_zones_managed_pages(void)
+ {
+ 	struct pglist_data *pgdat;
+ 
++	if (reset_managed_pages_done)
++		return;
++
+ 	for_each_online_pgdat(pgdat)
+ 		reset_node_managed_pages(pgdat);
++
+ 	reset_managed_pages_done = 1;
+ }
+ 
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 469bbf505f85..2fcc1a2e8ab2 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -31,6 +31,7 @@
+ #include <linux/stop_machine.h>
+ #include <linux/hugetlb.h>
+ #include <linux/memblock.h>
++#include <linux/bootmem.h>
+ 
+ #include <asm/tlbflush.h>
+ 
+@@ -1093,6 +1094,14 @@ static pg_data_t __ref *hotadd_new_pgdat(int nid, u64 start)
+ 	build_all_zonelists(pgdat, NULL);
+ 	mutex_unlock(&zonelists_mutex);
+ 
++	/*
++	 * zone->managed_pages is set to an approximate value in
++	 * free_area_init_core(), which will cause
++	 * /sys/device/system/node/nodeX/meminfo has wrong data.
++	 * So reset it to 0 before any memory is onlined.
++	 */
++	reset_node_managed_pages(pgdat);
++
+ 	return pgdat;
+ }
+ 
+diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+index 7ed58602e71b..aab07a497198 100644
+--- a/mm/nobootmem.c
++++ b/mm/nobootmem.c
+@@ -143,12 +143,10 @@ static unsigned long __init free_low_memory_core_early(void)
+ 
+ static int reset_managed_pages_done __initdata;
+ 
+-static inline void __init reset_node_managed_pages(pg_data_t *pgdat)
++void reset_node_managed_pages(pg_data_t *pgdat)
+ {
+ 	struct zone *z;
+ 
+-	if (reset_managed_pages_done)
+-		return;
+ 	for (z = pgdat->node_zones; z < pgdat->node_zones + MAX_NR_ZONES; z++)
+ 		z->managed_pages = 0;
+ }
+@@ -157,8 +155,12 @@ void __init reset_all_zones_managed_pages(void)
+ {
+ 	struct pglist_data *pgdat;
+ 
++	if (reset_managed_pages_done)
++		return;
++
+ 	for_each_online_pgdat(pgdat)
+ 		reset_node_managed_pages(pgdat);
++
+ 	reset_managed_pages_done = 1;
+ }
+ 
 -- 
 2.1.0
 
