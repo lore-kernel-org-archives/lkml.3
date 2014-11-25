@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720AbaKYKmi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:42:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58783 "EHLO
+	id S1753766AbaKYKmn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:42:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58833 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667AbaKYKm3 (ORCPT
+	with ESMTP id S1753717AbaKYKmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:29 -0500
+	Tue, 25 Nov 2014 05:42:38 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Sebastian Reichel <sre@kernel.org>,
+Cc: Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 154/254] power: bq2415x_charger: Properly handle ENODEV from power_supply_get_by_phandle
-Date: Tue, 25 Nov 2014 10:38:24 +0000
-Message-Id: <1416912004-5928-155-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 165/254] ARM: mvebu: armada xp: Generalize use of i2c quirk
+Date: Tue, 25 Nov 2014 10:38:35 +0000
+Message-Id: <1416912004-5928-166-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,54 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Andrew Lunn <andrew@lunn.ch>
 
-commit 0eaf437aa14949d2230aeab7364f4ab47901304a upstream.
+commit 5129ee22ce4aff7c5907d4c3d67d23f86cd6db9b upstream.
 
-The power_supply_get_by_phandle() on error returns ENODEV or NULL.
-The driver later expects obtained pointer to power supply to be
-valid or NULL. If it is not NULL then it dereferences it in
-bq2415x_notifier_call() which would lead to dereferencing ENODEV-value
-pointer.
+A second product has come to light which makes use of the A0 stepping
+of the Armada XP SoC. A0 stepping has a hardware bug in the i2c core
+meaning that hardware offload does not work, resulting in the kernel
+failing to boot. The quirk detects that the kernel is running on an A0
+stepping SoC and disables the use of hardware offload.
 
-Properly handle the power_supply_get_by_phandle() error case by
-replacing error value with NULL. This indicates that usb charger
-detection won't be used.
+Currently the quirk is only enabled for PlatHome Openblocks AX3. The
+AX3 has been produced with both A0 and B0 stepping SoCs. The second
+product is the Lenovo Iomega IX4-300d. It seems likely that this
+device will also swap from A0 to B0 SoC sometime during its life.
 
-Fix also memory leak of 'name' if power_supply_get_by_phandle() fails
-with NULL and probe should defer.
+If there are two products using A0, it seems likely there are more
+products with A0. Also, since the number of A0 SoCs is limited, these
+products are also likely to transition to B0. Hence detecting at run
+time is the safest option. So enable the quirk for all Armada XP
+boards.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Fixes: faffd234cf85 ("bq2415x_charger: Add DT support")
-[small fix regarding the missing ti,usb-charger-detection info message]
-Signed-off-by: Sebastian Reichel <sre@kernel.org>
+Tested on an AX3 with A0 stepping.
+
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Acked-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Fixes: 930ab3d403ae: ("i2c: mv64xxx: Add I2C Transaction Generator support")
+Link: https://lkml.kernel.org/r/1406395238-29758-2-git-send-email-andrew@lunn.ch
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/power/bq2415x_charger.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ arch/arm/mach-mvebu/board-v7.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/power/bq2415x_charger.c b/drivers/power/bq2415x_charger.c
-index e384844a1ae1..260795c6901a 100644
---- a/drivers/power/bq2415x_charger.c
-+++ b/drivers/power/bq2415x_charger.c
-@@ -1579,8 +1579,15 @@ static int bq2415x_probe(struct i2c_client *client,
- 	if (np) {
- 		bq->notify_psy = power_supply_get_by_phandle(np, "ti,usb-charger-detection");
+diff --git a/arch/arm/mach-mvebu/board-v7.c b/arch/arm/mach-mvebu/board-v7.c
+index b2524d689f21..b1e148d70876 100644
+--- a/arch/arm/mach-mvebu/board-v7.c
++++ b/arch/arm/mach-mvebu/board-v7.c
+@@ -174,7 +174,7 @@ static void __init thermal_quirk(void)
  
--		if (!bq->notify_psy)
--			return -EPROBE_DEFER;
-+		if (IS_ERR(bq->notify_psy)) {
-+			dev_info(&client->dev,
-+				"no 'ti,usb-charger-detection' property (err=%ld)\n",
-+				PTR_ERR(bq->notify_psy));
-+			bq->notify_psy = NULL;
-+		} else if (!bq->notify_psy) {
-+			ret = -EPROBE_DEFER;
-+			goto error_2;
-+		}
- 	}
- 	else if (pdata->notify_device)
- 		bq->notify_psy = power_supply_get_by_name(pdata->notify_device);
+ static void __init mvebu_dt_init(void)
+ {
+-	if (of_machine_is_compatible("plathome,openblocks-ax3-4"))
++	if (of_machine_is_compatible("marvell,armadaxp"))
+ 		i2c_quirk();
+ 	if (of_machine_is_compatible("marvell,a375-db")) {
+ 		external_abort_quirk();
 -- 
 2.1.0
 
