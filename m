@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110AbaKYMQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 07:16:29 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:12389 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752918AbaKYMO2 (ORCPT
+	id S1754159AbaKYMRI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 07:17:08 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:26938 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753274AbaKYMRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 07:14:28 -0500
-Message-Id: <20141125121426.255215256@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Tue, 25 Nov 2014 07:13:56 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [for-next][PATCH 1/5] tracing/trivial: Fix typos and make an int into a bool
-References: <20141125121355.225538266@goodmis.org>
+	Tue, 25 Nov 2014 07:17:04 -0500
+Date: Tue, 25 Nov 2014 15:16:00 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: David Drysdale <drysdale@google.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        Rich Felker <dalias@aerifal.cx>, Christoph Hellwig <hch@infradead.org>,
+        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
+Subject: Re: [PATCHv10 2/5] x86: Hook up execveat system call.
+Message-ID: <20141125121600.GE4893@mwanda>
+References: <1416830039-21952-1-git-send-email-drysdale@google.com>
+ <1416830039-21952-3-git-send-email-drysdale@google.com>
+ <20141124170626.GA5316@mwanda>
+ <CAHse=S-DS=NGC619Uhzkbd-EKa0D+HgBq3rE1czmLdoxAFswPg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0001-tracing-trivial-Fix-typos-and-make-an-int-into-a-boo.patch
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHse=S-DS=NGC619Uhzkbd-EKa0D+HgBq3rE1czmLdoxAFswPg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Mon, Nov 24, 2014 at 06:26:24PM +0000, David Drysdale wrote:
+> On Mon, Nov 24, 2014 at 5:06 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> > On Mon, Nov 24, 2014 at 11:53:56AM +0000, David Drysdale wrote:
+> >> Hook up x86-64, i386 and x32 ABIs.
+> >>
+> >> Signed-off-by: David Drysdale <drysdale@google.com>
+> >
+> > This one has been breaking my linux-next build for the past week.  I'm
+> > not sure what's going on.
+> 
+> Hi Dan,
+> 
+> Sorry if this has been causing you problems -- I've not had any
+> errors from the kbuild robots or my local builds.
+> 
 
-Fix up a few typos in comments and convert an int into a bool in
-update_traceon_count().
+For some reason I had a stale copy of
+arch/x86/include/generated/asm/unistd_32.h and it was using that in
+preference to the arch/x86/include/generated/uapi/asm/unistd_32.h file.
+Once I did ran:
 
-Link: http://lkml.kernel.org/r/546DD445.5080108@hitachi.com
+	arch/x86/include/generated/ -rf
 
-Suggested-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/ftrace.c          | 2 +-
- kernel/trace/trace_functions.c | 6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+Then it builds now.
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index fa0f36bb32e9..588af40d33db 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -1119,7 +1119,7 @@ static struct ftrace_ops global_ops = {
- 
- /*
-  * This is used by __kernel_text_address() to return true if the
-- * the address is on a dynamically allocated trampoline that would
-+ * address is on a dynamically allocated trampoline that would
-  * not return true for either core_kernel_text() or
-  * is_module_text_address().
-  */
-diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-index 973db52eb070..fcd41a166405 100644
---- a/kernel/trace/trace_functions.c
-+++ b/kernel/trace/trace_functions.c
-@@ -261,14 +261,14 @@ static struct tracer function_trace __tracer_data =
- };
- 
- #ifdef CONFIG_DYNAMIC_FTRACE
--static void update_traceon_count(void **data, int on)
-+static void update_traceon_count(void **data, bool on)
- {
- 	long *count = (long *)data;
- 	long old_count = *count;
- 
- 	/*
- 	 * Tracing gets disabled (or enabled) once per count.
--	 * This function can be called at the same time on mulitple CPUs.
-+	 * This function can be called at the same time on multiple CPUs.
- 	 * It is fine if both disable (or enable) tracing, as disabling
- 	 * (or enabling) the second time doesn't do anything as the
- 	 * state of the tracer is already disabled (or enabled).
-@@ -288,7 +288,7 @@ static void update_traceon_count(void **data, int on)
- 	 * the new state is visible before changing the counter by
- 	 * one minus the old counter. This guarantees that another CPU
- 	 * executing this code will see the new state before seeing
--	 * the new counter value, and would not do anthing if the new
-+	 * the new counter value, and would not do anything if the new
- 	 * counter is seen.
- 	 *
- 	 * Note, there is no synchronization between this and a user
--- 
-2.1.1
+I'm not sure what that's all about but it's fixed now.
 
+regards,
+dan carpenter
 
