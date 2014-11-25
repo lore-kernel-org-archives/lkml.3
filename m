@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736AbaKYLcq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:32:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58529 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317AbaKYKlr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753331AbaKYKlr (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 25 Nov 2014 05:41:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58505 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753112AbaKYKln (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 05:41:43 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jens Axboe <axboe@fb.com>, Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 108/254] blk-mq: fix potential hang if rolling wakeup depth is too high
-Date: Tue, 25 Nov 2014 10:37:38 +0000
-Message-Id: <1416912004-5928-109-git-send-email-luis.henriques@canonical.com>
+Cc: Chris Ball <chris@printf.net>, Lee Jones <lee.jones@linaro.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 103/254] mfd: rtsx_pcr: Fix MSI enable error handling
+Date: Tue, 25 Nov 2014 10:37:33 +0000
+Message-Id: <1416912004-5928-104-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -26,40 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jens Axboe <axboe@fb.com>
+From: Chris Ball <chris@printf.net>
 
-commit abab13b5c4fd1fec4f9a61622548012d93dc2831 upstream.
+commit 5152970538a5e16c03bbcb9f1c780489a795ed40 upstream.
 
-We currently divide the queue depth by 4 as our batch wakeup
-count, but we split the wakeups over BT_WAIT_QUEUES number of
-wait queues. This defaults to 8. If the product of the resulting
-batch wake count and BT_WAIT_QUEUES is higher than the device
-queue depth, we can get into a situation where a task goes to
-sleep waiting for a request, but never gets woken up.
+pci_enable_msi() can return failure with both positive and negative
+integers -- it returns 0 for success -- but is only tested here for
+"if (ret < 0)".  This causes us to try to use MSI on the RTS5249 SD
+reader in the Dell XPS 11 when enabling MSI failed, causing:
 
-Reported-by: Bart Van Assche <bvanassche@acm.org>
-Fixes: 4bb659b156996
-Signed-off-by: Jens Axboe <axboe@fb.com>
+[    1.737110] rtsx_pci: probe of 0000:05:00.0 failed with error -110
+
+Reported-by: D. Jared Dominguez <Jared_Dominguez@Dell.com>
+Tested-by: D. Jared Dominguez <Jared_Dominguez@Dell.com>
+Signed-off-by: Chris Ball <chris@printf.net>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- block/blk-mq-tag.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mfd/rtsx_pcr.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/block/blk-mq-tag.c b/block/blk-mq-tag.c
-index c1b92426c95e..74a4168ea34e 100644
---- a/block/blk-mq-tag.c
-+++ b/block/blk-mq-tag.c
-@@ -463,8 +463,8 @@ static void bt_update_count(struct blk_mq_bitmap_tags *bt,
+diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
+index 1d15735f9ef9..89b4c4216d0c 100644
+--- a/drivers/mfd/rtsx_pcr.c
++++ b/drivers/mfd/rtsx_pcr.c
+@@ -1177,7 +1177,7 @@ static int rtsx_pci_probe(struct pci_dev *pcidev,
+ 	pcr->msi_en = msi_en;
+ 	if (pcr->msi_en) {
+ 		ret = pci_enable_msi(pcidev);
+-		if (ret < 0)
++		if (ret)
+ 			pcr->msi_en = false;
  	}
  
- 	bt->wake_cnt = BT_WAIT_BATCH;
--	if (bt->wake_cnt > depth / 4)
--		bt->wake_cnt = max(1U, depth / 4);
-+	if (bt->wake_cnt > depth / BT_WAIT_QUEUES)
-+		bt->wake_cnt = max(1U, depth / BT_WAIT_QUEUES);
- 
- 	bt->depth = depth;
- }
 -- 
 2.1.0
 
