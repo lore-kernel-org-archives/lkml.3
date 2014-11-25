@@ -1,110 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754781AbaKYNSQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 08:18:16 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:29942 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754257AbaKYNSM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 08:18:12 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-f0-547481916896
-Message-id: <5474818E.7030704@samsung.com>
-Date: Tue, 25 Nov 2014 16:18:06 +0300
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.2.0
-MIME-version: 1.0
-To: Dmitry Chernenkov <dmitryc@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v7 08/12] mm: slub: add kernel address sanitizer support
- for slub allocator
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com>
- <1416852146-9781-9-git-send-email-a.ryabinin@samsung.com>
- <CAA6XgkETqmoDFi7Kdi9o3DTE-3=CT5imdCydFjvh83EayHHfpQ@mail.gmail.com>
-In-reply-to: <CAA6XgkETqmoDFi7Kdi9o3DTE-3=CT5imdCydFjvh83EayHHfpQ@mail.gmail.com>
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t/xa7oTG0tCDNrO8Fj83juT1WLO+jVs
-	FkeufWe3uP7tDaPFp5cPGC22XG9isnj+8CG7xYSHbewW0zaKW6zsbmaz2P7sLZPFys4HrBaX
-	d81hs7i35j+rRdvnf0BiyUYmi8VHbjNbvHs2mdni6qqD7BY/NjxmdRDxmL/zI6PHzll32T0W
-	bCr1WLznJZPHplWdbB6bPk1i9+h6e4XJ48SM3yweT65MZ/L4+PQWi8f7fVfZPD5vkvM40fKF
-	NYA3issmJTUnsyy1SN8ugSvj5ba8gu18FZ9aH7E3ML7h7mLk5JAQMJG4dv8CE4QtJnHh3no2
-	EFtIYCmjxMpt0V2MXEB2M5PErLMLwYp4BbQk5p9cxgxiswioSuz+shusgU1AT+LfrO1gtqhA
-	hMSVNXMYIeoFJX5MvscCYosA9Z7/8IAVZCizwB1WiVO/ZrKCJIQFEiUWvV7CCLGthUni5Zzr
-	7F2MHBycAsESG7olQExmAXWJKVNyQcqZBeQlNq95yzyBUWAWkhWzEKpmIalawMi8ilE0tTS5
-	oDgpPddQrzgxt7g0L10vOT93EyMkXr/sYFx8zOoQowAHoxIPr0FiSYgQa2JZcWXuIUYJDmYl
-	Ed7caqAQb0piZVVqUX58UWlOavEhRiYOTqkGRoa7c/vlr6gzJJfc2591Y6vF2riMb4qXPQ6x
-	fdQtW2q0UOCHZGJUXaqrdgaXc5+jnHveofvCovodDd7TBfyuaUe69TrfnK7Kv1ninW3orkkf
-	uHn3THnKzK0j8qLv0KEXh1VOeHk48SY/umN4n3GqozLjorJ1ZXvLlTL3sVdOPGy9W2T7xq6r
-	SizFGYmGWsxFxYkAy1FHfbUCAAA=
+	id S1754153AbaKYNQt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 08:16:49 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37230 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754045AbaKYNQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 08:16:45 -0500
+From: George Cherian <george.cherian@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+CC: <peter.chen@freescale.com>, <sojka@merica.cz>, <mathias.nyman@intel.com>,
+        <balbi@ti.com>, <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <bcousson@baylibre.com>, <kgene.kim@samsung.com>,
+        <ben-linux@fluff.org>, <linux@arm.linux.org.uk>,
+        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
+        George Cherian <george.cherian@ti.com>
+Subject: [PATCH 14/19] usb: dwc3: otg: Add the initial otg driver for dwc3.
+Date: Tue, 25 Nov 2014 18:41:50 +0530
+Message-ID: <1416921115-10467-15-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1416921115-10467-1-git-send-email-george.cherian@ti.com>
+References: <1416921115-10467-1-git-send-email-george.cherian@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2014 03:17 PM, Dmitry Chernenkov wrote:
-> FYI, when I backported Kasan to 3.14, in kasan_mark_slab_padding()
-> sometimes a negative size of padding was generated.
+Add the Initial OTG driver for dwc3.
+Currently support only
+	* ID based Role switching.
 
-I don't see how this could happen if pointers passed to kasan_mark_slab_padding() are correct.
+Signed-off-by: George Cherian <george.cherian@ti.com>
+---
+ drivers/usb/dwc3/Makefile |   4 ++
+ drivers/usb/dwc3/core.c   |  10 +---
+ drivers/usb/dwc3/core.h   |  10 ++++
+ drivers/usb/dwc3/otg.c    | 126 ++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 142 insertions(+), 8 deletions(-)
+ create mode 100644 drivers/usb/dwc3/otg.c
 
-Negative padding would mean that (object + s->size) is crossing slab page boundary.
-This is either slub allocator bug (very unlikely), or some pointers passed to kasan_mark_slab_padding()
-not correct.
-
-Or maybe I'm missing something?
-
-> This started
-> working when the patch below was applied:
-> 
-> @@ -262,12 +264,11 @@ void kasan_free_pages(struct page *page,
-> unsigned int order)
->  void kasan_mark_slab_padding(struct kmem_cache *s, void *object,
->   struct page *page)
->  {
-> - unsigned long object_end = (unsigned long)object + s->size;
-> - unsigned long padding_start = round_up(object_end,
-> - KASAN_SHADOW_SCALE_SIZE);
-> - unsigned long padding_end = (unsigned long)page_address(page) +
-> - (PAGE_SIZE << compound_order(page));
-> - size_t size = padding_end - padding_start;
-> + unsigned long page_start = (unsigned long) page_address(page);
-> + unsigned long page_end = page_start + (PAGE_SIZE << compound_order(page));
-> + unsigned long padding_start = round_up(page_end - s->reserved,
-> + KASAN_SHADOW_SCALE_SIZE);
-> + size_t size = page_end - padding_start;
-> 
->   kasan_poison_shadow((void *)padding_start, size, KASAN_SLAB_PADDING);
->  }
-> 
-> Also, in kasan_slab_free you poison the shadow with FREE not just the
-> object space, but also redzones. This is inefficient and will mistake
-> right out-of-bounds error for the next object with use-after-free.
-> This is fixed here
-> https://github.com/google/kasan/commit/4b3238be392ba0bc56bbc934ac545df3ff840782
-> , please patch.
-> 
-
-Makes sense.
-
-
-> 
-> LGTM
-> 
-
-
+diff --git a/drivers/usb/dwc3/Makefile b/drivers/usb/dwc3/Makefile
+index bb34fbc..fe7af97 100644
+--- a/drivers/usb/dwc3/Makefile
++++ b/drivers/usb/dwc3/Makefile
+@@ -12,6 +12,10 @@ ifneq ($(filter y,$(CONFIG_USB_DWC3_HOST) $(CONFIG_USB_DWC3_DUAL_ROLE)),)
+ 	dwc3-y				+= host.o
+ endif
+ 
++ifneq ($(CONFIG_USB_DWC3_DUAL_ROLE),)
++	dwc3-y				+= otg.o
++endif
++
+ ifneq ($(filter y,$(CONFIG_USB_DWC3_GADGET) $(CONFIG_USB_DWC3_DUAL_ROLE)),)
+ 	dwc3-y				+= gadget.o ep0.o
+ endif
+diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+index dbd5589..dd4af3f 100644
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -685,15 +685,9 @@ static int dwc3_core_init_mode(struct dwc3 *dwc)
+ 		break;
+ 	case USB_DR_MODE_OTG:
+ 		dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_OTG);
+-		ret = dwc3_host_init(dwc);
+-		if (ret) {
+-			dev_err(dev, "failed to initialize host\n");
+-			return ret;
+-		}
+-
+-		ret = dwc3_gadget_init(dwc);
++		ret = dwc3_otg_init(dwc);
+ 		if (ret) {
+-			dev_err(dev, "failed to initialize gadget\n");
++			dev_err(dev, "failed to initialize otg\n");
+ 			return ret;
+ 		}
+ 		break;
+diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
+index eb2e970..001d77d 100644
+--- a/drivers/usb/dwc3/core.h
++++ b/drivers/usb/dwc3/core.h
+@@ -1103,6 +1103,16 @@ static inline int dwc3_send_gadget_generic_command(struct dwc3 *dwc,
+ { return 0; }
+ #endif
+ 
++#if IS_ENABLED(CONFIG_USB_DWC3_DUAL_ROLE)
++int dwc3_otg_init(struct dwc3 *dwc);
++void dwc3_otg_exit(struct dwc3 *dwc);
++#else
++static inline int dwc3_otg_init(struct dwc3 *dwc)
++{ return 0; }
++static inline void dwc3_otg_exit(struct dwc3 *dwc)
++{ }
++#endif
++
+ /* power management interface */
+ #if !IS_ENABLED(CONFIG_USB_DWC3_HOST)
+ int dwc3_gadget_suspend(struct dwc3 *dwc);
+diff --git a/drivers/usb/dwc3/otg.c b/drivers/usb/dwc3/otg.c
+new file mode 100644
+index 0000000..b5c31c0
+--- /dev/null
++++ b/drivers/usb/dwc3/otg.c
+@@ -0,0 +1,126 @@
++/**
++ * otg.c - DesignWare USB3 DRD Controller OTG
++ *
++ * Copyright (C) 2014 Texas Instruments Incorporated - http://www.ti.com
++ *
++ * Authors: George Cherian <george.cherian@ti.com>
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2  of
++ * the License as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/platform_device.h>
++#include <linux/interrupt.h>
++#include <linux/usb.h>
++#include <linux/usb/hcd.h>
++
++#include <linux/usb/drd.h>
++#include "core.h"
++#include "io.h"
++
++#define DWC3_GSTS_OTG_IP (1 << 10)
++
++static irqreturn_t dwc3_otg_interrupt(int irq , void *_dwc)
++{
++	struct dwc3 *dwc = _dwc;
++	u32 reg;
++
++	spin_lock(&dwc->lock);
++	reg = dwc3_readl(dwc->regs, DWC3_GSTS);
++	if (reg & DWC3_GSTS_OTG_IP) {
++		reg = dwc3_readl(dwc->regs, DWC3_OEVT);
++		dev_vdbg(dwc->dev, "OTG Interrupt %x\n", reg);
++		dwc3_writel(dwc->regs, DWC3_OEVT, reg);
++		spin_unlock(&dwc->lock);
++		return IRQ_WAKE_THREAD;
++	}
++
++	spin_unlock(&dwc->lock);
++	return IRQ_NONE;
++}
++
++static irqreturn_t dwc3_otg_thread_interrupt(int irq, void *_dwc)
++{
++	struct dwc3 *dwc = _dwc;
++	u32 reg = dwc3_readl(dwc->regs, DWC3_OSTS);
++
++	dev_vdbg(dwc->dev, "OTG thread interrupt\n");
++	if ((reg & DWC3_OSTS_CONIDSTS)) {
++		usb_drd_stop_hcd(dwc->dev);
++		dwc3_writel(dwc->regs, DWC3_OCFG, DWC3_OCFG_SFTRSTMASK);
++		dwc3_writel(dwc->regs, DWC3_OCTL,
++			    DWC3_OCTL_SESREQ | DWC3_OCTL_PERIMODE);
++		if (usb_drd_get_state(dwc->dev) & DRD_DEVICE_REGISTERED) {
++			usb_drd_start_udc(dwc->dev);
++		} else {
++			dwc3_core_gadget_helper(dwc);
++			dwc3_gadget_init(dwc);
++		}
++		dwc3_writel(dwc->regs, DWC3_OEVTEN,
++			    DWC3_OEVTEN_CONIDSTSCHNGEN);
++	} else if (!(reg & DWC3_OSTS_CONIDSTS)) {
++		usb_drd_stop_udc(dwc->dev);
++		dwc3_writel(dwc->regs, DWC3_OCFG,
++			    DWC3_OCFG_DISPWRCUTTOFF | DWC3_OCFG_SFTRSTMASK);
++		dwc3_writel(dwc->regs, DWC3_OCTL, DWC3_OCTL_PRTPWRCTL);
++		if (usb_drd_get_state(dwc->dev) & DRD_HOST_REGISTERED)
++			usb_drd_start_hcd(dwc->dev);
++		else
++			dwc3_host_init(dwc);
++
++		dwc3_writel(dwc->regs, DWC3_OEVTEN,
++			    DWC3_OEVTEN_CONIDSTSCHNGEN);
++	}
++
++	return IRQ_HANDLED;
++}
++
++int dwc3_otg_init(struct dwc3 *dwc)
++{
++	u32 reg, ret;
++
++	usb_drd_add(dwc->dev);
++	dwc3_writel(dwc->regs, DWC3_OEVT, 0xFFFF);
++	if (dwc->otg_irq > 0) {
++		ret = devm_request_threaded_irq(dwc->dev, dwc->otg_irq,
++						dwc3_otg_interrupt,
++						dwc3_otg_thread_interrupt,
++						IRQF_SHARED, "dwc3-otg", dwc);
++	} else {
++		WARN(1, "Trying to request invalid otg_irq");
++		return -ENODEV;
++	}
++
++	dwc3_writel(dwc->regs, DWC3_OEVTEN, DWC3_OEVTEN_CONIDSTSCHNGEN);
++	dwc3_writel(dwc->regs, DWC3_OCTL, DWC3_OCTL_PERIMODE);
++
++	reg = dwc3_readl(dwc->regs, DWC3_OSTS);
++	if ((reg & DWC3_OSTS_CONIDSTS)) {
++		dev_vdbg(dwc->dev, "Gadget  init\n");
++		dwc3_writel(dwc->regs, DWC3_OCFG, DWC3_OCFG_SFTRSTMASK);
++		dwc3_writel(dwc->regs, DWC3_OCTL,
++			    DWC3_OCTL_SESREQ | DWC3_OCTL_PERIMODE);
++		dwc3_gadget_init(dwc);
++		dwc3_writel(dwc->regs, DWC3_OEVTEN,
++			    DWC3_OEVTEN_CONIDSTSCHNGEN);
++
++	} else if (!(reg & DWC3_OSTS_CONIDSTS)) {
++		dev_vdbg(dwc->dev, "Host  init\n");
++		dwc3_writel(dwc->regs, DWC3_OCFG,
++			    DWC3_OCFG_DISPWRCUTTOFF | DWC3_OCFG_SFTRSTMASK);
++		dwc3_writel(dwc->regs, DWC3_OCTL, DWC3_OCTL_PRTPWRCTL);
++		dwc3_host_init(dwc);
++		dwc3_writel(dwc->regs, DWC3_OEVTEN,
++			    DWC3_OEVTEN_CONIDSTSCHNGEN);
++	}
++
++	return 0;
++}
+-- 
+1.8.3.1
 
