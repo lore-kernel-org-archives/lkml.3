@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568AbaKYNc0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 08:32:26 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:65289 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568AbaKYNcX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 08:32:23 -0500
+	id S1753615AbaKYNeG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 08:34:06 -0500
+Received: from mout.web.de ([212.227.17.11]:58524 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752679AbaKYNeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 08:34:04 -0500
+Message-ID: <54748541.4000600@users.sourceforge.net>
+Date: Tue, 25 Nov 2014 14:33:53 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1416874644-12070-1-git-send-email-abrestic@chromium.org>
-References: <1416874644-12070-1-git-send-email-abrestic@chromium.org>
-Date: Tue, 25 Nov 2014 19:02:22 +0530
-Message-ID: <CAJe_Zhcz=WOLy0_98xRj6=i2+5MFeXQGPmYJhnpy1NfUEPJ-0w@mail.gmail.com>
-Subject: Re: [PATCH V6 00/12] Tegra xHCI support
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linux USB list <linux-usb@vger.kernel.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] GPU-DRM-MSM: Deletion of unnecessary checks before two
+ function calls
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:hz4egsoUb2argFb8JaSS67PzNr7wAhUT9bYWYf4Tf6Xs49F3yln
+ m49cfhcyyL47kKXacIF0HdUz3MazIMS3nuSQHiw5j06vRKHiVDMAp1+GwZ3OHPThNsaaZ5a
+ 8MfLcA0LIHZSNPlZt8MqNdUDXBu6J3iD5pB5cBj7T3xQMvW30yUEDasJLkiIspklAw8anc2
+ 2g8Io3OL9GK3SnKIqVzhQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 November 2014 at 05:47, Andrew Bresticker <abrestic@chromium.org> wrote:
-> This series adds support for xHCI on NVIDIA Tegra SoCs.  This includes:
->  - patches 1, 2, and 3: minor cleanups for mailbox framework and xHCI,
->  - patches 4 and 5: adding a driver for the mailbox used to communicate
->    with the xHCI controller's firmware,
->  - patches 6 and 7: extending the XUSB pad controller driver to support
->    the USB PHY types (UTMI, HSIC, and USB3),
->  - patches 8 and 9: adding a xHCI host-controller driver, and
->  - patches 10, 11, and 12: updating the relevant DT files.
->
-> The mailbox driver (patch 5) has a compile-time dependency on patch 2 and
-> a run-time dependency on patch 3.  Both the PHY (patch 7) and host (patch 9)
-> drivers have compile-time dependencies on the mailbox driver.  The host
-> driver also has a run-time dependency on patch 1.  Because of this, this
-> entire series should probably go through the Tegra tree.
->
-Why shouldn't I pick 2 & 3 at least?
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Tue, 25 Nov 2014 14:30:28 +0100
 
--Jassi
+The functions framebuffer_release() and vunmap() perform also input
+parameter validation. Thus the test around the call is not needed.
+
+This issue was detected by using the Coccinelle software.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/gpu/drm/msm/msm_fbdev.c | 3 +--
+ drivers/gpu/drm/msm/msm_gem.c   | 3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpu/drm/msm/msm_fbdev.c b/drivers/gpu/drm/msm/msm_fbdev.c
+index ab5bfd2..fd5a6f3 100644
+--- a/drivers/gpu/drm/msm/msm_fbdev.c
++++ b/drivers/gpu/drm/msm/msm_fbdev.c
+@@ -193,8 +193,7 @@ fail_unlock:
+ fail:
+ 
+ 	if (ret) {
+-		if (fbi)
+-			framebuffer_release(fbi);
++		framebuffer_release(fbi);
+ 		if (fb) {
+ 			drm_framebuffer_unregister_private(fb);
+ 			drm_framebuffer_remove(fb);
+diff --git a/drivers/gpu/drm/msm/msm_gem.c b/drivers/gpu/drm/msm/msm_gem.c
+index 4b1b82a..157cf21 100644
+--- a/drivers/gpu/drm/msm/msm_gem.c
++++ b/drivers/gpu/drm/msm/msm_gem.c
+@@ -543,8 +543,7 @@ void msm_gem_free_object(struct drm_gem_object *obj)
+ 			drm_free_large(msm_obj->pages);
+ 
+ 	} else {
+-		if (msm_obj->vaddr)
+-			vunmap(msm_obj->vaddr);
++		vunmap(msm_obj->vaddr);
+ 		put_pages(obj);
+ 	}
+ 
+-- 
+2.1.3
+
