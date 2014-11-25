@@ -1,74 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135AbaKYLwK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:52:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42571 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753526AbaKYLwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 06:52:06 -0500
-Date: Tue, 25 Nov 2014 12:51:59 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Kan Liang <kan.liang@intel.com>
-Cc: acme@kernel.org, namhyung@kernel.org, linux-kernel@vger.kernel.org,
-        ak@linux.intel.com
-Subject: Re: [PATCH V5 3/3] perf tool: check buildid for symoff
-Message-ID: <20141125115159.GE30861@krava.brq.redhat.com>
-References: <1416844829-26945-1-git-send-email-kan.liang@intel.com>
- <1416844829-26945-3-git-send-email-kan.liang@intel.com>
+	id S1756075AbaKYLvl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:51:41 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:36218 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755275AbaKYLve (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 06:51:34 -0500
+Message-Id: <20141125115129.901283525@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Tue, 25 Nov 2014 06:50:08 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [RFC][PATCH 5/9 v2] ftrace/x86: Simplify save_mcount_regs on getting RIP
+References: <20141125115003.856641273@goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416844829-26945-3-git-send-email-kan.liang@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0005-ftrace-x86-Simplify-save_mcount_regs-on-getting-RIP.patch
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 11:00:29AM -0500, Kan Liang wrote:
-> From: Kan Liang <kan.liang@intel.com>
-> 
-> symoff can support both same binaries and different binaries. However,
-> the offset may be changed for different binaries. This patch checks the
-> buildid of perf.data. If they are from different binaries, print a
-> warning to notify the user.
-> 
-> Signed-off-by: Kan Liang <kan.liang@intel.com>
-> ---
->  tools/perf/builtin-diff.c | 25 +++++++++++++++++++++++++
->  tools/perf/util/sort.c    |  3 +++
->  tools/perf/util/sort.h    |  1 +
->  3 files changed, 29 insertions(+)
-> 
-> diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-> index 03a4001..2a8c17a 100644
-> --- a/tools/perf/builtin-diff.c
-> +++ b/tools/perf/builtin-diff.c
-> @@ -678,6 +678,28 @@ static void data__free(struct data__file *d)
->  	}
->  }
->  
-> +static void buildid_check(void)
-> +{
-> +	struct dsos *base_k_dsos = &data__files[0].session->machines.host.kernel_dsos;
-> +	struct dsos *base_u_dsos = &data__files[0].session->machines.host.user_dsos;
-> +	struct dsos *k_dsos_tmp, *u_dsos_tmp;
-> +	struct data__file *d;
-> +	int i;
-> +
-> +	data__for_each_file_new(i, d) {
-> +		k_dsos_tmp = &d->session->machines.host.kernel_dsos;
-> +		u_dsos_tmp = &d->session->machines.host.user_dsos;
-> +
-> +		if (!dsos__build_ids_equal(base_k_dsos, k_dsos_tmp))
-> +			pr_warning("The perf.data come from different kernel. "
-> +				   "The kernel symbol offset may vary for different kernel.\n");
-> +
-> +		if (!dsos__build_ids_equal(base_u_dsos, u_dsos_tmp))
-> +			pr_warning("The perf.data come from different user binary. "
-> +				   "The user space symbol offset may vary for different binaries.\n");
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-we dont specify the kernel version or dso path in the warning message,
-maybe we want to print it out just once? In case there's more than 2
-not matching data?
+Currently save_mcount_regs is passed a "skip" parameter to know how much
+stack updated the pt_regs, as it tries to keep the saved pt_regs in the
+same location for all users. This is rather stupid, especially since the
+part stored on the pt_regs has nothing to do with what is suppose to be
+in that location.
 
-jirka
+Instead of doing that, just pass in an "added" parameter that lets that
+macro know how much stack was added before it was called so that it
+can get to the RIP.  But the difference is that it will now offset the
+pt_regs by that "added" count. The caller now needs to take care of
+the offset of the pt_regs.
+
+This will make it easier to simplify the code later.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ arch/x86/kernel/mcount_64.S | 37 ++++++++++++++++++-------------------
+ 1 file changed, 18 insertions(+), 19 deletions(-)
+
+diff --git a/arch/x86/kernel/mcount_64.S b/arch/x86/kernel/mcount_64.S
+index 4f1b27642495..596ac330c1db 100644
+--- a/arch/x86/kernel/mcount_64.S
++++ b/arch/x86/kernel/mcount_64.S
+@@ -37,12 +37,12 @@
+  * be saved in the locations that pt_regs has them in.
+  */
+ 
+-/* skip is set if the stack was already partially adjusted */
+-.macro save_mcount_regs skip=0
++/* @added: the amount of stack added before calling this */
++.macro save_mcount_regs added=0
+ 	 /*
+ 	  * We add enough stack to save all regs.
+ 	  */
+-	subq $(SS+8-\skip), %rsp
++	subq $(SS+8), %rsp
+ 	movq %rax, RAX(%rsp)
+ 	movq %rcx, RCX(%rsp)
+ 	movq %rdx, RDX(%rsp)
+@@ -51,11 +51,11 @@
+ 	movq %r8, R8(%rsp)
+ 	movq %r9, R9(%rsp)
+ 	 /* Move RIP to its proper location */
+-	movq SS+8(%rsp), %rdi
++	movq SS+8+\added(%rsp), %rdi
+ 	movq %rdi, RIP(%rsp)
+ 	.endm
+ 
+-.macro restore_mcount_regs skip=0
++.macro restore_mcount_regs
+ 	movq R9(%rsp), %r9
+ 	movq R8(%rsp), %r8
+ 	movq RDI(%rsp), %rdi
+@@ -63,12 +63,12 @@
+ 	movq RDX(%rsp), %rdx
+ 	movq RCX(%rsp), %rcx
+ 	movq RAX(%rsp), %rax
+-	addq $(SS+8-\skip), %rsp
++	addq $(SS+8), %rsp
+ 	.endm
+ 
+ /* skip is set if stack has been adjusted */
+-.macro ftrace_caller_setup trace_label skip=0
+-	save_mcount_regs \skip
++.macro ftrace_caller_setup trace_label added=0
++	save_mcount_regs \added
+ 
+ 	/* Save this location */
+ GLOBAL(\trace_label)
+@@ -79,9 +79,9 @@ GLOBAL(\trace_label)
+ 	subq $MCOUNT_INSN_SIZE, %rdi
+ 	/* Load the parent_ip into the second parameter */
+ #ifdef CC_USING_FENTRY
+-	movq SS+16(%rsp), %rsi
++	movq SS+16+\added(%rsp), %rsi
+ #else
+-	movq 8(%rbp), %rsi
++	movq 8+\added(%rbp), %rsi
+ #endif
+ .endm
+ 
+@@ -156,10 +156,10 @@ GLOBAL(ftrace_stub)
+ END(ftrace_caller)
+ 
+ ENTRY(ftrace_regs_caller)
+-	/* Save the current flags before compare (in SS location)*/
++	/* Save the current flags before any operations that can change them */
+ 	pushfq
+ 
+-	/* skip=8 to skip flags saved in SS */
++	/* added 8 bytes to save flags */
+ 	ftrace_caller_setup ftrace_regs_caller_op_ptr 8
+ 
+ 	/* Save the rest of pt_regs */
+@@ -172,15 +172,15 @@ ENTRY(ftrace_regs_caller)
+ 	movq %rbp, RBP(%rsp)
+ 	movq %rbx, RBX(%rsp)
+ 	/* Copy saved flags */
+-	movq SS(%rsp), %rcx
++	movq SS+8(%rsp), %rcx
+ 	movq %rcx, EFLAGS(%rsp)
+ 	/* Kernel segments */
+ 	movq $__KERNEL_DS, %rcx
+ 	movq %rcx, SS(%rsp)
+ 	movq $__KERNEL_CS, %rcx
+ 	movq %rcx, CS(%rsp)
+-	/* Stack - skipping return address */
+-	leaq SS+16(%rsp), %rcx
++	/* Stack - skipping return address and flags */
++	leaq SS+8*3(%rsp), %rcx
+ 	movq %rcx, RSP(%rsp)
+ 
+ 	/* regs go into 4th parameter */
+@@ -195,11 +195,11 @@ GLOBAL(ftrace_regs_call)
+ 
+ 	/* Copy flags back to SS, to restore them */
+ 	movq EFLAGS(%rsp), %rax
+-	movq %rax, SS(%rsp)
++	movq %rax, SS+8(%rsp)
+ 
+ 	/* Handlers can change the RIP */
+ 	movq RIP(%rsp), %rax
+-	movq %rax, SS+8(%rsp)
++	movq %rax, SS+8*2(%rsp)
+ 
+ 	/* restore the rest of pt_regs */
+ 	movq R15(%rsp), %r15
+@@ -210,8 +210,7 @@ GLOBAL(ftrace_regs_call)
+ 	movq RBP(%rsp), %rbp
+ 	movq RBX(%rsp), %rbx
+ 
+-	/* skip=8 to skip flags saved in SS */
+-	restore_mcount_regs 8
++	restore_mcount_regs
+ 
+ 	/* Restore flags */
+ 	popfq
+-- 
+2.1.1
+
+
