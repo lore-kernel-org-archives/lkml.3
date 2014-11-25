@@ -1,104 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508AbaKYMK1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 07:10:27 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:59682 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902AbaKYMKZ (ORCPT
+	id S1752053AbaKYMLz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 07:11:55 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:47760 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751433AbaKYMLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 07:10:25 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Kevin Hilman <khilman@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robh+dt@kernel.org>, ssantosh@kernel.org
-Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm domains
-Date: Tue, 25 Nov 2014 13:09:40 +0100
-Message-ID: <2301239.aDOlWg3gEs@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54746349.3000306@ti.com>
-References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com> <15074721.IbfeeI3ajE@wuerfel> <54746349.3000306@ti.com>
+	Tue, 25 Nov 2014 07:11:53 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:e84/LnWJzahYYauiz92jt35cN9fAyABksixmKFpKilh
- h2vb8Y6I2rjD4xxDOrcMOms6Ln2tRZbo2QziYq0S6zygBoVS/P
- ioLwNBqoGwoJnbKHUvwK3H4SX7FdhpJsq1g6klsZ3VsO5mC0hS
- NHESCzBnXnTMOyhL2hasJiAR0SJ1lNlsIDyJ2J1dsF2XT7Q8bv
- IECuAeV7F/2I0VkhHjnDjE8h3EeiuRapZUbgEFb47Zm/Tu12y1
- +/JmGaSj/iw8Zkf3rRaSDvp89+S87BWE0Bhoz00gly5vAnEyPD
- CVtDAOhoMtgoIL7U5vfcnDv0qYbiVA1IjlhVpx0qEjhWP5mtRg
- Twn6IaHpEbuZjwQIECGg=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <1416034608-24238-1-git-send-email-benzh@chromium.org>
+References: <1416034608-24238-1-git-send-email-benzh@chromium.org>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 25 Nov 2014 12:11:32 +0000
+X-Google-Sender-Auth: h25Cu0-1wSvVNfdxAvnwT8snm6Y
+Message-ID: <CACxGe6stjCvaQZkh=hFcF-56v5qJVar11jRZz0PRSd2wz6EUyA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ASoC: rt5677: Add ACPI device probing
+To: Ben Zhang <benzh@chromium.org>
+Cc: alsa-devel <alsa-devel@alsa-project.org>, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Bard Liao <bardliao@realtek.com>,
+        Oder Chiou <oder_chiou@realtek.com>,
+        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
+        flove@realtek.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Darren Hart <dvhart@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 25 November 2014 13:08:57 Grygorii Strashko wrote:
-> On 11/25/2014 12:33 PM, Arnd Bergmann wrote:
-> > On Monday 24 November 2014 22:44:06 Mike Turquette wrote:
-> >> Quoting Arnd Bergmann (2014-11-24 02:50:28)
-> >>>
-> > 
-> > I'm not sure I even understand what you intended the example to look
-> > like, it does't parse 
-> > 
-> > My point above was completely different, the suggestion I made was
-> > to not classify the clocks in DT at all, but to leave it all in
-> > the client driver.
-> 
-> I slept with this idea  From one side it sounds good. Pls, Correct me if I'm wrong:
-> - there still will be "simple-pmdomain" and all devices will be attached to it by
->    default (or as specified in DT power-domains = <&simple_pmdomain>;);
+On Sat, Nov 15, 2014 at 6:56 AM, Ben Zhang <benzh@chromium.org> wrote:
+> The rt5677 codec driver looks for ACPI device ID "RT5677CE",
+> which is specified in coreboot. This patch allows platform
+> data to be obtained via ACPI
+>
+> Signed-off-by: Ben Zhang <benzh@chromium.org>
 
-I would assume only devices that set "power-domains = <&simple_pmdomain>"
+This looks like an ideal time to talk about shared DT and ACPI driver
+bindings. This driver /already/ has a firmware binding. It is
+documented in the kernel under
+Documentation/bindings/sound/rt5677.txt. We now have a standard method
+for sharing bindings between DT and ACPI in the _DSD method[1].
+Support for DSD is in linux-next and getting merged into v3.19. This
+is exactly the case that _DSD should be used for passing additional
+data to the driver, and it should use the existing binding.
 
-> - drivers will use smth. like pm_clk_remove() to remove optional clocks from pm_clk;
+[1] http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-UUID.pdf
 
-Right. Regarding the naming of the function, I would pick something other
-than remove, since the main purpose is not to have that clock abandoned
-by the pm-domain code (this is still a side-effect), but to have the
-clock put under control of the driver itself.
+For a long time we've had the rule on DT that new bindings must be
+documented before we merge a patch. That rule I think has been a good
+one, even if it is a little chaoitc. I think when it comes to ACPI
+drivers that we should be requiring the same: Document the binding,
+either in the kernel as a DT binding, or point to somewhere else that
+has the binding documented.
 
-It might be possible to do this implicitly if the driver calls clk_get(),
-basically doing clk_get() (or another call if necessary) would prevent the
-simple pmdomain from turning it off during suspend.
+Also, since this patch is targeted at v3.19 or later, the
+device-properties API should be used. Don't create something custom.
 
-> From another side:
-> - drivers will get dependency from pm_clk;
+g.
 
-There are three cases here:
-
-- A device that is always used with a pm-domain, the driver doesn't
-  have to worry about it but do need the dependency on having the
-  simple-pmdomain code enabled.
-
-- A device that may or may not have clocks, but if it has them, they
-  are managed through a pm-domain. In this case, it's platform dependent
-  whether we have the dependency. We may want to prevent the device from
-  being probed if a power-domain property is present but no driver
-  for the domain.
-
-- A device that uses the pm-domain on some machines but not on others:
-  this is a bit tricky, because the driver will still have to know
-  about all the clocks, although we could choose not to turn off the
-  clocks during suspend if the power-domain is not set.
-
-> - HW limitations can't be taken into account - it's possible that some clocks should
->   not be enabled until it's allowed. And only driver know when it's allowed.
->   Otherwise, HW state may become unspecified or wrong output can be generated.
-
-Correct: if you have a device that you don't want to be handled by a simple
-pm-domain, then you have to connect it to a different pm-domain, e.g. one that
-manages a fixed set of clocks itself.
-
-	Arnd
+> ---
+>  sound/soc/codecs/rt5677.c | 52 +++++++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 50 insertions(+), 2 deletions(-)
+>
+> diff --git a/sound/soc/codecs/rt5677.c b/sound/soc/codecs/rt5677.c
+> index 5d317c68..384281d 100644
+> --- a/sound/soc/codecs/rt5677.c
+> +++ b/sound/soc/codecs/rt5677.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/i2c.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/spi/spi.h>
+> +#include <linux/acpi.h>
+>  #include <linux/firmware.h>
+>  #include <linux/gpio.h>
+>  #include <sound/core.h>
+> @@ -4525,6 +4526,43 @@ static int rt5677_parse_dt(struct rt5677_priv *rt5677, struct device_node *np)
+>         return 0;
+>  }
+>
+> +#ifdef CONFIG_ACPI
+> +
+> +static unsigned long long rt5677_parse_acpi_entry(struct device *dev,
+> +               acpi_string name)
+> +{
+> +       acpi_handle handle = ACPI_HANDLE(dev);
+> +       unsigned long long val;
+> +       acpi_status status;
+> +
+> +       status = acpi_evaluate_integer(handle, name, NULL, &val);
+> +       if (ACPI_FAILURE(status)) {
+> +               dev_err(dev, "Failed to parse ACPI entry %s, default to 0: %d\n",
+> +                               name, status);
+> +               return 0;
+> +       }
+> +       return val;
+> +}
+> +
+> +static void rt5677_parse_acpi(struct rt5677_priv *rt5677, struct device *dev)
+> +{
+> +       rt5677->pdata.dmic2_clk_pin = (enum rt5677_dmic2_clk)
+> +               rt5677_parse_acpi_entry(dev, "DCLK");
+> +       rt5677->pdata.in1_diff = (bool)rt5677_parse_acpi_entry(dev, "IN1");
+> +       rt5677->pdata.in2_diff = (bool)rt5677_parse_acpi_entry(dev, "IN2");
+> +       rt5677->pdata.lout1_diff = (bool)rt5677_parse_acpi_entry(dev, "OUT1");
+> +       rt5677->pdata.lout2_diff = (bool)rt5677_parse_acpi_entry(dev, "OUT2");
+> +       rt5677->pdata.lout3_diff = (bool)rt5677_parse_acpi_entry(dev, "OUT3");
+> +       rt5677->pdata.jd1_gpio = rt5677_parse_acpi_entry(dev, "JD1");
+> +       rt5677->pdata.jd2_gpio = rt5677_parse_acpi_entry(dev, "JD2");
+> +       rt5677->pdata.jd3_gpio = rt5677_parse_acpi_entry(dev, "JD3");
+> +}
+> +#else
+> +static void rt5677_parse_acpi(struct rt5677_priv *rt5677, struct device *dev)
+> +{
+> +}
+> +#endif
+> +
+>  static struct regmap_irq rt5677_irqs[] = {
+>         [RT5677_IRQ_JD1] = {
+>                 .reg_offset = 0,
+> @@ -4604,6 +4642,7 @@ static int rt5677_i2c_probe(struct i2c_client *i2c,
+>         if (pdata)
+>                 rt5677->pdata = *pdata;
+>
+> +       rt5677->pow_ldo2 = -EINVAL;
+>         if (i2c->dev.of_node) {
+>                 ret = rt5677_parse_dt(rt5677, i2c->dev.of_node);
+>                 if (ret) {
+> @@ -4611,8 +4650,8 @@ static int rt5677_i2c_probe(struct i2c_client *i2c,
+>                                 ret);
+>                         return ret;
+>                 }
+> -       } else {
+> -               rt5677->pow_ldo2 = -EINVAL;
+> +       } else if (ACPI_HANDLE(&i2c->dev)) {
+> +               rt5677_parse_acpi(rt5677, &i2c->dev);
+>         }
+>
+>         if (gpio_is_valid(rt5677->pow_ldo2)) {
+> @@ -4708,10 +4747,19 @@ static int rt5677_i2c_remove(struct i2c_client *i2c)
+>         return 0;
+>  }
+>
+> +#ifdef CONFIG_ACPI
+> +static const struct acpi_device_id rt5677_acpi_id[] = {
+> +       { "RT5677CE", 0 },
+> +       { }
+> +};
+> +MODULE_DEVICE_TABLE(acpi, rt5677_acpi_id);
+> +#endif
+> +
+>  static struct i2c_driver rt5677_i2c_driver = {
+>         .driver = {
+>                 .name = "rt5677",
+>                 .owner = THIS_MODULE,
+> +               .acpi_match_table = ACPI_PTR(rt5677_acpi_id),
+>         },
+>         .probe = rt5677_i2c_probe,
+>         .remove   = rt5677_i2c_remove,
+> --
+> 2.1.0.rc2.206.gedb03e5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
