@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751279AbaKYWBS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 17:01:18 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:49919 "EHLO mail.skyhub.de"
+	id S1751269AbaKYWGw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 17:06:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56177 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750781AbaKYWBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 17:01:17 -0500
-Date: Tue, 25 Nov 2014 23:01:12 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Mattias Schlenker <ms@mattiasschlenker.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Cross compile broken - 3.17.3 vs. 3.17.4?
-Message-ID: <20141125220112.GA4210@pd.tnic>
-References: <5474F177.9030404@mattiasschlenker.de>
+	id S1750869AbaKYWGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 17:06:51 -0500
+Date: Tue, 25 Nov 2014 23:06:37 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ian Kent <ikent@redhat.com>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        David Howells <dhowells@redhat.com>,
+        Benjamin Coddington <bcodding@redhat.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [RFC PATCH 3/4] kmod - add call_usermodehelper_ns() helper
+Message-ID: <20141125220637.GA10008@redhat.com>
+References: <20141125005255.4974.54193.stgit@pluto.fritz.box> <20141125010734.4974.85347.stgit@pluto.fritz.box> <20141125215248.GA7958@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5474F177.9030404@mattiasschlenker.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141125215248.GA7958@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 10:15:35PM +0100, Mattias Schlenker wrote:
-> Hello everyone,
-> 
-> when cross compiling with a rather generic x86_64-linux-gnu toolchain I run
-> into the problem that "make bzImage" fails. It seems vmlinux binary gets run
-> through the hosts objdump and not the $(CROSS_COMPILE)objdump as it was in
-> 3.17.3.
-> 
-> I am not accustomed enough to kernel build habits to immediately spot the
-> change that lead to this failed compile (178 files were changed between
-> 3.17.3 and 3.17.4). But if you want, I am gonna provide you with a shell
-> script that is able to set up the needed toolchain and succeed with 3.17.3
-> and fail with 3.17.4. Given my current workload this will take around 48
-> hours.
+On 11/25, Oleg Nesterov wrote:
+>
+> Let me first apologize, I didn't actually read this series yet.
+>
+> But I have to admit that so far I do not like this approach...
+> probably I am biased.
 
-Or you can wait for
-http://git.kernel.org/tip/e2e68ae688b0a3766cd75aedf4ed4e39be402009 to hit
-3.17-stable.
+Yes.
 
--- 
-Regards/Gruss,
-    Boris.
+And I have another concern... this is mostly a feeling, I can be
+easily wrong but:
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+> On 11/25, Ian Kent wrote:
+> >
+> > +static int umh_set_ns(struct subprocess_info *info, struct cred *new)
+> > +{
+> > +	struct nsproxy *ns = info->data;
+> > +
+> > +	mntns_setfs(ns->mnt_ns);
+>
+> Firstly, it is not clear to me if we should use the caller's ->mnt_ns.
+> Let me remind about the coredump. The dumping task can cloned with
+> CLONE_NEWNS or it cam do unshare(NEWNS)... but OK, I do not understand
+> this enough.
+
+And otoh. If we actually want to use the caller's mnt_ns/namespaces we
+could simply fork/reparent a child which will do execve ?
+
+Oleg.
+
