@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220AbaKYKKw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:10:52 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:37132 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760AbaKYKKt (ORCPT
+	id S1752131AbaKYKNF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:13:05 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:49551 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027AbaKYKNB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:10:49 -0500
-Date: Tue, 25 Nov 2014 11:10:44 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Catalina Mocanu <catalina.mocanu@gmail.com>
-Subject: Re: linux-next: manual merge of the tiny tree with the tip tree
-Message-ID: <20141125101044.GA20465@gmail.com>
-References: <20141125170315.13157c60@canb.auug.org.au>
- <20141125061645.GA15512@gmail.com>
- <20141125064849.GA1691@thin>
+	Tue, 25 Nov 2014 05:13:01 -0500
+Date: Tue, 25 Nov 2014 15:42:38 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Khalid Aziz <khalid.aziz@oracle.com>
+Cc: tglx@linutronix.de, corbet@lwn.net, mingo@redhat.com, hpa@zytor.com,
+        peterz@infradead.org, riel@redhat.com, akpm@linux-foundation.org,
+        rientjes@google.com, ak@linux.intel.com, mgorman@suse.de,
+        liwanp@linux.vnet.ibm.com, raistlin@linux.it,
+        kirill.shutemov@linux.intel.com, atomlin@redhat.com, avagin@openvz.org,
+        gorcunov@openvz.org, serge.hallyn@canonical.com, athorlton@sgi.com,
+        oleg@redhat.com, vdavydov@parallels.com, daeseok.youn@gmail.com,
+        keescook@chromium.org, yangds.fnst@cn.fujitsu.com, sbauer@eng.utah.edu,
+        vishnu.ps@samsung.com, axboe@fb.com, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v3] sched/fair: Add advisory flag for borrowing a
+ timeslice (was: Pre-emption control for userspace)
+Message-ID: <20141125101238.GA19795@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <1416862595-24513-1-git-send-email-khalid.aziz@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20141125064849.GA1691@thin>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1416862595-24513-1-git-send-email-khalid.aziz@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112510-0021-0000-0000-0000026EBB14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Josh Triplett <josh@joshtriplett.org> wrote:
-
-> On Tue, Nov 25, 2014 at 07:16:45AM +0100, Ingo Molnar wrote:
-> > * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > > Hi Josh,
-> > > 
-> > > Today's linux-next merge of the tiny tree got a conflict in
-> > > kernel/time/Makefile between commit fd866e2b116b ("time: Rename
-> > > udelay_test.c to test_udelay.c") from the tip tree and commit
-> > > d1f6d68d03ea ("kernel: time: Compile out NTP support") from the tiny
-> > > tree.
-> > 
-> > So I think a timer subsystem commit d1f6d68d03ea with this 
-> > magnitude of linecount increase:
-> > 
-> >  Signed-off-by: Catalina Mocanu <catalina.mocanu@gmail.com>
-> >  [josh: Handle CONFIG_COMPAT=y.]
-> >  Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> >  Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-> >  ---
-> >   drivers/pps/Kconfig        |  2 +-
-> >   include/linux/timex.h      | 15 +++++++++++++--
-> >   init/Kconfig               | 10 ++++++++++
-> >   kernel/compat.c            |  8 ++++++--
-> >   kernel/sys_ni.c            |  4 ++++
-> >   kernel/time/Makefile       |  3 ++-
-> >   kernel/time/ntp_internal.h | 28 ++++++++++++++++++++++++++++
-> >   kernel/time/posix-timers.c |  2 ++
-> >   kernel/time/time.c         |  2 ++
-> >   kernel/time/timekeeping.c  |  2 ++
-> >   10 files changed, 70 insertions(+), 6 deletions(-)
-> > 
-> > at minimum needs the ack of timer folks, before it can be 
-> > committed to Git. Or is the tiny tree plan to submit all
-> > patches to the appropriate subsystem or gather acks, before 
-> > sending it upstream?
 > 
-> Yes, absolutely.  I planned to send out a tinification patch 
-> review series later this week with all 10 current patches (both 
-> those reviewed on LKML and those only reviewed elsewhere).
+> - Request to borrow timeslice is not guranteed to be honored.
+> - If the task is allowed to borrow, kernel will inform the task
+>   of this. When this happens, task must yield the processor as soon
+>   as it completes its critical section.
+> - If the task fails to yield processor after being allowed to
+>   borrow, it is penalized by forcing it to skip its next time slot
+>   by the scheduler.
+> - Task is charged additional time for the borrowed timeslice as
+>   accumulated run time. This pushes it further down in consideration
+>   for the next task to run.
+> 
 
-But, but: _please_ don't push patches towards linux-next that 
-haven't been acked by maintainers.
+Is there a way for us to identify if the lock is contended?
+Because it may not be prudent to allow a task to borrow timeslice for a
+lock which isnt contended.
 
-The point of linux-next is to expose subsystem trees that are 
-likely to go upstream in the next release - generally because the 
-maintainers themselves push it out, but sometimes also when 
-there's acked patches (or features) from maintainers that get 
-collected in other trees by developers (such as yours).
+-- 
+Thanks and Regards
+Srikar Dronamraju
 
-But unacked patches with clear problems, causing conflicts, is 
-outside that scope. If you want coverage testing you can push it 
-out to korg into your own tree, then Fengguang Wu's robot will 
-pick it up and report problems with it.
-
-In other words: pushing linux-tiny to linux-next is fine, but 
-only for patches that got acked by maintainers and is lined up 
-for the next release. For 'work in progress' patches, other 
-venues such as korg should be used.
-
-Thanks,
-
-	Ingo
