@@ -1,67 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839AbaKYMVi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 07:21:38 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38003 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860AbaKYMVg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 07:21:36 -0500
-Date: Tue, 25 Nov 2014 12:19:16 +0000
-From: Mark Brown <broonie@kernel.org>
-To: gyungoh@gmail.com
-Cc: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
-        cooloney@gmail.com, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
-        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
-        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
-        jic23@kernel.org
-Message-ID: <20141125121916.GW7712@sirena.org.uk>
-References: <1416898986-24530-1-git-send-email-jack.yoo@skyworksinc.com>
- <1416898986-24530-8-git-send-email-jack.yoo@skyworksinc.com>
+	id S1754505AbaKYMWH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 07:22:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57696 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753239AbaKYMWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 07:22:06 -0500
+Date: Tue, 25 Nov 2014 13:21:59 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Kan Liang <kan.liang@intel.com>
+Cc: acme@kernel.org, namhyung@kernel.org, linux-kernel@vger.kernel.org,
+        ak@linux.intel.com
+Subject: Re: [PATCH V5 3/3] perf tool: check buildid for symoff
+Message-ID: <20141125122159.GF30861@krava.brq.redhat.com>
+References: <1416844829-26945-1-git-send-email-kan.liang@intel.com>
+ <1416844829-26945-3-git-send-email-kan.liang@intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YOs9+ySvlQ/qtugP"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1416898986-24530-8-git-send-email-jack.yoo@skyworksinc.com>
-X-Cookie: Celebrity voices impersonated.
+In-Reply-To: <1416844829-26945-3-git-send-email-kan.liang@intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v8 7/8] regulator: sky81452: Modify Device Tree structure
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 24, 2014 at 11:00:29AM -0500, Kan Liang wrote:
+> From: Kan Liang <kan.liang@intel.com>
+> 
+> symoff can support both same binaries and different binaries. However,
+> the offset may be changed for different binaries. This patch checks the
+> buildid of perf.data. If they are from different binaries, print a
+> warning to notify the user.
+> 
+> Signed-off-by: Kan Liang <kan.liang@intel.com>
+> ---
+>  tools/perf/builtin-diff.c | 25 +++++++++++++++++++++++++
+>  tools/perf/util/sort.c    |  3 +++
+>  tools/perf/util/sort.h    |  1 +
+>  3 files changed, 29 insertions(+)
+> 
+> diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+> index 03a4001..2a8c17a 100644
+> --- a/tools/perf/builtin-diff.c
+> +++ b/tools/perf/builtin-diff.c
+> @@ -678,6 +678,28 @@ static void data__free(struct data__file *d)
+>  	}
+>  }
+>  
+> +static void buildid_check(void)
+> +{
+> +	struct dsos *base_k_dsos = &data__files[0].session->machines.host.kernel_dsos;
+> +	struct dsos *base_u_dsos = &data__files[0].session->machines.host.user_dsos;
+> +	struct dsos *k_dsos_tmp, *u_dsos_tmp;
+> +	struct data__file *d;
+> +	int i;
+> +
+> +	data__for_each_file_new(i, d) {
+> +		k_dsos_tmp = &d->session->machines.host.kernel_dsos;
+> +		u_dsos_tmp = &d->session->machines.host.user_dsos;
+> +
+> +		if (!dsos__build_ids_equal(base_k_dsos, k_dsos_tmp))
+> +			pr_warning("The perf.data come from different kernel. "
+> +				   "The kernel symbol offset may vary for different kernel.\n");
+> +
+> +		if (!dsos__build_ids_equal(base_u_dsos, u_dsos_tmp))
 
---YOs9+ySvlQ/qtugP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+looks like at this time not all dsos on the list have
+the buildids read..
 
-On Tue, Nov 25, 2014 at 04:03:05PM +0900, gyungoh@gmail.com wrote:
-> From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+I tried to put in here the perf_session__read_build_ids call
+but it keeps showing me warning below:
 
-This doesn't apply, please check and resend.
+> +			pr_warning("The perf.data come from different user binary. "
+> +				   "The user space symbol offset may vary for different binaries.\n");
 
---YOs9+ySvlQ/qtugP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+for following workload:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+[jolsa@krava perf]$ ./perf record ls
+...
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.012 MB perf.data (~540 samples) ]
+[jolsa@krava perf]$ ./perf record ls
+...
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.012 MB perf.data (~540 samples) ]
+[jolsa@krava perf]$ ./perf diff -s symoff
+The perf.data come from different user binary. The user space symbol offset may vary for different binaries.
+# Event 'cycles'
+...
 
-iQEcBAEBAgAGBQJUdHPEAAoJECTWi3JdVIfQnroH/AxoncX83cbbtgIm5+1xv9cP
-dw0QEOtVuXFv5gXmWWMurd+r1uQBB7sc9L1g71bOe1oWSjQfNn3fudJ54XxETI0x
-DDRaoVZcha2FL8POfDBl0u/8b3PEqi+ijQZg6krTo9uSMGlxMSMKJphwwa5zYarI
-BUqwYBSHXqZc4Zwp+1mRJ2Giq2QeBeRFiyhw5hz25k9E+9BVwR7fCvvDqL7ZjF8Z
-h/ziFofstMb/8ngQfwTbbDYhE7HJe8wAWM7pSjStm/MqtSwiZC2H3AxpbU7Y6e+2
-Z4jullSsQc+OUMJ0X83Tg9WhGfMfaN7mVY2pM+/1wE1KYtnFzzrEu1TKBo2r1hI=
-=Zzl2
------END PGP SIGNATURE-----
 
---YOs9+ySvlQ/qtugP--
+jirka
