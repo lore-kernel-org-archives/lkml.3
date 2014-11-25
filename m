@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078AbaKYLNE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:13:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58817 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753692AbaKYKmf (ORCPT
+	id S1755110AbaKYLNg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:13:36 -0500
+Received: from smtp73.ord1c.emailsrvr.com ([108.166.43.73]:50941 "EHLO
+	smtp73.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754307AbaKYLNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:35 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, Jens Axboe <axboe@fb.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 162/254] block: Fix computation of merged request priority
-Date: Tue, 25 Nov 2014 10:38:32 +0000
-Message-Id: <1416912004-5928-163-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	Tue, 25 Nov 2014 06:13:33 -0500
+X-Sender-Id: pramod.gurav@smartplayin.com
+Message-ID: <54746533.1010408@smartplayin.com>
+Date: Tue, 25 Nov 2014 16:47:07 +0530
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        lgirdwood@gmail.com
+Subject: Re: [RFC PATCH] regulator: core: do not disable regulator if boot_on
+ is set
+References: <1416912803-10772-1-git-send-email-pramod.gurav@smartplayin.com> <20141125110540.GL7712@sirena.org.uk>
+In-Reply-To: <20141125110540.GL7712@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
+Hi Mark,
 
-------------------
+On Tuesday 25 November 2014 04:35 PM, Mark Brown wrote:
+> On Tue, Nov 25, 2014 at 04:23:23PM +0530, Pramod Gurav wrote:
+>> Currently the regulator core disables the regulators which are unused
+>> or whose reference count is zero or if they are configured always_on.
+> 
+> No, it does *not* disable them if they are configured always_on (as the
+> code you're modifying shows).
 
-From: Jan Kara <jack@suse.cz>
+Yes, thats a typo.
+> 
+>> This change adds a check in this logic to see if a regulator is
+>> configured as boot_on and does not disable it if found true.
+> 
+>> -		if (c && c->always_on)
+>> +		if (c && (c->always_on || c->boot_on))
+>>  			continue;
+> 
+> This isn't what boot_on means.  It just means that the regulator is
+> expected to be enabled at initial power on, it doesn't mean it needs to
+> be enabled all the time.  Otherwise there'd be no point in having a
+> separate always_on flag.
 
-commit ece9c72accdc45c3a9484dacb1125ce572647288 upstream.
-
-Priority of a merged request is computed by ioprio_best(). If one of the
-requests has undefined priority (IOPRIO_CLASS_NONE) and another request
-has priority from IOPRIO_CLASS_BE, the function will return the
-undefined priority which is wrong. Fix the function to properly return
-priority of a request with the defined priority.
-
-Fixes: d58cdfb89ce0c6bd5f81ae931a984ef298dbda20
-Signed-off-by: Jan Kara <jack@suse.cz>
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- block/ioprio.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
-
-diff --git a/block/ioprio.c b/block/ioprio.c
-index e50170ca7c33..31666c92b46a 100644
---- a/block/ioprio.c
-+++ b/block/ioprio.c
-@@ -157,14 +157,16 @@ out:
- 
- int ioprio_best(unsigned short aprio, unsigned short bprio)
- {
--	unsigned short aclass = IOPRIO_PRIO_CLASS(aprio);
--	unsigned short bclass = IOPRIO_PRIO_CLASS(bprio);
-+	unsigned short aclass;
-+	unsigned short bclass;
- 
--	if (aclass == IOPRIO_CLASS_NONE)
--		aclass = IOPRIO_CLASS_BE;
--	if (bclass == IOPRIO_CLASS_NONE)
--		bclass = IOPRIO_CLASS_BE;
-+	if (!ioprio_valid(aprio))
-+		aprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, IOPRIO_NORM);
-+	if (!ioprio_valid(bprio))
-+		bprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, IOPRIO_NORM);
- 
-+	aclass = IOPRIO_PRIO_CLASS(aprio);
-+	bclass = IOPRIO_PRIO_CLASS(bprio);
- 	if (aclass == bclass)
- 		return min(aprio, bprio);
- 	if (aclass > bclass)
--- 
-2.1.0
-
+Thanks for the comment. :-)
+> 
