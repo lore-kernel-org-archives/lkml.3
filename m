@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751146AbaKYPaH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 10:30:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50859 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065AbaKYPaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 10:30:04 -0500
-Message-ID: <54749F77.50905@redhat.com>
-Date: Tue, 25 Nov 2014 10:25:43 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1750896AbaKYPkP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 10:40:15 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:33757 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841AbaKYPkK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 10:40:10 -0500
 MIME-Version: 1.0
-To: Khalid Aziz <khalid.aziz@oracle.com>, tglx@linutronix.de, corbet@lwn.net,
-        mingo@redhat.com, hpa@zytor.com, peterz@infradead.org,
-        akpm@linux-foundation.org, rientjes@google.com, ak@linux.intel.com,
-        mgorman@suse.de, liwanp@linux.vnet.ibm.com, raistlin@linux.it,
-        kirill.shutemov@linux.intel.com, atomlin@redhat.com, avagin@openvz.org,
-        gorcunov@openvz.org, serge.hallyn@canonical.com, athorlton@sgi.com,
-        oleg@redhat.com, vdavydov@parallels.com, daeseok.youn@gmail.com,
-        keescook@chromium.org, yangds.fnst@cn.fujitsu.com, sbauer@eng.utah.edu,
-        vishnu.ps@samsung.com, axboe@fb.com, paulmck@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH v3] sched/fair: Add advisory flag for borrowing a timeslice
-References: <1416862595-24513-1-git-send-email-khalid.aziz@oracle.com> <5473E388.6000605@redhat.com> <547497A9.1080800@oracle.com>
-In-Reply-To: <547497A9.1080800@oracle.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1416929071.16769.1.camel@debian.org>
+References: <1416867838-18652-1-git-send-email-leif.lindholm@linaro.org>
+ <20141125145854.A46EDC44343@trevor.secretlab.ca> <20141125151515.GG2361@bivouac.eciton.net>
+ <CACxGe6v2i3iJGjK9s6HSBxV6bUwVrAtGYj=FAOb0AFEx3KVYEg@mail.gmail.com> <1416929071.16769.1.camel@debian.org>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Tue, 25 Nov 2014 15:39:49 +0000
+X-Google-Sender-Auth: nLcmbtrKnksVEpxi8maKUzUinco
+Message-ID: <CACxGe6vekjF4M0J4s7g2Q_E-KYUrT_3Pna2z6nobSMZ7bc8Bhw@mail.gmail.com>
+Subject: Re: [PATCH] of: support passing console options with stdout-path
+To: Ian Campbell <ijc@debian.org>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2014 09:52 AM, Khalid Aziz wrote:
-> On 11/24/2014 07:03 PM, Rik van Riel wrote:
->> -----BEGIN PGP SIGNED MESSAGE-----
->> Hash: SHA1
+On Tue, Nov 25, 2014 at 3:24 PM, Ian Campbell <ijc@debian.org> wrote:
+> On Tue, 2014-11-25 at 15:20 +0000, Grant Likely wrote:
+>> On Tue, Nov 25, 2014 at 3:15 PM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
+>> > On Tue, Nov 25, 2014 at 02:58:54PM +0000, Grant Likely wrote:
+>> >> > +           len = strchrnul(path, ':') - path;
+>> >> > +
+>> >> >             for_each_property_of_node(of_aliases, pp) {
+>> >> >                     if (strlen(pp->name) == len && !strncmp(pp->name, path, len)) {
+>> >> >                             np = of_find_node_by_path(pp->value);
+>> >>
+>> >> Can you add a testcase to drivers/of/unittests.c for this new path
+>> >> parsing? Then we know it's correct!
+>> >
+>> > Will do.
+>> >
+>> >> > @@ -1830,8 +1835,12 @@ void of_alias_scan(void * (*dt_alloc)(u64 size, u64 align))
+>> >> >                     name = of_get_property(of_chosen, "linux,stdout-path", NULL);
+>> >> >             if (IS_ENABLED(CONFIG_PPC) && !name)
+>> >> >                     name = of_get_property(of_aliases, "stdout", NULL);
+>> >> > -           if (name)
+>> >> > +           if (name) {
+>> >> >                     of_stdout = of_find_node_by_path(name);
+>> >> > +                   of_stdout_options = strchr(name, ':');
+>> >> > +                   if (of_stdout_options != NULL)
+>> >> > +                           of_stdout_options++;
+>> >> > +           }
+>> >>
+>> >> Not so good. The ':' should actually be a generic part of
+>> >> of_find_node_by_path(), it doesn't have to be limited to stdout parsing.
+>> >> There are other places that would use it. I would add a second,
+>> >> optional, argument to of_find_node_by_path() that will update a pointer
+>> >> to the arguments after the ':'.
+>> >
+>> > So, I agree this would be nicer...
+>> >
+>> > However, I'm counting 157 callers of this function outside of
+>> > drivers/of and 43 inside. Any chance you'd let me get away with a
+>> > separate of_find_extra_options_by_path()?
 >>
->> On 11/24/2014 03:56 PM, Khalid Aziz wrote:
->>> sched/fair: Add advisory flag for borrowing a timeslice
->>>
->>> This patch adds a way for a task to request to borrow one
->>> timeslice from future if it is about to be preempted, so it could
->>> delay preemption and complete any critical task it is in the middle
->>> of.
->>>
->>> This feature helps with performance on databases and has been used
->>> for many years on other OSs by the databases. This feature helps in
->>> situation where a task acquires a lock before performing a critical
->>> operation on the database and happens to get preempted
+>> I'd rather not. It is a trivial change and can be pretty much done
+>> mechanically. Something like (I think; I always have to look up the
+>> sed syntax):
 >>
->> Why don't the other tasks that want the lock sleep on the
->> lock?
->>
->> I can see this "solution" help mostly with userspace spinlocks,
->> which are relics of a past era that need to die. There is no
->> way userspace spinlocks will not fail miserably on virtual
->> machines, and it is time to get rid of them.
-> 
-> This solution indeed is for userspace spinlocks. Database code has been
-> written with all critical locking implemented in userspace (as I have
-> been told by database folks. I am not a database guy).
+>> sed s/of_find_node_by_path\((.*)\)/of_find_node_by_path\(\1, NULL\)
+>
+> Coccinelle rules for this sort of transformation...
 
-They should fix that.
+/me still hasn't gotten his head around how to use Coccinelle properly. :-(
 
-The scheme you propose can really only work on bare metal,
-and not on virtual machines. That improves the problem for,
-what, 60% of new installs (and dropping)?
+g.
