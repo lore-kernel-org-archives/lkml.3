@@ -1,58 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650AbaKYNE4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 08:04:56 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36641 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752186AbaKYNEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 08:04:54 -0500
-Message-ID: <54747E5E.8070204@ti.com>
-Date: Tue, 25 Nov 2014 15:04:30 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752631AbaKYNIJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 08:08:09 -0500
+Received: from sci-ig2.spreadtrum.com ([222.66.158.135]:63424 "EHLO
+	SHSQR01.spreadtrum.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751805AbaKYNIG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 08:08:06 -0500
+From: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+To: <grant.likely@linaro.org>, <robh+dt@kernel.org>, <catalin.marinas@arm.com>,
+        <gregkh@linuxfoundation.org>, <ijc+devicetree@hellion.org.uk>,
+        <jslaby@suse.cz>, <galak@codeaurora.org>, <broonie@linaro.org>,
+        <mark.rutland@arm.com>, <m-karicheri2@ti.com>, <pawel.moll@arm.com>,
+        <artagnon@gmail.com>, <rrichter@cavium.com>, <will.deacon@arm.com>,
+        <arnd@arndb.de>, <gnomes@lxorguk.ukuu.org.uk>, <corbet@lwn.net>,
+        <jason@lakedaemon.net>, <broonie@kernel.org>, <heiko@sntech.de>,
+        <shawn.guo@freescale.com>, <florian.vaussard@epfl.ch>,
+        <andrew@lunn.ch>, <hytszk@gmail.com>, <orsonzhai@gmail.com>,
+        <geng.ren@spreadtrum.com>, <zhizhou.zhang@spreadtrum.com>,
+        <lanqing.liu@spreadtrum.com>, <zhang.lyra@gmail.com>,
+        <wei.qiao@spreadtrum.com>
+CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <sprdlinux@freelists.org>,
+        <linux-doc@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        <linux-api@vger.kernel.org>
+Subject: [PATCH v3 4/5] arm64: Add support for Spreadtrum's Sharkl64 Platform in Kconfig and defconfig
+Date: Tue, 25 Nov 2014 20:16:57 +0800
+Message-ID: <1416917818-10506-5-git-send-email-chunyan.zhang@spreadtrum.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1416917818-10506-1-git-send-email-chunyan.zhang@spreadtrum.com>
+References: <Sharkl64-v3>
+ <1416917818-10506-1-git-send-email-chunyan.zhang@spreadtrum.com>
 MIME-Version: 1.0
-To: =?windows-1252?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Wolfram Sang <wsa@the-dreams.de>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Santosh Shilimkar <ssantosh@kernel.org>,
-        Murali Karicheri <m-karicheri2@ti.com>,
-        Ben Gardiner <bengardiner@nanometrics.ca>,
-        Mike Looijmans <milo-software@users.sourceforge.net>
-Subject: Re: [5/5] i2c: davinci: use ICPFUNC to toggle I2C as gpio for bus
- recovery
-References: <1416477788-5544-6-git-send-email-grygorii.strashko@ti.com> <20141123170400.GC4431@pengutronix.de> <54732F8E.4080105@ti.com> <20141124194533.GU4431@pengutronix.de>
-In-Reply-To: <20141124194533.GU4431@pengutronix.de>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-Originating-IP: [10.0.67.103]
+X-ClientProxiedBy: SHCAS01.spreadtrum.com (10.0.1.201) To
+ SHMBX01.spreadtrum.com (10.0.1.203)
+X-MAIL: SHSQR01.spreadtrum.com sAPCIHmR065158
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Uwe,
-On 11/24/2014 09:45 PM, Uwe Kleine-König wrote:
-> On Mon, Nov 24, 2014 at 03:15:58PM +0200, Grygorii Strashko wrote:
->> On 11/23/2014 07:04 PM, Uwe Kleine-König wrote:
->>> On Thu, Nov 20, 2014 at 12:03:08PM +0200, Grygorii Strashko wrote:
->>>> @@ -664,6 +759,7 @@ static int davinci_i2c_probe(struct platform_device *pdev)
->>>>    		if (!of_property_read_u32(pdev->dev.of_node, "clock-frequency",
->>>>    			&prop))
->>>>    			dev->pdata->bus_freq = prop / 1000;
->>>> +		dev->pdata->has_pfunc = true;
->>> I don't understand this. Why does this ICPFUNC recovery work if the bus
->>> is probed by oftree, but doesn't if not?
->>
->> I've mentioned this in commit message:
->>   Allow platforms to indicate the presence of the ICPFUNC registers with a has_pfunc
->>   platform data flag and enable this mode for platforms which supports DT (da850 and
->>   Keystone 2 are two SoCs which support DT now and they also support ICPFUNC registers).
-> Ah, so you assume that in the dt case the pfunc functionality is
-> available. I didn't understand if it's bad or not if this assumption is
-> wrong, but I suggest to only use the pfunc stuff if the device node has
-> a given property (e.g. ti,has_pfunc).
+From: Zhizhou Zhang <zhizhou.zhang@spreadtrum.com>
 
-Agree. I'll add it.
+Adds support for Spreadtrum's SoC Platform and its subset Sharkl64
+in the arm64 Kconfig and defconfig files.
 
-regards,
--grygorii
+Signed-off-by: Zhizhou Zhang <zhizhou.zhang@spreadtrum.com>
+Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+Signed-off-by: Orson Zhai <orson.zhai@spreadtrum.com>
+---
+ arch/arm64/Kconfig           |   17 +++++++++++++++++
+ arch/arm64/configs/defconfig |    2 ++
+ 2 files changed, 19 insertions(+)
+
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 9532f8d..a63ec45 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -147,6 +147,23 @@ config ARCH_THUNDER
+ 	help
+ 	  This enables support for Cavium's Thunder Family of SoCs.
+ 
++menuconfig ARCH_SPRD
++	bool "Spreadtrum SoC platform"
++	depends on ARM64
++	help
++	  Support for Spreadtrum ARM based SoCs
++
++if ARCH_SPRD
++
++config ARCH_SHARKL64
++	bool "Sharkl64 SoC Platform"
++	help
++	  Sharkl64 is a Spreadtrum's SoC Platform which is based
++	  on ARM 64-bit processor core including
++	    sc9836
++
++endif #ARCH_SPRD
++
+ config ARCH_VEXPRESS
+ 	bool "ARMv8 software model (Versatile Express)"
+ 	select ARCH_REQUIRE_GPIOLIB
+diff --git a/arch/arm64/configs/defconfig b/arch/arm64/configs/defconfig
+index dd301be..d7934a8 100644
+--- a/arch/arm64/configs/defconfig
++++ b/arch/arm64/configs/defconfig
+@@ -33,6 +33,8 @@ CONFIG_MODULE_UNLOAD=y
+ # CONFIG_BLK_DEV_BSG is not set
+ # CONFIG_IOSCHED_DEADLINE is not set
+ CONFIG_ARCH_THUNDER=y
++CONFIG_ARCH_SPRD=y
++CONFIG_ARCH_SHARKL64=y
+ CONFIG_ARCH_VEXPRESS=y
+ CONFIG_ARCH_XGENE=y
+ CONFIG_PCI=y
+-- 
+1.7.9.5
+
