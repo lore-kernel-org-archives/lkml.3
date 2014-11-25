@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403AbaKYLzA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:55:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58209 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752863AbaKYKkx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752874AbaKYKkx (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 25 Nov 2014 05:40:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58170 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752809AbaKYKkr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 05:40:47 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Skeggs <bskeggs@redhat.com>, Sven Joachim <svenjoac@gmx.de>,
+Cc: Imre Deak <imre.deak@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 049/254] drm/nouveau: punt fbcon resume out to a workqueue
-Date: Tue, 25 Nov 2014 10:36:39 +0000
-Message-Id: <1416912004-5928-50-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 041/254] tty/vt: don't set font mappings on vc not supporting this
+Date: Tue, 25 Nov 2014 10:36:31 +0000
+Message-Id: <1416912004-5928-42-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,91 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: Imre Deak <imre.deak@intel.com>
 
-commit 634ffcccfbe59d77652804e1beb415d3329b1bc6 upstream.
+commit 9e326f78713a4421fe11afc2ddeac07698fac131 upstream.
 
-Preparation for some runtime pm fixes.  Currently we skip over fbcon
-suspend/resume in the runtime path, which causes issues on resume if
-fbcon tries to write to the framebuffer before the BAR subdev has
-been resumed to restore the BAR1 VM setup.
+We can call this function for a dummy console that doesn't support
+setting the font mapping, which will result in a null ptr BUG. So check
+for this case and return error for consoles w/o font mapping support.
 
-As we might be woken up via a sysfs connector, we are unable to call
-fb_set_suspend() in the resume path as it could make its way down to
-a modeset and cause all sorts of locking hilarity.
-
-To solve this, we'll just delay the fbcon resume to a workqueue.
-
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-Cc: Sven Joachim <svenjoac@gmx.de>
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=59321
+Signed-off-by: Imre Deak <imre.deak@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/nouveau/nouveau_fbcon.c | 23 +++++++++++++++++------
- drivers/gpu/drm/nouveau/nouveau_fbcon.h |  1 +
- 2 files changed, 18 insertions(+), 6 deletions(-)
+ drivers/tty/vt/consolemap.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_fbcon.c b/drivers/gpu/drm/nouveau/nouveau_fbcon.c
-index 2ef2842aacbf..f6361391286c 100644
---- a/drivers/gpu/drm/nouveau/nouveau_fbcon.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_fbcon.c
-@@ -484,6 +484,16 @@ static struct drm_fb_helper_funcs nouveau_fbcon_helper_funcs = {
- 	.fb_probe = nouveau_fbcon_create,
- };
+diff --git a/drivers/tty/vt/consolemap.c b/drivers/tty/vt/consolemap.c
+index 610b720d3b91..59b25e039968 100644
+--- a/drivers/tty/vt/consolemap.c
++++ b/drivers/tty/vt/consolemap.c
+@@ -539,6 +539,12 @@ int con_set_unimap(struct vc_data *vc, ushort ct, struct unipair __user *list)
  
-+static void
-+nouveau_fbcon_set_suspend_work(struct work_struct *work)
-+{
-+	struct nouveau_fbdev *fbcon = container_of(work, typeof(*fbcon), work);
-+	console_lock();
-+	nouveau_fbcon_accel_restore(fbcon->dev);
-+	nouveau_fbcon_zfill(fbcon->dev, fbcon);
-+	fb_set_suspend(fbcon->helper.fbdev, FBINFO_STATE_RUNNING);
-+	console_unlock();
-+}
+ 	/* Save original vc_unipagdir_loc in case we allocate a new one */
+ 	p = *vc->vc_uni_pagedir_loc;
++
++	if (!p) {
++		err = -EINVAL;
++
++		goto out_unlock;
++	}
+ 	
+ 	if (p->refcount > 1) {
+ 		int j, k;
+@@ -623,6 +629,7 @@ int con_set_unimap(struct vc_data *vc, ushort ct, struct unipair __user *list)
+ 		set_inverse_transl(vc, p, i); /* Update inverse translations */
+ 	set_inverse_trans_unicode(vc, p);
  
- int
- nouveau_fbcon_init(struct drm_device *dev)
-@@ -502,6 +512,7 @@ nouveau_fbcon_init(struct drm_device *dev)
- 	if (!fbcon)
- 		return -ENOMEM;
- 
-+	INIT_WORK(&fbcon->work, nouveau_fbcon_set_suspend_work);
- 	fbcon->dev = dev;
- 	drm->fbcon = fbcon;
- 	fbcon->helper.funcs = &nouveau_fbcon_helper_funcs;
-@@ -549,14 +560,14 @@ nouveau_fbcon_set_suspend(struct drm_device *dev, int state)
- {
- 	struct nouveau_drm *drm = nouveau_drm(dev);
- 	if (drm->fbcon) {
--		console_lock();
--		if (state == 0) {
--			nouveau_fbcon_accel_restore(dev);
--			nouveau_fbcon_zfill(dev, drm->fbcon);
-+		if (state == FBINFO_STATE_RUNNING) {
-+			schedule_work(&drm->fbcon->work);
-+			return;
- 		}
-+		flush_work(&drm->fbcon->work);
-+		console_lock();
- 		fb_set_suspend(drm->fbcon->helper.fbdev, state);
--		if (state == 1)
--			nouveau_fbcon_accel_save_disable(dev);
-+		nouveau_fbcon_accel_save_disable(dev);
- 		console_unlock();
- 	}
++out_unlock:
+ 	console_unlock();
+ 	return err;
  }
-diff --git a/drivers/gpu/drm/nouveau/nouveau_fbcon.h b/drivers/gpu/drm/nouveau/nouveau_fbcon.h
-index 6d857e2869c9..2c8e84672b3b 100644
---- a/drivers/gpu/drm/nouveau/nouveau_fbcon.h
-+++ b/drivers/gpu/drm/nouveau/nouveau_fbcon.h
-@@ -36,6 +36,7 @@ struct nouveau_fbdev {
- 	struct nouveau_framebuffer nouveau_fb;
- 	struct list_head fbdev_list;
- 	struct drm_device *dev;
-+	struct work_struct work;
- 	unsigned int saved_flags;
- };
- 
 -- 
 2.1.0
 
