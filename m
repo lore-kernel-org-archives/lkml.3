@@ -1,141 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069AbaKYKDe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:03:34 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38663 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaKYKDb (ORCPT
+	id S1752076AbaKYKHN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:07:13 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:50547 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760AbaKYKHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:03:31 -0500
-Date: Tue, 25 Nov 2014 10:03:26 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Michal Simek <monstr@monstr.eu>,
-        Martin Wilck <martin.wilck@ts.fujitsu.com>,
-        Linux PCI <linux-pci@vger.kernel.org>
-Subject: Re: [RFC PATCH v3 1/2] drivers: pci: fix pci_mmap_fits()
- implementation for procfs mmap
-Message-ID: <20141125100326.GB1849@red-moon>
-References: <1415877558-8906-1-git-send-email-lorenzo.pieralisi@arm.com>
- <1415877558-8906-2-git-send-email-lorenzo.pieralisi@arm.com>
- <20141121175114.GC6578@google.com>
+	Tue, 25 Nov 2014 05:07:07 -0500
+Date: Tue, 25 Nov 2014 02:07:03 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Dudley Du <dudley.dulixin@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [BUG] [PATCH] next: cyapa: fix inop touchpad after resume on Acer
+ C720
+Message-ID: <20141125100703.GA9287@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Dudley Du <dudley.dulixin@gmail.com>, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141121175114.GC6578@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141124085059.GA15770@hudson.localdomain>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 05:51:14PM +0000, Bjorn Helgaas wrote:
-> On Thu, Nov 13, 2014 at 11:19:15AM +0000, Lorenzo Pieralisi wrote:
-> > The introduction of pci_mmap_fits() in commit:
-> > 
-> > b5ff7df3df9efab511244d5a299fce706c71af48
-> > "Check mapped ranges on sysfs resource files"
-> > 
-> > allowed to check for valid range mappings of PCI resources to user space
-> > when mapping PCI resources through the sysfs filesystem.
-> > 
-> > The mapping of resources through the sysfs expects the offset passed
-> > by the user through the mmap syscall to be 0, and the pgoff is adjusted
-> > by the kernel to memory map the resource to the CPU physical address
-> > corresponding to the PCI resource in question.
-> > 
-> > The usage of procfs mapping of PCI resources (/proc/bus/pci files)
-> > is more controversial in that userspace programs mapping PCI resources
-> > are expected to pass in the mmap offset field either a CPU physical address
-> > or a PCI bar value, depending on the architecture.
-> > 
-> > By the time pci_mmap_fits() was used to check PCI resource ranges for
-> > procfs PCI resources mapping in commit:
-> > 
-> > 9eff02e2042f96fb2aedd02e032eca1c5333d7
-> > "PCI: check mmap range of /proc/bus/pci files too"
-> > 
-> > the procfs interface for mmapping resources to user space broke, since
-> > pci_mmap_fits() expected the offset passed from user space in the mmap
-> > call to be 0, not the CPU physical address or PCI BAR value of the
-> > resource in question.
-> > 
-> > Subsequent attempts at fixing the pci_mmap_fits() implementation failed
-> > to fix the issue (or fixed the issue in some architectures but not for
-> > all of them, ARM and SPARC procfs interface PCI resources mapping stayed
-> > broken throughout) in particular commits:
-> > 
-> > 8c05cd08a7504b855c265263e84af61aabafa329
-> > "PCI: fix offset check for sysfs mmapped files"
-> > 
-> > and
-> > 
-> > 3b519e4ea618b6943a82931630872907f9ac2c2b
-> > "PCI: fix size checks for mmap() on /proc/bus/pci files"
-> > 
-> > fixed procfs PCI resources mapping checks in pci_mmap_fits for some
-> > architectures, but not for architectures like SPARC that expects
-> > the offset value passed from user space through the mmap syscall
-> > (when mapping through procfs) to represent the PCI BAR value of the
-> > resource to be mapped.
-> > 
-> > The reason behind the breakage is the following. The addresses stored
-> > in PCI device resources for memory spaces correspond to CPU physical
-> > addresses, which do not necessarily map 1:1 to PCI bus addresses as
-> > programmed in PCI devices configuration spaces.
-> > 
-> > This implies that the sanity checks carried out in pci_mmap_fits() to
-> > ensure that the user executes an mmap of a "real" pci resource are
-> > erroneous when executed through procfs. Some platforms (ie SPARC)
-> > expect the offset value to be passed in (procfs mapping) to be the
-> > PCI BAR configuration value as read from the PCI device configuration
-> > space, not the fixed-up CPU physical address that is present in PCI
-> > device resources.
-> > 
-> > The required pgoff (offset in mmap syscall) value passed from userspace
-> > is supposed to represent the resource value exported through
-> > /proc/bus/pci/devices when the resource is mmapped though procfs (and 0
-> > when the mapping is carried out through sysfs resource files), which
-> > corresponds to the PCI resource filtered through the pci_resource_to_user()
-> > API.
-> > 
-> > This patch converts the PCI resource to the expected "user visible"
-> > value through pci_resource_to_user() before carrying out sanity checks
-> > in pci_mmap_fits() so that the check is carried out on the resource
-> > values as expected from the userspace mmap API.
-> > 
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-> > Cc: Bjorn Helgaas <bhelgaas@google.com>
-> > Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> > Cc: David S. Miller <davem@davemloft.net>
-> > Cc: Michal Simek <monstr@monstr.eu>
-> > Cc: Martin Wilck <martin.wilck@ts.fujitsu.com>
-> > Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-> 
-> Hi Lorenzo,
-> 
-> I think this patch is the right thing to do.  I'm going to try to write
-> patches for microblaze, mips, powerpc, and sparc that implement their
-> pci_resource_to_user() in terms of pcibios_resource_to_bus() (the patches
-> are easy; it's the arguments for correctness that take time).  Then I'll
-> try to convince myself that those arches are currently broken and will be
-> fixed by your patch below.
+On an Acer C720 running linux-next (20141124) the touchpad will become
+inoperative after a resume.  Reloading the cyapa driver restores normal
+operation.
 
-I think that in doing that you might end up breaking at least powerpc
-and microblaze proc and sys interfaces, but I agree with the process.
+The following trace appeared in dmesg after a resume.
 
-> But I'll be on vacation all next week, so this will take me some time and
-> it may not make the next merge window.
+  [   21.803878] ------------[ cut here ]------------
+  [   21.803886] WARNING: CPU: 0 PID: 901 at kernel/irq/manage.c:444 enable_irq+0x3a/0x80()
+  [   21.803886] Unbalanced enable for IRQ 0
+  [   21.803927] Modules linked in: binfmt_misc bnep ecb ath3k btusb bluetooth uvcvideo videobuf2_vmalloc videobuf2_memops videobuf2_core v4l2_common videodev media nfsd auth_rpcgss oid_registry nfs_acl nfs lockd grace fscache sunrpc arc4 ath9k snd_hda_codec_hdmi ath9k_common ath9k_hw ath tpm_infineon mac80211 i915 joydev x86_pkg_temp_thermal iTCO_wdt intel_powerclamp cyapa iTCO_vendor_support intel_rapl iosf_mbi coretemp kvm_intel kvm cfg80211 snd_hda_codec_realtek snd_hda_codec_generic chromeos_laptop crct10dif_pclmul crc32_pclmul i2c_algo_bit crc32c_intel snd_hda_intel drm_kms_helper xhci_pci xhci_hcd ghash_clmulni_intel snd_hda_controller snd_hda_codec cryptd rfkill drm usbcore evdev pcspkr snd_hwdep serio_raw snd_pcm i2c_i801 shpchp snd_timer usb_common lpc_ich snd tpm_tis mfd_core video i2c_designware_pci
+  [   21.803941]  tpm battery ac soundcore i2c_designware_platform i2c_designware_core i2c_core processor button fuse autofs4 ext4 crc16 mbcache jbd2 sg sd_mod ahci libahci libata scsi_mod fan thermal thermal_sys sdhci_acpi sdhci mmc_core
+  [   21.803945] CPU: 0 PID: 901 Comm: systemd-sleep Not tainted 3.18.0-rc5-next-20141121 #50
+  [   21.803946] Hardware name: Acer Peppy, BIOS          04/30/2014
+  [   21.803949]  0000000000000000 ffffffff81725091 ffffffff81535c6c ffff8800740cbc78
+  [   21.803951]  ffffffff81069f61 ffff880100405400 0000000000000000 ffff88006c9c1c20
+  [   21.803953]  ffff88006ae73220 0000000000000010 ffffffff81069fda ffffffff8171bbb8
+  [   21.803953] Call Trace:
+  [   21.803959]  [<ffffffff81535c6c>] ? dump_stack+0x40/0x50
+  [   21.803964]  [<ffffffff81069f61>] ? warn_slowpath_common+0x81/0xb0
+  [   21.803967]  [<ffffffff81069fda>] ? warn_slowpath_fmt+0x4a/0x50
+  [   21.803969]  [<ffffffff810b9792>] ? __irq_get_desc_lock+0x52/0x90
+  [   21.803971]  [<ffffffff810bb32a>] ? enable_irq+0x3a/0x80
+  [   21.803976]  [<ffffffffa0412535>] ? cyapa_resume+0x85/0xb0 [cyapa]
+  [   21.803984]  [<ffffffffa01c3e90>] ? i2c_device_pm_thaw+0x40/0x40 [i2c_core]
+  [   21.803988]  [<ffffffff813ce85a>] ? dpm_run_callback+0x4a/0x100
+  [   21.803991]  [<ffffffff813cedd6>] ? device_resume+0xd6/0x210
+  [   21.803994]  [<ffffffff813d02c9>] ? dpm_resume+0x109/0x2c0
+  [   21.803997]  [<ffffffff813d07cd>] ? dpm_resume_end+0xd/0x20
+  [   21.804000]  [<ffffffff810ae1e7>] ? suspend_devices_and_enter+0x137/0x630
+  [   21.804003]  [<ffffffff810aea32>] ? pm_suspend+0x352/0x3d0
+  [   21.804005]  [<ffffffff810ad266>] ? state_store+0x76/0xf0
+  [   21.804010]  [<ffffffff8122bd5c>] ? kernfs_fop_write+0x12c/0x180
+  [   21.804013]  [<ffffffff811b78a2>] ? vfs_write+0xb2/0x1f0
+  [   21.804015]  [<ffffffff811b8432>] ? SyS_write+0x42/0xb0
+  [   21.804018]  [<ffffffff8153b6ad>] ? system_call_fastpath+0x16/0x1b
+  [   21.804020] ---[ end trace 83d258439f6abe06 ]---
 
-I understand that, it holds back patch 2, but it is fine since it can
-get in as a fix even if it misses the merge window, as long as you
-agree with the overall approach.
+Performing a bisect on the kernel revealed that the following commit
+introduced the bug.
 
-Thank you,
-Lorenzo
+  commit b1cfa7b4388285c0f0b486f152ab0cb18612c779
+  Author: Dudley Du <dudley.dulixin@gmail.com>
+  Date:   Sun Nov 9 12:36:34 2014 -0800
+
+      Input: cyapa - switch to using managed resources
+
+      Use of managed resources simplifies error handling and device removal code.
+
+      Signed-off-by: Dudley Du <dudl@cypress.com>
+      [Dmitry: added open/close methods so cyapa_remove is no longer needed.]
+      Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+
+The trace message "Unbalanced enable for IRQ 0" suggests there is a
+problem with the interrupts.  Examing the patch which introduced the bug
+revealed that the variable used to store the interrupt number was
+changed from cyapa->irq to client->irq.  However, there was an old entry
+in cyapa_resume() which wasn't updated and was trying to enable
+interrupts using the old name.  Since it was undefined, it was trying to
+enable irq 0, which produced the error.
+
+Fix the bug by using the correct variable name in cyapa_resume().
+
+Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
+---
+ drivers/input/mouse/cyapa.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
+index c84a9eb..d8d2ccb 100644
+--- a/drivers/input/mouse/cyapa.c
++++ b/drivers/input/mouse/cyapa.c
+@@ -964,7 +964,7 @@ static int __maybe_unused cyapa_resume(struct device *dev)
+ 		dev_warn(dev, "resume: set power mode to %d failed: %d\n",
+ 			 power_mode, error);
+ 
+-	enable_irq(cyapa->irq);
++	enable_irq(client->irq);
+ 
+ 	mutex_unlock(&input->mutex);
+ 
+-- 
+2.1.3
+
+
+-- 
+- Jeremiah Mahler
