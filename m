@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751330AbaKYQZe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 11:25:34 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:42526 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106AbaKYQZc (ORCPT
+	id S1751516AbaKYQ0j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 11:26:39 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:61843 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313AbaKYQZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 11:25:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <5474A72D.2000309@roeck-us.net>
-References: <1416930423-12179-1-git-send-email-bgolaszewski@baylibre.com>
-	<1416930423-12179-2-git-send-email-bgolaszewski@baylibre.com>
-	<5474A72D.2000309@roeck-us.net>
-Date: Tue, 25 Nov 2014 17:25:31 +0100
-Message-ID: <CAMpxmJUrs-3oXwYyNh26EnuZRH9bpXrmBBLKM7tmKGx=gSwyuQ@mail.gmail.com>
-Subject: Re: [PATCH 1/5] hwmon: ina2xx: bail-out from ina2xx_probe() in case
- of configuration errors
-From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Patrick Titiano <ptitiano@baylibre.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 25 Nov 2014 11:25:34 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, tglx@linutronix.de,
+        jason@lakedaemon.net, devicetree@vger.kernel.org
+Subject: [PATCH v2 5/8] ARM: STi: STiH416: Enable PMU IRQs
+Date: Tue, 25 Nov 2014 16:25:02 +0000
+Message-Id: <1416932705-16880-6-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1416932705-16880-1-git-send-email-lee.jones@linaro.org>
+References: <1416932705-16880-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-25 16:58 GMT+01:00 Guenter Roeck <linux@roeck-us.net>:
-> You are introducing those two functions with the same code just to display
-> a different error message. That does not provide enough value to have extra
-> functions and just increases code size.
->
-> Just check the return code from ina2xx_write_register directly in the probe
-> function and bail out there.
+This driver is used to enable System Configuration Register controlled
+External, CTI (Core Sight), PMU (Performance Management), and PL310 L2
+Cache IRQs prior to use.
 
-With all six patches from this set applied, each of the two functions
-is called twice in the code. Together with the return value checks and
-repeated error messages it bloats the code even more. What about a
-single function taking the name of the register (in our case
-"configuration" or "calibration") as argument in order to print a nice
-error message? If this is still too dirty, than we can just print the
-hex value of the register.
+Here we are enabling PMU IRQs on both channels.
 
-Bart
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ arch/arm/boot/dts/stih416.dtsi | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
+index badefd6..d98ce91 100644
+--- a/arch/arm/boot/dts/stih416.dtsi
++++ b/arch/arm/boot/dts/stih416.dtsi
+@@ -11,6 +11,7 @@
+ #include "stih416-pinctrl.dtsi"
+ #include <dt-bindings/interrupt-controller/arm-gic.h>
+ #include <dt-bindings/reset-controller/stih416-resets.h>
++#include <dt-bindings/interrupt-controller/irq-st.h>
+ / {
+ 	L2: cache-controller {
+ 		compatible = "arm,pl310-cache";
+@@ -90,6 +91,15 @@
+ 			reg		= <0xfe4b5100 0x8>;
+ 		};
+ 
++		irq-syscfg {
++			compatible    = "st,stih416-irq-syscfg";
++			st,syscfg     = <&syscfg_cpu>;
++			st,irq-device = <ST_IRQ_SYSCFG_PMU_0>,
++					<ST_IRQ_SYSCFG_PMU_1>;
++			st,fiq-device = <ST_IRQ_SYSCFG_DISABLED>,
++					<ST_IRQ_SYSCFG_DISABLED>;
++		};
++
+ 		serial2: serial@fed32000{
+ 			compatible	= "st,asc";
+ 			status 		= "disabled";
+-- 
+1.9.1
+
