@@ -1,67 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934AbaKYTlM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 14:41:12 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:28865 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888AbaKYTlJ (ORCPT
+	id S1751779AbaKYTmv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 14:42:51 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:64260 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828AbaKYTmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 14:41:09 -0500
-X-IronPort-AV: E=Sophos;i="5.07,457,1413270000"; 
-   d="scan'208";a="51465153"
-From: Scott Branden <sbranden@broadcom.com>
-To: Scott Branden <sbranden@broadcom.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: Ray Jui <rjui@broadcom.com>, Arun Ramamurthy <arunrama@broadcom.com>,
-        Tim Kryger <tim.kryger@gmail.com>,
-        <bcm-kernel-feedback-list@broadcom.com>, <linux-pwm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 1/4] pwm: kona: Remove setting default smooth type and polarity for all channels
-Date: Tue, 25 Nov 2014 11:40:38 -0800
-Message-ID: <1416944441-12066-2-git-send-email-sbranden@broadcom.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1416944441-12066-1-git-send-email-sbranden@broadcom.com>
-References: <Scott Branden <sbranden@broadcom.com>
- <1416944441-12066-1-git-send-email-sbranden@broadcom.com>
+	Tue, 25 Nov 2014 14:42:47 -0500
+Date: Tue, 25 Nov 2014 20:42:42 +0100
+From: Pieter Smith <pieter@boesman.nl>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Josh Triplett <josh@joshtriplett.org>, fuse-devel@lists.sourceforge.net,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 4/7] fs/fuse: support compiling out splice
+Message-ID: <20141125194242.GA21633@smipidev>
+References: <1416899996-21315-1-git-send-email-pieter@boesman.nl>
+ <1416899996-21315-5-git-send-email-pieter@boesman.nl>
+ <20141125141713.GA9137@tucsk.suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141125141713.GA9137@tucsk.suse.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arun Ramamurthy <arunrama@broadcom.com>
+On Tue, Nov 25, 2014 at 03:17:13PM +0100, Miklos Szeredi wrote:
+> [Trimming CC.  Please do the same for other patches.  I for one am not
+> interested in the general tinification discussion]
+> 
+> On Tue, Nov 25, 2014 at 08:19:39AM +0100, Pieter Smith wrote:
+> > To implement splice support, fs/fuse makes use of nosteal_pipe_buf_ops. This
+> > struct is exported by fs/splice. The goal of the larger patch set is to
+> > completely compile out fs/splice, so uses of the exported struct need to be
+> > compiled out along with fs/splice.
+> > 
+> > This patch therefore compiles out splice support in fs/fuse when
+> > CONFIG_SYSCALL_SPLICE is undefined.
+> > 
+> > Signed-off-by: Pieter Smith <pieter@boesman.nl>
+> > ---
+> >  fs/fuse/dev.c | 9 +++++++--
+> >  1 file changed, 7 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+> > index ca88731..e984302 100644
+> > --- a/fs/fuse/dev.c
+> > +++ b/fs/fuse/dev.c
+> > @@ -1191,8 +1191,9 @@ __releases(fc->lock)
+> >   * request_end().  Otherwise add it to the processing list, and set
+> >   * the 'sent' flag.
+> >   */
+> > -static ssize_t fuse_dev_do_read(struct fuse_conn *fc, struct file *file,
+> > -				struct fuse_copy_state *cs, size_t nbytes)
+> > +static ssize_t __maybe_unused
+> > +fuse_dev_do_read(struct fuse_conn *fc, struct file *file,
+> > +		 struct fuse_copy_state *cs, size_t nbytes)
+> 
+> fuse_dev_do_read() is definitely going to remain used.  So no point in adding
+> __maybe_unused.
 
-The probe routine unnecessarily sets the smooth type and polarity for
-all channels. This causes the channel for the speaker to click at the same
-time the backlight turns on. The smooth type and polarity should be set individually
-for each channel as required and no defaults need to be set.
+Off course, but at least gcc now also is aware that this is intentional and
+nicely refrains from nagging you with a warning.
 
-Signed-off-by: Arun Ramamurthy <arunrama@broadcom.com>
-Reviewed-by: Ray Jui <rjui@broadcom.com>
-Signed-off-by: Scott Branden <sbranden@broadcom.com>
----
- drivers/pwm/pwm-bcm-kona.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/pwm/pwm-bcm-kona.c b/drivers/pwm/pwm-bcm-kona.c
-index 02bc048..29eef9e 100644
---- a/drivers/pwm/pwm-bcm-kona.c
-+++ b/drivers/pwm/pwm-bcm-kona.c
-@@ -266,12 +266,9 @@ static int kona_pwmc_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
--	/* Set smooth mode, push/pull, and normal polarity for all channels */
--	for (chan = 0; chan < kp->chip.npwm; chan++) {
--		value |= (1 << PWM_CONTROL_SMOOTH_SHIFT(chan));
-+	/* Set push/pull for all channels */
-+	for (chan = 0; chan < kp->chip.npwm; chan++)
- 		value |= (1 << PWM_CONTROL_TYPE_SHIFT(chan));
--		value |= (1 << PWM_CONTROL_POLARITY_SHIFT(chan));
--	}
- 
- 	writel(value, kp->base + PWM_CONTROL_OFFSET);
- 
--- 
-2.1.3
-
+> >  {
+> >  	int err;
+> >  	struct fuse_req *req;
+> > @@ -1291,6 +1292,7 @@ static ssize_t fuse_dev_read(struct kiocb *iocb, const struct iovec *iov,
+> >  	return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
+> >  }
+> >  
+> > +#ifdef CONFIG_SYSCALL_SPLICE
+> >  static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
+> >  				    struct pipe_inode_info *pipe,
+> >  				    size_t len, unsigned int flags)
+> > @@ -1368,6 +1370,9 @@ out:
+> >  	kfree(bufs);
+> >  	return ret;
+> >  }
+> > +#else /* CONFIG_SYSCALL_SPLICE */
+> > +#define fuse_dev_splice_read NULL
+> > +#endif
+> 
+> This looks fine.
+> 
+> Thanks,
+> Miklos
+> 
+> >  
+> >  static int fuse_notify_poll(struct fuse_conn *fc, unsigned int size,
+> >  			    struct fuse_copy_state *cs)
+> > -- 
+> > 2.1.0
+> > 
