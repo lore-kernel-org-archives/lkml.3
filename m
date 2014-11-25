@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752031AbaKYGta (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 01:49:30 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:36775 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852AbaKYGt2 (ORCPT
+	id S1752059AbaKYGuL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 01:50:11 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34804 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaKYGuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 01:49:28 -0500
-X-Originating-IP: 50.43.41.112
-Date: Mon, 24 Nov 2014 22:48:49 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Catalina Mocanu <catalina.mocanu@gmail.com>
-Subject: Re: linux-next: manual merge of the tiny tree with the tip tree
-Message-ID: <20141125064849.GA1691@thin>
-References: <20141125170315.13157c60@canb.auug.org.au>
- <20141125061645.GA15512@gmail.com>
+	Tue, 25 Nov 2014 01:50:09 -0500
+Date: Tue, 25 Nov 2014 07:49:58 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mark.rutland@arm.com, grant.likely@linaro.org, robh+dt@kernel.org,
+        plagnioj@jcrosoft.com, ijc@debian.org
+Subject: Re: [PATCH] of: support passing console options with stdout-path
+Message-ID: <20141125064958.GK30369@pengutronix.de>
+References: <1416867838-18652-1-git-send-email-leif.lindholm@linaro.org>
+ <20141124230016.GP20238@lunn.ch>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141125061645.GA15512@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141124230016.GP20238@lunn.ch>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 07:46:17 up 40 days, 18:00, 79 users,  load average: 0.04, 0.05,
+ 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 07:16:45AM +0100, Ingo Molnar wrote:
-> * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > Hi Josh,
+On Tue, Nov 25, 2014 at 12:00:16AM +0100, Andrew Lunn wrote:
+> On Mon, Nov 24, 2014 at 10:23:58PM +0000, Leif Lindholm wrote:
+> > Support specifying console options (like with console=ttyXN,<options>)
+> > by appending them to the stdout-path property after a separating ':'.
 > > 
-> > Today's linux-next merge of the tiny tree got a conflict in
-> > kernel/time/Makefile between commit fd866e2b116b ("time: Rename
-> > udelay_test.c to test_udelay.c") from the tip tree and commit
-> > d1f6d68d03ea ("kernel: time: Compile out NTP support") from the tiny
-> > tree.
+> > Example:
+> > 	stdout-path = "uart0:115200";
+> > 
+> > This patch also modifies of_find_node_by_path() to match only the
+> > portion of the path before a ':'.
 > 
-> So I think a timer subsystem commit d1f6d68d03ea with this 
-> magnitude of linecount increase:
+> Hi Leif
 > 
->  Signed-off-by: Catalina Mocanu <catalina.mocanu@gmail.com>
->  [josh: Handle CONFIG_COMPAT=y.]
->  Reviewed-by: Josh Triplett <josh@joshtriplett.org>
->  Signed-off-by: Josh Triplett <josh@joshtriplett.org>
->  ---
->   drivers/pps/Kconfig        |  2 +-
->   include/linux/timex.h      | 15 +++++++++++++--
->   init/Kconfig               | 10 ++++++++++
->   kernel/compat.c            |  8 ++++++--
->   kernel/sys_ni.c            |  4 ++++
->   kernel/time/Makefile       |  3 ++-
->   kernel/time/ntp_internal.h | 28 ++++++++++++++++++++++++++++
->   kernel/time/posix-timers.c |  2 ++
->   kernel/time/time.c         |  2 ++
->   kernel/time/timekeeping.c  |  2 ++
->   10 files changed, 70 insertions(+), 6 deletions(-)
+> These appears to somewhat conform to ePAPR, which says:
 > 
-> at minimum needs the ack of timer folks, before it can be 
-> committed to Git. Or is the tiny tree plan to submit all
-> patches to the appropriate subsystem or gather acks, before 
-> sending it upstream?
+>       A string that specifies the full path to the node representing
+>       the device to be used for boot console output. If the character
+>       ":" is present in the value it terminates the path.
+> 
+> So you can put any random junk after the :. However, are we going to
+> have backward/forward compatibility problems, and problems with
+> bootloaders? The current kernel code does not look for the :. So a new
+> DT blob on an old kernel will not work so well.
+> 
+> More worrying, barebox does not support the : either. So there is a
+> danger your bootloader suddenly goes silent after a dt blob update.
 
-Yes, absolutely.  I planned to send out a tinification patch review
-series later this week with all 10 current patches (both those reviewed
-on LKML and those only reviewed elsewhere).
+Since in barebox we use the upstream Kernel devicetrees it will be under
+our control when they arrive, so we can add support for that ':'
+before the new devicetrees arrive.
 
-- Josh Triplett
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
