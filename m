@@ -1,97 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021AbaKYK5U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:57:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59061 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754012AbaKYKnT (ORCPT
+	id S1754703AbaKYK5k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:57:40 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40982 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131AbaKYK5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:43:19 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 212/254] Input: alps - ignore bad data on Dell Latitudes E6440 and E7440
-Date: Tue, 25 Nov 2014 10:39:22 +0000
-Message-Id: <1416912004-5928-213-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Extended-Stable: 3.16
+	Tue, 25 Nov 2014 05:57:19 -0500
+Message-ID: <1416913037.2741.1.camel@pengutronix.de>
+Subject: Re: [RFC PATCH] regulator: core: do not disable regulator if
+ boot_on is set
+From: Lucas Stach <l.stach@pengutronix.de>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: linux-kernel@vger.kernel.org, broonie@kernel.org, lgirdwood@gmail.com,
+        linux-arm-kernel@lists.infradead.org
+Date: Tue, 25 Nov 2014 11:57:17 +0100
+In-Reply-To: <1416912803-10772-1-git-send-email-pramod.gurav@smartplayin.com>
+References: <1416912803-10772-1-git-send-email-pramod.gurav@smartplayin.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.6-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:fa0f:41ff:fe58:4010
+X-SA-Exim-Mail-From: l.stach@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
+Am Dienstag, den 25.11.2014, 16:23 +0530 schrieb Pramod Gurav:
+> Currently the regulator core disables the regulators which are unused
+> or whose reference count is zero or if they are configured always_on.
+> This change adds a check in this logic to see if a regulator is
+> configured as boot_on and does not disable it if found true.
+> 
+> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> 
+> ---
+> 
+> The issue was found on apq8064 based IFC6410 on which a fixed regulator
+> configured as regulator-boot-on in DT and was being disabled when not in
+> use. Tested this change on this board and found working.
+> 
+Um, why would this be the correct fix? regulator-boot-on just tells the
+regulator core that the bootloader might have left this regulator
+enabled. If you want it to stay on after the kernel finished init you
+need to mark it as always-on.
 
-------------------
+>  drivers/regulator/core.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+> index cd87c0c..9f7a13f 100644
+> --- a/drivers/regulator/core.c
+> +++ b/drivers/regulator/core.c
+> @@ -4019,7 +4019,7 @@ static int __init regulator_init_complete(void)
+>  		ops = rdev->desc->ops;
+>  		c = rdev->constraints;
+>  
+> -		if (c && c->always_on)
+> +		if (c && (c->always_on || c->boot_on))
+>  			continue;
+>  
+>  		if (c && !(c->valid_ops_mask & REGULATOR_CHANGE_STATUS))
 
-From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-
-commit a7ef82aee91f26da79b981b9f5bca43b8817d3e4 upstream.
-
-Sometimes on Dell Latitude laptops psmouse/alps driver receive invalid ALPS
-protocol V3 packets with bit7 set in last byte. More often it can be
-reproduced on Dell Latitude E6440 or E7440 with closed lid and pushing
-cover above touchpad.
-
-If bit7 in last packet byte is set then it is not valid ALPS packet. I was
-told that ALPS devices never send these packets. It is not know yet who
-send those packets, it could be Dell EC, bug in BIOS and also bug in
-touchpad firmware...
-
-With this patch alps driver does not process those invalid packets, but
-instead of reporting PSMOUSE_BAD_DATA, getting into out of sync state,
-getting back in sync with the next byte and spam dmesg we return
-PSMOUSE_FULL_PACKET. If driver is truly out of sync we'll fail the checks
-on the next byte and report PSMOUSE_BAD_DATA then.
-
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-Tested-by: Pali Rohár <pali.rohar@gmail.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/input/mouse/alps.c | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/input/mouse/alps.c b/drivers/input/mouse/alps.c
-index fdffac9f741d..4979b00fbf04 100644
---- a/drivers/input/mouse/alps.c
-+++ b/drivers/input/mouse/alps.c
-@@ -1077,12 +1077,27 @@ static psmouse_ret_t alps_process_byte(struct psmouse *psmouse)
- 	}
- 
- 	/* Bytes 2 - pktsize should have 0 in the highest bit */
--	if ((priv->proto_version < ALPS_PROTO_V5) &&
-+	if (priv->proto_version < ALPS_PROTO_V5 &&
- 	    psmouse->pktcnt >= 2 && psmouse->pktcnt <= psmouse->pktsize &&
- 	    (psmouse->packet[psmouse->pktcnt - 1] & 0x80)) {
- 		psmouse_dbg(psmouse, "refusing packet[%i] = %x\n",
- 			    psmouse->pktcnt - 1,
- 			    psmouse->packet[psmouse->pktcnt - 1]);
-+
-+		if (priv->proto_version == ALPS_PROTO_V3 &&
-+		    psmouse->pktcnt == psmouse->pktsize) {
-+			/*
-+			 * Some Dell boxes, such as Latitude E6440 or E7440
-+			 * with closed lid, quite often smash last byte of
-+			 * otherwise valid packet with 0xff. Given that the
-+			 * next packet is very likely to be valid let's
-+			 * report PSMOUSE_FULL_PACKET but not process data,
-+			 * rather than reporting PSMOUSE_BAD_DATA and
-+			 * filling the logs.
-+			 */
-+			return PSMOUSE_FULL_PACKET;
-+		}
-+
- 		return PSMOUSE_BAD_DATA;
- 	}
- 
 -- 
-2.1.0
+Pengutronix e.K.             | Lucas Stach                 |
+Industrial Linux Solutions   | http://www.pengutronix.de/  |
 
