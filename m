@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516AbaKYKnX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:43:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59029 "EHLO
+	id S1754097AbaKYKnc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:43:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59098 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753985AbaKYKnO (ORCPT
+	with ESMTP id S1753985AbaKYKnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:43:14 -0500
+	Tue, 25 Nov 2014 05:43:24 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Mackerras <paulus@samba.org>, Al Viro <viro@zeniv.linux.org.uk>,
+Cc: Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 205/254] Fix thinko in iov_iter_single_seg_count
-Date: Tue, 25 Nov 2014 10:39:15 +0000
-Message-Id: <1416912004-5928-206-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 218/254] gre6: Move the setting of dev->iflink into the ndo_init functions.
+Date: Tue, 25 Nov 2014 10:39:28 +0000
+Message-Id: <1416912004-5928-219-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,46 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Mackerras <paulus@samba.org>
+From: Steffen Klassert <steffen.klassert@secunet.com>
 
-commit ad0eab9293485d1c06237e9249f6d4dfa3d93d4d upstream.
+commit f03eb128e3f4276f46442d14f3b8f864f3775821 upstream.
 
-The branches of the if (i->type & ITER_BVEC) statement in
-iov_iter_single_seg_count() are the wrong way around; if ITER_BVEC is
-clear then we use i->bvec, when we should be using i->iov.  This fixes
-it.
+Otherwise it gets overwritten by register_netdev().
 
-In my case, the symptom that this caused was that a KVM guest doing
-filesystem operations on a virtual disk would result in one of qemu's
-threads on the host going into an infinite loop in
-generic_perform_write().  The loop would hit the copied == 0 case and
-call iov_iter_single_seg_count() to reduce the number of bytes to try
-to process, but because of the error, iov_iter_single_seg_count()
-would just return i->count and the loop made no progress and continued
-forever.
-
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/iov_iter.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv6/ip6_gre.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/mm/iov_iter.c b/mm/iov_iter.c
-index 9a09f2034fcc..141dcf796d28 100644
---- a/mm/iov_iter.c
-+++ b/mm/iov_iter.c
-@@ -699,9 +699,9 @@ size_t iov_iter_single_seg_count(const struct iov_iter *i)
- 	if (i->nr_segs == 1)
- 		return i->count;
- 	else if (i->type & ITER_BVEC)
--		return min(i->count, i->iov->iov_len - i->iov_offset);
--	else
- 		return min(i->count, i->bvec->bv_len - i->iov_offset);
-+	else
-+		return min(i->count, i->iov->iov_len - i->iov_offset);
+diff --git a/net/ipv6/ip6_gre.c b/net/ipv6/ip6_gre.c
+index 43bc1fc24621..c3ba41cef1df 100644
+--- a/net/ipv6/ip6_gre.c
++++ b/net/ipv6/ip6_gre.c
+@@ -953,8 +953,6 @@ static void ip6gre_tnl_link_config(struct ip6_tnl *t, int set_mtu)
+ 	else
+ 		dev->flags &= ~IFF_POINTOPOINT;
+ 
+-	dev->iflink = p->link;
+-
+ 	/* Precalculate GRE options length */
+ 	if (t->parms.o_flags&(GRE_CSUM|GRE_KEY|GRE_SEQ)) {
+ 		if (t->parms.o_flags&GRE_CSUM)
+@@ -1262,6 +1260,7 @@ static int ip6gre_tunnel_init(struct net_device *dev)
+ 		u64_stats_init(&ip6gre_tunnel_stats->syncp);
+ 	}
+ 
++	dev->iflink = tunnel->parms.link;
+ 
+ 	return 0;
  }
- EXPORT_SYMBOL(iov_iter_single_seg_count);
+@@ -1470,6 +1469,8 @@ static int ip6gre_tap_init(struct net_device *dev)
+ 	if (!dev->tstats)
+ 		return -ENOMEM;
+ 
++	dev->iflink = tunnel->parms.link;
++
+ 	return 0;
+ }
  
 -- 
 2.1.0
