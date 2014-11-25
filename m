@@ -1,86 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858AbaKYVTk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 16:19:40 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:53247 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751409AbaKYVTj (ORCPT
+	id S1751880AbaKYVUJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 16:20:09 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:40039 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303AbaKYVUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 16:19:39 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mark Brown <broonie@kernel.org>
-Cc: Darren Hart <dvhart@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Ben Zhang <benzh@chromium.org>,
-        alsa-devel <alsa-devel@alsa-project.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Bard Liao <bardliao@realtek.com>,
-        Oder Chiou <oder_chiou@realtek.com>,
-        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
-        flove@realtek.com, Al Stone <al.stone@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ASoC: rt5677: Add ACPI device probing
-Date: Tue, 25 Nov 2014 22:40:53 +0100
-Message-ID: <1926483.B4ieFnCBlM@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141125202722.GA25261@sirena.org.uk>
-References: <1416034608-24238-1-git-send-email-benzh@chromium.org> <2580837.YI0IvfXqRR@vostro.rjw.lan> <20141125202722.GA25261@sirena.org.uk>
+	Tue, 25 Nov 2014 16:20:07 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <CAD=FV=U9Hh-OR2aGh6Q9YAwnP8AuAbQtogD=7wQxgg9XvoWTMw@mail.gmail.com>
+References: <1415109789-7046-1-git-send-email-addy.ke@rock-chips.com>
+ <1415678573-6093-1-git-send-email-addy.ke@rock-chips.com> <CAPDyKFqUoBjhsbz8rkLa9PY_dpgMxnimz3k7OoA5WVhi7MacPQ@mail.gmail.com>
+ <CAD=FV=VQHZ6YmcoeAb1OEVLYRrYBnc_dM5Kjt1TZX_CQJC=EfA@mail.gmail.com>
+ <5464152E.7040209@rock-chips.com> <CAPDyKFrzGfDew0eLLEcA+_iS_mo-O2bFU58fjirfXXA8AJ9UYQ@mail.gmail.com>
+ <CAD=FV=Ve1TY4+8quq1=18A1YOFvOWuFGrBmHLwMCwdWBSqzxOw@mail.gmail.com>
+ <CAD=FV=UJT5zBkcj2a03Y_RWxad9+Pu83G_z79Xzzn74V=eRqww@mail.gmail.com>
+ <CAPDyKFqt4rrwi940KAPyPONpjixK1730QmHEsN27V97jyHH+Qw@mail.gmail.com>
+ <5473EB8B.3000803@rock-chips.com> <CAD=FV=U9Hh-OR2aGh6Q9YAwnP8AuAbQtogD=7wQxgg9XvoWTMw@mail.gmail.com>
+From: Alexandru Stan <amstan@chromium.org>
+Date: Tue, 25 Nov 2014 13:11:43 -0800
+Message-ID: <CAHNYxRwT8YeR-AUa-BVPraufLWZtEaeLdNjGBs77CfkMWVCNqg@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: try pick the exact same voltage as vmmc for vqmmc
+To: Doug Anderson <dianders@chromium.org>
+Cc: Addy <addy.ke@rock-chips.com>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, lintao <lintao@rock-chips.com>,
+        chenfen <chenfen@rock-chips.com>, zyf <zyf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris Zhong <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        zhangqing <zhangqing@rock-chips.com>, Lin Huang <hl@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 25, 2014 08:27:22 PM Mark Brown wrote:
-> 
-> --ReaqsoxgOBHFXBhH
-> Content-Type: text/plain; charset=us-ascii
-> Content-Disposition: inline
-> 
-> On Tue, Nov 25, 2014 at 09:31:27PM +0100, Rafael J. Wysocki wrote:
-> > On Tuesday, November 25, 2014 11:07:06 AM Darren Hart wrote:
-> 
-> > > This is a current topic with the ACPI working group. We have the
-> > > following document:
-> 
-> > > http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-UUID.pdf
-> 
-> > This hasn't been discussed a lot at the meetings I attended.
-> 
-> > The bindings management process is being set up within the UEFI Forum, but I'm
-> > not sure if/how the existing DT bindings documented in the kernel tree are
-> > going to be covered by it ATM.
-> 
-> Al Stone (CCed) pointed me at the following two documents:
-> 
-> http://www.uefi.org/sites/default/files/resources/web-page-v2.pdf
-> http://www.uefi.org/sites/default/files/resources/nic-request-v2.pdf
-> 
-> (the first one being the actual process in so far as it exists).  The
-> process appears to be to mail requests in a specific format to the ASWG
-> chairperson (the address is apparently supposed to be awsg@uefi.org).
-> It looks like all the properties are expected to end up in one or more
-> PDF files like the second one.
-> 
-> My initial thought would be to require that we send any DT properties
-> defined for devices with ACPI identifiers registered there and hope the
-> volume doesn't DoS them.
+>From what I understand... High speed SD cards have 1.8V regulators
+inside them(sourced by vmmc (what we power the SD card with)). So in
+terms of the SD card IO pins they will either use exactly vmmc or
+1.8V. It doesn't make sense for vqmmc (the voltage we use to power the
+AP block connected to the SD cards) to be anything but exactly equal
+to vmmc or 1.8V. If vqmmc differs from vmmc(or 1.8V, depending on
+mode) by more than a little (~100-200mV), both up or down, you start
+getting leaks into the input protection diodes of the pins(either the
+AP or the SD card) which is a pretty BAD thing (you're essentially
+powering the sd card through the IO pins, or the SD card is powering
+the IO block on the AP).
 
-We absolutely need to start registering the existing bindings in there, but
-that needs to be rate limited somehow, because the process may not be very
-efficient to start with.
+Alexandru Stan (amstan)
 
-> A more defined format for DT documentation that we can script into the
-> ASWG format (or vice versa) might be helpful here, and we should add
-> notes to the DT documentation if this is how we want to proceed.
-
-That's a good point.
-
-Unfortunately, the timing is pretty bad (Thanksgiving) and the closest
-ASWG meeting is next Thursday, but that one's likely to be busy for other
-reasons.  I presume, then, that the earliest we can seriously get back to
-that in the ASWG is mid-December.
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+On Mon, Nov 24, 2014 at 9:36 PM, Doug Anderson <dianders@chromium.org> wrote:
+> Addy,
+>
+> On Mon, Nov 24, 2014 at 6:38 PM, Addy <addy.ke@rock-chips.com> wrote:
+>>> In worst case scenario, VDD = 3.6V and VIO = 2.7V. That gives as the
+>>> factor of 0.75, thus we are inside spec but without margins.
+>>
+>> * From eMMC4.5 spec:
+>>   1. (VDDF)vcc: Supply voltage for flash memory,  which is  2.7v -- 3.3v
+>>   2. (VDD)vccq: Supply voltage for memory controller, which is  1.7v --
+>> 1.95v  and 2,7v -- 3.6v
+>>
+>> * And from RK3288 datasheet:
+>>   Digtial GPIO Power(SDMMC0_VDD --> vccq) is 3.0v -- 3.6v and 1.62v - 1.98v
+>>
+>> So I think:
+>> 3.3v:  (2.7v < vccq < 3.6v)   &&  (3.0v < vccq < 3.6v)  ==> (3.0v < vccq <
+>> 3.6v)
+>> 1.8v:  (1.7v < vccq < 1.95v)  && (1.62v < vccq < 1.98v) ==> (1.7v < vccq <
+>> 1.95v)
+>>
+>> and (2.7v < vcc < 3.3v)
+>>
+>> * And according to our hardware engineer:
+>>   All of supply voltage must have +/- 10% cushion.
+>>
+>> * And we have found in some worse card that there is 200mv voltage collapse
+>> when these card is insert.
+>>
+>> So I think the best resolution is that vcc and vccq is configurable int dt
+>> table.
+>
+> Ah, interesting.  ...so what we really need to be able to do is to say
+> that the regulator we for vqmmc have supports the ranges 3.0V - 3.3V
+> and 1.7V - 1.95V but not anything in between 1.95V ad 3.0V.  I have no
+> idea how to express that in the regulator framework.
+>
+> Technically you could take the IO Voltage Domains code (responsible
+> for choosing the 1.8V range or the 3.3V range) and have it communicate
+> the requirements to the regulator framework if you could figure out
+> how to communicate them.
+>
+>
+> ...of course if you implemented my suggestion of keeping vqmmc as the
+> highest voltage <= vmmc then maybe the whole point is moot and we
+> don't have to figure it out.  Just make sure that vmmc never goes
+> below 3.0V.
+>
+>
+> -Doug
