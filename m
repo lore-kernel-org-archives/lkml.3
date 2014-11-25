@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751198AbaKYRsX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 12:48:23 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:54314 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852AbaKYRsT (ORCPT
+	id S1751278AbaKYRtO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 12:49:14 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:45818 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197AbaKYRtL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 12:48:19 -0500
-Date: Tue, 25 Nov 2014 18:48:11 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v4 09/42] virtio: set FEATURES_OK
-Message-ID: <20141125184811.3191f8db.cornelia.huck@de.ibm.com>
-In-Reply-To: <1416933600-21398-10-git-send-email-mst@redhat.com>
-References: <1416933600-21398-1-git-send-email-mst@redhat.com>
-	<1416933600-21398-10-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112517-0025-0000-0000-0000029388A8
+	Tue, 25 Nov 2014 12:49:11 -0500
+Message-ID: <5474C119.7020800@arm.com>
+Date: Tue, 25 Nov 2014 17:49:13 +0000
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Kirill Tkhai <ktkhai@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] sched/deadline: reduce overhead if there are no scheduling
+ parameters changed
+References: <1416386103-90800-1-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1416386103-90800-1-git-send-email-wanpeng.li@linux.intel.com>
+X-OriginalArrivalTime: 25 Nov 2014 17:49:09.0477 (UTC) FILETIME=[1D822150:01D008D8]
+X-MC-Unique: 114112517490900601
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Nov 2014 18:42:01 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+Hi,
 
-> set FEATURES_OK as per virtio 1.0 spec
+On 19/11/14 08:35, Wanpeng Li wrote:
+> There is no need to dequeue/enqueue and push/pull if there are
+> no scheduling parameters changed for dl class, actually both 
+> fair and rt class have already check if parameters changed for 
+> them to avoid unnecessary overhead. This patch add the parameters 
+> changed verify for dl class in order to reduce overhead.
 > 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 > ---
->  include/uapi/linux/virtio_config.h |  2 ++
->  drivers/virtio/virtio.c            | 29 ++++++++++++++++++++++-------
->  2 files changed, 24 insertions(+), 7 deletions(-)
+>  kernel/sched/core.c | 17 ++++++++++++++++-
+>  1 file changed, 16 insertions(+), 1 deletion(-)
 > 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 603c462..f361867 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -3402,6 +3402,21 @@ static bool check_same_owner(struct task_struct *p)
+>  	return match;
+>  }
+>  
+> +static bool dl_param_changed(struct task_struct *p,
+> +			const struct sched_attr *attr)
 
-> +	if (virtio_has_feature(dev, VIRTIO_F_VERSION_1)) {
-> +		add_status(dev, VIRTIO_CONFIG_S_FEATURES_OK);
-> +		status = dev->config->get_status(dev);
-> +		if (!(status & VIRTIO_CONFIG_S_FEATURES_OK)) {
-> +			printk(KERN_ERR "virtio: device refuses features: %x\n",
-> +			       status);
+Please check alignment.
 
-Can you use dev_err() to include the information which device failed?
+> +{
+> +	struct sched_dl_entity *dl_se = &p->dl;
+> +
+> +	if (dl_se->dl_runtime != attr->sched_runtime ||
+> +		dl_se->dl_deadline != attr->sched_deadline ||
+> +		dl_se->dl_period != attr->sched_period ||
+> +		dl_se->flags != attr->sched_flags ||
+> +		p->rt_priority != attr->sched_priority)
 
-> +			err = -ENODEV;
-> +			goto err;
-> +		}
-> +	}
+This last one is useless, as we fail above if
+attr->sched_priority != 0 when task has !rt_policy.
+
+Thanks,
+
+- Juri
+
+> +		return true;
+> +
+> +	return false;
+> +}
+> +
+>  static int __sched_setscheduler(struct task_struct *p,
+>  				const struct sched_attr *attr,
+>  				bool user)
+> @@ -3530,7 +3545,7 @@ recheck:
+>  			goto change;
+>  		if (rt_policy(policy) && attr->sched_priority != p->rt_priority)
+>  			goto change;
+> -		if (dl_policy(policy))
+> +		if (dl_policy(policy) && dl_param_changed(p, attr))
+>  			goto change;
+>  
+>  		p->sched_reset_on_fork = reset_on_fork;
+> 
 
