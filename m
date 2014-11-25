@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754807AbaKYLDr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:03:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58959 "EHLO
+	id S1753870AbaKYKm6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:42:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58914 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753816AbaKYKnB (ORCPT
+	with ESMTP id S1753777AbaKYKmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:43:01 -0500
+	Tue, 25 Nov 2014 05:42:52 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rabin Vincent <rabin@rab.in>, Steven Rostedt <rostedt@goodmis.org>,
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 189/254] tracing: Do not busy wait in buffer splice
-Date: Tue, 25 Nov 2014 10:38:59 +0000
-Message-Id: <1416912004-5928-190-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 181/254] cpufreq: Avoid crash in resume on SMP without OPP
+Date: Tue, 25 Nov 2014 10:38:51 +0000
+Message-Id: <1416912004-5928-182-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,253 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rabin Vincent <rabin@rab.in>
+From: Geert Uytterhoeven <geert+renesas@glider.be>
 
-commit e30f53aad2202b5526c40c36d8eeac8bf290bde5 upstream.
+commit 09712f557b31838092e1f22a5f2dd131a843a3de upstream.
 
-On a !PREEMPT kernel, attempting to use trace-cmd results in a soft
-lockup:
+When resuming from s2ram on an SMP system without cpufreq operating
+points (e.g. there's no "operating-points" property for the CPU node in
+DT, or the platform doesn't use DT yet), the kernel crashes when
+bringing CPU 1 online:
 
- # trace-cmd record -e raw_syscalls:* -F false
- NMI watchdog: BUG: soft lockup - CPU#0 stuck for 22s! [trace-cmd:61]
- ...
- Call Trace:
-  [<ffffffff8105b580>] ? __wake_up_common+0x90/0x90
-  [<ffffffff81092e25>] wait_on_pipe+0x35/0x40
-  [<ffffffff810936e3>] tracing_buffers_splice_read+0x2e3/0x3c0
-  [<ffffffff81093300>] ? tracing_stats_read+0x2a0/0x2a0
-  [<ffffffff812d10ab>] ? _raw_spin_unlock+0x2b/0x40
-  [<ffffffff810dc87b>] ? do_read_fault+0x21b/0x290
-  [<ffffffff810de56a>] ? handle_mm_fault+0x2ba/0xbd0
-  [<ffffffff81095c80>] ? trace_event_buffer_lock_reserve+0x40/0x80
-  [<ffffffff810951e2>] ? trace_buffer_lock_reserve+0x22/0x60
-  [<ffffffff81095c80>] ? trace_event_buffer_lock_reserve+0x40/0x80
-  [<ffffffff8112415d>] do_splice_to+0x6d/0x90
-  [<ffffffff81126971>] SyS_splice+0x7c1/0x800
-  [<ffffffff812d1edd>] tracesys_phase2+0xd3/0xd8
+    Enabling non-boot CPUs ...
+    CPU1: Booted secondary processor
+    Unable to handle kernel NULL pointer dereference at virtual address 0000003c
+    pgd = ee5e6b00
+    [0000003c] *pgd=6e579003, *pmd=6e588003, *pte=00000000
+    Internal error: Oops: a07 [#1] SMP ARM
+    Modules linked in:
+    CPU: 0 PID: 1246 Comm: s2ram Tainted: G        W      3.18.0-rc3-koelsch-01614-g0377af242bb175c8-dirty #589
+    task: eeec5240 ti: ee704000 task.ti: ee704000
+    PC is at __cpufreq_add_dev.isra.24+0x24c/0x77c
+    LR is at __cpufreq_add_dev.isra.24+0x244/0x77c
+    pc : [<c0298efc>]    lr : [<c0298ef4>]    psr: 60000153
+    sp : ee705d48  ip : ee705d48  fp : ee705d84
+    r10: c04e0450  r9 : 00000000  r8 : 00000001
+    r7 : c05426a8  r6 : 00000001  r5 : 00000001  r4 : 00000000
+    r3 : 00000000  r2 : 00000000  r1 : 20000153  r0 : c0542734
 
-The problem is this: tracing_buffers_splice_read() calls
-ring_buffer_wait() to wait for data in the ring buffers.  The buffers
-are not empty so ring_buffer_wait() returns immediately.  But
-tracing_buffers_splice_read() calls ring_buffer_read_page() with full=1,
-meaning it only wants to read a full page.  When the full page is not
-available, tracing_buffers_splice_read() tries to wait again with
-ring_buffer_wait(), which again returns immediately, and so on.
+Verify that policy is not NULL before dereferencing it to fix this.
 
-Fix this by adding a "full" argument to ring_buffer_wait() which will
-make ring_buffer_wait() wait until the writer has left the reader's
-page, i.e.  until full-page reads will succeed.
-
-Link: http://lkml.kernel.org/r/1415645194-25379-1-git-send-email-rabin@rab.in
-
-Fixes: b1169cc69ba9 ("tracing: Remove mock up poll wait function")
-Signed-off-by: Rabin Vincent <rabin@rab.in>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Fixes: 8414809c6a1e (cpufreq: Preserve policy structure across suspend/resume)
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/ring_buffer.h |  2 +-
- kernel/trace/ring_buffer.c  | 81 ++++++++++++++++++++++++++++++---------------
- kernel/trace/trace.c        | 23 ++++---------
- 3 files changed, 62 insertions(+), 44 deletions(-)
+ drivers/cpufreq/cpufreq.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/ring_buffer.h b/include/linux/ring_buffer.h
-index 49a4d6f59108..e2c13cd863bd 100644
---- a/include/linux/ring_buffer.h
-+++ b/include/linux/ring_buffer.h
-@@ -97,7 +97,7 @@ __ring_buffer_alloc(unsigned long size, unsigned flags, struct lock_class_key *k
- 	__ring_buffer_alloc((size), (flags), &__key);	\
- })
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index c06668f4e8c1..8daa0c95aa21 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1022,7 +1022,8 @@ static struct cpufreq_policy *cpufreq_policy_restore(unsigned int cpu)
  
--int ring_buffer_wait(struct ring_buffer *buffer, int cpu);
-+int ring_buffer_wait(struct ring_buffer *buffer, int cpu, bool full);
- int ring_buffer_poll_wait(struct ring_buffer *buffer, int cpu,
- 			  struct file *filp, poll_table *poll_table);
+ 	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
  
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 51862982e1e9..80516c7cee86 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -538,16 +538,18 @@ static void rb_wake_up_waiters(struct irq_work *work)
-  * ring_buffer_wait - wait for input to the ring buffer
-  * @buffer: buffer to wait on
-  * @cpu: the cpu buffer to wait on
-+ * @full: wait until a full page is available, if @cpu != RING_BUFFER_ALL_CPUS
-  *
-  * If @cpu == RING_BUFFER_ALL_CPUS then the task will wake up as soon
-  * as data is added to any of the @buffer's cpu buffers. Otherwise
-  * it will wait for data to be added to a specific cpu buffer.
-  */
--int ring_buffer_wait(struct ring_buffer *buffer, int cpu)
-+int ring_buffer_wait(struct ring_buffer *buffer, int cpu, bool full)
- {
--	struct ring_buffer_per_cpu *cpu_buffer;
-+	struct ring_buffer_per_cpu *uninitialized_var(cpu_buffer);
- 	DEFINE_WAIT(wait);
- 	struct rb_irq_work *work;
-+	int ret = 0;
+-	policy->governor = NULL;
++	if (policy)
++		policy->governor = NULL;
  
- 	/*
- 	 * Depending on what the caller is waiting for, either any
-@@ -564,36 +566,61 @@ int ring_buffer_wait(struct ring_buffer *buffer, int cpu)
- 	}
- 
- 
--	prepare_to_wait(&work->waiters, &wait, TASK_INTERRUPTIBLE);
-+	while (true) {
-+		prepare_to_wait(&work->waiters, &wait, TASK_INTERRUPTIBLE);
- 
--	/*
--	 * The events can happen in critical sections where
--	 * checking a work queue can cause deadlocks.
--	 * After adding a task to the queue, this flag is set
--	 * only to notify events to try to wake up the queue
--	 * using irq_work.
--	 *
--	 * We don't clear it even if the buffer is no longer
--	 * empty. The flag only causes the next event to run
--	 * irq_work to do the work queue wake up. The worse
--	 * that can happen if we race with !trace_empty() is that
--	 * an event will cause an irq_work to try to wake up
--	 * an empty queue.
--	 *
--	 * There's no reason to protect this flag either, as
--	 * the work queue and irq_work logic will do the necessary
--	 * synchronization for the wake ups. The only thing
--	 * that is necessary is that the wake up happens after
--	 * a task has been queued. It's OK for spurious wake ups.
--	 */
--	work->waiters_pending = true;
-+		/*
-+		 * The events can happen in critical sections where
-+		 * checking a work queue can cause deadlocks.
-+		 * After adding a task to the queue, this flag is set
-+		 * only to notify events to try to wake up the queue
-+		 * using irq_work.
-+		 *
-+		 * We don't clear it even if the buffer is no longer
-+		 * empty. The flag only causes the next event to run
-+		 * irq_work to do the work queue wake up. The worse
-+		 * that can happen if we race with !trace_empty() is that
-+		 * an event will cause an irq_work to try to wake up
-+		 * an empty queue.
-+		 *
-+		 * There's no reason to protect this flag either, as
-+		 * the work queue and irq_work logic will do the necessary
-+		 * synchronization for the wake ups. The only thing
-+		 * that is necessary is that the wake up happens after
-+		 * a task has been queued. It's OK for spurious wake ups.
-+		 */
-+		work->waiters_pending = true;
-+
-+		if (signal_pending(current)) {
-+			ret = -EINTR;
-+			break;
-+		}
-+
-+		if (cpu == RING_BUFFER_ALL_CPUS && !ring_buffer_empty(buffer))
-+			break;
-+
-+		if (cpu != RING_BUFFER_ALL_CPUS &&
-+		    !ring_buffer_empty_cpu(buffer, cpu)) {
-+			unsigned long flags;
-+			bool pagebusy;
-+
-+			if (!full)
-+				break;
-+
-+			raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
-+			pagebusy = cpu_buffer->reader_page == cpu_buffer->commit_page;
-+			raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
-+
-+			if (!pagebusy)
-+				break;
-+		}
- 
--	if ((cpu == RING_BUFFER_ALL_CPUS && ring_buffer_empty(buffer)) ||
--	    (cpu != RING_BUFFER_ALL_CPUS && ring_buffer_empty_cpu(buffer, cpu)))
- 		schedule();
-+	}
- 
- 	finish_wait(&work->waiters, &wait);
--	return 0;
-+
-+	return ret;
+ 	return policy;
  }
- 
- /**
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 291397e66669..bbf1381c2201 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1099,13 +1099,14 @@ update_max_tr_single(struct trace_array *tr, struct task_struct *tsk, int cpu)
- }
- #endif /* CONFIG_TRACER_MAX_TRACE */
- 
--static int wait_on_pipe(struct trace_iterator *iter)
-+static int wait_on_pipe(struct trace_iterator *iter, bool full)
- {
- 	/* Iterators are static, they should be filled or empty */
- 	if (trace_buffer_iter(iter, iter->cpu_file))
- 		return 0;
- 
--	return ring_buffer_wait(iter->trace_buffer->buffer, iter->cpu_file);
-+	return ring_buffer_wait(iter->trace_buffer->buffer, iter->cpu_file,
-+				full);
- }
- 
- #ifdef CONFIG_FTRACE_STARTUP_TEST
-@@ -4412,15 +4413,12 @@ static int tracing_wait_pipe(struct file *filp)
- 
- 		mutex_unlock(&iter->mutex);
- 
--		ret = wait_on_pipe(iter);
-+		ret = wait_on_pipe(iter, false);
- 
- 		mutex_lock(&iter->mutex);
- 
- 		if (ret)
- 			return ret;
--
--		if (signal_pending(current))
--			return -EINTR;
- 	}
- 
- 	return 1;
-@@ -5343,16 +5341,12 @@ tracing_buffers_read(struct file *filp, char __user *ubuf,
- 				goto out_unlock;
- 			}
- 			mutex_unlock(&trace_types_lock);
--			ret = wait_on_pipe(iter);
-+			ret = wait_on_pipe(iter, false);
- 			mutex_lock(&trace_types_lock);
- 			if (ret) {
- 				size = ret;
- 				goto out_unlock;
- 			}
--			if (signal_pending(current)) {
--				size = -EINTR;
--				goto out_unlock;
--			}
- 			goto again;
- 		}
- 		size = 0;
-@@ -5558,14 +5552,11 @@ tracing_buffers_splice_read(struct file *file, loff_t *ppos,
- 			goto out;
- 		}
- 		mutex_unlock(&trace_types_lock);
--		ret = wait_on_pipe(iter);
-+		ret = wait_on_pipe(iter, true);
- 		mutex_lock(&trace_types_lock);
- 		if (ret)
- 			goto out;
--		if (signal_pending(current)) {
--			ret = -EINTR;
--			goto out;
--		}
-+
- 		goto again;
- 	}
- 
 -- 
 2.1.0
 
