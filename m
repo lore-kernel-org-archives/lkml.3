@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751321AbaKYAyF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 19:54:05 -0500
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:54751 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772AbaKYAyD convert rfc822-to-8bit (ORCPT
+	id S1751540AbaKYAzW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 19:55:22 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:58485 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750830AbaKYAzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 19:54:03 -0500
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Mitchel Humpherys <mitchelh@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Matt Wagantall <mattw@codeaurora.org>,
-        "Don Brace (PMC)" <Don.Brace@pmcs.com>,
-        "Scales, Webb" <webb.scales@hp.com>
-Subject: RE: [PATCH RESEND v8] iopoll: Introduce memory-mapped IO polling
- macros
-Thread-Topic: [PATCH RESEND v8] iopoll: Introduce memory-mapped IO polling
- macros
-Thread-Index: AQHQCCNtAqVL7P1v/0SqGz4Bzc5Be5xwgPlA
-Date: Tue, 25 Nov 2014 00:53:19 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B4029593C5E1F@G9W0745.americas.hpqcorp.net>
-References: <1416860092-11620-1-git-send-email-mitchelh@codeaurora.org>
-In-Reply-To: <1416860092-11620-1-git-send-email-mitchelh@codeaurora.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.37]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 24 Nov 2014 19:55:20 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>
+Cc: Lan Tianyu <tianyu.lan@intel.com>, lenb@kernel.org, wsa@the-dreams.de,
+        robert.moore@intel.com, lv.zheng@intel.com, shigorin@gmail.com,
+        adamw@happyassassin.net, jan.brummer@tabos.org,
+        mika.westerberg@linux.intel.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        devel@acpica.org
+Subject: Re: [PATCH V3] ACPI: Add _DEP(Operation Region Dependencies) support to fix battery issue on the Asus T100TA
+Date: Tue, 25 Nov 2014 02:16:32 +0100
+Message-ID: <2504006.9dfaR2IgVp@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5473CADA.6040307@linux.intel.com>
+References: <1416748974-24124-1-git-send-email-tianyu.lan@intel.com> <1720074.U59stZW2tQ@vostro.rjw.lan> <5473CADA.6040307@linux.intel.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Mitchel Humpherys
-> Sent: Monday, 24 November, 2014 2:15 PM
-...
-> From: Matt Wagantall <mattw@codeaurora.org>
+On Tuesday, November 25, 2014 08:18:34 AM Li, Aubrey wrote:
+> On 2014/11/24 23:27, Rafael J. Wysocki wrote:
+> > On Monday, November 24, 2014 10:39:55 AM Li, Aubrey wrote:
+> >> On 2014/11/23 21:22, Lan Tianyu wrote:
+> >>> ACPI 5.0 introduces _DEP to designate device objects that OSPM should
+> >>> assign a higher priority in start ordering due to future operation region
+> >>> accesses.
+> >>>
+> >>> On Asus T100TA, ACPI battery info are read from a I2C slave device via
+> >>> I2C operation region. Before I2C operation region handler is installed,
+> >>> battery _STA always returns 0. There is a _DEP method of designating
+> >>> start order under battery device node.
+> >>>
+> >>> This patch is to implement _DEP feature to fix battery issue on the Asus T100TA.
+> >>> Introducing acpi_dep_list and adding dep_unmet count in the struct
+> >>> acpi_device. During ACPI namespace scan, create struct acpi_dep_data for a
+> >>> valid pair of master (device pointed to by _DEP)/slave(device with _DEP), record
+> >>> master's and slave's ACPI handle in it and put it into acpi_dep_list. The dep_unmet
+> >>> count will increase by one if there is a device under its _DEP. Driver's probe() should
+> >>> return EPROBE_DEFER when find dep_unmet is larger than 0. When I2C operation
+> >>> region handler is installed, remove all struct acpi_dep_data on the acpi_dep_list
+> >>> whose master is pointed to I2C host controller and decrease slave's dep_unmet.
+> >>> When dep_unmet decreases to 0, all _DEP conditions are met and then do acpi_bus_attach()
+> >>> for the device in order to resolve battery _STA issue on the Asus T100TA.
+> >>
+> >> Well, Can we explicitly tied this up with ASUS T100TA in the code?
+> >> If I understand correctly, the assumption in the patch is that the
+> >> battery device only depends on I2C device, which is true on ASUS T100TA,
+> >> but may not on the other platforms.
+> >>
+> >> This patch does not work on a box I have, on it _DEP contains I2C and GPIO.
+> > 
+> > Does the patch break anything for you?
 > 
-> It is sometimes necessary to poll a memory-mapped register until its value
-> satisfies some condition. Introduce a family of convenience macros that do
-> this. Tight-looping, sleeping, and timing out can all be accomplished
-> using these macros.
-> 
-...
-> +#define readx_poll_timeout(op, addr, val, cond, sleep_us, timeout_us)	\
-> +({ \
-> +	ktime_t timeout = ktime_add_us(ktime_get(), timeout_us); \
-> +	might_sleep_if(sleep_us); \
-> +	for (;;) { \
-> +		(val) = op(addr); \
-> +		if (cond) \
-> +			break; \
-> +		if (timeout_us && ktime_compare(ktime_get(), timeout) > 0) {
-> \
-> +			(val) = op(addr); \
-> +			break; \
-> +		} \
-> +		if (sleep_us) \
-> +			usleep_range((sleep_us >> 2) + 1, sleep_us); \
+> Not I'm aware so far.
 
-The hpsa SCSI driver used to use usleep_range in a loop like 
-that, but we found that it caused scheduler problems during
-boots because it uses TASK_UNINTERRUPTIBLE:
-[    9.260668] [sched_delayed] sched: RT throttling activated
+OK
 
-msleep() worked much better.
+It is not a complete solution, but it is an improvement.  It evidently helps
+people.
 
----
-Rob Elliott    HP Server Storage
-
-
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
