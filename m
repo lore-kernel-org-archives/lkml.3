@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940AbaKYKnH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:43:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58953 "EHLO
+	id S1754573AbaKYLBg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:01:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58993 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753877AbaKYKnA (ORCPT
+	with ESMTP id S1753938AbaKYKnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:43:00 -0500
+	Tue, 25 Nov 2014 05:43:07 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 190/254] param: fix crash on bad kernel arguments
-Date: Tue, 25 Nov 2014 10:39:00 +0000
-Message-Id: <1416912004-5928-191-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 199/254] NFSv4: Ensure that we call FREE_STATEID when NFSv4.x stateids are revoked
+Date: Tue, 25 Nov 2014 10:39:09 +0000
+Message-Id: <1416912004-5928-200-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,45 +27,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Thompson <daniel.thompson@linaro.org>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 3438cf549d2f3ee8e52c82acc8e2a9710ac21a5b upstream.
+commit c606bb8857921d3ecf4d353942d6cc7e116cc75a upstream.
 
-Currently if the user passes an invalid value on the kernel command line
-then the kernel will crash during argument parsing. On most systems this
-is very hard to debug because the console hasn't been initialized yet.
+NFSv4.x (x>0) requires us to call TEST_STATEID+FREE_STATEID if a stateid is
+revoked. We will currently fail to do this if the stateid is a delegation.
 
-This is a regression due to commit 51e158c12aca ("param: hand arguments
-after -- straight to init") which, in response to the systemd debug
-controversy, made it possible to explicitly pass arguments to init. To
-achieve this parse_args() was extended from simply returning an error
-code to returning a pointer. Regretably the new init args logic does not
-perform a proper validity check on the pointer resulting in a crash.
-
-This patch fixes the validity check. Should the check fail then no arguments
-will be passed to init. This is reasonable and matches how the kernel treats
-its own arguments (i.e. no error recovery).
-
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+http://lkml.kernel.org/r/CAN-5tyHwG=Cn2Q9KsHWadewjpTTy_K26ee+UnSvHvG4192p-Xw@mail.gmail.com
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- init/main.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/filelayout/filelayout.c | 3 ---
+ fs/nfs/nfs4proc.c              | 8 --------
+ 2 files changed, 11 deletions(-)
 
-diff --git a/init/main.c b/init/main.c
-index e8ae1fef0908..ed5f48edc7a8 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -544,7 +544,7 @@ asmlinkage __visible void __init start_kernel(void)
- 				  static_command_line, __start___param,
- 				  __stop___param - __start___param,
- 				  -1, -1, &unknown_bootoption);
--	if (after_dashes)
-+	if (!IS_ERR_OR_NULL(after_dashes))
- 		parse_args("Setting init args", after_dashes, NULL, 0, -1, -1,
- 			   set_init_arg);
- 
+diff --git a/fs/nfs/filelayout/filelayout.c b/fs/nfs/filelayout/filelayout.c
+index a596a1938b52..b2f8f17dcc3b 100644
+--- a/fs/nfs/filelayout/filelayout.c
++++ b/fs/nfs/filelayout/filelayout.c
+@@ -151,9 +151,6 @@ static int filelayout_async_handle_error(struct rpc_task *task,
+ 	case -NFS4ERR_DELEG_REVOKED:
+ 	case -NFS4ERR_ADMIN_REVOKED:
+ 	case -NFS4ERR_BAD_STATEID:
+-		if (state == NULL)
+-			break;
+-		nfs_remove_bad_delegation(state->inode);
+ 	case -NFS4ERR_OPENMODE:
+ 		if (state == NULL)
+ 			break;
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 23d982183aac..2768d382a4d1 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -360,11 +360,6 @@ static int nfs4_handle_exception(struct nfs_server *server, int errorcode, struc
+ 		case -NFS4ERR_DELEG_REVOKED:
+ 		case -NFS4ERR_ADMIN_REVOKED:
+ 		case -NFS4ERR_BAD_STATEID:
+-			if (inode != NULL && nfs4_have_delegation(inode, FMODE_READ)) {
+-				nfs_remove_bad_delegation(inode);
+-				exception->retry = 1;
+-				break;
+-			}
+ 			if (state == NULL)
+ 				break;
+ 			ret = nfs4_schedule_stateid_recovery(server, state);
+@@ -4780,9 +4775,6 @@ nfs4_async_handle_error(struct rpc_task *task, const struct nfs_server *server,
+ 		case -NFS4ERR_DELEG_REVOKED:
+ 		case -NFS4ERR_ADMIN_REVOKED:
+ 		case -NFS4ERR_BAD_STATEID:
+-			if (state == NULL)
+-				break;
+-			nfs_remove_bad_delegation(state->inode);
+ 		case -NFS4ERR_OPENMODE:
+ 			if (state == NULL)
+ 				break;
 -- 
 2.1.0
 
