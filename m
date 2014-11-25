@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751045AbaKYQZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 11:25:27 -0500
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:64095 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869AbaKYQZX (ORCPT
+	id S1751360AbaKYQZg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 11:25:36 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:33430 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751294AbaKYQZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 11:25:23 -0500
+	Tue, 25 Nov 2014 11:25:31 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com, tglx@linutronix.de,
         jason@lakedaemon.net, devicetree@vger.kernel.org
-Subject: [PATCH v2 1/8] dt: bindings: Supply shared ST IRQ defines
-Date: Tue, 25 Nov 2014 16:24:58 +0000
-Message-Id: <1416932705-16880-2-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH v2 4/8] ARM: STi: STiH416: Enable Cortex-A9 PMU support
+Date: Tue, 25 Nov 2014 16:25:01 +0000
+Message-Id: <1416932705-16880-5-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1416932705-16880-1-git-send-email-lee.jones@linaro.org>
 References: <1416932705-16880-1-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These defines are used to allow values used for configuration to be
-easily human readable and will lessen the chance of logical mistakes.
+This is ARM's generic Performance Monitoring Unit.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- include/dt-bindings/interrupt-controller/irq-st.h | 30 +++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
- create mode 100644 include/dt-bindings/interrupt-controller/irq-st.h
+ arch/arm/boot/dts/stih416.dtsi | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/include/dt-bindings/interrupt-controller/irq-st.h b/include/dt-bindings/interrupt-controller/irq-st.h
-new file mode 100644
-index 0000000..4c59ace
---- /dev/null
-+++ b/include/dt-bindings/interrupt-controller/irq-st.h
-@@ -0,0 +1,30 @@
-+/*
-+ *  include/linux/irqchip/irq-st.h
-+ *
-+ *  Copyright (C) 2014 STMicroelectronics – All Rights Reserved
-+ *
-+ *  Author: Lee Jones <lee.jones@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
+diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
+index 84758d7..badefd6 100644
+--- a/arch/arm/boot/dts/stih416.dtsi
++++ b/arch/arm/boot/dts/stih416.dtsi
+@@ -21,6 +21,12 @@
+ 		cache-level = <2>;
+ 	};
+ 
++	arm-pmu {
++		compatible = "arm,cortex-a9-pmu";
++		interrupt-parent = <&intc>;
++		interrupts = <GIC_PPI 15 IRQ_TYPE_LEVEL_HIGH>;
++	};
 +
-+#ifndef _DT_BINDINGS_INTERRUPT_CONTROLLER_ST_H
-+#define _DT_BINDINGS_INTERRUPT_CONTROLLER_ST_H
-+
-+#define ST_IRQ_SYSCFG_EXT_0		0
-+#define ST_IRQ_SYSCFG_EXT_1		1
-+#define ST_IRQ_SYSCFG_EXT_2		2
-+#define ST_IRQ_SYSCFG_CTI_0		3
-+#define ST_IRQ_SYSCFG_CTI_1		4
-+#define ST_IRQ_SYSCFG_PMU_0		5
-+#define ST_IRQ_SYSCFG_PMU_1		6
-+#define ST_IRQ_SYSCFG_pl310_L2		7
-+#define ST_IRQ_SYSCFG_DISABLED		0xFFFFFFFF
-+
-+#define ST_IRQ_SYSCFG_EXT_1_INV		0x1
-+#define ST_IRQ_SYSCFG_EXT_2_INV		0x2
-+#define ST_IRQ_SYSCFG_EXT_3_INV		0x4
-+
-+#endif
+ 	soc {
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
 -- 
 1.9.1
 
