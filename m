@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595AbaKYMCe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 07:02:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58079 "EHLO
+	id S1756104AbaKYMCz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 07:02:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58074 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643AbaKYKkb (ORCPT
+	with ESMTP id S1752635AbaKYKka (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:40:31 -0500
+	Tue, 25 Nov 2014 05:40:30 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oliver Neukum <oneukum@suse.de>,
+Cc: Adel Gadllah <adel.gadllah@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 025/254] xhci: no switching back on non-ULT Haswell
-Date: Tue, 25 Nov 2014 10:36:15 +0000
-Message-Id: <1416912004-5928-26-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 024/254] USB: quirks: enable device-qualifier quirk for yet another Elan touchscreen
+Date: Tue, 25 Nov 2014 10:36:14 +0000
+Message-Id: <1416912004-5928-25-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,46 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Adel Gadllah <adel.gadllah@gmail.com>
 
-commit b45abacde3d551c6696c6738bef4a1805d0bf27a upstream.
+commit d749947561af5996ccc076b2ffcc5f48b1be5d74 upstream.
 
-The switch back is limited to ULT even on HP. The contrary
-finding arose by bad luck in BIOS versions for testing.
-This fixes spontaneous resume from S3 on some HP laptops.
+Yet another device affected by this.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Tested-by: Kevin Fenzi <kevin@scrye.com>
+Signed-off-by: Adel Gadllah <adel.gadllah@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/host/xhci-pci.c | 14 --------------
- 1 file changed, 14 deletions(-)
+ drivers/usb/core/quirks.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index ea14b663c8b2..d71aa5a97f0d 100644
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -126,20 +126,6 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
- 		xhci->quirks |= XHCI_AVOID_BEI;
- 	}
- 	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
--	    (pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_XHCI ||
--	     pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_XHCI)) {
--		/* Workaround for occasional spurious wakeups from S5 (or
--		 * any other sleep) on Haswell machines with LPT and LPT-LP
--		 * with the new Intel BIOS
--		 */
--		/* Limit the quirk to only known vendors, as this triggers
--		 * yet another BIOS bug on some other machines
--		 * https://bugzilla.kernel.org/show_bug.cgi?id=66171
--		 */
--		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
--			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
--	}
--	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
- 		pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_XHCI) {
- 		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
- 	}
+diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+index 16b8e285ce75..c85459338991 100644
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -100,6 +100,9 @@ static const struct usb_device_id usb_quirk_list[] = {
+ 	{ USB_DEVICE(0x04f3, 0x009b), .driver_info =
+ 			USB_QUIRK_DEVICE_QUALIFIER },
+ 
++	{ USB_DEVICE(0x04f3, 0x016f), .driver_info =
++			USB_QUIRK_DEVICE_QUALIFIER },
++
+ 	/* Roland SC-8820 */
+ 	{ USB_DEVICE(0x0582, 0x0007), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
 -- 
 2.1.0
 
