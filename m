@@ -1,108 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125AbaKYHUg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 02:20:36 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:58254 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016AbaKYHUZ (ORCPT
+	id S1751995AbaKYHUS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 02:20:18 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:56479 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770AbaKYHUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 02:20:25 -0500
-X-Originating-IP: 50.43.41.112
-Date: Mon, 24 Nov 2014 23:20:13 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Catalina Mocanu <catalina.mocanu@gmail.com>
-Subject: Re: linux-next: manual merge of the tiny tree with the tip tree
-Message-ID: <20141125072013.GB1691@thin>
-References: <20141125170315.13157c60@canb.auug.org.au>
- <20141125061645.GA15512@gmail.com>
- <CALAqxLUKM7VyB6MW=-Mm+NA2pOEtD1CP3FxrmA_1gCucGon4hA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALAqxLUKM7VyB6MW=-Mm+NA2pOEtD1CP3FxrmA_1gCucGon4hA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 25 Nov 2014 02:20:14 -0500
+From: Pieter Smith <pieter@boesman.nl>
+To: pieter@boesman.nl
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bertrand Jacquin <beber@meleeweb.net>,
+        Catalina Mocanu <catalina.mocanu@gmail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Fabian Frederick <fabf@skynet.be>,
+        fuse-devel@lists.sourceforge.net (open list:FUSE: FILESYSTEM...),
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Hugh Dickins <hughd@google.com>, Iulia Manda <iulia.manda21@gmail.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Jeff Layton <jlayton@poochiereds.net>,
+        linux-api@vger.kernel.org (open list:ABI/API),
+        linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org (open list),
+        linux-nfs@vger.kernel.org (open list:KERNEL NFSD, SUNR...),
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Matt Turner <mattst88@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        netdev@vger.kernel.org (open list:NETWORKING [GENERAL]),
+        Oleg Nesterov <oleg@redhat.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Foley <pefoley2@pefoley.com>, Thomas Graf <tgraf@suug.ch>,
+        Tom Herbert <therbert@google.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Willem de Bruijn <willemb@google.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        =?UTF-8?q?=E8=94=A1=E6=AD=A3=E9=BE=99?= <zhenglong.cai@cs2c.com.cn>
+Subject: [PATCH v5 0/7] kernel tinification: optionally compile out splice family of syscalls (splice, vmsplice, tee and sendfile)
+Date: Tue, 25 Nov 2014 08:19:35 +0100
+Message-Id: <1416899996-21315-1-git-send-email-pieter@boesman.nl>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 10:30:10PM -0800, John Stultz wrote:
-> On Mon, Nov 24, 2014 at 10:16 PM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >
-> >> Hi Josh,
-> >>
-> >> Today's linux-next merge of the tiny tree got a conflict in
-> >> kernel/time/Makefile between commit fd866e2b116b ("time: Rename
-> >> udelay_test.c to test_udelay.c") from the tip tree and commit
-> >> d1f6d68d03ea ("kernel: time: Compile out NTP support") from the tiny
-> >> tree.
-> >
-> > So I think a timer subsystem commit d1f6d68d03ea with this
-> > magnitude of linecount increase:
-> >
-> >  Signed-off-by: Catalina Mocanu <catalina.mocanu@gmail.com>
-> >  [josh: Handle CONFIG_COMPAT=y.]
-> >  Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> >  Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-> >  ---
-> >   drivers/pps/Kconfig        |  2 +-
-> >   include/linux/timex.h      | 15 +++++++++++++--
-> >   init/Kconfig               | 10 ++++++++++
-> >   kernel/compat.c            |  8 ++++++--
-> >   kernel/sys_ni.c            |  4 ++++
-> >   kernel/time/Makefile       |  3 ++-
-> >   kernel/time/ntp_internal.h | 28 ++++++++++++++++++++++++++++
-> >   kernel/time/posix-timers.c |  2 ++
-> >   kernel/time/time.c         |  2 ++
-> >   kernel/time/timekeeping.c  |  2 ++
-> >   10 files changed, 70 insertions(+), 6 deletions(-)
-> >
-> > at minimum needs the ack of timer folks, before it can be
-> > committed to Git. Or is the tiny tree plan to submit all
-> > patches to the appropriate subsystem or gather acks, before
-> > sending it upstream?
-> 
-> Yea.  From first glance d1f6d68d03ea looks fairly broken.
-> 
-> Returning 0 for ntp_tick_length() (which should be the current tick
-> length in NTP_SCALE_SHIFT shifted ns), seems like it would cause major
-> timekeeping problems.
+REPO: https://github.com/smipi1/linux-tinification.git
 
-Ouch, yeah; I'm impressed the kernel successfully booted that way (which
-I did test).
+BRANCH: tiny/config-syscall-splice
 
-Computing the tick_length to return seems to require a div_u64; is it
-safe to initialize a static const with the result of calling div_u64, or
-does the intializer need manual constant-folding to make the expression
-compile-time computable?
+BACKGROUND: This patch-set forms part of the Linux Kernel Tinification effort (
+  https://tiny.wiki.kernel.org/).
 
-Going by the logic in ntp_update_frequency, it looks like the stub
-ntp_tick_length needs to return:
+GOAL: Support compiling out the splice family of syscalls (splice, vmsplice,
+  tee and sendfile) along with all supporting infrastructure if not needed.
+  Many embedded systems will not need the splice-family syscalls. Omitting them
+  saves space.
 
-tick_length_base = 0;
-tick_usec = TICK_USEC;
-second_length = (u64)(tick_usec * NSEC_PER_USEC * USER_HZ) << NTP_SCALE_SHIFT;
-new_base = div_u64(second_length, NTP_INTERVAL_FREQ);
-tick_length += new_base - tick_length_base;
+HISTORY:
+  PATCH v5:
+    - Fix up commit log still refering to dropped __splice_p()
 
-(tick_length starts out 0, gets new_base - 0 added initially, and every
-subsequent time gets 0 added since tick_length_base won't change.)
+  PATCH v4:
+    - Drops __splice_p()
+    - Let nfsd fall back to non-splice support when splice is compiled out
+    - Style fixes
+  
+  PATCH v3:
+    - Fixup commit logs so that they are consistent with patch strategy
+    - Style fixes
+  
+  PATCH v2:
+    - Avoid the ifdef mess introduced in PATCH v1 by mocking out exported splice
+      functions.
 
-Substituting and simplifying:
+STRATEGY:
+a. With the goal of eventually compiling out fs/splice.c, several functions
+   that are only used in support of the the splice family of syscalls are moved
+   into fs/splice.c from fs/read_write.c. The kernel_write function that is not
+   used to support the splice syscalls is moved to fs/read_write.c.
 
-tick_length = new_base
-            = div_u64(second_length, NTP_INTERVAL_FREQ)
-            = div_u64((TICK_USEC * NSEC_PER_USEC * USER_HZ) << NTP_SCALE_SHIFT, NTP_INTERVAL_FREQ)
+b. Introduce an EXPERT kernel configuration option; CONFIG_SYSCALL_SPLICE; to
+   compile out the splice family of syscalls. This removes all userspace uses
+   of the splice infrastructure.
 
-The numerator there could potentially be simplified, but I don't see an
-obvious way around the division by NTP_INTERVAL_FREQ (defined as HZ).
+c. Splice exports an operations struct, nosteal_pipe_buf_ops. Eliminate the 
+   uses of this struct when CONFIG_SYSCALL_SPLICE is undefined, so that splice
+   can later be compiled out.
 
-- Josh Triplett
+d. Let nfsd fall back to non-splice support when splice is compiled out.
+
+e. Compile out fs/splice.c. Functions exported by fs/splice are mocked out with
+   failing static inlines. This is done so as to all but eliminate the
+   maintenance burden on file-system drivers.
+
+RESULTS: A tinyconfig bloat-o-meter score for the entire patch-set:
+
+add/remove: 0/41 grow/shrink: 5/7 up/down: 23/-8422 (-8399)
+function                                     old     new   delta
+sys_pwritev                                  115     122      +7
+sys_preadv                                   115     122      +7
+fdput_pos                                     29      36      +7
+sys_pwrite64                                 115     116      +1
+sys_pread64                                  115     116      +1
+pipe_to_null                                   4       -      -4
+generic_pipe_buf_nosteal                       6       -      -6
+spd_release_page                              10       -     -10
+fdput                                         11       -     -11
+PageUptodate                                  22      11     -11
+lock_page                                     36      24     -12
+signal_pending                                39      26     -13
+fdget                                         56      42     -14
+page_cache_pipe_buf_release                   16       -     -16
+user_page_pipe_buf_ops                        20       -     -20
+splice_write_null                             24       4     -20
+page_cache_pipe_buf_ops                       20       -     -20
+nosteal_pipe_buf_ops                          20       -     -20
+default_pipe_buf_ops                          20       -     -20
+generic_splice_sendpage                       24       -     -24
+user_page_pipe_buf_steal                      25       -     -25
+splice_shrink_spd                             27       -     -27
+pipe_to_user                                  43       -     -43
+direct_splice_actor                           47       -     -47
+default_file_splice_write                     49       -     -49
+wakeup_pipe_writers                           54       -     -54
+wakeup_pipe_readers                           54       -     -54
+write_pipe_buf                                71       -     -71
+page_cache_pipe_buf_confirm                   80       -     -80
+splice_grow_spd                               87       -     -87
+do_splice_to                                  87       -     -87
+ipipe_prep.part                               92       -     -92
+splice_from_pipe                              93       -     -93
+splice_from_pipe_next                        107       -    -107
+pipe_to_sendpage                             109       -    -109
+page_cache_pipe_buf_steal                    114       -    -114
+opipe_prep.part                              119       -    -119
+sys_sendfile                                 122       -    -122
+generic_file_splice_read                     131       8    -123
+sys_sendfile64                               126       -    -126
+sys_vmsplice                                 137       -    -137
+do_splice_direct                             148       -    -148
+vmsplice_to_user                             205       -    -205
+__splice_from_pipe                           246       -    -246
+splice_direct_to_actor                       348       -    -348
+splice_to_pipe                               371       -    -371
+do_sendfile                                  492       -    -492
+sys_tee                                      497       -    -497
+vmsplice_to_pipe                             558       -    -558
+default_file_splice_read                     688       -    -688
+iter_file_splice_write                       702       4    -698
+sys_splice                                  1075       -   -1075
+__generic_file_splice_read                  1109       -   -1109
+
+
+Pieter Smith (7):
+  fs: move sendfile syscall into fs/splice
+  fs: moved kernel_write to fs/read_write
+  fs/splice: support compiling out splice-family syscalls
+  fs/fuse: support compiling out splice
+  net/core: support compiling out splice
+  fs/nfsd: support compiling out splice
+  fs/splice: full support for compiling out splice
+
+ fs/Makefile            |   3 +-
+ fs/fuse/dev.c          |   9 ++-
+ fs/read_write.c        | 181 +++------------------------------------------
+ fs/splice.c            | 194 +++++++++++++++++++++++++++++++++++++++++++++----
+ include/linux/fs.h     |  26 +++++++
+ include/linux/skbuff.h |  10 +++
+ include/linux/splice.h |  42 +++++++++++
+ init/Kconfig           |  10 +++
+ kernel/sys_ni.c        |   8 ++
+ net/core/skbuff.c      |  11 ++-
+ net/sunrpc/svc.c       |   2 +-
+ 11 files changed, 302 insertions(+), 194 deletions(-)
+
+-- 
+2.1.0
+
