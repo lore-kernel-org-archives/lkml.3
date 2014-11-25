@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751200AbaKYSKo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 13:10:44 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:46418 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877AbaKYSKl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 13:10:41 -0500
-Date: Tue, 25 Nov 2014 10:10:32 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Miller <davem@davemloft.net>
-Cc: rdunlap@infradead.org, pieter@boesman.nl, josh@joshtriplett.org,
-        alexander.h.duyck@intel.com, viro@zeniv.linux.org.uk, ast@plumgrid.com,
-        akpm@linux-foundation.org, beber@meleeweb.net,
-        catalina.mocanu@gmail.com, dborkman@redhat.com, edumazet@google.com,
-        ebiederm@xmission.com, fabf@skynet.be,
-        fuse-devel@lists.sourceforge.net, geert@linux-m68k.org,
-        hughd@google.com, iulia.manda21@gmail.com, JBeulich@suse.com,
-        bfields@fieldses.org, jlayton@poochiereds.net,
-        linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        mcgrof@suse.com, mattst88@gmail.com, mgorman@suse.de, mst@redhat.com,
-        miklos@szeredi.hu, netdev@vger.kernel.org, oleg@redhat.com,
-        Paul.Durrant@citrix.com, pefoley2@pefoley.com, tgraf@suug.ch,
-        therbert@google.com, trond.myklebust@primarydata.com,
-        willemb@google.com, xiaoguangrong@linux.vnet.ibm.com,
-        zhenglong.cai@cs2c.com.cn
-Subject: Re: [PATCH v4 0/7] kernel tinification: optionally compile out
- splice family of syscalls (splice, vmsplice, tee and sendfile)
-Message-ID: <20141125181032.GJ5050@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1416870079-15254-1-git-send-email-pieter@boesman.nl>
- <5474ABB6.3030400@infradead.org>
- <20141125.121305.2094097848188324942.davem@davemloft.net>
+	id S1750984AbaKYSPc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 13:15:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59522 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750784AbaKYSPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 13:15:30 -0500
+Date: Tue, 25 Nov 2014 19:15:21 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Aaron Tomlin <atomlin@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Sterling Alexander <stalexan@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] exit: pidns: alloc_pid() leaks pid_namespace if
+	child_reaper is exiting
+Message-ID: <20141125181521.GA31963@redhat.com>
+References: <20141124200629.GA21009@redhat.com> <87vbm4ff0r.fsf@x220.int.ebiederm.org> <20141125170718.GA29360@redhat.com> <87lhmzb24c.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141125.121305.2094097848188324942.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112518-0025-0000-0000-000006613C45
+In-Reply-To: <87lhmzb24c.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 12:13:05PM -0500, David Miller wrote:
-> From: Randy Dunlap <rdunlap@infradead.org>
-> Date: Tue, 25 Nov 2014 08:17:58 -0800
-> 
-> > Is the splice family of syscalls the only one that tiny has identified
-> > for optional building or can we expect similar treatment for other
-> > syscalls?
-> > 
-> > Why will many embedded systems not need these syscalls?  You know
-> > exactly what apps they run and you are positive that those apps do
-> > not use splice?
-> 
-> I think starting to compile out system calls is a very slippery
-> slope we should not begin the journey down.
-> 
-> This changes the forward facing interface to userspace.
+On 11/25, Eric W. Biederman wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> writes:
+>
+> > On 11/24, Eric W. Biederman wrote:
+> >>
+> >> However at the moment my I can't figure out if it is safe to move
+> >> get_pid_ns elow hlist_add_head_rcu.  Because once we are on the rcu list
+> >> the pid is findable, and being publicly visible with a bad refcount could cause
+> >> problems.
+> >
+> > The caller has a reference, this ns can't go away. Obviously, otherwise
+> > get_pid_ns(ns) is not safe.
+> >
+> > We need this get_pid_ns() to balance put_pid()->put_pid_ns() which obviously
+> > won't be called until we return this pid, otherwise everything is wrong.
+> >
+> > So I think this should be safe?
+>
+> My concern is exposing a half initialized struct pid to the world via an
+> rcu data structure.  In particular could one of the rcu users get into
+> trouble because we haven't called get_pid_ns yet?  That is unclear to me.
 
-I certainly sympathize with this concern, given the importance of software
-portability.  However, the tiny-hardware alternative appears ot some sort
-of special-purpose embedded OS, which most definitely will suffer from
-software compatibility issues.  I guess that the good news is that much
-of the tiny hardware that used to be 8 or 16 bits is now 32 bits, which
-means that it has at least some chance of running some form of Linux.  ;-)
+They can't. This pid was fully initialized, in particular
+pid->numbers[pid->level].ns == ns has a reference.
 
-							Thanx, Paul
+Just it is not ready for put_pid() which will be called by the "owner" of
+this pid, the caller or the new child. So in this sense it doesn't matter
+when we call get_pid_ns(), just we need to do this before return.
+
+> That is one of those weird nasty races I would rather not have to
+> consider and moving the get_pid_ns after hlist_add requires that we
+> think about it.
+>
+> To fix the error handling and avoid thinking about the races we have two
+> choices:
+> - In the error path that is currently called out_unlock we can drop the
+>   extra references.
+> - Immediately after we perform the test that on error jumps to out_unlock
+>   we call get_pid_ns.
+>
+> My preference would be the first, as it is a trivially correct one line
+> change.
+>
+> Aka I think this is the obviously correct trivial fix.
+>
+>  out_unlock:
+>  	spin_unlock_irq(&pidmap_lock);
+> +	put_pid_ns(ns);
+
+Sure, initially I was going to do this. But this is sub-optimal imo, I mainly
+mean less clear (imho).
+
+But again, I won't argue. I'll send V2 once we finish the discussion about 2/2.
+
+Oleg.
 
