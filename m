@@ -1,410 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673AbaKYUhq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 15:37:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58739 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751606AbaKYUhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 15:37:43 -0500
-Subject: [PATCH v7 2/4] arch: Add lightweight memory barriers dma_rmb() and
- dma_wmb()
-From: Alexander Duyck <alexander.h.duyck@redhat.com>
-To: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: mathieu.desnoyers@polymtl.ca, peterz@infradead.org,
-        benh@kernel.crashing.org, heiko.carstens@de.ibm.com, mingo@kernel.org,
-        mikey@neuling.org, linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
-        matthew.vick@intel.com, geert@linux-m68k.org,
-        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
-        paulmck@linux.vnet.ibm.com, nic_swsd@realtek.com, arnd@arndb.de,
-        will.deacon@arm.com, michael@ellerman.id.au, tony.luck@intel.com,
-        torvalds@linux-foundation.org, oleg@redhat.com, schwidefsky@de.ibm.com,
-        fweisbec@gmail.com, davem@davemloft.net
-Date: Tue, 25 Nov 2014 12:35:29 -0800
-Message-ID: <20141125203528.8240.17865.stgit@ahduyck-server>
-In-Reply-To: <20141125203310.8240.27370.stgit@ahduyck-server>
-References: <20141125203310.8240.27370.stgit@ahduyck-server>
-User-Agent: StGit/0.17-dirty
+	id S1751797AbaKYUjA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 15:39:00 -0500
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:34035 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951AbaKYUi6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 15:38:58 -0500
+Date: Tue, 25 Nov 2014 16:38:47 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, Linux PM list <linux-pm@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        Caesar Wang <caesar.wang@rock-chips.com>
+Subject: Re: [PATCH v2 3/4] thermal: of: Extend of-thermal to export table of
+ trip points
+Message-ID: <20141125203845.GB14292@developer>
+References: <1412872737-624-1-git-send-email-l.majewski@samsung.com>
+ <1416500488-7232-1-git-send-email-l.majewski@samsung.com>
+ <1416500488-7232-4-git-send-email-l.majewski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="K8nIJk4ghYZn606h"
+Content-Disposition: inline
+In-Reply-To: <1416500488-7232-4-git-send-email-l.majewski@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are a number of situations where the mandatory barriers rmb() and
-wmb() are used to order memory/memory operations in the device drivers
-and those barriers are much heavier than they actually need to be.  For
-example in the case of PowerPC wmb() calls the heavy-weight sync
-instruction when for coherent memory operations all that is really needed
-is an lsync or eieio instruction.
 
-This commit adds a coherent only version of the mandatory memory barriers
-rmb() and wmb().  In most cases this should result in the barrier being the
-same as the SMP barriers for the SMP case, however in some cases we use a
-barrier that is somewhere in between rmb() and smp_rmb().  For example on
-ARM the rmb barriers break down as follows:
+--K8nIJk4ghYZn606h
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-  Barrier   Call     Explanation
-  --------- -------- ----------------------------------
-  rmb()     dsb()    Data synchronization barrier - system
-  dma_rmb() dmb(osh) data memory barrier - outer sharable
-  smp_rmb() dmb(ish) data memory barrier - inner sharable
+On Thu, Nov 20, 2014 at 05:21:27PM +0100, Lukasz Majewski wrote:
+> This patch extends the of-thermal.c to export copy of trip points for
+> a given thermal zone.
+>=20
+> Thermal drivers should use of_thermal_get_trip_points() method to get
+> pointer to table of thermal trip points.
+>=20
+> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> ---
+> Changes for v2:
+> - New patch - as suggested by Eduardo Valentin
+> ---
+>  drivers/thermal/of-thermal.c   | 33 +++++++++++++++++++++++++++++++++
+>  drivers/thermal/thermal_core.h |  7 +++++++
+>  include/linux/thermal.h        | 14 ++++++++++++++
+>  3 files changed, 54 insertions(+)
+>=20
+> diff --git a/drivers/thermal/of-thermal.c b/drivers/thermal/of-thermal.c
+> index 336af7f..33921c5 100644
+> --- a/drivers/thermal/of-thermal.c
+> +++ b/drivers/thermal/of-thermal.c
+> @@ -89,6 +89,7 @@ struct __thermal_zone {
+>  	/* trip data */
+>  	int ntrips;
+>  	struct __thermal_trip *trips;
+> +	struct thermal_trip *gtrips;
+> =20
+>  	/* cooling binding data */
+>  	int num_tbps;
+> @@ -152,6 +153,27 @@ bool of_thermal_is_trip_en(struct thermal_zone_devic=
+e *tz, int trip)
+>  	return true;
+>  }
+> =20
+> +/**
+> + * of_thermal_get_trip_points - function to get access to a globally exp=
+orted
+> + *				trip points
+> + *
+> + * @tz:	pointer to a thermal zone
+> + *
+> + * This function provides a pointer to the copy of trip points table
+> + *
+> + * Return: pointer to trip points table, NULL otherwise
+> + */
+> +const struct thermal_trip * const
+> +of_thermal_get_trip_points(struct thermal_zone_device *tz)
 
-These new barriers are not as safe as the standard rmb() and wmb().
-Specifically they do not guarantee ordering between coherent and incoherent
-memories.  The primary use case for these would be to enforce ordering of
-reads and writes when accessing coherent memory that is shared between the
-CPU and a device.
+Another thing, can you please check why scripts/kernel-doc does not like
+this prototype? It throws an warn:
+Warning(drivers/thermal/of-thermal.c:168): cannot understand function
+prototype: 'const struct thermal_trip * const
+of_thermal_get_trip_points(struct thermal_zone_device *tz) '
 
-It may also be noted that there is no dma_mb().  Most architectures don't
-provide a good mechanism for performing a coherent only full barrier without
-resorting to the same mechanism used in mb().  As such there isn't much to
-be gained in trying to define such a function.
 
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: Michael Ellerman <michael@ellerman.id.au>
-Cc: Michael Neuling <mikey@neuling.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: David Miller <davem@davemloft.net>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Alexander Duyck <alexander.h.duyck@redhat.com>
----
- Documentation/memory-barriers.txt   |   42 +++++++++++++++++++++++++++++++++++
- arch/arm/include/asm/barrier.h      |    4 +++
- arch/arm64/include/asm/barrier.h    |    3 +++
- arch/ia64/include/asm/barrier.h     |    3 +++
- arch/metag/include/asm/barrier.h    |   14 ++++++------
- arch/mips/include/asm/barrier.h     |    9 ++++----
- arch/powerpc/include/asm/barrier.h  |   13 +++++++----
- arch/s390/include/asm/barrier.h     |    2 ++
- arch/sparc/include/asm/barrier_64.h |    3 +++
- arch/x86/include/asm/barrier.h      |   11 ++++++---
- arch/x86/um/asm/barrier.h           |   13 ++++++-----
- include/asm-generic/barrier.h       |    8 +++++++
- 12 files changed, 99 insertions(+), 26 deletions(-)
+> +{
+> +	struct __thermal_zone *data =3D tz->devdata;
+> +
+> +	if (!data)
+> +		return NULL;
+> +
+> +	return data->gtrips;
+> +}
+> +
+>  static int of_thermal_get_trend(struct thermal_zone_device *tz, int trip,
+>  				enum thermal_trend *trend)
+>  {
+> @@ -767,6 +789,16 @@ thermal_of_build_thermal_zone(struct device_node *np)
+>  			goto free_tbps;
+>  	}
+> =20
+> +	tz->gtrips =3D kcalloc(tz->ntrips, sizeof(*tz->gtrips), GFP_KERNEL);
+> +	if (!tz->gtrips) {
+> +		ret =3D -ENOMEM;
+> +		goto free_tbps;
+> +	}
+> +
+> +	for (i =3D 0; i < tz->ntrips; i++)
+> +		memcpy(&(tz->gtrips[i]), &(tz->trips[i].temperature),
+> +		       sizeof(*tz->gtrips));
+> +
+>  finish:
+>  	of_node_put(child);
+>  	tz->mode =3D THERMAL_DEVICE_DISABLED;
+> @@ -793,6 +825,7 @@ static inline void of_thermal_free_zone(struct __ther=
+mal_zone *tz)
+>  {
+>  	int i;
+> =20
+> +	kfree(tz->gtrips);
+>  	for (i =3D 0; i < tz->num_tbps; i++)
+>  		of_node_put(tz->tbps[i].cooling_device);
+>  	kfree(tz->tbps);
+> diff --git a/drivers/thermal/thermal_core.h b/drivers/thermal/thermal_cor=
+e.h
+> index 466208c..a9580ca 100644
+> --- a/drivers/thermal/thermal_core.h
+> +++ b/drivers/thermal/thermal_core.h
+> @@ -91,6 +91,8 @@ int of_parse_thermal_zones(void);
+>  void of_thermal_destroy_zones(void);
+>  int of_thermal_get_ntrips(struct thermal_zone_device *);
+>  bool of_thermal_is_trip_en(struct thermal_zone_device *, int);
+> +const struct thermal_trip * const
+> +of_thermal_get_trip_points(struct thermal_zone_device *);
+>  #else
+>  static inline int of_parse_thermal_zones(void) { return 0; }
+>  static inline void of_thermal_destroy_zones(void) { }
+> @@ -102,6 +104,11 @@ static inline bool of_thermal_is_trip_en(struct ther=
+mal_zone_device *, int)
+>  {
+>  	return 0;
+>  }
+> +static inline const struct thermal_trip * const
+> +of_thermal_get_trip_points(struct thermal_zone_device *)
+> +{
+> +	return NULL;
+> +}
+>  #endif
+> =20
+>  #endif /* __THERMAL_CORE_H__ */
+> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> index 5bc28a7..88d7249 100644
+> --- a/include/linux/thermal.h
+> +++ b/include/linux/thermal.h
+> @@ -303,6 +303,20 @@ struct thermal_zone_of_device_ops {
+>  	int (*get_trend)(void *, long *);
+>  };
+> =20
+> +/**
+> + * struct thermal_trip - Structure representing themal trip points expor=
+ted from
+> + *                       of-thermal
+> + *
+> + * @temperature:	trip point temperature
+> + * @hysteresis:		trip point hysteresis
+> + * @type:		trip point type
+> + */
+> +struct thermal_trip {
+> +	unsigned long int temperature;
+> +	unsigned long int hysteresis;
+> +	enum thermal_trip_type type;
+> +};
+> +
+>  /* Function declarations */
+>  #ifdef CONFIG_THERMAL_OF
+>  struct thermal_zone_device *
+> --=20
+> 2.0.0.rc2
+>=20
 
-diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-index ef0ca7c..a85694b 100644
---- a/Documentation/memory-barriers.txt
-+++ b/Documentation/memory-barriers.txt
-@@ -1664,6 +1664,48 @@ There are some more advanced barrier functions:
-      operations" subsection for information on where to use these.
- 
- 
-+ (*) dma_wmb();
-+ (*) dma_rmb();
-+
-+     These are for use with consistent memory to guarantee the ordering
-+     of writes or reads of shared memory accessible to both the CPU and a
-+     DMA capable device.
-+
-+     For example, consider a device driver that shares memory with a device
-+     and uses a descriptor status value to indicate if the descriptor belongs
-+     to the device or the CPU, and a doorbell to notify it when new
-+     descriptors are available:
-+
-+	if (desc->status != DEVICE_OWN) {
-+		/* do not read data until we own descriptor */
-+		dma_rmb();
-+
-+		/* read/modify data */
-+		read_data = desc->data;
-+		desc->data = write_data;
-+
-+		/* flush modifications before status update */
-+		dma_wmb();
-+
-+		/* assign ownership */
-+		desc->status = DEVICE_OWN;
-+
-+		/* force memory to sync before notifying device via MMIO */
-+		wmb();
-+
-+		/* notify device of new descriptors */
-+		writel(DESC_NOTIFY, doorbell);
-+	}
-+
-+     The dma_rmb() allows us guarantee the device has released ownership
-+     before we read the data from the descriptor, and he dma_wmb() allows
-+     us to guarantee the data is written to the descriptor before the device
-+     can see it now has ownership.  The wmb() is needed to guarantee that the
-+     cache coherent memory writes have completed before attempting a write to
-+     the cache incoherent MMIO region.
-+
-+     See Documentation/DMA-API.txt for more information on consistent memory.
-+
- MMIO WRITE BARRIER
- ------------------
- 
-diff --git a/arch/arm/include/asm/barrier.h b/arch/arm/include/asm/barrier.h
-index c6a3e73..d2f81e6 100644
---- a/arch/arm/include/asm/barrier.h
-+++ b/arch/arm/include/asm/barrier.h
-@@ -43,10 +43,14 @@
- #define mb()		do { dsb(); outer_sync(); } while (0)
- #define rmb()		dsb()
- #define wmb()		do { dsb(st); outer_sync(); } while (0)
-+#define dma_rmb()	dmb(osh)
-+#define dma_wmb()	dmb(oshst)
- #else
- #define mb()		barrier()
- #define rmb()		barrier()
- #define wmb()		barrier()
-+#define dma_rmb()	barrier()
-+#define dma_wmb()	barrier()
- #endif
- 
- #ifndef CONFIG_SMP
-diff --git a/arch/arm64/include/asm/barrier.h b/arch/arm64/include/asm/barrier.h
-index 6389d60..a5abb00 100644
---- a/arch/arm64/include/asm/barrier.h
-+++ b/arch/arm64/include/asm/barrier.h
-@@ -32,6 +32,9 @@
- #define rmb()		dsb(ld)
- #define wmb()		dsb(st)
- 
-+#define dma_rmb()	dmb(oshld)
-+#define dma_wmb()	dmb(oshst)
-+
- #ifndef CONFIG_SMP
- #define smp_mb()	barrier()
- #define smp_rmb()	barrier()
-diff --git a/arch/ia64/include/asm/barrier.h b/arch/ia64/include/asm/barrier.h
-index e8fffb0..f6769eb 100644
---- a/arch/ia64/include/asm/barrier.h
-+++ b/arch/ia64/include/asm/barrier.h
-@@ -39,6 +39,9 @@
- #define rmb()		mb()
- #define wmb()		mb()
- 
-+#define dma_rmb()	mb()
-+#define dma_wmb()	mb()
-+
- #ifdef CONFIG_SMP
- # define smp_mb()	mb()
- #else
-diff --git a/arch/metag/include/asm/barrier.h b/arch/metag/include/asm/barrier.h
-index 6d8b8c9..d703d8e 100644
---- a/arch/metag/include/asm/barrier.h
-+++ b/arch/metag/include/asm/barrier.h
-@@ -4,8 +4,6 @@
- #include <asm/metag_mem.h>
- 
- #define nop()		asm volatile ("NOP")
--#define mb()		wmb()
--#define rmb()		barrier()
- 
- #ifdef CONFIG_METAG_META21
- 
-@@ -41,11 +39,13 @@ static inline void wr_fence(void)
- 
- #endif /* !CONFIG_METAG_META21 */
- 
--static inline void wmb(void)
--{
--	/* flush writes through the write combiner */
--	wr_fence();
--}
-+/* flush writes through the write combiner */
-+#define mb()		wr_fence()
-+#define rmb()		barrier()
-+#define wmb()		mb()
-+
-+#define dma_rmb()	rmb()
-+#define dma_wmb()	wmb()
- 
- #ifndef CONFIG_SMP
- #define fence()		do { } while (0)
-diff --git a/arch/mips/include/asm/barrier.h b/arch/mips/include/asm/barrier.h
-index 3d69aa8..2b8bbbc 100644
---- a/arch/mips/include/asm/barrier.h
-+++ b/arch/mips/include/asm/barrier.h
-@@ -75,20 +75,21 @@
- 
- #include <asm/wbflush.h>
- 
--#define wmb()		fast_wmb()
--#define rmb()		fast_rmb()
- #define mb()		wbflush()
- #define iob()		wbflush()
- 
- #else /* !CONFIG_CPU_HAS_WB */
- 
--#define wmb()		fast_wmb()
--#define rmb()		fast_rmb()
- #define mb()		fast_mb()
- #define iob()		fast_iob()
- 
- #endif /* !CONFIG_CPU_HAS_WB */
- 
-+#define wmb()		fast_wmb()
-+#define rmb()		fast_rmb()
-+#define dma_wmb()	fast_wmb()
-+#define dma_rmb()	fast_rmb()
-+
- #if defined(CONFIG_WEAK_ORDERING) && defined(CONFIG_SMP)
- # ifdef CONFIG_CPU_CAVIUM_OCTEON
- #  define smp_mb()	__sync()
-diff --git a/arch/powerpc/include/asm/barrier.h b/arch/powerpc/include/asm/barrier.h
-index cb6d66c..a3bf5be 100644
---- a/arch/powerpc/include/asm/barrier.h
-+++ b/arch/powerpc/include/asm/barrier.h
-@@ -36,8 +36,6 @@
- 
- #define set_mb(var, value)	do { var = value; mb(); } while (0)
- 
--#ifdef CONFIG_SMP
--
- #ifdef __SUBARCH_HAS_LWSYNC
- #    define SMPWMB      LWSYNC
- #else
-@@ -45,12 +43,17 @@
- #endif
- 
- #define __lwsync()	__asm__ __volatile__ (stringify_in_c(LWSYNC) : : :"memory")
-+#define dma_rmb()	__lwsync()
-+#define dma_wmb()	__asm__ __volatile__ (stringify_in_c(SMPWMB) : : :"memory")
-+
-+#ifdef CONFIG_SMP
-+#define smp_lwsync()	__lwsync()
- 
- #define smp_mb()	mb()
- #define smp_rmb()	__lwsync()
- #define smp_wmb()	__asm__ __volatile__ (stringify_in_c(SMPWMB) : : :"memory")
- #else
--#define __lwsync()	barrier()
-+#define smp_lwsync()	barrier()
- 
- #define smp_mb()	barrier()
- #define smp_rmb()	barrier()
-@@ -72,7 +75,7 @@
- #define smp_store_release(p, v)						\
- do {									\
- 	compiletime_assert_atomic_type(*p);				\
--	__lwsync();							\
-+	smp_lwsync();							\
- 	ACCESS_ONCE(*p) = (v);						\
- } while (0)
- 
-@@ -80,7 +83,7 @@ do {									\
- ({									\
- 	typeof(*p) ___p1 = ACCESS_ONCE(*p);				\
- 	compiletime_assert_atomic_type(*p);				\
--	__lwsync();							\
-+	smp_lwsync();							\
- 	___p1;								\
- })
- 
-diff --git a/arch/s390/include/asm/barrier.h b/arch/s390/include/asm/barrier.h
-index 33d191d..8d72471 100644
---- a/arch/s390/include/asm/barrier.h
-+++ b/arch/s390/include/asm/barrier.h
-@@ -24,6 +24,8 @@
- 
- #define rmb()				mb()
- #define wmb()				mb()
-+#define dma_rmb()			rmb()
-+#define dma_wmb()			wmb()
- #define smp_mb()			mb()
- #define smp_rmb()			rmb()
- #define smp_wmb()			wmb()
-diff --git a/arch/sparc/include/asm/barrier_64.h b/arch/sparc/include/asm/barrier_64.h
-index 6c974c0..7664894 100644
---- a/arch/sparc/include/asm/barrier_64.h
-+++ b/arch/sparc/include/asm/barrier_64.h
-@@ -37,6 +37,9 @@ do {	__asm__ __volatile__("ba,pt	%%xcc, 1f\n\t" \
- #define rmb()	__asm__ __volatile__("":::"memory")
- #define wmb()	__asm__ __volatile__("":::"memory")
- 
-+#define dma_rmb()	rmb()
-+#define dma_wmb()	wmb()
-+
- #define set_mb(__var, __value) \
- 	do { __var = __value; membar_safe("#StoreLoad"); } while(0)
- 
-diff --git a/arch/x86/include/asm/barrier.h b/arch/x86/include/asm/barrier.h
-index 5238000..2ab1eb3 100644
---- a/arch/x86/include/asm/barrier.h
-+++ b/arch/x86/include/asm/barrier.h
-@@ -24,13 +24,16 @@
- #define wmb()	asm volatile("sfence" ::: "memory")
- #endif
- 
--#ifdef CONFIG_SMP
--#define smp_mb()	mb()
- #ifdef CONFIG_X86_PPRO_FENCE
--# define smp_rmb()	rmb()
-+#define dma_rmb()	rmb()
- #else
--# define smp_rmb()	barrier()
-+#define dma_rmb()	barrier()
- #endif
-+#define dma_wmb()	barrier()
-+
-+#ifdef CONFIG_SMP
-+#define smp_mb()	mb()
-+#define smp_rmb()	dma_rmb()
- #define smp_wmb()	barrier()
- #define set_mb(var, value) do { (void)xchg(&var, value); } while (0)
- #else /* !SMP */
-diff --git a/arch/x86/um/asm/barrier.h b/arch/x86/um/asm/barrier.h
-index d6511d9..2d7d9a1 100644
---- a/arch/x86/um/asm/barrier.h
-+++ b/arch/x86/um/asm/barrier.h
-@@ -29,17 +29,18 @@
- 
- #endif /* CONFIG_X86_32 */
- 
--#ifdef CONFIG_SMP
--
--#define smp_mb()	mb()
- #ifdef CONFIG_X86_PPRO_FENCE
--#define smp_rmb()	rmb()
-+#define dma_rmb()	rmb()
- #else /* CONFIG_X86_PPRO_FENCE */
--#define smp_rmb()	barrier()
-+#define dma_rmb()	barrier()
- #endif /* CONFIG_X86_PPRO_FENCE */
-+#define dma_wmb()	barrier()
- 
--#define smp_wmb()	barrier()
-+#ifdef CONFIG_SMP
- 
-+#define smp_mb()	mb()
-+#define smp_rmb()	dma_rmb()
-+#define smp_wmb()	barrier()
- #define set_mb(var, value) do { (void)xchg(&var, value); } while (0)
- 
- #else /* CONFIG_SMP */
-diff --git a/include/asm-generic/barrier.h b/include/asm-generic/barrier.h
-index 1402fa8..f5c40b0 100644
---- a/include/asm-generic/barrier.h
-+++ b/include/asm-generic/barrier.h
-@@ -42,6 +42,14 @@
- #define wmb()	mb()
- #endif
- 
-+#ifndef dma_rmb
-+#define dma_rmb()	rmb()
-+#endif
-+
-+#ifndef dma_wmb
-+#define dma_wmb()	wmb()
-+#endif
-+
- #ifndef read_barrier_depends
- #define read_barrier_depends()		do { } while (0)
- #endif
+--K8nIJk4ghYZn606h
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUdOjMAAoJEMLUO4d9pOJWxbAH/izuIdWp33DbP5Rj5hg+mVau
+u2omjJFwFFuyy2KQMo46pi9WSKzZ4RL0qcp0JGQfUDabhDJhOW0fhgwbdk3Wntxd
+S2NIIZEuWolYAwQdSUQ3R1ys5VJ250zRi0yR10f+WdGnJRDqie7dnR46lEmwaiza
+bQ9Y/SgL+UGQvX9UcXzoZGNqDIGRENktw6KcPLDBPuoJIUYpnVPNcQP9JVsoQWeO
+5E4DSYMDFYatP6idIrobIaNPXx5t+GTWOE6HnPqzdMWiLMJtCvEyTO09qaVR70ka
+3QHC+aSE4D18NrI3GFumS373fk3iKE2UX/lPWgv2RV1ysLyY8yFvhmgAjqvGnwY=
+=u5UC
+-----END PGP SIGNATURE-----
+
+--K8nIJk4ghYZn606h--
