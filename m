@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539AbaKYAuL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 19:50:11 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:46799 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784AbaKYAuI (ORCPT
+	id S1751572AbaKYAwr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 19:52:47 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:49331 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaKYAwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 19:50:08 -0500
+	Mon, 24 Nov 2014 19:52:44 -0500
 X-Originating-IP: 50.43.41.112
-Date: Mon, 24 Nov 2014 16:49:45 -0800
+Date: Mon, 24 Nov 2014 16:52:21 -0800
 From: Josh Triplett <josh@joshtriplett.org>
 To: Pieter Smith <pieter@boesman.nl>
 Cc: Alexander Duyck <alexander.h.duyck@intel.com>,
@@ -46,134 +46,43 @@ Cc: Alexander Duyck <alexander.h.duyck@intel.com>,
         Willem de Bruijn <willemb@google.com>,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
         =?utf-8?B?6JSh5q2j6b6Z?= <zhenglong.cai@cs2c.com.cn>
-Subject: Re: [PATCH v4 3/7] fs/splice: support compiling out splice-family
- syscalls
-Message-ID: <20141125004945.GA21653@thin>
+Subject: Re: [PATCH v4 0/7] kernel tinification: optionally compile out
+ splice family of syscalls (splice, vmsplice, tee and sendfile)
+Message-ID: <20141125005221.GB21653@thin>
 References: <1416870079-15254-1-git-send-email-pieter@boesman.nl>
- <1416870079-15254-4-git-send-email-pieter@boesman.nl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1416870079-15254-4-git-send-email-pieter@boesman.nl>
+In-Reply-To: <1416870079-15254-1-git-send-email-pieter@boesman.nl>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 12:01:02AM +0100, Pieter Smith wrote:
-> Many embedded systems will not need the splice-family syscalls (splice,
-> vmsplice, tee and sendfile). Omitting them saves space.  This adds a new EXPERT
-> config option CONFIG_SYSCALL_SPLICE (default y) to support compiling them out.
+On Tue, Nov 25, 2014 at 12:00:59AM +0100, Pieter Smith wrote:
+> REPO: https://github.com/smipi1/linux-tinification.git
 > 
-> The goal is to completely compile out fs/splice along with the syscalls. To
-> achieve this, the remaining patch-set will deal with fs/splice exports. As far
-> as possible, the impact on other device drivers will be minimized so as to
-> reduce the overal maintenance burden of CONFIG_SYSCALL_SPLICE.
+> BRANCH: tiny/config-syscall-splice
 > 
-> The use of exported functions will be solved by transparently mocking them out
-> with static inlines. Uses of the exported pipe_buf_operations struct however
-> require direct modification in fs/fuse and net/core. The next two patches will
-> deal with this. A macro is defined that will assist with NULL'ing out callbacks
-> when CONFIG_SYSCALL_SPLICE is undefined: __splice_p().
+> BACKGROUND: This patch-set forms part of the Linux Kernel Tinification effort (
+>   https://tiny.wiki.kernel.org/).
+> 
+> GOAL: Support compiling out the splice family of syscalls (splice, vmsplice,
+>   tee and sendfile) along with all supporting infrastructure if not needed.
+>   Many embedded systems will not need the splice-family syscalls. Omitting them
+>   saves space.
+> 
+> HISTORY:
+>   PATCH v4:
+>     - Drops __splice_p()
+>     - Let nfsd fall back to non-splice support when splice is compiled out
+>     - Style fixes
+[...]
+> RESULTS: A tinyconfig bloat-o-meter score for the entire patch-set:
+> 
+> add/remove: 0/41 grow/shrink: 5/7 up/down: 23/-8422 (-8399)
 
-This message needs updating, since the patch series doesn't introduce or
-use __splice_p anymore.
+I replied to one patch with a minor nit in the commit message.  Other
+than that, I don't see any obvious issues with this.
 
-> Once all exports are solved, fs/splice can be compiled out.
-> 
-> The bloat benefit of this patch given a tinyconfig is:
-> 
-> add/remove: 0/16 grow/shrink: 2/5 up/down: 114/-3693 (-3579)
-> function                                     old     new   delta
-> splice_direct_to_actor                       348     416     +68
-> splice_to_pipe                               371     417     +46
-> splice_from_pipe_next                        107     106      -1
-> fdput                                         11       -     -11
-> signal_pending                                39      26     -13
-> fdget                                         56      42     -14
-> user_page_pipe_buf_ops                        20       -     -20
-> user_page_pipe_buf_steal                      25       -     -25
-> file_end_write                                58      29     -29
-> file_start_write                              68      34     -34
-> pipe_to_user                                  43       -     -43
-> wakeup_pipe_readers                           54       -     -54
-> do_splice_to                                  87       -     -87
-> ipipe_prep.part                               92       -     -92
-> opipe_prep.part                              119       -    -119
-> sys_sendfile                                 122       -    -122
-> sys_sendfile64                               126       -    -126
-> sys_vmsplice                                 137       -    -137
-> vmsplice_to_user                             205       -    -205
-> sys_tee                                      491       -    -491
-> do_sendfile                                  492       -    -492
-> vmsplice_to_pipe                             558       -    -558
-> sys_splice                                  1020       -   -1020
-> 
-> Signed-off-by: Pieter Smith <pieter@boesman.nl>
-> ---
->  fs/splice.c     |  2 ++
->  init/Kconfig    | 10 ++++++++++
->  kernel/sys_ni.c |  8 ++++++++
->  3 files changed, 20 insertions(+)
-> 
-> diff --git a/fs/splice.c b/fs/splice.c
-> index 44b201b..7c4c695 100644
-> --- a/fs/splice.c
-> +++ b/fs/splice.c
-> @@ -1316,6 +1316,7 @@ long do_splice_direct(struct file *in, loff_t *ppos, struct file *out,
->  	return ret;
->  }
->  
-> +#ifdef CONFIG_SYSCALL_SPLICE
->  static int splice_pipe_to_pipe(struct pipe_inode_info *ipipe,
->  			       struct pipe_inode_info *opipe,
->  			       size_t len, unsigned int flags);
-> @@ -2200,4 +2201,5 @@ COMPAT_SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd,
->  	return do_sendfile(out_fd, in_fd, NULL, count, 0);
->  }
->  #endif
-> +#endif
->  
-> diff --git a/init/Kconfig b/init/Kconfig
-> index d811d5f..dec9819 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -1571,6 +1571,16 @@ config NTP
->  	  system clock to an NTP server, you can disable this option to save
->  	  space.
->  
-> +config SYSCALL_SPLICE
-> +	bool "Enable splice/vmsplice/tee/sendfile syscalls" if EXPERT
-> +	default y
-> +	help
-> +	  This option enables the splice, vmsplice, tee and sendfile syscalls. These
-> +	  are used by applications to: move data between buffers and arbitrary file
-> +	  descriptors; "copy" data between buffers; or copy data from userspace into
-> +	  buffers. If building an embedded system where no applications use these
-> +	  syscalls, you can disable this option to save space.
-> +
->  config PCI_QUIRKS
->  	default y
->  	bool "Enable PCI quirk workarounds" if EXPERT
-> diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-> index d2f5b00..25d5551 100644
-> --- a/kernel/sys_ni.c
-> +++ b/kernel/sys_ni.c
-> @@ -170,6 +170,14 @@ cond_syscall(sys_fstat);
->  cond_syscall(sys_stat);
->  cond_syscall(sys_uname);
->  cond_syscall(sys_olduname);
-> +cond_syscall(sys_vmsplice);
-> +cond_syscall(sys_splice);
-> +cond_syscall(sys_tee);
-> +cond_syscall(sys_sendfile);
-> +cond_syscall(sys_sendfile64);
-> +cond_syscall(compat_sys_vmsplice);
-> +cond_syscall(compat_sys_sendfile);
-> +cond_syscall(compat_sys_sendfile64);
->  
->  /* arch-specific weak syscall entries */
->  cond_syscall(sys_pciconfig_read);
-> -- 
-> 2.1.0
-> 
+- Josh Triplett
