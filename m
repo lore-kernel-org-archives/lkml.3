@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755094AbaKYLNG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:13:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58809 "EHLO
+	id S1755078AbaKYLNE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:13:04 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58817 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753682AbaKYKme (ORCPT
+	with ESMTP id S1753692AbaKYKmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:34 -0500
+	Tue, 25 Nov 2014 05:42:35 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Richard Guy Briggs <rgb@redhat.com>, Paul Moore <pmoore@redhat.com>,
+Cc: Jan Kara <jack@suse.cz>, Jens Axboe <axboe@fb.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 161/254] audit: AUDIT_FEATURE_CHANGE message format missing delimiting space
-Date: Tue, 25 Nov 2014 10:38:31 +0000
-Message-Id: <1416912004-5928-162-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 162/254] block: Fix computation of merged request priority
+Date: Tue, 25 Nov 2014 10:38:32 +0000
+Message-Id: <1416912004-5928-163-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,32 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Guy Briggs <rgb@redhat.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 897f1acbb6702ddaa953e8d8436eee3b12016c7e upstream.
+commit ece9c72accdc45c3a9484dacb1125ce572647288 upstream.
 
-Add a space between subj= and feature= fields to make them parsable.
+Priority of a merged request is computed by ioprio_best(). If one of the
+requests has undefined priority (IOPRIO_CLASS_NONE) and another request
+has priority from IOPRIO_CLASS_BE, the function will return the
+undefined priority which is wrong. Fix the function to properly return
+priority of a request with the defined priority.
 
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Fixes: d58cdfb89ce0c6bd5f81ae931a984ef298dbda20
+Signed-off-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/audit.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ block/ioprio.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index ba2ff5a5c600..855aaa0803d9 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -739,7 +739,7 @@ static void audit_log_feature_change(int which, u32 old_feature, u32 new_feature
+diff --git a/block/ioprio.c b/block/ioprio.c
+index e50170ca7c33..31666c92b46a 100644
+--- a/block/ioprio.c
++++ b/block/ioprio.c
+@@ -157,14 +157,16 @@ out:
  
- 	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_FEATURE_CHANGE);
- 	audit_log_task_info(ab, current);
--	audit_log_format(ab, "feature=%s old=%u new=%u old_lock=%u new_lock=%u res=%d",
-+	audit_log_format(ab, " feature=%s old=%u new=%u old_lock=%u new_lock=%u res=%d",
- 			 audit_feature_names[which], !!old_feature, !!new_feature,
- 			 !!old_lock, !!new_lock, res);
- 	audit_log_end(ab);
+ int ioprio_best(unsigned short aprio, unsigned short bprio)
+ {
+-	unsigned short aclass = IOPRIO_PRIO_CLASS(aprio);
+-	unsigned short bclass = IOPRIO_PRIO_CLASS(bprio);
++	unsigned short aclass;
++	unsigned short bclass;
+ 
+-	if (aclass == IOPRIO_CLASS_NONE)
+-		aclass = IOPRIO_CLASS_BE;
+-	if (bclass == IOPRIO_CLASS_NONE)
+-		bclass = IOPRIO_CLASS_BE;
++	if (!ioprio_valid(aprio))
++		aprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, IOPRIO_NORM);
++	if (!ioprio_valid(bprio))
++		bprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, IOPRIO_NORM);
+ 
++	aclass = IOPRIO_PRIO_CLASS(aprio);
++	bclass = IOPRIO_PRIO_CLASS(bprio);
+ 	if (aclass == bclass)
+ 		return min(aprio, bprio);
+ 	if (aclass > bclass)
 -- 
 2.1.0
 
