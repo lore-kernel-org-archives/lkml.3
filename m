@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751396AbaKYVi7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 16:38:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50391 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289AbaKYVi6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 16:38:58 -0500
-Date: Tue, 25 Nov 2014 13:38:57 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jungseung Lee <js07.lee@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] fs/binfmt_elf.c: fix inconsistent vma dump size
-Message-Id: <20141125133857.bb2d71659287df6aa908de5b@linux-foundation.org>
-In-Reply-To: <1416683799-678-1-git-send-email-js07.lee@gmail.com>
-References: <1416683799-678-1-git-send-email-js07.lee@gmail.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751470AbaKYVkF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 16:40:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48986 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751061AbaKYVkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 16:40:03 -0500
+Date: Tue, 25 Nov 2014 23:39:42 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        Rusty Russell <rusty@rustcorp.com.au>, Pawel Moll <pawel.moll@arm.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH v4 11/42] virtio: add legacy feature table support
+Message-ID: <20141125213942.GD22343@redhat.com>
+References: <1416933600-21398-1-git-send-email-mst@redhat.com>
+ <1416933600-21398-12-git-send-email-mst@redhat.com>
+ <20141125185342.761bf72e.cornelia.huck@de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141125185342.761bf72e.cornelia.huck@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 23 Nov 2014 04:16:39 +0900 Jungseung Lee <js07.lee@gmail.com> wrote:
-
-> vma_dump_size() has been used several times on actual dumper
-> and it is supposed to be same values for same vma.
-> But vma_dump_size() could be different, while coredump is procceeded.
-> (e.g. remove shared memory)
+On Tue, Nov 25, 2014 at 06:53:42PM +0100, Cornelia Huck wrote:
+> On Tue, 25 Nov 2014 18:42:09 +0200
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
 > 
-> In that case, header info and vma size could be inconsistent
-> and it cause wrong coredump file creation.
+> > virtio blk has some legacy feature bits that modern drivers
 > 
-> Fix the problem by always using the same vma dump size
-> which is stored in vma_filsz.
+> virtio-blk
+> 
+> > must not negotiate, but are needed for old legacy hosts
+> > (e.g. that dn't support virtio scsi).
+> 
+> (that e.g. don't support virtio-scsi)
+> 
+> > Allow a separate legacy feature table for such cases.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  include/linux/virtio.h  |  4 ++++
+> >  drivers/virtio/virtio.c | 25 ++++++++++++++++++++++++-
+> >  2 files changed, 28 insertions(+), 1 deletion(-)
+> > 
+> 
+> > @@ -177,7 +185,22 @@ static int virtio_dev_probe(struct device *_d)
+> >  		driver_features |= (1ULL << f);
+> >  	}
+> > 
+> > -	dev->features = driver_features & device_features;
+> > +	/* Some drivers have a separate feature tables for virtio v1.0 */
+> 
+> /* some drivers have a separate feature table for legacy virtio */
+> 
+> ?
 
-So concurrent shared memory removal causes inconsistencies.
+I prefer have separate feature tables:  drivers (plural) have tables
+(plural).
 
-But concurrent shared memory removal can still cause inconsistency
-after this patch, can't it?  If it happens while vma_filesz[] is being
-populated or if it happens between vma_filesz[] population and
-vma_filesz[] usage.  This will result in a dump file which is
-internally consistent, but is inconsistent with reality?
+Agree?
 
-If my understanding is correct then please fully describe this scenario
-within the changelog and explain why it is tolerable, if it is
-tolerable.
-
-> @@ -2093,7 +2083,20 @@ static int elf_core_dump(struct coredump_params *cprm)
->  
->  	dataoff = offset = roundup(offset, ELF_EXEC_PAGESIZE);
->  
-> -	offset += elf_core_vma_data_size(gate_vma, cprm->mm_flags);
-> +	vma_filesz = kmalloc(sizeof(*vma_filesz) * (segs - 1), GFP_KERNEL);
-
-Use kmalloc_array() here, in case a disaster has occurred...
-
-> +	if (!vma_filesz)
-> +		goto end_coredump;
-> +
-> +	for (i = 0, vma = first_vma(current, gate_vma); vma != NULL;
-> +			vma = next_vma(vma, gate_vma)) {
-> +		unsigned long dump_size;
-> +
-> +		dump_size = vma_dump_size(vma, cprm->mm_flags);
-> +		vma_filesz[i++] = dump_size;
-> +		vma_data_size += dump_size;
-> +	}
-> +
-> +	offset += vma_data_size;
-
+> > +	if (drv->feature_table_legacy) {
+> > +		driver_features_legacy = 0;
+> > +		for (i = 0; i < drv->feature_table_size_legacy; i++) {
+> > +			unsigned int f = drv->feature_table_legacy[i];
+> > +			BUG_ON(f >= 64);
+> > +			driver_features_legacy |= (1ULL << f);
+> > +		}
+> > +	} else {
+> > +		driver_features_legacy = driver_features;
+> > +	}
+> (...)
