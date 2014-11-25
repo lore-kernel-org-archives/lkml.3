@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754653AbaKYNWh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 08:22:37 -0500
-Received: from mail.kernel.org ([198.145.19.201]:35613 "EHLO mail.kernel.org"
+	id S1754796AbaKYNWk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 08:22:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:35635 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754578AbaKYNWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 08:22:33 -0500
+	id S1754578AbaKYNWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 08:22:38 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/12] perf callchain: Enable printing the srcline in the history
-Date: Tue, 25 Nov 2014 10:22:01 -0300
-Message-Id: <1416921730-5063-4-git-send-email-acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Borislav Petkov <bp@suse.de>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 04/12] perf symbols: Move bfd_demangle stubbing to its only user
+Date: Tue, 25 Nov 2014 10:22:02 -0300
+Message-Id: <1416921730-5063-5-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1416921730-5063-1-git-send-email-acme@kernel.org>
 References: <1416921730-5063-1-git-send-email-acme@kernel.org>
@@ -21,94 +26,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-For lbr-as-callgraph we need to see the line number in the history,
-because many LBR entries can be in a single function, and just
-showing the same function name many times is not useful.
+We need to define bfd_demangle() to either a wrapper for
+cplus_demangle() or to a stub when NO_DEMANGLE is defined.
 
-When the history code is configured to sort by address, also try to
-resolve the address to a file:srcline and display this in the browser.
-If that doesn't work still display the address.
+That is at odds with using bfd.h for some other reason, as it defines
+bfd_demangle() and then if code that wants to use symbol.h, where the
+above stubbing/wrapping is done, and bfd.h for other reasons, we end up
+with a build error where bfd_demangle() is found to be redefined.
 
-This can be also useful without LBRs for understanding which call in a large
-function (or in which inlined function) called something else.
+Avoid that by moving the stubbing/wrapping to symbol-elf.c, that is the
+only user of such function. If we ever get to a point where there are
+more valid users, we can then introduce a header for that.
 
-Contains fixes from Namhyung Kim
-
-v2: Refactor code into common function
-v3: Fix GTK build
-v4: Rebase
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1415844328-4884-7-git-send-email-andi@firstfloor.org
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-6wzjpe2fy9xtgchshulixlzw@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/callchain.c | 11 ++++++++++-
- tools/perf/util/callchain.h |  1 +
- tools/perf/util/srcline.c   |  6 ++++--
- 3 files changed, 15 insertions(+), 3 deletions(-)
+ tools/perf/util/symbol-elf.c | 21 +++++++++++++++++++++
+ tools/perf/util/symbol.h     | 21 ---------------------
+ 2 files changed, 21 insertions(+), 21 deletions(-)
 
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 38da69c8c1ff..b6624aeaaca9 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -815,7 +815,16 @@ char *callchain_list__sym_name(struct callchain_list *cl,
- 	int printed;
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index efc7eb6b8f0f..06fcd1bf98b6 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -11,6 +11,27 @@
+ #include <symbol/kallsyms.h>
+ #include "debug.h"
  
- 	if (cl->ms.sym) {
--		printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
-+		if (callchain_param.key == CCKEY_ADDRESS &&
-+		    cl->ms.map && !cl->srcline)
-+			cl->srcline = get_srcline(cl->ms.map->dso,
-+						  map__rip_2objdump(cl->ms.map,
-+								    cl->ip));
-+		if (cl->srcline)
-+			printed = scnprintf(bf, bfsize, "%s %s",
-+					cl->ms.sym->name, cl->srcline);
-+		else
-+			printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
- 	} else
- 		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
++#ifdef HAVE_CPLUS_DEMANGLE_SUPPORT
++extern char *cplus_demangle(const char *, int);
++
++static inline char *bfd_demangle(void __maybe_unused *v, const char *c, int i)
++{
++	return cplus_demangle(c, i);
++}
++#else
++#ifdef NO_DEMANGLE
++static inline char *bfd_demangle(void __maybe_unused *v,
++				 const char __maybe_unused *c,
++				 int __maybe_unused i)
++{
++	return NULL;
++}
++#else
++#define PACKAGE 'perf'
++#include <bfd.h>
++#endif
++#endif
++
+ #ifndef HAVE_ELF_GETPHDRNUM_SUPPORT
+ static int elf_getphdrnum(Elf *elf, size_t *dst)
+ {
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index ded3ca7266de..e0b297c50f9d 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -23,27 +23,6 @@
  
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 3e1ed15d11f1..3f158474c892 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -70,6 +70,7 @@ extern struct callchain_param callchain_param;
- struct callchain_list {
- 	u64			ip;
- 	struct map_symbol	ms;
-+	char		       *srcline;
- 	struct list_head	list;
- };
+ #include "dso.h"
  
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index 77c180637138..ac877f96fed7 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -258,7 +258,7 @@ char *get_srcline(struct dso *dso, unsigned long addr)
- 	const char *dso_name;
- 
- 	if (!dso->has_srcline)
--		return SRCLINE_UNKNOWN;
-+		goto out;
- 
- 	if (dso->symsrc_filename)
- 		dso_name = dso->symsrc_filename;
-@@ -289,7 +289,9 @@ out:
- 		dso->has_srcline = 0;
- 		dso__free_a2l(dso);
- 	}
--	return SRCLINE_UNKNOWN;
-+	if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
-+		return SRCLINE_UNKNOWN;
-+	return srcline;
- }
- 
- void free_srcline(char *srcline)
+-#ifdef HAVE_CPLUS_DEMANGLE_SUPPORT
+-extern char *cplus_demangle(const char *, int);
+-
+-static inline char *bfd_demangle(void __maybe_unused *v, const char *c, int i)
+-{
+-	return cplus_demangle(c, i);
+-}
+-#else
+-#ifdef NO_DEMANGLE
+-static inline char *bfd_demangle(void __maybe_unused *v,
+-				 const char __maybe_unused *c,
+-				 int __maybe_unused i)
+-{
+-	return NULL;
+-}
+-#else
+-#define PACKAGE 'perf'
+-#include <bfd.h>
+-#endif
+-#endif
+-
+ /*
+  * libelf 0.8.x and earlier do not support ELF_C_READ_MMAP;
+  * for newer versions we can use mmap to reduce memory usage:
 -- 
 1.9.3
 
