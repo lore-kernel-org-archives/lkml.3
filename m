@@ -1,217 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751388AbaKYUgp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 15:36:45 -0500
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:33287 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058AbaKYUgn (ORCPT
+	id S1751479AbaKYUgt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 15:36:49 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:51087 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305AbaKYUgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 15:36:43 -0500
-Date: Tue, 25 Nov 2014 16:36:31 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: Zhang Rui <rui.zhang@intel.com>, Linux PM list <linux-pm@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        Caesar Wang <caesar.wang@rock-chips.com>
-Subject: Re: [PATCH v2 3/4] thermal: of: Extend of-thermal to export table of
- trip points
-Message-ID: <20141125203629.GA14292@developer>
-References: <1412872737-624-1-git-send-email-l.majewski@samsung.com>
- <1416500488-7232-1-git-send-email-l.majewski@samsung.com>
- <1416500488-7232-4-git-send-email-l.majewski@samsung.com>
+	Tue, 25 Nov 2014 15:36:45 -0500
+Date: Tue, 25 Nov 2014 20:36:29 +0000
+From: Luis de Bethencourt <luis@debethencourt.com>
+To: linux-kernel@vger.kernel.org
+Cc: jarod@wilsonet.com, m.chehab@samsung.com, gregkh@linuxfoundation.org,
+        mahfouz.saif.elyazal@gmail.com, dan.carpenter@oracle.com,
+        tuomas.tynkkynen@iki.fi, gulsah.1004@gmail.com,
+        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] staging: media: lirc: lirc_zilog.c: fix quoted strings
+ split across lines
+Message-ID: <20141125203629.GA12059@biggie>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="17pEHd4RhPHOinZp"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1416500488-7232-4-git-send-email-l.majewski@samsung.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+checkpatch makes an exception to the 80-colum rule for quotes strings, and
+Documentation/CodingStyle recommends not splitting quotes strings across lines
+because it breaks the ability to grep for the string. Fixing these.
 
---17pEHd4RhPHOinZp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+WARNING: quoted string split across lines
 
-Hello Lukasz,
+Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
+---
+Changes in v2:
+	- As pointed out by Joe Perches I missed a space when joining a set of strings
 
-On Thu, Nov 20, 2014 at 05:21:27PM +0100, Lukasz Majewski wrote:
-> This patch extends the of-thermal.c to export copy of trip points for
-> a given thermal zone.
->=20
-> Thermal drivers should use of_thermal_get_trip_points() method to get
-> pointer to table of thermal trip points.
->=20
-> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> ---
-> Changes for v2:
-> - New patch - as suggested by Eduardo Valentin
-> ---
->  drivers/thermal/of-thermal.c   | 33 +++++++++++++++++++++++++++++++++
->  drivers/thermal/thermal_core.h |  7 +++++++
->  include/linux/thermal.h        | 14 ++++++++++++++
->  3 files changed, 54 insertions(+)
->=20
-> diff --git a/drivers/thermal/of-thermal.c b/drivers/thermal/of-thermal.c
-> index 336af7f..33921c5 100644
-> --- a/drivers/thermal/of-thermal.c
-> +++ b/drivers/thermal/of-thermal.c
-> @@ -89,6 +89,7 @@ struct __thermal_zone {
->  	/* trip data */
->  	int ntrips;
->  	struct __thermal_trip *trips;
-> +	struct thermal_trip *gtrips;
-> =20
->  	/* cooling binding data */
->  	int num_tbps;
-> @@ -152,6 +153,27 @@ bool of_thermal_is_trip_en(struct thermal_zone_devic=
-e *tz, int trip)
->  	return true;
->  }
-> =20
-> +/**
-> + * of_thermal_get_trip_points - function to get access to a globally exp=
-orted
-> + *				trip points
-> + *
-> + * @tz:	pointer to a thermal zone
-> + *
-> + * This function provides a pointer to the copy of trip points table
-> + *
-> + * Return: pointer to trip points table, NULL otherwise
-> + */
-> +const struct thermal_trip * const
-> +of_thermal_get_trip_points(struct thermal_zone_device *tz)
-> +{
-> +	struct __thermal_zone *data =3D tz->devdata;
-> +
-> +	if (!data)
-> +		return NULL;
-> +
-> +	return data->gtrips;
-> +}
-> +
+Thanks for the review Joe
+ drivers/staging/media/lirc/lirc_zilog.c | 39 ++++++++++++++-------------------
+ 1 file changed, 17 insertions(+), 22 deletions(-)
 
-EXPORT_SYMBOL_GPL(of_thermal_get_trip_points);
+diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
+index dca806a..a35d6f2 100644
+--- a/drivers/staging/media/lirc/lirc_zilog.c
++++ b/drivers/staging/media/lirc/lirc_zilog.c
+@@ -372,14 +372,12 @@ static int add_to_buf(struct IR *ir)
+ 					   ret);
+ 			if (failures >= 3) {
+ 				mutex_unlock(&ir->ir_lock);
+-				dev_err(ir->l.dev, "unable to read from the IR chip "
+-					    "after 3 resets, giving up\n");
++				dev_err(ir->l.dev, "unable to read from the IR chip after 3 resets, giving up\n");
+ 				break;
+ 			}
+ 
+ 			/* Looks like the chip crashed, reset it */
+-			dev_err(ir->l.dev, "polling the IR receiver chip failed, "
+-				    "trying reset\n");
++			dev_err(ir->l.dev, "polling the IR receiver chip failed, trying reset\n");
+ 
+ 			set_current_state(TASK_UNINTERRUPTIBLE);
+ 			if (kthread_should_stop()) {
+@@ -405,8 +403,8 @@ static int add_to_buf(struct IR *ir)
+ 		ret = i2c_master_recv(rx->c, keybuf, sizeof(keybuf));
+ 		mutex_unlock(&ir->ir_lock);
+ 		if (ret != sizeof(keybuf)) {
+-			dev_err(ir->l.dev, "i2c_master_recv failed with %d -- "
+-				    "keeping last read buffer\n", ret);
++			dev_err(ir->l.dev, "i2c_master_recv failed with %d -- keeping last read buffer\n",
++				    ret);
+ 		} else {
+ 			rx->b[0] = keybuf[3];
+ 			rx->b[1] = keybuf[4];
+@@ -713,8 +711,8 @@ static int send_boot_data(struct IR_tx *tx)
+ 				       buf[0]);
+ 		return 0;
+ 	}
+-	dev_notice(tx->ir->l.dev, "Zilog/Hauppauge IR blaster firmware version "
+-		     "%d.%d.%d loaded\n", buf[1], buf[2], buf[3]);
++	dev_notice(tx->ir->l.dev, "Zilog/Hauppauge IR blaster firmware version %d.%d.%d loaded\n",
++		     buf[1], buf[2], buf[3]);
+ 
+ 	return 0;
+ }
+@@ -794,8 +792,7 @@ static int fw_load(struct IR_tx *tx)
+ 	if (!read_uint8(&data, tx_data->endp, &version))
+ 		goto corrupt;
+ 	if (version != 1) {
+-		dev_err(tx->ir->l.dev, "unsupported code set file version (%u, expected"
+-			    "1) -- please upgrade to a newer driver",
++		dev_err(tx->ir->l.dev, "unsupported code set file version (%u, expected 1) -- please upgrade to a newer driver",
+ 			    version);
+ 		fw_unload_locked();
+ 		ret = -EFAULT;
+@@ -983,8 +980,8 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
+ 	ret = get_key_data(data_block, code, key);
+ 
+ 	if (ret == -EPROTO) {
+-		dev_err(tx->ir->l.dev, "failed to get data for code %u, key %u -- check "
+-			    "lircd.conf entries\n", code, key);
++		dev_err(tx->ir->l.dev, "failed to get data for code %u, key %u -- check lircd.conf entries\n",
++			    code, key);
+ 		return ret;
+ 	} else if (ret != 0)
+ 		return ret;
+@@ -1059,8 +1056,8 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
+ 		ret = i2c_master_send(tx->c, buf, 1);
+ 		if (ret == 1)
+ 			break;
+-		dev_dbg(tx->ir->l.dev, "NAK expected: i2c_master_send "
+-			"failed with %d (try %d)\n", ret, i+1);
++		dev_dbg(tx->ir->l.dev, "NAK expected: i2c_master_send failed with %d (try %d)\n",
++			ret, i+1);
+ 	}
+ 	if (ret != 1) {
+ 		dev_err(tx->ir->l.dev, "IR TX chip never got ready: last i2c_master_send "
+@@ -1167,12 +1164,10 @@ static ssize_t write(struct file *filep, const char __user *buf, size_t n,
+ 		 */
+ 		if (ret != 0) {
+ 			/* Looks like the chip crashed, reset it */
+-			dev_err(tx->ir->l.dev, "sending to the IR transmitter chip "
+-				    "failed, trying reset\n");
++			dev_err(tx->ir->l.dev, "sending to the IR transmitter chip failed, trying reset\n");
+ 
+ 			if (failures >= 3) {
+-				dev_err(tx->ir->l.dev, "unable to send to the IR chip "
+-					    "after 3 resets, giving up\n");
++				dev_err(tx->ir->l.dev, "unable to send to the IR chip after 3 resets, giving up\n");
+ 				mutex_unlock(&ir->ir_lock);
+ 				mutex_unlock(&tx->client_lock);
+ 				put_ir_tx(tx, false);
+@@ -1581,8 +1576,8 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 				       "zilog-rx-i2c-%d", adap->nr);
+ 		if (IS_ERR(rx->task)) {
+ 			ret = PTR_ERR(rx->task);
+-			dev_err(tx->ir->l.dev, "%s: could not start IR Rx polling thread"
+-				    "\n", __func__);
++			dev_err(tx->ir->l.dev, "%s: could not start IR Rx polling thread\n",
++				    __func__);
+ 			/* Failed kthread, so put back the ir ref */
+ 			put_ir_device(ir, true);
+ 			/* Failure exit, so put back rx ref from i2c_client */
+@@ -1594,8 +1589,8 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 
+ 		/* Proceed only if the Tx client is also ready */
+ 		if (tx == NULL) {
+-			pr_info("probe of IR Rx on %s (i2c-%d) done. Waiting"
+-				   " on IR Tx.\n", adap->name, adap->nr);
++			pr_info("probe of IR Rx on %s (i2c-%d) done. Waiting on IR Tx.\n",
++				   adap->name, adap->nr);
+ 			goto out_ok;
+ 		}
+ 	}
+-- 
+2.1.3
 
->  static int of_thermal_get_trend(struct thermal_zone_device *tz, int trip,
->  				enum thermal_trend *trend)
->  {
-> @@ -767,6 +789,16 @@ thermal_of_build_thermal_zone(struct device_node *np)
->  			goto free_tbps;
->  	}
-> =20
-> +	tz->gtrips =3D kcalloc(tz->ntrips, sizeof(*tz->gtrips), GFP_KERNEL);
-> +	if (!tz->gtrips) {
-> +		ret =3D -ENOMEM;
-> +		goto free_tbps;
-> +	}
-> +
-> +	for (i =3D 0; i < tz->ntrips; i++)
-> +		memcpy(&(tz->gtrips[i]), &(tz->trips[i].temperature),
-> +		       sizeof(*tz->gtrips));
-> +
->  finish:
->  	of_node_put(child);
->  	tz->mode =3D THERMAL_DEVICE_DISABLED;
-> @@ -793,6 +825,7 @@ static inline void of_thermal_free_zone(struct __ther=
-mal_zone *tz)
->  {
->  	int i;
-> =20
-> +	kfree(tz->gtrips);
->  	for (i =3D 0; i < tz->num_tbps; i++)
->  		of_node_put(tz->tbps[i].cooling_device);
->  	kfree(tz->tbps);
-> diff --git a/drivers/thermal/thermal_core.h b/drivers/thermal/thermal_cor=
-e.h
-> index 466208c..a9580ca 100644
-> --- a/drivers/thermal/thermal_core.h
-> +++ b/drivers/thermal/thermal_core.h
-> @@ -91,6 +91,8 @@ int of_parse_thermal_zones(void);
->  void of_thermal_destroy_zones(void);
->  int of_thermal_get_ntrips(struct thermal_zone_device *);
->  bool of_thermal_is_trip_en(struct thermal_zone_device *, int);
-> +const struct thermal_trip * const
-> +of_thermal_get_trip_points(struct thermal_zone_device *);
->  #else
->  static inline int of_parse_thermal_zones(void) { return 0; }
->  static inline void of_thermal_destroy_zones(void) { }
-> @@ -102,6 +104,11 @@ static inline bool of_thermal_is_trip_en(struct ther=
-mal_zone_device *, int)
->  {
-
-This produces compilation error when CONFIG_THERMAL_OF is not set. Name
-the parameters to fix.
-
->  	return 0;
->  }
-> +static inline const struct thermal_trip * const
-> +of_thermal_get_trip_points(struct thermal_zone_device *)
-> +{
-> +	return NULL;
-> +}
->  #endif
-> =20
->  #endif /* __THERMAL_CORE_H__ */
-> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> index 5bc28a7..88d7249 100644
-> --- a/include/linux/thermal.h
-> +++ b/include/linux/thermal.h
-> @@ -303,6 +303,20 @@ struct thermal_zone_of_device_ops {
->  	int (*get_trend)(void *, long *);
->  };
-> =20
-> +/**
-> + * struct thermal_trip - Structure representing themal trip points expor=
-ted from
-> + *                       of-thermal
-> + *
-
-The only problem I have with this name is that would look like it is in
-use in all thermal framework, which is not really the case. But I do
-think having a type here is a good thing. So, not sure :-)
-
-> + * @temperature:	trip point temperature
-> + * @hysteresis:		trip point hysteresis
-> + * @type:		trip point type
-> + */
-> +struct thermal_trip {
-> +	unsigned long int temperature;
-> +	unsigned long int hysteresis;
-> +	enum thermal_trip_type type;
-> +};
-> +
->  /* Function declarations */
->  #ifdef CONFIG_THERMAL_OF
->  struct thermal_zone_device *
-> --=20
-> 2.0.0.rc2
->=20
-
---17pEHd4RhPHOinZp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUdOhCAAoJEMLUO4d9pOJW/MsH/2mkqHxROgwKtjuZILnn5HIc
-FW9m6U3rWHqjS8nTvj41M2AoEFsadc8qBT66GoX25bQH8hjeDDi6kiCWHOJ1bHq2
-xe+LQKno4bzOc/3jNiPyTkGxexUDsdmx5pfSDcqhFCuvc+U6DdHKECrwigBWujzI
-JHoW+7P5RGd/jwBjmAma8VqQ+1jpa6eUjlFcWBnruz9Oh/8KLHGEzG+P/pcnj71V
-UIPPWnL13tuz9dEpezMQEl/CDctVlu0h4IEIo7/zPcF2uyKrrT0+1MeBWPV9Vz2U
-uy2AwgVtgffmiC9z2VJYK930akGjSuZnDOxlBCngObSqM2Dz/9A+qsJ1YZre6fw=
-=fm2i
------END PGP SIGNATURE-----
-
---17pEHd4RhPHOinZp--
