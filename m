@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216AbaKYFxN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 00:53:13 -0500
-Received: from mga14.intel.com ([192.55.52.115]:51011 "EHLO mga14.intel.com"
+	id S1752265AbaKYFxd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 00:53:33 -0500
+Received: from mga11.intel.com ([192.55.52.93]:25187 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752149AbaKYFwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 00:52:54 -0500
+	id S1752231AbaKYFxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 00:53:30 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,453,1413270000"; 
-   d="scan'208";a="627797901"
+   d="scan'208";a="627798095"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -16,17 +16,17 @@ To: Bjorn Helgaas <bhelgaas@google.com>,
         "H. Peter Anvin" <hpa@zytor.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Joerg Roedel <joro@8bytes.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Borislav Petkov <bp@alien8.de>, x86@kernel.org,
+        Joerg Roedel <joro@8bytes.org>, Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Tony Luck <tony.luck@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: [Patch Part2 v6 11/27] iommu/amd: Enhance AMD IR driver to suppport hierarchy irqdomain
-Date: Tue, 25 Nov 2014 13:53:20 +0800
-Message-Id: <1416894816-23245-12-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch Part2 v6 13/27] x86, PCI, MSI: Use hierarchy irqdomain to manage MSI interrupts
+Date: Tue, 25 Nov 2014 13:53:22 +0800
+Message-Id: <1416894816-23245-14-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1416894816-23245-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1416894816-23245-1-git-send-email-jiang.liu@linux.intel.com>
@@ -34,470 +34,315 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance AMD interrupt remapping driver to support hierarchy irqdomain,
-it will simplify the code eventually.
+Enhance MSI code to support hierarchy irqdomain, it helps to make
+the architecture more clear.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Acked-by: Joerg Roedel <jroedel@suse.de>
 ---
- drivers/iommu/amd_iommu.c       |  329 ++++++++++++++++++++++++++++++++++++++-
- drivers/iommu/amd_iommu_init.c  |    4 +
- drivers/iommu/amd_iommu_proto.h |    9 ++
- drivers/iommu/amd_iommu_types.h |    5 +
- 4 files changed, 341 insertions(+), 6 deletions(-)
+ arch/x86/Kconfig                     |    1 +
+ arch/x86/include/asm/hw_irq.h        |    9 ++-
+ arch/x86/include/asm/irq_remapping.h |    6 +-
+ arch/x86/include/asm/msi.h           |    7 ++
+ arch/x86/kernel/apic/msi.c           |  145 ++++++++++++++++++----------------
+ arch/x86/kernel/apic/vector.c        |    2 +
+ drivers/iommu/irq_remapping.c        |    1 -
+ 7 files changed, 96 insertions(+), 75 deletions(-)
+ create mode 100644 arch/x86/include/asm/msi.h
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 6fda7cc789eb..d02742311201 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -33,6 +33,7 @@
- #include <linux/export.h>
- #include <linux/irq.h>
- #include <linux/msi.h>
-+#include <linux/irqdomain.h>
- #include <asm/irq_remapping.h>
- #include <asm/io_apic.h>
- #include <asm/apic.h>
-@@ -3854,6 +3855,16 @@ union irte {
- 	} fields;
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 14385ebfd560..e05be74d713d 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -883,6 +883,7 @@ config X86_LOCAL_APIC
+ 	depends on X86_64 || SMP || X86_32_NON_STANDARD || X86_UP_APIC || PCI_MSI
+ 	select GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
+ 	select IRQ_DOMAIN_HIERARCHY
++	select PCI_MSI_IRQ_DOMAIN if PCI_MSI
+ 
+ config X86_IO_APIC
+ 	def_bool X86_64 || SMP || X86_32_NON_STANDARD || X86_UP_IOAPIC
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index bd7881c5a57a..270c432971f8 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -110,9 +110,10 @@ struct irq_2_irte {
  };
+ #endif	/* CONFIG_IRQ_REMAP */
  
-+struct amd_ir_data {
-+	struct irq_2_irte			irq_2_irte;
-+	union irte				irte_entry;
-+	union {
-+		struct msi_msg			msi_entry;
-+	};
-+};
++struct irq_domain;
 +
-+static struct irq_chip amd_ir_chip;
+ #ifdef	CONFIG_X86_LOCAL_APIC
+ struct irq_data;
+-struct irq_domain;
+ struct pci_dev;
+ struct msi_desc;
+ 
+@@ -214,6 +215,12 @@ static inline void lock_vector_lock(void) {}
+ static inline void unlock_vector_lock(void) {}
+ #endif	/* CONFIG_X86_LOCAL_APIC */
+ 
++#ifdef	CONFIG_PCI_MSI
++extern void arch_init_msi_domain(struct irq_domain *domain);
++#else
++static inline void arch_init_msi_domain(struct irq_domain *domain) { }
++#endif
 +
- #define DTE_IRQ_PHYS_ADDR_MASK	(((1ULL << 45)-1) << 6)
- #define DTE_IRQ_REMAP_INTCTL    (2ULL << 60)
- #define DTE_IRQ_TABLE_LEN       (8ULL << 1)
-@@ -3947,7 +3958,8 @@ out_unlock:
- 	return table;
- }
+ /* Statistics */
+ extern atomic_t irq_err_count;
+ extern atomic_t irq_mis_count;
+diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+index 3421f10456d8..3b11f5a3e092 100644
+--- a/arch/x86/include/asm/irq_remapping.h
++++ b/arch/x86/include/asm/irq_remapping.h
+@@ -68,11 +68,7 @@ irq_remapping_get_irq_domain(struct irq_alloc_info *info);
+ extern void irq_remapping_print_chip(struct irq_data *data, struct seq_file *p);
  
--static int alloc_irq_index(struct irq_cfg *cfg, u16 devid, int count)
-+static int alloc_irq_index(struct irq_cfg *cfg, struct irq_2_irte *irte_info,
-+			   u16 devid, int count)
- {
- 	struct irq_remap_table *table;
- 	unsigned long flags;
-@@ -3969,15 +3981,12 @@ static int alloc_irq_index(struct irq_cfg *cfg, u16 devid, int count)
- 			c = 0;
+ /* Create PCI MSI/MSIx irqdomain, use @parent as the parent irqdomain. */
+-static inline struct irq_domain *
+-arch_create_msi_irq_domain(struct irq_domain *parent)
+-{
+-	return NULL;
+-}
++extern struct irq_domain *arch_create_msi_irq_domain(struct irq_domain *parent);
  
- 		if (c == count)	{
--			struct irq_2_irte *irte_info;
--
- 			for (; c != 0; --c)
- 				table->table[index - c + 1] = IRTE_ALLOCATED;
+ /* Get parent irqdomain for interrupt remapping irqdomain */
+ static inline struct irq_domain *arch_get_ir_parent_domain(void)
+diff --git a/arch/x86/include/asm/msi.h b/arch/x86/include/asm/msi.h
+new file mode 100644
+index 000000000000..93724cc62177
+--- /dev/null
++++ b/arch/x86/include/asm/msi.h
+@@ -0,0 +1,7 @@
++#ifndef _ASM_X86_MSI_H
++#define _ASM_X86_MSI_H
++#include <asm/hw_irq.h>
++
++typedef struct irq_alloc_info msi_alloc_info_t;
++
++#endif /* _ASM_X86_MSI_H */
+diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
+index e0a7e6e152bd..e82ab7973477 100644
+--- a/arch/x86/kernel/apic/msi.c
++++ b/arch/x86/kernel/apic/msi.c
+@@ -3,6 +3,8 @@
+  *
+  * Copyright (C) 1997, 1998, 1999, 2000, 2009 Ingo Molnar, Hajnalka Szabo
+  *	Moved from arch/x86/kernel/apic/io_apic.c.
++ * Jiang Liu <jiang.liu@linux.intel.com>
++ *	Convert to hierarchy irqdomain
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+@@ -21,6 +23,8 @@
+ #include <asm/apic.h>
+ #include <asm/irq_remapping.h>
  
- 			index -= count - 1;
- 
- 			cfg->remapped	      = 1;
--			irte_info             = &cfg->irq_2_irte;
- 			irte_info->devid      = devid;
- 			irte_info->index      = index;
- 
-@@ -4222,7 +4231,7 @@ static int msi_alloc_irq(struct pci_dev *pdev, int irq, int nvec)
- 		return -EINVAL;
- 
- 	devid = get_device_id(&pdev->dev);
--	index = alloc_irq_index(cfg, devid, nvec);
-+	index = alloc_irq_index(cfg, &cfg->irq_2_irte, devid, nvec);
- 
- 	return index < 0 ? MAX_IRQS_PER_TABLE : index;
- }
-@@ -4269,7 +4278,7 @@ static int alloc_hpet_msi(unsigned int irq, unsigned int id)
- 	if (devid < 0)
- 		return devid;
- 
--	index = alloc_irq_index(cfg, devid, 1);
-+	index = alloc_irq_index(cfg, &cfg->irq_2_irte, devid, 1);
- 	if (index < 0)
- 		return index;
- 
-@@ -4280,6 +4289,72 @@ static int alloc_hpet_msi(unsigned int irq, unsigned int id)
++static struct irq_domain *msi_default_domain;
++
+ void native_compose_msi_msg(struct pci_dev *pdev,
+ 			    unsigned int irq, unsigned int dest,
+ 			    struct msi_msg *msg, u8 hpet_id)
+@@ -114,102 +118,107 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
  	return 0;
  }
  
-+static int get_devid(struct irq_alloc_info *info)
-+{
-+	int devid = -1;
-+
-+	switch (info->type) {
-+	case X86_IRQ_ALLOC_TYPE_IOAPIC:
-+		devid     = get_ioapic_devid(info->ioapic_id);
-+		break;
-+	case X86_IRQ_ALLOC_TYPE_HPET:
-+		devid     = get_hpet_devid(info->hpet_id);
-+		break;
-+	case X86_IRQ_ALLOC_TYPE_MSI:
-+	case X86_IRQ_ALLOC_TYPE_MSIX:
-+		devid = get_device_id(&info->msi_dev->dev);
-+		break;
-+	default:
-+		BUG_ON(1);
-+		break;
-+	}
-+
-+	return devid;
-+}
-+
-+static struct irq_domain *get_ir_irq_domain(struct irq_alloc_info *info)
-+{
-+	int devid;
-+	struct amd_iommu *iommu;
-+
-+	if (!info)
-+		return NULL;
-+
-+	devid = get_devid(info);
-+	if (devid >= 0) {
-+		iommu = amd_iommu_rlookup_table[devid];
-+		if (iommu)
-+			return iommu->ir_domain;
-+	}
-+
-+	return NULL;
-+}
-+
-+static struct irq_domain *get_irq_domain(struct irq_alloc_info *info)
-+{
-+	int devid;
-+	struct amd_iommu *iommu;
-+
-+	if (!info)
-+		return NULL;
-+
-+	switch (info->type) {
-+	case X86_IRQ_ALLOC_TYPE_MSI:
-+	case X86_IRQ_ALLOC_TYPE_MSIX:
-+		devid = get_device_id(&info->msi_dev->dev);
-+		if (devid >= 0) {
-+			iommu = amd_iommu_rlookup_table[devid];
-+			if (iommu)
-+				return iommu->msi_domain;
-+		}
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	return NULL;
-+}
-+
- struct irq_remap_ops amd_iommu_irq_ops = {
- 	.supported		= amd_iommu_supported,
- 	.prepare		= amd_iommu_prepare,
-@@ -4294,5 +4369,247 @@ struct irq_remap_ops amd_iommu_irq_ops = {
- 	.msi_alloc_irq		= msi_alloc_irq,
- 	.msi_setup_irq		= msi_setup_irq,
- 	.alloc_hpet_msi		= alloc_hpet_msi,
-+	.get_ir_irq_domain	= get_ir_irq_domain,
-+	.get_irq_domain		= get_irq_domain,
-+};
-+
-+static void irq_remapping_prepare_irte(struct amd_ir_data *data,
-+				       struct irq_cfg *irq_cfg,
-+				       struct irq_alloc_info *info,
-+				       int devid, int index, int sub_handle)
-+{
-+	union irte *irte = &data->irte_entry;
-+	struct irq_2_irte *irte_info = &data->irq_2_irte;
-+	struct msi_msg *msg = &data->msi_entry;
-+	struct IO_APIC_route_entry *entry;
-+
-+	irq_cfg->remapped = 1;
-+	data->irq_2_irte.devid = devid;
-+	data->irq_2_irte.index = index + sub_handle;
-+
-+	/* Setup IRTE for IOMMU */
-+	irte->val = 0;
-+	irte->fields.vector      = irq_cfg->vector;
-+	irte->fields.int_type    = apic->irq_delivery_mode;
-+	irte->fields.destination = irq_cfg->dest_apicid;
-+	irte->fields.dm          = apic->irq_dest_mode;
-+	irte->fields.valid       = 1;
-+
-+	switch (info->type) {
-+	case X86_IRQ_ALLOC_TYPE_IOAPIC:
-+		/* Setup IOAPIC entry */
-+		entry = info->ioapic_entry;
-+		info->ioapic_entry = NULL;
-+		memset(entry, 0, sizeof(*entry));
-+		entry->vector        = index;
-+		entry->mask          = 0;
-+		entry->trigger       = info->ioapic_trigger;
-+		entry->polarity      = info->ioapic_polarity;
-+		/* Mask level triggered irqs. */
-+		if (info->ioapic_trigger)
-+			entry->mask = 1;
-+		break;
-+
-+	case X86_IRQ_ALLOC_TYPE_HPET:
-+	case X86_IRQ_ALLOC_TYPE_MSI:
-+	case X86_IRQ_ALLOC_TYPE_MSIX:
-+		msg->address_hi = MSI_ADDR_BASE_HI;
-+		msg->address_lo = MSI_ADDR_BASE_LO;
-+		msg->data = irte_info->index;
-+		break;
-+
-+	default:
-+		BUG_ON(1);
-+		break;
-+	}
-+}
-+
-+static int irq_remapping_alloc(struct irq_domain *domain, unsigned int virq,
-+			       unsigned int nr_irqs, void *arg)
-+{
-+	struct irq_alloc_info *info = arg;
-+	struct amd_ir_data *data;
-+	struct irq_data *irq_data;
-+	struct irq_cfg *cfg;
-+	int i, ret, devid;
-+	int index = -1;
-+
-+	if (!info)
-+		return -EINVAL;
-+	if (nr_irqs > 1 && info->type != X86_IRQ_ALLOC_TYPE_MSI &&
-+	    info->type != X86_IRQ_ALLOC_TYPE_MSIX)
-+		return -EINVAL;
-+
-+	/*
-+	 * With IRQ remapping enabled, don't need contigious CPU vectors
-+	 * to support multiple MSI interrupts.
-+	 */
-+	if (info->type == X86_IRQ_ALLOC_TYPE_MSI)
-+		info->flags &= ~X86_IRQ_ALLOC_CONTIGOUS_VECTORS;
-+
-+	devid = get_devid(info);
-+	if (devid < 0)
-+		return -EINVAL;
-+
-+	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = -ENOMEM;
-+	data = kzalloc(sizeof(*data), GFP_KERNEL);
-+	if (!data)
-+		goto out_free_parent;
-+
-+	if (info->type == X86_IRQ_ALLOC_TYPE_IOAPIC) {
-+		if (get_irq_table(devid, true))
-+			index = info->ioapic_pin;
-+		else
-+			ret = -ENOMEM;
-+	} else {
-+		cfg = irq_cfg(virq);
-+		index = alloc_irq_index(cfg, &data->irq_2_irte, devid, nr_irqs);
-+	}
-+	if (index < 0) {
-+		pr_warn("Failed to allocate IRTE\n");
-+		kfree(data);
-+		goto out_free_parent;
-+	}
-+
-+	for (i = 0; i < nr_irqs; i++) {
-+		irq_data = irq_domain_get_irq_data(domain, virq + i);
-+		cfg = irqd_cfg(irq_data);
-+		if (!irq_data || !cfg) {
-+			ret = -EINVAL;
-+			goto out_free_data;
-+		}
-+
-+		if (i > 0) {
-+			data = kzalloc(sizeof(*data), GFP_KERNEL);
-+			if (!data)
-+				goto out_free_data;
-+		}
-+		irq_data->hwirq = (devid << 16) + i;
-+		irq_data->chip_data = data;
-+		irq_data->chip = &amd_ir_chip;
-+		irq_remapping_prepare_irte(data, cfg, info, devid, index, i);
-+		irq_set_status_flags(virq + i, IRQ_MOVE_PCNTXT);
-+	}
-+	return 0;
-+
-+out_free_data:
-+	for (i--; i >= 0; i--) {
-+		irq_data = irq_domain_get_irq_data(domain, virq + i);
-+		if (irq_data)
-+			kfree(irq_data->chip_data);
-+	}
-+	for (i = 0; i < nr_irqs; i++)
-+		free_irte(devid, index + i);
-+out_free_parent:
-+	irq_domain_free_irqs_common(domain, virq, nr_irqs);
-+	return ret;
-+}
-+
-+static void irq_remapping_free(struct irq_domain *domain, unsigned int virq,
-+			       unsigned int nr_irqs)
-+{
-+	struct irq_data *irq_data;
-+	struct amd_ir_data *data;
-+	struct irq_2_irte *irte_info;
-+	int i;
-+
-+	for (i = 0; i < nr_irqs; i++) {
-+		irq_data = irq_domain_get_irq_data(domain, virq  + i);
-+		if (irq_data && irq_data->chip_data) {
-+			data = irq_data->chip_data;
-+			irte_info = &data->irq_2_irte;
-+			free_irte(irte_info->devid, irte_info->index);
-+			kfree(data);
-+		}
-+	}
-+	irq_domain_free_irqs_common(domain, virq, nr_irqs);
-+}
-+
-+static void irq_remapping_activate(struct irq_domain *domain,
-+				   struct irq_data *irq_data)
-+{
-+	struct amd_ir_data *data = irq_data->chip_data;
-+	struct irq_2_irte *irte_info = &data->irq_2_irte;
-+
-+	modify_irte(irte_info->devid, irte_info->index, data->irte_entry);
-+}
-+
-+static void irq_remapping_deactivate(struct irq_domain *domain,
-+				     struct irq_data *irq_data)
-+{
-+	struct amd_ir_data *data = irq_data->chip_data;
-+	struct irq_2_irte *irte_info = &data->irq_2_irte;
-+	union irte entry;
-+
-+	entry.val = 0;
-+	modify_irte(irte_info->devid, irte_info->index, data->irte_entry);
-+}
-+
-+static struct irq_domain_ops amd_ir_domain_ops = {
-+	.alloc = irq_remapping_alloc,
-+	.free = irq_remapping_free,
-+	.activate = irq_remapping_activate,
-+	.deactivate = irq_remapping_deactivate,
- };
-+
-+static int amd_ir_set_affinity(struct irq_data *data,
-+			       const struct cpumask *mask, bool force)
-+{
-+	struct amd_ir_data *ir_data = data->chip_data;
-+	struct irq_2_irte *irte_info = &ir_data->irq_2_irte;
-+	struct irq_cfg *cfg = irqd_cfg(data);
-+	struct irq_data *parent = data->parent_data;
-+	int ret;
-+
-+	ret = parent->chip->irq_set_affinity(parent, mask, force);
-+	if (ret < 0 || ret == IRQ_SET_MASK_OK_DONE)
-+		return ret;
-+
-+	/*
-+	 * Atomically updates the IRTE with the new destination, vector
-+	 * and flushes the interrupt entry cache.
-+	 */
-+	ir_data->irte_entry.fields.vector = cfg->vector;
-+	ir_data->irte_entry.fields.destination = cfg->dest_apicid;
-+	modify_irte(irte_info->devid, irte_info->index, ir_data->irte_entry);
-+
-+	/*
-+	 * After this point, all the interrupts will start arriving
-+	 * at the new destination. So, time to cleanup the previous
-+	 * vector allocation.
-+	 */
-+	if (cfg->move_in_progress)
-+		send_cleanup_vector(cfg);
-+
-+	return IRQ_SET_MASK_OK_DONE;
-+}
-+
-+static void ir_compose_msi_msg(struct irq_data *irq_data, struct msi_msg *msg)
-+{
-+	struct amd_ir_data *ir_data = irq_data->chip_data;
-+
-+	*msg = ir_data->msi_entry;
-+}
-+
-+static struct irq_chip amd_ir_chip = {
-+	.irq_ack = ir_ack_apic_edge,
-+	.irq_set_affinity = amd_ir_set_affinity,
-+	.irq_compose_msi_msg = ir_compose_msi_msg,
-+};
-+
-+int amd_iommu_create_irq_domain(struct amd_iommu *iommu)
-+{
-+	iommu->ir_domain = irq_domain_add_tree(NULL, &amd_ir_domain_ops, iommu);
-+	if (!iommu->ir_domain)
-+		return -ENOMEM;
-+
-+	iommu->ir_domain->parent = arch_get_ir_parent_domain();
-+	iommu->msi_domain = arch_create_msi_irq_domain(iommu->ir_domain);
-+
-+	return 0;
-+}
- #endif
-diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-index b0522f15730f..de3390a7d345 100644
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -1124,6 +1124,10 @@ static int __init init_iommu_one(struct amd_iommu *iommu, struct ivhd_header *h)
- 	if (ret)
- 		return ret;
- 
-+	ret = amd_iommu_create_irq_domain(iommu);
-+	if (ret)
-+		return ret;
-+
- 	/*
- 	 * Make sure IOMMU is not considered to translate itself. The IVRS
- 	 * table tells us so, but this is a lie!
-diff --git a/drivers/iommu/amd_iommu_proto.h b/drivers/iommu/amd_iommu_proto.h
-index 95ed6deae47f..612a22192fa0 100644
---- a/drivers/iommu/amd_iommu_proto.h
-+++ b/drivers/iommu/amd_iommu_proto.h
-@@ -63,6 +63,15 @@ extern u8 amd_iommu_pc_get_max_counters(u16 devid);
- extern int amd_iommu_pc_get_set_reg_val(u16 devid, u8 bank, u8 cntr, u8 fxn,
- 				    u64 *value, bool is_write);
- 
-+#ifdef CONFIG_IRQ_REMAP
-+extern int amd_iommu_create_irq_domain(struct amd_iommu *iommu);
-+#else
-+static inline int amd_iommu_create_irq_domain(struct amd_iommu *iommu)
-+{
-+	return 0;
-+}
-+#endif
-+
- #define PPR_SUCCESS			0x0
- #define PPR_INVALID			0x1
- #define PPR_FAILURE			0xf
-diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
-index cec51a8ba844..ef12d74a03fe 100644
---- a/drivers/iommu/amd_iommu_types.h
-+++ b/drivers/iommu/amd_iommu_types.h
-@@ -392,6 +392,7 @@ struct amd_iommu_fault {
- 
- 
- struct iommu_domain;
-+struct irq_domain;
- 
+-static int
+-msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+-{
+-	struct irq_cfg *cfg = irqd_cfg(data);
+-	struct msi_msg msg;
+-	unsigned int dest;
+-	int ret;
+-
+-	ret = apic_set_affinity(data, mask, &dest);
+-	if (ret)
+-		return ret;
+-
+-	__get_cached_msi_msg(data->msi_desc, &msg);
+-
+-	msg.data &= ~MSI_DATA_VECTOR_MASK;
+-	msg.data |= MSI_DATA_VECTOR(cfg->vector);
+-	msg.address_lo &= ~MSI_ADDR_DEST_ID_MASK;
+-	msg.address_lo |= MSI_ADDR_DEST_ID(dest);
+-
+-	__write_msi_msg(data->msi_desc, &msg);
+-
+-	return IRQ_SET_MASK_OK_NOCOPY;
+-}
+-
  /*
-  * This structure contains generic data for  IOMMU protection domains
-@@ -574,6 +575,10 @@ struct amd_iommu {
- 	/* The maximum PC banks and counters/bank (PCSup=1) */
- 	u8 max_banks;
- 	u8 max_counters;
-+#ifdef CONFIG_IRQ_REMAP
-+	struct irq_domain *ir_domain;
-+	struct irq_domain *msi_domain;
-+#endif
+  * IRQ Chip for MSI PCI/PCI-X/PCI-Express Devices,
+  * which implement the MSI or MSI-X Capability Structure.
+  */
+-static struct irq_chip msi_chip = {
++static struct irq_chip pci_msi_controller = {
+ 	.name			= "PCI-MSI",
+-	.irq_unmask		= unmask_msi_irq,
+-	.irq_mask		= mask_msi_irq,
+-	.irq_ack		= apic_ack_edge,
+-	.irq_set_affinity	= msi_set_affinity,
+-	.irq_retrigger		= apic_retrigger_irq,
++	.irq_unmask		= pci_msi_unmask_irq,
++	.irq_mask		= pci_msi_mask_irq,
++	.irq_ack		= irq_chip_ack_parent,
++	.irq_set_affinity	= msi_domain_set_affinity,
++	.irq_retrigger		= irq_chip_retrigger_hierarchy,
++	.irq_print_chip		= irq_remapping_print_chip,
++	.irq_compose_msi_msg	= irq_msi_compose_msg,
++	.irq_write_msi_msg	= pci_msi_domain_write_msg,
+ 	.flags			= IRQCHIP_SKIP_SET_WAKE,
  };
  
- struct devid_map {
+-int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+-		  unsigned int irq_base, unsigned int irq_offset)
++int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ {
+-	struct irq_chip *chip = &msi_chip;
+-	struct msi_msg msg;
+-	unsigned int irq = irq_base + irq_offset;
+-	int ret;
++	struct irq_domain *domain;
++	struct irq_alloc_info info;
+ 
+-	ret = msi_compose_msg(dev, irq, &msg, -1);
+-	if (ret < 0)
+-		return ret;
++	init_irq_alloc_info(&info, NULL);
++	info.type = X86_IRQ_ALLOC_TYPE_MSI;
++	info.msi_dev = dev;
+ 
+-	irq_set_msi_desc_off(irq_base, irq_offset, msidesc);
++	domain = irq_remapping_get_irq_domain(&info);
++	if (domain == NULL)
++		domain = msi_default_domain;
++	if (domain == NULL)
++		return -ENOSYS;
+ 
+-	/*
+-	 * MSI-X message is written per-IRQ, the offset is always 0.
+-	 * MSI message denotes a contiguous group of IRQs, written for 0th IRQ.
+-	 */
+-	if (!irq_offset)
+-		write_msi_msg(irq, &msg);
++	return pci_msi_domain_alloc_irqs(domain, dev, nvec, type);
++}
+ 
+-	setup_remapped_irq(irq, irq_cfg(irq), chip);
++void native_teardown_msi_irq(unsigned int irq)
++{
++	irq_domain_free_irqs(irq, 1);
++}
+ 
+-	irq_set_chip_and_handler_name(irq, chip, handle_edge_irq, "edge");
++static irq_hw_number_t pci_msi_get_hwirq(struct msi_domain_info *info,
++					 msi_alloc_info_t *arg)
++{
++	return arg->msi_hwirq;
++}
+ 
+-	dev_dbg(&dev->dev, "irq %d for MSI/MSI-X\n", irq);
++static int pci_msi_prepare(struct irq_domain *domain, struct device *dev,
++			   int nvec, msi_alloc_info_t *arg)
++{
++	struct pci_dev *pdev = to_pci_dev(dev);
++	struct msi_desc *desc = first_pci_msi_entry(pdev);
++
++	init_irq_alloc_info(arg, NULL);
++	arg->msi_dev = pdev;
++	if (desc->msi_attrib.is_msix) {
++		arg->type = X86_IRQ_ALLOC_TYPE_MSIX;
++	} else {
++		arg->type = X86_IRQ_ALLOC_TYPE_MSI;
++		arg->flags |= X86_IRQ_ALLOC_CONTIGOUS_VECTORS;
++	}
+ 
+ 	return 0;
+ }
+ 
+-int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
++static void pci_msi_set_desc(msi_alloc_info_t *arg, struct msi_desc *desc)
+ {
+-	struct msi_desc *msidesc;
+-	int irq, ret;
++	arg->msi_hwirq = pci_msi_domain_calc_hwirq(arg->msi_dev, desc);
++}
+ 
+-	/* Multiple MSI vectors only supported with interrupt remapping */
+-	if (type == PCI_CAP_ID_MSI && nvec > 1)
+-		return 1;
++static struct msi_domain_ops pci_msi_domain_ops = {
++	.get_hwirq	= pci_msi_get_hwirq,
++	.msi_prepare	= pci_msi_prepare,
++	.set_desc	= pci_msi_set_desc,
++};
+ 
+-	list_for_each_entry(msidesc, &dev->msi_list, list) {
+-		irq = irq_domain_alloc_irqs(NULL, 1, NUMA_NO_NODE, NULL);
+-		if (irq <= 0)
+-			return -ENOSPC;
++static struct msi_domain_info pci_msi_domain_info = {
++	.flags		= MSI_FLAG_USE_DEF_DOM_OPS | MSI_FLAG_USE_DEF_CHIP_OPS |
++			  MSI_FLAG_MULTI_PCI_MSI | MSI_FLAG_PCI_MSIX,
++	.ops		= &pci_msi_domain_ops,
++	.chip		= &pci_msi_controller,
++	.handler	= handle_edge_irq,
++	.handler_name	= "edge",
++};
+ 
+-		ret = setup_msi_irq(dev, msidesc, irq, 0);
+-		if (ret < 0) {
+-			irq_domain_free_irqs(irq, 1);
+-			return ret;
+-		}
++void arch_init_msi_domain(struct irq_domain *parent)
++{
++	if (disable_apic)
++		return;
+ 
+-	}
+-	return 0;
++	msi_default_domain = pci_msi_create_irq_domain(NULL,
++					&pci_msi_domain_info, parent);
++	if (!msi_default_domain)
++		pr_warn("failed to initialize irqdomain for MSI/MSI-x.\n");
+ }
+ 
+-void native_teardown_msi_irq(unsigned int irq)
++#ifdef CONFIG_IRQ_REMAP
++struct irq_domain *arch_create_msi_irq_domain(struct irq_domain *parent)
+ {
+-	irq_domain_free_irqs(irq, 1);
++	return msi_create_irq_domain(NULL, &pci_msi_domain_info, parent);
+ }
++#endif
+ 
+ #ifdef CONFIG_DMAR_TABLE
+ static int
+diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
+index f8340c72546f..e971c87f7858 100644
+--- a/arch/x86/kernel/apic/vector.c
++++ b/arch/x86/kernel/apic/vector.c
+@@ -364,6 +364,8 @@ int __init arch_early_irq_init(void)
+ 	BUG_ON(x86_vector_domain == NULL);
+ 	irq_set_default_host(x86_vector_domain);
+ 
++	arch_init_msi_domain(x86_vector_domain);
++
+ 	return arch_early_ioapic_init();
+ }
+ 
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index 04ea5212cc28..6ec0099a16d1 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -171,7 +171,6 @@ static void __init irq_remapping_modify_x86_ops(void)
+ 	x86_io_apic_ops.set_affinity	= set_remapped_irq_affinity;
+ 	x86_io_apic_ops.setup_entry	= setup_ioapic_remapped_entry;
+ 	x86_io_apic_ops.eoi_ioapic_pin	= eoi_ioapic_pin_remapped;
+-	x86_msi.setup_msi_irqs		= irq_remapping_setup_msi_irqs;
+ 	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
+ 	x86_msi.compose_msi_msg		= compose_remapped_msi_msg;
+ }
 -- 
 1.7.10.4
 
