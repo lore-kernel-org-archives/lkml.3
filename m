@@ -1,100 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939AbaKYLSW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:18:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58744 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593AbaKYKmW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:22 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 148/254] dm bufio: change __GFP_IO to __GFP_FS in shrinker callbacks
-Date: Tue, 25 Nov 2014 10:38:18 +0000
-Message-Id: <1416912004-5928-149-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	id S1753665AbaKYLSj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:18:39 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:57419 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753593AbaKYLSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 06:18:37 -0500
+From: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: [PATCH v2 0/4] powernv: cpuidle: Redesign idle states management
+Date: Tue, 25 Nov 2014 16:47:55 +0530
+Message-Id: <1416914279-30384-1-git-send-email-shreyas@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.9.3
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112511-0033-0000-0000-000001248C5A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
+Deep idle states like sleep and winkle are per core idle states. A core
+enters these states only when all the threads enter either the particular
+idle state or a deeper one. There are tasks like fastsleep hardware bug
+workaround and hypervisor core state save which have to be done only by
+the last thread of the core entering deep idle state and similarly tasks
+like timebase resync, hypervisor core register restore that have to be
+done only by the first thread waking up from these states. 
 
-------------------
+The current idle state management does not have a way to distinguish the
+first/last thread of the core waking/entering idle states. Tasks like
+timebase resync are done for all the threads. This is not only is suboptimal,
+but can cause functionality issues when subcores are involved.
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+Winkle is deeper idle state compared to fastsleep. In this state the power
+supply to the chiplet, i.e core, private L2 and private L3 is turned off.
+This results in a total hypervisor state loss. This patch set adds support
+for winkle and provides a way to track the idle states of the threads of the
+core and use it for idle state management of idle states sleep and winkle.
 
-commit 9d28eb12447ee08bb5d1e8bb3195cf20e1ecd1c0 upstream.
 
-The shrinker uses gfp flags to indicate what kind of operation can the
-driver wait for. If __GFP_IO flag is present, the driver can wait for
-block I/O operations, if __GFP_FS flag is present, the driver can wait on
-operations involving the filesystem.
+Changes in v2:
+--------------
+-Using PNV_THREAD_NAP/SLEEP defines while calling power7_powersave_common
+-Comment changes based on review
+-Rebased on top of 3.18-rc6
 
-dm-bufio tested for __GFP_IO. However, dm-bufio can run on a loop block
-device that makes calls into the filesystem. If __GFP_IO is present and
-__GFP_FS isn't, dm-bufio could still block on filesystem operations if it
-runs on a loop block device.
 
-The change from __GFP_IO to __GFP_FS supposedly fixes one observed (though
-unreproducible) deadlock involving dm-bufio and loop device.
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Michael Ellerman <mpe@ellerman.id.au>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: linux-pm@vger.kernel.org
+Cc: linuxppc-dev@lists.ozlabs.org
+Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/md/dm-bufio.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+Paul Mackerras (1):
+  powerpc: powernv: Switch off MMU before entering nap/sleep/rvwinkle
+    mode
 
-diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
-index 598ba99d2e15..fb5654da25a1 100644
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -1448,9 +1448,9 @@ static void drop_buffers(struct dm_bufio_client *c)
- 
- /*
-  * Test if the buffer is unused and too old, and commit it.
-- * At if noio is set, we must not do any I/O because we hold
-- * dm_bufio_clients_lock and we would risk deadlock if the I/O gets rerouted to
-- * different bufio client.
-+ * And if GFP_NOFS is used, we must not do any I/O because we hold
-+ * dm_bufio_clients_lock and we would risk deadlock if the I/O gets
-+ * rerouted to different bufio client.
-  */
- static int __cleanup_old_buffer(struct dm_buffer *b, gfp_t gfp,
- 				unsigned long max_jiffies)
-@@ -1458,7 +1458,7 @@ static int __cleanup_old_buffer(struct dm_buffer *b, gfp_t gfp,
- 	if (jiffies - b->last_accessed < max_jiffies)
- 		return 0;
- 
--	if (!(gfp & __GFP_IO)) {
-+	if (!(gfp & __GFP_FS)) {
- 		if (test_bit(B_READING, &b->state) ||
- 		    test_bit(B_WRITING, &b->state) ||
- 		    test_bit(B_DIRTY, &b->state))
-@@ -1500,7 +1500,7 @@ dm_bufio_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- 	unsigned long freed;
- 
- 	c = container_of(shrink, struct dm_bufio_client, shrinker);
--	if (sc->gfp_mask & __GFP_IO)
-+	if (sc->gfp_mask & __GFP_FS)
- 		dm_bufio_lock(c);
- 	else if (!dm_bufio_trylock(c))
- 		return SHRINK_STOP;
-@@ -1517,7 +1517,7 @@ dm_bufio_shrink_count(struct shrinker *shrink, struct shrink_control *sc)
- 	unsigned long count;
- 
- 	c = container_of(shrink, struct dm_bufio_client, shrinker);
--	if (sc->gfp_mask & __GFP_IO)
-+	if (sc->gfp_mask & __GFP_FS)
- 		dm_bufio_lock(c);
- 	else if (!dm_bufio_trylock(c))
- 		return 0;
+Preeti U. Murthy (1):
+  powerpc/powernv: Enable Offline CPUs to enter deep idle states
+
+Shreyas B. Prabhu (2):
+  powernv: cpuidle: Redesign idle states management
+  powernv: powerpc: Add winkle support for offline cpus
+
+ arch/powerpc/include/asm/cpuidle.h             |  14 ++
+ arch/powerpc/include/asm/opal.h                |  13 +
+ arch/powerpc/include/asm/paca.h                |   6 +
+ arch/powerpc/include/asm/ppc-opcode.h          |   2 +
+ arch/powerpc/include/asm/processor.h           |   1 +
+ arch/powerpc/include/asm/reg.h                 |   4 +
+ arch/powerpc/kernel/asm-offsets.c              |   6 +
+ arch/powerpc/kernel/cpu_setup_power.S          |   4 +
+ arch/powerpc/kernel/exceptions-64s.S           |  30 ++-
+ arch/powerpc/kernel/idle_power7.S              | 332 +++++++++++++++++++++----
+ arch/powerpc/platforms/powernv/opal-wrappers.S |  39 +++
+ arch/powerpc/platforms/powernv/powernv.h       |   2 +
+ arch/powerpc/platforms/powernv/setup.c         | 160 ++++++++++++
+ arch/powerpc/platforms/powernv/smp.c           |  10 +-
+ arch/powerpc/platforms/powernv/subcore.c       |  34 +++
+ arch/powerpc/platforms/powernv/subcore.h       |   1 +
+ drivers/cpuidle/cpuidle-powernv.c              |  10 +-
+ 17 files changed, 608 insertions(+), 60 deletions(-)
+ create mode 100644 arch/powerpc/include/asm/cpuidle.h
+
 -- 
-2.1.0
+1.9.3
 
