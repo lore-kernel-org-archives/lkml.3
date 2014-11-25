@@ -1,145 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921AbaKYRMD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 12:12:03 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:55110 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964AbaKYRMA (ORCPT
+	id S1751935AbaKYRNR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 12:13:17 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:35581 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951AbaKYRNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 12:12:00 -0500
-From: Jungseung Lee <js07.lee@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Cc: Jungseung Lee <js07.lee@gmail.com>
-Subject: [PATCH RESEND] fs/binfmt_elf.c: fix inconsistent vma dump size
-Date: Wed, 26 Nov 2014 02:11:47 +0900
-Message-Id: <1416935507-9544-1-git-send-email-js07.lee@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 25 Nov 2014 12:13:14 -0500
+Date: Tue, 25 Nov 2014 12:13:05 -0500 (EST)
+Message-Id: <20141125.121305.2094097848188324942.davem@davemloft.net>
+To: rdunlap@infradead.org
+Cc: pieter@boesman.nl, josh@joshtriplett.org, alexander.h.duyck@intel.com,
+        viro@zeniv.linux.org.uk, ast@plumgrid.com, akpm@linux-foundation.org,
+        beber@meleeweb.net, catalina.mocanu@gmail.com, dborkman@redhat.com,
+        edumazet@google.com, ebiederm@xmission.com, fabf@skynet.be,
+        fuse-devel@lists.sourceforge.net, geert@linux-m68k.org,
+        hughd@google.com, iulia.manda21@gmail.com, JBeulich@suse.com,
+        bfields@fieldses.org, jlayton@poochiereds.net,
+        linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        mcgrof@suse.com, mattst88@gmail.com, mgorman@suse.de, mst@redhat.com,
+        miklos@szeredi.hu, netdev@vger.kernel.org, oleg@redhat.com,
+        Paul.Durrant@citrix.com, paulmck@linux.vnet.ibm.com,
+        pefoley2@pefoley.com, tgraf@suug.ch, therbert@google.com,
+        trond.myklebust@primarydata.com, willemb@google.com,
+        xiaoguangrong@linux.vnet.ibm.com, zhenglong.cai@cs2c.com.cn
+Subject: Re: [PATCH v4 0/7] kernel tinification: optionally compile out
+ splice family of syscalls (splice, vmsplice, tee and sendfile)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <5474ABB6.3030400@infradead.org>
+References: <1416870079-15254-1-git-send-email-pieter@boesman.nl>
+	<5474ABB6.3030400@infradead.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 25 Nov 2014 09:13:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vma_dump_size() has been used several times on actual dumper
-and it is supposed to be same values for same vma.
-But vma_dump_size() could be different, while coredump is procceeded.
-(e.g. remove shared memory)
+From: Randy Dunlap <rdunlap@infradead.org>
+Date: Tue, 25 Nov 2014 08:17:58 -0800
 
-In that case, header info and vma size could be inconsistent
-and it cause wrong coredump file creation.
+> Is the splice family of syscalls the only one that tiny has identified
+> for optional building or can we expect similar treatment for other
+> syscalls?
+> 
+> Why will many embedded systems not need these syscalls?  You know
+> exactly what apps they run and you are positive that those apps do
+> not use splice?
 
-Fix the problem by always using the same vma dump size
-which is stored in vma_filsz.
+I think starting to compile out system calls is a very slippery
+slope we should not begin the journey down.
 
-Signed-off-by: Jungseung Lee <js07.lee@gmail.com>
----
- fs/binfmt_elf.c | 40 ++++++++++++++++++++++------------------
- 1 file changed, 22 insertions(+), 18 deletions(-)
-
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index d8fc060..3ba08ca 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -1994,18 +1994,6 @@ static void fill_extnum_info(struct elfhdr *elf, struct elf_shdr *shdr4extnum,
- 	shdr4extnum->sh_info = segs;
- }
- 
--static size_t elf_core_vma_data_size(struct vm_area_struct *gate_vma,
--				     unsigned long mm_flags)
--{
--	struct vm_area_struct *vma;
--	size_t size = 0;
--
--	for (vma = first_vma(current, gate_vma); vma != NULL;
--	     vma = next_vma(vma, gate_vma))
--		size += vma_dump_size(vma, mm_flags);
--	return size;
--}
--
- /*
-  * Actual dumper
-  *
-@@ -2017,7 +2005,8 @@ static int elf_core_dump(struct coredump_params *cprm)
- {
- 	int has_dumped = 0;
- 	mm_segment_t fs;
--	int segs;
-+	int segs, i;
-+	size_t vma_data_size = 0;
- 	struct vm_area_struct *vma, *gate_vma;
- 	struct elfhdr *elf = NULL;
- 	loff_t offset = 0, dataoff;
-@@ -2026,6 +2015,7 @@ static int elf_core_dump(struct coredump_params *cprm)
- 	struct elf_shdr *shdr4extnum = NULL;
- 	Elf_Half e_phnum;
- 	elf_addr_t e_shoff;
-+	elf_addr_t *vma_filesz = NULL;
- 
- 	/*
- 	 * We no longer stop all VM operations.
-@@ -2093,7 +2083,20 @@ static int elf_core_dump(struct coredump_params *cprm)
- 
- 	dataoff = offset = roundup(offset, ELF_EXEC_PAGESIZE);
- 
--	offset += elf_core_vma_data_size(gate_vma, cprm->mm_flags);
-+	vma_filesz = kmalloc(sizeof(*vma_filesz) * (segs - 1), GFP_KERNEL);
-+	if (!vma_filesz)
-+		goto end_coredump;
-+
-+	for (i = 0, vma = first_vma(current, gate_vma); vma != NULL;
-+			vma = next_vma(vma, gate_vma)) {
-+		unsigned long dump_size;
-+
-+		dump_size = vma_dump_size(vma, cprm->mm_flags);
-+		vma_filesz[i++] = dump_size;
-+		vma_data_size += dump_size;
-+	}
-+
-+	offset += vma_data_size;
- 	offset += elf_core_extra_data_size();
- 	e_shoff = offset;
- 
-@@ -2113,7 +2116,7 @@ static int elf_core_dump(struct coredump_params *cprm)
- 		goto end_coredump;
- 
- 	/* Write program headers for segments dump */
--	for (vma = first_vma(current, gate_vma); vma != NULL;
-+	for (i = 0, vma = first_vma(current, gate_vma); vma != NULL;
- 			vma = next_vma(vma, gate_vma)) {
- 		struct elf_phdr phdr;
- 
-@@ -2121,7 +2124,7 @@ static int elf_core_dump(struct coredump_params *cprm)
- 		phdr.p_offset = offset;
- 		phdr.p_vaddr = vma->vm_start;
- 		phdr.p_paddr = 0;
--		phdr.p_filesz = vma_dump_size(vma, cprm->mm_flags);
-+		phdr.p_filesz = vma_filesz[i++];
- 		phdr.p_memsz = vma->vm_end - vma->vm_start;
- 		offset += phdr.p_filesz;
- 		phdr.p_flags = vma->vm_flags & VM_READ ? PF_R : 0;
-@@ -2149,12 +2152,12 @@ static int elf_core_dump(struct coredump_params *cprm)
- 	if (!dump_skip(cprm, dataoff - cprm->written))
- 		goto end_coredump;
- 
--	for (vma = first_vma(current, gate_vma); vma != NULL;
-+	for (i = 0, vma = first_vma(current, gate_vma); vma != NULL;
- 			vma = next_vma(vma, gate_vma)) {
- 		unsigned long addr;
- 		unsigned long end;
- 
--		end = vma->vm_start + vma_dump_size(vma, cprm->mm_flags);
-+		end = vma->vm_start + vma_filesz[i++];
- 
- 		for (addr = vma->vm_start; addr < end; addr += PAGE_SIZE) {
- 			struct page *page;
-@@ -2187,6 +2190,7 @@ end_coredump:
- cleanup:
- 	free_note_info(&info);
- 	kfree(shdr4extnum);
-+	kfree(vma_filesz);
- 	kfree(phdr4note);
- 	kfree(elf);
- out:
--- 
-1.9.1
-
+This changes the forward facing interface to userspace.
