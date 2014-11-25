@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073AbaKYKn1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:43:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59090 "EHLO
+	id S1754657AbaKYKyu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:54:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59113 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754043AbaKYKnX (ORCPT
+	with ESMTP id S1754058AbaKYKn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:43:23 -0500
+	Tue, 25 Nov 2014 05:43:26 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steffen Klassert <steffen.klassert@secunet.com>,
+Cc: Karl Beldan <karl.beldan@rivierawaves.com>,
+        Ian Campbell <ijc@hellion.org.uk>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 216/254] vti6: Use vti6_dev_init as the ndo_init function.
-Date: Tue, 25 Nov 2014 10:39:26 +0000
-Message-Id: <1416912004-5928-217-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 219/254] net: mv643xx_eth: reclaim TX skbs only when released by the HW
+Date: Tue, 25 Nov 2014 10:39:29 +0000
+Message-Id: <1416912004-5928-220-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,64 +32,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Karl Beldan <karl.beldan@rivierawaves.com>
 
-commit 16a0231bf7dc3fb37e9b1f1cb1a277dc220b5c5e upstream.
+commit 2c2a9cbd64387d6b70ac5db013e9bfe9412c7354 upstream.
 
-vti6_dev_init() sets the dev->iflink via a call to
-vti6_link_config(). After that, register_netdevice()
-sets dev->iflink = -1. So we loose the iflink configuration
-for vti6 tunnels. Fix this by using vti6_dev_init() as the
-ndo_init function. Then vti6_dev_init() is called after
-dev->iflink is set to -1 from register_netdevice().
+ATM, txq_reclaim will dequeue and free an skb for each tx desc released
+by the hw that has TX_LAST_DESC set. However, in case of TSO, each
+hw desc embedding the last part of a segment has TX_LAST_DESC set,
+losing the one-to-one 'last skb frag'/'TX_LAST_DESC set' correspondance,
+which causes data corruption.
 
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+Fix this by checking TX_ENABLE_INTERRUPT instead of TX_LAST_DESC, and
+warn when trying to dequeue from an empty txq (which can be symptomatic
+of releasing skbs prematurely).
+
+Fixes: 3ae8f4e0b98 ('net: mv643xx_eth: Implement software TSO')
+Reported-by: Slawomir Gajzner <slawomir.gajzner@gmail.com>
+Reported-by: Julien D'Ascenzio <jdascenzio@yahoo.fr>
+Signed-off-by: Karl Beldan <karl.beldan@rivierawaves.com>
+Cc: Ian Campbell <ijc@hellion.org.uk>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv6/ip6_vti.c | 11 +----------
- 1 file changed, 1 insertion(+), 10 deletions(-)
+ drivers/net/ethernet/marvell/mv643xx_eth.c | 18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
-diff --git a/net/ipv6/ip6_vti.c b/net/ipv6/ip6_vti.c
-index 9aaa6bb229e4..f3ce1cbc0bc5 100644
---- a/net/ipv6/ip6_vti.c
-+++ b/net/ipv6/ip6_vti.c
-@@ -172,10 +172,6 @@ static int vti6_tnl_create2(struct net_device *dev)
- 	struct vti6_net *ip6n = net_generic(net, vti6_net_id);
- 	int err;
+diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
+index b151a949f352..d44560d1d268 100644
+--- a/drivers/net/ethernet/marvell/mv643xx_eth.c
++++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
+@@ -1047,7 +1047,6 @@ static int txq_reclaim(struct tx_queue *txq, int budget, int force)
+ 		int tx_index;
+ 		struct tx_desc *desc;
+ 		u32 cmd_sts;
+-		struct sk_buff *skb;
  
--	err = vti6_dev_init(dev);
--	if (err < 0)
--		goto out;
--
- 	err = register_netdevice(dev);
- 	if (err < 0)
- 		goto out;
-@@ -779,6 +775,7 @@ static int vti6_change_mtu(struct net_device *dev, int new_mtu)
- }
+ 		tx_index = txq->tx_used_desc;
+ 		desc = &txq->tx_desc_area[tx_index];
+@@ -1066,19 +1065,22 @@ static int txq_reclaim(struct tx_queue *txq, int budget, int force)
+ 		reclaimed++;
+ 		txq->tx_desc_count--;
  
- static const struct net_device_ops vti6_netdev_ops = {
-+	.ndo_init	= vti6_dev_init,
- 	.ndo_uninit	= vti6_dev_uninit,
- 	.ndo_start_xmit = vti6_tnl_xmit,
- 	.ndo_do_ioctl	= vti6_ioctl,
-@@ -848,16 +845,10 @@ static int __net_init vti6_fb_tnl_dev_init(struct net_device *dev)
- 	struct ip6_tnl *t = netdev_priv(dev);
- 	struct net *net = dev_net(dev);
- 	struct vti6_net *ip6n = net_generic(net, vti6_net_id);
--	int err = vti6_dev_init_gen(dev);
--
--	if (err)
--		return err;
+-		skb = NULL;
+-		if (cmd_sts & TX_LAST_DESC)
+-			skb = __skb_dequeue(&txq->tx_skb);
++		if (!IS_TSO_HEADER(txq, desc->buf_ptr))
++			dma_unmap_single(mp->dev->dev.parent, desc->buf_ptr,
++					 desc->byte_cnt, DMA_TO_DEVICE);
++
++		if (cmd_sts & TX_ENABLE_INTERRUPT) {
++			struct sk_buff *skb = __skb_dequeue(&txq->tx_skb);
++
++			if (!WARN_ON(!skb))
++				dev_kfree_skb(skb);
++		}
  
- 	t->parms.proto = IPPROTO_IPV6;
- 	dev_hold(dev);
+ 		if (cmd_sts & ERROR_SUMMARY) {
+ 			netdev_info(mp->dev, "tx error\n");
+ 			mp->dev->stats.tx_errors++;
+ 		}
  
--	vti6_link_config(t);
--
- 	rcu_assign_pointer(ip6n->tnls_wc[0], t);
- 	return 0;
- }
+-		if (!IS_TSO_HEADER(txq, desc->buf_ptr))
+-			dma_unmap_single(mp->dev->dev.parent, desc->buf_ptr,
+-					 desc->byte_cnt, DMA_TO_DEVICE);
+-		dev_kfree_skb(skb);
+ 	}
+ 
+ 	__netif_tx_unlock_bh(nq);
 -- 
 2.1.0
 
