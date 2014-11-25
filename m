@@ -1,118 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421AbaKYNPt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 08:15:49 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37143 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751355AbaKYNPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 08:15:46 -0500
-From: George Cherian <george.cherian@ti.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-CC: <peter.chen@freescale.com>, <sojka@merica.cz>, <mathias.nyman@intel.com>,
-        <balbi@ti.com>, <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <bcousson@baylibre.com>, <kgene.kim@samsung.com>,
-        <ben-linux@fluff.org>, <linux@arm.linux.org.uk>,
-        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
-        George Cherian <george.cherian@ti.com>
-Subject: [PATCH 02/19] usb: host xhci: fix up deallocation code
-Date: Tue, 25 Nov 2014 18:41:38 +0530
-Message-ID: <1416921115-10467-3-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1416921115-10467-1-git-send-email-george.cherian@ti.com>
-References: <1416921115-10467-1-git-send-email-george.cherian@ti.com>
+	id S1752797AbaKYN3e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 08:29:34 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:38353 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751172AbaKYN3c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 08:29:32 -0500
+X-Sasl-enc: QdNYr3R3Y6UrIGqwc1hsevUkifCjo7ID1daaREAtbRQm 1416922171
+Date: Tue, 25 Nov 2014 11:29:19 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
+Subject: Re: [PATCH 7/8] x86, microcode, intel: guard against misaligned
+ microcode data
+Message-ID: <20141125132919.GA23248@khazad-dum.debian.net>
+References: <20141108215749.GC32023@khazad-dum.debian.net>
+ <20141111104700.GC31490@pd.tnic>
+ <20141111165731.GA2584@khazad-dum.debian.net>
+ <20141111171357.GK31490@pd.tnic>
+ <20141111195400.GG2584@khazad-dum.debian.net>
+ <20141112123115.GC16807@pd.tnic>
+ <20141113001846.GB19734@khazad-dum.debian.net>
+ <20141113115332.GB14070@pd.tnic>
+ <20141115231044.GA8968@khazad-dum.debian.net>
+ <20141124173517.GE20296@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141124173517.GE20296@pd.tnic>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes up the deallocation code in the xhci driver, so that
-usb_add_hcd()/usb_remove_hcd() can be called repeatedly without
-crashing.
+On Mon, 24 Nov 2014, Borislav Petkov wrote:
+> On Sat, Nov 15, 2014 at 09:10:44PM -0200, Henrique de Moraes Holschuh wrote:
+> > For SLAB:
+> > 
+> > SLAB is nasty to grok with a first look due to the whole complexity re. its
+> > queues and cpu caches, and I don't think I understood the code properly.
+> >
+> > intel microcode sized allocations end up in slabs with large objects that
+> > are all of the same 2^n size (i.e. 2048 bytes, 4096 bytes, etc).  I could
+> > not grok the code enough to assert what real alignment I could expect for
+> > 2KiB to 64KiB objects.
+> 
+> Well, 2KiB alignment certainly satisfies 16 bytes alignment.
 
-In case of DRD mode, the DRD library calls /usb_remove_hcd() while
-switching from HOST mode to Device mode, but it doesnot call usb_put_hcd().
-We need to preserve the already allocated xhci struct for the subsequent
-call of usb_add_hcd() from the DRD library.
+Yeah, however I was not sure SLAB wouldn't spoil the fun by adding a header
+before the slab and screwing up MIN(page-size, object-size) alignment inside
+the slab.
 
-A new quirk flag XHCI_DRD_SUPPORT is added to differentiate between
-normal usb_remove_hcd and drd specific call.
+Unlike SLUB, SLAB is documented to add an enemy-of-large-alignment
+head-of-slab header in an attempt to make the world a sadder place where
+even SIMD instructions (that want cache-line alignment) would suffer...
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
- drivers/usb/host/xhci.c | 22 ++++++++++++++++------
- drivers/usb/host/xhci.h |  1 +
- 2 files changed, 17 insertions(+), 6 deletions(-)
+But my empiric testing didn't show any of that sadness for these larger
+allocation sizes (2KiB and bigger).  They're all either page-aligned or
+object-size aligned, regardless of whether SLAB debug mode was compiled in
+or not. 
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 2a5d45b..d4196f8 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -666,7 +666,8 @@ static void xhci_only_stop_hcd(struct usb_hcd *hcd)
- 	 * calls this function when allocation fails in usb_add_hcd(), or
- 	 * usb_remove_hcd() is called).  So we need to unset xHCI's pointer.
- 	 */
--	xhci->shared_hcd = NULL;
-+	if (!(xhci->quirks & XHCI_DRD_SUPPORT))
-+		xhci->shared_hcd = NULL;
- 	spin_unlock_irq(&xhci->lock);
- }
- 
-@@ -4815,6 +4816,7 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
- 	struct xhci_hcd		*xhci;
- 	struct device		*dev = hcd->self.controller;
- 	int			retval;
-+	bool			allocated = false;
- 
- 	/* Accept arbitrarily long scatter-gather lists */
- 	hcd->self.sg_tablesize = ~0;
-@@ -4826,10 +4828,15 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
- 	hcd->self.no_stop_on_short = 1;
- 
- 	if (usb_hcd_is_primary_hcd(hcd)) {
--		xhci = kzalloc(sizeof(struct xhci_hcd), GFP_KERNEL);
--		if (!xhci)
--			return -ENOMEM;
--		*((struct xhci_hcd **) hcd->hcd_priv) = xhci;
-+		if (*((struct xhci_hcd **)hcd->hcd_priv) == NULL) {
-+			xhci = kzalloc(sizeof(struct xhci_hcd), GFP_KERNEL);
-+			if (!xhci)
-+				return -ENOMEM;
-+			*((struct xhci_hcd **)hcd->hcd_priv) = xhci;
-+			allocated = true;
-+		} else {
-+			xhci = *((struct xhci_hcd **)hcd->hcd_priv);
-+		}
- 		xhci->main_hcd = hcd;
- 		/* Mark the first roothub as being USB 2.0.
- 		 * The xHCI driver will register the USB 3.0 roothub.
-@@ -4902,7 +4909,10 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
- 	xhci_dbg(xhci, "Called HCD init\n");
- 	return 0;
- error:
--	kfree(xhci);
-+	if (allocated) {
-+		*((struct xhci_hcd **)hcd->hcd_priv) = NULL;
-+		kfree(xhci);
-+	}
- 	return retval;
- }
- EXPORT_SYMBOL_GPL(xhci_gen_setup);
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index df76d64..2248058 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1560,6 +1560,7 @@ struct xhci_hcd {
- #define XHCI_SPURIOUS_WAKEUP	(1 << 18)
- /* For controllers with a broken beyond repair streams implementation */
- #define XHCI_BROKEN_STREAMS	(1 << 19)
-+#define XHCI_DRD_SUPPORT	(1 << 20)
- 	unsigned int		num_active_eps;
- 	unsigned int		limit_active_eps;
- 	/* There are two roothubs to keep track of bus suspend info for */
+> > Empiric testing in x86-64 SLAB, done by allocating 63 objects of the same
+> > size in a row, for all possible microcode sizes, did not result in a single
+> > kmalloc() that was not sufficiently aligned, and in fact all of them were
+> > object-size aligned, even for the smallest microcodes (2048 bytes).  I even
+> > tried it with CONFIG_DEBUG_SLAB turned on and off to see if it changed
+> > anything (it didn't).
+> 
+> Ok.
+> 
+> > So, while I didn't understand the code enough to prove that we'd mostly get
+> > good microcode alignment out of SLAB, I couldn't get it to return pointers
+> > that would require extra alignment either.  The worst case was 2048-byte
+> > alignment, for microcodes with 2048 bytes.
+> 
+> Well, looking at calculate_alignment() in mm/slab_common.c
+> and since we're being called with SLAB_HWCACHE_ALIGN, i.e.
+> create_kmalloc_caches(ARCH_KMALLOC_FLAGS) in kmem_cache_init(), then the
+> loop in calculate_alignment() will definitely give higher alignment than
+> 16 for the larger caches. This is, of course AFAICT.
+
+Ah, that explains it.  Thanks.  I missed the
+create_kmalloc_caches(ARCH_KMALLOC_FLAGS) detail, which indeed ensures there
+is no slab info at the head of the slab, so all intel microcode objects will
+end up aligned to MIN(page-size, object-size).
+
+> > For SLOB:
+> > 
+> > SLOB will call the page allocator for anything bigger than 4095 bytes, so
+> > all microcodes from 4096 bytes and above will be page-aligned.
+> > 
+> > Only 2048-byte and 3072-byte microcode wouldn't go directly to the page
+> > allocator.  This is microcode for ancient processors: Pentium M and earlier,
+> > and the first NetBurst processors.
+> > 
+> > I didn't bother to test, but from the code, I expect that 2048-byte and
+> > 3072-byte sized microcode would *not* be aligned to 16 bytes.  However, we
+> > have very few users of these ancient processors left.  Calling kmalloc(s);
+> > kfree(); kmalloc(s+15); for these rare processors doesn't look like too much
+> > of an issue IMHO.
+> > 
+> > SLOB was the only allocator that could result in microcode that needs
+> > further alignment in my testing, and only for the small microcode (2KiB and
+> > 3KiB) of ancient processors.
+> 
+> Right, it looks like slob could give objects aligned to < 16.
+> 
+> Ok, please add the jist of this to the commit message without going into
+> unnecessary detail too much.
+
+Will do, thanks!
+
 -- 
-1.8.3.1
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
