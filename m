@@ -1,154 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774AbaKYLjY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:39:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58412 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753111AbaKYKl2 (ORCPT
+	id S1755789AbaKYLjf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:39:35 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:28087 "EHLO
+	imgpgp01.kl.imgtec.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754341AbaKYLjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:41:28 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 087/254] UBIFS: fix a race condition
-Date: Tue, 25 Nov 2014 10:37:17 +0000
-Message-Id: <1416912004-5928-88-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	Tue, 25 Nov 2014 06:39:32 -0500
+X-PGP-Universal: processed;
+	by imgpgp01.kl.imgtec.org on Tue, 25 Nov 2014 11:39:30 +0000
+Message-ID: <54746A6B.1050702@imgtec.com>
+Date: Tue, 25 Nov 2014 11:39:23 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+CC: Mike Turquette <mturquette@linaro.org>, <linux-metag@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>
+Subject: Re: [PATCH 15/15] metag: tz1090: add TZ1090 clocks to device tree
+References: <1416438943-11429-1-git-send-email-james.hogan@imgtec.com> <2363265.Y6kZ4TuTy5@diego> <20141121100647.GF12456@jhogan-linux.le.imgtec.org> <5932816.ccTTaBqqIv@diego>
+In-Reply-To: <5932816.ccTTaBqqIv@diego>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="lQhkCjV6btr5sI6pNnfL3iMC7EFUQDwXl"
+X-Originating-IP: [192.168.154.101]
+X-ESG-ENCRYPT-TAG: 5935c8df
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
+--lQhkCjV6btr5sI6pNnfL3iMC7EFUQDwXl
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+On 24/11/14 23:03, Heiko St=FCbner wrote:
+> Am Freitag, 21. November 2014, 10:06:47 schrieb James Hogan:
+>> On Thu, Nov 20, 2014 at 01:56:24PM +0100, Heiko St=FCbner wrote:
+>>> I don't know enough about your clock structure, but it looks quite a =
+bit
+>>> like Mike's mail from May [0] may apply here too.
+>>>
+>>> The register layout also suggests that it is indeed one clock ip-bloc=
+k:
+>>>
+>>> 0x02005908 0x4	CR_TOP_CLKSWITCH
+>>> 0x0200590c 0x4	CR_TOP_CLKENAB
+>>> 0x02005950 0x4	CR_TOP_SYSPLL_CTL0
+>>> 0x02005954 0x4	CR_TOP_SYSPLL_CTL1
+>>> 0x02005988 0x4	CR_TOP_CLKSWITCH2
+>>> 0x0200598c 0x4	CR_TOP_CLKENAB2
+>>> ...
+>>>
+>>>
+>>> [0] https://lkml.org/lkml/2014/5/14/715
+>>
+>> Thanks, that does make sense. It's probably more like 4 memory regions=
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+>> ("top" level, "perip" peripheral registers, "hep" high end peripheral
+>> registers, and "pdc" powerdown controller registers), but it could
+>> certainly still have a single binding with multiple memory regions to
+>> simplify the clock specifiers.
+>=20
+> It could also make sense to have 4 clock controller nodes for those. I =
+guess=20
+> it all depends on how the hardware is layed out.
+>=20
+> For example on Rockchip SoCs, all of this is contained in the "APB CRU"=
+ (Clock=20
+> and Reset Unit) with a memory region of <0x20000000 0x4000> - so here o=
+ne=20
 
-commit 052c28073ff26f771d44ef33952a41d18dadd255 upstream.
+/me twigs what CRU stands for!
 
-Hu (hujianyang@huawei.com) discovered a race condition which may lead to a
-situation when UBIFS is unable to mount the file-system after an unclean
-reboot. The problem is theoretical, though.
+> hardware-block that contains all the clocks and also the reset controll=
+er.
+>=20
+> On the other hand it might very well be more than one ip-block on your =
 
-In UBIFS, we have the log, which basically a set of LEBs in a certain area. The
-log has the tail and the head.
+> platform.=20
+>=20
+> So I guess it comes down to looking at the memory map [or documentation=
+ :-) ]=20
+> to determine how many ip blocks there really are.
 
-Every time user writes data to the file-system, the UBIFS journal grows, and
-the log grows as well, because we append new reference nodes to the head of the
-log. So the head moves forward all the time, while the log tail stays at the
-same position.
+I'll probably combine the TOP and HEP ones at least. HEP clock stuff is
+much simpler than TOP, and a couple of clocks feed both ways between
+them which otherwise wouldn't need to be visible, suggesting they're
+pretty closely coupled.
 
-At any time, the UBIFS master node points to the tail of the log. When we mount
-the file-system, we scan the log, and we always start from its tail, because
-this is where the master node points to. The only occasion when the tail of the
-log changes is the commit operation.
+PERIP is pretty much a single bank of 14 system clock gates for
+individual peripherals, so that one's arguable. I'll probably separate
+it as there's only 1 input clock so it wouldn't be at all messy.
 
-The commit operation has 2 phases - "commit start" and "commit end". The former
-is relatively short, and does not involve much I/O. During this phase we mostly
-just build various in-memory lists of the things which have to be written to
-the flash media during "commit end" phase.
+PDC is pretty independent and can remain mostly unchanged (that is
+consistent with irq, pinctrl and gpio drivers too, where PDC low power
+stuff is independent and fits nicely into separate drivers).
 
-During the commit start phase, what we do is we "clean" the log. Indeed, the
-commit operation will index all the data in the journal, so the entire journal
-"disappears", and therefore the data in the log become unneeded. So we just
-move the head of the log to the next LEB, and write the CS node there. This LEB
-will be the tail of the new log when the commit operation finishes.
+Thanks for the suggestions!
 
-When the "commit start" phase finishes, users may write more data to the
-file-system, in parallel with the ongoing "commit end" operation. At this point
-the log tail was not changed yet, it is the same as it had been before we
-started the commit. The log head keeps moving forward, though.
+James
 
-The commit operation now needs to write the new master node, and the new master
-node should point to the new log tail. After this the LEBs between the old log
-tail and the new log tail can be unmapped and re-used again.
 
-And here is the possible problem. We do 2 operations: (a) We first update the
-log tail position in memory (see 'ubifs_log_end_commit()'). (b) And then we
-write the master node (see the big lock of code in 'do_commit()').
+--lQhkCjV6btr5sI6pNnfL3iMC7EFUQDwXl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-But nothing prevents the log head from moving forward between (a) and (b), and
-the log head may "wrap" now to the old log tail. And when the "wrap" happens,
-the contends of the log tail gets erased. Now a power cut happens and we are in
-trouble. We end up with the old master node pointing to the old tail, which was
-erased. And replay fails because it expects the master node to point to the
-correct log tail at all times.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-This patch merges the abovementioned (a) and (b) operations by moving the master
-node change code to the 'ubifs_log_end_commit()' function, so that it runs with
-the log mutex locked, which will prevent the log from being changed benween
-operations (a) and (b).
+iQIcBAEBAgAGBQJUdGpxAAoJEGwLaZPeOHZ6YUAP/3fjFLwSV9ttveY/1tOWe6lp
+T5O8Ktns9V6U4rBrmiJYRSYUsCpUU98Q9EFJBBEufBP7WfOPp61q1Hu4vucDVAWI
+2EreVVzX+Frtd9nCldyBghfbsLz0CMC2BQgJsyRqzP5mwCAc6GLcGX5fA8BsBpy/
+seBj8w+aPE8bPacES8Y+9qc6rMQLcVZbJstUQduTy67TWcy2KkNidcHP2ANqohal
+JvkdCkUN+3qYXo72Bq8URMXwapBBFyh10xbyLXw+Rbv34BTxUR4Y5uTa+m05w4wM
+XB8MmKDYOVPbCUcXbTRfykPX0/hfKP9BwNcdtaHYWX9M8Tleih2SyXKJsMyMWbor
+2yGt2gOTcHnAuZ/l0zRq0L/SYEFOMNCWwP1WJfne6jFcDf6fYFv+v5ErYLi+lYSi
+KTVNgEpbyzMBT4yBNT7EAGMiL0Nb/nr1XMKViXEnabpL72WGi0jbCY7YYGnmgAEK
+L7UMPmZKa1CPTkJ/yy2COI0x5qBF3vkuBqF1dt4kRfVmWPZoTKQ54Hv04Dewu7GQ
+KrRizRyCKXeMbueBpwG5tmulscW92tSij5GYIaF2LMP1+aC+GJcMOhcEAmtjzv1D
++Hmf+cvBpTrhyfgMdY7V9Ccz9Ih3AeJmEwFEtmxbQUlGcr6c5uo/92l5L56kf8+O
+ijvaPlC4kvWe4eH7grpC
+=wtYx
+-----END PGP SIGNATURE-----
 
-Reported-by: hujianyang <hujianyang@huawei.com>
-Tested-by: hujianyang <hujianyang@huawei.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- fs/ubifs/commit.c |  8 +++-----
- fs/ubifs/log.c    | 11 ++++++++---
- 2 files changed, 11 insertions(+), 8 deletions(-)
-
-diff --git a/fs/ubifs/commit.c b/fs/ubifs/commit.c
-index aa13ad053b14..26b69b2d4a45 100644
---- a/fs/ubifs/commit.c
-+++ b/fs/ubifs/commit.c
-@@ -166,10 +166,6 @@ static int do_commit(struct ubifs_info *c)
- 	err = ubifs_orphan_end_commit(c);
- 	if (err)
- 		goto out;
--	old_ltail_lnum = c->ltail_lnum;
--	err = ubifs_log_end_commit(c, new_ltail_lnum);
--	if (err)
--		goto out;
- 	err = dbg_check_old_index(c, &zroot);
- 	if (err)
- 		goto out;
-@@ -202,7 +198,9 @@ static int do_commit(struct ubifs_info *c)
- 		c->mst_node->flags |= cpu_to_le32(UBIFS_MST_NO_ORPHS);
- 	else
- 		c->mst_node->flags &= ~cpu_to_le32(UBIFS_MST_NO_ORPHS);
--	err = ubifs_write_master(c);
-+
-+	old_ltail_lnum = c->ltail_lnum;
-+	err = ubifs_log_end_commit(c, new_ltail_lnum);
- 	if (err)
- 		goto out;
- 
-diff --git a/fs/ubifs/log.c b/fs/ubifs/log.c
-index a902c5919e42..3edc4a3dcca3 100644
---- a/fs/ubifs/log.c
-+++ b/fs/ubifs/log.c
-@@ -447,9 +447,9 @@ out:
-  * @ltail_lnum: new log tail LEB number
-  *
-  * This function is called on when the commit operation was finished. It
-- * moves log tail to new position and unmaps LEBs which contain obsolete data.
-- * Returns zero in case of success and a negative error code in case of
-- * failure.
-+ * moves log tail to new position and updates the master node so that it stores
-+ * the new log tail LEB number. Returns zero in case of success and a negative
-+ * error code in case of failure.
-  */
- int ubifs_log_end_commit(struct ubifs_info *c, int ltail_lnum)
- {
-@@ -477,7 +477,12 @@ int ubifs_log_end_commit(struct ubifs_info *c, int ltail_lnum)
- 	spin_unlock(&c->buds_lock);
- 
- 	err = dbg_check_bud_bytes(c);
-+	if (err)
-+		goto out;
- 
-+	err = ubifs_write_master(c);
-+
-+out:
- 	mutex_unlock(&c->log_mutex);
- 	return err;
- }
--- 
-2.1.0
-
+--lQhkCjV6btr5sI6pNnfL3iMC7EFUQDwXl--
