@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876AbaKYJbc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 04:31:32 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:33369 "EHLO gloria.sntech.de"
+	id S1751936AbaKYJeU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 04:34:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46190 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750901AbaKYJb2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 04:31:28 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Alexandru M Stan <amstan@chromium.org>,
-        Mike Turquette <mturquette@linaro.org>
-Cc: Doug Anderson <dianders@chromium.org>, addy ke <addy.ke@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Kever Yang <kever.yang@rock-chips.com>,
-        linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        mark.rutland@arm.com, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, linux-kernel@vger.kernel.org,
-        robh+dt@kernel.org, galak@codeaurora.org, mark.yao@rock-chips.com
-Subject: Re: [PATCH v3 0/2] Add support for the rockchip mmc clock phases using the framework
-Date: Tue, 25 Nov 2014 10:35:06 +0100
-Message-ID: <3222595.cbGxNcWa4c@diego>
-User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <1416344908-5975-1-git-send-email-amstan@chromium.org>
-References: <1416344908-5975-1-git-send-email-amstan@chromium.org>
+	id S1750901AbaKYJeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 04:34:18 -0500
+Date: Tue, 25 Nov 2014 10:33:52 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        namhyung@kernel.org, acme@kernel.org, mingo@kernel.org,
+        peterz@infradead.organton, Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <michaele@au1.ibm.com>
+Subject: Re: perf: Add support for full Intel event lists v8
+Message-ID: <20141125093352.GB30861@krava.brq.redhat.com>
+References: <1406762570-16694-1-git-send-email-andi@firstfloor.org>
+ <20141124223736.GA13184@us.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141124223736.GA13184@us.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 18. November 2014, 13:08:26 schrieb Alexandru M Stan:
-> For now all I have is the getter and setter for the phase, nothing that uses
-> it (that is ready). You can test the getter like this:
-> localhost ~ # cat /sys/kernel/debug/clk/clk_summary|grep sample -C 1
->     sclk_sdio1                            0            0    24000000        
->  0 0 sdio1_sample                       0            0    12000000         
-> 0 0 sdio1_drv                          0            0    12000000         
-> 0 90 --
->           sclk_sdmmc                      1            1   297000000        
->  0 0 sdmmc_sample                 0            0   148500000          0 134
-> sdmmc_drv                    0            0   148500000          0 90 --
->           sclk_sdio0                      1            1   100000000        
->  0 0 sdio0_sample                 0            0    50000000          0 0
-> sdio0_drv                    0            0    50000000          0 90
-> sclk_emmc                       1            1   100000000          0 0
-> emmc_sample                  0            0    50000000          0 0
-> emmc_drv                     0            0    50000000          0 180
+On Mon, Nov 24, 2014 at 02:37:36PM -0800, Sukadev Bhattiprolu wrote:
+> Andi Kleen [andi@firstfloor.org] wrote:
 > 
-> Next thing that will come is some dts changes that will make use of these
-> new clocks, and eventually mmc code will be changed to tune with these
-> clocks.
+> | Since it seems the download mechanism is controversal, 
+> | I removed the downloader for now until a suitable distribution
+> | method with kernel.org can be established. This is just
+> | the rest of the perf JSON event code that should hopefully
+> | not be controversal.
+> 
+> Ingo, Jiri, Andi,
+> 
+> Can we get this patchset merged please ? It is a step forward
+> in eliminating raw event codes right ?
+> 
+> We added hundreds of events to sysfs for Power7. We don't
+> want to do the same for Power8 because this JSON file solution
+> is clearly better.
+> 
+> But we currently have a regression in functionality from Power7
+> to Power8 :-(
+> 
+> Even if 'perf download' is left out this patchset is still
+> useful IMHO. Users (specially those who currently struggle
+> with raw codes, are highly qualified and) could wget the
+> JSON files as and when needed. 
+> 
+> Being able to install the JSON files and download updates is
+> a big plus, but is something thse users can live without for
+> now.
 
-As already said in v1, this looks nice to me, but I'll give Mike another day 
-or two to voice possible concerns.
+hi,
+I talked to Andi about this on LinuxCon and he said he works
+on that.. his current struggle was to get the ftp space IIRC
 
+not sure whats the current status now, but I had the feeling
+it wont take long..
 
-Heiko
-
+jirka
