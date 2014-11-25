@@ -1,185 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887AbaKYCin (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 21:38:43 -0500
-Received: from regular1.263xmail.com ([211.150.99.132]:41877 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534AbaKYCik (ORCPT
+	id S1751920AbaKYCkY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 21:40:24 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42882 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836AbaKYCkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 21:38:40 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: ulf.hansson@linaro.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <81873a9d63550eda5c4bbc1906515ba1>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <5473EB8B.3000803@rock-chips.com>
-Date: Tue, 25 Nov 2014 10:38:03 +0800
-From: Addy <addy.ke@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 24 Nov 2014 21:40:22 -0500
+Date: Tue, 25 Nov 2014 02:40:18 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, target-devel@vger.kernel.org,
+        nab@linux-iscsi.org, hch@infradead.org
+Subject: Re: [RFC] situation with csum_and_copy_... API
+Message-ID: <20141125024018.GH7996@ZenIV.linux.org.uk>
+References: <20141120.182339.972861702759954603.davem@davemloft.net>
+ <20141121.122615.1091044030302005883.davem@davemloft.net>
+ <20141122042856.GZ7996@ZenIV.linux.org.uk>
+ <20141122.022444.425003630662787798.davem@davemloft.net>
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>,
-        Doug Anderson <dianders@chromium.org>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Alexandru Stan <amstan@chromium.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, lintao <lintao@rock-chips.com>,
-        chenfen <chenfen@rock-chips.com>, zyf <zyf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Chris Zhong <zyw@rock-chips.com>,
-        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        zhangqing <zhangqing@rock-chips.com>, Lin Huang <hl@rock-chips.com>
-Subject: Re: [PATCH] mmc: dw_mmc: try pick the exact same voltage as vmmc
- for vqmmc
-References: <1415109789-7046-1-git-send-email-addy.ke@rock-chips.com>	<1415678573-6093-1-git-send-email-addy.ke@rock-chips.com>	<CAPDyKFqUoBjhsbz8rkLa9PY_dpgMxnimz3k7OoA5WVhi7MacPQ@mail.gmail.com>	<CAD=FV=VQHZ6YmcoeAb1OEVLYRrYBnc_dM5Kjt1TZX_CQJC=EfA@mail.gmail.com>	<5464152E.7040209@rock-chips.com>	<CAPDyKFrzGfDew0eLLEcA+_iS_mo-O2bFU58fjirfXXA8AJ9UYQ@mail.gmail.com>	<CAD=FV=Ve1TY4+8quq1=18A1YOFvOWuFGrBmHLwMCwdWBSqzxOw@mail.gmail.com>	<CAD=FV=UJT5zBkcj2a03Y_RWxad9+Pu83G_z79Xzzn74V=eRqww@mail.gmail.com> <CAPDyKFqt4rrwi940KAPyPONpjixK1730QmHEsN27V97jyHH+Qw@mail.gmail.com>
-In-Reply-To: <CAPDyKFqt4rrwi940KAPyPONpjixK1730QmHEsN27V97jyHH+Qw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141122.022444.425003630662787798.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Nov 22, 2014 at 02:24:44AM -0500, David Miller wrote:
+> From: Al Viro <viro@ZenIV.linux.org.uk>
+> Date: Sat, 22 Nov 2014 04:28:57 +0000
+> 
+> > 	OK, here's the next bunch.  Sorry about the delay, iov_iter.c stuff
+> > took most of the day (and it's not included in this pile).  Please, review.
+> 
+> I read over this stuff twice and this series looks fine to me.
+> 
+> Since this is the weekend... maybe wait until Monday for other feedback
+> then give me a pull request?
 
-On Fri, Nov 24, 2014 at 9:29 PM, Ulf Hansson <ulf.hansson@linaro.org> 
-wrote:
+I'll probably repost the patches with updates folded in first...
 
-> On 21 November 2014 at 22:04, Doug Anderson <dianders@chromium.org> wrote:
->> Hi,
->>
->> On Fri, Nov 21, 2014 at 9:42 AM, Doug Anderson <dianders@chromium.org> wrote:
->>> Ulf,
->>>
->>> On Fri, Nov 21, 2014 at 4:06 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->>>> [...]
->>>>
->>>>> Sure
->>>>> If the first card is sd2.0 since startup, dw_mci_switch_voltage will not be called,
->>>> That can't be right. mmc_power_up() should trigger
->>>> dw_mci_switch_voltage() to be invoked.
->>> Hmmm, I think you're right.  Addy: can you double check if it's only
->>> the 2nd card for you?  I was thinking that if a regulator is currently
->>> 3.3V and you request 2.7 - 3.3V the regulator framework will treat
->>> that as a noop.  ...but that definitely doesn't appear to be the case.
->>> When I boot up the first time even with no SD card plugged in, I see
->>> this at bootup:
->>>
->>> [    3.042234] vccio_sd: 1800 <--> 3300 mV at 3300 mV
->>>
->>> ...showing that it started at 3.3V.  Then I see:
->>>
->>> $ grep "" /sys/class/regulator/regulator.16/{name,microvolts}
->>> /sys/class/regulator/regulator.16/name:vccio_sd
->>> /sys/class/regulator/regulator.16/microvolts:2700000
->>>
->>> ...so it is certainly getting changed even with no card plugged in.
->>>
->>>
->>> BTW: I don't actually have one of these failing cards--all of mine
->>> work.  Addy, do you know the make and model of the card you have that
->>> fails?
->> Just as a bit of a followup, I did some more digging...
->>
->> 1. It looks as if we now have a bit of "opposite" logic for vmmc vs.
->> vqmmc.  In mmc_power_up() I see that it sets the initial voltage as:
->>
->>    host->ios.vdd = fls(ocr) - 1;
-> That's because we would like to supports as many cards as possible.
-> The policy is based upon that some cards may not support lower
-> voltages, but most will support higher.
->
->> That actually means that we're going to pick the maximum voltage for
->> vmmc (of the supported voltages).  For vqmmc dw_mmc is using the
->> regulator framework which (as described in my previous message) will
->> pick the minimum.
-> Correct. I have thought this has been inside spec and choosing the
-> lower value would be preferred to lower power consumption. Maybe we
-> needs to re-visit this one more time.
->
-> Here are some of the interesting sections in the eMMC spec:
-> 10.3.3 Power supply Voltages
-> "The VCCQ must be defined at equal to or less than VCC".
->
-> 10.5 Bus signal levels
-> Push-pull mode:
-> Voh = 0.75 * VCCQ. (Do note, its VCCQ not VCC).
->
-> Summary eMMC: VCCQ must be less and VCC, we should be inside spec.
->
-> >From SD spec:
-> 6.6.1 Threshold Level for High Voltage Range
-> Voh = 0.75 * VDD.
->
-> In worst case scenario, VDD = 3.6V and VIO = 2.7V. That gives as the
-> factor of 0.75, thus we are inside spec but without margins.
-* From eMMC4.5 spec:
-   1. (VDDF)vcc: Supply voltage for flash memory,  which is  2.7v -- 3.3v
-   2. (VDD)vccq: Supply voltage for memory controller, which is  1.7v -- 
-1.95v  and 2,7v -- 3.6v
+FWIW, the current situation is
+	* all but one ->recvmsg() instances switched to iov_iter primitives
+(the exception is one of the AF_ALG instances and I know what to do with it).
+Consequently, they do not drain iovecs anymore and simply advance ->msg_iter.
+	* kvec-based iov_iter work just fine without set_fs(KERNEL_DS).  And
+so do ->recvmsg() instances that had received such iov_iter.
+	* memcpy_to_iovec() and skb_copy_datagram_iovec() are gone - no users
+left.
 
-* And from RK3288 datasheet:
-   Digtial GPIO Power(SDMMC0_VDD --> vccq) is 3.0v -- 3.6v and 1.62v - 1.98v
+I'm about to start on ->sendmsg() side of the things.  The interesting
+question is whether tcp_send_syn_data() is doing the right thing if it
+runs into EFAULT when copying iovec from userland.
 
-So I think:
-3.3v:  (2.7v < vccq < 3.6v)   &&  (3.0v < vccq < 3.6v)  ==> (3.0v < vccq 
-< 3.6v)
-1.8v:  (1.7v < vccq < 1.95v)  && (1.62v < vccq < 1.98v) ==> (1.7v < vccq 
-< 1.95v)
+As it is, it gives up on the skb it has allocated and falls back to normal
+handshake.  I can duplicate that behaviour, all right, but why not simply
+do skb_trim(syn_data, <actually copied>) and do fallback only if nothing
+got copied at all?  Is there any problem with that?
 
-and (2.7v < vcc < 3.3v)
+The reason why I'm asking is that it's easier to just use copy_from_iter()
+and let the damn thing advance.  Not a lot of pain to preserve the original
+iov_iter (all 5 words of it) and copy it back in case of failure, but I'd
+rather understood what's wrong with simpler approach...
 
-* And according to our hardware engineer:
-   All of supply voltage must have +/- 10% cushion.
-
-* And we have found in some worse card that there is 200mv voltage 
-collapse when these card is insert.
-
-So I think the best resolution is that vcc and vccq is configurable int 
-dt table.
-
->> 2. Several people I've talked to have expressed concerns that our
->> minimum value is 2.7V.  Apparently that's really on the edge and makes
->> EEs a little nervous.  The quick sample of cards sitting on my desk
->> shows that they seem to claim 0x00ff8000, which doesn't include 2.7V.
-> 0x00ff8000 states what values of VDD levels the device supports. Not VIO.
->
->>
->> Both of the above make me feel like dw_mmc should try its best to pick
->> a value for vqmmc that is closest to the value of vmmc (and >= 2.7V).
->> That also happens to make us work exactly like hosts where vmmc and
->> vqmmc are supplied by the same supply.
-> I do see your point. And I agree that it would be nice to achieve
-> something like this.
->
-> The question is how to do this. For sure, we need to involve the mmc
-> core to handle this correctly.
->
-> Kind regards
-> Uffe
->
->
->
-
-
+Anyway, the current branch is in vfs.git#iov_iter-net.  Current balance is
+about -0.5KLoC and that's not counting the simplifications that will become
+possible in callers of kernel_sendmg/kernel_recvmsg...  I'll post the beginning
+of that queue (the same 17 commits in the beginning) later tonight and wait
+for review...
