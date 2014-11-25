@@ -1,83 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751291AbaKYJ7d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 04:59:33 -0500
-Received: from va-smtp01.263.net ([54.88.144.211]:58612 "EHLO
-	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760AbaKYJ7b (ORCPT
+	id S1752069AbaKYKDe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:03:34 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38663 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828AbaKYKDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 04:59:31 -0500
-X-RL-SENDER: kever.yang@rock-chips.com
-X-FST-TO: eddie.cai@rock-chips.com
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: kever.yang@rock-chips.com
-X-UNIQUE-TAG: <29aa5592904a59287eecd66c054cc6e2>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-Message-ID: <547452F0.1080307@rock-chips.com>
-Date: Tue, 25 Nov 2014 17:59:12 +0800
-From: Kever Yang <kever.yang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 25 Nov 2014 05:03:31 -0500
+Date: Tue, 25 Nov 2014 10:03:26 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Michal Simek <monstr@monstr.eu>,
+        Martin Wilck <martin.wilck@ts.fujitsu.com>,
+        Linux PCI <linux-pci@vger.kernel.org>
+Subject: Re: [RFC PATCH v3 1/2] drivers: pci: fix pci_mmap_fits()
+ implementation for procfs mmap
+Message-ID: <20141125100326.GB1849@red-moon>
+References: <1415877558-8906-1-git-send-email-lorenzo.pieralisi@arm.com>
+ <1415877558-8906-2-git-send-email-lorenzo.pieralisi@arm.com>
+ <20141121175114.GC6578@google.com>
 MIME-Version: 1.0
-To: Roger Chen <roger.chen@rock-chips.com>, heiko@sntech.de
-CC: peppe.cavallaro@st.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        mark.yao@rock-chips.com, eddie.cai@rock-chips.com
-Subject: Re: [PATCH 4/4] GMAC: dts: enable gmac on RK3288 evb board
-References: <1416906549-26196-1-git-send-email-roger.chen@rock-chips.com>
-In-Reply-To: <1416906549-26196-1-git-send-email-roger.chen@rock-chips.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141121175114.GC6578@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
+On Fri, Nov 21, 2014 at 05:51:14PM +0000, Bjorn Helgaas wrote:
+> On Thu, Nov 13, 2014 at 11:19:15AM +0000, Lorenzo Pieralisi wrote:
+> > The introduction of pci_mmap_fits() in commit:
+> > 
+> > b5ff7df3df9efab511244d5a299fce706c71af48
+> > "Check mapped ranges on sysfs resource files"
+> > 
+> > allowed to check for valid range mappings of PCI resources to user space
+> > when mapping PCI resources through the sysfs filesystem.
+> > 
+> > The mapping of resources through the sysfs expects the offset passed
+> > by the user through the mmap syscall to be 0, and the pgoff is adjusted
+> > by the kernel to memory map the resource to the CPU physical address
+> > corresponding to the PCI resource in question.
+> > 
+> > The usage of procfs mapping of PCI resources (/proc/bus/pci files)
+> > is more controversial in that userspace programs mapping PCI resources
+> > are expected to pass in the mmap offset field either a CPU physical address
+> > or a PCI bar value, depending on the architecture.
+> > 
+> > By the time pci_mmap_fits() was used to check PCI resource ranges for
+> > procfs PCI resources mapping in commit:
+> > 
+> > 9eff02e2042f96fb2aedd02e032eca1c5333d7
+> > "PCI: check mmap range of /proc/bus/pci files too"
+> > 
+> > the procfs interface for mmapping resources to user space broke, since
+> > pci_mmap_fits() expected the offset passed from user space in the mmap
+> > call to be 0, not the CPU physical address or PCI BAR value of the
+> > resource in question.
+> > 
+> > Subsequent attempts at fixing the pci_mmap_fits() implementation failed
+> > to fix the issue (or fixed the issue in some architectures but not for
+> > all of them, ARM and SPARC procfs interface PCI resources mapping stayed
+> > broken throughout) in particular commits:
+> > 
+> > 8c05cd08a7504b855c265263e84af61aabafa329
+> > "PCI: fix offset check for sysfs mmapped files"
+> > 
+> > and
+> > 
+> > 3b519e4ea618b6943a82931630872907f9ac2c2b
+> > "PCI: fix size checks for mmap() on /proc/bus/pci files"
+> > 
+> > fixed procfs PCI resources mapping checks in pci_mmap_fits for some
+> > architectures, but not for architectures like SPARC that expects
+> > the offset value passed from user space through the mmap syscall
+> > (when mapping through procfs) to represent the PCI BAR value of the
+> > resource to be mapped.
+> > 
+> > The reason behind the breakage is the following. The addresses stored
+> > in PCI device resources for memory spaces correspond to CPU physical
+> > addresses, which do not necessarily map 1:1 to PCI bus addresses as
+> > programmed in PCI devices configuration spaces.
+> > 
+> > This implies that the sanity checks carried out in pci_mmap_fits() to
+> > ensure that the user executes an mmap of a "real" pci resource are
+> > erroneous when executed through procfs. Some platforms (ie SPARC)
+> > expect the offset value to be passed in (procfs mapping) to be the
+> > PCI BAR configuration value as read from the PCI device configuration
+> > space, not the fixed-up CPU physical address that is present in PCI
+> > device resources.
+> > 
+> > The required pgoff (offset in mmap syscall) value passed from userspace
+> > is supposed to represent the resource value exported through
+> > /proc/bus/pci/devices when the resource is mmapped though procfs (and 0
+> > when the mapping is carried out through sysfs resource files), which
+> > corresponds to the PCI resource filtered through the pci_resource_to_user()
+> > API.
+> > 
+> > This patch converts the PCI resource to the expected "user visible"
+> > value through pci_resource_to_user() before carrying out sanity checks
+> > in pci_mmap_fits() so that the check is carried out on the resource
+> > values as expected from the userspace mmap API.
+> > 
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> > Cc: Bjorn Helgaas <bhelgaas@google.com>
+> > Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > Cc: Russell King <linux@arm.linux.org.uk>
+> > Cc: David S. Miller <davem@davemloft.net>
+> > Cc: Michal Simek <monstr@monstr.eu>
+> > Cc: Martin Wilck <martin.wilck@ts.fujitsu.com>
+> > Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> 
+> Hi Lorenzo,
+> 
+> I think this patch is the right thing to do.  I'm going to try to write
+> patches for microblaze, mips, powerpc, and sparc that implement their
+> pci_resource_to_user() in terms of pcibios_resource_to_bus() (the patches
+> are easy; it's the arguments for correctness that take time).  Then I'll
+> try to convince myself that those arches are currently broken and will be
+> fixed by your patch below.
 
-The subject should prefix:
-Arm: dts: rockchip: enable ...
+I think that in doing that you might end up breaking at least powerpc
+and microblaze proc and sys interfaces, but I agree with the process.
 
-On 11/25/2014 05:09 PM, Roger Chen wrote:
-> enable gmac in rk3288-evb-rk808.dts
->
-> Signed-off-by: Roger Chen <roger.chen@rock-chips.com>
-> ---
->   arch/arm/boot/dts/rk3288-evb-rk808.dts |   22 ++++++++++++++++++++++
->   1 file changed, 22 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/rk3288-evb-rk808.dts b/arch/arm/boot/dts/rk3288-evb-rk808.dts
-> index d8c775e6..168b4fa 100644
-> --- a/arch/arm/boot/dts/rk3288-evb-rk808.dts
-> +++ b/arch/arm/boot/dts/rk3288-evb-rk808.dts
-> @@ -152,3 +152,25 @@
->   		};
->   	};
->   };
-> +
-> +&ext_gmac {
-> +	clock-frequency = <125000000>;
-> +	clock-output-names = "ext_gmac";
-> +};
-> +
-> +&gmac {
-> +	//pmu_regulator = "act_ldo5";
-> +	//pmu_enable_level = <1>; //1->HIGH, 0->LOW
-remove these unused code.
-> +	power-gpio = <&gpio0 6 GPIO_ACTIVE_HIGH>;
-> +	reset-gpio = <&gpio4 7 GPIO_ACTIVE_LOW>;
-> +	//phyirq-gpio = <&gpio4 2 GPIO_ACTIVE_LOW>;
-same.
-> +	phy-mode = "rgmii";
-> +	clock_in_out = "input";
-> +	assigned-clocks = <&cru SCLK_MAC>;
-> +	assigned-clock-parents = <&ext_gmac>;
-> +	pinctrl-names = "default";
-> +	pinctrl-0 = <&rgmii_pin>; /*&rmii_pin*/
-same.
+> But I'll be on vacation all next week, so this will take me some time and
+> it may not make the next merge window.
 
-- Kever
-> +	tx_delay = <0x30>;
-> +	rx_delay = <0x10>;
-> +	status = "ok";
-> +};
+I understand that, it holds back patch 2, but it is fine since it can
+get in as a fix even if it misses the merge window, as long as you
+agree with the overall approach.
 
+Thank you,
+Lorenzo
