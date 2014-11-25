@@ -1,224 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751219AbaKYPr5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 10:47:57 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:64116 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830AbaKYPrQ (ORCPT
+	id S1751261AbaKYPtE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 10:49:04 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:35049 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837AbaKYPtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 10:47:16 -0500
-From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Patrick Titiano <ptitiano@baylibre.com>,
-        Bartosz Golaszewski <bgolaszewski@baylibre.com>
-Subject: [PATCH 3/5] hwmon: ina2xx: allow to change the averaging rate at run-time
-Date: Tue, 25 Nov 2014 16:47:01 +0100
-Message-Id: <1416930423-12179-4-git-send-email-bgolaszewski@baylibre.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1416930423-12179-1-git-send-email-bgolaszewski@baylibre.com>
-References: <1416930423-12179-1-git-send-email-bgolaszewski@baylibre.com>
+	Tue, 25 Nov 2014 10:49:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <54707ADB.30807@users.sourceforge.net>
+References: <5307CAA2.8060406@users.sourceforge.net>
+	<alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
+	<530A086E.8010901@users.sourceforge.net>
+	<alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
+	<530A72AA.3000601@users.sourceforge.net>
+	<alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
+	<530B5FB6.6010207@users.sourceforge.net>
+	<alpine.DEB.2.10.1402241710370.2074@hadrien>
+	<530C5E18.1020800@users.sourceforge.net>
+	<alpine.DEB.2.10.1402251014170.2080@hadrien>
+	<530CD2C4.4050903@users.sourceforge.net>
+	<alpine.DEB.2.10.1402251840450.7035@hadrien>
+	<530CF8FF.8080600@users.sourceforge.net>
+	<alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+	<530DD06F.4090703@users.sourceforge.net>
+	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+	<5317A59D.4@users.sourceforge.net>
+	<54707ADB.30807@users.sourceforge.net>
+Date: Tue, 25 Nov 2014 10:48:59 -0500
+Message-ID: <CAPoiz9znciQsg5ZXZf7xsM-8dt5umRnTX7RkEEADANQ6jqGEYQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] x86: PCI-Calgary: Deletion of an unnecessary check
+ before the function call "free_tce_table"
+From: Jon Mason <jdmason@kudzu.us>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Muli Ben-Yehuda <muli@il.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        discuss@x86-64.org, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The averaging rate of ina226 is hardcoded to 16 in the driver.
+On Sat, Nov 22, 2014 at 7:00 AM, SF Markus Elfring
+<elfring@users.sourceforge.net> wrote:
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Sat, 22 Nov 2014 12:55:28 +0100
+>
+> The free_tce_table() function tests whether its argument is NULL and then
+> returns immediately. Thus the test around the call is not needed.
+>
+> This issue was detected by using the Coccinelle software.
+>
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 
-Make it modifiable at run-time via a new sysfs attribute.
+Looks good to me
 
-Signed-off-by: Bartosz Golaszewski <bgolaszewski@baylibre.com>
----
- drivers/hwmon/ina2xx.c | 115 +++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 106 insertions(+), 9 deletions(-)
+Acked-by: Jon Mason <jdmason@kudzu.us>
 
-diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
-index eb66081..0914a72 100644
---- a/drivers/hwmon/ina2xx.c
-+++ b/drivers/hwmon/ina2xx.c
-@@ -54,6 +54,9 @@
- /* shunt resistor sysfs attribute index */
- #define INA2XX_RSHUNT			0x8
- 
-+/* INA226 averaging sysfs index */
-+#define INA226_AVG			0x9
-+
- /* register count */
- #define INA219_REGISTERS		6
- #define INA226_REGISTERS		8
-@@ -70,6 +73,12 @@
- /* default shunt resistance */
- #define INA2XX_RSHUNT_DEFAULT		10000
- 
-+/* bit masks for the averaging setting in the configuration register */
-+#define INA226_AVG_RD_MASK		0x0E00
-+#define INA226_AVG_WR_MASK		0xF1FF
-+
-+#define INA226_READ_AVG(reg) ((reg & INA226_AVG_RD_MASK) >> 9)
-+
- enum ina2xx_ids { ina219, ina226 };
- 
- struct ina2xx_config {
-@@ -117,6 +126,13 @@ static const struct ina2xx_config ina2xx_config[] = {
- 	},
- };
- 
-+/* Available averaging rates for ina226. The indices correspond with
-+ * the bit values expected by the chip (according to the ina226 datasheet,
-+ * table 3 AVG bit settings, found at
-+ * http://www.ti.com/lit/ds/symlink/ina226.pdf.
-+ */
-+static const int ina226_avg_tab[] = { 1, 4, 16, 64, 128, 256, 512, 1024 };
-+
- static u16 ina2xx_calibration_val(const struct ina2xx_data *data)
- {
- 	return (u16)(data->config->calibration_factor / data->rshunt);
-@@ -156,6 +172,45 @@ static int ina2xx_calibrate(const struct i2c_client *client, u16 value)
- 	return status;
- }
- 
-+static int ina226_avg_bits(int avg)
-+{
-+	int i;
-+
-+	for (i = 0; i <= ARRAY_SIZE(ina226_avg_tab); i++) {
-+		if (avg == ina226_avg_tab[i])
-+			return i;
-+	}
-+
-+	/* Invalid value */
-+	return -1;
-+}
-+
-+static int ina226_avg_val(int bits)
-+{
-+	/* Value read from the config register should be correct, but do check
-+	 * the boundary just in case.
-+	 */
-+	if (bits >= ARRAY_SIZE(ina226_avg_tab)) {
-+		WARN_ON_ONCE(1);
-+		return -1;
-+	}
-+
-+	return ina226_avg_tab[bits];
-+}
-+
-+static inline int ina226_update_avg(struct ina2xx_data *data, int avg)
-+{
-+	int status;
-+	u16 conf;
-+
-+	mutex_lock(&data->update_lock);
-+	conf = (data->regs[INA2XX_CONFIG] & INA226_AVG_WR_MASK) | (avg << 9);
-+	status = ina2xx_configure(data->client, conf);
-+	mutex_unlock(&data->update_lock);
-+
-+	return status;
-+}
-+
- static struct ina2xx_data *ina2xx_update_device(struct device *dev)
- {
- 	struct ina2xx_data *data = dev_get_drvdata(dev);
-@@ -213,6 +268,10 @@ static int ina2xx_get_value(struct ina2xx_data *data, u8 reg)
- 	case INA2XX_RSHUNT:
- 		val = data->rshunt;
- 		break;
-+	case INA226_AVG:
-+		val = ina226_avg_val(INA226_READ_AVG(
-+					data->regs[INA2XX_CONFIG]));
-+		break;
- 	default:
- 		/* programmer goofed */
- 		WARN_ON_ONCE(1);
-@@ -236,13 +295,25 @@ static ssize_t ina2xx_show_value(struct device *dev,
- 			ina2xx_get_value(data, attr->index));
- }
- 
--static ssize_t ina2xx_set_shunt(struct device *dev,
-+static ssize_t ina226_show_avg(struct device *dev,
-+			       struct device_attribute *da, char *buf)
-+{
-+	struct ina2xx_data *data = dev_get_drvdata(dev);
-+
-+	if (data->kind != ina226)
-+		return -ENXIO;
-+
-+	return ina2xx_show_value(dev, da, buf);
-+}
-+
-+static ssize_t ina2xx_set_value(struct device *dev,
- 				struct device_attribute *da,
- 				const char *buf, size_t count)
- {
-+	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
- 	struct ina2xx_data *data = ina2xx_update_device(dev);
- 	long val;
--	s32 status;
-+	int status;
- 
- 	if (IS_ERR(data))
- 		return PTR_ERR(data);
-@@ -250,12 +321,33 @@ static ssize_t ina2xx_set_shunt(struct device *dev,
- 	if ((kstrtol(buf, 10, &val) == -EINVAL) || (val <= 0))
- 		return -EINVAL;
- 
--	mutex_lock(&data->update_lock);
--	data->rshunt = val;
--	status = ina2xx_calibrate(data->client, ina2xx_calibration_val(data));
--	mutex_unlock(&data->update_lock);
--	if (status < 0)
--		return -ENODEV;
-+	switch (attr->index) {
-+	case INA2XX_RSHUNT:
-+		mutex_lock(&data->update_lock);
-+		data->rshunt = val;
-+		status = ina2xx_calibrate(data->client,
-+					  ina2xx_calibration_val(data));
-+		mutex_unlock(&data->update_lock);
-+		if (status < 0)
-+			return -ENODEV;
-+		break;
-+	case INA226_AVG:
-+		if (data->kind != ina226)
-+			return -ENXIO;
-+
-+		status = ina226_avg_bits(val);
-+		if (status < 0)
-+			return -EINVAL;
-+
-+		if (ina226_update_avg(data, status) < 0)
-+			return -ENODEV;
-+		break;
-+	default:
-+		/* programmer goofed */
-+		WARN_ON_ONCE(1);
-+		val = 0;
-+		break;
-+	}
- 
- 	return count;
- }
-@@ -278,7 +370,11 @@ static SENSOR_DEVICE_ATTR(power1_input, S_IRUGO, ina2xx_show_value, NULL,
- 
- /* shunt resistance */
- static SENSOR_DEVICE_ATTR(rshunt, S_IRUGO | S_IWUSR | S_IWGRP,
--			  ina2xx_show_value, ina2xx_set_shunt, INA2XX_RSHUNT);
-+			  ina2xx_show_value, ina2xx_set_value, INA2XX_RSHUNT);
-+
-+/* averaging rate */
-+static SENSOR_DEVICE_ATTR(avg, S_IRUGO | S_IWUSR | S_IWGRP,
-+			  ina226_show_avg, ina2xx_set_value, INA226_AVG);
- 
- /* pointers to created device attributes */
- static struct attribute *ina2xx_attrs[] = {
-@@ -287,6 +383,7 @@ static struct attribute *ina2xx_attrs[] = {
- 	&sensor_dev_attr_curr1_input.dev_attr.attr,
- 	&sensor_dev_attr_power1_input.dev_attr.attr,
- 	&sensor_dev_attr_rshunt.dev_attr.attr,
-+	&sensor_dev_attr_avg.dev_attr.attr,
- 	NULL,
- };
- ATTRIBUTE_GROUPS(ina2xx);
--- 
-2.1.3
 
+> ---
+>  arch/x86/kernel/pci-calgary_64.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
+> index 0497f71..d22a386 100644
+> --- a/arch/x86/kernel/pci-calgary_64.c
+> +++ b/arch/x86/kernel/pci-calgary_64.c
+> @@ -1476,8 +1476,7 @@ cleanup:
+>         for (--bus; bus >= 0; --bus) {
+>                 struct calgary_bus_info *info = &bus_info[bus];
+>
+> -               if (info->tce_space)
+> -                       free_tce_table(info->tce_space);
+> +               free_tce_table(info->tce_space);
+>         }
+>         return -ENOMEM;
+>  }
+> --
+> 2.1.3
+>
