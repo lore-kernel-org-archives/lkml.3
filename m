@@ -1,72 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485AbaKYBQk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 20:16:40 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:58108 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830AbaKYBQj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 20:16:39 -0500
-From: "pang.xunlei" <pang.xunlei@linaro.org>
-To: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>
-Cc: LKP <lkp@01.org>, "pang.xunlei" <pang.xunlei@linaro.org>
-Subject: [PATCH] time: Avoid possible NTP adjustment mult overflow
-Date: Tue, 25 Nov 2014 09:16:20 +0800
-Message-Id: <1416878180-25312-1-git-send-email-pang.xunlei@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751616AbaKYBRJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 20:17:09 -0500
+Received: from mail.kernel.org ([198.145.19.201]:51265 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751402AbaKYBRH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 20:17:07 -0500
+Date: Mon, 24 Nov 2014 22:17:01 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Brendan Gregg <brendan.d.gregg@gmail.com>
+Subject: Re: perf/branch-history branch build broken with NO_DEMANGLE=1 perf
+ hists browser: Print overhead percent value for first-level callchain
+Message-ID: <20141125011701.GG13167@kernel.org>
+References: <20141124145227.GE18625@kernel.org>
+ <20141124152312.GA13167@kernel.org>
+ <20141124152541.GB13167@kernel.org>
+ <20141124153204.GC13167@kernel.org>
+ <20141124154841.GD13167@kernel.org>
+ <20141124212308.GE13167@kernel.org>
+ <20141124225244.GS12538@two.firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141124225244.GS12538@two.firstfloor.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ideally, __clocksource_updatefreq_scale, selects the largest shift
-value possible for a clocksource. This results in the mult memember
-of struct clocksource being particularly large, although not so large
-that NTP would adjust the clock to cause it to overflow.
+Em Mon, Nov 24, 2014 at 11:52:44PM +0100, Andi Kleen escreveu:
+> > [root@zoo acme]# perf record -a -g -b sleep 2s
+> > [ perf record: Captured and wrote 3.033 MB perf.data (~132504 samples) ]
+> > [root@zoo acme]# perf report --stdio --branch-history
+> > # To display the perf.data header info, please use --header/--header-only options.
+> > BFD: Dwarf Error: Offset (2585882475) greater than or equal to .debug_str size (44321517).
+> > BFD: Dwarf Error: Could not find abbrev number 11800.
+> > <BIG SNIP>
+> > BFD: Dwarf Error: Offset (83496016) greater than or equal to .debug_str size (44321517).
+> > BFD: Dwarf Error: Offset (48628447) greater than or equal to .debug_str size (44321517).
+> > (END)Segmentation fault (core dumped)
+> > [root@zoo acme]# 
 
-That said, nothing actually prohibits an overflow from occurring, its
-just that it "shouldn't" occur.
+> > Will investigate this later today/tomorrow, if nobody finds a fix in the meantime.
+ 
+> I cannot reproduce this.
+ 
+> For me it looks like you have some binary or debuginfo that your libbfd
+> doesn't like. --branch-history resolves all addresses as srcline, 
+> so it will actually walk all the line numbers.
 
-So while very unlikely, and so far never observed, the value of
-(cs->mult+cs->maxadj) may have a chance to reach very near 0xFFFFFFFF,
-so there is a possibility it may overflow when doing NTP positive
-adjustment
+ 
+> Can you please find out which one it is? Probably can be seen
+> by just going up a few levels in gdb and dumping the event.
 
-See the following detail: When NTP slewes the clock, kernel goes
-through update_wall_time()->...->timekeeping_apply_adjustment():
-		 tk->tkr.mult += mult_adj;
+> If you can find the address that explodes you can also try it directly with
+> addr2line. If that works it's some problem in the perf implementation.
 
-Since there is no guard against it, its possible tk->tkr.mult may
-overflow during this operation.
+Right, I'll try and figure this out, since you didn't manage to easily
+reproduce this.
+ 
+> It is likely that it would need to be fixed in libbfd.
+> 
+> To work around it we could turn off force resolving the srcline,
+> but that would make the output much less useful too unfortuantely...
 
-This patch avoids any possible mult overflow by judging the overflow
-case before adding mult_adj to mult, also adds the WARNING message
-when capturing such case.
+I'll try to find out if there is something that can flag a file as
+"unsafe" to feed libbfd with, so that we can have a workaround for known
+buggy libbfds, if that ends up being really the case.
 
-Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
----
-Fix the problem in the former patch catched by Fengguang's 0day robot:
-[time] WARNING: CPU: 0 PID: 1 at kernel/time/timekeeping.c:1337 update_wall_time()
-
- kernel/time/timekeeping.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 0aef92a..9a1482e 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1390,6 +1390,12 @@ static __always_inline void timekeeping_apply_adjustment(struct timekeeper *tk,
- 	 *
- 	 * XXX - TODO: Doc ntp_error calculation.
- 	 */
-+	if (mult_adj > 0 && (tk->tkr.mult + mult_adj < mult_adj)) {
-+		/* NTP adjustment caused clocksource mult overflow */
-+		WARN_ON_ONCE(1);
-+		return;
-+	}
-+
- 	tk->tkr.mult += mult_adj;
- 	tk->xtime_interval += interval;
- 	tk->tkr.xtime_nsec -= offset;
--- 
-1.7.9.5
-
+- Arnaldo
