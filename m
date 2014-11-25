@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582AbaKYKwH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:52:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59169 "EHLO
+	id S1754567AbaKYKwG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:52:06 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59168 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753985AbaKYKng (ORCPT
+	with ESMTP id S1753368AbaKYKng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Nov 2014 05:43:36 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
+Cc: Dwight Engen <dwight.engen@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 231/254] sparc64: Fix crashes in schizo_pcierr_intr_other().
-Date: Tue, 25 Nov 2014 10:39:41 +0000
-Message-Id: <1416912004-5928-232-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 229/254] vio: fix reuse of vio_dring slot
+Date: Tue, 25 Nov 2014 10:39:39 +0000
+Message-Id: <1416912004-5928-230-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,102 +28,152 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Dwight Engen <dwight.engen@oracle.com>
 
-commit 7da89a2a3776442a57e918ca0b8678d1b16a7072 upstream.
+commit d0aedcd4f14a22e23b313f42b7e6e6ebfc0fbc31 upstream.
 
-Meelis Roos reports crashes during bootup on a V480 that look like
-this:
+vio_dring_avail() will allow use of every dring entry, but when the last
+entry is allocated then dr->prod == dr->cons which is indistinguishable from
+the ring empty condition. This causes the next allocation to reuse an entry.
+When this happens in sunvdc, the server side vds driver begins nack'ing the
+messages and ends up resetting the ldc channel. This problem does not effect
+sunvnet since it checks for < 2.
 
-====================
-[   61.300577] PCI: Scanning PBM /pci@9,600000
-[   61.304867] schizo f009b070: PCI host bridge to bus 0003:00
-[   61.310385] pci_bus 0003:00: root bus resource [io  0x7ffe9000000-0x7ffe9ffffff] (bus address [0x0000-0xffffff])
-[   61.320515] pci_bus 0003:00: root bus resource [mem 0x7fb00000000-0x7fbffffffff] (bus address [0x00000000-0xffffffff])
-[   61.331173] pci_bus 0003:00: root bus resource [bus 00]
-[   61.385344] Unable to handle kernel NULL pointer dereference
-[   61.390970] tsk->{mm,active_mm}->context = 0000000000000000
-[   61.396515] tsk->{mm,active_mm}->pgd = fff000b000002000
-[   61.401716]               \|/ ____ \|/
-[   61.401716]               "@'/ .. \`@"
-[   61.401716]               /_| \__/ |_\
-[   61.401716]                  \__U_/
-[   61.416362] swapper/0(0): Oops [#1]
-[   61.419837] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.18.0-rc1-00422-g2cc9188-dirty #24
-[   61.427975] task: fff000b0fd8e9c40 ti: fff000b0fd928000 task.ti: fff000b0fd928000
-[   61.435426] TSTATE: 0000004480e01602 TPC: 00000000004455e4 TNPC: 00000000004455e8 Y: 00000000    Not tainted
-[   61.445230] TPC: <schizo_pcierr_intr+0x104/0x560>
-[   61.449897] g0: 0000000000000000 g1: 0000000000000000 g2: 0000000000a10f78 g3: 000000000000000a
-[   61.458563] g4: fff000b0fd8e9c40 g5: fff000b0fdd82000 g6: fff000b0fd928000 g7: 000000000000000a
-[   61.467229] o0: 000000000000003d o1: 0000000000000000 o2: 0000000000000006 o3: fff000b0ffa5fc7e
-[   61.475894] o4: 0000000000060000 o5: c000000000000000 sp: fff000b0ffa5f3c1 ret_pc: 00000000004455cc
-[   61.484909] RPC: <schizo_pcierr_intr+0xec/0x560>
-[   61.489500] l0: fff000b0fd8e9c40 l1: 0000000000a20800 l2: 0000000000000000 l3: 000000000119a430
-[   61.498164] l4: 0000000001742400 l5: 00000000011cfbe0 l6: 00000000011319c0 l7: fff000b0fd8ea348
-[   61.506830] i0: 0000000000000000 i1: fff000b0fdb34000 i2: 0000000320000000 i3: 0000000000000000
-[   61.515497] i4: 00060002010b003f i5: 0000040004e02000 i6: fff000b0ffa5f481 i7: 00000000004a9920
-[   61.524175] I7: <handle_irq_event_percpu+0x40/0x140>
-[   61.529099] Call Trace:
-[   61.531531]  [00000000004a9920] handle_irq_event_percpu+0x40/0x140
-[   61.537681]  [00000000004a9a58] handle_irq_event+0x38/0x80
-[   61.543145]  [00000000004ac77c] handle_fasteoi_irq+0xbc/0x200
-[   61.548860]  [00000000004a9084] generic_handle_irq+0x24/0x40
-[   61.554500]  [000000000042be0c] handler_irq+0xac/0x100
-====================
+The fix here is to just never allocate the very last dring slot so that full
+and empty are not the same condition. The request start path was changed to
+check for the ring being full a bit earlier, and to stop the blk_queue if
+there is no space left. The blk_queue will be restarted once the ring is
+only half full again. The number of ring entries was increased to 512 which
+matches the sunvnet and Solaris vdc drivers, and greatly reduces the
+frequency of hitting the ring full condition and the associated blk_queue
+stop/starting. The checks in sunvent were adjusted to account for
+vio_dring_avail() returning 1 less.
 
-The problem is that pbm->pci_bus->self is NULL.
+Orabug: 19441666
+OraBZ: 14983
 
-This code is trying to go through the standard PCI config space
-interfaces to read the PCI controller's PCI_STATUS register.
-
-This doesn't work, because we more often than not do not enumerate
-the PCI controller as a bonafide PCI device during the OF device
-node scan.  Therefore bus->self remains NULL.
-
-Existing common code for PSYCHO and PSYCHO-like PCI controllers
-handles this properly, by doing the config space access directly.
-
-Do the same here, pbm->pci_ops->{read,write}().
-
-Reported-by: Meelis Roos <mroos@linux.ee>
-Tested-by: Meelis Roos <mroos@linux.ee>
+Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/sparc/kernel/pci_schizo.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/sparc/include/asm/vio.h       |  2 +-
+ drivers/block/sunvdc.c             | 39 ++++++++++++++++++++++----------------
+ drivers/net/ethernet/sun/sunvnet.c |  4 ++--
+ 3 files changed, 26 insertions(+), 19 deletions(-)
 
-diff --git a/arch/sparc/kernel/pci_schizo.c b/arch/sparc/kernel/pci_schizo.c
-index 8f76f23dac38..f9c6813c132d 100644
---- a/arch/sparc/kernel/pci_schizo.c
-+++ b/arch/sparc/kernel/pci_schizo.c
-@@ -581,7 +581,7 @@ static irqreturn_t schizo_pcierr_intr_other(struct pci_pbm_info *pbm)
+diff --git a/arch/sparc/include/asm/vio.h b/arch/sparc/include/asm/vio.h
+index 76290c868b01..2986120acac5 100644
+--- a/arch/sparc/include/asm/vio.h
++++ b/arch/sparc/include/asm/vio.h
+@@ -265,7 +265,7 @@ static inline u32 vio_dring_avail(struct vio_dring_state *dr,
+ 				  unsigned int ring_size)
  {
- 	unsigned long csr_reg, csr, csr_error_bits;
- 	irqreturn_t ret = IRQ_NONE;
--	u16 stat;
-+	u32 stat;
+ 	return (dr->pending -
+-		((dr->prod - dr->cons) & (ring_size - 1)));
++		((dr->prod - dr->cons) & (ring_size - 1)) - 1);
+ }
  
- 	csr_reg = pbm->pbm_regs + SCHIZO_PCI_CTRL;
- 	csr = upa_readq(csr_reg);
-@@ -617,7 +617,7 @@ static irqreturn_t schizo_pcierr_intr_other(struct pci_pbm_info *pbm)
- 			       pbm->name);
- 		ret = IRQ_HANDLED;
+ #define VIO_MAX_TYPE_LEN	32
+diff --git a/drivers/block/sunvdc.c b/drivers/block/sunvdc.c
+index 1a9360da1f54..756b8ec00f16 100644
+--- a/drivers/block/sunvdc.c
++++ b/drivers/block/sunvdc.c
+@@ -33,7 +33,7 @@ MODULE_DESCRIPTION("Sun LDOM virtual disk client driver");
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION(DRV_MODULE_VERSION);
+ 
+-#define VDC_TX_RING_SIZE	256
++#define VDC_TX_RING_SIZE	512
+ 
+ #define WAITING_FOR_LINK_UP	0x01
+ #define WAITING_FOR_TX_SPACE	0x02
+@@ -283,7 +283,9 @@ static void vdc_end_one(struct vdc_port *port, struct vio_dring_state *dr,
+ 
+ 	__blk_end_request(req, (desc->status ? -EIO : 0), desc->size);
+ 
+-	if (blk_queue_stopped(port->disk->queue))
++	/* restart blk queue when ring is half emptied */
++	if (blk_queue_stopped(port->disk->queue) &&
++	    vdc_tx_dring_avail(dr) * 100 / VDC_TX_RING_SIZE >= 50)
+ 		blk_start_queue(port->disk->queue);
+ }
+ 
+@@ -435,12 +437,6 @@ static int __send_request(struct request *req)
+ 	for (i = 0; i < nsg; i++)
+ 		len += sg[i].length;
+ 
+-	if (unlikely(vdc_tx_dring_avail(dr) < 1)) {
+-		blk_stop_queue(port->disk->queue);
+-		err = -ENOMEM;
+-		goto out;
+-	}
+-
+ 	desc = vio_dring_cur(dr);
+ 
+ 	err = ldc_map_sg(port->vio.lp, sg, nsg,
+@@ -480,21 +476,32 @@ static int __send_request(struct request *req)
+ 		port->req_id++;
+ 		dr->prod = (dr->prod + 1) & (VDC_TX_RING_SIZE - 1);
  	}
--	pci_read_config_word(pbm->pci_bus->self, PCI_STATUS, &stat);
-+	pbm->pci_ops->read(pbm->pci_bus, 0, PCI_STATUS, 2, &stat);
- 	if (stat & (PCI_STATUS_PARITY |
- 		    PCI_STATUS_SIG_TARGET_ABORT |
- 		    PCI_STATUS_REC_TARGET_ABORT |
-@@ -625,7 +625,7 @@ static irqreturn_t schizo_pcierr_intr_other(struct pci_pbm_info *pbm)
- 		    PCI_STATUS_SIG_SYSTEM_ERROR)) {
- 		printk("%s: PCI bus error, PCI_STATUS[%04x]\n",
- 		       pbm->name, stat);
--		pci_write_config_word(pbm->pci_bus->self, PCI_STATUS, 0xffff);
-+		pbm->pci_ops->write(pbm->pci_bus, 0, PCI_STATUS, 2, 0xffff);
- 		ret = IRQ_HANDLED;
+-out:
+ 
+ 	return err;
+ }
+ 
+-static void do_vdc_request(struct request_queue *q)
++static void do_vdc_request(struct request_queue *rq)
+ {
+-	while (1) {
+-		struct request *req = blk_fetch_request(q);
++	struct request *req;
+ 
+-		if (!req)
+-			break;
++	while ((req = blk_peek_request(rq)) != NULL) {
++		struct vdc_port *port;
++		struct vio_dring_state *dr;
+ 
+-		if (__send_request(req) < 0)
+-			__blk_end_request_all(req, -EIO);
++		port = req->rq_disk->private_data;
++		dr = &port->vio.drings[VIO_DRIVER_TX_RING];
++		if (unlikely(vdc_tx_dring_avail(dr) < 1))
++			goto wait;
++
++		blk_start_request(req);
++
++		if (__send_request(req) < 0) {
++			blk_requeue_request(rq, req);
++wait:
++			/* Avoid pointless unplugs. */
++			blk_stop_queue(rq);
++			break;
++		}
  	}
- 	return ret;
+ }
+ 
+diff --git a/drivers/net/ethernet/sun/sunvnet.c b/drivers/net/ethernet/sun/sunvnet.c
+index d813bfb1a847..f947ed821808 100644
+--- a/drivers/net/ethernet/sun/sunvnet.c
++++ b/drivers/net/ethernet/sun/sunvnet.c
+@@ -668,7 +668,7 @@ static int vnet_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	spin_lock_irqsave(&port->vio.lock, flags);
+ 
+ 	dr = &port->vio.drings[VIO_DRIVER_TX_RING];
+-	if (unlikely(vnet_tx_dring_avail(dr) < 2)) {
++	if (unlikely(vnet_tx_dring_avail(dr) < 1)) {
+ 		if (!netif_queue_stopped(dev)) {
+ 			netif_stop_queue(dev);
+ 
+@@ -716,7 +716,7 @@ static int vnet_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	dev->stats.tx_bytes += skb->len;
+ 
+ 	dr->prod = (dr->prod + 1) & (VNET_TX_RING_SIZE - 1);
+-	if (unlikely(vnet_tx_dring_avail(dr) < 2)) {
++	if (unlikely(vnet_tx_dring_avail(dr) < 1)) {
+ 		netif_stop_queue(dev);
+ 		if (vnet_tx_dring_avail(dr) > VNET_TX_WAKEUP_THRESH(dr))
+ 			netif_wake_queue(dev);
 -- 
 2.1.0
 
