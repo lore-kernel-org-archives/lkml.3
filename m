@@ -1,121 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751332AbaKYPwA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 10:52:00 -0500
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:54623 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136AbaKYPv7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 10:51:59 -0500
-Date: Tue, 25 Nov 2014 15:51:51 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: broonie@kernel.org, mturquette@linaro.org, a.zummo@towertech.it,
-        lgirdwood@gmail.com, sbkim73@samsung.com, sameo@linux.intel.com,
-        geunsik.lim@samsung.com, inki.dae@samsung.com,
-        kyungmin.park@samsung.com, k.kozlowski@samsung.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCHv2 5/5] mfd: s2mps11: Add binding documentation for
- Samsung S2MPS13 PMIC
-Message-ID: <20141125155151.GN4241@x1>
-References: <1416301183-10478-1-git-send-email-cw00.choi@samsung.com>
- <1416301183-10478-6-git-send-email-cw00.choi@samsung.com>
+	id S1751093AbaKYPyf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 10:54:35 -0500
+Received: from mail.us.es ([193.147.175.20]:44286 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750792AbaKYPyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 10:54:33 -0500
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus1 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.4/19679. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-103.2/7.5):. 
+ Processed in 1.834646 secs); 25 Nov 2014 15:54:30 -0000
+X-Spam-ASN: AS12715 87.216.0.0/16
+X-Envelope-From: pneira@us.es
+Date: Tue, 25 Nov 2014 16:56:41 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Marcelo Ricardo Leitner <mleitner@redhat.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Subject: Re: linux-next: manual merge of the net-next tree with the vfs tree
+Message-ID: <20141125155641.GA3817@salvia>
+References: <20141125134246.2761ada5@canb.auug.org.au>
+ <547466C8.1000203@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1416301183-10478-6-git-send-email-cw00.choi@samsung.com>
+In-Reply-To: <547466C8.1000203@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Nov 2014, Chanwoo Choi wrote:
-
-> This patch adds the binding documentation for Samsung S2MPS13 PMIC
-> which is similiar with existing S2MPS14 PMIC. S2MPS13 has the different number
-> of regulators from S2MPS14 and RTC/Clock is the same with the S2MPS14.
+On Tue, Nov 25, 2014 at 09:23:52AM -0200, Marcelo Ricardo Leitner wrote:
+> On 25-11-2014 00:42, Stephen Rothwell wrote:
+> >Hi all,
+> >
+> >Today's linux-next merge of the net-next tree got a conflict in
+> >net/netfilter/nf_log.c between commit e71456ae9871 ("netfilter: Remove
+> >checks of seq_printf() return values") from the vfs tree and commit
+> >0c26ed1c07f1 ("netfilter: nf_log: Introduce nft_log_dereference()
+> >macro") from the net-next tree.
+> >
+> >I fixed it up (see below) and can carry the fix as necessary (no action
+> >is required).
+> >
 > 
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Acked-by: Sangbeom Kim <sbkim73@samsung.com>
-> Acked-by: Lee Jones <lee.jones@linaro.org>
-> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  Documentation/devicetree/bindings/mfd/s2mps11.txt | 22 ++++++++++++----------
->  1 file changed, 12 insertions(+), 10 deletions(-)
+> Looks good to me, thanks Stephen.
 
-Applied, thanks.
-
-> diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-> index 0e4026a..57a0450 100644
-> --- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
-> +++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-> @@ -1,5 +1,5 @@
->  
-> -* Samsung S2MPS11, S2MPS14 and S2MPU02 Voltage and Current Regulator
-> +* Samsung S2MPS11, S2MPS13, S2MPS14 and S2MPU02 Voltage and Current Regulator
->  
->  The Samsung S2MPS11 is a multi-function device which includes voltage and
->  current regulators, RTC, charger controller and other sub-blocks. It is
-> @@ -7,8 +7,8 @@ interfaced to the host controller using an I2C interface. Each sub-block is
->  addressed by the host system using different I2C slave addresses.
->  
->  Required properties:
-> -- compatible: Should be "samsung,s2mps11-pmic" or "samsung,s2mps14-pmic"
-> -              or "samsung,s2mpu02-pmic".
-> +- compatible: Should be "samsung,s2mps11-pmic" or "samsung,s2mps13-pmic"
-> +	      or "samsung,s2mps14-pmic" or "samsung,s2mpu02-pmic".
->  - reg: Specifies the I2C slave address of the pmic block. It should be 0x66.
->  
->  Optional properties:
-> @@ -17,8 +17,8 @@ Optional properties:
->  - interrupts: Interrupt specifiers for interrupt sources.
->  
->  Optional nodes:
-> -- clocks: s2mps11 and s5m8767 provide three(AP/CP/BT) buffered 32.768 KHz
-> -  outputs, so to register these as clocks with common clock framework
-> +- clocks: s2mps11, s2mps13 and s5m8767 provide three(AP/CP/BT) buffered 32.768
-> +  KHz outputs, so to register these as clocks with common clock framework
->    instantiate a sub-node named "clocks". It uses the common clock binding
->    documented in :
->    [Documentation/devicetree/bindings/clock/clock-bindings.txt]
-> @@ -30,12 +30,12 @@ Optional nodes:
->      the clock which they consume.
->      Clock               ID           Devices
->      ----------------------------------------------------------
-> -    32KhzAP		0            S2MPS11, S2MPS14, S5M8767
-> -    32KhzCP		1            S2MPS11, S5M8767
-> -    32KhzBT		2            S2MPS11, S2MPS14, S5M8767
-> +    32KhzAP		0            S2MPS11, S2MPS13, S2MPS14, S5M8767
-> +    32KhzCP		1            S2MPS11, S2MPS13, S5M8767
-> +    32KhzBT		2            S2MPS11, S2MPS13, S2MPS14, S5M8767
->  
-> -  - compatible: Should be one of: "samsung,s2mps11-clk", "samsung,s2mps14-clk",
-> -		"samsung,s5m8767-clk"
-> +  - compatible: Should be one of: "samsung,s2mps11-clk", "samsung,s2mps13-clk",
-> +		"samsung,s2mps14-clk", "samsung,s5m8767-clk"
->  
->  - regulators: The regulators of s2mps11 that have to be instantiated should be
->  included in a sub-node named 'regulators'. Regulator nodes included in this
-> @@ -81,12 +81,14 @@ as per the datasheet of s2mps11.
->  	- LDOn
->  		  - valid values for n are:
->  			- S2MPS11: 1 to 38
-> +			- S2MPS13: 1 to 40
->  			- S2MPS14: 1 to 25
->  			- S2MPU02: 1 to 28
->  		  - Example: LDO1, LDO2, LDO28
->  	- BUCKn
->  		  - valid values for n are:
->  			- S2MPS11: 1 to 10
-> +			- S2MPS13: 1 to 10
->  			- S2MPS14: 1 to 5
->  			- S2MPU02: 1 to 7
->  		  - Example: BUCK1, BUCK2, BUCK9
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Also to me, thanks Stephen and Marcelo.
