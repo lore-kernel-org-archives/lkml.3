@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751346AbaKYBNS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 20:13:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57400 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841AbaKYBNS (ORCPT
+	id S1751485AbaKYBQk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 20:16:40 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:58108 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830AbaKYBQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 20:13:18 -0500
-Date: Mon, 24 Nov 2014 17:13:16 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        =?utf-8?B?7J6E6re87Iud?= <geunsik.lim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [GIT PULL] extcon next for 3.19
-Message-ID: <20141125011316.GA24893@kroah.com>
-References: <54731FC3.30809@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54731FC3.30809@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 24 Nov 2014 20:16:39 -0500
+From: "pang.xunlei" <pang.xunlei@linaro.org>
+To: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>
+Cc: LKP <lkp@01.org>, "pang.xunlei" <pang.xunlei@linaro.org>
+Subject: [PATCH] time: Avoid possible NTP adjustment mult overflow
+Date: Tue, 25 Nov 2014 09:16:20 +0800
+Message-Id: <1416878180-25312-1-git-send-email-pang.xunlei@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 09:08:35PM +0900, Chanwoo Choi wrote:
-> Dear Greg,
-> 
-> This is extcon-next full request for v3.19. I add detailed description of this
-> pull request on below. Please pull extcon with following updates.
-> 
-> This pull-request is based on Linux 3.18-rc3 (char-misc-next branch).
-> 
-> Best Regards,
-> Chanwoo Choi
-> 
-> The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
-> 
->   Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-next-for-3.19
+Ideally, __clocksource_updatefreq_scale, selects the largest shift
+value possible for a clocksource. This results in the mult memember
+of struct clocksource being particularly large, although not so large
+that NTP would adjust the clock to cause it to overflow.
 
-Pulled and pushed out, thanks.
+That said, nothing actually prohibits an overflow from occurring, its
+just that it "shouldn't" occur.
 
-greg k-h
+So while very unlikely, and so far never observed, the value of
+(cs->mult+cs->maxadj) may have a chance to reach very near 0xFFFFFFFF,
+so there is a possibility it may overflow when doing NTP positive
+adjustment
+
+See the following detail: When NTP slewes the clock, kernel goes
+through update_wall_time()->...->timekeeping_apply_adjustment():
+		 tk->tkr.mult += mult_adj;
+
+Since there is no guard against it, its possible tk->tkr.mult may
+overflow during this operation.
+
+This patch avoids any possible mult overflow by judging the overflow
+case before adding mult_adj to mult, also adds the WARNING message
+when capturing such case.
+
+Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
+---
+Fix the problem in the former patch catched by Fengguang's 0day robot:
+[time] WARNING: CPU: 0 PID: 1 at kernel/time/timekeeping.c:1337 update_wall_time()
+
+ kernel/time/timekeeping.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 0aef92a..9a1482e 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1390,6 +1390,12 @@ static __always_inline void timekeeping_apply_adjustment(struct timekeeper *tk,
+ 	 *
+ 	 * XXX - TODO: Doc ntp_error calculation.
+ 	 */
++	if (mult_adj > 0 && (tk->tkr.mult + mult_adj < mult_adj)) {
++		/* NTP adjustment caused clocksource mult overflow */
++		WARN_ON_ONCE(1);
++		return;
++	}
++
+ 	tk->tkr.mult += mult_adj;
+ 	tk->xtime_interval += interval;
+ 	tk->tkr.xtime_nsec -= offset;
+-- 
+1.7.9.5
+
