@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277AbaKYKlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:41:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58438 "EHLO
+	id S1754969AbaKYLeO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:34:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58482 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753116AbaKYKld (ORCPT
+	with ESMTP id S1753116AbaKYKlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:41:33 -0500
+	Tue, 25 Nov 2014 05:41:40 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 091/254] x86, fpu: shift drop_init_fpu() from save_xstate_sig() to handle_signal()
-Date: Tue, 25 Nov 2014 10:37:21 +0000
-Message-Id: <1416912004-5928-92-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 100/254] s390/topology: call set_sched_topology early
+Date: Tue, 25 Nov 2014 10:37:30 +0000
+Message-Id: <1416912004-5928-101-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,122 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit 66463db4fc5605d51c7bb81d009d5bf30a783a2c upstream.
+commit 48e9a6c1f54695609b709bf674aac133794ada00 upstream.
 
-save_xstate_sig()->drop_init_fpu() doesn't look right. setup_rt_frame()
-can fail after that, in this case the next setup_rt_frame() triggered
-by SIGSEGV won't save fpu simply because the old state was lost. This
-obviously mean that fpu won't be restored after sys_rt_sigreturn() from
-SIGSEGV handler.
+The call to topology_init is too late for the set_sched_topology call.
+The initial scheduling domain structure has already been established
+with default topology array. Use the smp_cpus_done() call to get the
+s390 specific topology array registered early enough.
 
-Shift drop_init_fpu() into !failed branch in handle_signal().
-
-Test-case (needs -O2):
-
-	#include <stdio.h>
-	#include <signal.h>
-	#include <unistd.h>
-	#include <sys/syscall.h>
-	#include <sys/mman.h>
-	#include <pthread.h>
-	#include <assert.h>
-
-	volatile double D;
-
-	void test(double d)
-	{
-		int pid = getpid();
-
-		for (D = d; D == d; ) {
-			/* sys_tkill(pid, SIGHUP); asm to avoid save/reload
-			 * fp regs around "C" call */
-			asm ("" : : "a"(200), "D"(pid), "S"(1));
-			asm ("syscall" : : : "ax");
-		}
-
-		printf("ERR!!\n");
-	}
-
-	void sigh(int sig)
-	{
-	}
-
-	char altstack[4096 * 10] __attribute__((aligned(4096)));
-
-	void *tfunc(void *arg)
-	{
-		for (;;) {
-			mprotect(altstack, sizeof(altstack), PROT_READ);
-			mprotect(altstack, sizeof(altstack), PROT_READ|PROT_WRITE);
-		}
-	}
-
-	int main(void)
-	{
-		stack_t st = {
-			.ss_sp = altstack,
-			.ss_size = sizeof(altstack),
-			.ss_flags = SS_ONSTACK,
-		};
-
-		struct sigaction sa = {
-			.sa_handler = sigh,
-		};
-
-		pthread_t pt;
-
-		sigaction(SIGSEGV, &sa, NULL);
-		sigaltstack(&st, NULL);
-		sa.sa_flags = SA_ONSTACK;
-		sigaction(SIGHUP, &sa, NULL);
-
-		pthread_create(&pt, NULL, tfunc, NULL);
-
-		test(123.456);
-		return 0;
-	}
-
-Reported-by: Bean Anderson <bean@azulsystems.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Link: http://lkml.kernel.org/r/20140902175713.GA21646@redhat.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/signal.c | 5 +++++
- arch/x86/kernel/xsave.c  | 2 --
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ arch/s390/kernel/topology.c | 18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index 2851d63c1202..ed37a768d0fc 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -675,6 +675,11 @@ handle_signal(struct ksignal *ksig, struct pt_regs *regs)
- 		 * handler too.
- 		 */
- 		regs->flags &= ~(X86_EFLAGS_DF|X86_EFLAGS_RF|X86_EFLAGS_TF);
-+		/*
-+		 * Ensure the signal handler starts with the new fpu state.
-+		 */
-+		if (used_math())
-+			drop_init_fpu(current);
- 	}
- 	signal_setup_done(failed, ksig, test_thread_flag(TIF_SINGLESTEP));
- }
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index 4679ef4005da..dd50e26c58f6 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -268,8 +268,6 @@ int save_xstate_sig(void __user *buf, void __user *buf_fx, int size)
- 	if (use_fxsr() && save_xstate_epilog(buf_fx, ia32_fxstate))
- 		return -1;
+diff --git a/arch/s390/kernel/topology.c b/arch/s390/kernel/topology.c
+index 355a16c55702..b93bed76ea94 100644
+--- a/arch/s390/kernel/topology.c
++++ b/arch/s390/kernel/topology.c
+@@ -464,15 +464,17 @@ static struct sched_domain_topology_level s390_topology[] = {
  
--	drop_init_fpu(tsk);	/* trigger finit */
+ static int __init topology_init(void)
+ {
+-	if (!MACHINE_HAS_TOPOLOGY) {
++	if (MACHINE_HAS_TOPOLOGY)
++		set_topology_timer();
++	else
+ 		topology_update_polarization_simple();
+-		goto out;
+-	}
+-	set_topology_timer();
+-out:
 -
- 	return 0;
+-	set_sched_topology(s390_topology);
+-
+ 	return device_create_file(cpu_subsys.dev_root, &dev_attr_dispatching);
  }
- 
+ device_initcall(topology_init);
++
++static int __init early_topology_init(void)
++{
++	set_sched_topology(s390_topology);
++	return 0;
++}
++early_initcall(early_topology_init);
 -- 
 2.1.0
 
