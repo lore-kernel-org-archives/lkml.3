@@ -1,101 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589AbaKYNRN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 08:17:13 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:50918 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754340AbaKYNRH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 08:17:07 -0500
-From: George Cherian <george.cherian@ti.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-CC: <peter.chen@freescale.com>, <sojka@merica.cz>, <mathias.nyman@intel.com>,
-        <balbi@ti.com>, <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <bcousson@baylibre.com>, <kgene.kim@samsung.com>,
-        <ben-linux@fluff.org>, <linux@arm.linux.org.uk>,
-        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
-        George Cherian <george.cherian@ti.com>
-Subject: [PATCH 17/19] arm: dts: dra7: Add named interrupt property for dwc3
-Date: Tue, 25 Nov 2014 18:41:53 +0530
-Message-ID: <1416921115-10467-18-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1416921115-10467-1-git-send-email-george.cherian@ti.com>
-References: <1416921115-10467-1-git-send-email-george.cherian@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754781AbaKYNSQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 08:18:16 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:29942 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754257AbaKYNSM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 08:18:12 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-f0-547481916896
+Message-id: <5474818E.7030704@samsung.com>
+Date: Tue, 25 Nov 2014 16:18:06 +0300
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+MIME-version: 1.0
+To: Dmitry Chernenkov <dmitryc@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v7 08/12] mm: slub: add kernel address sanitizer support
+ for slub allocator
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com>
+ <1416852146-9781-9-git-send-email-a.ryabinin@samsung.com>
+ <CAA6XgkETqmoDFi7Kdi9o3DTE-3=CT5imdCydFjvh83EayHHfpQ@mail.gmail.com>
+In-reply-to: <CAA6XgkETqmoDFi7Kdi9o3DTE-3=CT5imdCydFjvh83EayHHfpQ@mail.gmail.com>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t/xa7oTG0tCDNrO8Fj83juT1WLO+jVs
+	FkeufWe3uP7tDaPFp5cPGC22XG9isnj+8CG7xYSHbewW0zaKW6zsbmaz2P7sLZPFys4HrBaX
+	d81hs7i35j+rRdvnf0BiyUYmi8VHbjNbvHs2mdni6qqD7BY/NjxmdRDxmL/zI6PHzll32T0W
+	bCr1WLznJZPHplWdbB6bPk1i9+h6e4XJ48SM3yweT65MZ/L4+PQWi8f7fVfZPD5vkvM40fKF
+	NYA3issmJTUnsyy1SN8ugSvj5ba8gu18FZ9aH7E3ML7h7mLk5JAQMJG4dv8CE4QtJnHh3no2
+	EFtIYCmjxMpt0V2MXEB2M5PErLMLwYp4BbQk5p9cxgxiswioSuz+shusgU1AT+LfrO1gtqhA
+	hMSVNXMYIeoFJX5MvscCYosA9Z7/8IAVZCizwB1WiVO/ZrKCJIQFEiUWvV7CCLGthUni5Zzr
+	7F2MHBycAsESG7olQExmAXWJKVNyQcqZBeQlNq95yzyBUWAWkhWzEKpmIalawMi8ilE0tTS5
+	oDgpPddQrzgxt7g0L10vOT93EyMkXr/sYFx8zOoQowAHoxIPr0FiSYgQa2JZcWXuIUYJDmYl
+	Ed7caqAQb0piZVVqUX58UWlOavEhRiYOTqkGRoa7c/vlr6gzJJfc2591Y6vF2riMb4qXPQ6x
+	fdQtW2q0UOCHZGJUXaqrdgaXc5+jnHveofvCovodDd7TBfyuaUe69TrfnK7Kv1ninW3orkkf
+	uHn3THnKzK0j8qLv0KEXh1VOeHk48SY/umN4n3GqozLjorJ1ZXvLlTL3sVdOPGy9W2T7xq6r
+	SizFGYmGWsxFxYkAy1FHfbUCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add interrupt names so that the same can be used for OTG easily.
+On 11/25/2014 03:17 PM, Dmitry Chernenkov wrote:
+> FYI, when I backported Kasan to 3.14, in kasan_mark_slab_padding()
+> sometimes a negative size of padding was generated.
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
- arch/arm/boot/dts/dra7.dtsi | 28 ++++++++++++++++++++++++----
- 1 file changed, 24 insertions(+), 4 deletions(-)
+I don't see how this could happen if pointers passed to kasan_mark_slab_padding() are correct.
 
-diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
-index 9cc9843..78f1761 100644
---- a/arch/arm/boot/dts/dra7.dtsi
-+++ b/arch/arm/boot/dts/dra7.dtsi
-@@ -1153,7 +1153,12 @@
- 			usb1: usb@48890000 {
- 				compatible = "snps,dwc3";
- 				reg = <0x48890000 0x17000>;
--				interrupts = <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>;
-+				interrupts = <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>,
-+					     <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>,
-+					     <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
-+				interrupt-names = "peripheral",
-+						  "host",
-+						  "otg";
- 				phys = <&usb2_phy1>, <&usb3_phy1>;
- 				phy-names = "usb2-phy", "usb3-phy";
- 				tx-fifo-resize;
-@@ -1174,7 +1179,12 @@
- 			usb2: usb@488d0000 {
- 				compatible = "snps,dwc3";
- 				reg = <0x488d0000 0x17000>;
--				interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>;
-+				interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>,
-+					     <GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>,
-+					     <GIC_SPI 87 IRQ_TYPE_LEVEL_HIGH>;
-+				interrupt-names = "peripheral",
-+						  "host",
-+						  "otg";
- 				phys = <&usb2_phy2>;
- 				phy-names = "usb2-phy";
- 				tx-fifo-resize;
-@@ -1197,7 +1207,12 @@
- 			usb3: usb@48910000 {
- 				compatible = "snps,dwc3";
- 				reg = <0x48910000 0x17000>;
--				interrupts = <GIC_SPI 88 IRQ_TYPE_LEVEL_HIGH>;
-+				interrupts = <GIC_SPI 88 IRQ_TYPE_LEVEL_HIGH>,
-+					     <GIC_SPI 88 IRQ_TYPE_LEVEL_HIGH>,
-+					     <GIC_SPI 344 IRQ_TYPE_LEVEL_HIGH>;
-+				interrupt-names = "peripheral",
-+						  "host",
-+						  "otg";
- 				tx-fifo-resize;
- 				maximum-speed = "high-speed";
- 				dr_mode = "otg";
-@@ -1217,7 +1232,12 @@
- 			usb4: usb@48950000 {
- 				compatible = "snps,dwc3";
- 				reg = <0x48950000 0x17000>;
--				interrupts = <GIC_SPI 345 IRQ_TYPE_LEVEL_HIGH>;
-+				interrupts = <GIC_SPI 345 IRQ_TYPE_LEVEL_HIGH>,
-+					     <GIC_SPI 345 IRQ_TYPE_LEVEL_HIGH>,
-+					     <GIC_SPI 346 IRQ_TYPE_LEVEL_HIGH>;
-+				interrupt-names = "peripheral",
-+						  "host",
-+						  "otg";
- 				tx-fifo-resize;
- 				maximum-speed = "high-speed";
- 				dr_mode = "otg";
--- 
-1.8.3.1
+Negative padding would mean that (object + s->size) is crossing slab page boundary.
+This is either slub allocator bug (very unlikely), or some pointers passed to kasan_mark_slab_padding()
+not correct.
+
+Or maybe I'm missing something?
+
+> This started
+> working when the patch below was applied:
+> 
+> @@ -262,12 +264,11 @@ void kasan_free_pages(struct page *page,
+> unsigned int order)
+>  void kasan_mark_slab_padding(struct kmem_cache *s, void *object,
+>   struct page *page)
+>  {
+> - unsigned long object_end = (unsigned long)object + s->size;
+> - unsigned long padding_start = round_up(object_end,
+> - KASAN_SHADOW_SCALE_SIZE);
+> - unsigned long padding_end = (unsigned long)page_address(page) +
+> - (PAGE_SIZE << compound_order(page));
+> - size_t size = padding_end - padding_start;
+> + unsigned long page_start = (unsigned long) page_address(page);
+> + unsigned long page_end = page_start + (PAGE_SIZE << compound_order(page));
+> + unsigned long padding_start = round_up(page_end - s->reserved,
+> + KASAN_SHADOW_SCALE_SIZE);
+> + size_t size = page_end - padding_start;
+> 
+>   kasan_poison_shadow((void *)padding_start, size, KASAN_SLAB_PADDING);
+>  }
+> 
+> Also, in kasan_slab_free you poison the shadow with FREE not just the
+> object space, but also redzones. This is inefficient and will mistake
+> right out-of-bounds error for the next object with use-after-free.
+> This is fixed here
+> https://github.com/google/kasan/commit/4b3238be392ba0bc56bbc934ac545df3ff840782
+> , please patch.
+> 
+
+Makes sense.
+
+
+> 
+> LGTM
+> 
+
+
 
