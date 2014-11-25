@@ -1,79 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaKYOFm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:05:42 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:50906 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457AbaKYOFj convert rfc822-to-8bit (ORCPT
+	id S1751953AbaKYOEo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:04:44 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:44203 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458AbaKYOCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:05:39 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: [CFT PATCH v2 0/2] KVM: support XSAVES usage in the host
-From: Nadav Amit <nadav.amit@gmail.com>
-In-Reply-To: <54745BB0.8080304@redhat.com>
-Date: Tue, 25 Nov 2014 16:05:34 +0200
-Cc: Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kvm list <kvm@vger.kernel.org>, Nadav Amit <namit@cs.technion.ac.il>,
-        hpa@linux.intel.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <400361E2-995A-44B4-B35A-0D35793B49DD@gmail.com>
-References: <1416847414-22253-1-git-send-email-pbonzini@redhat.com> <20141125101331.GA28985@kernel> <54745BB0.8080304@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-X-Mailer: Apple Mail (2.1993)
+	Tue, 25 Nov 2014 09:02:34 -0500
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 11/17] switch sctp_user_addto_chunk() and sctp_datamsg_from_user() to passing iov_iter
+Date: Tue, 25 Nov 2014 14:02:25 +0000
+Message-Id: <1416924151-28698-11-git-send-email-viro@ZenIV.linux.org.uk>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <20141125024018.GH7996@ZenIV.linux.org.uk>
+References: <20141125024018.GH7996@ZenIV.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-> On Nov 25, 2014, at 12:36, Paolo Bonzini <pbonzini@redhat.com> wrote:
-> 
-> 
-> 
-> On 25/11/2014 11:13, Wanpeng Li wrote:
->> Hi Paolo,
->> On Mon, Nov 24, 2014 at 05:43:32PM +0100, Paolo Bonzini wrote:
->>> The first patch ensures that XSAVES is not exposed in the guest until
->>> we emulate MSR_IA32_XSS.  The second exports XSAVE data in the correct
->>> format.
->>> 
->>> I tested these on a non-XSAVES system so they should not be completely
->>> broken, but I need some help.  I am not even sure which XSAVE states
->>> are _not_ enabled, and thus compacted, in Linux.
->>> 
->>> Note that these patches do not add support for XSAVES in the guest yet,
->>> since MSR_IA32_XSS is not emulated.
->>> 
->>> If they fix the bug Nadav reported, I'll add Reported-by and commit.
->> 
->> I test this patchset w/ your "KVM: x86: export get_xsave_addr" patch on 
->> Skylake and guest hang during boot. The guest screen show "Probing EDD 
->> (edd=off to disable)... ok", and no more dump.
-> 
-> Anything in dmesg?  Can you try this patch on top?
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 373b0ab9a32e..ca26681455c2 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -6955,6 +6955,9 @@ int fx_init(struct kvm_vcpu *vcpu)
-> 		return err;
-> 
-> 	fpu_finit(&vcpu->arch.guest_fpu);
-> +	if (cpu_has_xsaves)
-> +		vcpu->arch.guest_fpu.state->xsave.xsave_hdr.xcomp_bv =
-> +			host_xcr0 | XSTATE_COMPACTION_ENABLED;
-> 
-> 	/*
-> 	 * Ensure guest xcr0 is valid for loading
-> 
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+ include/net/sctp/structs.h |    6 +++---
+ net/sctp/chunk.c           |    9 ++++-----
+ net/sctp/sm_make_chunk.c   |   16 ++++++++--------
+ net/sctp/socket.c          |    5 ++++-
+ 4 files changed, 19 insertions(+), 17 deletions(-)
 
-The second version works for me (w/qemu v2.1.0; Linux 3.13 guest). I did not need to apply this patch on top. [although I am not sure whether relying on userspace to call KVM_SET_XSAVE early enough is a good practice].
-
-One disclaimer: Since I got limited time with the machine, I executed a slightly modified kernel/qemu, and not the latest version.
-Anyhow, I don’t think these differences can have any impact.
-
-Regards,
-Nadav
+diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
+index 806e3b5..2bb2fcf 100644
+--- a/include/net/sctp/structs.h
++++ b/include/net/sctp/structs.h
+@@ -531,7 +531,7 @@ struct sctp_datamsg {
+ 
+ struct sctp_datamsg *sctp_datamsg_from_user(struct sctp_association *,
+ 					    struct sctp_sndrcvinfo *,
+-					    struct msghdr *, int len);
++					    struct iov_iter *);
+ void sctp_datamsg_free(struct sctp_datamsg *);
+ void sctp_datamsg_put(struct sctp_datamsg *);
+ void sctp_chunk_fail(struct sctp_chunk *, int error);
+@@ -647,8 +647,8 @@ struct sctp_chunk {
+ 
+ void sctp_chunk_hold(struct sctp_chunk *);
+ void sctp_chunk_put(struct sctp_chunk *);
+-int sctp_user_addto_chunk(struct sctp_chunk *chunk, int off, int len,
+-			  struct iovec *data);
++int sctp_user_addto_chunk(struct sctp_chunk *chunk, int len,
++			  struct iov_iter *from);
+ void sctp_chunk_free(struct sctp_chunk *);
+ void  *sctp_addto_chunk(struct sctp_chunk *, int len, const void *data);
+ struct sctp_chunk *sctp_chunkify(struct sk_buff *,
+diff --git a/net/sctp/chunk.c b/net/sctp/chunk.c
+index 158701d..a338091 100644
+--- a/net/sctp/chunk.c
++++ b/net/sctp/chunk.c
+@@ -164,7 +164,7 @@ static void sctp_datamsg_assign(struct sctp_datamsg *msg, struct sctp_chunk *chu
+  */
+ struct sctp_datamsg *sctp_datamsg_from_user(struct sctp_association *asoc,
+ 					    struct sctp_sndrcvinfo *sinfo,
+-					    struct msghdr *msgh, int msg_len)
++					    struct iov_iter *from)
+ {
+ 	int max, whole, i, offset, over, err;
+ 	int len, first_len;
+@@ -172,6 +172,7 @@ struct sctp_datamsg *sctp_datamsg_from_user(struct sctp_association *asoc,
+ 	struct sctp_chunk *chunk;
+ 	struct sctp_datamsg *msg;
+ 	struct list_head *pos, *temp;
++	size_t msg_len = iov_iter_count(from);
+ 	__u8 frag;
+ 
+ 	msg = sctp_datamsg_new(GFP_KERNEL);
+@@ -279,12 +280,10 @@ struct sctp_datamsg *sctp_datamsg_from_user(struct sctp_association *asoc,
+ 			goto errout;
+ 		}
+ 
+-		err = sctp_user_addto_chunk(chunk, offset, len, msgh->msg_iov);
++		err = sctp_user_addto_chunk(chunk, len, from);
+ 		if (err < 0)
+ 			goto errout_chunk_free;
+ 
+-		offset += len;
+-
+ 		/* Put the chunk->skb back into the form expected by send.  */
+ 		__skb_pull(chunk->skb, (__u8 *)chunk->chunk_hdr
+ 			   - (__u8 *)chunk->skb->data);
+@@ -317,7 +316,7 @@ struct sctp_datamsg *sctp_datamsg_from_user(struct sctp_association *asoc,
+ 			goto errout;
+ 		}
+ 
+-		err = sctp_user_addto_chunk(chunk, offset, over, msgh->msg_iov);
++		err = sctp_user_addto_chunk(chunk, over, from);
+ 
+ 		/* Put the chunk->skb back into the form expected by send.  */
+ 		__skb_pull(chunk->skb, (__u8 *)chunk->chunk_hdr
+diff --git a/net/sctp/sm_make_chunk.c b/net/sctp/sm_make_chunk.c
+index e49bcce..e49e231 100644
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -1491,26 +1491,26 @@ static void *sctp_addto_chunk_fixed(struct sctp_chunk *chunk,
+  * chunk is not big enough.
+  * Returns a kernel err value.
+  */
+-int sctp_user_addto_chunk(struct sctp_chunk *chunk, int off, int len,
+-			  struct iovec *data)
++int sctp_user_addto_chunk(struct sctp_chunk *chunk, int len,
++			  struct iov_iter *from)
+ {
+-	__u8 *target;
+-	int err = 0;
++	void *target;
++	ssize_t copied;
+ 
+ 	/* Make room in chunk for data.  */
+ 	target = skb_put(chunk->skb, len);
+ 
+ 	/* Copy data (whole iovec) into chunk */
+-	if ((err = memcpy_fromiovecend(target, data, off, len)))
+-		goto out;
++	copied = copy_from_iter(target, len, from);
++	if (copied != len)
++		return -EFAULT;
+ 
+ 	/* Adjust the chunk length field.  */
+ 	chunk->chunk_hdr->length =
+ 		htons(ntohs(chunk->chunk_hdr->length) + len);
+ 	chunk->chunk_end = skb_tail_pointer(chunk->skb);
+ 
+-out:
+-	return err;
++	return 0;
+ }
+ 
+ /* Helper function to assign a TSN if needed.  This assumes that both
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index 85e0b65..0397ac9 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -1609,6 +1609,9 @@ static int sctp_sendmsg(struct kiocb *iocb, struct sock *sk,
+ 	__u16 sinfo_flags = 0;
+ 	long timeo;
+ 	int err;
++	struct iov_iter from;
++
++	iov_iter_init(&from, WRITE, msg->msg_iov, msg->msg_iovlen, msg_len);
+ 
+ 	err = 0;
+ 	sp = sctp_sk(sk);
+@@ -1947,7 +1950,7 @@ static int sctp_sendmsg(struct kiocb *iocb, struct sock *sk,
+ 	}
+ 
+ 	/* Break the message into multiple chunks of maximum size. */
+-	datamsg = sctp_datamsg_from_user(asoc, sinfo, msg, msg_len);
++	datamsg = sctp_datamsg_from_user(asoc, sinfo, &from);
+ 	if (IS_ERR(datamsg)) {
+ 		err = PTR_ERR(datamsg);
+ 		goto out_free;
+-- 
+1.7.10.4
 
