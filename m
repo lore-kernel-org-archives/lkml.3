@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751050AbaKYRqQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 12:46:16 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:63522 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951AbaKYRqK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 12:46:10 -0500
-Message-ID: <1416937564.3512.15.camel@maggy.simpson.net>
-Subject: Re: [PATCH v3] sched/fair: Add advisory flag for borrowing a
- timeslice
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, corbet@lwn.net, mingo@redhat.com,
-        hpa@zytor.com, peterz@infradead.org, riel@redhat.com,
-        akpm@linux-foundation.org, rientjes@google.com, ak@linux.intel.com,
-        mgorman@suse.de, liwanp@linux.vnet.ibm.com, raistlin@linux.it,
-        kirill.shutemov@linux.intel.com, atomlin@redhat.com, avagin@openvz.org,
-        gorcunov@openvz.org, serge.hallyn@canonical.com, athorlton@sgi.com,
-        oleg@redhat.com, vdavydov@parallels.com, daeseok.youn@gmail.com,
-        keescook@chromium.org, yangds.fnst@cn.fujitsu.com, sbauer@eng.utah.edu,
-        vishnu.ps@samsung.com, axboe@fb.com, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-api@vger.kernel.org
-Date: Tue, 25 Nov 2014 10:46:04 -0700
-In-Reply-To: <54749725.3050307@oracle.com>
-References: <1416862595-24513-1-git-send-email-khalid.aziz@oracle.com>
-	 <alpine.DEB.2.11.1411242317380.6439@nanos>
-	 <1416889208.4335.127.camel@maggy.simpson.net> <54749725.3050307@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751194AbaKYRsI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 12:48:08 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:50233 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750809AbaKYRsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 12:48:04 -0500
+Date: Tue, 25 Nov 2014 18:48:00 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>, leif.lindholm@linaro.org,
+        roy.franz@linaro.org, linux-arm-kernel@lists.infradead.org,
+        mark.rutland@arm.com, msalter@redhat.com, dyoung@redhat.com,
+        linux-efi@vger.kernel.org, matt.fleming@intel.com, will.deacon@arm.com,
+        catalin.marinas@arm.com, grant.likely@linaro.org,
+        geoff.levand@linaro.org, linux-kernel@vger.kernel.org,
+        Peter Jones <pjones@redhat.com>
+Subject: Re: [PATCH v3 03/13] arm64: improve CONFIG_STRICT_DEVMEM handling
+Message-ID: <20141125174800.GA3938@pd.tnic>
+References: <1416315432-8534-1-git-send-email-ard.biesheuvel@linaro.org>
+ <1416315432-8534-4-git-send-email-ard.biesheuvel@linaro.org>
+ <20141125173925.GE3331@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141125173925.GE3331@console-pimps.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-25 at 07:50 -0700, Khalid Aziz wrote:
+On Tue, Nov 25, 2014 at 05:39:25PM +0000, Matt Fleming wrote:
+> On Tue, 18 Nov, at 01:57:02PM, Ard Biesheuvel wrote:
+> > Improve the handling of /dev/mem mappings under CONFIG_STRICT_DEVMEM by:
+> > - allowing read-only access to parts of System RAM that are not
+> >   considered memory by the kernel, this is mainly intended for exposing
+> >   UEFI Configuration tables to userland;
+> > - avoid using non-cached mappings for those parts of System RAM, as it
+> >   may result in mismatched attributes.
+> 
+> Is this really the best way to expose EFI config tables?
+> 
+> We already have parts in /sys/firmware/efi/ and in particular we expose
+> the runtime mappings there for kexec on x86.
 
-> It is definitely not an attempt to solve any kind of RT problem.
+Yeah!
 
-No no, I'm saying that giving certain tasks special dispensations
-effectively elevates them.  Temporarily or otherwise, they play by
-different rules, will block more deserving tasks, and it's not cut and
-dried that that blocking will not do more harm than good.
+> Hooking this into the /dev/mem infrastructure just seems wrong to me.
 
-Is it a clear win to make say some kworker or other global asset wait
-when it could have preempted and been gone in usecs?  Nope.
+And this virtmap.c thing is arm-only, AFAICT, but it looks like generic
+code and like a wholly new way of doing the efi page table.
 
-	-Mike
+This thing needs to be properly split into generic pieces which go into
+drivers/firmware/efi/ and arm-specific which would make that EFI_VIRTMAP
+into an arch bit.
 
+And so on and so on...
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
