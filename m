@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124AbaKYHDu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 02:03:50 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:61605 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209AbaKYHDs (ORCPT
+	id S1752146AbaKYHD7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 02:03:59 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:47295 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209AbaKYHD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 02:03:48 -0500
+	Tue, 25 Nov 2014 02:03:56 -0500
 From: gyungoh@gmail.com
 X-Google-Original-From: jack.yoo@skyworksinc.com
 To: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
@@ -19,9 +19,9 @@ Cc: jack.yoo@skyworksinc.com, linux-kernel@vger.kernel.org,
         shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
         trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
         jic23@kernel.org
-Subject: [PATCH v8 3/8] devicetree: mfd: Add new SKY81452 mfd binding
-Date: Tue, 25 Nov 2014 16:03:01 +0900
-Message-Id: <1416898986-24530-4-git-send-email-jack.yoo@skyworksinc.com>
+Subject: [PATCH v8 4/8] devicetree: backlight: Add new SKY81452 backlight binding
+Date: Tue, 25 Nov 2014 16:03:02 +0900
+Message-Id: <1416898986-24530-5-git-send-email-jack.yoo@skyworksinc.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1416898986-24530-1-git-send-email-jack.yoo@skyworksinc.com>
 References: <1416898986-24530-1-git-send-email-jack.yoo@skyworksinc.com>
@@ -34,6 +34,8 @@ From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 ---
 Changes v8:
+Renamed property names for backlight with vendor prefix
+Modified gpio-enable property to generic property for GPIO
 Made up the example for backlight DT
 
 Changes v7:
@@ -43,8 +45,7 @@ Changes v6:
 Nothing
 
 Changes v5:
-Changed DT for regulator : 'lout' node should be defined under 'regulator'
-Removed compatible string from sky81452-regulator driver
+Nothing
 
 Changes v4:
 Nothing
@@ -55,51 +56,44 @@ Nothing
 Changes v2:
 Added reg attribute for I2C slave address
 
- Documentation/devicetree/bindings/mfd/sky81452.txt | 36 ++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/sky81452.txt
+ .../video/backlight/sky81452-backlight.txt         | 29 ++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
 
-diff --git a/Documentation/devicetree/bindings/mfd/sky81452.txt b/Documentation/devicetree/bindings/mfd/sky81452.txt
+diff --git a/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
 new file mode 100644
-index 0000000..ab71473
+index 0000000..8daebf5
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/sky81452.txt
-@@ -0,0 +1,36 @@
-+SKY81452 bindings
++++ b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+@@ -0,0 +1,29 @@
++SKY81452-backlight bindings
 +
 +Required properties:
-+- compatible	: Must be "skyworks,sky81452"
-+- reg		: I2C slave address
++- compatible		: Must be "skyworks,sky81452-backlight"
 +
-+Required child nodes:
-+- backlight	: container node for backlight following the binding
-+		in video/backlight/sky81452-backlight.txt
-+- regulator	: container node for regulators following the binding
-+		in regulator/sky81452-regulator.txt
++Optional properties:
++- name			: Name of backlight device. Default is 'lcd-backlight'.
++- gpios			: GPIO to use to EN pin.
++			See Documentation/devicetree/bindings/gpio/gpio.txt
++- skyworks,en-channels	: Enable mask for current sink channel 1 to 6.
++- skyworks,ignore-pwm	: Ignore both PWM input
++- skyworks,dpwm-mode	: Enable DPWM dimming mode, otherwise Analog dimming.
++- skyworks,phase-shift	: Enable phase shift mode
++- skyworks,ovp-level	: Over-voltage protection level.
++			Should be between 14 or 28V.
++- skyworks,short-detection-threshold	: It should be one of 4, 5, 6 and 7V.
++- skyworks,current-limit	: It should be 2300mA or 2750mA.
 +
 +Example:
 +
-+	sky81452@2c {
-+		compatible = "skyworks,sky81452";
-+		reg = <0x2c>;
-+
-+		backlight {
-+			compatible = "skyworks,sky81452-backlight";
-+			name = "pwm-backlight";
-+			skyworks,en-channels = <0x3f>;
-+			skyworks,ignore-pwm;
-+			skyworks,phase-shift;
-+			skyworks,ovp-level = <20>;
-+			skyworks,current-limit = <2300>;
-+		};
-+
-+		regulator {
-+			lout {
-+				regulator-name = "sky81452-lout";
-+				regulator-min-microvolt = <4500000>;
-+				regulator-max-microvolt = <8000000>;
-+			};
-+		};
++	backlight {
++		compatible = "skyworks,sky81452-backlight";
++		name = "pwm-backlight";
++		skyworks,en-channels = <0x3f>;
++		skyworks,ignore-pwm;
++		skyworks,phase-shift;
++		skyworks,ovp-level = <20>;
++		skyworks,current-limit = <2300>;
 +	};
 -- 
 1.9.1
