@@ -1,110 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751575AbaKYO7Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:59:24 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:52171 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751016AbaKYO7U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:59:20 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH] of: support passing console options with stdout-path
-To: Leif Lindholm <leif.lindholm@linaro.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: mark.rutland@arm.com, robh+dt@kernel.org, plagnioj@jcrosoft.com,
-        ijc@debian.org
-In-Reply-To: <1416867838-18652-1-git-send-email-leif.lindholm@linaro.org>
-References: <1416867838-18652-1-git-send-email-leif.lindholm@linaro.org>
-Date: Tue, 25 Nov 2014 14:58:54 +0000
-Message-Id: <20141125145854.A46EDC44343@trevor.secretlab.ca>
+	id S1750975AbaKYPAK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 10:00:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42899 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750860AbaKYPAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 10:00:08 -0500
+Date: Tue, 25 Nov 2014 16:00:06 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Vlastimil Babka <vbabka@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Tim Hartrick <tim@edgecast.com>
+Subject: Re: [PATCH] Repeated fork() causes SLAB to grow without bound
+Message-ID: <20141125150006.GB4415@dhcp22.suse.cz>
+References: <CALYGNiOHXvyqr3+Jq5FsZ_xscsXwrQ_9YCtL2819i6iRkgms2w@mail.gmail.com>
+ <546CC0CD.40906@suse.cz>
+ <CALYGNiO9_bAVVZ2GdFq=PO2yV3LPs2utsbcb2pFby7MypptLCw@mail.gmail.com>
+ <CANN689G+y77m2_paF0vBpHG8EsJ2-pEnJvLJSGs-zHf+SqTEjQ@mail.gmail.com>
+ <CALYGNiOC4dEzzVzSQXGC4oxLbgp=8TC=A+duJs67jT97TWQ++g@mail.gmail.com>
+ <546DFFA1.4030700@redhat.com>
+ <CALYGNiP_zqAucmN=Gn75Mm2wK1iE6fPNxTsaTRgnUbFbFE7C-g@mail.gmail.com>
+ <CALYGNiO9NSpCFcRezArgfqzLQcTx2DnFYWYgpyK2HFyCnuGLOA@mail.gmail.com>
+ <20141125105953.GC4607@dhcp22.suse.cz>
+ <CALYGNiPZmf4Y1_vX_FaiALKp-BPvct7fAiaPEjnDGnVx9paS9w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALYGNiPZmf4Y1_vX_FaiALKp-BPvct7fAiaPEjnDGnVx9paS9w@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Nov 2014 22:23:58 +0000
-, Leif Lindholm <leif.lindholm@linaro.org>
- wrote:
-> Support specifying console options (like with console=ttyXN,<options>)
-> by appending them to the stdout-path property after a separating ':'.
+On Tue 25-11-14 16:13:16, Konstantin Khlebnikov wrote:
+> On Tue, Nov 25, 2014 at 1:59 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> > On Mon 24-11-14 11:09:40, Konstantin Khlebnikov wrote:
+> >> On Thu, Nov 20, 2014 at 6:03 PM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+> >> > On Thu, Nov 20, 2014 at 5:50 PM, Rik van Riel <riel@redhat.com> wrote:
+> >> >> -----BEGIN PGP SIGNED MESSAGE-----
+> >> >> Hash: SHA1
+> >> >>
+> >> >> On 11/20/2014 09:42 AM, Konstantin Khlebnikov wrote:
+> >> >>
+> >> >>> I'm thinking about limitation for reusing anon_vmas which might
+> >> >>> increase performance without breaking asymptotic estimation of
+> >> >>> count anon_vma in the worst case. For example this heuristic: allow
+> >> >>> to reuse only anon_vma with single direct descendant. It seems
+> >> >>> there will be arount up to two times more anon_vmas but
+> >> >>> false-aliasing must be much lower.
+> >>
+> >> Done. RFC patch in attachment.
+> >
+> > This is triggering BUG_ON(anon_vma->degree); in unlink_anon_vmas. I have
+> > applied the patch on top of 3.18.0-rc6.
 > 
-> Example:
-> 	stdout-path = "uart0:115200";
+> It seems I've screwed up with counter if anon_vma is merged in anon_vma_prepare.
+> Increment must be in the next if block:
 > 
-> This patch also modifies of_find_node_by_path() to match only the
-> portion of the path before a ':'.
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -182,8 +182,6 @@ int anon_vma_prepare(struct vm_area_struct *vma)
+>                         if (unlikely(!anon_vma))
+>                                 goto out_enomem_free_avc;
+>                         allocated = anon_vma;
+> -                       /* Bump degree, root anon_vma is its own parent. */
+> -                       anon_vma->degree++;
+>                 }
 > 
-> Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-> ---
->  drivers/of/base.c | 13 +++++++++++--
->  1 file changed, 11 insertions(+), 2 deletions(-)
+>                 anon_vma_lock_write(anon_vma);
+> @@ -192,6 +190,7 @@ int anon_vma_prepare(struct vm_area_struct *vma)
+>                 if (likely(!vma->anon_vma)) {
+>                         vma->anon_vma = anon_vma;
+>                         anon_vma_chain_link(vma, avc, anon_vma);
+> +                       anon_vma->degree++;
+>                         allocated = NULL;
+>                         avc = NULL;
+>                 }
 > 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index 3823edf..89c6b33 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -37,6 +37,7 @@ EXPORT_SYMBOL(of_allnodes);
->  struct device_node *of_chosen;
->  struct device_node *of_aliases;
->  struct device_node *of_stdout;
-> +static char *of_stdout_options;
->  
->  struct kset *of_kset;
->  
-> @@ -703,6 +704,8 @@ static struct device_node *__of_find_node_by_path(struct device_node *parent,
->  	if (!len)
->  		return NULL;
->  
-> +	len = strchrnul(path, ':') - path;
-> +
->  	__for_each_child_of_node(parent, child) {
->  		const char *name = strrchr(child->full_name, '/');
->  		if (WARN(!name, "malformed device_node %s\n", child->full_name))
-> @@ -747,6 +750,8 @@ struct device_node *of_find_node_by_path(const char *path)
->  		if (!of_aliases)
->  			return NULL;
->  
-> +		len = strchrnul(path, ':') - path;
-> +
->  		for_each_property_of_node(of_aliases, pp) {
->  			if (strlen(pp->name) == len && !strncmp(pp->name, path, len)) {
->  				np = of_find_node_by_path(pp->value);
+> I've tested it with trinity but probably isn't long enough.
 
-Can you add a testcase to drivers/of/unittests.c for this new path
-parsing? Then we know it's correct!
+OK, this has passed few runs with the original reproducer:
+$ date +%s; grep anon_vma /proc/slabinfo;
+$ ./vma_chain_repro
+$ sleep 1h
+$ date +%s; grep anon_vma /proc/slabinfo
+$ killall vma_chain_repro
+$ date +%s; grep anon_vma /proc/slabinfo
+1416923468
+anon_vma           11523  11523    176   23    1 : tunables    0    0    0 : slabdata    501    501      0
+1416927070
+anon_vma           11477  11477    176   23    1 : tunables    0    0    0 : slabdata    499    499      0
+1416927070
+anon_vma           11127  11431    176   23    1 : tunables    0    0    0 : slabdata    497    497      0
 
-> @@ -1830,8 +1835,12 @@ void of_alias_scan(void * (*dt_alloc)(u64 size, u64 align))
->  			name = of_get_property(of_chosen, "linux,stdout-path", NULL);
->  		if (IS_ENABLED(CONFIG_PPC) && !name)
->  			name = of_get_property(of_aliases, "stdout", NULL);
-> -		if (name)
-> +		if (name) {
->  			of_stdout = of_find_node_by_path(name);
-> +			of_stdout_options = strchr(name, ':');
-> +			if (of_stdout_options != NULL)
-> +				of_stdout_options++;
-> +		}
+anon_vmas do not seem to leak anymore. I have forwarded the patch to the
+customer who was complaining about NSD but I guess it will take some
+time to get the confirmation.
 
-Not so good. The ':' should actually be a generic part of
-of_find_node_by_path(), it doesn't have to be limited to stdout parsing.
-There are other places that would use it. I would add a second,
-optional, argument to of_find_node_by_path() that will update a pointer
-to the arguments after the ':'.
+Anyway thanks a lot for your help and feel free to add
+Tested-by: Michal Hocko <mhocko@suse.cz>
 
-g.
-
->  	}
->  
->  	if (!of_aliases)
-> @@ -1957,7 +1966,7 @@ bool of_console_check(struct device_node *dn, char *name, int index)
->  {
->  	if (!dn || dn != of_stdout || console_set_on_cmdline)
->  		return false;
-> -	return !add_preferred_console(name, index, NULL);
-> +	return !add_preferred_console(name, index, of_stdout_options);
->  }
->  EXPORT_SYMBOL_GPL(of_console_check);
->  
-> -- 
-> 1.9.1
-> 
-
+I have yet to look deeper into the code to give you my Reviewed-by.
+-- 
+Michal Hocko
+SUSE Labs
