@@ -1,387 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672AbaKYNJJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 08:09:09 -0500
-Received: from sci-ig2.spreadtrum.com ([222.66.158.135]:11860 "EHLO
-	SHSQR01.spreadtrum.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752180AbaKYNJG (ORCPT
+	id S1753888AbaKYNJT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 08:09:19 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:10131 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753757AbaKYNJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 08:09:06 -0500
-From: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
-To: <grant.likely@linaro.org>, <robh+dt@kernel.org>, <catalin.marinas@arm.com>,
-        <gregkh@linuxfoundation.org>, <ijc+devicetree@hellion.org.uk>,
-        <jslaby@suse.cz>, <galak@codeaurora.org>, <broonie@linaro.org>,
-        <mark.rutland@arm.com>, <m-karicheri2@ti.com>, <pawel.moll@arm.com>,
-        <artagnon@gmail.com>, <rrichter@cavium.com>, <will.deacon@arm.com>,
-        <arnd@arndb.de>, <gnomes@lxorguk.ukuu.org.uk>, <corbet@lwn.net>,
-        <jason@lakedaemon.net>, <broonie@kernel.org>, <heiko@sntech.de>,
-        <shawn.guo@freescale.com>, <florian.vaussard@epfl.ch>,
-        <andrew@lunn.ch>, <hytszk@gmail.com>, <orsonzhai@gmail.com>,
-        <geng.ren@spreadtrum.com>, <zhizhou.zhang@spreadtrum.com>,
-        <lanqing.liu@spreadtrum.com>, <zhang.lyra@gmail.com>,
-        <wei.qiao@spreadtrum.com>
-CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <sprdlinux@freelists.org>,
-        <linux-doc@vger.kernel.org>, <linux-serial@vger.kernel.org>,
-        <linux-api@vger.kernel.org>
-Subject: [PATCH v3 3/5] arm64: dts: Add support for Spreadtrum SC9836 SoC in dts and Makefile
-Date: Tue, 25 Nov 2014 20:16:56 +0800
-Message-ID: <1416917818-10506-4-git-send-email-chunyan.zhang@spreadtrum.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1416917818-10506-1-git-send-email-chunyan.zhang@spreadtrum.com>
-References: <Sharkl64-v3>
- <1416917818-10506-1-git-send-email-chunyan.zhang@spreadtrum.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.0.67.103]
-X-ClientProxiedBy: SHCAS01.spreadtrum.com (10.0.1.201) To
- SHMBX01.spreadtrum.com (10.0.1.203)
-X-MAIL: SHSQR01.spreadtrum.com sAPCIDEf065136
+	Tue, 25 Nov 2014 08:09:15 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-df-54747f776dc3
+Message-id: <54747F74.8070808@samsung.com>
+Date: Tue, 25 Nov 2014 16:09:08 +0300
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+MIME-version: 1.0
+To: Dmitry Chernenkov <dmitryc@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 11/12] lib: add kasan test module
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com>
+ <1416852146-9781-12-git-send-email-a.ryabinin@samsung.com>
+ <CAA6XgkEZD=+TvqXmO814nYi_oqp_3F7_NvkjEW0-X262xTiRDw@mail.gmail.com>
+In-reply-to: <CAA6XgkEZD=+TvqXmO814nYi_oqp_3F7_NvkjEW0-X262xTiRDw@mail.gmail.com>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNIsWRmVeSWpSXmKPExsVy+t/xy7rl9SUhBi/+KVn83juT1WLO+jVs
+	FkeufWe3uP7tDaPFp5cPGC22XG9isnj+8CG7xYSHbewW0zaKW6zsbmaz2P7sLZPFys4HrBaX
+	d81hs7i35j+rxeIjt5kt3j2bzGxxddVBdosfGx6zOgh5zN/5kdFj56y77B4LNpV6LN7zkslj
+	06pONo9Nnyaxe3S9vcLkcWLGbxaPJ1emM3l8fHqLxeP9vqtsHp83yXmcaPnCGsAbxWWTkpqT
+	WZZapG+XwJUx8+Bu5oJb3BUTt1xiamDcx9nFyMkhIWAi8e9wIyOELSZx4d56ti5GLg4hgaWM
+	Evs2vmWFcJqZJDbNXcQGUsUroCWxaM1rZhCbRUBV4sCbtywgNpuAnsS/WdvBakQFIiSurJnD
+	CFEvKPFj8j2wGhGg3vMfHoANZRa4xyIxre8CO0hCWMBC4u+ee0wQ21qZJPY+vQ02iVMgWGL/
+	sX1ACQ6gDnWJKVNyQcLMAvISm9e8ZZ7AKDALyY5ZCFWzkFQtYGRexSiaWppcUJyUnmukV5yY
+	W1yal66XnJ+7iRESoV93MC49ZnWIUYCDUYmH90ZcSYgQa2JZcWXuIUYJDmYlEd7caqAQb0pi
+	ZVVqUX58UWlOavEhRiYOTqkGxuvduaLvo7hmHmi8d0kjOEwsffFs/7aHP9QEt/7Sl12/6mdG
+	wwPDukM3f4g7PUtfXhzzJzpReHdBrLhM3yT2ZRkxh7Zv4a9bO+XMvVPKwm9fhghf5P79cMX2
+	zVdUrT+unetw+8G0XVtNE/bPC0x5rbfPRTeUvzH2bNrDrZalv/MlvQ+FSJ/f9lmJpTgj0VCL
+	uag4EQDZlLnQrgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhizhou Zhang <zhizhou.zhang@spreadtrum.com>
+On 11/25/2014 02:14 PM, Dmitry Chernenkov wrote:
+> I have a bit of concern about tests.
+> A) they are not fully automated, there is no checking whether they
+> pass or not. This is implemented in our repository using special tags
+> in the log (https://github.com/google/kasan/commit/33b267553e7ffe66d5207152a3294112361b75fe;
+> don't mmind the TODOs, they weren't broken to begin with), and a
+> parser script (https://code.google.com/p/address-sanitizer/source/browse/trunk/tools/kernel_test_parse.py)
+> to feed the kernel log to.
+> 
+> B) They are not thorough enough - they don't check false negatives,
 
-Adds the device tree support for Spreadtrum SC9836 SoC which is based on
-Sharkl64 platform.
+False negative means kasan's report on valid access, right? Most of the memory accesses
+in kernel are valid, so just booting kernel should give you the best check for false
+negatives you can ever write.
 
-Sharkl64 platform contains the common nodes of Spreadtrum's arm64-based SoCs.
+Though I agree that it's not very thorough. Currently this more demonstrational module,
+and there are a lot of cases not covered by it.
 
-Signed-off-by: Zhizhou Zhang <zhizhou.zhang@spreadtrum.com>
-Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
-Signed-off-by: Orson Zhai <orson.zhai@spreadtrum.com>
----
- arch/arm64/boot/dts/Makefile                  |    1 +
- arch/arm64/boot/dts/sprd-sc9836-openphone.dts |   85 ++++++++++++++++++++
- arch/arm64/boot/dts/sprd-sc9836.dtsi          |  103 ++++++++++++++++++++++++
- arch/arm64/boot/dts/sprd-sharkl64.dtsi        |  105 +++++++++++++++++++++++++
- 4 files changed, 294 insertions(+)
- create mode 100644 arch/arm64/boot/dts/sprd-sc9836-openphone.dts
- create mode 100644 arch/arm64/boot/dts/sprd-sc9836.dtsi
- create mode 100644 arch/arm64/boot/dts/sprd-sharkl64.dtsi
+> accesses more than 1 byte away etc.
+> 
+> C) (more of general concern for current Kasan realiability) - when
+> running multiple times, some tests are flaky, specificially oob_right
+> and uaf2. The latter needs quarantine to work reliably (I know
+> Konstantin is working on it). oob_right needs redzones in the
+> beginning of the slabs.
+> 
+> I know all of these may seem like long shots, but if we want a
+> reliable solution (also a backportable solution), we need to at least
+> consider them.
+> 
+> Otherwise, LGTM
+> 
 
-diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
-index f8001a6..d0aff8a 100644
---- a/arch/arm64/boot/dts/Makefile
-+++ b/arch/arm64/boot/dts/Makefile
-@@ -1,4 +1,5 @@
- dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
-+dtb-$(CONFIG_ARCH_SHARKL64) += sprd-sc9836-openphone.dtb
- dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
- dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
- 
-diff --git a/arch/arm64/boot/dts/sprd-sc9836-openphone.dts b/arch/arm64/boot/dts/sprd-sc9836-openphone.dts
-new file mode 100644
-index 0000000..484d714
---- /dev/null
-+++ b/arch/arm64/boot/dts/sprd-sc9836-openphone.dts
-@@ -0,0 +1,85 @@
-+/*
-+ * Spreadtrum SC9836 openphone board DTS file
-+ *
-+ * Copyright (C) 2014, Spreadtrum Communications Inc.
-+ *
-+ * This file is dual-licensed: you can use it either under the terms
-+ * of the GPL or the X11 license, at your option. Note that this dual
-+ * licensing only applies to this file, and not this project as a
-+ * whole.
-+ *
-+ *  a) This library is free software; you can redistribute it and/or
-+ *     modify it under the terms of the GNU General Public License as
-+ *     published by the Free Software Foundation; either version 2 of the
-+ *     License, or (at your option) any later version.
-+ *
-+ *     This library is distributed in the hope that it will be useful,
-+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *     GNU General Public License for more details.
-+ *
-+ * Or, alternatively,
-+ *
-+ *  b) Permission is hereby granted, free of charge, to any person
-+ *     obtaining a copy of this software and associated documentation
-+ *     files (the "Software"), to deal in the Software without
-+ *     restriction, including without limitation the rights to use,
-+ *     copy, modify, merge, publish, distribute, sublicense, and/or
-+ *     sell copies of the Software, and to permit persons to whom the
-+ *     Software is furnished to do so, subject to the following
-+ *     conditions:
-+ *
-+ *     The above copyright notice and this permission notice shall be
-+ *     included in all copies or substantial portions of the Software.
-+ *
-+ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-+ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-+ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-+ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-+ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-+ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-+ *     OTHER DEALINGS IN THE SOFTWARE.
-+ */
-+
-+/dts-v1/;
-+
-+#include "sprd-sc9836.dtsi"
-+
-+/ {
-+	model = "Spreadtrum,SC9836 Openphone Board";
-+
-+	compatible = "sprd,sc9836-openphone", "sprd,sc9836";
-+
-+	aliases {
-+		serial0 = &uart0;
-+		serial1 = &uart1;
-+		serial2 = &uart2;
-+		serial3 = &uart3;
-+	};
-+
-+	memory@80000000 {
-+		device_type = "memory";
-+		reg = <0 0x80000000 0 0x20000000>;
-+	};
-+
-+	chosen {
-+		stdout-path = &uart0;
-+	};
-+};
-+
-+&uart0 {
-+	status = "okay";
-+};
-+
-+&uart1 {
-+	status = "okay";
-+};
-+
-+&uart2 {
-+	status = "okay";
-+};
-+
-+&uart3 {
-+	status = "okay";
-+};
-diff --git a/arch/arm64/boot/dts/sprd-sc9836.dtsi b/arch/arm64/boot/dts/sprd-sc9836.dtsi
-new file mode 100644
-index 0000000..d5fe552
---- /dev/null
-+++ b/arch/arm64/boot/dts/sprd-sc9836.dtsi
-@@ -0,0 +1,103 @@
-+/*
-+ * Spreadtrum SC9836 SoC DTS file
-+ *
-+ * Copyright (C) 2014, Spreadtrum Communications Inc.
-+ *
-+ * This file is dual-licensed: you can use it either under the terms
-+ * of the GPL or the X11 license, at your option. Note that this dual
-+ * licensing only applies to this file, and not this project as a
-+ * whole.
-+ *
-+ *  a) This library is free software; you can redistribute it and/or
-+ *     modify it under the terms of the GNU General Public License as
-+ *     published by the Free Software Foundation; either version 2 of the
-+ *     License, or (at your option) any later version.
-+ *
-+ *     This library is distributed in the hope that it will be useful,
-+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *     GNU General Public License for more details.
-+ *
-+ * Or, alternatively,
-+ *
-+ *  b) Permission is hereby granted, free of charge, to any person
-+ *     obtaining a copy of this software and associated documentation
-+ *     files (the "Software"), to deal in the Software without
-+ *     restriction, including without limitation the rights to use,
-+ *     copy, modify, merge, publish, distribute, sublicense, and/or
-+ *     sell copies of the Software, and to permit persons to whom the
-+ *     Software is furnished to do so, subject to the following
-+ *     conditions:
-+ *
-+ *     The above copyright notice and this permission notice shall be
-+ *     included in all copies or substantial portions of the Software.
-+ *
-+ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-+ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-+ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-+ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-+ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-+ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-+ *     OTHER DEALINGS IN THE SOFTWARE.
-+ */
-+
-+#include "sprd-sharkl64.dtsi"
-+
-+/ {
-+	compatible = "sprd,sc9836";
-+
-+	cpus {
-+		#address-cells = <2>;
-+		#size-cells = <0>;
-+
-+		cpu@0 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a53", "arm,armv8";
-+			reg = <0x0 0x0>;
-+			enable-method = "psci";
-+		};
-+		cpu@1 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a53", "arm,armv8";
-+			reg = <0x0 0x1>;
-+			enable-method = "psci";
-+		};
-+		cpu@2 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a53", "arm,armv8";
-+			reg = <0x0 0x2>;
-+			enable-method = "psci";
-+		};
-+		cpu@3 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a53", "arm,armv8";
-+			reg = <0x0 0x3>;
-+			enable-method = "psci";
-+		};
-+	};
-+
-+	gic: interrupt-controller@12001000 {
-+		compatible = "arm,cortex-a15-gic", "arm,cortex-a9-gic";
-+		#interrupt-cells = <3>;
-+		interrupt-controller;
-+		reg = <0 0x12001000 0 0x1000>,
-+		      <0 0x12002000 0 0x1000>,
-+		      <0 0x12004000 0 0x2000>,
-+		      <0 0x12006000 0 0x2000>;
-+	};
-+
-+	psci {
-+		compatible = "arm,psci-0.2";
-+		method = "smc";
-+	};
-+
-+	timer {
-+		compatible = "arm,armv8-timer";
-+		interrupts = <1 13 0xff01>,
-+			     <1 14 0xff01>,
-+			     <1 11 0xff01>,
-+			     <1 10 0xff01>;
-+		clock-frequency = <26000000>;
-+	};
-+};
-diff --git a/arch/arm64/boot/dts/sprd-sharkl64.dtsi b/arch/arm64/boot/dts/sprd-sharkl64.dtsi
-new file mode 100644
-index 0000000..d9ecfe9
---- /dev/null
-+++ b/arch/arm64/boot/dts/sprd-sharkl64.dtsi
-@@ -0,0 +1,105 @@
-+/*
-+ * Spreadtrum Sharkl64 platform DTS file
-+ *
-+ * Copyright (C) 2014, Spreadtrum Communications Inc.
-+ *
-+ * This file is dual-licensed: you can use it either under the terms
-+ * of the GPL or the X11 license, at your option. Note that this dual
-+ * licensing only applies to this file, and not this project as a
-+ * whole.
-+ *
-+ *  a) This library is free software; you can redistribute it and/or
-+ *     modify it under the terms of the GNU General Public License as
-+ *     published by the Free Software Foundation; either version 2 of the
-+ *     License, or (at your option) any later version.
-+ *
-+ *     This library is distributed in the hope that it will be useful,
-+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *     GNU General Public License for more details.
-+ *
-+ * Or, alternatively,
-+ *
-+ *  b) Permission is hereby granted, free of charge, to any person
-+ *     obtaining a copy of this software and associated documentation
-+ *     files (the "Software"), to deal in the Software without
-+ *     restriction, including without limitation the rights to use,
-+ *     copy, modify, merge, publish, distribute, sublicense, and/or
-+ *     sell copies of the Software, and to permit persons to whom the
-+ *     Software is furnished to do so, subject to the following
-+ *     conditions:
-+ *
-+ *     The above copyright notice and this permission notice shall be
-+ *     included in all copies or substantial portions of the Software.
-+ *
-+ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-+ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-+ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-+ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-+ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-+ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-+ *     OTHER DEALINGS IN THE SOFTWARE.
-+ */
-+
-+/ {
-+	interrupt-parent = <&gic>;
-+	#address-cells = <2>;
-+	#size-cells = <2>;
-+
-+	soc {
-+		compatible = "simple-bus";
-+		reg = <0x0 0x0 0x0 0x80000000>;
-+		#address-cells = <2>;
-+		#size-cells = <2>;
-+		ranges;
-+
-+		ap_apb: apb@70000000 {
-+			compatible = "simple-bus";
-+			reg = <0x0 0x70000000 0x0 0x10000000>;
-+			#address-cells = <2>;
-+			#size-cells = <2>;
-+			ranges;
-+
-+			uart0: serial@70000000 {
-+				compatible = "sprd,sc9836-uart";
-+				reg = <0 0x70000000 0 0x100>;
-+				interrupts = <0 2 0xf04>;
-+				clocks = <&clk26mhz>;
-+				status = "disabled";
-+			};
-+
-+			uart1: serial@70100000 {
-+				compatible = "sprd,sc9836-uart";
-+				reg = <0 0x70100000 0 0x100>;
-+				interrupts = <0 3 0xf04>;
-+				clocks = <&clk26mhz>;
-+				status = "disabled";
-+			};
-+
-+			uart2: serial@70200000 {
-+				compatible = "sprd,sc9836-uart";
-+				reg = <0 0x70200000 0 0x100>;
-+				interrupts = <0 2 0xf04>;
-+				clocks = <&clk26mhz>;
-+				status = "disabled";
-+			};
-+
-+			uart3: serial@70300000 {
-+				compatible = "sprd,sc9836-uart";
-+				reg = <0 0x70300000 0 0x100>;
-+				interrupts = <0 3 0xf04>;
-+				clocks = <&clk26mhz>;
-+				status = "disabled";
-+			};
-+		};
-+	};
-+
-+	clocks {
-+		clk26mhz: clk26mhz {
-+			compatible = "fixed-clock";
-+			#clock-cells = <0>;
-+			clock-frequency = <26000000>;
-+		};
-+	};
-+};
--- 
-1.7.9.5
 
