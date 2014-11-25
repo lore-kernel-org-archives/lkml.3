@@ -1,74 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540AbaKYAzW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 19:55:22 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:58485 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750830AbaKYAzU (ORCPT
+	id S1751678AbaKYAzj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 19:55:39 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:57254 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751597AbaKYAzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 19:55:20 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Li, Aubrey" <aubrey.li@linux.intel.com>
-Cc: Lan Tianyu <tianyu.lan@intel.com>, lenb@kernel.org, wsa@the-dreams.de,
-        robert.moore@intel.com, lv.zheng@intel.com, shigorin@gmail.com,
-        adamw@happyassassin.net, jan.brummer@tabos.org,
-        mika.westerberg@linux.intel.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        devel@acpica.org
-Subject: Re: [PATCH V3] ACPI: Add _DEP(Operation Region Dependencies) support to fix battery issue on the Asus T100TA
-Date: Tue, 25 Nov 2014 02:16:32 +0100
-Message-ID: <2504006.9dfaR2IgVp@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5473CADA.6040307@linux.intel.com>
-References: <1416748974-24124-1-git-send-email-tianyu.lan@intel.com> <1720074.U59stZW2tQ@vostro.rjw.lan> <5473CADA.6040307@linux.intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 24 Nov 2014 19:55:37 -0500
+Message-ID: <1416876934.29427.9.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: Network throughput is reducedof in total bandwidth in Mips.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Sadasivan Shaiju <sshaiju@mvista.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Date: Mon, 24 Nov 2014 16:55:34 -0800
+In-Reply-To: <d1b4ee5706f2dcb796b53ffb41cad1f8@mail.gmail.com>
+References: <d1b4ee5706f2dcb796b53ffb41cad1f8@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 25, 2014 08:18:34 AM Li, Aubrey wrote:
-> On 2014/11/24 23:27, Rafael J. Wysocki wrote:
-> > On Monday, November 24, 2014 10:39:55 AM Li, Aubrey wrote:
-> >> On 2014/11/23 21:22, Lan Tianyu wrote:
-> >>> ACPI 5.0 introduces _DEP to designate device objects that OSPM should
-> >>> assign a higher priority in start ordering due to future operation region
-> >>> accesses.
-> >>>
-> >>> On Asus T100TA, ACPI battery info are read from a I2C slave device via
-> >>> I2C operation region. Before I2C operation region handler is installed,
-> >>> battery _STA always returns 0. There is a _DEP method of designating
-> >>> start order under battery device node.
-> >>>
-> >>> This patch is to implement _DEP feature to fix battery issue on the Asus T100TA.
-> >>> Introducing acpi_dep_list and adding dep_unmet count in the struct
-> >>> acpi_device. During ACPI namespace scan, create struct acpi_dep_data for a
-> >>> valid pair of master (device pointed to by _DEP)/slave(device with _DEP), record
-> >>> master's and slave's ACPI handle in it and put it into acpi_dep_list. The dep_unmet
-> >>> count will increase by one if there is a device under its _DEP. Driver's probe() should
-> >>> return EPROBE_DEFER when find dep_unmet is larger than 0. When I2C operation
-> >>> region handler is installed, remove all struct acpi_dep_data on the acpi_dep_list
-> >>> whose master is pointed to I2C host controller and decrease slave's dep_unmet.
-> >>> When dep_unmet decreases to 0, all _DEP conditions are met and then do acpi_bus_attach()
-> >>> for the device in order to resolve battery _STA issue on the Asus T100TA.
-> >>
-> >> Well, Can we explicitly tied this up with ASUS T100TA in the code?
-> >> If I understand correctly, the assumption in the patch is that the
-> >> battery device only depends on I2C device, which is true on ASUS T100TA,
-> >> but may not on the other platforms.
-> >>
-> >> This patch does not work on a box I have, on it _DEP contains I2C and GPIO.
-> > 
-> > Does the patch break anything for you?
+On Mon, 2014-11-24 at 14:31 -0800, Sadasivan Shaiju wrote:
+> HI,
 > 
-> Not I'm aware so far.
+> When  using iperf   with  small  buffers  there  is a performance
+> degradation   for  3.10  kernel   from  2.6.32  kernel .   Using
+> profiling  tools   I am getting  the  following  data.
+> 
+> 2.6.32   kerne  data
+> ........
+> samples  %        symbol name
+> 160321   39.1122  r4k_wait
+> 43731    10.6687  __do_softirq
+> 27547     6.7204  cvm_oct_napi_poll_68
+> 16569     4.0422  _raw_spin_unlock_irqrestore
+> 12537     3.0586  cvm_oct_xmit
+> 7362      1.7960  kfree
+> 5916      1.4433  tcp_ack
+> 5480      1.3369  net_rx_action
+> 5353      1.3059  __copy_user_common
+> 5097      1.2435  put_page
+> 4447      1.0849  __kmalloc
+> 4361      1.0639  kmem_cache_alloc
+> 4359      1.0634  skb_segment
+> 4309      1.0512  tcp_v4_rcv
+> 4120      1.0051  __inet_lookup_established
+> 4016      0.9798  ip_route_input
+> 4010      0.9783  napi_complete
+> 3766      0.9188  tcp_write_xmit
+> 3297      0.8043  free_hot_cold_page
+> 3189      0.7780  kmem_cache_free
+> 
+> 3.10  kernel  data
+> .......
+> samples  %        symbol name
+> 186       8.6431  __do_softirq
+> 127       5.9015  cvm_oct_napi_poll_68
+> 80        3.7175  tcp_sendmsg
+> 76        3.5316  tcp_write_xmit
+> 72        3.3457  cvm_oct_xmit_lockless
+> 71        3.2993  _raw_spin_lock_bh
+> 48        2.2305  tcp_release_cb
+> 47        2.1840  release_sock
+> 44        2.0446  add_preempt_count
+> 44        2.0446  tcp_transmit_skb
+> 34        1.5799  skb_split
+> 31        1.4405  sub_preempt_count
+> 27        1.2546  dev_hard_start_xmit
+> 25        1.1617  __srcu_read_lock
+> 25        1.1617  skb_release_data
+> 24        1.1152  tcp_ack
+> 23        1.0688  __bzero
+> 23        1.0688  _raw_spin_unlock_irqrestore
+> 23        1.0688  ip_finish_output
+> 22        1.0223  __copy_skb_header
+> 21        0.9758  __kfree_skb
+> 21        0.9758  ip_queue_xmit
+> 
+> Looks  like  mainly the  delay  is  causing   by  tcp_sendmsg()  and
+> tcp_write_xmit()   from  the  stack .   However   if  the  buffer  is
+> increased   to  default  (128k)  there  is  no  performance
+> Degradation .  This is  happening  only    for  small  buffers.
+> 
+> When  iperf is    used   as  below    the  bandwidth  on  3.10 kernel  is
+> only  around   600Mbps    compared   to  900Mbps   in  2.6.32  kernel.
+> 
+> ./iperf3 -c 10.162.103.131 -l 1500
+> 
+> When  iperf  is  ran  with  default  buffers  as  follows  the  bandwidth
+> is same  in 3.10  kernel  and 2.6.32  kernel.
+> 
+> ./iperf3 -c 10.162.103.131
+> 
+> Please  let me know  if  there is any fixes  available for  this .
+> --
 
-OK
+CC netdev, where you can actually find some help ;)
 
-It is not a complete solution, but it is an improvement.  It evidently helps
-people.
+Quite frankly, there are probably some reasons Octeon ethernet driver is
+still in staging.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1) This REUSE_SKBUFFS_WITHOUT_FREE kludge is quite horrible... Dont know
+if it was used in 2.6.32 and still used in 3.10 on your config.
+
+2) TX completions seem to be delayed by undefined amount of time.
+   TCP Small Queues was added in 3.6 so this driver problem could
+explain a lower throughput.
+
+You could try adding skb_orphan() into this driver...
+
+diff --git a/drivers/staging/octeon/ethernet-tx.c b/drivers/staging/octeon/ethernet-tx.c
+index 4e54d854021955868e2c602ac829b9b217960efd..85f42f32419aabcda28f1b2aa44e396a462b3fb2 100644
+--- a/drivers/staging/octeon/ethernet-tx.c
++++ b/drivers/staging/octeon/ethernet-tx.c
+@@ -175,6 +175,7 @@ int cvm_oct_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	 */
+ 	prefetch(priv);
+ 
++	skb_orphan(skb);
+ 	/*
+ 	 * The check on CVMX_PKO_QUEUES_PER_PORT_* is designed to
+ 	 * completely remove "qos" in the event neither interface
+
+
