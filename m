@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751353AbaKYTQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 14:16:21 -0500
-Received: from mga01.intel.com ([192.55.52.88]:44734 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750841AbaKYTQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 14:16:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,457,1413270000"; 
-   d="scan'208";a="637964339"
-Date: Tue, 25 Nov 2014 11:14:16 -0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Kees Cook <keescook@chromium.org>, "Qian, Shijun" <shijun.qian@intel.com>
-Cc: "Bernal Marin, Miguel" <miguel.bernal.marin@intel.com>,
-        Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
-Subject: [stable] KASLR could not find suitable E820 region...
-Message-ID: <20141125191416.GA4648@wfg-t540p.sh.intel.com>
+	id S1751763AbaKYTQa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 14:16:30 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:37494 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869AbaKYTQ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 14:16:26 -0500
+Date: Tue, 25 Nov 2014 11:16:19 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Andy Lutomirski <luto@amacapital.net>, X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST
+ context
+Message-ID: <20141125191619.GL5050@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CALCETrXBofV3oxDwK4MiSvFQcX3yxX_sL_KY63EZ8DgS8LnJSg@mail.gmail.com>
+ <20141124213501.GX5050@linux.vnet.ibm.com>
+ <20141124223407.GB8512@linux.vnet.ibm.com>
+ <CALCETrUA+z5z6bnOw63-EUiFD4WQtBXm1TE2DSRj3uG+d_k-bQ@mail.gmail.com>
+ <20141124225754.GY5050@linux.vnet.ibm.com>
+ <20141124233101.GA2819@linux.vnet.ibm.com>
+ <CALCETrV37kqC658AzBHZ5z_vH2b_1T821q5EfbMcS9Ecpj8EEw@mail.gmail.com>
+ <20141124235058.GZ5050@linux.vnet.ibm.com>
+ <CALCETrUFwyBYFWZi4JC1-HftmUumLr+bB1kh8EW6LViN+G+j+g@mail.gmail.com>
+ <20141125185803.GC3938@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141125185803.GC3938@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112519-0029-0000-0000-000005DE8FCC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kees,
+On Tue, Nov 25, 2014 at 07:58:03PM +0100, Borislav Petkov wrote:
+> On Mon, Nov 24, 2014 at 03:52:10PM -0800, Andy Lutomirski wrote:
+> > Dunno. Tony and Borislav -- when do you want the IST stack switching
+> > stuff?
+> 
+> I'd leave that up to Tony and his testbench. I mean, we can hammer on
+> it as much as we can and it can pass all testing locally but the real
+> fun starts once it hits upstream and for that it doesn't matter which
+> release... IMHO.
 
-We noticed the below boot errors in stable kernels 3.16.7 and 3.17.2
-on real hardwares:
+Nothing quite like oddball hardware to make test planning a challenge,
+no two ways about it!  ;-)
 
-        early console in decompress_kernel
-        KASLR could not find suitable E820 region...
+							Thanx, Paul
 
-        Decompressing Linux... Parsing ELF... Performing relocations... 
-
-        32-bit relocation outside of kernel!
-
-These kconfig options are enabled:
-
-        CONFIG_RANDOMIZE_BASE=y
-        CONFIG_RANDOMIZE_BASE_MAX_OFFSET=0x40000000
-
-Before digging further, we'd like to ask for a quick answer that
-whether they've been fixed by some commit in current mainline kernel?
-
-Thanks,
-Fengguang
