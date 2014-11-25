@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240AbaKYLox (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:44:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58319 "EHLO
+	id S1753063AbaKYKlL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:41:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58304 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057AbaKYKlM (ORCPT
+	with ESMTP id S1753036AbaKYKlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:41:12 -0500
+	Tue, 25 Nov 2014 05:41:09 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Benjamin Coddington <bcodding@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
+Cc: Houcheng Lin <houcheng@gmail.com>, Florian Westphal <fw@strlen.de>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 070/254] lockd: Try to reconnect if statd has moved
-Date: Tue, 25 Nov 2014 10:37:00 +0000
-Message-Id: <1416912004-5928-71-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 066/254] netfilter: nf_log: release skbuff on nlmsg put failure
+Date: Tue, 25 Nov 2014 10:36:56 +0000
+Message-Id: <1416912004-5928-67-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,38 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Coddington <bcodding@redhat.com>
+From: Houcheng Lin <houcheng@gmail.com>
 
-commit 173b3afceebe76fa2205b2c8808682d5b541fe3c upstream.
+commit b51d3fa364885a2c1e1668f88776c67c95291820 upstream.
 
-If rpc.statd is restarted, upcalls to monitor hosts can fail with
-ECONNREFUSED.  In that case force a lookup of statd's new port and retry the
-upcall.
+The kernel should reserve enough room in the skb so that the DONE
+message can always be appended.  However, in case of e.g. new attribute
+erronously not being size-accounted for, __nfulnl_send() will still
+try to put next nlmsg into this full skbuf, causing the skb to be stuck
+forever and blocking delivery of further messages.
 
-Signed-off-by: Benjamin Coddington <bcodding@redhat.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Fix issue by releasing skb immediately after nlmsg_put error and
+WARN() so we can track down the cause of such size mismatch.
+
+[ fw@strlen.de: add tailroom/len info to WARN ]
+
+Signed-off-by: Houcheng Lin <houcheng@gmail.com>
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/lockd/mon.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ net/netfilter/nfnetlink_log.c | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
-diff --git a/fs/lockd/mon.c b/fs/lockd/mon.c
-index 1812f026960c..6ae664b489af 100644
---- a/fs/lockd/mon.c
-+++ b/fs/lockd/mon.c
-@@ -159,6 +159,12 @@ static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res,
+diff --git a/net/netfilter/nfnetlink_log.c b/net/netfilter/nfnetlink_log.c
+index 8f415d6889fe..dd9fb9de9f1d 100644
+--- a/net/netfilter/nfnetlink_log.c
++++ b/net/netfilter/nfnetlink_log.c
+@@ -346,26 +346,25 @@ nfulnl_alloc_skb(struct net *net, u32 peer_portid, unsigned int inst_size,
+ 	return skb;
+ }
  
- 	msg.rpc_proc = &clnt->cl_procinfo[proc];
- 	status = rpc_call_sync(clnt, &msg, RPC_TASK_SOFTCONN);
-+	if (status == -ECONNREFUSED) {
-+		dprintk("lockd:	NSM upcall RPC failed, status=%d, forcing rebind\n",
-+				status);
-+		rpc_force_rebind(clnt);
-+		status = rpc_call_sync(clnt, &msg, RPC_TASK_SOFTCONN);
-+	}
- 	if (status < 0)
- 		dprintk("lockd: NSM upcall RPC failed, status=%d\n",
- 				status);
+-static int
++static void
+ __nfulnl_send(struct nfulnl_instance *inst)
+ {
+-	int status = -1;
+-
+ 	if (inst->qlen > 1) {
+ 		struct nlmsghdr *nlh = nlmsg_put(inst->skb, 0, 0,
+ 						 NLMSG_DONE,
+ 						 sizeof(struct nfgenmsg),
+ 						 0);
+-		if (!nlh)
++		if (WARN_ONCE(!nlh, "bad nlskb size: %u, tailroom %d\n",
++			      inst->skb->len, skb_tailroom(inst->skb))) {
++			kfree_skb(inst->skb);
+ 			goto out;
++		}
+ 	}
+-	status = nfnetlink_unicast(inst->skb, inst->net, inst->peer_portid,
+-				   MSG_DONTWAIT);
+-
++	nfnetlink_unicast(inst->skb, inst->net, inst->peer_portid,
++			  MSG_DONTWAIT);
++out:
+ 	inst->qlen = 0;
+ 	inst->skb = NULL;
+-out:
+-	return status;
+ }
+ 
+ static void
 -- 
 2.1.0
 
