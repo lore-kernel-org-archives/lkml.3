@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870AbaKYKm6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:42:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58914 "EHLO
+	id S1754624AbaKYLEg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:04:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58942 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753777AbaKYKmw (ORCPT
+	with ESMTP id S1753866AbaKYKm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:52 -0500
+	Tue, 25 Nov 2014 05:42:58 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 181/254] cpufreq: Avoid crash in resume on SMP without OPP
-Date: Tue, 25 Nov 2014 10:38:51 +0000
-Message-Id: <1416912004-5928-182-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 188/254] parisc: Use compat layer for msgctl, shmat, shmctl and semtimedop syscalls
+Date: Tue, 25 Nov 2014 10:38:58 +0000
+Message-Id: <1416912004-5928-189-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,56 +27,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert+renesas@glider.be>
+From: Helge Deller <deller@gmx.de>
 
-commit 09712f557b31838092e1f22a5f2dd131a843a3de upstream.
+commit 2fe749f50b0bec07650ef135b29b1f55bf543869 upstream.
 
-When resuming from s2ram on an SMP system without cpufreq operating
-points (e.g. there's no "operating-points" property for the CPU node in
-DT, or the platform doesn't use DT yet), the kernel crashes when
-bringing CPU 1 online:
+Switch over the msgctl, shmat, shmctl and semtimedop syscalls to use the compat
+layer. The problem was found with the debian procenv package, which called
+	shmctl(0, SHM_INFO, &info);
+in which the shmctl syscall then overwrote parts of the surrounding areas on
+the stack on which the info variable was stored and thus lead to a segfault
+later on.
 
-    Enabling non-boot CPUs ...
-    CPU1: Booted secondary processor
-    Unable to handle kernel NULL pointer dereference at virtual address 0000003c
-    pgd = ee5e6b00
-    [0000003c] *pgd=6e579003, *pmd=6e588003, *pte=00000000
-    Internal error: Oops: a07 [#1] SMP ARM
-    Modules linked in:
-    CPU: 0 PID: 1246 Comm: s2ram Tainted: G        W      3.18.0-rc3-koelsch-01614-g0377af242bb175c8-dirty #589
-    task: eeec5240 ti: ee704000 task.ti: ee704000
-    PC is at __cpufreq_add_dev.isra.24+0x24c/0x77c
-    LR is at __cpufreq_add_dev.isra.24+0x244/0x77c
-    pc : [<c0298efc>]    lr : [<c0298ef4>]    psr: 60000153
-    sp : ee705d48  ip : ee705d48  fp : ee705d84
-    r10: c04e0450  r9 : 00000000  r8 : 00000001
-    r7 : c05426a8  r6 : 00000001  r5 : 00000001  r4 : 00000000
-    r3 : 00000000  r2 : 00000000  r1 : 20000153  r0 : c0542734
+Additionally fix the definition of struct shminfo64 to use unsigned longs like
+the other architectures. This has no impact on userspace since we only have a
+32bit userspace up to now.
 
-Verify that policy is not NULL before dereferencing it to fix this.
-
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-Fixes: 8414809c6a1e (cpufreq: Preserve policy structure across suspend/resume)
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Helge Deller <deller@gmx.de>
+Cc: John David Anglin <dave.anglin@bell.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/cpufreq/cpufreq.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/parisc/include/uapi/asm/shmbuf.h | 25 +++++++++----------------
+ arch/parisc/kernel/syscall_table.S    |  8 ++++----
+ 2 files changed, 13 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index c06668f4e8c1..8daa0c95aa21 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1022,7 +1022,8 @@ static struct cpufreq_policy *cpufreq_policy_restore(unsigned int cpu)
+diff --git a/arch/parisc/include/uapi/asm/shmbuf.h b/arch/parisc/include/uapi/asm/shmbuf.h
+index 0a3eada1863b..f395cde7b593 100644
+--- a/arch/parisc/include/uapi/asm/shmbuf.h
++++ b/arch/parisc/include/uapi/asm/shmbuf.h
+@@ -36,23 +36,16 @@ struct shmid64_ds {
+ 	unsigned int		__unused2;
+ };
  
- 	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
+-#ifdef CONFIG_64BIT
+-/* The 'unsigned int' (formerly 'unsigned long') data types below will
+- * ensure that a 32-bit app calling shmctl(*,IPC_INFO,*) will work on
+- * a wide kernel, but if some of these values are meant to contain pointers
+- * they may need to be 'long long' instead. -PB XXX FIXME
+- */
+-#endif
+ struct shminfo64 {
+-	unsigned int	shmmax;
+-	unsigned int	shmmin;
+-	unsigned int	shmmni;
+-	unsigned int	shmseg;
+-	unsigned int	shmall;
+-	unsigned int	__unused1;
+-	unsigned int	__unused2;
+-	unsigned int	__unused3;
+-	unsigned int	__unused4;
++	unsigned long	shmmax;
++	unsigned long	shmmin;
++	unsigned long	shmmni;
++	unsigned long	shmseg;
++	unsigned long	shmall;
++	unsigned long	__unused1;
++	unsigned long	__unused2;
++	unsigned long	__unused3;
++	unsigned long	__unused4;
+ };
  
--	policy->governor = NULL;
-+	if (policy)
-+		policy->governor = NULL;
- 
- 	return policy;
- }
+ #endif /* _PARISC_SHMBUF_H */
+diff --git a/arch/parisc/kernel/syscall_table.S b/arch/parisc/kernel/syscall_table.S
+index 84c5d3a58fa1..3cd1c435c306 100644
+--- a/arch/parisc/kernel/syscall_table.S
++++ b/arch/parisc/kernel/syscall_table.S
+@@ -286,11 +286,11 @@
+ 	ENTRY_COMP(msgsnd)
+ 	ENTRY_COMP(msgrcv)
+ 	ENTRY_SAME(msgget)		/* 190 */
+-	ENTRY_SAME(msgctl)
+-	ENTRY_SAME(shmat)
++	ENTRY_COMP(msgctl)
++	ENTRY_COMP(shmat)
+ 	ENTRY_SAME(shmdt)
+ 	ENTRY_SAME(shmget)
+-	ENTRY_SAME(shmctl)		/* 195 */
++	ENTRY_COMP(shmctl)		/* 195 */
+ 	ENTRY_SAME(ni_syscall)		/* streams1 */
+ 	ENTRY_SAME(ni_syscall)		/* streams2 */
+ 	ENTRY_SAME(lstat64)
+@@ -323,7 +323,7 @@
+ 	ENTRY_SAME(epoll_ctl)		/* 225 */
+ 	ENTRY_SAME(epoll_wait)
+  	ENTRY_SAME(remap_file_pages)
+-	ENTRY_SAME(semtimedop)
++	ENTRY_COMP(semtimedop)
+ 	ENTRY_COMP(mq_open)
+ 	ENTRY_SAME(mq_unlink)		/* 230 */
+ 	ENTRY_COMP(mq_timedsend)
 -- 
 2.1.0
 
