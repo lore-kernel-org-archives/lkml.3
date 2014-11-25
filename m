@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681AbaKYT0S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 14:26:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51572 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751467AbaKYT0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 14:26:15 -0500
-Date: Tue, 25 Nov 2014 20:26:22 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Seth Jennings <sjenning@redhat.com>
-cc: Josh Poimboeuf <jpoimboe@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>, Petr Mladek <pmladek@suse.cz>,
-        Miroslav Benes <mbenes@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 0/3] Kernel Live Patching
-In-Reply-To: <1416935709-404-1-git-send-email-sjenning@redhat.com>
-Message-ID: <alpine.LNX.2.00.1411252017010.23174@pobox.suse.cz>
-References: <1416935709-404-1-git-send-email-sjenning@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751823AbaKYT1x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 14:27:53 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:37394 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891AbaKYT1v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 14:27:51 -0500
+Date: Tue, 25 Nov 2014 14:27:41 -0500 (EST)
+Message-Id: <20141125.142741.1620673255148724338.davem@davemloft.net>
+To: ebiederm@xmission.com
+Cc: josh@joshtriplett.org, rdunlap@infradead.org, pieter@boesman.nl,
+        alexander.h.duyck@intel.com, viro@zeniv.linux.org.uk, ast@plumgrid.com,
+        akpm@linux-foundation.org, beber@meleeweb.net,
+        catalina.mocanu@gmail.com, dborkman@redhat.com, edumazet@google.com,
+        fabf@skynet.be, fuse-devel@lists.sourceforge.net, geert@linux-m68k.org,
+        hughd@google.com, iulia.manda21@gmail.com, JBeulich@suse.com,
+        bfields@fieldses.org, jlayton@poochiereds.net,
+        linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        mcgrof@suse.com, mattst88@gmail.com, mgorman@suse.de, mst@redhat.com,
+        miklos@szeredi.hu, netdev@vger.kernel.org, oleg@redhat.com,
+        Paul.Durrant@citrix.com, paulmck@linux.vnet.ibm.com,
+        pefoley2@pefoley.com, tgraf@suug.ch, therbert@google.com,
+        trond.myklebust@primarydata.com, willemb@google.com,
+        xiaoguangrong@linux.vnet.ibm.com, zhenglong.cai@cs2c.com.cn
+Subject: Re: [PATCH v4 0/7] kernel tinification: optionally compile out
+ splice family of syscalls (splice, vmsplice, tee and sendfile)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <87egsr9jkz.fsf@x220.int.ebiederm.org>
+References: <20141125185310.GA24891@cloud>
+	<20141125.140441.401150380839514113.davem@davemloft.net>
+	<87egsr9jkz.fsf@x220.int.ebiederm.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 25 Nov 2014 11:27:48 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Nov 2014, Seth Jennings wrote:
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Tue, 25 Nov 2014 13:16:44 -0600
 
-> Masami's IPMODIFY patch is heading for -next via your tree.  Once it arrives,
-> I'll rebase and make the change to set IPMODIFY.  Do not pull this for -next
-> yet.  This version (v4) is for review and gathering acks.
+> David Miller <davem@davemloft.net> writes:
+> 
+>> From: josh@joshtriplett.org
+>> Date: Tue, 25 Nov 2014 10:53:10 -0800
+>>
+>>> It's not a "slippery slope"; it's been our standard practice for ages.
+>>
+>> We've never put an entire class of generic system calls behind
+>> a config option.
+> 
+> CONFIG_SYSVIPC has been in the kernel as long as I can remember.
+> 
+> I seem to remember a plan to remove that code once userspace had
+> finished migrating to more unixy interfaces to ipc.  But in 20 years
+> that migration does does not seem to have finished, or even look
+> like it ever will.
+> 
+> But if we started a slippery slope it was long long ago.
 
-Thanks for sending out v4 and incorporating the feedback, I really 
-appreciate your responsiveness!
+Fair enough.
 
-Anyway, I don't think targetting 3.19 is realistic, given we're currently 
-already past 3.18-rc6 ... even if we rush it into -next in the coming 
-days, it will get close to zero exposure in there before the merge window 
-opens.
-
-I'd like to do quite some more testing and still finish some pending 
-portions of code reviews on our side (especially to make sure that this 
-can be easily extended to support any consistency model in the future).
-
-Once we start collecting Reviewed-by's / Acked-by's on this patchset, I 
-can establish a tree on git.kernel.org that we can use to collect any 
-followup patches during 3.20 development cycle and send a pull request to 
-Linus during 3.20 merge window .. if everybody agrees with this course of 
-action, obviously.
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+Would be amusing if these tiny systems have it enabled.
