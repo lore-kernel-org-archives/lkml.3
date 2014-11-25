@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890AbaKYXvc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 18:51:32 -0500
-Received: from hydra.tuxags.com ([64.13.172.54]:58693 "EHLO mail.tuxags.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751825AbaKYXva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 18:51:30 -0500
-Date: Tue, 25 Nov 2014 15:51:30 -0800
-From: Matt Mullins <mmullins@mmlx.us>
-To: Tom Huynh <tom.huynh@freescale.com>
-Cc: mingo@redhat.com, acme@kernel.org, namhyung@kernel.org, jolsa@kernel.org,
-        a.p.zijlstra@chello.nl, paulus@samba.org, kim.phillips@freescale.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf hist browser: change print format from lu to llu
- to fit u64 type
-Message-ID: <20141125235128.GA25625@hydra.tuxags.com>
-Mail-Followup-To: Tom Huynh <tom.huynh@freescale.com>, mingo@redhat.com,
-	acme@kernel.org, namhyung@kernel.org, jolsa@kernel.org,
-	a.p.zijlstra@chello.nl, paulus@samba.org,
-	kim.phillips@freescale.com, linux-kernel@vger.kernel.org
-References: <1416351627-360-1-git-send-email-tom.huynh@freescale.com>
+	id S1751929AbaKYXwE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 18:52:04 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:35072 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751278AbaKYXwC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 18:52:02 -0500
+Date: Tue, 25 Nov 2014 23:51:50 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Jason Cooper <jason@lakedaemon.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: kbuild: Fix forced rebuild after 'make dtbs'
+Message-ID: <20141125235150.GH3836@n2100.arm.linux.org.uk>
+References: <CACRpkdYmJWy1_vs0tWRA7SvkQnvbXXKqf7pHpH5b5tZ6vR+KJg@mail.gmail.com>
+ <1414961549-31666-1-git-send-email-jason@lakedaemon.net>
+ <5474F78F.2060906@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1416351627-360-1-git-send-email-tom.huynh@freescale.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5474F78F.2060906@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 18, 2014 at 05:00:27PM -0600, Tom Huynh wrote:
-> nr_events in tools/perf/ui/browsers/hists.c is of type u64, thus it should
-> be printed as %llu instead of %lu. The print format %lu causes perf report
-> to show 0 event count when running with 32-bit userspace without 
-> redirection. This patch fixes that problem.
+On Tue, Nov 25, 2014 at 10:41:35PM +0100, Michal Marek wrote:
+> Dne 2.11.2014 v 21:52 Jason Cooper napsal(a):
+> > After this patch:
+> > 
+> >   f4d4ffc03efc kbuild: dtbs_install: new make target
+> > 
+> > was added the kernel tree, Linus Walleij noticed that 'make dtbs' forced
+> > a following 'make zImage' to rebuild the entire tree, even though
+> > nothing had changed.  His report:
+> > 
+> >   After this patch a while back I have observed the following behaviour
+> >   of the kernel build:
+> > 
+> >   make zImage
+> >   make zImage
+> >   -> incremental build, just relink
+> > 
+> >   make zImage
+> >   make dtbs
+> >   make zImage
+> >   -> The whole kernel gets rebuilt
+> > 
+> >   So now if I happen to recompile my device trees, I suddenly want
+> >   the entire zImage to be rebuilt to? It's by definition not changes
+> >   that affect the kernel build :-(
+> > 
+> >   I noticed this because my build scripts calls make dtbs && make
+> >   zImage, and started to rebuild absolutely everything all the time.
+> > 
+> > To fix this, we make only the dtbs_install target depend on the prepare
+> > target.  It's needed to make sure KERNELVERSION is calculated prior to
+> > installing.
 > 
-> Signed-off-by: Tom Huynh <tom.huynh@freescale.com>
-> ---
->  tools/perf/ui/browsers/hists.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-> index cfb976b..49b2471 100644
-> --- a/tools/perf/ui/browsers/hists.c
-> +++ b/tools/perf/ui/browsers/hists.c
-> @@ -1254,7 +1254,7 @@ static int hists__browser_title(struct hists *hists,
->  
->  	nr_samples = convert_unit(nr_samples, &unit);
->  	printed = scnprintf(bf, size,
-> -			   "Samples: %lu%c of event '%s', Event count (approx.): %lu",
-> +			   "Samples: %lu%c of event '%s', Event count (approx.): %llu",
->  			   nr_samples, unit, ev_name, nr_events);
+> If a mere 'make prepare' causes a rebuild of the whole kernel, then
+> there is something fishy in the ARM Makefiles. However, if you only need
+> the KERNELRELEASE variable, then you do not need to depend on prepare.
+> The main Makefile makes sure that silentoldconfig is ran and therefore
+> KERNELRELEASE set for all targets except make *config.
 
-If I enable __attribute__((format(printf, ...))) on scnprintf, on a 64-bit
-build this gives me:
+Running make prepare and then re-running a build doesn't rebuild anything
+for me.  However, I always build with O=  Also works if I do a make
+dtbs too.  So, everything seems to work as expected here.
 
-ui/browsers/hists.c: In function ‘hists__browser_title’:
-ui/browsers/hists.c:1258:7: error: format ‘%llu’ expects argument of type ‘long long unsigned int’, but argument 7 has type ‘u64’ [-Werror=format=]
-       nr_samples, unit, ev_name, nr_events);
-       ^
+I think this needs a bit more debugging to see why the whole kernel is
+being rebuilt - the kernel build system has methods to tell you why stuff
+is being built, which would be a good place to start.
 
-I would usually suggest using the PRIu64 macro which should(TM) evaluate to the
-right string constant for the platform, but that appears to be a C99 thing.
-I'm not sure if that's kosher in tools/perf, but it does seem to build for me
-(on Fedora 20).
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
