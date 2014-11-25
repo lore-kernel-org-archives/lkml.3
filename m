@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161AbaKYKno (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:43:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59162 "EHLO
+	id S1754289AbaKYKtS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:49:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59208 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753354AbaKYKnf (ORCPT
+	with ESMTP id S1753254AbaKYKnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:43:35 -0500
+	Tue, 25 Nov 2014 05:43:42 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dwight Engen <dwight.engen@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Derek Browne <Derek.Browne@intel.com>,
+        "Alvin (Weike) Chen" <alvin.chen@intel.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 228/254] sunvdc: limit each sg segment to a page
-Date: Tue, 25 Nov 2014 10:39:38 +0000
-Message-Id: <1416912004-5928-229-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 238/254] mmc: sdhci-pci: SDIO host controller support for Intel Quark X1000
+Date: Tue, 25 Nov 2014 10:39:48 +0000
+Message-Id: <1416912004-5928-239-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,43 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dwight Engen <dwight.engen@oracle.com>
+From: Derek Browne <Derek.Browne@intel.com>
 
-commit 5eed69ffd248c9f68f56c710caf07db134aef28b upstream.
+commit 43e968cec79b6334cf7cb3e11184cce720541712 upstream.
 
-ldc_map_sg() could fail its check that the number of pages referred to
-by the sg scatterlist was <= the number of cookies.
+This patch is to enable SDIO host controller for Intel Quark X1000.
 
-This fixes the issue by doing a similar thing to the xen-blkfront driver,
-ensuring that the scatterlist will only ever contain a segment count <=
-port->ring_cookies, and each segment will be page aligned, and <= page
-size. This ensures that the scatterlist is always mappable.
-
-Orabug: 19347817
-OraBZ: 15945
-
-Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Derek Browne <Derek.Browne@intel.com>
+Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/block/sunvdc.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/mmc/host/sdhci-pci.c | 12 ++++++++++++
+ drivers/mmc/host/sdhci-pci.h |  1 +
+ 2 files changed, 13 insertions(+)
 
-diff --git a/drivers/block/sunvdc.c b/drivers/block/sunvdc.c
-index 1616ad091a5e..1a9360da1f54 100644
---- a/drivers/block/sunvdc.c
-+++ b/drivers/block/sunvdc.c
-@@ -747,6 +747,10 @@ static int probe_disk(struct vdc_port *port)
+diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+index 52c42fcc284c..1aeeefc71512 100644
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@ -103,6 +103,10 @@ static const struct sdhci_pci_fixes sdhci_cafe = {
+ 			  SDHCI_QUIRK_BROKEN_TIMEOUT_VAL,
+ };
  
- 	port->disk = g;
- 
-+	/* Each segment in a request is up to an aligned page in size. */
-+	blk_queue_segment_boundary(q, PAGE_SIZE - 1);
-+	blk_queue_max_segment_size(q, PAGE_SIZE);
++static const struct sdhci_pci_fixes sdhci_intel_qrk = {
++	.quirks		= SDHCI_QUIRK_NO_HISPD_BIT,
++};
 +
- 	blk_queue_max_segments(q, port->ring_cookies);
- 	blk_queue_max_hw_sectors(q, port->max_xfer_size);
- 	g->major = vdc_major;
+ static int mrst_hc_probe_slot(struct sdhci_pci_slot *slot)
+ {
+ 	slot->host->mmc->caps |= MMC_CAP_8_BIT_DATA;
+@@ -753,6 +757,14 @@ static const struct pci_device_id pci_ids[] = {
+ 
+ 	{
+ 		.vendor		= PCI_VENDOR_ID_INTEL,
++		.device		= PCI_DEVICE_ID_INTEL_QRK_SD,
++		.subvendor	= PCI_ANY_ID,
++		.subdevice	= PCI_ANY_ID,
++		.driver_data	= (kernel_ulong_t)&sdhci_intel_qrk,
++	},
++
++	{
++		.vendor		= PCI_VENDOR_ID_INTEL,
+ 		.device		= PCI_DEVICE_ID_INTEL_MRST_SD0,
+ 		.subvendor	= PCI_ANY_ID,
+ 		.subdevice	= PCI_ANY_ID,
+diff --git a/drivers/mmc/host/sdhci-pci.h b/drivers/mmc/host/sdhci-pci.h
+index 6d718719659e..c101477ef3be 100644
+--- a/drivers/mmc/host/sdhci-pci.h
++++ b/drivers/mmc/host/sdhci-pci.h
+@@ -17,6 +17,7 @@
+ #define PCI_DEVICE_ID_INTEL_CLV_SDIO2	0x08fb
+ #define PCI_DEVICE_ID_INTEL_CLV_EMMC0	0x08e5
+ #define PCI_DEVICE_ID_INTEL_CLV_EMMC1	0x08e6
++#define PCI_DEVICE_ID_INTEL_QRK_SD	0x08A7
+ 
+ /*
+  * PCI registers
 -- 
 2.1.0
 
