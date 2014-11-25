@@ -1,123 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457AbaKYRZF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 12:25:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44259 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752368AbaKYRYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 12:24:46 -0500
-Message-Id: <20141125172329.580701786@redhat.com>
-User-Agent: quilt/0.60-1
-Date: Tue, 25 Nov 2014 15:21:10 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Luiz Capitulino <lcapitulino@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, kvm@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [patch -rt 2/2] KVM: lapic: mark LAPIC timer handler as irqsafe
-References: <20141125172108.992070524@redhat.com>
-Content-Disposition: inline; filename=kvm-lapic-irqsafe
+	id S1752097AbaKYRZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 12:25:56 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:52138 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802AbaKYRZz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 12:25:55 -0500
+Date: Tue, 25 Nov 2014 17:25:50 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
+        David Airlie <airlied@linux.ie>
+Subject: Re: [PATCH] radeon: acquire BIOS via firmware subsystem if
+ everything else failed
+Message-ID: <20141125172550.GA19688@srcf.ucam.org>
+References: <20141122193025.GA5782@kaos.lebenslange-mailadresse.de>
+ <CADnq5_OCeJ2M6qJXLXVow-RN6nZjBjmhQwu-FLSjLwwLWpsE5w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADnq5_OCeJ2M6qJXLXVow-RN6nZjBjmhQwu-FLSjLwwLWpsE5w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since lapic timer handler only wakes up a simple waitqueue,
-it can be executed from hardirq context.
+On Tue, Nov 25, 2014 at 12:14:21PM -0500, Alex Deucher wrote:
+> The vbios image is available via ACPI prior to the OS taking over.
+> IIRC, Matthew Garret fixed up the bootloader to fetch the vbios image
+> prior to loading Linux so that it could be accessed after the OS
+> loaded.
 
-Reduces average cyclictest latency by 3us.
+EFI rather than ACPI, but yeah. In theory this should work fine if 
+you're using the EFI entry point. I don't know whether the patches for 
+linuxefi were ever accepted by grub upstream - if not, pushing those 
+would make more sense.
 
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-
----
- arch/x86/kvm/lapic.c |   42 +++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 39 insertions(+), 3 deletions(-)
-
-Index: linux-stable-rt/arch/x86/kvm/lapic.c
-===================================================================
---- linux-stable-rt.orig/arch/x86/kvm/lapic.c	2014-11-25 14:14:38.636810068 -0200
-+++ linux-stable-rt/arch/x86/kvm/lapic.c	2014-11-25 14:17:28.850567059 -0200
-@@ -1031,8 +1031,38 @@
- 				   apic->divide_count);
- }
- 
-+
-+static enum hrtimer_restart apic_timer_fn(struct hrtimer *data);
-+
-+static void apic_timer_expired(struct hrtimer *data)
-+{
-+	int ret, i = 0;
-+	enum hrtimer_restart r;
-+	struct kvm_timer *ktimer = container_of(data, struct kvm_timer, timer);
-+
-+	r = apic_timer_fn(data);
-+
-+	if (r == HRTIMER_RESTART) {
-+		do {
-+			ret = hrtimer_start_expires(data, HRTIMER_MODE_ABS);
-+			if (ret == -ETIME)
-+				hrtimer_add_expires_ns(&ktimer->timer,
-+							ktimer->period);
-+			i++;
-+		} while (ret == -ETIME && i < 10);
-+
-+		if (ret == -ETIME) {
-+			printk(KERN_ERR "%s: failed to reprogram timer\n",
-+			       __func__);
-+			WARN_ON(1);
-+		}
-+	}
-+}
-+
-+
- static void start_apic_timer(struct kvm_lapic *apic)
- {
-+	int ret;
- 	ktime_t now;
- 	atomic_set(&apic->lapic_timer.pending, 0);
- 
-@@ -1062,9 +1092,11 @@
- 			}
- 		}
- 
--		hrtimer_start(&apic->lapic_timer.timer,
-+		ret = hrtimer_start(&apic->lapic_timer.timer,
- 			      ktime_add_ns(now, apic->lapic_timer.period),
- 			      HRTIMER_MODE_ABS);
-+		if (ret == -ETIME)
-+			apic_timer_expired(&apic->lapic_timer.timer);
- 
- 		apic_debug("%s: bus cycle is %" PRId64 "ns, now 0x%016"
- 			   PRIx64 ", "
-@@ -1094,8 +1126,10 @@
- 			ns = (tscdeadline - guest_tsc) * 1000000ULL;
- 			do_div(ns, this_tsc_khz);
- 		}
--		hrtimer_start(&apic->lapic_timer.timer,
-+		ret = hrtimer_start(&apic->lapic_timer.timer,
- 			ktime_add_ns(now, ns), HRTIMER_MODE_ABS);
-+		if (ret == -ETIME)
-+			apic_timer_expired(&apic->lapic_timer.timer);
- 
- 		local_irq_restore(flags);
- 	}
-@@ -1581,6 +1615,7 @@
- 	hrtimer_init(&apic->lapic_timer.timer, CLOCK_MONOTONIC,
- 		     HRTIMER_MODE_ABS);
- 	apic->lapic_timer.timer.function = apic_timer_fn;
-+	apic->lapic_timer.timer.irqsafe = 1;
- 
- 	/*
- 	 * APIC is created enabled. This will prevent kvm_lapic_set_base from
-@@ -1699,7 +1734,8 @@
- 
- 	timer = &vcpu->arch.apic->lapic_timer.timer;
- 	if (hrtimer_cancel(timer))
--		hrtimer_start_expires(timer, HRTIMER_MODE_ABS);
-+		if (hrtimer_start_expires(timer, HRTIMER_MODE_ABS) == -ETIME)
-+			apic_timer_expired(timer);
- }
- 
- /*
-
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
