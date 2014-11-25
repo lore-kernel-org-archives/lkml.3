@@ -1,229 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751194AbaKYFqv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 00:46:51 -0500
-Received: from ozlabs.org ([103.22.144.67]:48571 "EHLO ozlabs.org"
+	id S1751770AbaKYFui (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 00:50:38 -0500
+Received: from mga11.intel.com ([192.55.52.93]:64065 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750770AbaKYFqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 00:46:50 -0500
-Date: Tue, 25 Nov 2014 16:46:40 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+	id S1750770AbaKYFuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 00:50:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,453,1413270000"; 
+   d="scan'208";a="627797293"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hanjun Guo <hanjun.guo@linaro.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>, Yinghai Lu <yinghai@kernel.org>
-Subject: linux-next: manual merge of the tip tree with the pm tree
-Message-ID: <20141125164640.05d99ea5@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/T.+7iMvUwEH92u+UTGF86Po"; protocol="application/pgp-signature"
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [Patch Part2 v6 00/27] Enable hierarchy irqdomian on x86 platforms
+Date: Tue, 25 Nov 2014 13:53:09 +0800
+Message-Id: <1416894816-23245-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/T.+7iMvUwEH92u+UTGF86Po
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+We plan to restructure x86 interrupt code based on hierarchy irqdomain,
+that is to build irqdomains for CPU vector, interrupt remapping unit,
+IOAPIC, MSI and HPET etc and organize those irqdomains in hierarchy mode.
+Each irqdomain manages corresponding interrupt controller and talks to
+parent interrupt controller through public irqdomain interfaces. We also
+support stacked irq_chip based on hierarchy irqdomain. It will make the
+x86 interrupt architecture much more clear and more easy to maintain
+with hierarchy irqdomain and stacked irq_chip.
 
-Hi all,
+This is the second patch set to enable support of hierarchy irqdomain
+on x86 platforms. It's based on tip/x86/apic branch and IOMMU x86/vt-d
+branch at:
+https://git.kernel.org/cgit/linux/kernel/git/joro/iommu.git/ x86/vt-d
 
-Today's linux-next merge of the tip tree got a conflict in
-drivers/acpi/processor_core.c between commit 9d48ea9f967b ("ACPI /
-processor: Convert apic_id to phys_id to make it arch agnostic") from
-the pm tree and commits 5922b6f497ed ("ACPI: Fix minor syntax issues in
-processor_core.c") and 717ed6192d16 ("ACPI: Add interfaces to parse
-IOAPIC ID for IOAPIC hotplug") from the tip tree.
+You may access it at:
+https://github.com/jiangliu/linux.git irqdomain/p2v6
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+There will aslo be a third patch set to convert IOAPIC driver to support
+hierarchy irqdomain and clean up code.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+We have tested this patchset on Intel 32-bit and 64-bit systems. Joerg has
+helped to test it on AMD platforms. It also passes Fengguang's 0day tests.
+Helps are still needed for testings on:
+1) AMD HT_IRQ
+2) UV platform
+3) Intel MID platforms
 
-diff --cc drivers/acpi/processor_core.c
-index 0f6f73ed41f2,f124cbb491d9..000000000000
---- a/drivers/acpi/processor_core.c
-+++ b/drivers/acpi/processor_core.c
-@@@ -67,19 -86,12 +86,12 @@@ static int map_lsapic_id(struct acpi_su
-  static int map_madt_entry(int type, u32 acpi_id)
-  {
-  	unsigned long madt_end, entry;
-- 	static struct acpi_table_madt *madt;
-- 	static int read_madt;
- -	int apic_id =3D -1;
- +	int phys_id =3D -1;	/* CPU hardware ID */
-+ 	struct acpi_table_madt *madt;
- =20
-- 	if (!read_madt) {
-- 		if (ACPI_FAILURE(acpi_get_table(ACPI_SIG_MADT, 0,
-- 					(struct acpi_table_header **)&madt)))
-- 			madt =3D NULL;
-- 		read_madt++;
-- 	}
--=20
-+ 	madt =3D get_madt_table();
-  	if (!madt)
- -		return apic_id;
- +		return phys_id;
- =20
-  	entry =3D (unsigned long)madt;
-  	madt_end =3D entry + madt->header.length;
-@@@ -125,13 -137,12 +137,12 @@@ static int map_mat_entry(acpi_handle ha
-  	}
- =20
-  	header =3D (struct acpi_subtable_header *)obj->buffer.pointer;
-- 	if (header->type =3D=3D ACPI_MADT_TYPE_LOCAL_APIC) {
-+ 	if (header->type =3D=3D ACPI_MADT_TYPE_LOCAL_APIC)
- -		map_lapic_id(header, acpi_id, &apic_id);
- +		map_lapic_id(header, acpi_id, &phys_id);
-- 	} else if (header->type =3D=3D ACPI_MADT_TYPE_LOCAL_SAPIC) {
-+ 	else if (header->type =3D=3D ACPI_MADT_TYPE_LOCAL_SAPIC)
- -		map_lsapic_id(header, type, acpi_id, &apic_id);
- +		map_lsapic_id(header, type, acpi_id, &phys_id);
-- 	} else if (header->type =3D=3D ACPI_MADT_TYPE_LOCAL_X2APIC) {
-+ 	else if (header->type =3D=3D ACPI_MADT_TYPE_LOCAL_X2APIC)
- -		map_x2apic_id(header, type, acpi_id, &apic_id);
- +		map_x2apic_id(header, type, acpi_id, &phys_id);
-- 	}
- =20
-  exit:
-  	kfree(buffer.pointer);
-@@@ -197,10 -208,103 +208,103 @@@ int acpi_map_cpuid(int phys_id, u32 acp
- =20
-  int acpi_get_cpuid(acpi_handle handle, int type, u32 acpi_id)
-  {
- -	int apic_id;
- +	int phys_id;
- =20
- -	apic_id =3D acpi_get_apicid(handle, type, acpi_id);
- +	phys_id =3D acpi_get_phys_id(handle, type, acpi_id);
- =20
- -	return acpi_map_cpuid(apic_id, acpi_id);
- +	return acpi_map_cpuid(phys_id, acpi_id);
-  }
-  EXPORT_SYMBOL_GPL(acpi_get_cpuid);
-+=20
-+ #ifdef CONFIG_ACPI_HOTPLUG_IOAPIC
-+ static int get_ioapic_id(struct acpi_subtable_header *entry, u32 gsi_base,
-+ 			 u64 *phys_addr, int *ioapic_id)
-+ {
-+ 	struct acpi_madt_io_apic *ioapic =3D (struct acpi_madt_io_apic *)entry;
-+=20
-+ 	if (ioapic->global_irq_base !=3D gsi_base)
-+ 		return 0;
-+=20
-+ 	*phys_addr =3D ioapic->address;
-+ 	*ioapic_id =3D ioapic->id;
-+ 	return 1;
-+ }
-+=20
-+ static int parse_madt_ioapic_entry(u32 gsi_base, u64 *phys_addr)
-+ {
-+ 	struct acpi_subtable_header *hdr;
-+ 	unsigned long madt_end, entry;
-+ 	struct acpi_table_madt *madt;
-+ 	int apic_id =3D -1;
-+=20
-+ 	madt =3D get_madt_table();
-+ 	if (!madt)
-+ 		return apic_id;
-+=20
-+ 	entry =3D (unsigned long)madt;
-+ 	madt_end =3D entry + madt->header.length;
-+=20
-+ 	/* Parse all entries looking for a match. */
-+ 	entry +=3D sizeof(struct acpi_table_madt);
-+ 	while (entry + sizeof(struct acpi_subtable_header) < madt_end) {
-+ 		hdr =3D (struct acpi_subtable_header *)entry;
-+ 		if (hdr->type =3D=3D ACPI_MADT_TYPE_IO_APIC &&
-+ 		    get_ioapic_id(hdr, gsi_base, phys_addr, &apic_id))
-+ 			break;
-+ 		else
-+ 			entry +=3D hdr->length;
-+ 	}
-+=20
-+ 	return apic_id;
-+ }
-+=20
-+ static int parse_mat_ioapic_entry(acpi_handle handle, u32 gsi_base,
-+ 				  u64 *phys_addr)
-+ {
-+ 	struct acpi_buffer buffer =3D { ACPI_ALLOCATE_BUFFER, NULL };
-+ 	struct acpi_subtable_header *header;
-+ 	union acpi_object *obj;
-+ 	int apic_id =3D -1;
-+=20
-+ 	if (ACPI_FAILURE(acpi_evaluate_object(handle, "_MAT", NULL, &buffer)))
-+ 		goto exit;
-+=20
-+ 	if (!buffer.length || !buffer.pointer)
-+ 		goto exit;
-+=20
-+ 	obj =3D buffer.pointer;
-+ 	if (obj->type !=3D ACPI_TYPE_BUFFER ||
-+ 	    obj->buffer.length < sizeof(struct acpi_subtable_header))
-+ 		goto exit;
-+=20
-+ 	header =3D (struct acpi_subtable_header *)obj->buffer.pointer;
-+ 	if (header->type =3D=3D ACPI_MADT_TYPE_IO_APIC)
-+ 		get_ioapic_id(header, gsi_base, phys_addr, &apic_id);
-+=20
-+ exit:
-+ 	kfree(buffer.pointer);
-+ 	return apic_id;
-+ }
-+=20
-+ /**
-+  * acpi_get_ioapic_id - Get IOAPIC ID and physical address matching @gsi_=
-base
-+  * @handle:	ACPI object for IOAPIC device
-+  * @gsi_base:	GSI base to match with
-+  * @phys_addr:	Pointer to store physical address of matching IOAPIC record
-+  *
-+  * Walk resources returned by ACPI_MAT method, then ACPI MADT table, to s=
-earch
-+  * for an ACPI IOAPIC record matching @gsi_base.
-+  * Return IOAPIC id and store physical address in @phys_addr if found a m=
-atch,
-+  * otherwise return <0.
-+  */
-+ int acpi_get_ioapic_id(acpi_handle handle, u32 gsi_base, u64 *phys_addr)
-+ {
-+ 	int apic_id;
-+=20
-+ 	apic_id =3D parse_mat_ioapic_entry(handle, gsi_base, phys_addr);
-+ 	if (apic_id =3D=3D -1)
-+ 		apic_id =3D parse_madt_ioapic_entry(gsi_base, phys_addr);
-+=20
-+ 	return apic_id;
-+ }
-+ #endif /* CONFIG_ACPI_HOTPLUG_IOAPIC */
+Patch 1-7 introduce vector domain to manage CPU vectors and convert
+	PCI MSI/HPET/DMAT etc to use vector domain.
+Patch 8-11 introduce new irq_remapping interfaces to support hierarchy
+	irqdomain.
+Patch 12-14, 19-20, 24-27 convert PCI MSI/HPET/DMAR to use new hierarchy
+	irqdomain framework.
+Patch 15-18 clean up old irq_remapping interfaces to support PCI MSI and
+	HPET interrupts.
+Patch 21-22 convert HT_IRQ and UV platform to use new hierarchy irqdomain.
+Patch 23 normalizes irqchip names on x86 platforms.
 
---Sig_/T.+7iMvUwEH92u+UTGF86Po
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+V5->V6:
+1) Common hierarchy irqdomian code has been moved into tip/irq/irqdomain
+2) Rebase onto tip/irq/irqdomain and iommu/x86/vt-d
+3) Convert PCI MSI/HPET/DMAR to use the new generic MSI framework
+4) Fix bugs and conflicts when merging with IOMMU hotplug code
+5) More code cleanups
+V4->V5:
+1) Refine PCI MSI interfaces to support hierarchy irqdomain
+2) Fix a bug with dealing multiple MSI interrupts
+3) Improve commit messages
+V3->V4:
+1) Simplify IRQ remapping interfaces
+2) Hide all IRQ remapping logic from MSI/HPET drivers
+3) Move most MSI irqdomain code to public drivers/pci/msi.c so it could
+   be resued
+4) Improve common PCI MSI code
+5) Rebase to tip/x86/apic
+V2->V3:
+1) Fix bugs in handling OF irqdomain
+2) Add documentation
+3) Rebase to v3.18-rc2
+V1->V2
+1) Add hierarchy iredomain support of DMAR IRQ and UV IRQ.
+2) Fix bugs reported by Joe C.
+3) Address all review comments from Thomas
+4) Fix a bug found during tests
+5) Fix errors and warning found by 0day tests
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Jiang Liu (27):
+  x86, irq: Save destination CPU ID in irq_cfg
+  x86, irq: Use hierarchy irqdomain to manage CPU interrupt vectors
+  x86, hpet: Use new irqdomain interfaces to allocate/free IRQ
+  x86, MSI: Use new irqdomain interfaces to allocate/free IRQ
+  x86, uv: Use new irqdomain interfaces to allocate/free IRQ
+  x86, htirq: Use new irqdomain interfaces to allocate/free IRQ
+  x86, dmar: Use new irqdomain interfaces to allocate/free IRQ
+  x86: irq_remapping: Introduce new interfaces to support hierarchy
+    irqdomain
+  iommu/vt-d: Change prototypes to prepare for enabling hierarchy
+    irqdomain
+  iommu/vt-d: Enhance Intel IR driver to suppport hierarchy irqdomain
+  iommu/amd: Enhance AMD IR driver to suppport hierarchy irqdomain
+  x86, hpet: Enhance HPET IRQ to support hierarchy irqdomain
+  x86, PCI, MSI: Use hierarchy irqdomain to manage MSI interrupts
+  x86, irq: Directly call native_compose_msi_msg() for DMAR IRQ
+  iommu/vt-d: Clean up unused MSI related code
+  iommu/amd: Clean up unused MSI related code
+  x86: irq_remapping: Clean up unused MSI related code
+  x86, irq: Clean up unused MSI related code and interfaces
+  iommu/vt-d: Refine the interfaces to create IRQ for DMAR unit
+  x86, irq: Use hierarchy irqdomain to manage DMAR interrupts
+  x86, htirq: Use hierarchy irqdomain to manage Hypertransport
+    interrupts
+  x86, uv: Use hierarchy irqdomain to manage UV interrupts
+  x86, irq: Normalize x86 irq_chip name
+  x86, PCI/MSI: Simplify the way to deal with remapped MSI interrupts
+  PCI/MSI: Replace msi_update_msg() with irq_chip_compose_msi_msg()
+  x86, irq: Implement irq_chip.irq_write_msi_msg for MSI/DMAR/HPET
+    irq_chips
+  x86, irq: Simplify MSI/DMAR/HPET implementation by using common code
 
-iQIcBAEBCAAGBQJUdBfGAAoJEMDTa8Ir7ZwVeAMP/jT/rc43RxXIRBIBOb9oWDuE
-NTEMECD6ziGKOS2fqz+BqdAEDLi+wdYn3ba52U8SHTXBFN63lQc5ISQ+EUpeR7Pb
-jp5i9BiiL2RPPNSjQNZ8x1EZSnnGkIo9DwfH3uq75SwTDT+a8kMH618QGb0oDasY
-duafSmDbvVSxPZevxWtCsdLjU52ssB64PKUiugCBJyhup4JQW8wWdZ30w7AkUbUQ
-sBFtR01BXtLZ/wNX971821APvs/c/rZHE6a6cZoasN98E4p38k0pGcLrcUGiqdIO
-ORckMzsQghFj1gAMxzyHRg1c09ORuE19AZlAHF4W2nKJ18tW66/QG8+HCk+Z3R8z
-zkfOm5QFuQbYLoMyhyZ2HTZrxK2hkBVo6GNCmCpYBL0QpK/N2QU02A9lcNfFkYqm
-LX+IERxyEd1z1oNust3svRr5NKU3BEbdfXblAYtUIORTws+YDkZrc7SyksdCSIOa
-az7mmTxDcR/uQ8K/7SVO/D3nlutZm8MkYb5gFCbBaI7O5rmRACDMgYGlh0vCZ2dL
-tes0YBlsTBPWcHxb+/y6IsFs6HEZrPKPAQUu4wPJmcRb8PuJ95gxwUODSmf2duxL
-HJOWkci/j/ViNmJ/paVuI5MpJyHUMBf6oo/ze1IkL/4PKK2b4+drvyCY9KwV7Mjn
-dLsMDuJV/i959NkJa4EE
-=+Uu8
------END PGP SIGNATURE-----
+ arch/ia64/include/asm/irq_remapping.h |    2 -
+ arch/ia64/kernel/msi_ia64.c           |   30 ++-
+ arch/x86/Kconfig                      |    4 +-
+ arch/x86/include/asm/hpet.h           |   16 +-
+ arch/x86/include/asm/hw_irq.h         |   91 +++++++
+ arch/x86/include/asm/irq_remapping.h  |   47 ++--
+ arch/x86/include/asm/msi.h            |    7 +
+ arch/x86/include/asm/pci.h            |    5 -
+ arch/x86/include/asm/x86_init.h       |    4 -
+ arch/x86/kernel/apic/htirq.c          |  173 +++++++++----
+ arch/x86/kernel/apic/io_apic.c        |    3 -
+ arch/x86/kernel/apic/msi.c            |  420 +++++++++++++++++-------------
+ arch/x86/kernel/apic/vector.c         |  165 +++++++++++-
+ arch/x86/kernel/hpet.c                |   57 ++---
+ arch/x86/kernel/x86_init.c            |    2 -
+ arch/x86/platform/uv/uv_irq.c         |  298 ++++++++--------------
+ drivers/iommu/amd_iommu.c             |  378 ++++++++++++++++++++-------
+ drivers/iommu/amd_iommu_init.c        |    4 +
+ drivers/iommu/amd_iommu_proto.h       |    9 +
+ drivers/iommu/amd_iommu_types.h       |    5 +
+ drivers/iommu/dmar.c                  |   19 +-
+ drivers/iommu/intel_irq_remapping.c   |  453 +++++++++++++++++++++++----------
+ drivers/iommu/irq_remapping.c         |  191 ++++----------
+ drivers/iommu/irq_remapping.h         |   20 +-
+ drivers/pci/htirq.c                   |   48 +---
+ include/linux/dmar.h                  |    3 +-
+ include/linux/htirq.h                 |   22 +-
+ include/linux/intel-iommu.h           |    4 +
+ 28 files changed, 1523 insertions(+), 957 deletions(-)
+ create mode 100644 arch/x86/include/asm/msi.h
 
---Sig_/T.+7iMvUwEH92u+UTGF86Po--
+-- 
+1.7.10.4
+
