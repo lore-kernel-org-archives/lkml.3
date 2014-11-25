@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751156AbaKYPrW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 10:47:22 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:42011 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979AbaKYPrT (ORCPT
+	id S1751219AbaKYPr5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 10:47:57 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:64116 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830AbaKYPrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 10:47:19 -0500
+	Tue, 25 Nov 2014 10:47:16 -0500
 From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
 To: Guenter Roeck <linux@roeck-us.net>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Benoit Cousson <bcousson@baylibre.com>,
         Patrick Titiano <ptitiano@baylibre.com>,
         Bartosz Golaszewski <bgolaszewski@baylibre.com>
-Subject: [PATCH 5/5] hwmon: ina2xx: documentation update for new sysfs attributes
-Date: Tue, 25 Nov 2014 16:47:03 +0100
-Message-Id: <1416930423-12179-6-git-send-email-bgolaszewski@baylibre.com>
+Subject: [PATCH 3/5] hwmon: ina2xx: allow to change the averaging rate at run-time
+Date: Tue, 25 Nov 2014 16:47:01 +0100
+Message-Id: <1416930423-12179-4-git-send-email-bgolaszewski@baylibre.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1416930423-12179-1-git-send-email-bgolaszewski@baylibre.com>
 References: <1416930423-12179-1-git-send-email-bgolaszewski@baylibre.com>
@@ -23,31 +23,202 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include the rshunt and avg sysfs attributes for ina2xx in the documentation.
+The averaging rate of ina226 is hardcoded to 16 in the driver.
+
+Make it modifiable at run-time via a new sysfs attribute.
 
 Signed-off-by: Bartosz Golaszewski <bgolaszewski@baylibre.com>
 ---
- Documentation/hwmon/ina2xx | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/hwmon/ina2xx.c | 115 +++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 106 insertions(+), 9 deletions(-)
 
-diff --git a/Documentation/hwmon/ina2xx b/Documentation/hwmon/ina2xx
-index 4223c2d..621cf98 100644
---- a/Documentation/hwmon/ina2xx
-+++ b/Documentation/hwmon/ina2xx
-@@ -44,6 +44,10 @@ The INA226 monitors both a shunt voltage drop and bus supply voltage.
- The INA230 is a high or low side current shunt and power monitor with an I2C
- interface. The INA230 monitors both a shunt voltage drop and bus supply voltage.
+diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
+index eb66081..0914a72 100644
+--- a/drivers/hwmon/ina2xx.c
++++ b/drivers/hwmon/ina2xx.c
+@@ -54,6 +54,9 @@
+ /* shunt resistor sysfs attribute index */
+ #define INA2XX_RSHUNT			0x8
  
--The shunt value in micro-ohms can be set via platform data or device tree.
--Please refer to the Documentation/devicetree/bindings/i2c/ina2xx.txt for bindings
--if the device tree is used.
-+The shunt value in micro-ohms can be set via platform data or device tree in
-+compile-time or via the rshunt attribute in sysfs in run-time. Please refer to
-+the Documentation/devicetree/bindings/i2c/ina2xx.txt for bindings if the
-+device tree is used.
++/* INA226 averaging sysfs index */
++#define INA226_AVG			0x9
 +
-+The averaging rate of INA226 and INA230 can be changed via the avg sysfs
-+attribute. The available rates are: 1, 4, 16, 64, 128, 256, 512 and 1024.
+ /* register count */
+ #define INA219_REGISTERS		6
+ #define INA226_REGISTERS		8
+@@ -70,6 +73,12 @@
+ /* default shunt resistance */
+ #define INA2XX_RSHUNT_DEFAULT		10000
+ 
++/* bit masks for the averaging setting in the configuration register */
++#define INA226_AVG_RD_MASK		0x0E00
++#define INA226_AVG_WR_MASK		0xF1FF
++
++#define INA226_READ_AVG(reg) ((reg & INA226_AVG_RD_MASK) >> 9)
++
+ enum ina2xx_ids { ina219, ina226 };
+ 
+ struct ina2xx_config {
+@@ -117,6 +126,13 @@ static const struct ina2xx_config ina2xx_config[] = {
+ 	},
+ };
+ 
++/* Available averaging rates for ina226. The indices correspond with
++ * the bit values expected by the chip (according to the ina226 datasheet,
++ * table 3 AVG bit settings, found at
++ * http://www.ti.com/lit/ds/symlink/ina226.pdf.
++ */
++static const int ina226_avg_tab[] = { 1, 4, 16, 64, 128, 256, 512, 1024 };
++
+ static u16 ina2xx_calibration_val(const struct ina2xx_data *data)
+ {
+ 	return (u16)(data->config->calibration_factor / data->rshunt);
+@@ -156,6 +172,45 @@ static int ina2xx_calibrate(const struct i2c_client *client, u16 value)
+ 	return status;
+ }
+ 
++static int ina226_avg_bits(int avg)
++{
++	int i;
++
++	for (i = 0; i <= ARRAY_SIZE(ina226_avg_tab); i++) {
++		if (avg == ina226_avg_tab[i])
++			return i;
++	}
++
++	/* Invalid value */
++	return -1;
++}
++
++static int ina226_avg_val(int bits)
++{
++	/* Value read from the config register should be correct, but do check
++	 * the boundary just in case.
++	 */
++	if (bits >= ARRAY_SIZE(ina226_avg_tab)) {
++		WARN_ON_ONCE(1);
++		return -1;
++	}
++
++	return ina226_avg_tab[bits];
++}
++
++static inline int ina226_update_avg(struct ina2xx_data *data, int avg)
++{
++	int status;
++	u16 conf;
++
++	mutex_lock(&data->update_lock);
++	conf = (data->regs[INA2XX_CONFIG] & INA226_AVG_WR_MASK) | (avg << 9);
++	status = ina2xx_configure(data->client, conf);
++	mutex_unlock(&data->update_lock);
++
++	return status;
++}
++
+ static struct ina2xx_data *ina2xx_update_device(struct device *dev)
+ {
+ 	struct ina2xx_data *data = dev_get_drvdata(dev);
+@@ -213,6 +268,10 @@ static int ina2xx_get_value(struct ina2xx_data *data, u8 reg)
+ 	case INA2XX_RSHUNT:
+ 		val = data->rshunt;
+ 		break;
++	case INA226_AVG:
++		val = ina226_avg_val(INA226_READ_AVG(
++					data->regs[INA2XX_CONFIG]));
++		break;
+ 	default:
+ 		/* programmer goofed */
+ 		WARN_ON_ONCE(1);
+@@ -236,13 +295,25 @@ static ssize_t ina2xx_show_value(struct device *dev,
+ 			ina2xx_get_value(data, attr->index));
+ }
+ 
+-static ssize_t ina2xx_set_shunt(struct device *dev,
++static ssize_t ina226_show_avg(struct device *dev,
++			       struct device_attribute *da, char *buf)
++{
++	struct ina2xx_data *data = dev_get_drvdata(dev);
++
++	if (data->kind != ina226)
++		return -ENXIO;
++
++	return ina2xx_show_value(dev, da, buf);
++}
++
++static ssize_t ina2xx_set_value(struct device *dev,
+ 				struct device_attribute *da,
+ 				const char *buf, size_t count)
+ {
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+ 	struct ina2xx_data *data = ina2xx_update_device(dev);
+ 	long val;
+-	s32 status;
++	int status;
+ 
+ 	if (IS_ERR(data))
+ 		return PTR_ERR(data);
+@@ -250,12 +321,33 @@ static ssize_t ina2xx_set_shunt(struct device *dev,
+ 	if ((kstrtol(buf, 10, &val) == -EINVAL) || (val <= 0))
+ 		return -EINVAL;
+ 
+-	mutex_lock(&data->update_lock);
+-	data->rshunt = val;
+-	status = ina2xx_calibrate(data->client, ina2xx_calibration_val(data));
+-	mutex_unlock(&data->update_lock);
+-	if (status < 0)
+-		return -ENODEV;
++	switch (attr->index) {
++	case INA2XX_RSHUNT:
++		mutex_lock(&data->update_lock);
++		data->rshunt = val;
++		status = ina2xx_calibrate(data->client,
++					  ina2xx_calibration_val(data));
++		mutex_unlock(&data->update_lock);
++		if (status < 0)
++			return -ENODEV;
++		break;
++	case INA226_AVG:
++		if (data->kind != ina226)
++			return -ENXIO;
++
++		status = ina226_avg_bits(val);
++		if (status < 0)
++			return -EINVAL;
++
++		if (ina226_update_avg(data, status) < 0)
++			return -ENODEV;
++		break;
++	default:
++		/* programmer goofed */
++		WARN_ON_ONCE(1);
++		val = 0;
++		break;
++	}
+ 
+ 	return count;
+ }
+@@ -278,7 +370,11 @@ static SENSOR_DEVICE_ATTR(power1_input, S_IRUGO, ina2xx_show_value, NULL,
+ 
+ /* shunt resistance */
+ static SENSOR_DEVICE_ATTR(rshunt, S_IRUGO | S_IWUSR | S_IWGRP,
+-			  ina2xx_show_value, ina2xx_set_shunt, INA2XX_RSHUNT);
++			  ina2xx_show_value, ina2xx_set_value, INA2XX_RSHUNT);
++
++/* averaging rate */
++static SENSOR_DEVICE_ATTR(avg, S_IRUGO | S_IWUSR | S_IWGRP,
++			  ina226_show_avg, ina2xx_set_value, INA226_AVG);
+ 
+ /* pointers to created device attributes */
+ static struct attribute *ina2xx_attrs[] = {
+@@ -287,6 +383,7 @@ static struct attribute *ina2xx_attrs[] = {
+ 	&sensor_dev_attr_curr1_input.dev_attr.attr,
+ 	&sensor_dev_attr_power1_input.dev_attr.attr,
+ 	&sensor_dev_attr_rshunt.dev_attr.attr,
++	&sensor_dev_attr_avg.dev_attr.attr,
+ 	NULL,
+ };
+ ATTRIBUTE_GROUPS(ina2xx);
 -- 
 2.1.3
 
