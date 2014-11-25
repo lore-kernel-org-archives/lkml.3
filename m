@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824AbaKYKkr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:40:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58130 "EHLO
+	id S932167AbaKYL4n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:56:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58181 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752719AbaKYKkk (ORCPT
+	with ESMTP id S1752825AbaKYKkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:40:40 -0500
+	Tue, 25 Nov 2014 05:40:49 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Grant Likely <grant.likely@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Darren Hart <darren.hart@intel.com>,
+Cc: Yijing Wang <wangyijing@huawei.com>,
+        Weng Meiling <wengmeiling.weng@huawei.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 027/254] of: Fix overflow bug in string property parsing functions
-Date: Tue, 25 Nov 2014 10:36:17 +0000
-Message-Id: <1416912004-5928-28-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 044/254] sysfs: driver core: Fix glue dir race condition by gdp_mutex
+Date: Tue, 25 Nov 2014 10:36:34 +0000
+Message-Id: <1416912004-5928-45-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -31,391 +29,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Grant Likely <grant.likely@linaro.org>
+From: Yijing Wang <wangyijing@huawei.com>
 
-commit a87fa1d81a9fb5e9adca9820e16008c40ad09f33 upstream.
+commit e4a60d139060975eb956717e4f63ae348d4d8cc5 upstream.
 
-The string property read helpers will run off the end of the buffer if
-it is handed a malformed string property. Rework the parsers to make
-sure that doesn't happen. At the same time add new test cases to make
-sure the functions behave themselves.
+There is a race condition when removing glue directory.
+It can be reproduced in following test:
 
-The original implementations of of_property_read_string_index() and
-of_property_count_strings() both open-coded the same block of parsing
-code, each with it's own subtly different bugs. The fix here merges
-functions into a single helper and makes the original functions static
-inline wrappers around the helper.
+path 1: Add first child device
+device_add()
+    get_device_parent()
+            /*find parent from glue_dirs.list*/
+            list_for_each_entry(k, &dev->class->p->glue_dirs.list, entry)
+                    if (k->parent == parent_kobj) {
+                            kobj = kobject_get(k);
+                            break;
+                    }
+            ....
+            class_dir_create_and_add()
 
-One non-bugfix aspect of this patch is the addition of a new wrapper,
-of_property_read_string_array(). The new wrapper is needed by the
-device_properties feature that Rafael is working on and planning to
-merge for v3.19. The implementation is identical both with and without
-the new static inline wrapper, so it just got left in to reduce the
-churn on the header file.
+path2: Remove last child device under glue dir
+device_del()
+    cleanup_device_parent()
+            cleanup_glue_dir()
+                    kobject_put(glue_dir);
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Darren Hart <darren.hart@intel.com>
-[ luis: backported to 3.16: adjusted context ]
+If path2 has been called cleanup_glue_dir(), but not
+call kobject_put(glue_dir), the glue dir is still
+in parent's kset list. Meanwhile, path1 find the glue
+dir from the glue_dirs.list. Path2 may release glue dir
+before path1 call kobject_get(). So kernel will report
+the warning and bug_on.
+
+This is a "classic" problem we have of a kref in a list
+that can be found while the last instance could be removed
+at the same time.
+
+This patch reuse gdp_mutex to fix this race condition.
+
+The following calltrace is captured in kernel 3.4, but
+the latest kernel still has this bug.
+
+-----------------------------------------------------
+<4>[ 3965.441471] WARNING: at ...include/linux/kref.h:41 kobject_get+0x33/0x40()
+<4>[ 3965.441474] Hardware name: Romley
+<4>[ 3965.441475] Modules linked in: isd_iop(O) isd_xda(O)...
+...
+<4>[ 3965.441605] Call Trace:
+<4>[ 3965.441611]  [<ffffffff8103717a>] warn_slowpath_common+0x7a/0xb0
+<4>[ 3965.441615]  [<ffffffff810371c5>] warn_slowpath_null+0x15/0x20
+<4>[ 3965.441618]  [<ffffffff81215963>] kobject_get+0x33/0x40
+<4>[ 3965.441624]  [<ffffffff812d1e45>] get_device_parent.isra.11+0x135/0x1f0
+<4>[ 3965.441627]  [<ffffffff812d22d4>] device_add+0xd4/0x6d0
+<4>[ 3965.441631]  [<ffffffff812d0dbc>] ? dev_set_name+0x3c/0x40
+....
+<2>[ 3965.441912] kernel BUG at ..../fs/sysfs/group.c:65!
+<4>[ 3965.441915] invalid opcode: 0000 [#1] SMP
+...
+<4>[ 3965.686743]  [<ffffffff811a677e>] sysfs_create_group+0xe/0x10
+<4>[ 3965.686748]  [<ffffffff810cfb04>] blk_trace_init_sysfs+0x14/0x20
+<4>[ 3965.686753]  [<ffffffff811fcabb>] blk_register_queue+0x3b/0x120
+<4>[ 3965.686756]  [<ffffffff812030bc>] add_disk+0x1cc/0x490
+....
+-------------------------------------------------------
+
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/of/base.c                           | 88 ++++++++---------------------
- drivers/of/selftest.c                       | 66 ++++++++++++++++++++--
- drivers/of/testcase-data/tests-phandle.dtsi |  2 +
- include/linux/of.h                          | 84 ++++++++++++++++++++++-----
- 4 files changed, 154 insertions(+), 86 deletions(-)
+ drivers/base/core.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index b9864806e9b8..296bc43d26cc 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -1373,52 +1373,6 @@ int of_property_read_string(struct device_node *np, const char *propname,
- EXPORT_SYMBOL_GPL(of_property_read_string);
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 20da3ad1696b..0e9468cb814f 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -724,12 +724,12 @@ class_dir_create_and_add(struct class *class, struct kobject *parent_kobj)
+ 	return &dir->kobj;
+ }
  
- /**
-- * of_property_read_string_index - Find and read a string from a multiple
-- * strings property.
-- * @np:		device node from which the property value is to be read.
-- * @propname:	name of the property to be searched.
-- * @index:	index of the string in the list of strings
-- * @out_string:	pointer to null terminated return string, modified only if
-- *		return value is 0.
-- *
-- * Search for a property in a device tree node and retrieve a null
-- * terminated string value (pointer to data, not a copy) in the list of strings
-- * contained in that property.
-- * Returns 0 on success, -EINVAL if the property does not exist, -ENODATA if
-- * property does not have a value, and -EILSEQ if the string is not
-- * null-terminated within the length of the property data.
-- *
-- * The out_string pointer is modified only if a valid string can be decoded.
-- */
--int of_property_read_string_index(struct device_node *np, const char *propname,
--				  int index, const char **output)
--{
--	struct property *prop = of_find_property(np, propname, NULL);
--	int i = 0;
--	size_t l = 0, total = 0;
--	const char *p;
--
--	if (!prop)
--		return -EINVAL;
--	if (!prop->value)
--		return -ENODATA;
--	if (strnlen(prop->value, prop->length) >= prop->length)
--		return -EILSEQ;
--
--	p = prop->value;
--
--	for (i = 0; total < prop->length; total += l, p += l) {
--		l = strlen(p) + 1;
--		if (i++ == index) {
--			*output = p;
--			return 0;
--		}
--	}
--	return -ENODATA;
--}
--EXPORT_SYMBOL_GPL(of_property_read_string_index);
--
--/**
-  * of_property_match_string() - Find string in a list and return index
-  * @np: pointer to node containing string list property
-  * @propname: string list property name
-@@ -1444,7 +1398,7 @@ int of_property_match_string(struct device_node *np, const char *propname,
- 	end = p + prop->length;
++static DEFINE_MUTEX(gdp_mutex);
  
- 	for (i = 0; p < end; i++, p += l) {
--		l = strlen(p) + 1;
-+		l = strnlen(p, end - p) + 1;
- 		if (p + l > end)
- 			return -EILSEQ;
- 		pr_debug("comparing %s with %s\n", string, p);
-@@ -1456,39 +1410,41 @@ int of_property_match_string(struct device_node *np, const char *propname,
- EXPORT_SYMBOL_GPL(of_property_match_string);
- 
- /**
-- * of_property_count_strings - Find and return the number of strings from a
-- * multiple strings property.
-+ * of_property_read_string_util() - Utility helper for parsing string properties
-  * @np:		device node from which the property value is to be read.
-  * @propname:	name of the property to be searched.
-+ * @out_strs:	output array of string pointers.
-+ * @sz:		number of array elements to read.
-+ * @skip:	Number of strings to skip over at beginning of list.
-  *
-- * Search for a property in a device tree node and retrieve the number of null
-- * terminated string contain in it. Returns the number of strings on
-- * success, -EINVAL if the property does not exist, -ENODATA if property
-- * does not have a value, and -EILSEQ if the string is not null-terminated
-- * within the length of the property data.
-+ * Don't call this function directly. It is a utility helper for the
-+ * of_property_read_string*() family of functions.
-  */
--int of_property_count_strings(struct device_node *np, const char *propname)
-+int of_property_read_string_helper(struct device_node *np, const char *propname,
-+				   const char **out_strs, size_t sz, int skip)
+ static struct kobject *get_device_parent(struct device *dev,
+ 					 struct device *parent)
  {
- 	struct property *prop = of_find_property(np, propname, NULL);
--	int i = 0;
--	size_t l = 0, total = 0;
--	const char *p;
-+	int l = 0, i = 0;
-+	const char *p, *end;
+ 	if (dev->class) {
+-		static DEFINE_MUTEX(gdp_mutex);
+ 		struct kobject *kobj = NULL;
+ 		struct kobject *parent_kobj;
+ 		struct kobject *k;
+@@ -793,7 +793,9 @@ static void cleanup_glue_dir(struct device *dev, struct kobject *glue_dir)
+ 	    glue_dir->kset != &dev->class->p->glue_dirs)
+ 		return;
  
- 	if (!prop)
- 		return -EINVAL;
- 	if (!prop->value)
- 		return -ENODATA;
--	if (strnlen(prop->value, prop->length) >= prop->length)
--		return -EILSEQ;
--
- 	p = prop->value;
-+	end = p + prop->length;
- 
--	for (i = 0; total < prop->length; total += l, p += l, i++)
--		l = strlen(p) + 1;
--
--	return i;
-+	for (i = 0; p < end && (!out_strs || i < skip + sz); i++, p += l) {
-+		l = strnlen(p, end - p) + 1;
-+		if (p + l > end)
-+			return -EILSEQ;
-+		if (out_strs && i >= skip)
-+			*out_strs++ = p;
-+	}
-+	i -= skip;
-+	return i <= 0 ? -ENODATA : i;
- }
--EXPORT_SYMBOL_GPL(of_property_count_strings);
-+EXPORT_SYMBOL_GPL(of_property_read_string_helper);
- 
- void of_print_phandle_args(const char *msg, const struct of_phandle_args *args)
- {
-diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
-index 077314eebb95..f7ba7019343a 100644
---- a/drivers/of/selftest.c
-+++ b/drivers/of/selftest.c
-@@ -239,8 +239,9 @@ static void __init of_selftest_parse_phandle_with_args(void)
- 	selftest(rc == -EINVAL, "expected:%i got:%i\n", -EINVAL, rc);
++	mutex_lock(&gdp_mutex);
+ 	kobject_put(glue_dir);
++	mutex_unlock(&gdp_mutex);
  }
  
--static void __init of_selftest_property_match_string(void)
-+static void __init of_selftest_property_string(void)
- {
-+	const char *strings[4];
- 	struct device_node *np;
- 	int rc;
- 
-@@ -257,13 +258,66 @@ static void __init of_selftest_property_match_string(void)
- 	rc = of_property_match_string(np, "phandle-list-names", "third");
- 	selftest(rc == 2, "third expected:0 got:%i\n", rc);
- 	rc = of_property_match_string(np, "phandle-list-names", "fourth");
--	selftest(rc == -ENODATA, "unmatched string; rc=%i", rc);
-+	selftest(rc == -ENODATA, "unmatched string; rc=%i\n", rc);
- 	rc = of_property_match_string(np, "missing-property", "blah");
--	selftest(rc == -EINVAL, "missing property; rc=%i", rc);
-+	selftest(rc == -EINVAL, "missing property; rc=%i\n", rc);
- 	rc = of_property_match_string(np, "empty-property", "blah");
--	selftest(rc == -ENODATA, "empty property; rc=%i", rc);
-+	selftest(rc == -ENODATA, "empty property; rc=%i\n", rc);
- 	rc = of_property_match_string(np, "unterminated-string", "blah");
--	selftest(rc == -EILSEQ, "unterminated string; rc=%i", rc);
-+	selftest(rc == -EILSEQ, "unterminated string; rc=%i\n", rc);
-+
-+	/* of_property_count_strings() tests */
-+	rc = of_property_count_strings(np, "string-property");
-+	selftest(rc == 1, "Incorrect string count; rc=%i\n", rc);
-+	rc = of_property_count_strings(np, "phandle-list-names");
-+	selftest(rc == 3, "Incorrect string count; rc=%i\n", rc);
-+	rc = of_property_count_strings(np, "unterminated-string");
-+	selftest(rc == -EILSEQ, "unterminated string; rc=%i\n", rc);
-+	rc = of_property_count_strings(np, "unterminated-string-list");
-+	selftest(rc == -EILSEQ, "unterminated string array; rc=%i\n", rc);
-+
-+	/* of_property_read_string_index() tests */
-+	rc = of_property_read_string_index(np, "string-property", 0, strings);
-+	selftest(rc == 0 && !strcmp(strings[0], "foobar"), "of_property_read_string_index() failure; rc=%i\n", rc);
-+	strings[0] = NULL;
-+	rc = of_property_read_string_index(np, "string-property", 1, strings);
-+	selftest(rc == -ENODATA && strings[0] == NULL, "of_property_read_string_index() failure; rc=%i\n", rc);
-+	rc = of_property_read_string_index(np, "phandle-list-names", 0, strings);
-+	selftest(rc == 0 && !strcmp(strings[0], "first"), "of_property_read_string_index() failure; rc=%i\n", rc);
-+	rc = of_property_read_string_index(np, "phandle-list-names", 1, strings);
-+	selftest(rc == 0 && !strcmp(strings[0], "second"), "of_property_read_string_index() failure; rc=%i\n", rc);
-+	rc = of_property_read_string_index(np, "phandle-list-names", 2, strings);
-+	selftest(rc == 0 && !strcmp(strings[0], "third"), "of_property_read_string_index() failure; rc=%i\n", rc);
-+	strings[0] = NULL;
-+	rc = of_property_read_string_index(np, "phandle-list-names", 3, strings);
-+	selftest(rc == -ENODATA && strings[0] == NULL, "of_property_read_string_index() failure; rc=%i\n", rc);
-+	strings[0] = NULL;
-+	rc = of_property_read_string_index(np, "unterminated-string", 0, strings);
-+	selftest(rc == -EILSEQ && strings[0] == NULL, "of_property_read_string_index() failure; rc=%i\n", rc);
-+	rc = of_property_read_string_index(np, "unterminated-string-list", 0, strings);
-+	selftest(rc == 0 && !strcmp(strings[0], "first"), "of_property_read_string_index() failure; rc=%i\n", rc);
-+	strings[0] = NULL;
-+	rc = of_property_read_string_index(np, "unterminated-string-list", 2, strings); /* should fail */
-+	selftest(rc == -EILSEQ && strings[0] == NULL, "of_property_read_string_index() failure; rc=%i\n", rc);
-+	strings[1] = NULL;
-+
-+	/* of_property_read_string_array() tests */
-+	rc = of_property_read_string_array(np, "string-property", strings, 4);
-+	selftest(rc == 1, "Incorrect string count; rc=%i\n", rc);
-+	rc = of_property_read_string_array(np, "phandle-list-names", strings, 4);
-+	selftest(rc == 3, "Incorrect string count; rc=%i\n", rc);
-+	rc = of_property_read_string_array(np, "unterminated-string", strings, 4);
-+	selftest(rc == -EILSEQ, "unterminated string; rc=%i\n", rc);
-+	/* -- An incorrectly formed string should cause a failure */
-+	rc = of_property_read_string_array(np, "unterminated-string-list", strings, 4);
-+	selftest(rc == -EILSEQ, "unterminated string array; rc=%i\n", rc);
-+	/* -- parsing the correctly formed strings should still work: */
-+	strings[2] = NULL;
-+	rc = of_property_read_string_array(np, "unterminated-string-list", strings, 2);
-+	selftest(rc == 2 && strings[2] == NULL, "of_property_read_string_array() failure; rc=%i\n", rc);
-+	strings[1] = NULL;
-+	rc = of_property_read_string_array(np, "phandle-list-names", strings, 1);
-+	selftest(rc == 1 && strings[1] == NULL, "Overwrote end of string array; rc=%i, str='%s'\n", rc, strings[1]);
- }
- 
- static void __init of_selftest_parse_interrupts(void)
-@@ -532,7 +586,7 @@ static int __init of_selftest(void)
- 	of_selftest_find_node_by_name();
- 	of_selftest_dynamic();
- 	of_selftest_parse_phandle_with_args();
--	of_selftest_property_match_string();
-+	of_selftest_property_string();
- 	of_selftest_parse_interrupts();
- 	of_selftest_parse_interrupts_extended();
- 	of_selftest_match_node();
-diff --git a/drivers/of/testcase-data/tests-phandle.dtsi b/drivers/of/testcase-data/tests-phandle.dtsi
-index ce0fe083d406..5b1527e8a7fb 100644
---- a/drivers/of/testcase-data/tests-phandle.dtsi
-+++ b/drivers/of/testcase-data/tests-phandle.dtsi
-@@ -39,7 +39,9 @@
- 				phandle-list-bad-args = <&provider2 1 0>,
- 							<&provider3 0>;
- 				empty-property;
-+				string-property = "foobar";
- 				unterminated-string = [40 41 42 43];
-+				unterminated-string-list = "first", "second", [40 41 42 43];
- 			};
- 		};
- 	};
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 196b34c1ef4e..db2f8ac18dad 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -267,14 +267,12 @@ extern int of_property_read_u64(const struct device_node *np,
- extern int of_property_read_string(struct device_node *np,
- 				   const char *propname,
- 				   const char **out_string);
--extern int of_property_read_string_index(struct device_node *np,
--					 const char *propname,
--					 int index, const char **output);
- extern int of_property_match_string(struct device_node *np,
- 				    const char *propname,
- 				    const char *string);
--extern int of_property_count_strings(struct device_node *np,
--				     const char *propname);
-+extern int of_property_read_string_helper(struct device_node *np,
-+					      const char *propname,
-+					      const char **out_strs, size_t sz, int index);
- extern int of_device_is_compatible(const struct device_node *device,
- 				   const char *);
- extern int of_device_is_available(const struct device_node *device);
-@@ -485,15 +483,9 @@ static inline int of_property_read_string(struct device_node *np,
- 	return -ENOSYS;
- }
- 
--static inline int of_property_read_string_index(struct device_node *np,
--						const char *propname, int index,
--						const char **out_string)
--{
--	return -ENOSYS;
--}
--
--static inline int of_property_count_strings(struct device_node *np,
--					    const char *propname)
-+static inline int of_property_read_string_helper(struct device_node *np,
-+						 const char *propname,
-+						 const char **out_strs, size_t sz, int index)
- {
- 	return -ENOSYS;
- }
-@@ -667,6 +659,70 @@ static inline int of_property_count_u64_elems(const struct device_node *np,
- }
- 
- /**
-+ * of_property_read_string_array() - Read an array of strings from a multiple
-+ * strings property.
-+ * @np:		device node from which the property value is to be read.
-+ * @propname:	name of the property to be searched.
-+ * @out_strs:	output array of string pointers.
-+ * @sz:		number of array elements to read.
-+ *
-+ * Search for a property in a device tree node and retrieve a list of
-+ * terminated string values (pointer to data, not a copy) in that property.
-+ *
-+ * If @out_strs is NULL, the number of strings in the property is returned.
-+ */
-+static inline int of_property_read_string_array(struct device_node *np,
-+						const char *propname, const char **out_strs,
-+						size_t sz)
-+{
-+	return of_property_read_string_helper(np, propname, out_strs, sz, 0);
-+}
-+
-+/**
-+ * of_property_count_strings() - Find and return the number of strings from a
-+ * multiple strings property.
-+ * @np:		device node from which the property value is to be read.
-+ * @propname:	name of the property to be searched.
-+ *
-+ * Search for a property in a device tree node and retrieve the number of null
-+ * terminated string contain in it. Returns the number of strings on
-+ * success, -EINVAL if the property does not exist, -ENODATA if property
-+ * does not have a value, and -EILSEQ if the string is not null-terminated
-+ * within the length of the property data.
-+ */
-+static inline int of_property_count_strings(struct device_node *np,
-+					    const char *propname)
-+{
-+	return of_property_read_string_helper(np, propname, NULL, 0, 0);
-+}
-+
-+/**
-+ * of_property_read_string_index() - Find and read a string from a multiple
-+ * strings property.
-+ * @np:		device node from which the property value is to be read.
-+ * @propname:	name of the property to be searched.
-+ * @index:	index of the string in the list of strings
-+ * @out_string:	pointer to null terminated return string, modified only if
-+ *		return value is 0.
-+ *
-+ * Search for a property in a device tree node and retrieve a null
-+ * terminated string value (pointer to data, not a copy) in the list of strings
-+ * contained in that property.
-+ * Returns 0 on success, -EINVAL if the property does not exist, -ENODATA if
-+ * property does not have a value, and -EILSEQ if the string is not
-+ * null-terminated within the length of the property data.
-+ *
-+ * The out_string pointer is modified only if a valid string can be decoded.
-+ */
-+static inline int of_property_read_string_index(struct device_node *np,
-+						const char *propname,
-+						int index, const char **output)
-+{
-+	int rc = of_property_read_string_helper(np, propname, output, 1, index);
-+	return rc < 0 ? rc : 0;
-+}
-+
-+/**
-  * of_property_read_bool - Findfrom a property
-  * @np:		device node from which the property value is to be read.
-  * @propname:	name of the property to be searched.
+ static void cleanup_device_parent(struct device *dev)
 -- 
 2.1.0
 
