@@ -1,72 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751316AbaKYOuN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:50:13 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:48106 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113AbaKYOuL convert rfc822-to-8bit (ORCPT
+	id S1751409AbaKYOu2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:50:28 -0500
+Received: from cpanel09.rubas.ch ([195.182.222.79]:59386 "EHLO
+	cpanel09.tophost.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270AbaKYOuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:50:11 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: [CFT PATCH v2 0/2] KVM: support XSAVES usage in the host
-From: Nadav Amit <nadav.amit@gmail.com>
-In-Reply-To: <54748F70.70402@redhat.com>
-Date: Tue, 25 Nov 2014 16:50:06 +0200
-Cc: Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kvm list <kvm@vger.kernel.org>, Nadav Amit <namit@cs.technion.ac.il>,
-        hpa@linux.intel.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <DEE91387-BFE2-4F83-9711-25B2B65CF655@gmail.com>
-References: <1416847414-22253-1-git-send-email-pbonzini@redhat.com> <20141125101331.GA28985@kernel> <54745BB0.8080304@redhat.com> <400361E2-995A-44B4-B35A-0D35793B49DD@gmail.com> <54748F70.70402@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-X-Mailer: Apple Mail (2.1993)
+	Tue, 25 Nov 2014 09:50:23 -0500
+X-Greylist: delayed 2320 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Nov 2014 09:50:22 EST
+From: =?UTF-8?q?J=C3=BCrg=20Billeter?= <j@bitron.ch>
+To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Cc: Simon Horman <horms+renesas@verge.net.au>,
+        Magnus Damm <damm+renesas@opensource.se>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Phil Edworthy <phil.edworthy@renesas.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        dmaengine@vger.kernel.org,
+        =?UTF-8?q?J=C3=BCrg=20Billeter?= <j@bitron.ch>
+Subject: [PATCH] dmaengine: rcar-dmac: Handle hardware descriptor allocation failure
+Date: Tue, 25 Nov 2014 15:10:17 +0100
+Message-Id: <1416924617-15939-1-git-send-email-j@bitron.ch>
+X-Mailer: git-send-email 2.1.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cpanel09.tophost.ch
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - bitron.ch
+X-Get-Message-Sender-Via: cpanel09.tophost.ch: authenticated_id: juerg@bitron.ch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If the atomic DMA coherent pool is too small, disable use of hardware
+descriptor lists instead of crashing the system:
 
-> On Nov 25, 2014, at 16:17, Paolo Bonzini <pbonzini@redhat.com> wrote:
-> 
-> 
-> 
-> On 25/11/2014 15:05, Nadav Amit wrote:
->>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->>> index 373b0ab9a32e..ca26681455c2 100644
->>> --- a/arch/x86/kvm/x86.c
->>> +++ b/arch/x86/kvm/x86.c
->>> @@ -6955,6 +6955,9 @@ int fx_init(struct kvm_vcpu *vcpu)
->>> 		return err;
->>> 
->>> 	fpu_finit(&vcpu->arch.guest_fpu);
->>> +	if (cpu_has_xsaves)
->>> +		vcpu->arch.guest_fpu.state->xsave.xsave_hdr.xcomp_bv =
->>> +			host_xcr0 | XSTATE_COMPACTION_ENABLED;
->>> 
->>> 	/*
->>> 	 * Ensure guest xcr0 is valid for loading
->> 
->> The second version works for me (w/qemu v2.1.0; Linux 3.13 guest). I
->> did not need to apply this patch on top. [although I am not sure whether
->> relying on userspace to call KVM_SET_XSAVE early enough is a good practice].
-> 
-> Did you actually try the patch? :)  If it works, I'm tempted to apply it
-> anyway.
-Yes, I tried it both with and without this patch.
-Due to time constraints I only tested minimal functionality (Linux boot).
-I will run more tests in the near future. Anyhow, you can put the:
+ERROR: 256 KiB atomic DMA coherent pool is too small!
+Please increase it with coherent_pool= kernel parameter!
 
-Tested-by: Nadav Amit <namit@cs.technion.ac.il>
+Unable to handle kernel NULL pointer dereference at virtual address 00000004
+Internal error: Oops: a07 [#1] PREEMPT SMP ARM
 
-> 
->> One disclaimer: Since I got limited time with the machine, I executed
->> a slightly modified kernel/qemu, and not the latest version.
->> Anyhow, I don’t think these differences can have any impact.
-> 
-> Yes, that is no problem.
+PC is at rcar_dmac_chan_reinit+0x3c/0x160
+LR is at _raw_spin_lock_irqsave+0x18/0x5c
 
-I am just worried that Wanpeng reported it fails, while I report it works...
+[<802132c0>] (rcar_dmac_chan_reinit) from [<80214818>] (rcar_dmac_isr_error+0x84/0xa0)
+[<80214818>] (rcar_dmac_isr_error) from [<80060484>] (handle_irq_event_percpu+0x50/0x150)
+[<80060484>] (handle_irq_event_percpu) from [<800605c0>] (handle_irq_event+0x3c/0x5c)
+[<800605c0>] (handle_irq_event) from [<8006350c>] (handle_fasteoi_irq+0xb8/0x198)
+[<8006350c>] (handle_fasteoi_irq) from [<8005fdb0>] (generic_handle_irq+0x20/0x30)
+[<8005fdb0>] (generic_handle_irq) from [<8000fcd0>] (handle_IRQ+0x50/0xc4)
+[<8000fcd0>] (handle_IRQ) from [<800092cc>] (gic_handle_irq+0x28/0x5c)
+[<800092cc>] (gic_handle_irq) from [<80012700>] (__irq_svc+0x40/0x70)
 
-Nadav
+Kernel panic - not syncing: Fatal exception in interrupt
+
+Signed-off-by: JÃ¼rg Billeter <j@bitron.ch>
+---
+ drivers/dma/sh/rcar-dmac.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/dma/sh/rcar-dmac.c b/drivers/dma/sh/rcar-dmac.c
+index f8f70eb..f18b1b6 100644
+--- a/drivers/dma/sh/rcar-dmac.c
++++ b/drivers/dma/sh/rcar-dmac.c
+@@ -679,8 +679,8 @@ static void rcar_dmac_realloc_hwdesc(struct rcar_dmac_chan *chan,
+ 	desc->hwdescs.size = size;
+ }
+ 
+-static void rcar_dmac_fill_hwdesc(struct rcar_dmac_chan *chan,
+-				  struct rcar_dmac_desc *desc)
++static int rcar_dmac_fill_hwdesc(struct rcar_dmac_chan *chan,
++				 struct rcar_dmac_desc *desc)
+ {
+ 	struct rcar_dmac_xfer_chunk *chunk;
+ 	struct rcar_dmac_hw_desc *hwdesc;
+@@ -689,7 +689,7 @@ static void rcar_dmac_fill_hwdesc(struct rcar_dmac_chan *chan,
+ 
+ 	hwdesc = desc->hwdescs.mem;
+ 	if (!hwdesc)
+-		return;
++		return -ENOMEM;
+ 
+ 	list_for_each_entry(chunk, &desc->chunks, node) {
+ 		hwdesc->sar = chunk->src_addr;
+@@ -697,6 +697,8 @@ static void rcar_dmac_fill_hwdesc(struct rcar_dmac_chan *chan,
+ 		hwdesc->tcr = chunk->size >> desc->xfer_shift;
+ 		hwdesc++;
+ 	}
++
++	return 0;
+ }
+ 
+ /* -----------------------------------------------------------------------------
+@@ -933,8 +935,10 @@ rcar_dmac_chan_prep_sg(struct rcar_dmac_chan *chan, struct scatterlist *sgl,
+ 	 * additional complexity remains to be investigated.
+ 	 */
+ 	desc->hwdescs.use = !highmem && nchunks > 1;
+-	if (desc->hwdescs.use)
+-		rcar_dmac_fill_hwdesc(chan, desc);
++	if (desc->hwdescs.use) {
++		if (rcar_dmac_fill_hwdesc(chan, desc) < 0)
++			desc->hwdescs.use = false;
++	}
+ 
+ 	return &desc->async_tx;
+ }
+-- 
+2.1.3
 
