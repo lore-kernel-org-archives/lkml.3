@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504AbaKYIGE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 03:06:04 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:53429 "EHLO
+	id S1752526AbaKYIGM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 03:06:12 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:53492 "EHLO
 	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752416AbaKYIF4 (ORCPT
+	with ESMTP id S1752196AbaKYIGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 03:05:56 -0500
+	Tue, 25 Nov 2014 03:06:08 -0500
 From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
 Cc: peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de,
@@ -16,47 +16,184 @@ Cc: peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de,
         benh@kernel.crashing.org, sukadev@linux.vnet.ibm.com,
         mpe@ellerman.id.au, sam.bobroff@au1.ibm.com, kirjanov@gmail.com,
         shuahkh@osg.samsung.com
-Subject: [V5 1/7] elf: Add new powerpc specifc core note sections
-Date: Tue, 25 Nov 2014 13:35:25 +0530
-Message-Id: <1416902731-22446-2-git-send-email-khandual@linux.vnet.ibm.com>
+Subject: [V5 4/7] powerpc, ptrace: Enable vr_(get/set) for transactional memory
+Date: Tue, 25 Nov 2014 13:35:28 +0530
+Message-Id: <1416902731-22446-5-git-send-email-khandual@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1416902731-22446-1-git-send-email-khandual@linux.vnet.ibm.com>
 References: <1416902731-22446-1-git-send-email-khandual@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112508-0025-0000-0000-00000093E212
+x-cbid: 14112508-0025-0000-0000-00000093E247
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds four new ELF core note sections for powerpc
-transactional memory and one new ELF core note section for
-powerpc general miscellaneous debug registers. These addition
-of new ELF core note sections extends the existing ELF ABI
-without affecting it in any manner.
+This patch enables the vr_get which gets the running value of all
+the VMX registers and the vr_set which sets the running value of
+of all the VMX registers to accommodate in transaction ptrace
+interface based requests.
 
-Acked-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 ---
- include/uapi/linux/elf.h | 5 +++++
- 1 file changed, 5 insertions(+)
+ arch/powerpc/kernel/ptrace.c | 94 ++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 91 insertions(+), 3 deletions(-)
 
-diff --git a/include/uapi/linux/elf.h b/include/uapi/linux/elf.h
-index ea9bf25..2260fc0 100644
---- a/include/uapi/linux/elf.h
-+++ b/include/uapi/linux/elf.h
-@@ -379,6 +379,11 @@ typedef struct elf64_shdr {
- #define NT_PPC_VMX	0x100		/* PowerPC Altivec/VMX registers */
- #define NT_PPC_SPE	0x101		/* PowerPC SPE/EVR registers */
- #define NT_PPC_VSX	0x102		/* PowerPC VSX registers */
-+#define NT_PPC_TM_SPR	0x103		/* PowerPC TM special registers */
-+#define NT_PPC_TM_CGPR	0x104		/* PowerpC TM checkpointed GPR */
-+#define NT_PPC_TM_CFPR	0x105		/* PowerPC TM checkpointed FPR */
-+#define NT_PPC_TM_CVMX	0x106		/* PowerPC TM checkpointed VMX */
-+#define NT_PPC_MISC	0x107		/* PowerPC miscellaneous registers */
- #define NT_386_TLS	0x200		/* i386 TLS slots (struct user_desc) */
- #define NT_386_IOPERM	0x201		/* x86 io permission bitmap (1=deny) */
- #define NT_X86_XSTATE	0x202		/* x86 extended state using xsave */
+diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
+index fd36b32..2bbbd10 100644
+--- a/arch/powerpc/kernel/ptrace.c
++++ b/arch/powerpc/kernel/ptrace.c
+@@ -523,10 +523,30 @@ static int vr_active(struct task_struct *target,
+ 	return target->thread.used_vr ? regset->n : 0;
+ }
+ 
++/*
++ * vr_get
++ *
++ * When the transaction is active, 'transact_vr' holds the current running
++ * value of all the VMX registers and 'vr_state' holds the last checkpointed
++ * value of all the VMX registers for the current transaction to fall back
++ * on in case it aborts. When transaction is not active 'vr_state' holds
++ * the current running state of all the VMX registers. So this function which
++ * gets the current running values of all the VMX registers, needs to know
++ * whether any transaction is active or not.
++ *
++ * Userspace interface buffer layout:
++ *
++ * struct data {
++ *	vector128	vr[32];
++ *	vector128	vscr;
++ *	vector128	vrsave;
++ * };
++ */
+ static int vr_get(struct task_struct *target, const struct user_regset *regset,
+ 		  unsigned int pos, unsigned int count,
+ 		  void *kbuf, void __user *ubuf)
+ {
++	struct thread_vr_state *addr;
+ 	int ret;
+ 
+ 	flush_altivec_to_thread(target);
+@@ -534,8 +554,19 @@ static int vr_get(struct task_struct *target, const struct user_regset *regset,
+ 	BUILD_BUG_ON(offsetof(struct thread_vr_state, vscr) !=
+ 		     offsetof(struct thread_vr_state, vr[32]));
+ 
++#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
++	if (MSR_TM_ACTIVE(target->thread.regs->msr)) {
++		flush_fp_to_thread(target);
++		flush_tmregs_to_thread(target);
++		addr = &target->thread.transact_vr;
++	} else {
++		addr = &target->thread.vr_state;
++	}
++#else
++	addr = &target->thread.vr_state;
++#endif
+ 	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+-				  &target->thread.vr_state, 0,
++				  addr, 0,
+ 				  33 * sizeof(vector128));
+ 	if (!ret) {
+ 		/*
+@@ -546,7 +577,16 @@ static int vr_get(struct task_struct *target, const struct user_regset *regset,
+ 			u32 word;
+ 		} vrsave;
+ 		memset(&vrsave, 0, sizeof(vrsave));
++
++#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
++		if (MSR_TM_ACTIVE(target->thread.regs->msr))
++			vrsave.word = target->thread.transact_vrsave;
++		else
++			vrsave.word = target->thread.vrsave;
++#else
+ 		vrsave.word = target->thread.vrsave;
++#endif
++
+ 		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, &vrsave,
+ 					  33 * sizeof(vector128), -1);
+ 	}
+@@ -554,10 +594,30 @@ static int vr_get(struct task_struct *target, const struct user_regset *regset,
+ 	return ret;
+ }
+ 
++/*
++ * vr_set
++ *
++ * When the transaction is active, 'transact_vr' holds the current running
++ * value of all the VMX registers and 'vr_state' holds the last checkpointed
++ * value of all the VMX registers for the current transaction to fall back
++ * on in case it aborts. When transaction is not active 'vr_state' holds
++ * the current running state of all the VMX registers. So this function which
++ * sets the current running values of all the VMX registers, needs to know
++ * whether any transaction is active or not.
++ *
++ * Userspace interface buffer layout:
++ *
++ * struct data {
++ *	vector128	vr[32];
++ *	vector128	vscr;
++ *	vector128	vrsave;
++ * };
++ */
+ static int vr_set(struct task_struct *target, const struct user_regset *regset,
+ 		  unsigned int pos, unsigned int count,
+ 		  const void *kbuf, const void __user *ubuf)
+ {
++	struct thread_vr_state *addr;
+ 	int ret;
+ 
+ 	flush_altivec_to_thread(target);
+@@ -565,8 +625,19 @@ static int vr_set(struct task_struct *target, const struct user_regset *regset,
+ 	BUILD_BUG_ON(offsetof(struct thread_vr_state, vscr) !=
+ 		     offsetof(struct thread_vr_state, vr[32]));
+ 
++#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
++	if (MSR_TM_ACTIVE(target->thread.regs->msr)) {
++		flush_fp_to_thread(target);
++		flush_tmregs_to_thread(target);
++		addr = &target->thread.transact_vr;
++	} else {
++		addr = &target->thread.vr_state;
++	}
++#else
++	addr = &target->thread.vr_state;
++#endif
+ 	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+-				 &target->thread.vr_state, 0,
++				 addr, 0,
+ 				 33 * sizeof(vector128));
+ 	if (!ret && count > 0) {
+ 		/*
+@@ -577,11 +648,28 @@ static int vr_set(struct task_struct *target, const struct user_regset *regset,
+ 			u32 word;
+ 		} vrsave;
+ 		memset(&vrsave, 0, sizeof(vrsave));
++
++#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
++		if (MSR_TM_ACTIVE(target->thread.regs->msr))
++			vrsave.word = target->thread.transact_vrsave;
++		else
++			vrsave.word = target->thread.vrsave;
++#else
+ 		vrsave.word = target->thread.vrsave;
++#endif
+ 		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, &vrsave,
+ 					 33 * sizeof(vector128), -1);
+-		if (!ret)
++		if (!ret) {
++
++#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
++			if (MSR_TM_ACTIVE(target->thread.regs->msr))
++				target->thread.transact_vrsave = vrsave.word;
++			else
++				target->thread.vrsave = vrsave.word;
++#else
+ 			target->thread.vrsave = vrsave.word;
++#endif
++		}
+ 	}
+ 
+ 	return ret;
 -- 
 1.9.3
 
