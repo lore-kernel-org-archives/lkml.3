@@ -1,246 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320AbaKYHH1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 02:07:27 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:63259 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876AbaKYHHZ convert rfc822-to-8bit (ORCPT
+	id S1752508AbaKYHHm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 02:07:42 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:60047 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752352AbaKYHHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 02:07:25 -0500
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Philipp Zabel <p.zabel@pengutronix.de>,
-        "Thierry Reding" <thierry.reding@gmail.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1415007078-7947-1-git-send-email-p.zabel@pengutronix.de>
-Cc: =?utf-8?q?Janusz_U=C5=BCycki?= <j.uzycki@elproma.com.pl>,
-        "Rob Herring" <robh+dt@kernel.org>, "Pawel Moll" <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        "Kumar Gala" <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org,
-        "Philipp Zabel" <p.zabel@pengutronix.de>
-References: <1415007078-7947-1-git-send-email-p.zabel@pengutronix.de>
-Message-ID: <20141125070720.12298.46343@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v2] clk: Add PWM clock driver
-Date: Mon, 24 Nov 2014 23:07:20 -0800
+	Tue, 25 Nov 2014 02:07:39 -0500
+X-AuditID: cbfee68e-f79b46d000002b74-2e-54742ab9989b
+Date: Tue, 25 Nov 2014 07:07:36 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH v2 2/3] PM / devfreq: tegra: add devfreq driver for Tegra
+ Activity Monitor
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        =?utf-8?Q?=EB=B0=95=EA=B2=BD=EB=AF=BC?= <kyungmin.park@samsung.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20141125070538489@myungjoo.ham
+Msgkey: 20141125070538489@myungjoo.ham
+X-EPLocale: ko_KR.utf-8
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-MLAttribute: 
+X-RootMTR: 20141125070538489@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+X-ConfirmMail: N,general
+Content-type: text/plain; charset=utf-8
+MIME-version: 1.0
+Message-id: <715439136.113681416899252854.JavaMail.weblogic@epmlwas08c>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCIsWRmVeSWpSXmKPExsWyRsSkSHenVkmIwa957BaXd81hc2D0+LxJ
+	LoAxissmJTUnsyy1SN8ugSuj+1UvY0EbV8X+192sDYwPOLsYOTmEBNQlFi05yQZiSwiYSNzZ
+	fpoZwhaTuHBvPVCcC6hmKaPE1ref4Ipu/1nJApGYwyjRdfozWIJFQFViQXMDexcjBwebgJ7E
+	zM/JIGFhgTiJGd++gQ0VEciQ2PZlDytIL7PAXBaJznX7mSCuUJJYs+8VC4jNKyAocXLmExaI
+	ZaoSzRs3MELE1SSab3+CiotLXJh7iR3C5pWY0f4UKi4nMe3rGqgPpCXOz4LoBflm8ffHUHF+
+	iWO3dzBB2AISU88chKrRkvh6ajvUTD6JNQvfssDU7zq1nBlm1/0tc6F6JSS2tjxhBbGZBRQl
+	pnQ/BPudWUBTYv0ufXSv8Aq4S3T8WwgOUAmBXg6Jhc83Mk1gVJqFpG4WklGzEEYhK1nAyLKK
+	UTS1ILmgOCm9yEivODG3uDQvXS85P3cTIzAxnP73rG8H480D1ocYBTgYlXh4O84WhwixJpYV
+	V+YeYjQFxtJEZinR5Hxg+skriTc0NjOyMDUxNTYytzRTEudNkPoZLCSQnliSmp2aWpBaFF9U
+	mpNafIiRiYNTqoFxsTm/+Jz9Svemncr0K3jxpWXW1acqEUsnylr+CXrFaRPZaf5b2yDc8/GT
+	jj/CMj4C3Be+R4T/OPv1X9GEPqlMrckbdwVxbDx8LVr4atLNScy7JE6svW7Y3vHhyZJABiY2
+	wZNi7tY7Cs7Kvpk9K6G/Uv3h+ggtxbCX4rMeMm6TfRhz6b2GyYNCJZbijERDLeai4kQAMhBH
+	tgcDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCKsWRmVeSWpSXmKPExsVy+t/tPt2dWiUhBovELC7vmsPmwOjxeZNc
+	AGNUmk1GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0Ewl
+	hbLEnFKgUEBicbGSvp1NUX5pSapCRn5xia1StKG5kZ6RgZ6pkZ6hcayVoYGBkSlQTUJaRver
+	XsaCNq6K/a+7WRsYH3B2MXJyCAmoSyxacpINxJYQMJG4/WclC4QtJnHh3nqgOBdQzRxGia7T
+	n8GKWARUJRY0N7B3MXJwsAnoScz8nAwSFhaIk5jx7RsziC0ikCGx7cseVpBeZoG5LBKd6/Yz
+	QSxTkliz7xXYAl4BQYmTM59ALVOVaN64gREiribRfPsTVFxc4sLcS+wQNq/EjPanUHE5iWlf
+	1zBD2NIS52dB9IIcvfj7Y6g4v8Sx2zuYIGwBialnDkLVaEl8PbUdaiafxJqFb1lg6nedWs4M
+	s+v+lrlQvRISW1uesILYzAKKElO6H4L9ziygKbF+lz66V3gF3CU6/i1km8AoOwtJahaS7lkI
+	3chKFjCyrGIUTS1ILihOSq8w1CtOzC0uzUvXS87P3cQITkHPFu5g/HLe+hCjAAejEg9v59ni
+	ECHWxLLiytxDjBIczEoivFHzgEK8KYmVValF+fFFpTmpxYcYTYFxNpFZSjQ5H5ge80riDY2N
+	TcxMTC1NLAxMzZXEef+fyw0REkhPLEnNTk0tSC2C6WPi4JRqYFQUixXOEuOxE5ulzHvvWYFq
+	4vv305ojzT+ds9XpuXblv4a1qqjrIwHVyQxJ/xM950h4L8rdM7PxY3H2ybMcW8vsGif0Hs1l
+	1HvAJt+VUTmntFjtnZX+K6szDGbK3ApPl+Y3u1hsmOsbtPejqeLhDRzHss67R03Zp3cialp1
+	gpnQ1Pja2HNzlFiKMxINtZiLihMBUzw9QFcDAAA=
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAP77nck003825
 
-Quoting Philipp Zabel (2014-11-03 01:31:18)
-> Some board designers, when running out of clock output pads, decide to
-> (mis)use PWM output pads to provide a clock to external components.
-> This driver supports this practice by providing an adapter between the
-> PWM and clock bindings in the device tree. As the PWM bindings specify
-> the period in the device tree, this is a fixed clock.
+> The ACTMON block can monitor several counters, providing averaging and firing
+> interrupts based on watermarking configuration. This implementation monitors
+> the MCALL and MCCPU counters to choose an appropriate frequency for the
+> external memory clock.
 > 
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> This patch is based on work by Alex Frid <afrid@nvidia.com> and Mikko
+> Perttunen <mikko.perttunen@kapsi.fi>.
+> 
+> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+
+How are you going to integrate other two patches?
+May I just go ahead with this patch only?
+
+
+Cheers,
+MyungJoo.
+
+> 
 > ---
-> I'm resending this because last time the linux-pwm list was not in Cc:
-> So far I have not received any comments on the patch itself. I have used
-> it on a BoundaryDevices Nitrogen6X board to produce a master clock for
-> the OV5640 MIPI CSI-2 camera module.
 > 
-> Changes since v1:
->  - none (rebased onto v3.18-rc3)
-
-Hi Philipp,
-
-Thanks for testing this. Is the Nitrogen6X board merged upstream? I'm OK
-with the patch but prefer to merge things when a consumer is ready to
-use it. I guess you are missing a patch to add the pwm-clock bits to the
-Nitrogen6X dts?
-
-Regards,
-Mike
-
+> v2:	* Use devfreq
 > ---
->  .../devicetree/bindings/clock/pwm-clock.txt        |  23 +++++
->  drivers/clk/Kconfig                                |   7 ++
->  drivers/clk/Makefile                               |   1 +
->  drivers/clk/clk-pwm.c                              | 110 +++++++++++++++++++++
->  4 files changed, 141 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/clock/pwm-clock.txt
->  create mode 100644 drivers/clk/clk-pwm.c
+>  drivers/devfreq/Kconfig         |  10 +
+>  drivers/devfreq/Makefile        |   1 +
+>  drivers/devfreq/tegra-devfreq.c | 718 ++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 729 insertions(+)
+>  create mode 100644 drivers/devfreq/tegra-devfreq.c
 > 
-> diff --git a/Documentation/devicetree/bindings/clock/pwm-clock.txt b/Documentation/devicetree/bindings/clock/pwm-clock.txt
-> new file mode 100644
-> index 0000000..d127d17
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/clock/pwm-clock.txt
-> @@ -0,0 +1,23 @@
-> +Binding for an external clock signal driven by a PWM pin.
-> +
-> +This binding uses the common clock binding[1] and the common PWM binding[2].
-> +
-> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-> +[2] Documentation/devicetree/bindings/pwm/pwm.txt
-> +
-> +Required properties:
-> +- compatible : shall be "pwm-clock".
-> +- #clock-cells : from common clock binding; shall be set to 0.
-> +- pwms : from common PWM binding; this determines the clock frequency
-> +  via the PWM period given in the pwm-specifier.
-> +
-> +Optional properties:
-> +- clock-output-names : From common clock binding.
-> +
-> +Example:
-> +       clock {
-> +               compatible = "pwm-clock";
-> +               #clock-cells = <0>;
-> +               clock-output-names = "mipi_mclk";
-> +               pwms = <&pwm2 0 40>; /* 1 / 40 ns = 25 MHz */
-> +       };
-> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-> index 455fd17..36a6918a 100644
-> --- a/drivers/clk/Kconfig
-> +++ b/drivers/clk/Kconfig
-> @@ -129,6 +129,13 @@ config COMMON_CLK_PALMAS
->           This driver supports TI Palmas devices 32KHz output KG and KG_AUDIO
->           using common clock framework.
->  
-> +config COMMON_CLK_PWM
-> +       bool "Clock driver for PWMs used as clock outputs"
-> +       depends on PWM
-> +       ---help---
-> +         Adapter driver so that any PWM output can be (mis)used as clock signal
-> +         at 50% duty cycle.
-> +
->  config COMMON_CLK_PXA
->         def_bool COMMON_CLK && ARCH_PXA
->         ---help---
-> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-> index d5fba5b..6a0c5cf 100644
-> --- a/drivers/clk/Makefile
-> +++ b/drivers/clk/Makefile
-> @@ -40,6 +40,7 @@ obj-$(CONFIG_ARCH_U300)                       += clk-u300.o
->  obj-$(CONFIG_ARCH_VT8500)              += clk-vt8500.o
->  obj-$(CONFIG_COMMON_CLK_WM831X)                += clk-wm831x.o
->  obj-$(CONFIG_COMMON_CLK_XGENE)         += clk-xgene.o
-> +obj-$(CONFIG_COMMON_CLK_PWM)           += clk-pwm.o
->  obj-$(CONFIG_COMMON_CLK_AT91)          += at91/
->  obj-$(CONFIG_ARCH_BCM_MOBILE)          += bcm/
->  obj-$(CONFIG_ARCH_BERLIN)              += berlin/
-> diff --git a/drivers/clk/clk-pwm.c b/drivers/clk/clk-pwm.c
-> new file mode 100644
-> index 0000000..8f747b3
-> --- /dev/null
-> +++ b/drivers/clk/clk-pwm.c
-> @@ -0,0 +1,110 @@
-> +/*
-> + * Copyright (C) 2014 Philipp Zabel, Pengutronix
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * PWM (mis)used as clock output
-> + */
-> +#include <linux/clk-provider.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/pwm.h>
-> +
-> +struct clk_pwm {
-> +       struct clk_hw hw;
-> +       struct pwm_device *pwm;
-> +};
-> +
-> +#define to_clk_pwm(_hw) container_of(_hw, struct clk_pwm, hw)
-> +
-> +static int clk_pwm_enable(struct clk_hw *hw)
-> +{
-> +       struct clk_pwm *clk_pwm = to_clk_pwm(hw);
-> +
-> +       return pwm_enable(clk_pwm->pwm);
-> +}
-> +
-> +static void clk_pwm_disable(struct clk_hw *hw)
-> +{
-> +       struct clk_pwm *clk_pwm = to_clk_pwm(hw);
-> +
-> +       pwm_disable(clk_pwm->pwm);
-> +}
-> +
-> +static unsigned long clk_pwm_recalc_rate(struct clk_hw *hw,
-> +                                        unsigned long parent_rate)
-> +{
-> +       struct clk_pwm *clk_pwm = to_clk_pwm(hw);
-> +       unsigned int period_ns = pwm_get_period(clk_pwm->pwm);
-> +
-> +       return period_ns ? (1000000000 / period_ns) : 0;
-> +}
-> +
-> +const struct clk_ops clk_pwm_ops = {
-> +       .enable = clk_pwm_enable,
-> +       .disable = clk_pwm_disable,
-> +       .recalc_rate = clk_pwm_recalc_rate,
-> +};
-> +
-> +int clk_pwm_probe(struct platform_device *pdev)
-> +{
-> +       struct clk_init_data init;
-> +       struct clk_pwm *clk_pwm;
-> +       struct pwm_device *pwm;
-> +       struct clk *clk;
-> +       int ret;
-> +
-> +       clk_pwm = devm_kzalloc(&pdev->dev, sizeof(*clk_pwm), GFP_KERNEL);
-> +       if (!clk_pwm)
-> +               return -ENOMEM;
-> +
-> +       pwm = devm_pwm_get(&pdev->dev, NULL);
-> +       if (IS_ERR(pwm))
-> +               return PTR_ERR(pwm);
-> +
-> +       ret = pwm_config(pwm, (pwm->period + 1) >> 1, pwm->period);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       init.name = "pwm-clock";
-> +       init.ops = &clk_pwm_ops;
-> +       init.flags = CLK_IS_ROOT;
-> +       init.num_parents = 0;
-> +
-> +       clk_pwm->pwm = pwm;
-> +       clk_pwm->hw.init = &init;
-> +       clk = devm_clk_register(&pdev->dev, &clk_pwm->hw);
-> +       if (IS_ERR(clk))
-> +               return PTR_ERR(clk);
-> +
-> +       return of_clk_add_provider(pdev->dev.of_node,
-> +                                  of_clk_src_simple_get, clk);
-> +}
-> +
-> +int clk_pwm_remove(struct platform_device *pdev)
-> +{
-> +       of_clk_del_provider(pdev->dev.of_node);
-> +
-> +       return 0;
-> +}
-> +
-> +static const struct of_device_id clk_pwm_dt_ids[] = {
-> +       { .compatible = "pwm-clock" },
-> +       { }
-> +};
-> +MODULE_DEVICE_TABLE(of, clk_pwm_dt_ids);
-> +
-> +static struct platform_driver clk_pwm_driver = {
-> +       .probe = clk_pwm_probe,
-> +       .driver = {
-> +               .name = "pwm-clock",
-> +               .owner = THIS_MODULE,
-> +               .of_match_table = of_match_ptr(clk_pwm_dt_ids),
-> +       },
-> +};
-> +
-> +module_platform_driver(clk_pwm_driver);
-> -- 
-> 2.1.1
-> 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
