@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643AbaKYMOh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 07:14:37 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:12389 "EHLO
+	id S1753506AbaKYMOf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 07:14:35 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:54356 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753284AbaKYMO3 (ORCPT
+	by vger.kernel.org with ESMTP id S1752213AbaKYMOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 07:14:29 -0500
-Message-Id: <20141125121426.926254854@goodmis.org>
+	Tue, 25 Nov 2014 07:14:33 -0500
+Message-Id: <20141125121426.421824655@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Tue, 25 Nov 2014 07:14:00 -0500
+Date: Tue, 25 Nov 2014 07:13:57 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Markos Chandras <Markos.Chandras@imgtec.com>
-Subject: [for-next][PATCH 5/5] ftrace/x86: Have static function tracing always test for function
- graph
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [for-next][PATCH 2/5] kprobes/ftrace: Recover original IP if pre_handler doesnt change it
 References: <20141125121355.225538266@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0005-ftrace-x86-Have-static-function-tracing-always-test-.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0002-kprobes-ftrace-Recover-original-IP-if-pre_handler-do.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-New updates to the ftrace generic code had ftrace_stub not always being
-called when ftrace is off. This causes the static tracer to always save
-and restore functions. But it also showed that when function tracing is
-running, the function graph tracer can not. We should always check to see
-if function graph tracing is running even if the function tracer is running
-too. The function tracer code is not the only one that uses the hook to
-function mcount.
+Recover original IP register if the pre_handler doesn't change it.
+Since current kprobes doesn't expect that another ftrace handler
+may change regs->ip, it sets kprobe.addr + MCOUNT_INSN_SIZE to
+regs->ip and returns to ftrace.
+This seems wrong behavior since kprobes can recover regs->ip
+and safely pass it to another handler.
 
-Cc: Markos Chandras <Markos.Chandras@imgtec.com>
+This adds code which recovers original regs->ip passed from
+ftrace right before returning to ftrace, so that another ftrace
+user can change regs->ip.
+
+Link: http://lkml.kernel.org/r/20141009130106.4698.26362.stgit@kbuild-f20.novalocal
+
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/kernel/mcount_64.S | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/kernel/kprobes/ftrace.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/mcount_64.S b/arch/x86/kernel/mcount_64.S
-index 35a793fa4bba..6dc134b8dc70 100644
---- a/arch/x86/kernel/mcount_64.S
-+++ b/arch/x86/kernel/mcount_64.S
-@@ -194,6 +194,7 @@ ENTRY(function_hook)
- 	cmpq $ftrace_stub, ftrace_trace_function
- 	jnz trace
+diff --git a/arch/x86/kernel/kprobes/ftrace.c b/arch/x86/kernel/kprobes/ftrace.c
+index 717b02a22e67..5f8f0b3cc674 100644
+--- a/arch/x86/kernel/kprobes/ftrace.c
++++ b/arch/x86/kernel/kprobes/ftrace.c
+@@ -27,7 +27,7 @@
  
-+fgraph_trace:
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- 	cmpq $ftrace_stub, ftrace_graph_return
- 	jnz ftrace_graph_caller
-@@ -220,7 +221,7 @@ trace:
+ static nokprobe_inline
+ int __skip_singlestep(struct kprobe *p, struct pt_regs *regs,
+-		      struct kprobe_ctlblk *kcb)
++		      struct kprobe_ctlblk *kcb, unsigned long orig_ip)
+ {
+ 	/*
+ 	 * Emulate singlestep (and also recover regs->ip)
+@@ -39,6 +39,8 @@ int __skip_singlestep(struct kprobe *p, struct pt_regs *regs,
+ 		p->post_handler(p, regs, 0);
+ 	}
+ 	__this_cpu_write(current_kprobe, NULL);
++	if (orig_ip)
++		regs->ip = orig_ip;
+ 	return 1;
+ }
  
- 	MCOUNT_RESTORE_FRAME
+@@ -46,7 +48,7 @@ int skip_singlestep(struct kprobe *p, struct pt_regs *regs,
+ 		    struct kprobe_ctlblk *kcb)
+ {
+ 	if (kprobe_ftrace(p))
+-		return __skip_singlestep(p, regs, kcb);
++		return __skip_singlestep(p, regs, kcb, 0);
+ 	else
+ 		return 0;
+ }
+@@ -71,13 +73,14 @@ void kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
+ 	if (kprobe_running()) {
+ 		kprobes_inc_nmissed_count(p);
+ 	} else {
++		unsigned long orig_ip = regs->ip;
+ 		/* Kprobe handler expects regs->ip = ip + 1 as breakpoint hit */
+ 		regs->ip = ip + sizeof(kprobe_opcode_t);
  
--	jmp ftrace_stub
-+	jmp fgraph_trace
- END(function_hook)
- #endif /* CONFIG_DYNAMIC_FTRACE */
- #endif /* CONFIG_FUNCTION_TRACER */
+ 		__this_cpu_write(current_kprobe, p);
+ 		kcb->kprobe_status = KPROBE_HIT_ACTIVE;
+ 		if (!p->pre_handler || !p->pre_handler(p, regs))
+-			__skip_singlestep(p, regs, kcb);
++			__skip_singlestep(p, regs, kcb, orig_ip);
+ 		/*
+ 		 * If pre_handler returns !0, it sets regs->ip and
+ 		 * resets current kprobe.
 -- 
 2.1.1
 
