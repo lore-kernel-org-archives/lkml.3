@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151AbaKYLQO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:16:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58777 "EHLO
+	id S1755236AbaKYLQl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:16:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58764 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753651AbaKYKm2 (ORCPT
+	with ESMTP id S1753641AbaKYKm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:28 -0500
+	Tue, 25 Nov 2014 05:42:26 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Simon Horman <horms+renesas@verge.net.au>, Tejun Heo <tj@kernel.org>,
+Cc: Heinz Mauelshagen <heinzm@redhat.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mike Snitzer <snitzer@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 151/254] ata: sata_rcar: Disable DIPM mode for r8a7790 ES1
-Date: Tue, 25 Nov 2014 10:38:21 +0000
-Message-Id: <1416912004-5928-152-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 150/254] dm raid: ensure superblock's size matches device's logical block size
+Date: Tue, 25 Nov 2014 10:38:20 +0000
+Message-Id: <1416912004-5928-151-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,84 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Horman <horms+renesas@verge.net.au>
+From: Heinz Mauelshagen <heinzm@redhat.com>
 
-commit aa1cf25887099bba68f1f3879c0d394e08b8779f upstream.
+commit 40d43c4b4cac4c2647bf07110d7b07d35f399a84 upstream.
 
-Unlike other SATA R-Car r8a7790 controllers the r8a7790 ES1 SATA R-Car
-controller needs to be run with DIPM disabled.
+The dm-raid superblock (struct dm_raid_superblock) is padded to 512
+bytes and that size is being used to read it in from the metadata
+device into one preallocated page.
 
-Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Reading or writing this on a 512-byte sector device works fine but on
+a 4096-byte sector device this fails.
+
+Set the dm-raid superblock's size to the logical block size of the
+metadata device, because IO at that size is guaranteed too work.  Also
+add a size check to avoid silent partial metadata loss in case the
+superblock should ever grow past the logical block size or PAGE_SIZE.
+
+[includes pointer math fix from Dan Carpenter]
+Reported-by: "Liuhua Wang" <lwang@suse.com>
+Signed-off-by: Heinz Mauelshagen <heinzm@redhat.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- Documentation/devicetree/bindings/ata/sata_rcar.txt |  3 ++-
- drivers/ata/sata_rcar.c                             | 10 ++++++++++
- 2 files changed, 12 insertions(+), 1 deletion(-)
+ drivers/md/dm-raid.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/ata/sata_rcar.txt b/Documentation/devicetree/bindings/ata/sata_rcar.txt
-index 1e6111333fa8..7dd32d321a34 100644
---- a/Documentation/devicetree/bindings/ata/sata_rcar.txt
-+++ b/Documentation/devicetree/bindings/ata/sata_rcar.txt
-@@ -3,7 +3,8 @@
- Required properties:
- - compatible		: should contain one of the following:
- 			  - "renesas,sata-r8a7779" for R-Car H1
--			  - "renesas,sata-r8a7790" for R-Car H2
-+			  - "renesas,sata-r8a7790-es1" for R-Car H2 ES1
-+			  - "renesas,sata-r8a7790" for R-Car H2 other than ES1
- 			  - "renesas,sata-r8a7791" for R-Car M2
- - reg			: address and length of the SATA registers;
- - interrupts		: must consist of one interrupt specifier.
-diff --git a/drivers/ata/sata_rcar.c b/drivers/ata/sata_rcar.c
-index 61eb6d77dac7..8732e42db3a9 100644
---- a/drivers/ata/sata_rcar.c
-+++ b/drivers/ata/sata_rcar.c
-@@ -146,6 +146,7 @@
- enum sata_rcar_type {
- 	RCAR_GEN1_SATA,
- 	RCAR_GEN2_SATA,
-+	RCAR_R8A7790_ES1_SATA,
- };
+diff --git a/drivers/md/dm-raid.c b/drivers/md/dm-raid.c
+index 4880b69e2e9e..59715389b3cf 100644
+--- a/drivers/md/dm-raid.c
++++ b/drivers/md/dm-raid.c
+@@ -785,8 +785,7 @@ struct dm_raid_superblock {
+ 	__le32 layout;
+ 	__le32 stripe_sectors;
  
- struct sata_rcar_priv {
-@@ -763,6 +764,9 @@ static void sata_rcar_setup_port(struct ata_host *host)
- 	ap->udma_mask	= ATA_UDMA6;
- 	ap->flags	|= ATA_FLAG_SATA;
+-	__u8 pad[452];		/* Round struct to 512 bytes. */
+-				/* Always set to 0 when writing. */
++	/* Remainder of a logical block is zero-filled when writing (see super_sync()). */
+ } __packed;
  
-+	if (priv->type == RCAR_R8A7790_ES1_SATA)
-+		ap->flags	|= ATA_FLAG_NO_DIPM;
-+
- 	ioaddr->cmd_addr = base + SDATA_REG;
- 	ioaddr->ctl_addr = base + SSDEVCON_REG;
- 	ioaddr->scr_addr = base + SCRSSTS_REG;
-@@ -792,6 +796,7 @@ static void sata_rcar_init_controller(struct ata_host *host)
- 		sata_rcar_gen1_phy_init(priv);
- 		break;
- 	case RCAR_GEN2_SATA:
-+	case RCAR_R8A7790_ES1_SATA:
- 		sata_rcar_gen2_phy_init(priv);
- 		break;
- 	default:
-@@ -838,6 +843,10 @@ static struct of_device_id sata_rcar_match[] = {
- 		.data = (void *)RCAR_GEN2_SATA
- 	},
- 	{
-+		.compatible = "renesas,sata-r8a7790-es1",
-+		.data = (void *)RCAR_R8A7790_ES1_SATA
-+	},
-+	{
- 		.compatible = "renesas,sata-r8a7791",
- 		.data = (void *)RCAR_GEN2_SATA
- 	},
-@@ -849,6 +858,7 @@ static const struct platform_device_id sata_rcar_id_table[] = {
- 	{ "sata_rcar", RCAR_GEN1_SATA }, /* Deprecated by "sata-r8a7779" */
- 	{ "sata-r8a7779", RCAR_GEN1_SATA },
- 	{ "sata-r8a7790", RCAR_GEN2_SATA },
-+	{ "sata-r8a7790-es1", RCAR_R8A7790_ES1_SATA },
- 	{ "sata-r8a7791", RCAR_GEN2_SATA },
- 	{ },
- };
+ static int read_disk_sb(struct md_rdev *rdev, int size)
+@@ -823,7 +822,7 @@ static void super_sync(struct mddev *mddev, struct md_rdev *rdev)
+ 		    test_bit(Faulty, &(rs->dev[i].rdev.flags)))
+ 			failed_devices |= (1ULL << i);
+ 
+-	memset(sb, 0, sizeof(*sb));
++	memset(sb + 1, 0, rdev->sb_size - sizeof(*sb));
+ 
+ 	sb->magic = cpu_to_le32(DM_RAID_MAGIC);
+ 	sb->features = cpu_to_le32(0);	/* No features yet */
+@@ -858,7 +857,11 @@ static int super_load(struct md_rdev *rdev, struct md_rdev *refdev)
+ 	uint64_t events_sb, events_refsb;
+ 
+ 	rdev->sb_start = 0;
+-	rdev->sb_size = sizeof(*sb);
++	rdev->sb_size = bdev_logical_block_size(rdev->meta_bdev);
++	if (rdev->sb_size < sizeof(*sb) || rdev->sb_size > PAGE_SIZE) {
++		DMERR("superblock size of a logical block is no longer valid");
++		return -EINVAL;
++	}
+ 
+ 	ret = read_disk_sb(rdev, rdev->sb_size);
+ 	if (ret)
 -- 
 2.1.0
 
