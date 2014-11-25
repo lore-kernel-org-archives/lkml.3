@@ -1,125 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738AbaKYUrH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 15:47:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53024 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750925AbaKYUrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 15:47:04 -0500
-Subject: [PATCH v7 4/4] fm10k/igb/ixgbe: Use dma_rmb on Rx descriptor reads
-From: Alexander Duyck <alexander.h.duyck@redhat.com>
-To: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: mathieu.desnoyers@polymtl.ca, peterz@infradead.org,
-        benh@kernel.crashing.org, heiko.carstens@de.ibm.com, mingo@kernel.org,
-        mikey@neuling.org, linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
-        matthew.vick@intel.com, geert@linux-m68k.org,
-        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
-        paulmck@linux.vnet.ibm.com, nic_swsd@realtek.com, arnd@arndb.de,
-        will.deacon@arm.com, michael@ellerman.id.au, tony.luck@intel.com,
-        torvalds@linux-foundation.org, oleg@redhat.com, schwidefsky@de.ibm.com,
-        fweisbec@gmail.com, davem@davemloft.net
-Date: Tue, 25 Nov 2014 12:35:53 -0800
-Message-ID: <20141125203552.8240.73686.stgit@ahduyck-server>
-In-Reply-To: <20141125203310.8240.27370.stgit@ahduyck-server>
-References: <20141125203310.8240.27370.stgit@ahduyck-server>
-User-Agent: StGit/0.17-dirty
+	id S1751436AbaKYUtV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 15:49:21 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:39450 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869AbaKYUtU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 15:49:20 -0500
+Date: Tue, 25 Nov 2014 12:49:16 -0800
+From: josh@joshtriplett.org
+To: Pieter Smith <pieter@boesman.nl>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 4/7] fs/fuse: support compiling out splice
+Message-ID: <20141125204916.GD24891@cloud>
+References: <1416899996-21315-1-git-send-email-pieter@boesman.nl>
+ <1416899996-21315-5-git-send-email-pieter@boesman.nl>
+ <20141125141713.GA9137@tucsk.suse.de>
+ <20141125194242.GA21633@smipidev>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141125194242.GA21633@smipidev>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change makes it so that dma_rmb is used when reading the Rx
-descriptor.  The advantage of dma_rmb is that it allows for a much
-lower cost barrier on x86, powerpc, arm, and arm64 architectures than a
-traditional memory barrier when dealing with reads that only have to
-synchronize to coherent memory.
+On Tue, Nov 25, 2014 at 08:42:42PM +0100, Pieter Smith wrote:
+> On Tue, Nov 25, 2014 at 03:17:13PM +0100, Miklos Szeredi wrote:
+> > [Trimming CC.  Please do the same for other patches.  I for one am not
+> > interested in the general tinification discussion]
+> > 
+> > On Tue, Nov 25, 2014 at 08:19:39AM +0100, Pieter Smith wrote:
+> > > To implement splice support, fs/fuse makes use of nosteal_pipe_buf_ops. This
+> > > struct is exported by fs/splice. The goal of the larger patch set is to
+> > > completely compile out fs/splice, so uses of the exported struct need to be
+> > > compiled out along with fs/splice.
+> > > 
+> > > This patch therefore compiles out splice support in fs/fuse when
+> > > CONFIG_SYSCALL_SPLICE is undefined.
+> > > 
+> > > Signed-off-by: Pieter Smith <pieter@boesman.nl>
+> > > ---
+> > >  fs/fuse/dev.c | 9 +++++++--
+> > >  1 file changed, 7 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+> > > index ca88731..e984302 100644
+> > > --- a/fs/fuse/dev.c
+> > > +++ b/fs/fuse/dev.c
+> > > @@ -1191,8 +1191,9 @@ __releases(fc->lock)
+> > >   * request_end().  Otherwise add it to the processing list, and set
+> > >   * the 'sent' flag.
+> > >   */
+> > > -static ssize_t fuse_dev_do_read(struct fuse_conn *fc, struct file *file,
+> > > -				struct fuse_copy_state *cs, size_t nbytes)
+> > > +static ssize_t __maybe_unused
+> > > +fuse_dev_do_read(struct fuse_conn *fc, struct file *file,
+> > > +		 struct fuse_copy_state *cs, size_t nbytes)
+> > 
+> > fuse_dev_do_read() is definitely going to remain used.  So no point in adding
+> > __maybe_unused.
+> 
+> Off course, but at least gcc now also is aware that this is intentional and
+> nicely refrains from nagging you with a warning.
 
-In addition I have updated the code so that it just checks to see if any
-bits have been set instead of just the DD bit since the DD bit will always
-be set as a part of a descriptor write-back so we just need to check for a
-non-zero value being present at that memory location rather than just
-checking for any specific bit.  This allows the code itself to appear much
-cleaner and allows the compiler more room to optimize.
+GCC shouldn't be warning about an unused fuse_dev_do_read; please
+recheck.  It will always get used by fuse_dev_read, which
+unconditionally gets used in the .aio_read field of fuse_dev_operations.
 
-Cc: Matthew Vick <matthew.vick@intel.com>
-Cc: Don Skidmore <donald.c.skidmore@intel.com>
-Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: Alexander Duyck <alexander.h.duyck@redhat.com>
----
- drivers/net/ethernet/intel/fm10k/fm10k_main.c |    6 +++---
- drivers/net/ethernet/intel/igb/igb_main.c     |    6 +++---
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    9 ++++-----
- 3 files changed, 10 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/net/ethernet/intel/fm10k/fm10k_main.c b/drivers/net/ethernet/intel/fm10k/fm10k_main.c
-index 73457ed..b348178 100644
---- a/drivers/net/ethernet/intel/fm10k/fm10k_main.c
-+++ b/drivers/net/ethernet/intel/fm10k/fm10k_main.c
-@@ -620,14 +620,14 @@ static bool fm10k_clean_rx_irq(struct fm10k_q_vector *q_vector,
- 
- 		rx_desc = FM10K_RX_DESC(rx_ring, rx_ring->next_to_clean);
- 
--		if (!fm10k_test_staterr(rx_desc, FM10K_RXD_STATUS_DD))
-+		if (!rx_desc->d.staterr)
- 			break;
- 
- 		/* This memory barrier is needed to keep us from reading
- 		 * any other fields out of the rx_desc until we know the
--		 * RXD_STATUS_DD bit is set
-+		 * descriptor has been written back
- 		 */
--		rmb();
-+		dma_rmb();
- 
- 		/* retrieve a buffer from the ring */
- 		skb = fm10k_fetch_rx_buffer(rx_ring, rx_desc, skb);
-diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
-index 3c02216..ecf38cf 100644
---- a/drivers/net/ethernet/intel/igb/igb_main.c
-+++ b/drivers/net/ethernet/intel/igb/igb_main.c
-@@ -6922,14 +6922,14 @@ static bool igb_clean_rx_irq(struct igb_q_vector *q_vector, const int budget)
- 
- 		rx_desc = IGB_RX_DESC(rx_ring, rx_ring->next_to_clean);
- 
--		if (!igb_test_staterr(rx_desc, E1000_RXD_STAT_DD))
-+		if (!rx_desc->wb.upper.status_error)
- 			break;
- 
- 		/* This memory barrier is needed to keep us from reading
- 		 * any other fields out of the rx_desc until we know the
--		 * RXD_STAT_DD bit is set
-+		 * descriptor has been written back
- 		 */
--		rmb();
-+		dma_rmb();
- 
- 		/* retrieve a buffer from the ring */
- 		skb = igb_fetch_rx_buffer(rx_ring, rx_desc, skb);
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index c19af9f..5bc9650 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -2006,15 +2006,14 @@ static int ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 
- 		rx_desc = IXGBE_RX_DESC(rx_ring, rx_ring->next_to_clean);
- 
--		if (!ixgbe_test_staterr(rx_desc, IXGBE_RXD_STAT_DD))
-+		if (!rx_desc->wb.upper.status_error)
- 			break;
- 
--		/*
--		 * This memory barrier is needed to keep us from reading
-+		/* This memory barrier is needed to keep us from reading
- 		 * any other fields out of the rx_desc until we know the
--		 * RXD_STAT_DD bit is set
-+		 * descriptor has been written back
- 		 */
--		rmb();
-+		dma_rmb();
- 
- 		/* retrieve a buffer from the ring */
- 		skb = ixgbe_fetch_rx_buffer(rx_ring, rx_desc);
-
+- Josh Triplett
