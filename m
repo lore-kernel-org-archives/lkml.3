@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253AbaKYKvl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:51:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59175 "EHLO
+	id S1754582AbaKYKwH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:52:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59169 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754100AbaKYKnh (ORCPT
+	with ESMTP id S1753985AbaKYKng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:43:37 -0500
+	Tue, 25 Nov 2014 05:43:36 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 232/254] sparc64: Do irq_{enter,exit}() around generic_smp_call_function*().
-Date: Tue, 25 Nov 2014 10:39:42 +0000
-Message-Id: <1416912004-5928-233-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 231/254] sparc64: Fix crashes in schizo_pcierr_intr_other().
+Date: Tue, 25 Nov 2014 10:39:41 +0000
+Message-Id: <1416912004-5928-232-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -29,81 +29,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-commit ab5c780913bca0a5763ca05dd5c2cb5cb08ccb26 upstream.
+commit 7da89a2a3776442a57e918ca0b8678d1b16a7072 upstream.
 
-Otherwise rcu_irq_{enter,exit}() do not happen and we get dumps like:
+Meelis Roos reports crashes during bootup on a V480 that look like
+this:
 
 ====================
-[  188.275021] ===============================
-[  188.309351] [ INFO: suspicious RCU usage. ]
-[  188.343737] 3.18.0-rc3-00068-g20f3963-dirty #54 Not tainted
-[  188.394786] -------------------------------
-[  188.429170] include/linux/rcupdate.h:883 rcu_read_lock() used
-illegally while idle!
-[  188.505235]
-other info that might help us debug this:
-
-[  188.554230]
-RCU used illegally from idle CPU!
-rcu_scheduler_active = 1, debug_locks = 0
-[  188.637587] RCU used illegally from extended quiescent state!
-[  188.690684] 3 locks held by swapper/7/0:
-[  188.721932]  #0:  (&x->wait#11){......}, at: [<0000000000495de8>] complete+0x8/0x60
-[  188.797994]  #1:  (&p->pi_lock){-.-.-.}, at: [<000000000048510c>] try_to_wake_up+0xc/0x400
-[  188.881343]  #2:  (rcu_read_lock){......}, at: [<000000000048a910>] select_task_rq_fair+0x90/0xb40
-[  188.973043]stack backtrace:
-[  188.993879] CPU: 7 PID: 0 Comm: swapper/7 Not tainted 3.18.0-rc3-00068-g20f3963-dirty #54
-[  189.076187] Call Trace:
-[  189.089719]  [0000000000499360] lockdep_rcu_suspicious+0xe0/0x100
-[  189.147035]  [000000000048a99c] select_task_rq_fair+0x11c/0xb40
-[  189.202253]  [00000000004852d8] try_to_wake_up+0x1d8/0x400
-[  189.252258]  [000000000048554c] default_wake_function+0xc/0x20
-[  189.306435]  [0000000000495554] __wake_up_common+0x34/0x80
-[  189.356448]  [00000000004955b4] __wake_up_locked+0x14/0x40
-[  189.406456]  [0000000000495e08] complete+0x28/0x60
-[  189.448142]  [0000000000636e28] blk_end_sync_rq+0x8/0x20
-[  189.496057]  [0000000000639898] __blk_mq_end_request+0x18/0x60
-[  189.550249]  [00000000006ee014] scsi_end_request+0x94/0x180
-[  189.601286]  [00000000006ee334] scsi_io_completion+0x1d4/0x600
-[  189.655463]  [00000000006e51c4] scsi_finish_command+0xc4/0xe0
-[  189.708598]  [00000000006ed958] scsi_softirq_done+0x118/0x140
-[  189.761735]  [00000000006398ec] __blk_mq_complete_request_remote+0xc/0x20
-[  189.827383]  [00000000004c75d0] generic_smp_call_function_single_interrupt+0x150/0x1c0
-[  189.906581]  [000000000043e514] smp_call_function_single_client+0x14/0x40
+[   61.300577] PCI: Scanning PBM /pci@9,600000
+[   61.304867] schizo f009b070: PCI host bridge to bus 0003:00
+[   61.310385] pci_bus 0003:00: root bus resource [io  0x7ffe9000000-0x7ffe9ffffff] (bus address [0x0000-0xffffff])
+[   61.320515] pci_bus 0003:00: root bus resource [mem 0x7fb00000000-0x7fbffffffff] (bus address [0x00000000-0xffffffff])
+[   61.331173] pci_bus 0003:00: root bus resource [bus 00]
+[   61.385344] Unable to handle kernel NULL pointer dereference
+[   61.390970] tsk->{mm,active_mm}->context = 0000000000000000
+[   61.396515] tsk->{mm,active_mm}->pgd = fff000b000002000
+[   61.401716]               \|/ ____ \|/
+[   61.401716]               "@'/ .. \`@"
+[   61.401716]               /_| \__/ |_\
+[   61.401716]                  \__U_/
+[   61.416362] swapper/0(0): Oops [#1]
+[   61.419837] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.18.0-rc1-00422-g2cc9188-dirty #24
+[   61.427975] task: fff000b0fd8e9c40 ti: fff000b0fd928000 task.ti: fff000b0fd928000
+[   61.435426] TSTATE: 0000004480e01602 TPC: 00000000004455e4 TNPC: 00000000004455e8 Y: 00000000    Not tainted
+[   61.445230] TPC: <schizo_pcierr_intr+0x104/0x560>
+[   61.449897] g0: 0000000000000000 g1: 0000000000000000 g2: 0000000000a10f78 g3: 000000000000000a
+[   61.458563] g4: fff000b0fd8e9c40 g5: fff000b0fdd82000 g6: fff000b0fd928000 g7: 000000000000000a
+[   61.467229] o0: 000000000000003d o1: 0000000000000000 o2: 0000000000000006 o3: fff000b0ffa5fc7e
+[   61.475894] o4: 0000000000060000 o5: c000000000000000 sp: fff000b0ffa5f3c1 ret_pc: 00000000004455cc
+[   61.484909] RPC: <schizo_pcierr_intr+0xec/0x560>
+[   61.489500] l0: fff000b0fd8e9c40 l1: 0000000000a20800 l2: 0000000000000000 l3: 000000000119a430
+[   61.498164] l4: 0000000001742400 l5: 00000000011cfbe0 l6: 00000000011319c0 l7: fff000b0fd8ea348
+[   61.506830] i0: 0000000000000000 i1: fff000b0fdb34000 i2: 0000000320000000 i3: 0000000000000000
+[   61.515497] i4: 00060002010b003f i5: 0000040004e02000 i6: fff000b0ffa5f481 i7: 00000000004a9920
+[   61.524175] I7: <handle_irq_event_percpu+0x40/0x140>
+[   61.529099] Call Trace:
+[   61.531531]  [00000000004a9920] handle_irq_event_percpu+0x40/0x140
+[   61.537681]  [00000000004a9a58] handle_irq_event+0x38/0x80
+[   61.543145]  [00000000004ac77c] handle_fasteoi_irq+0xbc/0x200
+[   61.548860]  [00000000004a9084] generic_handle_irq+0x24/0x40
+[   61.554500]  [000000000042be0c] handler_irq+0xac/0x100
 ====================
 
-Based almost entirely upon a patch by Paul E. McKenney.
+The problem is that pbm->pci_bus->self is NULL.
+
+This code is trying to go through the standard PCI config space
+interfaces to read the PCI controller's PCI_STATUS register.
+
+This doesn't work, because we more often than not do not enumerate
+the PCI controller as a bonafide PCI device during the OF device
+node scan.  Therefore bus->self remains NULL.
+
+Existing common code for PSYCHO and PSYCHO-like PCI controllers
+handles this properly, by doing the config space access directly.
+
+Do the same here, pbm->pci_ops->{read,write}().
 
 Reported-by: Meelis Roos <mroos@linux.ee>
 Tested-by: Meelis Roos <mroos@linux.ee>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/sparc/kernel/smp_64.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/sparc/kernel/pci_schizo.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
-index c9300bfaee5a..81954ee7c47c 100644
---- a/arch/sparc/kernel/smp_64.c
-+++ b/arch/sparc/kernel/smp_64.c
-@@ -816,13 +816,17 @@ void arch_send_call_function_single_ipi(int cpu)
- void __irq_entry smp_call_function_client(int irq, struct pt_regs *regs)
+diff --git a/arch/sparc/kernel/pci_schizo.c b/arch/sparc/kernel/pci_schizo.c
+index 8f76f23dac38..f9c6813c132d 100644
+--- a/arch/sparc/kernel/pci_schizo.c
++++ b/arch/sparc/kernel/pci_schizo.c
+@@ -581,7 +581,7 @@ static irqreturn_t schizo_pcierr_intr_other(struct pci_pbm_info *pbm)
  {
- 	clear_softint(1 << irq);
-+	irq_enter();
- 	generic_smp_call_function_interrupt();
-+	irq_exit();
- }
+ 	unsigned long csr_reg, csr, csr_error_bits;
+ 	irqreturn_t ret = IRQ_NONE;
+-	u16 stat;
++	u32 stat;
  
- void __irq_entry smp_call_function_single_client(int irq, struct pt_regs *regs)
- {
- 	clear_softint(1 << irq);
-+	irq_enter();
- 	generic_smp_call_function_single_interrupt();
-+	irq_exit();
- }
- 
- static void tsb_sync(void *info)
+ 	csr_reg = pbm->pbm_regs + SCHIZO_PCI_CTRL;
+ 	csr = upa_readq(csr_reg);
+@@ -617,7 +617,7 @@ static irqreturn_t schizo_pcierr_intr_other(struct pci_pbm_info *pbm)
+ 			       pbm->name);
+ 		ret = IRQ_HANDLED;
+ 	}
+-	pci_read_config_word(pbm->pci_bus->self, PCI_STATUS, &stat);
++	pbm->pci_ops->read(pbm->pci_bus, 0, PCI_STATUS, 2, &stat);
+ 	if (stat & (PCI_STATUS_PARITY |
+ 		    PCI_STATUS_SIG_TARGET_ABORT |
+ 		    PCI_STATUS_REC_TARGET_ABORT |
+@@ -625,7 +625,7 @@ static irqreturn_t schizo_pcierr_intr_other(struct pci_pbm_info *pbm)
+ 		    PCI_STATUS_SIG_SYSTEM_ERROR)) {
+ 		printk("%s: PCI bus error, PCI_STATUS[%04x]\n",
+ 		       pbm->name, stat);
+-		pci_write_config_word(pbm->pci_bus->self, PCI_STATUS, 0xffff);
++		pbm->pci_ops->write(pbm->pci_bus, 0, PCI_STATUS, 2, 0xffff);
+ 		ret = IRQ_HANDLED;
+ 	}
+ 	return ret;
 -- 
 2.1.0
 
