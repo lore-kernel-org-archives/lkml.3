@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540AbaKYKvD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:51:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59184 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754118AbaKYKni (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754120AbaKYKni (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 25 Nov 2014 05:43:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59152 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753214AbaKYKnd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 05:43:33 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Dwight Engen <dwight.engen@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 234/254] drm/radeon: initialize sadb to NULL in the audio code
-Date: Tue, 25 Nov 2014 10:39:44 +0000
-Message-Id: <1416912004-5928-235-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 226/254] sunvdc: add cdrom and v1.1 protocol support
+Date: Tue, 25 Nov 2014 10:39:36 +0000
+Message-Id: <1416912004-5928-227-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,59 +28,251 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Allen Pais <allen.pais@oracle.com>
 
-commit 83d04c39f9048807a8500e575ae3f1718a3f45bb upstream.
+commit 9bce21828d54a95143f1b74619705c2dd8e88b92 upstream.
 
-Fixes kfree of the sadb buffer when it's NULL.
+Interpret the media type from v1.1 protocol to support CDROM/DVD.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+For v1.0 protocol, a disk's size continues to be calculated from the
+geometry returned by the vdisk server. The geometry returned by the server
+can be less than the actual number of sectors available in the backing
+image/device due to the rounding in the division used to compute the
+geometry in the vdisk server.
+
+In v1.1 protocol a disk's actual size in sectors is returned during the
+handshake. Use this size when v1.1 protocol is negotiated. Since this size
+will always be larger than the former geometry computed size, disks created
+under v1.0 will be forwards compatible to v1.1, but not vice versa.
+
+Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/dce3_1_afmt.c    | 2 +-
- drivers/gpu/drm/radeon/dce6_afmt.c      | 2 +-
- drivers/gpu/drm/radeon/evergreen_hdmi.c | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ arch/sparc/include/asm/vio.h |  12 +++--
+ drivers/block/sunvdc.c       | 109 ++++++++++++++++++++++++++++++++++++-------
+ 2 files changed, 101 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/dce3_1_afmt.c b/drivers/gpu/drm/radeon/dce3_1_afmt.c
-index 71f4d26669cd..13a27d971d35 100644
---- a/drivers/gpu/drm/radeon/dce3_1_afmt.c
-+++ b/drivers/gpu/drm/radeon/dce3_1_afmt.c
-@@ -32,7 +32,7 @@ static void dce3_2_afmt_write_speaker_allocation(struct drm_encoder *encoder)
- 	struct drm_connector *connector;
- 	struct radeon_connector *radeon_connector = NULL;
- 	u32 tmp;
--	u8 *sadb;
-+	u8 *sadb = NULL;
- 	int sad_count;
+diff --git a/arch/sparc/include/asm/vio.h b/arch/sparc/include/asm/vio.h
+index e0f6c399f1d0..76290c868b01 100644
+--- a/arch/sparc/include/asm/vio.h
++++ b/arch/sparc/include/asm/vio.h
+@@ -118,12 +118,18 @@ struct vio_disk_attr_info {
+ 	u8			vdisk_type;
+ #define VD_DISK_TYPE_SLICE	0x01 /* Slice in block device	*/
+ #define VD_DISK_TYPE_DISK	0x02 /* Entire block device	*/
+-	u16			resv1;
++	u8			vdisk_mtype;		/* v1.1 */
++#define VD_MEDIA_TYPE_FIXED	0x01 /* Fixed device */
++#define VD_MEDIA_TYPE_CD	0x02 /* CD Device    */
++#define VD_MEDIA_TYPE_DVD	0x03 /* DVD Device   */
++	u8			resv1;
+ 	u32			vdisk_block_size;
+ 	u64			operations;
+-	u64			vdisk_size;
++	u64			vdisk_size;		/* v1.1 */
+ 	u64			max_xfer_size;
+-	u64			resv2[2];
++	u32			phys_block_size;	/* v1.2 */
++	u32			resv2;
++	u64			resv3[1];
+ };
  
- 	list_for_each_entry(connector, &encoder->dev->mode_config.connector_list, head) {
-diff --git a/drivers/gpu/drm/radeon/dce6_afmt.c b/drivers/gpu/drm/radeon/dce6_afmt.c
-index ee5da3b56fbf..ed131d7422dc 100644
---- a/drivers/gpu/drm/radeon/dce6_afmt.c
-+++ b/drivers/gpu/drm/radeon/dce6_afmt.c
-@@ -155,7 +155,7 @@ void dce6_afmt_write_speaker_allocation(struct drm_encoder *encoder)
- 	struct drm_connector *connector;
- 	struct radeon_connector *radeon_connector = NULL;
- 	u32 offset, tmp;
--	u8 *sadb;
-+	u8 *sadb = NULL;
- 	int sad_count;
+ struct vio_disk_desc {
+diff --git a/drivers/block/sunvdc.c b/drivers/block/sunvdc.c
+index 5814deb6963d..66ddf704ad7f 100644
+--- a/drivers/block/sunvdc.c
++++ b/drivers/block/sunvdc.c
+@@ -9,6 +9,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/hdreg.h>
+ #include <linux/genhd.h>
++#include <linux/cdrom.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/completion.h>
+@@ -22,8 +23,8 @@
  
- 	if (!dig || !dig->afmt || !dig->afmt->pin)
-diff --git a/drivers/gpu/drm/radeon/evergreen_hdmi.c b/drivers/gpu/drm/radeon/evergreen_hdmi.c
-index d9c8bb9559a9..9343ebc74480 100644
---- a/drivers/gpu/drm/radeon/evergreen_hdmi.c
-+++ b/drivers/gpu/drm/radeon/evergreen_hdmi.c
-@@ -102,7 +102,7 @@ static void dce4_afmt_write_speaker_allocation(struct drm_encoder *encoder)
- 	struct drm_connector *connector;
- 	struct radeon_connector *radeon_connector = NULL;
- 	u32 tmp;
--	u8 *sadb;
-+	u8 *sadb = NULL;
- 	int sad_count;
+ #define DRV_MODULE_NAME		"sunvdc"
+ #define PFX DRV_MODULE_NAME	": "
+-#define DRV_MODULE_VERSION	"1.0"
+-#define DRV_MODULE_RELDATE	"June 25, 2007"
++#define DRV_MODULE_VERSION	"1.1"
++#define DRV_MODULE_RELDATE	"February 13, 2013"
  
- 	list_for_each_entry(connector, &encoder->dev->mode_config.connector_list, head) {
+ static char version[] =
+ 	DRV_MODULE_NAME ".c:v" DRV_MODULE_VERSION " (" DRV_MODULE_RELDATE ")\n";
+@@ -65,6 +66,7 @@ struct vdc_port {
+ 	u64			operations;
+ 	u32			vdisk_size;
+ 	u8			vdisk_type;
++	u8			vdisk_mtype;
+ 
+ 	char			disk_name[32];
+ 
+@@ -79,9 +81,16 @@ static inline struct vdc_port *to_vdc_port(struct vio_driver_state *vio)
+ 
+ /* Ordered from largest major to lowest */
+ static struct vio_version vdc_versions[] = {
++	{ .major = 1, .minor = 1 },
+ 	{ .major = 1, .minor = 0 },
+ };
+ 
++static inline int vdc_version_supported(struct vdc_port *port,
++					u16 major, u16 minor)
++{
++	return port->vio.ver.major == major && port->vio.ver.minor >= minor;
++}
++
+ #define VDCBLK_NAME	"vdisk"
+ static int vdc_major;
+ #define PARTITION_SHIFT	3
+@@ -103,9 +112,41 @@ static int vdc_getgeo(struct block_device *bdev, struct hd_geometry *geo)
+ 	return 0;
+ }
+ 
++/* Add ioctl/CDROM_GET_CAPABILITY to support cdrom_id in udev
++ * when vdisk_mtype is VD_MEDIA_TYPE_CD or VD_MEDIA_TYPE_DVD.
++ * Needed to be able to install inside an ldom from an iso image.
++ */
++static int vdc_ioctl(struct block_device *bdev, fmode_t mode,
++		     unsigned command, unsigned long argument)
++{
++	int i;
++	struct gendisk *disk;
++
++	switch (command) {
++	case CDROMMULTISESSION:
++		pr_debug(PFX "Multisession CDs not supported\n");
++		for (i = 0; i < sizeof(struct cdrom_multisession); i++)
++			if (put_user(0, (char __user *)(argument + i)))
++				return -EFAULT;
++		return 0;
++
++	case CDROM_GET_CAPABILITY:
++		disk = bdev->bd_disk;
++
++		if (bdev->bd_disk && (disk->flags & GENHD_FL_CD))
++			return 0;
++		return -EINVAL;
++
++	default:
++		pr_debug(PFX "ioctl %08x not supported\n", command);
++		return -EINVAL;
++	}
++}
++
+ static const struct block_device_operations vdc_fops = {
+ 	.owner		= THIS_MODULE,
+ 	.getgeo		= vdc_getgeo,
++	.ioctl		= vdc_ioctl,
+ };
+ 
+ static void vdc_finish(struct vio_driver_state *vio, int err, int waiting_for)
+@@ -165,9 +206,9 @@ static int vdc_handle_attr(struct vio_driver_state *vio, void *arg)
+ 	struct vio_disk_attr_info *pkt = arg;
+ 
+ 	viodbg(HS, "GOT ATTR stype[0x%x] ops[%llx] disk_size[%llu] disk_type[%x] "
+-	       "xfer_mode[0x%x] blksz[%u] max_xfer[%llu]\n",
++	       "mtype[0x%x] xfer_mode[0x%x] blksz[%u] max_xfer[%llu]\n",
+ 	       pkt->tag.stype, pkt->operations,
+-	       pkt->vdisk_size, pkt->vdisk_type,
++	       pkt->vdisk_size, pkt->vdisk_type, pkt->vdisk_mtype,
+ 	       pkt->xfer_mode, pkt->vdisk_block_size,
+ 	       pkt->max_xfer_size);
+ 
+@@ -192,8 +233,11 @@ static int vdc_handle_attr(struct vio_driver_state *vio, void *arg)
+ 		}
+ 
+ 		port->operations = pkt->operations;
+-		port->vdisk_size = pkt->vdisk_size;
+ 		port->vdisk_type = pkt->vdisk_type;
++		if (vdc_version_supported(port, 1, 1)) {
++			port->vdisk_size = pkt->vdisk_size;
++			port->vdisk_mtype = pkt->vdisk_mtype;
++		}
+ 		if (pkt->max_xfer_size < port->max_xfer_size)
+ 			port->max_xfer_size = pkt->max_xfer_size;
+ 		port->vdisk_block_size = pkt->vdisk_block_size;
+@@ -663,18 +707,25 @@ static int probe_disk(struct vdc_port *port)
+ 		return err;
+ 	}
+ 
+-	err = generic_request(port, VD_OP_GET_DISKGEOM,
+-			      &port->geom, sizeof(port->geom));
+-	if (err < 0) {
+-		printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
+-		       "error %d\n", err);
+-		return err;
++	if (vdc_version_supported(port, 1, 1)) {
++		/* vdisk_size should be set during the handshake, if it wasn't
++		 * then the underlying disk is reserved by another system
++		 */
++		if (port->vdisk_size == -1)
++			return -ENODEV;
++	} else {
++		err = generic_request(port, VD_OP_GET_DISKGEOM,
++				      &port->geom, sizeof(port->geom));
++		if (err < 0) {
++			printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
++			       "error %d\n", err);
++			return err;
++		}
++		port->vdisk_size = ((u64)port->geom.num_cyl *
++				    (u64)port->geom.num_hd *
++				    (u64)port->geom.num_sec);
+ 	}
+ 
+-	port->vdisk_size = ((u64)port->geom.num_cyl *
+-			    (u64)port->geom.num_hd *
+-			    (u64)port->geom.num_sec);
+-
+ 	q = blk_init_queue(do_vdc_request, &port->vio.lock);
+ 	if (!q) {
+ 		printk(KERN_ERR PFX "%s: Could not allocate queue.\n",
+@@ -704,9 +755,32 @@ static int probe_disk(struct vdc_port *port)
+ 
+ 	set_capacity(g, port->vdisk_size);
+ 
+-	printk(KERN_INFO PFX "%s: %u sectors (%u MB)\n",
++	if (vdc_version_supported(port, 1, 1)) {
++		switch (port->vdisk_mtype) {
++		case VD_MEDIA_TYPE_CD:
++			pr_info(PFX "Virtual CDROM %s\n", port->disk_name);
++			g->flags |= GENHD_FL_CD;
++			g->flags |= GENHD_FL_REMOVABLE;
++			set_disk_ro(g, 1);
++			break;
++
++		case VD_MEDIA_TYPE_DVD:
++			pr_info(PFX "Virtual DVD %s\n", port->disk_name);
++			g->flags |= GENHD_FL_CD;
++			g->flags |= GENHD_FL_REMOVABLE;
++			set_disk_ro(g, 1);
++			break;
++
++		case VD_MEDIA_TYPE_FIXED:
++			pr_info(PFX "Virtual Hard disk %s\n", port->disk_name);
++			break;
++		}
++	}
++
++	pr_info(PFX "%s: %u sectors (%u MB) protocol %d.%d\n",
+ 	       g->disk_name,
+-	       port->vdisk_size, (port->vdisk_size >> (20 - 9)));
++	       port->vdisk_size, (port->vdisk_size >> (20 - 9)),
++	       port->vio.ver.major, port->vio.ver.minor);
+ 
+ 	add_disk(g);
+ 
+@@ -765,6 +839,7 @@ static int vdc_port_probe(struct vio_dev *vdev, const struct vio_device_id *id)
+ 	else
+ 		snprintf(port->disk_name, sizeof(port->disk_name),
+ 			 VDCBLK_NAME "%c", 'a' + ((int)vdev->dev_no % 26));
++	port->vdisk_size = -1;
+ 
+ 	err = vio_driver_init(&port->vio, vdev, VDEV_DISK,
+ 			      vdc_versions, ARRAY_SIZE(vdc_versions),
 -- 
 2.1.0
 
