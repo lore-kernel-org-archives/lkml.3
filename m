@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327AbaKYNf4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 08:35:56 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:39206 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752217AbaKYNfy (ORCPT
+	id S1753733AbaKYNgQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 08:36:16 -0500
+Received: from smtp-out-206.synserver.de ([212.40.185.206]:1025 "EHLO
+	smtp-out-206.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638AbaKYNgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 08:35:54 -0500
-From: Athira Lekshmi C V <andnlnbn18@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: forest@alittletooquiet.net, tvboxspy@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Athira Lekshmi C V <andnlnbn18@gmail.com>
-Subject: [PATCH] Drivers:Staging:vt6656: Fixed checkpatch warning
-Date: Tue, 25 Nov 2014 19:05:51 +0530
-Message-Id: <1416922551-7401-1-git-send-email-andnlnbn18@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 25 Nov 2014 08:36:14 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 31441
+Message-ID: <547485CF.4050600@metafoo.de>
+Date: Tue, 25 Nov 2014 14:36:15 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>, Jean-Francois Moine <moinejf@free.fr>
+CC: Liam Girdwood <lgirdwood@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] ASoC: Remove 'const' from the device_node pointers
+References: <20141125131351.GC7712@sirena.org.uk>
+In-Reply-To: <20141125131351.GC7712@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed the checkpatch warning:
-WARNING: else is not generally useful after a break or return
+On 11/25/2014 02:13 PM, Mark Brown wrote:
+> On Tue, Nov 25, 2014 at 12:14:48PM +0100, Jean-Francois Moine wrote:
+>> As Russell King's explained it, there should not be pointers to
+>> struct device_node:
+>>
+>> "struct device_node is a ref-counted structure.  That means if you
+>>   store a reference to it, you should "get" it, and you should "put"
+>>   it once you've done.  The act of "put"ing the pointed-to structure
+>>   involves writing to that structure, so it is totally unappropriate
+>>   to store a device_node structure as a const pointer.  It forces you
+>>   to have to cast it back to a non-const pointer at various points
+>>   in time to use various OF function calls."
+>
+> So, we're not holding references here (we're just doing comparisons, the
+> references need to be owned before we get into the core)
 
-Signed-off-by: Athira Lekshmi C V <andnlnbn18@gmail.com>
----
- drivers/staging/vt6656/rxtx.c |   35 ++++++++++++++++-------------------
- 1 file changed, 16 insertions(+), 19 deletions(-)
+The core itself will only do the comparisons and it is the board drivers 
+responsibility to get and put the references. Making the pointers non const 
+allows the board driver to use them to put the reference once the card has 
+been unregistered rather than having to keep a separate set of pointers 
+around. This should probably be mentioned in the commit message though.
 
-diff --git a/drivers/staging/vt6656/rxtx.c b/drivers/staging/vt6656/rxtx.c
-index ea5140a..af79be8 100644
---- a/drivers/staging/vt6656/rxtx.c
-+++ b/drivers/staging/vt6656/rxtx.c
-@@ -555,27 +555,24 @@ static u16 vnt_fill_cts_head(struct vnt_usb_send_context *tx_context,
- 		memcpy(buf->data.ra, priv->current_net_addr, ETH_ALEN);
- 
- 		return vnt_rxtx_datahead_g_fb(tx_context, &buf->data_head);
--	} else {
--		struct vnt_cts *buf = &head->cts_g;
--		/* Get SignalField,ServiceField,Length */
--		vnt_get_phy_field(priv, cts_frame_len,
--			priv->top_cck_basic_rate, PK_TYPE_11B, &buf->b);
--		/* Get CTSDuration_ba */
--		buf->duration_ba =
--			vnt_get_rtscts_duration_le(tx_context, CTSDUR_BA,
--						   tx_context->pkt_type,
--						   current_rate);
--		/*Get CTS Frame body*/
--		buf->data.duration = buf->duration_ba;
--		buf->data.frame_control =
--			cpu_to_le16(IEEE80211_FTYPE_CTL | IEEE80211_STYPE_CTS);
--
--		memcpy(buf->data.ra, priv->current_net_addr, ETH_ALEN);
--
--		return vnt_rxtx_datahead_g(tx_context, &buf->data_head);
- 	}
-+	struct vnt_cts *buf = &head->cts_g;
-+	/* Get SignalField,ServiceField,Length */
-+	vnt_get_phy_field(priv, cts_frame_len,
-+		priv->top_cck_basic_rate, PK_TYPE_11B, &buf->b);
-+	/* Get CTSDuration_ba */
-+	buf->duration_ba =
-+		vnt_get_rtscts_duration_le(tx_context, CTSDUR_BA,
-+					   tx_context->pkt_type,
-+					   current_rate);
-+	/*Get CTS Frame body*/
-+	buf->data.duration = buf->duration_ba;
-+	buf->data.frame_control =
-+		cpu_to_le16(IEEE80211_FTYPE_CTL | IEEE80211_STYPE_CTS);
- 
--	return 0;
-+	memcpy(buf->data.ra, priv->current_net_addr, ETH_ALEN);
-+
-+	return vnt_rxtx_datahead_g(tx_context, &buf->data_head);
- }
- 
- static u16 vnt_rxtx_rts(struct vnt_usb_send_context *tx_context,
--- 
-1.7.9.5
+> I'm not seeing anything here removing casts?
+
+This patch used to be part of a two part series where the second patch 
+removed the casts. This patch as already been applied though.
 
