@@ -1,152 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755388AbaKYLxw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:53:52 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:9439 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756015AbaKYLve (ORCPT
+	id S1756091AbaKYLzB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:55:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58204 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752858AbaKYKkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 06:51:34 -0500
-Message-Id: <20141125115130.057490878@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Tue, 25 Nov 2014 06:50:09 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [RFC][PATCH 6/9 v2] ftrace/x86: Add macro MCOUNT_REG_SIZE for amount of stack used to
- save mcount regs
-References: <20141125115003.856641273@goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0006-ftrace-x86-Add-macro-MCOUNT_REG_SIZE-for-amount-of-s.patch
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Tue, 25 Nov 2014 05:40:53 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Ben Skeggs <bskeggs@redhat.com>, Sven Joachim <svenjoac@gmx.de>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 048/254] drm/nouveau/kms: restore acceleration before fb_set_suspend() resumes
+Date: Tue, 25 Nov 2014 10:36:38 +0000
+Message-Id: <1416912004-5928-49-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
+References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
 
-The macro save_mcount_regs saves regs onto the stack. But to uncouple the
-amount of stack used in that macro from the users of the macro, we need
-to have a define that tells all the users how much stack is used by that
-macro. This way we can change the amount of stack the macro uses without
-breaking its users.
+------------------
 
-Also remove some dead code that was left over from commit fdc841b58cf5
-"ftrace: x86: Remove check of obsolete variable function_trace_stop".
+From: Ben Skeggs <bskeggs@redhat.com>
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+commit 04384435fbcd2c5cb70b2e58c8b643822d7e337f upstream.
+
+This *should* be safe these days.
+
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Cc: Sven Joachim <svenjoac@gmx.de>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/mcount_64.S | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_fbcon.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/mcount_64.S b/arch/x86/kernel/mcount_64.S
-index 596ac330c1db..a0f6f942183a 100644
---- a/arch/x86/kernel/mcount_64.S
-+++ b/arch/x86/kernel/mcount_64.S
-@@ -21,6 +21,9 @@
- # define function_hook	mcount
- #endif
- 
-+/* Size of stack used to save mcount regs in save_mcount_regs */
-+#define MCOUNT_REG_SIZE		(SS+8)
-+
- /*
-  * gcc -pg option adds a call to 'mcount' in most functions.
-  * When -mfentry is used, the call is to 'fentry' and not 'mcount'
-@@ -42,7 +45,7 @@
- 	 /*
- 	  * We add enough stack to save all regs.
- 	  */
--	subq $(SS+8), %rsp
-+	subq $MCOUNT_REG_SIZE, %rsp
- 	movq %rax, RAX(%rsp)
- 	movq %rcx, RCX(%rsp)
- 	movq %rdx, RDX(%rsp)
-@@ -51,7 +54,7 @@
- 	movq %r8, R8(%rsp)
- 	movq %r9, R9(%rsp)
- 	 /* Move RIP to its proper location */
--	movq SS+8+\added(%rsp), %rdi
-+	movq MCOUNT_REG_SIZE+\added(%rsp), %rdi
- 	movq %rdi, RIP(%rsp)
- 	.endm
- 
-@@ -63,7 +66,7 @@
- 	movq RDX(%rsp), %rdx
- 	movq RCX(%rsp), %rcx
- 	movq RAX(%rsp), %rax
--	addq $(SS+8), %rsp
-+	addq $MCOUNT_REG_SIZE, %rsp
- 	.endm
- 
- /* skip is set if stack has been adjusted */
-@@ -79,7 +82,7 @@ GLOBAL(\trace_label)
- 	subq $MCOUNT_INSN_SIZE, %rdi
- 	/* Load the parent_ip into the second parameter */
- #ifdef CC_USING_FENTRY
--	movq SS+16+\added(%rsp), %rsi
-+	movq MCOUNT_REG_SIZE+8+\added(%rsp), %rsi
- #else
- 	movq 8+\added(%rbp), %rsi
- #endif
-@@ -172,7 +175,7 @@ ENTRY(ftrace_regs_caller)
- 	movq %rbp, RBP(%rsp)
- 	movq %rbx, RBX(%rsp)
- 	/* Copy saved flags */
--	movq SS+8(%rsp), %rcx
-+	movq MCOUNT_REG_SIZE(%rsp), %rcx
- 	movq %rcx, EFLAGS(%rsp)
- 	/* Kernel segments */
- 	movq $__KERNEL_DS, %rcx
-@@ -180,7 +183,7 @@ ENTRY(ftrace_regs_caller)
- 	movq $__KERNEL_CS, %rcx
- 	movq %rcx, CS(%rsp)
- 	/* Stack - skipping return address and flags */
--	leaq SS+8*3(%rsp), %rcx
-+	leaq MCOUNT_REG_SIZE+8*2(%rsp), %rcx
- 	movq %rcx, RSP(%rsp)
- 
- 	/* regs go into 4th parameter */
-@@ -195,11 +198,11 @@ GLOBAL(ftrace_regs_call)
- 
- 	/* Copy flags back to SS, to restore them */
- 	movq EFLAGS(%rsp), %rax
--	movq %rax, SS+8(%rsp)
-+	movq %rax, MCOUNT_REG_SIZE(%rsp)
- 
- 	/* Handlers can change the RIP */
- 	movq RIP(%rsp), %rax
--	movq %rax, SS+8*2(%rsp)
-+	movq %rax, MCOUNT_REG_SIZE+8(%rsp)
- 
- 	/* restore the rest of pt_regs */
- 	movq R15(%rsp), %r15
-@@ -225,9 +228,6 @@ GLOBAL(ftrace_regs_caller_end)
- 
- 	jmp ftrace_return
- 
--	popfq
--	jmp  ftrace_stub
--
- END(ftrace_regs_caller)
- 
- 
-@@ -266,7 +266,7 @@ ENTRY(ftrace_graph_caller)
- 	save_mcount_regs
- 
- #ifdef CC_USING_FENTRY
--	leaq SS+16(%rsp), %rdi
-+	leaq MCOUNT_REG_SIZE+8(%rsp), %rdi
- 	movq $0, %rdx	/* No framepointers needed */
- #else
- 	leaq 8(%rbp), %rdi
+diff --git a/drivers/gpu/drm/nouveau/nouveau_fbcon.c b/drivers/gpu/drm/nouveau/nouveau_fbcon.c
+index 02dc2a1e1d28..2ef2842aacbf 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_fbcon.c
++++ b/drivers/gpu/drm/nouveau/nouveau_fbcon.c
+@@ -550,13 +550,13 @@ nouveau_fbcon_set_suspend(struct drm_device *dev, int state)
+ 	struct nouveau_drm *drm = nouveau_drm(dev);
+ 	if (drm->fbcon) {
+ 		console_lock();
+-		if (state == 1)
+-			nouveau_fbcon_accel_save_disable(dev);
+-		fb_set_suspend(drm->fbcon->helper.fbdev, state);
+ 		if (state == 0) {
+ 			nouveau_fbcon_accel_restore(dev);
+ 			nouveau_fbcon_zfill(dev, drm->fbcon);
+ 		}
++		fb_set_suspend(drm->fbcon->helper.fbdev, state);
++		if (state == 1)
++			nouveau_fbcon_accel_save_disable(dev);
+ 		console_unlock();
+ 	}
+ }
 -- 
-2.1.1
-
+2.1.0
 
