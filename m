@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236AbaKYLQl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:16:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58764 "EHLO
+	id S1754738AbaKYLQj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:16:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58772 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753641AbaKYKm0 (ORCPT
+	with ESMTP id S1753650AbaKYKm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:26 -0500
+	Tue, 25 Nov 2014 05:42:27 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Heinz Mauelshagen <heinzm@redhat.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Mike Snitzer <snitzer@redhat.com>,
+Cc: James Ralston <james.d.ralston@intel.com>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 150/254] dm raid: ensure superblock's size matches device's logical block size
-Date: Tue, 25 Nov 2014 10:38:20 +0000
-Message-Id: <1416912004-5928-151-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 153/254] ahci: Add Device IDs for Intel Sunrise Point PCH
+Date: Tue, 25 Nov 2014 10:38:23 +0000
+Message-Id: <1416912004-5928-154-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -29,68 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heinz Mauelshagen <heinzm@redhat.com>
+From: James Ralston <james.d.ralston@intel.com>
 
-commit 40d43c4b4cac4c2647bf07110d7b07d35f399a84 upstream.
+commit 690000b930456a98663567d35dd5c54b688d1e3f upstream.
 
-The dm-raid superblock (struct dm_raid_superblock) is padded to 512
-bytes and that size is being used to read it in from the metadata
-device into one preallocated page.
+This patch adds the AHCI-mode SATA Device IDs for the Intel Sunrise Point PCH.
 
-Reading or writing this on a 512-byte sector device works fine but on
-a 4096-byte sector device this fails.
-
-Set the dm-raid superblock's size to the logical block size of the
-metadata device, because IO at that size is guaranteed too work.  Also
-add a size check to avoid silent partial metadata loss in case the
-superblock should ever grow past the logical block size or PAGE_SIZE.
-
-[includes pointer math fix from Dan Carpenter]
-Reported-by: "Liuhua Wang" <lwang@suse.com>
-Signed-off-by: Heinz Mauelshagen <heinzm@redhat.com>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/dm-raid.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/ata/ahci.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/md/dm-raid.c b/drivers/md/dm-raid.c
-index 4880b69e2e9e..59715389b3cf 100644
---- a/drivers/md/dm-raid.c
-+++ b/drivers/md/dm-raid.c
-@@ -785,8 +785,7 @@ struct dm_raid_superblock {
- 	__le32 layout;
- 	__le32 stripe_sectors;
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index d5fc45ae867b..99c9a2b5f377 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -321,6 +321,11 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H AHCI */
++	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H RAID */
++	{ PCI_VDEVICE(INTEL, 0xa105), board_ahci }, /* Sunrise Point-H RAID */
++	{ PCI_VDEVICE(INTEL, 0xa107), board_ahci }, /* Sunrise Point-H RAID */
++	{ PCI_VDEVICE(INTEL, 0xa10f), board_ahci }, /* Sunrise Point-H RAID */
  
--	__u8 pad[452];		/* Round struct to 512 bytes. */
--				/* Always set to 0 when writing. */
-+	/* Remainder of a logical block is zero-filled when writing (see super_sync()). */
- } __packed;
- 
- static int read_disk_sb(struct md_rdev *rdev, int size)
-@@ -823,7 +822,7 @@ static void super_sync(struct mddev *mddev, struct md_rdev *rdev)
- 		    test_bit(Faulty, &(rs->dev[i].rdev.flags)))
- 			failed_devices |= (1ULL << i);
- 
--	memset(sb, 0, sizeof(*sb));
-+	memset(sb + 1, 0, rdev->sb_size - sizeof(*sb));
- 
- 	sb->magic = cpu_to_le32(DM_RAID_MAGIC);
- 	sb->features = cpu_to_le32(0);	/* No features yet */
-@@ -858,7 +857,11 @@ static int super_load(struct md_rdev *rdev, struct md_rdev *refdev)
- 	uint64_t events_sb, events_refsb;
- 
- 	rdev->sb_start = 0;
--	rdev->sb_size = sizeof(*sb);
-+	rdev->sb_size = bdev_logical_block_size(rdev->meta_bdev);
-+	if (rdev->sb_size < sizeof(*sb) || rdev->sb_size > PAGE_SIZE) {
-+		DMERR("superblock size of a logical block is no longer valid");
-+		return -EINVAL;
-+	}
- 
- 	ret = read_disk_sb(rdev, rdev->sb_size);
- 	if (ret)
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 -- 
 2.1.0
 
