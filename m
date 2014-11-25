@@ -1,95 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203AbaKYH4r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 02:56:47 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40199 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752768AbaKYH4q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 02:56:46 -0500
-Message-ID: <1416902195.3166.1.camel@pengutronix.de>
-Subject: Re: [PATCH v2] clk: Add PWM clock driver
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Janusz =?UTF-8?Q?U=C5=BCycki?= <j.uzycki@elproma.com.pl>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org
-Date: Tue, 25 Nov 2014 08:56:35 +0100
-In-Reply-To: <20141125070720.12298.46343@quantum>
-References: <1415007078-7947-1-git-send-email-p.zabel@pengutronix.de>
-	 <20141125070720.12298.46343@quantum>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1753119AbaKYHyw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 02:54:52 -0500
+Received: from mga01.intel.com ([192.55.52.88]:38967 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752885AbaKYHyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 02:54:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,454,1413270000"; 
+   d="scan'208";a="627836633"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, x86@kernel.org,
+        Joerg Roedel <joro@8bytes.org>, Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, iommu@lists.linux-foundation.org
+Subject: [Patch Part3 v4 33/38] x86, irq: Move check of cfg->move_in_progress into send_cleanup_vector()
+Date: Tue, 25 Nov 2014 15:49:57 +0800
+Message-Id: <1416901802-24211-34-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1416901802-24211-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1416901802-24211-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+Move check of cfg->move_in_progress into send_cleanup_vector() to
+prepare for simplifying struct irq_cfg.
 
-Am Montag, den 24.11.2014, 23:07 -0800 schrieb Mike Turquette:
-> Quoting Philipp Zabel (2014-11-03 01:31:18)
-> > Some board designers, when running out of clock output pads, decide to
-> > (mis)use PWM output pads to provide a clock to external components.
-> > This driver supports this practice by providing an adapter between the
-> > PWM and clock bindings in the device tree. As the PWM bindings specify
-> > the period in the device tree, this is a fixed clock.
-> > 
-> > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> > ---
-> > I'm resending this because last time the linux-pwm list was not in Cc:
-> > So far I have not received any comments on the patch itself. I have used
-> > it on a BoundaryDevices Nitrogen6X board to produce a master clock for
-> > the OV5640 MIPI CSI-2 camera module.
-> > 
-> > Changes since v1:
-> >  - none (rebased onto v3.18-rc3)
-> 
-> Hi Philipp,
-> 
-> Thanks for testing this. Is the Nitrogen6X board merged upstream? I'm OK
-> with the patch but prefer to merge things when a consumer is ready to
-> use it. I guess you are missing a patch to add the pwm-clock bits to the
-> Nitrogen6X dts?
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Tested-by: Joerg Roedel <jroedel@suse.de>
+---
+ arch/x86/kernel/apic/vector.c       |   10 ++++++++--
+ arch/x86/platform/uv/uv_irq.c       |    3 +--
+ drivers/iommu/amd_iommu.c           |    3 +--
+ drivers/iommu/intel_irq_remapping.c |    3 +--
+ 4 files changed, 11 insertions(+), 8 deletions(-)
 
-The Nitrogen6X board is merged upstream already, I used this dts patch
-to register the clock:
-
-diff --git a/arch/arm/boot/dts/imx6qdl-nitrogen6x.dtsi b/arch/arm/boot/dts/imx6qdl-nitrogen6x.dtsi
-index 7628049..e2e7a22 100644
---- a/arch/arm/boot/dts/imx6qdl-nitrogen6x.dtsi
-+++ b/arch/arm/boot/dts/imx6qdl-nitrogen6x.dtsi
-@@ -130,6 +130,18 @@
- 		power-supply = <&reg_3p3v>;
- 		status = "okay";
- 	};
-+
-+	mipi_mclk: mipi-mclk {
-+		compatible = "pwm-clock";
-+		clock-output-names = "mipi-mclk";
-+		/* Note: since the PWM reference clock is 66 MHz, the highest
-+		 * possible frequency with 50% duty cycle smaller than 27 MHz
-+		 * is 16.5 MHz: <&pwm3 0 61>;
-+		 * But we can also do 22 MHz with 33% duty cycle:
-+		 */
-+		pwms = <&pwm3 0 46>; /* 22 MHz */
-+		#clock-cells = <0>;
-+	};
+diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
+index 436a3400d9ac..a5ce2eef0528 100644
+--- a/arch/x86/kernel/apic/vector.c
++++ b/arch/x86/kernel/apic/vector.c
+@@ -495,7 +495,7 @@ static struct irq_chip lapic_controller = {
  };
  
- &audmux {
+ #ifdef CONFIG_SMP
+-void send_cleanup_vector(struct irq_cfg *cfg)
++static void __send_cleanup_vector(struct irq_cfg *cfg)
+ {
+ 	cpumask_var_t cleanup_mask;
+ 
+@@ -513,6 +513,12 @@ void send_cleanup_vector(struct irq_cfg *cfg)
+ 	cfg->move_in_progress = 0;
+ }
+ 
++void send_cleanup_vector(struct irq_cfg *cfg)
++{
++	if (cfg->move_in_progress)
++		__send_cleanup_vector(cfg);
++}
++
+ asmlinkage __visible void smp_irq_move_cleanup_interrupt(void)
+ {
+ 	unsigned vector, me;
+@@ -583,7 +589,7 @@ static void __irq_complete_move(struct irq_cfg *cfg, unsigned vector)
+ 	me = smp_processor_id();
+ 
+ 	if (vector == cfg->vector && cpumask_test_cpu(me, cfg->domain))
+-		send_cleanup_vector(cfg);
++		__send_cleanup_vector(cfg);
+ }
+ 
+ void irq_complete_move(struct irq_cfg *cfg)
+diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
+index c237ed34a498..b242e0aada19 100644
+--- a/arch/x86/platform/uv/uv_irq.c
++++ b/arch/x86/platform/uv/uv_irq.c
+@@ -63,8 +63,7 @@ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	ret = parent->chip->irq_set_affinity(parent, mask, force);
+ 	if (ret >= 0) {
+ 		uv_program_mmr(cfg, data->chip_data);
+-		if (cfg->move_in_progress)
+-			send_cleanup_vector(cfg);
++		send_cleanup_vector(cfg);
+ 	}
+ 
+ 	return ret;
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index 2e8bbe5e164d..a5c59b434c77 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -4331,8 +4331,7 @@ static int amd_ir_set_affinity(struct irq_data *data,
+ 	 * at the new destination. So, time to cleanup the previous
+ 	 * vector allocation.
+ 	 */
+-	if (cfg->move_in_progress)
+-		send_cleanup_vector(cfg);
++	send_cleanup_vector(cfg);
+ 
+ 	return IRQ_SET_MASK_OK_DONE;
+ }
+diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+index acff8493191e..f6da3b2651c0 100644
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -997,8 +997,7 @@ intel_ir_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	 * at the new destination. So, time to cleanup the previous
+ 	 * vector allocation.
+ 	 */
+-	if (cfg->move_in_progress)
+-		send_cleanup_vector(cfg);
++	send_cleanup_vector(cfg);
+ 
+ 	return IRQ_SET_MASK_OK_DONE;
+ }
 -- 
-2.1.1
-
-regards
-Philipp
+1.7.10.4
 
