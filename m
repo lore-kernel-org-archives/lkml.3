@@ -1,107 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709AbaKYLiD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:38:03 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40719 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753688AbaKYLiA (ORCPT
+	id S1755751AbaKYLis (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:38:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58418 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198AbaKYKl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 06:38:00 -0500
-From: Juergen Borleis <jbe@pengutronix.de>
-To: rtc-linux@googlegroups.com
-Cc: Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Subject: [PATCH 2/2] RTC/i.MX/DryIce: add more known register bits
-Date: Tue, 25 Nov 2014 12:37:48 +0100
-Message-Id: <1416915468-20552-2-git-send-email-jbe@pengutronix.de>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1416915468-20552-1-git-send-email-jbe@pengutronix.de>
-References: <1416915468-20552-1-git-send-email-jbe@pengutronix.de>
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::7
-X-SA-Exim-Mail-From: jbe@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 25 Nov 2014 05:41:29 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 083/254] mmc: sdhci-s3c: fix runtime PM handling on sdhci_add_host() failure
+Date: Tue, 25 Nov 2014 10:37:13 +0000
+Message-Id: <1416912004-5928-84-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
+References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intended for monitoring and controlling the security features. These bits are
-required to bring this unit back to live after a security violation event was
-detected. The code to bring it back to live will follow after a vendor
-clearance.
+3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Juergen Borleis <jbe@pengutronix.de>
+------------------
+
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+
+commit 221414db1934c1c883501998f510bb75acfbaa51 upstream.
+
+Runtime Power Management handling for the sdhci_add_host() failure
+case in sdhci_s3c_probe() should match the code in sdhci_s3c_remove()
+(which uses pm_runtime_disable() call which matches the earlier
+pm_runtime_enable() one).  Fix it.
+
+This patch fixes "BUG: spinlock bad magic on CPU#0, swapper/0/1" and
+"Unbalanced pm_runtime_enable!" warnings.
+
+>From the kernel log:
+...
+[    1.659631] s3c-sdhci 12530000.sdhci: sdhci_add_host() failed
+[    1.665096] BUG: spinlock bad magic on CPU#0, swapper/0/1
+[    1.670433]  lock: 0xea01e484, .magic: 00000000, .owner: <none>/-1, .owner_cpu: 0
+[    1.677895] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.16.0-next-20140804-00008-ga59480f-dirty #707
+[    1.687037] [<c0013ae4>] (unwind_backtrace) from [<c0010d70>] (show_stack+0x10/0x14)
+[    1.694740] [<c0010d70>] (show_stack) from [<c04050c8>] (dump_stack+0x68/0xb8)
+[    1.701948] [<c04050c8>] (dump_stack) from [<c0052558>] (do_raw_spin_lock+0x15c/0x1a4)
+[    1.709848] [<c0052558>] (do_raw_spin_lock) from [<c040a630>] (_raw_spin_lock_irqsave+0x20/0x28)
+[    1.718619] [<c040a630>] (_raw_spin_lock_irqsave) from [<c030d7d0>] (sdhci_do_set_ios+0x1c/0x5cc)
+[    1.727464] [<c030d7d0>] (sdhci_do_set_ios) from [<c030ddfc>] (sdhci_runtime_resume_host+0x50/0x104)
+[    1.736574] [<c030ddfc>] (sdhci_runtime_resume_host) from [<c02462dc>] (pm_generic_runtime_resume+0x2c/0x40)
+[    1.746383] [<c02462dc>] (pm_generic_runtime_resume) from [<c0247898>] (__rpm_callback+0x34/0x70)
+[    1.755233] [<c0247898>] (__rpm_callback) from [<c02478fc>] (rpm_callback+0x28/0x88)
+[    1.762958] [<c02478fc>] (rpm_callback) from [<c02486f0>] (rpm_resume+0x384/0x4ec)
+[    1.770511] [<c02486f0>] (rpm_resume) from [<c02488b0>] (pm_runtime_forbid+0x58/0x64)
+[    1.778325] [<c02488b0>] (pm_runtime_forbid) from [<c030ea70>] (sdhci_s3c_probe+0x4a4/0x540)
+[    1.786749] [<c030ea70>] (sdhci_s3c_probe) from [<c02429cc>] (platform_drv_probe+0x2c/0x5c)
+[    1.795076] [<c02429cc>] (platform_drv_probe) from [<c02415f0>] (driver_probe_device+0x114/0x234)
+[    1.803929] [<c02415f0>] (driver_probe_device) from [<c024179c>] (__driver_attach+0x8c/0x90)
+[    1.812347] [<c024179c>] (__driver_attach) from [<c023ffb4>] (bus_for_each_dev+0x54/0x88)
+[    1.820506] [<c023ffb4>] (bus_for_each_dev) from [<c0240df8>] (bus_add_driver+0xd8/0x1cc)
+[    1.828665] [<c0240df8>] (bus_add_driver) from [<c0241db8>] (driver_register+0x78/0xf4)
+[    1.836652] [<c0241db8>] (driver_register) from [<c00088a4>] (do_one_initcall+0x80/0x1d0)
+[    1.844816] [<c00088a4>] (do_one_initcall) from [<c059ac94>] (kernel_init_freeable+0x108/0x1d4)
+[    1.853503] [<c059ac94>] (kernel_init_freeable) from [<c0401300>] (kernel_init+0x8/0xe4)
+[    1.861568] [<c0401300>] (kernel_init) from [<c000e538>] (ret_from_fork+0x14/0x3c)
+[    1.869582] platform 12530000.sdhci: Driver s3c-sdhci requests probe deferral
+...
+[    1.997047] s3c-sdhci 12530000.sdhci: Unbalanced pm_runtime_enable!
+...
+[    2.027235] s3c-sdhci 12530000.sdhci: sdhci_add_host() failed
+[    2.032884] platform 12530000.sdhci: Driver s3c-sdhci requests probe deferral
+...
+
+Tested on Hardkernel's Exynos4412 based ODROID-U3 board.
+
+Fixes: 9f4e8151dbbc ("mmc: sdhci-s3c: Enable runtime power management")
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Jaehoon Chung <jh80.chung@samsung.com>
+Cc: Ben Dooks <ben-linux@fluff.org>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/rtc/rtc-imxdi.c | 44 ++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 40 insertions(+), 4 deletions(-)
+ drivers/mmc/host/sdhci-s3c.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/rtc/rtc-imxdi.c b/drivers/rtc/rtc-imxdi.c
-index a2544f0..4e39f89 100644
---- a/drivers/rtc/rtc-imxdi.c
-+++ b/drivers/rtc/rtc-imxdi.c
-@@ -50,22 +50,58 @@
- #define DCAMR_UNSET  0xFFFFFFFF  /* doomsday - 1 sec */
+diff --git a/drivers/mmc/host/sdhci-s3c.c b/drivers/mmc/host/sdhci-s3c.c
+index fa5954a05449..1e47903fa184 100644
+--- a/drivers/mmc/host/sdhci-s3c.c
++++ b/drivers/mmc/host/sdhci-s3c.c
+@@ -606,8 +606,6 @@ static int sdhci_s3c_probe(struct platform_device *pdev)
+ 	ret = sdhci_add_host(host);
+ 	if (ret) {
+ 		dev_err(dev, "sdhci_add_host() failed\n");
+-		pm_runtime_forbid(&pdev->dev);
+-		pm_runtime_get_noresume(&pdev->dev);
+ 		goto err_req_regs;
+ 	}
  
- #define DCR       0x10           /* Control Reg */
-+#define DCR_TDCHL (1 << 30)      /* Tamper-detect configuration hard lock */
-+#define DCR_TDCSL (1 << 29)      /* Tamper-detect configuration soft lock */
-+#define DCR_KSSL  (1 << 27)      /* Key-select soft lock */
-+#define DCR_MCHL  (1 << 20)      /* Monotonic-counter hard lock */
-+#define DCR_MCSL  (1 << 19)      /* Monotonic-counter soft lock */
-+#define DCR_TCHL  (1 << 18)      /* Timer-counter hard lock */
-+#define DCR_TCSL  (1 << 17)      /* Timer-counter soft lock */
-+#define DCR_FSHL  (1 << 16)      /* Failure state hard lock */
- #define DCR_TCE   (1 << 3)       /* Time Counter Enable */
-+#define DCR_MCE   (1 << 2)       /* Monotonic Counter Enable */
+@@ -618,6 +616,8 @@ static int sdhci_s3c_probe(struct platform_device *pdev)
+ 	return 0;
  
- #define DSR       0x14           /* Status Reg */
--#define DSR_WBF   (1 << 10)      /* Write Busy Flag */
--#define DSR_WNF   (1 << 9)       /* Write Next Flag */
--#define DSR_WCF   (1 << 8)       /* Write Complete Flag */
-+#define DSR_WTD   (1 << 23)      /* Wire-mesh tamper detected */
-+#define DSR_ETBD  (1 << 22)      /* External tamper B detected */
-+#define DSR_ETAD  (1 << 21)      /* External tamper A detected */
-+#define DSR_EBD   (1 << 20)      /* External boot detected */
-+#define DSR_SAD   (1 << 19)      /* SCC alarm detected */
-+#define DSR_TTD   (1 << 18)      /* Temperatur tamper detected */
-+#define DSR_CTD   (1 << 17)      /* Clock tamper detected */
-+#define DSR_VTD   (1 << 16)      /* Voltage tamper detected */
-+#define DSR_WBF   (1 << 10)      /* Write Busy Flag (synchronous) */
-+#define DSR_WNF   (1 << 9)       /* Write Next Flag (synchronous) */
-+#define DSR_WCF   (1 << 8)       /* Write Complete Flag (synchronous)*/
- #define DSR_WEF   (1 << 7)       /* Write Error Flag */
- #define DSR_CAF   (1 << 4)       /* Clock Alarm Flag */
-+#define DSR_MCO   (1 << 3)       /* monotonic counter overflow */
-+#define DSR_TCO   (1 << 2)       /* time counter overflow */
- #define DSR_NVF   (1 << 1)       /* Non-Valid Flag */
- #define DSR_SVF   (1 << 0)       /* Security Violation Flag */
- 
--#define DIER      0x18           /* Interrupt Enable Reg */
-+#define DIER      0x18           /* Interrupt Enable Reg (synchronous) */
- #define DIER_WNIE (1 << 9)       /* Write Next Interrupt Enable */
- #define DIER_WCIE (1 << 8)       /* Write Complete Interrupt Enable */
- #define DIER_WEIE (1 << 7)       /* Write Error Interrupt Enable */
- #define DIER_CAIE (1 << 4)       /* Clock Alarm Interrupt Enable */
-+#define DIER_SVIE (1 << 0)       /* Security-violation Interrupt Enable */
+  err_req_regs:
++	pm_runtime_disable(&pdev->dev);
 +
-+#define DMCR      0x1c           /* DryIce Monotonic Counter Reg */
-+
-+#define DTCR      0x28           /* DryIce Tamper Configuration Reg */
-+#define DTCR_MOE  (1 << 9)       /* monotonic overflow enabled */
-+#define DTCR_TOE  (1 << 8)       /* time overflow enabled */
-+#define DTCR_WTE  (1 << 7)       /* wire-mesh tamper enabled */
-+#define DTCR_ETBE (1 << 6)       /* external B tamper enabled */
-+#define DTCR_ETAE (1 << 5)       /* external A tamper enabled */
-+#define DTCR_EBE  (1 << 4)       /* external boot tamper enabled */
-+#define DTCR_SAIE (1 << 3)       /* SCC enabled */
-+#define DTCR_TTE  (1 << 2)       /* temperature tamper enabled */
-+#define DTCR_CTE  (1 << 1)       /* clock tamper enabled */
-+#define DTCR_VTE  (1 << 0)       /* voltage tamper enabled */
-+
-+#define DGPR      0x3c           /* DryIce General Purpose Reg */
+  err_no_busclks:
+ 	clk_disable_unprepare(sc->clk_io);
  
- /**
-  * struct imxdi_dev - private imxdi rtc data
 -- 
-2.1.3
+2.1.0
 
