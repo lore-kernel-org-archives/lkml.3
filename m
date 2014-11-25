@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099AbaKYHiV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 02:38:21 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:51607 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770AbaKYHiR convert rfc822-to-8bit (ORCPT
+	id S1752035AbaKYHmU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 02:42:20 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:40997 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209AbaKYHmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 02:38:17 -0500
+	Tue, 25 Nov 2014 02:42:19 -0500
+Message-ID: <547432D2.7000909@linaro.org>
+Date: Tue, 25 Nov 2014 16:42:10 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20141119100954.GV27002@pengutronix.de>
-References: <1360738983-22436-1-git-send-email-gnurou@gmail.com>
- <1360738983-22436-3-git-send-email-gnurou@gmail.com> <20141117090915.GE27002@pengutronix.de>
- <CAAVeFuKzP0ADix8TxC31ohb3ZmnEVmNcO5kgzhZ3DcwAhTq=-Q@mail.gmail.com>
- <20141119084432.GT27002@pengutronix.de> <CAAVeFuLtQoxt_D_TaRQc49Sh0FZTg=q4y5QorZ7OUK+qPE0CbQ@mail.gmail.com>
- <20141119090222.GU27002@pengutronix.de> <CAAVeFu+zc6tiM-SvwQ3mQmkMNdY+1+Ysi0F2eThyCjziKVwpOQ@mail.gmail.com>
- <20141119100954.GV27002@pengutronix.de>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 25 Nov 2014 16:37:57 +0900
-Message-ID: <CAAVeFuJ8=PdV8oiazVVcyrO3Kx4mV6GphxHCGEGX9ooMuoBWtA@mail.gmail.com>
-Subject: Re: [PATCH 2/4] gpiolib: use const parameters when possible
-To: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Janusz Uzycki <j.uzycki@elproma.com.pl>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Will Deacon <will.deacon@arm.com>
+CC: "keescook@chromium.org" <keescook@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 2/6] arm64: ptrace: allow tracer to skip a system call
+References: <1416273038-15590-1-git-send-email-takahiro.akashi@linaro.org> <1416273038-15590-3-git-send-email-takahiro.akashi@linaro.org> <20141118140425.GM18842@arm.com> <546C58DB.5080204@linaro.org> <20141119190601.GM15985@arm.com> <546D7860.2010300@linaro.org> <20141120191738.GV19126@arm.com>
+In-Reply-To: <20141120191738.GV19126@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 19, 2014 at 7:09 PM, Uwe Kleine-König
-<u.kleine-koenig@pengutronix.de> wrote:
-> Hello Alexandre,
->
-> On Wed, Nov 19, 2014 at 06:07:50PM +0900, Alexandre Courbot wrote:
->>  On Wed, Nov 19, 2014 at 6:02 PM, Uwe Kleine-König
->> <u.kleine-koenig@pengutronix.de> wrote:
->> > I'd make gpiod_get_direction static and only use it to fill in
->> > /sys/kernel/debug/gpio.
+On 11/21/2014 04:17 AM, Will Deacon wrote:
+> On Thu, Nov 20, 2014 at 05:13:04AM +0000, AKASHI Takahiro wrote:
+>> On 11/20/2014 04:06 AM, Will Deacon wrote:
+>>> On Wed, Nov 19, 2014 at 08:46:19AM +0000, AKASHI Takahiro wrote:
+>>>> Syscall(-1) will return -ENOSYS whether or not a syscallno is explicitly
+>>>> replaced with -1 by a tracer, and, in this sense, it is *skipped*.
+>>>
+>>> Ok, but now userspace sees -ENOSYS for a skipped system call in that case,
+>>> whereas it would usually see whatever the trace put in x0, right?
 >>
->> That's very tempting. I see only atmel_serial.c using this function,
->> and there is no gpio_get_direction() declared anywhere so no user of
->> this either. I'm not sure what I was thinking when I decided to export
->> it?
-> In next there is also drivers/tty/serial/mxs-auart.c.
+>> If you don't really like this behavior, how about this patch instead of my [2/6] patch?
+>>
+>> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+>> index 726b910..1ef57d0 100644
+>> --- a/arch/arm64/kernel/entry.S
+>> +++ b/arch/arm64/kernel/entry.S
+>> @@ -668,8 +668,15 @@ ENDPROC(el0_svc)
+>>            * switches, and waiting for our parent to respond.
+>>            */
+>>    __sys_trace:
+>> +       cmp     w8, #-1                         // default errno for invalid
+>> +       b.ne    1f                              // system call
+>> +       mov     x0, #-ENOSYS
+>> +       str     x0, [sp, #S_X0]
+>> +1:
+>>           mov     x0, sp
+>>           bl      syscall_trace_enter
+>> +       cmp     w0, #-1                         // skip the syscall?
+>> +       b.eq    __sys_trace_return_skipped
+>>           adr     lr, __sys_trace_return          // return address
+>>           uxtw    scno, w0                        // syscall number (possibly new)
+>>           mov     x1, sp                          // pointer to regs
+>> @@ -684,6 +691,7 @@ __sys_trace:
+>>
+>>    __sys_trace_return:
+>>           str     x0, [sp]                        // save returned x0
+>> +__sys_trace_return_skipped:
+>>           mov     x0, sp
+>>           bl      syscall_trace_exit
+>>           b       ret_to_user
+>>
+>> With this change, I believe, syscall(-1) returns -ENOSYS by default whether traced
+>> or not, and still you can change a return value when tracing.
+>> (But a drawback here is that a tracer will see -ENOSYS in x0 even at syscall entry
+>> for syscall(-1).)
+>
+> But it's exactly these drawbacks that I'm objected to. syscall(-1) shouldn't
+> be treated any differently to syscall(42) with respect to restarting,
+> exactly like x86.
 
-Ok. I think we can get rid of gpiod_get_direction() if
-serial_mctrl_gpio implements its own way to query the direction (maybe
-using a bitmap in the mctrl_gpios and a mctrl_gpio_get_direction()
-function that queries that map). Using gpiod_get_direction() is just
-too unreliable.
+Can you elaborate a bit more as to "restarting?"
+We can't make any assumption about the number of arguments taken by *invalid* syscall(-1)
+and so changing a value in x0 (or any other registers) doesn't make any difference.
+()
 
-Janusz, since your change for mxs-auart is in -next, would you mind
-amending it to do this? Then we could do the same for atmel_serial and
-remove gpiod_get_direction() from the public GPIO interface. This
-function would do more harm than good anyway.
+-Takahiro AKASHI
 
-Thanks!
+> Will
+>
