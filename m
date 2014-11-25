@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751108AbaKYRuJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 12:50:09 -0500
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:41541 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792AbaKYRuH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 12:50:07 -0500
+	id S1751338AbaKYRuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 12:50:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58002 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750951AbaKYRuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 12:50:11 -0500
+Message-ID: <5474C055.8070409@redhat.com>
+Date: Tue, 25 Nov 2014 12:45:57 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <5474B564.9080902@roeck-us.net>
-References: <1416930423-12179-1-git-send-email-bgolaszewski@baylibre.com>
-	<1416930423-12179-2-git-send-email-bgolaszewski@baylibre.com>
-	<5474A72D.2000309@roeck-us.net>
-	<CAMpxmJUrs-3oXwYyNh26EnuZRH9bpXrmBBLKM7tmKGx=gSwyuQ@mail.gmail.com>
-	<5474B564.9080902@roeck-us.net>
-Date: Tue, 25 Nov 2014 18:50:07 +0100
-Message-ID: <CAMpxmJVGE444t3gE-=u8kuK_B9rJ=0fw9ZYVuYgQRPdswiPj7Q@mail.gmail.com>
-Subject: Re: [PATCH 1/5] hwmon: ina2xx: bail-out from ina2xx_probe() in case
- of configuration errors
-From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Patrick Titiano <ptitiano@baylibre.com>
+To: Khalid Aziz <khalid.aziz@oracle.com>, tglx@linutronix.de, corbet@lwn.net,
+        mingo@redhat.com, hpa@zytor.com, peterz@infradead.org,
+        akpm@linux-foundation.org, rientjes@google.com, ak@linux.intel.com,
+        mgorman@suse.de, raistlin@linux.it, kirill.shutemov@linux.intel.com,
+        atomlin@redhat.com, avagin@openvz.org, gorcunov@openvz.org,
+        serge.hallyn@canonical.com, athorlton@sgi.com, oleg@redhat.com,
+        vdavydov@parallels.com, daeseok.youn@gmail.com, keescook@chromium.org,
+        yangds.fnst@cn.fujitsu.com, sbauer@eng.utah.edu, vishnu.ps@samsung.com,
+        axboe@fb.com, paulmck@linux.vnet.ibm.com
+CC: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v3] sched/fair: Add advisory flag for borrowing a timeslice
+References: <1416862595-24513-1-git-send-email-khalid.aziz@oracle.com> <5473E388.6000605@redhat.com> <547497A9.1080800@oracle.com> <54749F77.50905@redhat.com> <5474BADC.5030808@oracle.com>
+In-Reply-To: <5474BADC.5030808@oracle.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-25 17:59 GMT+01:00 Guenter Roeck <linux@roeck-us.net>:
-> The new functions _might_ make a bit more sense if you would
-> implement the necessary calculations in the functions, but you are
-> not doing that. Instead, in the next patch, you introduce yet
-> another function to do the calibration calculation, just to add it
-> as parameter to the actual calibration function whenever you call it.
+On 11/25/2014 12:22 PM, Khalid Aziz wrote:
+> On 11/25/2014 08:25 AM, Rik van Riel wrote:
+>> On 11/25/2014 09:52 AM, Khalid Aziz wrote:
+>>> On 11/24/2014 07:03 PM, Rik van Riel wrote:
+>>>> -----BEGIN PGP SIGNED MESSAGE-----
+>>>> Hash: SHA1
+>>>>
+>>>> On 11/24/2014 03:56 PM, Khalid Aziz wrote:
+>>>>> sched/fair: Add advisory flag for borrowing a timeslice
+>>>>>
+>>>>> This patch adds a way for a task to request to borrow one
+>>>>> timeslice from future if it is about to be preempted, so it could
+>>>>> delay preemption and complete any critical task it is in the middle
+>>>>> of.
+>>>>>
+>>>>> This feature helps with performance on databases and has been used
+>>>>> for many years on other OSs by the databases. This feature helps in
+>>>>> situation where a task acquires a lock before performing a critical
+>>>>> operation on the database and happens to get preempted
+>>>>
+>>>> Why don't the other tasks that want the lock sleep on the
+>>>> lock?
+>>>>
+>>>> I can see this "solution" help mostly with userspace spinlocks,
+>>>> which are relics of a past era that need to die. There is no
+>>>> way userspace spinlocks will not fail miserably on virtual
+>>>> machines, and it is time to get rid of them.
+>>>
+>>> This solution indeed is for userspace spinlocks. Database code has been
+>>> written with all critical locking implemented in userspace (as I have
+>>> been told by database folks. I am not a database guy).
+>>
+>> They should fix that.
+> 
+> Agreed, but that is a very large task for databases for sure and
+> potentially for java as well (think exhaustive testing as well besides
+> code re-write). I do not see this happening except as part of major
+> re-architecture. In the mean time, if we can give them help without
+> impacting kernel significantly for other users, it only makes Linux a
+> more usable platform for them.
 
-This wasn't my intention, but I'll keep that in mind for the next version.
+I am not convinced that permanently adding overhead to the
+Linux scheduler in order to deal with a temporary problem in
+database and Java software (probably not every JVM, either!)
+is a worthwhile trade-off..
 
-> - I don't accept unnecessary ( ).
-> - I don't accept unnecessary typecasts.
-> - If you don't accept negative values, use kstrtoul().
-> - kstrtol can at least in theory return other errors besides -EINVAL.
-
-I'll fix those in the next version.
-
-> - Locking should be done in the calling code. It is not needed during
->   probe and more appropriate in set functions.
-
-I don't use locks in probe - they're used directly in
-ina2xx_set_value() or indirectly in ina226_update_avg(), but these
-functions are never called from probe.
-
-> - Any reason for selecting "rshunt" as sysfs attribute name instead
->   of, say, shunt-resistor or maybe shunt_resistor ?
-
-I'll change it to shunt_resistor for more readability.
-
-> - Returning -ENODEV from a set function doesn't make much sense.
-
-It does make sense in case of ACME (http://baylibre.com/acme/) - a
-probe can be disconnected at run-time, which, even without these
-patches, would cause ina2xx_update_device() to error out when called
-by ina2xx_show_value():
-
-231                         int rv = i2c_smbus_read_word_swapped(client, i);
-232                         if (rv < 0) {
-233                                 ret = ERR_PTR(rv);
-234                                 goto abort;
-
-I just reproduced this behavior in ina2xx_set_value().
-
-> - We don't overwrite error codes except in probe functions.
-
-I'll fix that too.
-
-Bart
