@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459AbaKYL6P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:58:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58149 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762AbaKYKkn (ORCPT
+	id S1756114AbaKYL6Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:58:24 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:50871 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752762AbaKYL6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:40:43 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 038/254] serial: Fix divide-by-zero fault in uart_get_divisor()
-Date: Tue, 25 Nov 2014 10:36:28 +0000
-Message-Id: <1416912004-5928-39-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
+	Tue, 25 Nov 2014 06:58:20 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: suravee.suthikulpanit@amd.com
+Cc: mark.rutland@arm.com, will.deacon@arm.com, marc.zyngier@arm.com,
+        catalin.marinas@arm.com, robherring2@gmail.com, liviu.dudau@arm.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
+        Thomas Lendacky <Thomas.Lendacky@amd.com>,
+        Joel Schopp <Joel.Schopp@amd.com>
+Subject: Re: [PATCH V4] arm64: amd-seattle: Adding device tree for AMD Seattle platform
+Date: Tue, 25 Nov 2014 12:57:30 +0100
+Message-ID: <2285363.CoMWhviz1f@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1416865877-8347-1-git-send-email-suravee.suthikulpanit@amd.com>
+References: <1416865877-8347-1-git-send-email-suravee.suthikulpanit@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Extended-Stable: 3.16
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:dbIC4pwgP8evsBOcDmC3iOJqYCbGG19OaUZRGULe+9D
+ obSrllV2q5H6JoFmVp1bj9i8jTq0sgYiHuPz4JkvQXkUl/4b/A
+ nAY4bM6TONLCYSRU2wwiZw5XrYWzAy2MaO3nesu7lWtFfRjYph
+ WPuZ18DLlaHwwguuw0nofqNng6Q/r2PFOJATg8eYg6UrUJOmn1
+ WjPW6YcTcaVU/Gt/eHLsqwhxzGPN3SUEzdSefkZZX+dRSkd28c
+ R5/9yZLhwLGCFnLJ5ANf4FPmAMfp4KJvzRvGe8bzcGixkf7Wfl
+ tAF1/wbNm+MyTbq7a/FTCf81UjCX51/MQuVZ5d4KHMk5mbznvr
+ HM8S5bMYvG50B3utK7u4=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
+On Monday 24 November 2014 15:51:17 suravee.suthikulpanit@amd.com wrote:
+> 
+> +	gic: interrupt-controller@e1101000 {
+> +		compatible = "arm,gic-400", "arm,cortex-a15-gic";
+> +		interrupt-controller;
+> +		#interrupt-cells = <3>;
+> +		#address-cells = <2>;
+> +		#size-cells = <2>;
+> +		reg = <0x0 0xe1110000 0 0x1000>,
+> +		      <0x0 0xe112f000 0 0x2000>,
+> +		      <0x0 0xe1140000 0 0x10000>,
+> +		      <0x0 0xe1160000 0 0x10000>;
+> +		interrupts = <1 9 0xf04>;
+> +		ranges;
+> +		v2m0: v2m@e1180000 {
+> +			compatible = "arm,gic-v2m-frame";
+> +			msi-controller;
+> +			arm,msi-base-spi = <64>;
+> +			arm,msi-num-spis = <256>;
+> +			reg = <0x0 0xe1180000 0 0x1000>;
+> +		};
+> +	};
 
-------------------
 
-From: Peter Hurley <peter@hurleysoftware.com>
+Having an empty ranges property in the gic seems strange, especially
+since the registers of the v2m seem to directly follow the gic's own
+registers. Could you limit the ranges to only the registers that
+are in the gic or its child devices itself?
 
-commit 547039ec502076e60034eeb79611df3433a99b7d upstream.
-
-uart_get_baud_rate() will return baud == 0 if the max rate is set
-to the "magic" 38400 rate and the SPD_* flags are also specified.
-On the first iteration, if the current baud rate is higher than the
-max, the baud rate is clamped at the max (which in the degenerate
-case is 38400). On the second iteration, the now-"magic" 38400 baud
-rate selects the possibly higher alternate baud rate indicated by
-the SPD_* flag. Since only two loop iterations are performed, the
-loop is exited, a kernel WARNING is generated and a baud rate of
-0 is returned.
-
-Reproducible with:
- setserial /dev/ttyS0 spd_hi base_baud 38400
-
-Only perform the "magic" 38400 -> SPD_* baud transform on the first
-loop iteration, which prevents the degenerate case from recognizing
-the clamped baud rate as the "magic" 38400 value.
-
-Reported-by: Robert Święcki <robert@swiecki.net>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/tty/serial/serial_core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index ef2fb367d179..ba468b11fa04 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -361,7 +361,7 @@ uart_get_baud_rate(struct uart_port *port, struct ktermios *termios,
- 		 * The spd_hi, spd_vhi, spd_shi, spd_warp kludge...
- 		 * Die! Die! Die!
- 		 */
--		if (baud == 38400)
-+		if (try == 0 && baud == 38400)
- 			baud = altbaud;
- 
- 		/*
--- 
-2.1.0
-
+	Arnd
