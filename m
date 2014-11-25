@@ -1,65 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529AbaKYVz5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 16:55:57 -0500
-Received: from mout.web.de ([212.227.17.12]:52582 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751196AbaKYVzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 16:55:55 -0500
-Message-ID: <5474FAD6.4060704@users.sourceforge.net>
-Date: Tue, 25 Nov 2014 22:55:34 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751575AbaKYV4t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 16:56:49 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:19785 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289AbaKYV4s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 16:56:48 -0500
+Message-ID: <5474FBC6.7090603@oracle.com>
+Date: Tue, 25 Nov 2014 16:59:34 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, devel@linuxdriverproject.org,
-        netdev@vger.kernel.org
-CC: Haiyang Zhang <haiyangz@microsoft.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH v2] net: Hyper-V: Deletion of an unnecessary check before
- the function call "vfree"
-References: <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>	<5317A59D.4@users.sourceforge.net>	<546DF9D7.6080801@users.sourceforge.net> <20141121.151503.1986113223309494197.davem@davemloft.net>
-In-Reply-To: <20141121.151503.1986113223309494197.davem@davemloft.net>
-Content-Type: text/plain; charset=windows-1252
+To: Borislav Petkov <bp@suse.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Richard Hendershot <rshendershot@mchsi.com>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: Re: [PATCH 3.17 100/141] x86, microcode: Fix accessing dis_ucode_ldr
+ on 32-bit
+References: <20141119205153.916605840@linuxfoundation.org> <5474C67A.7040200@oracle.com> <20141125182410.GB4128@pd.tnic> <5474CDCE.6040000@oracle.com> <20141125184351.GC4128@pd.tnic> <5474D0A1.2020600@oracle.com> <20141125190849.GF4128@pd.tnic> <5474D86E.6020608@oracle.com> <20141125202628.GG4128@pd.tnic> <20141125203634.GA6433@laptop.dumpdata.com> <20141125211708.GH4128@pd.tnic>
+In-Reply-To: <20141125211708.GH4128@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:7zBNneMfQpNB66WeLKRmbmsBo5W4QfH1uN1md97Ram0E1WSfVwO
- ayDn51YQJIyDLTOSIyFok63sykNL7DmLpPlnmoXs1jEamZpWNzo1ELg/dPgHgwhnKQwrPkJ
- cXubMsK1PeAb8CGyJ5a45AC1iY9imesO4IOw35XFzv/GgkKGAv/uLIV0+GrBGVf0+RLDpSZ
- PI39PYPbIAud6rDkbK8/w==
-X-UI-Out-Filterresults: notjunk:1;
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Tue, 25 Nov 2014 22:33:45 +0100
+On 11/25/2014 04:17 PM, Borislav Petkov wrote:
+> On Tue, Nov 25, 2014 at 03:36:34PM -0500, Konrad Rzeszutek Wilk wrote:
+>> Is there an use-case for this in virtualization at all?
+> Not that I know of...
+>
+>> Why not make it in general then? Like:
+>>
+>> if (cpu_has_hypervisor)
+>> 	return;
+> Ah, good idea. Although we need to do it by-foot because the cpu_has
+> stuff hasn't been initialized yet that early. Boris, I'm guessing
+> something that should work... ?
+>
+> ---
+> diff --git a/arch/x86/kernel/cpu/microcode/core_early.c b/arch/x86/kernel/cpu/microcode/core_early.c
+> index 2c017f242a78..77137b317e2a 100644
+> --- a/arch/x86/kernel/cpu/microcode/core_early.c
+> +++ b/arch/x86/kernel/cpu/microcode/core_early.c
+> @@ -74,6 +74,16 @@ static int x86_family(void)
+>   	return x86;
+>   }
+>   
+> +static bool x86_guest(void)
+> +{
+> +	u32 eax = 0x1;
+> +	u32 ebx, ecx = 0, edx;
+> +
+> +	native_cpuid(&eax, &ebx, &ecx, &edx);
 
-The vfree() function performs also input parameter validation.
-Thus the test around the call is not needed.
+This should be cpuid(0x1, &eax, &ebx, &ecx, &edx). Otherwise we are not 
+getting bits that the hypervisor wants the guest to see (on Xen cpuid() 
+turns into hypercall, on baremetal it's native).
 
-This issue was detected by using the Coccinelle software.
+With that change it works and
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/net/hyperv/netvsc.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+Tested-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 
-diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
-index 6b46311..6fc834e 100644
---- a/drivers/net/hyperv/netvsc.c
-+++ b/drivers/net/hyperv/netvsc.c
-@@ -561,9 +561,7 @@ int netvsc_device_remove(struct hv_device *device)
- 	vmbus_close(device->channel);
- 
- 	/* Release all resources */
--	if (net_device->sub_cb_buf)
--		vfree(net_device->sub_cb_buf);
--
-+	vfree(net_device->sub_cb_buf);
- 	free_netvsc_device(net_device);
- 	return 0;
- }
--- 
-2.1.3
+(May be worth adding a comment as to what is_guest() is checking for 
+since 31 is a magic number).
+
+BTW, the crash had nothing to do with accessing dis_ucode_ldr, we are 
+crashing much later, in load_ucode_intel_ap(), trying to access 
+*initrd_start_p. And the reason we didn't crash before was because 
+compiler optimized out whole load_ucode_ap() since 
+check_loader_disabled_ap() was always true.
+
+Thanks.
+-boris
+
+> +
+> +	return !!(ecx & BIT(31));
+> +}
+> +
+>   static bool __init check_loader_disabled_bsp(void)
+>   {
+>   #ifdef CONFIG_X86_32
+> @@ -98,6 +108,9 @@ void __init load_ucode_bsp(void)
+>   {
+>   	int vendor, x86;
+>   
+> +	if (x86_guest())
+> +		return;
+> +
+>   	if (check_loader_disabled_bsp())
+>   		return;
+>   
+> @@ -134,6 +147,9 @@ void load_ucode_ap(void)
+>   {
+>   	int vendor, x86;
+>   
+> +	if (x86_guest())
+> +		return;
+> +
+>   	if (check_loader_disabled_ap())
+>   		return;
+>
 
