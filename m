@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751556AbaKYSrr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 13:47:47 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:39244 "EHLO
+	id S1751512AbaKYSrg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 13:47:36 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:39236 "EHLO
 	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467AbaKYSrp (ORCPT
+	with ESMTP id S1751467AbaKYSrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 13:47:45 -0500
+	Tue, 25 Nov 2014 13:47:33 -0500
 From: Marc Zyngier <marc.zyngier@arm.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Jiang Liu <jiang.liu@linux.intel.com>,
         Yingjoe Chen <yingjoe.chen@mediatek.com>,
         Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH v11 2/2] irqchip: gicv2m: Add DT bindings for GICv2m
-Date: Tue, 25 Nov 2014 18:47:23 +0000
-Message-Id: <1416941243-7181-3-git-send-email-marc.zyngier@arm.com>
+Subject: [PATCH v11 1/2] irqchip: gicv2m: Add support for ARM GICv2m MSI(-X) doorbell
+Date: Tue, 25 Nov 2014 18:47:22 +0000
+Message-Id: <1416941243-7181-2-git-send-email-marc.zyngier@arm.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1416941243-7181-1-git-send-email-marc.zyngier@arm.com>
 References: <1416941243-7181-1-git-send-email-marc.zyngier@arm.com>
@@ -26,76 +26,432 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 
-Update the GIC DT bindings to support GICv2m.
+ARM GICv2m specification extends GICv2 to support MSI(-X) with
+a new register frame. This allows a GICv2 based system to support
+MSI with minimal changes.
 
 Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-[maz: split DT patch from main driver, updated changelog]
+[maz: converted the driver to use stacked irq domains,
+      updated changelog]
 Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 ---
- Documentation/devicetree/bindings/arm/gic.txt | 53 +++++++++++++++++++++++++++
- 1 file changed, 53 insertions(+)
+ arch/arm64/Kconfig              |   1 +
+ drivers/irqchip/Kconfig         |   6 +
+ drivers/irqchip/Makefile        |   1 +
+ drivers/irqchip/irq-gic-v2m.c   | 333 ++++++++++++++++++++++++++++++++++++++++
+ drivers/irqchip/irq-gic.c       |   4 +
+ include/linux/irqchip/arm-gic.h |   2 +
+ 6 files changed, 347 insertions(+)
+ create mode 100644 drivers/irqchip/irq-gic-v2m.c
 
-diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
-index c7d2fa1..375147e 100644
---- a/Documentation/devicetree/bindings/arm/gic.txt
-+++ b/Documentation/devicetree/bindings/arm/gic.txt
-@@ -96,3 +96,56 @@ Example:
- 		      <0x2c006000 0x2000>;
- 		interrupts = <1 9 0xf04>;
- 	};
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 9532f8d..d93bb5e 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -13,6 +13,7 @@ config ARM64
+ 	select ARM_ARCH_TIMER
+ 	select ARM_GIC
+ 	select AUDIT_ARCH_COMPAT_GENERIC
++	select ARM_GIC_V2M if PCI_MSI
+ 	select ARM_GIC_V3
+ 	select BUILDTIME_EXTABLE_SORT
+ 	select CLONE_BACKWARDS
+diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+index 7f34138..fb93974 100644
+--- a/drivers/irqchip/Kconfig
++++ b/drivers/irqchip/Kconfig
+@@ -8,6 +8,12 @@ config ARM_GIC
+ 	select IRQ_DOMAIN_HIERARCHY
+ 	select MULTI_IRQ_HANDLER
+ 
++config ARM_GIC_V2M
++	bool
++	depends on ARM_GIC
++	depends on PCI && PCI_MSI
++	select PCI_MSI_IRQ_DOMAIN
 +
+ config GIC_NON_BANKED
+ 	bool
+ 
+diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+index 173bb5f..1fadd76 100644
+--- a/drivers/irqchip/Makefile
++++ b/drivers/irqchip/Makefile
+@@ -19,6 +19,7 @@ obj-$(CONFIG_ARCH_SUNXI)		+= irq-sun4i.o
+ obj-$(CONFIG_ARCH_SUNXI)		+= irq-sunxi-nmi.o
+ obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-shirq.o
+ obj-$(CONFIG_ARM_GIC)			+= irq-gic.o irq-gic-common.o
++obj-$(CONFIG_ARM_GIC_V2M)		+= irq-gic-v2m.o
+ obj-$(CONFIG_ARM_GIC_V3)		+= irq-gic-v3.o irq-gic-common.o
+ obj-$(CONFIG_ARM_NVIC)			+= irq-nvic.o
+ obj-$(CONFIG_ARM_VIC)			+= irq-vic.o
+diff --git a/drivers/irqchip/irq-gic-v2m.c b/drivers/irqchip/irq-gic-v2m.c
+new file mode 100644
+index 0000000..fdf7065
+--- /dev/null
++++ b/drivers/irqchip/irq-gic-v2m.c
+@@ -0,0 +1,333 @@
++/*
++ * ARM GIC v2m MSI(-X) support
++ * Support for Message Signaled Interrupts for systems that
++ * implement ARM Generic Interrupt Controller: GICv2m.
++ *
++ * Copyright (C) 2014 Advanced Micro Devices, Inc.
++ * Authors: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
++ *	    Harish Kasiviswanathan <harish.kasiviswanathan@amd.com>
++ *	    Brandon Anderson <brandon.anderson@amd.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published
++ * by the Free Software Foundation.
++ */
 +
-+* GICv2m extension for MSI/MSI-x support (Optional)
++#define pr_fmt(fmt) "GICv2m: " fmt
 +
-+Certain revisions of GIC-400 supports MSI/MSI-x via V2M register frame(s).
-+This is enabled by specifying v2m sub-node(s).
++#include <linux/irq.h>
++#include <linux/irqdomain.h>
++#include <linux/kernel.h>
++#include <linux/of_address.h>
++#include <linux/of_pci.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
 +
-+Required properties:
++/*
++* MSI_TYPER:
++*     [31:26] Reserved
++*     [25:16] lowest SPI assigned to MSI
++*     [15:10] Reserved
++*     [9:0]   Numer of SPIs assigned to MSI
++*/
++#define V2M_MSI_TYPER		       0x008
++#define V2M_MSI_TYPER_BASE_SHIFT       16
++#define V2M_MSI_TYPER_BASE_MASK	       0x3FF
++#define V2M_MSI_TYPER_NUM_MASK	       0x3FF
++#define V2M_MSI_SETSPI_NS	       0x040
++#define V2M_MIN_SPI		       32
++#define V2M_MAX_SPI		       1019
 +
-+- compatible	    : The value here should contain "arm,gic-v2m-frame".
++#define V2M_MSI_TYPER_BASE_SPI(x)      \
++	       (((x) >> V2M_MSI_TYPER_BASE_SHIFT) & V2M_MSI_TYPER_BASE_MASK)
 +
-+- msi-controller    : Identifies the node as an MSI controller.
++#define V2M_MSI_TYPER_NUM_SPI(x)       ((x) & V2M_MSI_TYPER_NUM_MASK)
 +
-+- reg		    : GICv2m MSI interface register base and size
++struct v2m_data {
++	spinlock_t msi_cnt_lock;
++	struct msi_controller mchip;
++	struct resource res;	/* GICv2m resource */
++	void __iomem *base;	/* GICv2m virt address */
++	u32 spi_start;		/* The SPI number that MSIs start */
++	u32 nr_spis;		/* The number of SPIs for MSIs */
++	unsigned long *bm;	/* MSI vector bitmap */
++	struct irq_domain *domain;
++};
 +
-+Optional properties:
++static void gicv2m_mask_msi_irq(struct irq_data *d)
++{
++	pci_msi_mask_irq(d);
++	irq_chip_mask_parent(d);
++}
 +
-+- arm,msi-base-spi  : When the MSI_TYPER register contains an incorrect
-+  		      value, this property should contain the SPI base of
-+		      the MSI frame, overriding the HW value.
++static void gicv2m_unmask_msi_irq(struct irq_data *d)
++{
++	pci_msi_unmask_irq(d);
++	irq_chip_unmask_parent(d);
++}
 +
-+- arm,msi-num-spis  : When the MSI_TYPER register contains an incorrect
-+  		      value, this property should contain the number of
-+		      SPIs assigned to the frame, overriding the HW value.
++static struct irq_chip gicv2m_msi_irq_chip = {
++	.name			= "MSI",
++	.irq_mask		= gicv2m_mask_msi_irq,
++	.irq_unmask		= gicv2m_unmask_msi_irq,
++	.irq_eoi		= irq_chip_eoi_parent,
++	.irq_write_msi_msg	= pci_msi_domain_write_msg,
++};
 +
-+Example:
++static struct msi_domain_info gicv2m_msi_domain_info = {
++	.flags	= (MSI_FLAG_USE_DEF_DOM_OPS | MSI_FLAG_USE_DEF_CHIP_OPS |
++		   MSI_FLAG_PCI_MSIX),
++	.chip	= &gicv2m_msi_irq_chip,
++};
 +
-+	interrupt-controller@e1101000 {
-+		compatible = "arm,gic-400";
-+		#interrupt-cells = <3>;
-+		#address-cells = <2>;
-+		#size-cells = <2>;
-+		interrupt-controller;
-+		interrupts = <1 8 0xf04>;
-+		ranges = <0 0 0 0xe1100000 0 0x100000>;
-+		reg = <0x0 0xe1110000 0 0x01000>,
-+		      <0x0 0xe112f000 0 0x02000>,
-+		      <0x0 0xe1140000 0 0x10000>,
-+		      <0x0 0xe1160000 0 0x10000>;
-+		v2m0: v2m@0x8000 {
-+			compatible = "arm,gic-v2m-frame";
-+			msi-controller;
-+			reg = <0x0 0x80000 0 0x1000>;
-+		};
++static int gicv2m_set_affinity(struct irq_data *irq_data,
++			       const struct cpumask *mask, bool force)
++{
++	int ret;
 +
-+		....
++	ret = irq_chip_set_affinity_parent(irq_data, mask, force);
++	if (ret == IRQ_SET_MASK_OK)
++		ret = IRQ_SET_MASK_OK_DONE;
 +
-+		v2mN: v2m@0x9000 {
-+			compatible = "arm,gic-v2m-frame";
-+			msi-controller;
-+			reg = <0x0 0x90000 0 0x1000>;
-+		};
-+	};
++	return ret;
++}
++
++static void gicv2m_compose_msi_msg(struct irq_data *data, struct msi_msg *msg)
++{
++	struct v2m_data *v2m = irq_data_get_irq_chip_data(data);
++	phys_addr_t addr = v2m->res.start + V2M_MSI_SETSPI_NS;
++
++	msg->address_hi = (u32) (addr >> 32);
++	msg->address_lo = (u32) (addr);
++	msg->data = data->hwirq;
++}
++
++static struct irq_chip gicv2m_irq_chip = {
++	.name			= "GICv2m",
++	.irq_mask		= irq_chip_mask_parent,
++	.irq_unmask		= irq_chip_unmask_parent,
++	.irq_eoi		= irq_chip_eoi_parent,
++	.irq_set_affinity	= gicv2m_set_affinity,
++	.irq_compose_msi_msg	= gicv2m_compose_msi_msg,
++};
++
++static int gicv2m_irq_gic_domain_alloc(struct irq_domain *domain,
++				       unsigned int virq,
++				       irq_hw_number_t hwirq)
++{
++	struct of_phandle_args args;
++	struct irq_data *d;
++	int err;
++
++	args.np = domain->parent->of_node;
++	args.args_count = 3;
++	args.args[0] = 0;
++	args.args[1] = hwirq - 32;
++	args.args[2] = IRQ_TYPE_EDGE_RISING;
++
++	err = irq_domain_alloc_irqs_parent(domain, virq, 1, &args);
++	if (err)
++		return err;
++
++	/* Configure the interrupt line to be edge */
++	d = irq_domain_get_irq_data(domain->parent, virq);
++	d->chip->irq_set_type(d, IRQ_TYPE_EDGE_RISING);
++	return 0;
++}
++
++static void gicv2m_unalloc_msi(struct v2m_data *v2m, unsigned int hwirq)
++{
++	int pos;
++
++	pos = hwirq - v2m->spi_start;
++	if (pos < 0 || pos >= v2m->nr_spis) {
++		pr_err("Failed to teardown msi. Invalid hwirq %d\n", hwirq);
++		return;
++	}
++
++	spin_lock(&v2m->msi_cnt_lock);
++	__clear_bit(pos, v2m->bm);
++	spin_unlock(&v2m->msi_cnt_lock);
++}
++
++static int gicv2m_irq_domain_alloc(struct irq_domain *domain, unsigned int virq,
++				   unsigned int nr_irqs, void *args)
++{
++	struct v2m_data *v2m = domain->host_data;
++	int hwirq, offset, err = 0;
++
++	spin_lock(&v2m->msi_cnt_lock);
++	offset = find_first_zero_bit(v2m->bm, v2m->nr_spis);
++	if (offset < v2m->nr_spis)
++		__set_bit(offset, v2m->bm);
++	else
++		err = -ENOSPC;
++	spin_unlock(&v2m->msi_cnt_lock);
++
++	if (err)
++		return err;
++
++	hwirq = v2m->spi_start + offset;
++
++	err = gicv2m_irq_gic_domain_alloc(domain, virq, hwirq);
++	if (err) {
++		gicv2m_unalloc_msi(v2m, hwirq);
++		return err;
++	}
++
++	irq_domain_set_hwirq_and_chip(domain, virq, hwirq,
++				      &gicv2m_irq_chip, v2m);
++
++	return 0;
++}
++
++static void gicv2m_irq_domain_free(struct irq_domain *domain,
++				   unsigned int virq, unsigned int nr_irqs)
++{
++	struct irq_data *d = irq_domain_get_irq_data(domain, virq);
++	struct v2m_data *v2m = irq_data_get_irq_chip_data(d);
++
++	BUG_ON(nr_irqs != 1);
++	gicv2m_unalloc_msi(v2m, d->hwirq);
++	irq_domain_free_irqs_parent(domain, virq, nr_irqs);
++}
++
++static const struct irq_domain_ops gicv2m_domain_ops = {
++	.alloc			= gicv2m_irq_domain_alloc,
++	.free			= gicv2m_irq_domain_free,
++};
++
++static bool is_msi_spi_valid(u32 base, u32 num)
++{
++	if (base < V2M_MIN_SPI) {
++		pr_err("Invalid MSI base SPI (base:%u)\n", base);
++		return false;
++	}
++
++	if ((num == 0) || (base + num > V2M_MAX_SPI)) {
++		pr_err("Number of SPIs (%u) exceed maximum (%u)\n",
++		       num, V2M_MAX_SPI - V2M_MIN_SPI + 1);
++		return false;
++	}
++
++	return true;
++}
++
++static int __init gicv2m_init_one(struct device_node *node,
++				  struct irq_domain *parent)
++{
++	int ret;
++	struct v2m_data *v2m;
++
++	v2m = kzalloc(sizeof(struct v2m_data), GFP_KERNEL);
++	if (!v2m) {
++		pr_err("Failed to allocate struct v2m_data.\n");
++		return -ENOMEM;
++	}
++
++	ret = of_address_to_resource(node, 0, &v2m->res);
++	if (ret) {
++		pr_err("Failed to allocate v2m resource.\n");
++		goto err_free_v2m;
++	}
++
++	v2m->base = ioremap(v2m->res.start, resource_size(&v2m->res));
++	if (!v2m->base) {
++		pr_err("Failed to map GICv2m resource\n");
++		ret = -ENOMEM;
++		goto err_free_v2m;
++	}
++
++	if (!of_property_read_u32(node, "arm,msi-base-spi", &v2m->spi_start) &&
++	    !of_property_read_u32(node, "arm,msi-num-spis", &v2m->nr_spis)) {
++		pr_info("Overriding V2M MSI_TYPER (base:%u, num:%u)\n",
++			v2m->spi_start, v2m->nr_spis);
++	} else {
++		u32 typer = readl_relaxed(v2m->base + V2M_MSI_TYPER);
++
++		v2m->spi_start = V2M_MSI_TYPER_BASE_SPI(typer);
++		v2m->nr_spis = V2M_MSI_TYPER_NUM_SPI(typer);
++	}
++
++	if (!is_msi_spi_valid(v2m->spi_start, v2m->nr_spis)) {
++		ret = -EINVAL;
++		goto err_iounmap;
++	}
++
++	v2m->bm = kzalloc(sizeof(long) * BITS_TO_LONGS(v2m->nr_spis),
++			  GFP_KERNEL);
++	if (!v2m->bm) {
++		ret = -ENOMEM;
++		goto err_iounmap;
++	}
++
++	v2m->domain = irq_domain_add_tree(NULL, &gicv2m_domain_ops, v2m);
++	if (!v2m->domain) {
++		pr_err("Failed to create GICv2m domain\n");
++		ret = -ENOMEM;
++		goto err_free_bm;
++	}
++
++	v2m->domain->parent = parent;
++	v2m->mchip.of_node = node;
++	v2m->mchip.domain = pci_msi_create_irq_domain(node,
++						      &gicv2m_msi_domain_info,
++						      v2m->domain);
++	if (!v2m->mchip.domain) {
++		pr_err("Failed to create MSI domain\n");
++		ret = -ENOMEM;
++		goto err_free_domains;
++	}
++
++	spin_lock_init(&v2m->msi_cnt_lock);
++
++	ret = of_pci_msi_chip_add(&v2m->mchip);
++	if (ret) {
++		pr_err("Failed to add msi_chip.\n");
++		goto err_free_domains;
++	}
++
++	pr_info("Node %s: range[%#lx:%#lx], SPI[%d:%d]\n", node->name,
++		(unsigned long)v2m->res.start, (unsigned long)v2m->res.end,
++		v2m->spi_start, (v2m->spi_start + v2m->nr_spis));
++
++	return 0;
++
++err_free_domains:
++	if (v2m->mchip.domain)
++		irq_domain_remove(v2m->mchip.domain);
++	if (v2m->domain)
++		irq_domain_remove(v2m->domain);
++err_free_bm:
++	kfree(v2m->bm);
++err_iounmap:
++	iounmap(v2m->base);
++err_free_v2m:
++	kfree(v2m);
++	return ret;
++}
++
++static struct of_device_id gicv2m_device_id[] = {
++	{	.compatible	= "arm,gic-v2m-frame",	},
++	{},
++};
++
++int __init gicv2m_of_init(struct device_node *node, struct irq_domain *parent)
++{
++	int ret = 0;
++	struct device_node *child;
++
++	for (child = of_find_matching_node(node, gicv2m_device_id); child;
++	     child = of_find_matching_node(child, gicv2m_device_id)) {
++		if (!of_find_property(child, "msi-controller", NULL))
++			continue;
++
++		ret = gicv2m_init_one(child, parent);
++		if (ret) {
++			of_node_put(node);
++			break;
++		}
++	}
++
++	return ret;
++}
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index ab6069b..5a71be7 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -1066,6 +1066,10 @@ gic_of_init(struct device_node *node, struct device_node *parent)
+ 		irq = irq_of_parse_and_map(node, 0);
+ 		gic_cascade_irq(gic_cnt, irq);
+ 	}
++
++	if (IS_ENABLED(CONFIG_ARM_GIC_V2M))
++		gicv2m_of_init(node, gic_data[gic_cnt].domain);
++
+ 	gic_cnt++;
+ 	return 0;
+ }
+diff --git a/include/linux/irqchip/arm-gic.h b/include/linux/irqchip/arm-gic.h
+index 13eed92..60b09ed 100644
+--- a/include/linux/irqchip/arm-gic.h
++++ b/include/linux/irqchip/arm-gic.h
+@@ -106,6 +106,8 @@ static inline void gic_init(unsigned int nr, int start,
+ 	gic_init_bases(nr, start, dist, cpu, 0, NULL);
+ }
+ 
++int gicv2m_of_init(struct device_node *node, struct irq_domain *parent);
++
+ void gic_send_sgi(unsigned int cpu_id, unsigned int irq);
+ int gic_get_cpu_id(unsigned int cpu);
+ void gic_migrate_target(unsigned int new_cpu_id);
 -- 
 2.1.3
 
