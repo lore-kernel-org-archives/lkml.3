@@ -1,128 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119AbaKYHyw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 02:54:52 -0500
-Received: from mga01.intel.com ([192.55.52.88]:38967 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752885AbaKYHyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 02:54:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,454,1413270000"; 
-   d="scan'208";a="627836633"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+	id S1751964AbaKYH7c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 02:59:32 -0500
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:47578 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751757AbaKYH73 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 02:59:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <1416834256-11225-8-git-send-email-amit.daniel@samsung.com>
+References: <1416833572-6880-1-git-send-email-amit.daniel@samsung.com>
+	<1416834256-11225-1-git-send-email-amit.daniel@samsung.com>
+	<1416834256-11225-8-git-send-email-amit.daniel@samsung.com>
+Date: Tue, 25 Nov 2014 08:59:29 +0100
+Message-ID: <CAPDyKFoBnViXQF=wDYp0x4gaOO4ht3a8KBeY6=k6_Zkkav28pQ@mail.gmail.com>
+Subject: Re: [PATCH RFC v2 08/12] soc: samsung: pm_domain: Add support for
+ parent power domain
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>, pankaj.dubey@samsung.com,
+        Kevin Hilman <khilman@kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, x86@kernel.org,
-        Joerg Roedel <joro@8bytes.org>, Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: [Patch Part3 v4 33/38] x86, irq: Move check of cfg->move_in_progress into send_cleanup_vector()
-Date: Tue, 25 Nov 2014 15:49:57 +0800
-Message-Id: <1416901802-24211-34-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1416901802-24211-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1416901802-24211-1-git-send-email-jiang.liu@linux.intel.com>
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move check of cfg->move_in_progress into send_cleanup_vector() to
-prepare for simplifying struct irq_cfg.
+On 24 November 2014 at 14:04, Amit Daniel Kachhap
+<amit.daniel@samsung.com> wrote:
+> This patch adds supports for parent power domain. This will ensure
+> invoking of parent/child power domain on/off in a correct sequence.
+> In exynos7 SOC's, power domain controllers have parent and child
+> hierarchy.
+>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> ---
+>  .../bindings/arm/exynos/power_domain.txt           |    2 +
+>  drivers/soc/samsung/pm_domains.c                   |   43 +++++++++++++++++++-
+>  2 files changed, 44 insertions(+), 1 deletion(-)
+>
+> diff --git a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
+> index 00ebda1..0160bdc 100644
+> --- a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
+> +++ b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
+> @@ -24,6 +24,7 @@ Optional Properties:
+>         - pclkN, clkN: Pairs of parent of input clock and input clock to the
+>                 devices in this power domain. Maximum of 4 pairs (N = 0 to 3)
+>                 are supported currently.
+> +- parents: phandle of parent power domains.
+>
+>  Node of a device using power domains must have a samsung,power-domain property
+>  defined with a phandle to respective power domain.
+> @@ -48,6 +49,7 @@ Example:
+>         mfc_pd: power-domain@10044060 {
+>                 compatible = "samsung,exynos4210-pd", "samsung,exynos7-pd-mfc";
+>                 reg = <0x10044060 0x20>;
+> +               parents = <&pd_top>;
+>                 #power-domain-cells = <0>;
+>         };
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Tested-by: Joerg Roedel <jroedel@suse.de>
----
- arch/x86/kernel/apic/vector.c       |   10 ++++++++--
- arch/x86/platform/uv/uv_irq.c       |    3 +--
- drivers/iommu/amd_iommu.c           |    3 +--
- drivers/iommu/intel_irq_remapping.c |    3 +--
- 4 files changed, 11 insertions(+), 8 deletions(-)
+This seems like a good and generic approach to describe that a PM
+domain could have a parent. I would suggest to rename it, such it
+reflects its a PM domain binding though.
 
-diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
-index 436a3400d9ac..a5ce2eef0528 100644
---- a/arch/x86/kernel/apic/vector.c
-+++ b/arch/x86/kernel/apic/vector.c
-@@ -495,7 +495,7 @@ static struct irq_chip lapic_controller = {
- };
- 
- #ifdef CONFIG_SMP
--void send_cleanup_vector(struct irq_cfg *cfg)
-+static void __send_cleanup_vector(struct irq_cfg *cfg)
- {
- 	cpumask_var_t cleanup_mask;
- 
-@@ -513,6 +513,12 @@ void send_cleanup_vector(struct irq_cfg *cfg)
- 	cfg->move_in_progress = 0;
- }
- 
-+void send_cleanup_vector(struct irq_cfg *cfg)
-+{
-+	if (cfg->move_in_progress)
-+		__send_cleanup_vector(cfg);
-+}
-+
- asmlinkage __visible void smp_irq_move_cleanup_interrupt(void)
- {
- 	unsigned vector, me;
-@@ -583,7 +589,7 @@ static void __irq_complete_move(struct irq_cfg *cfg, unsigned vector)
- 	me = smp_processor_id();
- 
- 	if (vector == cfg->vector && cpumask_test_cpu(me, cfg->domain))
--		send_cleanup_vector(cfg);
-+		__send_cleanup_vector(cfg);
- }
- 
- void irq_complete_move(struct irq_cfg *cfg)
-diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
-index c237ed34a498..b242e0aada19 100644
---- a/arch/x86/platform/uv/uv_irq.c
-+++ b/arch/x86/platform/uv/uv_irq.c
-@@ -63,8 +63,7 @@ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
- 	ret = parent->chip->irq_set_affinity(parent, mask, force);
- 	if (ret >= 0) {
- 		uv_program_mmr(cfg, data->chip_data);
--		if (cfg->move_in_progress)
--			send_cleanup_vector(cfg);
-+		send_cleanup_vector(cfg);
- 	}
- 
- 	return ret;
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 2e8bbe5e164d..a5c59b434c77 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -4331,8 +4331,7 @@ static int amd_ir_set_affinity(struct irq_data *data,
- 	 * at the new destination. So, time to cleanup the previous
- 	 * vector allocation.
- 	 */
--	if (cfg->move_in_progress)
--		send_cleanup_vector(cfg);
-+	send_cleanup_vector(cfg);
- 
- 	return IRQ_SET_MASK_OK_DONE;
- }
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index acff8493191e..f6da3b2651c0 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -997,8 +997,7 @@ intel_ir_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 	 * at the new destination. So, time to cleanup the previous
- 	 * vector allocation.
- 	 */
--	if (cfg->move_in_progress)
--		send_cleanup_vector(cfg);
-+	send_cleanup_vector(cfg);
- 
- 	return IRQ_SET_MASK_OK_DONE;
- }
--- 
-1.7.10.4
+So, maybe we can add this as a common DT binding for the generic PM
+domain instead of having it as Exynos specific?
 
+Kind regards
+Uffe
