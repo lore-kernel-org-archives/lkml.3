@@ -1,61 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751488AbaKYQfF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 11:35:05 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:37058 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750973AbaKYQfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 11:35:00 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Mark Yao <mark.yao@rock-chips.com>
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-api@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, dianders@chromium.org,
-        marcheu@chromium.org, dbehr@chromium.org, olof@lixom.net,
-        djkurtz@chromium.org, cf@rock-chips.com, xxm@rock-chips.com,
-        huangtao@rock-chips.com, kever.yang@rock-chips.com, yxj@rock-chips.com,
-        xw@rock-chips.com
-Subject: Re: [PATCH v14 0/3] Add drm driver for Rockchip Socs
-Date: Tue, 25 Nov 2014 17:38:27 +0100
-Message-ID: <23617908.6oA5uRuO3l@diego>
-User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <1416447994-9921-1-git-send-email-mark.yao@rock-chips.com>
-References: <1416447994-9921-1-git-send-email-mark.yao@rock-chips.com>
+	id S1751074AbaKYQfn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 11:35:43 -0500
+Received: from static.88-198-71-155.clients.your-server.de ([88.198.71.155]:48209
+	"EHLO socrates.bennee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309AbaKYQeK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 11:34:10 -0500
+From: =?UTF-8?q?Alex=20Benn=C3=A9e?= <alex.bennee@linaro.org>
+To: kvm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kvmarm@lists.cs.columbia.edu, christoffer.dall@linaro.org,
+        marc.zyngier@arm.com, peter.maydell@linaro.org, agraf@suse.de
+Cc: jan.kiszka@siemens.com, dahi@linux.vnet.ibm.com, r65777@freescale.com,
+        bp@suse.de, pbonzini@redhat.com,
+        =?UTF-8?q?Alex=20Benn=C3=A9e?= <alex.bennee@linaro.org>,
+        Gleb Natapov <gleb@kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        linux-kernel@vger.kernel.org (open list),
+        linux-api@vger.kernel.org (open list:ABI/API)
+Subject: [PATCH 5/7] KVM: arm64: guest debug, add support for single-step
+Date: Tue, 25 Nov 2014 16:10:03 +0000
+Message-Id: <1416931805-23223-6-git-send-email-alex.bennee@linaro.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org>
+References: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 127.0.0.1
+X-SA-Exim-Mail-From: alex.bennee@linaro.org
+X-SA-Exim-Scanned: No (on socrates.bennee.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark,
+This adds support for single-stepping the guest. As userspace can and
+will manipulate guest registers before restarting any tweaking of the
+registers has to occur just before control is passed back to the guest.
+Furthermore while guest debugging is in effect we need to squash the
+ability of the guest to single-step itself as we have no easy way of
+re-entering the guest after the exception has been delivered to the
+hypervisor.
 
-Am Donnerstag, 20. November 2014, 09:46:34 schrieb Mark Yao:
-> This a series of patches is a DRM Driver for Rockchip Socs, add support
-> for vop devices. Future patches will add additional encoders/connectors,
-> such as eDP, HDMI.
-> 
-> The basic "crtc" for rockchip is a "VOP" - Video Output Processor.
-> the vop devices found on Rockchip rk3288 Soc, rk3288 soc have two similar
-> Vop devices. Vop devices support iommu mapping, we use dma-mapping API with
-> ARM_DMA_USE_IOMMU.
+Signed-off-by: Alex Bennée <alex.bennee@linaro.org>
 
-it looks like everybody is more or less happy with this version - in past 
-versions responses voicing concerns where quite swift.
+diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
+index 48d26bb..a76daae 100644
+--- a/arch/arm/kvm/arm.c
++++ b/arch/arm/kvm/arm.c
+@@ -38,6 +38,7 @@
+ #include <asm/tlbflush.h>
+ #include <asm/cacheflush.h>
+ #include <asm/virt.h>
++#include <asm/debug-monitors.h>
+ #include <asm/kvm_arm.h>
+ #include <asm/kvm_asm.h>
+ #include <asm/kvm_mmu.h>
+@@ -300,6 +301,17 @@ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
+ 	kvm_arm_set_running_vcpu(NULL);
+ }
+ 
++/**
++ * kvm_arch_vcpu_ioctl_set_guest_debug - Setup guest debugging
++ * @kvm:	pointer to the KVM struct
++ * @kvm_guest_debug: the ioctl data buffer
++ *
++ * This sets up the VM for guest debugging. Care has to be taken when
++ * manipulating guest registers as these will be set/cleared by the
++ * hyper-visor controller, typically before each kvm_run event. As a
++ * result modification of the guest registers needs to take place
++ * after they have been restored in the hyp.S trampoline code.
++ */
+ int kvm_arch_vcpu_ioctl_set_guest_debug(struct kvm_vcpu *vcpu,
+ 					struct kvm_guest_debug *dbg)
+ {
+@@ -317,8 +329,8 @@ int kvm_arch_vcpu_ioctl_set_guest_debug(struct kvm_vcpu *vcpu,
+ 
+ 	/* Single Step */
+ 	if (vcpu->guest_debug & KVM_GUESTDBG_SINGLESTEP) {
+-		kvm_info("SS requested, not yet implemented\n");
+-		return -EINVAL;
++		kvm_info("SS requested\n");
++		route_el2 = true;
+ 	}
+ 
+ 	/* Software Break Points */
+diff --git a/arch/arm64/kernel/asm-offsets.c b/arch/arm64/kernel/asm-offsets.c
+index 8da1043..78e5ae1 100644
+--- a/arch/arm64/kernel/asm-offsets.c
++++ b/arch/arm64/kernel/asm-offsets.c
+@@ -121,6 +121,7 @@ int main(void)
+   DEFINE(VCPU_FAR_EL2,		offsetof(struct kvm_vcpu, arch.fault.far_el2));
+   DEFINE(VCPU_HPFAR_EL2,	offsetof(struct kvm_vcpu, arch.fault.hpfar_el2));
+   DEFINE(VCPU_DEBUG_FLAGS,	offsetof(struct kvm_vcpu, arch.debug_flags));
++  DEFINE(GUEST_DEBUG,		offsetof(struct kvm_vcpu, guest_debug));
+   DEFINE(VCPU_HCR_EL2,		offsetof(struct kvm_vcpu, arch.hcr_el2));
+   DEFINE(VCPU_MDCR_EL2,	offsetof(struct kvm_vcpu, arch.mdcr_el2));
+   DEFINE(VCPU_IRQ_LINES,	offsetof(struct kvm_vcpu, arch.irq_lines));
+diff --git a/arch/arm64/kvm/handle_exit.c b/arch/arm64/kvm/handle_exit.c
+index 28dc92b..6def054 100644
+--- a/arch/arm64/kvm/handle_exit.c
++++ b/arch/arm64/kvm/handle_exit.c
+@@ -91,6 +91,25 @@ static int kvm_handle_bkpt(struct kvm_vcpu *vcpu, struct kvm_run *run)
+ 	return 0;
+ }
+ 
++/**
++ * kvm_handle_ss - handle single step exceptions
++ *
++ * @vcpu:	the vcpu pointer
++ *
++ * See: ARM ARM D2.12 for the details. While the host is routing debug
++ * exceptions to it's handlers we have to suppress the ability of the
++ * guest to trigger exceptions.
++ */
++static int kvm_handle_ss(struct kvm_vcpu *vcpu, struct kvm_run *run)
++{
++	WARN_ON(!(vcpu->guest_debug & KVM_GUESTDBG_SINGLESTEP));
++
++	run->exit_reason = KVM_EXIT_DEBUG;
++	run->debug.arch.exit_type = KVM_DEBUG_EXIT_SINGLE_STEP;
++	run->debug.arch.address = *vcpu_pc(vcpu);
++	return 0;
++}
++
+ static exit_handle_fn arm_exit_handlers[] = {
+ 	[ESR_EL2_EC_WFI]	= kvm_handle_wfx,
+ 	[ESR_EL2_EC_CP15_32]	= kvm_handle_cp15_32,
+@@ -105,6 +124,7 @@ static exit_handle_fn arm_exit_handlers[] = {
+ 	[ESR_EL2_EC_SYS64]	= kvm_handle_sys_reg,
+ 	[ESR_EL2_EC_IABT]	= kvm_handle_guest_abort,
+ 	[ESR_EL2_EC_DABT]	= kvm_handle_guest_abort,
++	[ESR_EL2_EC_SOFTSTP]    = kvm_handle_ss,
+ 	[ESR_EL2_EC_BKPT32]	= kvm_handle_bkpt,
+ 	[ESR_EL2_EC_BRK64]	= kvm_handle_bkpt,
+ };
+diff --git a/arch/arm64/kvm/hyp.S b/arch/arm64/kvm/hyp.S
+index 3c733ea..c0bc218 100644
+--- a/arch/arm64/kvm/hyp.S
++++ b/arch/arm64/kvm/hyp.S
+@@ -16,6 +16,7 @@
+  */
+ 
+ #include <linux/linkage.h>
++#include <linux/kvm.h>
+ 
+ #include <asm/assembler.h>
+ #include <asm/memory.h>
+@@ -168,6 +169,31 @@
+ 	// x19-x29, lr, sp*, elr*, spsr*
+ 	restore_common_regs
+ 
++	// After restoring the guest registers but before we return to the guest
++	// we may want to make some final tweaks to support guest debugging.
++	ldr	x3, [x0, #GUEST_DEBUG]
++	tbz	x3, #KVM_GUESTDBG_ENABLE_SHIFT, 2f	// No guest debug
++
++	// x0 - preserved as VCPU ptr
++	// x1 - spsr
++	// x2 - mdscr
++	mrs	x1, spsr_el2
++	mrs 	x2, mdscr_el1
++
++	// See ARM ARM D2.12.3 The software step state machine
++	// If we are doing Single Step - set MDSCR_EL1.SS and PSTATE.SS
++	orr	x1, x1, #DBG_SPSR_SS
++	orr	x2, x2, #DBG_MDSCR_SS
++	tbnz	x3, #KVM_GUESTDBG_SINGLESTEP_SHIFT, 1f
++	// If we are not doing Single Step we want to prevent the guest doing so
++	// as otherwise we will have to deal with the re-routed exceptions as we
++	// are doing other guest debug related things
++	eor	x1, x1, #DBG_SPSR_SS
++	eor	x2, x2, #DBG_MDSCR_SS
++1:
++	msr	spsr_el2, x1
++	msr	mdscr_el1, x2
++2:
+ 	// Last bits of the 64bit state
+ 	pop	x2, x3
+ 	pop	x0, x1
+diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+index 523f476..347e5b0 100644
+--- a/include/uapi/linux/kvm.h
++++ b/include/uapi/linux/kvm.h
+@@ -7,6 +7,8 @@
+  * Note: you must update KVM_API_VERSION if you change this interface.
+  */
+ 
++#ifndef __ASSEMBLY__
++
+ #include <linux/types.h>
+ #include <linux/compiler.h>
+ #include <linux/ioctl.h>
+@@ -515,11 +517,6 @@ struct kvm_s390_irq {
+ 	} u;
+ };
+ 
+-/* for KVM_SET_GUEST_DEBUG */
+-
+-#define KVM_GUESTDBG_ENABLE		0x00000001
+-#define KVM_GUESTDBG_SINGLESTEP		0x00000002
+-
+ struct kvm_guest_debug {
+ 	__u32 control;
+ 	__u32 pad;
+@@ -1189,4 +1186,15 @@ struct kvm_assigned_msix_entry {
+ 	__u16 padding[3];
+ };
+ 
++#endif /* __ASSEMBLY__ */
++
++/* for KVM_SET_GUEST_DEBUG */
++
++#define KVM_GUESTDBG_ENABLE_SHIFT	0
++#define KVM_GUESTDBG_ENABLE		(1 << KVM_GUESTDBG_ENABLE_SHIFT)
++#define KVM_GUESTDBG_SINGLESTEP_SHIFT	1
++#define KVM_GUESTDBG_SINGLESTEP	(1 << KVM_GUESTDBG_SINGLESTEP_SHIFT)
++
++
++
+ #endif /* __LINUX_KVM_H */
+-- 
+2.1.3
 
-As David requested a pull request the last time, it might be time to do so, so 
-that we maybe still reach 3.19. 
-
-
-Heiko
