@@ -1,161 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751136AbaKYQGY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 11:06:24 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:20861 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781AbaKYQGW (ORCPT
+	id S1751277AbaKYQJT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 11:09:19 -0500
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:61508 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043AbaKYQJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 11:06:22 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: rostedt@goodmis.org
-Cc: jkosina@suse.cz, paulmck@linux.vnet.ibm.com, pmladek@suse.cz,
-        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] x86/nmi: fix use of unallocated cpumask_var_t
-Date: Tue, 25 Nov 2014 11:06:00 -0500
-Message-Id: <1416931560-10603-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 2.1.0
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Tue, 25 Nov 2014 11:09:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <5474A77B.10806@roeck-us.net>
+References: <1416930423-12179-1-git-send-email-bgolaszewski@baylibre.com>
+	<1416930423-12179-3-git-send-email-bgolaszewski@baylibre.com>
+	<5474A77B.10806@roeck-us.net>
+Date: Tue, 25 Nov 2014 17:09:16 +0100
+Message-ID: <CAMpxmJXA_jKgxb64EMK3KjxSDbTdi2x4rN0FTcVieOLMLCvZSg@mail.gmail.com>
+Subject: Re: [PATCH 2/5] hwmon: ina2xx: make shunt resistance configurable at run-time
+From: =?UTF-8?Q?Bartosz_Go=C5=82aszewski?= <bgolaszewski@baylibre.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Patrick Titiano <ptitiano@baylibre.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit "x86/nmi: Perform a safe NMI stack trace on all CPUs" has introduced
-a cpumask_var_t variable:
+2014-11-25 16:59 GMT+01:00 Guenter Roeck <linux@roeck-us.net>:
+> For a given system it should always be known, and it appears unlikely
+> that there is a system out there where the shunt resistor value can change.
+>
+> What system exactly are you talking about ?
 
-	+static cpumask_var_t printtrace_mask;
+We're talking about the ACME cape for BeagleBone Black:
+http://baylibre.com/acme/
 
-But never allocated it before using it, which caused a NULL ptr deref when
-trying to print the stack trace:
+The probes you can see on the page can be connected in various
+configurations and different probes have different shunt resistors.
+Their values are set from the user-space after booting, hence the
+patch.
 
-[ 1110.296154] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[ 1110.296169] IP: __memcpy (arch/x86/lib/memcpy_64.S:151)
-[ 1110.296178] PGD 4c34b3067 PUD 4c351b067 PMD 0 
-[ 1110.296186] Oops: 0002 [#1] PREEMPT SMP KASAN
-[ 1110.296234] Dumping ftrace buffer:
-[ 1110.296330]    (ftrace buffer empty)
-[ 1110.296339] Modules linked in:
-[ 1110.296345] CPU: 1 PID: 10538 Comm: trinity-c99 Not tainted 3.18.0-rc5-next-20141124-sasha-00058-ge2a8c09-dirty #1499
-[ 1110.296348] task: ffff880152650000 ti: ffff8804c3560000 task.ti: ffff8804c3560000
-[ 1110.296357] RIP: __memcpy (arch/x86/lib/memcpy_64.S:151)
-[ 1110.296360] RSP: 0000:ffff8804c3563870  EFLAGS: 00010246
-[ 1110.296363] RAX: 0000000000000000 RBX: ffffe8fff3c4a809 RCX: 0000000000000000
-[ 1110.296366] RDX: 0000000000000008 RSI: ffffffff9e254040 RDI: 0000000000000000
-[ 1110.296369] RBP: ffff8804c3563908 R08: 0000000000ffffff R09: 0000000000ffffff
-[ 1110.296371] R10: 0000000000000000 R11: 0000000000000006 R12: 0000000000000000
-[ 1110.296375] R13: 0000000000000000 R14: ffffffff9e254040 R15: ffffe8fff3c4a809
-[ 1110.296379] FS:  00007f9e43b0b700(0000) GS:ffff880107e00000(0000) knlGS:0000000000000000
-[ 1110.296382] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1110.296385] CR2: 0000000000000000 CR3: 00000004e4334000 CR4: 00000000000006a0
-[ 1110.296400] Stack:
-[ 1110.296406]  ffffffff81b1e46c 0000000000000000 ffff880107e03fb8 000000000000000b
-[ 1110.296413]  ffff880107dfffc0 ffff880107e03fc0 0000000000000008 ffffffff93f2e9c8
-[ 1110.296419]  0000000000000000 ffffda0020fc07f7 0000000000000008 ffff8804c3563901
-[ 1110.296420] Call Trace:
-[ 1110.296429] ? memcpy (mm/kasan/kasan.c:275)
-[ 1110.296437] ? arch_trigger_all_cpu_backtrace (include/linux/bitmap.h:215 include/linux/cpumask.h:506 arch/x86/kernel/apic/hw_nmi.c:76)
-[ 1110.296444] arch_trigger_all_cpu_backtrace (include/linux/bitmap.h:215 include/linux/cpumask.h:506 arch/x86/kernel/apic/hw_nmi.c:76)
-[ 1110.296451] ? dump_stack (./arch/x86/include/asm/preempt.h:95 lib/dump_stack.c:55)
-[ 1110.296458] do_raw_spin_lock (./arch/x86/include/asm/spinlock.h:86 kernel/locking/spinlock_debug.c:130 kernel/locking/spinlock_debug.c:137)
-[ 1110.296468] _raw_spin_lock (include/linux/spinlock_api_smp.h:143 kernel/locking/spinlock.c:151)
-[ 1110.296474] ? __page_check_address (include/linux/spinlock.h:309 mm/rmap.c:630)
-[ 1110.296481] __page_check_address (include/linux/spinlock.h:309 mm/rmap.c:630)
-[ 1110.296487] ? preempt_count_sub (kernel/sched/core.c:2615)
-[ 1110.296493] try_to_unmap_one (include/linux/rmap.h:202 mm/rmap.c:1146)
-[ 1110.296504] ? anon_vma_interval_tree_iter_next (mm/interval_tree.c:72 mm/interval_tree.c:103)
-[ 1110.296514] rmap_walk (mm/rmap.c:1653 mm/rmap.c:1725)
-[ 1110.296521] ? page_get_anon_vma (include/linux/rcupdate.h:423 include/linux/rcupdate.h:935 mm/rmap.c:435)
-[ 1110.296530] try_to_unmap (mm/rmap.c:1545)
-[ 1110.296536] ? page_get_anon_vma (mm/rmap.c:437)
-[ 1110.296545] ? try_to_unmap_nonlinear (mm/rmap.c:1138)
-[ 1110.296551] ? SyS_msync (mm/rmap.c:1501)
-[ 1110.296558] ? page_remove_rmap (mm/rmap.c:1409)
-[ 1110.296565] ? page_get_anon_vma (mm/rmap.c:448)
-[ 1110.296571] ? anon_vma_ctor (mm/rmap.c:1496)
-[ 1110.296579] migrate_pages (mm/migrate.c:913 mm/migrate.c:956 mm/migrate.c:1136)
-[ 1110.296586] ? _raw_spin_unlock_irq (./arch/x86/include/asm/preempt.h:95 include/linux/spinlock_api_smp.h:169 kernel/locking/spinlock.c:199)
-[ 1110.296593] ? buffer_migrate_lock_buffers (mm/migrate.c:1584)
-[ 1110.296601] ? handle_mm_fault (mm/memory.c:3163 mm/memory.c:3223 mm/memory.c:3336 mm/memory.c:3365)
-[ 1110.296607] migrate_misplaced_page (mm/migrate.c:1738)
-[ 1110.296614] handle_mm_fault (mm/memory.c:3170 mm/memory.c:3223 mm/memory.c:3336 mm/memory.c:3365)
-[ 1110.296623] __do_page_fault (arch/x86/mm/fault.c:1246)
-[ 1110.296630] ? vtime_account_user (kernel/sched/cputime.c:701)
-[ 1110.296638] ? get_parent_ip (kernel/sched/core.c:2559)
-[ 1110.296646] ? context_tracking_user_exit (kernel/context_tracking.c:144)  
-[ 1110.296656] trace_do_page_fault (arch/x86/mm/fault.c:1329 include/linux/jump_label.h:114 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1330)
-[ 1110.296664] do_async_page_fault (arch/x86/kernel/kvm.c:280)
-[ 1110.296670] async_page_fault (arch/x86/kernel/entry_64.S:1285)  
-[ 1110.296755] Code: 08 4c 8b 54 16 f0 4c 8b 5c 16 f8 4c 89 07 4c 89 4f 08 4c 89 54 17 f0 4c 89 5c 17 f8 c3 90 83 fa 08 72 1b 4c 8b 06 4c 8b 4c 16 f8 <4c> 89 07 4c 89 4c 17 f8 c3 66 2e 0f 1f 84 00 00 00 00 00 83 fa 
-All code
-========
-   0:   08 4c 8b 54             or     %cl,0x54(%rbx,%rcx,4)
-   4:   16                      (bad)  
-   5:   f0 4c 8b 5c 16 f8       lock mov -0x8(%rsi,%rdx,1),%r11
-   b:   4c 89 07                mov    %r8,(%rdi)
-   e:   4c 89 4f 08             mov    %r9,0x8(%rdi)
-  12:   4c 89 54 17 f0          mov    %r10,-0x10(%rdi,%rdx,1)
-  17:   4c 89 5c 17 f8          mov    %r11,-0x8(%rdi,%rdx,1)
-  1c:   c3                      retq   
-  1d:   90                      nop
-  1e:   83 fa 08                cmp    $0x8,%edx
-  21:   72 1b                   jb     0x3e
-  23:   4c 8b 06                mov    (%rsi),%r8
-  26:   4c 8b 4c 16 f8          mov    -0x8(%rsi,%rdx,1),%r9
-  2b:*  4c 89 07                mov    %r8,(%rdi)               <-- trapping instruction
-  2e:   4c 89 4c 17 f8          mov    %r9,-0x8(%rdi,%rdx,1)
-  33:   c3                      retq   
-  34:   66 2e 0f 1f 84 00 00    nopw   %cs:0x0(%rax,%rax,1)
-  3b:   00 00 00 
-  3e:   83 fa 00                cmp    $0x0,%edx
-
-Code starting with the faulting instruction
-===========================================
-   0:   4c 89 07                mov    %r8,(%rdi)
-   3:   4c 89 4c 17 f8          mov    %r9,-0x8(%rdi,%rdx,1)
-   8:   c3                      retq   
-   9:   66 2e 0f 1f 84 00 00    nopw   %cs:0x0(%rax,%rax,1)
-  10:   00 00 00 
-  13:   83 fa 00                cmp    $0x0,%edx
-[ 1110.296760] RIP __memcpy (arch/x86/lib/memcpy_64.S:151)
-[ 1110.296763]  RSP <ffff8804c3563870>
-[ 1110.296765] CR2: 0000000000000000
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- arch/x86/kernel/apic/hw_nmi.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index c95c3e9..6873ab9 100644
---- a/arch/x86/kernel/apic/hw_nmi.c
-+++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -30,7 +30,7 @@ u64 hw_nmi_get_sample_period(int watchdog_thresh)
- #ifdef arch_trigger_all_cpu_backtrace
- /* For reliability, we're prepared to waste bits here. */
- static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
--static cpumask_var_t printtrace_mask;
-+static cpumask_t printtrace_mask;
- 
- #define NMI_BUF_SIZE		4096
- 
-@@ -73,7 +73,7 @@ void arch_trigger_all_cpu_backtrace(bool include_self)
- 	if (!include_self)
- 		cpumask_clear_cpu(this_cpu, to_cpumask(backtrace_mask));
- 
--	cpumask_copy(printtrace_mask, to_cpumask(backtrace_mask));
-+	cpumask_copy(&printtrace_mask, to_cpumask(backtrace_mask));
- 	/*
- 	 * Set up per_cpu seq_buf buffers that the NMIs running on the other
- 	 * CPUs will write to.
-@@ -101,7 +101,7 @@ void arch_trigger_all_cpu_backtrace(bool include_self)
- 	 * Now that all the NMIs have triggered, we can dump out their
- 	 * back traces safely to the console.
- 	 */
--	for_each_cpu(cpu, printtrace_mask) {
-+	for_each_cpu(cpu, &printtrace_mask) {
- 		int last_i = 0;
- 
- 		s = &per_cpu(nmi_print_seq, cpu);
--- 
-1.7.10.4
-
+Bart
