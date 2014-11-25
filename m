@@ -1,203 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254AbaKYLwi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:52:38 -0500
-Received: from mga01.intel.com ([192.55.52.88]:41588 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752962AbaKYLwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 06:52:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,455,1413270000"; 
-   d="scan'208";a="637739926"
-Message-ID: <54746D7F.1020104@intel.com>
-Date: Tue, 25 Nov 2014 19:52:31 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S1756059AbaKYLvj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:51:39 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:60765 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754520AbaKYLve (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 06:51:34 -0500
+Message-Id: <20141125115129.578941565@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Tue, 25 Nov 2014 06:50:06 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [RFC][PATCH 3/9 v2] ftrace/x86: Rename MCOUNT_SAVE_FRAME and add more detailed comments
+References: <20141125115003.856641273@goodmis.org>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Lee Jones <lee.jones@linaro.org>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Yegnesh Iyer <yegnesh.s.iyer@intel.com>, linux-acpi@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/3] Support PMIC operation region for CrystalCove
- and XPower
-References: <1416553911-22990-1-git-send-email-aaron.lu@intel.com> <1987897.BgdIEqPdlH@vostro.rjw.lan>
-In-Reply-To: <1987897.BgdIEqPdlH@vostro.rjw.lan>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0003-ftrace-x86-Rename-MCOUNT_SAVE_FRAME-and-add-more-det.patch
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2014 09:47 AM, Rafael J. Wysocki wrote:
-> On Friday, November 21, 2014 03:11:48 PM Aaron Lu wrote:
->> v3:
->> Only some function/variable name changes, no functiona changes:
->> - Replace the dptf/DPTF word originate from the BIOS ACPI table with more
->>   meaningful word thermal/THERMAL in all places;
->> - Eliminate the soc part in various structure and function names to make
->>   them shorter:
->>   intel_soc_pmic_opregion -> intel_pmic_opregion
->>   intel_soc_pmic_pmop_handler -> intel_pmic_pmop_handler
->>   intel_soc_pmic_install_opregion_handler -> intel_pmic_install_opregion_handler
->>   etc.
->>
->>
->> v2:
->> Place PMIC operation files under drivers/acpi/pmic instead of
->> drivers/acpi/pmic_opregion as suggested by Rafael;
->> Rename PMIC operation files to make them shorter as suggested by Rafael.
->>
->> v1:
->> On Intel Baytrail-T and Baytrail-T-CR platforms, there are two customized
->> ACPI operation regions defined for the Power Management Integrated Circuit
->> device, one is for power resource handling and one is for thermal: sensor
->> temperature reporting, trip point setting, etc. There are different PMIC
->> chips used on those platforms and though each has the same two operation
->> regions and functionality, their implementation is different so every PMIC
->> will need a driver. But since their functionality is similar, some common
->> code is abstracted into the intel_soc_pmic_opregion.c.
->>
->> The last version is posted here:
->> https://lkml.org/lkml/2014/9/8/801
->>
->> Changes since then:
->> 1 Move to drivers/acpi as discussed on the above thread;
->> 2 Added support for XPower AXP288 PMIC operation region support;
->> 3 Since operation region handler can not be removed(at the moment at least),
->>   use bool for the two operation region driver configs instead of tristate;
->>   Another reason to do this is that, with Mika's MFD ACPI support patch, all
->>   those MFD cell devices created will have the same modalias as their parent's
->>   so it doesn't make much sense to compile these drivers into modules.
->>
->> Patch 1 applies on top of Rafael's pm-next branch, and then patch 2 and
->> patch 3 needs merge of Lee's mfd/ib-mfd-iio-3.19 branch where the PMIC
->> driver XPower AXP288 and iio driver axp288_adc is located.
->>
->>
->> Aaron Lu (3):
->>   ACPI / PMIC: support PMIC operation region for CrystalCove
->>   ACPI / PMIC: support PMIC operation region for XPower AXP288
->>   ACPI / PMIC: AXP288: support virtual GPIO in ACPI table
-> 
-> OK
-> 
-> I've pulled the Lee's 'mfd/ib-mfd-iio-3.19' branch and applied your updated
-> three on top of that.  Please check the bleeding-edge branch of linux-pm.git
-> for the result.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Thanks, and a fix patch is here:
+The name MCOUNT_SAVE_FRAME is rather confusing as it really isn't a
+function frame that is saved, but just the required mcount registers
+that are needed to be saved before C code may be called. The word
+"frame" confuses it as being a function frame which it is not.
 
-From: Aaron Lu <aaron.lu@intel.com>
-Date: Tue, 25 Nov 2014 14:35:38 +0800
-Subject: [PATCH] ACPI / PMIC: Make it possible to build PMIC driver as a module
+Rename MCOUNT_SAVE_FRAME and MCOUNT_RESTORE_FRAME to save_mcount_regs
+and restore_mcount_regs respectively. Noticed the lower case, which
+keeps it from screaming at the reviewers.
 
-This can solve a problem that when axp288_adc driver is built as a
-module and the PMIC driver is builtin, following error would ocur:
- drivers/built-in.o: In function `intel_xpower_pmic_get_raw_temp':
- intel_pmic_xpower.c:(.text+0xdfaa7): undefined reference to `iio_channel_get'
- intel_pmic_xpower.c:(.text+0xdfb24): undefined reference to `iio_read_channel_raw'
- intel_pmic_xpower.c:(.text+0xdfb4e): undefined reference to `iio_channel_release'
+Link: http://lkml.kernel.org/r/CA+55aFwF+qCGSKdGaEgW4p6N65GZ5_XTV=1NbtWDvxnd5yYLiw@mail.gmail.com
 
-Also, with the fix commit: 52870786ff5d ("ACPI: Use ACPI companion to
-match only the first physical device"), the MFD cell device will have
-its own platform modalias instead of its parent's ACPI modalias, this
-made it possible for the module to be autoloaded.
-
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/acpi/Kconfig                  |  6 +++---
- drivers/acpi/pmic/intel_pmic_crc.c    | 12 +++++++++++-
- drivers/acpi/pmic/intel_pmic_xpower.c | 12 +++++++++++-
- 3 files changed, 25 insertions(+), 5 deletions(-)
+ arch/x86/kernel/mcount_64.S | 32 ++++++++++++++++++++++++--------
+ 1 file changed, 24 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index 227f0692cbff..f9459ba4ce59 100644
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -394,7 +394,7 @@ config ACPI_EXTLOG
- 	  tracepoint which carries that information to userspace.
+diff --git a/arch/x86/kernel/mcount_64.S b/arch/x86/kernel/mcount_64.S
+index 94fe46725fe0..0a693d011980 100644
+--- a/arch/x86/kernel/mcount_64.S
++++ b/arch/x86/kernel/mcount_64.S
+@@ -21,8 +21,24 @@
+ # define function_hook	mcount
+ #endif
  
- menuconfig PMIC_OPREGION
--	bool "PMIC (Power Management Integrated Circuit) operation region support"
-+	tristate "PMIC (Power Management Integrated Circuit) operation region support"
- 	help
- 	  Select this option to enable support for ACPI operation
- 	  region of the PMIC chip. The operation region can be used
-@@ -403,13 +403,13 @@ menuconfig PMIC_OPREGION
- 
- if PMIC_OPREGION
- config CRC_PMIC_OPREGION
--	bool "ACPI operation region support for CrystalCove PMIC"
-+	tristate "ACPI operation region support for CrystalCove PMIC"
- 	depends on INTEL_SOC_PMIC
- 	help
- 	  This config adds ACPI operation region support for CrystalCove PMIC.
- 
- config XPOWER_PMIC_OPREGION
--	bool "ACPI operation region support for XPower AXP288 PMIC"
-+	tristate "ACPI operation region support for XPower AXP288 PMIC"
- 	depends on AXP288_ADC
- 	help
- 	  This config adds ACPI operation region support for XPower AXP288 PMIC.
-diff --git a/drivers/acpi/pmic/intel_pmic_crc.c b/drivers/acpi/pmic/intel_pmic_crc.c
-index 8955e5b41195..8a193381b5ee 100644
---- a/drivers/acpi/pmic/intel_pmic_crc.c
-+++ b/drivers/acpi/pmic/intel_pmic_crc.c
-@@ -194,13 +194,23 @@ static int intel_crc_pmic_opregion_probe(struct platform_device *pdev)
- 			&intel_crc_pmic_opregion_data);
- }
- 
-+#define DRV_NAME "crystal_cove_region"
++/*
++ * gcc -pg option adds a call to 'mcount' in most functions.
++ * When -mfentry is used, the call is to 'fentry' and not 'mcount'
++ * and is done before the function's stack frame is set up.
++ * They both require a set of regs to be saved before calling
++ * any C code and restored before returning back to the function.
++ *
++ * On boot up, all these calls are converted into nops. When tracing
++ * is enabled, the call can jump to either ftrace_caller or
++ * ftrace_regs_caller. Callbacks (tracing functions) that require
++ * ftrace_regs_caller (like kprobes) need to have pt_regs passed to
++ * it. For this reason, the size of the pt_regs structure will be
++ * allocated on the stack and the required mcount registers will
++ * be saved in the locations that pt_regs has them in.
++ */
 +
-+static struct platform_device_id crc_opregion_id_table[] = {
-+	{ .name = DRV_NAME },
-+	{},
-+};
-+
- static struct platform_driver intel_crc_pmic_opregion_driver = {
- 	.probe = intel_crc_pmic_opregion_probe,
-+	.id_table = crc_opregion_id_table,
- 	.driver = {
--		.name = "crystal_cove_region",
-+		.name = DRV_NAME,
- 	},
- };
+ /* skip is set if the stack was already partially adjusted */
+-.macro MCOUNT_SAVE_FRAME skip=0
++.macro save_mcount_regs skip=0
+ 	 /*
+ 	  * We add enough stack to save all regs.
+ 	  */
+@@ -39,7 +55,7 @@
+ 	movq %rdx, RIP(%rsp)
+ 	.endm
  
-+MODULE_DEVICE_TABLE(platform, crc_opregion_id_table);
-+
- static int __init intel_crc_pmic_opregion_driver_init(void)
- {
- 	return platform_driver_register(&intel_crc_pmic_opregion_driver);
-diff --git a/drivers/acpi/pmic/intel_pmic_xpower.c b/drivers/acpi/pmic/intel_pmic_xpower.c
-index 9ec57ebd81c9..4debcbbd6285 100644
---- a/drivers/acpi/pmic/intel_pmic_xpower.c
-+++ b/drivers/acpi/pmic/intel_pmic_xpower.c
-@@ -251,13 +251,23 @@ static int intel_xpower_pmic_opregion_probe(struct platform_device *pdev)
- 	return result;
- }
+-.macro MCOUNT_RESTORE_FRAME skip=0
++.macro restore_mcount_regs skip=0
+ 	movq R9(%rsp), %r9
+ 	movq R8(%rsp), %r8
+ 	movq RDI(%rsp), %rdi
+@@ -52,7 +68,7 @@
  
-+#define DRV_NAME "axp288_opregion"
-+
-+static struct platform_device_id xpower_opregion_id_table[] = {
-+	{ .name = DRV_NAME },
-+	{},
-+};
-+
- static struct platform_driver intel_xpower_pmic_opregion_driver = {
- 	.probe = intel_xpower_pmic_opregion_probe,
-+	.id_table = xpower_opregion_id_table,
- 	.driver = {
--		.name = "axp288_opregion",
-+		.name = DRV_NAME,
- 	},
- };
+ /* skip is set if stack has been adjusted */
+ .macro ftrace_caller_setup trace_label skip=0
+-	MCOUNT_SAVE_FRAME \skip
++	save_mcount_regs \skip
  
-+MODULE_DEVICE_TABLE(platform, xpower_opregion_id_table);
-+
- static int __init intel_xpower_pmic_opregion_driver_init(void)
- {
- 	return platform_driver_register(&intel_xpower_pmic_opregion_driver);
+ 	/* Save this location */
+ GLOBAL(\trace_label)
+@@ -121,7 +137,7 @@ GLOBAL(ftrace_call)
+ 
+ 	restore_frame
+ 
+-	MCOUNT_RESTORE_FRAME
++	restore_mcount_regs
+ 
+ 	/*
+ 	 * The copied trampoline must call ftrace_return as it
+@@ -196,7 +212,7 @@ GLOBAL(ftrace_regs_call)
+ 	movq RBX(%rsp), %rbx
+ 
+ 	/* skip=8 to skip flags saved in SS */
+-	MCOUNT_RESTORE_FRAME 8
++	restore_mcount_regs 8
+ 
+ 	/* Restore flags */
+ 	popfq
+@@ -240,7 +256,7 @@ trace:
+ 
+ 	call   *ftrace_trace_function
+ 
+-	MCOUNT_RESTORE_FRAME
++	restore_mcount_regs
+ 
+ 	jmp fgraph_trace
+ END(function_hook)
+@@ -249,7 +265,7 @@ END(function_hook)
+ 
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ ENTRY(ftrace_graph_caller)
+-	MCOUNT_SAVE_FRAME
++	save_mcount_regs
+ 
+ #ifdef CC_USING_FENTRY
+ 	leaq SS+16(%rsp), %rdi
+@@ -263,7 +279,7 @@ ENTRY(ftrace_graph_caller)
+ 
+ 	call	prepare_ftrace_return
+ 
+-	MCOUNT_RESTORE_FRAME
++	restore_mcount_regs
+ 
+ 	retq
+ END(ftrace_graph_caller)
 -- 
-1.9.3
+2.1.1
+
 
