@@ -1,101 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869AbaKYLJk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:09:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58875 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753725AbaKYKmp (ORCPT
+	id S1754903AbaKYLKb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:10:31 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:33889 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754056AbaKYLKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:45 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Nadav Amit <namit@cs.technion.ac.il>, Paolo Bonzini <pbonzini@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 171/254] KVM: x86: Fix uninitialized op->type for some immediate values
-Date: Tue, 25 Nov 2014 10:38:41 +0000
-Message-Id: <1416912004-5928-172-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	Tue, 25 Nov 2014 06:10:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <1416820083-20902-1-git-send-email-tomeu.vizoso@collabora.com>
+References: <CAKohponxpSoUXHc9S-y_zgo=T44-6Ayk4vRbW=jRHqQRsdbrGQ@mail.gmail.com>
+	<1416820083-20902-1-git-send-email-tomeu.vizoso@collabora.com>
+Date: Tue, 25 Nov 2014 16:40:23 +0530
+Message-ID: <CAKohponYcoFkbezPjjUbedzZRgbyROJVgKhecALPH+O2yKQfow@mail.gmail.com>
+Subject: Re: [PATCH v2] cpufreq: Ref the policy object sooner
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
+On 24 November 2014 at 14:38, Tomeu Vizoso <tomeu.vizoso@collabora.com> wrote:
+> Do it before it's assigned to cpufreq_cpu_data, otherwise when a driver
+> tries to get the cpu frequency during initialization the policy kobj is
+> referenced and we get this warning:
+>
+> ------------[ cut here ]------------
+> WARNING: CPU: 1 PID: 64 at include/linux/kref.h:47 kobject_get+0x64/0x70()
+> Modules linked in:
+> CPU: 1 PID: 64 Comm: irq/77-tegra-ac Not tainted 3.18.0-rc4-next-20141114ccu-00050-g3eff942 #326
+> [<c0016fac>] (unwind_backtrace) from [<c001272c>] (show_stack+0x10/0x14)
+> [<c001272c>] (show_stack) from [<c06085d8>] (dump_stack+0x98/0xd8)
+> [<c06085d8>] (dump_stack) from [<c002892c>] (warn_slowpath_common+0x84/0xb4)
+> [<c002892c>] (warn_slowpath_common) from [<c00289f8>] (warn_slowpath_null+0x1c/0x24)
+> [<c00289f8>] (warn_slowpath_null) from [<c0220290>] (kobject_get+0x64/0x70)
+> [<c0220290>] (kobject_get) from [<c03e944c>] (cpufreq_cpu_get+0x88/0xc8)
+> [<c03e944c>] (cpufreq_cpu_get) from [<c03e9500>] (cpufreq_get+0xc/0x64)
+> [<c03e9500>] (cpufreq_get) from [<c0285288>] (actmon_thread_isr+0x134/0x198)
+> [<c0285288>] (actmon_thread_isr) from [<c0069008>] (irq_thread_fn+0x1c/0x40)
+> [<c0069008>] (irq_thread_fn) from [<c0069324>] (irq_thread+0x134/0x174)
+> [<c0069324>] (irq_thread) from [<c0040290>] (kthread+0xdc/0xf4)
+> [<c0040290>] (kthread) from [<c000f4b8>] (ret_from_fork+0x14/0x3c)
+> ---[ end trace b7bd64a81b340c59 ]---
+>
+> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+>
+> ---
+>
+> v2:     * Properly unwind when erroring out.
+> ---
+>  drivers/cpufreq/cpufreq.c | 42 +++++++++++++++++++++---------------------
+>  1 file changed, 21 insertions(+), 21 deletions(-)
+>
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 4473eba..ae27ea6 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -898,46 +898,31 @@ static int cpufreq_add_dev_interface(struct cpufreq_policy *policy,
+>         struct freq_attr **drv_attr;
+>         int ret = 0;
+>
+> -       /* prepare interface data */
+> -       ret = kobject_init_and_add(&policy->kobj, &ktype_cpufreq,
+> -                                  &dev->kobj, "cpufreq");
+> -       if (ret)
+> -               return ret;
+> -
+>         /* set up files for this cpu device */
+>         drv_attr = cpufreq_driver->attr;
+>         while ((drv_attr) && (*drv_attr)) {
+>                 ret = sysfs_create_file(&policy->kobj, &((*drv_attr)->attr));
+>                 if (ret)
+> -                       goto err_out_kobj_put;
+> +                       return ret;
+>                 drv_attr++;
+>         }
+>         if (cpufreq_driver->get) {
+>                 ret = sysfs_create_file(&policy->kobj, &cpuinfo_cur_freq.attr);
+>                 if (ret)
+> -                       goto err_out_kobj_put;
+> +                       return ret;
+>         }
+>
+>         ret = sysfs_create_file(&policy->kobj, &scaling_cur_freq.attr);
+>         if (ret)
+> -               goto err_out_kobj_put;
+> +               return ret;
+>
+>         if (cpufreq_driver->bios_limit) {
+>                 ret = sysfs_create_file(&policy->kobj, &bios_limit.attr);
+>                 if (ret)
+> -                       goto err_out_kobj_put;
+> +                       return ret;
+>         }
 
-------------------
+We should add proper handling for error returned from sysfs_create_file()
+someday, but its obviously not what you are trying to fix.
 
-From: Nadav Amit <namit@cs.technion.ac.il>
-
-commit d29b9d7ed76c0b961603ca692b8a562556a20212 upstream.
-
-The emulator could reuse an op->type from a previous instruction for some
-immediate values.  If it mistakenly considers the operands as memory
-operands, it will performs a memory read and overwrite op->val.
-
-Consider for instance the ROR instruction - src2 (the number of times)
-would be read from memory instead of being used as immediate.
-
-Mark every immediate operand as such to avoid this problem.
-
-Fixes: c44b4c6ab80eef3a9c52c7b3f0c632942e6489aa
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/x86/kvm/emulate.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index bcb3134a8d4c..27362eceec9c 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -4220,6 +4220,7 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
- 		fetch_register_operand(op);
- 		break;
- 	case OpCL:
-+		op->type = OP_IMM;
- 		op->bytes = 1;
- 		op->val = reg_read(ctxt, VCPU_REGS_RCX) & 0xff;
- 		break;
-@@ -4227,6 +4228,7 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
- 		rc = decode_imm(ctxt, op, 1, true);
- 		break;
- 	case OpOne:
-+		op->type = OP_IMM;
- 		op->bytes = 1;
- 		op->val = 1;
- 		break;
-@@ -4285,21 +4287,27 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
- 		ctxt->memop.bytes = ctxt->op_bytes + 2;
- 		goto mem_common;
- 	case OpES:
-+		op->type = OP_IMM;
- 		op->val = VCPU_SREG_ES;
- 		break;
- 	case OpCS:
-+		op->type = OP_IMM;
- 		op->val = VCPU_SREG_CS;
- 		break;
- 	case OpSS:
-+		op->type = OP_IMM;
- 		op->val = VCPU_SREG_SS;
- 		break;
- 	case OpDS:
-+		op->type = OP_IMM;
- 		op->val = VCPU_SREG_DS;
- 		break;
- 	case OpFS:
-+		op->type = OP_IMM;
- 		op->val = VCPU_SREG_FS;
- 		break;
- 	case OpGS:
-+		op->type = OP_IMM;
- 		op->val = VCPU_SREG_GS;
- 		break;
- 	case OpImplicit:
--- 
-2.1.0
-
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
