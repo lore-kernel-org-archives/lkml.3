@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114AbaKYMtx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 07:49:53 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38044 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913AbaKYMtw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 07:49:52 -0500
-Date: Tue, 25 Nov 2014 12:47:42 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <nicoleotsuka@gmail.com>
-Cc: b02247@freescale.com, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, alsa-devel@alsa-project.org,
-        timur@tabi.org, Li.Xiubo@freescale.com, lgirdwood@gmail.com
-Message-ID: <20141125124742.GZ7712@sirena.org.uk>
-References: <cover.1414193668.git.nicoleotsuka@gmail.com>
+	id S1753555AbaKYMul (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 07:50:41 -0500
+Received: from mout.web.de ([212.227.15.3]:54911 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752494AbaKYMuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 07:50:39 -0500
+Message-ID: <54747B11.9070104@users.sourceforge.net>
+Date: Tue, 25 Nov 2014 13:50:25 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zrEArbvrm/ur3HOL"
-Content-Disposition: inline
-In-Reply-To: <cover.1414193668.git.nicoleotsuka@gmail.com>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 0/2] ASoC: fsl: Use dynamic slot width for ESAI.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] GPU-DRM-MSM-Adreno: Deletion of unnecessary checks before
+ the function call "release_firmware"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:B3wjjb3AkgN4DXOINQowV6GHrl0znxVM9w10G/f82SeK+/nMRPp
+ uolvL5M3E6HiiViZgUe5kHqqZ9jSxemDbaO4HDSjANHxkNEK+L+XWK93kjZFnVZZCSuPNjE
+ SrReeP7vr3AbW9BToXdXvLXD8h3jPXF72CmJeDFhCmh2ixV2ABAmDHidxxDNB/QNt3hMqNU
+ LQo6GrOAKOX24gk09dJyQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Tue, 25 Nov 2014 13:44:20 +0100
 
---zrEArbvrm/ur3HOL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The release_firmware() function tests whether its argument is NULL
+and then returns immediately. Thus the test around the call is not needed.
 
-On Fri, Oct 24, 2014 at 04:48:10PM -0700, Nicolin Chen wrote:
-> This series of patches add the support of dynamic slot width for
-> ESAI driver. To do this, the PATCH-1 removes the fixed width. In
-> order not to break those platforms that use fixed width, there
-> comes the PATCH-2 to apply an override of slot_width.
+This issue was detected by using the Coccinelle software.
 
-Applied both, thanks.
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/gpu/drm/msm/adreno/adreno_gpu.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---zrEArbvrm/ur3HOL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/drivers/gpu/drm/msm/adreno/adreno_gpu.c b/drivers/gpu/drm/msm/adreno/adreno_gpu.c
+index 655ce5b..757052c 100644
+--- a/drivers/gpu/drm/msm/adreno/adreno_gpu.c
++++ b/drivers/gpu/drm/msm/adreno/adreno_gpu.c
+@@ -404,9 +404,7 @@ void adreno_gpu_cleanup(struct adreno_gpu *gpu)
+ 			msm_gem_put_iova(gpu->memptrs_bo, gpu->base.id);
+ 		drm_gem_object_unreference(gpu->memptrs_bo);
+ 	}
+-	if (gpu->pm4)
+-		release_firmware(gpu->pm4);
+-	if (gpu->pfp)
+-		release_firmware(gpu->pfp);
++	release_firmware(gpu->pm4);
++	release_firmware(gpu->pfp);
+ 	msm_gpu_cleanup(&gpu->base);
+ }
+-- 
+2.1.3
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUdHpuAAoJECTWi3JdVIfQuPEH+wU2vOjKzHpwHUpL0Q6P920z
-XyUuRWZaWgL/wqp6ugDRcopn41Ow4IrngI9Ju/Fx+GOM2jjUupBScqOUkh+dPLWE
-lQ8kwpRw0CZld59Q2W2hBL6VmCG8njGmZ7W6Q4F0wtdPfEjk89wE35b0qSsis2G4
-xovNV+kmMBozkXS0FF+26bav3k3b1Ppk+SEG77bmL7BbjWDI/QFtoSZPF+28tpkS
-XbGLU9yrz8+UvvJbqlHZ+flBISzE0RsskIR+5mBU0wD1Ms3ECgAWrvvR4UE4Lgye
-NOelEPmcssGqNAwprwKP8XTh0urxtNTjNFIk4TQVkKbUHaXOAWN7s7KyT66C2Os=
-=wNgc
------END PGP SIGNATURE-----
-
---zrEArbvrm/ur3HOL--
