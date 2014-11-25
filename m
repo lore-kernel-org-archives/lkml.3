@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799AbaKYKmr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:42:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58864 "EHLO
+	id S1754847AbaKYLIV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:08:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58889 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753755AbaKYKmn (ORCPT
+	with ESMTP id S1753782AbaKYKmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:43 -0500
+	Tue, 25 Nov 2014 05:42:47 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Borislav Petkov <bp@suse.de>,
+Cc: Greg Kurz <gkurz@linux.vnet.ibm.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 172/254] x86, microcode: Fix accessing dis_ucode_ldr on 32-bit
-Date: Tue, 25 Nov 2014 10:38:42 +0000
-Message-Id: <1416912004-5928-173-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 174/254] hwrng: pseries - port to new read API and fix stack corruption
+Date: Tue, 25 Nov 2014 10:38:44 +0000
+Message-Id: <1416912004-5928-175-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,33 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <bp@suse.de>
+From: Greg Kurz <gkurz@linux.vnet.ibm.com>
 
-commit 85be07c32496dc264661308e4d9d4e9ccaff8072 upstream.
+commit 24c65bc7037e7d0f362c0df70d17dd72ee64b8b9 upstream.
 
-We should be accessing it through a pointer, like on the BSP.
+The add_early_randomness() function in drivers/char/hw_random/core.c passes
+a 16-byte buffer to pseries_rng_data_read(). Unfortunately, plpar_hcall()
+returns four 64-bit values and trashes 16 bytes on the stack.
 
-Tested-by: Richard Hendershot <rshendershot@mchsi.com>
-Fixes: 65cef1311d5d ("x86, microcode: Add a disable chicken bit")
-Signed-off-by: Borislav Petkov <bp@suse.de>
+This bug has been lying around for a long time. It got unveiled by:
+
+commit d3cc7996473a7bdd33256029988ea690754e4e2a
+Author: Amit Shah <amit.shah@redhat.com>
+Date:   Thu Jul 10 15:42:34 2014 +0530
+
+    hwrng: fetch randomness only after device init
+
+It may trig a oops while loading or unloading the pseries-rng module for both
+PowerVM and PowerKVM guests.
+
+This patch does two things:
+- pass an intermediate well sized buffer to plpar_hcall(). This is acceptalbe
+  since we're not on a hot path.
+- move to the new read API so that we know the return buffer size for sure.
+
+Signed-off-by: Greg Kurz <gkurz@linux.vnet.ibm.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/cpu/microcode/core_early.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/char/hw_random/pseries-rng.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/microcode/core_early.c b/arch/x86/kernel/cpu/microcode/core_early.c
-index 5f28a64e71ea..2c017f242a78 100644
---- a/arch/x86/kernel/cpu/microcode/core_early.c
-+++ b/arch/x86/kernel/cpu/microcode/core_early.c
-@@ -124,7 +124,7 @@ void __init load_ucode_bsp(void)
- static bool check_loader_disabled_ap(void)
+diff --git a/drivers/char/hw_random/pseries-rng.c b/drivers/char/hw_random/pseries-rng.c
+index ab7ffdec0ec3..f38f2c13e79c 100644
+--- a/drivers/char/hw_random/pseries-rng.c
++++ b/drivers/char/hw_random/pseries-rng.c
+@@ -25,18 +25,21 @@
+ #include <asm/vio.h>
+ 
+ 
+-static int pseries_rng_data_read(struct hwrng *rng, u32 *data)
++static int pseries_rng_read(struct hwrng *rng, void *data, size_t max, bool wait)
  {
- #ifdef CONFIG_X86_32
--	return __pa_nodebug(dis_ucode_ldr);
-+	return *((bool *)__pa_nodebug(&dis_ucode_ldr));
- #else
- 	return dis_ucode_ldr;
- #endif
++	u64 buffer[PLPAR_HCALL_BUFSIZE];
++	size_t size = max < 8 ? max : 8;
+ 	int rc;
+ 
+-	rc = plpar_hcall(H_RANDOM, (unsigned long *)data);
++	rc = plpar_hcall(H_RANDOM, (unsigned long *)buffer);
+ 	if (rc != H_SUCCESS) {
+ 		pr_err_ratelimited("H_RANDOM call failed %d\n", rc);
+ 		return -EIO;
+ 	}
++	memcpy(data, buffer, size);
+ 
+ 	/* The hypervisor interface returns 64 bits */
+-	return 8;
++	return size;
+ }
+ 
+ /**
+@@ -55,7 +58,7 @@ static unsigned long pseries_rng_get_desired_dma(struct vio_dev *vdev)
+ 
+ static struct hwrng pseries_rng = {
+ 	.name		= KBUILD_MODNAME,
+-	.data_read	= pseries_rng_data_read,
++	.read		= pseries_rng_read,
+ };
+ 
+ static int __init pseries_rng_probe(struct vio_dev *dev,
 -- 
 2.1.0
 
