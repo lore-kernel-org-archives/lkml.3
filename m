@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075AbaKYLFX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:05:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58936 "EHLO
+	id S1754372AbaKYLFt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:05:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58928 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753853AbaKYKm5 (ORCPT
+	with ESMTP id S1753832AbaKYKmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:57 -0500
+	Tue, 25 Nov 2014 05:42:55 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+Cc: Christoph Hellwig <hch@lst.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 187/254] dm btree: fix a recursion depth bug in btree walking code
-Date: Tue, 25 Nov 2014 10:38:57 +0000
-Message-Id: <1416912004-5928-188-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 185/254] scsi: only re-lock door after EH on devices that were reset
+Date: Tue, 25 Nov 2014 10:38:55 +0000
+Message-Id: <1416912004-5928-186-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,125 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Christoph Hellwig <hch@lst.de>
 
-commit 9b460d3699324d570a4d4161c3741431887f102f upstream.
+commit 48379270fe6808cf4612ee094adc8da2b7a83baa upstream.
 
-The walk code was using a 'ro_spine' to hold it's locked btree nodes.
-But this data structure is designed for the rolling lock scheme, and
-as such automatically unlocks blocks that are two steps up the call
-chain.  This is not suitable for the simple recursive walk algorithm,
-which retraces its steps.
+Setups that use the blk-mq I/O path can lock up if a host with a single
+device that has its door locked enters EH.  Make sure to only send the
+command to re-lock the door to devices that actually were reset and thus
+might have lost their state.  Otherwise the EH code might be get blocked
+on blk_get_request as all requests for non-reset devices might be in use.
 
-This code is only used by the persistent array code, which in turn is
-only used by dm-cache.  In order to trigger it you need to have a
-mapping tree that is more than 2 levels deep; which equates to 8-16
-million cache blocks.  For instance a 4T ssd with a very small block
-size of 32k only just triggers this bug.
-
-The fix just places the locked blocks on the stack, and stops using
-the ro_spine altogether.
-
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reported-by: Meelis Roos <meelis.roos@ut.ee>
+Tested-by: Meelis Roos <meelis.roos@ut.ee>
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/persistent-data/dm-btree-internal.h |  6 ++++++
- drivers/md/persistent-data/dm-btree-spine.c    |  2 +-
- drivers/md/persistent-data/dm-btree.c          | 24 ++++++++++--------------
- 3 files changed, 17 insertions(+), 15 deletions(-)
+ drivers/scsi/scsi_error.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/persistent-data/dm-btree-internal.h b/drivers/md/persistent-data/dm-btree-internal.h
-index 37d367bb9aa8..bf2b80d5c470 100644
---- a/drivers/md/persistent-data/dm-btree-internal.h
-+++ b/drivers/md/persistent-data/dm-btree-internal.h
-@@ -42,6 +42,12 @@ struct btree_node {
- } __packed;
- 
- 
-+/*
-+ * Locks a block using the btree node validator.
-+ */
-+int bn_read_lock(struct dm_btree_info *info, dm_block_t b,
-+		 struct dm_block **result);
-+
- void inc_children(struct dm_transaction_manager *tm, struct btree_node *n,
- 		  struct dm_btree_value_type *vt);
- 
-diff --git a/drivers/md/persistent-data/dm-btree-spine.c b/drivers/md/persistent-data/dm-btree-spine.c
-index cf9fd676ae44..1b5e13ec7f96 100644
---- a/drivers/md/persistent-data/dm-btree-spine.c
-+++ b/drivers/md/persistent-data/dm-btree-spine.c
-@@ -92,7 +92,7 @@ struct dm_block_validator btree_node_validator = {
- 
- /*----------------------------------------------------------------*/
- 
--static int bn_read_lock(struct dm_btree_info *info, dm_block_t b,
-+int bn_read_lock(struct dm_btree_info *info, dm_block_t b,
- 		 struct dm_block **result)
- {
- 	return dm_tm_read_lock(info->tm, b, &btree_node_validator, result);
-diff --git a/drivers/md/persistent-data/dm-btree.c b/drivers/md/persistent-data/dm-btree.c
-index 416060c25709..200ac12a1d40 100644
---- a/drivers/md/persistent-data/dm-btree.c
-+++ b/drivers/md/persistent-data/dm-btree.c
-@@ -847,22 +847,26 @@ EXPORT_SYMBOL_GPL(dm_btree_find_lowest_key);
-  * FIXME: We shouldn't use a recursive algorithm when we have limited stack
-  * space.  Also this only works for single level trees.
-  */
--static int walk_node(struct ro_spine *s, dm_block_t block,
-+static int walk_node(struct dm_btree_info *info, dm_block_t block,
- 		     int (*fn)(void *context, uint64_t *keys, void *leaf),
- 		     void *context)
- {
- 	int r;
- 	unsigned i, nr;
-+	struct dm_block *node;
- 	struct btree_node *n;
- 	uint64_t keys;
- 
--	r = ro_step(s, block);
--	n = ro_node(s);
-+	r = bn_read_lock(info, block, &node);
-+	if (r)
-+		return r;
-+
-+	n = dm_block_data(node);
- 
- 	nr = le32_to_cpu(n->header.nr_entries);
- 	for (i = 0; i < nr; i++) {
- 		if (le32_to_cpu(n->header.flags) & INTERNAL_NODE) {
--			r = walk_node(s, value64(n, i), fn, context);
-+			r = walk_node(info, value64(n, i), fn, context);
- 			if (r)
- 				goto out;
- 		} else {
-@@ -874,7 +878,7 @@ static int walk_node(struct ro_spine *s, dm_block_t block,
+diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+index 7e957918f33f..b350eb8ec898 100644
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -1989,8 +1989,10 @@ static void scsi_restart_operations(struct Scsi_Host *shost)
+ 	 * is no point trying to lock the door of an off-line device.
+ 	 */
+ 	shost_for_each_device(sdev, shost) {
+-		if (scsi_device_online(sdev) && sdev->locked)
++		if (scsi_device_online(sdev) && sdev->was_reset && sdev->locked) {
+ 			scsi_eh_lock_door(sdev);
++			sdev->was_reset = 0;
++		}
  	}
  
- out:
--	ro_pop(s);
-+	dm_tm_unlock(info->tm, node);
- 	return r;
- }
- 
-@@ -882,15 +886,7 @@ int dm_btree_walk(struct dm_btree_info *info, dm_block_t root,
- 		  int (*fn)(void *context, uint64_t *keys, void *leaf),
- 		  void *context)
- {
--	int r;
--	struct ro_spine spine;
--
- 	BUG_ON(info->levels > 1);
--
--	init_ro_spine(&spine, info);
--	r = walk_node(&spine, root, fn, context);
--	exit_ro_spine(&spine);
--
--	return r;
-+	return walk_node(info, root, fn, context);
- }
- EXPORT_SYMBOL_GPL(dm_btree_walk);
+ 	/*
 -- 
 2.1.0
 
