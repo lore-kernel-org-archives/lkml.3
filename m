@@ -1,144 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907AbaKYHwo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 02:52:44 -0500
-Received: from mga01.intel.com ([192.55.52.88]:43818 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752887AbaKYHwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 02:52:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,454,1413270000"; 
-   d="scan'208";a="627835973"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, x86@kernel.org,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [Patch Part3 v4 27/38] x86, irq: Kill x86_io_apic_ops.write and x86_io_apic_ops.modify
-Date: Tue, 25 Nov 2014 15:49:51 +0800
-Message-Id: <1416901802-24211-28-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1416901802-24211-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1416901802-24211-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1752931AbaKYHws (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 02:52:48 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:25391 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752899AbaKYHwn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 02:52:43 -0500
+Date: Tue, 25 Nov 2014 10:52:29 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Zahari Doychev <zahari.doychev@linux.com>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        oleg.drokin@intel.com, bergwolf@gmail.com, andreas.dilger@intel.com,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH 1/2] [drivers] staging/lustre: fix sparse warnings
+Message-ID: <20141125075229.GC4893@mwanda>
+References: <cover.1416853961.git.zahari.doychev@linux.com>
+ <76b947454ee1a19847633c913f8ac28520aa0574.1416853961.git.zahari.doychev@linux.com>
+ <20141124234036.GA4835@mwanda>
+ <20141125073542.GN429@riot.fritz.box>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141125073542.GN429@riot.fritz.box>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86_io_apic_ops.write is always set to native_io_apic_write(),
-and nobody overrides it. So get rid of the indirection by changing
-native_io_apic_write() as io_apic_write() and killing
-x86_io_apic_ops.write.
+On Tue, Nov 25, 2014 at 08:35:42AM +0100, Zahari Doychev wrote:
+> On Tue, Nov 25, 2014 at 02:40:36AM +0300, Dan Carpenter wrote:
+> > On Mon, Nov 24, 2014 at 07:55:41PM +0100, Zahari Doychev wrote:
+> > > --- a/drivers/staging/lustre/include/linux/lnet/lib-lnet.h
+> > > +++ b/drivers/staging/lustre/include/linux/lnet/lib-lnet.h
+> > > @@ -784,7 +784,8 @@ lnet_copy_iov2flat(int dlen, void *dest, unsigned int doffset,
+> > >  		   unsigned int nsiov, struct iovec *siov, unsigned int soffset,
+> > >  		   unsigned int nob)
+> > >  {
+> > > -	struct iovec diov = {/*.iov_base = */ dest, /*.iov_len = */ dlen};
+> > > +	struct iovec diov = {/*.iov_base = */ (void __user *)dest,
+> > > +			     /*.iov_len = */ dlen};
+> > >  
+> > 
+> > Why can't we just make the comments into code by removing the /*
+> > characters?  Remove the cast by declaring the data as __user data to
+> > begin with instead of declaring it incorrectly and then casting to the
+> > correct type later.
+> 
+> If I make the declarations right then I am moving the casts to other functions.
 
-Do the same for x86_io_apic_ops.modify and native_io_apic_modify().
+Yeah.  It might introduce new warnings.  Don't stress about that.  Don't
+add casts, we'll just fix it all later.  It's better to have warnings
+instead of hiding them with casts.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Tested-by: Joerg Roedel <jroedel@suse.de>
----
- arch/x86/include/asm/io_apic.h  |   13 -------------
- arch/x86/include/asm/x86_init.h |    2 --
- arch/x86/kernel/apic/io_apic.c  |    6 ++++--
- arch/x86/kernel/x86_init.c      |    2 --
- 4 files changed, 4 insertions(+), 19 deletions(-)
-
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 1597c77725f9..21578af00243 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -208,8 +208,6 @@ extern void disable_ioapic_support(void);
- 
- extern void __init native_io_apic_init_mappings(void);
- extern unsigned int native_io_apic_read(unsigned int apic, unsigned int reg);
--extern void native_io_apic_write(unsigned int apic, unsigned int reg, unsigned int val);
--extern void native_io_apic_modify(unsigned int apic, unsigned int reg, unsigned int val);
- extern void native_disable_io_apic(void);
- 
- static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
-@@ -217,15 +215,6 @@ static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
- 	return x86_io_apic_ops.read(apic, reg);
- }
- 
--static inline void io_apic_write(unsigned int apic, unsigned int reg, unsigned int value)
--{
--	x86_io_apic_ops.write(apic, reg, value);
--}
--static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned int value)
--{
--	x86_io_apic_ops.modify(apic, reg, value);
--}
--
- extern void setup_IO_APIC(void);
- extern void enable_IO_APIC(void);
- extern void disable_IO_APIC(void);
-@@ -266,8 +255,6 @@ static inline void mp_save_irq(struct mpc_intsrc *m) { };
- static inline void disable_ioapic_support(void) { }
- #define native_io_apic_init_mappings	NULL
- #define native_io_apic_read		NULL
--#define native_io_apic_write		NULL
--#define native_io_apic_modify		NULL
- #define native_disable_io_apic		NULL
- #endif
- 
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index 09d4dab9302f..844b37d55a44 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -182,8 +182,6 @@ struct x86_msi_ops {
- struct x86_io_apic_ops {
- 	void		(*init)   (void);
- 	unsigned int	(*read)   (unsigned int apic, unsigned int reg);
--	void		(*write)  (unsigned int apic, unsigned int reg, unsigned int value);
--	void		(*modify) (unsigned int apic, unsigned int reg, unsigned int value);
- 	void		(*disable)(void);
- };
- 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index f0ef5832f527..7a3679e43b67 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -277,7 +277,8 @@ unsigned int native_io_apic_read(unsigned int apic, unsigned int reg)
- 	return readl(&io_apic->data);
- }
- 
--void native_io_apic_write(unsigned int apic, unsigned int reg, unsigned int value)
-+static void io_apic_write(unsigned int apic, unsigned int reg,
-+			  unsigned int value)
- {
- 	struct io_apic __iomem *io_apic = io_apic_base(apic);
- 
-@@ -291,7 +292,8 @@ void native_io_apic_write(unsigned int apic, unsigned int reg, unsigned int valu
-  *
-  * Older SiS APIC requires we rewrite the index register
-  */
--void native_io_apic_modify(unsigned int apic, unsigned int reg, unsigned int value)
-+static void io_apic_modify(unsigned int apic, unsigned int reg,
-+			   unsigned int value)
- {
- 	struct io_apic __iomem *io_apic = io_apic_base(apic);
- 
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index f612dc018fb6..633f07845099 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -141,7 +141,5 @@ void arch_restore_msi_irqs(struct pci_dev *dev)
- struct x86_io_apic_ops x86_io_apic_ops = {
- 	.init			= native_io_apic_init_mappings,
- 	.read			= native_io_apic_read,
--	.write			= native_io_apic_write,
--	.modify			= native_io_apic_modify,
- 	.disable		= native_disable_io_apic,
- };
--- 
-1.7.10.4
+regards,
+dan carpenter
 
