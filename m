@@ -1,90 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367AbaKYR3x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 12:29:53 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:32810 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218AbaKYR3v (ORCPT
+	id S1752150AbaKYRas (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 12:30:48 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:43000 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402AbaKYRaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 12:29:51 -0500
-Date: Tue, 25 Nov 2014 18:29:42 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Sudeep Dutt <sudeep.dutt@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nikhil Rao <nikhil.rao@intel.com>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>, lguest@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH v4 04/42] virtio: disable virtio 1.0 in transports
-Message-ID: <20141125182942.3890fe7b.cornelia.huck@de.ibm.com>
-In-Reply-To: <1416933600-21398-5-git-send-email-mst@redhat.com>
-References: <1416933600-21398-1-git-send-email-mst@redhat.com>
-	<1416933600-21398-5-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112517-0013-0000-0000-000001FC1F31
+	Tue, 25 Nov 2014 12:30:46 -0500
+From: icyflame <kannan.siddharth12@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: mail@beyermatthias.de, rickard_strandqvist@spectrumdigital.se,
+        ztugcesirin@gmail.com, fanwlexca@gmail.com, rashika.kheria@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        klmckinney1@gmail.com, kannan.siddharth12@gmail.com
+Subject: [PATCH] staging: bcm: nvm: Fixed spelling errors, that may break grep.
+Date: Tue, 25 Nov 2014 23:00:35 +0530
+Message-Id: <1416936635-5375-1-git-send-email-kannan.siddharth12@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Nov 2014 18:41:35 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+Changing the following:
 
-> disable virtio 1.0 in transports that don't
-> support it yet.
+Adapater -> Adapter
+STATUS_SUCESS -> STATUS_SUCCESS
 
-I'd prefer if you disabled it for _every_ transport in this patch,
-until the needed infrastructure is in place. Else this is a bit
-confusing.
+Signed-off by: Siddharth Kannan <kannan.siddharth12@gmail.com>
+---
+ drivers/staging/bcm/nvm.c |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
-> We will gradually re-enable as support is added.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  drivers/lguest/lguest_device.c     | 3 ++-
->  drivers/misc/mic/card/mic_virtio.c | 2 ++
->  drivers/s390/kvm/virtio_ccw.c      | 3 ++-
->  drivers/virtio/virtio_mmio.c       | 2 ++
->  4 files changed, 8 insertions(+), 2 deletions(-)
-
-Why do you disable ccw but not pci? (Doesn't pci need any changes
-transport-side?) And you missed the old s390 virtio transport in
-drivers/s390/kvm/kvm_virtio.c :)
-
-> diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
-> index abba04d..08536f0 100644
-> --- a/drivers/s390/kvm/virtio_ccw.c
-> +++ b/drivers/s390/kvm/virtio_ccw.c
-> @@ -704,7 +704,8 @@ static u64 virtio_ccw_get_features(struct virtio_device *vdev)
->  out_free:
->  	kfree(features);
->  	kfree(ccw);
-> -	return rc;
-> +	/* TODO: enable virtio 1.0 */
-> +	return rc & ~BIT_ULL(VIRTIO_F_VERSION_1);;
-
-double ';'
-
-FWIW, as negotiating a revision >= 1 is a pre-req for virtio 1.0
-support on ccw, virtio 1.0 is already implicitly disabled.
-
->  }
-> 
->  static void virtio_ccw_finalize_features(struct virtio_device *vdev)
+diff --git a/drivers/staging/bcm/nvm.c b/drivers/staging/bcm/nvm.c
+index ce09473..3cb6eed 100644
+--- a/drivers/staging/bcm/nvm.c
++++ b/drivers/staging/bcm/nvm.c
+@@ -2953,7 +2953,7 @@ int BcmFlash2xBulkWrite(struct bcm_mini_adapter *Adapter,
+  * @Adapter :-Drivers private Data Structure
+  *
+  * Return Value:-
+- * Return STATUS_SUCESS if get success in setting the right DSD else negative error code
++ * Return STATUS_SUCCESS if get success in setting the right DSD else negative error code
+  *
+  */
+ 
+@@ -2994,7 +2994,7 @@ static int BcmGetActiveDSD(struct bcm_mini_adapter *Adapter)
+  * @Adapter : Driver private Data Structure
+  *
+  * Return Value:-
+- * Sucsess:- STATUS_SUCESS
++ * Success:- STATUS_SUCCESS
+  * Failure- : negative erro code
+  *
+  */
+@@ -3083,7 +3083,7 @@ static int BcmDumpFlash2xSectionBitMap(struct bcm_flash2x_bitmap *psFlash2xBitMa
+  * @Adapter:-Driver private Data Structure
+  *
+  * Return value:-
+- * Success:- STATUS_SUCESS
++ * Success:- STATUS_SUCCESS
+  * Failure:- negative error code
+  */
+ 
+@@ -3330,7 +3330,7 @@ int BcmGetFlash2xSectionalBitMap(struct bcm_mini_adapter *Adapter, struct bcm_fl
+  * BcmSetActiveSection :- Set Active section is used to make priority field highest over other
+  * section of same type.
+  *
+- * @Adapater :- Bcm Driver Private Data Structure
++ * @Adapter :- Bcm Driver Private Data Structure
+  * @eFlash2xSectionVal :- Flash section val whose priority has to be made highest.
+  *
+  * Return Value:- Make the priorit highest else return erorr code
+@@ -3510,7 +3510,7 @@ int BcmSetActiveSection(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_secti
+ 
+ /*
+  * BcmCopyISO - Used only for copying the ISO section
+- * @Adapater :- Bcm Driver Private Data Structure
++ * @Adapter :- Bcm Driver Private Data Structure
+  * @sCopySectStrut :- Section copy structure
+  *
+  * Return value:- SUCCESS if copies successfully else negative error code
+@@ -3792,7 +3792,7 @@ out:
+ /*
+  * BcmFlash2xCorruptSig : this API is used to corrupt the written sig in Bcm Header present in flash section.
+  * It will corrupt the sig, if Section is writable, by making first bytes as zero.
+- * @Adapater :- Bcm Driver Private Data Structure
++ * @Adapter :- Bcm Driver Private Data Structure
+  * @eFlash2xSectionVal :- Flash section val which has header
+  *
+  * Return Value :-
+@@ -3820,7 +3820,7 @@ int BcmFlash2xCorruptSig(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_sect
+ /*
+  *BcmFlash2xWriteSig :-this API is used to Write the sig if requested Section has
+  *					  header and  Write Permission.
+- * @Adapater :- Bcm Driver Private Data Structure
++ * @Adapter :- Bcm Driver Private Data Structure
+  * @eFlashSectionVal :- Flash section val which has header
+  *
+  * Return Value :-
+@@ -3882,7 +3882,7 @@ int BcmFlash2xWriteSig(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_sectio
+ /*
+  * validateFlash2xReadWrite :- This API is used to validate the user request for Read/Write.
+  *						      if requested Bytes goes beyond the Requested section, it reports error.
+- * @Adapater :- Bcm Driver Private Data Structure
++ * @Adapter :- Bcm Driver Private Data Structure
+  * @psFlash2xReadWrite :-Flash2x Read/write structure pointer
+  *
+  * Return values:-Return TRUE is request is valid else false.
+@@ -3950,7 +3950,7 @@ int validateFlash2xReadWrite(struct bcm_mini_adapter *Adapter, struct bcm_flash2
+ 
+ /*
+  * IsFlash2x :- check for Flash 2.x
+- * Adapater :- Bcm Driver Private Data Structure
++ * Adapter :- Bcm Driver Private Data Structure
+  *
+  * Return value:-
+  *	return TRUE if flah2.x of hgher version else return false.
+@@ -3966,7 +3966,7 @@ int IsFlash2x(struct bcm_mini_adapter *Adapter)
+ 
+ /*
+  * GetFlashBaseAddr :- Calculate the Flash Base address
+- * @Adapater :- Bcm Driver Private Data Structure
++ * @Adapter :- Bcm Driver Private Data Structure
+  *
+  * Return Value:-
+  *	Success :- Base Address of the Flash
+@@ -4005,7 +4005,7 @@ static int GetFlashBaseAddr(struct bcm_mini_adapter *Adapter)
+  * BcmCopySection :- This API is used to copy the One section in another. Both section should
+  *				    be contiuous and of same size. Hence this Will not be applicabe to copy ISO.
+  *
+- * @Adapater :- Bcm Driver Private Data Structure
++ * @Adapter :- Bcm Driver Private Data Structure
+  * @SrcSection :- Source section From where data has to be copied
+  * @DstSection :- Destination section to which data has to be copied
+  * @offset :- Offset from/to  where data has to be copied from one section to another.
+@@ -4112,7 +4112,7 @@ int BcmCopySection(struct bcm_mini_adapter *Adapter,
+ 
+ /*
+  * SaveHeaderIfPresent :- This API is use to Protect the Header in case of Header Sector write
+- * @Adapater :- Bcm Driver Private Data Structure
++ * @Adapter :- Bcm Driver Private Data Structure
+  * @pBuff :- Data buffer that has to be written in sector having the header map.
+  * @uiOffset :- Flash offset that has to be written.
+  *
+@@ -4181,7 +4181,7 @@ static int SaveHeaderIfPresent(struct bcm_mini_adapter *Adapter, PUCHAR pBuff, u
+ 
+ /*
+  * BcmDoChipSelect : This will selcet the appropriate chip for writing.
+- * @Adapater :- Bcm Driver Private Data Structure
++ * @Adapter :- Bcm Driver Private Data Structure
+  *
+  * OutPut:-
+  *	Select the Appropriate chip and retrn status Success
+-- 
+1.7.9.5
 
