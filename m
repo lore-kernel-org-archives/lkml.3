@@ -1,91 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751275AbaKYORJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:17:09 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:33866 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908AbaKYORG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:17:06 -0500
-Date: Tue, 25 Nov 2014 15:17:13 +0100
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Pieter Smith <pieter@boesman.nl>
-Cc: Josh Triplett <josh@joshtriplett.org>, fuse-devel@lists.sourceforge.net,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 4/7] fs/fuse: support compiling out splice
-Message-ID: <20141125141713.GA9137@tucsk.suse.de>
-References: <1416899996-21315-1-git-send-email-pieter@boesman.nl>
- <1416899996-21315-5-git-send-email-pieter@boesman.nl>
+	id S1751382AbaKYORM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:17:12 -0500
+Received: from mta-out1.inet.fi ([62.71.2.195]:60272 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750908AbaKYORK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 09:17:10 -0500
+Date: Tue, 25 Nov 2014 16:17:02 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: David Rientjes <rientjes@google.com>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] mm/thp: Always allocate transparent hugepages on
+ local node
+Message-ID: <20141125141702.GB11841@node.dhcp.inet.fi>
+References: <1416838791-30023-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20141124150342.GA3889@node.dhcp.inet.fi>
+ <alpine.DEB.2.10.1411241317430.21237@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1416899996-21315-5-git-send-email-pieter@boesman.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.10.1411241317430.21237@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Trimming CC.  Please do the same for other patches.  I for one am not
-interested in the general tinification discussion]
-
-On Tue, Nov 25, 2014 at 08:19:39AM +0100, Pieter Smith wrote:
-> To implement splice support, fs/fuse makes use of nosteal_pipe_buf_ops. This
-> struct is exported by fs/splice. The goal of the larger patch set is to
-> completely compile out fs/splice, so uses of the exported struct need to be
-> compiled out along with fs/splice.
+On Mon, Nov 24, 2014 at 01:33:42PM -0800, David Rientjes wrote:
+> On Mon, 24 Nov 2014, Kirill A. Shutemov wrote:
 > 
-> This patch therefore compiles out splice support in fs/fuse when
-> CONFIG_SYSCALL_SPLICE is undefined.
+> > > This make sure that we try to allocate hugepages from local node. If
+> > > we can't we fallback to small page allocation based on
+> > > mempolicy. This is based on the observation that allocating pages
+> > > on local node is more beneficial that allocating hugepages on remote node.
+> > 
+> > Local node on allocation is not necessary local node for use.
+> > If policy says to use a specific node[s], we should follow.
+> > 
 > 
-> Signed-off-by: Pieter Smith <pieter@boesman.nl>
-> ---
->  fs/fuse/dev.c | 9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
+> True, and the interaction between thp and mempolicies is fragile: if a 
+> process has a MPOL_BIND mempolicy over a set of nodes, that does not 
+> necessarily mean that we want to allocate thp remotely if it will always 
+> be accessed remotely.  It's simple to benchmark and show that remote 
+> access latency of a hugepage can exceed that of local pages.  MPOL_BIND 
+> itself is a policy of exclusion, not inclusion, and it's difficult to 
+> define when local pages and its cost of allocation is better than remote 
+> thp.
 > 
-> diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
-> index ca88731..e984302 100644
-> --- a/fs/fuse/dev.c
-> +++ b/fs/fuse/dev.c
-> @@ -1191,8 +1191,9 @@ __releases(fc->lock)
->   * request_end().  Otherwise add it to the processing list, and set
->   * the 'sent' flag.
->   */
-> -static ssize_t fuse_dev_do_read(struct fuse_conn *fc, struct file *file,
-> -				struct fuse_copy_state *cs, size_t nbytes)
-> +static ssize_t __maybe_unused
-> +fuse_dev_do_read(struct fuse_conn *fc, struct file *file,
-> +		 struct fuse_copy_state *cs, size_t nbytes)
+> For MPOL_BIND, if the local node is allowed then thp should be forced from 
+> that node, if the local node is disallowed then allocate from any node in 
+> the nodemask.  For MPOL_INTERLEAVE, I think we should only allocate thp 
+> from the next node in order, otherwise fail the allocation and fallback to 
+> small pages.  Is this what you meant as well?
 
-fuse_dev_do_read() is definitely going to remain used.  So no point in adding
-__maybe_unused.
+Correct.
 
->  {
->  	int err;
->  	struct fuse_req *req;
-> @@ -1291,6 +1292,7 @@ static ssize_t fuse_dev_read(struct kiocb *iocb, const struct iovec *iov,
->  	return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
->  }
->  
-> +#ifdef CONFIG_SYSCALL_SPLICE
->  static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
->  				    struct pipe_inode_info *pipe,
->  				    size_t len, unsigned int flags)
-> @@ -1368,6 +1370,9 @@ out:
->  	kfree(bufs);
->  	return ret;
->  }
-> +#else /* CONFIG_SYSCALL_SPLICE */
-> +#define fuse_dev_splice_read NULL
-> +#endif
-
-This looks fine.
-
-Thanks,
-Miklos
-
->  
->  static int fuse_notify_poll(struct fuse_conn *fc, unsigned int size,
->  			    struct fuse_copy_state *cs)
-> -- 
-> 2.1.0
+> > I think it makes sense to force local allocation if policy is interleave
+> > or if current node is in preferred or bind set.
+> >  
 > 
+> If local allocation were forced for MPOL_INTERLEAVE and all memory is 
+> initially faulted by cpus on a single node, then the policy has 
+> effectively become MPOL_DEFAULT, there's no interleave.
+
+You're right. I don't have much experience with mempolicy code.
+
+-- 
+ Kirill A. Shutemov
