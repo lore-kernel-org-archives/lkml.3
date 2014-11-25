@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207AbaKYQnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 11:43:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58237 "EHLO mx1.redhat.com"
+	id S1752276AbaKYQn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 11:43:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38203 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751329AbaKYQno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 11:43:44 -0500
-Date: Tue, 25 Nov 2014 18:43:31 +0200
+	id S1752216AbaKYQnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 11:43:51 -0500
+Date: Tue, 25 Nov 2014 18:43:35 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
         kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
         netdev@vger.kernel.org
-Subject: [PATCH v4 30/42] vhost/net: larger header for virtio 1.0
-Message-ID: <1416933600-21398-31-git-send-email-mst@redhat.com>
+Subject: [PATCH v4 31/42] vhost/net: enable virtio 1.0
+Message-ID: <1416933600-21398-32-git-send-email-mst@redhat.com>
 References: <1416933600-21398-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -31,19 +31,19 @@ Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index cae22f9..1ac58d0 100644
+index 1ac58d0..984242e 100644
 --- a/drivers/vhost/net.c
 +++ b/drivers/vhost/net.c
-@@ -1027,7 +1027,8 @@ static int vhost_net_set_features(struct vhost_net *n, u64 features)
- 	size_t vhost_hlen, sock_hlen, hdr_len;
- 	int i;
+@@ -61,7 +61,8 @@ MODULE_PARM_DESC(experimental_zcopytx, "Enable Zero Copy TX;"
+ enum {
+ 	VHOST_NET_FEATURES = VHOST_FEATURES |
+ 			 (1ULL << VHOST_NET_F_VIRTIO_NET_HDR) |
+-			 (1ULL << VIRTIO_NET_F_MRG_RXBUF),
++			 (1ULL << VIRTIO_NET_F_MRG_RXBUF) |
++			 (1ULL << VIRTIO_F_VERSION_1),
+ };
  
--	hdr_len = (features & (1 << VIRTIO_NET_F_MRG_RXBUF)) ?
-+	hdr_len = (features & ((1ULL << VIRTIO_NET_F_MRG_RXBUF) |
-+			       (1ULL << VIRTIO_F_VERSION_1))) ?
- 			sizeof(struct virtio_net_hdr_mrg_rxbuf) :
- 			sizeof(struct virtio_net_hdr);
- 	if (features & (1 << VHOST_NET_F_VIRTIO_NET_HDR)) {
+ enum {
 -- 
 MST
 
