@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808AbaKYBHx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 20:07:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34797 "EHLO mx1.redhat.com"
+	id S1751862AbaKYBIW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 20:08:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47859 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751751AbaKYBHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 20:07:52 -0500
-Subject: [RFC PATCH 4/4] KEYS: exec request-key within the requesting task's
- namespace
+	id S1751482AbaKYBHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Nov 2014 20:07:34 -0500
+Subject: [RFC PATCH 2/4] nsproxy - make create_new_namespaces() non-static
 From: Ian Kent <ikent@redhat.com>
 To: Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: "J. Bruce Fields" <bfields@fieldses.org>,
@@ -18,8 +17,8 @@ Cc: "J. Bruce Fields" <bfields@fieldses.org>,
         Benjamin Coddington <bcodding@redhat.com>,
         Al Viro <viro@ZenIV.linux.org.uk>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Tue, 25 Nov 2014 09:07:42 +0800
-Message-ID: <20141125010741.4974.7022.stgit@pluto.fritz.box>
+Date: Tue, 25 Nov 2014 09:07:28 +0800
+Message-ID: <20141125010727.4974.27785.stgit@pluto.fritz.box>
 In-Reply-To: <20141125005255.4974.54193.stgit@pluto.fritz.box>
 References: <20141125005255.4974.54193.stgit@pluto.fritz.box>
 User-Agent: StGit/0.17-dirty
@@ -30,14 +29,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Coddington <bcodding@redhat.com>
+create_new_namespaces() will be needed by call_usermodehelper_ns()
+and call_usermodehelper_keys() for namespace restricted execution.
 
-Copy the current task's namespaces into the request-key userspace helper to
-restrict contained processes from executing key instantiation processes
-outside their containers.
-
-Signed-off-by: Benjamin Coddington <bcodding@redhat.com>
 Signed-off-by: Ian Kent <ikent@redhat.com>
+Signed-off-by: Benjamin Coddington <bcodding@redhat.com>
 Cc: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: J. Bruce Fields <bfields@fieldses.org>
 Cc: David Howells <dhowells@redhat.com>
@@ -46,96 +42,35 @@ Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: Oleg Nesterov <onestero@redhat.com>
 Cc: Eric W. Biederman <ebiederm@xmission.com>
 ---
- security/keys/request_key.c |   45 +++++++++++++++++++++++++++++++++++++------
- 1 file changed, 39 insertions(+), 6 deletions(-)
+ include/linux/nsproxy.h |    3 +++
+ kernel/nsproxy.c        |    2 +-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index bb4337c..b03feec 100644
---- a/security/keys/request_key.c
-+++ b/security/keys/request_key.c
-@@ -17,6 +17,8 @@
- #include <linux/err.h>
- #include <linux/keyctl.h>
- #include <linux/slab.h>
-+#include <linux/nsproxy.h>
-+#include <linux/mount.h>
- #include "internal.h"
- 
- #define key_negative_timeout	60	/* default timeout on a negative key's existence */
-@@ -46,6 +48,11 @@ void complete_request_key(struct key_construction *cons, int error)
- }
- EXPORT_SYMBOL(complete_request_key);
- 
-+struct request_key_info {
-+	struct key	*keyring;
-+	struct nsproxy	*nsproxy;
-+};
-+
- /*
-  * Initialise a usermode helper that is going to have a specific session
-  * keyring.
-@@ -55,9 +62,14 @@ EXPORT_SYMBOL(complete_request_key);
+diff --git a/include/linux/nsproxy.h b/include/linux/nsproxy.h
+index 35fa08f..dfe7dda 100644
+--- a/include/linux/nsproxy.h
++++ b/include/linux/nsproxy.h
+@@ -62,6 +62,9 @@ extern struct nsproxy init_nsproxy;
+  *
   */
- static int umh_keys_init(struct subprocess_info *info, struct cred *cred)
- {
--	struct key *keyring = info->data;
-+	struct request_key_info *rki = info->data;
-+	struct nsproxy *ns = rki->nsproxy;
  
--	return install_session_keyring_to_cred(cred, keyring);
-+	if (ns) {
-+		mntns_setfs(ns->mnt_ns);
-+		switch_task_namespaces(current, ns);
-+	}
-+	return install_session_keyring_to_cred(cred, rki->keyring);
- }
- 
- /*
-@@ -65,8 +77,9 @@ static int umh_keys_init(struct subprocess_info *info, struct cred *cred)
++struct nsproxy *create_new_namespaces(unsigned long flags,
++	struct task_struct *tsk, struct user_namespace *user_ns,
++	struct fs_struct *new_fs);
+ int copy_namespaces(unsigned long flags, struct task_struct *tsk);
+ void exit_task_namespaces(struct task_struct *tsk);
+ void switch_task_namespaces(struct task_struct *tsk, struct nsproxy *new);
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index ef42d0a..dcfbb13 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -56,7 +56,7 @@ static inline struct nsproxy *create_nsproxy(void)
+  * Return the newly created nsproxy.  Do not attach this to the task,
+  * leave it to the caller to do proper locking and attach it to task.
   */
- static void umh_keys_cleanup(struct subprocess_info *info)
+-static struct nsproxy *create_new_namespaces(unsigned long flags,
++struct nsproxy *create_new_namespaces(unsigned long flags,
+ 	struct task_struct *tsk, struct user_namespace *user_ns,
+ 	struct fs_struct *new_fs)
  {
--	struct key *keyring = info->data;
--	key_put(keyring);
-+	struct request_key_info *rki = info->data;
-+	key_put(rki->keyring);
-+	kfree(rki);
- }
- 
- /*
-@@ -76,12 +89,32 @@ static int call_usermodehelper_keys(char *path, char **argv, char **envp,
- 					struct key *session_keyring, int wait)
- {
- 	struct subprocess_info *info;
-+	struct request_key_info *rki;
-+	struct nsproxy *ns;
-+
-+	ns = umh_open_ns();
-+	if (ns && IS_ERR(ns))
-+		return PTR_ERR(ns);
-+
-+	rki = kmalloc(sizeof(*rki), GFP_KERNEL);
-+	if (!rki) {
-+		if (ns)
-+			free_nsproxy(ns);
-+		return -ENOMEM;
-+	}
-+
-+	rki->keyring = session_keyring;
-+	rki->nsproxy = ns;
- 
- 	info = call_usermodehelper_setup(path, argv, envp, GFP_KERNEL,
- 					  umh_keys_init, umh_keys_cleanup,
--					  session_keyring);
--	if (!info)
-+					  rki);
-+	if (!info) {
-+		if (ns)
-+			free_nsproxy(ns);
-+		kfree(rki);
- 		return -ENOMEM;
-+	}
- 
- 	key_get(session_keyring);
- 	return call_usermodehelper_exec(info, wait);
 
