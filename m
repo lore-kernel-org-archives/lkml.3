@@ -1,76 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519AbaKYGaO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 01:30:14 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:54190 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840AbaKYGaM (ORCPT
+	id S1751938AbaKYGas (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 01:30:48 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33971 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823AbaKYGar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 01:30:12 -0500
+	Tue, 25 Nov 2014 01:30:47 -0500
+Date: Mon, 24 Nov 2014 22:30:30 -0800
+From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
+Message-ID: <tip-7ddc6a2199f1da405a2fb68c40db8899b1a8cd87@git.kernel.org>
+Cc: hpa@zytor.com, luto@amacapital.net, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, rostedt@goodmis.org, tglx@linutronix.de,
+        mingo@kernel.org
+Reply-To: mingo@kernel.org, tglx@linutronix.de, torvalds@linux-foundation.org,
+        rostedt@goodmis.org, linux-kernel@vger.kernel.org, luto@amacapital.net,
+        hpa@zytor.com
+In-Reply-To: <50e33d26adca60816f3ba968875801652507d0c4.1416870125.git.luto@amacapital.net>
+References: <50e33d26adca60816f3ba968875801652507d0c4.1416870125.git.luto@amacapital.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] x86/asm/traps:
+  Disable tracing and kprobes in fixup_bad_iret and sync_regs
+Git-Commit-ID: 7ddc6a2199f1da405a2fb68c40db8899b1a8cd87
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20141125061645.GA15512@gmail.com>
-References: <20141125170315.13157c60@canb.auug.org.au>
-	<20141125061645.GA15512@gmail.com>
-Date: Mon, 24 Nov 2014 22:30:10 -0800
-Message-ID: <CALAqxLUKM7VyB6MW=-Mm+NA2pOEtD1CP3FxrmA_1gCucGon4hA@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the tiny tree with the tip tree
-From: John Stultz <john.stultz@linaro.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Josh Triplett <josh@joshtriplett.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Catalina Mocanu <catalina.mocanu@gmail.com>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 10:16 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->
->> Hi Josh,
->>
->> Today's linux-next merge of the tiny tree got a conflict in
->> kernel/time/Makefile between commit fd866e2b116b ("time: Rename
->> udelay_test.c to test_udelay.c") from the tip tree and commit
->> d1f6d68d03ea ("kernel: time: Compile out NTP support") from the tiny
->> tree.
->
-> So I think a timer subsystem commit d1f6d68d03ea with this
-> magnitude of linecount increase:
->
->  Signed-off-by: Catalina Mocanu <catalina.mocanu@gmail.com>
->  [josh: Handle CONFIG_COMPAT=y.]
->  Reviewed-by: Josh Triplett <josh@joshtriplett.org>
->  Signed-off-by: Josh Triplett <josh@joshtriplett.org>
->  ---
->   drivers/pps/Kconfig        |  2 +-
->   include/linux/timex.h      | 15 +++++++++++++--
->   init/Kconfig               | 10 ++++++++++
->   kernel/compat.c            |  8 ++++++--
->   kernel/sys_ni.c            |  4 ++++
->   kernel/time/Makefile       |  3 ++-
->   kernel/time/ntp_internal.h | 28 ++++++++++++++++++++++++++++
->   kernel/time/posix-timers.c |  2 ++
->   kernel/time/time.c         |  2 ++
->   kernel/time/timekeeping.c  |  2 ++
->   10 files changed, 70 insertions(+), 6 deletions(-)
->
-> at minimum needs the ack of timer folks, before it can be
-> committed to Git. Or is the tiny tree plan to submit all
-> patches to the appropriate subsystem or gather acks, before
-> sending it upstream?
+Commit-ID:  7ddc6a2199f1da405a2fb68c40db8899b1a8cd87
+Gitweb:     http://git.kernel.org/tip/7ddc6a2199f1da405a2fb68c40db8899b1a8cd87
+Author:     Andy Lutomirski <luto@amacapital.net>
+AuthorDate: Mon, 24 Nov 2014 17:39:06 -0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 25 Nov 2014 07:26:55 +0100
 
-Yea.  From first glance d1f6d68d03ea looks fairly broken.
+x86/asm/traps: Disable tracing and kprobes in fixup_bad_iret and sync_regs
 
-Returning 0 for ntp_tick_length() (which should be the current tick
-length in NTP_SCALE_SHIFT shifted ns), seems like it would cause major
-timekeeping problems.
+These functions can be executed on the int3 stack, so kprobes
+are dangerous. Tracing is probably a bad idea, too.
 
-thanks
--john
+Fixes: b645af2d5905 ("x86_64, traps: Rework bad_iret")
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Cc: <stable@vger.kernel.org> # Backport as far back as it would apply
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/50e33d26adca60816f3ba968875801652507d0c4.1416870125.git.luto@amacapital.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/traps.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index de801f2..07ab8e9 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -387,7 +387,7 @@ NOKPROBE_SYMBOL(do_int3);
+  * for scheduling or signal handling. The actual stack switch is done in
+  * entry.S
+  */
+-asmlinkage __visible struct pt_regs *sync_regs(struct pt_regs *eregs)
++asmlinkage __visible notrace struct pt_regs *sync_regs(struct pt_regs *eregs)
+ {
+ 	struct pt_regs *regs = eregs;
+ 	/* Did already sync */
+@@ -413,7 +413,7 @@ struct bad_iret_stack {
+ 	struct pt_regs regs;
+ };
+ 
+-asmlinkage __visible
++asmlinkage __visible notrace
+ struct bad_iret_stack *fixup_bad_iret(struct bad_iret_stack *s)
+ {
+ 	/*
+@@ -436,6 +436,7 @@ struct bad_iret_stack *fixup_bad_iret(struct bad_iret_stack *s)
+ 	BUG_ON(!user_mode_vm(&new_stack->regs));
+ 	return new_stack;
+ }
++NOKPROBE_SYMBOL(fixup_bad_iret);
+ #endif
+ 
+ /*
