@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039AbaKYXRd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 18:17:33 -0500
-Received: from gate.crashing.org ([63.228.1.57]:55823 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751293AbaKYXRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 18:17:30 -0500
-Message-ID: <1416957328.5089.17.camel@kernel.crashing.org>
-Subject: Re: [PATCH v5 2/4] arch: Add lightweight memory barriers dma_rmb()
- and dma_wmb()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alexander Duyck <alexander.h.duyck@redhat.com>
-Cc: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mathieu.desnoyers@polymtl.ca,
-        peterz@infradead.org, heiko.carstens@de.ibm.com, mingo@kernel.org,
-        mikey@neuling.org, linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
-        matthew.vick@intel.com, geert@linux-m68k.org,
-        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
-        paulmck@linux.vnet.ibm.com, nic_swsd@realtek.com, will.deacon@arm.com,
-        michael@ellerman.id.au, tony.luck@intel.com,
-        torvalds@linux-foundation.org, oleg@redhat.com, schwidefsky@de.ibm.com,
-        fweisbec@gmail.com, davem@davemloft.net
-Date: Wed, 26 Nov 2014 10:15:28 +1100
-In-Reply-To: <20141119012400.9563.21117.stgit@ahduyck-server>
-References: <20141119012205.9563.95544.stgit@ahduyck-server>
-	 <20141119012400.9563.21117.stgit@ahduyck-server>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
+	id S1751852AbaKYXUy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 18:20:54 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:38680 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751061AbaKYXUx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 18:20:53 -0500
+Date: Tue, 25 Nov 2014 18:20:38 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Cc: jslaby@suse.cz, Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>, nsekhar@ti.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        mingo@redhat.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Subject: Re: [PATCH] arm: ftrace: Adds support for ftrace operations
+Message-ID: <20141125182038.04497ec0@gandalf.local.home>
+In-Reply-To: <CACh+v5MDFZj+NOPWdnMgNthn_DxL3nn=CZJ224vMh7hSf84o4Q@mail.gmail.com>
+References: <1415372352-15664-1-git-send-email-jjhiblot@traphandler.com>
+	<20141107115225.72bc6cbf@gandalf.local.home>
+	<545CFAF4.8030104@traphandler.com>
+	<CACh+v5MDFZj+NOPWdnMgNthn_DxL3nn=CZJ224vMh7hSf84o4Q@mail.gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-18 at 17:24 -0800, Alexander Duyck wrote:
-> There are a number of situations where the mandatory barriers rmb() and
-> wmb() are used to order memory/memory operations in the device drivers
-> and those barriers are much heavier than they actually need to be.  For
-> example in the case of PowerPC wmb() calls the heavy-weight sync
-> instruction when for coherent memory operations all that is really needed
-> is an lsync or eieio instruction.
->  .../...
+On Mon, 24 Nov 2014 10:59:24 +0100
+Jean-Jacques Hiblot <jjhiblot@traphandler.com> wrote:
 
-For powerpc:
+> Hi Steve,
+> did you get a chance of running your tests suite on real hardware with
+> this patch? I'd be really interested in the results.
 
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Yes I finally got it working on my beaglebone white. It passed all the
+tests that passed without it. Although I'm not sure this patch itself
+was tested as I didn't have kprobes which might use it.
 
-
-
+-- Steve
