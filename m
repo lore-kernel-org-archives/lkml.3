@@ -1,122 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751390AbaKYBsE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 20:48:04 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:46607 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789AbaKYBsB (ORCPT
+	id S1751466AbaKYBvi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 20:51:38 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:37122 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784AbaKYBvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 20:48:01 -0500
-Date: Tue, 25 Nov 2014 10:47:49 +0900
-From: Gyungoh Yoo <gyungoh@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: sameo@linux.intel.com, jg1.han@samsung.com, cooloney@gmail.com,
-        broonie@kernel.org, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
-        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
-        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
-        jic23@kernel.org
-Subject: Re: [RESUBMIT PATCH v7 4/9] devicetree: backlight: Add new SKY81452
- backlight binding
-Message-ID: <20141125014749.GA28978@jack-ThinkPad-T520>
-References: <1416213190-20935-1-git-send-email-jack.yoo@skyworksinc.com>
- <1416213190-20935-5-git-send-email-jack.yoo@skyworksinc.com>
- <20141117122333.GQ24004@x1>
+	Mon, 24 Nov 2014 20:51:37 -0500
+Message-ID: <5473E0A2.6020709@hitachi.com>
+Date: Tue, 25 Nov 2014 10:51:30 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141117122333.GQ24004@x1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Petr Mladek <pmladek@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        Namhyung Kim <namhyung@kernel.org>, Miroslav Benes <mbenes@suse.cz>,
+        Ingo Molnar <mingo@kernel.org>, Shuah Khan <shuahkh@osg.samsung.com>
+Subject: Re: Re: [PATCH ftrace/core v6 5/5] kselftest, ftrace: Add ftrace
+ IPMODIFY flag test
+References: <20141121102502.11844.82696.stgit@localhost.localdomain> <20141121102537.11844.9781.stgit@localhost.localdomain> <20141121160329.575fd043@gandalf.local.home> <54729CDE.5030700@hitachi.com> <20141123232932.1ed70d18@gandalf.local.home> <54733C80.6060509@hitachi.com> <20141124100727.19531a3b@gandalf.local.home> <20141124101831.69f6db23@gandalf.local.home> <20141124101919.3fd6fd01@gandalf.local.home>
+In-Reply-To: <20141124101919.3fd6fd01@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 12:23:33PM +0000, Lee Jones wrote:
-> On Mon, 17 Nov 2014, gyungoh@gmail.com wrote:
+(2014/11/25 0:19), Steven Rostedt wrote:
+> On Mon, 24 Nov 2014 10:18:31 -0500
+> Steven Rostedt <rostedt@goodmis.org> wrote:
 > 
-> > From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
-> > 
-> > Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
-> > ---
-> > Changes v7:
-> > Nothing
-> > 
-> > Changes v6:
-> > Nothing
-> > 
-> > Changes v5:
-> > Nothing
-> > 
-> > Changes v4:
-> > Nothing
-> > 
-> > Changes v3:
-> > Nothing
-> > 
-> > Changes v2:
-> > Added reg attribute for I2C slave address
-> > 
-> >  .../video/backlight/sky81452-backlight.txt         | 24 ++++++++++++++++++++++
-> >  1 file changed, 24 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
-> > 
-> > diff --git a/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
-> > new file mode 100644
-> > index 0000000..2c2d947
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
-> > @@ -0,0 +1,24 @@
-> > +SKY81452-backlight bindings
-> > +
-> > +Required properties:
-> > +- compatible		: Must be "skyworks,sky81452-backlight"
-> > +
-> > +Optional properties:
-> > +- name			: Name of backlight device. Default is 'lcd-backlight'.
-> > +- gpio-enable		: GPIO to use to EN pin.
-> > +- enable		: Enable mask for current sink channel 1 to 6.
-> > +- ignore-pwm		: Ignore both PWM input
-> > +- dpwm-mode		: Enable DPWM dimming mode, otherwise Analog dimming mode
-> > +- phase-shift		: Enable phase shift mode
-> > +- ovp-level		: Over-voltage protection level. Should be between 14 or 28V.
-> > +- short-detection-threshold	: It should be one of 4, 5, 6 and 7V.
-> > +- boost-current-limit	: It should be one of 800, 1100 and 1500mA.
+>> On Mon, 24 Nov 2014 10:07:27 -0500
+>> Steven Rostedt <rostedt@goodmis.org> wrote:
+>>
+>>> On Mon, 24 Nov 2014 23:11:12 +0900
+>>> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+>>>  
+>>>> So, if your server directory is mounted with noexec, it's an environmental
+>>>> problem. I guess you can not build any kernel drivers on that testbox, can you?
+>>>>
+>>>
+>>> You're right about the noexec, even though my fstab has "exec" in it ??
+>>
+>> Ha! I hit this bug!
+>>
+>>   https://bugzilla.redhat.com/show_bug.cgi?id=769636
+>>
+>> If I remove "user" from the flags, it mounts exec.
+>>
+>> This test box runs Fedora 18.
+>>
 > 
-> These are going to need some serious reviewing from the DT guys.  Each
-> property should either have a vendor prefix or be made generic and
-> placed in the generic DT documentation for the subsystem.  The name
-> 'enable' is far to generic we don't tend to put masks in DT.  There
-> is already a generic property for GPIO enable pins.
+> Oh, and "make O=/tmp" now works :-)
 
-I see. I will rename the properties with the vendor prefix
-and modify the name for GPIO enable pin to use 'gpios'
+Good :)
 
-> 
-> > +Example:
-> > +
-> > +	backlight {
-> > +		compatible = "skyworks,sky81452-backlight";
-> > +		name = "pwm-backlight";
-> > +		enable = <0x3F>;
-> 
-> Lower case.
-> 
-> > +		ignore-pwm;
-> 
-> You should probably demonstrate more of your properties here.
+So, I don't need to fix that at this point, do I?
+It seems that current kselftest only supports this type of build
+(build on installed kernel), and Shuah is working on fixing that.
 
-I will make up the example.
-Thank you for your comments.
+Thank you,
 
-> 
-> > +	};
-> 
-> -- 
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
