@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751250AbaKYOom (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:44:42 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:60554 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042AbaKYOol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:44:41 -0500
-Message-ID: <547495D7.40308@osg.samsung.com>
-Date: Tue, 25 Nov 2014 07:44:39 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Petr Mladek <pmladek@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
-        Namhyung Kim <namhyung@kernel.org>, Miroslav Benes <mbenes@suse.cz>,
-        Ingo Molnar <mingo@kernel.org>, Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: [PATCH ftrace/core v6 5/5] kselftest, ftrace: Add ftrace IPMODIFY
- flag test
-References: <20141121102502.11844.82696.stgit@localhost.localdomain> <20141121102537.11844.9781.stgit@localhost.localdomain> <20141121160329.575fd043@gandalf.local.home> <54729CDE.5030700@hitachi.com> <20141123232932.1ed70d18@gandalf.local.home> <54733C80.6060509@hitachi.com> <54735A4F.8090602@osg.samsung.com> <5473D9F6.8070701@hitachi.com> <5474955A.5070605@osg.samsung.com>
-In-Reply-To: <5474955A.5070605@osg.samsung.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1751287AbaKYOpI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:45:08 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:56566 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869AbaKYOpF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 09:45:05 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH] of: support passing console options with stdout-path
+To: Andrew Lunn <andrew@lunn.ch>, Leif Lindholm <leif.lindholm@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, mark.rutland@arm.com, robh+dt@kernel.org,
+        plagnioj@jcrosoft.com, ijc@debian.org
+In-Reply-To: <20141124230016.GP20238@lunn.ch>
+References: <1416867838-18652-1-git-send-email-leif.lindholm@linaro.org>
+	<20141124230016.GP20238@lunn.ch>
+Date: Tue, 25 Nov 2014 14:44:39 +0000
+Message-Id: <20141125144439.07212C44343@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2014 07:42 AM, Shuah Khan wrote:
-> On 11/24/2014 06:23 PM, Masami Hiramatsu wrote:
->> (2014/11/25 1:18), Shuah Khan wrote:
->>> On 11/24/2014 07:11 AM, Masami Hiramatsu wrote:
->>>> (CC'ed Shuah, since this is related to kselftest)
->>>>
->>>>
->>>> So, if your server directory is mounted with noexec, it's an environmental
->>>> problem. I guess you can not build any kernel drivers on that testbox, can you?
->>>>
->>>> Anyway, this gives us a good question, "should test binaries be made by
->>>> server or client(testbox) environment?" This ipmodify driver is a binary
->>>> and it should be built with the kernel binary (by server) I think.
->>>> But yes, I missed the Makefile didn't allow that (this always referred
->>>> installed running kernel builddir).
->>>>
->>>> I hope to have CONFIG_KSELFTEST_BINARIES for Kconfig, or make prep_kselftest
->>>> target to build these binaries with kernel...
->>>>
->>>> Shuah, what would you think about this?
->>>
->>> I am working on patch series to add an install target to the
->>> main kernel makefile, so these tests can be built and installed
->>> on a target just like we do with kernel and modules. I hope to
->>> get this in 3.19 or definitely into 3.20
->>>
->>> This probably will help address the problem you are seeing.
->>> Install target is needed for qemu type environments as well.
->>
->> Yes, that is what we need for this test case!
->> Please CC to me when sending the series. I'd like to try and
->> know how it works :)
->>
+On Tue, 25 Nov 2014 00:00:16 +0100
+, Andrew Lunn <andrew@lunn.ch>
+ wrote:
+> On Mon, Nov 24, 2014 at 10:23:58PM +0000, Leif Lindholm wrote:
+> > Support specifying console options (like with console=ttyXN,<options>)
+> > by appending them to the stdout-path property after a separating ':'.
+> > 
+> > Example:
+> > 	stdout-path = "uart0:115200";
+> > 
+> > This patch also modifies of_find_node_by_path() to match only the
+> > portion of the path before a ':'.
 > 
-> Good. Please take a look at this thread and give it a try. Please
-> give me feedback as well. This is the first step to get the install
-> feature added and then we can refine it at the selftests level as
-> needed.
+> Hi Leif
 > 
-> https://lkml.org/lkml/2014/11/11/851
+> These appears to somewhat conform to ePAPR, which says:
 > 
+>       A string that specifies the full path to the node representing
+>       the device to be used for boot console output. If the character
+>       ":" is present in the value it terminates the path.
+> 
+> So you can put any random junk after the :. However, are we going to
+> have backward/forward compatibility problems, and problems with
+> bootloaders? The current kernel code does not look for the :. So a new
+> DT blob on an old kernel will not work so well.
 
-Forgot to mention I didn't include ftrace in this first series for
-install, planning to add it in my next round of patches. I have the
-code ready for to do that.
+For DT, we've generally not been worrying about compatibility in that
+direction.  If we've got a new firmware, we should be able to get a new
+kernel.  Nobody has really screamed bout it yet.
 
--- Shuah
+> More worrying, barebox does not support the : either. So there is a
+> danger your bootloader suddenly goes silent after a dt blob update.
 
+Is barebox parsing the property? Or updating it? Or both? I've got no
+problem with this patch, but we can also support things like the
+'current-speed' property in the UART to set a default when the stdout
+path doesn't have any arguments.
 
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+g.
