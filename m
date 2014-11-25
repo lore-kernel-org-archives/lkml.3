@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750782AbaKYO6B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:58:01 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:50120 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726AbaKYO57 (ORCPT
+	id S1751407AbaKYO66 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:58:58 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:34133 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751012AbaKYO64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:57:59 -0500
+	Tue, 25 Nov 2014 09:58:56 -0500
+Date: Tue, 25 Nov 2014 22:58:50 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v3 4/7] crypto: AF_ALG: add AEAD support
+Message-ID: <20141125145850.GD8541@gondor.apana.org.au>
+References: <4088013.2O8zCP0xXa@tachyon.chronox.de>
+ <2175035.5IWBGpA0Ko@tachyon.chronox.de>
+ <20141124142945.GB31469@gondor.apana.org.au>
+ <5492722.Cc6uZ9OM2L@tauon>
 MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <CA+icZUW4bennT=duj9hXq4+U5QLF7GivARA595C2KnRNzAdKAw@mail.gmail.com>
-References: <20140929141457.GB5011@tucsk.piliscsaba.szeredi.hu>
-	<CA+icZUW4bennT=duj9hXq4+U5QLF7GivARA595C2KnRNzAdKAw@mail.gmail.com>
-Date: Tue, 25 Nov 2014 15:57:58 +0100
-Message-ID: <CAJfpegvE76UbMPaoHQ8tc2tERjP_N2xiaJRwDp3yBgH2uUocdw@mail.gmail.com>
-Subject: Re: [PULL for 3.18] overlay filesystem v24
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@infradead.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-unionfs@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5492722.Cc6uZ9OM2L@tauon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 1:56 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+On Mon, Nov 24, 2014 at 03:58:34PM +0100, Stephan Mueller wrote:
+> Ok. But in the code you see that skcipher is a 100% subset of AEAD. For 
+> AEAD, all we need to do in addition to normal symmetric ciphers is to 
+> select the AEAD kernel crypto API calls, to locate and use the AD and to 
+> ensure we have the right memory size to process the tag.
 
-> Is the documentation up2date?
+There is still one fundamental difference between AEAD and ciphers.
+Namely that ciphers can operate as you go while AEAD requests must
+be done in one lot.  So that should make the AEAD code simpler vs.
+ciphers.
 
-Should be.  If you find any issues, please let me know (patch is also welcome).
+I think the best course of action for now is to start with sharing
+no code and then chop bits off as we see fit.
 
-> Some files below fs/overlayfs/ have copyright pointing to year 2011 by
-> Novell - needs an update?
-
-Not even sure who's my employer at the moment ;)
-
-> Thought about a co-maintainer?
-
-No.
-
-> Docs could have a pointer to the testsuite by David Howells [1]?
-
-Sure, that's a good idea.  Patch queued.
-
-Thanks,
-Miklos
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
