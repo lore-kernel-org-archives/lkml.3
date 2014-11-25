@@ -1,85 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751349AbaKYSho (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 13:37:44 -0500
-Received: from mga11.intel.com ([192.55.52.93]:42187 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751252AbaKYShm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 13:37:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,457,1413270000"; 
-   d="scan'208";a="637944576"
-Message-ID: <1416940656.7260.48.camel@loki>
-Subject: Re: [alsa-devel] [PATCH 1/2] ASoC: rt5677: Add ACPI device probing
-From: Liam Girdwood <liam.r.girdwood@linux.intel.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Ben Zhang <benzh@chromium.org>,
-        Oder Chiou <oder_chiou@realtek.com>,
-        alsa-devel <alsa-devel@alsa-project.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, Anatol Pomozov <anatol@google.com>,
-        Bard Liao <bardliao@realtek.com>, Dylan Reid <dgreid@chromium.org>,
-        flove@realtek.com
-Date: Tue, 25 Nov 2014 18:37:36 +0000
-In-Reply-To: <5474A7CA.3020106@linux.intel.com>
-References: <1416034608-24238-1-git-send-email-benzh@chromium.org>
-	 <CACxGe6stjCvaQZkh=hFcF-56v5qJVar11jRZz0PRSd2wz6EUyA@mail.gmail.com>
-	 <1416925686.7260.28.camel@loki> <5474A7CA.3020106@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	id S1750931AbaKYSkp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 13:40:45 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:38757 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750726AbaKYSkn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 13:40:43 -0500
+Message-ID: <5474CDCE.6040000@oracle.com>
+Date: Tue, 25 Nov 2014 13:43:26 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@suse.de>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Richard Hendershot <rshendershot@mchsi.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: Re: [PATCH 3.17 100/141] x86, microcode: Fix accessing dis_ucode_ldr
+ on 32-bit
+References: <20141119205150.700188369@linuxfoundation.org> <20141119205153.916605840@linuxfoundation.org> <5474C67A.7040200@oracle.com> <20141125182410.GB4128@pd.tnic>
+In-Reply-To: <20141125182410.GB4128@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-25 at 08:01 -0800, Darren Hart wrote:
-> 
-> On 11/25/14 06:28, Liam Girdwood wrote:
-> > On Tue, 2014-11-25 at 12:11 +0000, Grant Likely wrote:
-> >> On Sat, Nov 15, 2014 at 6:56 AM, Ben Zhang <benzh@chromium.org> wrote:
-> >>> The rt5677 codec driver looks for ACPI device ID "RT5677CE",
-> >>> which is specified in coreboot. This patch allows platform
-> >>> data to be obtained via ACPI
-> >>>
-> >>> Signed-off-by: Ben Zhang <benzh@chromium.org>
-> >>
-> >> This looks like an ideal time to talk about shared DT and ACPI driver
-> >> bindings. This driver /already/ has a firmware binding. It is
-> >> documented in the kernel under
-> >> Documentation/bindings/sound/rt5677.txt. We now have a standard method
-> >> for sharing bindings between DT and ACPI in the _DSD method[1].
-> >> Support for DSD is in linux-next and getting merged into v3.19. This
-> >> is exactly the case that _DSD should be used for passing additional
-> >> data to the driver, and it should use the existing binding.
-> >>
-> >> [1] http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-UUID.pdf
-> >>
-> >> For a long time we've had the rule on DT that new bindings must be
-> >> documented before we merge a patch. That rule I think has been a good
-> >> one, even if it is a little chaoitc. I think when it comes to ACPI
-> >> drivers that we should be requiring the same: Document the binding,
-> >> either in the kernel as a DT binding, or point to somewhere else that
-> >> has the binding documented.
-> >>
-> >> Also, since this patch is targeted at v3.19 or later, the
-> >> device-properties API should be used. Don't create something custom.
-> >>
-> > 
-> > My sentiments exactly, there would be little point having bespoke device
-> > properties for every single device. Btw, we also need to align here with
-> > Windows too !
-> > 
-> 
-> The Windows folks definitely know about _DSD (and helped define it), so
-> this is a good opportunity to work through that process. Liam, do you
-> have a good contact to start that discussion?
-> 
+On 11/25/2014 01:24 PM, Borislav Petkov wrote:
+> On Tue, Nov 25, 2014 at 01:12:10PM -0500, Boris Ostrovsky wrote:
+>> On 11/19/2014 03:52 PM, Greg Kroah-Hartman wrote:
+>>> 3.17-stable review patch.  If anyone has any objections, please let me know.
+>>
+>> This breaks PV on Xen.
+>>
+>> -boris
+>>
+>>> ------------------
+>>>
+>>> From: Borislav Petkov <bp@suse.de>
+>>>
+>>> commit 85be07c32496dc264661308e4d9d4e9ccaff8072 upstream.
+>>>
+>>> We should be accessing it through a pointer, like on the BSP.
+>>>
+>>> Tested-by: Richard Hendershot <rshendershot@mchsi.com>
+>>> Fixes: 65cef1311d5d ("x86, microcode: Add a disable chicken bit")
+>>> Signed-off-by: Borislav Petkov <bp@suse.de>
+>>> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>>>
+>>> ---
+>>>   arch/x86/kernel/cpu/microcode/core_early.c |    2 +-
+>>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> --- a/arch/x86/kernel/cpu/microcode/core_early.c
+>>> +++ b/arch/x86/kernel/cpu/microcode/core_early.c
+>>> @@ -124,7 +124,7 @@ void __init load_ucode_bsp(void)
+>>>   static bool check_loader_disabled_ap(void)
+>>>   {
+>>>   #ifdef CONFIG_X86_32
+>>> -	return __pa_nodebug(dis_ucode_ldr);
+>>> +	return *((bool *)__pa_nodebug(&dis_ucode_ldr));
+> And practically the same line in check_loader_disabled_bsp() doesn't?
 
-I do, I've contacted them off-list to align on this with Realtek.
 
-Liam
+I don't think this routine is called on PV.
+
+
+-boris
+
 
 
