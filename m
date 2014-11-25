@@ -1,120 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062AbaKYNTU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 08:19:20 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:44885 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753923AbaKYNQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 08:16:32 -0500
-From: George Cherian <george.cherian@ti.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-CC: <peter.chen@freescale.com>, <sojka@merica.cz>, <mathias.nyman@intel.com>,
-        <balbi@ti.com>, <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <bcousson@baylibre.com>, <kgene.kim@samsung.com>,
-        <ben-linux@fluff.org>, <linux@arm.linux.org.uk>,
-        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
-        George Cherian <george.cherian@ti.com>
-Subject: [PATCH 13/19] usb: dwc3: core: Add DWC3 OTG specific register defines
-Date: Tue, 25 Nov 2014 18:41:49 +0530
-Message-ID: <1416921115-10467-14-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1416921115-10467-1-git-send-email-george.cherian@ti.com>
-References: <1416921115-10467-1-git-send-email-george.cherian@ti.com>
+	id S1753702AbaKYNUb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 08:20:31 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38101 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753372AbaKYNQH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 08:16:07 -0500
+Date: Tue, 25 Nov 2014 13:13:51 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Lars-Peter Clausen <lars@metafoo.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20141125131351.GC7712@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cmojth4sdaU3VRJa"
+Content-Disposition: inline
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3] ASoC: Remove 'const' from the device_node pointers
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add OTG reggister defines to DWC3 core.h
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
- drivers/usb/dwc3/core.h | 68 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 68 insertions(+)
+--cmojth4sdaU3VRJa
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
-index 7fbe736..eb2e970 100644
---- a/drivers/usb/dwc3/core.h
-+++ b/drivers/usb/dwc3/core.h
-@@ -381,6 +381,74 @@
- #define DWC3_DEPCMD_TYPE_BULK		2
- #define DWC3_DEPCMD_TYPE_INTR		3
- 
-+/* OTG Configuration Register */
-+#define DWC3_OCFG_DISPWRCUTTOFF                (1 << 5)
-+#define DWC3_OCFG_HIBDISMASK           (1 << 4)
-+#define DWC3_OCFG_SFTRSTMASK           (1 << 3)
-+#define DWC3_OCFG_OTGVERSION           (1 << 2)
-+#define DWC3_OCFG_HNPCAP               (1 << 1)
-+#define DWC3_OCFG_SRPCAP               (1 << 0)
-+
-+/* OTG CTL Register */
-+#define DWC3_OCTL_OTG3GOERR            (1 << 7)
-+#define DWC3_OCTL_PERIMODE             (1 << 6)
-+#define DWC3_OCTL_PRTPWRCTL            (1 << 5)
-+#define DWC3_OCTL_HNPREQ               (1 << 4)
-+#define DWC3_OCTL_SESREQ               (1 << 3)
-+#define DWC3_OCTL_TERMSELIDPULSE       (1 << 2)
-+#define DWC3_OCTL_DEVSETHNPEN          (1 << 1)
-+#define DWC3_OCTL_HOSTSETHNPEN         (1 << 0)
-+
-+/* OTG Event Register */
-+#define DWC3_OEVT_DEVICEMODE           (1 << 31)
-+#define DWC3_OEVT_XHCIRUNSTPSET                (1 << 27)
-+#define DWC3_OEVT_DEVRUNSTPSET         (1 << 26)
-+#define DWC3_OEVT_HIBENTRY             (1 << 25)
-+#define DWC3_OEVT_IDSTSCHNG            (1 << 24)
-+#define DWC3_OEVT_HRRCONFNOTIF         (1 << 23)
-+#define DWC3_OEVT_HRRINITNOTIF         (1 << 22)
-+#define DWC3_OEVT_ADEVIDLE             (1 << 21)
-+#define DWC3_OEVT_ADEVBHOSTEND         (1 << 20)
-+#define DWC3_OEVT_ADEVHOST             (1 << 19)
-+#define DWC3_OEVT_ADEVHNPCHNG          (1 << 18)
-+#define DWC3_OEVT_ADEVSRPDET           (1 << 17)
-+#define DWC3_OEVT_ADEVSESSENDDET       (1 << 16)
-+#define DWC3_OEVT_BDEVBHOSTEND         (1 << 11)
-+#define DWC3_OEVT_BDEVHNPCHNG          (1 << 10)
-+#define DWC3_OEVT_BDEVSESSVLDDET       (1 << 9)
-+#define DWC3_OEVT_BDEVVBUSCHNG         (1 << 8)
-+#define DWC3_OEVT_BSESSVLD             (1 << 3)
-+#define DWC3_OEVT_HOSTNEGSTS           (1 << 2)
-+#define DWC3_OEVT_SESSREQSTS           (1 << 1)
-+#define DWC3_OEVT_ERR                  (1 << 0)
-+
-+/* OTG Event Enable Register */
-+#define DWC3_OEVTEN_XHCIRUNSTPSETEN    (1 << 27)
-+#define DWC3_OEVTEN_DEVRUNSTPSETEN     (1 << 26)
-+#define DWC3_OEVTEN_HIBENTRYEN         (1 << 25)
-+#define DWC3_OEVTEN_CONIDSTSCHNGEN     (1 << 24)
-+#define DWC3_OEVTEN_HRRCONFNOTIFEN     (1 << 23)
-+#define DWC3_OEVTEN_HRRINITNOTIFEN     (1 << 22)
-+#define DWC3_OEVTEN_ADEVIDLEEN         (1 << 21)
-+#define DWC3_OEVTEN_ADEVBHOSTENDEN     (1 << 20)
-+#define DWC3_OEVTEN_ADEVHOSTEN         (1 << 19)
-+#define DWC3_OEVTEN_ADEVHNPCHNGEN      (1 << 18)
-+#define DWC3_OEVTEN_ADEVSRPDETEN       (1 << 17)
-+#define DWC3_OEVTEN_ADEVSESSENDDETEN   (1 << 16)
-+#define DWC3_OEVTEN_BDEVHOSTENDEN      (1 << 11)
-+#define DWC3_OEVTEN_BDEVHNPCHNGEN      (1 << 10)
-+#define DWC3_OEVTEN_BDEVSESSVLDDETEN   (1 << 9)
-+#define DWC3_OEVTEN_BDEVVBUSCHNGEVNTEN (1 << 8)
-+
-+/* OTG Status Register */
-+#define DWC3_OSTS_DEVRUNSTP            (1 << 13)
-+#define DWC3_OSTS_XHCIRUNSTP           (1 << 12)
-+#define DWC3_OSTS_PERIPHERALSTATE      (1 << 4)
-+#define DWC3_OSTS_XHCIPORTPOWER                (1 << 3)
-+#define DWC3_OSTS_BSESVLD              (1 << 2)
-+#define DWC3_OSTS_VBUSVLD              (1 << 1)
-+#define DWC3_OSTS_CONIDSTS             (1 << 0)
-+
- /* Structures */
- 
- struct dwc3_trb;
--- 
-1.8.3.1
+On Tue, Nov 25, 2014 at 12:14:48PM +0100, Jean-Francois Moine wrote:
+> As Russell King's explained it, there should not be pointers to
+> struct device_node:
+>=20
+> "struct device_node is a ref-counted structure.  That means if you
+>  store a reference to it, you should "get" it, and you should "put"
+>  it once you've done.  The act of "put"ing the pointed-to structure
+>  involves writing to that structure, so it is totally unappropriate
+>  to store a device_node structure as a const pointer.  It forces you
+>  to have to cast it back to a non-const pointer at various points
+>  in time to use various OF function calls."
 
+So, we're not holding references here (we're just doing comparisons, the
+references need to be owned before we get into the core) and I'm not
+seeing anything here removing casts?
+
+--cmojth4sdaU3VRJa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUdICOAAoJECTWi3JdVIfQcggH/jVqi1O/AWH3tQmTsDEkFXT4
+et8yGx03au/zpgWbEr+UFD5jFLTep1StgnZD5kgAmpzierEAkxbYf0/GJ68QKSzl
+8zZgniyrhHsZosYwfId9d8hk0OuXLEAtX2U9F4LjPrTKOjebd/vzzaTmloaBVfXI
+DlZmVYv2U3qaxDhD5tnG0qClG3ae86cSkZLKu99F4ktSmKPex5PCVn3bR/y1vwgP
+2uc+n1q27Va9NF2fS3E3IJxdtJbvv1itlpTcNE7F6Z+8ydtUX3pbbSCYQbEA5Uud
+V1vlEzZZvrkINEQArmho90MZPzs5ba13o/t2Bd96Rvss5vURvQSQQ10pB6BZjgQ=
+=Hdvy
+-----END PGP SIGNATURE-----
+
+--cmojth4sdaU3VRJa--
