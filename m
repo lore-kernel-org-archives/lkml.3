@@ -1,82 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751240AbaKYAMr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 19:12:47 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:49621 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774AbaKYAMo (ORCPT
+	id S1751500AbaKYARh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 19:17:37 -0500
+Received: from mail-qc0-f202.google.com ([209.85.216.202]:57206 "EHLO
+	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267AbaKYARd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 19:12:44 -0500
-Date: Tue, 25 Nov 2014 00:12:36 +0000
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, mark.rutland@arm.com,
-        grant.likely@linaro.org, robh+dt@kernel.org, plagnioj@jcrosoft.com,
-        ijc@debian.org
-Subject: Re: [PATCH] of: support passing console options with stdout-path
-Message-ID: <20141125001236.GA2361@bivouac.eciton.net>
-References: <1416867838-18652-1-git-send-email-leif.lindholm@linaro.org>
- <20141124230016.GP20238@lunn.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141124230016.GP20238@lunn.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 24 Nov 2014 19:17:33 -0500
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org
+Cc: Benson Leung <bleung@chromium.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Felipe Balbi <balbi@ti.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+Subject: [PATCH V6 03/12] mailbox: Fix up error handling in mbox_request_channel()
+Date: Mon, 24 Nov 2014 16:17:15 -0800
+Message-Id: <1416874644-12070-4-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1416874644-12070-1-git-send-email-abrestic@chromium.org>
+References: <1416874644-12070-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 12:00:16AM +0100, Andrew Lunn wrote:
-> On Mon, Nov 24, 2014 at 10:23:58PM +0000, Leif Lindholm wrote:
-> > Support specifying console options (like with console=ttyXN,<options>)
-> > by appending them to the stdout-path property after a separating ':'.
-> > 
-> > Example:
-> > 	stdout-path = "uart0:115200";
-> > 
-> > This patch also modifies of_find_node_by_path() to match only the
-> > portion of the path before a ':'.
-> 
-> Hi Leif
-> 
-> These appears to somewhat conform to ePAPR, which says:
-> 
->       A string that specifies the full path to the node representing
->       the device to be used for boot console output. If the character
->       ":" is present in the value it terminates the path.
-> 
-> So you can put any random junk after the :. However, are we going to
-> have backward/forward compatibility problems, and problems with
-> bootloaders? The current kernel code does not look for the :. So a new
-> DT blob on an old kernel will not work so well.
+From: Benson Leung <bleung@chromium.org>
 
-I _think_ this will be less of a problem in practice than it could be
-in theory.
+mbox_request_channel() currently returns EBUSY in the event the controller
+is not present or if of_xlate() fails, but in neither case is EBUSY really
+appropriate.  Return EPROBE_DEFER if the controller is not yet present
+and change of_xlate() to return an ERR_PTR instead of NULL so that the
+error can be propagated back to the caller of mbox_request_channel().
 
-The reason this is needed is that at least several platforms have
-different baudrate settings in firmware than the default provided by
-the kernel for their UART. As a result, stdout-path becomes
-semi-useless; the only thing it gives you is the ability to get
-earlycon output without specifying a specific device (and then the
-console turns to garbage once non-earlycon is enabled).
+Signed-off-by: Benson Leung <bleung@chromium.org>
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+---
+No changes from v5.
+New for v5.
+---
+ drivers/mailbox/mailbox.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-Hence, a platform that gets along happily today without the ability to
-specify console options in stdout-path would have no pressing need to
-add it to its dt. This should permit at least a very long, soft,
-transition path.
+diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
+index afcb430..955c0a7 100644
+--- a/drivers/mailbox/mailbox.c
++++ b/drivers/mailbox/mailbox.c
+@@ -315,7 +315,7 @@ struct mbox_chan *mbox_request_channel(struct mbox_client *cl, int index)
+ 		return ERR_PTR(-ENODEV);
+ 	}
+ 
+-	chan = NULL;
++	chan = ERR_PTR(-EPROBE_DEFER);
+ 	list_for_each_entry(mbox, &mbox_cons, node)
+ 		if (mbox->dev->of_node == spec.np) {
+ 			chan = mbox->of_xlate(mbox, &spec);
+@@ -324,7 +324,12 @@ struct mbox_chan *mbox_request_channel(struct mbox_client *cl, int index)
+ 
+ 	of_node_put(spec.np);
+ 
+-	if (!chan || chan->cl || !try_module_get(mbox->dev->driver->owner)) {
++	if (IS_ERR(chan)) {
++		mutex_unlock(&con_mutex);
++		return chan;
++	}
++
++	if (chan->cl || !try_module_get(mbox->dev->driver->owner)) {
+ 		dev_dbg(dev, "%s: mailbox not free\n", __func__);
+ 		mutex_unlock(&con_mutex);
+ 		return ERR_PTR(-EBUSY);
+@@ -387,7 +392,7 @@ of_mbox_index_xlate(struct mbox_controller *mbox,
+ 	int ind = sp->args[0];
+ 
+ 	if (ind >= mbox->num_chans)
+-		return NULL;
++		return ERR_PTR(-EINVAL);
+ 
+ 	return &mbox->chans[ind];
+ }
+-- 
+2.1.0.rc2.206.gedb03e5
 
-(console= on kernel command line continues to override stdout-path.)
-
-> More worrying, barebox does not support the : either. So there is a
-> danger your bootloader suddenly goes silent after a dt blob update.
-
-_That_ would be most unfortunate.
-
-> Would it be safer to add a new property in chosen?
-
-My preference would be not, given the above, but the important thing
-is to get the functionality in so we get rid of mandatory console=.
-
-/
-    Leif
