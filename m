@@ -1,142 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750947AbaKYPGl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 10:06:41 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:47452 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812AbaKYPGj convert rfc822-to-8bit (ORCPT
+	id S1751078AbaKYPHn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 10:07:43 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:56384 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939AbaKYPHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 10:06:39 -0500
-MIME-Version: 1.0
-Reply-To: cw00.choi@samsung.com
-In-Reply-To: <20141124100435.GA4241@x1>
-References: <1416301183-10478-1-git-send-email-cw00.choi@samsung.com>
-	<1416301183-10478-4-git-send-email-cw00.choi@samsung.com>
-	<20141118215926.25314.90810@quantum>
-	<20141119164310.GH1875@x1>
-	<5472F3C2.4030907@samsung.com>
-	<20141124100435.GA4241@x1>
-Date: Wed, 26 Nov 2014 00:06:38 +0900
-Message-ID: <CAGTfZH0GFV5m3Cu3dgpxzv-e6kZiBBpSteSffgaZUVQn9HEJXg@mail.gmail.com>
-Subject: Re: [PATCHv2 3/5] clk: s2mps11: Add the support for S2MPS13 PMIC clock
-From: Chanwoo Choi <cwchoi00@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Mike Turquette <mturquette@linaro.org>, Mark Brown <broonie@kernel.org>,
-        a.zummo@towertech.it, Liam Girdwood <lgirdwood@gmail.com>,
-        sbkim73@samsung.com, Samuel Ortiz <sameo@linux.intel.com>,
-        geunsik.lim@samsung.com, inki.dae@samsung.com,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        =?UTF-8?Q?Krzysztof_Koz=C5=82owski?= <k.kozlowski@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        devicetree <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 25 Nov 2014 10:07:41 -0500
+From: Andreas Ruprecht <rupran@einserver.de>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andreas Ruprecht <rupran@einserver.de>
+Subject: [PATCH] net: netfilter: Fix undefined reference to nf_nat_redirect_* functions
+Date: Tue, 25 Nov 2014 16:07:14 +0100
+Message-Id: <1416928034-10882-1-git-send-email-rupran@einserver.de>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Lee,
+In a configuration with CONFIG_NFT_NAT and
+CONFIG_NETFILTER_XT_TARGET_REDIRECT enabled, undefined references to
+nf_nat_redirect_ipv{4,6}() can occur, when the corresponding options
+CONFIG_NF_NAT_REDIRECT_IPV4 or CONFIG_NF_NAT_REDIRECT_IPV6 are not
+enabled.
 
-Could you pick these patchset without RTC patch?
-I'll re-send etc patch separately.
+net/built-in.o: In function `redirect_tg4':
+xt_REDIRECT.c:(.text+0x6d001): undefined reference to `nf_nat_redirect_ipv4'
+net/built-in.o: In function `redirect_tg6':
+xt_REDIRECT.c:(.text+0x6d021): undefined reference to `nf_nat_redirect_ipv6'
 
-Best Regards,
-Chanwoo Choi
+This is because the file xt_REDIRECT.c is compiled when
+CONFIG_NETFILTER_XT_TARGET_REDIRECT is enabled, which only depends
+on CONFIG_NF_NAT. This option is invisible and can only be selected by
+other Kconfig options. In this particular case, it is selected by
+CONFIG_NFT_NAT.
 
-On Mon, Nov 24, 2014 at 7:04 PM, Lee Jones <lee.jones@linaro.org> wrote:
->> Could you please apply this patchset on your tree
->> or Do we wait the Ack from RTC mainatiner for patch 4?
->
-> We still need an Ack from Alessandro.
->
->> On 11/20/2014 01:43 AM, Lee Jones wrote:
->> > On Tue, 18 Nov 2014, Mike Turquette wrote:
->> >
->> >> Quoting Chanwoo Choi (2014-11-18 00:59:41)
->> >>> This patch adds the support for S2MPS13 PMIC clock which is same with existing
->> >>> S2MPS14 RTC IP. But, S2MPS13 uses all of clocks (32khz_{ap|bt|cp}).
->> >>>
->> >>> Cc: Mike Turquette <mturquette@linaro.org>
->> >>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->> >>> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
->> >>
->> >> Applied to clk-next.
->> >
->> > I'm pretty sure you can't do that.  You have a dependency on
->> > linux/mfd/samsung/s2mps13.h, which is satisfied in one of the earlier
->> > patches in the set.  If you'd care to just provide an Ack for this
->> > patch, I can send you a pull-request with the decencies met.
->> >
->> >>> ---
->> >>>  drivers/clk/clk-s2mps11.c | 24 ++++++++++++++++++++++++
->> >>>  1 file changed, 24 insertions(+)
->> >>>
->> >>> diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
->> >>> index b7797fb..7bb13af 100644
->> >>> --- a/drivers/clk/clk-s2mps11.c
->> >>> +++ b/drivers/clk/clk-s2mps11.c
->> >>> @@ -23,6 +23,7 @@
->> >>>  #include <linux/clk-provider.h>
->> >>>  #include <linux/platform_device.h>
->> >>>  #include <linux/mfd/samsung/s2mps11.h>
->> >>> +#include <linux/mfd/samsung/s2mps13.h>
->> >>>  #include <linux/mfd/samsung/s2mps14.h>
->> >>>  #include <linux/mfd/samsung/s5m8767.h>
->> >>>  #include <linux/mfd/samsung/core.h>
->> >>> @@ -120,6 +121,24 @@ static struct clk_init_data s2mps11_clks_init[S2MPS11_CLKS_NUM] = {
->> >>>         },
->> >>>  };
->> >>>
->> >>> +static struct clk_init_data s2mps13_clks_init[S2MPS11_CLKS_NUM] = {
->> >>> +       [S2MPS11_CLK_AP] = {
->> >>> +               .name = "s2mps13_ap",
->> >>> +               .ops = &s2mps11_clk_ops,
->> >>> +               .flags = CLK_IS_ROOT,
->> >>> +       },
->> >>> +       [S2MPS11_CLK_CP] = {
->> >>> +               .name = "s2mps13_cp",
->> >>> +               .ops = &s2mps11_clk_ops,
->> >>> +               .flags = CLK_IS_ROOT,
->> >>> +       },
->> >>> +       [S2MPS11_CLK_BT] = {
->> >>> +               .name = "s2mps13_bt",
->> >>> +               .ops = &s2mps11_clk_ops,
->> >>> +               .flags = CLK_IS_ROOT,
->> >>> +       },
->> >>> +};
->> >>> +
->> >>>  static struct clk_init_data s2mps14_clks_init[S2MPS11_CLKS_NUM] = {
->> >>>         [S2MPS11_CLK_AP] = {
->> >>>                 .name = "s2mps14_ap",
->> >>> @@ -184,6 +203,10 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
->> >>>                 s2mps11_reg = S2MPS11_REG_RTC_CTRL;
->> >>>                 clks_init = s2mps11_clks_init;
->> >>>                 break;
->> >>> +       case S2MPS13X:
->> >>> +               s2mps11_reg = S2MPS13_REG_RTCCTRL;
->> >>> +               clks_init = s2mps13_clks_init;
->> >>> +               break;
->> >>>         case S2MPS14X:
->> >>>                 s2mps11_reg = S2MPS14_REG_RTCCTRL;
->> >>>                 clks_init = s2mps14_clks_init;
->> >>> @@ -279,6 +302,7 @@ static int s2mps11_clk_remove(struct platform_device *pdev)
->> >>>
->> >>>  static const struct platform_device_id s2mps11_clk_id[] = {
->> >>>         { "s2mps11-clk", S2MPS11X},
->> >>> +       { "s2mps13-clk", S2MPS13X},
->> >>>         { "s2mps14-clk", S2MPS14X},
->> >>>         { "s5m8767-clk", S5M8767X},
->> >>>         { },
->> >
->>
->
-> --
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+This patch changes the dependency for CONFIG_NETFILTER_XT_TARGET_REDIRECT
+to only make it visible if at least one of
+{CONFIG_NF_NAT_REDIRECT_IPV4, CONFIG_NF_NAT_REDIRECT_IPV6} are enabled.
+
+Additionally it is necessary to provide stubs for the
+nf_nat_redirect_ipv{4,6} functions in case the header is included but
+the corresponding Kconfig feature is not enabled.
+
+Signed-off-by: Andreas Ruprecht <rupran@einserver.de>
+---
+ include/net/netfilter/ipv4/nf_nat_redirect.h | 14 ++++++++++++++
+ include/net/netfilter/ipv6/nf_nat_redirect.h | 13 +++++++++++++
+ net/netfilter/Kconfig                        |  2 +-
+ 3 files changed, 28 insertions(+), 1 deletion(-)
+
+diff --git a/include/net/netfilter/ipv4/nf_nat_redirect.h b/include/net/netfilter/ipv4/nf_nat_redirect.h
+index 19e1df3a0a4d..514c7f465d5f 100644
+--- a/include/net/netfilter/ipv4/nf_nat_redirect.h
++++ b/include/net/netfilter/ipv4/nf_nat_redirect.h
+@@ -1,9 +1,23 @@
+ #ifndef _NF_NAT_REDIRECT_IPV4_H_
+ #define _NF_NAT_REDIRECT_IPV4_H_
+ 
++#include <linux/netfilter.h>
++
++#ifdef CONFIG_NF_NAT_REDIRECT_IPV4
+ unsigned int
+ nf_nat_redirect_ipv4(struct sk_buff *skb,
+ 		     const struct nf_nat_ipv4_multi_range_compat *mr,
+ 		     unsigned int hooknum);
+ 
++#else /* CONFIG_NF_NAT_REDIRECT_IPv4 */
++
++unsigned int
++nf_nat_redirect_ipv4(struct sk_buff *skb,
++		     const struct nf_nat_ipv4_multi_range_compat *mr,
++		     unsigned int hooknum)
++{
++	return NF_ACCEPT;
++}
++#endif /* CONFIG_NF_NAT_REDIRECT_IPv4 */
++
+ #endif /* _NF_NAT_REDIRECT_IPV4_H_ */
+diff --git a/include/net/netfilter/ipv6/nf_nat_redirect.h b/include/net/netfilter/ipv6/nf_nat_redirect.h
+index 1ebdffc461cc..4db9351120ec 100644
+--- a/include/net/netfilter/ipv6/nf_nat_redirect.h
++++ b/include/net/netfilter/ipv6/nf_nat_redirect.h
+@@ -1,8 +1,21 @@
+ #ifndef _NF_NAT_REDIRECT_IPV6_H_
+ #define _NF_NAT_REDIRECT_IPV6_H_
+ 
++#include <linux/netfilter.h>
++
++#ifdef CONFIG_NF_NAT_REDIRECT_IPV6
+ unsigned int
+ nf_nat_redirect_ipv6(struct sk_buff *skb, const struct nf_nat_range *range,
+ 		     unsigned int hooknum);
+ 
++#else /* CONFIG_NF_NAT_REDIRECT_IPV6 */
++
++unsigned int
++nf_nat_redirect_ipv6(struct sk_buff *skb, const struct nf_nat_range *range,
++		     unsigned int hooknum)
++{
++	return NF_ACCEPT;
++}
++#endif /* CONFIG_NF_NAT_REDIRECT_IPV6 */
++
+ #endif /* _NF_NAT_REDIRECT_IPV6_H_ */
+diff --git a/net/netfilter/Kconfig b/net/netfilter/Kconfig
+index be8db270aa77..0972851cce03 100644
+--- a/net/netfilter/Kconfig
++++ b/net/netfilter/Kconfig
+@@ -844,7 +844,7 @@ config NETFILTER_XT_TARGET_RATEEST
+ 
+ config NETFILTER_XT_TARGET_REDIRECT
+ 	tristate "REDIRECT target support"
+-	depends on NF_NAT
++	depends on NF_NAT_IPV4 || NF_NAT_IPV6
+ 	select NF_NAT_REDIRECT_IPV4 if NF_NAT_IPV4
+ 	select NF_NAT_REDIRECT_IPV6 if NF_NAT_IPV6
+ 	---help---
+-- 
+1.9.1
+
