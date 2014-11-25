@@ -1,112 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750975AbaKYPAK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 10:00:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42899 "EHLO mx2.suse.de"
+	id S1751051AbaKYPEY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 10:04:24 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:60558 "EHLO lists.s-osg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750860AbaKYPAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 10:00:08 -0500
-Date: Tue, 25 Nov 2014 16:00:06 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Tim Hartrick <tim@edgecast.com>
-Subject: Re: [PATCH] Repeated fork() causes SLAB to grow without bound
-Message-ID: <20141125150006.GB4415@dhcp22.suse.cz>
-References: <CALYGNiOHXvyqr3+Jq5FsZ_xscsXwrQ_9YCtL2819i6iRkgms2w@mail.gmail.com>
- <546CC0CD.40906@suse.cz>
- <CALYGNiO9_bAVVZ2GdFq=PO2yV3LPs2utsbcb2pFby7MypptLCw@mail.gmail.com>
- <CANN689G+y77m2_paF0vBpHG8EsJ2-pEnJvLJSGs-zHf+SqTEjQ@mail.gmail.com>
- <CALYGNiOC4dEzzVzSQXGC4oxLbgp=8TC=A+duJs67jT97TWQ++g@mail.gmail.com>
- <546DFFA1.4030700@redhat.com>
- <CALYGNiP_zqAucmN=Gn75Mm2wK1iE6fPNxTsaTRgnUbFbFE7C-g@mail.gmail.com>
- <CALYGNiO9NSpCFcRezArgfqzLQcTx2DnFYWYgpyK2HFyCnuGLOA@mail.gmail.com>
- <20141125105953.GC4607@dhcp22.suse.cz>
- <CALYGNiPZmf4Y1_vX_FaiALKp-BPvct7fAiaPEjnDGnVx9paS9w@mail.gmail.com>
+	id S1750782AbaKYPEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 10:04:23 -0500
+Date: Tue, 25 Nov 2014 13:04:16 -0200
+From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, LMML <linux-media@vger.kernel.org>,
+        linux-samsung-soc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: Re: [PATCH] media: exynos-gsc: fix build warning
+Message-ID: <20141125130416.457e48b0@recife.lan>
+In-Reply-To: <1416308268-22957-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1416308268-22957-1-git-send-email-prabhakar.csengg@gmail.com>
+Organization: Samsung
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALYGNiPZmf4Y1_vX_FaiALKp-BPvct7fAiaPEjnDGnVx9paS9w@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 25-11-14 16:13:16, Konstantin Khlebnikov wrote:
-> On Tue, Nov 25, 2014 at 1:59 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> > On Mon 24-11-14 11:09:40, Konstantin Khlebnikov wrote:
-> >> On Thu, Nov 20, 2014 at 6:03 PM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
-> >> > On Thu, Nov 20, 2014 at 5:50 PM, Rik van Riel <riel@redhat.com> wrote:
-> >> >> -----BEGIN PGP SIGNED MESSAGE-----
-> >> >> Hash: SHA1
-> >> >>
-> >> >> On 11/20/2014 09:42 AM, Konstantin Khlebnikov wrote:
-> >> >>
-> >> >>> I'm thinking about limitation for reusing anon_vmas which might
-> >> >>> increase performance without breaking asymptotic estimation of
-> >> >>> count anon_vma in the worst case. For example this heuristic: allow
-> >> >>> to reuse only anon_vma with single direct descendant. It seems
-> >> >>> there will be arount up to two times more anon_vmas but
-> >> >>> false-aliasing must be much lower.
-> >>
-> >> Done. RFC patch in attachment.
-> >
-> > This is triggering BUG_ON(anon_vma->degree); in unlink_anon_vmas. I have
-> > applied the patch on top of 3.18.0-rc6.
-> 
-> It seems I've screwed up with counter if anon_vma is merged in anon_vma_prepare.
-> Increment must be in the next if block:
-> 
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -182,8 +182,6 @@ int anon_vma_prepare(struct vm_area_struct *vma)
->                         if (unlikely(!anon_vma))
->                                 goto out_enomem_free_avc;
->                         allocated = anon_vma;
-> -                       /* Bump degree, root anon_vma is its own parent. */
-> -                       anon_vma->degree++;
->                 }
-> 
->                 anon_vma_lock_write(anon_vma);
-> @@ -192,6 +190,7 @@ int anon_vma_prepare(struct vm_area_struct *vma)
->                 if (likely(!vma->anon_vma)) {
->                         vma->anon_vma = anon_vma;
->                         anon_vma_chain_link(vma, avc, anon_vma);
-> +                       anon_vma->degree++;
->                         allocated = NULL;
->                         avc = NULL;
->                 }
-> 
-> I've tested it with trinity but probably isn't long enough.
+Em Tue, 18 Nov 2014 10:57:48 +0000
+"Lad, Prabhakar" <prabhakar.csengg@gmail.com> escreveu:
 
-OK, this has passed few runs with the original reproducer:
-$ date +%s; grep anon_vma /proc/slabinfo;
-$ ./vma_chain_repro
-$ sleep 1h
-$ date +%s; grep anon_vma /proc/slabinfo
-$ killall vma_chain_repro
-$ date +%s; grep anon_vma /proc/slabinfo
-1416923468
-anon_vma           11523  11523    176   23    1 : tunables    0    0    0 : slabdata    501    501      0
-1416927070
-anon_vma           11477  11477    176   23    1 : tunables    0    0    0 : slabdata    499    499      0
-1416927070
-anon_vma           11127  11431    176   23    1 : tunables    0    0    0 : slabdata    497    497      0
+> this patch fixes following build warning:
+> 
+> gsc-core.c:350:17: warning: 'low_plane' may be used uninitialized
+> gsc-core.c:371:31: warning: 'high_plane' may be used uninitialized
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> ---
+>  drivers/media/platform/exynos-gsc/gsc-core.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/media/platform/exynos-gsc/gsc-core.c b/drivers/media/platform/exynos-gsc/gsc-core.c
+> index 91d226b..6c71b17 100644
+> --- a/drivers/media/platform/exynos-gsc/gsc-core.c
+> +++ b/drivers/media/platform/exynos-gsc/gsc-core.c
+> @@ -347,8 +347,8 @@ void gsc_set_prefbuf(struct gsc_dev *gsc, struct gsc_frame *frm)
+>  		s_chk_addr = frm->addr.cb;
+>  		s_chk_len = frm->payload[1];
+>  	} else if (frm->fmt->num_planes == 3) {
+> -		u32 low_addr, low_plane, mid_addr, mid_plane;
+> -		u32 high_addr, high_plane;
+> +		u32 low_addr, low_plane = 0, mid_addr, mid_plane;
+> +		u32 high_addr, high_plane = 0;
+>  		u32 t_min, t_max;
+>  
+>  		t_min = min3(frm->addr.y, frm->addr.cb, frm->addr.cr);
 
-anon_vmas do not seem to leak anymore. I have forwarded the patch to the
-customer who was complaining about NSD but I guess it will take some
-time to get the confirmation.
+Actually, this just hides the error, without fixing.
 
-Anyway thanks a lot for your help and feel free to add
-Tested-by: Michal Hocko <mhocko@suse.cz>
+If the address is not found, a real error occurs, and the address
+is also invalid.
 
-I have yet to look deeper into the code to give you my Reviewed-by.
--- 
-Michal Hocko
-SUSE Labs
+So, I think that the enclosed patch will be doing a better job fixing it.
+
+Still, the entire code seems mostly useless on my eyes, as this function
+seems to be used only for debugging purposes, and errors there aren't
+actually handled properly.
+
+
+[PATCH] [media] exynos-gsc: fix build warning
+
+Fixes following build warnings:
+
+gsc-core.c:350:17: warning: 'low_plane' may be used uninitialized
+gsc-core.c:371:31: warning: 'high_plane' may be used uninitialized
+
+Reported-by: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+
+diff --git a/drivers/media/platform/exynos-gsc/gsc-core.c b/drivers/media/platform/exynos-gsc/gsc-core.c
+index 91d226b8fe5c..3062e9fac6da 100644
+--- a/drivers/media/platform/exynos-gsc/gsc-core.c
++++ b/drivers/media/platform/exynos-gsc/gsc-core.c
+@@ -319,21 +319,22 @@ int gsc_enum_fmt_mplane(struct v4l2_fmtdesc *f)
+ 	return 0;
+ }
+ 
+-static u32 get_plane_info(struct gsc_frame *frm, u32 addr, u32 *index)
++static int get_plane_info(struct gsc_frame *frm, u32 addr, u32 *index, u32 *ret_addr)
+ {
+ 	if (frm->addr.y == addr) {
+ 		*index = 0;
+-		return frm->addr.y;
++		*ret_addr = frm->addr.y;
+ 	} else if (frm->addr.cb == addr) {
+ 		*index = 1;
+-		return frm->addr.cb;
++		*ret_addr = frm->addr.cb;
+ 	} else if (frm->addr.cr == addr) {
+ 		*index = 2;
+-		return frm->addr.cr;
++		*ret_addr = frm->addr.cr;
+ 	} else {
+ 		pr_err("Plane address is wrong");
+ 		return -EINVAL;
+ 	}
++	return 0;
+ }
+ 
+ void gsc_set_prefbuf(struct gsc_dev *gsc, struct gsc_frame *frm)
+@@ -352,9 +353,11 @@ void gsc_set_prefbuf(struct gsc_dev *gsc, struct gsc_frame *frm)
+ 		u32 t_min, t_max;
+ 
+ 		t_min = min3(frm->addr.y, frm->addr.cb, frm->addr.cr);
+-		low_addr = get_plane_info(frm, t_min, &low_plane);
++		if (get_plane_info(frm, t_min, &low_plane, &low_addr))
++			return;
+ 		t_max = max3(frm->addr.y, frm->addr.cb, frm->addr.cr);
+-		high_addr = get_plane_info(frm, t_max, &high_plane);
++		if (get_plane_info(frm, t_max, &high_plane, &high_addr))
++			return;
+ 
+ 		mid_plane = 3 - (low_plane + high_plane);
+ 		if (mid_plane == 0)
