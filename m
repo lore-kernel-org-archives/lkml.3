@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162AbaKYHzG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 02:55:06 -0500
-Received: from mga14.intel.com ([192.55.52.115]:11065 "EHLO mga14.intel.com"
+	id S1752660AbaKYHzn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 02:55:43 -0500
+Received: from mga14.intel.com ([192.55.52.115]:11270 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752611AbaKYHzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 02:55:01 -0500
+	id S1753157AbaKYHzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 02:55:05 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,454,1413270000"; 
-   d="scan'208";a="627836690"
+   d="scan'208";a="627836730"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -16,18 +16,18 @@ To: Bjorn Helgaas <bhelgaas@google.com>,
         "H. Peter Anvin" <hpa@zytor.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, x86@kernel.org
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Borislav Petkov <bp@alien8.de>, Jonathan Corbet <corbet@lwn.net>,
+        x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [Patch Part3 v4 36/38] ACPI, irq, x86: Kill private function mp_register_gsi()/ mp_unregister_gsi()
-Date: Tue, 25 Nov 2014 15:50:00 +0800
-Message-Id: <1416901802-24211-37-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org, Daniel J Blueman <daniel@numascale.com>,
+        linux-doc@vger.kernel.org
+Subject: [Patch Part3 v4 38/38] x86, irq: Add kernel parameter vector_alloc to set CPU vector allocation policy
+Date: Tue, 25 Nov 2014 15:50:02 +0800
+Message-Id: <1416901802-24211-39-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1416901802-24211-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1416901802-24211-1-git-send-email-jiang.liu@linux.intel.com>
@@ -35,100 +35,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function mp_register_gsi() is only called once, so fold it into caller
-acpi_register_gsi_ioapic(). Do the same for mp_unregister_gsi().
+Parameter vector_alloc should be set to an integer with:
+bit 0:	enable allocating CPU vector from CPUs on device local node.
+	That's to allocate from cpumask_of_node(irq_data->node).
+bit 1: enable the default policy, which is to allocate from
+       apic->target_cpus().
+
+When allocating vectors, it tries all enabled policies from lower bit
+position to higher bit position.
+
+This option could be use to optimize interrupt distribution on large
+system such as NumaChip etc.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Tested-by: Joerg Roedel <jroedel@suse.de>
+Cc: Daniel J Blueman <daniel@numascale.com>
 ---
- arch/x86/kernel/acpi/boot.c |   57 ++++++++++++++-----------------------------
- 1 file changed, 18 insertions(+), 39 deletions(-)
+ Documentation/kernel-parameters.txt |    6 ++++++
+ arch/x86/kernel/apic/vector.c       |   11 +++++++++++
+ 2 files changed, 17 insertions(+)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 509a48f49fc7..e54a8d72ae6e 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -400,42 +400,6 @@ static int mp_config_acpi_gsi(struct device *dev, u32 gsi, int trigger,
- 	return 0;
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 4c81a860cc2b..a175c5016954 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -3709,6 +3709,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	vector=		[IA-64,SMP]
+ 			vector=percpu: enable percpu vector domain
+ 
++	vector_alloc=	[x86,SMP]
++			vector_alloc=policy: policy is a bitmap, bit 0
++			for allocating CPU vector from CPUs on device local
++			node; bit 1 for the default policy to allocating from
++			apic->target_cpus(). All higher bits are reserved.
++
+ 	video=		[FB] Frame buffer configuration
+ 			See Documentation/fb/modedb.txt.
+ 
+diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
+index 16de8906ee1e..1158843551c7 100644
+--- a/arch/x86/kernel/apic/vector.c
++++ b/arch/x86/kernel/apic/vector.c
+@@ -79,6 +79,17 @@ void set_vector_alloc_policy(unsigned int policy)
+ 		x86_vector_alloc_policy = policy | X86_VECTOR_POL_CALLER;
  }
  
--static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
--			   int polarity)
--{
--	int irq, node;
--	struct irq_alloc_info info;
--
--	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
--		return gsi;
--
--	trigger = trigger == ACPI_EDGE_SENSITIVE ? 0 : 1;
--	polarity = polarity == ACPI_ACTIVE_HIGH ? 0 : 1;
--	node = dev ? dev_to_node(dev) : NUMA_NO_NODE;
--	ioapic_set_alloc_attr(&info, node, trigger, polarity);
--	irq = mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC, &info);
--	if (irq < 0)
--		return irq;
--
--	/* Don't set up the ACPI SCI because it's already set up */
--	if (enable_update_mptable && acpi_gbl_FADT.sci_interrupt != gsi)
--		mp_config_acpi_gsi(dev, gsi, trigger, polarity);
--
--	return irq;
--}
--
--static void mp_unregister_gsi(u32 gsi)
--{
--	int irq;
--
--	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
--		return;
--
--	irq = mp_map_gsi_to_irq(gsi, 0, NULL);
--	if (irq > 0)
--		mp_unmap_irq(irq);
--}
--
- static struct irq_domain_ops acpi_irqdomain_ops = {
- 	.alloc = mp_irqdomain_alloc,
- 	.free = mp_irqdomain_free,
-@@ -657,10 +621,21 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
- 				    int trigger, int polarity)
++static int __init apic_parse_vector_policy(char *str)
++{
++	int policy;
++
++	if (get_option(&str, &policy) == 1)
++		set_vector_alloc_policy(policy);
++
++	return 1;
++}
++__setup("vector_alloc=", apic_parse_vector_policy);
++
+ static struct apic_chip_data *alloc_apic_chip_data(int node)
  {
- 	int irq = gsi;
--
- #ifdef CONFIG_X86_IO_APIC
-+	int node;
-+	struct irq_alloc_info info;
-+
-+	node = dev ? dev_to_node(dev) : NUMA_NO_NODE;
-+	trigger = trigger == ACPI_EDGE_SENSITIVE ? 0 : 1;
-+	polarity = polarity == ACPI_ACTIVE_HIGH ? 0 : 1;
-+	ioapic_set_alloc_attr(&info, node, trigger, polarity);
-+
- 	mutex_lock(&acpi_ioapic_lock);
--	irq = mp_register_gsi(dev, gsi, trigger, polarity);
-+	irq = mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC, &info);
-+	/* Don't set up the ACPI SCI because it's already set up */
-+	if (irq >= 0 && enable_update_mptable &&
-+	    acpi_gbl_FADT.sci_interrupt != gsi)
-+		mp_config_acpi_gsi(dev, gsi, trigger, polarity);
- 	mutex_unlock(&acpi_ioapic_lock);
- #endif
- 
-@@ -670,8 +645,12 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
- static void acpi_unregister_gsi_ioapic(u32 gsi)
- {
- #ifdef CONFIG_X86_IO_APIC
-+	int irq;
-+
- 	mutex_lock(&acpi_ioapic_lock);
--	mp_unregister_gsi(gsi);
-+	irq = mp_map_gsi_to_irq(gsi, 0, NULL);
-+	if (irq > 0)
-+		mp_unmap_irq(irq);
- 	mutex_unlock(&acpi_ioapic_lock);
- #endif
- }
+ 	struct apic_chip_data *data;
 -- 
 1.7.10.4
 
