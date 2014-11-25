@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091AbaKYKnv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:43:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59231 "EHLO
+	id S1752322AbaKYKqu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:46:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59251 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752984AbaKYKnr (ORCPT
+	with ESMTP id S932084AbaKYKnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:43:47 -0500
+	Tue, 25 Nov 2014 05:43:50 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>,
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 243/254] pinctrl: dra: dt-bindings: Fix output pull up/down
-Date: Tue, 25 Nov 2014 10:39:53 +0000
-Message-Id: <1416912004-5928-244-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 247/254] clocksource: Remove "weak" from clocksource_default_clock() declaration
+Date: Tue, 25 Nov 2014 10:39:57 +0000
+Message-Id: <1416912004-5928-248-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,41 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit 73b3a6657a88ef5348a0d69c9a8107d6f01ae862 upstream.
+commit 96a2adbc6f501996418da9f7afe39bf0e4d006a9 upstream.
 
-For PIN_OUTPUT_PULLUP and PIN_OUTPUT_PULLDOWN we must not set the
-PULL_DIS bit which disables the PULLs.
+kernel/time/jiffies.c provides a default clocksource_default_clock()
+definition explicitly marked "weak".  arch/s390 provides its own definition
+intended to override the default, but the "weak" attribute on the
+declaration applied to the s390 definition as well, so the linker chose one
+based on link order (see 10629d711ed7 ("PCI: Remove __weak annotation from
+pcibios_get_phb_of_node decl")).
 
-PULL_ENA is a 0 and using it in an OR operation is a NOP, so don't
-use it in the PIN_OUTPUT_PULLUP/DOWN macros.
+Remove the "weak" attribute from the clocksource_default_clock()
+declaration so we always prefer a non-weak definition over the weak one,
+independent of link order.
 
-Fixes: 23d9cec07c58 ("pinctrl: dra: dt-bindings: Fix pull enable/disable")
-
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Nishanth Menon <nm@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Fixes: f1b82746c1e9 ("clocksource: Cleanup clocksource selection")
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: John Stultz <john.stultz@linaro.org>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+CC: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/dt-bindings/pinctrl/dra.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/clocksource.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/dt-bindings/pinctrl/dra.h b/include/dt-bindings/pinctrl/dra.h
-index 3d33794e4f3e..7448edff4723 100644
---- a/include/dt-bindings/pinctrl/dra.h
-+++ b/include/dt-bindings/pinctrl/dra.h
-@@ -40,8 +40,8 @@
+diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
+index a16b497d5159..366269d77d7c 100644
+--- a/include/linux/clocksource.h
++++ b/include/linux/clocksource.h
+@@ -289,7 +289,7 @@ extern struct clocksource* clocksource_get_next(void);
+ extern void clocksource_change_rating(struct clocksource *cs, int rating);
+ extern void clocksource_suspend(void);
+ extern void clocksource_resume(void);
+-extern struct clocksource * __init __weak clocksource_default_clock(void);
++extern struct clocksource * __init clocksource_default_clock(void);
+ extern void clocksource_mark_unstable(struct clocksource *cs);
  
- /* Active pin states */
- #define PIN_OUTPUT		(0 | PULL_DIS)
--#define PIN_OUTPUT_PULLUP	(PIN_OUTPUT | PULL_ENA | PULL_UP)
--#define PIN_OUTPUT_PULLDOWN	(PIN_OUTPUT | PULL_ENA)
-+#define PIN_OUTPUT_PULLUP	(PULL_UP)
-+#define PIN_OUTPUT_PULLDOWN	(0)
- #define PIN_INPUT		(INPUT_EN | PULL_DIS)
- #define PIN_INPUT_SLEW		(INPUT_EN | SLEWCONTROL)
- #define PIN_INPUT_PULLUP	(PULL_ENA | INPUT_EN | PULL_UP)
+ extern u64
 -- 
 2.1.0
 
