@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653AbaKYKkb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:40:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58032 "EHLO
+	id S1754595AbaKYMCe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 07:02:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58079 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752560AbaKYKkY (ORCPT
+	with ESMTP id S1752643AbaKYKkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:40:24 -0500
+	Tue, 25 Nov 2014 05:40:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <johan@kernel.org>,
+Cc: Oliver Neukum <oneukum@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 012/254] USB: kobil_sct: fix non-atomic allocation in write path
-Date: Tue, 25 Nov 2014 10:36:02 +0000
-Message-Id: <1416912004-5928-13-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 025/254] xhci: no switching back on non-ULT Haswell
+Date: Tue, 25 Nov 2014 10:36:15 +0000
+Message-Id: <1416912004-5928-26-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -27,42 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit 191252837626fca0de694c18bb2aa64c118eda89 upstream.
+commit b45abacde3d551c6696c6738bef4a1805d0bf27a upstream.
 
-Write may be called from interrupt context so make sure to use
-GFP_ATOMIC for all allocations in write.
+The switch back is limited to ULT even on HP. The contrary
+finding arose by bad luck in BIOS versions for testing.
+This fixes spontaneous resume from S3 on some HP laptops.
 
-Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/kobil_sct.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-pci.c | 14 --------------
+ 1 file changed, 14 deletions(-)
 
-diff --git a/drivers/usb/serial/kobil_sct.c b/drivers/usb/serial/kobil_sct.c
-index 078f9ed419c8..a31ff1503a99 100644
---- a/drivers/usb/serial/kobil_sct.c
-+++ b/drivers/usb/serial/kobil_sct.c
-@@ -335,7 +335,8 @@ static int kobil_write(struct tty_struct *tty, struct usb_serial_port *port,
- 			port->interrupt_out_urb->transfer_buffer_length = length;
- 
- 			priv->cur_pos = priv->cur_pos + length;
--			result = usb_submit_urb(port->interrupt_out_urb, GFP_NOIO);
-+			result = usb_submit_urb(port->interrupt_out_urb,
-+					GFP_ATOMIC);
- 			dev_dbg(&port->dev, "%s - Send write URB returns: %i\n", __func__, result);
- 			todo = priv->filled - priv->cur_pos;
- 
-@@ -350,7 +351,7 @@ static int kobil_write(struct tty_struct *tty, struct usb_serial_port *port,
- 		if (priv->device_type == KOBIL_ADAPTER_B_PRODUCT_ID ||
- 			priv->device_type == KOBIL_ADAPTER_K_PRODUCT_ID) {
- 			result = usb_submit_urb(port->interrupt_in_urb,
--								GFP_NOIO);
-+					GFP_ATOMIC);
- 			dev_dbg(&port->dev, "%s - Send read URB returns: %i\n", __func__, result);
- 		}
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index ea14b663c8b2..d71aa5a97f0d 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -126,20 +126,6 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
+ 		xhci->quirks |= XHCI_AVOID_BEI;
+ 	}
+ 	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
+-	    (pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_XHCI ||
+-	     pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_XHCI)) {
+-		/* Workaround for occasional spurious wakeups from S5 (or
+-		 * any other sleep) on Haswell machines with LPT and LPT-LP
+-		 * with the new Intel BIOS
+-		 */
+-		/* Limit the quirk to only known vendors, as this triggers
+-		 * yet another BIOS bug on some other machines
+-		 * https://bugzilla.kernel.org/show_bug.cgi?id=66171
+-		 */
+-		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
+-			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
+-	}
+-	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
+ 		pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_XHCI) {
+ 		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
  	}
 -- 
 2.1.0
