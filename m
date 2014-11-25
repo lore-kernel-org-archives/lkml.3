@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751367AbaKYF3d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 00:29:33 -0500
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:45124 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945AbaKYF3a (ORCPT
+	id S1751535AbaKYFdx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 00:33:53 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:34257 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706AbaKYFdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 00:29:30 -0500
+	Tue, 25 Nov 2014 00:33:52 -0500
+Message-ID: <54741307.6070905@linux.vnet.ibm.com>
+Date: Tue, 25 Nov 2014 10:56:31 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFqt4rrwi940KAPyPONpjixK1730QmHEsN27V97jyHH+Qw@mail.gmail.com>
-References: <1415109789-7046-1-git-send-email-addy.ke@rock-chips.com>
-	<1415678573-6093-1-git-send-email-addy.ke@rock-chips.com>
-	<CAPDyKFqUoBjhsbz8rkLa9PY_dpgMxnimz3k7OoA5WVhi7MacPQ@mail.gmail.com>
-	<CAD=FV=VQHZ6YmcoeAb1OEVLYRrYBnc_dM5Kjt1TZX_CQJC=EfA@mail.gmail.com>
-	<5464152E.7040209@rock-chips.com>
-	<CAPDyKFrzGfDew0eLLEcA+_iS_mo-O2bFU58fjirfXXA8AJ9UYQ@mail.gmail.com>
-	<CAD=FV=Ve1TY4+8quq1=18A1YOFvOWuFGrBmHLwMCwdWBSqzxOw@mail.gmail.com>
-	<CAD=FV=UJT5zBkcj2a03Y_RWxad9+Pu83G_z79Xzzn74V=eRqww@mail.gmail.com>
-	<CAPDyKFqt4rrwi940KAPyPONpjixK1730QmHEsN27V97jyHH+Qw@mail.gmail.com>
-Date: Mon, 24 Nov 2014 21:29:28 -0800
-X-Google-Sender-Auth: f7dAc0dkfwTNFtnEKWxmHmF1rxg
-Message-ID: <CAD=FV=UZT91rp2rgPCh5mY5s+g8J3iOrDsHKjuXAgEqoye5goQ@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: try pick the exact same voltage as vmmc for vqmmc
-From: Doug Anderson <dianders@chromium.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: addy ke <addy.ke@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Alexandru Stan <amstan@chromium.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, lintao <lintao@rock-chips.com>,
-        chenfen <chenfen@rock-chips.com>, zyf <zyf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Chris Zhong <zyw@rock-chips.com>,
-        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        zhangqing <zhangqing@rock-chips.com>, Lin Huang <hl@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        peterz@infradead.org, tglx@linutronix.de, james.hogan@imgtec.com,
+        avagin@openvz.org, Paul.Clothier@imgtec.com, palves@redhat.com,
+        oleg@redhat.com, dhowells@redhat.com, davej@redhat.com,
+        davem@davemloft.net, mikey@neuling.org, benh@kernel.crashing.org,
+        sukadev@linux.vnet.ibm.com, mpe@ellerman.id.au,
+        sam.bobroff@au1.ibm.com
+Subject: Re: [PATCH V4 1/8] elf: Add new PowerPC specifc core note sections
+References: <1415683597-22819-1-git-send-email-khandual@linux.vnet.ibm.com> <1415683597-22819-2-git-send-email-khandual@linux.vnet.ibm.com> <20141121154310.489097fb4403d664f2156043@linux-foundation.org>
+In-Reply-To: <20141121154310.489097fb4403d664f2156043@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112505-0033-0000-0000-00000096884E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ulf,
+On 11/22/2014 05:13 AM, Andrew Morton wrote:
+> On Tue, 11 Nov 2014 10:56:30 +0530 Anshuman Khandual <khandual@linux.vnet.ibm.com> wrote:
+> 
+>> This patch adds four new core note sections for PowerPC transactional
+>> memory and one core note section for general miscellaneous debug registers.
+>> These addition of new elf core note sections extends the existing elf ABI
+>> without affecting it in any manner.
+>>
+>> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+>> ---
+>>  include/uapi/linux/elf.h | 5 +++++
+>>  1 file changed, 5 insertions(+)
+>>
+>> diff --git a/include/uapi/linux/elf.h b/include/uapi/linux/elf.h
+>> index ea9bf25..2260fc0 100644
+>> --- a/include/uapi/linux/elf.h
+>> +++ b/include/uapi/linux/elf.h
+>> @@ -379,6 +379,11 @@ typedef struct elf64_shdr {
+>>  #define NT_PPC_VMX	0x100		/* PowerPC Altivec/VMX registers */
+>>  #define NT_PPC_SPE	0x101		/* PowerPC SPE/EVR registers */
+>>  #define NT_PPC_VSX	0x102		/* PowerPC VSX registers */
+>> +#define NT_PPC_TM_SPR	0x103		/* PowerPC TM special registers */
+>> +#define NT_PPC_TM_CGPR	0x104		/* PowerpC TM checkpointed GPR */
+>> +#define NT_PPC_TM_CFPR	0x105		/* PowerPC TM checkpointed FPR */
+>> +#define NT_PPC_TM_CVMX	0x106		/* PowerPC TM checkpointed VMX */
+>> +#define NT_PPC_MISC	0x107		/* PowerPC miscellaneous registers */
+>>  #define NT_386_TLS	0x200		/* i386 TLS slots (struct user_desc) */
+>>  #define NT_386_IOPERM	0x201		/* x86 io permission bitmap (1=deny) */
+>>  #define NT_X86_XSTATE	0x202		/* x86 extended state using xsave */
+> 
+> ack from me, if that was at all expected.
 
-On Mon, Nov 24, 2014 at 5:29 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->> 2. Several people I've talked to have expressed concerns that our
->> minimum value is 2.7V.  Apparently that's really on the edge and makes
->> EEs a little nervous.  The quick sample of cards sitting on my desk
->> shows that they seem to claim 0x00ff8000, which doesn't include 2.7V.
->
-> 0x00ff8000 states what values of VDD levels the device supports. Not VIO.
+Thanks Andrew.
 
-Yup, I was just pointing out that possibly others were trying to get a
-little bit of margin (not going all the way down to 2.7V) too.
+> 
+> Please cc Shuah Khan <shuah.kh@samsung.com> on the tools/testing/selftests
+> changes.
 
->> Both of the above make me feel like dw_mmc should try its best to pick
->> a value for vqmmc that is closest to the value of vmmc (and >= 2.7V).
->> That also happens to make us work exactly like hosts where vmmc and
->> vqmmc are supplied by the same supply.
->
-> I do see your point. And I agree that it would be nice to achieve
-> something like this.
->
-> The question is how to do this. For sure, we need to involve the mmc
-> core to handle this correctly.
+Sure, will do.
 
-You could add a function to the core that we could call from
-dw_mci_switch_voltage() and it would do all the work except trying to
-set the UHS register.  That would certainly make it easy.  That could
-try to set the highest voltage that is <= vmmc when we're at
-MMC_SIGNAL_VOLTAGE_330.
-
--Doug
