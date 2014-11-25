@@ -1,54 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751375AbaKYRfZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 12:35:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46187 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812AbaKYRfX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 12:35:23 -0500
-Date: Tue, 25 Nov 2014 09:35:21 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Subject: Re: [GIT PULL] USB patches for v3.19 merge window
-Message-ID: <20141125173521.GA28406@kroah.com>
-References: <1416928650-20218-1-git-send-email-balbi@ti.com>
+	id S1751611AbaKYRgG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 12:36:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45007 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751273AbaKYRgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 12:36:04 -0500
+Date: Tue, 25 Nov 2014 18:42:09 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        Rusty Russell <rusty@rustcorp.com.au>, Pawel Moll <pawel.moll@arm.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH v4 11/42] virtio: add legacy feature table support
+Message-ID: <1416933600-21398-12-git-send-email-mst@redhat.com>
+References: <1416933600-21398-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1416928650-20218-1-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1416933600-21398-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 09:17:30AM -0600, Felipe Balbi wrote:
-> Hi Greg,
-> 
-> Here's a giant pull request for v3.19. Patches have been
-> on linux-next for quite a while - most of them at least - and
-> I tested what I could - read, what I had HW for - on both
-> BeagleBoneBlack and AM437x SK. Some has also been tested with
-> BeagleBoard X15, but that's still not supported in mainline
-> (probably v3.19 as well).
-> 
-> Anyway, let me know if you want to change anything.
-> 
-> cheers
-> 
-> The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
-> 
->   Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git tags/usb-for-v3.19
+virtio blk has some legacy feature bits that modern drivers
+must not negotiate, but are needed for old legacy hosts
+(e.g. that dn't support virtio scsi).
+Allow a separate legacy feature table for such cases.
 
-I had a merge conflict in drivers/usb/chipidea/otg_fsm.c, so you might
-want to verify I got that change correct.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ include/linux/virtio.h  |  4 ++++
+ drivers/virtio/virtio.c | 25 ++++++++++++++++++++++++-
+ 2 files changed, 28 insertions(+), 1 deletion(-)
 
-thanks,
+diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+index d6359a5..f70411e 100644
+--- a/include/linux/virtio.h
++++ b/include/linux/virtio.h
+@@ -130,6 +130,8 @@ int virtio_device_restore(struct virtio_device *dev);
+  * @id_table: the ids serviced by this driver.
+  * @feature_table: an array of feature numbers supported by this driver.
+  * @feature_table_size: number of entries in the feature table array.
++ * @feature_table_legacy: same as feature_table but when working in legacy mode.
++ * @feature_table_size_legacy: number of entries in feature table legacy array.
+  * @probe: the function to call when a device is found.  Returns 0 or -errno.
+  * @remove: the function to call when a device is removed.
+  * @config_changed: optional function to call when the device configuration
+@@ -140,6 +142,8 @@ struct virtio_driver {
+ 	const struct virtio_device_id *id_table;
+ 	const unsigned int *feature_table;
+ 	unsigned int feature_table_size;
++	const unsigned int *feature_table_legacy;
++	unsigned int feature_table_size_legacy;
+ 	int (*probe)(struct virtio_device *dev);
+ 	void (*scan)(struct virtio_device *dev);
+ 	void (*remove)(struct virtio_device *dev);
+diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
+index 0f44cff..e9018b4 100644
+--- a/drivers/virtio/virtio.c
++++ b/drivers/virtio/virtio.c
+@@ -113,6 +113,13 @@ void virtio_check_driver_offered_feature(const struct virtio_device *vdev,
+ 	for (i = 0; i < drv->feature_table_size; i++)
+ 		if (drv->feature_table[i] == fbit)
+ 			return;
++
++	if (drv->feature_table_legacy) {
++		for (i = 0; i < drv->feature_table_size_legacy; i++)
++			if (drv->feature_table_legacy[i] == fbit)
++				return;
++	}
++
+ 	BUG();
+ }
+ EXPORT_SYMBOL_GPL(virtio_check_driver_offered_feature);
+@@ -161,6 +168,7 @@ static int virtio_dev_probe(struct device *_d)
+ 	struct virtio_driver *drv = drv_to_virtio(dev->dev.driver);
+ 	u64 device_features;
+ 	u64 driver_features;
++	u64 driver_features_legacy;
+ 	unsigned status;
+ 
+ 	/* We have a driver! */
+@@ -177,7 +185,22 @@ static int virtio_dev_probe(struct device *_d)
+ 		driver_features |= (1ULL << f);
+ 	}
+ 
+-	dev->features = driver_features & device_features;
++	/* Some drivers have a separate feature tables for virtio v1.0 */
++	if (drv->feature_table_legacy) {
++		driver_features_legacy = 0;
++		for (i = 0; i < drv->feature_table_size_legacy; i++) {
++			unsigned int f = drv->feature_table_legacy[i];
++			BUG_ON(f >= 64);
++			driver_features_legacy |= (1ULL << f);
++		}
++	} else {
++		driver_features_legacy = driver_features;
++	}
++
++	if (driver_features & device_features & (1ULL << VIRTIO_F_VERSION_1))
++		dev->features = driver_features & device_features;
++	else
++		dev->features = driver_features_legacy & device_features;
+ 
+ 	/* Transport features always preserved to pass to finalize_features. */
+ 	for (i = VIRTIO_TRANSPORT_F_START; i < VIRTIO_TRANSPORT_F_END; i++)
+-- 
+MST
 
-greg k-h
