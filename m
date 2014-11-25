@@ -1,102 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847AbaKYLIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:08:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58889 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753782AbaKYKmr (ORCPT
+	id S1754863AbaKYLIh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:08:37 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:43076 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752986AbaKYLIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:47 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Greg Kurz <gkurz@linux.vnet.ibm.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 174/254] hwrng: pseries - port to new read API and fix stack corruption
-Date: Tue, 25 Nov 2014 10:38:44 +0000
-Message-Id: <1416912004-5928-175-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	Tue, 25 Nov 2014 06:08:35 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH 0/7] Fixes for ALPS trackstick
+Date: Tue, 25 Nov 2014 12:08:31 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Yunkang Tang <yunkang.tang@cn.alps.com>,
+        Vadim Klishko <vadim@cirque.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1415993906-13307-1-git-send-email-pali.rohar@gmail.com> <201411170839.17504@pali> <201411200029.49547@pali>
+In-Reply-To: <201411200029.49547@pali>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart5693687.OUhKZolg6b";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201411251208.31658@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
+--nextPart5693687.OUhKZolg6b
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+On Thursday 20 November 2014 00:29:49 Pali Roh=C3=A1r wrote:
+> On Monday 17 November 2014 08:39:14 Pali Roh=C3=A1r wrote:
+> > On Friday 14 November 2014 21:59:31 Dmitry Torokhov wrote:
+> > > Hi Pali,
+> > >=20
+> > > On Friday, November 14, 2014 08:38:19 PM Pali Roh=C3=A1r wrote:
+> > > > This patch series fix detection and identifying
+> > > > trackstick on machines with ALPS devices. Last patch
+> > > > split trackstick and bare PS/2 mouse packets between
+> > > > dev2 and dev3 input devices which make sure that driver
+> > > > will send only trackstick data to trackstick input
+> > > > device.
+> > >=20
+> > > Thank you for splitting the change, unfortunately it is
+> > > now quite big to apply to 3.18. Any chance you could try
+> > > implementing what I suggested in
+> > > http://www.spinics.net/lists/linux-input/msg34029.html and
+> > > then we can do the more comprehensive solution in 3.19.
+> > >=20
+> > > Thanks.
+> >=20
+> > Hello, I think that patches 1/7 and 5/7 could do that job. I
+> > did not tested them alone (without other patches), but if
+> > you think that two patches are ok for 3.18 & stable I can
+> > test them...
+>=20
+> Dmitry, ping.
 
-From: Greg Kurz <gkurz@linux.vnet.ibm.com>
+Dmitry: ping again.
 
-commit 24c65bc7037e7d0f362c0df70d17dd72ee64b8b9 upstream.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-The add_early_randomness() function in drivers/char/hw_random/core.c passes
-a 16-byte buffer to pseries_rng_data_read(). Unfortunately, plpar_hcall()
-returns four 64-bit values and trashes 16 bytes on the stack.
+--nextPart5693687.OUhKZolg6b
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-This bug has been lying around for a long time. It got unveiled by:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-commit d3cc7996473a7bdd33256029988ea690754e4e2a
-Author: Amit Shah <amit.shah@redhat.com>
-Date:   Thu Jul 10 15:42:34 2014 +0530
+iEYEABECAAYFAlR0Yy8ACgkQi/DJPQPkQ1LKHwCfaBoDx7SSlzXru6ZLH8MqcA3O
+vD4AoMoeMnMrBIn4R6LjxTtzOA9bH3IW
+=ZQzK
+-----END PGP SIGNATURE-----
 
-    hwrng: fetch randomness only after device init
-
-It may trig a oops while loading or unloading the pseries-rng module for both
-PowerVM and PowerKVM guests.
-
-This patch does two things:
-- pass an intermediate well sized buffer to plpar_hcall(). This is acceptalbe
-  since we're not on a hot path.
-- move to the new read API so that we know the return buffer size for sure.
-
-Signed-off-by: Greg Kurz <gkurz@linux.vnet.ibm.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/char/hw_random/pseries-rng.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/char/hw_random/pseries-rng.c b/drivers/char/hw_random/pseries-rng.c
-index ab7ffdec0ec3..f38f2c13e79c 100644
---- a/drivers/char/hw_random/pseries-rng.c
-+++ b/drivers/char/hw_random/pseries-rng.c
-@@ -25,18 +25,21 @@
- #include <asm/vio.h>
- 
- 
--static int pseries_rng_data_read(struct hwrng *rng, u32 *data)
-+static int pseries_rng_read(struct hwrng *rng, void *data, size_t max, bool wait)
- {
-+	u64 buffer[PLPAR_HCALL_BUFSIZE];
-+	size_t size = max < 8 ? max : 8;
- 	int rc;
- 
--	rc = plpar_hcall(H_RANDOM, (unsigned long *)data);
-+	rc = plpar_hcall(H_RANDOM, (unsigned long *)buffer);
- 	if (rc != H_SUCCESS) {
- 		pr_err_ratelimited("H_RANDOM call failed %d\n", rc);
- 		return -EIO;
- 	}
-+	memcpy(data, buffer, size);
- 
- 	/* The hypervisor interface returns 64 bits */
--	return 8;
-+	return size;
- }
- 
- /**
-@@ -55,7 +58,7 @@ static unsigned long pseries_rng_get_desired_dma(struct vio_dev *vdev)
- 
- static struct hwrng pseries_rng = {
- 	.name		= KBUILD_MODNAME,
--	.data_read	= pseries_rng_data_read,
-+	.read		= pseries_rng_read,
- };
- 
- static int __init pseries_rng_probe(struct vio_dev *dev,
--- 
-2.1.0
-
+--nextPart5693687.OUhKZolg6b--
