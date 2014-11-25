@@ -1,78 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845AbaKYM2h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 07:28:37 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:58232 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861AbaKYM2d (ORCPT
+	id S1753217AbaKYM2f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 07:28:35 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:40132 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753089AbaKYM2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 07:28:33 -0500
-From: Romain Perier <romain.perier@gmail.com>
-To: heiko@sntech.de
-Cc: johan@kernel.org, lee.jones@linaro.org, broonie@kernel.org,
-        grant.likely@linaro.org, robh@kernel.org, devicetree@vger.kernel.org,
-        lgirdwood@gmail.com, mark.rutland@arm.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        balbi@ti.com
-Subject: [PATCH v5 0/2] poweroff-source DT property renaming
-Date: Tue, 25 Nov 2014 12:28:24 +0000
-Message-Id: <1416918506-9366-1-git-send-email-romain.perier@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 25 Nov 2014 07:28:32 -0500
+MIME-Version: 1.0
+In-Reply-To: <1416852146-9781-5-git-send-email-a.ryabinin@samsung.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com> <1416852146-9781-5-git-send-email-a.ryabinin@samsung.com>
+From: Dmitry Chernenkov <dmitryc@google.com>
+Date: Tue, 25 Nov 2014 16:28:12 +0400
+Message-ID: <CAA6XgkFQ-uHc=Wv0RosXi0J6_ZKu3FU2hFo08=Ahr_uH+D41ig@mail.gmail.com>
+Subject: Re: [PATCH v7 04/12] mm: page_alloc: add kasan hooks on alloc and
+ free paths
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The goal of this serie is to rename the property "poweroff-source" to
-"system-power-controller". After discussions, it makes more sense to rename back
-to the old established property name. This patches serie reverts
-commit a4b4e0461ec5 ("of: Add standard property for poweroff capability").
+LGTM
 
-Changes since v4:
-  - Renamed the helper function to of_device_is_system_power_controller
-  - Removed changes in tps65910, as this commit will be removed from the mfd tree
-  - Updated doc
-
-Changes since v3:
-  - Move backward compatibility from of_is_system_power_controller to
-    tps65910, as it was only required for this driver.
-
-Changes since v2:
-  - of_is_system_power_controller is inline in of.h and only supports
-    backward compatibility with device drivers which used this helper
-    (which is tps65910)
-  - Quashed all changes into a single patch (except documentation)
-  - Add a separated commit to fix typos and mispellings in documentation
-
-Changes since v1:
-
-  - The first patch defines "of_is_system_power_controller" which is compatible
-    with both "vendor,system-power-controller" and "system-power-controller"
-    properties. Also, It keeps the old helper function of_system_has_poweroff_source
-    for source compatibility until everything is renamed (in this way, bisections
-    are not broken and change is made "atomically" between each commit)
-
-    Note: the property "poweroff-source" itself is not used in dts files yet.
-    Before this patch tps65910 was broken due to missing backward compatibility
-    with "vendor,system-power-controller". As the old helper uses the new one,
-    it works again.
-
-  - act8865 and tps65910 are ported to the new helper function
-  - The last commit removes the olf helper which was only used for source compatibility
-
-Romain Perier (2):
-  of: Rename "poweroff-source" property to "system-power-controller"
-  dt-bindings: Update documentation for "system-power-controller" and
-    fix misspellings
-
- .../devicetree/bindings/power/power-controller.txt     | 18 ++++++++++++++++++
- Documentation/devicetree/bindings/power/poweroff.txt   | 18 ------------------
- .../bindings/regulator/act8865-regulator.txt           |  4 ++--
- drivers/regulator/act8865-regulator.c                  |  2 +-
- include/linux/of.h                                     |  6 +++---
- 5 files changed, 24 insertions(+), 24 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/power/power-controller.txt
- delete mode 100644 Documentation/devicetree/bindings/power/poweroff.txt
-
--- 
-1.9.1
-
+On Mon, Nov 24, 2014 at 9:02 PM, Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
+> Add kernel address sanitizer hooks to mark allocated page's addresses
+> as accessible in corresponding shadow region.
+> Mark freed pages as inaccessible.
+>
+> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+> ---
+>  include/linux/kasan.h |  6 ++++++
+>  mm/compaction.c       |  2 ++
+>  mm/kasan/kasan.c      | 14 ++++++++++++++
+>  mm/kasan/kasan.h      |  1 +
+>  mm/kasan/report.c     |  7 +++++++
+>  mm/page_alloc.c       |  3 +++
+>  6 files changed, 33 insertions(+)
+>
+> diff --git a/include/linux/kasan.h b/include/linux/kasan.h
+> index 01c99fe..9714fba 100644
+> --- a/include/linux/kasan.h
+> +++ b/include/linux/kasan.h
+> @@ -30,6 +30,9 @@ static inline void kasan_disable_local(void)
+>
+>  void kasan_unpoison_shadow(const void *address, size_t size);
+>
+> +void kasan_alloc_pages(struct page *page, unsigned int order);
+> +void kasan_free_pages(struct page *page, unsigned int order);
+> +
+>  #else /* CONFIG_KASAN */
+>
+>  static inline void kasan_unpoison_shadow(const void *address, size_t size) {}
+> @@ -37,6 +40,9 @@ static inline void kasan_unpoison_shadow(const void *address, size_t size) {}
+>  static inline void kasan_enable_local(void) {}
+>  static inline void kasan_disable_local(void) {}
+>
+> +static inline void kasan_alloc_pages(struct page *page, unsigned int order) {}
+> +static inline void kasan_free_pages(struct page *page, unsigned int order) {}
+> +
+>  #endif /* CONFIG_KASAN */
+>
+>  #endif /* LINUX_KASAN_H */
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index a857225..a5c8e84 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -16,6 +16,7 @@
+>  #include <linux/sysfs.h>
+>  #include <linux/balloon_compaction.h>
+>  #include <linux/page-isolation.h>
+> +#include <linux/kasan.h>
+>  #include "internal.h"
+>
+>  #ifdef CONFIG_COMPACTION
+> @@ -61,6 +62,7 @@ static void map_pages(struct list_head *list)
+>         list_for_each_entry(page, list, lru) {
+>                 arch_alloc_page(page, 0);
+>                 kernel_map_pages(page, 1, 1);
+> +               kasan_alloc_pages(page, 0);
+>         }
+>  }
+>
+> diff --git a/mm/kasan/kasan.c b/mm/kasan/kasan.c
+> index f77be01..b336073 100644
+> --- a/mm/kasan/kasan.c
+> +++ b/mm/kasan/kasan.c
+> @@ -247,6 +247,20 @@ static __always_inline void check_memory_region(unsigned long addr,
+>         kasan_report(addr, size, write);
+>  }
+>
+> +void kasan_alloc_pages(struct page *page, unsigned int order)
+> +{
+> +       if (likely(!PageHighMem(page)))
+> +               kasan_unpoison_shadow(page_address(page), PAGE_SIZE << order);
+> +}
+> +
+> +void kasan_free_pages(struct page *page, unsigned int order)
+> +{
+> +       if (likely(!PageHighMem(page)))
+> +               kasan_poison_shadow(page_address(page),
+> +                               PAGE_SIZE << order,
+> +                               KASAN_FREE_PAGE);
+> +}
+> +
+>  void __asan_load1(unsigned long addr)
+>  {
+>         check_memory_region(addr, 1, false);
+> diff --git a/mm/kasan/kasan.h b/mm/kasan/kasan.h
+> index 6da1d78..2a6a961 100644
+> --- a/mm/kasan/kasan.h
+> +++ b/mm/kasan/kasan.h
+> @@ -6,6 +6,7 @@
+>  #define KASAN_SHADOW_SCALE_SIZE (1UL << KASAN_SHADOW_SCALE_SHIFT)
+>  #define KASAN_SHADOW_MASK       (KASAN_SHADOW_SCALE_SIZE - 1)
+>
+> +#define KASAN_FREE_PAGE         0xFF  /* page was freed */
+>  #define KASAN_SHADOW_GAP        0xF9  /* address belongs to shadow memory */
+>
+>  struct access_info {
+> diff --git a/mm/kasan/report.c b/mm/kasan/report.c
+> index 56a2089..8ac3b6b 100644
+> --- a/mm/kasan/report.c
+> +++ b/mm/kasan/report.c
+> @@ -57,6 +57,9 @@ static void print_error_description(struct access_info *info)
+>         case 0 ... KASAN_SHADOW_SCALE_SIZE - 1:
+>                 bug_type = "out of bounds access";
+>                 break;
+> +       case KASAN_FREE_PAGE:
+> +               bug_type = "use after free";
+> +               break;
+>         case KASAN_SHADOW_GAP:
+>                 bug_type = "wild memory access";
+>                 break;
+> @@ -78,6 +81,10 @@ static void print_address_description(struct access_info *info)
+>         page = virt_to_head_page((void *)info->access_addr);
+>
+>         switch (shadow_val) {
+> +       case KASAN_FREE_PAGE:
+> +               dump_page(page, "kasan error");
+> +               dump_stack();
+> +               break;
+>         case KASAN_SHADOW_GAP:
+>                 pr_err("No metainfo is available for this access.\n");
+>                 dump_stack();
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index b0e6eab..3829589 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -58,6 +58,7 @@
+>  #include <linux/page-debug-flags.h>
+>  #include <linux/hugetlb.h>
+>  #include <linux/sched/rt.h>
+> +#include <linux/kasan.h>
+>
+>  #include <asm/sections.h>
+>  #include <asm/tlbflush.h>
+> @@ -758,6 +759,7 @@ static bool free_pages_prepare(struct page *page, unsigned int order)
+>
+>         trace_mm_page_free(page, order);
+>         kmemcheck_free_shadow(page, order);
+> +       kasan_free_pages(page, order);
+>
+>         if (PageAnon(page))
+>                 page->mapping = NULL;
+> @@ -940,6 +942,7 @@ static int prep_new_page(struct page *page, unsigned int order, gfp_t gfp_flags)
+>
+>         arch_alloc_page(page, order);
+>         kernel_map_pages(page, 1 << order, 1);
+> +       kasan_alloc_pages(page, order);
+>
+>         if (gfp_flags & __GFP_ZERO)
+>                 prep_zero_page(page, order, gfp_flags);
+> --
+> 2.1.3
+>
