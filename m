@@ -1,370 +1,367 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764AbaKYLOz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:14:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58799 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753673AbaKYKmc (ORCPT
+	id S1755189AbaKYLPB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:15:01 -0500
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:52073 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754191AbaKYLO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:32 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Sebastian Reichel <sre@kernel.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 156/254] power: charger-manager: Fix accessing invalidated power supply after fuel gauge unbind
-Date: Tue, 25 Nov 2014 10:38:26 +0000
-Message-Id: <1416912004-5928-157-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	Tue, 25 Nov 2014 06:14:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <1416852146-9781-12-git-send-email-a.ryabinin@samsung.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1416852146-9781-1-git-send-email-a.ryabinin@samsung.com> <1416852146-9781-12-git-send-email-a.ryabinin@samsung.com>
+From: Dmitry Chernenkov <dmitryc@google.com>
+Date: Tue, 25 Nov 2014 15:14:37 +0400
+Message-ID: <CAA6XgkEZD=+TvqXmO814nYi_oqp_3F7_NvkjEW0-X262xTiRDw@mail.gmail.com>
+Subject: Re: [PATCH v7 11/12] lib: add kasan test module
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt2 -stable review patch.  If anyone has any objections, please let me know.
+I have a bit of concern about tests.
+A) they are not fully automated, there is no checking whether they
+pass or not. This is implemented in our repository using special tags
+in the log (https://github.com/google/kasan/commit/33b267553e7ffe66d5207152a3294112361b75fe;
+don't mmind the TODOs, they weren't broken to begin with), and a
+parser script (https://code.google.com/p/address-sanitizer/source/browse/trunk/tools/kernel_test_parse.py)
+to feed the kernel log to.
 
-------------------
+B) They are not thorough enough - they don't check false negatives,
+accesses more than 1 byte away etc.
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+C) (more of general concern for current Kasan realiability) - when
+running multiple times, some tests are flaky, specificially oob_right
+and uaf2. The latter needs quarantine to work reliably (I know
+Konstantin is working on it). oob_right needs redzones in the
+beginning of the slabs.
 
-commit bdbe81445407644492b9ac69a24d35e3202d773b upstream.
+I know all of these may seem like long shots, but if we want a
+reliable solution (also a backportable solution), we need to at least
+consider them.
 
-The charger manager obtained reference to fuel gauge power supply in probe
-with power_supply_get_by_name() for later usage. However if fuel gauge
-driver was removed and re-added then this reference would point to old
-power supply (from driver which was removed).
+Otherwise, LGTM
 
-This lead to accessing old (and probably invalid) memory which could be
-observed with:
-$ echo "12-0036" > /sys/bus/i2c/drivers/max17042/unbind
-$ echo "12-0036" > /sys/bus/i2c/drivers/max17042/bind
-$ cat /sys/devices/virtual/power_supply/battery/capacity
-[  240.480084] INFO: task cat:1393 blocked for more than 120 seconds.
-[  240.484799]       Not tainted 3.17.0-next-20141007-00028-ge60b6dd79570 #203
-[  240.491782] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  240.499589] cat             D c0469530     0  1393      1 0x00000000
-[  240.505947] [<c0469530>] (__schedule) from [<c0469d3c>] (schedule_preempt_disabled+0x14/0x20)
-[  240.514449] [<c0469d3c>] (schedule_preempt_disabled) from [<c046af08>] (mutex_lock_nested+0x1bc/0x458)
-[  240.523736] [<c046af08>] (mutex_lock_nested) from [<c0287a98>] (regmap_read+0x30/0x60)
-[  240.531647] [<c0287a98>] (regmap_read) from [<c032238c>] (max17042_get_property+0x2e8/0x350)
-[  240.540055] [<c032238c>] (max17042_get_property) from [<c03247d8>] (charger_get_property+0x264/0x348)
-[  240.549252] [<c03247d8>] (charger_get_property) from [<c0320764>] (power_supply_show_property+0x48/0x1e0)
-[  240.558808] [<c0320764>] (power_supply_show_property) from [<c027308c>] (dev_attr_show+0x1c/0x48)
-[  240.567664] [<c027308c>] (dev_attr_show) from [<c0141fb0>] (sysfs_kf_seq_show+0x84/0x104)
-[  240.575814] [<c0141fb0>] (sysfs_kf_seq_show) from [<c0140b18>] (kernfs_seq_show+0x24/0x28)
-[  240.584061] [<c0140b18>] (kernfs_seq_show) from [<c0104574>] (seq_read+0x1b0/0x484)
-[  240.591702] [<c0104574>] (seq_read) from [<c00e1e24>] (vfs_read+0x88/0x144)
-[  240.598640] [<c00e1e24>] (vfs_read) from [<c00e1f20>] (SyS_read+0x40/0x8c)
-[  240.605507] [<c00e1f20>] (SyS_read) from [<c000e760>] (ret_fast_syscall+0x0/0x48)
-[  240.612952] 4 locks held by cat/1393:
-[  240.616589]  #0:  (&p->lock){+.+.+.}, at: [<c01043f4>] seq_read+0x30/0x484
-[  240.623414]  #1:  (&of->mutex){+.+.+.}, at: [<c01417dc>] kernfs_seq_start+0x1c/0x8c
-[  240.631086]  #2:  (s_active#31){++++.+}, at: [<c01417e4>] kernfs_seq_start+0x24/0x8c
-[  240.638777]  #3:  (&map->mutex){+.+...}, at: [<c0287a98>] regmap_read+0x30/0x60
-
-The charger-manager should get reference to fuel gauge power supply on
-each use of get_property callback. The thermal zone 'tzd' field of
-power supply should not be used because of the same reason.
-
-Additionally this change solves also the issue with nested
-thermal_zone_get_temp() calls and related false lockdep positive for
-deadlock for thermal zone's mutex [1]. When fuel gauge is used as source of
-temperature then the charger manager forwards its get_temp calls to fuel
-gauge thermal zone. So actually different mutexes are used (one for
-charger manager thermal zone and second for fuel gauge thermal zone) but
-for lockdep this is one class of mutex.
-
-The recursion is removed by retrieving temperature through power
-supply's get_property().
-
-In case external thermal zone is used ('cm-thermal-zone' property is
-present in DTS) the recursion does not exist. Charger manager simply
-exports POWER_SUPPLY_PROP_TEMP_AMBIENT property (instead of
-POWER_SUPPLY_PROP_TEMP) thus no thermal zone is created for this power
-supply.
-
-[1] https://lkml.org/lkml/2014/10/6/309
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Fixes: 3bb3dbbd56ea ("power_supply: Add initial Charger-Manager driver")
-Signed-off-by: Sebastian Reichel <sre@kernel.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/power/charger-manager.c       | 99 +++++++++++++++++++++++++----------
- include/linux/power/charger-manager.h |  1 -
- 2 files changed, 71 insertions(+), 29 deletions(-)
-
-diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-index ef1f4c928431..71b2eb6c8ced 100644
---- a/drivers/power/charger-manager.c
-+++ b/drivers/power/charger-manager.c
-@@ -97,6 +97,7 @@ static struct charger_global_desc *g_desc; /* init with setup_charger_manager */
- static bool is_batt_present(struct charger_manager *cm)
- {
- 	union power_supply_propval val;
-+	struct power_supply *psy;
- 	bool present = false;
- 	int i, ret;
- 
-@@ -107,7 +108,11 @@ static bool is_batt_present(struct charger_manager *cm)
- 	case CM_NO_BATTERY:
- 		break;
- 	case CM_FUEL_GAUGE:
--		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
-+		psy = power_supply_get_by_name(cm->desc->psy_fuel_gauge);
-+		if (!psy)
-+			break;
-+
-+		ret = psy->get_property(psy,
- 				POWER_SUPPLY_PROP_PRESENT, &val);
- 		if (ret == 0 && val.intval)
- 			present = true;
-@@ -167,12 +172,14 @@ static bool is_ext_pwr_online(struct charger_manager *cm)
- static int get_batt_uV(struct charger_manager *cm, int *uV)
- {
- 	union power_supply_propval val;
-+	struct power_supply *fuel_gauge;
- 	int ret;
- 
--	if (!cm->fuel_gauge)
-+	fuel_gauge = power_supply_get_by_name(cm->desc->psy_fuel_gauge);
-+	if (!fuel_gauge)
- 		return -ENODEV;
- 
--	ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
-+	ret = fuel_gauge->get_property(fuel_gauge,
- 				POWER_SUPPLY_PROP_VOLTAGE_NOW, &val);
- 	if (ret)
- 		return ret;
-@@ -248,6 +255,7 @@ static bool is_full_charged(struct charger_manager *cm)
- {
- 	struct charger_desc *desc = cm->desc;
- 	union power_supply_propval val;
-+	struct power_supply *fuel_gauge;
- 	int ret = 0;
- 	int uV;
- 
-@@ -255,11 +263,15 @@ static bool is_full_charged(struct charger_manager *cm)
- 	if (!is_batt_present(cm))
- 		return false;
- 
--	if (cm->fuel_gauge && desc->fullbatt_full_capacity > 0) {
-+	fuel_gauge = power_supply_get_by_name(cm->desc->psy_fuel_gauge);
-+	if (!fuel_gauge)
-+		return false;
-+
-+	if (desc->fullbatt_full_capacity > 0) {
- 		val.intval = 0;
- 
- 		/* Not full if capacity of fuel gauge isn't full */
--		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
-+		ret = fuel_gauge->get_property(fuel_gauge,
- 				POWER_SUPPLY_PROP_CHARGE_FULL, &val);
- 		if (!ret && val.intval > desc->fullbatt_full_capacity)
- 			return true;
-@@ -273,10 +285,10 @@ static bool is_full_charged(struct charger_manager *cm)
- 	}
- 
- 	/* Full, if the capacity is more than fullbatt_soc */
--	if (cm->fuel_gauge && desc->fullbatt_soc > 0) {
-+	if (desc->fullbatt_soc > 0) {
- 		val.intval = 0;
- 
--		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
-+		ret = fuel_gauge->get_property(fuel_gauge,
- 				POWER_SUPPLY_PROP_CAPACITY, &val);
- 		if (!ret && val.intval >= desc->fullbatt_soc)
- 			return true;
-@@ -551,6 +563,20 @@ static int check_charging_duration(struct charger_manager *cm)
- 	return ret;
- }
- 
-+static int cm_get_battery_temperature_by_psy(struct charger_manager *cm,
-+					int *temp)
-+{
-+	struct power_supply *fuel_gauge;
-+
-+	fuel_gauge = power_supply_get_by_name(cm->desc->psy_fuel_gauge);
-+	if (!fuel_gauge)
-+		return -ENODEV;
-+
-+	return fuel_gauge->get_property(fuel_gauge,
-+				POWER_SUPPLY_PROP_TEMP,
-+				(union power_supply_propval *)temp);
-+}
-+
- static int cm_get_battery_temperature(struct charger_manager *cm,
- 					int *temp)
- {
-@@ -560,15 +586,18 @@ static int cm_get_battery_temperature(struct charger_manager *cm,
- 		return -ENODEV;
- 
- #ifdef CONFIG_THERMAL
--	ret = thermal_zone_get_temp(cm->tzd_batt, (unsigned long *)temp);
--	if (!ret)
--		/* Calibrate temperature unit */
--		*temp /= 100;
--#else
--	ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
--				POWER_SUPPLY_PROP_TEMP,
--				(union power_supply_propval *)temp);
-+	if (cm->tzd_batt) {
-+		ret = thermal_zone_get_temp(cm->tzd_batt, (unsigned long *)temp);
-+		if (!ret)
-+			/* Calibrate temperature unit */
-+			*temp /= 100;
-+	} else
- #endif
-+	{
-+		/* if-else continued from CONFIG_THERMAL */
-+		ret = cm_get_battery_temperature_by_psy(cm, temp);
-+	}
-+
- 	return ret;
- }
- 
-@@ -827,6 +856,7 @@ static int charger_get_property(struct power_supply *psy,
- 	struct charger_manager *cm = container_of(psy,
- 			struct charger_manager, charger_psy);
- 	struct charger_desc *desc = cm->desc;
-+	struct power_supply *fuel_gauge;
- 	int ret = 0;
- 	int uV;
- 
-@@ -857,14 +887,20 @@ static int charger_get_property(struct power_supply *psy,
- 		ret = get_batt_uV(cm, &val->intval);
- 		break;
- 	case POWER_SUPPLY_PROP_CURRENT_NOW:
--		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
-+		fuel_gauge = power_supply_get_by_name(cm->desc->psy_fuel_gauge);
-+		if (!fuel_gauge) {
-+			ret = -ENODEV;
-+			break;
-+		}
-+		ret = fuel_gauge->get_property(fuel_gauge,
- 				POWER_SUPPLY_PROP_CURRENT_NOW, val);
- 		break;
- 	case POWER_SUPPLY_PROP_TEMP:
- 	case POWER_SUPPLY_PROP_TEMP_AMBIENT:
- 		return cm_get_battery_temperature(cm, &val->intval);
- 	case POWER_SUPPLY_PROP_CAPACITY:
--		if (!cm->fuel_gauge) {
-+		fuel_gauge = power_supply_get_by_name(cm->desc->psy_fuel_gauge);
-+		if (!fuel_gauge) {
- 			ret = -ENODEV;
- 			break;
- 		}
-@@ -875,7 +911,7 @@ static int charger_get_property(struct power_supply *psy,
- 			break;
- 		}
- 
--		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
-+		ret = fuel_gauge->get_property(fuel_gauge,
- 					POWER_SUPPLY_PROP_CAPACITY, val);
- 		if (ret)
- 			break;
-@@ -924,7 +960,14 @@ static int charger_get_property(struct power_supply *psy,
- 		break;
- 	case POWER_SUPPLY_PROP_CHARGE_NOW:
- 		if (is_charging(cm)) {
--			ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
-+			fuel_gauge = power_supply_get_by_name(
-+					cm->desc->psy_fuel_gauge);
-+			if (!fuel_gauge) {
-+				ret = -ENODEV;
-+				break;
-+			}
-+
-+			ret = fuel_gauge->get_property(fuel_gauge,
- 						POWER_SUPPLY_PROP_CHARGE_NOW,
- 						val);
- 			if (ret) {
-@@ -1485,14 +1528,15 @@ err:
- 	return ret;
- }
- 
--static int cm_init_thermal_data(struct charger_manager *cm)
-+static int cm_init_thermal_data(struct charger_manager *cm,
-+		struct power_supply *fuel_gauge)
- {
- 	struct charger_desc *desc = cm->desc;
- 	union power_supply_propval val;
- 	int ret;
- 
- 	/* Verify whether fuel gauge provides battery temperature */
--	ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
-+	ret = fuel_gauge->get_property(fuel_gauge,
- 					POWER_SUPPLY_PROP_TEMP, &val);
- 
- 	if (!ret) {
-@@ -1502,8 +1546,6 @@ static int cm_init_thermal_data(struct charger_manager *cm)
- 		cm->desc->measure_battery_temp = true;
- 	}
- #ifdef CONFIG_THERMAL
--	cm->tzd_batt = cm->fuel_gauge->tzd;
--
- 	if (ret && desc->thermal_zone) {
- 		cm->tzd_batt =
- 			thermal_zone_get_zone_by_name(desc->thermal_zone);
-@@ -1666,6 +1708,7 @@ static int charger_manager_probe(struct platform_device *pdev)
- 	int ret = 0, i = 0;
- 	int j = 0;
- 	union power_supply_propval val;
-+	struct power_supply *fuel_gauge;
- 
- 	if (g_desc && !rtc_dev && g_desc->rtc_name) {
- 		rtc_dev = rtc_class_open(g_desc->rtc_name);
-@@ -1744,8 +1787,8 @@ static int charger_manager_probe(struct platform_device *pdev)
- 		}
- 	}
- 
--	cm->fuel_gauge = power_supply_get_by_name(desc->psy_fuel_gauge);
--	if (!cm->fuel_gauge) {
-+	fuel_gauge = power_supply_get_by_name(desc->psy_fuel_gauge);
-+	if (!fuel_gauge) {
- 		dev_err(&pdev->dev, "Cannot find power supply \"%s\"\n",
- 			desc->psy_fuel_gauge);
- 		return -ENODEV;
-@@ -1788,13 +1831,13 @@ static int charger_manager_probe(struct platform_device *pdev)
- 	cm->charger_psy.num_properties = psy_default.num_properties;
- 
- 	/* Find which optional psy-properties are available */
--	if (!cm->fuel_gauge->get_property(cm->fuel_gauge,
-+	if (!fuel_gauge->get_property(fuel_gauge,
- 					  POWER_SUPPLY_PROP_CHARGE_NOW, &val)) {
- 		cm->charger_psy.properties[cm->charger_psy.num_properties] =
- 				POWER_SUPPLY_PROP_CHARGE_NOW;
- 		cm->charger_psy.num_properties++;
- 	}
--	if (!cm->fuel_gauge->get_property(cm->fuel_gauge,
-+	if (!fuel_gauge->get_property(fuel_gauge,
- 					  POWER_SUPPLY_PROP_CURRENT_NOW,
- 					  &val)) {
- 		cm->charger_psy.properties[cm->charger_psy.num_properties] =
-@@ -1802,7 +1845,7 @@ static int charger_manager_probe(struct platform_device *pdev)
- 		cm->charger_psy.num_properties++;
- 	}
- 
--	ret = cm_init_thermal_data(cm);
-+	ret = cm_init_thermal_data(cm, fuel_gauge);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to initialize thermal data\n");
- 		cm->desc->measure_battery_temp = false;
-diff --git a/include/linux/power/charger-manager.h b/include/linux/power/charger-manager.h
-index 07e7945a1ff2..5d90d329e0ba 100644
---- a/include/linux/power/charger-manager.h
-+++ b/include/linux/power/charger-manager.h
-@@ -253,7 +253,6 @@ struct charger_manager {
- 	struct device *dev;
- 	struct charger_desc *desc;
- 
--	struct power_supply *fuel_gauge;
- 	struct power_supply **charger_stat;
- 
- #ifdef CONFIG_THERMAL
--- 
-2.1.0
-
+On Mon, Nov 24, 2014 at 9:02 PM, Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
+> This is a test module doing various nasty things like
+> out of bounds accesses, use after free. It is useful for testing
+> kernel debugging features like kernel address sanitizer.
+>
+> It mostly concentrates on testing of slab allocator, but we
+> might want to add more different stuff here in future (like
+> stack/global variables out of bounds accesses and so on).
+>
+> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+> ---
+>  lib/Kconfig.kasan |   8 ++
+>  lib/Makefile      |   1 +
+>  lib/test_kasan.c  | 254 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 263 insertions(+)
+>  create mode 100644 lib/test_kasan.c
+>
+> diff --git a/lib/Kconfig.kasan b/lib/Kconfig.kasan
+> index 1fa4fe8..8548646 100644
+> --- a/lib/Kconfig.kasan
+> +++ b/lib/Kconfig.kasan
+> @@ -43,4 +43,12 @@ config KASAN_INLINE
+>
+>  endchoice
+>
+> +config TEST_KASAN
+> +       tristate "Module for testing kasan for bug detection"
+> +       depends on m && KASAN
+> +       help
+> +         This is a test module doing various nasty things like
+> +         out of bounds accesses, use after free. It is useful for testing
+> +         kernel debugging features like kernel address sanitizer.
+> +
+>  endif
+> diff --git a/lib/Makefile b/lib/Makefile
+> index 750617c..1d8211a 100644
+> --- a/lib/Makefile
+> +++ b/lib/Makefile
+> @@ -38,6 +38,7 @@ obj-$(CONFIG_TEST_LKM) += test_module.o
+>  obj-$(CONFIG_TEST_USER_COPY) += test_user_copy.o
+>  obj-$(CONFIG_TEST_BPF) += test_bpf.o
+>  obj-$(CONFIG_TEST_FIRMWARE) += test_firmware.o
+> +obj-$(CONFIG_TEST_KASAN) += test_kasan.o
+>
+>  ifeq ($(CONFIG_DEBUG_KOBJECT),y)
+>  CFLAGS_kobject.o += -DDEBUG
+> diff --git a/lib/test_kasan.c b/lib/test_kasan.c
+> new file mode 100644
+> index 0000000..896dee5
+> --- /dev/null
+> +++ b/lib/test_kasan.c
+> @@ -0,0 +1,254 @@
+> +/*
+> + *
+> + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
+> + * Author: Andrey Ryabinin <a.ryabinin@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#define pr_fmt(fmt) "kasan test: %s " fmt, __func__
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/printk.h>
+> +#include <linux/slab.h>
+> +#include <linux/string.h>
+> +#include <linux/module.h>
+> +
+> +static noinline void __init kmalloc_oob_right(void)
+> +{
+> +       char *ptr;
+> +       size_t size = 123;
+> +
+> +       pr_info("out-of-bounds to right\n");
+> +       ptr = kmalloc(size, GFP_KERNEL);
+> +       if (!ptr) {
+> +               pr_err("Allocation failed\n");
+> +               return;
+> +       }
+> +
+> +       ptr[size] = 'x';
+> +       kfree(ptr);
+> +}
+> +
+> +static noinline void __init kmalloc_oob_left(void)
+> +{
+> +       char *ptr;
+> +       size_t size = 15;
+> +
+> +       pr_info("out-of-bounds to left\n");
+> +       ptr = kmalloc(size, GFP_KERNEL);
+> +       if (!ptr) {
+> +               pr_err("Allocation failed\n");
+> +               return;
+> +       }
+> +
+> +       *ptr = *(ptr - 1);
+> +       kfree(ptr);
+> +}
+> +
+> +static noinline void __init kmalloc_node_oob_right(void)
+> +{
+> +       char *ptr;
+> +       size_t size = 4096;
+> +
+> +       pr_info("kmalloc_node(): out-of-bounds to right\n");
+> +       ptr = kmalloc_node(size, GFP_KERNEL, 0);
+> +       if (!ptr) {
+> +               pr_err("Allocation failed\n");
+> +               return;
+> +       }
+> +
+> +       ptr[size] = 0;
+> +       kfree(ptr);
+> +}
+> +
+> +static noinline void __init kmalloc_large_oob_rigth(void)
+> +{
+> +       char *ptr;
+> +       size_t size = KMALLOC_MAX_CACHE_SIZE + 10;
+> +
+> +       pr_info("kmalloc large allocation: out-of-bounds to right\n");
+> +       ptr = kmalloc(size, GFP_KERNEL);
+> +       if (!ptr) {
+> +               pr_err("Allocation failed\n");
+> +               return;
+> +       }
+> +
+> +       ptr[size] = 0;
+> +       kfree(ptr);
+> +}
+> +
+> +static noinline void __init kmalloc_oob_krealloc_more(void)
+> +{
+> +       char *ptr1, *ptr2;
+> +       size_t size1 = 17;
+> +       size_t size2 = 19;
+> +
+> +       pr_info("out-of-bounds after krealloc more\n");
+> +       ptr1 = kmalloc(size1, GFP_KERNEL);
+> +       ptr2 = krealloc(ptr1, size2, GFP_KERNEL);
+> +       if (!ptr1 || !ptr2) {
+> +               pr_err("Allocation failed\n");
+> +               kfree(ptr1);
+> +               return;
+> +       }
+> +
+> +       ptr2[size2] = 'x';
+> +       kfree(ptr2);
+> +}
+> +
+> +static noinline void __init kmalloc_oob_krealloc_less(void)
+> +{
+> +       char *ptr1, *ptr2;
+> +       size_t size1 = 17;
+> +       size_t size2 = 15;
+> +
+> +       pr_info("out-of-bounds after krealloc less\n");
+> +       ptr1 = kmalloc(size1, GFP_KERNEL);
+> +       ptr2 = krealloc(ptr1, size2, GFP_KERNEL);
+> +       if (!ptr1 || !ptr2) {
+> +               pr_err("Allocation failed\n");
+> +               kfree(ptr1);
+> +               return;
+> +       }
+> +       ptr2[size1] = 'x';
+> +       kfree(ptr2);
+> +}
+> +
+> +static noinline void __init kmalloc_oob_16(void)
+> +{
+> +       struct {
+> +               u64 words[2];
+> +       } *ptr1, *ptr2;
+> +
+> +       pr_info("kmalloc out-of-bounds for 16-bytes access\n");
+> +       ptr1 = kmalloc(sizeof(*ptr1) - 3, GFP_KERNEL);
+> +       ptr2 = kmalloc(sizeof(*ptr2), GFP_KERNEL);
+> +       if (!ptr1 || !ptr2) {
+> +               pr_err("Allocation failed\n");
+> +               kfree(ptr1);
+> +               kfree(ptr2);
+> +               return;
+> +       }
+> +       *ptr1 = *ptr2;
+> +       kfree(ptr1);
+> +       kfree(ptr2);
+> +}
+> +
+> +static noinline void __init kmalloc_oob_in_memset(void)
+> +{
+> +       char *ptr;
+> +       size_t size = 666;
+> +
+> +       pr_info("out-of-bounds in memset\n");
+> +       ptr = kmalloc(size, GFP_KERNEL);
+> +       if (!ptr) {
+> +               pr_err("Allocation failed\n");
+> +               return;
+> +       }
+> +
+> +       memset(ptr, 0, size+5);
+> +       kfree(ptr);
+> +}
+> +
+> +static noinline void __init kmalloc_uaf(void)
+> +{
+> +       char *ptr;
+> +       size_t size = 10;
+> +
+> +       pr_info("use-after-free\n");
+> +       ptr = kmalloc(size, GFP_KERNEL);
+> +       if (!ptr) {
+> +               pr_err("Allocation failed\n");
+> +               return;
+> +       }
+> +
+> +       kfree(ptr);
+> +       *(ptr + 8) = 'x';
+> +}
+> +
+> +static noinline void __init kmalloc_uaf_memset(void)
+> +{
+> +       char *ptr;
+> +       size_t size = 33;
+> +
+> +       pr_info("use-after-free in memset\n");
+> +       ptr = kmalloc(size, GFP_KERNEL);
+> +       if (!ptr) {
+> +               pr_err("Allocation failed\n");
+> +               return;
+> +       }
+> +
+> +       kfree(ptr);
+> +       memset(ptr, 0, size);
+> +}
+> +
+> +static noinline void __init kmalloc_uaf2(void)
+> +{
+> +       char *ptr1, *ptr2;
+> +       size_t size = 43;
+> +
+> +       pr_info("use-after-free after another kmalloc\n");
+> +       ptr1 = kmalloc(size, GFP_KERNEL);
+> +       if (!ptr1) {
+> +               pr_err("Allocation failed\n");
+> +               return;
+> +       }
+> +
+> +       kfree(ptr1);
+> +       ptr2 = kmalloc(size, GFP_KERNEL);
+> +       if (!ptr2) {
+> +               pr_err("Allocation failed\n");
+> +               return;
+> +       }
+> +
+> +       ptr1[40] = 'x';
+> +       kfree(ptr2);
+> +}
+> +
+> +static noinline void __init kmem_cache_oob(void)
+> +{
+> +       char *p;
+> +       size_t size = 200;
+> +       struct kmem_cache *cache = kmem_cache_create("test_cache",
+> +                                               size, 0,
+> +                                               0, NULL);
+> +       if (!cache) {
+> +               pr_err("Cache allocation failed\n");
+> +               return;
+> +       }
+> +       pr_info("out-of-bounds in kmem_cache_alloc\n");
+> +       p = kmem_cache_alloc(cache, GFP_KERNEL);
+> +       if (!p) {
+> +               pr_err("Allocation failed\n");
+> +               kmem_cache_destroy(cache);
+> +               return;
+> +       }
+> +
+> +       *p = p[size];
+> +       kmem_cache_free(cache, p);
+> +       kmem_cache_destroy(cache);
+> +}
+> +
+> +int __init kmalloc_tests_init(void)
+> +{
+> +       kmalloc_oob_right();
+> +       kmalloc_oob_left();
+> +       kmalloc_node_oob_right();
+> +       kmalloc_large_oob_rigth();
+> +       kmalloc_oob_krealloc_more();
+> +       kmalloc_oob_krealloc_less();
+> +       kmalloc_oob_16();
+> +       kmalloc_oob_in_memset();
+> +       kmalloc_uaf();
+> +       kmalloc_uaf_memset();
+> +       kmalloc_uaf2();
+> +       kmem_cache_oob();
+> +       return -EAGAIN;
+> +}
+> +
+> +module_init(kmalloc_tests_init);
+> +MODULE_LICENSE("GPL");
+> --
+> 2.1.3
+>
