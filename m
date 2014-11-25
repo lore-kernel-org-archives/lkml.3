@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409AbaKYLGe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:06:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58919 "EHLO
+	id S1754608AbaKYLGx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:06:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58902 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753823AbaKYKmx (ORCPT
+	with ESMTP id S1753806AbaKYKmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:53 -0500
+	Tue, 25 Nov 2014 05:42:49 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 183/254] Input: alps - allow up to 2 invalid packets without resetting device
-Date: Tue, 25 Nov 2014 10:38:53 +0000
-Message-Id: <1416912004-5928-184-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 179/254] drm/radeon: use gart for DMA IB tests
+Date: Tue, 25 Nov 2014 10:38:49 +0000
+Message-Id: <1416912004-5928-180-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,48 +27,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 9d720b34c0a432639252f63012e18b0507f5b432 upstream.
+commit 0b021c5802fbe5addf6f89f5030f684adf04f7b7 upstream.
 
-On some Dell Latitude laptops ALPS device or Dell EC send one invalid byte
-in 6 bytes ALPS packet. In this case psmouse driver enter out of sync
-state. It looks like that all other bytes in packets are valid and also
-device working properly. So there is no need to do full device reset, just
-need to wait for byte which match condition for first byte (start of
-packet). Because ALPS packets are bigger (6 or 8 bytes) default limit is
-small.
+Use gart rather than vram to avoid having to deal with
+the HDP cache.
 
-This patch increase number of invalid bytes to size of 2 ALPS packets which
-psmouse driver can drop before do full reset.
+Port of adfed2b0587289013f8143c54913ddfd44ac1fd3
+(drm/radeon: use gart memory for DMA ring tests)
+to the IB tests.
 
-Resetting ALPS devices take some time and when doing reset on some Dell
-laptops touchpad, trackstick and also keyboard do not respond. So it is
-better to do it only if really necessary.
-
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-Tested-by: Pali Rohár <pali.rohar@gmail.com>
-Reviewed-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/input/mouse/alps.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/radeon/cik_sdma.c | 21 ++++++++++++---------
+ drivers/gpu/drm/radeon/r600_dma.c | 20 ++++++++++----------
+ 2 files changed, 22 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/input/mouse/alps.c b/drivers/input/mouse/alps.c
-index 873c0e024889..fdffac9f741d 100644
---- a/drivers/input/mouse/alps.c
-+++ b/drivers/input/mouse/alps.c
-@@ -2154,6 +2154,9 @@ int alps_init(struct psmouse *psmouse)
- 	/* We are having trouble resyncing ALPS touchpads so disable it for now */
- 	psmouse->resync_time = 0;
+diff --git a/drivers/gpu/drm/radeon/cik_sdma.c b/drivers/gpu/drm/radeon/cik_sdma.c
+index f54d45bad01d..fc9177194c7c 100644
+--- a/drivers/gpu/drm/radeon/cik_sdma.c
++++ b/drivers/gpu/drm/radeon/cik_sdma.c
+@@ -636,17 +636,20 @@ int cik_sdma_ib_test(struct radeon_device *rdev, struct radeon_ring *ring)
+ {
+ 	struct radeon_ib ib;
+ 	unsigned i;
++	unsigned index;
+ 	int r;
+-	void __iomem *ptr = (void *)rdev->vram_scratch.ptr;
+ 	u32 tmp = 0;
++	u64 gpu_addr;
  
-+	/* Allow 2 invalid packets without resetting device */
-+	psmouse->resetafter = psmouse->pktsize * 2;
+-	if (!ptr) {
+-		DRM_ERROR("invalid vram scratch pointer\n");
+-		return -EINVAL;
+-	}
++	if (ring->idx == R600_RING_TYPE_DMA_INDEX)
++		index = R600_WB_DMA_RING_TEST_OFFSET;
++	else
++		index = CAYMAN_WB_DMA1_RING_TEST_OFFSET;
 +
- 	return 0;
++	gpu_addr = rdev->wb.gpu_addr + index;
  
- init_fail:
+ 	tmp = 0xCAFEDEAD;
+-	writel(tmp, ptr);
++	rdev->wb.wb[index/4] = cpu_to_le32(tmp);
+ 
+ 	r = radeon_ib_get(rdev, ring->idx, &ib, NULL, 256);
+ 	if (r) {
+@@ -655,8 +658,8 @@ int cik_sdma_ib_test(struct radeon_device *rdev, struct radeon_ring *ring)
+ 	}
+ 
+ 	ib.ptr[0] = SDMA_PACKET(SDMA_OPCODE_WRITE, SDMA_WRITE_SUB_OPCODE_LINEAR, 0);
+-	ib.ptr[1] = rdev->vram_scratch.gpu_addr & 0xfffffffc;
+-	ib.ptr[2] = upper_32_bits(rdev->vram_scratch.gpu_addr);
++	ib.ptr[1] = lower_32_bits(gpu_addr);
++	ib.ptr[2] = upper_32_bits(gpu_addr);
+ 	ib.ptr[3] = 1;
+ 	ib.ptr[4] = 0xDEADBEEF;
+ 	ib.length_dw = 5;
+@@ -673,7 +676,7 @@ int cik_sdma_ib_test(struct radeon_device *rdev, struct radeon_ring *ring)
+ 		return r;
+ 	}
+ 	for (i = 0; i < rdev->usec_timeout; i++) {
+-		tmp = readl(ptr);
++		tmp = le32_to_cpu(rdev->wb.wb[index/4]);
+ 		if (tmp == 0xDEADBEEF)
+ 			break;
+ 		DRM_UDELAY(1);
+diff --git a/drivers/gpu/drm/radeon/r600_dma.c b/drivers/gpu/drm/radeon/r600_dma.c
+index 964c32031059..f1c584f21419 100644
+--- a/drivers/gpu/drm/radeon/r600_dma.c
++++ b/drivers/gpu/drm/radeon/r600_dma.c
+@@ -338,17 +338,17 @@ int r600_dma_ib_test(struct radeon_device *rdev, struct radeon_ring *ring)
+ {
+ 	struct radeon_ib ib;
+ 	unsigned i;
++	unsigned index;
+ 	int r;
+-	void __iomem *ptr = (void *)rdev->vram_scratch.ptr;
+ 	u32 tmp = 0;
++	u64 gpu_addr;
+ 
+-	if (!ptr) {
+-		DRM_ERROR("invalid vram scratch pointer\n");
+-		return -EINVAL;
+-	}
++	if (ring->idx == R600_RING_TYPE_DMA_INDEX)
++		index = R600_WB_DMA_RING_TEST_OFFSET;
++	else
++		index = CAYMAN_WB_DMA1_RING_TEST_OFFSET;
+ 
+-	tmp = 0xCAFEDEAD;
+-	writel(tmp, ptr);
++	gpu_addr = rdev->wb.gpu_addr + index;
+ 
+ 	r = radeon_ib_get(rdev, ring->idx, &ib, NULL, 256);
+ 	if (r) {
+@@ -357,8 +357,8 @@ int r600_dma_ib_test(struct radeon_device *rdev, struct radeon_ring *ring)
+ 	}
+ 
+ 	ib.ptr[0] = DMA_PACKET(DMA_PACKET_WRITE, 0, 0, 1);
+-	ib.ptr[1] = rdev->vram_scratch.gpu_addr & 0xfffffffc;
+-	ib.ptr[2] = upper_32_bits(rdev->vram_scratch.gpu_addr) & 0xff;
++	ib.ptr[1] = lower_32_bits(gpu_addr);
++	ib.ptr[2] = upper_32_bits(gpu_addr) & 0xff;
+ 	ib.ptr[3] = 0xDEADBEEF;
+ 	ib.length_dw = 4;
+ 
+@@ -374,7 +374,7 @@ int r600_dma_ib_test(struct radeon_device *rdev, struct radeon_ring *ring)
+ 		return r;
+ 	}
+ 	for (i = 0; i < rdev->usec_timeout; i++) {
+-		tmp = readl(ptr);
++		tmp = le32_to_cpu(rdev->wb.wb[index/4]);
+ 		if (tmp == 0xDEADBEEF)
+ 			break;
+ 		DRM_UDELAY(1);
 -- 
 2.1.0
 
