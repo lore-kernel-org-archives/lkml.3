@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682AbaKYK5V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:57:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59060 "EHLO
+	id S1753021AbaKYK5U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:57:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59061 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754010AbaKYKnT (ORCPT
+	with ESMTP id S1754012AbaKYKnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Nov 2014 05:43:19 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Weijie Yang <weijie.yang@samsung.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Dan Streetman <ddstreet@ieee.org>, Nitin Gupta <ngupta@vflare.org>,
-        Weijie Yang <weijie.yang.kh@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 209/254] zram: avoid kunmap_atomic() of a NULL pointer
-Date: Tue, 25 Nov 2014 10:39:19 +0000
-Message-Id: <1416912004-5928-210-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 212/254] Input: alps - ignore bad data on Dell Latitudes E6440 and E7440
+Date: Tue, 25 Nov 2014 10:39:22 +0000
+Message-Id: <1416912004-5928-213-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,44 +31,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weijie Yang <weijie.yang@samsung.com>
+From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
 
-commit c406515239376fc93a30d5d03192182160cbd3fb upstream.
+commit a7ef82aee91f26da79b981b9f5bca43b8817d3e4 upstream.
 
-zram could kunmap_atomic() a NULL pointer in a rare situation: a zram
-page becomes a full-zeroed page after a partial write io.  The current
-code doesn't handle this case and performs kunmap_atomic() on a NULL
-pointer, which panics the kernel.
+Sometimes on Dell Latitude laptops psmouse/alps driver receive invalid ALPS
+protocol V3 packets with bit7 set in last byte. More often it can be
+reproduced on Dell Latitude E6440 or E7440 with closed lid and pushing
+cover above touchpad.
 
-This patch fixes this issue.
+If bit7 in last packet byte is set then it is not valid ALPS packet. I was
+told that ALPS devices never send these packets. It is not know yet who
+send those packets, it could be Dell EC, bug in BIOS and also bug in
+touchpad firmware...
 
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Dan Streetman <ddstreet@ieee.org>
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Weijie Yang <weijie.yang.kh@gmail.com>
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+With this patch alps driver does not process those invalid packets, but
+instead of reporting PSMOUSE_BAD_DATA, getting into out of sync state,
+getting back in sync with the next byte and spam dmesg we return
+PSMOUSE_FULL_PACKET. If driver is truly out of sync we'll fail the checks
+on the next byte and report PSMOUSE_BAD_DATA then.
+
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Tested-by: Pali Rohár <pali.rohar@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/block/zram/zram_drv.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/input/mouse/alps.c | 17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 36e54be402df..2b30485cbd26 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -459,7 +459,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+diff --git a/drivers/input/mouse/alps.c b/drivers/input/mouse/alps.c
+index fdffac9f741d..4979b00fbf04 100644
+--- a/drivers/input/mouse/alps.c
++++ b/drivers/input/mouse/alps.c
+@@ -1077,12 +1077,27 @@ static psmouse_ret_t alps_process_byte(struct psmouse *psmouse)
  	}
  
- 	if (page_zero_filled(uncmem)) {
--		kunmap_atomic(user_mem);
-+		if (user_mem)
-+			kunmap_atomic(user_mem);
- 		/* Free memory associated with this sector now. */
- 		write_lock(&zram->meta->tb_lock);
- 		zram_free_page(zram, index);
+ 	/* Bytes 2 - pktsize should have 0 in the highest bit */
+-	if ((priv->proto_version < ALPS_PROTO_V5) &&
++	if (priv->proto_version < ALPS_PROTO_V5 &&
+ 	    psmouse->pktcnt >= 2 && psmouse->pktcnt <= psmouse->pktsize &&
+ 	    (psmouse->packet[psmouse->pktcnt - 1] & 0x80)) {
+ 		psmouse_dbg(psmouse, "refusing packet[%i] = %x\n",
+ 			    psmouse->pktcnt - 1,
+ 			    psmouse->packet[psmouse->pktcnt - 1]);
++
++		if (priv->proto_version == ALPS_PROTO_V3 &&
++		    psmouse->pktcnt == psmouse->pktsize) {
++			/*
++			 * Some Dell boxes, such as Latitude E6440 or E7440
++			 * with closed lid, quite often smash last byte of
++			 * otherwise valid packet with 0xff. Given that the
++			 * next packet is very likely to be valid let's
++			 * report PSMOUSE_FULL_PACKET but not process data,
++			 * rather than reporting PSMOUSE_BAD_DATA and
++			 * filling the logs.
++			 */
++			return PSMOUSE_FULL_PACKET;
++		}
++
+ 		return PSMOUSE_BAD_DATA;
+ 	}
+ 
 -- 
 2.1.0
 
