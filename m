@@ -1,110 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539AbaKYR3R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 12:29:17 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:42154 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960AbaKYR1i (ORCPT
+	id S1752367AbaKYR3x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 12:29:53 -0500
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:32810 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218AbaKYR3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 12:27:38 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Tim Sander <tim@krieglstein.org>, Marc Zyngier <marc.zyngier@arm.com>
-Subject: [PATCH 3.18-rc3 v9 1/5] irqchip: gic: Finer grain locking for gic_raise_softirq
-Date: Tue, 25 Nov 2014 17:26:37 +0000
-Message-Id: <1416936401-5147-2-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1416936401-5147-1-git-send-email-daniel.thompson@linaro.org>
-References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
- <1416936401-5147-1-git-send-email-daniel.thompson@linaro.org>
+	Tue, 25 Nov 2014 12:29:51 -0500
+Date: Tue, 25 Nov 2014 18:29:42 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Pawel Moll <pawel.moll@arm.com>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nikhil Rao <nikhil.rao@intel.com>,
+        Siva Yerramreddy <yshivakrishna@gmail.com>, lguest@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH v4 04/42] virtio: disable virtio 1.0 in transports
+Message-ID: <20141125182942.3890fe7b.cornelia.huck@de.ibm.com>
+In-Reply-To: <1416933600-21398-5-git-send-email-mst@redhat.com>
+References: <1416933600-21398-1-git-send-email-mst@redhat.com>
+	<1416933600-21398-5-git-send-email-mst@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112517-0013-0000-0000-000001FC1F31
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-irq_controller_lock is used for multiple purposes within the gic driver.
-Primarily it is used to make register read-modify-write sequences atomic.
-It is also used by gic_raise_softirq() in order that the big.LITTLE
-migration logic can figure out when it is safe to migrate interrupts
-between physical cores.
+On Tue, 25 Nov 2014 18:41:35 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-The second usage of irq_controller_lock is difficult to discern when
-reviewing the code because the migration itself takes place outside
-the lock.
+> disable virtio 1.0 in transports that don't
+> support it yet.
 
-This patch makes the second usage more explicit by splitting it out into
-a separate lock and providing better comments.
+I'd prefer if you disabled it for _every_ transport in this patch,
+until the needed infrastructure is in place. Else this is a bit
+confusing.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Marc Zyngier <marc.zyngier@arm.com>
----
- drivers/irqchip/irq-gic.c | 21 ++++++++++++++++++---
- 1 file changed, 18 insertions(+), 3 deletions(-)
+> We will gradually re-enable as support is added.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  drivers/lguest/lguest_device.c     | 3 ++-
+>  drivers/misc/mic/card/mic_virtio.c | 2 ++
+>  drivers/s390/kvm/virtio_ccw.c      | 3 ++-
+>  drivers/virtio/virtio_mmio.c       | 2 ++
+>  4 files changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 38493ff28fa5..bb4bc20573ea 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -73,6 +73,12 @@ struct gic_chip_data {
- static DEFINE_RAW_SPINLOCK(irq_controller_lock);
- 
- /*
-+ * This lock is used by the big.LITTLE migration code to ensure no
-+ * IPIs can be pended on the old core after the map has been updated.
-+ */
-+static DEFINE_RAW_SPINLOCK(cpu_map_migration_lock);
-+
-+/*
-  * The GIC mapping of CPU interfaces does not necessarily match
-  * the logical CPU numbering.  Let's use a mapping as returned
-  * by the GIC itself.
-@@ -624,7 +630,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- 	int cpu;
- 	unsigned long flags, map = 0;
- 
--	raw_spin_lock_irqsave(&irq_controller_lock, flags);
-+	raw_spin_lock_irqsave(&cpu_map_migration_lock, flags);
- 
- 	/* Convert our logical CPU mask into a physical one. */
- 	for_each_cpu(cpu, mask)
-@@ -639,7 +645,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- 	/* this always happens on GIC0 */
- 	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
- 
--	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
-+	raw_spin_unlock_irqrestore(&cpu_map_migration_lock, flags);
- }
- #endif
- 
-@@ -710,8 +716,17 @@ void gic_migrate_target(unsigned int new_cpu_id)
- 
- 	raw_spin_lock(&irq_controller_lock);
- 
--	/* Update the target interface for this logical CPU */
-+	/*
-+	 * Update the target interface for this logical CPU
-+	 *
-+	 * From the point we release the cpu_map_migration_lock any new
-+	 * SGIs will be pended on the new cpu which makes the set of SGIs
-+	 * pending on the old cpu static. That means we can defer the
-+	 * migration until after we have released the irq_controller_lock.
-+	 */
-+	raw_spin_lock(&cpu_map_migration_lock);
- 	gic_cpu_map[cpu] = 1 << new_cpu_id;
-+	raw_spin_unlock(&cpu_map_migration_lock);
- 
- 	/*
- 	 * Find all the peripheral interrupts targetting the current
--- 
-1.9.3
+Why do you disable ccw but not pci? (Doesn't pci need any changes
+transport-side?) And you missed the old s390 virtio transport in
+drivers/s390/kvm/kvm_virtio.c :)
+
+> diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
+> index abba04d..08536f0 100644
+> --- a/drivers/s390/kvm/virtio_ccw.c
+> +++ b/drivers/s390/kvm/virtio_ccw.c
+> @@ -704,7 +704,8 @@ static u64 virtio_ccw_get_features(struct virtio_device *vdev)
+>  out_free:
+>  	kfree(features);
+>  	kfree(ccw);
+> -	return rc;
+> +	/* TODO: enable virtio 1.0 */
+> +	return rc & ~BIT_ULL(VIRTIO_F_VERSION_1);;
+
+double ';'
+
+FWIW, as negotiating a revision >= 1 is a pre-req for virtio 1.0
+support on ccw, virtio 1.0 is already implicitly disabled.
+
+>  }
+> 
+>  static void virtio_ccw_finalize_features(struct virtio_device *vdev)
 
