@@ -1,72 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033AbaKYJro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 04:47:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34908 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750760AbaKYJrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 04:47:43 -0500
-Message-ID: <5474503D.5030501@suse.de>
-Date: Tue, 25 Nov 2014 10:47:41 +0100
-From: Hannes Reinecke <hare@suse.de>
+	id S1752102AbaKYJtA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 04:49:00 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:33747 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252AbaKYJs6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 04:48:58 -0500
+Message-ID: <54745087.5020904@gmail.com>
+Date: Tue, 25 Nov 2014 12:48:55 +0300
+From: Dmitry Tunin <hanipouspilot@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Ondrej Zary <linux@rainbow-software.org>, linux-scsi@vger.kernel.org
-CC: Christoph Hellwig <hch@infradead.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] wd719x: Add firmware documentation
-References: <1416867882-29344-1-git-send-email-linux@rainbow-software.org> <1416867882-29344-4-git-send-email-linux@rainbow-software.org>
-In-Reply-To: <1416867882-29344-4-git-send-email-linux@rainbow-software.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+Subject: [PATCH v6] ath3k: Add support of MCI 13d3:3408 bt device
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2014 11:24 PM, Ondrej Zary wrote:
-> Add documentation and script to obtain required firmware.
-> 
-> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-> ---
->  Documentation/scsi/wd719x.txt |   21 +++++++++++++++++++++
->  1 file changed, 21 insertions(+)
->  create mode 100644 Documentation/scsi/wd719x.txt
-> 
-> diff --git a/Documentation/scsi/wd719x.txt b/Documentation/scsi/wd719x.txt
-> new file mode 100644
-> index 0000000..0816b02
-> --- /dev/null
-> +++ b/Documentation/scsi/wd719x.txt
-> @@ -0,0 +1,21 @@
-> +Driver for Western Digital WD7193, WD7197 and WD7296 SCSI cards
-> +---------------------------------------------------------------
-> +
-> +The card requires firmware that can be cut out of the Windows NT driver that
-> +can be downloaded from WD at:
-> +http://support.wdc.com/product/download.asp?groupid=801&sid=27&lang=en
-> +
-> +There is no license anywhere in the file or on the page - so the firmware
-> +probably cannot be added to linux-firmware.
-> +
-> +This script downloads and extracts the firmware, creating wd719x-risc.bin and
-> +d719x-wcs.bin files. Put them in /lib/firmware/.
-> +
-> +#!/bin/sh
-> +wget http://support.wdc.com/download/archive/pciscsi.exe
-> +lha xi pciscsi.exe pci-scsi.exe
-> +lha xi pci-scsi.exe nt/wd7296a.sys
-> +rm pci-scsi.exe
-> +dd if=wd7296a.sys of=wd719x-risc.bin bs=1 skip=5760 count=14336
-> +dd if=wd7296a.sys of=wd719x-wcs.bin bs=1 skip=20096 count=514
-> +rm wd7296a.sys
-> 
-Reviewed-by: Hannes Reinecke <hare@suse.de>
+Add support for bluetooth MCI WB335 (AR9565) Wi-Fi+bt module.
+This bluetooth module requires loading patch and sysconfig by ath3k driver.
 
-Cheers,
+T:  Bus=01 Lev=02 Prnt=03 Port=00 Cnt=01 Dev#= 20 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=13d3 ProdID=3408 Rev= 0.02
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+A:  FirstIf#= 0 IfCount= 2 Cls=e0(wlcon) Sub=01 Prot=01
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 21284 (AG Nürnberg)
+
+CC: stable@vger.kernel.org
+Signed-off-by: Dmitry Tunin <hanipouspilot@gmail.com>
+
+---
+
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index d85ced2..086240c 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -105,6 +105,7 @@ static const struct usb_device_id ath3k_table[] = {
+  	{ USB_DEVICE(0x13d3, 0x3375) },
+  	{ USB_DEVICE(0x13d3, 0x3393) },
+  	{ USB_DEVICE(0x13d3, 0x3402) },
++	{ USB_DEVICE(0x13d3, 0x3408) },
+  	{ USB_DEVICE(0x13d3, 0x3432) },
+
+  	/* Atheros AR5BBU12 with sflash firmware */
+@@ -156,6 +157,7 @@ static const struct usb_device_id ath3k_blist_tbl[] = {
+  	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+  	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
+  	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x13d3, 0x3408), .driver_info = BTUSB_ATH3012 },
+  	{ USB_DEVICE(0x13d3, 0x3432), .driver_info = BTUSB_ATH3012 },
+
+  	/* Atheros AR5BBU22 with sflash firmware */
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index edfc17b..091c813 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -182,6 +182,7 @@ static const struct usb_device_id blacklist_table[] = {
+  	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+  	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
+  	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x13d3, 0x3408), .driver_info = BTUSB_ATH3012 },
+  	{ USB_DEVICE(0x13d3, 0x3432), .driver_info = BTUSB_ATH3012 },
+
+  	/* Atheros AR5BBU12 with sflash firmware */
+
+--
+
