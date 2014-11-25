@@ -1,295 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126AbaKYOGq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:06:46 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44198 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445AbaKYOCd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:02:33 -0500
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 08/17] {macvtap,tun}_get_user(): switch to iov_iter
-Date: Tue, 25 Nov 2014 14:02:22 +0000
-Message-Id: <1416924151-28698-8-git-send-email-viro@ZenIV.linux.org.uk>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <20141125024018.GH7996@ZenIV.linux.org.uk>
-References: <20141125024018.GH7996@ZenIV.linux.org.uk>
+	id S1752154AbaKYOHB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:07:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41465 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751445AbaKYOG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 09:06:59 -0500
+Message-ID: <54748D00.1030000@suse.de>
+Date: Tue, 25 Nov 2014 15:06:56 +0100
+From: Alexander Graf <agraf@suse.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: "J. German Rivera" <German.Rivera@freescale.com>,
+        gregkh@linuxfoundation.org, arnd@arndb.de,
+        linux-kernel@vger.kernel.org
+CC: stuart.yoder@freescale.com, Kim.Phillips@freescale.com,
+        scottwood@freescale.com, bhamciu1@freescale.com, R89243@freescale.com,
+        Geoff.Thorpe@freescale.com, bhupesh.sharma@freescale.com,
+        nir.erez@freescale.com, richard.schmitt@freescale.com
+Subject: Re: [PATCH 1/3 v4] drivers/bus: Added Freescale Management Complex
+ APIs
+References: <1415901246-24131-1-git-send-email-German.Rivera@freescale.com> <1415901246-24131-2-git-send-email-German.Rivera@freescale.com>
+In-Reply-To: <1415901246-24131-2-git-send-email-German.Rivera@freescale.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@zeniv.linux.org.uk>
 
-allows to switch macvtap and tun from ->aio_write() to ->write_iter()
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
- drivers/net/macvtap.c |   44 +++++++++++++++++++++-----------------------
- drivers/net/tun.c     |   44 ++++++++++++++++++++++++--------------------
- 2 files changed, 45 insertions(+), 43 deletions(-)
+On 13.11.14 18:54, J. German Rivera wrote:
+> APIs to access the Management Complex (MC) hardware
+> module of Freescale LS2 SoCs. This patch includes
+> APIs to check the MC firmware version and to manipulate
+> DPRC objects in the MC.
+> 
+> Signed-off-by: J. German Rivera <German.Rivera@freescale.com>
+> Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
+> ---
+> Changes in v4:
+> - Addressed comments from Alex Graf:
+>   * Added file description for files that did not have one
+>   * Removed Marshalling/unmarshalling macros invoked in MC
+>     command wrapper functions, and instead do the marshalling/
+>     unmarshalling directly in these functions.
+>   * Added type cast u32 in status range-check in mc_status_to_error()
+>   * Moved mc_write_command() and mc_read_response() inline
+>     function to mc_sys.c as they are only used in that file
+>   * Renamed u64_enc() as mc_enc() and u64_dec() as mc_dec()
+> - Upgraded MC flibs for MC firmware 0.5
+> 
+> Changes in v3:
+> - Addressed comment from Greg Kroah-Hartman:
+>   * Removed doxygen comments
+> 
+> - Addressed comment from Scott Wood:
+>   * Replaced udelay() call with usleep_range() call in polling loop
+> - Addressed comments from Kim Phillips:
+>   * Fixed license text in all files
+>   * Renamed files:
+> 	drivers/bus/fsl-mc/fsl_dpmng_cmd.h -> drivers/bus/fsl-mc/dpmng-cmd.h
+> 	drivers/bus/fsl-mc/fsl_dprc_cmd.h -> drivers/bus/fsl-mc/dprc-cmd.h
+> 	drivers/bus/fsl-mc/fsl_mc_sys.c -> drivers/bus/fsl-mc/mc-sys.c
+> 	include/linux/fsl_dpmng.h -> include/linux/fsl/dpmng.h
+> 	include/linux/fsl_dprc.h -> include/linux/fsl/dprc.h
+> 	include/linux/fsl_mc_cmd.h -> include/linux/fsl/mc-cmd.h
+> 	include/linux/fsl_mc_sys.h -> include/linux/fsl/mc-sys.h
+>   * Changed dpmng_load_iop() to take the DMA address directly,
+>     instead of the image virtual address.
+>   * Removed if and WARN_ON that checks for NULL fsl_destroy_mc_io()
+>   * Removed locking from mc_send_command(). Now the caller of MC flib
+>     APIs is responsible for protecting concurrent accesses to the same
+>     MC portal.
+> 
+> Changes in v2:
+> - Addressed comment from Joe Perches:
+>   * Refactored logic to actively fail on err and proceed at
+>     the same indent level on success, for all functions in dprc.c
+>     and dpmng.c.
+> 
+> - Addressed comments from Kim Phillips:
+>   * Fixed warning in mc_send_command
+>   * Changed serialization logic in mc_send_command() to only use
+>     spinlock_irqsave() when both threads and interrupt handlers
+>     concurrently access the same portal.
+>   * Changed switch to lookup table in mc_status_to_error()
+>   * Removed macros iowrite64(), ioread64(), ENOTSUP from fsl_mc_sys.h
+>   * Removed #ifdef side for FSL_MC_FIRMWARE in fsl_mc_cmd.h
+>   * Changed non-devm_ API calls to devm_ API calls and refactored
+>     fsl_create_mc_io()/fsl_destroy_mc_io() to simplify cleanup logic.
+> 
+> - Addressed comments from Scott Wood:
+>   * Return -ENXIO instead of -EFAULT when ioremap_nocache() fails
+> 
+> - Addressed comments from Alex Graf:
+>   * Added MAINTAINERS file entries for new files
+>   * Added dev param to fsl_create_mc_io(), to enable the use
+>     of devm_ APIs in this function and fsl_destroy_mc_io().
+>   * Changed the value of the timeout for MC command completion
+>     to be a function of HZ instead of a hard-coded jiffies value.
+> 
+>  MAINTAINERS                    |   8 +
+>  drivers/bus/fsl-mc/dpmng-cmd.h |  50 +++
+>  drivers/bus/fsl-mc/dpmng.c     | 126 ++++++
+>  drivers/bus/fsl-mc/dprc-cmd.h  |  85 ++++
+>  drivers/bus/fsl-mc/dprc.c      | 933 +++++++++++++++++++++++++++++++++++++++++
+>  drivers/bus/fsl-mc/mc-sys.c    | 284 +++++++++++++
+>  include/linux/fsl/dpmng.h      | 151 +++++++
+>  include/linux/fsl/dprc.h       | 868 ++++++++++++++++++++++++++++++++++++++
+>  include/linux/fsl/mc-cmd.h     | 109 +++++
+>  include/linux/fsl/mc-sys.h     |  70 ++++
+>  10 files changed, 2684 insertions(+)
+>  create mode 100644 drivers/bus/fsl-mc/dpmng-cmd.h
+>  create mode 100644 drivers/bus/fsl-mc/dpmng.c
+>  create mode 100644 drivers/bus/fsl-mc/dprc-cmd.h
+>  create mode 100644 drivers/bus/fsl-mc/dprc.c
+>  create mode 100644 drivers/bus/fsl-mc/mc-sys.c
+>  create mode 100644 include/linux/fsl/dpmng.h
+>  create mode 100644 include/linux/fsl/dprc.h
+>  create mode 100644 include/linux/fsl/mc-cmd.h
+>  create mode 100644 include/linux/fsl/mc-sys.h
+> 
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index 8f80045..22b4cf2 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -640,12 +640,12 @@ static void macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
- 
- /* Get packet from user space buffer */
- static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
--				const struct iovec *iv, unsigned long total_len,
--				size_t count, int noblock)
-+				struct iov_iter *from, int noblock)
- {
- 	int good_linear = SKB_MAX_HEAD(NET_IP_ALIGN);
- 	struct sk_buff *skb;
- 	struct macvlan_dev *vlan;
-+	unsigned long total_len = iov_iter_count(from);
- 	unsigned long len = total_len;
- 	int err;
- 	struct virtio_net_hdr vnet_hdr = { 0 };
-@@ -653,6 +653,7 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
- 	int copylen = 0;
- 	bool zerocopy = false;
- 	size_t linear;
-+	ssize_t n;
- 
- 	if (q->flags & IFF_VNET_HDR) {
- 		vnet_hdr_len = q->vnet_hdr_sz;
-@@ -662,10 +663,11 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
- 			goto err;
- 		len -= vnet_hdr_len;
- 
--		err = memcpy_fromiovecend((void *)&vnet_hdr, iv, 0,
--					   sizeof(vnet_hdr));
--		if (err < 0)
-+		err = -EFAULT;
-+		n = copy_from_iter(&vnet_hdr, sizeof(vnet_hdr), from);
-+		if (n != sizeof(vnet_hdr))
- 			goto err;
-+		iov_iter_advance(from, vnet_hdr_len - sizeof(vnet_hdr));
- 		if ((vnet_hdr.flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) &&
- 		     vnet_hdr.csum_start + vnet_hdr.csum_offset + 2 >
- 							vnet_hdr.hdr_len)
-@@ -680,17 +682,16 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
- 	if (unlikely(len < ETH_HLEN))
- 		goto err;
- 
--	err = -EMSGSIZE;
--	if (unlikely(count > UIO_MAXIOV))
--		goto err;
--
- 	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
-+		struct iov_iter i;
-+
- 		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
- 		if (copylen > good_linear)
- 			copylen = good_linear;
- 		linear = copylen;
--		if (iov_pages(iv, vnet_hdr_len + copylen, count)
--		    <= MAX_SKB_FRAGS)
-+		i = *from;
-+		iov_iter_advance(&i, copylen);
-+		if (iov_iter_npages(&i, INT_MAX) <= MAX_SKB_FRAGS)
- 			zerocopy = true;
- 	}
- 
-@@ -708,10 +709,9 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
- 		goto err;
- 
- 	if (zerocopy)
--		err = zerocopy_sg_from_iovec(skb, iv, vnet_hdr_len, count);
-+		err = zerocopy_sg_from_iter(skb, from);
- 	else {
--		err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len,
--						   len);
-+		err = skb_copy_datagram_from_iter(skb, 0, from, len);
- 		if (!err && m && m->msg_control) {
- 			struct ubuf_info *uarg = m->msg_control;
- 			uarg->callback(uarg, false);
-@@ -764,16 +764,12 @@ err:
- 	return err;
- }
- 
--static ssize_t macvtap_aio_write(struct kiocb *iocb, const struct iovec *iv,
--				 unsigned long count, loff_t pos)
-+static ssize_t macvtap_write_iter(struct kiocb *iocb, struct iov_iter *from)
- {
- 	struct file *file = iocb->ki_filp;
--	ssize_t result = -ENOLINK;
- 	struct macvtap_queue *q = file->private_data;
- 
--	result = macvtap_get_user(q, NULL, iv, iov_length(iv, count), count,
--				  file->f_flags & O_NONBLOCK);
--	return result;
-+	return macvtap_get_user(q, NULL, from, file->f_flags & O_NONBLOCK);
- }
- 
- /* Put packet to the user space buffer */
-@@ -1081,8 +1077,9 @@ static const struct file_operations macvtap_fops = {
- 	.open		= macvtap_open,
- 	.release	= macvtap_release,
- 	.read		= new_sync_read,
-+	.write		= new_sync_write,
- 	.read_iter	= macvtap_read_iter,
--	.aio_write	= macvtap_aio_write,
-+	.write_iter	= macvtap_write_iter,
- 	.poll		= macvtap_poll,
- 	.llseek		= no_llseek,
- 	.unlocked_ioctl	= macvtap_ioctl,
-@@ -1095,8 +1092,9 @@ static int macvtap_sendmsg(struct kiocb *iocb, struct socket *sock,
- 			   struct msghdr *m, size_t total_len)
- {
- 	struct macvtap_queue *q = container_of(sock, struct macvtap_queue, sock);
--	return macvtap_get_user(q, m, m->msg_iov, total_len, m->msg_iovlen,
--			    m->msg_flags & MSG_DONTWAIT);
-+	struct iov_iter from;
-+	iov_iter_init(&from, WRITE, m->msg_iov, m->msg_iovlen, total_len);
-+	return macvtap_get_user(q, m, &from, m->msg_flags & MSG_DONTWAIT);
- }
- 
- static int macvtap_recvmsg(struct kiocb *iocb, struct socket *sock,
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 405dfdf..4b743c6 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1012,28 +1012,29 @@ static struct sk_buff *tun_alloc_skb(struct tun_file *tfile,
- 
- /* Get packet from user space buffer */
- static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
--			    void *msg_control, const struct iovec *iv,
--			    size_t total_len, size_t count, int noblock)
-+			    void *msg_control, struct iov_iter *from,
-+			    int noblock)
- {
- 	struct tun_pi pi = { 0, cpu_to_be16(ETH_P_IP) };
- 	struct sk_buff *skb;
-+	size_t total_len = iov_iter_count(from);
- 	size_t len = total_len, align = NET_SKB_PAD, linear;
- 	struct virtio_net_hdr gso = { 0 };
- 	int good_linear;
--	int offset = 0;
- 	int copylen;
- 	bool zerocopy = false;
- 	int err;
- 	u32 rxhash;
-+	ssize_t n;
- 
- 	if (!(tun->flags & TUN_NO_PI)) {
- 		if (len < sizeof(pi))
- 			return -EINVAL;
- 		len -= sizeof(pi);
- 
--		if (memcpy_fromiovecend((void *)&pi, iv, 0, sizeof(pi)))
-+		n = copy_from_iter(&pi, sizeof(pi), from);
-+		if (n != sizeof(pi))
- 			return -EFAULT;
--		offset += sizeof(pi);
- 	}
- 
- 	if (tun->flags & TUN_VNET_HDR) {
-@@ -1041,7 +1042,8 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 			return -EINVAL;
- 		len -= tun->vnet_hdr_sz;
- 
--		if (memcpy_fromiovecend((void *)&gso, iv, offset, sizeof(gso)))
-+		n = copy_from_iter(&gso, sizeof(gso), from);
-+		if (n != sizeof(gso))
- 			return -EFAULT;
- 
- 		if ((gso.flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) &&
-@@ -1050,7 +1052,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 
- 		if (gso.hdr_len > len)
- 			return -EINVAL;
--		offset += tun->vnet_hdr_sz;
-+		iov_iter_advance(from, tun->vnet_hdr_sz);
- 	}
- 
- 	if ((tun->flags & TUN_TYPE_MASK) == TUN_TAP_DEV) {
-@@ -1063,6 +1065,8 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 	good_linear = SKB_MAX_HEAD(align);
- 
- 	if (msg_control) {
-+		struct iov_iter i = *from;
-+
- 		/* There are 256 bytes to be copied in skb, so there is
- 		 * enough room for skb expand head in case it is used.
- 		 * The rest of the buffer is mapped from userspace.
-@@ -1071,7 +1075,8 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 		if (copylen > good_linear)
- 			copylen = good_linear;
- 		linear = copylen;
--		if (iov_pages(iv, offset + copylen, count) <= MAX_SKB_FRAGS)
-+		iov_iter_advance(&i, copylen);
-+		if (iov_iter_npages(&i, INT_MAX) <= MAX_SKB_FRAGS)
- 			zerocopy = true;
- 	}
- 
-@@ -1091,9 +1096,9 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 	}
- 
- 	if (zerocopy)
--		err = zerocopy_sg_from_iovec(skb, iv, offset, count);
-+		err = zerocopy_sg_from_iter(skb, from);
- 	else {
--		err = skb_copy_datagram_from_iovec(skb, 0, iv, offset, len);
-+		err = skb_copy_datagram_from_iter(skb, 0, from, len);
- 		if (!err && msg_control) {
- 			struct ubuf_info *uarg = msg_control;
- 			uarg->callback(uarg, false);
-@@ -1207,8 +1212,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 	return total_len;
- }
- 
--static ssize_t tun_chr_aio_write(struct kiocb *iocb, const struct iovec *iv,
--			      unsigned long count, loff_t pos)
-+static ssize_t tun_chr_write_iter(struct kiocb *iocb, struct iov_iter *from)
- {
- 	struct file *file = iocb->ki_filp;
- 	struct tun_struct *tun = tun_get(file);
-@@ -1218,10 +1222,7 @@ static ssize_t tun_chr_aio_write(struct kiocb *iocb, const struct iovec *iv,
- 	if (!tun)
- 		return -EBADFD;
- 
--	tun_debug(KERN_INFO, tun, "tun_chr_write %ld\n", count);
--
--	result = tun_get_user(tun, tfile, NULL, iv, iov_length(iv, count),
--			      count, file->f_flags & O_NONBLOCK);
-+	result = tun_get_user(tun, tfile, NULL, from, file->f_flags & O_NONBLOCK);
- 
- 	tun_put(tun);
- 	return result;
-@@ -1445,11 +1446,14 @@ static int tun_sendmsg(struct kiocb *iocb, struct socket *sock,
- 	int ret;
- 	struct tun_file *tfile = container_of(sock, struct tun_file, socket);
- 	struct tun_struct *tun = __tun_get(tfile);
-+	struct iov_iter from;
- 
- 	if (!tun)
- 		return -EBADFD;
--	ret = tun_get_user(tun, tfile, m->msg_control, m->msg_iov, total_len,
--			   m->msg_iovlen, m->msg_flags & MSG_DONTWAIT);
-+
-+	iov_iter_init(&from, WRITE, m->msg_iov, m->msg_iovlen, total_len);
-+	ret = tun_get_user(tun, tfile, m->msg_control, &from,
-+			   m->msg_flags & MSG_DONTWAIT);
- 	tun_put(tun);
- 	return ret;
- }
-@@ -2233,9 +2237,9 @@ static const struct file_operations tun_fops = {
- 	.owner	= THIS_MODULE,
- 	.llseek = no_llseek,
- 	.read  = new_sync_read,
-+	.write = new_sync_write,
- 	.read_iter  = tun_chr_read_iter,
--	.write = do_sync_write,
--	.aio_write = tun_chr_aio_write,
-+	.write_iter = tun_chr_write_iter,
- 	.poll	= tun_chr_poll,
- 	.unlocked_ioctl	= tun_chr_ioctl,
- #ifdef CONFIG_COMPAT
--- 
-1.7.10.4
+[...]
 
+> +/**
+> + * Sends an command to the MC device using the given MC I/O object
+> + *
+> + * @mc_io: MC I/O object to be used
+> + * @cmd: command to be sent
+> + *
+> + * Returns '0' on Success; Error code otherwise.
+> + *
+> + * NOTE: This function cannot be invoked from from atomic contexts.
+> + */
+> +int mc_send_command(struct fsl_mc_io *mc_io, struct mc_command *cmd)
+> +{
+> +	enum mc_cmd_status status;
+> +	unsigned long irqsave_flags = 0;
+
+drivers/bus/fsl-mc/mc-sys.c: In function ‘mc_send_command’:
+drivers/bus/fsl-mc/mc-sys.c:235:16: warning: unused variable
+‘irqsave_flags’ [-Wunused-variable]
+  unsigned long irqsave_flags = 0;
+                ^
+
+
+Alex
