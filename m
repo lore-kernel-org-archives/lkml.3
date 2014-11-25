@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755894AbaKYLqr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 06:46:47 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:40495 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753004AbaKYLqo (ORCPT
+	id S1755905AbaKYLrA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:47:00 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37923 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540AbaKYLq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 06:46:44 -0500
-From: Athira Lekshmi C V <andnlnbn18@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: matt@ninezulu.com, raghav3276@gmail.com, josh@joshtriplett.org,
-        tapaswenipathak@gmail.com, vitaly.osipov@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Athira Lekshmi C V <andnlnbn18@gmail.com>
-Subject: [PATCH] Drivers:staging:wlan-ng: Fixed checkpatch warning
-Date: Tue, 25 Nov 2014 17:16:40 +0530
-Message-Id: <1416916000-4243-1-git-send-email-andnlnbn18@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 25 Nov 2014 06:46:58 -0500
+Date: Tue, 25 Nov 2014 11:44:49 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Rob Herring <robh+dt@kernel.org>, Wolfram Sang <wsa@the-dreams.de>,
+        linux-spi@vger.kernel.org
+Message-ID: <20141125114449.GO7712@sirena.org.uk>
+References: <1416868422-22103-1-git-send-email-grant.likely@linaro.org>
+ <1416868422-22103-15-git-send-email-grant.likely@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7Vi1RbbjZdZQ982c"
+Content-Disposition: inline
+In-Reply-To: <1416868422-22103-15-git-send-email-grant.likely@linaro.org>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 14/14] spi/of: Add OF notifier handler
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following checkpatch warning was fixed
-WARNING: line over 80 characters
 
-Signed-off-by: Athira Lekshmi C V <andnlnbn18@gmail.com>
----
- drivers/staging/wlan-ng/prism2fw.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+--7Vi1RbbjZdZQ982c
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/staging/wlan-ng/prism2fw.c b/drivers/staging/wlan-ng/prism2fw.c
-index e907380..8e1da3c 100644
---- a/drivers/staging/wlan-ng/prism2fw.c
-+++ b/drivers/staging/wlan-ng/prism2fw.c
-@@ -238,7 +238,8 @@ static int prism2_fwtry(struct usb_device *udev, wlandevice_t *wlandev)
- *	0	- success
- *	~0	- failure
- ----------------------------------------------------------------*/
--static int prism2_fwapply(const struct ihex_binrec *rfptr, wlandevice_t *wlandev)
-+static int prism2_fwapply(const struct ihex_binrec *rfptr,
-+	      wlandevice_t *wlandev)
- {
- 	signed int result = 0;
- 	struct p80211msg_dot11req_mibget getmsg;
-@@ -707,7 +708,9 @@ static int plugimage(struct imgchunk *fchunk, unsigned int nfchunks,
- 			continue;
- 		}
- 
--		/* Validate plug address against chunk data and identify chunk */
-+		/* Validate plug address against chunk data and
-+		 * identify chunk
-+		 */
- 		for (c = 0; c < nfchunks; c++) {
- 			cstart = fchunk[c].addr;
- 			cend = fchunk[c].addr + fchunk[c].len;
-@@ -922,7 +925,8 @@ static int read_fwfile(const struct ihex_binrec *record)
- 				      rcnt,
- 				      s3info[ns3info].len,
- 				      s3info[ns3info].type);
--			if (((s3info[ns3info].len - 1) * sizeof(u16)) > sizeof(s3info[ns3info].info)) {
-+			if (((s3info[ns3info].len - 1) * sizeof(u16)) >
-+			      sizeof(s3info[ns3info].info)) {
- 				pr_err("S3 inforec length too long - aborting\n");
- 				return 1;
- 			}
--- 
-1.7.9.5
+On Mon, Nov 24, 2014 at 10:33:42PM +0000, Grant Likely wrote:
+> From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+>=20
+> Add OF notifier handler needed for creating/destroying spi devices
+> according to dynamic runtime changes in the DT live tree. This code is
+> enabled when CONFIG_OF_DYNAMIC is selected.
 
+Reviwed-by: Mark Brown <broonei@kernel.org>
+
+--7Vi1RbbjZdZQ982c
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUdGuwAAoJECTWi3JdVIfQ6jAH/RUW0vMc+HnqwgvwlpuMhXAd
+ySikOk64bpyL07YkzTirUTv0ikWj83T2I9LfCru8kBY7uPmZtKJp7i0+/TY2XZ0J
+HxZUgzjyce2KVg30tGPJ7tFU3yWbJc2cxSSxtuDixUEghd0QABSddVpjWVpMK7Rr
+SY0YnnhZ++vr0T0DGePCl/U+E+eKe8AWIYF53wOy0pRYc0qnQSx2wvtO8pjetp09
+DYqwViiql4UaqnbsDxaejQfBVzCZs9Yrl5LOy1w1ABfqTy9yoQoQbthG6sOYP7Th
+fK9WEkRP/OkvIGHdWnRWKb7q8QRZT8vi7o4WBFwY+vaUgzICf6buuRBVeJS+MkY=
+=jsVk
+-----END PGP SIGNATURE-----
+
+--7Vi1RbbjZdZQ982c--
