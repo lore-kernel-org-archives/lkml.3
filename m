@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaKYOFI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 09:05:08 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:33900 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859AbaKYOFG (ORCPT
+	id S1752070AbaKYOFm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 09:05:42 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:50906 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457AbaKYOFj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 09:05:06 -0500
-Date: Tue, 25 Nov 2014 14:04:41 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Kevin Hilman <khilman@kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robh+dt@kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, ssantosh@kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 1/2] ARM: keystone: pm: switch to use generic pm
- domains
-Message-ID: <20141125140440.GF3836@n2100.arm.linux.org.uk>
-References: <1415631557-22897-1-git-send-email-grygorii.strashko@ti.com>
- <15074721.IbfeeI3ajE@wuerfel>
- <54746349.3000306@ti.com>
- <2301239.aDOlWg3gEs@wuerfel>
- <5474846C.2000308@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5474846C.2000308@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 25 Nov 2014 09:05:39 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: [CFT PATCH v2 0/2] KVM: support XSAVES usage in the host
+From: Nadav Amit <nadav.amit@gmail.com>
+In-Reply-To: <54745BB0.8080304@redhat.com>
+Date: Tue, 25 Nov 2014 16:05:34 +0200
+Cc: Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kvm list <kvm@vger.kernel.org>, Nadav Amit <namit@cs.technion.ac.il>,
+        hpa@linux.intel.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <400361E2-995A-44B4-B35A-0D35793B49DD@gmail.com>
+References: <1416847414-22253-1-git-send-email-pbonzini@redhat.com> <20141125101331.GA28985@kernel> <54745BB0.8080304@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 03:30:20PM +0200, Grygorii Strashko wrote:
-> On 11/25/2014 02:09 PM, Arnd Bergmann wrote:
-> > It might be possible to do this implicitly if the driver calls clk_get(),
-> > basically doing clk_get() (or another call if necessary) would prevent the
-> > simple pmdomain from turning it off during suspend.
+
+> On Nov 25, 2014, at 12:36, Paolo Bonzini <pbonzini@redhat.com> wrote:
 > 
-> Unfortunately, clk_get() will not work, because drivers still need to use it
-> to get functional clocks even if they are not going to control them explicitly.
-> For example, if it need to know clock's rate.
+> 
+> 
+> On 25/11/2014 11:13, Wanpeng Li wrote:
+>> Hi Paolo,
+>> On Mon, Nov 24, 2014 at 05:43:32PM +0100, Paolo Bonzini wrote:
+>>> The first patch ensures that XSAVES is not exposed in the guest until
+>>> we emulate MSR_IA32_XSS.  The second exports XSAVE data in the correct
+>>> format.
+>>> 
+>>> I tested these on a non-XSAVES system so they should not be completely
+>>> broken, but I need some help.  I am not even sure which XSAVE states
+>>> are _not_ enabled, and thus compacted, in Linux.
+>>> 
+>>> Note that these patches do not add support for XSAVES in the guest yet,
+>>> since MSR_IA32_XSS is not emulated.
+>>> 
+>>> If they fix the bug Nadav reported, I'll add Reported-by and commit.
+>> 
+>> I test this patchset w/ your "KVM: x86: export get_xsave_addr" patch on 
+>> Skylake and guest hang during boot. The guest screen show "Probing EDD 
+>> (edd=off to disable)... ok", and no more dump.
+> 
+> Anything in dmesg?  Can you try this patch on top?
+> 
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 373b0ab9a32e..ca26681455c2 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -6955,6 +6955,9 @@ int fx_init(struct kvm_vcpu *vcpu)
+> 		return err;
+> 
+> 	fpu_finit(&vcpu->arch.guest_fpu);
+> +	if (cpu_has_xsaves)
+> +		vcpu->arch.guest_fpu.state->xsave.xsave_hdr.xcomp_bv =
+> +			host_xcr0 | XSTATE_COMPACTION_ENABLED;
+> 
+> 	/*
+> 	 * Ensure guest xcr0 is valid for loading
+> 
 
-If you don't want a clock to be turned off, then clk_get() it, then
-clk_prepare() it, and finally clk_enable() it.
+The second version works for me (w/qemu v2.1.0; Linux 3.13 guest). I did not need to apply this patch on top. [although I am not sure whether relying on userspace to call KVM_SET_XSAVE early enough is a good practice].
 
-Even if someone else gets it, the only time that a clock is turned off
-is when _all_ users of it mutually agree that it can be turned off - by
-every user disabling (and possibly unpreparing) it.
+One disclaimer: Since I got limited time with the machine, I executed a slightly modified kernel/qemu, and not the latest version.
+Anyhow, I don’t think these differences can have any impact.
 
-So, if the PM domain code gets a clock, prepares and enables it, then
-a driver gets the same clock, prepares and enables it also, it won't
-be disabled until _both_ the PM domain code _and_ the driver disable
-and unprepare the clock.
+Regards,
+Nadav
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
