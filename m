@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947AbaKYDCU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 22:02:20 -0500
-Received: from TYO201.gate.nec.co.jp ([210.143.35.51]:59908 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770AbaKYDCT convert rfc822-to-8bit (ORCPT
+	id S1751956AbaKYDDs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 22:03:48 -0500
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:57301 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaKYDDr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 22:02:19 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Christoph Lameter <cl@gentwo.org>,
-        Steve Capper <steve.capper@linaro.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 01/19] mm, thp: drop FOLL_SPLIT
-Thread-Topic: [PATCH 01/19] mm, thp: drop FOLL_SPLIT
-Thread-Index: AQHP+QfSWbFOdr5ZS0iDGj9k1RQfn5xwLzCA
-Date: Tue, 25 Nov 2014 03:01:16 +0000
-Message-ID: <20141125030109.GA21716@hori1.linux.bs1.fc.nec.co.jp>
-References: <1415198994-15252-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1415198994-15252-2-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1415198994-15252-2-git-send-email-kirill.shutemov@linux.intel.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
+	Mon, 24 Nov 2014 22:03:47 -0500
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: Mitchel Humpherys <mitchelh@codeaurora.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Wagantall <mattw@codeaurora.org>,
+        "Don Brace (PMC)" <Don.Brace@pmcs.com>,
+        "Scales, Webb" <webb.scales@hp.com>
+Subject: RE: [PATCH RESEND v8] iopoll: Introduce memory-mapped IO polling
+ macros
+Thread-Topic: [PATCH RESEND v8] iopoll: Introduce memory-mapped IO polling
+ macros
+Thread-Index: AQHQCE4XAqVL7P1v/0SqGz4Bzc5Be5xwoQew
+Date: Tue, 25 Nov 2014 03:02:30 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B4029593C61A3@G9W0745.americas.hpqcorp.net>
+References: <1416860092-11620-1-git-send-email-mitchelh@codeaurora.org>
+	<94D0CD8314A33A4D9D801C0FE68B4029593C5E1F@G9W0745.americas.hpqcorp.net>
+ <vnkwy4r0gjne.fsf@mitchelh-linux.qualcomm.com>
+In-Reply-To: <vnkwy4r0gjne.fsf@mitchelh-linux.qualcomm.com>
+Accept-Language: en-US
+Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.128.101.12]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-ID: <C01FDC8EF842D54697B74E053094DEBA@gisp.nec.co.jp>
+x-originating-ip: [16.216.65.177]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 04:49:36PM +0200, Kirill A. Shutemov wrote:
-> FOLL_SPLIT is used only in two places: migration and s390.
-> 
-> Let's replace it with explicit split and remove FOLL_SPLIT.
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> ---
+
+
+> -----Original Message-----
+> From: Mitchel Humpherys [mailto:mitchelh@codeaurora.org]
+> Sent: Monday, November 24, 2014 7:21 PM
+> To: Elliott, Robert (Server Storage)
 ...
-> @@ -1246,6 +1246,11 @@ static int do_move_page_to_node_array(struct mm_struct *mm,
->  		if (!page)
->  			goto set_status;
->  
-> +		if (PageTransHuge(page) && split_huge_page(page)) {
-> +			err = -EBUSY;
-> +			goto set_status;
-> +		}
-> +
+> > The hpsa SCSI driver used to use usleep_range in a loop like
+> > that, but we found that it caused scheduler problems during
+> > boots because it uses TASK_UNINTERRUPTIBLE:
+> > [    9.260668] [sched_delayed] sched: RT throttling activated
+> >
+> > msleep() worked much better.
 
-This check makes split_huge_page() be called for hugetlb pages, which
-triggers BUG_ON. So could you do this after if (PageHuge) block below?
-And I think that we have "Node already in the right place" check afterward,
-so I hope that moving down this check also helps us reduce thp splitting.
+Sorry, that might have been msleep_interruptible() - the fixes
+are still not upstream, so I'll have to doublecheck tomorrow.
 
-Thanks,
-Naoya Horiguchi
+> Hmm, maybe you were just sleeping for too long?  According to
+> Documentation/timers/timers-howto.txt, usleep_range is what should be
+> used for non-atomic sleeps in the range [10us, 20ms].  Plus we need
+> microsecond granularity anyways, so msleep wouldn't cut it.
 
->  		/* Use PageReserved to check for zero page */
->  		if (PageReserved(page))
->  			goto put_and_set;
+The intervals and the overall number of loops were indeed long.  I 
+think the corrected code waits a total of 1 second; before the fix,
+600 seconds.
+
+> If there are any potential users of these macros that would want to
+> sleep for more than 20ms I guess we could add a special case here to use
+> msleep when sleep_us exceeds 20,000 or so.
+...
+
+Maybe just a comment in the documentation for the macro would suffice,
+possibly with a separate macro for longer interval sleeps.  I don't
+want to force an extra msleep() call to be compiled into a bunch
+of places where it's not needed.
+
+
+---
+Rob Elliott    HP Server Storage
+
+
