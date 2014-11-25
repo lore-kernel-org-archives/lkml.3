@@ -1,248 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839AbaKYUjX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 15:39:23 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:60650 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751362AbaKYUjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 15:39:21 -0500
-Message-ID: <5474E8F6.8010307@osg.samsung.com>
-Date: Tue, 25 Nov 2014 13:39:18 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751362AbaKYUj5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 15:39:57 -0500
+Received: from mail-bl2on0124.outbound.protection.outlook.com ([65.55.169.124]:7632
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750726AbaKYUjz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 15:39:55 -0500
+X-WSS-ID: 0NFM428-08-V0I-02
+X-M-MSG: 
+From: "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "liviu.dudau@arm.com" <liviu.dudau@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "Lendacky, Thomas" <Thomas.Lendacky@amd.com>,
+        "Schopp, Joel" <Joel.Schopp@amd.com>
+Subject: Re: [PATCH V4] arm64: amd-seattle: Adding device tree for AMD
+ Seattle platform
+Thread-Topic: [PATCH V4] arm64: amd-seattle: Adding device tree for AMD
+ Seattle platform
+Thread-Index: AQHQCDDPK3mlC9v6xEOEmK8G5GOQ9ZxxkWoAgAEEeQA=
+Date: Tue, 25 Nov 2014 20:39:45 +0000
+Message-ID: <D09AF278.A61D%suravee.suthikulpanit@amd.com>
+In-Reply-To: <2285363.CoMWhviz1f@wuerfel>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.3.0.121105
+x-originating-ip: [10.177.96.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <266F8E5B654D9B48B2376FE09941D16B@amd.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Tim Bird <tim.bird@sonymobile.com>, linux-api@vger.kernel.org
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>,
-        Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: [PATCH v3] selftest: size: Add size test for Linux kernel
-References: <546D084D.20002@sonymobile.com> <546D321F.2080405@sonymobile.com> <547376D3.7070709@sonymobile.com>
-In-Reply-To: <547376D3.7070709@sonymobile.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(164054003)(189002)(24454002)(479174003)(199003)(51704005)(99396003)(21056001)(31966008)(23726002)(87936001)(2656002)(84676001)(105586002)(106116001)(107046002)(106466001)(46406003)(110136001)(95666004)(36756003)(53416004)(77096003)(62966003)(77156002)(83506001)(46102003)(120916001)(47776003)(97736003)(20776003)(64706001)(50986999)(54356999)(86362001)(50466002)(101416001)(97756001)(44976005)(19580405001)(68736004)(92726001)(92566001)(4396001)(19580395003);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB205;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB205;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB205;
+X-Forefront-PRVS: 040655413E
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB205;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2014 11:20 AM, Tim Bird wrote:
-> 
-> This test shows the amount of memory used by the system.
-> Note that this is dependent on the user-space that is loaded
-> when this program runs.  Optimally, this program would be
-> run as the init program itself.
-> 
-> The program is optimized for size itself, to avoid conflating
-> its own execution with that of the system software.
-> The code is compiled statically, with no stdlibs. On my x86_64 system,
-> this results in a statically linked binary of less than 5K.
-> 
 
-This following version information shouldn't be part of changelog.
 
-> Changes from v2:
->   - add return values to print routines
->   - add .gitignore file
-> 
-> Changes from v1:
->   - use more correct Copyright string in get_size.c
-> 
-> Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
-> ---
+On 11/25/14, 18:57, "Arnd Bergmann" <arnd@arndb.de> wrote:
 
-Goes here.
+>On Monday 24 November 2014 15:51:17 suravee.suthikulpanit@amd.com wrote:
+>> 
+>> +	gic: interrupt-controller@e1101000 {
+>> +		compatible = "arm,gic-400", "arm,cortex-a15-gic";
+>> +		interrupt-controller;
+>> +		#interrupt-cells = <3>;
+>> +		#address-cells = <2>;
+>> +		#size-cells = <2>;
+>> +		reg = <0x0 0xe1110000 0 0x1000>,
+>> +		      <0x0 0xe112f000 0 0x2000>,
+>> +		      <0x0 0xe1140000 0 0x10000>,
+>> +		      <0x0 0xe1160000 0 0x10000>;
+>> +		interrupts = <1 9 0xf04>;
+>> +		ranges;
+>> +		v2m0: v2m@e1180000 {
+>> +			compatible = "arm,gic-v2m-frame";
+>> +			msi-controller;
+>> +			arm,msi-base-spi = <64>;
+>> +			arm,msi-num-spis = <256>;
+>> +			reg = <0x0 0xe1180000 0 0x1000>;
+>> +		};
+>> +	};
+>
+>
+>Having an empty ranges property in the gic seems strange, especially
+>since the registers of the v2m seem to directly follow the gic's own
+>registers. Could you limit the ranges to only the registers that
+>are in the gic or its child devices itself?
+>
+>	Arnd
 
->  tools/testing/selftests/Makefile        |   1 +
->  tools/testing/selftests/size/.gitignore |   1 +
->  tools/testing/selftests/size/Makefile   |  21 +++++++
->  tools/testing/selftests/size/get_size.c | 105 ++++++++++++++++++++++++++++++++
->  4 files changed, 128 insertions(+)
->  create mode 100644 tools/testing/selftests/size/.gitignore
->  create mode 100644 tools/testing/selftests/size/Makefile
->  create mode 100644 tools/testing/selftests/size/get_size.c
-> 
-> diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
-> index 45f145c..fa91aef 100644
-> --- a/tools/testing/selftests/Makefile
-> +++ b/tools/testing/selftests/Makefile
-> @@ -15,6 +15,7 @@ TARGETS += user
->  TARGETS += sysctl
->  TARGETS += firmware
->  TARGETS += ftrace
-> +TARGETS += size
->  
->  TARGETS_HOTPLUG = cpu-hotplug
->  TARGETS_HOTPLUG += memory-hotplug
-> diff --git a/tools/testing/selftests/size/.gitignore b/tools/testing/selftests/size/.gitignore
-> new file mode 100644
-> index 0000000..189b781
-> --- /dev/null
-> +++ b/tools/testing/selftests/size/.gitignore
-> @@ -0,0 +1 @@
-> +get_size
-> diff --git a/tools/testing/selftests/size/Makefile b/tools/testing/selftests/size/Makefile
-> new file mode 100644
-> index 0000000..51e5fbd
-> --- /dev/null
-> +++ b/tools/testing/selftests/size/Makefile
-> @@ -0,0 +1,21 @@
-> +#ifndef CC
-> +	CC = $(CROSS_COMPILE)gcc
-> +#endif
-> +
-> +#ifndef STRIP
-> +	STRIP = $(CROSS_COMPILE)strip
-> +#endif
-> +
-> +all: get_size
-> +
-> +get_size: get_size.c
-> +	$(CC) --static -ffreestanding -nostartfiles \
-> +		-Wl,--entry=main get_size.c -o get_size \
-> +		`cc -print-libgcc-file-name`
-> +	$(STRIP) -s get_size
-> +
-> +run_tests: all
-> +	./get_size
-> +
-> +clean:
-> +	$(RM) get_size
-> diff --git a/tools/testing/selftests/size/get_size.c b/tools/testing/selftests/size/get_size.c
-> new file mode 100644
-> index 0000000..9c8d3cd
-> --- /dev/null
-> +++ b/tools/testing/selftests/size/get_size.c
-> @@ -0,0 +1,105 @@
-> +/*
-> + * Copyright 2014 Sony
-> + *
-> + * Licensed under the terms of the GNU GPL License version 2
-> + *
-> + * Selftest for runtime system size
-> + *
-> + * Prints the amount of RAM that the currently running system is using.
-> + *
-> + * This program tries to be as small as possible itself, to
-> + * avoid perturbing the system memory utilization with its
-> + * own execution.  It also attempts to have as few dependencies
-> + * on kernel features as possible.
-> + *
-> + * It should be statically linked, with startup libs avoided.
-> + * It uses no library calls, and only the following 3 syscalls:
-> + *   sysinfo(), write(), and _exit()
-> + *
-> + * For output, it avoids printf (which in some C libraries
-> + * has large external dependencies) by implementing its own
-> + * strlen(), number output and print() routines.
-> + */
-> +
-> +#include <sys/sysinfo.h>
-> +#include <unistd.h>
-> +
-> +#define STDOUT_FILENO 1
-> +
-> +int my_strlen(const char *s)
-> +{
-> +	int len = 0;
-> +
-> +	while (*s++)
-> +		len++;
-> +	return len;
-> +}
-> +
-> +/*
-> + * num_to_str - put digits from num into *s, left to right
-> + *   do this by dividing the number by powers of 10
-> + *   the tricky part is to omit leading zeros
-> + *   don't print zeros until we've started printing any numbers at all
-> + */
-> +void num_to_str(unsigned long num, char *s)
-> +{
-> +	unsigned long long temp, div;
-> +	int started;
-> +
-> +	temp = num;
-> +	div = 1000000000000000000LL;
-> +	started = 0;
-> +	while (div) {
-> +		if (temp/div || started) {
-> +			*s++ = (unsigned char)(temp/div + '0');
-> +			started = 1;
-> +		}
-> +		temp -= (temp/div)*div;
-> +		div /= 10;
-> +	}
-> +	*s = 0;
-> +}
-> +
-> +int print_num(unsigned long num)
-> +{
-> +	char num_buf[30];
-> +
-> +	num_to_str(num, num_buf);
-> +	return write(STDOUT_FILENO, num_buf, my_strlen(num_buf));
-> +}
-> +
-> +int print(char *s)
-> +{
-> +	return write(STDOUT_FILENO, s, my_strlen(s));
-> +}
-> +
-> +void main(int argc, char **argv)
-> +{
-> +	int ccode;
-> +	unsigned long used;
-> +	struct sysinfo info;
-> +	unsigned long long temp;
-> +
-> +	print("Testing system size.\n");
-> +	print("1..1\n");
+Yes, I can change it to ranges = <0 0 0 0xe1100000 0 0x100000> to limit
+the range to just the GIC address range.
 
-I ran this test and the reporting could be improved.
-Could you change the above to say
+Thanks,
 
-System RAM in use instead of system size. Also can you also
-print total RAM and other information you already have:
+Suravee
 
-Maybe something along the lines of:
-
-System RAM report (units Kilobytes):
-   Total:
-   Free:
-   Bufferram:
-   In use:
-
-I would remove the print("1..1\n");
-
-> +
-> +	ccode = sysinfo(&info);
-> +	if (ccode < 0) {
-> +		print("not ok 1 get size runtime size\n");
-> +		print("# could not get sysinfo\n");
-> +		_exit(ccode);
-> +	}
-> +
-> +	/* ignore cache complexities for now */
-> +	temp = info.totalram - info.freeram - info.bufferram;
-> +	temp = temp * info.mem_unit;
-> +	temp = temp / 1024;
-> +
-> +	used = temp;
-> +
-> +	print("ok 1 get runtime size # size = ");
-> +	print_num(used);
-> +	print(" K\n");
-
-Please see above. You can get rid of print(" K\n"); at the end.
-
-Sorry for not giving this feedback earlier. The not so clear
-reporting aspect stood out for me after running the test.
-
-thanks,
--- Shuah
-
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
