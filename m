@@ -1,78 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059AbaKYGuL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 01:50:11 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34804 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840AbaKYGuJ (ORCPT
+	id S1752080AbaKYGw1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 01:52:27 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53452 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061AbaKYGwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 01:50:09 -0500
-Date: Tue, 25 Nov 2014 07:49:58 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Leif Lindholm <leif.lindholm@linaro.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        mark.rutland@arm.com, grant.likely@linaro.org, robh+dt@kernel.org,
-        plagnioj@jcrosoft.com, ijc@debian.org
-Subject: Re: [PATCH] of: support passing console options with stdout-path
-Message-ID: <20141125064958.GK30369@pengutronix.de>
-References: <1416867838-18652-1-git-send-email-leif.lindholm@linaro.org>
- <20141124230016.GP20238@lunn.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141124230016.GP20238@lunn.ch>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 07:46:17 up 40 days, 18:00, 79 users,  load average: 0.04, 0.05,
- 0.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 25 Nov 2014 01:52:25 -0500
+X-Original-SENDERIP: 10.186.119.199
+X-Original-MAILFROM: chanho.min@lge.com
+From: Chanho Min <chanho.min@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        HyoJun Im <hyojun.im@lge.com>, Gunho Lee <gunho.lee@lge.com>,
+        Wonhong Kwon <wonhong.kwon@lge.com>, Chanho Min <chanho.min@lge.com>
+Subject: [PATCH] mm: add parameter to disable faultaround
+Date: Tue, 25 Nov 2014 15:51:58 +0900
+Message-Id: <1416898318-17409-1-git-send-email-chanho.min@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 12:00:16AM +0100, Andrew Lunn wrote:
-> On Mon, Nov 24, 2014 at 10:23:58PM +0000, Leif Lindholm wrote:
-> > Support specifying console options (like with console=ttyXN,<options>)
-> > by appending them to the stdout-path property after a separating ':'.
-> > 
-> > Example:
-> > 	stdout-path = "uart0:115200";
-> > 
-> > This patch also modifies of_find_node_by_path() to match only the
-> > portion of the path before a ':'.
-> 
-> Hi Leif
-> 
-> These appears to somewhat conform to ePAPR, which says:
-> 
->       A string that specifies the full path to the node representing
->       the device to be used for boot console output. If the character
->       ":" is present in the value it terminates the path.
-> 
-> So you can put any random junk after the :. However, are we going to
-> have backward/forward compatibility problems, and problems with
-> bootloaders? The current kernel code does not look for the :. So a new
-> DT blob on an old kernel will not work so well.
-> 
-> More worrying, barebox does not support the : either. So there is a
-> danger your bootloader suddenly goes silent after a dt blob update.
+The faultaround improves the file read performance, whereas pages which
+can be dropped by drop_caches are reduced. On some systems, The amount of
+freeable pages under memory pressure is more important than read
+performance. So It prefers to be selectable.
 
-Since in barebox we use the upstream Kernel devicetrees it will be under
-our control when they arrive, so we can add support for that ':'
-before the new devicetrees arrive.
+This patch adds a new kernel cmdline parameter "nofaultaround"
+for situations where users want to disable faultaround.
 
-Sascha
+Signed-off-by: Chanho Min <chanho.min@lge.com>
+---
+ mm/memory.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
+diff --git a/mm/memory.c b/mm/memory.c
+index 4879b42..c36a96f 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2888,6 +2888,14 @@ static int __init fault_around_debugfs(void)
+ late_initcall(fault_around_debugfs);
+ #endif
+ 
++static bool enable_fault_around = true;
++static int __init disable_fault_around(char *s)
++{
++	enable_fault_around = false;
++	return 1;
++}
++__setup("nofaultaround", disable_fault_around);
++
+ /*
+  * do_fault_around() tries to map few pages around the fault address. The hope
+  * is that the pages will be needed soon and this will lower the number of
+@@ -2965,7 +2973,8 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	 * if page by the offset is not ready to be mapped (cold cache or
+ 	 * something).
+ 	 */
+-	if (vma->vm_ops->map_pages && !(flags & FAULT_FLAG_NONLINEAR) &&
++	if (enable_fault_around && vma->vm_ops->map_pages &&
++	    !(flags & FAULT_FLAG_NONLINEAR) &&
+ 	    fault_around_pages() > 1) {
+ 		pte = pte_offset_map_lock(mm, pmd, address, &ptl);
+ 		do_fault_around(vma, address, pte, pgoff, flags);
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1.7.9.5
+
