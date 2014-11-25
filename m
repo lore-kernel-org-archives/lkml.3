@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367AbaKYKlw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:41:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58503 "EHLO
+	id S1754605AbaKYLaW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 06:30:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58567 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753302AbaKYKlm (ORCPT
+	with ESMTP id S1753302AbaKYKlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:41:42 -0500
+	Tue, 25 Nov 2014 05:41:53 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thorsten Knabe <linux@thorsten-knabe.de>,
-        Richard Weinberger <richard@nod.at>,
+Cc: Michel Lespinasse <walken@google.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Andreas Gruenbacher <agruen@linbit.com>,
+        Philipp Reisner <philipp.reisner@linbit.com>,
+        Jens Axboe <axboe@fb.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 099/254] um: ubd: Fix for processes stuck in D state forever
-Date: Tue, 25 Nov 2014 10:37:29 +0000
-Message-Id: <1416912004-5928-100-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 111/254] drbd: compute the end before rb_insert_augmented()
+Date: Tue, 25 Nov 2014 10:37:41 +0000
+Message-Id: <1416912004-5928-112-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,48 +31,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thorsten Knabe <linux@thorsten-knabe.de>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 2a2361228c5e6d8c1733f00653481de918598e50 upstream.
+commit 82cfb90bc99d7b7e0ec62d0505b9d4f06805d5db upstream.
 
-Starting with Linux 3.12 processes get stuck in D state forever in
-UserModeLinux under sync heavy workloads. This bug was introduced by
-commit 805f11a0d5 (um: ubd: Add REQ_FLUSH suppport).
-Fix bug by adding a check if FLUSH request was successfully submitted to
-the I/O thread and keeping the FLUSH request on the request queue on
-submission failures.
+Commit 98683650 "Merge branch 'drbd-8.4_ed6' into
+for-3.8-drivers-drbd-8.4_ed6" switches to the new augment API, but the
+new API requires that the tree is augmented before rb_insert_augmented()
+is called, which is missing.
 
-Fixes: 805f11a0d5 (um: ubd: Add REQ_FLUSH suppport)
-Signed-off-by: Thorsten Knabe <linux@thorsten-knabe.de>
-Signed-off-by: Richard Weinberger <richard@nod.at>
+So we add the augment-code to drbd_insert_interval() when it travels the
+tree up to down before rb_insert_augmented().  See the example in
+include/linux/interval_tree_generic.h or Documentation/rbtree.txt.
+
+drbd_insert_interval() may cancel the insertion when traveling, in this
+case, the just added augment-code does nothing before cancel since the
+@this node is already in the subtrees in this case.
+
+CC: Michel Lespinasse <walken@google.com>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/um/drivers/ubd_kern.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/block/drbd/drbd_interval.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/um/drivers/ubd_kern.c b/arch/um/drivers/ubd_kern.c
-index 3716e6952554..e8ab93c3e638 100644
---- a/arch/um/drivers/ubd_kern.c
-+++ b/arch/um/drivers/ubd_kern.c
-@@ -1277,7 +1277,7 @@ static void do_ubd_request(struct request_queue *q)
+diff --git a/drivers/block/drbd/drbd_interval.c b/drivers/block/drbd/drbd_interval.c
+index 89c497c630b4..04a14e0f8878 100644
+--- a/drivers/block/drbd/drbd_interval.c
++++ b/drivers/block/drbd/drbd_interval.c
+@@ -79,6 +79,7 @@ bool
+ drbd_insert_interval(struct rb_root *root, struct drbd_interval *this)
+ {
+ 	struct rb_node **new = &root->rb_node, *parent = NULL;
++	sector_t this_end = this->sector + (this->size >> 9);
  
- 	while(1){
- 		struct ubd *dev = q->queuedata;
--		if(dev->end_sg == 0){
-+		if(dev->request == NULL){
- 			struct request *req = blk_fetch_request(q);
- 			if(req == NULL)
- 				return;
-@@ -1299,7 +1299,8 @@ static void do_ubd_request(struct request_queue *q)
- 				return;
- 			}
- 			prepare_flush_request(req, io_req);
--			submit_request(io_req, dev);
-+			if (submit_request(io_req, dev) == false)
-+				return;
- 		}
+ 	BUG_ON(!IS_ALIGNED(this->size, 512));
  
- 		while(dev->start_sg < dev->end_sg){
+@@ -87,6 +88,8 @@ drbd_insert_interval(struct rb_root *root, struct drbd_interval *this)
+ 			rb_entry(*new, struct drbd_interval, rb);
+ 
+ 		parent = *new;
++		if (here->end < this_end)
++			here->end = this_end;
+ 		if (this->sector < here->sector)
+ 			new = &(*new)->rb_left;
+ 		else if (this->sector > here->sector)
+@@ -99,6 +102,7 @@ drbd_insert_interval(struct rb_root *root, struct drbd_interval *this)
+ 			return false;
+ 	}
+ 
++	this->end = this_end;
+ 	rb_link_node(&this->rb, parent, new);
+ 	rb_insert_augmented(&this->rb, root, &augment_callbacks);
+ 	return true;
 -- 
 2.1.0
 
