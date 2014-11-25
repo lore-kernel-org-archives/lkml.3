@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750927AbaKYAJT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Nov 2014 19:09:19 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:43247 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774AbaKYAJR convert rfc822-to-8bit (ORCPT
+	id S1751240AbaKYAMr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Nov 2014 19:12:47 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:49621 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaKYAMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Nov 2014 19:09:17 -0500
-Content-Type: text/plain; charset=koi8-r
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH v3 2/4] i2c: omap: implement workaround for handling invalid BB-bit values
-From: Alexander Kochetkov <al.kochet@gmail.com>
-In-Reply-To: <47749B61-5924-4E56-9931-77B0CFC0AAA0@gmail.com>
-Date: Tue, 25 Nov 2014 03:09:13 +0300
-Cc: Kevin Hilman <khilman@kernel.org>, Felipe Balbi <balbi@ti.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        linux-omap <linux-omap@vger.kernel.org>, linux-i2c@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <06376010-5DED-49AA-9494-A9546567E7CA@gmail.com>
-References: <1416518925-20679-1-git-send-email-al.kochet@gmail.com> <1416685634-5864-1-git-send-email-al.kochet@gmail.com> <1416685634-5864-3-git-send-email-al.kochet@gmail.com> <CAMAWPa8whctBR6fBFaSzPvm3qn+QK06CimRrxFxxH=0kNkF4UA@mail.gmail.com> <47A1A441-952C-4AC3-859C-5A8E405767E0@gmail.com> <20141124194759.GG2757@atomide.com> <47749B61-5924-4E56-9931-77B0CFC0AAA0@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Mon, 24 Nov 2014 19:12:44 -0500
+Date: Tue, 25 Nov 2014 00:12:36 +0000
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, mark.rutland@arm.com,
+        grant.likely@linaro.org, robh+dt@kernel.org, plagnioj@jcrosoft.com,
+        ijc@debian.org
+Subject: Re: [PATCH] of: support passing console options with stdout-path
+Message-ID: <20141125001236.GA2361@bivouac.eciton.net>
+References: <1416867838-18652-1-git-send-email-leif.lindholm@linaro.org>
+ <20141124230016.GP20238@lunn.ch>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141124230016.GP20238@lunn.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-24 нояб. 2014 г., в 23:05, Alexander Kochetkov <al.kochet@gmail.com> написал(а):
-
-> Something (u-boot, may be) leave the bus in the wrong state.
-> Really strange.
-
-Actually something wrong with i2c-pullups on i2c.1 bus on fault boards.
-May be these are boards without pull-ups?
-All beagles doesn't have internal pull-ups on i2c.1 since u-boot 2011.x.
-
-Here is the bug in the u-boot related to beagle:
-http://git.denx.de/?p=u-boot.git;a=commit;h=04e2a13336f0e507ef416bbede3be92b79c46594
-
-Yes, I made fix, but keep that in mind.
-
-For example one of the boards (omap3-beagle):
-http://status.armcloud.us/boot/omap3-beagle/job/next/kernel/next-20141124/defconfig/arm-omap2plus_defconfig/
-http://status.armcloud.us/boot/omap3-beagle,legacy/job/next/kernel/next-20141124/defconfig/arm-omap2plus_defconfig/
-http://status.armcloud.us/boot/omap3-beagle/job/next/kernel/next-20141124/defconfig/arm-multi_v7_defconfig/
-
-has following warning message in the u-boot log:
-> U-Boot 2014.07 (Aug 21 2014 - 11:03:05)
+On Tue, Nov 25, 2014 at 12:00:16AM +0100, Andrew Lunn wrote:
+> On Mon, Nov 24, 2014 at 10:23:58PM +0000, Leif Lindholm wrote:
+> > Support specifying console options (like with console=ttyXN,<options>)
+> > by appending them to the stdout-path property after a separating ':'.
+> > 
+> > Example:
+> > 	stdout-path = "uart0:115200";
+> > 
+> > This patch also modifies of_find_node_by_path() to match only the
+> > portion of the path before a ':'.
 > 
-> OMAP3530-GP ES3.0, CPU-OPP2, L3-165MHz, Max CPU Clock 600 MHz
-> OMAP3 Beagle board + LPDDR/NAND
-> ....
-> Beagle Rev C1/C2/C3
-> Timed out in wait_for_event: status=1000
-> Check if pads/pull-ups of bus 1 are properly configured
+> Hi Leif
+> 
+> These appears to somewhat conform to ePAPR, which says:
+> 
+>       A string that specifies the full path to the node representing
+>       the device to be used for boot console output. If the character
+>       ":" is present in the value it terminates the path.
+> 
+> So you can put any random junk after the :. However, are we going to
+> have backward/forward compatibility problems, and problems with
+> bootloaders? The current kernel code does not look for the :. So a new
+> DT blob on an old kernel will not work so well.
 
-Also beagle schematic has following log entry for A3:
-4. Added optional pullup resistors on I2C2_SCL and I2C_SDA into the layout.
+I _think_ this will be less of a problem in practice than it could be
+in theory.
 
-Is the fault beagle is pre A3 revision?
+The reason this is needed is that at least several platforms have
+different baudrate settings in firmware than the default provided by
+the kernel for their UART. As a result, stdout-path becomes
+semi-useless; the only thing it gives you is the ability to get
+earlycon output without specifying a specific device (and then the
+console turns to garbage once non-earlycon is enabled).
 
-I can't tell anything about second one board (omap3-overo-tobi), because I could not get it schematic.
+Hence, a platform that gets along happily today without the ability to
+specify console options in stdout-path would have no pressing need to
+add it to its dt. This should permit at least a very long, soft,
+transition path.
 
-And how you have i2c.1 working without pull-ups I don't know.
+(console= on kernel command line continues to override stdout-path.)
 
-Alexander.
+> More worrying, barebox does not support the : either. So there is a
+> danger your bootloader suddenly goes silent after a dt blob update.
 
+_That_ would be most unfortunate.
+
+> Would it be safer to add a new property in chosen?
+
+My preference would be not, given the above, but the important thing
+is to get the functionality in so we get rid of mandatory console=.
+
+/
+    Leif
