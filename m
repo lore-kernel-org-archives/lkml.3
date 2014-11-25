@@ -1,103 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751608AbaKYUob (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 15:44:31 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:61186 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751174AbaKYUo3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 15:44:29 -0500
-From: Zahari Doychev <zahari.doychev@linux.com>
-To: linux-kernel@vger.kernel.org, dan.carpenter@oracle.com
-Cc: devel@driverdev.osuosl.org, oleg.drokin@intel.com,
-        andreas.dilger@intel.com, gregkh@linuxfoundation.org,
-        bergwolf@gmail.com
-Subject: [PATCH] staging: lustre: fix pointer declarations
-Date: Tue, 25 Nov 2014 21:44:21 +0100
-Message-Id: <1b2734828d1cfcab4aaf7f72a2444793c1d74fd0.1416947671.git.zahari.doychev@linux.com>
-X-Mailer: git-send-email 2.1.0
+	id S1751539AbaKYUq7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 15:46:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32868 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751297AbaKYUq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 15:46:57 -0500
+Subject: [PATCH v7 3/4] r8169: Use dma_rmb() and dma_wmb() for DescOwn checks
+From: Alexander Duyck <alexander.h.duyck@redhat.com>
+To: linux-arch@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: mathieu.desnoyers@polymtl.ca, peterz@infradead.org,
+        benh@kernel.crashing.org, heiko.carstens@de.ibm.com, mingo@kernel.org,
+        mikey@neuling.org, linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
+        matthew.vick@intel.com, geert@linux-m68k.org,
+        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
+        paulmck@linux.vnet.ibm.com, nic_swsd@realtek.com, arnd@arndb.de,
+        will.deacon@arm.com, michael@ellerman.id.au, tony.luck@intel.com,
+        torvalds@linux-foundation.org, oleg@redhat.com, schwidefsky@de.ibm.com,
+        fweisbec@gmail.com, davem@davemloft.net
+Date: Tue, 25 Nov 2014 12:35:42 -0800
+Message-ID: <20141125203542.8240.95772.stgit@ahduyck-server>
+In-Reply-To: <20141125203310.8240.27370.stgit@ahduyck-server>
+References: <20141125203310.8240.27370.stgit@ahduyck-server>
+User-Agent: StGit/0.17-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes pointer declarations from void * to void __user * in order
-to remove some sparse warnings.
+The r8169 use a pair of wmb() calls when setting up the descriptor rings.
+The first is to synchronize the descriptor data with the descriptor status,
+and the second is to synchronize the descriptor status with the use of the
+MMIO doorbell to notify the device that descriptors are ready.  This can
+come at a heavy price on some systems, and is not really necessary on
+systems such as x86 as a simple barrier() would suffice to order store/store
+accesses.  As such we can replace the first memory barrier with
+dma_wmb() to reduce the cost for these accesses.
 
-lib-lnet.h:798:48: warning: incorrect type in initializer (different address spaces)
-lib-lnet.h:798:48:    expected void [noderef] <asn:1>*iov_base
-lib-lnet.h:798:48:    got void *dest
-lib-lnet.h:787:47: warning: incorrect type in initializer (different address spaces)
-lib-lnet.h:787:47:    expected void [noderef] <asn:1>*iov_base
-lib-lnet.h:787:47:    got void *dest
-lib-lnet.h:819:48: warning: incorrect type in initializer (different address spaces)
-lib-lnet.h:819:48:    expected void [noderef] <asn:1>*iov_base
-lib-lnet.h:819:48:    got void *src
-lib-lnet.h:808:47: warning: incorrect type in initializer (different address spaces)
-lib-lnet.h:808:47:    expected void [noderef] <asn:1>*iov_base
-lib-lnet.h:808:47:    got void *src
+In addition the r8169 uses a rmb() to prevent compiler optimization in the
+cleanup paths, however by moving the barrier down a few lines and replacing
+it with a dma_rmb() we should be able to use it to guarantee
+descriptor accesses do not occur until the device has updated the DescOwn
+bit from its end.
 
-Signed-off-by: Zahari Doychev <zahari.doychev@linux.com>
+One last change I made is to move the update of cur_tx in the xmit path to
+after the wmb.  This way we can guarantee the device and all CPUs should
+see the DescOwn update before they see the cur_tx value update.
+
+Cc: Realtek linux nic maintainers <nic_swsd@realtek.com>
+Cc: Francois Romieu <romieu@fr.zoreil.com>
+Signed-off-by: Alexander Duyck <alexander.h.duyck@redhat.com>
 ---
- drivers/staging/lustre/include/linux/lnet/lib-lnet.h | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c |   29 +++++++++++++++++++++--------
+ 1 file changed, 21 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/staging/lustre/include/linux/lnet/lib-lnet.h b/drivers/staging/lustre/include/linux/lnet/lib-lnet.h
-index 7e89b3b..e60ce56 100644
---- a/drivers/staging/lustre/include/linux/lnet/lib-lnet.h
-+++ b/drivers/staging/lustre/include/linux/lnet/lib-lnet.h
-@@ -780,22 +780,22 @@ void lnet_copy_kiov2kiov(unsigned int ndkiov, lnet_kiov_t *dkiov,
- 			  unsigned int soffset, unsigned int nob);
- 
- static inline void
--lnet_copy_iov2flat(int dlen, void *dest, unsigned int doffset,
-+lnet_copy_iov2flat(int dlen, void __user *dest, unsigned int doffset,
- 		   unsigned int nsiov, struct iovec *siov, unsigned int soffset,
- 		   unsigned int nob)
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index cf154f7..39e9796 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -6601,6 +6601,9 @@ static inline void rtl8169_mark_to_asic(struct RxDesc *desc, u32 rx_buf_sz)
  {
--	struct iovec diov = {/*.iov_base = */ dest, /*.iov_len = */ dlen};
-+	struct iovec diov = {.iov_base = dest, .iov_len = dlen};
+ 	u32 eor = le32_to_cpu(desc->opts1) & RingEnd;
  
- 	lnet_copy_iov2iov(1, &diov, doffset,
- 			  nsiov, siov, soffset, nob);
++	/* Force memory writes to complete before releasing descriptor */
++	dma_wmb();
++
+ 	desc->opts1 = cpu_to_le32(DescOwn | eor | rx_buf_sz);
  }
  
- static inline void
--lnet_copy_kiov2flat(int dlen, void *dest, unsigned int doffset,
-+lnet_copy_kiov2flat(int dlen, void __user *dest, unsigned int doffset,
- 		    unsigned int nsiov, lnet_kiov_t *skiov,
- 		    unsigned int soffset, unsigned int nob)
+@@ -6608,7 +6611,6 @@ static inline void rtl8169_map_to_asic(struct RxDesc *desc, dma_addr_t mapping,
+ 				       u32 rx_buf_sz)
  {
--	struct iovec diov = {/* .iov_base = */ dest, /* .iov_len = */ dlen};
-+	struct iovec diov = {.iov_base = dest, .iov_len = dlen};
+ 	desc->addr = cpu_to_le64(mapping);
+-	wmb();
+ 	rtl8169_mark_to_asic(desc, rx_buf_sz);
+ }
  
- 	lnet_copy_kiov2iov(1, &diov, doffset,
- 			   nsiov, skiov, soffset, nob);
-@@ -803,9 +803,10 @@ lnet_copy_kiov2flat(int dlen, void *dest, unsigned int doffset,
+@@ -7077,16 +7079,18 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
  
- static inline void
- lnet_copy_flat2iov(unsigned int ndiov, struct iovec *diov, unsigned int doffset,
--		   int slen, void *src, unsigned int soffset, unsigned int nob)
-+		   int slen, void __user *src, unsigned int soffset,
-+		   unsigned int nob)
- {
--	struct iovec siov = {/*.iov_base = */ src, /*.iov_len = */slen};
-+	struct iovec siov = {.iov_base =  src, .iov_len = slen};
+ 	skb_tx_timestamp(skb);
  
- 	lnet_copy_iov2iov(ndiov, diov, doffset,
- 			  1, &siov, soffset, nob);
-@@ -813,10 +814,10 @@ lnet_copy_flat2iov(unsigned int ndiov, struct iovec *diov, unsigned int doffset,
+-	wmb();
++	/* Force memory writes to complete before releasing descriptor */
++	dma_wmb();
  
- static inline void
- lnet_copy_flat2kiov(unsigned int ndiov, lnet_kiov_t *dkiov,
--		    unsigned int doffset, int slen, void *src,
-+		    unsigned int doffset, int slen, void __user *src,
- 		    unsigned int soffset, unsigned int nob)
- {
--	struct iovec siov = {/* .iov_base = */ src, /* .iov_len = */ slen};
-+	struct iovec siov = {.iov_base = src, .iov_len = slen};
+ 	/* Anti gcc 2.95.3 bugware (sic) */
+ 	status = opts[0] | len | (RingEnd * !((entry + 1) % NUM_TX_DESC));
+ 	txd->opts1 = cpu_to_le32(status);
  
- 	lnet_copy_iov2kiov(ndiov, dkiov, doffset,
- 			   1, &siov, soffset, nob);
--- 
-2.1.0
+-	tp->cur_tx += frags + 1;
+-
++	/* Force all memory writes to complete before notifying device */
+ 	wmb();
+ 
++	tp->cur_tx += frags + 1;
++
+ 	RTL_W8(TxPoll, NPQ);
+ 
+ 	mmiowb();
+@@ -7185,11 +7189,16 @@ static void rtl_tx(struct net_device *dev, struct rtl8169_private *tp)
+ 		struct ring_info *tx_skb = tp->tx_skb + entry;
+ 		u32 status;
+ 
+-		rmb();
+ 		status = le32_to_cpu(tp->TxDescArray[entry].opts1);
+ 		if (status & DescOwn)
+ 			break;
+ 
++		/* This barrier is needed to keep us from reading
++		 * any other fields out of the Tx descriptor until
++		 * we know the status of DescOwn
++		 */
++		dma_rmb();
++
+ 		rtl8169_unmap_tx_skb(&tp->pci_dev->dev, tx_skb,
+ 				     tp->TxDescArray + entry);
+ 		if (status & LastFrag) {
+@@ -7284,11 +7293,16 @@ static int rtl_rx(struct net_device *dev, struct rtl8169_private *tp, u32 budget
+ 		struct RxDesc *desc = tp->RxDescArray + entry;
+ 		u32 status;
+ 
+-		rmb();
+ 		status = le32_to_cpu(desc->opts1) & tp->opts1_mask;
+-
+ 		if (status & DescOwn)
+ 			break;
++
++		/* This barrier is needed to keep us from reading
++		 * any other fields out of the Rx descriptor until
++		 * we know the status of DescOwn
++		 */
++		dma_rmb();
++
+ 		if (unlikely(status & RxRES)) {
+ 			netif_info(tp, rx_err, dev, "Rx ERROR. status = %08x\n",
+ 				   status);
+@@ -7350,7 +7364,6 @@ process_pkt:
+ 		}
+ release_descriptor:
+ 		desc->opts2 = 0;
+-		wmb();
+ 		rtl8169_mark_to_asic(desc, rx_buf_sz);
+ 	}
+ 
 
