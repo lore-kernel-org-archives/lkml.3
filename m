@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725AbaKYKkf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:40:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58061 "EHLO
+	id S1753101AbaKYKlP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:41:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58324 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608AbaKYKk2 (ORCPT
+	with ESMTP id S1753036AbaKYKlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:40:28 -0500
+	Tue, 25 Nov 2014 05:41:13 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <johan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Benjamin Coddington <bcodding@redhat.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 021/254] USB: core: add device-qualifier quirk
-Date: Tue, 25 Nov 2014 10:36:11 +0000
-Message-Id: <1416912004-5928-22-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 071/254] SUNRPC: Don't wake tasks during connection abort
+Date: Tue, 25 Nov 2014 10:37:01 +0000
+Message-Id: <1416912004-5928-72-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,53 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Benjamin Coddington <bcodding@redhat.com>
 
-commit 2a159389bf5d962359349a76827b2f683276a1c7 upstream.
+commit a743419f420a64d442280845c0377a915b76644f upstream.
 
-Add new quirk for devices that cannot handle requests for the
-device_qualifier descriptor.
+When aborting a connection to preserve source ports, don't wake the task in
+xs_error_report.  This allows tasks with RPC_TASK_SOFTCONN to succeed if the
+connection needs to be re-established since it preserves the task's status
+instead of setting it to the status of the aborting kernel_connect().
 
-A USB-2.0 compliant device must respond to requests for the
-device_qualifier descriptor (even if it's with a request error), but at
-least one device is known to misbehave after such a request.
+This may also avoid a potential conflict on the socket's lock.
 
-Suggested-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Johan Hovold <johan@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: prereq for the following Elan touchscreen patches ]
+Signed-off-by: Benjamin Coddington <bcodding@redhat.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/core/hub.c     | 3 +++
- include/linux/usb/quirks.h | 3 +++
- 2 files changed, 6 insertions(+)
+ include/linux/sunrpc/xprt.h | 1 +
+ net/sunrpc/xprtsock.c       | 4 ++++
+ 2 files changed, 5 insertions(+)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index ba2a8f3b8059..0e0e0354c523 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -4524,6 +4524,9 @@ check_highspeed (struct usb_hub *hub, struct usb_device *udev, int port1)
- 	struct usb_qualifier_descriptor	*qual;
- 	int				status;
+diff --git a/include/linux/sunrpc/xprt.h b/include/linux/sunrpc/xprt.h
+index fcbfe8783243..cf391eef2e6d 100644
+--- a/include/linux/sunrpc/xprt.h
++++ b/include/linux/sunrpc/xprt.h
+@@ -357,6 +357,7 @@ int			xs_swapper(struct rpc_xprt *xprt, int enable);
+ #define XPRT_CONNECTION_ABORT	(7)
+ #define XPRT_CONNECTION_CLOSE	(8)
+ #define XPRT_CONGESTED		(9)
++#define XPRT_CONNECTION_REUSE	(10)
  
-+	if (udev->quirks & USB_QUIRK_DEVICE_QUALIFIER)
-+		return;
-+
- 	qual = kmalloc (sizeof *qual, GFP_KERNEL);
- 	if (qual == NULL)
- 		return;
-diff --git a/include/linux/usb/quirks.h b/include/linux/usb/quirks.h
-index 49587dc22f5d..8b96ae2a38fe 100644
---- a/include/linux/usb/quirks.h
-+++ b/include/linux/usb/quirks.h
-@@ -33,4 +33,7 @@
- /* device generates spurious wakeup, ignore remote wakeup capability */
- #define USB_QUIRK_IGNORE_REMOTE_WAKEUP	0x00000200
+ static inline void xprt_set_connected(struct rpc_xprt *xprt)
+ {
+diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+index be8bbd5d65ec..ab52cefa8f39 100644
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -842,6 +842,8 @@ static void xs_error_report(struct sock *sk)
+ 	dprintk("RPC:       xs_error_report client %p, error=%d...\n",
+ 			xprt, -err);
+ 	trace_rpc_socket_error(xprt, sk->sk_socket, err);
++	if (test_bit(XPRT_CONNECTION_REUSE, &xprt->state))
++		goto out;
+ 	xprt_wake_pending_tasks(xprt, err);
+  out:
+ 	read_unlock_bh(&sk->sk_callback_lock);
+@@ -2241,7 +2243,9 @@ static void xs_tcp_setup_socket(struct work_struct *work)
+ 		abort_and_exit = test_and_clear_bit(XPRT_CONNECTION_ABORT,
+ 				&xprt->state);
+ 		/* "close" the socket, preserving the local port */
++		set_bit(XPRT_CONNECTION_REUSE, &xprt->state);
+ 		xs_tcp_reuse_connection(transport);
++		clear_bit(XPRT_CONNECTION_REUSE, &xprt->state);
  
-+/* device can't handle device_qualifier descriptor requests */
-+#define USB_QUIRK_DEVICE_QUALIFIER	0x00000100
-+
- #endif /* __LINUX_USB_QUIRKS_H */
+ 		if (abort_and_exit)
+ 			goto out_eagain;
 -- 
 2.1.0
 
