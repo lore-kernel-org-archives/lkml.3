@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253AbaKYKle (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:41:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58364 "EHLO
+	id S1753301AbaKYKlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:41:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58454 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112AbaKYKlV (ORCPT
+	with ESMTP id S1753112AbaKYKlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:41:21 -0500
+	Tue, 25 Nov 2014 05:41:35 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>,
-        Mark Brown <broonie@kernel.org>,
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 077/254] ASoC: tlv320aic3x: fix PLL D configuration
-Date: Tue, 25 Nov 2014 10:37:07 +0000
-Message-Id: <1416912004-5928-78-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 095/254] [jffs2] kill wbuf_queued/wbuf_dwork_lock
+Date: Tue, 25 Nov 2014 10:37:25 +0000
+Message-Id: <1416912004-5928-96-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,65 +27,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit 31d9f8faf9a54c851e835af489c82f45105a442f upstream.
+commit 99358a1ca53e8e6ce09423500191396f0e6584d2 upstream.
 
-Current caching implementation during regcache_sync() call bypasses
-all register writes of values that are already known as default
-(regmap reg_defaults). Same time in TLV320AIC3x codecs register 5
-(AIC3X_PLL_PROGC_REG) write should be immediately followed by register
-6 write (AIC3X_PLL_PROGD_REG) even if it was not changed. Otherwise
-both registers will not be written.
+schedule_delayed_work() happening when the work is already pending is
+a cheap no-op.  Don't bother with ->wbuf_queued logics - it's both
+broken (cancelling ->wbuf_dwork leaves it set, as spotted by Jeff Harris)
+and pointless.  It's cheaper to let schedule_delayed_work() handle that
+case.
 
-This brings to issue that appears particulary in case of 44.1kHz
-playback with 19.2MHz master clock. In this case AIC3X_PLL_PROGC_REG
-is 0x6e while AIC3X_PLL_PROGD_REG is 0x0 (same as register
-default). Thus AIC3X_PLL_PROGC_REG also remains not written and we get
-wrong playback speed.
-
-In this patch snd_soc_read() is used to get cached pll values and
-snd_soc_write() (unlike regcache_sync() this function doesn't bypasses
-hardware default values) to write them to registers.
-
-Signed-off-by: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Reported-by: Jeff Harris <jefftharris@gmail.com>
+Tested-by: Jeff Harris <jefftharris@gmail.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/codecs/tlv320aic3x.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ fs/jffs2/jffs2_fs_sb.h |  2 --
+ fs/jffs2/wbuf.c        | 17 ++---------------
+ 2 files changed, 2 insertions(+), 17 deletions(-)
 
-diff --git a/sound/soc/codecs/tlv320aic3x.c b/sound/soc/codecs/tlv320aic3x.c
-index e12fafbb1e09..80d2722392ff 100644
---- a/sound/soc/codecs/tlv320aic3x.c
-+++ b/sound/soc/codecs/tlv320aic3x.c
-@@ -1121,6 +1121,7 @@ static int aic3x_regulator_event(struct notifier_block *nb,
- static int aic3x_set_power(struct snd_soc_codec *codec, int power)
- {
- 	struct aic3x_priv *aic3x = snd_soc_codec_get_drvdata(codec);
-+	unsigned int pll_c, pll_d;
- 	int ret;
+diff --git a/fs/jffs2/jffs2_fs_sb.h b/fs/jffs2/jffs2_fs_sb.h
+index 413ef89c2d1b..046fee8b6e9b 100644
+--- a/fs/jffs2/jffs2_fs_sb.h
++++ b/fs/jffs2/jffs2_fs_sb.h
+@@ -134,8 +134,6 @@ struct jffs2_sb_info {
+ 	struct rw_semaphore wbuf_sem;	/* Protects the write buffer */
  
- 	if (power) {
-@@ -1138,6 +1139,18 @@ static int aic3x_set_power(struct snd_soc_codec *codec, int power)
- 		/* Sync reg_cache with the hardware */
- 		regcache_cache_only(aic3x->regmap, false);
- 		regcache_sync(aic3x->regmap);
-+
-+		/* Rewrite paired PLL D registers in case cached sync skipped
-+		 * writing one of them and thus caused other one also not
-+		 * being written
-+		 */
-+		pll_c = snd_soc_read(codec, AIC3X_PLL_PROGC_REG);
-+		pll_d = snd_soc_read(codec, AIC3X_PLL_PROGD_REG);
-+		if (pll_c == aic3x_reg[AIC3X_PLL_PROGC_REG].def ||
-+			pll_d == aic3x_reg[AIC3X_PLL_PROGD_REG].def) {
-+			snd_soc_write(codec, AIC3X_PLL_PROGC_REG, pll_c);
-+			snd_soc_write(codec, AIC3X_PLL_PROGD_REG, pll_d);
-+		}
- 	} else {
- 		/*
- 		 * Do soft reset to this codec instance in order to clear
+ 	struct delayed_work wbuf_dwork; /* write-buffer write-out work */
+-	int wbuf_queued;                /* non-zero delayed work is queued */
+-	spinlock_t wbuf_dwork_lock;     /* protects wbuf_dwork and and wbuf_queued */
+ 
+ 	unsigned char *oobbuf;
+ 	int oobavail; /* How many bytes are available for JFFS2 in OOB */
+diff --git a/fs/jffs2/wbuf.c b/fs/jffs2/wbuf.c
+index a6597d60d76d..09ed55190ee2 100644
+--- a/fs/jffs2/wbuf.c
++++ b/fs/jffs2/wbuf.c
+@@ -1162,10 +1162,6 @@ static void delayed_wbuf_sync(struct work_struct *work)
+ 	struct jffs2_sb_info *c = work_to_sb(work);
+ 	struct super_block *sb = OFNI_BS_2SFFJ(c);
+ 
+-	spin_lock(&c->wbuf_dwork_lock);
+-	c->wbuf_queued = 0;
+-	spin_unlock(&c->wbuf_dwork_lock);
+-
+ 	if (!(sb->s_flags & MS_RDONLY)) {
+ 		jffs2_dbg(1, "%s()\n", __func__);
+ 		jffs2_flush_wbuf_gc(c, 0);
+@@ -1180,14 +1176,9 @@ void jffs2_dirty_trigger(struct jffs2_sb_info *c)
+ 	if (sb->s_flags & MS_RDONLY)
+ 		return;
+ 
+-	spin_lock(&c->wbuf_dwork_lock);
+-	if (!c->wbuf_queued) {
++	delay = msecs_to_jiffies(dirty_writeback_interval * 10);
++	if (queue_delayed_work(system_long_wq, &c->wbuf_dwork, delay))
+ 		jffs2_dbg(1, "%s()\n", __func__);
+-		delay = msecs_to_jiffies(dirty_writeback_interval * 10);
+-		queue_delayed_work(system_long_wq, &c->wbuf_dwork, delay);
+-		c->wbuf_queued = 1;
+-	}
+-	spin_unlock(&c->wbuf_dwork_lock);
+ }
+ 
+ int jffs2_nand_flash_setup(struct jffs2_sb_info *c)
+@@ -1211,7 +1202,6 @@ int jffs2_nand_flash_setup(struct jffs2_sb_info *c)
+ 
+ 	/* Initialise write buffer */
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 	c->wbuf_pagesize = c->mtd->writesize;
+ 	c->wbuf_ofs = 0xFFFFFFFF;
+@@ -1251,7 +1241,6 @@ int jffs2_dataflash_setup(struct jffs2_sb_info *c) {
+ 
+ 	/* Initialize write buffer */
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 	c->wbuf_pagesize =  c->mtd->erasesize;
+ 
+@@ -1311,7 +1300,6 @@ int jffs2_nor_wbuf_flash_setup(struct jffs2_sb_info *c) {
+ 
+ 	/* Initialize write buffer */
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 
+ 	c->wbuf_pagesize = c->mtd->writesize;
+@@ -1346,7 +1334,6 @@ int jffs2_ubivol_setup(struct jffs2_sb_info *c) {
+ 		return 0;
+ 
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 
+ 	c->wbuf_pagesize =  c->mtd->writesize;
 -- 
 2.1.0
 
