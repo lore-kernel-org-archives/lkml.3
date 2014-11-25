@@ -1,137 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167AbaKYHoX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 02:44:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46935 "EHLO mx1.redhat.com"
+	id S1752050AbaKYHqv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 02:46:51 -0500
+Received: from mga01.intel.com ([192.55.52.88]:49643 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751291AbaKYHoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 02:44:22 -0500
-Date: Tue, 25 Nov 2014 15:42:23 +0800
-From: Amos Kong <akong@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        herbert@gondor.apana.org.au, m@bues.ch, mb@bu3sch.de, mpm@selenic.com,
-        amit.shah@redhat.com, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v4 4/6] hw_random: fix unregister race.
-Message-ID: <20141125074223.GA11690@air.redhat.com>
-References: <1415030186-18303-1-git-send-email-akong@redhat.com>
- <1415030186-18303-5-git-send-email-akong@redhat.com>
- <87y4rhm5fv.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="X1bOJ3K7DJ5YkBrT"
-Content-Disposition: inline
-In-Reply-To: <87y4rhm5fv.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1750770AbaKYHqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 02:46:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,454,1413270000"; 
+   d="scan'208";a="627834037"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [Patch Part3 v4 00/38] Enable hierarchy irqdomian on x86 platforms
+Date: Tue, 25 Nov 2014 15:49:24 +0800
+Message-Id: <1416901802-24211-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is the last part to enable support of hierarchy domain on x86
+platforms.
 
---X1bOJ3K7DJ5YkBrT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It first converts IOAPIC to support hierarchy irqdomain, then cleans
+up all unused code and interfaces. It also introduces a kernel boot
+parameter to configure CPU vector allocation policies.
 
-On Wed, Nov 12, 2014 at 02:33:00PM +1030, Rusty Russell wrote:
-> Amos Kong <akong@redhat.com> writes:
-> > From: Rusty Russell <rusty@rustcorp.com.au>
-> >
-> > The previous patch added one potential problem: we can still be
-> > reading from a hwrng when it's unregistered.  Add a wait for zero
-> > in the hwrng_unregister path.
-> >
-> > v4: add cleanup_done flag to insure that cleanup is done
->=20
-> That's a bit weird.  The usual pattern would be to hold a reference
-> until we're actually finished, but this reference is a bit weird.
+It's based on my previous patch set at:
+http://lkml.org/lkml/2014/11/25/10
+And you may access it at:
+https://github.com/jiangliu/linux.git irqdomain/p3v4
 
-The cleanup function is a callback function of kref_put(), we can't
-use the same reference count inside cleanup function.
-=20
-> We hold the mutex across cleanup, so we could grab that but we have to
-> take care sleeping inside wait_event, otherwise Peter will have to fix
-> my code again :)
+It has been tested on Intel 64-bit server and 32-bit laptop. Joerg has
+helped to test on AMD platforms. It also passes Fengguang's 0day tests.
+Helps are welcomed for testing:
+1) Intel MID platform
+2) Intel CE or OLPC platforms
 
-We didn't hold rng_mutex inside cleanup_rng(), am I missing something?
-=20
-> AFAICT the wake_woken() stuff isn't merged yet, so your patch will
-> have to do for now.
+Patch 1-3 kills pre_init_apic_IRQ0().
+Patch 4-9 convert IOAPIC to use hierarch irqdomain
+Patch 10-36 clean up code, unused interfaces etc.
+Patch 37-38 introduces a mechanism to configure CPU vector allocation
+	policies.
 
-Can you provide some patches/mail link here? I searched nothing about wake_=
-woken.
-=20
-> > @@ -98,6 +99,8 @@ static inline void cleanup_rng(struct kref *kref)
-> > =20
-> >  	if (rng->cleanup)
-> >  		rng->cleanup(rng);
-> > +	rng->cleanup_done =3D true;
-> > +	wake_up_all(&rng_done);
-> >  }
-> > =20
-> >  static void set_current_rng(struct hwrng *rng)
-> > @@ -536,6 +539,11 @@ void hwrng_unregister(struct hwrng *rng)
-> >  			kthread_stop(hwrng_fill);
-> >  	} else
-> >  		mutex_unlock(&rng_mutex);
-> > +
-> > +	/* Just in case rng is reading right now, wait. */
-> > +	wait_event(rng_done, rng->cleanup_done &&
-> > +		   atomic_read(&rng->ref.refcount) =3D=3D 0);
-> > +
->=20
-> The atomic_read() isn't necessary here.
->=20
-> However, you should probably init cleanup_done in hwrng_register().
-> (Probably noone does unregister then register, but let's be clear).
+V3->V4:
+1) Rebase onto latest prerequisition patch sets
 
-Got it.
-=20
-> Thanks,
-> Rusty.
->=20
-> >  }
-> >  EXPORT_SYMBOL_GPL(hwrng_unregister);
-> > =20
-> > diff --git a/include/linux/hw_random.h b/include/linux/hw_random.h
-> > index c212e71..7832e50 100644
-> > --- a/include/linux/hw_random.h
-> > +++ b/include/linux/hw_random.h
-> > @@ -46,6 +46,7 @@ struct hwrng {
-> >  	/* internal. */
-> >  	struct list_head list;
-> >  	struct kref ref;
-> > +	bool cleanup_done;
-> >  };
-> > =20
-> >  /** Register a new Hardware Random Number Generator driver. */
-> > --=20
-> > 1.9.3
+Jiang Liu (37):
+  x86, intel-mid, trivial: Refine code syntax for sfi_parse_mtmr()
+  x86, irq: Kill unused pre_init_apic_IRQ0()
+  x86, irq: Prepare IOAPIC interfaces to support hierarchy irqdomain
+  x86, irq: Implement callbacks to enable hierarchy irqdomain on
+    IOAPICs
+  x86, irq: Refine the way to allocate irq_cfg for legacy IRQs
+  x86, irq: Simplify the way to print IOAPIC entry
+  x86, irq: Introduce helper functions to support hierarchy irqdomain
+    for IOAPIC
+  x86, irq: Convert IOAPIC to use hierarchy irqdomain interfaces
+  x86, irq: Kill unused old IOAPIC irqdomain interfaces
+  x86, irq: Kill unused struct mp_pin_info
+  x86, irq: Kill x86_io_apic_ops.print_entries and related interfaces
+  x86, irq: Kill x86_io_apic_ops.setup_entry and related interfaces
+  x86, irq: Kill x86_io_apic_ops.set_affinity and related interfaces
+  x86, irq: Kill x86_io_apic_ops.eoi_ioapic_pin and related interfaces
+  x86, irq: Kill GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
+  x86: Clean up unused forward declarations in x86_init.h
+  x86: irq_remapping: Clean up unsued code
+  iommu/vt-d: Clean up unsued code
+  iommu/amd: Clean up unsued code
+  x86: irq_remapping: Clean up unused interfaces
+  x86, irq: Kill irq_cfg.irq_remapped
+  iommu/vt-d: Move struct irq_2_iommu into intel_irq_remapping.c
+  iommu/amd: Move struct irq_2_irte into amd_iommu.c
+  x86, irq: Move irq_cfg.irq_2_pin into io_apic.c
+  x86, irq: Kill struct io_apic_irq_attr
+  x86, irq: Kill x86_io_apic_ops.write and x86_io_apic_ops.modify
+  x86, irq: Clean up io_apic.h
+  x86, irq: Use cached IOAPIC entry instead of reading from hardware
+  x86, irq: Kill unused alloc_irq_and_cfg_at()
+  x86, irq: Change functions only used in vector.c as static
+  x86, irq: Kill function apic_set_affinity()
+  x86, irq: Move check of cfg->move_in_progress into
+    send_cleanup_vector()
+  x86, irq: Move private data in struct irq_cfg into dedicated data
+    structure
+  x86, irq: Refine the way to calculate NR_IRQS
+  ACPI, irq, x86: Kill private function mp_register_gsi()/
+    mp_unregister_gsi()
+  x86, irq: Introduce mechanism to support different vector allocation
+    policies
+  x86, irq: Add kernel parameter vector_alloc to set CPU vector
+    allocation policy
 
---=20
-			Amos.
+Thomas Gleixner (1):
+  x86, intel-mid: Delay initialization of APB timer
 
---X1bOJ3K7DJ5YkBrT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ Documentation/kernel-parameters.txt                |    6 +
+ arch/x86/Kconfig                                   |    1 -
+ arch/x86/include/asm/hw_irq.h                      |   51 +-
+ arch/x86/include/asm/io_apic.h                     |   81 +-
+ arch/x86/include/asm/irq_remapping.h               |   36 -
+ arch/x86/include/asm/irq_vectors.h                 |   18 +-
+ arch/x86/include/asm/x86_init.h                    |   16 -
+ arch/x86/kernel/acpi/boot.c                        |   69 +-
+ arch/x86/kernel/apb_timer.c                        |    4 -
+ arch/x86/kernel/apic/io_apic.c                     | 1071 +++++++++-----------
+ arch/x86/kernel/apic/vector.c                      |  416 ++++----
+ arch/x86/kernel/devicetree.c                       |   37 +-
+ arch/x86/kernel/mpparse.c                          |    6 +-
+ arch/x86/kernel/x86_init.c                         |    6 -
+ arch/x86/pci/intel_mid_pci.c                       |    6 +-
+ .../platform/intel-mid/device_libs/platform_wdt.c  |    5 +-
+ arch/x86/platform/intel-mid/intel-mid.c            |   18 +-
+ arch/x86/platform/intel-mid/sfi.c                  |   30 +-
+ arch/x86/platform/sfi/sfi.c                        |    5 +-
+ arch/x86/platform/uv/uv_irq.c                      |    3 +-
+ drivers/iommu/amd_iommu.c                          |  153 +--
+ drivers/iommu/intel_irq_remapping.c                |  206 +---
+ drivers/iommu/irq_remapping.c                      |   84 --
+ drivers/iommu/irq_remapping.h                      |   16 -
+ 24 files changed, 874 insertions(+), 1470 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+-- 
+1.7.10.4
 
-iQIcBAEBAgAGBQJUdDLfAAoJELxSv6I5vP9jW4gP/2glGE79f30avT494VYlJK64
-jN9dzIzfpGe3a+rD+w9XCD0MBq2dSxPV0BKeW98Zy7AJ52gDDIlmZkeU5cFA4iDi
-z9an+3t5mxcb4poIUqyykXXiEsAXSS7DV+w+DkKYYFaXA/BAiht3kuNKwXqOb+N1
-mjM3j2pNpIdb36V3lPekAxFN6LE/Gct8gJA9Om++gUWH67w4LeaFtxfHRlycMOix
-T769rVwIAUdJ0ZZpIXTFbYyWzVSBvK+/iSMViFykwWkv0poaC+WBjHebBwFhDETX
-Rau8b6bnYCbpqIU3HlJh67ffScpMNI3Ym/Zb/tq5iVD97M3CTee5c0tJrj696KJi
-MxwSAT3NvmO9GglY5P2UlXLnjRFL061RWzPwsEg4wLY6kxJFQU721aX06WRRY/EP
-uZiiXUpuFhm2qqRD615nV8V+6J84mugMmoq+jdEIOh2FOCGmTJ4MhQ3MIIM6P0SM
-MZy8DKDEHmd3pJMH73MBrexN76wD/tQwJdirMw7djhkrKQqmabE1bbPgFwfW4Rl4
-hpcfQakq1y+9i0U/yYHSA/MYTgM73rZH1szgAuq8PO72TAoKkLFCJVTHMCcOjV4v
-3u7r+MDXhKHDJWgEwkSxC8M8jqeIe1IcyDEPfLVNJJVjVpdkwcpfidsAV1NljZqr
-MrA0Note0GomruthFm0W
-=YUhK
------END PGP SIGNATURE-----
-
---X1bOJ3K7DJ5YkBrT--
