@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750910AbaKYPNS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 10:13:18 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:48157 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaKYPNR (ORCPT
+	id S1750984AbaKYPNV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 10:13:21 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:39827 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaKYPNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 10:13:17 -0500
-X-IronPort-AV: E=Sophos;i="5.07,456,1413244800"; 
-   d="scan'208";a="196587022"
-Date: Tue, 25 Nov 2014 15:12:14 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <david.vrabel@citrix.com>, <konrad.wilk@oracle.com>,
-        <jun.nakajima@intel.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xen.org>
-Subject: Re: [PATCH v3 1/2] xen/pci: Defer initialization of MSI ops on HVM
- guests until after x2APIC has been set up
-In-Reply-To: <54749C2B.4090303@oracle.com>
-Message-ID: <alpine.DEB.2.02.1411251511580.2675@kaball.uk.xensource.com>
-References: <1416870378-32481-1-git-send-email-boris.ostrovsky@oracle.com> <1416870378-32481-2-git-send-email-boris.ostrovsky@oracle.com> <alpine.DEB.2.02.1411251205220.2675@kaball.uk.xensource.com> <54749C2B.4090303@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 25 Nov 2014 10:13:19 -0500
+Message-ID: <54749C80.3050702@collabora.co.uk>
+Date: Tue, 25 Nov 2014 16:13:04 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Kukjin Kim <kgene@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Kevin Hilman <khilman@kernel.org>
+Subject: Re: [RFC 0/2] Fix Arndale Octa/Peach Pi boot on Audio subsystem clocks
+References: <1416842312-4405-1-git-send-email-k.kozlowski@samsung.com> <54736AD0.4070909@collabora.co.uk> <1416907375.5023.54.camel@AMDC1943> <547485F5.50600@collabora.co.uk> <1416925325.26128.6.camel@AMDC1943> <547497B2.3010907@collabora.co.uk> <1416927292.26128.8.camel@AMDC1943>
+In-Reply-To: <1416927292.26128.8.camel@AMDC1943>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Nov 2014, Boris Ostrovsky wrote:
-> On 11/25/2014 07:06 AM, Stefano Stabellini wrote:
-> > On Mon, 24 Nov 2014, Boris Ostrovsky wrote:
-> > > If the hardware supports APIC virtualization we may decide not to use
-> > > pirqs
-> > > and instead use APIC/x2APIC directly, meaning that we don't want to set
-> > > x86_msi.setup_msi_irqs and x86_msi.teardown_msi_irq to Xen-specific
-> > > routines.
-> > > However, x2APIC is not set up by the time pci_xen_hvm_init() is called so
-> > > we
-> > > need to postpone setting these ops until later, when we know which APIC
-> > > mode
-> > > is used.
-> > > 
-> > > (Note that currently x2APIC is never initialized on HVM guests. This may
-> > > change in the future)
-> > I take that this is safe because no MSIs can be received at this point
-> > (apic_post_init), right?
-> 
-> 
-> Yes. At the time apic_post_init() is called PCI has not been probed yet.
+Hello Krzysztof,
 
-Please add that to the commit message.
+On 11/25/2014 03:54 PM, Krzysztof Kozlowski wrote:
+> 
+> My patch only fixed the gate clocks but it didn't touched div and mux.
+> I'll prepare a v2 of it (I got some feedback) which I hope will fix both
+> cases: i2s and disabling unused clocks.
+>
 
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Perfect, I will gladly test on Peach boards once you post it.
+
+Thanks a lot for your help.
+
+Best regards,
+Javier
