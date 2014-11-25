@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600AbaKYKxK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:53:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59138 "EHLO
+	id S1754642AbaKYKxh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:53:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59126 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752937AbaKYKna (ORCPT
+	with ESMTP id S1754075AbaKYKn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:43:30 -0500
+	Tue, 25 Nov 2014 05:43:29 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Enric Balletbo i Serra <eballetbo@iseebcn.com>,
+Cc: Daniel Borkmann <dborkman@redhat.com>, Vlad Yasevich <vyasevich@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 225/254] smsc911x: power-up phydev before doing a software reset.
-Date: Tue, 25 Nov 2014 10:39:35 +0000
-Message-Id: <1416912004-5928-226-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 221/254] net: sctp: fix NULL pointer dereference in af->from_addr_param on malformed packet
+Date: Tue, 25 Nov 2014 10:39:31 +0000
+Message-Id: <1416912004-5928-222-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,97 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Enric Balletbo i Serra <eballetbo@iseebcn.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit ccf899a27c08038db91765ff12bb0380dcd85887 upstream.
+commit e40607cbe270a9e8360907cb1e62ddf0736e4864 upstream.
 
-With commit be9dad1f9f26604fb ("net: phy: suspend phydev when going
-to HALTED"), the PHY device will be put in a low-power mode using
-BMCR_PDOWN if the the interface is set down. The smsc911x driver does
-a software_reset opening the device driver (ndo_open). In such case,
-the PHY must be powered-up before access to any register and before
-calling the software_reset function. Otherwise, as the PHY is powered
-down the software reset fails and the interface can not be enabled
-again.
+An SCTP server doing ASCONF will panic on malformed INIT ping-of-death
+in the form of:
 
-This patch fixes this scenario that is easy to reproduce setting down
-the network interface and setting up again.
+  ------------ INIT[PARAM: SET_PRIMARY_IP] ------------>
 
-    $ ifconfig eth0 down
-    $ ifconfig eth0 up
-    ifconfig: SIOCSIFFLAGS: Input/output error
+While the INIT chunk parameter verification dissects through many things
+in order to detect malformed input, it misses to actually check parameters
+inside of parameters. E.g. RFC5061, section 4.2.4 proposes a 'set primary
+IP address' parameter in ASCONF, which has as a subparameter an address
+parameter.
 
-Signed-off-by: Enric Balletbo i Serra <eballetbo@iseebcn.com>
+So an attacker may send a parameter type other than SCTP_PARAM_IPV4_ADDRESS
+or SCTP_PARAM_IPV6_ADDRESS, param_type2af() will subsequently return 0
+and thus sctp_get_af_specific() returns NULL, too, which we then happily
+dereference unconditionally through af->from_addr_param().
+
+The trace for the log:
+
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000078
+IP: [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
+PGD 0
+Oops: 0000 [#1] SMP
+[...]
+Pid: 0, comm: swapper Not tainted 2.6.32-504.el6.x86_64 #1 Bochs Bochs
+RIP: 0010:[<ffffffffa01e9c62>]  [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
+[...]
+Call Trace:
+ <IRQ>
+ [<ffffffffa01f2add>] ? sctp_bind_addr_copy+0x5d/0xe0 [sctp]
+ [<ffffffffa01e1fcb>] sctp_sf_do_5_1B_init+0x21b/0x340 [sctp]
+ [<ffffffffa01e3751>] sctp_do_sm+0x71/0x1210 [sctp]
+ [<ffffffffa01e5c09>] ? sctp_endpoint_lookup_assoc+0xc9/0xf0 [sctp]
+ [<ffffffffa01e61f6>] sctp_endpoint_bh_rcv+0x116/0x230 [sctp]
+ [<ffffffffa01ee986>] sctp_inq_push+0x56/0x80 [sctp]
+ [<ffffffffa01fcc42>] sctp_rcv+0x982/0xa10 [sctp]
+ [<ffffffffa01d5123>] ? ipt_local_in_hook+0x23/0x28 [iptable_filter]
+ [<ffffffff8148bdc9>] ? nf_iterate+0x69/0xb0
+ [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
+ [<ffffffff8148bf86>] ? nf_hook_slow+0x76/0x120
+ [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
+[...]
+
+A minimal way to address this is to check for NULL as we do on all
+other such occasions where we know sctp_get_af_specific() could
+possibly return with NULL.
+
+Fixes: d6de3097592b ("[SCTP]: Add the handling of "Set Primary IP Address" parameter to INIT")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/smsc/smsc911x.c | 46 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 46 insertions(+)
+ net/sctp/sm_make_chunk.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/net/ethernet/smsc/smsc911x.c b/drivers/net/ethernet/smsc/smsc911x.c
-index 5e13fa5524ae..a4400035681f 100644
---- a/drivers/net/ethernet/smsc/smsc911x.c
-+++ b/drivers/net/ethernet/smsc/smsc911x.c
-@@ -1342,6 +1342,42 @@ static void smsc911x_rx_multicast_update_workaround(struct smsc911x_data *pdata)
- 	spin_unlock(&pdata->mac_lock);
- }
+diff --git a/net/sctp/sm_make_chunk.c b/net/sctp/sm_make_chunk.c
+index ab734be8cb20..9f32741abb1c 100644
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -2609,6 +2609,9 @@ do_addr_param:
+ 		addr_param = param.v + sizeof(sctp_addip_param_t);
  
-+static int smsc911x_phy_general_power_up(struct smsc911x_data *pdata)
-+{
-+	int rc = 0;
+ 		af = sctp_get_af_specific(param_type2af(param.p->type));
++		if (af == NULL)
++			break;
 +
-+	if (!pdata->phy_dev)
-+		return rc;
-+
-+	/* If the internal PHY is in General Power-Down mode, all, except the
-+	 * management interface, is powered-down and stays in that condition as
-+	 * long as Phy register bit 0.11 is HIGH.
-+	 *
-+	 * In that case, clear the bit 0.11, so the PHY powers up and we can
-+	 * access to the phy registers.
-+	 */
-+	rc = phy_read(pdata->phy_dev, MII_BMCR);
-+	if (rc < 0) {
-+		SMSC_WARN(pdata, drv, "Failed reading PHY control reg");
-+		return rc;
-+	}
-+
-+	/* If the PHY general power-down bit is not set is not necessary to
-+	 * disable the general power down-mode.
-+	 */
-+	if (rc & BMCR_PDOWN) {
-+		rc = phy_write(pdata->phy_dev, MII_BMCR, rc & ~BMCR_PDOWN);
-+		if (rc < 0) {
-+			SMSC_WARN(pdata, drv, "Failed writing PHY control reg");
-+			return rc;
-+		}
-+
-+		usleep_range(1000, 1500);
-+	}
-+
-+	return 0;
-+}
-+
- static int smsc911x_phy_disable_energy_detect(struct smsc911x_data *pdata)
- {
- 	int rc = 0;
-@@ -1415,6 +1451,16 @@ static int smsc911x_soft_reset(struct smsc911x_data *pdata)
- 	int ret;
+ 		af->from_addr_param(&addr, addr_param,
+ 				    htons(asoc->peer.port), 0);
  
- 	/*
-+	 * Make sure to power-up the PHY chip before doing a reset, otherwise
-+	 * the reset fails.
-+	 */
-+	ret = smsc911x_phy_general_power_up(pdata);
-+	if (ret) {
-+		SMSC_WARN(pdata, drv, "Failed to power-up the PHY chip");
-+		return ret;
-+	}
-+
-+	/*
- 	 * LAN9210/LAN9211/LAN9220/LAN9221 chips have an internal PHY that
- 	 * are initialized in a Energy Detect Power-Down mode that prevents
- 	 * the MAC chip to be software reseted. So we have to wakeup the PHY
 -- 
 2.1.0
 
