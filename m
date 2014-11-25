@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558AbaKYKm3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 05:42:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58763 "EHLO
+	id S1753720AbaKYKmi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 05:42:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58783 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753636AbaKYKmZ (ORCPT
+	with ESMTP id S1753667AbaKYKm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:42:25 -0500
+	Tue, 25 Nov 2014 05:42:29 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tejun Heo <tj@kernel.org>, Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 152/254] ahci: disable MSI instead of NCQ on Samsung pci-e SSDs on macbooks
-Date: Tue, 25 Nov 2014 10:38:22 +0000
-Message-Id: <1416912004-5928-153-git-send-email-luis.henriques@canonical.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Sebastian Reichel <sre@kernel.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 154/254] power: bq2415x_charger: Properly handle ENODEV from power_supply_get_by_phandle
+Date: Tue, 25 Nov 2014 10:38:24 +0000
+Message-Id: <1416912004-5928-155-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -26,65 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 66a7cbc303f4d28f201529b06061944d51ab530c upstream.
+commit 0eaf437aa14949d2230aeab7364f4ab47901304a upstream.
 
-Samsung pci-e SSDs on macbooks failed miserably on NCQ commands, so
-67809f85d31e ("ahci: disable NCQ on Samsung pci-e SSDs on macbooks")
-disabled NCQ on them.  It turns out that NCQ is fine as long as MSI is
-not used, so let's turn off MSI and leave NCQ on.
+The power_supply_get_by_phandle() on error returns ENODEV or NULL.
+The driver later expects obtained pointer to power supply to be
+valid or NULL. If it is not NULL then it dereferences it in
+bq2415x_notifier_call() which would lead to dereferencing ENODEV-value
+pointer.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=60731
-Tested-by: <dorin@i51.org>
-Tested-by: Imre Kaloz <kaloz@openwrt.org>
-Fixes: 67809f85d31e ("ahci: disable NCQ on Samsung pci-e SSDs on macbooks")
+Properly handle the power_supply_get_by_phandle() error case by
+replacing error value with NULL. This indicates that usb charger
+detection won't be used.
+
+Fix also memory leak of 'name' if power_supply_get_by_phandle() fails
+with NULL and probe should defer.
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Fixes: faffd234cf85 ("bq2415x_charger: Add DT support")
+[small fix regarding the missing ti,usb-charger-detection info message]
+Signed-off-by: Sebastian Reichel <sre@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/ahci.c | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ drivers/power/bq2415x_charger.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index f0f8ae1197e2..d5fc45ae867b 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -60,6 +60,7 @@ enum board_ids {
- 	/* board IDs by feature in alphabetical order */
- 	board_ahci,
- 	board_ahci_ign_iferr,
-+	board_ahci_nomsi,
- 	board_ahci_noncq,
- 	board_ahci_nosntf,
- 	board_ahci_yes_fbs,
-@@ -121,6 +122,13 @@ static const struct ata_port_info ahci_port_info[] = {
- 		.udma_mask	= ATA_UDMA6,
- 		.port_ops	= &ahci_ops,
- 	},
-+	[board_ahci_nomsi] = {
-+		AHCI_HFLAGS	(AHCI_HFLAG_NO_MSI),
-+		.flags		= AHCI_FLAG_COMMON,
-+		.pio_mask	= ATA_PIO4,
-+		.udma_mask	= ATA_UDMA6,
-+		.port_ops	= &ahci_ops,
-+	},
- 	[board_ahci_noncq] = {
- 		AHCI_HFLAGS	(AHCI_HFLAG_NO_NCQ),
- 		.flags		= AHCI_FLAG_COMMON,
-@@ -475,10 +483,10 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1062 */
+diff --git a/drivers/power/bq2415x_charger.c b/drivers/power/bq2415x_charger.c
+index e384844a1ae1..260795c6901a 100644
+--- a/drivers/power/bq2415x_charger.c
++++ b/drivers/power/bq2415x_charger.c
+@@ -1579,8 +1579,15 @@ static int bq2415x_probe(struct i2c_client *client,
+ 	if (np) {
+ 		bq->notify_psy = power_supply_get_by_phandle(np, "ti,usb-charger-detection");
  
- 	/*
--	 * Samsung SSDs found on some macbooks.  NCQ times out.
--	 * https://bugzilla.kernel.org/show_bug.cgi?id=60731
-+	 * Samsung SSDs found on some macbooks.  NCQ times out if MSI is
-+	 * enabled.  https://bugzilla.kernel.org/show_bug.cgi?id=60731
- 	 */
--	{ PCI_VDEVICE(SAMSUNG, 0x1600), board_ahci_noncq },
-+	{ PCI_VDEVICE(SAMSUNG, 0x1600), board_ahci_nomsi },
- 
- 	/* Enmotus */
- 	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
+-		if (!bq->notify_psy)
+-			return -EPROBE_DEFER;
++		if (IS_ERR(bq->notify_psy)) {
++			dev_info(&client->dev,
++				"no 'ti,usb-charger-detection' property (err=%ld)\n",
++				PTR_ERR(bq->notify_psy));
++			bq->notify_psy = NULL;
++		} else if (!bq->notify_psy) {
++			ret = -EPROBE_DEFER;
++			goto error_2;
++		}
+ 	}
+ 	else if (pdata->notify_device)
+ 		bq->notify_psy = power_supply_get_by_name(pdata->notify_device);
 -- 
 2.1.0
 
