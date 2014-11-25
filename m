@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192AbaKYMA1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 07:00:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58109 "EHLO
+	id S1754328AbaKYMBR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 07:01:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58094 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608AbaKYKkh (ORCPT
+	with ESMTP id S1752704AbaKYKke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 05:40:37 -0500
+	Tue, 25 Nov 2014 05:40:34 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: George McCollister <george.mccollister@gmail.com>,
-        Jonathan Cameron <jic23@kernel.org>,
+Cc: Alexander Stein <alexander.stein@systec-electronic.com>,
+        Mark Brown <broonie@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 031/254] iio: as3935: allocate correct iio_device size
-Date: Tue, 25 Nov 2014 10:36:21 +0000
-Message-Id: <1416912004-5928-32-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 028/254] spi: fsl-dspi: Fix CTAR selection
+Date: Tue, 25 Nov 2014 10:36:18 +0000
+Message-Id: <1416912004-5928-29-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
 References: <1416912004-5928-1-git-send-email-luis.henriques@canonical.com>
@@ -28,31 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: George McCollister <george.mccollister@gmail.com>
+From: Alexander Stein <alexander.stein@systec-electronic.com>
 
-commit f73cde600d410ad4b31362a9c348016e40a146ea upstream.
+commit 5cc7b04740effa5cc0af53f434134b5859d58b73 upstream.
 
-Signed-off-by: George McCollister <george.mccollister@gmail.com>
-Acked-by: Hartmut Knaack <knaack.h@gmx.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+There are only 4 CTAR registers (CTAR0 - CTAR3) so we can only use the
+lower 2 bits of the chip select to select a CTAR register.
+SPI_PUSHR_CTAS used the lower 3 bits which would result in wrong bit values
+if the chip selects 4/5 are used. For those chip selects SPI_CTAR even
+calculated offsets of non-existing registers.
+
+Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/iio/proximity/as3935.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/spi/spi-fsl-dspi.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/iio/proximity/as3935.c b/drivers/iio/proximity/as3935.c
-index bf677bfe8eb2..d102210b207d 100644
---- a/drivers/iio/proximity/as3935.c
-+++ b/drivers/iio/proximity/as3935.c
-@@ -330,7 +330,7 @@ static int as3935_probe(struct spi_device *spi)
- 		return -EINVAL;
- 	}
+diff --git a/drivers/spi/spi-fsl-dspi.c b/drivers/spi/spi-fsl-dspi.c
+index 5021ddf03f60..fde711380d1a 100644
+--- a/drivers/spi/spi-fsl-dspi.c
++++ b/drivers/spi/spi-fsl-dspi.c
+@@ -46,7 +46,7 @@
  
--	indio_dev = devm_iio_device_alloc(&spi->dev, sizeof(st));
-+	indio_dev = devm_iio_device_alloc(&spi->dev, sizeof(*st));
- 	if (!indio_dev)
- 		return -ENOMEM;
+ #define SPI_TCR			0x08
  
+-#define SPI_CTAR(x)		(0x0c + (x * 4))
++#define SPI_CTAR(x)		(0x0c + (((x) & 0x3) * 4))
+ #define SPI_CTAR_FMSZ(x)	(((x) & 0x0000000f) << 27)
+ #define SPI_CTAR_CPOL(x)	((x) << 26)
+ #define SPI_CTAR_CPHA(x)	((x) << 25)
+@@ -70,7 +70,7 @@
+ 
+ #define SPI_PUSHR		0x34
+ #define SPI_PUSHR_CONT		(1 << 31)
+-#define SPI_PUSHR_CTAS(x)	(((x) & 0x00000007) << 28)
++#define SPI_PUSHR_CTAS(x)	(((x) & 0x00000003) << 28)
+ #define SPI_PUSHR_EOQ		(1 << 27)
+ #define SPI_PUSHR_CTCNT	(1 << 26)
+ #define SPI_PUSHR_PCS(x)	(((1 << x) & 0x0000003f) << 16)
 -- 
 2.1.0
 
