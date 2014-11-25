@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751708AbaKYJGA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 04:06:00 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:33275 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898AbaKYJFz (ORCPT
+	id S1751978AbaKYJGN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 04:06:13 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:57646 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751805AbaKYJGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 04:05:55 -0500
-Date: Tue, 25 Nov 2014 10:05:40 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com
-Subject: Re: [PATCH v3 00/41] linux: towards virtio-1 guest support
-Message-ID: <20141125100540.3b747d12.cornelia.huck@de.ibm.com>
-In-Reply-To: <20141124191205.GA8049@redhat.com>
-References: <1416829787-14252-1-git-send-email-mst@redhat.com>
-	<20141124194831.252318e4.cornelia.huck@de.ibm.com>
-	<20141124191205.GA8049@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112509-0005-0000-0000-000002363CF8
+	Tue, 25 Nov 2014 04:06:10 -0500
+Date: Tue, 25 Nov 2014 17:06:01 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Stephan Mueller <smueller@chronox.de>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: crypto: user - crypto_alg_match removal
+Message-ID: <20141125090601.GA6244@gondor.apana.org.au>
+References: <3095384.PkgHxCg8eG@tauon>
+ <20141124072246.GX6390@secunet.com>
+ <1480327.kK94DiIqOk@tachyon.chronox.de>
+ <20141125084225.GY6390@secunet.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141125084225.GY6390@secunet.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Nov 2014 21:12:05 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+On Tue, Nov 25, 2014 at 09:42:25AM +0100, Steffen Klassert wrote:
+>
+> Well, I think there is a small but important difference. If a user
+> requests a driver name that would match an algorithm name (i.e. cbc(aes)
+> instead of cbc(aes-asm)) crypto_alg_lookup() returns the algorithm with
+> the highest priority instead of telling that we don't have a driver with
+> the name cbc(aes).
 
-> On Mon, Nov 24, 2014 at 07:48:31PM +0100, Cornelia Huck wrote:
+Does this matter though? The current user interface is only used to
+query specific driver names which should never be equal to an
+algorithm name.  So doing so already invokes undefined behaviour.
 
-> > vring_transport_features() seems to knock off the version 1 bit (I
-> > wonder why I did not see that before, maybe VIRTIO_TRANSPORT_F_END had
-> > not been increased before?). If I add VIRTIO_F_VERSION_1 in this
-> > function, virtio-net and virtio-blk seem to work fine with version 1 on
-> > virtio-ccw (tested with my old virtio-1 qemu branch).
-> 
-> What if we just move VIRTIO_TRANSPORT_F_END back for now?
-> Does patch below fix it for you?
-
-It does.
-
-> 
-> > I'll try to do a bit of reviewing tomorrow.
-> 
-> BTW could you post your latest qemu bits please?
-
-I haven't done much work on virtio-1 lately, but I could rebase my
-existing branch to current qemu.
-
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
