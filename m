@@ -1,83 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751709AbaKZAy5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 19:54:57 -0500
-Received: from mga11.intel.com ([192.55.52.93]:9498 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751061AbaKZAy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 19:54:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,459,1413270000"; 
-   d="scan'208";a="638122941"
-Date: Wed, 26 Nov 2014 08:34:32 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: Juri Lelli <juri.lelli@arm.com>, Kirill Tkhai <ktkhai@parallels.com>,
-        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: Re: [PATCH v6 1/7] sched/deadline: fix start high-res preemption
- tick for a non-leftmost task
-Message-ID: <20141126003432.GA6852@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1416962647-76792-1-git-send-email-wanpeng.li@linux.intel.com>
- <1416962647-76792-3-git-send-email-wanpeng.li@linux.intel.com>
+	id S1751915AbaKZAzo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 19:55:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52668 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975AbaKZAzn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 19:55:43 -0500
+Date: Tue, 25 Nov 2014 16:55:42 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        rafael.j.wysocki@intel.com, pebolle@tiscali.nl,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: defconfig: Enable CONFIG_FHANDLE
+Message-ID: <20141126005542.GA14758@kroah.com>
+References: <1416958612-7448-1-git-send-email-richard@nod.at>
+ <20141125235108.GB3138@kroah.com>
+ <54751A95.60805@nod.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1416962647-76792-3-git-send-email-wanpeng.li@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <54751A95.60805@nod.at>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the subject by "Subject: [PATCH v6 2/7] sched/deadline: fix rt runtime corrupt when dl refuse a smaller bandwidth"
-On Wed, Nov 26, 2014 at 08:44:02AM +0800, Wanpeng Li wrote:
->Dl class will refuse the bandwidth being set to some value smaller
->than the currently allocated bandwidth in any of the root_domains
->through sched_rt_runtime_us and sched_rt_period_us. RT runtime will
->be set according to sched_rt_runtime_us before dl class verify if
->the new bandwidth is suitable in the case of !CONFIG_RT_GROUP_SCHED.
->
->However, rt runtime will be corrupt if dl refuse the new bandwidth
->since there is no undo to reset the rt runtime to the old value.
->
->This patch fix it by verifying new bandwidth for deadline in advance.
->
->Cc: Juri Lelli <juri.lelli@arm.com>
->Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->---
->v1 -> v2:
-> * move sched_dl_global_constraints before sched_rt_global_constraints,
->   and change the name of the former to sched_dl_global_validate().
->
-> kernel/sched/core.c | 6 +++---
-> 1 file changed, 3 insertions(+), 3 deletions(-)
->
->diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->index 603c462..981f075 100644
->--- a/kernel/sched/core.c
->+++ b/kernel/sched/core.c
->@@ -7808,7 +7808,7 @@ static int sched_rt_global_constraints(void)
-> }
-> #endif /* CONFIG_RT_GROUP_SCHED */
+On Wed, Nov 26, 2014 at 01:11:01AM +0100, Richard Weinberger wrote:
+> Am 26.11.2014 um 00:51 schrieb Greg KH:
+> > On Wed, Nov 26, 2014 at 12:36:52AM +0100, Richard Weinberger wrote:
+> >> systemd has a hard dependency on CONFIG_FHANDLE.
+> > 
+> > It's been this way for a very long time, why is this suddenly an issue?
 > 
->-static int sched_dl_global_constraints(void)
->+static int sched_dl_global_validate(void)
-> {
-> 	u64 runtime = global_rt_runtime();
-> 	u64 period = global_rt_period();
->@@ -7909,11 +7909,11 @@ int sched_rt_handler(struct ctl_table *table, int write,
-> 		if (ret)
-> 			goto undo;
+> Because nobody cared to create patch and just called systemd names? ;-)
+
+systemd documents what is needed in order for it to boot properly quite
+well, I don't see why this needs to be here.
+
+> > Do these files even make any sense anymore?  Who uses them?  The distros
+> > sure do not...
 > 
->-		ret = sched_rt_global_constraints();
->+		ret = sched_dl_global_validate();
-> 		if (ret)
-> 			goto undo;
-> 
->-		ret = sched_dl_global_constraints();
->+		ret = sched_rt_global_constraints();
-> 		if (ret)
-> 			goto undo;
-> 
->-- 
->1.9.1
+> Maybe I'm oldschool but I expect a defconfig kernel to be able to boot a
+> recent distro.
+
+You are :)
+How does the defconfig know your hardware in order to be able to find
+the root disk properly?  Video device?  USB keyboard?  and so on...
+
+I thought we were getting rid of the defconfig files entirely one of
+these days, didn't some arches already do this?
+
+greg k-h
