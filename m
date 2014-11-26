@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923AbaKZJjx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 04:39:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35011 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750834AbaKZJju (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 04:39:50 -0500
-Message-ID: <54759FE4.5030700@suse.cz>
-Date: Wed, 26 Nov 2014 10:39:48 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: kbuild: Fix forced rebuild after 'make dtbs'
-References: <CACRpkdYmJWy1_vs0tWRA7SvkQnvbXXKqf7pHpH5b5tZ6vR+KJg@mail.gmail.com> <1414961549-31666-1-git-send-email-jason@lakedaemon.net> <5474F78F.2060906@suse.cz> <20141125235150.GH3836@n2100.arm.linux.org.uk>
-In-Reply-To: <20141125235150.GH3836@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=windows-1252
+	id S1751300AbaKZJnh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 04:43:37 -0500
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:57672 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750875AbaKZJnf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 04:43:35 -0500
+Message-ID: <1416995014.29407.50.camel@x220>
+Subject: Re: [PATCH] x86: defconfig: Enable CONFIG_FHANDLE
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Richard Weinberger <richard@nod.at>
+Cc: Dave Jones <davej@redhat.com>, x86@kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, gregkh@linuxfoundation.org,
+        rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org
+Date: Wed, 26 Nov 2014 10:43:34 +0100
+In-Reply-To: <54751ACF.9050604@nod.at>
+References: <1416958612-7448-1-git-send-email-richard@nod.at>
+	 <20141125234326.GA10021@redhat.com> <54751ACF.9050604@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 26 Nov 2014 09:43:34.0763 (UTC) FILETIME=[724753B0:01D0095D]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-11-26 00:51, Russell King - ARM Linux wrote:
-> On Tue, Nov 25, 2014 at 10:41:35PM +0100, Michal Marek wrote:
->> Dne 2.11.2014 v 21:52 Jason Cooper napsal(a):
->>> After this patch:
->>>
->>>   f4d4ffc03efc kbuild: dtbs_install: new make target
->>>
->>> was added the kernel tree, Linus Walleij noticed that 'make dtbs' forced
->>> a following 'make zImage' to rebuild the entire tree, even though
->>> nothing had changed.  His report:
->>>
->>>   After this patch a while back I have observed the following behaviour
->>>   of the kernel build:
->>>
->>>   make zImage
->>>   make zImage
->>>   -> incremental build, just relink
->>>
->>>   make zImage
->>>   make dtbs
->>>   make zImage
->>>   -> The whole kernel gets rebuilt
->>>
->>>   So now if I happen to recompile my device trees, I suddenly want
->>>   the entire zImage to be rebuilt to? It's by definition not changes
->>>   that affect the kernel build :-(
->>>
->>>   I noticed this because my build scripts calls make dtbs && make
->>>   zImage, and started to rebuild absolutely everything all the time.
->>>
->>> To fix this, we make only the dtbs_install target depend on the prepare
->>> target.  It's needed to make sure KERNELVERSION is calculated prior to
->>> installing.
->>
->> If a mere 'make prepare' causes a rebuild of the whole kernel, then
->> there is something fishy in the ARM Makefiles. However, if you only need
->> the KERNELRELEASE variable, then you do not need to depend on prepare.
->> The main Makefile makes sure that silentoldconfig is ran and therefore
->> KERNELRELEASE set for all targets except make *config.
+On Wed, 2014-11-26 at 01:11 +0100, Richard Weinberger wrote:
+> Am 26.11.2014 um 00:43 schrieb Dave Jones:
+> > On Wed, Nov 26, 2014 at 12:36:52AM +0100, Richard Weinberger wrote:
+> >  > systemd has a hard dependency on CONFIG_FHANDLE.
+> >  > If you run systemd with CONFIG_FHANDLE=n it will somehow
+> >  > boot but fail to spawn a getty or other basic services.
+> >  > As systemd is now used by most x86 distributions it
+> >  > makes sense to enabled this by default and save kernel
+> >  > hackers a lot of value debugging time.
+> > 
+> > Perhaps also note this in the kconfig entry for it ?
 > 
-> Running make prepare and then re-running a build doesn't rebuild anything
-> for me.  However, I always build with O=  Also works if I do a make
-> dtbs too.  So, everything seems to work as expected here.
+> I'm not sure if this helps a lot.
+> But I can create patch (including for all other systemd dependencies).
 
-Good :).
+How would people find these notes: by grepping Kconfig files for
+"systemd"? Wouldn't it make more sense - if what Richard states is
+correct - to just enable those dependencies by default (provided they
+have no adverse effects for a, well, not too big group of x86 systems)?
 
 
-> I think this needs a bit more debugging to see why the whole kernel is
-> being rebuilt - the kernel build system has methods to tell you why stuff
-> is being built, which would be a good place to start.
+Paul Bolle
 
-Right, this is make V=2.
-
-Michal
