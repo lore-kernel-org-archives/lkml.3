@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172AbaKZWAo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 17:00:44 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:53910 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753058AbaKZWAm (ORCPT
+	id S1753176AbaKZWCG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 17:02:06 -0500
+Received: from www.linutronix.de ([62.245.132.108]:53319 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484AbaKZWCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 17:00:42 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] drm/rcar-du: fix error return code
-Date: Thu, 27 Nov 2014 00:01:07 +0200
-Message-ID: <2892924.lmSyP4ZfXU@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1416748278-22881-5-git-send-email-Julia.Lawall@lip6.fr>
-References: <1416748278-22881-1-git-send-email-Julia.Lawall@lip6.fr> <1416748278-22881-5-git-send-email-Julia.Lawall@lip6.fr>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 26 Nov 2014 17:02:04 -0500
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: linux-serial@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Tony Lindgren <tony@atomide.com>,
+        Sekhar Nori <nsekhar@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH] tty: serial: serial-omap: depend on !8250_omap
+Date: Wed, 26 Nov 2014 23:01:46 +0100
+Message-Id: <1417039306-2384-1-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 2.1.3
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julia,
+Technically speaking this is not required. If both are enabled then the
+Maikefile order says that 8250 one wins, the second is never probed.
 
-Thank you for the patch.
+If we choose to enable 8250_omap via defconfig then one might get supprised
+that his console isn't working anymore since nothing says use ttySx
+instead ttyOx.
+This patch _tries_ to bring this to the users' attention by not showing
+the serial-omap driver once the 8250 one is enabled. So the user might
+choose to use the help text which says that this driver (8250_omap)
+uses ttySx instead ttyOx.
 
-On Sunday 23 November 2014 14:11:17 Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Propagate the error code on failure.
-> 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> identifier ret; expression e1,e2;
-> @@
-> (
-> if (\(ret < 0\|ret != 0\))
->  { ... return ret; }
-> 
-> ret = 0
-> )
-> ... when != ret = e1
->     when != &ret
-> *if(...)
-> {
->   ... when != ret = e2
->       when forall
->  return ret;
-> }
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+This is my attempt to warn the defconfig user of the defconfig change
+(which did not yet happen). Any suggestions?
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+ drivers/tty/serial/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I've applied the patch to my tree and sent a pull request.
-
-> ---
->  drivers/gpu/drm/rcar-du/rcar_du_crtc.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/gpu/drm/rcar-du/rcar_du_crtc.c
-> b/drivers/gpu/drm/rcar-du/rcar_du_crtc.c index 088bfd8..23cc910 100644
-> --- a/drivers/gpu/drm/rcar-du/rcar_du_crtc.c
-> +++ b/drivers/gpu/drm/rcar-du/rcar_du_crtc.c
-> @@ -586,7 +586,7 @@ int rcar_du_crtc_create(struct rcar_du_group *rgrp,
-> unsigned int index)
-> 
->  	if (irq < 0) {
->  		dev_err(rcdu->dev, "no IRQ for CRTC %u\n", index);
-> -		return ret;
-> +		return irq;
->  	}
-> 
->  	ret = devm_request_irq(rcdu->dev, irq, rcar_du_crtc_irq, irqflags,
-
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index e71a28b4b94e..1b1bdf946fee 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -1125,7 +1125,7 @@ config SERIAL_OF_PLATFORM
+ 
+ config SERIAL_OMAP
+ 	tristate "OMAP serial port support"
+-	depends on ARCH_OMAP2PLUS
++	depends on ARCH_OMAP2PLUS && !SERIAL_8250_OMAP
+ 	select SERIAL_CORE
+ 	help
+ 	  If you have a machine based on an Texas Instruments OMAP CPU you
 -- 
-Regards,
-
-Laurent Pinchart
+2.1.3
 
