@@ -1,77 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352AbaKZVjk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 16:39:40 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:59234 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752741AbaKZVji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 16:39:38 -0500
-From: Dave Gerlach <d-gerlach@ti.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
-CC: Tony Lindgren <tony@atomide.com>, Benoit Cousson <bcousson@baylibre.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Gerlach <d-gerlach@ti.com>
-Subject: [RFC PATCH 1/3] Documentation: dt: add ti,am3352-emif bindings
-Date: Wed, 26 Nov 2014 15:39:05 -0600
-Message-ID: <8103cf8683cac55efdd690c61f44005289e62856.1417029919.git.d-gerlach@ti.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <cover.1417029919.git.d-gerlach@ti.com>
-References: <cover.1417029919.git.d-gerlach@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753239AbaKZVjZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 16:39:25 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:50985 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770AbaKZVjW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 16:39:22 -0500
+Date: Wed, 26 Nov 2014 16:39:20 -0500 (EST)
+Message-Id: <20141126.163920.2254225978631403023.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2014-11-26
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20141126194743.GA12284@tuxdriver.com>
+References: <20141126194743.GA12284@tuxdriver.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 26 Nov 2014 13:39:22 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the device tree bindings document for ti,am3352-emif which
-is used by the ti-emif-sram driver to provide low-level PM
-functionality.
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Wed, 26 Nov 2014 14:47:43 -0500
 
-Signed-off-by: Dave Gerlach <d-gerlach@ti.com>
----
- .../bindings/memory-controllers/ti/emif-sram.txt   | 31 ++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/memory-controllers/ti/emif-sram.txt
+> Please pull this little batch of fixes intended for the 3.18 stream...
+> 
+> For the iwlwifi one, Emmanuel says:
+> 
+> "Not all the firmware know how to handle the HOT_SPOT_CMD.
+> Make sure that the firmware will know this command before
+> sending it. This avoids a firmware crash."
+> 
+> Along with that, Larry sends a pair of rtlwifi fixes to address some
+> discrepancies from moving drivers out of staging.  Larry says:
+> 
+> "These two patches are needed to fix a regression introduced when
+> driver rtl8821ae was moved from staging to the regular wireless tree."
+> 
+> Please let me know if there are problems!
 
-diff --git a/Documentation/devicetree/bindings/memory-controllers/ti/emif-sram.txt b/Documentation/devicetree/bindings/memory-controllers/ti/emif-sram.txt
-new file mode 100644
-index 0000000..72d6db0
---- /dev/null
-+++ b/Documentation/devicetree/bindings/memory-controllers/ti/emif-sram.txt
-@@ -0,0 +1,31 @@
-+EMIF SRAM Driver
-+=====================
-+
-+TI AMx3 family of devices use a similar EMIF to other TI SoCs but have
-+different PM requirements. Late suspend code runs from SRAM and requires
-+save and restore of EMIF context and placing the SDRAM in and out of
-+self-refresh. Because of this, the ti-emif-sram driver introduces
-+relocatable PM function that can run from SRAM and place the EMIF in
-+the proper state for low-power mode transition.
-+
-+EMIF Device Node:
-+====================
-+A emif node is used to represent an EMIF IP instance within an SoC. The node
-+must contain a phandle to an sram node so the ti-emif-sram driver can allocate
-+space within the sram and copy the relocatable PM functions.
-+
-+Required properties:
-+--------------------
-+- compatible:		Should be "ti,am3352-emif" for AM33xx SoCs
-+- reg:			Contains the emif register address ranges.
-+- sram:			Phandle for generic sram node for the driver
-+			to use to copy PM functions to.
-+
-+Example:
-+--------
-+/* AM33xx */
-+emif: emif@4c000000 {
-+	compatible = "ti,am3352-emif";
-+	reg =	<0x4C000000 0x1000>;
-+	sram = <&ocmcram>;
-+};
--- 
-2.1.0
-
+Pulled John, thanks a lot!
