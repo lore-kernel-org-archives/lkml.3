@@ -1,67 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448AbaKZHnk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 02:43:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46013 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752113AbaKZHnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 02:43:39 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: mst@redhat.com, Jason Wang <jasowang@redhat.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: [PATCH net-next V2] tun/macvtap: use consume_skb() instead of kfree_skb() when needed
-Date: Wed, 26 Nov 2014 15:43:30 +0800
-Message-Id: <1416987810-23263-1-git-send-email-jasowang@redhat.com>
+	id S1752472AbaKZHom (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 02:44:42 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:52424 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752318AbaKZHok (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 02:44:40 -0500
+Date: Wed, 26 Nov 2014 08:44:35 +0100
+From: Pieter Smith <pieter@boesman.nl>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Josh Triplett <josh@joshtriplett.org>, fuse-devel@lists.sourceforge.net,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 4/7] fs/fuse: support compiling out splice
+Message-ID: <20141126074435.GA15377@smipidev>
+References: <1416899996-21315-1-git-send-email-pieter@boesman.nl>
+ <1416899996-21315-5-git-send-email-pieter@boesman.nl>
+ <20141125141713.GA9137@tucsk.suse.de>
+ <20141125194242.GA21633@smipidev>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141125194242.GA21633@smipidev>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To be more friendly with drop monitor, we should only call kfree_skb() when
-the packets were dropped and use consume_skb() in other cases.
-
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
-Changes from V1:
-- check the return value of tun/macvtap_put_user()
----
- drivers/net/macvtap.c | 5 ++++-
- drivers/net/tun.c     | 5 ++++-
- 2 files changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index 42a80d3..c171ab6 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -862,7 +862,10 @@ static ssize_t macvtap_do_read(struct macvtap_queue *q,
- 		}
- 		iov_iter_init(&iter, READ, iv, segs, len);
- 		ret = macvtap_put_user(q, skb, &iter);
--		kfree_skb(skb);
-+		if (ret < 0)
-+			kfree_skb(skb);
-+		else
-+			consume_skb(skb);
- 		break;
- 	}
- 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index ac53a73..a21c130 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1363,7 +1363,10 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
- 
- 	iov_iter_init(&iter, READ, iv, segs, len);
- 	ret = tun_put_user(tun, tfile, skb, &iter);
--	kfree_skb(skb);
-+	if (ret < 0)
-+		kfree_skb(skb);
-+	else
-+		consume_skb(skb);
- 
- 	return ret;
- }
--- 
-1.9.1
-
+On Tue, Nov 25, 2014 at 08:42:42PM +0100, Pieter Smith wrote:
+> On Tue, Nov 25, 2014 at 03:17:13PM +0100, Miklos Szeredi wrote:
+> > [Trimming CC.  Please do the same for other patches.  I for one am not
+> > interested in the general tinification discussion]
+> > 
+> > On Tue, Nov 25, 2014 at 08:19:39AM +0100, Pieter Smith wrote:
+> > > To implement splice support, fs/fuse makes use of nosteal_pipe_buf_ops. This
+> > > struct is exported by fs/splice. The goal of the larger patch set is to
+> > > completely compile out fs/splice, so uses of the exported struct need to be
+> > > compiled out along with fs/splice.
+> > > 
+> > > This patch therefore compiles out splice support in fs/fuse when
+> > > CONFIG_SYSCALL_SPLICE is undefined.
+> > > 
+> > > Signed-off-by: Pieter Smith <pieter@boesman.nl>
+> > > ---
+> > >  fs/fuse/dev.c | 9 +++++++--
+> > >  1 file changed, 7 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+> > > index ca88731..e984302 100644
+> > > --- a/fs/fuse/dev.c
+> > > +++ b/fs/fuse/dev.c
+> > > @@ -1191,8 +1191,9 @@ __releases(fc->lock)
+> > >   * request_end().  Otherwise add it to the processing list, and set
+> > >   * the 'sent' flag.
+> > >   */
+> > > -static ssize_t fuse_dev_do_read(struct fuse_conn *fc, struct file *file,
+> > > -				struct fuse_copy_state *cs, size_t nbytes)
+> > > +static ssize_t __maybe_unused
+> > > +fuse_dev_do_read(struct fuse_conn *fc, struct file *file,
+> > > +		 struct fuse_copy_state *cs, size_t nbytes)
+> > 
+> > fuse_dev_do_read() is definitely going to remain used.  So no point in adding
+> > __maybe_unused.
+> 
+> Off course, but at least gcc now also is aware that this is intentional and
+> nicely refrains from nagging you with a warning.
+> 
+My apologies. My response was too hasty. You are right. This should not be
+needed. I will revert this piece in v6 of this patch.
+> > >  {
+> > >  	int err;
+> > >  	struct fuse_req *req;
+> > > @@ -1291,6 +1292,7 @@ static ssize_t fuse_dev_read(struct kiocb *iocb, const struct iovec *iov,
+> > >  	return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
+> > >  }
+> > >  
+> > > +#ifdef CONFIG_SYSCALL_SPLICE
+> > >  static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
+> > >  				    struct pipe_inode_info *pipe,
+> > >  				    size_t len, unsigned int flags)
+> > > @@ -1368,6 +1370,9 @@ out:
+> > >  	kfree(bufs);
+> > >  	return ret;
+> > >  }
+> > > +#else /* CONFIG_SYSCALL_SPLICE */
+> > > +#define fuse_dev_splice_read NULL
+> > > +#endif
+> > 
+> > This looks fine.
+> > 
+> > Thanks,
+> > Miklos
+> > 
+> > >  
+> > >  static int fuse_notify_poll(struct fuse_conn *fc, unsigned int size,
+> > >  			    struct fuse_copy_state *cs)
+> > > -- 
+> > > 2.1.0
+> > > 
