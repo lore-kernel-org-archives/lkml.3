@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046AbaKZO5K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 09:57:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53804 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752018AbaKZO5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 09:57:08 -0500
-Date: Wed, 26 Nov 2014 16:56:42 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-scsi@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH v4 38/42] virtio_scsi: v1.0 support
-Message-ID: <20141126145642.GA9359@redhat.com>
-References: <1416933600-21398-1-git-send-email-mst@redhat.com>
- <1416933600-21398-39-git-send-email-mst@redhat.com>
- <20141126155103.1f6725ce.cornelia.huck@de.ibm.com>
+	id S1753194AbaKZO6R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 09:58:17 -0500
+Received: from static.88-198-71-155.clients.your-server.de ([88.198.71.155]:57140
+	"EHLO socrates.bennee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753012AbaKZO6Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 09:58:16 -0500
+References: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org> <1416931805-23223-3-git-send-email-alex.bennee@linaro.org> <20141126143122.GB3245@hawk.usersys.redhat.com>
+From: Alex =?utf-8?Q?Benn=C3=A9e?= <alex.bennee@linaro.org>
+To: Andrew Jones <drjones@redhat.com>
+Cc: kvm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kvmarm@lists.cs.columbia.edu, christoffer.dall@linaro.org,
+        marc.zyngier@arm.com, peter.maydell@linaro.org, agraf@suse.de,
+        Catalin Marinas <catalin.marinas@arm.com>, jan.kiszka@siemens.com,
+        Will Deacon <will.deacon@arm.com>,
+        open list <linux-kernel@vger.kernel.org>, dahi@linux.vnet.ibm.com,
+        r65777@freescale.com, pbonzini@redhat.com, bp@suse.de
+Subject: Re: [PATCH 2/7] KVM: arm: guest debug, define API headers
+In-reply-to: <20141126143122.GB3245@hawk.usersys.redhat.com>
+Date: Wed, 26 Nov 2014 14:58:16 +0000
+Message-ID: <87sih6knzr.fsf@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141126155103.1f6725ce.cornelia.huck@de.ibm.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 127.0.0.1
+X-SA-Exim-Mail-From: alex.bennee@linaro.org
+X-SA-Exim-Scanned: No (on socrates.bennee.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 03:51:03PM +0100, Cornelia Huck wrote:
-> On Tue, 25 Nov 2014 18:44:08 +0200
-> "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> 
-> > Note: for consistency, and to avoid sparse errors,
-> >   convert all fields, even those no longer in use
-> >   for virtio v1.0.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  include/linux/virtio_scsi.h | 32 +++++++++++++++-------------
-> >  drivers/scsi/virtio_scsi.c  | 51 ++++++++++++++++++++++++++++-----------------
-> >  2 files changed, 49 insertions(+), 34 deletions(-)
-> > 
-> 
-> > @@ -158,7 +158,7 @@ static void virtscsi_complete_cmd(struct virtio_scsi *vscsi, void *buf)
-> >  		sc, resp->response, resp->status, resp->sense_len);
-> > 
-> >  	sc->result = resp->status;
-> > -	virtscsi_compute_resid(sc, resp->resid);
-> > +	virtscsi_compute_resid(sc, __virtio32_to_cpu(vscsi->vdev, resp->resid));
-> 
-> Confused. Don't you need the non-underscore versions if you pass in a
-> vdev as first parameter?
 
-Ouch, this built because vscsi->vdev is true.
-thanks!
+Andrew Jones <drjones@redhat.com> writes:
 
-> >  	switch (resp->response) {
-> >  	case VIRTIO_SCSI_S_OK:
-> >  		set_host_byte(sc, DID_OK);
+> On Tue, Nov 25, 2014 at 04:10:00PM +0000, Alex Bennée wrote:
+>> This commit defines the API headers for guest debugging. There are two
+>> architecture specific debug structures:
+<snip>
+>> +/* Architecture related debug defines - upper 16 bits of
+>> + * kvm_guest_debug->control
+>> + */
+>> +#define KVM_GUESTDBG_USE_SW_BP_SHIFT	16
+>> +#define KVM_GUESTDBG_USE_SW_BP		(1 << KVM_GUESTDBG_USE_SW_BP_SHIFT)
+>> +#define KVM_GUESTDBG_USE_HW_BP_SHIFT	17
+>> +#define KVM_GUESTDBG_USE_HW_BP		(1 << KVM_GUESTDBG_USE_HW_BP_SHIFT)
+>> +
+>
+> I see this are defined in arch/x86/include/uapi/asm/kvm.h,
+> so you needed to reproduce them here, but shouldn't they
+> be promoted to include/uapi/linux/kvm.h instead?
+
+Well if we move them to common uapi we either restrict the $ARCH
+specific options that don't have SW/HW BKPTS (would be weird but...) or
+make them generic in the lower 16 bits (breaks API).
+
+But in principle I have no objection if other don't.
+
+-- 
+Alex Bennée
