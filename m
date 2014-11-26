@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462AbaKZQjU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 11:39:20 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39514 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaKZQjS (ORCPT
+	id S1753652AbaKZQjj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 11:39:39 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:40301 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753510AbaKZQjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 11:39:18 -0500
-Date: Wed, 26 Nov 2014 16:37:02 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Gyungoh Yoo <gyungoh@gmail.com>
-Cc: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
-        cooloney@gmail.com, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
-        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
-        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
-        jic23@kernel.org
-Message-ID: <20141126163702.GI7712@sirena.org.uk>
-References: <1416898986-24530-1-git-send-email-jack.yoo@skyworksinc.com>
- <1416898986-24530-8-git-send-email-jack.yoo@skyworksinc.com>
- <20141125121916.GW7712@sirena.org.uk>
- <20141126014007.GA2876@jack-ThinkPad-T520>
+	Wed, 26 Nov 2014 11:39:37 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gPUs6siww+AY7XMI"
-Content-Disposition: inline
-In-Reply-To: <20141126014007.GA2876@jack-ThinkPad-T520>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v8 7/8] regulator: sky81452: Modify Device Tree structure
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1408555596.16955.12.camel@hastur.hellion.org.uk>
+References: <1408552838-4032-1-git-send-email-konrad.wilk@oracle.com>
+ <1408552838-4032-2-git-send-email-konrad.wilk@oracle.com> <1408555132.16955.5.camel@hastur.hellion.org.uk>
+ <20140820172029.GA5089@laptop.dumpdata.com> <1408555596.16955.12.camel@hastur.hellion.org.uk>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Wed, 26 Nov 2014 11:39:16 -0500
+X-Google-Sender-Auth: jxw6Sc4rdLjyUywu7hhHdb1yX84
+Message-ID: <CAB=NE6VS9hbk4nTRM7Gw_K6TChiEzDPoPGQ616EK68ASCN8BXQ@mail.gmail.com>
+Subject: Re: [Xen-devel] [PATCH] xen-pciback: Add MODULE_ALIAS for pciback.
+To: Ian Campbell <ian.campbell@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 20, 2014 at 1:26 PM, Ian Campbell <ian.campbell@citrix.com> wrote:
+> On Wed, 2014-08-20 at 13:20 -0400, Konrad Rzeszutek Wilk wrote:
+>> On Wed, Aug 20, 2014 at 06:18:52PM +0100, Ian Campbell wrote:
+>> > On Wed, 2014-08-20 at 12:40 -0400, Konrad Rzeszutek Wilk wrote:
+>> > > The rest of the Xen device drivers use an module alias
+>> > > to load devices when they shop up in XenBus.
+>> >
+>> > "show".
+>> > >
+>> > >  MODULE_LICENSE("Dual BSD/GPL");
+>> > >  MODULE_ALIAS("xen-backend:pci");
+>> > > +MODULE_ALIAS("xen:pci");
+>> >
+>> > Isn't that xen-backend:pci already the right thing for a backend device?
+>> > xen: is for frontends, I thought.
+>>
+>> Oh, you are right. Cool! Thanks!
+>
+> The patch turned out to be even more trivial than expected ;-)
 
---gPUs6siww+AY7XMI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Is this what we expected to be pending work for the item "device
+hotplug (MODULE_ALIAS)" on the upstream TODO list?
 
-On Wed, Nov 26, 2014 at 10:40:07AM +0900, Gyungoh Yoo wrote:
-> On Tue, Nov 25, 2014 at 12:19:16PM +0000, Mark Brown wrote:
-> > On Tue, Nov 25, 2014 at 04:03:05PM +0900, gyungoh@gmail.com wrote:
-> > > From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+http://wiki.xenproject.org/wiki/XenParavirtOps#Upstream_delta_details
 
-> > This doesn't apply, please check and resend.
+This was simply to just auto load that driver when needed right?
 
-> Could you please explain why this doesn't?
+Also as for actual PCI device hotplug support:
 
-When I tried to apply it to my topic/sky81452 branch git am barfed on
-it, presumably because the code you based it on is different to that
-branch.
+http://wiki.xen.org/wiki/Xen_PCI_Passthrough#Hotplug
 
---gPUs6siww+AY7XMI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I don't think we need a delta for that do we?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUdgGtAAoJECTWi3JdVIfQ0AIH/1KywIS5SmzYpSqMNV/Saco7
-9PP38VjEPiEN7YvRCn9HliuZ932X6x3SXPjObzLtlx4D3nVD+llYqEVHl6dKMgV4
-vRAFjRt6fkd2MVm+FRvKH2C/1hiBemXVYruUCLeaql8orN0D0ziAmuhSVgaMUXrp
-hSJBnEODoNSdetacOU3eG6ykIjyFA+dqygSc1CZKyN55n4hbZLI1fku5GvbdqaVP
-e1ytWy3EzLFazIMxuitAaXSejGDLdnKCT0B75ho0i0saqweFsQBsI6uWPd/tlbLU
-UeSym4pLvm8tK6VvzDp1WMBQdmmzXJWfKKcsrE5vbim8ujdGVukLQ1V2bYnMEmI=
-=hNu3
------END PGP SIGNATURE-----
-
---gPUs6siww+AY7XMI--
+ Luis
