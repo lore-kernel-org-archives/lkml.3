@@ -1,68 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbaKZWRg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 17:17:36 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:41898 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114AbaKZWRe (ORCPT
+	id S1752898AbaKZWTK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 17:19:10 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:63885 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811AbaKZWTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 17:17:34 -0500
-Date: Wed, 26 Nov 2014 14:17:32 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Qiang Huang <h.huangqiang@huawei.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [patch] mm, oom: remove gfp helper function
-Message-ID: <alpine.DEB.2.10.1411261416480.13014@chino.kir.corp.google.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 26 Nov 2014 17:19:08 -0500
+Date: Wed, 26 Nov 2014 22:19:03 +0000
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ian Campbell <ijc@debian.org>, Andrew Lunn <andrew@lunn.ch>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>
+Subject: Re: [PATCH v2 1/2] of: add optional options parameter to
+ of_find_node_by_path()
+Message-ID: <20141126221903.GI2361@bivouac.eciton.net>
+References: <1417023640-23464-1-git-send-email-leif.lindholm@linaro.org>
+ <1417023640-23464-2-git-send-email-leif.lindholm@linaro.org>
+ <CACxGe6tQ5rWzCUcS+_fFY+rjEyua2khApAoCVKpTuJAghU=N_w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACxGe6tQ5rWzCUcS+_fFY+rjEyua2khApAoCVKpTuJAghU=N_w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit b9921ecdee66 ("mm: add a helper function to check may oom
-condition") was added because the gfp criteria for oom killing was
-checked in both the page allocator and memcg.
+On Wed, Nov 26, 2014 at 09:06:33PM +0000, Grant Likely wrote:
+> On Wed, Nov 26, 2014 at 5:40 PM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
+> > Update of_find_node_by_path():
+> > 1) Ignore any part of the path beyond and including the ':' separator.
+> > 2) Set the new provided pointer argument to the beginning of the string
+> >    following the ':' separator.
+> >
+> > Coccinelle fixup using:
+> >
+> > @@
+> > expression E1;
+> > @@
+> >
+> > - of_find_node_by_path(E1)
+> > + of_find_node_by_path(E1, NULL)
+> >
+> > drivers/of/resolver.c manually updated, since spatch fails to parse
+> > it correctly.
+> >
+> > Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+> 
+> Okay, so you're probably going to kill me for the next comment...
+> After actually looking at this I can see that it's going to be a hard
+> patch to merge because of conflicts. It will need to be merged at the
+> end of a merge window to catch all the users, but that will mean that
+> the important part of the patch won't be able to be queued up in
+> linux-next.
 
-That was true for about nine months, but then commit 0029e19ebf84 ("mm:
-memcontrol: remove explicit OOM parameter in charge path") removed the
-memcg usecase.
+Not to worry - I'll simply keep this to guilt trip you with at some
+point in the future.
 
-Fold the implementation into its only caller.
+Seeing get_maintainer take 1m42s on a quad-i7 with the entire kernel
+tree in disk cache was nearly reward enough :)
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- include/linux/oom.h | 5 -----
- mm/page_alloc.c     | 2 +-
- 2 files changed, 1 insertion(+), 6 deletions(-)
+> So you were right the first time around. Create a new function name
+> that adds the extra argument and make of_find_node_by_path() a static
+> inline wrapper. That way I can queue it up into linux-next immediately
+> and the cleanup across the tree can be generated and submitted at the
+> very end of the merge window.
 
-diff --git a/include/linux/oom.h b/include/linux/oom.h
---- a/include/linux/oom.h
-+++ b/include/linux/oom.h
-@@ -85,11 +85,6 @@ static inline void oom_killer_enable(void)
- 	oom_killer_disabled = false;
- }
- 
--static inline bool oom_gfp_allowed(gfp_t gfp_mask)
--{
--	return (gfp_mask & __GFP_FS) && !(gfp_mask & __GFP_NORETRY);
--}
--
- extern struct task_struct *find_lock_task_mm(struct task_struct *p);
- 
- /* sysctls */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2706,7 +2706,7 @@ rebalance:
- 	 * running out of options and have to consider going OOM
- 	 */
- 	if (!did_some_progress) {
--		if (oom_gfp_allowed(gfp_mask)) {
-+		if ((gfp_mask & __GFP_FS) && !(gfp_mask & __GFP_NORETRY)) {
- 			if (oom_killer_disabled)
- 				goto nopage;
- 			/* Coredumps can quickly deplete all memory reserves */
+That will also make it a lot less invasive to potentially get it
+backported to debian-kernel, so we can have this support for the
+Jessie installer.
+
+I'll whip that up tomorrow morning.
+
+/
+    Leif
+
+> > @@ -380,7 +380,8 @@ static inline struct device_node *of_find_matching_node_and_match(
+> >         return NULL;
+> >  }
+> >
+> > -static inline struct device_node *of_find_node_by_path(const char *path)
+> > +static inline struct device_node *of_find_node_by_path(const char *path,
+> > +       char **opts)
+> 
+> const char **opts
+> 
+> >  {
+> >         return NULL;
+> >  }
+> > diff --git a/sound/soc/fsl/fsl_ssi.c b/sound/soc/fsl/fsl_ssi.c
+> > index e695517..0056963 100644
+> > --- a/sound/soc/fsl/fsl_ssi.c
+> > +++ b/sound/soc/fsl/fsl_ssi.c
+> > @@ -1427,7 +1427,7 @@ static int fsl_ssi_probe(struct platform_device *pdev)
+> >          * device tree.  We also pass the address of the CPU DAI driver
+> >          * structure.
+> >          */
+> > -       sprop = of_get_property(of_find_node_by_path("/"), "compatible", NULL);
+> > +       sprop = of_get_property(of_find_node_by_path("/", NULL), "compatible", NULL);
+> >         /* Sometimes the compatible name has a "fsl," prefix, so we strip it. */
+> >         p = strrchr(sprop, ',');
+> >         if (p)
+> > --
+> > 1.7.10.4
+> >
