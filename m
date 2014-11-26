@@ -1,161 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751149AbaKZI2M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 03:28:12 -0500
-Received: from mail-oi0-f53.google.com ([209.85.218.53]:58963 "EHLO
-	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaKZI2L (ORCPT
+	id S1751208AbaKZI2o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 03:28:44 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:50877 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834AbaKZI2m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 03:28:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <5475628D.2080301@gmail.com>
-References: <1415033687-23294-1-git-send-email-vincent.guittot@linaro.org>
- <1415033687-23294-6-git-send-email-vincent.guittot@linaro.org>
- <5473E867.6030607@gmail.com> <CAKfTPtCSJhTR2=1_g2UVxeEEKocBs+ouco4Z5SRO2oRSJ-O2mA@mail.gmail.com>
- <5475628D.2080301@gmail.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Wed, 26 Nov 2014 09:27:50 +0100
-Message-ID: <CAKfTPtB_SwusyQF=0L1t7fckUMKBWseXOmSoc16xqfmGO_hNLw@mail.gmail.com>
-Subject: Re: [PATCH v9 05/10] sched: make scale_rt invariant with frequency
-To: Wanpeng Li <kernellwp@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 26 Nov 2014 03:28:42 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-0a-54758f38a7be
+Date: Wed, 26 Nov 2014 09:28:29 +0100
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, Linux PM list <linux-pm@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        Caesar Wang <caesar.wang@rock-chips.com>
+Subject: Re: [PATCH v2 1/4] thermal: of: Extend of-thermal.c to provide number
+ of trip points
+Message-id: <20141126092829.41127e8b@amdc2363>
+In-reply-to: <20141125060421.GA13591@developer>
+References: <1412872737-624-1-git-send-email-l.majewski@samsung.com>
+ <1416500488-7232-1-git-send-email-l.majewski@samsung.com>
+ <1416500488-7232-2-git-send-email-l.majewski@samsung.com>
+ <20141125060421.GA13591@developer>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCIsWRmVeSWpSXmKPExsVy+t9jQV2L/tIQg8NrJC0er1nMZLFxxnpW
+	iy+f+9gs5l+5xmqx5q+SxZtH3BaXd81hs/jce4TR4snCM0wWD65OY7N48hCo6tXBNhaLn7vm
+	sTjweuycdZfdY/Gel0we66a9ZfbobX7H5vF31n4Wj53fG9g9+rasYvT4vEnOY+Pc0ADOKC6b
+	lNSczLLUIn27BK6MSw8a2Qs2SVbMmcbWwLhXpIuRk0NCwERiwreFTBC2mMSFe+vZuhi5OIQE
+	pjNK/Px1mAXC+cUo0X7zHytIFYuAqsTkk33sIDabgJ7E57tPwbpFBLQkTlzaDmYzC/xhlri5
+	Asjm4BAWiJe49DofxOQFKt/0sRrE5BTQl2j8rgEx/SGjxLRHZ1lAOvkFJCXa//1ghrjHTuLc
+	pw1gm3gFBCV+TL7HAjFdXWLSvEXMELa2xJN3F1gnMArOQlI2C0nZLCRlCxiZVzGKphYkFxQn
+	peca6hUn5haX5qXrJefnbmIEx9UzqR2MKxssDjEKcDAq8fBGSJWGCLEmlhVX5h5ilOBgVhLh
+	NakDCvGmJFZWpRblxxeV5qQWH2KU5mBREue9cTM3REggPbEkNTs1tSC1CCbLxMEp1cC46PmO
+	Cy+/10kpx31d96d2uvWThYzbo5arnNfacLCnZNWW47ceFHCyHL/D87a69PqFvF/Tju89GDT3
+	Zf0KvUVLPT4Lbeue6XP0Htv7XXHrpv3dmTCBfa1OeLfZkeVTF/cr6VsWayXwXs5I9HPfN9u0
+	puVIb3Y+q65/0+PtBVwXrjha8KRFKU5vUGIpzkg01GIuKk4EAJ5N8L2nAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 November 2014 at 06:18, Wanpeng Li <kernellwp@gmail.com> wrote:
-> Hi Vincent,
->
-> On 11/25/14, 9:52 PM, Vincent Guittot wrote:
->>
->> On 25 November 2014 at 03:24, Wanpeng Li <kernellwp@gmail.com> wrote:
->>>
->>> Hi Vincent,
->>> On 11/4/14, 12:54 AM, Vincent Guittot wrote:
->>>>
->>>> The average running time of RT tasks is used to estimate the remaining
->>>> compute
->>>> capacity for CFS tasks. This remaining capacity is the original capacity
->>>> scaled
->>>> down by a factor (aka scale_rt_capacity). This estimation of available
->>>> capacity
->>>> must also be invariant with frequency scaling.
->>>>
->>>> A frequency scaling factor is applied on the running time of the RT
->>>> tasks
->>>> for
->>>> computing scale_rt_capacity.
->>>>
->>>> In sched_rt_avg_update, we scale the RT execution time like below:
->>>> rq->rt_avg += rt_delta * arch_scale_freq_capacity() >>
->>>> SCHED_CAPACITY_SHIFT
->>>>
->>>> Then, scale_rt_capacity can be summarized by:
->>>> scale_rt_capacity = SCHED_CAPACITY_SCALE -
->>>>                  ((rq->rt_avg << SCHED_CAPACITY_SHIFT) / period)
->>>
->>>
->>> The 'period' aka 'total' in the scale_rt_capacity(), why it is
->>> sched_avg_period() + delta instead of sched_avg_period()?
->>
->> The default value of sched_avg_period is 1sec which is "long" so we
->> take into account the time consumed by RT tasks in the ongoing period
->> .
->
->
-> Do you mean 'sched_avg_period() + delta' should be replaced by 'delta' since
-> sched_avg_period() is "long"?
+Hi Eduardo,
 
-No, Both are useful. sched_avg_period is useful to keep the value more
-stable across the time. Without sched_avg_period,  it will be too much
-reactive  ( especially at the beg of a period ).
+> 
+> Lukasz,
+> 
+> On Thu, Nov 20, 2014 at 05:21:25PM +0100, Lukasz Majewski wrote:
+> > This patch extends the of-thermal.c to provide information about
+> > number of available trip points.
+> > 
+> > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> > ---
+> > Changes for v2:
+> > - Provide detailed (doxygen like) description of the
+> > of_thermal_get_ntrips() method
+> > - Check for data pointer not being NULL
+> > ---
+> >  drivers/thermal/of-thermal.c   | 20 ++++++++++++++++++++
+> >  drivers/thermal/thermal_core.h |  5 +++++
+> >  2 files changed, 25 insertions(+)
+> > 
+> > diff --git a/drivers/thermal/of-thermal.c
+> > b/drivers/thermal/of-thermal.c index b7982f0..7170822 100644
+> > --- a/drivers/thermal/of-thermal.c
+> > +++ b/drivers/thermal/of-thermal.c
+> > @@ -112,6 +112,26 @@ static int of_thermal_get_temp(struct
+> > thermal_zone_device *tz, return
+> > data->ops->get_temp(data->sensor_data, temp); }
+> >  
+> > +/**
+> > + * of_thermal_get_ntrips - function to export number of available
+> > trip
+> > + *			   points.
+> > + * @tz: pointer to a thermal zone
+> > + *
+> > + * This function is a globally visible wrapper to get number of
+> > trip points
+> > + * stored in the local struct __thermal_zone
+> > + *
+> > + * Return: number of available trip points, -ENODEV when data not
+> > available
+> > + */
+> > +int of_thermal_get_ntrips(struct thermal_zone_device *tz)
+> > +{
+> > +	struct __thermal_zone *data = tz->devdata;
+> > +
+> > +	if (!data || IS_ERR(data))
+> > +		return -ENODEV;
+> > +
+> > +	return data->ntrips;
+> > +}
+> > +
+> 
+> Missing
+> EXPORT_SYMBOL_GPL(of_thermal_get_ntrips);
 
->
-> Regards,
-> Wanpeng Li
->
->
->>
->>> Regards,
->>> Wanpeng Li
->>>
->>>
->>>> We can optimize by removing right and left shift in the computation of
->>>> rq->rt_avg
->>>> and scale_rt_capacity
->>>>
->>>> The call to arch_scale_frequency_capacity in the rt scheduling path
->>>> might
->>>> be
->>>> a concern for RT folks because I'm not sure whether we can rely on
->>>> arch_scale_freq_capacity to be short and efficient ?
->>>>
->>>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->>>> ---
->>>>    kernel/sched/fair.c  | 17 +++++------------
->>>>    kernel/sched/sched.h |  4 +++-
->>>>    2 files changed, 8 insertions(+), 13 deletions(-)
->>>>
->>>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->>>> index a5039da..b37c27b 100644
->>>> --- a/kernel/sched/fair.c
->>>> +++ b/kernel/sched/fair.c
->>>> @@ -5785,7 +5785,7 @@ unsigned long __weak
->>>> arch_scale_cpu_capacity(struct
->>>> sched_domain *sd, int cpu)
->>>>    static unsigned long scale_rt_capacity(int cpu)
->>>>    {
->>>>          struct rq *rq = cpu_rq(cpu);
->>>> -       u64 total, available, age_stamp, avg;
->>>> +       u64 total, used, age_stamp, avg;
->>>>          s64 delta;
->>>>          /*
->>>> @@ -5801,19 +5801,12 @@ static unsigned long scale_rt_capacity(int cpu)
->>>>          total = sched_avg_period() + delta;
->>>>    -     if (unlikely(total < avg)) {
->>>> -               /* Ensures that capacity won't end up being negative */
->>>> -               available = 0;
->>>> -       } else {
->>>> -               available = total - avg;
->>>> -       }
->>>> +       used = div_u64(avg, total);
->>>>    -     if (unlikely((s64)total < SCHED_CAPACITY_SCALE))
->>>> -               total = SCHED_CAPACITY_SCALE;
->>>> +       if (likely(used < SCHED_CAPACITY_SCALE))
->>>> +               return SCHED_CAPACITY_SCALE - used;
->>>>    -     total >>= SCHED_CAPACITY_SHIFT;
->>>> -
->>>> -       return div_u64(available, total);
->>>> +       return 1;
->>>>    }
->>>>      static void update_cpu_capacity(struct sched_domain *sd, int cpu)
->>>> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
->>>> index c34bd11..fc5b152 100644
->>>> --- a/kernel/sched/sched.h
->>>> +++ b/kernel/sched/sched.h
->>>> @@ -1312,9 +1312,11 @@ static inline int hrtick_enabled(struct rq *rq)
->>>>      #ifdef CONFIG_SMP
->>>>    extern void sched_avg_update(struct rq *rq);
->>>> +extern unsigned long arch_scale_freq_capacity(struct sched_domain *sd,
->>>> int cpu);
->>>> +
->>>>    static inline void sched_rt_avg_update(struct rq *rq, u64 rt_delta)
->>>>    {
->>>> -       rq->rt_avg += rt_delta;
->>>> +       rq->rt_avg += rt_delta * arch_scale_freq_capacity(NULL,
->>>> cpu_of(rq));
->>>>          sched_avg_update(rq);
->>>>    }
->>>>    #else
->>>
->>>
->
+OK
+
+> 
+> >  static int of_thermal_get_trend(struct thermal_zone_device *tz,
+> > int trip, enum thermal_trend *trend)
+> >  {
+> > diff --git a/drivers/thermal/thermal_core.h
+> > b/drivers/thermal/thermal_core.h index d15d243..c3c7b82 100644
+> > --- a/drivers/thermal/thermal_core.h
+> > +++ b/drivers/thermal/thermal_core.h
+> > @@ -89,9 +89,14 @@ static inline void
+> > thermal_gov_user_space_unregister(void) {} #ifdef CONFIG_THERMAL_OF
+> >  int of_parse_thermal_zones(void);
+> >  void of_thermal_destroy_zones(void);
+> > +int of_thermal_get_ntrips(struct thermal_zone_device *);
+> >  #else
+> >  static inline int of_parse_thermal_zones(void) { return 0; }
+> >  static inline void of_thermal_destroy_zones(void) { }
+> > +static inline int of_thermal_get_ntrips(struct thermal_zone_device
+> > *)
+> 
+> You need to declare the parameter name with a name
+> ---------------^ .
+> 
+> > +{
+> 
+> This produces a compilation error if CONFIG_THERMAL_OF is not set:
+> In file included from drivers/thermal/step_wise.c:28:0:
+> drivers/thermal/thermal_core.h: In function ‘of_thermal_get_ntrips’:
+> drivers/thermal/thermal_core.h:96:48: error: parameter name omitted
+>  static inline int of_thermal_get_ntrips(struct thermal_zone_device *)
+> 
+
+Good point. Thanks for check.
+
+> 
+> 
+> > +	return 0;
+> > +}
+> >  #endif
+> >  
+> >  #endif /* __THERMAL_CORE_H__ */
+> > -- 
+> > 2.0.0.rc2
+> > 
+
+
+
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
