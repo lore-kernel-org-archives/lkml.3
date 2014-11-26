@@ -1,107 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869AbaKZAed (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 19:34:33 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:39821 "EHLO gloria.sntech.de"
+	id S1751555AbaKZAlf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 19:41:35 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:39850 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751636AbaKZAeb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 19:34:31 -0500
+	id S1750975AbaKZAld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 19:41:33 -0500
 From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Dave Airlie <airlied@gmail.com>, Joerg Roedel <jroedel@suse.de>
-Cc: Mark Yao <mark.yao@rock-chips.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>, linux-api@vger.kernel.org,
-        linux-rockchip@lists.infradead.org,
-        Douglas Anderson <dianders@chromium.org>,
-        =?ISO-8859-1?Q?St=E9phane?= Marchesin <marcheu@chromium.org>,
-        dbehr@chromium.org, Olof Johansson <olof@lixom.net>,
-        Daniel Kurtz <djkurtz@chromium.org>, Eddie Cai <cf@rock-chips.com>,
-        simon xue <xxm@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Kever Yang <kever.yang@rock-chips.com>, yxj@rock-chips.com,
-        xw@rock-chips.com
-Subject: Re: [PATCH v14 0/3] Add drm driver for Rockchip Socs
-Date: Wed, 26 Nov 2014 01:37:51 +0100
-Message-ID: <1557742.FTdLsE0bVs@diego>
+To: Doug Anderson <dianders@chromium.org>
+Cc: cym@rock-chips.com, Mike Turquette <mturquette@linaro.org>,
+        Derek Basehore <dbasehore@chromium.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        kever.yang@rock-chips.com, mark.yao@rock-chips.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] clk: rockchip: add binding ID for DMC (memory controller) clocks on rk3288
+Date: Wed, 26 Nov 2014 01:45:12 +0100
+Message-ID: <1717801.sWHeWsmqUi@diego>
 User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <CAPM=9tzvvb5U+8KaCO+K6CJi=rwWOkoW+4ZSFW_Oo9gTncvkWA@mail.gmail.com>
-References: <1416447994-9921-1-git-send-email-mark.yao@rock-chips.com> <23617908.6oA5uRuO3l@diego> <CAPM=9tzvvb5U+8KaCO+K6CJi=rwWOkoW+4ZSFW_Oo9gTncvkWA@mail.gmail.com>
+In-Reply-To: <1416960783-25119-1-git-send-email-dianders@chromium.org>
+References: <1416960783-25119-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg, Dave,
-
-Am Mittwoch, 26. November 2014, 09:12:56 schrieb Dave Airlie:
-> On 26 November 2014 at 02:38, Heiko Stübner <heiko@sntech.de> wrote:
-> > Mark,
-> > 
-> > Am Donnerstag, 20. November 2014, 09:46:34 schrieb Mark Yao:
-> >> This a series of patches is a DRM Driver for Rockchip Socs, add support
-> >> for vop devices. Future patches will add additional encoders/connectors,
-> >> such as eDP, HDMI.
-> >> 
-> >> The basic "crtc" for rockchip is a "VOP" - Video Output Processor.
-> >> the vop devices found on Rockchip rk3288 Soc, rk3288 soc have two similar
-> >> Vop devices. Vop devices support iommu mapping, we use dma-mapping API
-> >> with
-> >> ARM_DMA_USE_IOMMU.
-> > 
-> > it looks like everybody is more or less happy with this version - in past
-> > versions responses voicing concerns where quite swift.
-> > 
-> > As David requested a pull request the last time, it might be time to do
-> > so, so that we maybe still reach 3.19.
+Am Dienstag, 25. November 2014, 16:13:02 schrieb Doug Anderson:
+> From: Jeff Chen <cym@rock-chips.com>
 > 
-> I need the iommu changes the drm driver depends on in a stable
-> maintainer git tree,
-> I'm not pulling in code I can't build.
+> The DMC clocks need to be turned off at runtime, so we should have IDs
+> so we can export them.
+> 
+> Signed-off-by: Jeff Chen <cym@rock-chips.com>
+> [dianders: split into two patches; adjusted commit msg]
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-Joerg, is your arm/rockchip branch [0] considered stable?
+both patches look ok to me and I'll probably pick them up tomorrow.
 
-[0] https://git.kernel.org/cgit/linux/kernel/git/joro/iommu.git/log/?h=arm/rockchip
+Just as handling question, do you plan on sending dts changes using these 
+clocks in time for 3.19 [i.e. in the next couple of days]?
 
+We have currently three clock patches/series adding new clock ids [this one, 
+the mmc phases and Sonny's i2s_clkout] and I'm trying to dertermine if I need 
+a shared branch for those.
 
-> I'm happy if the rockchip drm pull stays static and I can pull it in
-> once the iommu bits
-> are done.
-
-While testing this I noticed a quite big kconfig warning
-(on both 3.18-rc1 and 3.18-rc6):
-
-drivers/video/fbdev/Kconfig:5:error: recursive dependency detected!
-drivers/video/fbdev/Kconfig:5:  symbol FB is selected by DRM_KMS_FB_HELPER
-drivers/gpu/drm/Kconfig:34:     symbol DRM_KMS_FB_HELPER is selected by DRM_ROCKCHIP
-drivers/gpu/drm/rockchip/Kconfig:1:     symbol DRM_ROCKCHIP depends on ARM_DMA_USE_IOMMU
-arch/arm/Kconfig:95:    symbol ARM_DMA_USE_IOMMU is selected by VIDEO_OMAP3
-drivers/media/platform/Kconfig:96:      symbol VIDEO_OMAP3 depends on VIDEO_V4L2
-drivers/media/v4l2-core/Kconfig:6:      symbol VIDEO_V4L2 depends on I2C
-drivers/i2c/Kconfig:7:  symbol I2C is selected by FB_DDC
-drivers/video/fbdev/Kconfig:59: symbol FB_DDC is selected by FB_CYBER2000_DDC
-drivers/video/fbdev/Kconfig:374:        symbol FB_CYBER2000_DDC depends on FB_CYBER2000
-drivers/video/fbdev/Kconfig:362:        symbol FB_CYBER2000 depends on FB
-
-It looks like the VIDEO_OMAP3 is selecting ARM_DMA_USE_IOMMU and
-OMAP_IOMMU instead of depending on it.
-
-I'm not sure which driver should change but looking at the exynos drm
-driver it is also depends on the iommu parts instead of selecting them
-[like the rockchip drm currently does]
+Currently it doesn't look like the others will provide dts patches using the 
+clocks in time, so it looks like I can skip the shared branch and we can use 
+the clock ids regularly after the merge-window. Some true for your clocks?
 
 
+Thanks
 Heiko
