@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080AbaKZDdK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 22:33:10 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:34666 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752033AbaKZDdI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 22:33:08 -0500
-Date: Tue, 25 Nov 2014 19:33:04 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Rodrigo Freire <rfreire@redhat.com>
-Cc: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-        linux-mtd@lists.infradead.org, Felix Fietkau <nbd@openwrt.org>,
-        dwmw2@infradead.org, linux-kernel@vger.kernel.org,
-        Herton Krzesinski <hkrzesin@redhat.com>
-Subject: Re: [PATCH V2] mtd: block2mtd: Present block2mtd timely on boot time
-Message-ID: <20141126033304.GR24364@ld-irv-0074>
-References: <371358190.34795877.1410204429882.JavaMail.zimbra@redhat.com>
- <1444809468.34812041.1410206680931.JavaMail.zimbra@redhat.com>
- <20140909170231.GA14429@logfs.org>
- <1807144344.40128259.1410985683342.JavaMail.zimbra@redhat.com>
- <20141105202303.GN23619@ld-irv-0074>
- <9691395.7454649.1415535485079.JavaMail.zimbra@redhat.com>
+	id S1752060AbaKZDlJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 22:41:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35082 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750938AbaKZDlH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 22:41:07 -0500
+Date: Tue, 25 Nov 2014 22:41:04 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: dm-bufio: fix memleak when using a dm_buffer's inline bio
+Message-ID: <20141126034103.GA26585@redhat.com>
+References: <20141126014515.GE10050@birch.djwong.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <9691395.7454649.1415535485079.JavaMail.zimbra@redhat.com>
+In-Reply-To: <20141126014515.GE10050@birch.djwong.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 09, 2014 at 07:18:05AM -0500, Rodrigo Freire wrote:
-> > From: "Brian Norris" <computersforpeace@gmail.com>
-> > Sent: Wednesday, November 5, 2014 6:23:03 PM
+On Tue, Nov 25 2014 at  8:45pm -0500,
+Darrick J. Wong <darrick.wong@oracle.com> wrote:
+
+> When dm-bufio sets out to use the bio built into a struct dm_buffer to
+> issue an IO, it needs to call bio_reset after it's done with the bio
+> so that we can free things attached to the bio such as the integrity
+> payload.  Therefore, inject our own endio callback to take care of
+> the bio_reset after calling submit_io's end_io callback.
 > 
-> > This still seems like a bad idea (using a block device + block2mtd +
-> > JFFS2). Why are you doing this? See comments here:
-> > http://www.linux-mtd.infradead.org/faq/jffs2.html#L_hdd_jffs2
+> Test case:
+> 1. modprobe scsi_debug delay=0 dif=1 dix=199 ato=1 dev_size_mb=300
+> 2. Set up a dm-bufio client, e.g. dm-verity, on the scsi_debug device
+> 3. Repeatedly read metadata and watch kmalloc-192 leak!
 > 
-> As Felix stated on a previous message to the thread, I am using JFFS2 over
-> block2mtd where regular filesystems failed to do so well. There are several
-> [1] threads pointing this issue, and JFFS2 over block2mtd works like a charm
-> on more harsh scenarios.
-[...]
-> [1] - http://bit.ly/1smGvwa
+> Fix is against 3.18-rc6.
+> 
+> Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
 
-OK, so there are definitely problems with cheap SD card power cut
-tolerance. That's not news. But that doesn't mean block2mtd + JFFS2 is a
-good solution. In fact, when I add 'jffs2' to your Google search query
-of 'raspberry pi corrupt sd card', the only mentions I see are those who
-agree that this is not the right choice.
+Thanks for reporting/fixing this.
 
-But anyway, we can look at supporting block2mtd (since you provided the
-patches), even if we don't agree how it should be used. And in fact, I
-might argue there are no good (production) uses for block2mtd, so I
-suppose I don't have much stake in it :)
+Alternatively I think we could just call bio_reset() in submit_io(),
+e.g.:
 
-Brian
+diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
+index afe7971..e7036e3 100644
+--- a/drivers/md/dm-bufio.c
++++ b/drivers/md/dm-bufio.c
+@@ -579,6 +579,8 @@ static void submit_io(struct dm_buffer *b, int rw, sector_t block,
+ 	if (rw == WRITE && b->c->write_callback)
+ 		b->c->write_callback(b);
+ 
++	bio_reset(&b->bio);
++
+ 	if (b->c->block_size <= DM_BUFIO_INLINE_VECS * PAGE_SIZE &&
+ 	    b->data_mode != DATA_MODE_VMALLOC)
+ 		use_inline_bio(b, rw, block, end_io);
+
+What do you think?
