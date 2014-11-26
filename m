@@ -1,97 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966AbaKZPyi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 10:54:38 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55573 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752858AbaKZPyg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 10:54:36 -0500
-Date: Wed, 26 Nov 2014 16:54:31 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Sekhar Nori <nsekhar@ti.com>,
-        linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Mike Looijmans <milo-software@users.sourceforge.net>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Santosh Shilimkar <ssantosh@kernel.org>,
-        Murali Karicheri <m-karicheri2@ti.com>
-Subject: Re: [PATCH v2 1/5] i2c: i2c-davinci: switch to use platform_get_irq
-Message-ID: <20141126155431.GK4431@pengutronix.de>
-References: <1417010393-30598-1-git-send-email-grygorii.strashko@ti.com>
- <1417010393-30598-2-git-send-email-grygorii.strashko@ti.com>
+	id S1753236AbaKZPzo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 10:55:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41070 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750945AbaKZPzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 10:55:42 -0500
+Date: Wed, 26 Nov 2014 09:55:08 -0600
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Petr Mladek <pmladek@suse.cz>, Miroslav Benes <mbenes@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
+        x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 0/3] Kernel Live Patching
+Message-ID: <20141126155508.GC29079@treble.hsd1.ky.comcast.net>
+References: <1416935709-404-1-git-send-email-sjenning@redhat.com>
+ <547596C6.2050303@hitachi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1417010393-30598-2-git-send-email-grygorii.strashko@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <547596C6.2050303@hitachi.com>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Grygorii,
-
-On Wed, Nov 26, 2014 at 03:59:49PM +0200, Grygorii Strashko wrote:
-> Switch Davinci I2C driver to use platform_get_irq(), because
-> it is not recommened to use platform_get_resource(pdev, IORESOURCE_IRQ, ..)
-> for requesting IRQ resources any more, as they can be not ready yet
-> in case of DT-boot.
+On Wed, Nov 26, 2014 at 06:00:54PM +0900, Masami Hiramatsu wrote:
+> (2014/11/26 2:15), Seth Jennings wrote:
+> > Note to Steve:
+> > Masami's IPMODIFY patch is heading for -next via your tree.  Once it arrives,
+> > I'll rebase and make the change to set IPMODIFY.  Do not pull this for -next
+> > yet.  This version (v4) is for review and gathering acks.
 > 
-> CC: Sekhar Nori <nsekhar@ti.com>
-> CC: Kevin Hilman <khilman@deeprootsystems.com>
-> CC: Santosh Shilimkar <ssantosh@kernel.org>
-> CC: Murali Karicheri <m-karicheri2@ti.com>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> ---
->  drivers/i2c/busses/i2c-davinci.c | 20 ++++++++++++--------
->  1 file changed, 12 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
-> index 4d96147..7f54903 100644
-> --- a/drivers/i2c/busses/i2c-davinci.c
-> +++ b/drivers/i2c/busses/i2c-davinci.c
-> @@ -640,13 +640,17 @@ static int davinci_i2c_probe(struct platform_device *pdev)
->  {
->  	struct davinci_i2c_dev *dev;
->  	struct i2c_adapter *adap;
-> -	struct resource *mem, *irq;
-> -	int r;
-> -
-> -	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-> -	if (!irq) {
-> -		dev_err(&pdev->dev, "no irq resource?\n");
-> -		return -ENODEV;
-> +	struct resource *mem;
-> +	int r, irq;
-> +
-> +	irq = platform_get_irq(pdev, 0);
-> +	if (irq <= 0) {
-> +		if (irq == -EPROBE_DEFER)
-> +			return irq;
-> +		if (!irq)
-> +			irq = -ENXIO;
-> +		dev_err(&pdev->dev, "can't get irq resource ret=%d\n", irq);
-> +		return irq;
-The simpler and I think also more usual logic is:
+> BTW, as we discussed IPMODIFY is an exclusive flag. So if we allocate ftrace_ops
+> for each function in each patch, it could be conflict each other.
+> Maybe we need to have another ops hashtable to find such conflict and new
+> handler to handle it.
 
-	if (!irq)
-		irq = -ENXIO;
-	if (irq != -EPROBE_DEFER)
-		dev_err(...);
-	return irq;
-
-Other than that the patch looks fine.
-
-Best regards
-Uwe
+I agree, but this is not a problem with the current patch set because it
+doesn't yet support patching the same function multiple times :-)
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Josh
