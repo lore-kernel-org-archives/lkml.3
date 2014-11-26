@@ -1,132 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528AbaKZJgK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 04:36:10 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:37575 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875AbaKZJgI (ORCPT
+	id S1751796AbaKZJiW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 04:38:22 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:58864 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848AbaKZJiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 04:36:08 -0500
-From: Andreas Ruprecht <rupran@einserver.de>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andreas Ruprecht <rupran@einserver.de>
-Subject: [PATCH v2] net: netfilter: Fix undefined reference to nf_nat_redirect_* functions
-Date: Wed, 26 Nov 2014 10:35:37 +0100
-Message-Id: <1416994537-1592-1-git-send-email-rupran@einserver.de>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1416928034-10882-1-git-send-email-rupran@einserver.de>
-References: <1416928034-10882-1-git-send-email-rupran@einserver.de>
+	Wed, 26 Nov 2014 04:38:20 -0500
+Message-ID: <54759F8A.20303@baylibre.com>
+Date: Wed, 26 Nov 2014 10:38:18 +0100
+From: Benoit Cousson <bcousson@baylibre.com>
+Organization: BayLibre
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>,
+        Bartosz Golaszewski <bgolaszewski@baylibre.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Patrick Titiano <ptitiano@baylibre.com>
+Subject: Re: [PATCH 1/5] hwmon: ina2xx: bail-out from ina2xx_probe() in case
+ of configuration errors
+References: <1416930423-12179-1-git-send-email-bgolaszewski@baylibre.com>	<1416930423-12179-2-git-send-email-bgolaszewski@baylibre.com>	<5474A72D.2000309@roeck-us.net>	<CAMpxmJUrs-3oXwYyNh26EnuZRH9bpXrmBBLKM7tmKGx=gSwyuQ@mail.gmail.com>	<5474B564.9080902@roeck-us.net>	<CAMpxmJVGE444t3gE-=u8kuK_B9rJ=0fw9ZYVuYgQRPdswiPj7Q@mail.gmail.com>	<5474C36C.1020004@roeck-us.net> <CAMpxmJUhpX+AAmOS2gcgtJGr0dkeQ7YRyae12oRoW2NkT5drBA@mail.gmail.com> <5474CAC6.8030608@roeck-us.net> <54754364.80705@roeck-us.net>
+In-Reply-To: <54754364.80705@roeck-us.net>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In a configuration with CONFIG_NFT_NAT and
-CONFIG_NETFILTER_XT_TARGET_REDIRECT enabled, undefined references to
-nf_nat_redirect_ipv{4,6}() can occur, when the corresponding options
-CONFIG_NF_NAT_REDIRECT_IPV4 or CONFIG_NF_NAT_REDIRECT_IPV6 are not
-enabled.
+Hi Guenter,
 
-net/built-in.o: In function `redirect_tg4':
-xt_REDIRECT.c:(.text+0x6d001): undefined reference to `nf_nat_redirect_ipv4'
-net/built-in.o: In function `redirect_tg6':
-xt_REDIRECT.c:(.text+0x6d021): undefined reference to `nf_nat_redirect_ipv6'
+On 26/11/2014 04:05, Guenter Roeck wrote:
 
-This is because the file xt_REDIRECT.c is compiled when
-CONFIG_NETFILTER_XT_TARGET_REDIRECT is enabled, which only depends
-on CONFIG_NF_NAT. This option is invisible and can only be selected by
-other Kconfig options. In this particular case, it is selected by
-CONFIG_NFT_NAT.
+[...]
 
-This patch changes the dependency for CONFIG_NETFILTER_XT_TARGET_REDIRECT
-to only make it visible if at least one of
-{CONFIG_NF_NAT_REDIRECT_IPV4, CONFIG_NF_NAT_REDIRECT_IPV6} are enabled.
+> Looking into the available documents, I am quite sure that the resistor
+> is changed by replacing the probe, in other words by pulling the board
+> with the ina226 and replacing it with another one. Given that, configuring
+> the shunt resistor value with a sysfs attribute is really the wrong way
+> to do it; you should use probe specific devicetree overlays instead.
 
-Additionally it is necessary to provide stubs for the
-nf_nat_redirect_ipv{4,6} functions in case the header is included but
-the corresponding Kconfig feature is not enabled.
+Unfortunately, that's not dynamic enough for all the use cases we need 
+to support with the probes.
+In fact, most customers will rather put the shunts on their board and 
+thus use a shunt-less version of the probe to do the measurement. In 
+that case, there is no way we can hard code, even in a DTS, the shunt value.
 
-Changes:
-v2: Correct capitalization for CONFIG_NF_NAT_REDIRECT_IPV4 in comment.
+That's for that kind of usage that we do need to be able to set the 
+shunt value at runtime. The probe in that case can be pluged dynamically 
+on different board jumpers to do the measurement.
 
-Signed-off-by: Andreas Ruprecht <rupran@einserver.de>
----
- include/net/netfilter/ipv4/nf_nat_redirect.h | 14 ++++++++++++++
- include/net/netfilter/ipv6/nf_nat_redirect.h | 13 +++++++++++++
- net/netfilter/Kconfig                        |  2 +-
- 3 files changed, 28 insertions(+), 1 deletion(-)
+Later, thanks to the web UI, the user will be able to configure the 
+shunt value based on the way they were plugged to its boards.
 
-diff --git a/include/net/netfilter/ipv4/nf_nat_redirect.h b/include/net/netfilter/ipv4/nf_nat_redirect.h
-index 19e1df3a0a4d..56a506dd55cc 100644
---- a/include/net/netfilter/ipv4/nf_nat_redirect.h
-+++ b/include/net/netfilter/ipv4/nf_nat_redirect.h
-@@ -1,9 +1,23 @@
- #ifndef _NF_NAT_REDIRECT_IPV4_H_
- #define _NF_NAT_REDIRECT_IPV4_H_
- 
-+#include <linux/netfilter.h>
-+
-+#ifdef CONFIG_NF_NAT_REDIRECT_IPV4
- unsigned int
- nf_nat_redirect_ipv4(struct sk_buff *skb,
- 		     const struct nf_nat_ipv4_multi_range_compat *mr,
- 		     unsigned int hooknum);
- 
-+#else /* CONFIG_NF_NAT_REDIRECT_IPV4 */
-+
-+unsigned int
-+nf_nat_redirect_ipv4(struct sk_buff *skb,
-+		     const struct nf_nat_ipv4_multi_range_compat *mr,
-+		     unsigned int hooknum)
-+{
-+	return NF_ACCEPT;
-+}
-+#endif /* CONFIG_NF_NAT_REDIRECT_IPV4 */
-+
- #endif /* _NF_NAT_REDIRECT_IPV4_H_ */
-diff --git a/include/net/netfilter/ipv6/nf_nat_redirect.h b/include/net/netfilter/ipv6/nf_nat_redirect.h
-index 1ebdffc461cc..4db9351120ec 100644
---- a/include/net/netfilter/ipv6/nf_nat_redirect.h
-+++ b/include/net/netfilter/ipv6/nf_nat_redirect.h
-@@ -1,8 +1,21 @@
- #ifndef _NF_NAT_REDIRECT_IPV6_H_
- #define _NF_NAT_REDIRECT_IPV6_H_
- 
-+#include <linux/netfilter.h>
-+
-+#ifdef CONFIG_NF_NAT_REDIRECT_IPV6
- unsigned int
- nf_nat_redirect_ipv6(struct sk_buff *skb, const struct nf_nat_range *range,
- 		     unsigned int hooknum);
- 
-+#else /* CONFIG_NF_NAT_REDIRECT_IPV6 */
-+
-+unsigned int
-+nf_nat_redirect_ipv6(struct sk_buff *skb, const struct nf_nat_range *range,
-+		     unsigned int hooknum)
-+{
-+	return NF_ACCEPT;
-+}
-+#endif /* CONFIG_NF_NAT_REDIRECT_IPV6 */
-+
- #endif /* _NF_NAT_REDIRECT_IPV6_H_ */
-diff --git a/net/netfilter/Kconfig b/net/netfilter/Kconfig
-index be8db270aa77..0972851cce03 100644
---- a/net/netfilter/Kconfig
-+++ b/net/netfilter/Kconfig
-@@ -844,7 +844,7 @@ config NETFILTER_XT_TARGET_RATEEST
- 
- config NETFILTER_XT_TARGET_REDIRECT
- 	tristate "REDIRECT target support"
--	depends on NF_NAT
-+	depends on NF_NAT_IPV4 || NF_NAT_IPV6
- 	select NF_NAT_REDIRECT_IPV4 if NF_NAT_IPV4
- 	select NF_NAT_REDIRECT_IPV6 if NF_NAT_IPV6
- 	---help---
+sysfs seems to be the easiest way to do that. I don't think DT overlay 
+can handle that, since it is depend of the targeted system and not on 
+the measurement system.
+
+Thanks,
+Benoit
+
 -- 
-1.9.1
-
+Benoît Cousson
+BayLibre
+Embedded Linux Technology Lab
+www.baylibre.com
