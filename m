@@ -1,33 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484AbaKZXSg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 18:18:36 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58888 "EHLO
+	id S1754516AbaKZXSs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 18:18:48 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58904 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753744AbaKZXSe (ORCPT
+	with ESMTP id S1753653AbaKZXSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 18:18:34 -0500
-Date: Wed, 26 Nov 2014 15:12:38 -0800
-From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-8590d1fd22caf31a81deb3d526f6817288780ffc@git.kernel.org>
-Cc: bhelgaas@google.com, gregkh@linuxfoundation.org, tglx@linutronix.de,
-        mingo@kernel.org, rdunlap@infradead.org, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, joro@8bytes.org,
-        jiang.liu@linux.intel.com, tony.luck@intel.com, konrad.wilk@oracle.com,
-        hpa@zytor.com, bp@alien8.de, benh@kernel.crashing.org,
-        rjw@rjwysocki.net
-Reply-To: tony.luck@intel.com, jiang.liu@linux.intel.com, joro@8bytes.org,
-        linux-kernel@vger.kernel.org, yinghai@kernel.org,
-        rdunlap@infradead.org, tglx@linutronix.de, mingo@kernel.org,
-        gregkh@linuxfoundation.org, bhelgaas@google.com, rjw@rjwysocki.net,
-        benh@kernel.crashing.org, bp@alien8.de, hpa@zytor.com,
-        konrad.wilk@oracle.com
-In-Reply-To: <1416894816-23245-28-git-send-email-jiang.liu@linux.intel.com>
-References: <1416894816-23245-28-git-send-email-jiang.liu@linux.intel.com>
+	Wed, 26 Nov 2014 18:18:42 -0500
+Date: Wed, 26 Nov 2014 15:12:53 -0800
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-b1f0b70db8679a0e4fa456cd7c12fbb42050c190@git.kernel.org>
+Cc: benh@kernel.crashing.org, rdunlap@infradead.org, tglx@linutronix.de,
+        andriy.shevchenko@linux.intel.com, david.a.cohen@linux.intel.com,
+        hpa@zytor.com, mingo@kernel.org, bp@alien8.de,
+        sathyanarayanan.kuppuswamy@linux.intel.com, gregkh@linuxfoundation.org,
+        yinghai@kernel.org, hpa@linux.intel.com, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org, jiang.liu@linux.intel.com,
+        bhelgaas@google.com, joro@8bytes.org, konrad.wilk@oracle.com,
+        tony.luck@intel.com
+Reply-To: konrad.wilk@oracle.com, tony.luck@intel.com, bhelgaas@google.com,
+        joro@8bytes.org, jiang.liu@linux.intel.com,
+        linux-kernel@vger.kernel.org, rjw@rjwysocki.net, hpa@linux.intel.com,
+        sathyanarayanan.kuppuswamy@linux.intel.com, bp@alien8.de,
+        yinghai@kernel.org, gregkh@linuxfoundation.org, mingo@kernel.org,
+        hpa@zytor.com, andriy.shevchenko@linux.intel.com,
+        david.a.cohen@linux.intel.com, tglx@linutronix.de,
+        rdunlap@infradead.org, benh@kernel.crashing.org
+In-Reply-To: <1416901802-24211-2-git-send-email-jiang.liu@linux.intel.com>
+References: <1416901802-24211-2-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq: Simplify MSI/DMAR/
- HPET implementation by using common code
-Git-Commit-ID: 8590d1fd22caf31a81deb3d526f6817288780ffc
+Subject: [tip:x86/apic] x86, intel-mid: Delay initialization of APB timer
+Git-Commit-ID: b1f0b70db8679a0e4fa456cd7c12fbb42050c190
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -40,327 +43,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8590d1fd22caf31a81deb3d526f6817288780ffc
-Gitweb:     http://git.kernel.org/tip/8590d1fd22caf31a81deb3d526f6817288780ffc
-Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Tue, 25 Nov 2014 13:53:36 +0800
+Commit-ID:  b1f0b70db8679a0e4fa456cd7c12fbb42050c190
+Gitweb:     http://git.kernel.org/tip/b1f0b70db8679a0e4fa456cd7c12fbb42050c190
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Tue, 25 Nov 2014 15:49:25 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 26 Nov 2014 18:59:26 +0100
+CommitDate: Wed, 26 Nov 2014 23:52:46 +0100
 
-x86, irq: Simplify MSI/DMAR/HPET implementation by using common code
+x86, intel-mid: Delay initialization of APB timer
 
-Use common MSI interfaces to simplify DMAR/HPET driver implementation.
+MID has no PIC, but depending on the platform it requires the
+abt_timer, which is connected to irq0. The timer is set up at
+late_time_init().
 
+But, looking at the MID code it seems, that there is no reason to do
+so. The only code which might need the timer working is the TSC
+calibration code, but thats a non issue on MID as that is using its
+own empty calibration function. And check_timer() is not invoked
+either because MID has no PIC and therefor no legacy irqs.
+
+So if you look at intel_mid_time_init() then you'll see that in the
+ARAT case the timer setup is skipped already. So until the point where
+x86_init.timers.setup_percpu_clockev() is called for the boot cpu
+nothing really needs a timer on MID.
+
+According to the MID code the apbt horror is only used for moorestown.
+Medfield and later use the local apic timer without the apbt nonsense.
+
+The best thing we can do is to drop moorestown support and get rid of
+that apbt nonsense alltogether.
+
+I don't think anyone deeply cares about it not being supported from
+3.18 on. The number of devices which sport a moorestown should be
+pretty limited and the only relevant use case of those is to act as a
+pocket heater with short battery life time. Its pretty pointless to
+update kernels on pocket heaters except for bragging reasons.
+
+If someone at Intel really thinks that we need to keep moorestown
+alive for other than documentary and sentimental reasons, then we can
+move the apbt setup to x86_init.timers.setup_percpu_clockev(). At that
+point the IOAPIC is setup already, so it should just work.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Tony Luck <tony.luck@intel.com>
 Cc: Joerg Roedel <joro@8bytes.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
 Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
 Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
-Link: http://lkml.kernel.org/r/1416894816-23245-28-git-send-email-jiang.liu@linux.intel.com
+Cc: David Cohen <david.a.cohen@linux.intel.com>
+Cc: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
+Link: http://lkml.kernel.org/r/1416901802-24211-2-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Tested-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- arch/x86/kernel/apic/msi.c | 192 +++++++++++++--------------------------------
- 1 file changed, 54 insertions(+), 138 deletions(-)
+ arch/x86/kernel/apb_timer.c             |  4 ----
+ arch/x86/platform/intel-mid/intel-mid.c | 18 +++++++++++++-----
+ arch/x86/platform/intel-mid/sfi.c       |  2 --
+ 3 files changed, 13 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
-index f5b8995..da163da 100644
---- a/arch/x86/kernel/apic/msi.c
-+++ b/arch/x86/kernel/apic/msi.c
-@@ -62,10 +62,8 @@ static struct irq_chip pci_msi_controller = {
- 	.irq_unmask		= pci_msi_unmask_irq,
- 	.irq_mask		= pci_msi_mask_irq,
- 	.irq_ack		= irq_chip_ack_parent,
--	.irq_set_affinity	= msi_domain_set_affinity,
- 	.irq_retrigger		= irq_chip_retrigger_hierarchy,
- 	.irq_compose_msi_msg	= irq_msi_compose_msg,
--	.irq_write_msi_msg	= pci_msi_domain_write_msg,
- 	.flags			= IRQCHIP_SKIP_SET_WAKE,
- };
+diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
+index b708738..7cfdc54 100644
+--- a/arch/x86/kernel/apb_timer.c
++++ b/arch/x86/kernel/apb_timer.c
+@@ -179,10 +179,6 @@ static int __init apbt_clockevent_register(void)
  
-@@ -153,9 +151,7 @@ static struct irq_chip pci_msi_ir_controller = {
- 	.irq_unmask		= pci_msi_unmask_irq,
- 	.irq_mask		= pci_msi_mask_irq,
- 	.irq_ack		= irq_chip_ack_parent,
--	.irq_set_affinity	= msi_domain_set_affinity,
- 	.irq_retrigger		= irq_chip_retrigger_hierarchy,
--	.irq_write_msi_msg	= pci_msi_domain_write_msg,
- 	.flags			= IRQCHIP_SKIP_SET_WAKE,
- };
- 
-@@ -175,23 +171,6 @@ struct irq_domain *arch_create_msi_irq_domain(struct irq_domain *parent)
- #endif
- 
- #ifdef CONFIG_DMAR_TABLE
--static int
--dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
--		      bool force)
--{
--	struct irq_data *parent = data->parent_data;
--	struct msi_msg msg;
--	int ret;
--
--	ret = parent->chip->irq_set_affinity(parent, mask, force);
--	if (ret >= 0) {
--		irq_chip_compose_msi_msg(data, &msg);
--		dmar_msi_write(data->irq, &msg);
--	}
--
--	return ret;
--}
--
- static void dmar_msi_write_msg(struct irq_data *data, struct msi_msg *msg)
+ static void apbt_setup_irq(struct apbt_dev *adev)
  {
- 	dmar_msi_write(data->irq, msg);
-@@ -202,67 +181,37 @@ static struct irq_chip dmar_msi_controller = {
- 	.irq_unmask		= dmar_msi_unmask,
- 	.irq_mask		= dmar_msi_mask,
- 	.irq_ack		= irq_chip_ack_parent,
--	.irq_set_affinity	= dmar_msi_set_affinity,
-+	.irq_set_affinity	= msi_domain_set_affinity,
- 	.irq_retrigger		= irq_chip_retrigger_hierarchy,
- 	.irq_compose_msi_msg	= irq_msi_compose_msg,
- 	.irq_write_msi_msg	= dmar_msi_write_msg,
- 	.flags			= IRQCHIP_SKIP_SET_WAKE,
- };
- 
--static int dmar_domain_alloc(struct irq_domain *domain, unsigned int virq,
--			     unsigned int nr_irqs, void *arg)
-+static irq_hw_number_t dmar_msi_get_hwirq(struct msi_domain_info *info,
-+					  msi_alloc_info_t *arg)
- {
--	struct irq_alloc_info *info = arg;
--	int ret;
+-	/* timer0 irq has been setup early */
+-	if (adev->irq == 0)
+-		return;
 -
--	if (nr_irqs > 1 || !info || info->type != X86_IRQ_ALLOC_TYPE_DMAR)
--		return -EINVAL;
--	if (irq_find_mapping(domain, info->dmar_id)) {
--		pr_warn("IRQ for DMAR%d already exists.\n", info->dmar_id);
--		return -EEXIST;
--	}
--
--	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
--	if (ret >= 0) {
--		irq_domain_set_hwirq_and_chip(domain, virq, info->dmar_id,
--					      &dmar_msi_controller, NULL);
--		irq_set_handler_data(virq, info->dmar_data);
--		__irq_set_handler(virq, handle_edge_irq, 0, "edge");
--	}
--
--	return ret;
-+	return arg->dmar_id;
+ 	irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
+ 	irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
+ }
+diff --git a/arch/x86/platform/intel-mid/intel-mid.c b/arch/x86/platform/intel-mid/intel-mid.c
+index 1bbedc4..d8e23a6 100644
+--- a/arch/x86/platform/intel-mid/intel-mid.c
++++ b/arch/x86/platform/intel-mid/intel-mid.c
+@@ -81,26 +81,34 @@ static unsigned long __init intel_mid_calibrate_tsc(void)
+ 	return 0;
  }
  
--static void dmar_domain_free(struct irq_domain *domain, unsigned int virq,
--			     unsigned int nr_irqs)
-+static int dmar_msi_init(struct irq_domain *domain,
-+			 struct msi_domain_info *info, unsigned int virq,
-+			 irq_hw_number_t hwirq, msi_alloc_info_t *arg)
- {
--	BUG_ON(nr_irqs > 1);
--	irq_domain_free_irqs_top(domain, virq, nr_irqs);
--}
-+	irq_domain_set_info(domain, virq, arg->dmar_id, info->chip, NULL,
-+			    handle_edge_irq, arg->dmar_data, "edge");
- 
--static void dmar_domain_activate(struct irq_domain *domain,
--				 struct irq_data *irq_data)
--{
--	struct msi_msg msg;
--
--	BUG_ON(irq_chip_compose_msi_msg(irq_data, &msg));
--	dmar_msi_write(irq_data->irq, &msg);
-+	return 0;
- }
- 
--static void dmar_domain_deactivate(struct irq_domain *domain,
--				   struct irq_data *irq_data)
--{
--	struct msi_msg msg;
--
--	memset(&msg, 0, sizeof(msg));
--	dmar_msi_write(irq_data->irq, &msg);
--}
-+static struct msi_domain_ops dmar_msi_domain_ops = {
-+	.get_hwirq	= dmar_msi_get_hwirq,
-+	.msi_init	= dmar_msi_init,
-+};
- 
--static struct irq_domain_ops dmar_domain_ops = {
--	.alloc = dmar_domain_alloc,
--	.free = dmar_domain_free,
--	.activate = dmar_domain_activate,
--	.deactivate = dmar_domain_deactivate,
-+static struct msi_domain_info dmar_msi_domain_info = {
-+	.ops		= &dmar_msi_domain_ops,
-+	.chip		= &dmar_msi_controller,
- };
- 
- static struct irq_domain *dmar_get_irq_domain(void)
-@@ -271,11 +220,9 @@ static struct irq_domain *dmar_get_irq_domain(void)
- 	static DEFINE_MUTEX(dmar_lock);
- 
- 	mutex_lock(&dmar_lock);
--	if (dmar_domain == NULL) {
--		dmar_domain = irq_domain_add_tree(NULL, &dmar_domain_ops, NULL);
--		if (dmar_domain)
--			dmar_domain->parent = x86_vector_domain;
--	}
-+	if (dmar_domain == NULL)
-+		dmar_domain = msi_create_irq_domain(NULL, &dmar_msi_domain_info,
-+						    x86_vector_domain);
- 	mutex_unlock(&dmar_lock);
- 
- 	return dmar_domain;
-@@ -309,23 +256,9 @@ void dmar_free_hwirq(int irq)
- #ifdef CONFIG_HPET_TIMER
- static inline int hpet_dev_id(struct irq_domain *domain)
- {
--	return (int)(long)domain->host_data;
--}
-+	struct msi_domain_info *info = msi_get_domain_info(domain);
- 
--static int hpet_msi_set_affinity(struct irq_data *data,
--				 const struct cpumask *mask, bool force)
--{
--	struct irq_data *parent = data->parent_data;
--	struct msi_msg msg;
--	int ret;
--
--	ret = parent->chip->irq_set_affinity(parent, mask, force);
--	if (ret >= 0 && ret != IRQ_SET_MASK_OK_DONE) {
--		irq_chip_compose_msi_msg(data, &msg);
--		hpet_msi_write(data->handler_data, &msg);
--	}
--
--	return ret;
-+	return (int)(long)info->data;
- }
- 
- static void hpet_msi_write_msg(struct irq_data *data, struct msi_msg *msg)
-@@ -338,79 +271,63 @@ static struct irq_chip hpet_msi_controller = {
- 	.irq_unmask = hpet_msi_unmask,
- 	.irq_mask = hpet_msi_mask,
- 	.irq_ack = irq_chip_ack_parent,
--	.irq_set_affinity = hpet_msi_set_affinity,
-+	.irq_set_affinity = msi_domain_set_affinity,
- 	.irq_retrigger = irq_chip_retrigger_hierarchy,
- 	.irq_compose_msi_msg = irq_msi_compose_msg,
- 	.irq_write_msi_msg = hpet_msi_write_msg,
- 	.flags = IRQCHIP_SKIP_SET_WAKE,
- };
- 
--static int hpet_domain_alloc(struct irq_domain *domain, unsigned int virq,
--			     unsigned int nr_irqs, void *arg)
--{
--	struct irq_alloc_info *info = arg;
--	int ret;
--
--	if (nr_irqs > 1 || !info || info->type != X86_IRQ_ALLOC_TYPE_HPET)
--		return -EINVAL;
--	if (irq_find_mapping(domain, info->hpet_index)) {
--		pr_warn("IRQ for HPET%d already exists.\n", info->hpet_index);
--		return -EEXIST;
--	}
--
--	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
--	if (ret >= 0) {
--		irq_set_status_flags(virq, IRQ_MOVE_PCNTXT);
--		irq_domain_set_hwirq_and_chip(domain, virq, info->hpet_index,
--					      &hpet_msi_controller, NULL);
--		irq_set_handler_data(virq, info->hpet_data);
--		__irq_set_handler(virq, handle_edge_irq, 0, "edge");
--	}
--
--	return ret;
--}
--
--static void hpet_domain_free(struct irq_domain *domain, unsigned int virq,
--			     unsigned int nr_irqs)
-+static irq_hw_number_t hpet_msi_get_hwirq(struct msi_domain_info *info,
-+					  msi_alloc_info_t *arg)
- {
--	BUG_ON(nr_irqs > 1);
--	irq_clear_status_flags(virq, IRQ_MOVE_PCNTXT);
--	irq_domain_free_irqs_top(domain, virq, nr_irqs);
-+	return arg->hpet_index;
- }
- 
--static void hpet_domain_activate(struct irq_domain *domain,
--				struct irq_data *irq_data)
-+static int hpet_msi_init(struct irq_domain *domain,
-+			 struct msi_domain_info *info, unsigned int virq,
-+			 irq_hw_number_t hwirq, msi_alloc_info_t *arg)
- {
--	struct msi_msg msg;
-+	irq_set_status_flags(virq, IRQ_MOVE_PCNTXT);
-+	irq_domain_set_info(domain, virq, arg->hpet_index, info->chip, NULL,
-+			    handle_edge_irq, arg->hpet_data, "edge");
- 
--	BUG_ON(irq_chip_compose_msi_msg(irq_data, &msg));
--	hpet_msi_write(irq_get_handler_data(irq_data->irq), &msg);
-+	return 0;
- }
- 
--static void hpet_domain_deactivate(struct irq_domain *domain,
--				  struct irq_data *irq_data)
-+static void hpet_msi_free(struct irq_domain *domain,
-+			  struct msi_domain_info *info, unsigned int virq)
- {
--	struct msi_msg msg;
--
--	memset(&msg, 0, sizeof(msg));
--	hpet_msi_write(irq_get_handler_data(irq_data->irq), &msg);
-+	irq_clear_status_flags(virq, IRQ_MOVE_PCNTXT);
- }
- 
--static struct irq_domain_ops hpet_domain_ops = {
--	.alloc = hpet_domain_alloc,
--	.free = hpet_domain_free,
--	.activate = hpet_domain_activate,
--	.deactivate = hpet_domain_deactivate,
-+static struct msi_domain_ops hpet_msi_domain_ops = {
-+	.get_hwirq	= hpet_msi_get_hwirq,
-+	.msi_init	= hpet_msi_init,
-+	.msi_free	= hpet_msi_free,
-+};
++static void __init intel_mid_setup_bp_timer(void)
++{
++	apbt_time_init();
++	setup_boot_APIC_clock();
++}
 +
-+static struct msi_domain_info hpet_msi_domain_info = {
-+	.ops		= &hpet_msi_domain_ops,
-+	.chip		= &hpet_msi_controller,
- };
- 
- struct irq_domain *hpet_create_irq_domain(int hpet_id)
+ static void __init intel_mid_time_init(void)
  {
- 	struct irq_domain *parent;
- 	struct irq_alloc_info info;
-+	struct msi_domain_info *domain_info;
- 
- 	if (x86_vector_domain == NULL)
- 		return NULL;
- 
-+	domain_info = kzalloc(sizeof(*domain_info), GFP_KERNEL);
-+	if (!domain_info)
-+		return NULL;
+ 	sfi_table_parse(SFI_SIG_MTMR, NULL, NULL, sfi_parse_mtmr);
 +
-+	*domain_info = hpet_msi_domain_info;
-+	domain_info->data = (void *)(long)hpet_id;
+ 	switch (intel_mid_timer_options) {
+ 	case INTEL_MID_TIMER_APBT_ONLY:
+ 		break;
+ 	case INTEL_MID_TIMER_LAPIC_APBT:
+-		x86_init.timers.setup_percpu_clockev = setup_boot_APIC_clock;
++		/* Use apbt and local apic */
++		x86_init.timers.setup_percpu_clockev = intel_mid_setup_bp_timer;
+ 		x86_cpuinit.setup_percpu_clockev = setup_secondary_APIC_clock;
+-		break;
++		return;
+ 	default:
+ 		if (!boot_cpu_has(X86_FEATURE_ARAT))
+ 			break;
++		/* Lapic only, no apbt */
+ 		x86_init.timers.setup_percpu_clockev = setup_boot_APIC_clock;
+ 		x86_cpuinit.setup_percpu_clockev = setup_secondary_APIC_clock;
+ 		return;
+ 	}
+-	/* we need at least one APB timer */
+-	pre_init_apic_IRQ0();
+-	apbt_time_init();
 +
- 	init_irq_alloc_info(&info, NULL);
- 	info.type = X86_IRQ_ALLOC_TYPE_HPET;
- 	info.hpet_id = hpet_id;
-@@ -420,8 +337,7 @@ struct irq_domain *hpet_create_irq_domain(int hpet_id)
- 	else
- 		hpet_msi_controller.name = "IR-HPET-MSI";
- 
--	return irq_domain_add_hierarchy(parent, 0, 0, NULL, &hpet_domain_ops,
--					(void *)(long)hpet_id);
-+	return msi_create_irq_domain(NULL, domain_info, parent);
++	x86_init.timers.setup_percpu_clockev = apbt_time_init;
  }
  
- int hpet_assign_irq(struct irq_domain *domain, struct hpet_dev *dev,
+ static void intel_mid_arch_setup(void)
+diff --git a/arch/x86/platform/intel-mid/sfi.c b/arch/x86/platform/intel-mid/sfi.c
+index c14ad34..aa59f88 100644
+--- a/arch/x86/platform/intel-mid/sfi.c
++++ b/arch/x86/platform/intel-mid/sfi.c
+@@ -95,8 +95,6 @@ int __init sfi_parse_mtmr(struct sfi_table_header *table)
+ 		pr_debug("timer[%d]: paddr = 0x%08x, freq = %dHz, irq = %d\n",
+ 			totallen, (u32)pentry->phys_addr,
+ 			pentry->freq_hz, pentry->irq);
+-			if (!pentry->irq)
+-				continue;
+ 			mp_irq.type = MP_INTSRC;
+ 			mp_irq.irqtype = mp_INT;
+ /* triggering mode edge bit 2-3, active high polarity bit 0-1 */
