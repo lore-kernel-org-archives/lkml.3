@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751602AbaKZMNR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 07:13:17 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:39681 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938AbaKZMNQ (ORCPT
+	id S1751046AbaKZMRf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 07:17:35 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:56273 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770AbaKZMRd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 07:13:16 -0500
-From: Pawel Moll <pawel.moll@arm.com>
-To: arm@kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+	Wed, 26 Nov 2014 07:17:33 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Joe Perches <joe@perches.com>, Mike Turquette <mturquette@linaro.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>
-Cc: Liviu Dudau <liviu.dudau@arm.com>, Sudeep Holla <sudeep.holla@arm.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>
-Subject: [PATCH v2] MAINTAINERS: ARM Versatile Express platform
-Date: Wed, 26 Nov 2014 12:13:05 +0000
-Message-Id: <1417003985-21564-1-git-send-email-pawel.moll@arm.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1416939455-1814-2-git-send-email-pawel.moll@arm.com>
-References: <1416939455-1814-2-git-send-email-pawel.moll@arm.com>
+        Liviu Dudau <Liviu.Dudau@arm.com>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] MAINTAINERS: ARM Versatile Express platform
+Date: Wed, 26 Nov 2014 13:17:17 +0100
+Message-ID: <2667096.evZZoH9ryD@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1417003449.3972.1.camel@arm.com>
+References: <1416939455-1814-1-git-send-email-pawel.moll@arm.com> <1416967146.8358.19.camel@perches.com> <1417003449.3972.1.camel@arm.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:qBKJXK3ASIyLN1psgEBjwUMgWSClnNYt183Kj83tHI+
+ /w+qdnLulcGy4eJsQahyXdIksLDpegxRXlJDIYJsfXdoiL4tmr
+ LebuyrRyRGK4+ftiAee8+a2J88bhk2/eNbENd+HutQpxUjM1A6
+ nlj4d1G6ROPSfAeZHyKIO3CKWevScAtc3STopA93rSkQaBEfHt
+ PMfYav3Tb9mIEM8VJ7IcEbJlJhre+uAXz19OzkGmR9lVoPJSUS
+ HpKxzDWO3qfZBe4s3/e/2upxZpNka8nKQArAN2m9qfB+oKVvNi
+ cGAkwvOeHSdZJa1uLucxjJzNmLBY9KVv4EfIYoSVepNYL41vXc
+ 4yKFCjqHzHokELkPg2Ms=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a separate section for the ARM
-Versatile Express platform maintainers, listing
-all different bits and bobs used by it.
+On Wednesday 26 November 2014 12:04:09 Pawel Moll wrote:
+> 
+> Right, of course. Whole directory.
+> 
+> > F:    */*/vexpress*
+> 
+> Cool, didn't think about multiple wildcards. 
 
-Acked-by: Liviu Dudau <liviu.dudau@arm.com>
-Acked-by: Sudeep Holla <sudeep.holla@arm.com>
-Acked-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-Acked-by: Michael Turquette <mturquette@linaro.org>
----
- MAINTAINERS | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+Actually, I think you could even do this as
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 0ff630d..924454f 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1503,6 +1503,18 @@ S:	Maintained
- F:	drivers/clk/ux500/
- F:	include/linux/platform_data/clk-ux500.h
- 
-+ARM/VERSATILE EXPRESS PLATFORM
-+M:	Liviu Dudau <liviu.dudau@arm.com>
-+M:	Sudeep Holla <sudeep.holla@arm.com>
-+M:	Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-+L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-+S:	Maintained
-+F:	arch/arm/boot/dts/vexpress*
-+F:	arch/arm/mach-vexpress/
-+F:	*/*/vexpress*
-+F:	drivers/clk/versatile/clk-vexpress-osc.c
-+F:	drivers/clocksource/versatile.c
-+
- ARM/VFP SUPPORT
- M:	Russell King <linux@arm.linux.org.uk>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
--- 
-2.1.0
+N:	vexpress
 
+which would be even shorter and match most of the other entries too.
+
+	Arnd
