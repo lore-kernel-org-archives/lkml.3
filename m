@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651AbaKZPkd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 10:40:33 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:58448 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753550AbaKZPka (ORCPT
+	id S1753748AbaKZPlB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 10:41:01 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39465 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752544AbaKZPk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 10:40:30 -0500
-From: Grant Likely <grant.likely@linaro.org>
-To: devicetree@vger.kernel.org, Paul Bolle <pebolle@tiscali.nl>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Subject: [PATCH] of: remove select of non-existant OF_DEVICE config symbol
-Date: Wed, 26 Nov 2014 15:40:24 +0000
-Message-Id: <1417016424-9647-1-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Wed, 26 Nov 2014 10:40:57 -0500
+Date: Wed, 26 Nov 2014 15:38:51 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+Cc: lee.jones@linaro.org, cw00.choi@samsung.com, linus.walleij@linaro.org,
+        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        linux-gpio@vger.kernel.org, ckeepax@opensource.wolfsonmicro.com
+Message-ID: <20141126153851.GG7712@sirena.org.uk>
+References: <1417014788-8311-1-git-send-email-rf@opensource.wolfsonmicro.com>
+ <1417014788-8311-4-git-send-email-rf@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="v3PO+W4hh3dRkCny"
+Content-Disposition: inline
+In-Reply-To: <1417014788-8311-4-git-send-email-rf@opensource.wolfsonmicro.com>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V2 3/6] regulator: arizona-micsupp: Add support for
+ WM8280/WM8281
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The OF_OVERLAY option selects OF_DEVICE, but OF_DEVICE was removed in
-commit ba166e900b, "of: remove CONFIG_OF_DEVICE". Remove the unnecessary
-select.
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Reported-by: Paul Bolle <pebolle@tiscali.nl>
-Cc: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
----
+--v3PO+W4hh3dRkCny
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This fixes a bug in my devicetree/next branch which is included in
-linux-next. It doesn't apply against mainline. I'll be applying it
-directly to my tree.
+On Wed, Nov 26, 2014 at 03:13:05PM +0000, Richard Fitzgerald wrote:
 
- drivers/of/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
+> Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
 
-diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
-index 18b2e2539f84..b5e0c873d4e1 100644
---- a/drivers/of/Kconfig
-+++ b/drivers/of/Kconfig
-@@ -88,7 +88,6 @@ config OF_OVERLAY
- 	bool
- 	depends on OF
- 	select OF_DYNAMIC
--	select OF_DEVICE
- 	select OF_RESOLVE
- 
- endmenu # OF
--- 
-1.9.1
+Reviewed-by: Mark Brown <broonie@kernel.org>
 
+--v3PO+W4hh3dRkCny
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUdfQLAAoJECTWi3JdVIfQrT8H/jQfSpqmlDOMA2iNb1GTt27v
+ZrXe9ynN6u6LNkRY6MSEQRPpGV4xWLjJL1WjygPFi1lHg/it34NIN+aHIxqBIJgK
+MYA//+Mo/+dtcstrYa3F05p1KJ4kpm7qt2g3Sb0ItJwsY4iiBPRj96ca3/29TQYU
+Bpv7mwLuoJFMIoRKshC0P+4fVMw4WUib89D0igNTSkXnCb4RHmwYsQ+ZBNHgaL65
+RvFASlQPIFaJO05lqzU4uGyinQFMlNGGdjpvr6HjuMZBsLmb3RGOk44HkgAu2kql
+A7qzUJA5Wsys7TC8xRp9RWoO/DN6nQ6SvE1Ux4i1V3o7EyCvv8elU1frfIwFyiY=
+=6W8O
+-----END PGP SIGNATURE-----
+
+--v3PO+W4hh3dRkCny--
