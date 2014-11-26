@@ -1,42 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426AbaKZUhk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 15:37:40 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:50538 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750895AbaKZUhj (ORCPT
+	id S1752785AbaKZUiR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 15:38:17 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39789 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752583AbaKZUiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 15:37:39 -0500
-Date: Wed, 26 Nov 2014 15:37:36 -0500 (EST)
-Message-Id: <20141126.153736.1815789848350571029.davem@davemloft.net>
-To: jasowang@redhat.com
-Cc: kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, vyasevic@redhat.com
-Subject: Re: [PATCH net-next] macvlan: delay the header check for dodgy
- packets into lower device
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1416993674-11177-1-git-send-email-jasowang@redhat.com>
-References: <1416993674-11177-1-git-send-email-jasowang@redhat.com>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 26 Nov 2014 12:37:38 -0800 (PST)
+	Wed, 26 Nov 2014 15:38:15 -0500
+Date: Wed, 26 Nov 2014 20:36:10 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Message-ID: <20141126203610.GY7712@sirena.org.uk>
+References: <546B5EF9.3080102@mentor.com>
+ <546CAB49.8030103@mentor.com>
+ <20141125121749.GV7712@sirena.org.uk>
+ <54760D6A.9080306@mentor.com>
+ <20141126175304.GM7712@sirena.org.uk>
+ <5476266E.9040901@mentor.com>
+ <20141126192021.GU7712@sirena.org.uk>
+ <547630AD.1010108@mentor.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SHRM/EOepzdjttEK"
+Content-Disposition: inline
+In-Reply-To: <547630AD.1010108@mentor.com>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: Question about fixed regulator DT properties
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Wang <jasowang@redhat.com>
-Date: Wed, 26 Nov 2014 17:21:14 +0800
 
-> We do header check twice for a dodgy packet. One is done before
-> macvlan_start_xmit(), another is done before lower device's
-> ndo_start_xmit(). The first one seems redundant so this patch tries to
-> delay header check until a packet reaches its lower device (or macvtap)
-> through always enabling NETIF_F_GSO_ROBUST for macvlan device.
-> 
-> Cc: Patrick McHardy <kaber@trash.net>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+--SHRM/EOepzdjttEK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Hmmm, it's the idea that if we have a dodgy packet, we want to
-notice that as early as possible in the packet processing path?
+On Wed, Nov 26, 2014 at 09:57:33PM +0200, Vladimir Zapolskiy wrote:
+
+> If "regulator-boot-on" is specified and the regulator is untouched by
+> bootloader/firmware, then the kernel simply enables it.
+
+> As far as I understand the latter side-effect is exploited on quite many
+> ARM boards, when there is no defined regulator consumer, but I agree
+> that it looks hackish. My assumption is that probably fixed regulator
+
+It's not just hackish, if the regulator actually needs to be on but has
+no users it's actively broken since the core might decide to power it
+off at any time for any reason.  Such regulators *must* be flagged as
+always-on.
+
+> logic around "regulator-boot-on" property should be changed, so that the
+> kernel will not attempt to physically re-enable/enable the
+> "regulator-boot-on" regulator at all, then misusage of the property
+> should gone forced by necessity of finding a proper regulator consumer.
+
+The only boards which might be able to get away with this are
+non-DT/ACPI ones which aren't getting merged anyway and it is in general
+going to be better to expand the set of cases where we do the disables
+(since it saves power).
+
+--SHRM/EOepzdjttEK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUdjm5AAoJECTWi3JdVIfQeckH/1Q92XiUUs7wTJbHUFPsBfzc
+TiJJUUuyY7I54A+mtxNFmXAVwL6nrQ5shEtq5Z0ErgbBKXwNnFkZKV8qrqHoxNJj
+V5ZhkiN+hp5a2Wg8H9mtuUTO8sTQmHFgXSSHQAMQeu5lrRBxr/9X5SJhqqkYLgnr
+YAQrT7pCU7UNf2ng9ZskPqjXVy+3GNjPzsdplsCbsPGZ6bmHEaM/+070WaEP1kO2
+lw+/Yx368NczQyN4rPUDRwgqiNFLBPxSmm/1SGp/ZkeX/zHEem7xDpZf8uJUCujB
+yZWieTJjBGqo1Ovje8qOcbINmvrxyc1wDESOYAJ8xL4bnljp3IWPgTl6dWmv4a8=
+=lXYu
+-----END PGP SIGNATURE-----
+
+--SHRM/EOepzdjttEK--
