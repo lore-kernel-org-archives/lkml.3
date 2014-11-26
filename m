@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907AbaKZRWV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 12:22:21 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:31770 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752482AbaKZRWS (ORCPT
+	id S1752960AbaKZRYC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 12:24:02 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:51445 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927AbaKZRYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 12:22:18 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-92-54760c47e451
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] ARM: EXYNOS: use u8 for val[] in struct exynos_pmu_conf
-Date: Wed, 26 Nov 2014 18:21:38 +0100
-Message-id: <1787532.9Q2MHGpzCz@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-70-generic-pae; KDE/4.8.5; i686; ; )
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJLMWRmVeSWpSXmKPExsVy+t9jAV13nrIQgyPLjC0aroZY9C64ymZx
-	tukNu8Wmx9dYLS7vmsNmMeP8PiaLRVu/sDuwe2xeUu/Rt2UVo8fnTXIBzFFcNimpOZllqUX6
-	dglcGf/Xr2As2MBR8XnaBtYGxitsXYycHBICJhKnT89hhbDFJC7cWw8U5+IQEljEKDGpcT8z
-	hNPCJDFh5XkmkCo2ASuJie2rGEFsEQE1iZ7FWxlBipgFPjFKXJrQATZWWMBbYsLLn8wgNouA
-	qsSbSUfAGngFNCUuTNoLFhcV8JTYOf0AVFxQ4sfkeywgNrOAvMS+/VNZIWwtifU7jzNNYOSb
-	haRsFpKyWUjKFjAyr2IUTS1ILihOSs811CtOzC0uzUvXS87P3cQIDtBnUjsYVzZYHGIU4GBU
-	4uGNkCoNEWJNLCuuzD3EKMHBrCTCy/EOKMSbklhZlVqUH19UmpNafIhRmoNFSZz3xs3cECGB
-	9MSS1OzU1ILUIpgsEwenVAMjq21NbNbl67OzJ7cl6jQ33HDbt3DKatmnyWVR++8fOhjEvF9y
-	i8ihzBWZm1aWsp+8FWHt2/5or8PBuRt2P0hxmXyQZ9cEoV/1Ooynrq/qFLDzXbTN1O77Qf7D
-	/0+GLsqQeyYx91mB3Pzoy+plU+66fF0W+1qnx2Jn2Jv02g0Gah1bXZO03bekK7EUZyQaajEX
-	FScCAMHpPlFMAgAA
+	Wed, 26 Nov 2014 12:24:00 -0500
+MIME-Version: 1.0
+Date: Wed, 26 Nov 2014 09:23:59 -0800
+Message-ID: <CAADnVQKtYkKtsd9rUFm2yfMoh7F_SRFPVP8hpvSY00KpmB-NNg@mail.gmail.com>
+Subject: Re: [PATCH] x86: bpf_jit_comp: simplify trivial boolean return
+From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Quentin Lambert <lambert.quentin@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Values stored in val[] are never bigger than a byte.
+On Wed, Nov 26, 2014 at 8:58 AM, Joe Perches <joe@perches.com> wrote:
+> On Wed, 2014-11-26 at 08:42 -0800, Alexei Starovoitov wrote:
+>> On Wed, Nov 26, 2014 at 1:18 AM, Quentin Lambert
+>> <lambert.quentin@gmail.com> wrote:
+>> > Remove if then else statements preceding
+>> > boolean return.
+> []
+>> > diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
+> []
+>> > @@ -135,11 +135,9 @@ static const int reg2hex[] = {
+>> >   */
+>> >  static inline bool is_ereg(u32 reg)
+>> >  {
+>> > -       if (reg == BPF_REG_5 || reg == AUX_REG ||
+>> > -           (reg >= BPF_REG_7 && reg <= BPF_REG_9))
+>> > -               return true;
+>> > -       else
+>> > -               return false;
+>> > +       return (reg == BPF_REG_5 ||
+>> > +               reg == AUX_REG ||
+>> > +               (reg >= BPF_REG_7 && reg <= BPF_REG_9));
+>>
+>> please remove extra () around the whole expression, and
+>> align in properly, and
+>> don't move reg==AUX_REG check to a different line.
+>> Subject is not warranted. I don't think it's a simplification.
+>
+> It's not really a simplification,
+> gcc should emit the same object code.
 
-   text    data     bss     dec     hex filename
-   7716    3692       8   11416    2c98 arch/arm/mach-exynos/pmu.o.before
-   5436    1908       8    7352    1cb8 arch/arm/mach-exynos/pmu.o.after
+exactly.
 
-Cc: Pankaj Dubey <pankaj.dubey@samsung.com>
-Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-v2:
-- rebased on top of next-20141126 branch of linux-next kernel tree
-  (it also applies fine to for-next branch of linux-samsung.git)
+>> imo existing code is fine and I don't think the time spent
+>> reviewing such changes is worth it when there is no
+>> improvement in readability.
+>
+> Is there any value in reordering these tests for frequency
+> or maybe using | instead of || to avoid multiple jumps?
 
- arch/arm/mach-exynos/pmu.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm/mach-exynos/pmu.c b/arch/arm/mach-exynos/pmu.c
-index ccb0120..c15761c 100644
---- a/arch/arm/mach-exynos/pmu.c
-+++ b/arch/arm/mach-exynos/pmu.c
-@@ -25,7 +25,7 @@
- 
- struct exynos_pmu_conf {
- 	unsigned int offset;
--	unsigned int val[NUM_SYS_POWERDOWN];
-+	u8 val[NUM_SYS_POWERDOWN];
- };
- 
- struct exynos_pmu_data {
--- 
-1.8.2.3
-
-
+probably not. It's not a critical path.
+compiler may fuse conditions depending on values anyway.
+If it was a critical path, we could have used
+(1 << reg) & mask trick.
+I picked explicit 'return true' else 'return false' here,
+because it felt easier to read. Just a matter of taste.
