@@ -1,140 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752196AbaKZFPb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 00:15:31 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:38178 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751243AbaKZFP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 00:15:29 -0500
-Message-ID: <547561D7.1050605@linux.vnet.ibm.com>
-Date: Wed, 26 Nov 2014 10:45:03 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>, Michael Ellerman <mpe@ellerman.id.au>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 0/4] powernv: cpuidle: Redesign idle states management
-References: <1416914279-30384-1-git-send-email-shreyas@linux.vnet.ibm.com>
-In-Reply-To: <1416914279-30384-1-git-send-email-shreyas@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112605-0033-0000-0000-00000126AE7F
+	id S1752242AbaKZFPk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 00:15:40 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:53695 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752202AbaKZFPi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 00:15:38 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: bluetooth related firmware loader spew on resume.
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <s5hsih7xmgg.wl-tiwai@suse.de>
+Date: Wed, 26 Nov 2014 14:15:27 +0900
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        pgynther@google.com, linux-bluetooth@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D19A9DA1-3706-4351-B2E9-25D5ABA662E7@holtmann.org>
+References: <20141111181228.GA27815@redhat.com> <s5hsih7xmgg.wl-tiwai@suse.de>
+To: Takashi Iwai <tiwai@suse.de>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Takashi,
 
-I ran hackbench to evaluate this patchset and found good improvements in
-the results.
+>> Since the addition of 10d4c6736ea "Bluetooth: btusb: Add Broadcom patch
+>> RAM support", I (and a number of other people[*]) have been seeing
+>> this trace on resume from suspend.
+>> 
+>> WARNING: CPU: 1 PID: 8565 at drivers/base/firmware_class.c:1127 _request_firmware+0x4c1/0x7c0()
+>> CPU: 1 PID: 8565 Comm: kworker/u17:0 Not tainted 3.17.2-200.fc20.x86_64 #1
+>> Hardware name: LENOVO 2356JK8/2356JK8, BIOS G7ET94WW (2.54 ) 04/30/2013
+>> Workqueue: hci0 hci_power_on [bluetooth]
+>> 0000000000000000 00000000f52a564b ffff8800a8c63be8 ffffffff817271cc
+>> 0000000000000000 ffff8800a8c63c20 ffffffff81094ced ffff8800a8c63d10
+>> ffff8801365ddf00 ffff8801387b4b00 ffff8800a8c63d08 00000000fffffff5
+>> Call Trace:
+>> [<ffffffff817271cc>] dump_stack+0x45/0x56
+>> [<ffffffff81094ced>] warn_slowpath_common+0x7d/0xa0
+>> [<ffffffff81094e1a>] warn_slowpath_null+0x1a/0x20
+>> [<ffffffff814965c1>] _request_firmware+0x4c1/0x7c0
+>> [<ffffffff8137b9b9>] ? snprintf+0x49/0x70
+>> [<ffffffff814968f1>] request_firmware+0x31/0x50
+>> [<ffffffffa0943bf3>] btusb_setup_bcm_patchram+0x83/0x550 [btusb]
+>> [<ffffffff8148ecf6>] ? rpm_idle+0xd6/0x2b0
+>> [<ffffffffa0649051>] hci_dev_do_open+0xe1/0xa60 [bluetooth]
+>> ACPI: \_SB_.PCI0.LPC_.EC__.BAT1: docking
+>> Restarting tasks ... 
+>> [<ffffffff810bcb3d>] ? ttwu_do_activate.constprop.90+0x5d/0x70
+>> [<ffffffffa064a1c0>] hci_power_on+0x40/0x1e0 [bluetooth]
+>> [<ffffffff810f53fb>] ? lock_timer_base.isra.34+0x2b/0x50
+>> [<ffffffff810acc39>] process_one_work+0x149/0x3d0
+>> [<ffffffff810ad2bb>] worker_thread+0x11b/0x490
+>> [<ffffffff810ad1a0>] ? rescuer_thread+0x2e0/0x2e0
+>> [<ffffffff810b2318>] kthread+0xd8/0xf0
+>> [<ffffffff810b2240>] ? kthread_create_on_node+0x190/0x190
+>> [<ffffffff8172e7bc>] ret_from_fork+0x7c/0xb0
+>> [<ffffffff810b2240>] ? kthread_create_on_node+0x190/0x190
+>> ---[ end trace 75a0e9c7f33ebb4c ]---
+>> bluetooth hci0: firmware: brcm/BCM20702A0-0a5c-21e6.hcd will not be loaded
+>> Bluetooth: hci0: BCM: patch brcm/BCM20702A0-0a5c-21e6.hcd not found
+>> 
+>> 
+>> At first I thought it was just over-reaction to the file being missing, but
+>> looking at the WARN_ON, it appears that we're trying to invoke the firmware
+>> loader before userspace is back up ?
+>> 
+>> In this (and probably other related) kernel, CONFIG_FW_LOADER_USER_HELPER is unset,
+>> in case that matters at all.
+> 
+> If it's the case where no matching firmware file is present, the patch
+> below might help.  It's only compile-tested.
+> 
+> 
+> Takashi
+> 
+> -- 8< --
+> From: Takashi Iwai <tiwai@suse.de>
+> Subject: [PATCH] btusb: Give up firmware loading once when failed
+> 
+> Otherwise it may trigger request_firmware() for the non-existing file
+> in the resume path, resulting in a warning.  For the success paths,
+> calling request_firmware() is fine, as it's cached properly at
+> suspend.  The problem is only for the error paths.
+> 
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+> drivers/bluetooth/btusb.c | 2 ++
+> 1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+> index edfc17bfcd44..62d8e23fd3cb 100644
+> --- a/drivers/bluetooth/btusb.c
+> +++ b/drivers/bluetooth/btusb.c
+> @@ -1569,6 +1569,7 @@ static int btusb_setup_intel(struct hci_dev *hdev)
+> 	if (!fw) {
+> 		kfree_skb(skb);
+> 		btusb_check_bdaddr_intel(hdev);
+> +		hdev->setup = NULL;
+> 		return 0;
+> 	}
+> 	fw_ptr = fw->data;
+> @@ -1756,6 +1757,7 @@ static int btusb_setup_bcm_patchram(struct hci_dev *hdev)
+> 	ret = request_firmware(&fw, fw_name, &hdev->dev);
+> 	if (ret < 0) {
+> 		BT_INFO("%s: BCM: patch %s not found", hdev->name, fw_name);
+> +		hdev->setup = NULL;
+> 		return 0;
+> 	}
 
-I modified hackbench to take in a 'loops' parameter along with
-num_groups which ensures that the test runs long enough to observe and
-debug issues. The idea was to find out how latency sensitive workloads
-can get affected by modification in cpuidle heuristics since it is easy
-to measure the impact on these workloads.
+the hdev->setup callback is only called once for each new device found. This means that setting it back to NULL from the its own handler is not making any difference.
 
-The experiment was conducted on a Power8 system with 1 socket and 6
-cores on it.
+Also the problem is that hdev->setup is really there to load firmware. Devices might work without the firmware, but then they run off an old ROM firmware which is not a good idea in most cases. So we can not just close our eyes and hope for the best. The firmware should really be loaded.
 
-The first experiment was carried out by pinning hackbench to the first
-thread in each core while the rest of the smt threads were idle and
-below are the results. This would ensure the core entered deep idle
-states more often.
+I think the problem is that the devices physically disappear from the USB bus during suspend and will show up as a newly attached device after resume. So we have the cold plug case here. And there we need to firmware. Plain and simple. As stated above hdev->setup is only after run once. The only way to run it a second time is by unplugging and replugging the device. A BIOS that takes the power of the Bluetooth USB device is essentially simulating this behavior.
 
-num_grps     %improvement with patchset
-3                    3.6
-6                   10.6
-12                   5.0
-24                   5.0
-
-The second experiment was carried out by allowing hackbench to run on
-the smt threads of two cores and % improvement with the patchset was in
-range of 4-7%.
-
-I ran the experiments on the vanilla kernel. This means the performance
-improvements is primarily due to avoiding having to do a timebase sync
-by every thread in the core. The power numbers have very little
-variation between the runs with and without the patchset.
-
-Thanks
+We are seeing a hci_power_on call since that is triggered exactly once when the device is plugged in. If we wanted to be super smart, then we could delay that initial call until the first userspace opens any Bluetooth socket. In theory that would work, but could be also way to complicated to realized. However it would mean the initial firmware loading and setup of the device is delayed until bluetoothd has been started. For bluetoothd this will be not a problem since it can handle hotplug of Bluetooth controllers, but for all other command line tools it might be a real problem. 
 
 Regards
-Preeti U Murthy
 
-On 11/25/2014 04:47 PM, Shreyas B. Prabhu wrote:
-> Deep idle states like sleep and winkle are per core idle states. A core
-> enters these states only when all the threads enter either the particular
-> idle state or a deeper one. There are tasks like fastsleep hardware bug
-> workaround and hypervisor core state save which have to be done only by
-> the last thread of the core entering deep idle state and similarly tasks
-> like timebase resync, hypervisor core register restore that have to be
-> done only by the first thread waking up from these states. 
-> 
-> The current idle state management does not have a way to distinguish the
-> first/last thread of the core waking/entering idle states. Tasks like
-> timebase resync are done for all the threads. This is not only is suboptimal,
-> but can cause functionality issues when subcores are involved.
-> 
-> Winkle is deeper idle state compared to fastsleep. In this state the power
-> supply to the chiplet, i.e core, private L2 and private L3 is turned off.
-> This results in a total hypervisor state loss. This patch set adds support
-> for winkle and provides a way to track the idle states of the threads of the
-> core and use it for idle state management of idle states sleep and winkle.
-> 
-> 
-> Changes in v2:
-> --------------
-> -Using PNV_THREAD_NAP/SLEEP defines while calling power7_powersave_common
-> -Comment changes based on review
-> -Rebased on top of 3.18-rc6
-> 
-> 
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Michael Ellerman <mpe@ellerman.id.au>
-> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-> Cc: linux-pm@vger.kernel.org
-> Cc: linuxppc-dev@lists.ozlabs.org
-> Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-> Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-> 
-> Paul Mackerras (1):
->   powerpc: powernv: Switch off MMU before entering nap/sleep/rvwinkle
->     mode
-> 
-> Preeti U. Murthy (1):
->   powerpc/powernv: Enable Offline CPUs to enter deep idle states
-> 
-> Shreyas B. Prabhu (2):
->   powernv: cpuidle: Redesign idle states management
->   powernv: powerpc: Add winkle support for offline cpus
-> 
->  arch/powerpc/include/asm/cpuidle.h             |  14 ++
->  arch/powerpc/include/asm/opal.h                |  13 +
->  arch/powerpc/include/asm/paca.h                |   6 +
->  arch/powerpc/include/asm/ppc-opcode.h          |   2 +
->  arch/powerpc/include/asm/processor.h           |   1 +
->  arch/powerpc/include/asm/reg.h                 |   4 +
->  arch/powerpc/kernel/asm-offsets.c              |   6 +
->  arch/powerpc/kernel/cpu_setup_power.S          |   4 +
->  arch/powerpc/kernel/exceptions-64s.S           |  30 ++-
->  arch/powerpc/kernel/idle_power7.S              | 332 +++++++++++++++++++++----
->  arch/powerpc/platforms/powernv/opal-wrappers.S |  39 +++
->  arch/powerpc/platforms/powernv/powernv.h       |   2 +
->  arch/powerpc/platforms/powernv/setup.c         | 160 ++++++++++++
->  arch/powerpc/platforms/powernv/smp.c           |  10 +-
->  arch/powerpc/platforms/powernv/subcore.c       |  34 +++
->  arch/powerpc/platforms/powernv/subcore.h       |   1 +
->  drivers/cpuidle/cpuidle-powernv.c              |  10 +-
->  17 files changed, 608 insertions(+), 60 deletions(-)
->  create mode 100644 arch/powerpc/include/asm/cpuidle.h
-> 
+Marcel
 
