@@ -1,179 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589AbaKZVMq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 16:12:46 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:38928 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028AbaKZVMp (ORCPT
+	id S1752803AbaKZVND (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 16:13:03 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:42391 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540AbaKZVNB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 16:12:45 -0500
-Date: Wed, 26 Nov 2014 13:12:40 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: bpqw <bpqw@micron.com>
-Cc: Marek Vasut <marex@denx.de>, "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "shijie8@gmail.com" <shijie8@gmail.com>,
-        "geert+renesas@glider.be" <geert+renesas@glider.be>,
-        "grmoore@altera.com" <grmoore@altera.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [V5 PATCH 1/1] driver:mtd:spi-nor: Add quad I/O support for
- Micron spi nor
-Message-ID: <20141126211240.GD21347@ld-irv-0074>
-References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
- <201409251211.57183.marex@denx.de>
- <A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com>
- <201409261046.07132.marex@denx.de>
- <A765B125120D1346A63912DDE6D8B6315EA24E@NTXXIAMBX02.xacn.micron.com>
+	Wed, 26 Nov 2014 16:13:01 -0500
+Message-ID: <54764255.9040404@roeck-us.net>
+Date: Wed, 26 Nov 2014 13:12:53 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A765B125120D1346A63912DDE6D8B6315EA24E@NTXXIAMBX02.xacn.micron.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: navneet kumar <navneetk@nvidia.com>,
+        Eduardo Valentin <edubezval@gmail.com>,
+        Lukasz Majewski <l.majewski@samsung.com>
+CC: Zhang Rui <rui.zhang@intel.com>, Linux PM list <linux-pm@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>, linux-kernel@vger.kernel.org,
+        Caesar Wang <caesar.wang@rock-chips.com>
+Subject: Re: [PATCH v2 3/4] thermal: of: Extend of-thermal to export table
+ of trip points
+References: <1412872737-624-1-git-send-email-l.majewski@samsung.com> <1416500488-7232-1-git-send-email-l.majewski@samsung.com> <1416500488-7232-4-git-send-email-l.majewski@samsung.com> <20141125203629.GA14292@developer> <20141126093510.4233ff7f@amdc2363> <20141126151828.GC3925@developer> <54763B66.90208@nvidia.com>
+In-Reply-To: <54763B66.90208@nvidia.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020208.5476425C.016A,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First of all, can you fix your mail so that you have a proper 'From'?
-That should be your real name (not bpqw), so that it gives a proper
-patch author. If you can't get your mail header to have the right
-'From:' line, then it also works to begin your mail with:
+On 11/26/2014 12:43 PM, navneet kumar wrote:
+>
+> Hi Eduardo, Lukasz,
+>
+> [Combining my concerns as a single text blob here]
+>
+> I. Firstly, with the current patch
+> 	1. is it really needed to duplicate the struct thermal_trip? Why don’t
+> 	we get rid of the __thermal_trip and stay with the 'thermal_trip' ? it
+> 	is not a big change.
+>
+> 	2. gtrips is not updated on "set_trip_temp" etc. actions via sysfs. (am
+> 	I missing something?).
+>
+> II. The other concern is more of a design question
+> 	1. Do we intend to keep the of-thermal as a middle layer between the
+> 	thermal_core and the sensor device? OR, is the role of of-thermal just
+> 	to parse the DT and opt out ? currently of-thermal is somewhat a hybrid
+> 	of these as, in addition to parsing the dt, it holds on to the data
+> 	related to trip points etc. etc.
+>
+> 	2. assuming latter is true (OF is just a dt parser helper): we should
+> 	not be adding more intelligence and dependencies linked to the OF.
+>
+> 	3. assuming former is true (OF is a well-defined middle layer): All is
+> 	good till the point OF maintains the trip points (which is a good thing
+> 	since, OF caches on to the data); BUT, if we expose this information to
+> 	the sensor device too (as this patch is doing),
+>
+> 		3a. we violate the layering principle :-)
+>
+> 		3b. more importantly, this is all just excessive logic that we
+> 		put in which *could be useful* only if we intend to extend the
+> 		role of OF as a trip point management layer that does more than
+> 		just holding on to the data. This may include -
+>
+> 			-> The sensor devices to know nothing about the
+> 			trip_points, instead the sensor devices would work on
+> 			"temperature thresholds" and OF would map sensor
+> 			thresholds to the actual trip points as needed
+> 			(configured from DT); while the sensor devices stick to
+> 			using "thresholds".
+>
+> 			-> Queuing from above, sensors, most of the time, only
+> 			need to know a high and a low temp threshold; which
+> 			essentially is a subset of the active/passive etc. trip
+> 			points. Calculation of that based on the current temp,
+> 			as of today is replicated across all the sensor drivers
+> 			and can be hoisted up to the of-thermal.
+>
 
-From: Your Name <your@email.com>
+Sorry, lost you here. What replicated calculation do you refer to ?
 
-On Thu, Nov 06, 2014 at 03:09:06AM +0000, bpqw wrote:
-> This patch adds code which enables Quad I/O mode on Micron SPI NOR flashes.
-> 
-> For Micron SPI NOR flash,enabling or disabling quad I/O protocol is controlled
-> by EVCR (Enhanced Volatile Configuration Register), Quad I/O protocol bit 7.
-> When EVCR bit 7 is reset to 0,the SPI NOR flash will operate in quad I/O mode.
+Thanks,
+Guenter
 
-What's the difference between using EVCR and the ENTER QUAD I/O MODE
-(35h) command I see in some of your datasheets? Are both supported on
-all Micron quad I/O SPI NOR flash?
+> Seems like this is the opportune time to make a call about the role of of-thermal?
+>
+> On 11/26/2014 07:18 AM, Eduardo Valentin wrote:
+>> * PGP Signed by an unknown key
+>>
+>> Hello,
+>>
+>> On Wed, Nov 26, 2014 at 09:35:10AM +0100, Lukasz Majewski wrote:
+>>> Hi Eduardo,
+>>>
+>>>> Hello Lukasz,
+>>>>
+>>>> On Thu, Nov 20, 2014 at 05:21:27PM +0100, Lukasz Majewski wrote:
+>>>>> This patch extends the of-thermal.c to export copy of trip points
+>>>>> for a given thermal zone.
+>>>>>
+>>>>> Thermal drivers should use of_thermal_get_trip_points() method to
+>>>>> get pointer to table of thermal trip points.
+>>>>>
+>>>>> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+>>>>> ---
+>>>>> Changes for v2:
+>>>>> - New patch - as suggested by Eduardo Valentin
+>>>>> ---
+>>>>>   drivers/thermal/of-thermal.c   | 33
+>>>>> +++++++++++++++++++++++++++++++++ drivers/thermal/thermal_core.h |
+>>>>> 7 +++++++ include/linux/thermal.h        | 14 ++++++++++++++
+>>>>>   3 files changed, 54 insertions(+)
+>>>>>
+>>>>> diff --git a/drivers/thermal/of-thermal.c
+>>>>> b/drivers/thermal/of-thermal.c index 336af7f..33921c5 100644
+>>>>> --- a/drivers/thermal/of-thermal.c
+>>>>> +++ b/drivers/thermal/of-thermal.c
+>>>>> @@ -89,6 +89,7 @@ struct __thermal_zone {
+>>>>>   	/* trip data */
+>>>>>   	int ntrips;
+>>>>>   	struct __thermal_trip *trips;
+>>>>> +	struct thermal_trip *gtrips;
+> Do we really need this duplication ?
+>>>>>
+>>>>>   	/* cooling binding data */
+>>>>>   	int num_tbps;
+>>>>> @@ -152,6 +153,27 @@ bool of_thermal_is_trip_en(struct
+>>>>> thermal_zone_device *tz, int trip) return true;
+>>>>>   }
+>>>>>
+>>>>> +/**
+>>>>> + * of_thermal_get_trip_points - function to get access to a
+>>>>> globally exported
+>>>>> + *				trip points
+>>>>> + *
+>>>>> + * @tz:	pointer to a thermal zone
+>>>>> + *
+>>>>> + * This function provides a pointer to the copy of trip points
+>>>>> table
+>>>>> + *
+>>>>> + * Return: pointer to trip points table, NULL otherwise
+>>>>> + */
+>>>>> +const struct thermal_trip * const
+>>>>> +of_thermal_get_trip_points(struct thermal_zone_device *tz)
+>>>>> +{
+>>>>> +	struct __thermal_zone *data = tz->devdata;
+>>>>> +
+>>>>> +	if (!data)
+>>>>> +		return NULL;
+>>>>> +
+>>>>> +	return data->gtrips;
+>>>>> +}
+>>>>> +
+>>>>
+>>>> EXPORT_SYMBOL_GPL(of_thermal_get_trip_points);
+>>>
+>>> Ok.
+>>>
+>>>>
+>>>>>   static int of_thermal_get_trend(struct thermal_zone_device *tz,
+>>>>> int trip, enum thermal_trend *trend)
+>>>>>   {
+>>>>> @@ -767,6 +789,16 @@ thermal_of_build_thermal_zone(struct
+>>>>> device_node *np) goto free_tbps;
+>>>>>   	}
+>>>>>
+>>>>> +	tz->gtrips = kcalloc(tz->ntrips, sizeof(*tz->gtrips),
+>>>>> GFP_KERNEL);
+>>>>> +	if (!tz->gtrips) {
+>>>>> +		ret = -ENOMEM;
+>>>>> +		goto free_tbps;
+>>>>> +	}
+>>>>> +
+>>>>> +	for (i = 0; i < tz->ntrips; i++)
+>>>>> +		memcpy(&(tz->gtrips[i]),
+>>>>> &(tz->trips[i].temperature),
+>>>>> +		       sizeof(*tz->gtrips));
+>>>>> +
+>>>>>   finish:
+>>>>>   	of_node_put(child);
+>>>>>   	tz->mode = THERMAL_DEVICE_DISABLED;
+>>>>> @@ -793,6 +825,7 @@ static inline void of_thermal_free_zone(struct
+>>>>> __thermal_zone *tz) {
+>>>>>   	int i;
+>>>>>
+>>>>> +	kfree(tz->gtrips);
+>>>>>   	for (i = 0; i < tz->num_tbps; i++)
+>>>>>   		of_node_put(tz->tbps[i].cooling_device);
+>>>>>   	kfree(tz->tbps);
+> Couldn't find the code that updates *gtrips as a result of set_trip_temp via
+> sysfs.
+>
+>>>>> diff --git a/drivers/thermal/thermal_core.h
+>>>>> b/drivers/thermal/thermal_core.h index 466208c..a9580ca 100644
+>>>>> --- a/drivers/thermal/thermal_core.h
+>>>>> +++ b/drivers/thermal/thermal_core.h
+>>>>> @@ -91,6 +91,8 @@ int of_parse_thermal_zones(void);
+>>>>>   void of_thermal_destroy_zones(void);
+>>>>>   int of_thermal_get_ntrips(struct thermal_zone_device *);
+>>>>>   bool of_thermal_is_trip_en(struct thermal_zone_device *, int);
+>>>>> +const struct thermal_trip * const
+>>>>> +of_thermal_get_trip_points(struct thermal_zone_device *);
+>>>>>   #else
+>>>>>   static inline int of_parse_thermal_zones(void) { return 0; }
+>>>>>   static inline void of_thermal_destroy_zones(void) { }
+>>>>> @@ -102,6 +104,11 @@ static inline bool
+>>>>> of_thermal_is_trip_en(struct thermal_zone_device *, int) {
+>>>>
+>>>> This produces compilation error when CONFIG_THERMAL_OF is not set.
+>>>> Name the parameters to fix.
+>>>
+>>> As all the other cases, I will fix that.
+>>>
+>>>>
+>>>>>   	return 0;
+>>>>>   }
+>>>>> +static inline const struct thermal_trip * const
+>>>>> +of_thermal_get_trip_points(struct thermal_zone_device *)
+>>>>> +{
+>>>>> +	return NULL;
+>>>>> +}
+>>>>>   #endif
+>>>>>
+>>>>>   #endif /* __THERMAL_CORE_H__ */
+>>>>> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+>>>>> index 5bc28a7..88d7249 100644
+>>>>> --- a/include/linux/thermal.h
+>>>>> +++ b/include/linux/thermal.h
+>>>>> @@ -303,6 +303,20 @@ struct thermal_zone_of_device_ops {
+>>>>>   	int (*get_trend)(void *, long *);
+>>>>>   };
+>>>>>
+>>>>> +/**
+>>>>> + * struct thermal_trip - Structure representing themal trip points
+>>>>> exported from
+>>>>> + *                       of-thermal
+>>>>> + *
+>>>>
+>>>> The only problem I have with this name is that would look like it is
+>>>> in use in all thermal framework, which is not really the case. But I
+>>>> do think having a type here is a good thing. So, not sure :-)
+>>>
+>>> It can stay to be struct thermal_trip or we can rename it to
+>>> struct of_thermal_trip.
+>>>
+>>> I'm fine with both names.
+>>
+>> Leave it as 'thermal_trip'.
+>>
+>>>
+>>>>
+>>>>> + * @temperature:	trip point temperature
+>>>>> + * @hysteresis:		trip point hysteresis
+>>>>> + * @type:		trip point type
+>>>>> + */
+>>>>> +struct thermal_trip {
+>>>>> +	unsigned long int temperature;
+>>>>> +	unsigned long int hysteresis;
+>>>>> +	enum thermal_trip_type type;
+>>>>> +};
+>>>>> +
+>>>>>   /* Function declarations */
+>>>>>   #ifdef CONFIG_THERMAL_OF
+>>>>>   struct thermal_zone_device *
+>>>>> --
+>>>>> 2.0.0.rc2
+>>>>>
+>>>
+>>>
+>>>
+>>> --
+>>> Best regards,
+>>>
+>>> Lukasz Majewski
+>>>
+>>> Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+>>
+>> * Unknown Key
+>> * 0x7DA4E256
+>>
+>
 
-Also, which SPI NOR is this enabled for? I don't see any Micron entries
-in spi_nor_ids[] which contain the SPI_NOR_QUAD_READ flag.
-
-> Signed-off-by: bean huo <beanhuo@micron.com>
-> Acked-by: Marek Vasut <marex@denx.de>
-> ---
->  v1-v2:
-> 	Modified to that capture wait_till_ready()
-> 	return value,if error,directly return its
-> 	the value.
->  v2-v3:
-> 	Directly use the reurning error value of
-> 	read_reg and write_reg,instead of -EINVAL.
->  v3-v4:
-> 	Modify commit logs that wraped into 80 columns 
->  v4-v5:
-> 	Rebuild new patch based on latest linux-mtd
-
-Please rebase on l2-mtd.git. Sorry if that wasn't clear earlier.
-
->  drivers/mtd/spi-nor/spi-nor.c |   46 +++++++++++++++++++++++++++++++++++++++++
->  include/linux/mtd/spi-nor.h   |    6 ++++++
->  2 files changed, 52 insertions(+)
-> 
-> diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c
-> index c51ee52..2a31742 100644
-> --- a/drivers/mtd/spi-nor/spi-nor.c
-> +++ b/drivers/mtd/spi-nor/spi-nor.c
-> @@ -874,6 +874,45 @@ static int spansion_quad_enable(struct spi_nor *nor)
->  	return 0;
->  }
->  
-> +static int micron_quad_enable(struct spi_nor *nor)
-> +{
-> +	int ret, val;
-> +
-> +	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
-> +	if (ret < 0) {
-> +		dev_err(nor->dev, "error %d reading EVCR\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	write_enable(nor);
-> +
-> +	/* set EVCR ,enable quad I/O */
-> +	nor->cmd_buf[0] = val & ~EVCR_QUAD_EN_MICRON;
-> +	ret = nor->write_reg(nor, SPINOR_OP_WD_EVCR, nor->cmd_buf, 1, 0);
-> +	if (ret < 0) {
-> +		dev_err(nor->dev,
-> +			"error while writing EVCR register\n");
-
-Join the above two lines?
-
-> +		return ret;
-> +	}
-> +
-> +	ret = wait_till_ready(nor);
-
-It's spi_nor_wait_till_ready(), now.
-
-> +	if (ret)
-> +		return ret;
-> +
-> +	/* read EVCR and check it */
-> +	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
-> +	if (ret < 0) {
-> +		dev_err(nor->dev, "error %d reading EVCR\n", ret);
-> +		return ret;
-> +	}
-> +	if (val & EVCR_QUAD_EN_MICRON) {
-> +		dev_err(nor->dev, "Micron EVCR Quad bit not clear\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  static int set_quad_mode(struct spi_nor *nor, u32 jedec_id)
->  {
->  	int status;
-> @@ -886,6 +925,13 @@ static int set_quad_mode(struct spi_nor *nor, u32 jedec_id)
->  			return -EINVAL;
->  		}
->  		return status;
-> +	case CFI_MFR_ST:
-> +		status = micron_quad_enable(nor);
-> +		if (status) {
-> +			dev_err(nor->dev, "Micron quad-read not enabled\n");
-> +			return -EINVAL;
-> +		}
-> +		return status;
->  	default:
->  		status = spansion_quad_enable(nor);
->  		if (status) {
-> diff --git a/include/linux/mtd/spi-nor.h b/include/linux/mtd/spi-nor.h
-> index 046a0a2..42e7e37 100644
-> --- a/include/linux/mtd/spi-nor.h
-> +++ b/include/linux/mtd/spi-nor.h
-> @@ -56,6 +56,10 @@
->  /* Used for Spansion flashes only. */
->  #define SPINOR_OP_BRWR		0x17	/* Bank register write */
->  
-> +/* Used for Micron flashes only. */
-> +#define SPINOR_OP_RD_EVCR      0x65    /* Read EVCR register */
-> +#define SPINOR_OP_WD_EVCR      0x61    /* Write EVCR register */
-> +
->  /* Status Register bits. */
->  #define SR_WIP			1	/* Write in progress */
->  #define SR_WEL			2	/* Write enable latch */
-> @@ -67,6 +71,8 @@
->  
->  #define SR_QUAD_EN_MX		0x40	/* Macronix Quad I/O */
->  
-> +#define EVCR_QUAD_EN_MICRON    0x80    /* Micron Quad I/O */
-
-Like with other register bitfields (SR, FSR), please place a comment
-above to describe the register, like:
-
-/* Enhanced Volatile Configuration Register bits */
-
-> +
->  /* Flag Status Register bits */
->  #define FSR_READY		0x80
->  
-
-Brian
