@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643AbaKZNMb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 08:12:31 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:35793 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752538AbaKZNM1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 08:12:27 -0500
-Date: Wed, 26 Nov 2014 13:12:10 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Tim Sander <tim@krieglstein.org>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>
-Subject: Re: [PATCH 3.18-rc3 v9 5/5] arm: smp: Handle ipi_cpu_backtrace()
- using FIQ (if available)
-Message-ID: <20141126131210.GI3836@n2100.arm.linux.org.uk>
-References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
- <1416936401-5147-1-git-send-email-daniel.thompson@linaro.org>
- <1416936401-5147-6-git-send-email-daniel.thompson@linaro.org>
- <2744845.J3XUj2a9bM@dabox>
+	id S1752669AbaKZNM4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 08:12:56 -0500
+Received: from mga03.intel.com ([134.134.136.65]:58614 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752650AbaKZNMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 08:12:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,462,1413270000"; 
+   d="scan'208";a="614352392"
+Message-ID: <5475D174.50402@intel.com>
+Date: Wed, 26 Nov 2014 15:11:16 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2744845.J3XUj2a9bM@dabox>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jiri Olsa <jolsa@redhat.com>
+CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V2 02/22] perf evlist: Add initial support for mmapping
+ an Instruction Trace buffer
+References: <1416489808-4489-1-git-send-email-adrian.hunter@intel.com> <1416489808-4489-3-git-send-email-adrian.hunter@intel.com> <20141125165752.GB563@krava.brq.redhat.com>
+In-Reply-To: <20141125165752.GB563@krava.brq.redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 01:46:52PM +0100, Tim Sander wrote:
-> Hi Daniel
+On 25/11/14 18:57, Jiri Olsa wrote:
+> On Thu, Nov 20, 2014 at 03:23:08PM +0200, Adrian Hunter wrote:
 > 
-> Am Dienstag, 25. November 2014, 17:26:41 schrieb Daniel Thompson:
-> > Previous changes have introduced both a replacement default FIQ handler
-> > and an implementation of arch_trigger_all_cpu_backtrace for ARM but
-> > these are currently independent of each other.
-> > 
-> > This patch plumbs together these features making it possible, on platforms
-> > that support it, to trigger backtrace using FIQ.
-> Does this ipi handler interfere in any way with set_fiq_handler?
+> SNIP
 > 
-> As far as i know there is only one FIQ handler vector so i guess there is a 
-> potential conflict. But i have not worked with IPI's so i might be completley
-> wrong.
+>> +			bool per_cpu __maybe_unused)
+>> +{
+>> +}
+>> +
+>>  static void __perf_evlist__munmap(struct perf_evlist *evlist, int idx)
+>>  {
+>>  	if (evlist->mmap[idx].base != NULL) {
+>> @@ -731,6 +759,7 @@ static void __perf_evlist__munmap(struct perf_evlist *evlist, int idx)
+>>  		evlist->mmap[idx].base = NULL;
+>>  		evlist->mmap[idx].refcnt = 0;
+>>  	}
+>> +	itrace_mmap__munmap(&evlist->mmap[idx].itrace_mmap);
+>>  }
+>>  
+>>  void perf_evlist__munmap(struct perf_evlist *evlist)
+>> @@ -758,6 +787,7 @@ static int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
+>>  struct mmap_params {
+>>  	int prot;
+>>  	int mask;
+>> +	struct itrace_mmap_params itrace_mp;
+>>  };
+>>  
+>>  static int __perf_evlist__mmap(struct perf_evlist *evlist, int idx,
+>> @@ -788,6 +818,10 @@ static int __perf_evlist__mmap(struct perf_evlist *evlist, int idx,
+>>  		return -1;
+>>  	}
+>>  
+>> +	if (itrace_mmap__mmap(&evlist->mmap[idx].itrace_mmap,
+>> +			      &mp->itrace_mp, evlist->mmap[idx].base, fd))
+>> +		return -1;
+>> +
+> 
+> so the itrace mmap is mmaped with right after event mmap for event fd..?
 
-First, the code in arch/arm/kernel/fiq.c should work with this new FIQ
-code in that the new FIQ code is used as the "default" handler (as
-opposed to the original handler which was a total no-op.)
+The AUX area support is not implemented yet.  The AUX mmap size and offset
+are set through the mmap page via aux_offset and aux_size.
 
-Secondly, use of arch/arm/kernel/fiq.c in a SMP system is really not a
-good idea: the FIQ registers are private to each CPU in the system, and
-there is no infrastructure to allow fiq.c to ensure that it loads the
-right CPU with the register information for the provided handler.
+> is there any latest version of kernel changes, so I could check with
+> kernel's perf_mmap? hum.. or you just use the same mmap?
 
-So, use of arch/arm/kernel/fiq.c and the IPI's use of FIQ /should/ be
-mutually exclusive.
+I re-based and pushed to:
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+	git://git.infradead.org/users/ahunter/linux-perf.git
+
+The missing AUX bits are added in this patch:
+
+	http://git.infradead.org/users/ahunter/linux-perf.git/commitdiff/f1be40371b5600a5c4a20f88adff9595bdf5e7ec
+
