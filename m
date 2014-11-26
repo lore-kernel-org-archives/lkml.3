@@ -1,176 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838AbaKZQw1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 11:52:27 -0500
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:48296 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaKZQwZ (ORCPT
+	id S1752909AbaKZQwd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 11:52:33 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:38563 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752843AbaKZQwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 11:52:25 -0500
-MIME-Version: 1.0
-X-Originating-IP: [46.116.162.1]
-In-Reply-To: <5464EE5C.8090904@ti.com>
-References: <1410892387-30596-1-git-send-email-s-anna@ti.com> <5464EE5C.8090904@ti.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 26 Nov 2014 18:52:03 +0200
-Message-ID: <CAK=Wgbb=u-GBo3JakZcrbO6xoOe=PWb3C50EJAXrpFJF3VraTQ@mail.gmail.com>
-Subject: Re: [PATCHv2] rpmsg: compute number of buffers to allocate from vrings
-To: Suman Anna <s-anna@ti.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Dave Gerlach <d-gerlach@ti.com>
-Content-Type: multipart/mixed; boundary=001a114034102460930508c5da7d
+	Wed, 26 Nov 2014 11:52:30 -0500
+Message-ID: <1417020748.29427.59.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH net] r8152: drop the tx packet with invalid length
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Date: Wed, 26 Nov 2014 08:52:28 -0800
+In-Reply-To: <1394712342-15778-104-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-104-Taiwan-albertk@realtek.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a114034102460930508c5da7d
-Content-Type: text/plain; charset=UTF-8
+On Wed, 2014-11-26 at 17:56 +0800, Hayes Wang wrote:
+> Drop the tx packet which is more than the size of agg_buf_sz. When
+> creating a bridge with the device, we may get the tx packet with
+> TSO and the length is more than the gso_max_size which is set by
+> the driver through netif_set_gso_max_size(). Such packets couldn't
+> be transmitted and should be dropped directly.
+> 
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+> ---
+>  drivers/net/usb/r8152.c | 9 +++++++++
+>  1 file changed, 9 insertions(+)
+> 
+> diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+> index c6554c7..ebdaff7 100644
+> --- a/drivers/net/usb/r8152.c
+> +++ b/drivers/net/usb/r8152.c
+> @@ -1897,6 +1897,15 @@ static netdev_tx_t rtl8152_start_xmit(struct sk_buff *skb,
+>  {
+>  	struct r8152 *tp = netdev_priv(netdev);
+>  
+> +	if ((skb->len + sizeof(struct tx_desc)) > agg_buf_sz) {
+> +		struct net_device_stats *stats = &netdev->stats;
+> +
+> +		dev_kfree_skb_any(skb);
+> +		stats->tx_dropped++;
+> +		WARN_ON_ONCE(1);
+> +		return NETDEV_TX_OK;
+> +	}
+> +
+>  	skb_tx_timestamp(skb);
+>  
+>  	skb_queue_tail(&tp->tx_queue, skb);
 
-Hi Suman,
+Looks like a candidate for ndo_gso_check(), so that we do not drop, but
+instead segment from netif_needs_gso()/validate_xmit_skb()
 
-On Thu, Nov 13, 2014 at 7:46 PM, Suman Anna <s-anna@ti.com> wrote:
-> Hi Ohad,
->
-> On 09/16/2014 01:33 PM, Suman Anna wrote:
->> The buffers to be used for communication are allocated during the
->> rpmsg virtio driver's probe, and the total number of buffers is
->> currently hard-coded to 512. The vring configuration can vary from
->> one platform to another or between different remote processors. The
->> setup of the receive buffers will throw a WARN_ON if the associated
->> vrings are configured with less than 256 buffers (in each direction).
->> So, adjust this hard-coded value to rely on the number of buffers the
->> virtqueue vring is setup with, but also limit to use 256 buffers at
->> most in each direction to avoid wacky resource tables consuming up
->> unreasonable memory.
->>
->> NOTE: The number of buffers is already assumed to be symmetrical
->> in each direction, and that logic is not unchanged.
->>
->> Signed-off-by: Suman Anna <s-anna@ti.com>
->> ---
->> v2 changes:
->> - add upper limit on buffers and update comments
->> - revise patch description
->
-> Any comments on this one, if not can you pick this up for 3.19?
 
-Did some small changes - untested, not even compiled - can you please
-make sure it works for you?
 
-Thanks,
-Ohad.
-
---001a114034102460930508c5da7d
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-rpmsg-use-less-buffers-when-vrings-are-small.patch"
-Content-Disposition: attachment; 
-	filename="0001-rpmsg-use-less-buffers-when-vrings-are-small.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_i2yx8g2v0
-
-RnJvbSBiMWI5ODkxNDQxZmEzM2ZkMGQ0OWI1Y2IzYWE3ZjA0YmNhMWNjMWRiIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBTdW1hbiBBbm5hIDxzLWFubmFAdGkuY29tPgpEYXRlOiBUdWUs
-IDE2IFNlcCAyMDE0IDEzOjMzOjA3IC0wNTAwClN1YmplY3Q6IFtQQVRDSF0gcnBtc2c6IHVzZSBs
-ZXNzIGJ1ZmZlcnMgd2hlbiB2cmluZ3MgYXJlIHNtYWxsCgpBZGp1c3QgdGhlIG51bWJlciBvZiBy
-cG1zZyBidWZmZXJzIHRvIHJlbHkgb24gdGhlIHNpemUgb2YgdGhlCnZyaW5nLCBpbnN0ZWFkIG9m
-IHVzaW5nIHRoZSBoYXJkIGNvZGVkIHZhbHVlIG9mIDUxMiAoMjU2IHBlcgpkaXJlY3Rpb24pLgoK
-VGhpcyBpcyBuZWVkZWQgd2hlbiBzbWFsbCB2cmluZ3MgYXJlIGJlaW5nIHVzZWQsIHdoZXJlIDI1
-NgpidWZmZXJzIGFyZSB0b28gbXVjaCB0byBmaXQgaW4gYSB2cmluZy4KCldoaWxlIGNvbnNpZGVy
-aW5nIHRoZSB2cmluZyBzaXplLCBrZWVwIHVzaW5nIHRoZSA1MTIgaGFyZCBjb2RlZAp2YWx1ZSBh
-cyBhbiB1cHBlciBsaW1pdCB0byBhdm9pZCB3YWNreSByZXNvdXJjZSB0YWJsZXMgY29uc3VtaW5n
-CnVucmVhc29uYWJsZSBhbW91bnQgb2YgbWVtb3J5LgoKTk9URTogVGhlIG51bWJlciBvZiBidWZm
-ZXJzIGlzIGFscmVhZHkgYXNzdW1lZCB0byBiZSBzeW1tZXRyaWNhbAppbiBlYWNoIGRpcmVjdGlv
-biwgYW5kIHRoYXQgbG9naWMgaXMgdW5jaGFuZ2VkLgoKU2lnbmVkLW9mZi1ieTogU3VtYW4gQW5u
-YSA8cy1hbm5hQHRpLmNvbT4KW2VkaXQgY29tbWl0IG1lc3NhZ2UsIHNtYWxsIGNvZGUgYW5kIGNv
-bW1lbnQgc2ltcGxpZmljYXRpb25dClNpZ25lZC1vZmYtYnk6IE9oYWQgQmVuLUNvaGVuIDxvaGFk
-QHdpemVyeS5jb20+Ci0tLQogZHJpdmVycy9ycG1zZy92aXJ0aW9fcnBtc2dfYnVzLmMgfCA0NCAr
-KysrKysrKysrKysrKysrKysrKysrKysrKystLS0tLS0tLS0tLS0tCiAxIGZpbGUgY2hhbmdlZCwg
-MzAgaW5zZXJ0aW9ucygrKSwgMTQgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9y
-cG1zZy92aXJ0aW9fcnBtc2dfYnVzLmMgYi9kcml2ZXJzL3JwbXNnL3ZpcnRpb19ycG1zZ19idXMu
-YwppbmRleCBiNjEzNWQ0Li45MmY2YWY2IDEwMDY0NAotLS0gYS9kcml2ZXJzL3JwbXNnL3ZpcnRp
-b19ycG1zZ19idXMuYworKysgYi9kcml2ZXJzL3JwbXNnL3ZpcnRpb19ycG1zZ19idXMuYwpAQCAt
-NDEsNiArNDEsNyBAQAogICogQHN2cToJdHggdmlydHF1ZXVlCiAgKiBAcmJ1ZnM6CWtlcm5lbCBh
-ZGRyZXNzIG9mIHJ4IGJ1ZmZlcnMKICAqIEBzYnVmczoJa2VybmVsIGFkZHJlc3Mgb2YgdHggYnVm
-ZmVycworICogQG51bV9idWZzOgl0b3RhbCBudW1iZXIgb2YgYnVmZmVycyBmb3IgcnggYW5kIHR4
-CiAgKiBAbGFzdF9zYnVmOglpbmRleCBvZiBsYXN0IHR4IGJ1ZmZlciB1c2VkCiAgKiBAYnVmc19k
-bWE6CWRtYSBiYXNlIGFkZHIgb2YgdGhlIGJ1ZmZlcnMKICAqIEB0eF9sb2NrOglwcm90ZWN0cyBz
-dnEsIHNidWZzIGFuZCBzbGVlcGVycywgdG8gYWxsb3cgY29uY3VycmVudCBzZW5kZXJzLgpAQCAt
-NjAsNiArNjEsNyBAQCBzdHJ1Y3QgdmlydHByb2NfaW5mbyB7CiAJc3RydWN0IHZpcnRpb19kZXZp
-Y2UgKnZkZXY7CiAJc3RydWN0IHZpcnRxdWV1ZSAqcnZxLCAqc3ZxOwogCXZvaWQgKnJidWZzLCAq
-c2J1ZnM7CisJdW5zaWduZWQgaW50IG51bV9idWZzOwogCWludCBsYXN0X3NidWY7CiAJZG1hX2Fk
-ZHJfdCBidWZzX2RtYTsKIAlzdHJ1Y3QgbXV0ZXggdHhfbG9jazsKQEAgLTg2LDEzICs4OCwxNCBA
-QCBzdHJ1Y3QgcnBtc2dfY2hhbm5lbF9pbmZvIHsKICNkZWZpbmUgdG9fcnBtc2dfZHJpdmVyKGQp
-IGNvbnRhaW5lcl9vZihkLCBzdHJ1Y3QgcnBtc2dfZHJpdmVyLCBkcnYpCiAKIC8qCi0gKiBXZSdy
-ZSBhbGxvY2F0aW5nIDUxMiBidWZmZXJzIG9mIDUxMiBieXRlcyBmb3IgY29tbXVuaWNhdGlvbnMs
-IGFuZCB0aGVuCi0gKiB1c2luZyB0aGUgZmlyc3QgMjU2IGJ1ZmZlcnMgZm9yIFJYLCBhbmQgdGhl
-IGxhc3QgMjU2IGJ1ZmZlcnMgZm9yIFRYLgorICogV2UncmUgYWxsb2NhdGluZyBidWZmZXJzIG9m
-IDUxMiBieXRlcyBlYWNoIGZvciBjb21tdW5pY2F0aW9ucy4gVGhlCisgKiBudW1iZXIgb2YgYnVm
-ZmVycyB3aWxsIGJlIGNvbXB1dGVkIGZyb20gdGhlIG51bWJlciBvZiBidWZmZXJzIHN1cHBvcnRl
-ZAorICogYnkgdGhlIHZyaW5nLCB1cHRvIGEgbWF4aW11bSBvZiA1MTIgYnVmZmVycyAoMjU2IGlu
-IGVhY2ggZGlyZWN0aW9uKS4KICAqCiAgKiBFYWNoIGJ1ZmZlciB3aWxsIGhhdmUgMTYgYnl0ZXMg
-Zm9yIHRoZSBtc2cgaGVhZGVyIGFuZCA0OTYgYnl0ZXMgZm9yCiAgKiB0aGUgcGF5bG9hZC4KICAq
-Ci0gKiBUaGlzIHdpbGwgcmVxdWlyZSBhIHRvdGFsIHNwYWNlIG9mIDI1NktCIGZvciB0aGUgYnVm
-ZmVycy4KKyAqIFRoaXMgd2lsbCB1dGlsaXplIGEgbWF4aW11bSB0b3RhbCBzcGFjZSBvZiAyNTZL
-QiBmb3IgdGhlIGJ1ZmZlcnMuCiAgKgogICogV2UgbWlnaHQgYWxzbyB3YW50IHRvIGFkZCBzdXBw
-b3J0IGZvciB1c2VyLXByb3ZpZGVkIGJ1ZmZlcnMgaW4gdGltZS4KICAqIFRoaXMgd2lsbCBhbGxv
-dyBiaWdnZXIgYnVmZmVyIHNpemUgZmxleGliaWxpdHksIGFuZCBjYW4gYWxzbyBiZSB1c2VkCkBA
-IC0xMDIsOSArMTA1LDggQEAgc3RydWN0IHJwbXNnX2NoYW5uZWxfaW5mbyB7CiAgKiBjYW4gY2hh
-bmdlIHRoaXMgd2l0aG91dCBjaGFuZ2luZyBhbnl0aGluZyBpbiB0aGUgZmlybXdhcmUgb2YgdGhl
-IHJlbW90ZQogICogcHJvY2Vzc29yLgogICovCi0jZGVmaW5lIFJQTVNHX05VTV9CVUZTCQkoNTEy
-KQorI2RlZmluZSBNQVhfUlBNU0dfTlVNX0JVRlMJKDUxMikKICNkZWZpbmUgUlBNU0dfQlVGX1NJ
-WkUJCSg1MTIpCi0jZGVmaW5lIFJQTVNHX1RPVEFMX0JVRl9TUEFDRQkoUlBNU0dfTlVNX0JVRlMg
-KiBSUE1TR19CVUZfU0laRSkKIAogLyoKICAqIExvY2FsIGFkZHJlc3NlcyBhcmUgZHluYW1pY2Fs
-bHkgYWxsb2NhdGVkIG9uLWRlbWFuZC4KQEAgLTU3OSw3ICs1ODEsNyBAQCBzdGF0aWMgdm9pZCAq
-Z2V0X2FfdHhfYnVmKHN0cnVjdCB2aXJ0cHJvY19pbmZvICp2cnApCiAJICogZWl0aGVyIHBpY2sg
-dGhlIG5leHQgdW51c2VkIHR4IGJ1ZmZlcgogCSAqIChoYWxmIG9mIG91ciBidWZmZXJzIGFyZSB1
-c2VkIGZvciBzZW5kaW5nIG1lc3NhZ2VzKQogCSAqLwotCWlmICh2cnAtPmxhc3Rfc2J1ZiA8IFJQ
-TVNHX05VTV9CVUZTIC8gMikKKwlpZiAodnJwLT5sYXN0X3NidWYgPCB2cnAtPm51bV9idWZzIC8g
-MikKIAkJcmV0ID0gdnJwLT5zYnVmcyArIFJQTVNHX0JVRl9TSVpFICogdnJwLT5sYXN0X3NidWYr
-KzsKIAkvKiBvciByZWN5Y2xlIGEgdXNlZCBvbmUgKi8KIAllbHNlCkBAIC05NDgsNiArOTUwLDcg
-QEAgc3RhdGljIGludCBycG1zZ19wcm9iZShzdHJ1Y3QgdmlydGlvX2RldmljZSAqdmRldikKIAlz
-dHJ1Y3QgdmlydHByb2NfaW5mbyAqdnJwOwogCXZvaWQgKmJ1ZnNfdmE7CiAJaW50IGVyciA9IDAs
-IGk7CisJc2l6ZV90IHRvdGFsX2J1Zl9zcGFjZTsKIAogCXZycCA9IGt6YWxsb2Moc2l6ZW9mKCp2
-cnApLCBHRlBfS0VSTkVMKTsKIAlpZiAoIXZycCkKQEAgLTk2OCwxMCArOTcxLDIyIEBAIHN0YXRp
-YyBpbnQgcnBtc2dfcHJvYmUoc3RydWN0IHZpcnRpb19kZXZpY2UgKnZkZXYpCiAJdnJwLT5ydnEg
-PSB2cXNbMF07CiAJdnJwLT5zdnEgPSB2cXNbMV07CiAKKwkvKiB3ZSBleHBlY3Qgc3ltbWV0cmlj
-IHR4L3J4IHZyaW5ncyAqLworCVdBUk5fT04odmlydHF1ZXVlX2dldF92cmluZ19zaXplKHZycC0+
-cnZxKSAhPQorCQl2aXJ0cXVldWVfZ2V0X3ZyaW5nX3NpemUodnJwLT5zdnEpKTsKKworCS8qIHdl
-IG5lZWQgbGVzcyBidWZmZXJzIGlmIHZyaW5ncyBhcmUgc21hbGwgKi8KKwlpZiAodmlydHF1ZXVl
-X2dldF92cmluZ19zaXplKHZycC0+cnZxKSA8IE1BWF9SUE1TR19OVU1fQlVGUyAvIDIpCisJCXZy
-cC0+bnVtX2J1ZnMgPSB2aXJ0cXVldWVfZ2V0X3ZyaW5nX3NpemUodnJwLT5ydnEpICogMjsKKwll
-bHNlCisJCXZycC0+bnVtX2J1ZnMgPSBNQVhfUlBNU0dfTlVNX0JVRlM7CisKKwl0b3RhbF9idWZf
-c3BhY2UgPSB2cnAtPm51bV9idWZzICogUlBNU0dfQlVGX1NJWkU7CisKIAkvKiBhbGxvY2F0ZSBj
-b2hlcmVudCBtZW1vcnkgZm9yIHRoZSBidWZmZXJzICovCiAJYnVmc192YSA9IGRtYV9hbGxvY19j
-b2hlcmVudCh2ZGV2LT5kZXYucGFyZW50LT5wYXJlbnQsCi0JCQkJUlBNU0dfVE9UQUxfQlVGX1NQ
-QUNFLAotCQkJCSZ2cnAtPmJ1ZnNfZG1hLCBHRlBfS0VSTkVMKTsKKwkJCQkgICAgIHRvdGFsX2J1
-Zl9zcGFjZSwgJnZycC0+YnVmc19kbWEsCisJCQkJICAgICBHRlBfS0VSTkVMKTsKIAlpZiAoIWJ1
-ZnNfdmEpIHsKIAkJZXJyID0gLUVOT01FTTsKIAkJZ290byB2cXNfZGVsOwpAQCAtOTg0LDEwICs5
-OTksMTAgQEAgc3RhdGljIGludCBycG1zZ19wcm9iZShzdHJ1Y3QgdmlydGlvX2RldmljZSAqdmRl
-dikKIAl2cnAtPnJidWZzID0gYnVmc192YTsKIAogCS8qIGFuZCBoYWxmIGlzIGRlZGljYXRlZCBm
-b3IgVFggKi8KLQl2cnAtPnNidWZzID0gYnVmc192YSArIFJQTVNHX1RPVEFMX0JVRl9TUEFDRSAv
-IDI7CisJdnJwLT5zYnVmcyA9IGJ1ZnNfdmEgKyB0b3RhbF9idWZfc3BhY2UgLyAyOwogCiAJLyog
-c2V0IHVwIHRoZSByZWNlaXZlIGJ1ZmZlcnMgKi8KLQlmb3IgKGkgPSAwOyBpIDwgUlBNU0dfTlVN
-X0JVRlMgLyAyOyBpKyspIHsKKwlmb3IgKGkgPSAwOyBpIDwgdnJwLT5udW1fYnVmcyAvIDI7IGkr
-KykgewogCQlzdHJ1Y3Qgc2NhdHRlcmxpc3Qgc2c7CiAJCXZvaWQgKmNwdV9hZGRyID0gdnJwLT5y
-YnVmcyArIGkgKiBSUE1TR19CVUZfU0laRTsKIApAQCAtMTAyMyw4ICsxMDM4LDggQEAgc3RhdGlj
-IGludCBycG1zZ19wcm9iZShzdHJ1Y3QgdmlydGlvX2RldmljZSAqdmRldikKIAlyZXR1cm4gMDsK
-IAogZnJlZV9jb2hlcmVudDoKLQlkbWFfZnJlZV9jb2hlcmVudCh2ZGV2LT5kZXYucGFyZW50LT5w
-YXJlbnQsIFJQTVNHX1RPVEFMX0JVRl9TUEFDRSwKLQkJCQkJYnVmc192YSwgdnJwLT5idWZzX2Rt
-YSk7CisJZG1hX2ZyZWVfY29oZXJlbnQodmRldi0+ZGV2LnBhcmVudC0+cGFyZW50LCB0b3RhbF9i
-dWZfc3BhY2UsCisJCQkgIGJ1ZnNfdmEsIHZycC0+YnVmc19kbWEpOwogdnFzX2RlbDoKIAl2ZGV2
-LT5jb25maWctPmRlbF92cXModnJwLT52ZGV2KTsKIGZyZWVfdnJwOgpAQCAtMTA0Miw2ICsxMDU3
-LDcgQEAgc3RhdGljIGludCBycG1zZ19yZW1vdmVfZGV2aWNlKHN0cnVjdCBkZXZpY2UgKmRldiwg
-dm9pZCAqZGF0YSkKIHN0YXRpYyB2b2lkIHJwbXNnX3JlbW92ZShzdHJ1Y3QgdmlydGlvX2Rldmlj
-ZSAqdmRldikKIHsKIAlzdHJ1Y3QgdmlydHByb2NfaW5mbyAqdnJwID0gdmRldi0+cHJpdjsKKwlz
-aXplX3QgdG90YWxfYnVmX3NwYWNlID0gdnJwLT5udW1fYnVmcyAqIFJQTVNHX0JVRl9TSVpFOwog
-CWludCByZXQ7CiAKIAl2ZGV2LT5jb25maWctPnJlc2V0KHZkZXYpOwpAQCAtMTA1Nyw4ICsxMDcz
-LDggQEAgc3RhdGljIHZvaWQgcnBtc2dfcmVtb3ZlKHN0cnVjdCB2aXJ0aW9fZGV2aWNlICp2ZGV2
-KQogCiAJdmRldi0+Y29uZmlnLT5kZWxfdnFzKHZycC0+dmRldik7CiAKLQlkbWFfZnJlZV9jb2hl
-cmVudCh2ZGV2LT5kZXYucGFyZW50LT5wYXJlbnQsIFJQTVNHX1RPVEFMX0JVRl9TUEFDRSwKLQkJ
-CQkJdnJwLT5yYnVmcywgdnJwLT5idWZzX2RtYSk7CisJZG1hX2ZyZWVfY29oZXJlbnQodmRldi0+
-ZGV2LnBhcmVudC0+cGFyZW50LCB0b3RhbF9idWZfc3BhY2UsCisJCQkgIHZycC0+cmJ1ZnMsIHZy
-cC0+YnVmc19kbWEpOwogCiAJa2ZyZWUodnJwKTsKIH0KLS0gCjEuNy4xMC5yYzMuMTA2Ny5nYjEy
-OTA1MQoK
---001a114034102460930508c5da7d--
