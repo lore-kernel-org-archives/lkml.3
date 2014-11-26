@@ -1,131 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041AbaKZRme (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 12:42:34 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:27909 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290AbaKZRmd (ORCPT
+	id S1753526AbaKZRmv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 12:42:51 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:13346 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753256AbaKZRmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 12:42:33 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19SzLx4MZwuNOB8ekQVmk7BZjty31CbhFk=
-X-DKIM: OpenDKIM Filter v2.0.1 titan B3E27624A22
-Date: Wed, 26 Nov 2014 12:42:04 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Tim Sander <tim@krieglstein.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Subject: Re: [PATCH 3.18-rc4 v10 4/6] irqchip: gic: Introduce plumbing for
- IPI FIQ
-Message-ID: <20141126174204.GK22670@titan.lakedaemon.net>
-References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
- <1417019010-9220-1-git-send-email-daniel.thompson@linaro.org>
- <1417019010-9220-5-git-send-email-daniel.thompson@linaro.org>
+	Wed, 26 Nov 2014 12:42:50 -0500
+X-IronPort-AV: E=Sophos;i="5.07,463,1413270000"; 
+   d="scan'208";a="51710199"
+Message-ID: <54761116.5090700@broadcom.com>
+Date: Wed, 26 Nov 2014 18:42:46 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417019010-9220-5-git-send-email-daniel.thompson@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Takashi Iwai <tiwai@suse.de>
+CC: =?UTF-8?B?TWloYWkgRG9uyJt1?= <mihai.dontu@gmail.com>,
+        <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        <pgynther@google.com>, <marcel@holtmann.org>,
+        <linux-bluetooth@vger.kernel.org>
+Subject: Re: bluetooth related firmware loader spew on resume.
+References: <20141111181228.GA27815@redhat.com>	<20141126165609.41ee0c24@mdontu-l.dsd.ro>	<s5hoaruvvje.wl-tiwai@suse.de>	<20141126172615.7b6e2cdb@mdontu-l.dsd.ro> <s5hk32ivv6k.wl-tiwai@suse.de>
+In-Reply-To: <s5hk32ivv6k.wl-tiwai@suse.de>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel,
+On 11/26/14 16:27, Takashi Iwai wrote:
+> At Wed, 26 Nov 2014 17:26:15 +0200,
+> Mihai Donțu wrote:
+>>
+>> On Wed, 26 Nov 2014 16:19:49 +0100
+>> Takashi Iwai<tiwai@suse.de>  wrote:
+>>
+>>> At Wed, 26 Nov 2014 16:56:09 +0200,
+>>> Mihai Donțu wrote:
+>>>>
+>>>> On Tue, 11 Nov 2014 13:12:28 -0500 Dave Jones wrote:
+>>>>> Since the addition of 10d4c6736ea "Bluetooth: btusb: Add Broadcom patch
+>>>>> RAM support", I (and a number of other people[*]) have been seeing
+>>>>> this trace on resume from suspend.
+>>>>>
+>>>>> WARNING: CPU: 1 PID: 8565 at drivers/base/firmware_class.c:1127 _request_firmware+0x4c1/0x7c0()
+>>>>> CPU: 1 PID: 8565 Comm: kworker/u17:0 Not tainted 3.17.2-200.fc20.x86_64 #1
+>>>>> Hardware name: LENOVO 2356JK8/2356JK8, BIOS G7ET94WW (2.54 ) 04/30/2013
+>>>>> Workqueue: hci0 hci_power_on [bluetooth]
+>>>>> 0000000000000000 00000000f52a564b ffff8800a8c63be8 ffffffff817271cc
+>>>>> 0000000000000000 ffff8800a8c63c20 ffffffff81094ced ffff8800a8c63d10
+>>>>> ffff8801365ddf00 ffff8801387b4b00 ffff8800a8c63d08 00000000fffffff5
+>>>>> Call Trace:
+>>>>> [<ffffffff817271cc>] dump_stack+0x45/0x56
+>>>>> [<ffffffff81094ced>] warn_slowpath_common+0x7d/0xa0
+>>>>> [<ffffffff81094e1a>] warn_slowpath_null+0x1a/0x20
+>>>>> [<ffffffff814965c1>] _request_firmware+0x4c1/0x7c0
+>>>>> [<ffffffff8137b9b9>] ? snprintf+0x49/0x70
+>>>>> [<ffffffff814968f1>] request_firmware+0x31/0x50
+>>>>> [<ffffffffa0943bf3>] btusb_setup_bcm_patchram+0x83/0x550 [btusb]
+>>>>> [<ffffffff8148ecf6>] ? rpm_idle+0xd6/0x2b0
+>>>>> [<ffffffffa0649051>] hci_dev_do_open+0xe1/0xa60 [bluetooth]
+>>>>> ACPI: \_SB_.PCI0.LPC_.EC__.BAT1: docking
+>>>>> Restarting tasks ...
+>>>>> [<ffffffff810bcb3d>] ? ttwu_do_activate.constprop.90+0x5d/0x70
+>>>>> [<ffffffffa064a1c0>] hci_power_on+0x40/0x1e0 [bluetooth]
+>>>>> [<ffffffff810f53fb>] ? lock_timer_base.isra.34+0x2b/0x50
+>>>>> [<ffffffff810acc39>] process_one_work+0x149/0x3d0
+>>>>> [<ffffffff810ad2bb>] worker_thread+0x11b/0x490
+>>>>> [<ffffffff810ad1a0>] ? rescuer_thread+0x2e0/0x2e0
+>>>>> [<ffffffff810b2318>] kthread+0xd8/0xf0
+>>>>> [<ffffffff810b2240>] ? kthread_create_on_node+0x190/0x190
+>>>>> [<ffffffff8172e7bc>] ret_from_fork+0x7c/0xb0
+>>>>> [<ffffffff810b2240>] ? kthread_create_on_node+0x190/0x190
+>>>>> ---[ end trace 75a0e9c7f33ebb4c ]---
+>>>>> bluetooth hci0: firmware: brcm/BCM20702A0-0a5c-21e6.hcd will not be loaded
+>>>>> Bluetooth: hci0: BCM: patch brcm/BCM20702A0-0a5c-21e6.hcd not found
+>>>>>
+>>>>>
+>>>>> At first I thought it was just over-reaction to the file being missing, but
+>>>>> looking at the WARN_ON, it appears that we're trying to invoke the firmware
+>>>>> loader before userspace is back up ?
+>>>>>
+>>>>> In this (and probably other related) kernel, CONFIG_FW_LOADER_USER_HELPER is unset,
+>>>>> in case that matters at all.
+>>>>>
+>>>>> 	Dave
+>>>>>
+>>>>> [*] https://bugzilla.kernel.org/show_bug.cgi?id=81821
+>>>>>      https://bugzilla.redhat.com/show_bug.cgi?id=1133378
+>>>>
+>>>> I have the following during normal boot:
+>>>>
+>>>> [    5.620796] Bluetooth: hci0: read Intel version: 370710018002030d00
+>>>> [    5.620822] bluetooth hci0: Direct firmware load for intel/ibt-hw-37.7.10-fw-1.80.2.3.d.bseq failed with error -2
+>>>> [    5.620827] Bluetooth: hci0 failed to open Intel firmware file: intel/ibt-hw-37.7.10-fw-1.80.2.3.d.bseq(-2)
+>>>> [    5.620920] bluetooth hci0: Direct firmware load for intel/ibt-hw-37.7.bseq failed with error -2
+>>>> [    5.620922] Bluetooth: hci0 failed to open default Intel fw file: intel/ibt-hw-37.7.bseq
+>>>> [    5.629910] EXT4-fs (sda2): mounted filesystem with ordered data mode. Opts: (null)
+>>>> [    5.629916] VFS: Mounted root (ext4 filesystem) readonly on device 8:2.
+>>>>
+>>>> The driver is trying to load the firmware before root is mounted. Do I
+>>>> really need an initramfs?
+>>>
+>>> If btusb driver is loaded in initrd, you'd need the corresponding
+>>> firmware in initrd, too.
+>>
+>> The driver is built into the kernel and I don't use an initrd. I could
+>> probably create one, but it's a bit tricky with UEFI and a tad harder
+>> to maintain.
+>
+> Then you can build the firmware file into kernel, too.
 
-I've been a bit swamped this cycle and haven't kept as close an eye on
-this as I should have. :(  fwiw, it's looking really good.  I have one
-question below:
+huh? The whole idea of the firmware API was to keep (often proprietary) 
+firmware out of the kernel. Has that strategy been abandoned recently?
 
-On Wed, Nov 26, 2014 at 04:23:28PM +0000, Daniel Thompson wrote:
-> Currently it is not possible to exploit FIQ for systems with a GIC, even if
-> the systems are otherwise capable of it. This patch makes it possible
-> for IPIs to be delivered using FIQ.
-> 
-> To do so it modifies the register state so that normal interrupts are
-> placed in group 1 and specific IPIs are placed into group 0. It also
-> configures the controller to raise group 0 interrupts using the FIQ
-> signal. It provides a means for architecture code to define which IPIs
-> shall use FIQ and to acknowledge any IPIs that are raised.
-> 
-> All GIC hardware except GICv1-without-TrustZone support provides a means
-> to group exceptions into group 0 and group 1 but the hardware
-> functionality is unavailable to the kernel when a secure monitor is
-> present because access to the grouping registers are prohibited outside
-> "secure world". However when grouping is not available (or in the case
-> of early GICv1 implementations is very hard to configure) the code to
-> change groups does not deploy and all IPIs will be raised via IRQ.
-> 
-> It has been tested and shown working on two systems capable of
-> supporting grouping (Freescale i.MX6 and STiH416). It has also been
-> tested for boot regressions on two systems that do not support grouping
-> (vexpress-a9 and Qualcomm Snapdragon 600).
-> 
-> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Marc Zyngier <marc.zyngier@arm.com>
-> Tested-by: Jon Medhurst <tixy@linaro.org>
-> ---
->  arch/arm/kernel/traps.c         |   5 +-
->  drivers/irqchip/irq-gic.c       | 155 +++++++++++++++++++++++++++++++++++++---
->  include/linux/irqchip/arm-gic.h |   8 +++
->  3 files changed, 158 insertions(+), 10 deletions(-)
-...
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index 5d72823bc5e9..978e5e48d5c1 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-...
-> +/*
-> + * Test which group an interrupt belongs to.
-> + *
-> + * Returns 0 if the controller does not support grouping.
-> + */
-> +static int gic_get_group_irq(void __iomem *base, unsigned int hwirq)
-> +{
-> +	unsigned int grp_reg = hwirq / 32 * 4;
-> +	u32 grp_val;
-> +
-> +	grp_val = readl_relaxed(base + GIC_DIST_IGROUP + grp_reg);
-> +
-> +	return (grp_val >> (hwirq % 32)) & 1;
-> +}
-...
-> @@ -669,7 +802,11 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
->  	dmb(ishst);
->  
->  	/* this always happens on GIC0 */
-> -	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
-> +	softint = map << 16 | irq;
-> +	if (gic_get_group_irq(gic_data_dist_base(&gic_data[0]), irq))
-> +		softint |= 0x8000;
-> +	writel_relaxed(softint,
-> +		       gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
->  
->  	bl_migration_unlock();
->  }
+Regards,
+Arend
 
-Is it worth the code complication to optimize this if the controller
-doesn't support grouping?  Maybe set group_enabled at init so the above
-would become:
+> Takashi
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-	softint = map << 16 | irq;
-	if (group_enabled &&
-	    gic_get_group_irq(gic_data_dist_base(&gic_data[0]), irq))
-		softint |= 0x8000;
-	writel_relaxed(...);
-
-thx,
-
-Jason.
