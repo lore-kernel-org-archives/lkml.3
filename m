@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741AbaKZQYJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 11:24:09 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:45356 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753666AbaKZQYG (ORCPT
+	id S1753833AbaKZQYR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 11:24:17 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:45956 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753666AbaKZQYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 11:24:06 -0500
+	Wed, 26 Nov 2014 11:24:14 -0500
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>,
@@ -17,11 +17,10 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>,
         Dirk Behme <dirk.behme@de.bosch.com>,
         Daniel Drake <drake@endlessm.com>,
         Dmitry Pervushin <dpervushin@gmail.com>,
-        Tim Sander <tim@krieglstein.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Subject: [PATCH 3.18-rc4 v10 2/6] irqchip: gic: Optimize locking in gic_raise_softirq
-Date: Wed, 26 Nov 2014 16:23:26 +0000
-Message-Id: <1417019010-9220-3-git-send-email-daniel.thompson@linaro.org>
+        Tim Sander <tim@krieglstein.org>, Stephen Boyd <sboyd@codeaurora.org>
+Subject: [PATCH 3.18-rc4 v10 6/6] arm: smp: Handle ipi_cpu_backtrace() using FIQ (if available)
+Date: Wed, 26 Nov 2014 16:23:30 +0000
+Message-Id: <1417019010-9220-7-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1417019010-9220-1-git-send-email-daniel.thompson@linaro.org>
 References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
@@ -30,65 +29,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently gic_raise_softirq() unconditionally takes and releases a lock
-whose only purpose is to synchronize with the b.L switcher.
+Previous changes have introduced both a replacement default FIQ handler
+and an implementation of arch_trigger_all_cpu_backtrace for ARM but
+these are currently independent of each other.
 
-Remove this lock if the b.L switcher is not compiled in.
+This patch plumbs together these features making it possible, on platforms
+that support it, to trigger backtrace using FIQ.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Marc Zyngier <marc.zyngier@arm.com>
 ---
- drivers/irqchip/irq-gic.c | 19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+ arch/arm/include/asm/smp.h | 3 +++
+ arch/arm/kernel/smp.c      | 4 +++-
+ arch/arm/kernel/traps.c    | 3 +++
+ 3 files changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 94d77118efa8..e875da93f24a 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -76,8 +76,23 @@ static DEFINE_RAW_SPINLOCK(irq_controller_lock);
-  * This lock is used by the big.LITTLE migration code to ensure no IPIs
-  * can be pended on the old core after the map has been updated.
-  */
-+#ifdef CONFIG_BL_SWITCHER
- static DEFINE_RAW_SPINLOCK(cpu_map_migration_lock);
- 
-+static inline void bl_migration_lock(unsigned long *flags)
-+{
-+	raw_spin_lock_irqsave(&cpu_map_migration_lock, *flags);
-+}
-+
-+static inline void bl_migration_unlock(unsigned long flags)
-+{
-+	raw_spin_unlock_irqrestore(&cpu_map_migration_lock, flags);
-+}
-+#else
-+static inline void bl_migration_lock(unsigned long *flags) {}
-+static inline void bl_migration_unlock(unsigned long flags) {}
-+#endif
-+
- /*
-  * The GIC mapping of CPU interfaces does not necessarily match
-  * the logical CPU numbering.  Let's use a mapping as returned
-@@ -630,7 +645,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- 	int cpu;
- 	unsigned long flags, map = 0;
- 
--	raw_spin_lock_irqsave(&cpu_map_migration_lock, flags);
-+	bl_migration_lock(&flags);
- 
- 	/* Convert our logical CPU mask into a physical one. */
- 	for_each_cpu(cpu, mask)
-@@ -645,7 +660,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- 	/* this always happens on GIC0 */
- 	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
- 
--	raw_spin_unlock_irqrestore(&cpu_map_migration_lock, flags);
-+	bl_migration_unlock(flags);
- }
+diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
+index 18f5a554134f..b076584ac0fa 100644
+--- a/arch/arm/include/asm/smp.h
++++ b/arch/arm/include/asm/smp.h
+@@ -18,6 +18,8 @@
+ # error "<asm/smp.h> included in non-SMP build"
  #endif
+ 
++#define SMP_IPI_FIQ_MASK 0x0100
++
+ #define raw_smp_processor_id() (current_thread_info()->cpu)
+ 
+ struct seq_file;
+@@ -79,6 +81,7 @@ extern void arch_send_call_function_single_ipi(int cpu);
+ extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
+ extern void arch_send_wakeup_ipi_mask(const struct cpumask *mask);
+ 
++extern void ipi_cpu_backtrace(struct pt_regs *regs);
+ extern int register_ipi_completion(struct completion *completion, int cpu);
+ 
+ struct smp_operations {
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 14c594a12bef..e923843562d9 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -539,7 +539,7 @@ static void ipi_cpu_stop(unsigned int cpu)
+ 		cpu_relax();
+ }
+ 
+-static void ipi_cpu_backtrace(struct pt_regs *regs)
++void ipi_cpu_backtrace(struct pt_regs *regs)
+ {
+ 	int cpu = smp_processor_id();
+ 
+@@ -580,6 +580,8 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+ 	unsigned int cpu = smp_processor_id();
+ 	struct pt_regs *old_regs = set_irq_regs(regs);
+ 
++	BUILD_BUG_ON(SMP_IPI_FIQ_MASK != BIT(IPI_CPU_BACKTRACE));
++
+ 	if ((unsigned)ipinr < NR_IPI) {
+ 		trace_ipi_entry(ipi_types[ipinr]);
+ 		__inc_irq_stat(cpu, ipi_irqs[ipinr]);
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index 4dc45b38e56e..9eb05be9526e 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -483,6 +483,9 @@ asmlinkage void __exception_irq_entry handle_fiq_as_nmi(struct pt_regs *regs)
+ #ifdef CONFIG_ARM_GIC
+ 	gic_handle_fiq_ipi();
+ #endif
++#ifdef CONFIG_SMP
++	ipi_cpu_backtrace(regs);
++#endif
+ 
+ 	nmi_exit();
  
 -- 
 1.9.3
