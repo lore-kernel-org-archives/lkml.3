@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414AbaKZLrv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 06:47:51 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:36415 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285AbaKZLru (ORCPT
+	id S1752490AbaKZLtw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 06:49:52 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:44675 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305AbaKZLtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 06:47:50 -0500
-From: Athira Lekshmi C V <andnlnbn18@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: paul.gortmaker@windriver.com, gulsah.1004@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Athira Lekshmi C V <andnlnbn18@gmail.com>
-Subject: [PATCH] Drivers:staging:octeon: Fixed checkpatch warning
-Date: Wed, 26 Nov 2014 17:17:48 +0530
-Message-Id: <1417002468-30711-1-git-send-email-andnlnbn18@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 26 Nov 2014 06:49:50 -0500
+Message-ID: <5475BE5A.4090503@linux.com>
+Date: Wed, 26 Nov 2014 14:49:46 +0300
+From: Alexander Popov <alex.popov@linux.com>
+Reply-To: alex.popov@linux.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Disabled LocalPlus Controller (LPC) clock on MPC512x
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed the checkpatch warning:
-WARNING: Missing a blank line after declarations
+Hello.
 
-Signed-off-by: Athira Lekshmi C V <andnlnbn18@gmail.com>
----
- drivers/staging/octeon/ethernet-rx.c |    5 +++++
- 1 file changed, 5 insertions(+)
+My Freescale TWR-MPC5125 board instantly reboots if I touch
+any physical address on the LocalPlus Bus (LPB) for the first time
+when Linux has already booted.
 
-diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
-index 44e372f..f80d509 100644
---- a/drivers/staging/octeon/ethernet-rx.c
-+++ b/drivers/staging/octeon/ethernet-rx.c
-@@ -84,6 +84,7 @@ static int cvm_irq_cpu;
- static void cvm_oct_enable_napi(void *_)
- {
- 	int cpu = smp_processor_id();
-+
- 	napi_schedule(&cvm_oct_napi[cpu].napi);
- }
- 
-@@ -169,6 +170,7 @@ static inline int cvm_oct_check_rcv_error(cvmx_wqe_t *work)
- 		int interface = cvmx_helper_get_interface_num(work->ipprt);
- 		int index = cvmx_helper_get_interface_index_num(work->ipprt);
- 		union cvmx_gmxx_rxx_frm_ctl gmxx_rxx_frm_ctl;
-+
- 		gmxx_rxx_frm_ctl.u64 =
- 		    cvmx_read_csr(CVMX_GMXX_RXX_FRM_CTL(index, interface));
- 		if (gmxx_rxx_frm_ctl.s.pre_chk == 0) {
-@@ -272,6 +274,7 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
- 		did_work_request = 0;
- 		if (work == NULL) {
- 			union cvmx_pow_wq_int wq_int;
-+
- 			wq_int.u64 = 0;
- 			wq_int.s.iq_dis = 1 << pow_receive_group;
- 			wq_int.s.wq_int = 1 << pow_receive_group;
-@@ -294,8 +297,10 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
- 			 * CPU.
- 			 */
- 			union cvmx_pow_wq_int_cntx counts;
-+
- 			int backlog;
- 			int cores_in_use = core_state.baseline_cores - atomic_read(&core_state.available_cores);
-+
- 			counts.u64 = cvmx_read_csr(CVMX_POW_WQ_INT_CNTX(pow_receive_group));
- 			backlog = counts.s.iq_cnt + counts.s.ds_cnt;
- 			if (backlog > budget * cores_in_use && napi != NULL)
--- 
-1.7.9.5
+This effect is reproduced by using /dev/mem or loading a kernel module
+which works with any peripherals on LPB.
 
+It took me some time to find out that such crash is caused by
+clk_disable_unused() in drivers/clk/clk.c, which disables
+LocalPlus Controller (LPC) clock if I don't touch LPB addresses in the
+previous initcalls. So starting Linux with clk_ignore_unused bootparam
+or inserting dummy LPB reading to some initcall is a temporary fix.
+
+Is it correct to gate LPC clock? If yes, how to avoid the mentioned
+crashes properly?
+
+There's a piece of code in arch/powerpc/platforms/512x/clock-commonclk.c
+which is doubtful for me:
+
+/*
+  * pre-enable those "internal" clock items which never get
+  * claimed by any peripheral driver, to not have the clock
+  * subsystem disable them late at startup
+  */
+clk_prepare_enable(clks[MPC512x_CLK_DUMMY]);
+clk_prepare_enable(clks[MPC512x_CLK_E300]);    /* PowerPC CPU */
+clk_prepare_enable(clks[MPC512x_CLK_DDR]);    /* DRAM */
+clk_prepare_enable(clks[MPC512x_CLK_MEM]);    /* SRAM */
+clk_prepare_enable(clks[MPC512x_CLK_IPS]);    /* SoC periph */
+clk_prepare_enable(clks[MPC512x_CLK_LPC]);    /* boot media */
+
+Does it mean that these clocks should be registered with
+CLK_IGNORE_UNUSED flag?
+
+Thanks a lot.
+Best regards,
+Alexander
