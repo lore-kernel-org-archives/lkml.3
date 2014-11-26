@@ -1,55 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488AbaKZMfh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 07:35:37 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:42919 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778AbaKZMff (ORCPT
+	id S1751363AbaKZMh6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 07:37:58 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:45867 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884AbaKZMh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 07:35:35 -0500
-Date: Wed, 26 Nov 2014 13:35:24 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v4 20/42] virtio_net: pass vi around
-Message-ID: <20141126133524.27e9beb6.cornelia.huck@de.ibm.com>
-In-Reply-To: <1416933600-21398-21-git-send-email-mst@redhat.com>
-References: <1416933600-21398-1-git-send-email-mst@redhat.com>
-	<1416933600-21398-21-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112612-0041-0000-0000-000002430468
+	Wed, 26 Nov 2014 07:37:56 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAPP0e=M9eUkn+riY3E+5fTOkrxH+Btr_arByg+E4ROH+ifcZ1g@mail.gmail.com>
+References: <1416683799-678-1-git-send-email-js07.lee@gmail.com>
+	<20141125133857.bb2d71659287df6aa908de5b@linux-foundation.org>
+	<CAPP0e=M9eUkn+riY3E+5fTOkrxH+Btr_arByg+E4ROH+ifcZ1g@mail.gmail.com>
+Date: Wed, 26 Nov 2014 21:37:54 +0900
+Message-ID: <CAPP0e=Myz8B9x1pRp3q37wGEwSaACBJfUJPcf6MCzN7K4nG=sg@mail.gmail.com>
+Subject: Re: [RFC PATCH] fs/binfmt_elf.c: fix inconsistent vma dump size
+From: Jungseung Lee <js07.lee@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Nov 2014 18:42:49 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+2014-11-26 15:51 GMT+09:00 Jungseung Lee <js07.lee@gmail.com>:
 
-> Too many places poke at [rs]q->vq->vdev->priv just to get
-> the the vi structure.  Let's just pass the pointer around: seems
-
-s/the the/the/
-
-> cleaner, and might even be faster.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  drivers/net/virtio_net.c | 38 ++++++++++++++++++++------------------
->  1 file changed, 20 insertions(+), 18 deletions(-)
-> 
-Looks reasonable.
-
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-
+>>> @@ -2093,7 +2083,20 @@ static int elf_core_dump(struct coredump_params *cprm)
+>>>
+>>>       dataoff = offset = roundup(offset, ELF_EXEC_PAGESIZE);
+>>>
+>>> -     offset += elf_core_vma_data_size(gate_vma, cprm->mm_flags);
+>>> +     vma_filesz = kmalloc(sizeof(*vma_filesz) * (segs - 1), GFP_KERNEL);
+>>
+>> Use kmalloc_array() here, in case a disaster has occurred...
+>>
+> I'll try to find another way how to pass or save vma size with consistency.
+>
+it looks like just to replace kmalloc to vmalloc could be solution.
+I'll send patch, thanks.
