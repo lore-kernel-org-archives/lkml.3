@@ -1,106 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865AbaKZPbd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 10:31:33 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:54806 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753005AbaKZPbb (ORCPT
+	id S1753870AbaKZPcV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 10:32:21 -0500
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:52984 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752945AbaKZPcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 10:31:31 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH] fat: Fix oops on corrupted vfat fs
-Date: Thu, 27 Nov 2014 00:31:28 +0900
-Message-ID: <873896x9kf.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/25.0.50 (gnu/linux)
+	Wed, 26 Nov 2014 10:32:17 -0500
+Date: Wed, 26 Nov 2014 16:32:07 +0100
+From: David Hildenbrand <dahi@linux.vnet.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
+        paulus@samba.org, akpm@linux-foundation.org, heiko.carstens@de.ibm.com,
+        schwidefsky@de.ibm.com, borntraeger@de.ibm.com, mingo@kernel.org
+Subject: Re: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
+ atomic
+Message-ID: <20141126163207.63810fcb@thinkpad-w530>
+In-Reply-To: <20141126152334.GA9648@redhat.com>
+References: <1416915806-24757-1-git-send-email-dahi@linux.vnet.ibm.com>
+	<20141126070258.GA25523@redhat.com>
+	<20141126110504.511b733a@thinkpad-w530>
+	<20141126151729.GB9612@redhat.com>
+	<20141126152334.GA9648@redhat.com>
+Organization: IBM Deutschland GmbH
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112615-0021-0000-0000-000001EC6CFF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> On Wed, Nov 26, 2014 at 05:17:29PM +0200, Michael S. Tsirkin wrote:
+> > On Wed, Nov 26, 2014 at 11:05:04AM +0100, David Hildenbrand wrote:
+> > > > What's the path you are trying to debug?
+> > > 
+> > > Well, we had a problem where we held a spin_lock and called
+> > > copy_(from|to)_user(). We experienced very random deadlocks that took some guy
+> > > almost a week to debug. The simple might_sleep() check would have showed this
+> > > error immediately.
+> > 
+> > This must have been a very old kernel.
+> > A modern kernel will return an error from copy_to_user.
+> > Which is really the point of the patch you are trying to revert.
+> 
+> That's assuming you disabled preemption. If you didn't, and take
+> a spinlock, you have deadlocks even without userspace access.
+> 
 
-a) don't bother with ->d_time for positives - we only check it for negatives
-anyway.
-b) make sure to set it at unlink and rmdir time - at *that* point soon-to-be
-negative dentry matches then-current directory contents
-c) don't go into renaming of old alias in vfat_lookup() unless it has
-the same parent (which it will, unless we are seeing corrupted image)
+(Thanks for your resent, my first email was sent directly to you ... grml)
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: <stable@vger.kernel.org> # 3.17.x
-[Make change minimum, don't call d_move() for dir]
-Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
----
+This is what happened on our side (very recent kernel):
 
- fs/fat/namei_vfat.c |   20 +++++++++++---------
- 1 file changed, 11 insertions(+), 9 deletions(-)
+spin_lock(&lock)
+copy_to_user(...)
+spin_unlock(&lock)
 
-diff -puN fs/fat/namei_vfat.c~fat-corrupt-fs-fix fs/fat/namei_vfat.c
---- linux/fs/fat/namei_vfat.c~fat-corrupt-fs-fix	2014-11-10 01:09:08.782815944 +0900
-+++ linux-hirofumi/fs/fat/namei_vfat.c	2014-11-10 01:56:47.283117983 +0900
-@@ -736,7 +736,12 @@ static struct dentry *vfat_lookup(struct
- 	}
- 
- 	alias = d_find_alias(inode);
--	if (alias && !vfat_d_anon_disconn(alias)) {
-+	/*
-+	 * Checking "alias->d_parent == dentry->d_parent" to make sure
-+	 * FS is not corrupted (especially double linked dir).
-+	 */
-+	if (alias && alias->d_parent == dentry->d_parent &&
-+	    !vfat_d_anon_disconn(alias)) {
- 		/*
- 		 * This inode has non anonymous-DCACHE_DISCONNECTED
- 		 * dentry. This means, the user did ->lookup() by an
-@@ -755,12 +760,9 @@ static struct dentry *vfat_lookup(struct
- 
- out:
- 	mutex_unlock(&MSDOS_SB(sb)->s_lock);
--	dentry->d_time = dentry->d_parent->d_inode->i_version;
--	dentry = d_splice_alias(inode, dentry);
--	if (dentry)
--		dentry->d_time = dentry->d_parent->d_inode->i_version;
--	return dentry;
--
-+	if (!inode)
-+		dentry->d_time = dir->i_version;
-+	return d_splice_alias(inode, dentry);
- error:
- 	mutex_unlock(&MSDOS_SB(sb)->s_lock);
- 	return ERR_PTR(err);
-@@ -793,7 +795,6 @@ static int vfat_create(struct inode *dir
- 	inode->i_mtime = inode->i_atime = inode->i_ctime = ts;
- 	/* timestamp is already written, so mark_inode_dirty() is unneeded. */
- 
--	dentry->d_time = dentry->d_parent->d_inode->i_version;
- 	d_instantiate(dentry, inode);
- out:
- 	mutex_unlock(&MSDOS_SB(sb)->s_lock);
-@@ -824,6 +825,7 @@ static int vfat_rmdir(struct inode *dir,
- 	clear_nlink(inode);
- 	inode->i_mtime = inode->i_atime = CURRENT_TIME_SEC;
- 	fat_detach(inode);
-+	dentry->d_time = dir->i_version;
- out:
- 	mutex_unlock(&MSDOS_SB(sb)->s_lock);
- 
-@@ -849,6 +851,7 @@ static int vfat_unlink(struct inode *dir
- 	clear_nlink(inode);
- 	inode->i_mtime = inode->i_atime = CURRENT_TIME_SEC;
- 	fat_detach(inode);
-+	dentry->d_time = dir->i_version;
- out:
- 	mutex_unlock(&MSDOS_SB(sb)->s_lock);
- 
-@@ -889,7 +892,6 @@ static int vfat_mkdir(struct inode *dir,
- 	inode->i_mtime = inode->i_atime = inode->i_ctime = ts;
- 	/* timestamp is already written, so mark_inode_dirty() is unneeded. */
- 
--	dentry->d_time = dentry->d_parent->d_inode->i_version;
- 	d_instantiate(dentry, inode);
- 
- 	mutex_unlock(&MSDOS_SB(sb)->s_lock);
-_
+1. s390 locks/unlocks a spin lock with a compare and swap, using the _cpu id_
+   as "old value"
+2. we slept during copy_to_user()
+3. the thread got scheduled onto another cpu
+4. spin_unlock failed as the _cpu id_ didn't match (another cpu that locked
+   the spinlock tried to unlocked it).
+5. lock remained locked -> deadlock
+
+Christian came up with the following explanation:
+Without preemption, spin_lock() will not touch the preempt counter.
+disable_pfault() will always touch it.
+
+Therefore, with preemption disabled, copy_to_user() has no idea that it is
+running in atomic context - and will therefore try to sleep.
+
+So copy_to_user() will on s390:
+1. run "as atomic" while spin_lock() with preemption enabled.
+2. run "as not atomic" while spin_lock() with preemption disabled.
+3.  run "as atomic" while pagefault_disabled() with preemption enabled or
+disabled.
+4. run "as not atomic" when really not atomic.
+
+And exactly nr 2. is the thing that produced the deadlock in our scenario and
+the reason why I want a might_sleep() :)
+
