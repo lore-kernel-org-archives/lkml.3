@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737AbaKZWs4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 17:48:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44060 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148AbaKZWss (ORCPT
+	id S1753397AbaKZWwh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 17:52:37 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:58720 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811AbaKZWwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 17:48:48 -0500
-Date: Wed, 26 Nov 2014 14:48:46 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [patch] fs, seq_file: fallback to vmalloc instead of oom kill
- processes
-Message-Id: <20141126144846.d7a3ec1a2a0c20d9cb1a7c49@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.10.1411261434080.13014@chino.kir.corp.google.com>
-References: <alpine.DEB.2.10.1411261415500.13014@chino.kir.corp.google.com>
-	<20141126142404.bc6b03387d5e869908db5e38@linux-foundation.org>
-	<alpine.DEB.2.10.1411261434080.13014@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Nov 2014 17:52:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <1416900743-29204-5-git-send-email-zyw@rock-chips.com>
+References: <1416900743-29204-1-git-send-email-zyw@rock-chips.com>
+	<1416900743-29204-5-git-send-email-zyw@rock-chips.com>
+Date: Wed, 26 Nov 2014 14:52:35 -0800
+X-Google-Sender-Auth: Mw8SgOJp1c64mn3qOCBt3UpjnJM
+Message-ID: <CAD=FV=V29zCpcEHE+rq6q_6SOZ_NOJgc5FiwmJ9jnRZK4mMUhw@mail.gmail.com>
+Subject: Re: [PATCH v9 4/4] ARM: dts: rockchip: add suspend settings for rk3288-evb-rk808
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Mike Turquette <mturquette@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kevin Hilman <khilman@kernel.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Nov 2014 14:40:06 -0800 (PST) David Rientjes <rientjes@google.com> wrote:
+Chris,
 
-> On Wed, 26 Nov 2014, Andrew Morton wrote:
-> 
-> > You forgot something.
-> > 
-> > --- a/fs/seq_file.c~fs-seq_file-fallback-to-vmalloc-instead-of-oom-kill-processes-fix
-> > +++ a/fs/seq_file.c
-> > @@ -36,6 +36,10 @@ static void *seq_buf_alloc(unsigned long
-> >  {
-> >  	void *buf;
-> >  
-> > +	/*
-> > +	 * __GFP_NORETRY to avoid oom-killings with high-order allocations -
-> > +	 * it's better to fall back to vmalloc() than to kill things.
-> > +	 */
-> >  	buf = kmalloc(size, GFP_KERNEL | __GFP_NORETRY | __GFP_NOWARN);
-> >  	if (!buf && size > PAGE_SIZE)
-> >  		buf = vmalloc(size);
-> > 
-> 
-> ...
->
-> The slowpath tries to allocate, calls memory compaction if necessary, 
-> tries to allocate, calls direct reclaim, tries to allocate, call the oom 
-> killer and tries to allocate if we are going to loop, and then loop if 
-> allowed.  There's no need to try to allocate if we don't call the oom 
-> killer since it won't succeed and there's no need to call the oom killer 
-> to free memory if we aren't going to retry.
+On Mon, Nov 24, 2014 at 11:32 PM, Chris Zhong <zyw@rock-chips.com> wrote:
+>                         vcc_ddr: DCDC_REG3 {
+>                                 regulator-always-on;
+>                                 regulator-boot-on;
+>                                 regulator-name = "vcc_ddr";
+> +                               regulator-suspend-mem-enabled;
 
-My concern is that an open-coded __GFP_NORETRY is very obscure.  Even
-something like
+The "regulator-suspend-mem-enabled" is not an upstream property and
+isn't doing anything.  It should be removed.
 
-#define __GFP_NO_OOM_KILL __GFP_NORETRY
+Possibly this is something Heiko could do when applying  (depends on
+what he wants) if no other spins are required.
+>                         vcc_18: LDO_REG7 {
+> @@ -128,6 +163,11 @@
+>                                 regulator-min-microvolt = <1800000>;
+>                                 regulator-max-microvolt = <1800000>;
+>                                 regulator-name = "vcc_18";
+> +                               regulator-suspend-mem-microvolt = <1800000>;
 
-would help make things a bit self-documenting.
-
-> Even if __GFP_NO_OOM_KILL existed, it wouldn't be applicable to this 
-> patch: the change here is that seqfile will now return -ENOMEM instead of 
-> oom killing processes;
-
-Not really?  The change makes seq_buf_alloc() fall back to vmalloc()
-rather than killing things.  Doesn't it?
-
-Unless the allocation is < PAGE_SIZE, in which case we do go ENOMEM. 
-That's daft - it would be better to vmalloc() a whole page in this
-case.  Not that the vmalloc is likely to be successful anyway..
-
-> the slab allocation will no longer loop forever 
-> trying to allocate memory.
+Another non-upstream property: regulator-suspend-mem-microvolt
