@@ -1,188 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615AbaKZN3p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 08:29:45 -0500
-Received: from mail-yh0-f48.google.com ([209.85.213.48]:36463 "EHLO
-	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973AbaKZN3m (ORCPT
+	id S1752700AbaKZNaR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 08:30:17 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:40670 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752625AbaKZNaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 08:29:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <1416834381-11314-1-git-send-email-gautam.vivek@samsung.com>
-References: <CAGOxZ53TUvZhSDLfeCuyvBwVcrkQhFnftQzk1DbkU_krdoFbZA@mail.gmail.com>
- <1416834381-11314-1-git-send-email-gautam.vivek@samsung.com>
-From: Alim Akhtar <alim.akhtar@gmail.com>
-Date: Wed, 26 Nov 2014 18:59:01 +0530
-Message-ID: <CAGOxZ52XtT-Aq-HJFq7GAzfAq6GEdrzKeez_=fwJR-Z2rkUF+g@mail.gmail.com>
-Subject: Re: [PATCH V2 2/2] arm64: exynos: Add bus1 pinctrl node on exynos7
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>, devicetree@vger.kernel.org,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        "robh+dt" <robh+dt@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>, kgene@kernel.org,
-        Alim Akhtar <alim.akhtar@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 26 Nov 2014 08:30:09 -0500
+X-AuditID: cbfee68e-f79b46d000002b74-2b-5475d5dd83af
+From: Jaewon Kim <jaewon02.kim@samsung.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-input@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Jaewon Kim <jaewon02.kim@samsung.com>
+Subject: [PATCH v3 2/2] ARM: dts: Add regulator-haptic device node for
+ exynos3250-rinato
+Date: Wed, 26 Nov 2014 22:30:02 +0900
+Message-id: <1417008602-22841-3-git-send-email-jaewon02.kim@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1417008602-22841-1-git-send-email-jaewon02.kim@samsung.com>
+References: <1417008602-22841-1-git-send-email-jaewon02.kim@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsWyRsSkWPfu1dIQg3+96hbXvzxntTi86AWj
+	xY6GI6wWvQuuslnc/PSN1eLyrjlsFjPO72OyWLT1C7sDh8fOWXfZPfq2rGL0+LxJLoA5issm
+	JTUnsyy1SN8ugSvj4RWxghusFWt6WtkbGG+ydDFycEgImEic2MvdxcgJZIpJXLi3nq2LkYtD
+	SGApo8TvS5OZIBImEnOPbWWCSCxilDh4eyUzhNPGJDFp5Q52kCo2AW2J7+sXs4LYIgKhEp8v
+	zAIrYha4xSix+dlusCJhgSiJi7f7GEFsFgFViWmLPzOD2LwCHhLrZi9jgzhJQWLOJBuQMKeA
+	p8Sm04fASoSASrbuvQB2noTAZHaJJacPMUHMEZD4NvkQ1DuyEpsOMENcLSlxcMUNlgmMwgsY
+	GVYxiqYWJBcUJ6UXGekVJ+YWl+al6yXn525iBIb26X/P+nYw3jxgfYhRgINRiYc3Qqo0RIg1
+	say4MvcQoynQhonMUqLJ+cAIyiuJNzQ2M7IwNTE1NjK3NFMS502Q+hksJJCeWJKanZpakFoU
+	X1Sak1p8iJGJg1OqgbHkXveF0JWKlw1Ln2XM584+J/wgM+/2leO6B5NTjH9JVT9eKsglsmRG
+	h6nCJO6rmy599bdMXCzpO5H/dOGFVg3DOycn65X6nSq13ikj/8Y/3J6dlfXgoe93Gn53R9zM
+	1dlkmhbfaKRn9GryYr/0xR6Wjw5Pk0noXWg2u+BAu5GLsZBAstZDQSWW4oxEQy3mouJEACvW
+	w1NoAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrAIsWRmVeSWpSXmKPExsVy+t9jAd27V0tDDG4tULC4/uU5q8XhRS8Y
+	LXY0HGG16F1wlc3i5qdvrBaXd81hs5hxfh+TxaKtX9gdODx2zrrL7tG3ZRWjx+dNcgHMUQ2M
+	NhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAJygplCXm
+	lAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYMx5eESu4wVqxpqeVvYHxJksXIyeH
+	hICJxNxjW5kgbDGJC/fWs3UxcnEICSxilDh4eyUzhNPGJDFp5Q52kCo2AW2J7+sXs4LYIgKh
+	Ep8vzAIrYha4xSix+dlusCJhgSiJi7f7GEFsFgFViWmLPzOD2LwCHhLrZi8DWsEBtE5BYs4k
+	G5Awp4CnxKbTh8BKhIBKtu69wDaBkXcBI8MqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjODY
+	eSa1g3Flg8UhRgEORiUe3gip0hAh1sSy4srcQ4wSHMxKIrxfNwCFeFMSK6tSi/Lji0pzUosP
+	MZoCHTWRWUo0OR8Y13kl8YbGJmZGlkbmhhZGxuZK4rw3buaGCAmkJ5akZqemFqQWwfQxcXBK
+	NTBatRrktW//7C517uSt+H13ez7LOx9eMm2uTDrj97LyxtUiSSfmVdluN59bHS2Z+UNqTQuL
+	mv4jrjWtdnFCTy0/Xr+1wzT89Sf1OA/fXoGdx7PYWL5s0pWWnnlwvWz0y+Ifi689XnVg05+D
+	tmv27hN59apz4YQNT7Mmqv4xWeD9bmlpzaGvnBsWKrEUZyQaajEXFScCAKoqJkSzAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vivek,
+This patch adds regulator-haptic device node controlled by regulator.
 
-On Mon, Nov 24, 2014 at 6:36 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
-> BUS1 pinctrl provides gpios for usb and power regulator
-> available on exynos7-espresso board. So add relevant device
-> node for pinctrl-bus1.
->
-> Signed-off-by: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> ---
->
-Looks good to me.
-Reviewed-by: Alim Akhtar <alim.akhtar@samsung.com>
+Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
+Reviewed-by: Chanwoo Choi <cw00.choi@samsung.com>
+---
+ arch/arm/boot/dts/exynos3250-rinato.dts |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-> This patch was part of series:
-> "[PATCH 00/11] Exynos7: Adding USB 3.0 support"
->  https://lkml.org/lkml/2014/11/21/247
->
-> Changes since V1:
->  - Added support for all pin banks which are part of BUS1 pin controller.
->
->  arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi |   82 +++++++++++++++++++++++
->  arch/arm64/boot/dts/exynos/exynos7.dtsi         |    7 ++
->  2 files changed, 89 insertions(+)
->
-> diff --git a/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi b/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi
-> index 2eef4a2..c367f0a 100644
-> --- a/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi
-> +++ b/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi
-> @@ -335,6 +335,88 @@
->         };
->  };
->
-> +&pinctrl_bus1 {
-> +       gpf0: gpf0 {
-> +               gpio-controller;
-> +               #gpio-cells = <2>;
-> +
-> +               interrupt-controller;
-> +               #interrupt-cells = <2>;
-> +       };
-> +
-> +       gpf1: gpf1 {
-> +               gpio-controller;
-> +               #gpio-cells = <2>;
-> +
-> +               interrupt-controller;
-> +               #interrupt-cells = <2>;
-> +       };
-> +
-> +       gpf2: gpf2 {
-> +               gpio-controller;
-> +               #gpio-cells = <2>;
-> +
-> +               interrupt-controller;
-> +               #interrupt-cells = <2>;
-> +       };
-> +
-> +       gpf3: gpf3 {
-> +               gpio-controller;
-> +               #gpio-cells = <2>;
-> +
-> +               interrupt-controller;
-> +               #interrupt-cells = <2>;
-> +       };
-> +
-> +       gpf4: gpf4 {
-> +               gpio-controller;
-> +               #gpio-cells = <2>;
-> +
-> +               interrupt-controller;
-> +               #interrupt-cells = <2>;
-> +       };
-> +
-> +       gpf5: gpf5 {
-> +               gpio-controller;
-> +               #gpio-cells = <2>;
-> +
-> +               interrupt-controller;
-> +               #interrupt-cells = <2>;
-> +       };
-> +
-> +       gpg1: gpg1 {
-> +               gpio-controller;
-> +               #gpio-cells = <2>;
-> +
-> +               interrupt-controller;
-> +               #interrupt-cells = <2>;
-> +       };
-> +
-> +       gpg2: gpg2 {
-> +               gpio-controller;
-> +               #gpio-cells = <2>;
-> +
-> +               interrupt-controller;
-> +               #interrupt-cells = <2>;
-> +       };
-> +
-> +       gph1: gph1 {
-> +               gpio-controller;
-> +               #gpio-cells = <2>;
-> +
-> +               interrupt-controller;
-> +               #interrupt-cells = <2>;
-> +       };
-> +
-> +       gpv6: gpv6 {
-> +               gpio-controller;
-> +               #gpio-cells = <2>;
-> +
-> +               interrupt-controller;
-> +               #interrupt-cells = <2>;
-> +       };
-> +};
-> +
->  &pinctrl_nfc {
->         gpj0: gpj0 {
->                 gpio-controller;
-> diff --git a/arch/arm64/boot/dts/exynos/exynos7.dtsi b/arch/arm64/boot/dts/exynos/exynos7.dtsi
-> index 1d9e4c9..e633b02 100644
-> --- a/arch/arm64/boot/dts/exynos/exynos7.dtsi
-> +++ b/arch/arm64/boot/dts/exynos/exynos7.dtsi
-> @@ -26,6 +26,7 @@
->                 pinctrl5 = &pinctrl_ese;
->                 pinctrl6 = &pinctrl_fsys0;
->                 pinctrl7 = &pinctrl_fsys1;
-> +               pinctrl8 = &pinctrl_bus1;
->         };
->
->         cpus {
-> @@ -242,6 +243,12 @@
->                         interrupts = <0 383 0>;
->                 };
->
-> +               pinctrl_bus1: pinctrl@14870000 {
-> +                       compatible = "samsung,exynos7-pinctrl";
-> +                       reg = <0x14870000 0x1000>;
-> +                       interrupts = <0 384 0>;
-> +               };
-> +
->                 pinctrl_nfc: pinctrl@14cd0000 {
->                         compatible = "samsung,exynos7-pinctrl";
->                         reg = <0x14cd0000 0x1000>;
-> --
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
+diff --git a/arch/arm/boot/dts/exynos3250-rinato.dts b/arch/arm/boot/dts/exynos3250-rinato.dts
+index 84380fa..da03005 100644
+--- a/arch/arm/boot/dts/exynos3250-rinato.dts
++++ b/arch/arm/boot/dts/exynos3250-rinato.dts
+@@ -104,6 +104,13 @@
+ 			};
+ 		};
+ 	};
++
++	haptics {
++		compatible = "regulator-haptic";
++		haptic-supply = <&motor_reg>;
++		min-microvolt = <1100000>;
++		max-microvolt = <2700000>;
++	};
+ };
+ 
+ &adc {
 -- 
-Regards,
-Alim
+1.7.9.5
+
