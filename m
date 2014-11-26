@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640AbaKZQb6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 11:31:58 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:41282 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845AbaKZQb4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 11:31:56 -0500
-Message-ID: <54760072.8010307@collabora.co.uk>
-Date: Wed, 26 Nov 2014 17:31:46 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	id S1753769AbaKZQcP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 11:32:15 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59825 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753657AbaKZQcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 11:32:13 -0500
+Message-ID: <5476005A.6090207@ti.com>
+Date: Wed, 26 Nov 2014 18:31:22 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>, Kukjin Kim <kgene@kernel.org>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org,
-        devicetree@vger.kernel.org, Vivek Gautam <gautam.vivek@samsung.com>,
-        Kevin Hilman <khilman@kernel.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v2 0/5] Fix Arndale Octa/Peach Pi boot on Audio subsystem
- clocks
-References: <1417011857-10419-1-git-send-email-k.kozlowski@samsung.com>
-In-Reply-To: <1417011857-10419-1-git-send-email-k.kozlowski@samsung.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+To: =?windows-1252?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Wolfram Sang <wsa@the-dreams.de>, Sekhar Nori <nsekhar@ti.com>,
+        <linux-i2c@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>,
+        Mike Looijmans <milo-software@users.sourceforge.net>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>,
+        Murali Karicheri <m-karicheri2@ti.com>
+Subject: Re: [PATCH v2 2/5] i2c: davinci: query STP always when NACK is received
+References: <1417010393-30598-1-git-send-email-grygorii.strashko@ti.com> <1417010393-30598-3-git-send-email-grygorii.strashko@ti.com> <20141126155711.GL4431@pengutronix.de>
+In-Reply-To: <20141126155711.GL4431@pengutronix.de>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Krzysztof,
+On 11/26/2014 05:57 PM, Uwe Kleine-König wrote:
+> Hello,
+>
+> I don't understand your use of "query" in the subject and later in the
+> commit log. Do you mean "send"?
 
-On 11/26/2014 03:24 PM, Krzysztof Kozlowski wrote:
-> Description
-> ===========
-> This patchset tries to solve dependency between AudioSS components
-> (clocks and GPIO) and main clock controller on Exynos platform.
-> 
-> This solves boot failure of Peach Pi/Pit and Arndale Octa [1].
-> 
+will change to "generate". Ok?
 
-I tested and patches #2, #3, #4 solves the boot failure I was facing.
-So for the whole series on an Exynos5420 Peach Pit:
+>
+> On Wed, Nov 26, 2014 at 03:59:50PM +0200, Grygorii Strashko wrote:
+>> According to I2C specification the NACK should be handled as folows:
+> s/folows/follows/
+ok.
 
-Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Can I assume that you are ok with this patch in general?
 
-Thanks a lot for solving this issue.
+regards,
+-grygorii
 
-Best regards,
-Javier
+
