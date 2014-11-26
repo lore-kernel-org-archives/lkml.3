@@ -1,32 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664AbaKZXVp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 18:21:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59164 "EHLO
+	id S1754681AbaKZXVw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 18:21:52 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59172 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283AbaKZXVn (ORCPT
+	with ESMTP id S1753283AbaKZXVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 18:21:43 -0500
-Date: Wed, 26 Nov 2014 15:18:51 -0800
+	Wed, 26 Nov 2014 18:21:49 -0500
+Date: Wed, 26 Nov 2014 15:20:55 -0800
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-a266cd087cb237c796927ad4399ad29a9250f94a@git.kernel.org>
-Cc: bp@alien8.de, jiang.liu@linux.intel.com, konrad.wilk@oracle.com,
-        benh@kernel.crashing.org, gregkh@linuxfoundation.org,
-        rjw@rjwysocki.net, joro@8bytes.org, bhelgaas@google.com,
-        yinghai@kernel.org, jroedel@suse.de, tony.luck@intel.com,
-        mingo@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, rdunlap@infradead.org
-Reply-To: bhelgaas@google.com, joro@8bytes.org, gregkh@linuxfoundation.org,
-        rjw@rjwysocki.net, konrad.wilk@oracle.com, benh@kernel.crashing.org,
-        jiang.liu@linux.intel.com, bp@alien8.de, rdunlap@infradead.org,
-        mingo@kernel.org, tglx@linutronix.de, tony.luck@intel.com,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, jroedel@suse.de,
-        yinghai@kernel.org
-In-Reply-To: <1416901802-24211-25-git-send-email-jiang.liu@linux.intel.com>
-References: <1416901802-24211-25-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <tip-cd42f95eaeaab2cdbada4731279701f6fd80e195@git.kernel.org>
+Cc: jroedel@suse.de, tony.luck@intel.com, gregkh@linuxfoundation.org,
+        hpa@zytor.com, konrad.wilk@oracle.com, jiang.liu@linux.intel.com,
+        mingo@kernel.org, rdunlap@infradead.org, bhelgaas@google.com,
+        joro@8bytes.org, benh@kernel.crashing.org,
+        linux-kernel@vger.kernel.org, yinghai@kernel.org, rjw@rjwysocki.net,
+        tglx@linutronix.de, bp@alien8.de
+Reply-To: mingo@kernel.org, jiang.liu@linux.intel.com, konrad.wilk@oracle.com,
+        hpa@zytor.com, gregkh@linuxfoundation.org, tony.luck@intel.com,
+        jroedel@suse.de, bp@alien8.de, rjw@rjwysocki.net, tglx@linutronix.de,
+        yinghai@kernel.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, joro@8bytes.org, bhelgaas@google.com,
+        rdunlap@infradead.org
+In-Reply-To: <1416901802-24211-32-git-send-email-jiang.liu@linux.intel.com>
+References: <1416901802-24211-32-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] iommu/amd: Move struct irq_2_irte into amd_iommu.c
-Git-Commit-ID: a266cd087cb237c796927ad4399ad29a9250f94a
+Subject: [tip:x86/apic] x86, irq:
+  Change functions only used in vector.c as static
+Git-Commit-ID: cd42f95eaeaab2cdbada4731279701f6fd80e195
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -39,82 +40,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a266cd087cb237c796927ad4399ad29a9250f94a
-Gitweb:     http://git.kernel.org/tip/a266cd087cb237c796927ad4399ad29a9250f94a
+Commit-ID:  cd42f95eaeaab2cdbada4731279701f6fd80e195
+Gitweb:     http://git.kernel.org/tip/cd42f95eaeaab2cdbada4731279701f6fd80e195
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Tue, 25 Nov 2014 15:49:48 +0800
+AuthorDate: Tue, 25 Nov 2014 15:49:55 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 26 Nov 2014 23:52:48 +0100
+CommitDate: Wed, 26 Nov 2014 23:52:49 +0100
 
-iommu/amd: Move struct irq_2_irte into amd_iommu.c
+x86, irq: Change functions only used in vector.c as static
 
-Now only amd_iommu.c access irq_2_irte, so move it from hw_irq.h into
-amd_iommu.c.
+Function {assign|clear}_irq_vector() and apic_retrigger_irq() are only
+used in file vector.c, so change them as static.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: iommu@lists.linux-foundation.org
 Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
 Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
-Cc: Joerg Roedel <joro@8bytes.org>
-Link: http://lkml.kernel.org/r/1416901802-24211-25-git-send-email-jiang.liu@linux.intel.com
+Link: http://lkml.kernel.org/r/1416901802-24211-32-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Tested-by: Joerg Roedel <jroedel@suse.de>
 ---
- arch/x86/include/asm/hw_irq.h | 13 -------------
- drivers/iommu/amd_iommu.c     |  5 +++++
- 2 files changed, 5 insertions(+), 13 deletions(-)
+ arch/x86/include/asm/hw_irq.h | 3 ---
+ arch/x86/kernel/apic/vector.c | 7 ++++---
+ 2 files changed, 4 insertions(+), 6 deletions(-)
 
 diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index 3520f71..494d541 100644
+index a88f5b3..ea9aebc 100644
 --- a/arch/x86/include/asm/hw_irq.h
 +++ b/arch/x86/include/asm/hw_irq.h
-@@ -94,14 +94,6 @@ extern void trace_call_function_single_interrupt(void);
- #define trace_kvm_posted_intr_ipi kvm_posted_intr_ipi
- #endif /* CONFIG_TRACING */
+@@ -188,8 +188,6 @@ extern struct irq_cfg *irq_cfg(unsigned int irq);
+ extern struct irq_cfg *irqd_cfg(struct irq_data *irq_data);
+ extern void lock_vector_lock(void);
+ extern void unlock_vector_lock(void);
+-extern int assign_irq_vector(int, struct irq_cfg *, const struct cpumask *);
+-extern void clear_irq_vector(int irq, struct irq_cfg *cfg);
+ extern void setup_vector_irq(int cpu);
+ #ifdef CONFIG_SMP
+ extern void send_cleanup_vector(struct irq_cfg *);
+@@ -199,7 +197,6 @@ static inline void send_cleanup_vector(struct irq_cfg *c) { }
+ static inline void irq_complete_move(struct irq_cfg *c) { }
+ #endif
  
--#ifdef CONFIG_IRQ_REMAP
--/* AMD specific interrupt remapping information */
--struct irq_2_irte {
--	u16 devid; /* Device ID for IRTE table */
--	u16 index; /* Index into IRTE table*/
--};
--#endif	/* CONFIG_IRQ_REMAP */
--
- struct irq_domain;
+-extern int apic_retrigger_irq(struct irq_data *data);
+ extern void apic_ack_edge(struct irq_data *data);
+ extern int apic_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 			     unsigned int *dest_id);
+diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
+index 8467ca4..fba4958 100644
+--- a/arch/x86/kernel/apic/vector.c
++++ b/arch/x86/kernel/apic/vector.c
+@@ -185,7 +185,8 @@ next:
+ 	return err;
+ }
  
- #ifdef	CONFIG_X86_LOCAL_APIC
-@@ -184,11 +176,6 @@ struct irq_cfg {
- 	unsigned int		dest_apicid;
- 	u8			vector;
- 	u8			move_in_progress : 1;
--#ifdef CONFIG_IRQ_REMAP
--	union {
--		struct irq_2_irte  irq_2_irte;
--	};
--#endif
- 	union {
- #ifdef CONFIG_X86_IO_APIC
- 		struct {
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index cc4ac40..2e8bbe5 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -3855,6 +3855,11 @@ union irte {
- 	} fields;
- };
+-int assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
++static int assign_irq_vector(int irq, struct irq_cfg *cfg,
++			     const struct cpumask *mask)
+ {
+ 	int err;
+ 	unsigned long flags;
+@@ -196,7 +197,7 @@ int assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
+ 	return err;
+ }
  
-+struct irq_2_irte {
-+	u16 devid; /* Device ID for IRTE table */
-+	u16 index; /* Index into IRTE table*/
-+};
-+
- struct amd_ir_data {
- 	struct irq_2_irte			irq_2_irte;
- 	union irte				irte_entry;
+-void clear_irq_vector(int irq, struct irq_cfg *cfg)
++static void clear_irq_vector(int irq, struct irq_cfg *cfg)
+ {
+ 	int cpu, vector;
+ 	unsigned long flags;
+@@ -441,7 +442,7 @@ void setup_vector_irq(int cpu)
+ 	__setup_vector_irq(cpu);
+ }
+ 
+-int apic_retrigger_irq(struct irq_data *data)
++static int apic_retrigger_irq(struct irq_data *data)
+ {
+ 	struct irq_cfg *cfg = irqd_cfg(data);
+ 	unsigned long flags;
