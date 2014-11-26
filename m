@@ -1,91 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831AbaKZQvU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 11:51:20 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:52264 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764AbaKZQvS (ORCPT
+	id S1752838AbaKZQw1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 11:52:27 -0500
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:48296 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828AbaKZQwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 11:51:18 -0500
-Message-ID: <547604FC.4030300@de.ibm.com>
-Date: Wed, 26 Nov 2014 17:51:08 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 26 Nov 2014 11:52:25 -0500
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: David Hildenbrand <dahi@linux.vnet.ibm.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
-        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com, mingo@kernel.org
-Subject: Re: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
- atomic
-References: <1416915806-24757-1-git-send-email-dahi@linux.vnet.ibm.com> <20141126070258.GA25523@redhat.com> <20141126110504.511b733a@thinkpad-w530> <20141126151729.GB9612@redhat.com> <20141126152334.GA9648@redhat.com> <20141126163207.63810fcb@thinkpad-w530> <20141126154717.GB10568@redhat.com> <5475FAB1.1000802@de.ibm.com> <20141126163216.GB10850@redhat.com>
-In-Reply-To: <20141126163216.GB10850@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112616-0009-0000-0000-00000226DCFC
+X-Originating-IP: [46.116.162.1]
+In-Reply-To: <5464EE5C.8090904@ti.com>
+References: <1410892387-30596-1-git-send-email-s-anna@ti.com> <5464EE5C.8090904@ti.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 26 Nov 2014 18:52:03 +0200
+Message-ID: <CAK=Wgbb=u-GBo3JakZcrbO6xoOe=PWb3C50EJAXrpFJF3VraTQ@mail.gmail.com>
+Subject: Re: [PATCHv2] rpmsg: compute number of buffers to allocate from vrings
+To: Suman Anna <s-anna@ti.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Dave Gerlach <d-gerlach@ti.com>
+Content-Type: multipart/mixed; boundary=001a114034102460930508c5da7d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.11.2014 um 17:32 schrieb Michael S. Tsirkin:
-[...]
->>>> This is what happened on our side (very recent kernel):
->>>>
->>>> spin_lock(&lock)
->>>> copy_to_user(...)
->>>> spin_unlock(&lock)
->>>
->>> That's a deadlock even without copy_to_user - it's
->>> enough for the thread to be preempted and another one
->>> to try taking the lock.
+--001a114034102460930508c5da7d
+Content-Type: text/plain; charset=UTF-8
+
+Hi Suman,
+
+On Thu, Nov 13, 2014 at 7:46 PM, Suman Anna <s-anna@ti.com> wrote:
+> Hi Ohad,
+>
+> On 09/16/2014 01:33 PM, Suman Anna wrote:
+>> The buffers to be used for communication are allocated during the
+>> rpmsg virtio driver's probe, and the total number of buffers is
+>> currently hard-coded to 512. The vring configuration can vary from
+>> one platform to another or between different remote processors. The
+>> setup of the receive buffers will throw a WARN_ON if the associated
+>> vrings are configured with less than 256 buffers (in each direction).
+>> So, adjust this hard-coded value to rely on the number of buffers the
+>> virtqueue vring is setup with, but also limit to use 256 buffers at
+>> most in each direction to avoid wacky resource tables consuming up
+>> unreasonable memory.
 >>
->> Huh? With CONFIG_PREEMPT spin_lock will disable preemption. (we had preempt = server anyway).
-> 
-> Are you sure? Can you point me where it does this please?
-
-spin_lock --> raw_spin_lock --> _raw_spin_lock --> __raw_spin_lock
-
-static inline void __raw_spin_lock(raw_spinlock_t *lock)
-{
----->   preempt_disable();   <-----
-        spin_acquire(&lock->dep_map, 0, 0, _RET_IP_);
-        LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
-}
-
-
-Michael, please be serious. The whole kernel would be broken if spin_lock would not disable preemption.
-
-
-> 
->> But please: One step back. The problem is not the good path. The problem is that we lost a debugging aid for a known to be broken case. In other words: Our code had a bug. Older kernels detected that kind of bug. With your change we no longer saw the sleeping while atomic. Thats it. See my other mail.
+>> NOTE: The number of buffers is already assumed to be symmetrical
+>> in each direction, and that logic is not unchanged.
 >>
->> Christian
-> 
-> You want to add more debugging tools, fine.
+>> Signed-off-by: Suman Anna <s-anna@ti.com>
+>> ---
+>> v2 changes:
+>> - add upper limit on buffers and update comments
+>> - revise patch description
+>
+> Any comments on this one, if not can you pick this up for 3.19?
 
-We dont want to add, we want to fix something that used to work
+Did some small changes - untested, not even compiled - can you please
+make sure it works for you?
 
-> But this one was > giving users in field false positives.
+Thanks,
+Ohad.
 
-So lets try to fix those, ok? If we cant, then tough luck. But coming up with wrong statements is not helpful.
+--001a114034102460930508c5da7d
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-rpmsg-use-less-buffers-when-vrings-are-small.patch"
+Content-Disposition: attachment; 
+	filename="0001-rpmsg-use-less-buffers-when-vrings-are-small.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i2yx8g2v0
 
-> 
-> The point is that *_user is safe with preempt off.
-> It returns an error gracefully.
-> It does not sleep.
-> It does not trigger the scheduler in that context.
-
-There are special cases where your statement is true. But its not in general.
-copy_to_user might fault and that fault might sleep and reschedule. For example handle_mm_fault might go down to pud_alloc, pmd_alloc etc and all these functions could do an GFP_KERNEL allocation. Which might sleep. Which will schedule.
-
-
-> 
-> 
-> David's patch makes it say it does, so it's wrong.
-> 
-> 
-> 
-
+RnJvbSBiMWI5ODkxNDQxZmEzM2ZkMGQ0OWI1Y2IzYWE3ZjA0YmNhMWNjMWRiIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBTdW1hbiBBbm5hIDxzLWFubmFAdGkuY29tPgpEYXRlOiBUdWUs
+IDE2IFNlcCAyMDE0IDEzOjMzOjA3IC0wNTAwClN1YmplY3Q6IFtQQVRDSF0gcnBtc2c6IHVzZSBs
+ZXNzIGJ1ZmZlcnMgd2hlbiB2cmluZ3MgYXJlIHNtYWxsCgpBZGp1c3QgdGhlIG51bWJlciBvZiBy
+cG1zZyBidWZmZXJzIHRvIHJlbHkgb24gdGhlIHNpemUgb2YgdGhlCnZyaW5nLCBpbnN0ZWFkIG9m
+IHVzaW5nIHRoZSBoYXJkIGNvZGVkIHZhbHVlIG9mIDUxMiAoMjU2IHBlcgpkaXJlY3Rpb24pLgoK
+VGhpcyBpcyBuZWVkZWQgd2hlbiBzbWFsbCB2cmluZ3MgYXJlIGJlaW5nIHVzZWQsIHdoZXJlIDI1
+NgpidWZmZXJzIGFyZSB0b28gbXVjaCB0byBmaXQgaW4gYSB2cmluZy4KCldoaWxlIGNvbnNpZGVy
+aW5nIHRoZSB2cmluZyBzaXplLCBrZWVwIHVzaW5nIHRoZSA1MTIgaGFyZCBjb2RlZAp2YWx1ZSBh
+cyBhbiB1cHBlciBsaW1pdCB0byBhdm9pZCB3YWNreSByZXNvdXJjZSB0YWJsZXMgY29uc3VtaW5n
+CnVucmVhc29uYWJsZSBhbW91bnQgb2YgbWVtb3J5LgoKTk9URTogVGhlIG51bWJlciBvZiBidWZm
+ZXJzIGlzIGFscmVhZHkgYXNzdW1lZCB0byBiZSBzeW1tZXRyaWNhbAppbiBlYWNoIGRpcmVjdGlv
+biwgYW5kIHRoYXQgbG9naWMgaXMgdW5jaGFuZ2VkLgoKU2lnbmVkLW9mZi1ieTogU3VtYW4gQW5u
+YSA8cy1hbm5hQHRpLmNvbT4KW2VkaXQgY29tbWl0IG1lc3NhZ2UsIHNtYWxsIGNvZGUgYW5kIGNv
+bW1lbnQgc2ltcGxpZmljYXRpb25dClNpZ25lZC1vZmYtYnk6IE9oYWQgQmVuLUNvaGVuIDxvaGFk
+QHdpemVyeS5jb20+Ci0tLQogZHJpdmVycy9ycG1zZy92aXJ0aW9fcnBtc2dfYnVzLmMgfCA0NCAr
+KysrKysrKysrKysrKysrKysrKysrKysrKystLS0tLS0tLS0tLS0tCiAxIGZpbGUgY2hhbmdlZCwg
+MzAgaW5zZXJ0aW9ucygrKSwgMTQgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9y
+cG1zZy92aXJ0aW9fcnBtc2dfYnVzLmMgYi9kcml2ZXJzL3JwbXNnL3ZpcnRpb19ycG1zZ19idXMu
+YwppbmRleCBiNjEzNWQ0Li45MmY2YWY2IDEwMDY0NAotLS0gYS9kcml2ZXJzL3JwbXNnL3ZpcnRp
+b19ycG1zZ19idXMuYworKysgYi9kcml2ZXJzL3JwbXNnL3ZpcnRpb19ycG1zZ19idXMuYwpAQCAt
+NDEsNiArNDEsNyBAQAogICogQHN2cToJdHggdmlydHF1ZXVlCiAgKiBAcmJ1ZnM6CWtlcm5lbCBh
+ZGRyZXNzIG9mIHJ4IGJ1ZmZlcnMKICAqIEBzYnVmczoJa2VybmVsIGFkZHJlc3Mgb2YgdHggYnVm
+ZmVycworICogQG51bV9idWZzOgl0b3RhbCBudW1iZXIgb2YgYnVmZmVycyBmb3IgcnggYW5kIHR4
+CiAgKiBAbGFzdF9zYnVmOglpbmRleCBvZiBsYXN0IHR4IGJ1ZmZlciB1c2VkCiAgKiBAYnVmc19k
+bWE6CWRtYSBiYXNlIGFkZHIgb2YgdGhlIGJ1ZmZlcnMKICAqIEB0eF9sb2NrOglwcm90ZWN0cyBz
+dnEsIHNidWZzIGFuZCBzbGVlcGVycywgdG8gYWxsb3cgY29uY3VycmVudCBzZW5kZXJzLgpAQCAt
+NjAsNiArNjEsNyBAQCBzdHJ1Y3QgdmlydHByb2NfaW5mbyB7CiAJc3RydWN0IHZpcnRpb19kZXZp
+Y2UgKnZkZXY7CiAJc3RydWN0IHZpcnRxdWV1ZSAqcnZxLCAqc3ZxOwogCXZvaWQgKnJidWZzLCAq
+c2J1ZnM7CisJdW5zaWduZWQgaW50IG51bV9idWZzOwogCWludCBsYXN0X3NidWY7CiAJZG1hX2Fk
+ZHJfdCBidWZzX2RtYTsKIAlzdHJ1Y3QgbXV0ZXggdHhfbG9jazsKQEAgLTg2LDEzICs4OCwxNCBA
+QCBzdHJ1Y3QgcnBtc2dfY2hhbm5lbF9pbmZvIHsKICNkZWZpbmUgdG9fcnBtc2dfZHJpdmVyKGQp
+IGNvbnRhaW5lcl9vZihkLCBzdHJ1Y3QgcnBtc2dfZHJpdmVyLCBkcnYpCiAKIC8qCi0gKiBXZSdy
+ZSBhbGxvY2F0aW5nIDUxMiBidWZmZXJzIG9mIDUxMiBieXRlcyBmb3IgY29tbXVuaWNhdGlvbnMs
+IGFuZCB0aGVuCi0gKiB1c2luZyB0aGUgZmlyc3QgMjU2IGJ1ZmZlcnMgZm9yIFJYLCBhbmQgdGhl
+IGxhc3QgMjU2IGJ1ZmZlcnMgZm9yIFRYLgorICogV2UncmUgYWxsb2NhdGluZyBidWZmZXJzIG9m
+IDUxMiBieXRlcyBlYWNoIGZvciBjb21tdW5pY2F0aW9ucy4gVGhlCisgKiBudW1iZXIgb2YgYnVm
+ZmVycyB3aWxsIGJlIGNvbXB1dGVkIGZyb20gdGhlIG51bWJlciBvZiBidWZmZXJzIHN1cHBvcnRl
+ZAorICogYnkgdGhlIHZyaW5nLCB1cHRvIGEgbWF4aW11bSBvZiA1MTIgYnVmZmVycyAoMjU2IGlu
+IGVhY2ggZGlyZWN0aW9uKS4KICAqCiAgKiBFYWNoIGJ1ZmZlciB3aWxsIGhhdmUgMTYgYnl0ZXMg
+Zm9yIHRoZSBtc2cgaGVhZGVyIGFuZCA0OTYgYnl0ZXMgZm9yCiAgKiB0aGUgcGF5bG9hZC4KICAq
+Ci0gKiBUaGlzIHdpbGwgcmVxdWlyZSBhIHRvdGFsIHNwYWNlIG9mIDI1NktCIGZvciB0aGUgYnVm
+ZmVycy4KKyAqIFRoaXMgd2lsbCB1dGlsaXplIGEgbWF4aW11bSB0b3RhbCBzcGFjZSBvZiAyNTZL
+QiBmb3IgdGhlIGJ1ZmZlcnMuCiAgKgogICogV2UgbWlnaHQgYWxzbyB3YW50IHRvIGFkZCBzdXBw
+b3J0IGZvciB1c2VyLXByb3ZpZGVkIGJ1ZmZlcnMgaW4gdGltZS4KICAqIFRoaXMgd2lsbCBhbGxv
+dyBiaWdnZXIgYnVmZmVyIHNpemUgZmxleGliaWxpdHksIGFuZCBjYW4gYWxzbyBiZSB1c2VkCkBA
+IC0xMDIsOSArMTA1LDggQEAgc3RydWN0IHJwbXNnX2NoYW5uZWxfaW5mbyB7CiAgKiBjYW4gY2hh
+bmdlIHRoaXMgd2l0aG91dCBjaGFuZ2luZyBhbnl0aGluZyBpbiB0aGUgZmlybXdhcmUgb2YgdGhl
+IHJlbW90ZQogICogcHJvY2Vzc29yLgogICovCi0jZGVmaW5lIFJQTVNHX05VTV9CVUZTCQkoNTEy
+KQorI2RlZmluZSBNQVhfUlBNU0dfTlVNX0JVRlMJKDUxMikKICNkZWZpbmUgUlBNU0dfQlVGX1NJ
+WkUJCSg1MTIpCi0jZGVmaW5lIFJQTVNHX1RPVEFMX0JVRl9TUEFDRQkoUlBNU0dfTlVNX0JVRlMg
+KiBSUE1TR19CVUZfU0laRSkKIAogLyoKICAqIExvY2FsIGFkZHJlc3NlcyBhcmUgZHluYW1pY2Fs
+bHkgYWxsb2NhdGVkIG9uLWRlbWFuZC4KQEAgLTU3OSw3ICs1ODEsNyBAQCBzdGF0aWMgdm9pZCAq
+Z2V0X2FfdHhfYnVmKHN0cnVjdCB2aXJ0cHJvY19pbmZvICp2cnApCiAJICogZWl0aGVyIHBpY2sg
+dGhlIG5leHQgdW51c2VkIHR4IGJ1ZmZlcgogCSAqIChoYWxmIG9mIG91ciBidWZmZXJzIGFyZSB1
+c2VkIGZvciBzZW5kaW5nIG1lc3NhZ2VzKQogCSAqLwotCWlmICh2cnAtPmxhc3Rfc2J1ZiA8IFJQ
+TVNHX05VTV9CVUZTIC8gMikKKwlpZiAodnJwLT5sYXN0X3NidWYgPCB2cnAtPm51bV9idWZzIC8g
+MikKIAkJcmV0ID0gdnJwLT5zYnVmcyArIFJQTVNHX0JVRl9TSVpFICogdnJwLT5sYXN0X3NidWYr
+KzsKIAkvKiBvciByZWN5Y2xlIGEgdXNlZCBvbmUgKi8KIAllbHNlCkBAIC05NDgsNiArOTUwLDcg
+QEAgc3RhdGljIGludCBycG1zZ19wcm9iZShzdHJ1Y3QgdmlydGlvX2RldmljZSAqdmRldikKIAlz
+dHJ1Y3QgdmlydHByb2NfaW5mbyAqdnJwOwogCXZvaWQgKmJ1ZnNfdmE7CiAJaW50IGVyciA9IDAs
+IGk7CisJc2l6ZV90IHRvdGFsX2J1Zl9zcGFjZTsKIAogCXZycCA9IGt6YWxsb2Moc2l6ZW9mKCp2
+cnApLCBHRlBfS0VSTkVMKTsKIAlpZiAoIXZycCkKQEAgLTk2OCwxMCArOTcxLDIyIEBAIHN0YXRp
+YyBpbnQgcnBtc2dfcHJvYmUoc3RydWN0IHZpcnRpb19kZXZpY2UgKnZkZXYpCiAJdnJwLT5ydnEg
+PSB2cXNbMF07CiAJdnJwLT5zdnEgPSB2cXNbMV07CiAKKwkvKiB3ZSBleHBlY3Qgc3ltbWV0cmlj
+IHR4L3J4IHZyaW5ncyAqLworCVdBUk5fT04odmlydHF1ZXVlX2dldF92cmluZ19zaXplKHZycC0+
+cnZxKSAhPQorCQl2aXJ0cXVldWVfZ2V0X3ZyaW5nX3NpemUodnJwLT5zdnEpKTsKKworCS8qIHdl
+IG5lZWQgbGVzcyBidWZmZXJzIGlmIHZyaW5ncyBhcmUgc21hbGwgKi8KKwlpZiAodmlydHF1ZXVl
+X2dldF92cmluZ19zaXplKHZycC0+cnZxKSA8IE1BWF9SUE1TR19OVU1fQlVGUyAvIDIpCisJCXZy
+cC0+bnVtX2J1ZnMgPSB2aXJ0cXVldWVfZ2V0X3ZyaW5nX3NpemUodnJwLT5ydnEpICogMjsKKwll
+bHNlCisJCXZycC0+bnVtX2J1ZnMgPSBNQVhfUlBNU0dfTlVNX0JVRlM7CisKKwl0b3RhbF9idWZf
+c3BhY2UgPSB2cnAtPm51bV9idWZzICogUlBNU0dfQlVGX1NJWkU7CisKIAkvKiBhbGxvY2F0ZSBj
+b2hlcmVudCBtZW1vcnkgZm9yIHRoZSBidWZmZXJzICovCiAJYnVmc192YSA9IGRtYV9hbGxvY19j
+b2hlcmVudCh2ZGV2LT5kZXYucGFyZW50LT5wYXJlbnQsCi0JCQkJUlBNU0dfVE9UQUxfQlVGX1NQ
+QUNFLAotCQkJCSZ2cnAtPmJ1ZnNfZG1hLCBHRlBfS0VSTkVMKTsKKwkJCQkgICAgIHRvdGFsX2J1
+Zl9zcGFjZSwgJnZycC0+YnVmc19kbWEsCisJCQkJICAgICBHRlBfS0VSTkVMKTsKIAlpZiAoIWJ1
+ZnNfdmEpIHsKIAkJZXJyID0gLUVOT01FTTsKIAkJZ290byB2cXNfZGVsOwpAQCAtOTg0LDEwICs5
+OTksMTAgQEAgc3RhdGljIGludCBycG1zZ19wcm9iZShzdHJ1Y3QgdmlydGlvX2RldmljZSAqdmRl
+dikKIAl2cnAtPnJidWZzID0gYnVmc192YTsKIAogCS8qIGFuZCBoYWxmIGlzIGRlZGljYXRlZCBm
+b3IgVFggKi8KLQl2cnAtPnNidWZzID0gYnVmc192YSArIFJQTVNHX1RPVEFMX0JVRl9TUEFDRSAv
+IDI7CisJdnJwLT5zYnVmcyA9IGJ1ZnNfdmEgKyB0b3RhbF9idWZfc3BhY2UgLyAyOwogCiAJLyog
+c2V0IHVwIHRoZSByZWNlaXZlIGJ1ZmZlcnMgKi8KLQlmb3IgKGkgPSAwOyBpIDwgUlBNU0dfTlVN
+X0JVRlMgLyAyOyBpKyspIHsKKwlmb3IgKGkgPSAwOyBpIDwgdnJwLT5udW1fYnVmcyAvIDI7IGkr
+KykgewogCQlzdHJ1Y3Qgc2NhdHRlcmxpc3Qgc2c7CiAJCXZvaWQgKmNwdV9hZGRyID0gdnJwLT5y
+YnVmcyArIGkgKiBSUE1TR19CVUZfU0laRTsKIApAQCAtMTAyMyw4ICsxMDM4LDggQEAgc3RhdGlj
+IGludCBycG1zZ19wcm9iZShzdHJ1Y3QgdmlydGlvX2RldmljZSAqdmRldikKIAlyZXR1cm4gMDsK
+IAogZnJlZV9jb2hlcmVudDoKLQlkbWFfZnJlZV9jb2hlcmVudCh2ZGV2LT5kZXYucGFyZW50LT5w
+YXJlbnQsIFJQTVNHX1RPVEFMX0JVRl9TUEFDRSwKLQkJCQkJYnVmc192YSwgdnJwLT5idWZzX2Rt
+YSk7CisJZG1hX2ZyZWVfY29oZXJlbnQodmRldi0+ZGV2LnBhcmVudC0+cGFyZW50LCB0b3RhbF9i
+dWZfc3BhY2UsCisJCQkgIGJ1ZnNfdmEsIHZycC0+YnVmc19kbWEpOwogdnFzX2RlbDoKIAl2ZGV2
+LT5jb25maWctPmRlbF92cXModnJwLT52ZGV2KTsKIGZyZWVfdnJwOgpAQCAtMTA0Miw2ICsxMDU3
+LDcgQEAgc3RhdGljIGludCBycG1zZ19yZW1vdmVfZGV2aWNlKHN0cnVjdCBkZXZpY2UgKmRldiwg
+dm9pZCAqZGF0YSkKIHN0YXRpYyB2b2lkIHJwbXNnX3JlbW92ZShzdHJ1Y3QgdmlydGlvX2Rldmlj
+ZSAqdmRldikKIHsKIAlzdHJ1Y3QgdmlydHByb2NfaW5mbyAqdnJwID0gdmRldi0+cHJpdjsKKwlz
+aXplX3QgdG90YWxfYnVmX3NwYWNlID0gdnJwLT5udW1fYnVmcyAqIFJQTVNHX0JVRl9TSVpFOwog
+CWludCByZXQ7CiAKIAl2ZGV2LT5jb25maWctPnJlc2V0KHZkZXYpOwpAQCAtMTA1Nyw4ICsxMDcz
+LDggQEAgc3RhdGljIHZvaWQgcnBtc2dfcmVtb3ZlKHN0cnVjdCB2aXJ0aW9fZGV2aWNlICp2ZGV2
+KQogCiAJdmRldi0+Y29uZmlnLT5kZWxfdnFzKHZycC0+dmRldik7CiAKLQlkbWFfZnJlZV9jb2hl
+cmVudCh2ZGV2LT5kZXYucGFyZW50LT5wYXJlbnQsIFJQTVNHX1RPVEFMX0JVRl9TUEFDRSwKLQkJ
+CQkJdnJwLT5yYnVmcywgdnJwLT5idWZzX2RtYSk7CisJZG1hX2ZyZWVfY29oZXJlbnQodmRldi0+
+ZGV2LnBhcmVudC0+cGFyZW50LCB0b3RhbF9idWZfc3BhY2UsCisJCQkgIHZycC0+cmJ1ZnMsIHZy
+cC0+YnVmc19kbWEpOwogCiAJa2ZyZWUodnJwKTsKIH0KLS0gCjEuNy4xMC5yYzMuMTA2Ny5nYjEy
+OTA1MQoK
+--001a114034102460930508c5da7d--
