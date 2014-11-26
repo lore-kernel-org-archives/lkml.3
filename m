@@ -1,159 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607AbaKZUUS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 15:20:18 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:46479 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107AbaKZUUQ (ORCPT
+	id S1751958AbaKZU0T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 15:26:19 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:22583 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750770AbaKZU0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 15:20:16 -0500
+	Wed, 26 Nov 2014 15:26:18 -0500
+Date: Wed, 26 Nov 2014 15:26:16 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [ANNOUNCE] 3.14.25-rt22
+Message-ID: <20141126152616.404e5cf7@gandalf.local.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <54762A73.4080801@redhat.com>
-References: <20141126191145.3089.90947.stgit@zurg>
-	<54762A73.4080801@redhat.com>
-Date: Thu, 27 Nov 2014 00:20:14 +0400
-Message-ID: <CALYGNiOy1vbm82Yy93__g+Pszgc_zUaemR+d=06axfaTVywYew@mail.gmail.com>
-Subject: Re: [PATCH v3] mm: prevent endless growth of anon_vma hierarchy
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-mm <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Tim Hartrick <tim@edgecast.com>,
-        Daniel Forrest <dan.forrest@ssec.wisc.edu>,
-        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
-        Vlastimil Babka <vbabka@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 10:30 PM, Rik van Riel <riel@redhat.com> wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
->
-> On 11/26/2014 01:11 PM, Konstantin Khlebnikov wrote:
->
->> diff --git a/include/linux/rmap.h b/include/linux/rmap.h index
->> c0c2bce..b1d140c 100644 --- a/include/linux/rmap.h +++
->> b/include/linux/rmap.h @@ -45,6 +45,22 @@ struct anon_vma { *
->> mm_take_all_locks() (mm_all_locks_mutex). */ struct rb_root
->> rb_root;      /* Interval tree of private "related" vmas */ + +       /* +     *
->> Count of child anon_vmas and VMAs which points to this anon_vma. +
->> * +    * This counter is used for making decision about reusing old
->> anon_vma +     * instead of forking new one. It allows to detect
->> anon_vmas which have +         * just one direct descendant and no vmas.
->> Reusing such anon_vma not +    * leads to significant preformance
->> regression but prevents degradation +  * of anon_vma hierarchy to
->> endless linear chain. +        * +     * Root anon_vma is never reused
->> because it is its own parent and it has +      * at leat one vma or
->> child, thus at fork it's degree is at least 2. +       */ +   unsigned
->> degree; + +   struct anon_vma *parent;        /* Parent of this anon_vma */
->> };
->
-> Could this be put earlier in the struct, so the "unsigned degree" can be
-> packed into the same long word as the spinlock, on 64 bit systems?
->
-> Otherwise there are two 4-byte entities in the struct, each of which get
-> padded out to 8 bytes.
 
-As I see, rw-semaphore is used here now.
-But here is 4-byte padding after atomic counter.
-So we could shrink structure from 8 to 7 64-bit words.
+Dear RT Folks,
 
->
->
->> diff --git a/mm/rmap.c b/mm/rmap.c index 19886fb..df5c44e 100644
->> --- a/mm/rmap.c +++ b/mm/rmap.c @@ -72,6 +72,8 @@ static inline
->> struct anon_vma *anon_vma_alloc(void) anon_vma =
->> kmem_cache_alloc(anon_vma_cachep, GFP_KERNEL); if (anon_vma) {
->> atomic_set(&anon_vma->refcount, 1); +         anon_vma->degree = 1;   /*
->> Reference for first vma */ +          anon_vma->parent = anon_vma; /* *
->> Initialise the anon_vma root to point to itself. If called * from
->> fork, the root will be reset to the parents anon_vma. @@ -188,6
->> +190,8 @@ int anon_vma_prepare(struct vm_area_struct *vma) if
->> (likely(!vma->anon_vma)) { vma->anon_vma = anon_vma;
->> anon_vma_chain_link(vma, avc, anon_vma); +                    /* vma link if merged
->> or child link for new root */ +                       anon_vma->degree++; allocated =
->> NULL; avc = NULL; } @@ -256,7 +260,17 @@ int anon_vma_clone(struct
->> vm_area_struct *dst, struct vm_area_struct *src) anon_vma =
->> pavc->anon_vma; root = lock_anon_vma_root(root, anon_vma);
->> anon_vma_chain_link(dst, avc, anon_vma); + +          /* +             * Reuse
->> existing anon_vma if its degree lower than two, +              * that means it
->> has no vma and just one anon_vma child. +              */ +           if
->> (!dst->anon_vma && anon_vma != src->anon_vma && +
->> anon_vma->degree < 2) +                       dst->anon_vma = anon_vma; }
->
-> Why can src->anon_vma not be reused if it still not shared with
-> any other task?
+I'm pleased to announce the 3.14.25-rt22 stable release.
 
-First child will see parent anon-vma with degree counter == 1.
-Child haven't incremented this counter yet.
-It could be shared but this isn't necessary for fixing original problem.
-So I've decided to minimized influence.
 
->
-> Would it be more readable to use a "reuse_anon_vma" pointer here,
-> and assign dst->anon_vma the value of reuse_anon_vma if we choose
-> to reuse one?
->
-> Assigning different things to dst->anon_vma looks a little confusing.
+This release is just an update to the new stable 3.14.25 version
+and no RT specific changes have been made.
 
-What different things? It always points to anon_vma, but sometimes it's NULL.
 
->
-> Would it make sense to rename anon_vma->degree to anon_vma->sharing
-> or anon_vma->shared, or even anon_vma->users, to indicate that it is
-> a counter of how many VMAs are sharing this anon_vma?
+You can get this release via the git tree at:
 
-It counts two different things: vmas and directly descended anon_vmas.
-So I give it abstract name to prevent misunderstanding.
-For example, if it's 1 that doesn't means that here is just one user:
-that might be one child anon_vma and a lot of grandchilds.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
 
->
->> +     if (dst->anon_vma) +            dst->anon_vma->degree++;
->> unlock_anon_vma_root(root); return 0;
->>
->> @@ -279,6 +293,9 @@ int anon_vma_fork(struct vm_area_struct *vma,
->> struct vm_area_struct *pvma) if (!pvma->anon_vma) return 0;
->>
->> +     /* Drop inherited anon_vma, we'll reuse old one or allocate new.
->> */ +  vma->anon_vma = NULL;
->
-> Use of a temporary variable in anon_vma_clone() would avoid this.
+  branch: v3.14-rt
+  Head SHA1: c26838fac79f5bd2597c41fa3a03773169893bf3
 
-anon_vma_clone() is used in some other places where we clone vma
-without creating new level: for example in vma_split. This trick allows
-to keep interface untouched.
 
->
->> @@ -286,6 +303,10 @@ int anon_vma_fork(struct vm_area_struct *vma,
->> struct vm_area_struct *pvma) if (anon_vma_clone(vma, pvma)) return
->> -ENOMEM;
->>
->> +     /* An old anon_vma has been reused. */
->
-> s/old/existing/  ?
+Or to build 3.14.25-rt22 directly, the following patches should be applied:
 
-or maybe antecedent
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.14.tar.xz
 
->
->> +     if (vma->anon_vma) +            return 0; + /* Then add our own anon_vma.
->> */ anon_vma = anon_vma_alloc(); if (!anon_vma)
->
-> Overall the patch looks good.
->
-> - --
-> All rights reversed
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1
->
-> iQEcBAEBAgAGBQJUdipzAAoJEM553pKExN6Db2kH/20CfKy2ntayKb03tqYnlohu
-> OUxtCwqiow8XsfYc2cEBrCznCNPD5B0sdDdEgRWybBnRCikHNQS4vUBhNl/F13gS
-> Hu8LM+RElhZwr69cCshUXefIx5xMKimUeAsHutpvy09onZy0DvYutdR958/Nhca/
-> 1OjXqtE+LbPd0aG87OQQlagk4DQls0uA2l609qBRKsfMgm2444MRPAN0RGQwlYIv
-> SENvzVFN4ZvIdzsU8IoSw2EkhBankYDKbbTxAy+sHCHaxKzq0eKn+JgRaoZLjxU9
-> +43snI/fkWNN+S5KLgshUKIVO84kAmRAIfdKUjt/DYYkOj6YPp48aJnOKVFwjIY=
-> =Bhp4
-> -----END PGP SIGNATURE-----
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.14.25.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.14/patch-3.14.25-rt22.patch.xz
+
+
+
+
+Enjoy,
+
+-- Steve
+
