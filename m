@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397AbaKZWwh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 17:52:37 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:58720 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811AbaKZWwg (ORCPT
+	id S1753440AbaKZWxs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 17:53:48 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:63229 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634AbaKZWxp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 17:52:36 -0500
+	Wed, 26 Nov 2014 17:53:45 -0500
 MIME-Version: 1.0
-In-Reply-To: <1416900743-29204-5-git-send-email-zyw@rock-chips.com>
-References: <1416900743-29204-1-git-send-email-zyw@rock-chips.com>
-	<1416900743-29204-5-git-send-email-zyw@rock-chips.com>
-Date: Wed, 26 Nov 2014 14:52:35 -0800
-X-Google-Sender-Auth: Mw8SgOJp1c64mn3qOCBt3UpjnJM
-Message-ID: <CAD=FV=V29zCpcEHE+rq6q_6SOZ_NOJgc5FiwmJ9jnRZK4mMUhw@mail.gmail.com>
-Subject: Re: [PATCH v9 4/4] ARM: dts: rockchip: add suspend settings for rk3288-evb-rk808
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Zhong <zyw@rock-chips.com>
+In-Reply-To: <20141126073430.GD3156@suse.de>
+References: <1416447994-9921-1-git-send-email-mark.yao@rock-chips.com>
+	<23617908.6oA5uRuO3l@diego>
+	<CAPM=9tzvvb5U+8KaCO+K6CJi=rwWOkoW+4ZSFW_Oo9gTncvkWA@mail.gmail.com>
+	<1557742.FTdLsE0bVs@diego>
+	<20141126073430.GD3156@suse.de>
+Date: Thu, 27 Nov 2014 08:53:43 +1000
+Message-ID: <CAPM=9tzhZLShA5=ShGTKhyZR6ddKycQDUWBZxXpUBb+1tGp-mQ@mail.gmail.com>
+Subject: Re: [PATCH v14 0/3] Add drm driver for Rockchip Socs
+From: Dave Airlie <airlied@gmail.com>
+To: Joerg Roedel <jroedel@suse.de>
 Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
+        Mark Yao <mark.yao@rock-chips.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
         Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kevin Hilman <khilman@kernel.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>, linux-api@vger.kernel.org,
+        linux-rockchip@lists.infradead.org,
+        Douglas Anderson <dianders@chromium.org>,
+        =?UTF-8?Q?St=C3=A9phane_Marchesin?= <marcheu@chromium.org>,
+        dbehr@chromium.org, Olof Johansson <olof@lixom.net>,
+        Daniel Kurtz <djkurtz@chromium.org>, Eddie Cai <cf@rock-chips.com>,
+        simon xue <xxm@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Kever Yang <kever.yang@rock-chips.com>, yxj@rock-chips.com,
+        xw@rock-chips.com
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris,
+On 26 November 2014 at 17:34, Joerg Roedel <jroedel@suse.de> wrote:
+> On Wed, Nov 26, 2014 at 01:37:51AM +0100, Heiko Stübner wrote:
+>>
+>> Joerg, is your arm/rockchip branch [0] considered stable?
+>>
+>> [0] https://git.kernel.org/cgit/linux/kernel/git/joro/iommu.git/log/?h=arm/rockchip
+>>
+>
+> Yes, this branch will not be rebased. It can be pulled into another
+> tree.
 
-On Mon, Nov 24, 2014 at 11:32 PM, Chris Zhong <zyw@rock-chips.com> wrote:
->                         vcc_ddr: DCDC_REG3 {
->                                 regulator-always-on;
->                                 regulator-boot-on;
->                                 regulator-name = "vcc_ddr";
-> +                               regulator-suspend-mem-enabled;
+Great, so if we can get a rockchip drm tree based on drm-next with
+that tree pulled into it
+that would be good.
 
-The "regulator-suspend-mem-enabled" is not an upstream property and
-isn't doing anything.  It should be removed.
-
-Possibly this is something Heiko could do when applying  (depends on
-what he wants) if no other spins are required.
->                         vcc_18: LDO_REG7 {
-> @@ -128,6 +163,11 @@
->                                 regulator-min-microvolt = <1800000>;
->                                 regulator-max-microvolt = <1800000>;
->                                 regulator-name = "vcc_18";
-> +                               regulator-suspend-mem-microvolt = <1800000>;
-
-Another non-upstream property: regulator-suspend-mem-microvolt
+Dave.
