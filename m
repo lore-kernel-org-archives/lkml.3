@@ -1,230 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752870AbaKZQ5O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 11:57:14 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:53507 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751565AbaKZQ5L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 11:57:11 -0500
-Date: Wed, 26 Nov 2014 17:57:08 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org, Huang Shijie <shijie8@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
-Subject: Re: [PATCH v5 1/3] mtd: nand: gpmi: add gpmi_move_bits function
-Message-ID: <20141126175708.1acb90ac@bbrezillon>
-In-Reply-To: <1417020793-3354-2-git-send-email-boris.brezillon@free-electrons.com>
-References: <1417020793-3354-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1417020793-3354-2-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1753325AbaKZQ5g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 11:57:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37245 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752754AbaKZQ5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 11:57:33 -0500
+Date: Wed, 26 Nov 2014 18:56:53 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Greg Kurz <gkurz@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, rusty@au1.ibm.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>,
+        virtualization@lists.linux-foundation.org, linux-s390@vger.kernel.org,
+        lguest@lists.ozlabs.org, Pawel Moll <pawel.moll@arm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Joel Stanley <joel@jms.id.au>, Arnd Bergmann <arnd@arndb.de>,
+        Siva Yerramreddy <yshivakrishna@gmail.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, pbonzini@redhat.com,
+        Brian Swetland <swetland@google.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Amit Shah <amit.shah@redhat.com>, linux390@de.ibm.com,
+        David Miller <davem@davemloft.net>
+Subject: Re: [PATCH v4 02/42] virtio: add support for 64 bit features.
+Message-ID: <20141126165653.GB11202@redhat.com>
+References: <1416933600-21398-1-git-send-email-mst@redhat.com>
+ <1416933600-21398-3-git-send-email-mst@redhat.com>
+ <20141126174809.24f6be4d@bahia.local>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141126174809.24f6be4d@bahia.local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Nov 2014 17:53:11 +0100
-Boris Brezillon <boris.brezillon@free-electrons.com> wrote:
-
-> Add a new function to move bits (not bytes) from a memory region to
-> another one.
-> This function is similar to memmove except it acts at bit level.
-> This function is needed to implement GPMI raw access functions, given the
-> fact that ECC engine does not pad ECC bits to the next byte boundary.
+On Wed, Nov 26, 2014 at 05:48:09PM +0100, Greg Kurz wrote:
+> On Tue, 25 Nov 2014 18:41:22 +0200
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
 > 
-> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> ---
->  drivers/mtd/nand/gpmi-nand/gpmi-lib.c  | 151 +++++++++++++++++++++++++++++++++
->  drivers/mtd/nand/gpmi-nand/gpmi-nand.h |   4 +
->  2 files changed, 155 insertions(+)
+> > From: Rusty Russell <rusty@rustcorp.com.au>
+> > 
+> > Change the u32 to a u64, and make sure to use 1ULL everywhere!
+> > 
+> > Cc: Brian Swetland <swetland@google.com>
+> > Cc: Christian Borntraeger <borntraeger@de.ibm.com>
+> > [Thomas Huth: fix up virtio-ccw get_features]
+> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> > Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+> > Acked-by: Pawel Moll <pawel.moll@arm.com>
+> > Acked-by: Ohad Ben-Cohen <ohad@wizery.com>
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+
+...
+
+> > @@ -86,14 +86,14 @@ static inline bool virtio_has_feature(const struct virtio_device *vdev,
+> >  {
+> >  	/* Did you forget to fix assumptions on max features? */
+> >  	if (__builtin_constant_p(fbit))
+> > -		BUILD_BUG_ON(fbit >= 32);
+> > +		BUILD_BUG_ON(fbit >= 64);
 > 
-> diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> index 87e658c..77eff0e 100644
-> --- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> +++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> @@ -1353,3 +1353,154 @@ int gpmi_read_page(struct gpmi_nand_data *this,
->  	set_dma_type(this, DMA_FOR_READ_ECC_PAGE);
->  	return start_dma_with_bch_irq(this, desc);
->  }
-> +
-> +/**
-> + * gpmi_move_bits - move bits from one memory region to another
-> + * @dst: destination buffer
-> + * @dst_bit_off: bit offset we're starting to write at
-> + * @src: source buffer
-> + * @src_bit_off: bit offset we're starting to read from
-> + * @nbits: number of bits to copy
-> + *
-> + * This functions copies bits from one memory region to another, and is used by
-> + * the GPMI driver to copy ECC sections which are not guaranteed to be byte
-> + * aligned.
+> 
+> While you're here, maybe you could derive the max value from the .features field ?
+> 
+> -               BUILD_BUG_ON(fbit >= 64);
+> +               BUILD_BUG_ON(fbit >= (sizeof(vdev->features) << 3));
 
-I forgot to add that src and dst should not overlap, otherwise it won't
-work...
+I don't see how that will help.
+All that 1ULL math only works up to 64 bit.
+So this only makes it look like we support any size,
+but doesn't really.
 
-> + *
-> + */
-> +void gpmi_move_bits(u8 *dst, size_t dst_bit_off,
-> +		    const u8 *src, size_t src_bit_off,
-> +		    size_t nbits)
-> +{
-> +	size_t i;
-> +	size_t nbytes;
-> +	u32 src_buffer = 0;
-> +	size_t bits_in_src_buffer = 0;
-> +
-> +	if (!nbits)
-> +		return;
-> +
-> +	/*
-> +	 * Move src and dst pointers to the closest byte pointer and store bit
-> +	 * offsets within a byte.
-> +	 */
-> +	src += src_bit_off / 8;
-> +	src_bit_off %= 8;
-> +
-> +	dst += dst_bit_off / 8;
-> +	dst_bit_off %= 8;
-> +
-> +	/*
-> +	 * Initialize the src_buffer value with bits available in the first
-> +	 * byte of data so that we end up with a byte aligned src pointer.
-> +	 */
-> +	if (src_bit_off) {
-> +		src_buffer = src[0] >> src_bit_off;
-> +		if (nbits >= (8 - src_bit_off)) {
-> +			bits_in_src_buffer += 8 - src_bit_off;
-> +		} else {
-> +			src_buffer &= GENMASK(nbits - 1, 0);
-> +			bits_in_src_buffer += nbits;
-> +		}
-> +		nbits -= bits_in_src_buffer;
-> +		src++;
-> +	}
-> +
-> +	/* Calculate the number of bytes that can be copied from src to dst. */
-> +	nbytes = nbits / 8;
-> +
-> +	/* Try to align dst to a byte boundary. */
-> +	if (dst_bit_off) {
-> +		if (bits_in_src_buffer < (8 - dst_bit_off) && nbytes) {
-> +			src_buffer |= src[0] << bits_in_src_buffer;
-> +			bits_in_src_buffer += 8;
-> +			src++;
-> +			nbytes--;
-> +		}
-> +
-> +		if (bits_in_src_buffer >= (8 - dst_bit_off)) {
-> +			dst[0] &= GENMASK(dst_bit_off - 1, 0);
-> +			dst[0] |= src_buffer << dst_bit_off;
-> +			src_buffer >>= (8 - dst_bit_off);
-> +			bits_in_src_buffer -= (8 - dst_bit_off);
-> +			dst_bit_off = 0;
-> +			dst++;
-> +			if (bits_in_src_buffer > 7) {
-> +				bits_in_src_buffer -= 8;
-> +				dst[0] = src_buffer;
-> +				dst++;
-> +				src_buffer >>= 8;
-> +			}
-> +		}
-> +	}
-> +
-> +	if (!bits_in_src_buffer && !dst_bit_off) {
-> +		/*
-> +		 * Both src and dst pointers are byte aligned, thus we can
-> +		 * just use the optimized memcpy function.
-> +		 */
-> +		if (nbytes)
-> +			memcpy(dst, src, nbytes);
-> +	} else {
-> +		/*
-> +		 * src buffer is not byte aligned, hence we have to copy each
-> +		 * src byte to the src_buffer variable before extracting a byte
-> +		 * to store in dst.
-> +		 */
-> +		for (i = 0; i < nbytes; i++) {
-> +			src_buffer |= src[i] << bits_in_src_buffer;
-> +			dst[i] = src_buffer;
-> +			src_buffer >>= 8;
-> +		}
-> +	}
-> +	/* Update dst and src pointers */
-> +	dst += nbytes;
-> +	src += nbytes;
-> +
-> +	/*
-> +	 * nbits is the number of remaining bits. It should not exceed 8 as
-> +	 * we've already copied as much bytes as possible.
-> +	 */
-> +	nbits %= 8;
-> +
-> +	/*
-> +	 * If there's no more bits to copy to the destination and src buffer
-> +	 * was already byte aligned, then we're done.
-> +	 */
-> +	if (!nbits && !bits_in_src_buffer)
-> +		return;
-> +
-> +	/* Copy the remaining bits to src_buffer */
-> +	if (nbits)
-> +		src_buffer |= (*src & GENMASK(nbits - 1, 0)) <<
-> +			      bits_in_src_buffer;
-> +	bits_in_src_buffer += nbits;
-> +
-> +	/*
-> +	 * In case there were not enough bits to get a byte aligned dst buffer
-> +	 * prepare the src_buffer variable to match the dst organization (shift
-> +	 * src_buffer by dst_bit_off and retrieve the least significant bits
-> +	 * from dst).
-> +	 */
-> +	if (dst_bit_off)
-> +		src_buffer = (src_buffer << dst_bit_off) |
-> +			     (*dst & GENMASK(dst_bit_off - 1, 0));
-> +	bits_in_src_buffer += dst_bit_off;
-> +
-> +	/*
-> +	 * Keep most significant bits from dst if we end up with an unaligned
-> +	 * number of bits.
-> +	 */
-> +	nbytes = bits_in_src_buffer / 8;
-> +	if (bits_in_src_buffer % 8) {
-> +		src_buffer |= (dst[nbytes] &
-> +			       GENMASK(7, bits_in_src_buffer % 8)) <<
-> +			      (nbytes * 8);
-> +		nbytes++;
-> +	}
-> +
-> +	/* Copy the remaining bytes to dst */
-> +	for (i = 0; i < nbytes; i++) {
-> +		dst[i] = src_buffer;
-> +		src_buffer >>= 8;
-> +	}
-> +}
-> diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.h b/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-> index 32c6ba4..17d0736 100644
-> --- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-> +++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-> @@ -290,6 +290,10 @@ extern int gpmi_send_page(struct gpmi_nand_data *,
->  extern int gpmi_read_page(struct gpmi_nand_data *,
->  			dma_addr_t payload, dma_addr_t auxiliary);
->  
-> +void gpmi_move_bits(u8 *dst, size_t dst_bit_off,
-> +		    const u8 *src, size_t src_bit_off,
-> +		    size_t nbits);
-> +
->  /* BCH : Status Block Completion Codes */
->  #define STATUS_GOOD		0x00
->  #define STATUS_ERASED		0xff
-
-
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+No?
