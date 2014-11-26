@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485AbaKZRPF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 12:15:05 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:45964 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaKZRPD (ORCPT
+	id S1752539AbaKZRP2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 12:15:28 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47885 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688AbaKZRP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 12:15:03 -0500
+	Wed, 26 Nov 2014 12:15:26 -0500
+Date: Wed, 26 Nov 2014 18:15:19 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>, Sekhar Nori <nsekhar@ti.com>,
+        linux-kernel@vger.kernel.org, Murali Karicheri <m-karicheri2@ti.com>,
+        linux-i2c@vger.kernel.org,
+        Mike Looijmans <milo-software@users.sourceforge.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 2/5] i2c: davinci: query STP always when NACK is
+ received
+Message-ID: <20141126171519.GP4431@pengutronix.de>
+References: <1417010393-30598-1-git-send-email-grygorii.strashko@ti.com>
+ <1417010393-30598-3-git-send-email-grygorii.strashko@ti.com>
+ <20141126155711.GL4431@pengutronix.de>
+ <5476005A.6090207@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20141126160720.GD3245@hawk.usersys.redhat.com>
-References: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org>
- <1416931805-23223-5-git-send-email-alex.bennee@linaro.org> <20141126160720.GD3245@hawk.usersys.redhat.com>
-From: Peter Maydell <peter.maydell@linaro.org>
-Date: Wed, 26 Nov 2014 17:14:40 +0000
-Message-ID: <CAFEAcA-xV80Z3j52H5yh2e+JxOo5=inZNcM54HkOa2U2rBvKhQ@mail.gmail.com>
-Subject: Re: [PATCH 4/7] KVM: arm64: guest debug, add SW break point support
-To: Andrew Jones <drjones@redhat.com>
-Cc: =?UTF-8?B?QWxleCBCZW5uw6ll?= <alex.bennee@linaro.org>,
-        kvm-devel <kvm@vger.kernel.org>,
-        arm-mail-list <linux-arm-kernel@lists.infradead.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>, Alexander Graf <agraf@suse.de>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Corbet <corbet@lwn.net>, Gleb Natapov <gleb@kernel.org>,
-        "J. Kiszka" <jan.kiszka@siemens.com>,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        David Hildenbrand <dahi@linux.vnet.ibm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Bharat Bhushan <r65777@freescale.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, bp@suse.de
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5476005A.6090207@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 November 2014 at 16:07, Andrew Jones <drjones@redhat.com> wrote:
-> There appears to be a typo in the ARM ARM. Subsection "Software
-> Breakpoint Instruction exception" of D1.10.4 says BRK (ESR_EL2_EC_BRK64)
-> is 0x39, but the table above that has it correctly as 0x3c.
+Hello Grygorii,
 
-Thanks for pointing out this typo -- I've reported it to the
-appropriate documentation people.
+On Wed, Nov 26, 2014 at 06:31:22PM +0200, Grygorii Strashko wrote:
+> On 11/26/2014 05:57 PM, Uwe Kleine-König wrote:
+> >I don't understand your use of "query" in the subject and later in the
+> >commit log. Do you mean "send"?
+> 
+> will change to "generate". Ok?
+yes that would be better understandable
 
--- PMM
+> Can I assume that you are ok with this patch in general?
+Yeah, your argument that being able to send a Sr is not sensible made
+sense to me. If Wolfram is happy with your patch so am I.
+
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
