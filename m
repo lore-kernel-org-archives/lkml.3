@@ -1,90 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062AbaKZQRR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 11:17:17 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:55262 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601AbaKZQRP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 11:17:15 -0500
-Message-ID: <5475FD02.3030501@linaro.org>
-Date: Wed, 26 Nov 2014 16:17:06 +0000
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752951AbaKZQUM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 11:20:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37269 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752491AbaKZQUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 11:20:10 -0500
+Date: Wed, 26 Nov 2014 18:19:47 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
+        paulus@samba.org, akpm@linux-foundation.org, heiko.carstens@de.ibm.com,
+        schwidefsky@de.ibm.com, borntraeger@de.ibm.com, mingo@kernel.org
+Subject: Re: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
+ atomic
+Message-ID: <20141126161947.GA10850@redhat.com>
+References: <1416915806-24757-1-git-send-email-dahi@linux.vnet.ibm.com>
+ <20141126070258.GA25523@redhat.com>
+ <20141126110504.511b733a@thinkpad-w530>
+ <20141126151729.GB9612@redhat.com>
+ <20141126152334.GA9648@redhat.com>
+ <20141126163207.63810fcb@thinkpad-w530>
+ <20141126154717.GB10568@redhat.com>
+ <20141126170223.3b108b94@thinkpad-w530>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tim Sander <tim@krieglstein.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>
-Subject: Re: [PATCH 3.18-rc3 v9 5/5] arm: smp: Handle ipi_cpu_backtrace()
- using FIQ (if available)
-References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org> <1416936401-5147-1-git-send-email-daniel.thompson@linaro.org> <1416936401-5147-6-git-send-email-daniel.thompson@linaro.org> <2744845.J3XUj2a9bM@dabox> <20141126131210.GI3836@n2100.arm.linux.org.uk>
-In-Reply-To: <20141126131210.GI3836@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141126170223.3b108b94@thinkpad-w530>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/11/14 13:12, Russell King - ARM Linux wrote:
-> On Wed, Nov 26, 2014 at 01:46:52PM +0100, Tim Sander wrote:
->> Hi Daniel
->>
->> Am Dienstag, 25. November 2014, 17:26:41 schrieb Daniel Thompson:
->>> Previous changes have introduced both a replacement default FIQ handler
->>> and an implementation of arch_trigger_all_cpu_backtrace for ARM but
->>> these are currently independent of each other.
->>>
->>> This patch plumbs together these features making it possible, on platforms
->>> that support it, to trigger backtrace using FIQ.
->> Does this ipi handler interfere in any way with set_fiq_handler?
->>
->> As far as i know there is only one FIQ handler vector so i guess there is a 
->> potential conflict. But i have not worked with IPI's so i might be completley
->> wrong.
+On Wed, Nov 26, 2014 at 05:02:23PM +0100, David Hildenbrand wrote:
+> > > This is what happened on our side (very recent kernel):
+> > > 
+> > > spin_lock(&lock)
+> > > copy_to_user(...)
+> > > spin_unlock(&lock)
+> > 
+> > That's a deadlock even without copy_to_user - it's
+> > enough for the thread to be preempted and another one
+> > to try taking the lock.
+> > 
+> > 
+> > > 1. s390 locks/unlocks a spin lock with a compare and swap, using the _cpu id_
+> > >    as "old value"
+> > > 2. we slept during copy_to_user()
+> > > 3. the thread got scheduled onto another cpu
+> > > 4. spin_unlock failed as the _cpu id_ didn't match (another cpu that locked
+> > >    the spinlock tried to unlocked it).
+> > > 5. lock remained locked -> deadlock
+> > > 
+> > > Christian came up with the following explanation:
+> > > Without preemption, spin_lock() will not touch the preempt counter.
+> > > disable_pfault() will always touch it.
+> > > 
+> > > Therefore, with preemption disabled, copy_to_user() has no idea that it is
+> > > running in atomic context - and will therefore try to sleep.
+> > >
+> > > So copy_to_user() will on s390:
+> > > 1. run "as atomic" while spin_lock() with preemption enabled.
+> > > 2. run "as not atomic" while spin_lock() with preemption disabled.
+> > > 3.  run "as atomic" while pagefault_disabled() with preemption enabled or
+> > > disabled.
+> > > 4. run "as not atomic" when really not atomic.
 > 
-> First, the code in arch/arm/kernel/fiq.c should work with this new FIQ
-> code in that the new FIQ code is used as the "default" handler (as
-> opposed to the original handler which was a total no-op.)
+> should have been more clear at that point: 
+> preemption enabled == kernel compiled with preemption support
+> preemption disabled == kernel compiled without preemption support
 > 
-> Secondly, use of arch/arm/kernel/fiq.c in a SMP system is really not a
-> good idea: the FIQ registers are private to each CPU in the system, and
-> there is no infrastructure to allow fiq.c to ensure that it loads the
-> right CPU with the register information for the provided handler.
+> > > 
+> > > And exactly nr 2. is the thing that produced the deadlock in our scenario and
+> > > the reason why I want a might_sleep() :)
+> > 
+> > IMHO it's not copy to user that causes the problem.
+> > It's the misuse of spinlocks with preemption on.
 > 
-> So, use of arch/arm/kernel/fiq.c and the IPI's use of FIQ /should/ be
-> mutually exclusive.
+> As I said, preemption was off.
 
-Agree with the above. Just to add...
+off -> disabled at compile time?
 
-I am currently working to get NMI features from x86 land running on top
-of the new default FIQ handler: arch_trigger_all_cpu_backtrace (with
-Russell's patch), perf, hard lockup detector, kgdb.
-
-However I don't think anything I'm doing makes it very much harder than
-it already is to use arch/arm/kernel/fiq.c . That said, other then
-setting the GIC up nicely, I am not doing anything to make it easier either.
-
-I'd like to end up somewhere where if you want the NMI features (and
-have a suitable device) you just use the default handler and it all just
-works. If you need *Fast* Interrupt reQuests, proper old school "I want
-to write an overclocked I2C slave in software" craziness and you can
-pass on the improved debug features then set_fiq_handler() is still
-there and still need extremely careful handling.
-
-The only thing I might have done to make your life worse is not provide
-the code to dynamically shunt all the debug and performance monitoring
-features back to group 1. All except the hard lockup detector will have
-logic to fall back statically. This means making it dynamic shouldn't be
-that hard. However since there is no code in the upstream kernel that
-would use the code I don't plan to go there myself.
+But the code is broken for people that do enable it.
 
 
-Daniel.
+> > 
+> > So might_sleep would make you think copy_to_user is
+> > the problem, and e.g. let you paper over it by
+> > moving copy_to_user out.
+> 
+> Actually implementing different way of locking easily fixed the problem for us.
+> The old might_sleep() checks would have given us the problem within a few
+> seconds (I tested it).
 
+
+Or enable CONFIG_PREMPT, with same effect (copy_to_user will report
+an error).
+
+Do you check  return code from copy to user?
+If not then you have another bug ...
+
+> > 
+> > Enable lock prover and you will see what the real
+> > issue is, which is you didn't disable preempt.
+> > and if you did, copy_to_user would be okay.
+> > 
+> 
+> Our kernel is compiled without preemption and we turned on all lock/atomic
+> sleep debugging aid. No problem was detected.
+
+But your code is still buggy with preemption on, isn't it?
+
+
+> ----
+> But the question is if we shouldn't rather provide a:
+> 
+>   copy_to_user_nosleep() implementation that can be called from
+>     pagefault_disable() because it won't sleep.
+> and a
+>   copy_to_user_sleep() implementation that cannot be called from
+>     pagefault_disable().
+> 
+> Another way to fix it would be a reworked pagefault_disable() function that
+> somehow sets "a flag", so copy_to_user() knows that it is in fact called from a
+> valid context, not just from "some atomic" context. So we could trigger
+> might_sleep() when detecting a !pagefault_disable contex
+
+I think all this is just directing people to paper over the
+problem. You should normally disable preemption if you take
+spinlocks.
+Yes it might happen to work if preempt is compiled out
+and you don't trigger scheduler, but Linux might
+add scheduler calls at any point without notice,
+code must be preempt safe.
+
+Maybe add a debug option warning about spinlocks taken
+with preempt on.
+
+That would make sense I think.
+
+
+-- 
+MST
