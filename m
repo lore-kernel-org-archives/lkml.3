@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaKZVvv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 16:51:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34674 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751975AbaKZVvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 16:51:43 -0500
-Date: Wed, 26 Nov 2014 16:51:08 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Christoph Hellwig <hch@infradead.org>, martin.petersen@oracle.com,
-        mst@redhat.com, rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        qemu-devel@nongnu.org, dm-devel@redhat.com,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: virtio_blk: fix defaults for max_hw_sectors and max_segment_size
-Message-ID: <20141126215108.GA32077@redhat.com>
-References: <20141120190058.GA31214@redhat.com>
- <20141121095456.GB8866@infradead.org>
- <20141121154920.GA7644@redhat.com>
- <54762E9A.2070007@kernel.dk>
- <20141126205106.GA31815@redhat.com>
- <54763DEC.3050207@kernel.dk>
+	id S1753422AbaKZVvQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 16:51:16 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:11807 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753219AbaKZVvN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 16:51:13 -0500
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Lee Jones <lee.jones@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Mark Brown <broonie@kernel.org>
+CC: Josh Cartwright <joshc@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-arm-msm@vger.kernel.org>
+Subject: [PATCH v8 3/3] regulator: qcom-rpm: Add missing state flag in call to RPM
+Date: Wed, 26 Nov 2014 13:51:01 -0800
+Message-ID: <1417038661-30209-4-git-send-email-bjorn.andersson@sonymobile.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <1417038661-30209-1-git-send-email-bjorn.andersson@sonymobile.com>
+References: <1417038661-30209-1-git-send-email-bjorn.andersson@sonymobile.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54763DEC.3050207@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26 2014 at  3:54pm -0500,
-Jens Axboe <axboe@kernel.dk> wrote:
+This adds the missing state parameter to the call down to the RPM. This
+is currently hard coded to the active state, as that's all we're
+supporting at this moment.
 
-> On 11/26/2014 01:51 PM, Mike Snitzer wrote:
-> > On Wed, Nov 26 2014 at  2:48pm -0500,
-> > Jens Axboe <axboe@kernel.dk> wrote:
-> > 
-> >>
-> >> That code isn't even in mainline, as far as I can tell...
-> > 
-> > Right, it is old RHEL6 code.
-> > 
-> > But I've yet to determine what changed upstream that enables this to
-> > "just work" with a really large max_sectors (I haven't been looking
-> > either).
-> 
-> Kind of hard for the rest of us to say, since it's triggering a BUG in
-> code we don't have :-)
+Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+---
+ drivers/regulator/qcom_rpm-regulator.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-I never asked you or others to weigh in on old RHEL6 code.  Once I
-realized upstream worked even if max_sectors is _really_ high I said
-"sorry for the noise".
+diff --git a/drivers/regulator/qcom_rpm-regulator.c b/drivers/regulator/qcom_rpm-regulator.c
+index b55cd5b..8f66040 100644
+--- a/drivers/regulator/qcom_rpm-regulator.c
++++ b/drivers/regulator/qcom_rpm-regulator.c
+@@ -198,6 +198,7 @@ static int rpm_reg_write(struct qcom_rpm_reg *vreg,
+ 	vreg->val[req->word] |= value << req->shift;
+ 
+ 	return qcom_rpm_write(vreg->rpm,
++			      QCOM_RPM_ACTIVE_STATE,
+ 			      vreg->resource,
+ 			      vreg->val,
+ 			      vreg->parts->request_len);
+-- 
+1.8.2.2
 
-But while you're here, I wouldn't mind getting your take on virtio-blk
-setting max_hw_sectors to -1U.
-
-As I said in my original reply to mst: it only makes sense to set a
-really high initial upper bound like that in a driver if that driver
-goes on to stack an underlying device's limit.
