@@ -1,115 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752420AbaKZIHa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 03:07:30 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:23868 "EHLO
+	id S1752454AbaKZIIt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 03:08:49 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:25757 "EHLO
 	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752143AbaKZIH3 (ORCPT
+	with ESMTP id S1751764AbaKZIIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 03:07:29 -0500
+	Wed, 26 Nov 2014 03:08:48 -0500
 X-Mail-Handler: Dyn Standard SMTP by Dyn
 X-Originating-IP: 96.249.243.124
 X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19ZAh2zJ8foWgi56cpGcrW4jdX1rbRLc/w=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 427AB62433C
-Date: Wed, 26 Nov 2014 03:06:36 -0500
+X-MHO-User: U2FsdGVkX1+3mYtcgz7c7/z2iJs9ddjGqky8GLsiT3c=
+X-DKIM: OpenDKIM Filter v2.0.1 titan B6CD262434D
+Date: Wed, 26 Nov 2014 03:08:19 -0500
 From: Jason Cooper <jason@lakedaemon.net>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Jiang Liu <jiang.liu@linux.intel.com>,
+To: Yingjoe Chen <yingjoe.chen@mediatek.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        devicetree@vger.kernel.org, hc.yen@mediatek.com,
+        srv_heupstream@mediatek.com, yh.chen@mediatek.com,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Yijing Wang <wangyijing@huawei.com>, Rob Herring <robh+dt@kernel.org>,
+        nathan.chung@mediatek.com, yingjoe.chen@gmail.com,
+        Matthias Brugger <matthias.bgg@gmail.com>, eddie.huang@mediatek.com,
         Bjorn Helgaas <bhelgaas@google.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Robert Richter <robert.richter@caviumnetworks.com>,
-        "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-Subject: Re: [PATCH v3 00/13] arm64: PCI/MSI: GICv3 ITS support (stacked
- domain edition)
-Message-ID: <20141126080636.GC22670@titan.lakedaemon.net>
-References: <1416839720-18400-1-git-send-email-marc.zyngier@arm.com>
+        Sascha Hauer <kernel@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v8 0/4] ARM: mediatek: Add support for interrupt
+ polarity
+Message-ID: <20141126080819.GD22670@titan.lakedaemon.net>
+References: <1416902662-19281-1-git-send-email-yingjoe.chen@mediatek.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1416839720-18400-1-git-send-email-marc.zyngier@arm.com>
+In-Reply-To: <1416902662-19281-1-git-send-email-yingjoe.chen@mediatek.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marc,
+Yingjoe,
 
-On Mon, Nov 24, 2014 at 02:35:07PM +0000, Marc Zyngier wrote:
-> The GICv3 architecture provides a way to implement support for
-> MSI/MSI-X using a specific block called the ITS (Interrupt Translation
-> Service).
+On Tue, Nov 25, 2014 at 04:04:18PM +0800, Yingjoe Chen wrote:
+> This series is 8th version of interrupt polarity support for MediaTek SoCs.
 > 
-> The ITS can be accurately described as "page tables for
-> interrupts". If you think this sounds scary, you're spot on. It uses a
-> set of opaque memory tables that are manipulated through commands
-> (software almost never touches the tables directly). In order to make
-> it slightly easier to digest, the code has been split into (mostly)
-> logical units.
+> I rebased previous version to latest tip/irq/irqdomain, and fix issues
+> raised by Marc & Mark. The interrupt & irq free work fine on mt8135 board.
 > 
-> To make things more fun, this relies on Jiang Liu's stacked domain
-> patch series as now merged in tip/irq/irqdomain:
+> Simplified block diagram for interrupt on my system:
 > 
-> - patch 1 imports the new asm-generic/msi.h file into arch/arm64
-> - patches 2 to 13 are the bulk of the ITS driver.
+>     +-------+      +-------+
+>  ---| SYSIRQ|------|ARM GIC|
+>  ---|       |------|       |
+>  ---|       |------|       |
+>  ---|       |------|       |
+>  ---|       |------|       |
+>     +-------+      +-------+
 > 
-> This has been tested on arm64 with an FVP model, and is based on
-> tip/irq/irqdomain. The whole thing is available at:
+> In device tree, interrupt-parent for other devices is sysirq, child of gic.
+> This describe HW better and allow device to specify polarity as it is sent
+> by the device.
 > 
-> git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git irq/gicv3-its
+> When using hierarchy irq domain, gic will use irq_domain_add_linear to
+> create irqdomain and all interrupt numbers must come from device tree. My
+> /proc/interrupts looks like this now:
 > 
-> Unless someone screams murder, I consider this to be ready for merge.
+> # cat /proc/interrupts
+>            CPU0
+>  16:     149578  MT_SYSIRQ 113  mtk_timer
+>  20:       1082  MT_SYSIRQ  54  serial
 > 
-> 	M.
+> Changes in v8:
+>  - Rebased to new tip/irq/irqdomain
+>  - Update mediatek,sysirq.txt bindinds to document interrupt-cells format
+>    and interrupt-parents
+>  - Change interrupt-cells format check in mtk_sysirq.
+>  - Minor coding style fix
 > 
-> From v2 [2]:
-> - rebased on top of the stable version of tip/irq/irqdomain
-> - use irq_domain_reset_irq_data instead of
->   irq_domain_set_hwirq_and_chip on the free path
-> - use pci_msi_mask_irq instead of mask_msi_irq
-> - use host_data to pass the ITS structure around
-> - top-level MSI domain is now indentified by the ITS of_node
+> Changes in v7:
+>  - Discussed in [1]
+>  - Rebased to tip/irq/irqdomain
+>  - In mtk_sysirq_domain_alloc, use copy of irq_data to workaound of_node
+>    check in gic_irq_domain_xlate.
 > 
-> From v1 [1]:
-> - rebased on top of tip/irq/irqdomain
-> - dropped the arm64-specific implementation of arch_setup_msi_irqs and co.
-> - reworked the whole ITS/MSI setup to use the new MSI/PCI split
+> Changes in v6:
+>  - Discussed in [2]
+>  - Rebased to tip/irq/irqdomain
 > 
-> [1]: http://lwn.net/Articles/619788/
-> [2]: https://lkml.org/lkml/2014/11/18/825
+> Changes in v5:
+>  - Discussed in [3]
+>  - Fix bug on mt6589 reported by Matthias
+>  - Fix bug for irq_find_mapping in irq_create_of_mapping
+>  - Merge Marc's change to proper handle non-DT case in gic_init_bases
 > 
-> Marc Zyngier (13):
->   arm64: PCI/MSI: Use asm-generic/msi.h
->   irqchip: GICv3: Convert to domain hierarchy
->   irqchip: GICv3: rework redistributor structure
->   irqchip: GICv3: ITS command queue
->   irqchip: GICv3: ITS: irqchip implementation
->   irqchip: GICv3: ITS: LPI allocator
->   irqchip: GICv3: ITS: tables allocators
->   irqchip: GICv3: ITS: device allocation and configuration
->   irqchip: GICv3: ITS: MSI support
->   irqchip: GICv3: ITS: DT probing and initialization
->   irqchip: GICv3: ITS: plug ITS init into main GICv3 code
->   irqchip: GICv3: ITS: enable compilation of the ITS driver
->   irqchip: GICv3: Binding updates for ITS
+> Changes in v4:
+>  - Discussed in [4]
+>  - Remove arm,hierarchy-irq-domain. When GIC is probed by DT, it will
+> support hierarchy irqdomain.
 > 
->  Documentation/devicetree/bindings/arm/gic-v3.txt |   39 +
->  arch/arm64/Kconfig                               |    1 +
->  arch/arm64/include/asm/Kbuild                    |    1 +
->  drivers/irqchip/Kconfig                          |    5 +
->  drivers/irqchip/Makefile                         |    1 +
->  drivers/irqchip/irq-gic-v3-its.c                 | 1402 ++++++++++++++++++++++
->  drivers/irqchip/irq-gic-v3.c                     |  156 ++-
->  include/linux/irqchip/arm-gic-v3.h               |  128 ++
->  8 files changed, 1693 insertions(+), 40 deletions(-)
->  create mode 100644 drivers/irqchip/irq-gic-v3-its.c
+> Changes in v3:
+>  - Discussed in [5]
+>  - First implementation using hierarchy irqdomain
+> 
+> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/304119.html
+> [2] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/302221.html
+> [3] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/298161.html
+> [4] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/296911.html
+> [5] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/293766.html
+> 
+> Yingjoe Chen (4):
+>   irqchip: gic: Support hierarchy irq domain.
+>   ARM: mediatek: Add sysirq interrupt polarity support
+>   ARM: mediatek: Add sysirq in mt6589/mt8135/mt8127 dtsi
+>   dt-bindings: add bindings for mediatek sysirq
+> 
+>  .../bindings/arm/mediatek/mediatek,sysirq.txt      |  28 ++++
+>  arch/arm/boot/dts/mt6589.dtsi                      |  14 +-
+>  arch/arm/boot/dts/mt8127.dtsi                      |  14 +-
+>  arch/arm/boot/dts/mt8135.dtsi                      |  14 +-
+>  drivers/irqchip/Kconfig                            |   1 +
+>  drivers/irqchip/Makefile                           |   1 +
+>  drivers/irqchip/irq-gic.c                          |  77 +++++++---
+>  drivers/irqchip/irq-mtk-sysirq.c                   | 163 +++++++++++++++++++++
+>  8 files changed, 282 insertions(+), 30 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/arm/mediatek/mediatek,sysirq.txt
+>  create mode 100644 drivers/irqchip/irq-mtk-sysirq.c
 
-Applied to irqchip/core with a dependency on tip/irq/irqdomain
+Patches 1, 2, and 4 applied to irqchip/core with a dependency on
+tip/irq/irqdomain with a few small subject line tweaks.
 
 thx,
 
