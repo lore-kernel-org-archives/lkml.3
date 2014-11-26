@@ -1,263 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185AbaKZV25 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 16:28:57 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44562 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752808AbaKZV2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 16:28:02 -0500
-From: Dave Gerlach <d-gerlach@ti.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
-CC: Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Kevin Hilman <khilman@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Suman Anna <s-anna@ti.com>, Dave Gerlach <d-gerlach@ti.com>
-Subject: [RFC PATCH 3/3] remoteproc: wkup_m3: Add wkup_m3 remote proc driver
-Date: Wed, 26 Nov 2014 15:27:12 -0600
-Message-ID: <5c0efc1f0fbaa394c24a4ff12de2b450f7509499.1417029919.git.d-gerlach@ti.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <cover.1417029919.git.d-gerlach@ti.com>
-References: <cover.1417029919.git.d-gerlach@ti.com>
+	id S1753232AbaKZV3A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 16:29:00 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:49168 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753172AbaKZV26 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 16:28:58 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Jon Fraser <jfraser@broadcom.com>, Dmitry Torokhov <dtor@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, Jonas Gorski <jogo@openwrt.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V3 11/11] MIPS: Add multiplatform BMIPS target
+Date: Wed, 26 Nov 2014 22:28:45 +0100
+Message-ID: <6239602.L0sNsMk5KV@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAJiQ=7DwhSySAa19OxfUDkvT4DLWaZ3uhPU2QJzQ6Gc7YCvDgg@mail.gmail.com>
+References: <1416796846-28149-1-git-send-email-cernekee@gmail.com> <3146555.WCj2bhBSnP@wuerfel> <CAJiQ=7DwhSySAa19OxfUDkvT4DLWaZ3uhPU2QJzQ6Gc7YCvDgg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:PL6tCWJuecBrxUbaEe4Ll1kfgqDUqU5q5ivxHBgCeiL
+ qyEyOceQWXLDqFK+eP1hCiPNe21ntTO4PEKCy+WTrSdrtAlerG
+ 7JADVkMwqYZhFxqRoqvk6QjMRtZzglKFxV2zxuCrRkDpiAeWQz
+ 78d7Vjx7oSZbfiUYQSWxU6nkR081LTkVceKavToTT90ETpilRb
+ qZgfvvOF7w56wb/jTtqbI0xAdYTXb6hbG+UzaNFE4adCuLJJNt
+ TwiUbZMnt8pvjQl/wFsLavlnI8mW7V0JCTTw3yuhNjqpEblPpE
+ DxJTjQN3OtvP80dRCWkB5Nn1rmly2I0n1kc2iycKI05eqpSC9p
+ u9XFtAAW+5HVzwA2qxWs=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a remoteproc driver to load the firmware for and boot the wkup_m3
-present on am33xx. The wkup_m3 is an integrated Cortex M3 that allows
-the SoC to enter the lowest possible power state by taking control from
-the MPU after it has gone into its own low power state and shutting off
-any additional peripherals.
+On Wednesday 26 November 2014 12:45:47 Kevin Cernekee wrote:
+> On Mon, Nov 24, 2014 at 1:39 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> >> >> +OF_DECLARE_2(irqchip, mips_cpu_intc, "mti,cpu-interrupt-controller",
+> >> >> +          mips_cpu_irq_of_init);
+> >> >
+> >> > OF_DECLARE_2 really wasn't meant to be used directly. Can you move this
+> >> > code into drivers/irqchip and make it use IRQCHIP_DECLARE()?
+> >>
+> >> Perhaps arch/mips/kernel/irq_cpu.c could be moved under
+> >> drivers/irqchip in a future commit?  We'll probably have to change the
+> >> way arch/mips/ralink invokes it too.
+> >
+> > Possibly, but that seems unrelated. Moving this file is required
+> > in order to use IRQCHIP_DECLARE, which is defined in
+> > drivers/irqchip/irqchip.h.
+> 
+> arch/mips/kernel/irq_cpu.c is the actual irqchip driver containing
+> mips_cpu_irq_of_init().  It probably would not make sense to move
+> arch/mips/bmips/irq.c (platform IRQ stubs, not an irqchip driver)
+> under drivers/irqchip.
 
-The driver expects a resource table to be present in the wkup_m3
-firmware to define the required memory resources needed by the wkup_m3,
-at least the data memory so that the firmware can be copied to the proper
-place for execution.
+I see. Makes sense.
 
-Signed-off-by: Dave Gerlach <d-gerlach@ti.com>
----
- drivers/remoteproc/Kconfig         |  12 +++
- drivers/remoteproc/Makefile        |   1 +
- drivers/remoteproc/wkup_m3_rproc.c | 175 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 188 insertions(+)
- create mode 100644 drivers/remoteproc/wkup_m3_rproc.c
+> >> > Is this intended to become a generic MIPS boot interface? Better
+> >> > document it in Documentation/mips/
+> >>
+> >> Not sure yet.  It's currently limited to BCM3384.
+> >>
+> >> For V4 I can add an "Entry point for arch/mips/bmips" or even an
+> >> "Entry point for arch/mips" section to
+> >> Documentation/devicetree/booting-without-of.txt.  Any preferences?
+> >
+> > If the goal is being able to have a multiplatform kernel
+> > that can cover more than just BMIPS, I think this would have
+> > to be documented as the only way for MIPS multiplatform.
+> >
+> > If that isn't possible, most of my other comments here are
+> > moot, but then you shouldn't call it "multiplatform" but just
+> > "generic BMIPS" or something like that.
+> 
+> Currently my goal is to cover BMIPS only.  Although it's possible that
+> someday somebody develops a more hardware-independent implementation
+> that runs on other MIPS processor variants.
+> 
+> So, I can go ahead and rename it to "Generic BMIPS" if that clarifies
+> the intent.
 
-diff --git a/drivers/remoteproc/Kconfig b/drivers/remoteproc/Kconfig
-index 5e343ba..7fbdb53 100644
---- a/drivers/remoteproc/Kconfig
-+++ b/drivers/remoteproc/Kconfig
-@@ -41,6 +41,18 @@ config STE_MODEM_RPROC
- 	  This can be either built-in or a loadable module.
- 	  If unsure say N.
- 
-+config WKUP_M3_RPROC
-+	bool "AM33xx wkup-m3 remoteproc support"
-+	depends on SOC_AM33XX
-+	select REMOTEPROC
-+	help
-+	  Say y here to support AM33xx wkup-m3.
-+
-+	  Required for Suspend-to-ram and CPUIdle on AM33xx. Allows for
-+	  loading of firmware of CM3 PM coprocessor that is present
-+	  on AM33xx family of SoCs
-+	  If unsure say N.
-+
- config DA8XX_REMOTEPROC
- 	tristate "DA8xx/OMAP-L13x remoteproc support"
- 	depends on ARCH_DAVINCI_DA8XX
-diff --git a/drivers/remoteproc/Makefile b/drivers/remoteproc/Makefile
-index ac2ff75..81b04d1 100644
---- a/drivers/remoteproc/Makefile
-+++ b/drivers/remoteproc/Makefile
-@@ -9,4 +9,5 @@ remoteproc-y				+= remoteproc_virtio.o
- remoteproc-y				+= remoteproc_elf_loader.o
- obj-$(CONFIG_OMAP_REMOTEPROC)		+= omap_remoteproc.o
- obj-$(CONFIG_STE_MODEM_RPROC)	 	+= ste_modem_rproc.o
-+obj-$(CONFIG_WKUP_M3_RPROC)		+= wkup_m3_rproc.o
- obj-$(CONFIG_DA8XX_REMOTEPROC)		+= da8xx_remoteproc.o
-diff --git a/drivers/remoteproc/wkup_m3_rproc.c b/drivers/remoteproc/wkup_m3_rproc.c
-new file mode 100644
-index 0000000..8686ca2
---- /dev/null
-+++ b/drivers/remoteproc/wkup_m3_rproc.c
-@@ -0,0 +1,175 @@
-+/*
-+ * AMx3 Wkup M3 Remote Processor driver
-+ *
-+ * Copyright (C) 2014 Texas Instruments, Inc.
-+ *
-+ * Dave Gerlach <d-gerlach@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/err.h>
-+#include <linux/kernel.h>
-+#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/of_device.h>
-+#include <linux/platform_device.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/remoteproc.h>
-+
-+#include <linux/platform_data/wkup_m3.h>
-+
-+#include "remoteproc_internal.h"
-+
-+struct wkup_m3_rproc {
-+	struct rproc *rproc;
-+	struct platform_device *pdev;
-+};
-+
-+static int wkup_m3_rproc_start(struct rproc *rproc)
-+{
-+	struct wkup_m3_rproc *m3_rproc = rproc->priv;
-+	struct platform_device *pdev = m3_rproc->pdev;
-+	struct device *dev = &pdev->dev;
-+	struct wkup_m3_platform_data *pdata = dev->platform_data;
-+	int ret;
-+
-+	ret = pdata->deassert_reset(pdev, pdata->reset_name);
-+	if (ret) {
-+		dev_err(dev, "Unable to reset wkup_m3!\n");
-+		return -ENODEV;
-+	}
-+
-+	return 0;
-+}
-+
-+static int wkup_m3_rproc_stop(struct rproc *rproc)
-+{
-+	struct wkup_m3_rproc *m3_rproc = rproc->priv;
-+	struct platform_device *pdev = m3_rproc->pdev;
-+	struct device *dev = &pdev->dev;
-+	struct wkup_m3_platform_data *pdata = dev->platform_data;
-+	int ret;
-+
-+	ret = pdata->assert_reset(pdev, pdata->reset_name);
-+	if (ret) {
-+		dev_err(dev, "Unable to assert reset of wkup_m3!\n");
-+		return -ENODEV;
-+	}
-+	return 0;
-+}
-+
-+static struct rproc_ops wkup_m3_rproc_ops = {
-+	.start		= wkup_m3_rproc_start,
-+	.stop		= wkup_m3_rproc_stop,
-+};
-+
-+static const struct of_device_id wkup_m3_rproc_of_match[] = {
-+	{
-+		.compatible = "ti,am3353-wkup-m3",
-+		.data = (void *)"am335x-pm-firmware.elf",
-+	},
-+	{},
-+};
-+
-+static int wkup_m3_rproc_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	const char *fw_name;
-+	struct wkup_m3_platform_data *pdata = dev->platform_data;
-+	struct wkup_m3_rproc *m3_rproc;
-+	const struct of_device_id *match;
-+	struct rproc *rproc;
-+	int ret;
-+
-+	if (!(pdata && pdata->deassert_reset && pdata->assert_reset &&
-+	      pdata->reset_name)) {
-+		dev_err(dev, "Platform data missing!\n");
-+		return -ENODEV;
-+	}
-+
-+	match = of_match_device(wkup_m3_rproc_of_match, &pdev->dev);
-+	if (!match)
-+		return -ENODEV;
-+	fw_name = (char *)match->data;
-+
-+	pm_runtime_enable(&pdev->dev);
-+
-+	ret = pm_runtime_get_sync(&pdev->dev);
-+	if (IS_ERR_VALUE(ret)) {
-+		dev_err(&pdev->dev, "pm_runtime_get_sync() failed\n");
-+		return ret;
-+	}
-+
-+	rproc = rproc_alloc(dev, "wkup_m3", &wkup_m3_rproc_ops,
-+			    fw_name, sizeof(*m3_rproc));
-+	if (!rproc)
-+		return -ENOMEM;
-+
-+	m3_rproc = rproc->priv;
-+	m3_rproc->rproc = rproc;
-+	m3_rproc->pdev = pdev;
-+
-+	dev_set_drvdata(dev, rproc);
-+
-+	/* Register as a remoteproc device */
-+	ret = rproc_add(rproc);
-+	if (ret) {
-+		dev_err(dev, "rproc_add failed\n");
-+		goto err;
-+	}
-+
-+	return 0;
-+
-+err:
-+	rproc_put(rproc);
-+	pm_runtime_put_sync(&pdev->dev);
-+	return ret;
-+}
-+
-+static int wkup_m3_rproc_remove(struct platform_device *pdev)
-+{
-+	struct rproc *rproc = platform_get_drvdata(pdev);
-+
-+	rproc_del(rproc);
-+	rproc_put(rproc);
-+	pm_runtime_put_sync(&pdev->dev);
-+
-+	return 0;
-+}
-+
-+static int wkup_m3_rpm_suspend(struct device *dev)
-+{
-+	return -EBUSY;
-+}
-+
-+static int wkup_m3_rpm_resume(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+static const struct dev_pm_ops wkup_m3_rproc_pm_ops = {
-+	SET_RUNTIME_PM_OPS(wkup_m3_rpm_suspend, wkup_m3_rpm_resume, NULL)
-+};
-+
-+static struct platform_driver wkup_m3_rproc_driver = {
-+	.probe = wkup_m3_rproc_probe,
-+	.remove = wkup_m3_rproc_remove,
-+	.driver = {
-+		.name = "wkup_m3",
-+		.of_match_table = wkup_m3_rproc_of_match,
-+		.pm = &wkup_m3_rproc_pm_ops,
-+	},
-+};
-+
-+module_platform_driver(wkup_m3_rproc_driver);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("wkup m3 remote processor control driver");
--- 
-2.1.0
+Ok. One more thought: With the powerpc-approach of having platform
+specific boot wrappers (with or without uncompress code), the boot
+protocol would no longer matter to the common multiplatform
+implementation, and the specific BMIPS interface would become
+part of arch/mips/boot/bmips.c or something like that. Looking at
+the Makefile in there, MIPS already supports six different binary
+formats that can all be generated from the same vmlinux, so at the
+point when someone implements a full multiplatform implementation,
+the bmips specifics can become another binary format that encapsulates
+the vmlinux file and an optional dtb file and passes the dtb
+into the common kernel entry point when calling the actual vmlinux
+head.S.
 
+> >> >> diff --git a/arch/mips/include/asm/mach-bmips/dma-coherence.h b/arch/mips/include/asm/mach-bmips/dma-coherence.h
+> >> >> new file mode 100644
+> >> >> index 000000000000..5481a4d1bbbf
+> >> >> --- /dev/null
+> >> >> +++ b/arch/mips/include/asm/mach-bmips/dma-coherence.h
+> >> >> @@ -0,0 +1,45 @@
+> >> >> +#ifndef __ASM_MACH_BMIPS_DMA_COHERENCE_H
+> >> >> +#define __ASM_MACH_BMIPS_DMA_COHERENCE_H
+> >> >> +
+> >> >> +struct device;
+> >> >> +
+> >> >> +extern dma_addr_t plat_map_dma_mem(struct device *dev, void *addr, size_t size);
+> >> >> +extern dma_addr_t plat_map_dma_mem_page(struct device *dev, struct page *page);
+> >> >> +extern unsigned long plat_dma_addr_to_phys(struct device *dev,
+> >> >> +     dma_addr_t dma_addr);
+> >> >> +extern void plat_unmap_dma_mem(struct device *dev, dma_addr_t dma_addr,
+> >> >> +     size_t size, enum dma_data_direction direction);
+> >> >
+> >> > I think you could just add these to
+> >> > arch/mips/include/asm/mach-generic/dma-coherence.h and get rid of the
+> >> > header file, after adding a Kconfig symbol.
+> >>
+> >> Some platforms mix and match inline definitions versus externs in this file.
+> >>
+> >> Maybe Ralf can comment on whether we should move to an "all or nothing" model?
+> >
+> > To clarify where I was getting to here: In a generic multiplatform kernel,
+> > you would probably want to always look at the dma-ranges properties here,
+> > at least if there are one or more platforms built into the kernel that
+> > don't just have a flat mapping that the current mach-generic header
+> > provides.
+> 
+> For the BMIPS case:
+> 
+> plat_map_dma_mem* and plat_dma_addr_to_phys are just performing
+> remapping, so dma-ranges would work.
+> 
+> plat_unmap_dma_mem is used to perform an extra BMIPS-specific
+> cacheflush operation.
+
+Yes, the cacheflush again would have to be abstracted. This is normally
+done using either a platform-specific dma_map_ops struct, or using
+a further abstraction with another function pointer.
+
+I'm surprised that you need the special flush operation only
+for 'unmap' and not for 'dma_sync_*_for_cpu'. Can you check that
+you are actually doing the right thing for drivers that reuse
+a DMA buffer with the streaming API?
+
+> Not sure about something like this - I guess it would work with 4
+> ranges as long as bits 63:39 of daddr are 0:
+> 
+> phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr)
+> {
+>     long nid;
+> #ifdef CONFIG_PHYS48_TO_HT40
+>     /* We extract 2bit node id (bit 44~47, only bit 44~45 used now) from
+>      * Loongson-3's 48bit address space and embed it into 40bit */
+>     nid = (daddr >> 37) & 0x3;
+>     daddr = ((nid << 37) ^ daddr) | (nid << 44);
+> #endif
+>     return daddr;
+> }
+> 
+> dma-octeon.c also has a few different cases to handle, but it looks
+> like they are range remappings selected based on the machine type;
+> that might still be suitable for DT.
+> 
+> The other tests in that file (coherency, per-device DMA masks) might
+> be better off as DT properties.
+
+I guess a platform that doesn't fit the simple model could always
+have its own dma_map_ops and not use the the dma-coherence.h interfaces.
+
+	Arnd
