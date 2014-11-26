@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029AbaKZR01 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 12:26:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38917 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837AbaKZR0Z (ORCPT
+	id S1753077AbaKZR1N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 12:27:13 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:40085 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026AbaKZR1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 12:26:25 -0500
-Date: Wed, 26 Nov 2014 09:26:24 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Arianna Avanzini <avanzini.arianna@gmail.com>
-Cc: jslaby@suse.cz, linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH] tty, serial, 8250: remove __init from function
- serial8250_console_setup()
-Message-ID: <20141126172624.GA2816@kroah.com>
-References: <20141125175121.GA32573@kroah.com>
- <1416954082-1755-1-git-send-email-avanzini.arianna@gmail.com>
+	Wed, 26 Nov 2014 12:27:11 -0500
+Message-ID: <54760D6A.9080306@mentor.com>
+Date: Wed, 26 Nov 2014 19:27:06 +0200
+From: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416954082-1755-1-git-send-email-avanzini.arianna@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Mark Brown <broonie@kernel.org>
+CC: Liam Girdwood <lgirdwood@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: Question about fixed regulator DT properties
+References: <546B5EF9.3080102@mentor.com> <546CAB49.8030103@mentor.com> <20141125121749.GV7712@sirena.org.uk>
+In-Reply-To: <20141125121749.GV7712@sirena.org.uk>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [137.202.0.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 11:21:22PM +0100, Arianna Avanzini wrote:
-> Some RS232 adapters handled by this driver are hotpluggable. The function
-> serial8250_console_setup() is called during device init and is defined with
-> the __init macro. In case the driver is built-in, hotplugging the device after
-> the initialization phase has been completed (and the related memory has been
-> freed) results in a kernel crash.
-> This commit fixes the issue by removing __init from the function definition.
+Hello Mark,
+
+On 25.11.2014 14:17, Mark Brown wrote:
+> On Wed, Nov 19, 2014 at 04:38:01PM +0200, Vladimir Zapolskiy wrote:
+>> Hello Mark,
+>>
+>> On 18.11.2014 17:00, Vladimir Zapolskiy wrote:
 > 
-> Signed-off-by: Arianna Avanzini <avanzini.arianna@gmail.com>
-> ---
->  drivers/tty/serial/8250/8250_core.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Your mail is really quite long and all in quotes which makes it hard to
+> follow, brevity is really helpful to readers.
+
+my sole purpose was to describe the problems I encounter in details,
+sorry for excessive verbosity.
+
+Just to summarize my findings:
+a) "enable-active-high" property has no effect on GPIO output,
+b) "regulator-boot-on" does not mean that the regulator is controlled by
+bootloader or firmware exclusively.
+
+>>> | regulator-boot-on | enable-active-high | GPIO polarity | GPIO output |
+>>> +-------------------+--------------------+---------------+-------------+
+>>> |        no         |         yes        |  active high  |    low      |
+>>> |        no         |          no        |  active low   |   high      |
 > 
-> diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-> index ca5cfdc..ca8108d 100644
-> --- a/drivers/tty/serial/8250/8250_core.c
-> +++ b/drivers/tty/serial/8250/8250_core.c
-> @@ -3237,7 +3237,7 @@ serial8250_console_write(struct console *co, const char *s, unsigned int count)
->  	serial8250_rpm_put(up);
->  }
->  
-> -static int __init serial8250_console_setup(struct console *co, char *options)
-> +static int serial8250_console_setup(struct console *co, char *options)
->  {
->  	struct uart_port *port;
->  	int baud = 9600;
-> -- 
-> 2.1.3
+>>> I'd rather think that both resulting GPIO outputs are incorrect or
+>>> better to say do not correspond to my perception of "regulator-boot-on"
+>>> and "enable-active-high" DTS properties described in the documentation,
+>>> however above "enable-active-high" and actual GPIO polarity are the same
+>>> (when they are not, it is another open topic for discussion).
+> 
+> What you're saying seems sensible.
 
-This has already been in my tree for a long time, always work against
-linux-next to avoid redoing work that others have already done.
+Good, I read it as a confirmation that the problem exists.
 
-thanks,
+>>> Should documentation be updated to reflect "regulator-boot-on" role that
+>>> a regulator is re-enabled by the kernel?
+> 
+> I'm confused about this.  That's the sole purpose of the flag and as far
+> as I can tell it's what the documentation says.
 
-greg k-h
+Documentation/devicetree/bindings/regulator/regulator.txt says:
+
+  - regulator-boot-on: bootloader/firmware enabled regulator
+
+I would suggest to add Linux kernel to that list of regulator
+controllers, if it is the intention. In its current state the
+documentation makes an impression that "regulator-boot-on" property
+instructs the kernel to ignore regulator setup, since it is already
+controlled by bootloader or firmware.
+
+>>> Should "enable-active-high" be replaced by getting GPIO flags directly?
+> 
+> Probably makes sense, it predates those flags by quite some time.
+> 
+
+If you have no objection I'll take a look how to fix it by removing
+"enable-active-high" flag completely from the driver's logic,
+fortunately the flag has no tangible effect at the moment as it is shown
+by my analysis.
+
+--
+With best wishes,
+Vladimir
