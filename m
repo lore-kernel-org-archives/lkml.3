@@ -1,76 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737AbaKZPyV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 10:54:21 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:8842 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaKZPyU (ORCPT
+	id S1752966AbaKZPyi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 10:54:38 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55573 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752858AbaKZPyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 10:54:20 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-a5-5475f7a93012
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clk: qcom: fix driver dependencies
-Date: Wed, 26 Nov 2014 16:54:13 +0100
-Message-id: <2602622.MuWT6vUosD@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-70-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <2408462.Vr3YfHniN8@amdc1032>
-References: <2408462.Vr3YfHniN8@amdc1032>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t9jAd1V30tDDGY2sFmcbXrDbnF51xw2
-	i6cTLrJZ/DjTzeLA4nG5r5fJ4861PWwefVtWMXp83iQXwBLFZZOSmpNZllqkb5fAldG99zB7
-	wSzOinkTzrE1MJ5n72Lk5JAQMJG4vuURM4QtJnHh3nq2LkYuDiGBRYwSe1sesEM4LUwS7R//
-	g1WxCVhJTGxfxQhiiwhoSWw70MoGYjMLFEksmfWTFcQWFjCXWLloAwuIzSKgKnHnyC8mEJtX
-	QFOi/8hdsLiogKfEzukHwOZwAs053nkSbI4QUM32S0sZIeoFJX5MvscCMV9eYt/+qawQtpbE
-	+p3HmSYwCsxCUjYLSdksJGULGJlXMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgSH7zPpHYyr
-	GiwOMQpwMCrx8EZIlYYIsSaWFVfmHmKU4GBWEuHleAcU4k1JrKxKLcqPLyrNSS0+xCjNwaIk
-	znvjZm6IkEB6YklqdmpqQWoRTJaJg1OqgbFNf//ZY+WrL+W5X461YBbt+m7SMomBy+PFKqO2
-	Z5J3Av3fL3mkJ6py+AGzseubyosTJ+RwSBzx/nDdpuW29kqx8g9SCZONFskbLsz2kmD41CnD
-	utVt28V9zl+CZ09iWLf9XlfrJ7c2z0lNV6Ym5pfZPjzrIbx156Np+zYaiz7rD7p4xOmpC6sS
-	S3FGoqEWc1FxIgDxce3nWwIAAA==
+	Wed, 26 Nov 2014 10:54:36 -0500
+Date: Wed, 26 Nov 2014 16:54:31 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Sekhar Nori <nsekhar@ti.com>,
+        linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Mike Looijmans <milo-software@users.sourceforge.net>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>,
+        Murali Karicheri <m-karicheri2@ti.com>
+Subject: Re: [PATCH v2 1/5] i2c: i2c-davinci: switch to use platform_get_irq
+Message-ID: <20141126155431.GK4431@pengutronix.de>
+References: <1417010393-30598-1-git-send-email-grygorii.strashko@ti.com>
+ <1417010393-30598-2-git-send-email-grygorii.strashko@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1417010393-30598-2-git-send-email-grygorii.strashko@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Grygorii,
 
-Hi Mike,
-
-Could you please apply this patch for 3.19?
-
-It still applies fine to the current -next and I haven't got any
-feedback for it since the initial posting in September.
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
-
-On Monday, September 01, 2014 05:20:41 PM Bartlomiej Zolnierkiewicz wrote:
-> Support for Qualcomm's clock controllers should be available only on
-> Qualcomm platforms.
+On Wed, Nov 26, 2014 at 03:59:49PM +0200, Grygorii Strashko wrote:
+> Switch Davinci I2C driver to use platform_get_irq(), because
+> it is not recommened to use platform_get_resource(pdev, IORESOURCE_IRQ, ..)
+> for requesting IRQ resources any more, as they can be not ready yet
+> in case of DT-boot.
 > 
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Stephen Boyd <sboyd@codeaurora.org>
+> CC: Sekhar Nori <nsekhar@ti.com>
+> CC: Kevin Hilman <khilman@deeprootsystems.com>
+> CC: Santosh Shilimkar <ssantosh@kernel.org>
+> CC: Murali Karicheri <m-karicheri2@ti.com>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 > ---
->  drivers/clk/qcom/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
+>  drivers/i2c/busses/i2c-davinci.c | 20 ++++++++++++--------
+>  1 file changed, 12 insertions(+), 8 deletions(-)
 > 
-> Index: b/drivers/clk/qcom/Kconfig
-> ===================================================================
-> --- a/drivers/clk/qcom/Kconfig	2014-08-22 16:53:37.429123415 +0200
-> +++ b/drivers/clk/qcom/Kconfig	2014-09-01 17:13:43.604778653 +0200
-> @@ -1,6 +1,7 @@
->  config COMMON_CLK_QCOM
->  	tristate "Support for Qualcomm's clock controllers"
->  	depends on OF
-> +	depends on ARCH_QCOM || COMPILE_TEST
->  	select REGMAP_MMIO
->  	select RESET_CONTROLLER
+> diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
+> index 4d96147..7f54903 100644
+> --- a/drivers/i2c/busses/i2c-davinci.c
+> +++ b/drivers/i2c/busses/i2c-davinci.c
+> @@ -640,13 +640,17 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+>  {
+>  	struct davinci_i2c_dev *dev;
+>  	struct i2c_adapter *adap;
+> -	struct resource *mem, *irq;
+> -	int r;
+> -
+> -	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+> -	if (!irq) {
+> -		dev_err(&pdev->dev, "no irq resource?\n");
+> -		return -ENODEV;
+> +	struct resource *mem;
+> +	int r, irq;
+> +
+> +	irq = platform_get_irq(pdev, 0);
+> +	if (irq <= 0) {
+> +		if (irq == -EPROBE_DEFER)
+> +			return irq;
+> +		if (!irq)
+> +			irq = -ENXIO;
+> +		dev_err(&pdev->dev, "can't get irq resource ret=%d\n", irq);
+> +		return irq;
+The simpler and I think also more usual logic is:
 
+	if (!irq)
+		irq = -ENXIO;
+	if (irq != -EPROBE_DEFER)
+		dev_err(...);
+	return irq;
+
+Other than that the patch looks fine.
+
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
