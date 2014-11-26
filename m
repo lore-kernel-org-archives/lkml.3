@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492AbaKZW6s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 17:58:48 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:53955 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793AbaKZW6r (ORCPT
+	id S1753551AbaKZW7A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 17:59:00 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:42342 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753177AbaKZW64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 17:58:47 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: Re: [PATCH v2 11/11] media: usb: uvc: use vb2_ops_wait_prepare/finish helper
-Date: Thu, 27 Nov 2014 00:59:12 +0200
-Message-ID: <2698849.pKqLKtTreZ@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1417041754-8714-12-git-send-email-prabhakar.csengg@gmail.com>
-References: <1417041754-8714-1-git-send-email-prabhakar.csengg@gmail.com> <1417041754-8714-12-git-send-email-prabhakar.csengg@gmail.com>
+	Wed, 26 Nov 2014 17:58:56 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <CAGr1F2Hm4+aCUz3RqkgUhbJAQtWvUbb2CRDkW5rJSZkwLM_huw@mail.gmail.com>
+References: <1414783141-6947-1-git-send-email-adityakali@google.com>
+	<20141104131030.GA2937@redhat.com>
+	<CAGr1F2Hm4+aCUz3RqkgUhbJAQtWvUbb2CRDkW5rJSZkwLM_huw@mail.gmail.com>
+Date: Wed, 26 Nov 2014 23:58:55 +0100
+Message-ID: <CAFLxGvybiem34J3zrtVhW=4itSdczassNt9RcuxnpJQeAz-JVA@mail.gmail.com>
+Subject: Re: [PATCHv2 0/7] CGroup Namespaces
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Aditya Kali <adityakali@google.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Linux Containers <containers@lists.linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+On Thu, Nov 6, 2014 at 6:33 PM, Aditya Kali <adityakali@google.com> wrote:
+> On Tue, Nov 4, 2014 at 5:10 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+>> On Fri, Oct 31, 2014 at 12:18:54PM -0700, Aditya Kali wrote:
+>> [..]
+>>>  fs/kernfs/dir.c                  | 194 ++++++++++++++++++++++++++++++++++-----
+>>>  fs/kernfs/mount.c                |  48 ++++++++++
+>>>  fs/proc/namespaces.c             |   1 +
+>>>  include/linux/cgroup.h           |  41 ++++++++-
+>>>  include/linux/cgroup_namespace.h |  36 ++++++++
+>>>  include/linux/kernfs.h           |   5 +
+>>>  include/linux/nsproxy.h          |   2 +
+>>>  include/linux/proc_ns.h          |   4 +
+>>>  include/uapi/linux/sched.h       |   3 +-
+>>>  kernel/Makefile                  |   2 +-
+>>>  kernel/cgroup.c                  | 108 +++++++++++++++++-----
+>>>  kernel/cgroup_namespace.c        | 148 +++++++++++++++++++++++++++++
+>>>  kernel/fork.c                    |   2 +-
+>>>  kernel/nsproxy.c                 |  19 +++-
+>>
+>> Hi Aditya,
+>>
+>> Can we provide a documentation file for cgroup namespace behavior. Say,
+>> Documentation/namespaces/cgroup-namespace.txt.
+>>
+> Yes, definitely. I will add it as soon as we have a consensus on the
+> overall series.
 
-Thank you for the patch.
-
-On Wednesday 26 November 2014 22:42:34 Lad, Prabhakar wrote:
-> This patch drops driver specific wait_prepare() and
-> wait_finish() callbacks from vb2_ops and instead uses
-> the the helpers vb2_ops_wait_prepare/finish() provided
-> by the vb2 core, the lock member of the queue needs
-> to be initalized to a mutex so that vb2 helpers
-> vb2_ops_wait_prepare/finish() can make use of it.
-
-The queue lock field isn't initialized by the uvcvideo driver, so you can't 
-use vb2_ops_wait_prepare|finish().
-
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> ---
->  drivers/media/usb/uvc/uvc_queue.c | 18 ++----------------
->  1 file changed, 2 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/media/usb/uvc/uvc_queue.c
-> b/drivers/media/usb/uvc/uvc_queue.c index cc96072..64147b5 100644
-> --- a/drivers/media/usb/uvc/uvc_queue.c
-> +++ b/drivers/media/usb/uvc/uvc_queue.c
-> @@ -143,20 +143,6 @@ static void uvc_buffer_finish(struct vb2_buffer *vb)
->  		uvc_video_clock_update(stream, &vb->v4l2_buf, buf);
->  }
-> 
-> -static void uvc_wait_prepare(struct vb2_queue *vq)
-> -{
-> -	struct uvc_video_queue *queue = vb2_get_drv_priv(vq);
-> -
-> -	mutex_unlock(&queue->mutex);
-> -}
-> -
-> -static void uvc_wait_finish(struct vb2_queue *vq)
-> -{
-> -	struct uvc_video_queue *queue = vb2_get_drv_priv(vq);
-> -
-> -	mutex_lock(&queue->mutex);
-> -}
-> -
->  static int uvc_start_streaming(struct vb2_queue *vq, unsigned int count)
->  {
->  	struct uvc_video_queue *queue = vb2_get_drv_priv(vq);
-> @@ -195,8 +181,8 @@ static struct vb2_ops uvc_queue_qops = {
->  	.buf_prepare = uvc_buffer_prepare,
->  	.buf_queue = uvc_buffer_queue,
->  	.buf_finish = uvc_buffer_finish,
-> -	.wait_prepare = uvc_wait_prepare,
-> -	.wait_finish = uvc_wait_finish,
-> +	.wait_prepare = vb2_ops_wait_prepare,
-> +	.wait_finish = vb2_ops_wait_finish,
->  	.start_streaming = uvc_start_streaming,
->  	.stop_streaming = uvc_stop_streaming,
->  };
+Do you have a public git repository which contains your patches?
 
 -- 
-Regards,
-
-Laurent Pinchart
-
+Thanks,
+//richard
