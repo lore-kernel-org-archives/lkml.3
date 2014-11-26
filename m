@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699AbaKZVZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 16:25:57 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:40653 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770AbaKZVZz (ORCPT
+	id S1752805AbaKZV17 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 16:27:59 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:36052 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792AbaKZV15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 16:25:55 -0500
-From: Kevin Hilman <khilman@kernel.org>
-To: Alexander Kochetkov <al.kochet@gmail.com>
-Cc: linux-omap@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Wolfram Sang <wsa@the-dreams.de>, Tony Lindgren <tony@atomide.com>
-Subject: Re: [RFC] i2c: omap: TEST: do IP reset during probe.
-References: <1416685634-5864-3-git-send-email-al.kochet@gmail.com>
-	<1417028722-29306-1-git-send-email-al.kochet@gmail.com>
-Date: Wed, 26 Nov 2014 13:25:52 -0800
-In-Reply-To: <1417028722-29306-1-git-send-email-al.kochet@gmail.com>
-	(Alexander Kochetkov's message of "Wed, 26 Nov 2014 23:05:22 +0400")
-Message-ID: <7hzjbdd57j.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 26 Nov 2014 16:27:57 -0500
+From: Dave Gerlach <d-gerlach@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
+CC: Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Kevin Hilman <khilman@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Suman Anna <s-anna@ti.com>, Dave Gerlach <d-gerlach@ti.com>
+Subject: [RFC PATCH 0/3] remoteproc: Introduce wkup_m3_rproc driver
+Date: Wed, 26 Nov 2014 15:27:09 -0600
+Message-ID: <cover.1417029919.git.d-gerlach@ti.com>
+X-Mailer: git-send-email 2.1.0
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexander Kochetkov <al.kochet@gmail.com> writes:
+Hi,
+This patch series adds a wkup_m3_rproc driver for TI AM335x SoCs.
+This family of SoCs contains an ARM Cortex M3 coprocessor that is
+responsible for low-level power tasks that cannot be handled by the
+main ARM Cortex A8 so firmware running from the CM3 can be used instead.
+This driver handles loading of the firmware and reset of the CM3
+once it is booted.
 
-> NOT FOR UPSTREAM
->
-> The patch checks if IP reset during probe could bring I2C bus
-> to a free state on omap2430 - omap3530 boards.
->
-> I guess, IP hold one of I2C lines in a low state.
-> I guess, u-boot haven't sent a stop condition.
->
-> The patch is rebased on branch 'i2c/for-next' of
-> git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux
-> (6e79807443cba7397cd855ed29d6faba51d4c893)
->
-> Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
-> Reported-by: Kevin Hilman <khilman@kernel.org>
-> Tested-by: Kevin Hilman <khilman@kernel.org>
+This patch was split off from v4 of the am335x suspend series, found
+here [1]. Because of this it is a dependency for v5 of that series. I have
+pushed a branch based on v3.18-rc6 containing all dependencies here [2] for
+am33xx suspend for a higher level view of the entire series of patch sets.
 
-Built for omap2plus_defconfig and tested on all my OMAP boards.  Results
-here:
+This patch set depends on series "couple of generic remoteproc enhancements"
+by Suman Anna found here [3] (Included already in previously mentioned branch)
 
-http://people.linaro.org/~khilman/tmp/next-20141126-1-g760388ee02e4/arm-omap2plus_defconfig/
+Regards,
+Dave
+
+[1] http://www.spinics.net/lists/linux-omap/msg109331.html
+[2] https://github.com/dgerlach/linux-pm/tree/rfc-pm-am335x-v3.18-rc6
+[3] http://www.spinics.net/lists/arm-kernel/msg362961.html
+
+Dave Gerlach (3):
+  ARM: OMAP2+: Use pdata-quirks for wkup_m3 deassert_hardreset
+  Documentation: dt: add ti,am3353-wkup-m3 bindings
+  remoteproc: wkup_m3: Add wkup_m3 remote proc driver
+
+ .../bindings/remoteproc/wkup_m3_rproc.txt          |  32 ++++
+ arch/arm/mach-omap2/pdata-quirks.c                 |  13 ++
+ drivers/remoteproc/Kconfig                         |  12 ++
+ drivers/remoteproc/Makefile                        |   1 +
+ drivers/remoteproc/wkup_m3_rproc.c                 | 175 +++++++++++++++++++++
+ include/linux/platform_data/wkup_m3.h              |  23 +++
+ 6 files changed, 256 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/remoteproc/wkup_m3_rproc.txt
+ create mode 100644 drivers/remoteproc/wkup_m3_rproc.c
+ create mode 100644 include/linux/platform_data/wkup_m3.h
+
+-- 
+2.1.0
+
