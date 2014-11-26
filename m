@@ -1,62 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490AbaKZLtw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 06:49:52 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:44675 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305AbaKZLtu (ORCPT
+	id S1752508AbaKZLvQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 06:51:16 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:36301 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699AbaKZLvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 06:49:50 -0500
-Message-ID: <5475BE5A.4090503@linux.com>
-Date: Wed, 26 Nov 2014 14:49:46 +0300
-From: Alexander Popov <alex.popov@linux.com>
-Reply-To: alex.popov@linux.com
+	Wed, 26 Nov 2014 06:51:13 -0500
+Message-ID: <5475BEAC.9020208@linaro.org>
+Date: Wed, 26 Nov 2014 12:51:08 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Disabled LocalPlus Controller (LPC) clock on MPC512x
+To: Doug Anderson <dianders@chromium.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        Rob Herring <robh+dt@kernel.org>, Sonny Rao <sonnyrao@chromium.org>,
+        =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>
+Subject: Re: [PATCH v4] clocksource: arch_timer: Allow the device tree to
+ specify uninitialized timer registers
+References: <1412753627-28287-1-git-send-email-sonnyrao@chromium.org> <CAD=FV=VhaMo4fNide3a2S6jdLiq2pyOqY3hmx7ai0iDTPxCsPA@mail.gmail.com>
+In-Reply-To: <CAD=FV=VhaMo4fNide3a2S6jdLiq2pyOqY3hmx7ai0iDTPxCsPA@mail.gmail.com>
 Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-My Freescale TWR-MPC5125 board instantly reboots if I touch
-any physical address on the LocalPlus Bus (LPB) for the first time
-when Linux has already booted.
+Hi Doug, Olof,
 
-This effect is reproduced by using /dev/mem or loading a kernel module
-which works with any peripherals on LPB.
+IIUC, it sounds like this patch is needed from some other patches in 
+arm-soc. Olof was proposing to take this patch through its tree to 
+facilitate the integration.
 
-It took me some time to find out that such crash is caused by
-clk_disable_unused() in drivers/clk/clk.c, which disables
-LocalPlus Controller (LPC) clock if I don't touch LPB addresses in the
-previous initcalls. So starting Linux with clk_ignore_unused bootparam
-or inserting dummy LPB reading to some initcall is a temporary fix.
+Olof, is it this patch you were worried about ?
 
-Is it correct to gate LPC clock? If yes, how to avoid the mentioned
-crashes properly?
+Thanks
 
-There's a piece of code in arch/powerpc/platforms/512x/clock-commonclk.c
-which is doubtful for me:
+   -- Daniel
 
-/*
-  * pre-enable those "internal" clock items which never get
-  * claimed by any peripheral driver, to not have the clock
-  * subsystem disable them late at startup
-  */
-clk_prepare_enable(clks[MPC512x_CLK_DUMMY]);
-clk_prepare_enable(clks[MPC512x_CLK_E300]);    /* PowerPC CPU */
-clk_prepare_enable(clks[MPC512x_CLK_DDR]);    /* DRAM */
-clk_prepare_enable(clks[MPC512x_CLK_MEM]);    /* SRAM */
-clk_prepare_enable(clks[MPC512x_CLK_IPS]);    /* SoC periph */
-clk_prepare_enable(clks[MPC512x_CLK_LPC]);    /* boot media */
+On 11/20/2014 12:01 AM, Doug Anderson wrote:
+> Daniel,
+>
+> On Wed, Oct 8, 2014 at 12:33 AM, Sonny Rao <sonnyrao@chromium.org> wrote:
+>> From: Doug Anderson <dianders@chromium.org>
+>>
+>> Some 32-bit (ARMv7) systems are architected like this:
+>>
+>> * The firmware doesn't know and doesn't care about hypervisor mode and
+>>    we don't want to add the complexity of hypervisor there.
+>>
+>> * The firmware isn't involved in SMP bringup or resume.
+>>
+>> * The ARCH timer come up with an uninitialized offset (CNTVOFF)
+>>    between the virtual and physical counters.  Each core gets a
+>>    different random offset.
+>>
+>> * The device boots in "Secure SVC" mode.
+>>
+>> * Nothing has touched the reset value of CNTHCTL.PL1PCEN or
+>>    CNTHCTL.PL1PCTEN (both default to 1 at reset)
+>>
+>> On systems like the above, it doesn't make sense to use the virtual
+>> counter.  There's nobody managing the offset and each time a core goes
+>> down and comes back up it will get reinitialized to some other random
+>> value.
+>>
+>> This adds an optional property which can inform the kernel of this
+>> situation, and firmware is free to remove the property if it is going
+>> to initialize the CNTVOFF registers when each CPU comes out of reset.
+>>
+>> Currently, the best course of action in this case is to use the
+>> physical timer, which is why it is important that CNTHCTL hasn't been
+>> changed from its reset value and it's a reasonable assumption given
+>> that the firmware has never entered HYP mode.
+>>
+>> Note that it's been said that on ARMv8 systems the firmware and
+>> kernel really can't be architected as described above.  That means
+>> using the physical timer like this really only makes sense for ARMv7
+>> systems.
+>>
+>> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+>> Reviewed-by: Mark Rutland <mark.rutland@arm.com>
+>> ---
+>> Changes in v2:
+>> - Add "#ifdef CONFIG_ARM" as per Will Deacon
+>>
+>> Changes in v3:
+>> - change property name to arm,cntvoff-not-fw-configured and specify
+>>    that the value of CNTHCTL.PL1PC(T)EN must still be the reset value
+>>    of 1 as per Mark Rutland
+>>
+>> Changes in v4:
+>> - change property name to arm,cpu-registers-not-fw-configured and
+>>    specify that all cpu registers must have architected reset values
+>>    per Mark Rutland
+>> - change from "#ifdef CONFIG_ARM" to "if (IS_ENABLED(CONFIG_ARM))" per
+>>    Arnd Bergmann
+>> ---
+>>   Documentation/devicetree/bindings/arm/arch_timer.txt | 8 ++++++++
+>>   drivers/clocksource/arm_arch_timer.c                 | 8 ++++++++
+>>   2 files changed, 16 insertions(+)
+>
+> Do you know what the status of this patch is?  This patch and Sonny's
+> patch at <https://patchwork.kernel.org/patch/5051901/> are needed on
+> Rockchip rk3288 for some specific things:
+>
+> 1. To make SMP happy with coreboot.
+>
+> 2. To (I assume) make SMP happy after S2R (no matter which firmware is
+> used since I don't think anyone has PSCI for rk3288).
+>
+> ...we still need a DTS entry atop these patches, but that's trivial to
+> add once these land.
+>
+> Thanks!
+>
 
-Does it mean that these clocks should be registered with
-CLK_IGNORE_UNUSED flag?
 
-Thanks a lot.
-Best regards,
-Alexander
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
