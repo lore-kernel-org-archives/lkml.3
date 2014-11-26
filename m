@@ -1,83 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaKZV7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 16:59:14 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:45620 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792AbaKZV7M (ORCPT
+	id S1753001AbaKZWAJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 17:00:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43748 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752295AbaKZWAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 16:59:12 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141127084614.209450b9@canb.auug.org.au>
-References: <20141125194319.GA9328@www.outflux.net>
-	<alpine.LRH.2.11.1411270022240.22560@namei.org>
-	<20141127084614.209450b9@canb.auug.org.au>
-Date: Wed, 26 Nov 2014 13:59:11 -0800
-X-Google-Sender-Auth: fAv504a-xeO5n0sKBKBso_NWujQ
-Message-ID: <CAGXu5jJQK39HnyVMmVrerY+wiL+P80JTE8nscDa7Wyyk1hZing@mail.gmail.com>
-Subject: Re: [PULL] seccomp update (next)
-From: Kees Cook <keescook@chromium.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: James Morris <jmorris@namei.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Pranith Kumar <bobby.prani@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 26 Nov 2014 17:00:07 -0500
+Date: Wed, 26 Nov 2014 14:00:06 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Michel Lespinasse <walken@google.com>, Jan Kara <jack@suse.cz>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [rfc patch] mm: protect set_page_dirty() from ongoing
+ truncation
+Message-Id: <20141126140006.d6f71f447b69cd4fadc42c26@linux-foundation.org>
+In-Reply-To: <1416944921-14164-1-git-send-email-hannes@cmpxchg.org>
+References: <1416944921-14164-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 1:46 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi James,
->
-> On Thu, 27 Nov 2014 00:23:06 +1100 (AEDT) James Morris <jmorris@namei.org> wrote:
->>
->> On Tue, 25 Nov 2014, Kees Cook wrote:
->>
->> > Please pull these seccomp changes for next.
->> >
->> > Thanks!
->> >
->> > -Kees
->> >
->> > The following changes since commit 5d01410fe4d92081f349b013a2e7a95429e4f2c9:
->> >
->> >   Linux 3.18-rc6 (2014-11-23 15:25:20 -0800)
->> >
->> > are available in the git repository at:
->> >
->> >   git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux.git tags/seccomp-next
->> >
->> > for you to fetch changes up to cb24de187b9a0717246f05afc0f2be070e075d80:
->> >
->> >   seccomp: Replace smp_read_barrier_depends() with lockless_dereference() (2014-11-25 11:40:24 -0800)
->> >
->> > ----------------------------------------------------------------
->> > Improves SMP dereferencing with new macro.
->> >
->> > ----------------------------------------------------------------
->> > Pranith Kumar (1):
->> >       seccomp: Replace smp_read_barrier_depends() with lockless_dereference()
->> >
->> >  kernel/seccomp.c | 7 +++----
->> >  1 file changed, 3 insertions(+), 4 deletions(-)
->> >
->>
->> This is what I get when pulling to my next branch:
->>
->> 9128 files changed, 468773 insertions(+), 340317 deletions(-)
->
-> That would be because your tree is based on v3.17 and Kees' is based on
-> v3.18-rc6 ...
+On Tue, 25 Nov 2014 14:48:41 -0500 Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-James, I can base on whatever you like. I can do v3.17, or even
-against your security-next. It seems everyone uses something
-different. :)
+> Tejun, while reviewing the code, spotted the following race condition
+> between the dirtying and truncation of a page:
+> 
+> __set_page_dirty_nobuffers()       __delete_from_page_cache()
+>   if (TestSetPageDirty(page))
+>                                      page->mapping = NULL
+> 				     if (PageDirty())
+> 				       dec_zone_page_state(page, NR_FILE_DIRTY);
+> 				       dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+>     if (page->mapping)
+>       account_page_dirtied(page)
+>         __inc_zone_page_state(page, NR_FILE_DIRTY);
+> 	__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+> 
+> which results in an imbalance of NR_FILE_DIRTY and BDI_RECLAIMABLE.
+> 
+> Dirtiers usually lock out truncation, either by holding the page lock
+> directly, or in case of zap_pte_range(), by pinning the mapcount with
+> the page table lock held.  The notable exception to this rule, though,
+> is do_wp_page(), for which this race exists.  However, do_wp_page()
+> already waits for a locked page to unlock before setting the dirty
+> bit, in order to prevent a race where clear_page_dirty() misses the
+> page bit in the presence of dirty ptes.  Upgrade that wait to a fully
+> locked set_page_dirty() to also cover the situation explained above.
+> 
+> Afterwards, the code in set_page_dirty() dealing with a truncation
+> race is no longer needed.  Remove it.
+> 
+> Reported-by: Tejun Heo <tj@kernel.org>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  mm/memory.c         | 11 ++---------
+>  mm/page-writeback.c | 33 ++++++++++++---------------------
+>  2 files changed, 14 insertions(+), 30 deletions(-)
+> 
+> It is unfortunate to hold the page lock while balancing dirty pages,
+> but I don't see what else would protect mapping at that point.
 
-Thanks!
+Yes.
 
--Kees
+I'm a bit surprised that calling balance_dirty_pages() under
+lock_page() doesn't just go and deadlock.  Memory fails me.
 
--- 
-Kees Cook
-Chrome OS Security
+And yes, often the only thing which protects the address_space is
+lock_page().
+
+set_page_dirty_balance() and balance_dirty_pages() don't actually need
+the address_space - they just use it to get at the backing_dev_info. 
+So perhaps what we could do here is the change those functions to take
+a bdi directly, then change do_wp_page() to do something like
+
+	lock_page(dirty_page);
+	bdi = page->mapping->backing_dev_info;
+	need_balance = set_page_dirty2(bdi);
+	unlock_page(page);
+	if (need_balance)
+		balance_dirty_pages_ratelimited2(bdi);
+
+
+so we no longer require that the address_space be stabilized after
+lock_page().  Of course something needs to protect the bdi and I'm not
+sure what that is, but we're talking about umount and that quiesces and
+evicts lots of things before proceeding, so surely there's something in
+there which will save us ;)
+
+>  The
+> same btw applies for the page_mkwrite case: how is mapping safe to
+> pass to balance_dirty_pages() after unlocking page table and page?
+
+I'm not sure which code you're referring to here, but it's likely that
+the switch-balancing-to-bdi approach will address that as well?
+
