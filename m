@@ -1,90 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481AbaKZLTd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 06:19:33 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39222 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752288AbaKZLTb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 06:19:31 -0500
-Date: Wed, 26 Nov 2014 11:17:16 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Ben Zhang <benzh@chromium.org>,
-        alsa-devel <alsa-devel@alsa-project.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Bard Liao <bardliao@realtek.com>,
-        Oder Chiou <oder_chiou@realtek.com>,
-        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
-        flove@realtek.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Message-ID: <20141126111716.GE7712@sirena.org.uk>
-References: <1416034608-24238-1-git-send-email-benzh@chromium.org>
- <CACxGe6stjCvaQZkh=hFcF-56v5qJVar11jRZz0PRSd2wz6EUyA@mail.gmail.com>
- <5474A78C.7030805@linux.intel.com>
- <20141125172120.GI7712@sirena.org.uk>
- <5474CB5D.9050807@linux.intel.com>
- <20141125184304.GK7712@sirena.org.uk>
- <54753168.9010303@linux.intel.com>
+	id S1752112AbaKZLXV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 06:23:21 -0500
+Received: from mail.us.es ([193.147.175.20]:44995 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751092AbaKZLXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 06:23:19 -0500
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus1 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.4/19682. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-103.2/7.5):. 
+ Processed in 1.925516 secs); 26 Nov 2014 11:23:13 -0000
+X-Spam-ASN: AS12715 87.216.0.0/16
+X-Envelope-From: pneira@us.es
+Date: Wed, 26 Nov 2014 12:24:49 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Andreas Ruprecht <rupran@einserver.de>
+Cc: Florian Westphal <fw@strlen.de>, Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] net: netfilter: Fix undefined reference to
+ nf_nat_redirect_* functions
+Message-ID: <20141126112449.GA4700@salvia>
+References: <1416928034-10882-1-git-send-email-rupran@einserver.de>
+ <1416994537-1592-1-git-send-email-rupran@einserver.de>
+ <20141126102402.GA24801@breakpoint.cc>
+ <5475AC6F.9010902@einserver.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4mL5lf+nIvB09VHj"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54753168.9010303@linux.intel.com>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] ASoC: rt5677: Add ACPI device probing
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <5475AC6F.9010902@einserver.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 26, 2014 at 11:33:19AM +0100, Andreas Ruprecht wrote:
+> Sure.
+> 
+> When the file is compiled, i.e. CONFIG_NETFILTER_XT_TARGET_REDIRECT is
+> selected, all headers will be included and all functions inside the file
+> will be compiled, regardless of other Kconfig options.
+> 
+> This means redirect_tg6 and redirect_tg4 will be compiled (which doesn't
+> necessarily mean they will be _called_) but the linker needs to resolve
+> nf_nat_redirect_ipv4() due to the compilation of the redirect_tg4()
+> function.
+> 
+> nf_nat_redirect_ip4() is defined in
+> net/ipv4/netfilter/nf_nat_redirect_ipv4.c but this file is only included
+> into the build when CONFIG_NF_NAT_REDIRECT_IPV4 is enabled.
+> 
+> Now when a kernel config enables CONFIG_NETFILTER_XT_TARGET_REDIRECT but
+> _not_ CONFIG_NF_NAT_REDIRECT_IPV4, the declaration of
+> nf_nat_redirect_ipv4() from the header
+> <net/netfilter/ipv4/nf_nat_redirect.h> will have no definition (i.e., no
+> implementation), causing the linker to report an "undefined reference".
+> 
+> Same logic goes for nf_nat_redirect_ipv6().
 
---4mL5lf+nIvB09VHj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I'd suggest alternatives to resolve this problem:
 
-On Tue, Nov 25, 2014 at 05:48:24PM -0800, Darren Hart wrote:
-> On 11/25/14 10:43, Mark Brown wrote:
+1) Split xt_REDIRECT into ipt_REDIRECT and ip6t_REDIRECT, so we
+restore the state of how this was back in 2012. The main motivation
+behind that change was to reduce memory consumption by combining both
+modules. In other modules, these combinations have been causing us
+problems specifically when IPv6 symbols are used and it's not that
+clean since IPv6 specific code remains there unused in the module even
+if CONFIG_IPV6=n.
 
-> > Link from where - do we want to talk to the ACPI/UEFI forum and
-> > figure out some kind of fast track process for them to add an "it's
-> > already covered by DT, see here" entry to their database for
-> > example?  We also ought to work out how to make sure ACPI IDs are
-> > registered there as well, should be possible to have something
-> > simple as part of that.
+2) Merge nf_nat_redirect_ipv4 and nf_nat_redirect_ipv6 into
+nf_nat_redirect, so we inconditionally build IPv6 redirect code, thus
+xt_REDIRECT always finds the IPv6 symbol that needs even if it doesn't
+use it.
 
-> As to registering ACPI IDs, I believe this is the right link:
-> http://www.uefi.org/PNP_ACPI_Registry
+3) Add #ifdef to xt_REDIRECT.c to make IPv6 specific code, this should
+be a simple and small patch, but it results in #ifdef pollution.
 
-No, those are vendors as far as I can tell.  I mean identifiers for
-specific devices - it appears to be common for for example Intel to
-allocate identifiers for devices they don't produce, I'd expect there to
-be some effort to keep track of that especially given that _DSD
-properties may well end up being specific to the identifier used to
-register in cases of parallel evolution.
+Comments?
 
-> Or did you mean a HID/CID<->DSD mapping?
-
-I don't really know what that is, sorry.
-
---4mL5lf+nIvB09VHj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUdba7AAoJECTWi3JdVIfQl+EH/05OwjjXJShHKp/BUtfOENKZ
-8YftwVKN6JcxV8bMCirUrmW8SUU7e30SczJCNO1M/6d+eIStGINKidD0WH8xsN/t
-frPLB51T2BLbZi66hp4H/SQPUzi1HLK+RvBD1+SnObY04vn0vbQBUgkerBs2zU4G
-c3E/uMcjG2ZuMb7bVphC7nnuHs3edz99gyAEGZW9ZCz0uvPqS3BUm7UTIXb5UsVF
-fQkOzIZeioRRjw81dSzFV3ruJFMxbxe0Sb5BfoobuGDRBl9ZM32QwzSIZl3pyVdh
-KuJTar+zYpgT5sdZWcY+7088uE1aGvHl0Cn+7B0LnrponBT958EibrEqeg3w9cA=
-=13eO
------END PGP SIGNATURE-----
-
---4mL5lf+nIvB09VHj--
+Thanks.
