@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121AbaKZViz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 16:38:55 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:34216 "EHLO bear.ext.ti.com"
+	id S1752979AbaKZViw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 16:38:52 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:34211 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753001AbaKZVix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 16:38:53 -0500
+	id S1751240AbaKZVit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 16:38:49 -0500
 From: Dave Gerlach <d-gerlach@ti.com>
 To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
@@ -13,9 +13,9 @@ CC: Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
         Benoit Cousson <bcousson@baylibre.com>,
         Kevin Hilman <khilman@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>,
         Suman Anna <s-anna@ti.com>, Dave Gerlach <d-gerlach@ti.com>
-Subject: [RFC PATCH 3/3] ARM: dts: am33xx: Add wkup_m3_ipc node
-Date: Wed, 26 Nov 2014 15:38:10 -0600
-Message-ID: <4981daf0740253def2cfcf11a2994526191d9f32.1417029919.git.d-gerlach@ti.com>
+Subject: [RFC PATCH 1/3] Documentation: dt: add ti,am3353-wkup-m3-ipc bindings
+Date: Wed, 26 Nov 2014 15:38:08 -0600
+Message-ID: <25c3f49c4f5acb4a3180a3f3481dee467eb3a2b7.1417029919.git.d-gerlach@ti.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <cover.1417029919.git.d-gerlach@ti.com>
 References: <cover.1417029919.git.d-gerlach@ti.com>
@@ -25,33 +25,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add wkup_m3_ipc node for wkup_m3_ipc driver.
+Add the device tree bindings document for ti,am3353-wkup-m3-ipc which
+is used by the wkup_m3_ipc driver.
 
 Signed-off-by: Dave Gerlach <d-gerlach@ti.com>
 ---
- arch/arm/boot/dts/am33xx.dtsi | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ .../devicetree/bindings/soc/ti/wkup_m3_ipc.txt     | 41 ++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/soc/ti/wkup_m3_ipc.txt
 
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index 41659df..b86d8c0 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -848,6 +848,15 @@
- 			reg = <0x48310000 0x2000>;
- 			interrupts = <111>;
- 		};
+diff --git a/Documentation/devicetree/bindings/soc/ti/wkup_m3_ipc.txt b/Documentation/devicetree/bindings/soc/ti/wkup_m3_ipc.txt
+new file mode 100644
+index 0000000..ceb6acf
+--- /dev/null
++++ b/Documentation/devicetree/bindings/soc/ti/wkup_m3_ipc.txt
+@@ -0,0 +1,41 @@
++Wakeup M3 IPC Driver
++=====================
 +
-+		wkup_m3_ipc: wkup_m3_ipc@44e11324 {
-+			compatible = "ti,am3353-wkup-m3-ipc";
-+			reg = <0x44e11324 0x0024>;
-+			reg-names = "ipc_regs";
-+			interrupts = <78>;
-+			ti,rproc = <&wkup_m3>;
-+			mboxes = <&mailbox &mbox_wkupm3>;
-+		};
- 	};
- };
- 
++TI AMx3 family of devices use a Cortex M3 co-processor to help with various
++low power tasks that cannot be controlled from the MPU like suspend/resume
++and certain deep C-states for CPU Idle. Once the wkup_m3_ipc driver uses the
++wkup_m3_rproc driver to boot the wkup_m3, it handles communication with the
++CM3 using IPC registers present in the SoC's control module and a mailbox.
++The wkup_m3_ipc exposes an API to allow the SoC PM code to execute specific
++PM tasks.
++
++Wkup M3 Device Node:
++====================
++A wkup_m3_ipc device node is used to represent a wakeup M3 IP instance within
++an SoC. The sub-mailboxes are represented as child node of this parent node.
++
++Required properties:
++--------------------
++- compatible:		Should be "ti,am3353-wkup-m3-ipc" for AM33xx SoCs
++- reg:			Contains the wkup_m3 register address ranges for
++			ipc-regs.
++- reg-names:		Name for ipc-regs given above
++- interrupts:		Contains the interrupt information for the wkup_m3
++			interrupt that signals the MPU.
++- ti,rproc:		Phandle to the wkup_m3 rproc node so the IPC driver
++			can boot it.
++- mboxes:		Phandles used by IPC framework to get correct mbox
++			channel for communication. Must point to appropriate
++			mbox_wkupm3 child node.
++
++Example:
++--------
++/* AM33xx */
++wkup_m3_ipc: wkup_m3_ipc@44e11324 {
++	compatible = "ti,am3353-wkup-m3-ipc";
++	reg = <0x44e11324 0x0024>;
++	reg-names = "ipc_regs";
++	interrupts = <78>;
++	ti,rproc = <&wkup_m3>;
++	mboxes = <&mailbox &mbox_wkupm3>;
++};
 -- 
 2.1.0
 
