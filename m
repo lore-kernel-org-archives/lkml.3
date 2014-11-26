@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085AbaKZPQo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 10:16:44 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59507 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753420AbaKZPPF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 10:15:05 -0500
-From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-To: lee.jones@linaro.org, broonie@kernel.org
-Cc: cw00.choi@samsung.com, linus.walleij@linaro.org,
-        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        linux-gpio@vger.kernel.org, ckeepax@opensource.wolfsonmicro.com
-Subject: [PATCH V2 4/6] gpio: arizona: Add support for WM8280/WM8281
-Date: Wed, 26 Nov 2014 15:13:06 +0000
-Message-Id: <1417014788-8311-5-git-send-email-rf@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1417014788-8311-1-git-send-email-rf@opensource.wolfsonmicro.com>
-References: <1417014788-8311-1-git-send-email-rf@opensource.wolfsonmicro.com>
+	id S1753151AbaKZPR7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 10:17:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35091 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752621AbaKZPR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 10:17:57 -0500
+Date: Wed, 26 Nov 2014 17:17:29 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
+        paulus@samba.org, akpm@linux-foundation.org, heiko.carstens@de.ibm.com,
+        schwidefsky@de.ibm.com, borntraeger@de.ibm.com, mingo@kernel.org
+Subject: Re: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
+ atomic
+Message-ID: <20141126151729.GB9612@redhat.com>
+References: <1416915806-24757-1-git-send-email-dahi@linux.vnet.ibm.com>
+ <20141126070258.GA25523@redhat.com>
+ <20141126110504.511b733a@thinkpad-w530>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141126110504.511b733a@thinkpad-w530>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/gpio/gpio-arizona.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+On Wed, Nov 26, 2014 at 11:05:04AM +0100, David Hildenbrand wrote:
+> > What's the path you are trying to debug?
+> 
+> Well, we had a problem where we held a spin_lock and called
+> copy_(from|to)_user(). We experienced very random deadlocks that took some guy
+> almost a week to debug. The simple might_sleep() check would have showed this
+> error immediately.
 
-diff --git a/drivers/gpio/gpio-arizona.c b/drivers/gpio/gpio-arizona.c
-index fe369f5..9665d0a 100644
---- a/drivers/gpio/gpio-arizona.c
-+++ b/drivers/gpio/gpio-arizona.c
-@@ -116,6 +116,7 @@ static int arizona_gpio_probe(struct platform_device *pdev)
- 	switch (arizona->type) {
- 	case WM5102:
- 	case WM5110:
-+	case WM8280:
- 	case WM8997:
- 		arizona_gpio->gpio_chip.ngpio = 5;
- 		break;
--- 
-1.7.2.5
-
+This must have been a very old kernel.
+A modern kernel will return an error from copy_to_user.
+Which is really the point of the patch you are trying to revert.
