@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638AbaKZPYB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 10:24:01 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:53196 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750961AbaKZPXy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753619AbaKZPX7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 10:23:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49300 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753431AbaKZPXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 26 Nov 2014 10:23:54 -0500
-Date: Wed, 26 Nov 2014 10:23:46 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        nick <xerofoify@gmail.com>, gleb@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Another Obsolete Fix me in trace.h?
-Message-ID: <20141126102346.213ee325@gandalf.local.home>
-In-Reply-To: <20141126144933.GA5630@potion.brq.redhat.com>
-References: <5472B5B5.5090201@gmail.com>
-	<54730475.9040000@redhat.com>
-	<54730B33.1080101@siemens.com>
-	<20141124210000.GB6795@potion.brq.redhat.com>
-	<20141124161901.6266925c@gandalf.local.home>
-	<20141124214939.GA6671@potion.brq.redhat.com>
-	<20141126124022.GC6795@potion.brq.redhat.com>
-	<20141126091543.52dc5bfe@gandalf.local.home>
-	<20141126144933.GA5630@potion.brq.redhat.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+Date: Wed, 26 Nov 2014 17:23:34 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
+        paulus@samba.org, akpm@linux-foundation.org, heiko.carstens@de.ibm.com,
+        schwidefsky@de.ibm.com, borntraeger@de.ibm.com, mingo@kernel.org
+Subject: Re: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
+ atomic
+Message-ID: <20141126152334.GA9648@redhat.com>
+References: <1416915806-24757-1-git-send-email-dahi@linux.vnet.ibm.com>
+ <20141126070258.GA25523@redhat.com>
+ <20141126110504.511b733a@thinkpad-w530>
+ <20141126151729.GB9612@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141126151729.GB9612@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Nov 2014 15:49:34 +0100
-Radim Krčmář <rkrcmar@redhat.com> wrote:
+On Wed, Nov 26, 2014 at 05:17:29PM +0200, Michael S. Tsirkin wrote:
+> On Wed, Nov 26, 2014 at 11:05:04AM +0100, David Hildenbrand wrote:
+> > > What's the path you are trying to debug?
+> > 
+> > Well, we had a problem where we held a spin_lock and called
+> > copy_(from|to)_user(). We experienced very random deadlocks that took some guy
+> > almost a week to debug. The simple might_sleep() check would have showed this
+> > error immediately.
+> 
+> This must have been a very old kernel.
+> A modern kernel will return an error from copy_to_user.
+> Which is really the point of the patch you are trying to revert.
 
- 
-> (It just seemed weird that we have an infrastructure that could allow a
->  "generic plugin" to cover this functionality.)
+That's assuming you disabled preemption. If you didn't, and take
+a spinlock, you have deadlocks even without userspace access.
 
-Maybe in the future we may do something like that. But for now, think
-of these as "optimized" ;-)
-
--- Steve
+-- 
+MST
