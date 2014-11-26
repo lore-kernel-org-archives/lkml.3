@@ -1,191 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376AbaKZPEX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 10:04:23 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:44248 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753339AbaKZPEU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 10:04:20 -0500
+	id S1753393AbaKZPFD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 10:05:03 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:37988 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752376AbaKZPFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 10:05:00 -0500
+Date: Wed, 26 Nov 2014 13:04:51 -0200
+From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+To: Beniamino Galvani <b.galvani@gmail.com>, Carlo Caione <carlo@caione.org>
+Cc: linux-media@vger.kernel.org, Sean Young <sean@mess.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
+        Victor Wan <victor.wan@amlogic.com>
+Subject: Re: [PATCH v3 2/3] media: rc: add driver for Amlogic Meson IR
+ remote receiver
+Message-ID: <20141126130451.5789e7f9@recife.lan>
+In-Reply-To: <1416342155-26820-3-git-send-email-b.galvani@gmail.com>
+References: <1416342155-26820-1-git-send-email-b.galvani@gmail.com>
+	<1416342155-26820-3-git-send-email-b.galvani@gmail.com>
+Organization: Samsung
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20141126144504.GA3808@developer>
-References: <1416963070-5806-1-git-send-email-a.kesavan@samsung.com>
-	<20141126144504.GA3808@developer>
-Date: Wed, 26 Nov 2014 20:34:19 +0530
-Message-ID: <CAM4voa=OidszVoxRCnXPTKTyGZn5QXv7YWgGRF+JyHmHi+SCPw@mail.gmail.com>
-Subject: Re: [PATCH v2] thermal: exynos: add special clock support
-From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Amit Kachhap <amit.daniel@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        =?UTF-8?B?7LWc7LCs7Jqw?= <cw00.choi@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eduardo,
+Em Tue, 18 Nov 2014 21:22:34 +0100
+Beniamino Galvani <b.galvani@gmail.com> escreveu:
 
-On Wed, Nov 26, 2014 at 8:15 PM, Eduardo Valentin <edubezval@gmail.com> wrote:
->
-> Abhilash,
->
-> On Wed, Nov 26, 2014 at 06:21:10AM +0530, Abhilash Kesavan wrote:
->> Exynos7 has a special clock required for the functional operation
->> of the TMU that is not present in earlier SoCs. Add support for
->> this clock and update the binding documentation.
->>
->> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
->> ---
->> Changes since v1:
->>       - Added a per-soc flag to indicate the presence of special clock
->>       - Changed the name of special clock from "tmu_sclk" to "sclk"
->>       - Fixed the error handling for sclk
->>
->> Tested on 5420 and 5800 based chromebooks, no change in existing behavior.
->>
->>  .../devicetree/bindings/thermal/exynos-thermal.txt |    3 ++
->>  drivers/thermal/samsung/exynos_tmu.c               |   31 ++++++++++++++++----
->>  2 files changed, 29 insertions(+), 5 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
->> index ae738f5..acf4705 100644
->> --- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
->> +++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
->> @@ -32,10 +32,13 @@
->>  - clocks : The main clocks for TMU device
->>       -- 1. operational clock for TMU channel
->>       -- 2. optional clock to access the shared registers of TMU channel
->> +     -- 3. optional special clock for functional operation
->>  - clock-names : Thermal system clock name
->>       -- "tmu_apbif" operational clock for current TMU channel
->>       -- "tmu_triminfo_apbif" clock to access the shared triminfo register
->>               for current TMU channel
->> +     -- "sclk" clock for functional operation of the current TMU
->> +             channel
->>  - vtmu-supply: This entry is optional and provides the regulator node supplying
->>               voltage to TMU. If needed this entry can be placed inside
->>               board/platform specific dts file.
->> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
->> index d44d91d..8ed8409 100644
->> --- a/drivers/thermal/samsung/exynos_tmu.c
->> +++ b/drivers/thermal/samsung/exynos_tmu.c
->> @@ -123,11 +123,14 @@
->>   * @base: base address of the single instance of the TMU controller.
->>   * @base_second: base address of the common registers of the TMU controller.
->>   * @irq: irq number of the TMU controller.
->> + * @needs_sclk: SoC specific flag indicating that sclk is required for
->> +     functional operation of the TMU controller.
->>   * @soc: id of the SOC type.
->>   * @irq_work: pointer to the irq work structure.
->>   * @lock: lock to implement synchronization.
->>   * @clk: pointer to the clock structure.
->>   * @clk_sec: pointer to the clock structure for accessing the base_second.
->> + * @sclk: pointer to the clock structure for accessing the tmu special clock.
->>   * @temp_error1: fused value of the first point trim.
->>   * @temp_error2: fused value of the second point trim.
->>   * @regulator: pointer to the TMU regulator structure.
->> @@ -144,10 +147,11 @@ struct exynos_tmu_data {
->>       void __iomem *base;
->>       void __iomem *base_second;
->>       int irq;
->> +     bool needs_sclk;
->>       enum soc_type soc;
->>       struct work_struct irq_work;
->>       struct mutex lock;
->> -     struct clk *clk, *clk_sec;
->> +     struct clk *clk, *clk_sec, *sclk;
->>       u8 temp_error1, temp_error2;
->>       struct regulator *regulator;
->>       struct thermal_sensor_conf *reg_conf;
->> @@ -883,10 +887,24 @@ static int exynos_tmu_probe(struct platform_device *pdev)
->>               goto err_clk_sec;
->>       }
->>
->> +     if (data->needs_sclk) {
->
-> Based on the trend we see from Bartlomiej's and Lukasz' works, you
-> should be asking for SoC version, not adding a flag. Can you please
-> crosscheck with them?
+> Amlogic Meson SoCs include a infrared remote control receiver that can
+> operate in two modes: "NEC" mode in which the hardware decodes frames
+> using the NEC IR protocol, and "general" mode in which the receiver
+> simply reports the duration of pulses and spaces for software
+> decoding.
+> 
+> This is a driver for the IR receiver that implements software decoding
+> of received frames.
+> 
+> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+> ---
+>  MAINTAINERS                 |   1 +
+>  drivers/media/rc/Kconfig    |  11 +++
+>  drivers/media/rc/Makefile   |   1 +
+>  drivers/media/rc/meson-ir.c | 216 ++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 229 insertions(+)
+>  create mode 100644 drivers/media/rc/meson-ir.c
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 0662378..f1bc045 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -850,6 +850,7 @@ ARM/Amlogic MesonX SoC support
+>  M:	Carlo Caione <carlo@caione.org>
+>  L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+>  S:	Maintained
+> +F:	drivers/media/rc/meson-ir.c
+>  N:	meson[x68]
 
-I planned to populate this flag as true for Exynos7 in
-exynos_map_dt_data() where other soc specific methods are being setup.
+Hmm... you're putting this driver at Carlo's maintenance shoulders.
 
-Bartlomiej/Lukasz can you kindly comment on if you would prefer the
-check to be based on the SoC version.
+I need his ack in order to apply this patch.
 
 Regards,
-Abhilash
->
-> Cheers,
->
-> Eduardo Valentin
->
->> +             data->sclk = devm_clk_get(&pdev->dev, "sclk");
->> +             if (IS_ERR(data->sclk)) {
->> +                     dev_err(&pdev->dev, "Failed to get sclk\n");
->> +                     goto err_clk;
->> +             } else {
->> +                     ret = clk_prepare_enable(data->sclk);
->> +                     if (ret) {
->> +                             dev_err(&pdev->dev, "Failed to enable sclk\n");
->> +                             goto err_clk;
->> +                     }
->> +             }
->> +     }
->> +
->>       ret = exynos_tmu_initialize(pdev);
->>       if (ret) {
->>               dev_err(&pdev->dev, "Failed to initialize TMU\n");
->> -             goto err_clk;
->> +             goto err_sclk;
->>       }
->>
->>       exynos_tmu_control(pdev, true);
->> @@ -896,7 +914,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
->>                               sizeof(struct thermal_sensor_conf), GFP_KERNEL);
->>       if (!sensor_conf) {
->>               ret = -ENOMEM;
->> -             goto err_clk;
->> +             goto err_sclk;
->>       }
->>       sprintf(sensor_conf->name, "therm_zone%d", data->id);
->>       sensor_conf->read_temperature = (int (*)(void *))exynos_tmu_read;
->> @@ -928,7 +946,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
->>       ret = exynos_register_thermal(sensor_conf);
->>       if (ret) {
->>               dev_err(&pdev->dev, "Failed to register thermal interface\n");
->> -             goto err_clk;
->> +             goto err_sclk;
->>       }
->>       data->reg_conf = sensor_conf;
->>
->> @@ -936,10 +954,12 @@ static int exynos_tmu_probe(struct platform_device *pdev)
->>               IRQF_TRIGGER_RISING | IRQF_SHARED, dev_name(&pdev->dev), data);
->>       if (ret) {
->>               dev_err(&pdev->dev, "Failed to request irq: %d\n", data->irq);
->> -             goto err_clk;
->> +             goto err_sclk;
->>       }
->>
->>       return 0;
->> +err_sclk:
->> +     clk_disable_unprepare(data->sclk);
->>  err_clk:
->>       clk_unprepare(data->clk);
->>  err_clk_sec:
->> @@ -956,6 +976,7 @@ static int exynos_tmu_remove(struct platform_device *pdev)
->>
->>       exynos_tmu_control(pdev, false);
->>
->> +     clk_disable_unprepare(data->sclk);
->>       clk_unprepare(data->clk);
->>       if (!IS_ERR(data->clk_sec))
->>               clk_unprepare(data->clk_sec);
->> --
->> 1.7.9.5
->>
+Mauro
+
+>  
+>  ARM/ATMEL AT91RM9200 AND AT91SAM ARM ARCHITECTURES
+> diff --git a/drivers/media/rc/Kconfig b/drivers/media/rc/Kconfig
+> index 1aea732..ddfab25 100644
+> --- a/drivers/media/rc/Kconfig
+> +++ b/drivers/media/rc/Kconfig
+> @@ -223,6 +223,17 @@ config IR_FINTEK
+>  	   To compile this driver as a module, choose M here: the
+>  	   module will be called fintek-cir.
+>  
+> +config IR_MESON
+> +	tristate "Amlogic Meson IR remote receiver"
+> +	depends on RC_CORE
+> +	depends on ARCH_MESON || COMPILE_TEST
+> +	---help---
+> +	   Say Y if you want to use the IR remote receiver available
+> +	   on Amlogic Meson SoCs.
+> +
+> +	   To compile this driver as a module, choose M here: the
+> +	   module will be called meson-ir.
+> +
+>  config IR_NUVOTON
+>  	tristate "Nuvoton w836x7hg Consumer Infrared Transceiver"
+>  	depends on PNP
+> diff --git a/drivers/media/rc/Makefile b/drivers/media/rc/Makefile
+> index 8f509e0..379a5c0 100644
+> --- a/drivers/media/rc/Makefile
+> +++ b/drivers/media/rc/Makefile
+> @@ -22,6 +22,7 @@ obj-$(CONFIG_IR_IMON) += imon.o
+>  obj-$(CONFIG_IR_ITE_CIR) += ite-cir.o
+>  obj-$(CONFIG_IR_MCEUSB) += mceusb.o
+>  obj-$(CONFIG_IR_FINTEK) += fintek-cir.o
+> +obj-$(CONFIG_IR_MESON) += meson-ir.o
+>  obj-$(CONFIG_IR_NUVOTON) += nuvoton-cir.o
+>  obj-$(CONFIG_IR_ENE) += ene_ir.o
+>  obj-$(CONFIG_IR_REDRAT3) += redrat3.o
+> diff --git a/drivers/media/rc/meson-ir.c b/drivers/media/rc/meson-ir.c
+> new file mode 100644
+> index 0000000..fcc3b82
+> --- /dev/null
+> +++ b/drivers/media/rc/meson-ir.c
+> @@ -0,0 +1,216 @@
+> +/*
+> + * Driver for Amlogic Meson IR remote receiver
+> + *
+> + * Copyright (C) 2014 Beniamino Galvani <b.galvani@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * version 2 as published by the Free Software Foundation.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program. If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#include <linux/device.h>
+> +#include <linux/err.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/spinlock.h>
+> +
+> +#include <media/rc-core.h>
+> +
+> +#define DRIVER_NAME		"meson-ir"
+> +
+> +#define IR_DEC_LDR_ACTIVE	0x00
+> +#define IR_DEC_LDR_IDLE		0x04
+> +#define IR_DEC_LDR_REPEAT	0x08
+> +#define IR_DEC_BIT_0		0x0c
+> +#define IR_DEC_REG0		0x10
+> +#define IR_DEC_FRAME		0x14
+> +#define IR_DEC_STATUS		0x18
+> +#define IR_DEC_REG1		0x1c
+> +
+> +#define REG0_RATE_MASK		(BIT(11) - 1)
+> +
+> +#define REG1_MODE_MASK		(BIT(7) | BIT(8))
+> +#define REG1_MODE_NEC		(0 << 7)
+> +#define REG1_MODE_GENERAL	(2 << 7)
+> +
+> +#define REG1_TIME_IV_SHIFT	16
+> +#define REG1_TIME_IV_MASK	((BIT(13) - 1) << REG1_TIME_IV_SHIFT)
+> +
+> +#define REG1_IRQSEL_MASK	(BIT(2) | BIT(3))
+> +#define REG1_IRQSEL_NEC_MODE	(0 << 2)
+> +#define REG1_IRQSEL_RISE_FALL	(1 << 2)
+> +#define REG1_IRQSEL_FALL	(2 << 2)
+> +#define REG1_IRQSEL_RISE	(3 << 2)
+> +
+> +#define REG1_RESET		BIT(0)
+> +#define REG1_ENABLE		BIT(15)
+> +
+> +#define STATUS_IR_DEC_IN	BIT(8)
+> +
+> +#define MESON_TRATE		10	/* us */
+> +
+> +struct meson_ir {
+> +	void __iomem	*reg;
+> +	struct rc_dev	*rc;
+> +	int		irq;
+> +	spinlock_t	lock;
+> +};
+> +
+> +static void meson_ir_set_mask(struct meson_ir *ir, unsigned int reg,
+> +			      u32 mask, u32 value)
+> +{
+> +	u32 data;
+> +
+> +	data = readl(ir->reg + reg);
+> +	data &= ~mask;
+> +	data |= (value & mask);
+> +	writel(data, ir->reg + reg);
+> +}
+> +
+> +static irqreturn_t meson_ir_irq(int irqno, void *dev_id)
+> +{
+> +	struct meson_ir *ir = dev_id;
+> +	u32 duration;
+> +	DEFINE_IR_RAW_EVENT(rawir);
+> +
+> +	spin_lock(&ir->lock);
+> +
+> +	duration = readl(ir->reg + IR_DEC_REG1);
+> +	duration = (duration & REG1_TIME_IV_MASK) >> REG1_TIME_IV_SHIFT;
+> +	rawir.duration = US_TO_NS(duration * MESON_TRATE);
+> +
+> +	rawir.pulse = !!(readl(ir->reg + IR_DEC_STATUS) & STATUS_IR_DEC_IN);
+> +
+> +	ir_raw_event_store_with_filter(ir->rc, &rawir);
+> +	ir_raw_event_handle(ir->rc);
+> +
+> +	spin_unlock(&ir->lock);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int meson_ir_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct device_node *node = dev->of_node;
+> +	struct resource *res;
+> +	const char *map_name;
+> +	struct meson_ir *ir;
+> +	int ret;
+> +
+> +	ir = devm_kzalloc(dev, sizeof(struct meson_ir), GFP_KERNEL);
+> +	if (!ir)
+> +		return -ENOMEM;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	ir->reg = devm_ioremap_resource(dev, res);
+> +	if (IS_ERR(ir->reg)) {
+> +		dev_err(dev, "failed to map registers\n");
+> +		return PTR_ERR(ir->reg);
+> +	}
+> +
+> +	ir->irq = platform_get_irq(pdev, 0);
+> +	if (ir->irq < 0) {
+> +		dev_err(dev, "no irq resource\n");
+> +		return ir->irq;
+> +	}
+> +
+> +	ir->rc = rc_allocate_device();
+> +	if (!ir->rc) {
+> +		dev_err(dev, "failed to allocate rc device\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	ir->rc->priv = ir;
+> +	ir->rc->input_name = DRIVER_NAME;
+> +	ir->rc->input_phys = DRIVER_NAME "/input0";
+> +	ir->rc->input_id.bustype = BUS_HOST;
+> +	map_name = of_get_property(node, "linux,rc-map-name", NULL);
+> +	ir->rc->map_name = map_name ? map_name : RC_MAP_EMPTY;
+> +	ir->rc->dev.parent = dev;
+> +	ir->rc->driver_type = RC_DRIVER_IR_RAW;
+> +	ir->rc->allowed_protocols = RC_BIT_ALL;
+> +	ir->rc->rx_resolution = US_TO_NS(MESON_TRATE);
+> +	ir->rc->timeout = MS_TO_NS(200);
+> +	ir->rc->driver_name = DRIVER_NAME;
+> +
+> +	spin_lock_init(&ir->lock);
+> +	platform_set_drvdata(pdev, ir);
+> +
+> +	ret = rc_register_device(ir->rc);
+> +	if (ret) {
+> +		dev_err(dev, "failed to register rc device\n");
+> +		goto out_free;
+> +	}
+> +
+> +	ret = devm_request_irq(dev, ir->irq, meson_ir_irq, 0, "ir-meson", ir);
+> +	if (ret) {
+> +		dev_err(dev, "failed to request irq\n");
+> +		goto out_unreg;
+> +	}
+> +
+> +	/* Reset the decoder */
+> +	meson_ir_set_mask(ir, IR_DEC_REG1, REG1_RESET, REG1_RESET);
+> +	meson_ir_set_mask(ir, IR_DEC_REG1, REG1_RESET, 0);
+> +	/* Set general operation mode */
+> +	meson_ir_set_mask(ir, IR_DEC_REG1, REG1_MODE_MASK, REG1_MODE_GENERAL);
+> +	/* Set rate */
+> +	meson_ir_set_mask(ir, IR_DEC_REG0, REG0_RATE_MASK, MESON_TRATE - 1);
+> +	/* IRQ on rising and falling edges */
+> +	meson_ir_set_mask(ir, IR_DEC_REG1, REG1_IRQSEL_MASK,
+> +			  REG1_IRQSEL_RISE_FALL);
+> +	/* Enable the decoder */
+> +	meson_ir_set_mask(ir, IR_DEC_REG1, REG1_ENABLE, REG1_ENABLE);
+> +
+> +	dev_info(dev, "receiver initialized\n");
+> +
+> +	return 0;
+> +out_unreg:
+> +	rc_unregister_device(ir->rc);
+> +	ir->rc = NULL;
+> +out_free:
+> +	rc_free_device(ir->rc);
+> +
+> +	return ret;
+> +}
+> +
+> +static int meson_ir_remove(struct platform_device *pdev)
+> +{
+> +	struct meson_ir *ir = platform_get_drvdata(pdev);
+> +	unsigned long flags;
+> +
+> +	/* Disable the decoder */
+> +	spin_lock_irqsave(&ir->lock, flags);
+> +	meson_ir_set_mask(ir, IR_DEC_REG1, REG1_ENABLE, 0);
+> +	spin_unlock_irqrestore(&ir->lock, flags);
+> +
+> +	rc_unregister_device(ir->rc);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id meson_ir_match[] = {
+> +	{ .compatible = "amlogic,meson6-ir" },
+> +	{ },
+> +};
+> +
+> +static struct platform_driver meson_ir_driver = {
+> +	.probe		= meson_ir_probe,
+> +	.remove		= meson_ir_remove,
+> +	.driver = {
+> +		.name		= DRIVER_NAME,
+> +		.of_match_table	= meson_ir_match,
+> +	},
+> +};
+> +
+> +module_platform_driver(meson_ir_driver);
+> +
+> +MODULE_DESCRIPTION("Amlogic Meson IR remote receiver driver");
+> +MODULE_AUTHOR("Beniamino Galvani <b.galvani@gmail.com>");
+> +MODULE_LICENSE("GPL v2");
