@@ -1,60 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751273AbaKZMXq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 07:23:46 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:47158 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816AbaKZMXo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 07:23:44 -0500
-Date: Wed, 26 Nov 2014 12:23:20 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: georg@schorsch-tech.de
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Comedi device layered on top of FT232RL
-Message-ID: <20141126122320.4051857f@lxorguk.ukuu.org.uk>
-In-Reply-To: <34ec4bedbde2ede76f23b31e337bb37f.squirrel@wm.schorsch-tech.de>
-References: <34ec4bedbde2ede76f23b31e337bb37f.squirrel@wm.schorsch-tech.de>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1752277AbaKZMYe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 07:24:34 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:43907 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751708AbaKZMYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 07:24:31 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Doug Anderson <dianders@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        Rob Herring <robh+dt@kernel.org>, Sonny Rao <sonnyrao@chromium.org>
+Subject: Re: [PATCH v4] clocksource: arch_timer: Allow the device tree to specify uninitialized timer registers
+Date: Wed, 26 Nov 2014 13:06:35 +0100
+Message-ID: <4822206.0yqmIumDEc@diego>
+User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <5475BEAC.9020208@linaro.org>
+References: <1412753627-28287-1-git-send-email-sonnyrao@chromium.org> <CAD=FV=VhaMo4fNide3a2S6jdLiq2pyOqY3hmx7ai0iDTPxCsPA@mail.gmail.com> <5475BEAC.9020208@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Nov 2014 15:39:28 +0100
-georg@schorsch-tech.de wrote:
+Hi Daniel,
 
-> Hi LKML,
-> right now i try to understand if the following thing is possible:
+Am Mittwoch, 26. November 2014, 12:51:08 schrieb Daniel Lezcano:
+> Hi Doug, Olof,
 > 
-> I have an embedded device with an FT232RL interface which gets
-> handled by ftdi_ser.ko. I can with userspace tools talk to it over
-> /dev/ttyUSB0. The device control some digital inputs/outputs and some
-> ADC/DACs. All is handled over a serial protocol.
+> IIUC, it sounds like this patch is needed from some other patches in
+> arm-soc. Olof was proposing to take this patch through its tree to
+> facilitate the integration.
 > 
-> I thought about following options:
-> 1.Userspace daemon which sits on /dev/ttyUSB0
->   Pro: Easy to implement
->   Con: It would not be an comedi device and thus not able to use the
->        comedi features
-> 
-> 2.Kernel driver:
->   Pro: It would be possible to use the comedi interface
->   Con: I would duplicate much of the code used for ftdi_ser.ko.
-> 
-> OFC i would like to avoid code duplication but i would like to use the
-> features and interface from comedi.
-> 
-> What is the recommended way to solve such issue?
+> Olof, is it this patch you were worried about ?
 
-That depends a lot on the protocol and interface. If the Comedi interface
-over the ftdi is a serial protocol then the right way to use it is
-to write a line discipline. It can then sit on top of the existing serial
-drivers and will also conveniently work with any other kind of tty serial
-driver (or even ptys) which can be useful if you need to remote control
-devices etc.
+I think this is one of two patches in question.
 
-Alan
+"clocksource: arch_timer: Fix code to use physical timers when requested" [0] 
+would be the second one.
+
+And the patch for arm-soc that Olof means would be "ARM: dts: rk3288: add 
+arm,cpu-registers-not-fw-configured" [1].
+
+
+Heiko
+
+[0] 
+https://git.linaro.org/people/daniel.lezcano/linux.git/commit/04f71c2cae54dc26b2a236c787ea8d56c174150b
+[1] https://lkml.org/lkml/2014/11/25/975
+
+> 
+> Thanks
+> 
+>    -- Daniel
+> 
+> On 11/20/2014 12:01 AM, Doug Anderson wrote:
+> > Daniel,
+> > 
+> > On Wed, Oct 8, 2014 at 12:33 AM, Sonny Rao <sonnyrao@chromium.org> wrote:
+> >> From: Doug Anderson <dianders@chromium.org>
+> >> 
+> >> Some 32-bit (ARMv7) systems are architected like this:
+> >> 
+> >> * The firmware doesn't know and doesn't care about hypervisor mode and
+> >> 
+> >>    we don't want to add the complexity of hypervisor there.
+> >> 
+> >> * The firmware isn't involved in SMP bringup or resume.
+> >> 
+> >> * The ARCH timer come up with an uninitialized offset (CNTVOFF)
+> >> 
+> >>    between the virtual and physical counters.  Each core gets a
+> >>    different random offset.
+> >> 
+> >> * The device boots in "Secure SVC" mode.
+> >> 
+> >> * Nothing has touched the reset value of CNTHCTL.PL1PCEN or
+> >> 
+> >>    CNTHCTL.PL1PCTEN (both default to 1 at reset)
+> >> 
+> >> On systems like the above, it doesn't make sense to use the virtual
+> >> counter.  There's nobody managing the offset and each time a core goes
+> >> down and comes back up it will get reinitialized to some other random
+> >> value.
+> >> 
+> >> This adds an optional property which can inform the kernel of this
+> >> situation, and firmware is free to remove the property if it is going
+> >> to initialize the CNTVOFF registers when each CPU comes out of reset.
+> >> 
+> >> Currently, the best course of action in this case is to use the
+> >> physical timer, which is why it is important that CNTHCTL hasn't been
+> >> changed from its reset value and it's a reasonable assumption given
+> >> that the firmware has never entered HYP mode.
+> >> 
+> >> Note that it's been said that on ARMv8 systems the firmware and
+> >> kernel really can't be architected as described above.  That means
+> >> using the physical timer like this really only makes sense for ARMv7
+> >> systems.
+> >> 
+> >> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> >> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+> >> Reviewed-by: Mark Rutland <mark.rutland@arm.com>
+> >> ---
+> >> Changes in v2:
+> >> - Add "#ifdef CONFIG_ARM" as per Will Deacon
+> >> 
+> >> Changes in v3:
+> >> - change property name to arm,cntvoff-not-fw-configured and specify
+> >> 
+> >>    that the value of CNTHCTL.PL1PC(T)EN must still be the reset value
+> >>    of 1 as per Mark Rutland
+> >> 
+> >> Changes in v4:
+> >> - change property name to arm,cpu-registers-not-fw-configured and
+> >> 
+> >>    specify that all cpu registers must have architected reset values
+> >>    per Mark Rutland
+> >> 
+> >> - change from "#ifdef CONFIG_ARM" to "if (IS_ENABLED(CONFIG_ARM))" per
+> >> 
+> >>    Arnd Bergmann
+> >> 
+> >> ---
+> >> 
+> >>   Documentation/devicetree/bindings/arm/arch_timer.txt | 8 ++++++++
+> >>   drivers/clocksource/arm_arch_timer.c                 | 8 ++++++++
+> >>   2 files changed, 16 insertions(+)
+> > 
+> > Do you know what the status of this patch is?  This patch and Sonny's
+> > patch at <https://patchwork.kernel.org/patch/5051901/> are needed on
+> > Rockchip rk3288 for some specific things:
+> > 
+> > 1. To make SMP happy with coreboot.
+> > 
+> > 2. To (I assume) make SMP happy after S2R (no matter which firmware is
+> > used since I don't think anyone has PSCI for rk3288).
+> > 
+> > ...we still need a DTS entry atop these patches, but that's trivial to
+> > add once these land.
+> > 
+> > Thanks!
+
