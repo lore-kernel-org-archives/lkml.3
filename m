@@ -1,48 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297AbaKZPCZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 10:02:25 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:57699 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598AbaKZPCX (ORCPT
+	id S1753310AbaKZPD0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 10:03:26 -0500
+Received: from static.88-198-71-155.clients.your-server.de ([88.198.71.155]:57177
+	"EHLO socrates.bennee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204AbaKZPDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 10:02:23 -0500
-Message-ID: <5475EB77.3050004@gmail.com>
-Date: Thu, 27 Nov 2014 00:02:15 +0900
-From: Akira Hayakawa <ruby.wktk@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 26 Nov 2014 10:03:24 -0500
+References: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org> <1416931805-23223-4-git-send-email-alex.bennee@linaro.org> <20141126143855.GC3245@hawk.usersys.redhat.com>
+From: Alex =?utf-8?Q?Benn=C3=A9e?= <alex.bennee@linaro.org>
+To: Andrew Jones <drjones@redhat.com>
+Cc: kvm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kvmarm@lists.cs.columbia.edu, christoffer.dall@linaro.org,
+        marc.zyngier@arm.com, peter.maydell@linaro.org, agraf@suse.de,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Corbet <corbet@lwn.net>, Gleb Natapov <gleb@kernel.org>,
+        jan.kiszka@siemens.com,
+        "open list\:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>, dahi@linux.vnet.ibm.com,
+        r65777@freescale.com, pbonzini@redhat.com, bp@suse.de
+Subject: Re: [PATCH 3/7] KVM: arm: guest debug, add stub KVM_SET_GUEST_DEBUG ioctl
+In-reply-to: <20141126143855.GC3245@hawk.usersys.redhat.com>
+Date: Wed, 26 Nov 2014 15:03:14 +0000
+Message-ID: <87r3wqknrh.fsf@linaro.org>
 MIME-Version: 1.0
-To: dm-devel@redhat.com
-CC: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, corbet@lwn.net,
-        masami.hiramatsu@gmail.com
-Subject: dm-writeboost: About inclusion into mainline
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 127.0.0.1
+X-SA-Exim-Mail-From: alex.bennee@linaro.org
+X-SA-Exim-Scanned: No (on socrates.bennee.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-I am wondering what's the next step of dm-writeboost, my log-structured SSD-caching driver.
-I want to discuss this.
+Andrew Jones <drjones@redhat.com> writes:
 
-I will start from introducing my activity on dm-writeboost.
-It was more than a year ago that I proposed my dm-writeboost for staging.
-Mike Snitzer, a maintainer of device-mapper, rejected it because dm-writeboost at that moment wasn't even suitable for staging.
-(http://www.redhat.com/archives/dm-devel/2013-September/msg00075.html)
-It is clear that the comment was really right. The code was actually terrible.
-Since then, with helps of DM guys, dm-writeboost's design and implementation has been polished.
-And it was included into Joe's linux-2.6 where he develops his drivers.
-(https://github.com/jthornber/linux-2.6/tree/thin-dev/drivers/md)
-I found some bugs and fixed them after this inclusion. I am confident the quality is good enough for staging.
+> On Tue, Nov 25, 2014 at 04:10:01PM +0000, Alex Bennée wrote:
+>> This commit adds a stub function to support the KVM_SET_GUEST_DEBUG
+>> ioctl. Currently any operation flag will return EINVAL. Actual
+>> functionality will be added with further patches.
+>
+> Technically the stub is already there, and you're extending it to
+> start looking at control flags, but still not doing anything yet.
 
-Now, I can't find the way how I go over the wall.
-It seems that third party drivers are rarely merged into the md.
-The fact is, no third party driver (meaning proposed by other than RH) was included since I am involved with device-mapper, for 2 years.
-I am really afraid dm-writeboost will never be into the md ever after.
+Sure we do:
 
-In one sense, this sounds too conservative. New features are always rejected. As a result, third party developers, including me, are losing their willingness.
-As you know, developing driver is a hard work and spend lot of time. Actually, I spent hundreds or thousands of my private hours on my driver (hoping that my driver will be included and become famous) but I am almost giving up dm-writeboost if it has no hope. I know, storage softwares should become safe-side but I also know that willingness is the only key for non-paid development.
+>>  int kvm_arch_vcpu_ioctl_set_guest_debug(struct kvm_vcpu *vcpu,
+>>  					struct kvm_guest_debug *dbg)
+>>  {
+>> -	return -EINVAL;
+>> +	/* If it's not enabled clear all flags */
+>> +	if (!(dbg->control & KVM_GUESTDBG_ENABLE)) {
+>> +		vcpu->guest_debug = 0;
+>> +		return 0;
+>> +	}
 
-- Akira
+That's some class non-functionality right there ;-)
+
+>> +	vcpu->guest_debug = dbg->control;
+>> +	kvm_info("%s: guest_debug is 0x%lx\n", __func__, vcpu->guest_debug);
+>> +
+>> +	/* Single Step */
+>> +	if (vcpu->guest_debug & KVM_GUESTDBG_SINGLESTEP) {
+>> +		kvm_info("SS requested, not yet implemented\n");
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	/* Software Break Points */
+>> +	if (vcpu->guest_debug & KVM_GUESTDBG_USE_SW_BP) {
+>> +		kvm_info("SW BP support requested, not yet implemented\n");
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	/* Hardware assisted Break and Watch points */
+>> +	if (vcpu->guest_debug & KVM_GUESTDBG_USE_HW_BP) {
+>> +		kvm_info("HW BP support requested, not yet implemented\n");
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	return 0;
+>>  }
+>
+> I guess all the kvm_info's were useful for developing this patch series,
+> but do we still need them?
+
+They also served the very useful roll of stopping checkpatch.pl bitching
+about my reluctance to remove braces from the if () { } clauses. However
+I take your point. I can certainly remove the kvm_info() statements as
+each bit of functionality is added while leaving this one to help when
+someone is bisecting and confused.
+
+-- 
+Alex Bennée
