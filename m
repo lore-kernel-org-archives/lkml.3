@@ -1,91 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847AbaKZOCJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 09:02:09 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:43769 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750AbaKZOAt (ORCPT
+	id S1752603AbaKZOAd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 09:00:33 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:51785 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991AbaKZOAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 09:00:49 -0500
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-To: Wolfram Sang <wsa@the-dreams.de>, Sekhar Nori <nsekhar@ti.com>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: <linux-i2c@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>,
-        Mike Looijmans <milo-software@users.sourceforge.net>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Santosh Shilimkar <ssantosh@kernel.org>,
-        Murali Karicheri <m-karicheri2@ti.com>
-Subject: [PATCH v2 2/5] i2c: davinci: query STP always when NACK is received
-Date: Wed, 26 Nov 2014 15:59:50 +0200
-Message-ID: <1417010393-30598-3-git-send-email-grygorii.strashko@ti.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417010393-30598-1-git-send-email-grygorii.strashko@ti.com>
-References: <1417010393-30598-1-git-send-email-grygorii.strashko@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+	Wed, 26 Nov 2014 09:00:31 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: mingo@kernel.org, akpm@linux-foundation.org, torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
+Subject: [RFC 1/2] compiler: use compiler to detect integer overflows
+Date: Wed, 26 Nov 2014 09:00:18 -0500
+Message-Id: <1417010419-3827-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 2.1.0
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to I2C specification the NACK should be handled as folows:
-"When SDA remains HIGH during this ninth clock pulse, this is defined as the Not
-Acknowledge signal. The master can then generate either a STOP condition to
-abort the transfer, or a repeated START condition to start a new transfer."
-[I2C spec Rev. 6, 3.1.6: http://www.nxp.com/documents/user_manual/UM10204.pdf]
+We've used to detect integer overflows by causing an overflow and testing the
+result. For example, to test for addition overflow we would:
 
-Currently the Davinci i2c driver interrupts the transfer on receipt of a
-NACK but fails to send a STOP in some situations and so makes the bus
-stuck until next I2C IP reset (idle/enable).
+	if (a + b < a)
+		/* Overflow detected */
 
-For example, the issue will happen during SMBus read transfer which
-consists from two i2c messages write command/address and read data:
+While it works, this is actually an undefined behaviour and we're not
+guaranteed to have integers overflowing this way. GCC5 has introduced
+built in macros (which existed in Clang/LLVM for a while) to test for
+addition, subtraction and multiplication overflows.
 
-S Slave Address Wr A Command Code A Sr Slave Address Rd A D1..Dn A P
-<--- write -----------------------> <--- read --------------------->
+Rather than keep relying on the current behaviour of GCC, let's take
+it's olive branch and test for overflows by using the builtin
+functions.
 
-The I2C client device will send NACK if it can't recognize "Command Code"
-and it's expected from I2C master to query STP in this case.
-But now, Davinci i2C driver will just exit with -EREMOTEIO and STP will
-not be queried.
+Changing existing code is simple and can be done using Coccinelle:
 
-Hence, fix it by querying Stop condition (STP) always when NACK is received.
+@@ expression X; expression Y; expression Z; constant C; @@
+(
+- X + Y < Y
++ check_add_overflow(X, Y)
+|
+- X - Y > X
++ check_sub_overflow(X, Y)
+|
+- X != 0 && Y > C / X
++ check_mul_overflow(X, Y, C)
+)
 
-This patch fixes Davinci I2C in the same way it was done for OMAP I2C
-commit cda2109a26eb ("i2c: omap: query STP always when NACK is received").
+Which also makes the code much more clearer, for example:
 
-CC: Sekhar Nori <nsekhar@ti.com>
-CC: Kevin Hilman <khilman@deeprootsystems.com>
-CC: Santosh Shilimkar <ssantosh@kernel.org>
-CC: Murali Karicheri <m-karicheri2@ti.com>
-Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+-       if (addr + len < addr)
++       if (check_add_overflow(addr, len))
+                return -EFAULT;
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- drivers/i2c/busses/i2c-davinci.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
-index 7f54903..1990ae8 100644
---- a/drivers/i2c/busses/i2c-davinci.c
-+++ b/drivers/i2c/busses/i2c-davinci.c
-@@ -411,11 +411,9 @@ i2c_davinci_xfer_msg(struct i2c_adapter *adap, struct i2c_msg *msg, int stop)
- 	if (dev->cmd_err & DAVINCI_I2C_STR_NACK) {
- 		if (msg->flags & I2C_M_IGNORE_NAK)
- 			return msg->len;
--		if (stop) {
--			w = davinci_i2c_read_reg(dev, DAVINCI_I2C_MDR_REG);
--			w |= DAVINCI_I2C_MDR_STP;
--			davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, w);
--		}
-+		w = davinci_i2c_read_reg(dev, DAVINCI_I2C_MDR_REG);
-+		w |= DAVINCI_I2C_MDR_STP;
-+		davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, w);
- 		return -EREMOTEIO;
- 	}
- 	return -EIO;
+The patch following this one is an example of how changes to existing
+code will look like. It's just one patch out of about 40 which are very
+simiar - so to avoid lots of useless mails I'll avoid sending them until
+this patch looks ok.
+
+ include/linux/compiler-gcc5.h |    8 ++++++++
+ include/linux/compiler.h      |   11 +++++++++++
+ 2 files changed, 19 insertions(+)
+
+diff --git a/include/linux/compiler-gcc5.h b/include/linux/compiler-gcc5.h
+index c8c5659..9d39f66 100644
+--- a/include/linux/compiler-gcc5.h
++++ b/include/linux/compiler-gcc5.h
+@@ -63,3 +63,11 @@
+ #define __HAVE_BUILTIN_BSWAP64__
+ #define __HAVE_BUILTIN_BSWAP16__
+ #endif /* CONFIG_ARCH_USE_BUILTIN_BSWAP */
++
++__maybe_unused static unsigned int gcc_overflow_dummy;
++#define check_add_overflow(A, B) \
++		__builtin_add_overflow((A), (B), &gcc_overflow_dummy)
++#define check_sub_overflow(A, B) \
++		__builtin_sub_overflow((A), (B), &gcc_overflow_dummy)
++#define check_mul_overflow(A, B, C) \
++		__builtin_mul_overflow((A), (B), &gcc_overflow_dummy)
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index 934a834..7f15a18 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -388,4 +388,15 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+ # define __kprobes
+ # define nokprobe_inline	inline
+ #endif
++
++#ifndef check_add_overflow
++#define check_add_overflow(A, B) (((A) + (B)) < (A))
++#endif
++#ifndef check_sub_overflow
++#define check_sub_overflow(A, B) (((A) - (B)) > (A))
++#endif
++#ifndef check_mul_overflow
++#define check_mul_overflow(A, B, C) ((A) != 0 && (B) > (C) / (A))
++#endif
++
+ #endif /* __LINUX_COMPILER_H */
 -- 
-1.9.1
+1.7.10.4
 
