@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316AbaKZGTY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 01:19:24 -0500
-Received: from ozlabs.org ([103.22.144.67]:56992 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752108AbaKZGTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 01:19:23 -0500
-Date: Wed, 26 Nov 2014 17:19:14 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Christoffer Dall <cdall@cs.columbia.edu>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Subject: linux-next: manual merge of the kvm-arm tree with the kvm tree
-Message-ID: <20141126171914.19ad9151@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1752361AbaKZGVt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 01:21:49 -0500
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:39061 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245AbaKZGVr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 01:21:47 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/yZipVHhD6SLAjK3Y6qYdkAK"; protocol="application/pgp-signature"
+In-Reply-To: <CA+55aFzVyTi_pR4y3=Z3y1bWkXbvgoJaykoyn0pUE7eTYgr+ZQ@mail.gmail.com>
+References: <20141114213124.GB3344@redhat.com>
+	<CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
+	<20141115213405.GA31971@redhat.com>
+	<20141116014006.GA5016@redhat.com>
+	<CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
+	<20141126002501.GA11752@redhat.com>
+	<CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>
+	<5475596A.9010301@suse.com>
+	<CA+55aFx1SiFBzmA=k9jHxi3cZE3Ei_+2NHepujgf86KEvkz8eQ@mail.gmail.com>
+	<54756424.6020409@suse.com>
+	<CA+55aFzVyTi_pR4y3=Z3y1bWkXbvgoJaykoyn0pUE7eTYgr+ZQ@mail.gmail.com>
+Date: Tue, 25 Nov 2014 22:21:46 -0800
+X-Google-Sender-Auth: XLVaW0gwofj4abnO_6Ouiyu6G0Y
+Message-ID: <CA+55aFzOSfdvgrkfiN=zZg4mSoot-tJQiVRh5ENW2-rzmLMy1w@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Juergen Gross <jgross@suse.com>
+Cc: "the arch/x86 maintainers" <x86@kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/yZipVHhD6SLAjK3Y6qYdkAK
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Nov 25, 2014 at 9:52 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> And leave it running for a while, and see if the trace is always the
+> same, or if there are variations on it...
 
-Hi all,
+Amusing.
 
-Today's linux-next merge of the kvm-arm tree got a conflict in
-arch/ia64/kvm/kvm-ia64.c between commit 003f7de62589 ("KVM: ia64:
-remove") from the kvm tree and commit bf4bea8e9a90 ("kvm: fix
-kvm_is_mmio_pfn() and rename to kvm_is_reserved_pfn()") from the
-kvm-arm tree.
+Lookie here:
 
-I fixed it up (the former removed the file, so I did that) and can
-carry the fix as necessary (no action is required).
+   http://lists.xenproject.org/archives/html/xen-changelog/2005-08/msg00310.html
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+That's from 2005.
 
---Sig_/yZipVHhD6SLAjK3Y6qYdkAK
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+Anyway, I don't see why the cr3 issue matters, *unless* there is some
+situation where the scheduler can run with interrupts enabled. And why
+this is Xen-related, I have no idea.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+The Xen patches seem to have lost that
 
-iQIcBAEBCAAGBQJUdXDnAAoJEMDTa8Ir7ZwV4mkP/3qHjvJfrAoFyXay+QYyiAi2
-h0A9t/BJeEsJZKs/BsmMybbXk/5AtgeFddjb04juMqYnptq73HSZvyg7M40gxct3
-kr/wpDCEryMsI9MHw8JUqo3uWX56958LO2fs5GVeK8Yb16DPzUU+ZbxTNU0idycc
-+LcvrkAAyGOUsRWkl7wtWkou/Ct8X6EMeR4t8cZ50Z7klxZBPHcXMoXImnNE11s9
-YIwQIYHVqgeJ9hxFZLDWNXclsN96EJq/0+NPJVrKF6qGzTHB24UlAjg7CyMSDVGG
-mnVYB4bwj3GUJfzs3NjQpyFK0S1ReM0XW3t0A7Z9jdIHLRMuvz/r9hdDoB6QLBcu
-tA46iZGCu/VX4joWjfmA9XOuExbbEthhlcOyHplD2+l1fmvAn03PACWv0BsYWy/Y
-eQHzjRz3L5UqES+1k0Pn3afNyzLLBQgM2YxHjsVVWSYSL3lOdyCKv1+ByyWtmASd
-B/dYIm6o3+NG0s/zfccj5LkY/F8Nhal2tM819Ql4AcleWpW/x232wkcx9es7EsBw
-q7IP04+OScQ4zvhWlq0VwkSbSBhEj8+chsf5u3adYfYTmBBkDXfjhIv1vZtGZ0zT
-OvPZHY5LaCRRNBdWvFu8NH9ISUwPxP1bOp6MdV6Ammw8LdVctFM/Yn6DMYHvkIeH
-/2GXhhU1pnBR/vtg+ODo
-=/c+B
------END PGP SIGNATURE-----
+ /* On Xen the line below does not always work. Needs investigating! */
 
---Sig_/yZipVHhD6SLAjK3Y6qYdkAK--
+line when backporting the 2.6.29 patches to Xen. And clearly nobody
+investigated.
+
+So please do get me back-traces, and we'll investigate. Better late
+than never. But it does sound Xen-specific - although it's possible
+that Xen just triggers some timing (and has apparently been able to
+trigger it since 2005) that DaveJ now triggers on his one machine.
+
+So DaveJ, even though this does appear Xen-centric (Xentric?) and
+you're running on bare hardware, maybe you could do the same thing in
+that x86-64 vmalloc_fault(). The timing with Jürgen is kind of
+intriguing - if 3.18-rc made it happen much more often for him, maybe
+it really is very timing-sensitive, and you actually are seeing a
+non-Xen version of the same thing...
+
+                           Linus
