@@ -1,80 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346AbaKZHMf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 02:12:35 -0500
-Received: from ozlabs.org ([103.22.144.67]:37928 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751764AbaKZHMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 02:12:34 -0500
-Date: Wed, 26 Nov 2014 18:12:26 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jingchang Lu <jingchang.lu@freescale.com>
-Subject: linux-next: manual merge of the tty tree with the tty.current tree
-Message-ID: <20141126181226.55eb1afe@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1752245AbaKZHUP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 02:20:15 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:38738 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141AbaKZHUN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 02:20:13 -0500
+Message-ID: <54757F25.80005@hitachi.com>
+Date: Wed, 26 Nov 2014 16:20:05 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/7LlzsWQ3/cddZm=WyIiaHgA"; protocol="application/pgp-signature"
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Petr Mladek <pmladek@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        Namhyung Kim <namhyung@kernel.org>, Miroslav Benes <mbenes@suse.cz>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: Re: [PATCH ftrace/core v6 5/5] kselftest, ftrace: Add ftrace
+ IPMODIFY flag test
+References: <20141121102502.11844.82696.stgit@localhost.localdomain> <20141121102537.11844.9781.stgit@localhost.localdomain> <20141121160329.575fd043@gandalf.local.home> <54729CDE.5030700@hitachi.com> <20141123232932.1ed70d18@gandalf.local.home> <54733C80.6060509@hitachi.com> <54735A4F.8090602@osg.samsung.com> <5473D9F6.8070701@hitachi.com> <5474955A.5070605@osg.samsung.com> <547495D7.40308@osg.samsung.com>
+In-Reply-To: <547495D7.40308@osg.samsung.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/7LlzsWQ3/cddZm=WyIiaHgA
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+(2014/11/25 23:44), Shuah Khan wrote:
+> On 11/25/2014 07:42 AM, Shuah Khan wrote:
+>> On 11/24/2014 06:23 PM, Masami Hiramatsu wrote:
+>>> (2014/11/25 1:18), Shuah Khan wrote:
+>>>> On 11/24/2014 07:11 AM, Masami Hiramatsu wrote:
+>>>>> (CC'ed Shuah, since this is related to kselftest)
+>>>>>
+>>>>>
+>>>>> So, if your server directory is mounted with noexec, it's an environmental
+>>>>> problem. I guess you can not build any kernel drivers on that testbox, can you?
+>>>>>
+>>>>> Anyway, this gives us a good question, "should test binaries be made by
+>>>>> server or client(testbox) environment?" This ipmodify driver is a binary
+>>>>> and it should be built with the kernel binary (by server) I think.
+>>>>> But yes, I missed the Makefile didn't allow that (this always referred
+>>>>> installed running kernel builddir).
+>>>>>
+>>>>> I hope to have CONFIG_KSELFTEST_BINARIES for Kconfig, or make prep_kselftest
+>>>>> target to build these binaries with kernel...
+>>>>>
+>>>>> Shuah, what would you think about this?
+>>>>
+>>>> I am working on patch series to add an install target to the
+>>>> main kernel makefile, so these tests can be built and installed
+>>>> on a target just like we do with kernel and modules. I hope to
+>>>> get this in 3.19 or definitely into 3.20
+>>>>
+>>>> This probably will help address the problem you are seeing.
+>>>> Install target is needed for qemu type environments as well.
+>>>
+>>> Yes, that is what we need for this test case!
+>>> Please CC to me when sending the series. I'd like to try and
+>>> know how it works :)
+>>>
+>>
+>> Good. Please take a look at this thread and give it a try. Please
+>> give me feedback as well. This is the first step to get the install
+>> feature added and then we can refine it at the selftests level as
+>> needed.
+>>
+>> https://lkml.org/lkml/2014/11/11/851
 
-Hi Greg,
+OK, I'll try that.
+BTW, are those patches included in the below kernel.org tree ?
 
-Today's linux-next merge of the tty tree got a conflict in
-drivers/tty/serial/of_serial.c between commit a5e9ab291c60 ("Revert
-"serial: of-serial: add PM suspend/resume support"") from the
-tty.current tree and commit 513e43858102 ("serial: of-serial: fix up PM
-ops on no_console_suspend and port type") from the tty tree.
+https://git.kernel.org/cgit/linux/kernel/git/shuah/linux-kselftest.git/
 
-I fixed it up (I assumed the tty tree version is correct and used that)
-and can carry the fix as necessary (no action is required).
+> Forgot to mention I didn't include ftrace in this first series for
+> install, planning to add it in my next round of patches. I have the
+> code ready for to do that.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+No problem, I'll wait for your series :)
 
-diff --cc drivers/tty/serial/of_serial.c
-index f2fde9c21e9b,fd00e2521584..000000000000
---- a/drivers/tty/serial/of_serial.c
-+++ b/drivers/tty/serial/of_serial.c
-@@@ -269,7 -342,9 +342,8 @@@ static struct of_device_id of_platform_
-  static struct platform_driver of_platform_serial_driver =3D {
-  	.driver =3D {
-  		.name =3D "of_serial",
- -		.owner =3D THIS_MODULE,
-  		.of_match_table =3D of_platform_serial_table,
-+ 		.pm =3D &of_serial_pm_ops,
-  	},
-  	.probe =3D of_platform_serial_probe,
-  	.remove =3D of_platform_serial_remove,
+Thank you,
 
---Sig_/7LlzsWQ3/cddZm=WyIiaHgA
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-iQIcBAEBCAAGBQJUdX1fAAoJEMDTa8Ir7ZwVsSQP/i7FNcw6aoFFWvCLa2uD2Vyf
-+/8VqQ3pezZUK7tJswRjJ7JzomZUn79QEWSYFydlIxkEytZSQ7lgYLSUkCwc/WRg
-mwxek6D3+niw0qe4Ria+lO7F14YvvdFFKzSGSmszKPgk0zT2rx+UL/pdN5UF422W
-sZNGy13ouUdaFYPokK2CIrjpMHTSj+IpLCEXu/I1rORIg8vpVufmBXlBbkeysJZT
-cA9F0BjctzytUDfiyzGF6nTk8ZAlB1uOnnWzedwoXiz7VeeriF+IrEw9PiJr3AHg
-57Of3w3Tf9Ki4KXldGpqMeRt2JmqtPiPiqFCUV+mh/3lZUyIr3KDoc4AOxU5wu5P
-EJ65h4HyMj5+1TzEtb1SNvO6e6avAw3/PHdBecCMXNvmwyavodnI/+4NTvNlw6sK
-lbweDSThc1av53OS59YvjnmFrBgAImPRsHss1iVYyxXqyusPZCQraLEnmPngEwtI
-1SpiC85FscB5OWrOTeTmfaQ80P/5iWeGd0dX0Unltw5ALCbVhA9OaJhtHTdZdOLs
-jfLMqg8sTbH0ZOveOrlEDhqgsYZPgcJaE3iAnUVFsM7Tots6JcF3+qPX11zRyNUq
-EOx0aUREKyp14D9/m3EFpiFjeocoePx0T0T7FeM9mSj7dOSuQ8+KKdK+d0PsbhGW
-ch7zUeobeqFn4lu4qzdh
-=9UGd
------END PGP SIGNATURE-----
 
---Sig_/7LlzsWQ3/cddZm=WyIiaHgA--
