@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658AbaKZOGB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 09:06:01 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:55644 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981AbaKZOF6 convert rfc822-to-8bit (ORCPT
+	id S1752772AbaKZOGj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 09:06:39 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:20100 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750907AbaKZOGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 09:05:58 -0500
+	Wed, 26 Nov 2014 09:06:37 -0500
+Date: Wed, 26 Nov 2014 17:06:21 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] tracing: off by one in __trace_array_vprintk()
+Message-ID: <20141126140621.GA18740@mwanda>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: bluetooth related firmware loader spew on resume.
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1416996623.3171.7.camel@linux-0dmf.site>
-Date: Wed, 26 Nov 2014 23:05:20 +0900
-Cc: Takashi Iwai <tiwai@suse.de>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, pgynther@google.com,
-        linux-bluetooth@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <0E1D95E7-64D2-4BEA-AFAA-4B119838F24E@holtmann.org>
-References: <20141111181228.GA27815@redhat.com> <s5hsih7xmgg.wl-tiwai@suse.de> <D19A9DA1-3706-4351-B2E9-25D5ABA662E7@holtmann.org> <s5h7fyijqc9.wl-tiwai@suse.de> <1416996623.3171.7.camel@linux-0dmf.site>
-To: Oliver Neukum <oneukum@suse.de>
-X-Mailer: Apple Mail (2.1993)
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oliver,
+This check says "goto out;" if we had to truncate the string.
 
->> In order to paper over this, we may also remember the failing firmware
->> and avoid loading it.  This might be an easer way than the endless
->> fight against UMH race...
-> 
-> 
-> the full fix would be to implement reset_resume() for btusb.
-> It seems to me that setup() should be split in two methods,
-> one to request the firmware from user space and the second
-> to transfer it to the device. reset_resume() would just need
-> to repeat the second operation.
+The "tbuffer" buffer has TRACE_BUF_SIZE bytes.  The vsnprintf() function
+returns the number of characters (not counting the NUL char) which would
+have been printed if there were space.  If we we tried to print
+TRACE_BUF_SIZE characters, the last character would have been truncated
+to make space for the NUL character so we should "goto out;".
 
-so when you do hci_register_dev, then hdev->setup is only called once. I really mean only once per lifetime of the hci_dev. So you would need to unregister the hci_dev first before hdev->setup will ever be called again. So I am not sure this is actually the problem here. The problem here is entirely within request_firmware() unless of course we run through the USB probe handlers again. Which I do not see happening here.
+My other concern here was that a few lines later we do:
 
-And we have hdev->setup this way since normally the Bluetooth devices keep their firmware patches and not forget about them and suspend-resume cycles. If the USB device of course jumps of the bus during it then all bets are off anyway.
+	entry->buf[len] = '\0';
 
-Regards
+I worried that maybe we were putting the NUL char past the end of the
+array but I wasn't smart enough to figure out the size of entry->buf[].
 
-Marcel
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 42a822d..22af2ae 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2161,7 +2161,7 @@ __trace_array_vprintk(struct ring_buffer *buffer,
+ 	}
+ 
+ 	len = vsnprintf(tbuffer, TRACE_BUF_SIZE, fmt, args);
+-	if (len > TRACE_BUF_SIZE)
++	if (len >= TRACE_BUF_SIZE)
+ 		goto out;
+ 
+ 	local_save_flags(flags);
