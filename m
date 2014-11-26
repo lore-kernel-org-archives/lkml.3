@@ -1,185 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaKZAvS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 19:51:18 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:13428 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751556AbaKZAvQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 19:51:16 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-e0-547524029bc1
-From: Abhilash Kesavan <a.kesavan@samsung.com>
-To: rui.zhang@intel.com, edubezval@gmail.com, linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com,
-        amit.daniel@samsung.com, kesavan.abhilash@gmail.com,
-        l.majewski@samsung.com, cw00.choi@samsung.com
-Subject: [PATCH v2] thermal: exynos: add special clock support
-Date: Wed, 26 Nov 2014 06:21:10 +0530
-Message-id: <1416963070-5806-1-git-send-email-a.kesavan@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsWyRsSkSpdJpTTE4OQJPouGqyEWG2esZ7W4
-	/uU5q8X8K9dYLdb8VbJ483Azo8XlXXPYLD73HmG0ePKwj82B02PnrLvsHov3vGTy6NuyitHj
-	8ya5AJYoLpuU1JzMstQifbsEroy1944xFlxSrzg47ydjA+N8hS5GTg4JAROJd6/3sEDYYhIX
-	7q1n62Lk4hASWMoocX/ZYyaYot6ThxghEosYJb6t+M8M4fQxSUzt/MMGUsUmoCex4N9XZhBb
-	RMBNYvGif+wgRcwgHc1bvrGDJIQF7CSunDgJNIqDg0VAVWL1OR2QMK+Ai8SD3gdsIGEJAQWJ
-	OZNsIBa3s0u8O+YLYrMICEh8m3yIBaJEVmLTAWaIEkmJgytusExgFFzAyLCKUTS1ILmgOCm9
-	yEivODG3uDQvXS85P3cTIzB0T/971reD8eYB60OMAhyMSjy8EVKlIUKsiWXFlbmHGE2BNkxk
-	lhJNzgdGSF5JvKGxmZGFqYmpsZG5pZmSOG+C1M9gIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxS
-	DYz9udPKFscs2hJeobNsikpwULNs6OJ7p3VFRc3ubdrgGiJeI+X/fpn+rBdhdU+kNPQN03f4
-	L3G0lIhsSe1c/3Bn/8pT2hPNY56/9jL+4mqpyn7pscgGm1kPk6NL9v1RdI/U0dd+6T+5w95x
-	VsLT2+ryzqrLT0b+fpTzffnkWxfZu6RTTRoyNZVYijMSDbWYi4oTAYDPnDtYAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAIsWRmVeSWpSXmKPExsVy+t9jAV0mldIQg4aLLBYNV0MsNs5Yz2px
-	/ctzVov5V66xWqz5q2Tx5uFmRovLu+awWXzuPcJo8eRhH5sDp8fOWXfZPRbvecnk0bdlFaPH
-	501yASxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6Z
-	OUCnKCmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJaxgz1t47xlhwSb3i4Lyf
-	jA2M8xW6GDk5JARMJHpPHmKEsMUkLtxbz9bFyMUhJLCIUeLbiv/MEE4fk8TUzj9sIFVsAnoS
-	C/59ZQaxRQTcJBYv+scOUsQM0tG85Rs7SEJYwE7iyomTQGM5OFgEVCVWn9MBCfMKuEg86H3A
-	BhKWEFCQmDPJZgIj9wJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwbHxTHoH46oGi0OM
-	AhyMSjy8EVKlIUKsiWXFlbmHGCU4mJVEeCUYgEK8KYmVValF+fFFpTmpxYcYTYF2T2SWEk3O
-	B8ZtXkm8obGJuamxqaWJhYmZpZI4742buSFCAumJJanZqakFqUUwfUwcnFINjFNVL7hlK73U
-	S2Odf3qXzEP52AQfs9Pv3nE1bjl9xGuq2S7dOY+lsya/0TPbftvDyPmoyqbZfoXfbizpVLzk
-	cXiFvNGZjrzLh/9evJUwY+mqfpGNVvtXCk/6WaO3PWHZb/ENrtfeJP54V+7C4CtrVPjlk7jb
-	SedP8wqfXX9rnyQ13V/lasza2+lKLMUZiYZazEXFiQCJS/MdowIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1751709AbaKZAy5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 19:54:57 -0500
+Received: from mga11.intel.com ([192.55.52.93]:9498 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751061AbaKZAy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 19:54:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,459,1413270000"; 
+   d="scan'208";a="638122941"
+Date: Wed, 26 Nov 2014 08:34:32 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Juri Lelli <juri.lelli@arm.com>, Kirill Tkhai <ktkhai@parallels.com>,
+        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: Re: [PATCH v6 1/7] sched/deadline: fix start high-res preemption
+ tick for a non-leftmost task
+Message-ID: <20141126003432.GA6852@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1416962647-76792-1-git-send-email-wanpeng.li@linux.intel.com>
+ <1416962647-76792-3-git-send-email-wanpeng.li@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416962647-76792-3-git-send-email-wanpeng.li@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exynos7 has a special clock required for the functional operation
-of the TMU that is not present in earlier SoCs. Add support for
-this clock and update the binding documentation.
-
-Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
----
-Changes since v1:
-	- Added a per-soc flag to indicate the presence of special clock
-	- Changed the name of special clock from "tmu_sclk" to "sclk"
-	- Fixed the error handling for sclk
-
-Tested on 5420 and 5800 based chromebooks, no change in existing behavior.
-
- .../devicetree/bindings/thermal/exynos-thermal.txt |    3 ++
- drivers/thermal/samsung/exynos_tmu.c               |   31 ++++++++++++++++----
- 2 files changed, 29 insertions(+), 5 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-index ae738f5..acf4705 100644
---- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-+++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-@@ -32,10 +32,13 @@
- - clocks : The main clocks for TMU device
- 	-- 1. operational clock for TMU channel
- 	-- 2. optional clock to access the shared registers of TMU channel
-+	-- 3. optional special clock for functional operation
- - clock-names : Thermal system clock name
- 	-- "tmu_apbif" operational clock for current TMU channel
- 	-- "tmu_triminfo_apbif" clock to access the shared triminfo register
- 		for current TMU channel
-+	-- "sclk" clock for functional operation of the current TMU
-+		channel
- - vtmu-supply: This entry is optional and provides the regulator node supplying
- 		voltage to TMU. If needed this entry can be placed inside
- 		board/platform specific dts file.
-diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index d44d91d..8ed8409 100644
---- a/drivers/thermal/samsung/exynos_tmu.c
-+++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -123,11 +123,14 @@
-  * @base: base address of the single instance of the TMU controller.
-  * @base_second: base address of the common registers of the TMU controller.
-  * @irq: irq number of the TMU controller.
-+ * @needs_sclk: SoC specific flag indicating that sclk is required for
-+	functional operation of the TMU controller.
-  * @soc: id of the SOC type.
-  * @irq_work: pointer to the irq work structure.
-  * @lock: lock to implement synchronization.
-  * @clk: pointer to the clock structure.
-  * @clk_sec: pointer to the clock structure for accessing the base_second.
-+ * @sclk: pointer to the clock structure for accessing the tmu special clock.
-  * @temp_error1: fused value of the first point trim.
-  * @temp_error2: fused value of the second point trim.
-  * @regulator: pointer to the TMU regulator structure.
-@@ -144,10 +147,11 @@ struct exynos_tmu_data {
- 	void __iomem *base;
- 	void __iomem *base_second;
- 	int irq;
-+	bool needs_sclk;
- 	enum soc_type soc;
- 	struct work_struct irq_work;
- 	struct mutex lock;
--	struct clk *clk, *clk_sec;
-+	struct clk *clk, *clk_sec, *sclk;
- 	u8 temp_error1, temp_error2;
- 	struct regulator *regulator;
- 	struct thermal_sensor_conf *reg_conf;
-@@ -883,10 +887,24 @@ static int exynos_tmu_probe(struct platform_device *pdev)
- 		goto err_clk_sec;
- 	}
- 
-+	if (data->needs_sclk) {
-+		data->sclk = devm_clk_get(&pdev->dev, "sclk");
-+		if (IS_ERR(data->sclk)) {
-+			dev_err(&pdev->dev, "Failed to get sclk\n");
-+			goto err_clk;
-+		} else {
-+			ret = clk_prepare_enable(data->sclk);
-+			if (ret) {
-+				dev_err(&pdev->dev, "Failed to enable sclk\n");
-+				goto err_clk;
-+			}
-+		}
-+	}
-+
- 	ret = exynos_tmu_initialize(pdev);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to initialize TMU\n");
--		goto err_clk;
-+		goto err_sclk;
- 	}
- 
- 	exynos_tmu_control(pdev, true);
-@@ -896,7 +914,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
- 				sizeof(struct thermal_sensor_conf), GFP_KERNEL);
- 	if (!sensor_conf) {
- 		ret = -ENOMEM;
--		goto err_clk;
-+		goto err_sclk;
- 	}
- 	sprintf(sensor_conf->name, "therm_zone%d", data->id);
- 	sensor_conf->read_temperature = (int (*)(void *))exynos_tmu_read;
-@@ -928,7 +946,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
- 	ret = exynos_register_thermal(sensor_conf);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to register thermal interface\n");
--		goto err_clk;
-+		goto err_sclk;
- 	}
- 	data->reg_conf = sensor_conf;
- 
-@@ -936,10 +954,12 @@ static int exynos_tmu_probe(struct platform_device *pdev)
- 		IRQF_TRIGGER_RISING | IRQF_SHARED, dev_name(&pdev->dev), data);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to request irq: %d\n", data->irq);
--		goto err_clk;
-+		goto err_sclk;
- 	}
- 
- 	return 0;
-+err_sclk:
-+	clk_disable_unprepare(data->sclk);
- err_clk:
- 	clk_unprepare(data->clk);
- err_clk_sec:
-@@ -956,6 +976,7 @@ static int exynos_tmu_remove(struct platform_device *pdev)
- 
- 	exynos_tmu_control(pdev, false);
- 
-+	clk_disable_unprepare(data->sclk);
- 	clk_unprepare(data->clk);
- 	if (!IS_ERR(data->clk_sec))
- 		clk_unprepare(data->clk_sec);
--- 
-1.7.9.5
-
+Replace the subject by "Subject: [PATCH v6 2/7] sched/deadline: fix rt runtime corrupt when dl refuse a smaller bandwidth"
+On Wed, Nov 26, 2014 at 08:44:02AM +0800, Wanpeng Li wrote:
+>Dl class will refuse the bandwidth being set to some value smaller
+>than the currently allocated bandwidth in any of the root_domains
+>through sched_rt_runtime_us and sched_rt_period_us. RT runtime will
+>be set according to sched_rt_runtime_us before dl class verify if
+>the new bandwidth is suitable in the case of !CONFIG_RT_GROUP_SCHED.
+>
+>However, rt runtime will be corrupt if dl refuse the new bandwidth
+>since there is no undo to reset the rt runtime to the old value.
+>
+>This patch fix it by verifying new bandwidth for deadline in advance.
+>
+>Cc: Juri Lelli <juri.lelli@arm.com>
+>Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>---
+>v1 -> v2:
+> * move sched_dl_global_constraints before sched_rt_global_constraints,
+>   and change the name of the former to sched_dl_global_validate().
+>
+> kernel/sched/core.c | 6 +++---
+> 1 file changed, 3 insertions(+), 3 deletions(-)
+>
+>diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>index 603c462..981f075 100644
+>--- a/kernel/sched/core.c
+>+++ b/kernel/sched/core.c
+>@@ -7808,7 +7808,7 @@ static int sched_rt_global_constraints(void)
+> }
+> #endif /* CONFIG_RT_GROUP_SCHED */
+> 
+>-static int sched_dl_global_constraints(void)
+>+static int sched_dl_global_validate(void)
+> {
+> 	u64 runtime = global_rt_runtime();
+> 	u64 period = global_rt_period();
+>@@ -7909,11 +7909,11 @@ int sched_rt_handler(struct ctl_table *table, int write,
+> 		if (ret)
+> 			goto undo;
+> 
+>-		ret = sched_rt_global_constraints();
+>+		ret = sched_dl_global_validate();
+> 		if (ret)
+> 			goto undo;
+> 
+>-		ret = sched_dl_global_constraints();
+>+		ret = sched_rt_global_constraints();
+> 		if (ret)
+> 			goto undo;
+> 
+>-- 
+>1.9.1
