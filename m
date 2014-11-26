@@ -1,127 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570AbaKZMlJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 07:41:09 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:47207 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973AbaKZMlG (ORCPT
+	id S1751144AbaKZMle (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 07:41:34 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:39698 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770AbaKZMld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 07:41:06 -0500
-Date: Wed, 26 Nov 2014 12:33:13 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
-Cc: <grant.likely@linaro.org>, <robh+dt@kernel.org>, <catalin.marinas@arm.com>,
-        <gregkh@linuxfoundation.org>, <ijc+devicetree@hellion.org.uk>,
-        <jslaby@suse.cz>, <galak@codeaurora.org>, <broonie@linaro.org>,
-        <mark.rutland@arm.com>, <m-karicheri2@ti.com>, <pawel.moll@arm.com>,
-        <artagnon@gmail.com>, <rrichter@cavium.com>, <will.deacon@arm.com>,
-        <arnd@arndb.de>, <corbet@lwn.net>, <jason@lakedaemon.net>,
-        <broonie@kernel.org>, <heiko@sntech.de>, <shawn.guo@freescale.com>,
-        <florian.vaussard@epfl.ch>, <andrew@lunn.ch>, <hytszk@gmail.com>,
-        <orsonzhai@gmail.com>, <geng.ren@spreadtrum.com>,
-        <zhizhou.zhang@spreadtrum.com>, <lanqing.liu@spreadtrum.com>,
-        <zhang.lyra@gmail.com>, <wei.qiao@spreadtrum.com>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <sprdlinux@freelists.org>,
-        <linux-doc@vger.kernel.org>, <linux-serial@vger.kernel.org>,
-        <linux-api@vger.kernel.org>
-Subject: Re: [PATCH v3 5/5] tty/serial: Add Spreadtrum sc9836-uart driver
- support
-Message-ID: <20141126123313.520ac83f@lxorguk.ukuu.org.uk>
-In-Reply-To: <1416917818-10506-6-git-send-email-chunyan.zhang@spreadtrum.com>
-References: <Sharkl64-v3>
-	<1416917818-10506-1-git-send-email-chunyan.zhang@spreadtrum.com>
-	<1416917818-10506-6-git-send-email-chunyan.zhang@spreadtrum.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	Wed, 26 Nov 2014 07:41:33 -0500
+Date: Wed, 26 Nov 2014 12:41:28 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: "keescook@chromium.org" <keescook@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v9 1/6] arm64: ptrace: add NT_ARM_SYSTEM_CALL regset
+Message-ID: <20141126124128.GH14866@arm.com>
+References: <1416977391-24231-1-git-send-email-takahiro.akashi@linaro.org>
+ <1416977391-24231-2-git-send-email-takahiro.akashi@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416977391-24231-2-git-send-email-takahiro.akashi@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +		 213 = /dev/ttySPX0		SPRD serial port 0
-> +		    ...
-> +		 216 = /dev/ttySPX3		SPRD serial port 3
+Hi Akashi,
 
-Please use dynamic allocation or give a very very good reason why you
-can't
-
-> +config SERIAL_SPRD_NR
-> +        int "Maximum number of sprd serial ports"
-> +        depends on SERIAL_SPRD
-> +        default "4"
-
-If you are doing dynamic allocation this should pretty much go away
-
-
-> +static int sprd_startup(struct uart_port *port)
+On Wed, Nov 26, 2014 at 04:49:46AM +0000, AKASHI Takahiro wrote:
+> This regeset is intended to be used to get and set a system call number
+> while tracing.
+> There was some discussion about possible approaches to do so:
+> 
+> (1) modify x8 register with ptrace(PTRACE_SETREGSET) indirectly,
+>     and update regs->syscallno later on in syscall_trace_enter(), or
+> (2) define a dedicated regset for this purpose as on s390, or
+> (3) support ptrace(PTRACE_SET_SYSCALL) as on arch/arm
+> 
+> Thinking of the fact that user_pt_regs doesn't expose 'syscallno' to
+> tracer as well as that secure_computing() expects a changed syscall number,
+> especially case of -1, to be visible before this function returns in
+> syscall_trace_enter(), (1) doesn't work well.
+> We will take (2) since it looks much cleaner.
+> 
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> ---
+>  arch/arm64/kernel/ptrace.c |   35 +++++++++++++++++++++++++++++++++++
+>  include/uapi/linux/elf.h   |    1 +
+>  2 files changed, 36 insertions(+)
+> 
+> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+> index 8a4ae8e..8b98781 100644
+> --- a/arch/arm64/kernel/ptrace.c
+> +++ b/arch/arm64/kernel/ptrace.c
+> @@ -551,6 +551,32 @@ static int tls_set(struct task_struct *target, const struct user_regset *regset,
+>  	return ret;
+>  }
+>  
+> +static int system_call_get(struct task_struct *target,
+> +			   const struct user_regset *regset,
+> +			   unsigned int pos, unsigned int count,
+> +			   void *kbuf, void __user *ubuf)
 > +{
-> +	int ret = 0;
-> +	unsigned int ien, ctrl1;
-> +	struct sprd_uart_port *sp;
+> +	struct pt_regs *regs = task_pt_regs(target);
 > +
-> +	serial_out(port, SPRD_CTL2, ((THLD_TX_EMPTY << 8) | THLD_RX_FULL));
-> +
-> +	/* clear rx fifo */
-> +	while (serial_in(port, SPRD_STS1) & 0x00ff)
-> +		serial_in(port, SPRD_RXD);
-> +
-> +	/* clear tx fifo */
-> +	while (serial_in(port, SPRD_STS1) & 0xff00)
-> +		;
+> +	return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+> +				   &regs->syscallno, 0, -1);
 
-Missing a cpu_relax and I would have thought a timeout on both of these.
+Does this work for big-endian machines? regs->syscallno is a u64, but the
+regset defines it as an int. I think you need to copy to a temporary
+register first.
 
-
-> +static void sprd_set_termios(struct uart_port *port,
-> +				    struct ktermios *termios,
-> +				    struct ktermios *old)
-> +{
-> +	unsigned int baud, quot;
-
-> +	/* calculate parity */
-> +	lcr &= ~SPRD_LCR_PARITY;
-> +	if (termios->c_cflag & PARENB) {
-> +		lcr |= SPRD_LCR_PARITY_EN;
-> +		if (termios->c_cflag & PARODD)
-> +			lcr |= SPRD_LCR_ODD_PAR;
-> +		else
-> +			lcr |= SPRD_LCR_EVEN_PAR;
-> +	}
-
-If you don't support mark/space parity then also clear CMSPAR in
-termios->c_cflag. If you do then it ought to be handled above.
-
-> +
-> +	/* clock divider bit16~bit20 */
-> +	serial_out(port, SPRD_CLKD1, (quot & 0x1f0000) >> 16);
-> +	serial_out(port, SPRD_LCR, lcr);
-> +	fc |= 0x3e00 | THLD_RX_FULL;
-> +	serial_out(port, SPRD_CTL1, fc);
-
-Also set the resulting baud back into the termios (see the 8250 termios
-for an example)
-
-
-> +static int __init sprd_console_setup(struct console *co, char *options)
-> +{
-> +	struct uart_port *port;
-> +	int baud = 115200;
-> +	int bits = 8;
-> +	int parity = 'n';
-> +	int flow = 'n';
-> +
-> +	if (unlikely(co->index >= UART_NR_MAX || co->index < 0))
-> +		co->index = 0;
-> +
-> +	port = (struct uart_port *)sprd_port[co->index];
-> +	if (port == NULL) {
-> +		pr_info("srial port %d not yet initialized\n", co->index);
-
-Typo
-
-Looks basically sound to me
-
-Alan
+Will
