@@ -1,10 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824AbaKZOAz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 09:00:55 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:41064 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752668AbaKZOAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752809AbaKZOAx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 09:00:53 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:43768 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008AbaKZOAt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 26 Nov 2014 09:00:49 -0500
 From: Grygorii Strashko <grygorii.strashko@ti.com>
 To: Wolfram Sang <wsa@the-dreams.de>, Sekhar Nori <nsekhar@ti.com>,
@@ -17,9 +18,9 @@ CC: <linux-i2c@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         Kevin Hilman <khilman@deeprootsystems.com>,
         Santosh Shilimkar <ssantosh@kernel.org>,
         Murali Karicheri <m-karicheri2@ti.com>
-Subject: [PATCH v2 1/5] i2c: i2c-davinci: switch to use platform_get_irq
-Date: Wed, 26 Nov 2014 15:59:49 +0200
-Message-ID: <1417010393-30598-2-git-send-email-grygorii.strashko@ti.com>
+Subject: [PATCH v2 3/5] i2c: recovery: change input parameter to i2c_adapter for prepare/unprepare_recovery
+Date: Wed, 26 Nov 2014 15:59:51 +0200
+Message-ID: <1417010393-30598-4-git-send-email-grygorii.strashko@ti.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417010393-30598-1-git-send-email-grygorii.strashko@ti.com>
 References: <1417010393-30598-1-git-send-email-grygorii.strashko@ti.com>
@@ -30,58 +31,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch Davinci I2C driver to use platform_get_irq(), because
-it is not recommened to use platform_get_resource(pdev, IORESOURCE_IRQ, ..)
-for requesting IRQ resources any more, as they can be not ready yet
-in case of DT-boot.
+This patch changes type of input parameter for .prepare/unprepare_recovery()
+callbacks from struct i2c_bus_recovery_info * to struct i2c_adapter *.
+This allows to simplify implementation of these callbacks and avoid
+type conversations from i2c_bus_recovery_info to i2c_adapter.
+The i2c_bus_recovery_info can be simply retrieved from struct i2c_adapter
+which contains pointer on it.
 
 CC: Sekhar Nori <nsekhar@ti.com>
 CC: Kevin Hilman <khilman@deeprootsystems.com>
 CC: Santosh Shilimkar <ssantosh@kernel.org>
 CC: Murali Karicheri <m-karicheri2@ti.com>
+Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 ---
- drivers/i2c/busses/i2c-davinci.c | 20 ++++++++++++--------
- 1 file changed, 12 insertions(+), 8 deletions(-)
+ drivers/i2c/i2c-core.c | 4 ++--
+ include/linux/i2c.h    | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
-index 4d96147..7f54903 100644
---- a/drivers/i2c/busses/i2c-davinci.c
-+++ b/drivers/i2c/busses/i2c-davinci.c
-@@ -640,13 +640,17 @@ static int davinci_i2c_probe(struct platform_device *pdev)
- {
- 	struct davinci_i2c_dev *dev;
- 	struct i2c_adapter *adap;
--	struct resource *mem, *irq;
--	int r;
--
--	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
--	if (!irq) {
--		dev_err(&pdev->dev, "no irq resource?\n");
--		return -ENODEV;
-+	struct resource *mem;
-+	int r, irq;
-+
-+	irq = platform_get_irq(pdev, 0);
-+	if (irq <= 0) {
-+		if (irq == -EPROBE_DEFER)
-+			return irq;
-+		if (!irq)
-+			irq = -ENXIO;
-+		dev_err(&pdev->dev, "can't get irq resource ret=%d\n", irq);
-+		return irq;
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index 2f90ac6..72b6e34 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -563,7 +563,7 @@ static int i2c_generic_recovery(struct i2c_adapter *adap)
+ 	int i = 0, val = 1, ret = 0;
+ 
+ 	if (bri->prepare_recovery)
+-		bri->prepare_recovery(bri);
++		bri->prepare_recovery(adap);
+ 
+ 	/*
+ 	 * By this time SCL is high, as we need to give 9 falling-rising edges
+@@ -588,7 +588,7 @@ static int i2c_generic_recovery(struct i2c_adapter *adap)
  	}
  
- 	dev = devm_kzalloc(&pdev->dev, sizeof(struct davinci_i2c_dev),
-@@ -661,7 +665,7 @@ static int davinci_i2c_probe(struct platform_device *pdev)
- 	init_completion(&dev->xfr_complete);
- #endif
- 	dev->dev = &pdev->dev;
--	dev->irq = irq->start;
-+	dev->irq = irq;
- 	dev->pdata = dev_get_platdata(&pdev->dev);
- 	platform_set_drvdata(pdev, dev);
+ 	if (bri->unprepare_recovery)
+-		bri->unprepare_recovery(bri);
++		bri->unprepare_recovery(adap);
  
+ 	return ret;
+ }
+diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+index b556e0a..cf9380f 100644
+--- a/include/linux/i2c.h
++++ b/include/linux/i2c.h
+@@ -404,8 +404,8 @@ struct i2c_bus_recovery_info {
+ 	void (*set_scl)(struct i2c_adapter *, int val);
+ 	int (*get_sda)(struct i2c_adapter *);
+ 
+-	void (*prepare_recovery)(struct i2c_bus_recovery_info *bri);
+-	void (*unprepare_recovery)(struct i2c_bus_recovery_info *bri);
++	void (*prepare_recovery)(struct i2c_adapter *);
++	void (*unprepare_recovery)(struct i2c_adapter *);
+ 
+ 	/* gpio recovery */
+ 	int scl_gpio;
 -- 
 1.9.1
 
