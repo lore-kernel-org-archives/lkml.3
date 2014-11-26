@@ -1,863 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706AbaKZOSX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 09:18:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49671 "EHLO mx1.redhat.com"
+	id S1752991AbaKZOTL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 09:19:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42263 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751485AbaKZOST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 09:18:19 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 5/5] MODSIGN: Use PKCS#7 messages as module signatures [ver
- #2]
-From: David Howells <dhowells@redhat.com>
-To: rusty@rustcorp.com.au
-Cc: mmarek@suse.cz, keyrings@linux-nfs.org, d.kasatkin@samsung.com,
-        linux-kernel@vger.kernel.org, dhowells@redhat.com,
-        linux-security-module@vger.kernel.org, zohar@linux.vnet.ibm.com
-Date: Wed, 26 Nov 2014 14:18:04 +0000
-Message-ID: <20141126141803.3944.24388.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20141126141709.3944.66589.stgit@warthog.procyon.org.uk>
-References: <20141126141709.3944.66589.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.17-dirty
+	id S1752968AbaKZOTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 09:19:09 -0500
+Date: Wed, 26 Nov 2014 15:19:17 +0100 (CET)
+From: Miroslav Benes <mbenes@suse.cz>
+To: Seth Jennings <sjenning@redhat.com>
+cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Petr Mladek <pmladek@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 2/3] kernel: add support for live patching
+In-Reply-To: <1416935709-404-3-git-send-email-sjenning@redhat.com>
+Message-ID: <alpine.LNX.2.00.1411261451570.10866@pobox.suse.cz>
+References: <1416935709-404-1-git-send-email-sjenning@redhat.com> <1416935709-404-3-git-send-email-sjenning@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move to using PKCS#7 messages as module signatures because:
 
- (1) We have to be able to support the use of X.509 certificates that don't
-     have a subjKeyId set.  We're currently relying on this to look up the
-     X.509 certificate in the trusted keyring list.
+Hi,
 
- (2) PKCS#7 message signed information blocks have a field that supplies the
-     data required to match with the X.509 certificate that signed it.
+thank you for new version, it looks much better now. I still have some 
+comments though. See below please.
 
- (3) The PKCS#7 certificate carries fields that specify the digest algorithm
-     used to generate the signature in a standardised way and the X.509
-     certificates specify the public key algorithm in a standardised way - so
-     we don't need our own methods of specifying these.
+On Tue, 25 Nov 2014, Seth Jennings wrote:
 
- (4) We now have PKCS#7 message support in the kernel for signed kexec purposes
-     and we can make use of this.
+[...]
 
-To make this work, the old sign-file script has been replaced with a program
-that needs compiling in a previous patch.  The rules to build it are added
-here.
+> diff --git a/include/linux/livepatch.h b/include/linux/livepatch.h
+> new file mode 100644
+> index 0000000..4e01b59
+> --- /dev/null
+> +++ b/include/linux/livepatch.h
+> @@ -0,0 +1,121 @@
+> +/*
+> + * livepatch.h - Kernel Live Patching Core
+> + *
+> + * Copyright (C) 2014 Seth Jennings <sjenning@redhat.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version 2
+> + * of the License, or (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#ifndef _LINUX_LIVEPATCH_H_
+> +#define _LINUX_LIVEPATCH_H_
+> +
+> +#include <linux/module.h>
+> +#include <linux/ftrace.h>
+> +
+> +#if IS_ENABLED(CONFIG_LIVE_PATCHING)
+> +
+> +#include <asm/livepatch.h>
+> +
+> +enum klp_state {
+> +	KLP_DISABLED,
+> +	KLP_ENABLED
+> +};
+> +
+> +/**
+> + * struct klp_func - function structure for live patching
+> + * @old_name:	name of the function to be patched
+> + * @new_func:	pointer to the patched function code
+> + * @old_addr:	a hint conveying at what address the old function
+> + *		can be found (optional, vmlinux patches only)
+> + */
+> +struct klp_func {
+> +	/* external */
+> +	const char *old_name;
+> +	void *new_func;
+> +	/*
+> +	 * The old_addr field is optional and can be used to resolve
+> +	 * duplicate symbol names in the vmlinux object.  If this
+> +	 * information is not present, the symbol is located by name
+> +	 * with kallsyms. If the name is not unique and old_addr is
+> +	 * not provided, the patch application fails as there is no
+> +	 * way to resolve the ambiguity.
+> +	 */
+> +	unsigned long old_addr;
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+I wonder if we really need old_addr as an external field. I assume that 
+userspace tool in kpatch use it as a "hint" for kernel part and thus 
+kallsyms is not needed there (and it solves ambiguity problem as well). 
+But I am not sure if it is gonna be the same in upstream. When kernel is 
+randomized (CONFIG_RANDOMIZE_BASE is set to 'y', though default is 'n') 
+old_addr is not usable (and we throw it away in the code). Without 
+old_addr being set by the user we could spare some of code (calls to 
+klp_verify_vmlinux_symbol and such). 
 
- Makefile                |    2 
- init/Kconfig            |    1 
- kernel/module_signing.c |  220 +++++--------------------
- scripts/Makefile        |    2 
- scripts/sign-file       |  421 -----------------------------------------------
- scripts/sign-file.c     |   33 +++-
- 6 files changed, 73 insertions(+), 606 deletions(-)
- delete mode 100755 scripts/sign-file
+So the question is whether future userspace tool in upstream would need it 
+and would use it. Please note that I do not mean it as a kpatch or kgraft 
+way to do things, I'm just not sure about old_addr being "public" and want 
+do discuss the options.
 
-diff --git a/Makefile b/Makefile
-index b77de27e58fc..8d5624bf96db 100644
---- a/Makefile
-+++ b/Makefile
-@@ -859,7 +859,7 @@ ifdef CONFIG_MODULE_SIG_ALL
- MODSECKEY = ./signing_key.priv
- MODPUBKEY = ./signing_key.x509
- export MODPUBKEY
--mod_sign_cmd = perl $(srctree)/scripts/sign-file $(CONFIG_MODULE_SIG_HASH) $(MODSECKEY) $(MODPUBKEY)
-+mod_sign_cmd = scripts/sign-file $(CONFIG_MODULE_SIG_HASH) $(MODSECKEY) $(MODPUBKEY)
- else
- mod_sign_cmd = true
- endif
-diff --git a/init/Kconfig b/init/Kconfig
-index 80a6907f91c5..e6f418b97bdd 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1840,6 +1840,7 @@ config MODULE_SIG
- 	select ASN1
- 	select OID_REGISTRY
- 	select X509_CERTIFICATE_PARSER
-+	select PKCS7_MESSAGE_PARSER
- 	help
- 	  Check modules for valid signatures upon load: the signature
- 	  is simply appended to the module. For more information see
-diff --git a/kernel/module_signing.c b/kernel/module_signing.c
-index be5b8fac4bd0..8eb20cc66b39 100644
---- a/kernel/module_signing.c
-+++ b/kernel/module_signing.c
-@@ -11,10 +11,9 @@
- 
- #include <linux/kernel.h>
- #include <linux/err.h>
--#include <crypto/public_key.h>
--#include <crypto/hash.h>
--#include <keys/asymmetric-type.h>
- #include <keys/system_keyring.h>
-+#include <crypto/public_key.h>
-+#include <crypto/pkcs7.h>
- #include "module-internal.h"
- 
- /*
-@@ -28,157 +27,53 @@
-  *	- Information block
-  */
- struct module_signature {
--	u8	algo;		/* Public-key crypto algorithm [enum pkey_algo] */
--	u8	hash;		/* Digest algorithm [enum hash_algo] */
--	u8	id_type;	/* Key identifier type [enum pkey_id_type] */
--	u8	signer_len;	/* Length of signer's name */
--	u8	key_id_len;	/* Length of key identifier */
-+	u8	algo;		/* Public-key crypto algorithm [0] */
-+	u8	hash;		/* Digest algorithm [0] */
-+	u8	id_type;	/* Key identifier type [PKEY_ID_PKCS7] */
-+	u8	signer_len;	/* Length of signer's name [0] */
-+	u8	key_id_len;	/* Length of key identifier [0] */
- 	u8	__pad[3];
- 	__be32	sig_len;	/* Length of signature data */
- };
- 
- /*
-- * Digest the module contents.
-+ * Verify a PKCS#7-based signature on a module.
-  */
--static struct public_key_signature *mod_make_digest(enum hash_algo hash,
--						    const void *mod,
--						    unsigned long modlen)
-+static int mod_verify_pkcs7(const void *mod, unsigned long modlen,
-+			    const void *raw_pkcs7, size_t pkcs7_len)
- {
--	struct public_key_signature *pks;
--	struct crypto_shash *tfm;
--	struct shash_desc *desc;
--	size_t digest_size, desc_size;
-+	struct pkcs7_message *pkcs7;
-+	bool trusted;
- 	int ret;
- 
--	pr_devel("==>%s()\n", __func__);
--	
--	/* Allocate the hashing algorithm we're going to need and find out how
--	 * big the hash operational data will be.
--	 */
--	tfm = crypto_alloc_shash(hash_algo_name[hash], 0, 0);
--	if (IS_ERR(tfm))
--		return (PTR_ERR(tfm) == -ENOENT) ? ERR_PTR(-ENOPKG) : ERR_CAST(tfm);
--
--	desc_size = crypto_shash_descsize(tfm) + sizeof(*desc);
--	digest_size = crypto_shash_digestsize(tfm);
--
--	/* We allocate the hash operational data storage on the end of our
--	 * context data and the digest output buffer on the end of that.
--	 */
--	ret = -ENOMEM;
--	pks = kzalloc(digest_size + sizeof(*pks) + desc_size, GFP_KERNEL);
--	if (!pks)
--		goto error_no_pks;
--
--	pks->pkey_hash_algo	= hash;
--	pks->digest		= (u8 *)pks + sizeof(*pks) + desc_size;
--	pks->digest_size	= digest_size;
--
--	desc = (void *)pks + sizeof(*pks);
--	desc->tfm   = tfm;
--	desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
--
--	ret = crypto_shash_init(desc);
-+	pkcs7 = pkcs7_parse_message(raw_pkcs7, pkcs7_len);
-+	if (IS_ERR(pkcs7))
-+		return PTR_ERR(pkcs7);
-+
-+	/* The data should be detached - so we need to supply it. */
-+	if (pkcs7_supply_detached_data(pkcs7, mod, modlen) < 0) {
-+		pr_err("PKCS#7 signature with non-detached data\n");
-+		ret = -EBADMSG;
-+		goto error;
-+	}
-+
-+	ret = pkcs7_verify(pkcs7);
- 	if (ret < 0)
- 		goto error;
- 
--	ret = crypto_shash_finup(desc, mod, modlen, pks->digest);
-+	ret = pkcs7_validate_trust(pkcs7, system_trusted_keyring, &trusted);
- 	if (ret < 0)
- 		goto error;
- 
--	crypto_free_shash(tfm);
--	pr_devel("<==%s() = ok\n", __func__);
--	return pks;
-+	if (!trusted) {
-+		pr_err("PKCS#7 signature not signed with a trusted key\n");
-+		ret = -ENOKEY;
-+	}
- 
- error:
--	kfree(pks);
--error_no_pks:
--	crypto_free_shash(tfm);
-+	pkcs7_free_message(pkcs7);
- 	pr_devel("<==%s() = %d\n", __func__, ret);
--	return ERR_PTR(ret);
--}
--
--/*
-- * Extract an MPI array from the signature data.  This represents the actual
-- * signature.  Each raw MPI is prefaced by a BE 2-byte value indicating the
-- * size of the MPI in bytes.
-- *
-- * RSA signatures only have one MPI, so currently we only read one.
-- */
--static int mod_extract_mpi_array(struct public_key_signature *pks,
--				 const void *data, size_t len)
--{
--	size_t nbytes;
--	MPI mpi;
--
--	if (len < 3)
--		return -EBADMSG;
--	nbytes = ((const u8 *)data)[0] << 8 | ((const u8 *)data)[1];
--	data += 2;
--	len -= 2;
--	if (len != nbytes)
--		return -EBADMSG;
--
--	mpi = mpi_read_raw_data(data, nbytes);
--	if (!mpi)
--		return -ENOMEM;
--	pks->mpi[0] = mpi;
--	pks->nr_mpi = 1;
--	return 0;
--}
--
--/*
-- * Request an asymmetric key.
-- */
--static struct key *request_asymmetric_key(const char *signer, size_t signer_len,
--					  const u8 *key_id, size_t key_id_len)
--{
--	key_ref_t key;
--	size_t i;
--	char *id, *q;
--
--	pr_devel("==>%s(,%zu,,%zu)\n", __func__, signer_len, key_id_len);
--
--	/* Construct an identifier. */
--	id = kmalloc(signer_len + 2 + key_id_len * 2 + 1, GFP_KERNEL);
--	if (!id)
--		return ERR_PTR(-ENOKEY);
--
--	memcpy(id, signer, signer_len);
--
--	q = id + signer_len;
--	*q++ = ':';
--	*q++ = ' ';
--	for (i = 0; i < key_id_len; i++) {
--		*q++ = hex_asc[*key_id >> 4];
--		*q++ = hex_asc[*key_id++ & 0x0f];
--	}
--
--	*q = 0;
--
--	pr_debug("Look up: \"%s\"\n", id);
--
--	key = keyring_search(make_key_ref(system_trusted_keyring, 1),
--			     &key_type_asymmetric, id);
--	if (IS_ERR(key))
--		pr_warn("Request for unknown module key '%s' err %ld\n",
--			id, PTR_ERR(key));
--	kfree(id);
--
--	if (IS_ERR(key)) {
--		switch (PTR_ERR(key)) {
--			/* Hide some search errors */
--		case -EACCES:
--		case -ENOTDIR:
--		case -EAGAIN:
--			return ERR_PTR(-ENOKEY);
--		default:
--			return ERR_CAST(key);
--		}
--	}
--
--	pr_devel("<==%s() = 0 [%x]\n", __func__, key_serial(key_ref_to_ptr(key)));
--	return key_ref_to_ptr(key);
-+	return ret;
- }
- 
- /*
-@@ -186,12 +81,8 @@ static struct key *request_asymmetric_key(const char *signer, size_t signer_len,
-  */
- int mod_verify_sig(const void *mod, unsigned long *_modlen)
- {
--	struct public_key_signature *pks;
- 	struct module_signature ms;
--	struct key *key;
--	const void *sig;
- 	size_t modlen = *_modlen, sig_len;
--	int ret;
- 
- 	pr_devel("==>%s(,%zu)\n", __func__, modlen);
- 
-@@ -205,46 +96,23 @@ int mod_verify_sig(const void *mod, unsigned long *_modlen)
- 	if (sig_len >= modlen)
- 		return -EBADMSG;
- 	modlen -= sig_len;
--	if ((size_t)ms.signer_len + ms.key_id_len >= modlen)
--		return -EBADMSG;
--	modlen -= (size_t)ms.signer_len + ms.key_id_len;
--
- 	*_modlen = modlen;
--	sig = mod + modlen;
--
--	/* For the moment, only support RSA and X.509 identifiers */
--	if (ms.algo != PKEY_ALGO_RSA ||
--	    ms.id_type != PKEY_ID_X509)
--		return -ENOPKG;
- 
--	if (ms.hash >= PKEY_HASH__LAST ||
--	    !hash_algo_name[ms.hash])
-+	if (ms.id_type != PKEY_ID_PKCS7) {
-+		pr_err("Module is not signed with expected PKCS#7 message\n");
- 		return -ENOPKG;
--
--	key = request_asymmetric_key(sig, ms.signer_len,
--				     sig + ms.signer_len, ms.key_id_len);
--	if (IS_ERR(key))
--		return PTR_ERR(key);
--
--	pks = mod_make_digest(ms.hash, mod, modlen);
--	if (IS_ERR(pks)) {
--		ret = PTR_ERR(pks);
--		goto error_put_key;
- 	}
- 
--	ret = mod_extract_mpi_array(pks, sig + ms.signer_len + ms.key_id_len,
--				    sig_len);
--	if (ret < 0)
--		goto error_free_pks;
--
--	ret = verify_signature(key, pks);
--	pr_devel("verify_signature() = %d\n", ret);
-+	if (ms.algo != 0 ||
-+	    ms.hash != 0 ||
-+	    ms.signer_len != 0 ||
-+	    ms.key_id_len != 0 ||
-+	    ms.__pad[0] != 0 ||
-+	    ms.__pad[1] != 0 ||
-+	    ms.__pad[2] != 0) {
-+		pr_err("PKCS#7 signature info has unexpected non-zero params\n");
-+		return -EBADMSG;
-+	}
- 
--error_free_pks:
--	mpi_free(pks->rsa.s);
--	kfree(pks);
--error_put_key:
--	key_put(key);
--	pr_devel("<==%s() = %d\n", __func__, ret);
--	return ret;	
-+	return mod_verify_pkcs7(mod, modlen, mod + modlen, sig_len);
- }
-diff --git a/scripts/Makefile b/scripts/Makefile
-index 72902b5f2721..719311b7bd46 100644
---- a/scripts/Makefile
-+++ b/scripts/Makefile
-@@ -16,9 +16,11 @@ hostprogs-$(CONFIG_VT)           += conmakehash
- hostprogs-$(BUILD_C_RECORDMCOUNT) += recordmcount
- hostprogs-$(CONFIG_BUILDTIME_EXTABLE_SORT) += sortextable
- hostprogs-$(CONFIG_ASN1)	 += asn1_compiler
-+hostprogs-$(CONFIG_MODULE_SIG)	 += sign-file
- 
- HOSTCFLAGS_sortextable.o = -I$(srctree)/tools/include
- HOSTCFLAGS_asn1_compiler.o = -I$(srctree)/include
-+HOSTLOADLIBES_sign-file = -lcrypto
- 
- always		:= $(hostprogs-y) $(hostprogs-m)
- 
-diff --git a/scripts/sign-file b/scripts/sign-file
-deleted file mode 100755
-index 2b7c4484d46c..000000000000
---- a/scripts/sign-file
-+++ /dev/null
-@@ -1,421 +0,0 @@
--#!/usr/bin/perl -w
--#
--# Sign a module file using the given key.
--#
--
--my $USAGE =
--"Usage: scripts/sign-file [-v] <hash algo> <key> <x509> <module> [<dest>]\n" .
--"       scripts/sign-file [-v] -s <raw sig> <hash algo> <x509> <module> [<dest>]\n";
--
--use strict;
--use FileHandle;
--use IPC::Open2;
--use Getopt::Std;
--
--my %opts;
--getopts('vs:', \%opts) or die $USAGE;
--my $verbose = $opts{'v'};
--my $signature_file = $opts{'s'};
--
--die $USAGE if ($#ARGV > 4);
--die $USAGE if (!$signature_file && $#ARGV < 3 || $signature_file && $#ARGV < 2);
--
--my $dgst = shift @ARGV;
--my $private_key;
--if (!$signature_file) {
--	$private_key = shift @ARGV;
--}
--my $x509 = shift @ARGV;
--my $module = shift @ARGV;
--my ($dest, $keep_orig);
--if (@ARGV) {
--	$dest = $ARGV[0];
--	$keep_orig = 1;
--} else {
--	$dest = $module . "~";
--}
--
--die "Can't read private key\n" if (!$signature_file && !-r $private_key);
--die "Can't read signature file\n" if ($signature_file && !-r $signature_file);
--die "Can't read X.509 certificate\n" unless (-r $x509);
--die "Can't read module\n" unless (-r $module);
--
--#
--# Function to read the contents of a file into a variable.
--#
--sub read_file($)
--{
--    my ($file) = @_;
--    my $contents;
--    my $len;
--
--    open(FD, "<$file") || die $file;
--    binmode FD;
--    my @st = stat(FD);
--    die $file if (!@st);
--    $len = read(FD, $contents, $st[7]) || die $file;
--    close(FD) || die $file;
--    die "$file: Wanted length ", $st[7], ", got ", $len, "\n"
--	if ($len != $st[7]);
--    return $contents;
--}
--
--###############################################################################
--#
--# First of all, we have to parse the X.509 certificate to find certain details
--# about it.
--#
--# We read the DER-encoded X509 certificate and parse it to extract the Subject
--# name and Subject Key Identifier.  Theis provides the data we need to build
--# the certificate identifier.
--#
--# The signer's name part of the identifier is fabricated from the commonName,
--# the organizationName or the emailAddress components of the X.509 subject
--# name.
--#
--# The subject key ID is used to select which of that signer's certificates
--# we're intending to use to sign the module.
--#
--###############################################################################
--my $x509_certificate = read_file($x509);
--
--my $UNIV = 0 << 6;
--my $APPL = 1 << 6;
--my $CONT = 2 << 6;
--my $PRIV = 3 << 6;
--
--my $CONS = 0x20;
--
--my $BOOLEAN	= 0x01;
--my $INTEGER	= 0x02;
--my $BIT_STRING	= 0x03;
--my $OCTET_STRING = 0x04;
--my $NULL	= 0x05;
--my $OBJ_ID	= 0x06;
--my $UTF8String	= 0x0c;
--my $SEQUENCE	= 0x10;
--my $SET		= 0x11;
--my $UTCTime	= 0x17;
--my $GeneralizedTime = 0x18;
--
--my %OIDs = (
--    pack("CCC", 85, 4, 3)	=> "commonName",
--    pack("CCC", 85, 4, 6)	=> "countryName",
--    pack("CCC", 85, 4, 10)	=> "organizationName",
--    pack("CCC", 85, 4, 11)	=> "organizationUnitName",
--    pack("CCCCCCCCC", 42, 134, 72, 134, 247, 13, 1, 1, 1) => "rsaEncryption",
--    pack("CCCCCCCCC", 42, 134, 72, 134, 247, 13, 1, 1, 5) => "sha1WithRSAEncryption",
--    pack("CCCCCCCCC", 42, 134, 72, 134, 247, 13, 1, 9, 1) => "emailAddress",
--    pack("CCC", 85, 29, 35)	=> "authorityKeyIdentifier",
--    pack("CCC", 85, 29, 14)	=> "subjectKeyIdentifier",
--    pack("CCC", 85, 29, 19)	=> "basicConstraints"
--);
--
--###############################################################################
--#
--# Extract an ASN.1 element from a string and return information about it.
--#
--###############################################################################
--sub asn1_extract($$@)
--{
--    my ($cursor, $expected_tag, $optional) = @_;
--
--    return [ -1 ]
--	if ($cursor->[1] == 0 && $optional);
--
--    die $x509, ": ", $cursor->[0], ": ASN.1 data underrun (elem ", $cursor->[1], ")\n"
--	if ($cursor->[1] < 2);
--
--    my ($tag, $len) = unpack("CC", substr(${$cursor->[2]}, $cursor->[0], 2));
--
--    if ($expected_tag != -1 && $tag != $expected_tag) {
--	return [ -1 ]
--	    if ($optional);
--	die $x509, ": ", $cursor->[0], ": ASN.1 unexpected tag (", $tag,
--	" not ", $expected_tag, ")\n";
--    }
--
--    $cursor->[0] += 2;
--    $cursor->[1] -= 2;
--
--    die $x509, ": ", $cursor->[0], ": ASN.1 long tag\n"
--	if (($tag & 0x1f) == 0x1f);
--    die $x509, ": ", $cursor->[0], ": ASN.1 indefinite length\n"
--	if ($len == 0x80);
--
--    if ($len > 0x80) {
--	my $l = $len - 0x80;
--	die $x509, ": ", $cursor->[0], ": ASN.1 data underrun (len len $l)\n"
--	    if ($cursor->[1] < $l);
--
--	if ($l == 0x1) {
--	    $len = unpack("C", substr(${$cursor->[2]}, $cursor->[0], 1));
--	} elsif ($l == 0x2) {
--	    $len = unpack("n", substr(${$cursor->[2]}, $cursor->[0], 2));
--	} elsif ($l == 0x3) {
--	    $len = unpack("C", substr(${$cursor->[2]}, $cursor->[0], 1)) << 16;
--	    $len = unpack("n", substr(${$cursor->[2]}, $cursor->[0] + 1, 2));
--	} elsif ($l == 0x4) {
--	    $len = unpack("N", substr(${$cursor->[2]}, $cursor->[0], 4));
--	} else {
--	    die $x509, ": ", $cursor->[0], ": ASN.1 element too long (", $l, ")\n";
--	}
--
--	$cursor->[0] += $l;
--	$cursor->[1] -= $l;
--    }
--
--    die $x509, ": ", $cursor->[0], ": ASN.1 data underrun (", $len, ")\n"
--	if ($cursor->[1] < $len);
--
--    my $ret = [ $tag, [ $cursor->[0], $len, $cursor->[2] ] ];
--    $cursor->[0] += $len;
--    $cursor->[1] -= $len;
--
--    return $ret;
--}
--
--###############################################################################
--#
--# Retrieve the data referred to by a cursor
--#
--###############################################################################
--sub asn1_retrieve($)
--{
--    my ($cursor) = @_;
--    my ($offset, $len, $data) = @$cursor;
--    return substr($$data, $offset, $len);
--}
--
--###############################################################################
--#
--# Roughly parse the X.509 certificate
--#
--###############################################################################
--my $cursor = [ 0, length($x509_certificate), \$x509_certificate ];
--
--my $cert = asn1_extract($cursor, $UNIV | $CONS | $SEQUENCE);
--my $tbs = asn1_extract($cert->[1], $UNIV | $CONS | $SEQUENCE);
--my $version = asn1_extract($tbs->[1], $CONT | $CONS | 0, 1);
--my $serial_number = asn1_extract($tbs->[1], $UNIV | $INTEGER);
--my $sig_type = asn1_extract($tbs->[1], $UNIV | $CONS | $SEQUENCE);
--my $issuer = asn1_extract($tbs->[1], $UNIV | $CONS | $SEQUENCE);
--my $validity = asn1_extract($tbs->[1], $UNIV | $CONS | $SEQUENCE);
--my $subject = asn1_extract($tbs->[1], $UNIV | $CONS | $SEQUENCE);
--my $key = asn1_extract($tbs->[1], $UNIV | $CONS | $SEQUENCE);
--my $issuer_uid = asn1_extract($tbs->[1], $CONT | $CONS | 1, 1);
--my $subject_uid = asn1_extract($tbs->[1], $CONT | $CONS | 2, 1);
--my $extension_list = asn1_extract($tbs->[1], $CONT | $CONS | 3, 1);
--
--my $subject_key_id = ();
--my $authority_key_id = ();
--
--#
--# Parse the extension list
--#
--if ($extension_list->[0] != -1) {
--    my $extensions = asn1_extract($extension_list->[1], $UNIV | $CONS | $SEQUENCE);
--
--    while ($extensions->[1]->[1] > 0) {
--	my $ext = asn1_extract($extensions->[1], $UNIV | $CONS | $SEQUENCE);
--	my $x_oid = asn1_extract($ext->[1], $UNIV | $OBJ_ID);
--	my $x_crit = asn1_extract($ext->[1], $UNIV | $BOOLEAN, 1);
--	my $x_val = asn1_extract($ext->[1], $UNIV | $OCTET_STRING);
--
--	my $raw_oid = asn1_retrieve($x_oid->[1]);
--	next if (!exists($OIDs{$raw_oid}));
--	my $x_type = $OIDs{$raw_oid};
--
--	my $raw_value = asn1_retrieve($x_val->[1]);
--
--	if ($x_type eq "subjectKeyIdentifier") {
--	    my $vcursor = [ 0, length($raw_value), \$raw_value ];
--
--	    $subject_key_id = asn1_extract($vcursor, $UNIV | $OCTET_STRING);
--	}
--    }
--}
--
--###############################################################################
--#
--# Determine what we're going to use as the signer's name.  In order of
--# preference, take one of: commonName, organizationName or emailAddress.
--#
--###############################################################################
--my $org = "";
--my $cn = "";
--my $email = "";
--
--while ($subject->[1]->[1] > 0) {
--    my $rdn = asn1_extract($subject->[1], $UNIV | $CONS | $SET);
--    my $attr = asn1_extract($rdn->[1], $UNIV | $CONS | $SEQUENCE);
--    my $n_oid = asn1_extract($attr->[1], $UNIV | $OBJ_ID);
--    my $n_val = asn1_extract($attr->[1], -1);
--
--    my $raw_oid = asn1_retrieve($n_oid->[1]);
--    next if (!exists($OIDs{$raw_oid}));
--    my $n_type = $OIDs{$raw_oid};
--
--    my $raw_value = asn1_retrieve($n_val->[1]);
--
--    if ($n_type eq "organizationName") {
--	$org = $raw_value;
--    } elsif ($n_type eq "commonName") {
--	$cn = $raw_value;
--    } elsif ($n_type eq "emailAddress") {
--	$email = $raw_value;
--    }
--}
--
--my $signers_name = $email;
--
--if ($org && $cn) {
--    # Don't use the organizationName if the commonName repeats it
--    if (length($org) <= length($cn) &&
--	substr($cn, 0, length($org)) eq $org) {
--	$signers_name = $cn;
--	goto got_id_name;
--    }
--
--    # Or a signifcant chunk of it
--    if (length($org) >= 7 &&
--	length($cn) >= 7 &&
--	substr($cn, 0, 7) eq substr($org, 0, 7)) {
--	$signers_name = $cn;
--	goto got_id_name;
--    }
--
--    $signers_name = $org . ": " . $cn;
--} elsif ($org) {
--    $signers_name = $org;
--} elsif ($cn) {
--    $signers_name = $cn;
--}
--
--got_id_name:
--
--die $x509, ": ", "X.509: Couldn't find the Subject Key Identifier extension\n"
--    if (!$subject_key_id);
--
--my $key_identifier = asn1_retrieve($subject_key_id->[1]);
--
--###############################################################################
--#
--# Create and attach the module signature
--#
--###############################################################################
--
--#
--# Signature parameters
--#
--my $algo = 1;		# Public-key crypto algorithm: RSA
--my $hash = 0;		# Digest algorithm
--my $id_type = 1;	# Identifier type: X.509
--
--#
--# Digest the data
--#
--my $prologue;
--if ($dgst eq "sha1") {
--    $prologue = pack("C*",
--		     0x30, 0x21, 0x30, 0x09, 0x06, 0x05,
--		     0x2B, 0x0E, 0x03, 0x02, 0x1A,
--		     0x05, 0x00, 0x04, 0x14);
--    $hash = 2;
--} elsif ($dgst eq "sha224") {
--    $prologue = pack("C*",
--		     0x30, 0x2d, 0x30, 0x0d, 0x06, 0x09,
--		     0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x04,
--		     0x05, 0x00, 0x04, 0x1C);
--    $hash = 7;
--} elsif ($dgst eq "sha256") {
--    $prologue = pack("C*",
--		     0x30, 0x31, 0x30, 0x0d, 0x06, 0x09,
--		     0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01,
--		     0x05, 0x00, 0x04, 0x20);
--    $hash = 4;
--} elsif ($dgst eq "sha384") {
--    $prologue = pack("C*",
--		     0x30, 0x41, 0x30, 0x0d, 0x06, 0x09,
--		     0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02,
--		     0x05, 0x00, 0x04, 0x30);
--    $hash = 5;
--} elsif ($dgst eq "sha512") {
--    $prologue = pack("C*",
--		     0x30, 0x51, 0x30, 0x0d, 0x06, 0x09,
--		     0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03,
--		     0x05, 0x00, 0x04, 0x40);
--    $hash = 6;
--} else {
--    die "Unknown hash algorithm: $dgst\n";
--}
--
--my $signature;
--if ($signature_file) {
--	$signature = read_file($signature_file);
--} else {
--	#
--	# Generate the digest and read from openssl's stdout
--	#
--	my $digest;
--	$digest = readpipe("openssl dgst -$dgst -binary $module") || die "openssl dgst";
--
--	#
--	# Generate the binary signature, which will be just the integer that
--	# comprises the signature with no metadata attached.
--	#
--	my $pid;
--	$pid = open2(*read_from, *write_to,
--		     "openssl rsautl -sign -inkey $private_key -keyform PEM") ||
--	    die "openssl rsautl";
--	binmode write_to;
--	print write_to $prologue . $digest || die "pipe to openssl rsautl";
--	close(write_to) || die "pipe to openssl rsautl";
--
--	binmode read_from;
--	read(read_from, $signature, 4096) || die "pipe from openssl rsautl";
--	close(read_from) || die "pipe from openssl rsautl";
--	waitpid($pid, 0) || die;
--	die "openssl rsautl died: $?" if ($? >> 8);
--}
--$signature = pack("n", length($signature)) . $signature,
--
--#
--# Build the signed binary
--#
--my $unsigned_module = read_file($module);
--
--my $magic_number = "~Module signature appended~\n";
--
--my $info = pack("CCCCCxxxN",
--		$algo, $hash, $id_type,
--		length($signers_name),
--		length($key_identifier),
--		length($signature));
--
--if ($verbose) {
--    print "Size of unsigned module: ", length($unsigned_module), "\n";
--    print "Size of signer's name  : ", length($signers_name), "\n";
--    print "Size of key identifier : ", length($key_identifier), "\n";
--    print "Size of signature      : ", length($signature), "\n";
--    print "Size of informaton     : ", length($info), "\n";
--    print "Size of magic number   : ", length($magic_number), "\n";
--    print "Signer's name          : '", $signers_name, "'\n";
--    print "Digest                 : $dgst\n";
--}
--
--open(FD, ">$dest") || die $dest;
--binmode FD;
--print FD
--    $unsigned_module,
--    $signers_name,
--    $key_identifier,
--    $signature,
--    $info,
--    $magic_number
--    ;
--close FD || die $dest;
--
--if (!$keep_orig) {
--    rename($dest, $module) || die $module;
--}
-diff --git a/scripts/sign-file.c b/scripts/sign-file.c
-index 3f9bedbd185f..ff5e78348de0 100755
---- a/scripts/sign-file.c
-+++ b/scripts/sign-file.c
-@@ -61,14 +61,24 @@ static void display_openssl_errors(int l)
- 	}
- }
- 
-+static void drain_openssl_errors(void)
-+{
-+	const char *file;
-+	int line;
-+
-+	if (ERR_peek_error() == 0)
-+		return;
-+	while (ERR_get_error_line(&file, &line)) {}
-+}
- 
--#define ERR(cond, ...)				  \
--	do {					  \
--		bool __cond = (cond);		  \
--		display_openssl_errors(__LINE__); \
--		if (__cond) {			  \
--			err(1, ## __VA_ARGS__);	  \
--		}				  \
-+
-+#define ERR(cond, ...)					\
-+	do {						\
-+		bool __cond = (cond);			\
-+		display_openssl_errors(__LINE__);	\
-+		if (__cond) {				\
-+			err(1, ## __VA_ARGS__);		\
-+		}					\
- 	} while(0)
- 
- int main(int argc, char **argv)
-@@ -126,8 +136,15 @@ int main(int argc, char **argv)
- 
- 	b = BIO_new_file(x509_name, "rb");
- 	ERR(!b, "%s", x509_name);
--        x509 = PEM_read_bio_X509(b, NULL, NULL, NULL);
-+	x509 = d2i_X509_bio(b, NULL); /* Binary encoded X.509 */
-+	if (!x509) {
-+		BIO_reset(b);
-+		x509 = PEM_read_bio_X509(b, NULL, NULL, NULL); /* PEM encoded X.509 */
-+		if (x509)
-+			drain_openssl_errors();
-+	}
- 	BIO_free(b);
-+	ERR(!x509, "%s", x509_name);
- 
- 	/* Open the destination file now so that we can shovel the module data
- 	 * across as we read it.
+The ambiguity of symbols was discussed in some other thread in lkml in 
+october (I guess) with no conclusion IIRC...
 
+[...]
+
+> +static void klp_ftrace_handler(unsigned long ip, unsigned long parent_ip,
+> +			       struct ftrace_ops *ops, struct pt_regs *regs)
+
+I think we should label ftrace handler as notrace to prevent possible 
+recursion loop when one would like to patch the handler :). See note in 
+the comment for register_ftrace_function in kernel/trace/ftrace.c.
+
+> +{
+> +	struct klp_func *func = ops->private;
+> +
+> +	regs->ip = (unsigned long)func->new_func;
+> +}
+> +
+> +static int klp_enable_func(struct klp_func *func)
+> +{
+> +	int ret;
+> +
+> +	if (WARN_ON(!func->old_addr))
+> +		return -EINVAL;
+> +
+> +	if (WARN_ON(func->state != KLP_DISABLED))
+> +		return -EINVAL;
+> +
+> +	ret = ftrace_set_filter_ip(func->fops, func->old_addr, 0, 0);
+> +	if (ret) {
+> +		pr_err("failed to set ftrace filter for function '%s' (%d)\n",
+> +		       func->old_name, ret);
+> +		return ret;
+> +	}
+> +	ret = register_ftrace_function(func->fops);
+> +	if (ret) {
+> +		pr_err("failed to register ftrace handler for function '%s' (%d)\n",
+> +		       func->old_name, ret);
+> +		ftrace_set_filter_ip(func->fops, func->old_addr, 1, 0);
+> +	} else
+> +		func->state = KLP_ENABLED;
+
+Missing braces for else branch.
+
+> +
+> +	return ret;
+> +}
+
+[...]
+
+> +/**
+> + * klp_disable_patch() - disables a registered patch
+> + * @patch:	The registered, enabled patch to be disabled
+> + *
+> + * Unregisters the patched functions from ftrace.
+> + *
+> + * Return: 0 on success, otherwise error
+> + */
+> +int klp_disable_patch(struct klp_patch *patch)
+> +{
+> +	int ret;
+> +
+> +	mutex_lock(&klp_mutex);
+> +	if (patch->state == KLP_ENABLED) {
+> +		ret = -EINVAL;
+> +		goto out;
+> +	}
+
+if (patch->state == KLP_DISABLED) { ?
+
+> +	ret = __klp_disable_patch(patch);
+> +out:
+> +	mutex_unlock(&klp_mutex);
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(klp_disable_patch);
+> +
+
+
+[...]
+> +static void klp_module_notify_coming(struct module *pmod,
+> +				     struct klp_object *obj)
+> +{
+> +	struct module *mod = obj->mod;
+> +	int ret;
+> +
+> +	pr_notice("applying patch '%s' to loading module '%s'\n",
+> +		  pmod->name, mod->name);
+> +	obj->mod = mod;
+
+Still there :)
+
+> +	ret = klp_enable_object(pmod, obj);
+> +	if (ret)
+> +		pr_warn("failed to apply patch '%s' to module '%s' (%d)\n",
+> +			pmod->name, mod->name, ret);
+> +}
+> +
+> +static void klp_module_notify_going(struct module *pmod,
+> +				    struct klp_object *obj)
+> +{
+> +	struct module *mod = obj->mod;
+> +	int ret;
+> +
+> +	pr_notice("reverting patch '%s' on unloading module '%s'\n",
+> +		  pmod->name, mod->name);
+> +	ret = klp_disable_object(obj);
+> +	if (ret)
+> +		pr_warn("failed to revert patch '%s' on module '%s' (%d)\n",
+> +			pmod->name, mod->name, ret);
+> +	obj->mod = NULL;
+> +}
+> +
+> +static int klp_module_notify(struct notifier_block *nb, unsigned long action,
+> +			    void *data)
+> +{
+> +	struct module *mod = data;
+> +	struct klp_patch *patch;
+> +	struct klp_object *obj;
+> +
+> +	if (action != MODULE_STATE_COMING && action != MODULE_STATE_GOING)
+> +		return 0;
+> +
+> +	mutex_lock(&klp_mutex);
+> +	list_for_each_entry(patch, &klp_patches, list) {
+> +		if (patch->state == KLP_DISABLED)
+> +			continue;
+> +		for (obj = patch->objs; obj->funcs; obj++) {
+> +			if (!obj->name || strcmp(obj->name, mod->name))
+> +				continue;
+> +			if (action == MODULE_STATE_COMING) {
+> +				obj->mod = mod;
+> +				klp_module_notify_coming(patch->mod, obj);
+> +			} else /* MODULE_STATE_GOING */
+> +				klp_module_notify_going(patch->mod, obj);
+> +			break;
+> +		}
+> +	}
+> +	mutex_unlock(&klp_mutex);
+> +	return 0;
+> +}
+
+
+[...]
+> +static int klp_init_objects(struct klp_patch *patch)
+> +{
+> +	struct klp_object *obj;
+> +	int ret;
+> +
+> +	if (!patch->objs)
+> +		return -EINVAL;
+> +
+> +	for (obj = patch->objs; obj->funcs; obj++) {
+> +		/* obj->mod set by klp_object_module_get() */
+
+Still there. Moreover obj->mod is also set in module notifier.
+
+> +		obj->state = KLP_DISABLED;
+> +
+> +		/* sysfs */
+> +		obj->kobj = kobject_create_and_add(obj->name, &patch->kobj);
+
+There is the problem with obj->name set to NULL (for vmlinux). This 
+creates subdirectory called '(null)' which is not nice.
+
+> +		if (!obj->kobj)
+> +			goto free;
+> +
+> +		/* init functions */
+> +		ret = klp_init_funcs(obj);
+> +		if (ret) {
+> +			kobject_put(obj->kobj);
+> +			goto free;
+> +		}
+> +	}
+> +
+> +	return 0;
+> +free:
+> +	klp_free_objects_limited(patch, obj);
+> +	return -ENOMEM;
+> +}
+
+> +int klp_register_patch(struct klp_patch *patch)
+> +{
+> +	int ret;
+> +
+> +	if (!patch || !patch->mod || !patch->objs)
+> +		return -EINVAL;
+
+Check for patch->objs is also above in klp_init_objects, so it can be 
+removed from here.
+
+> +
+> +	/*
+> +	 * A reference is taken on the patch module to prevent it from being
+> +	 * unloaded.  Right now, we don't allow patch modules to unload since
+> +	 * there is currently no method to determine if a thread is still
+> +	 * running in the patched code contained in the patch module once
+> +	 * the ftrace registration is successful.
+> +	 */
+> +	if (!try_module_get(patch->mod))
+> +		return -ENODEV;
+> +
+> +	ret = klp_init_patch(patch);
+> +	if (ret)
+> +		module_put(patch->mod);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(klp_register_patch);
+
+Thank you again for good work!
+
+--
+Miroslav Benes
+SUSE Labs
