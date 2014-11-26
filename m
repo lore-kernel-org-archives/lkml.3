@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902AbaKZOSG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 09:18:06 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:42994 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752867AbaKZOSB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752878AbaKZOSB (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 26 Nov 2014 09:18:01 -0500
-Date: Wed, 26 Nov 2014 15:17:50 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v4 25/42] vhost: add memory access wrappers
-Message-ID: <20141126151750.61a40fe4.cornelia.huck@de.ibm.com>
-In-Reply-To: <20141126140539.GA5528@redhat.com>
-References: <1416933600-21398-1-git-send-email-mst@redhat.com>
-	<1416933600-21398-26-git-send-email-mst@redhat.com>
-	<20141126145438.4421c00d.cornelia.huck@de.ibm.com>
-	<20141126140539.GA5528@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Received: from mx1.redhat.com ([209.132.183.28]:49504 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752639AbaKZOR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 09:17:58 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH 3/5] PKCS#7: Allow detached data to be supplied for
+ signature checking purposes [ver #2]
+From: David Howells <dhowells@redhat.com>
+To: rusty@rustcorp.com.au
+Cc: mmarek@suse.cz, keyrings@linux-nfs.org, d.kasatkin@samsung.com,
+        linux-kernel@vger.kernel.org, dhowells@redhat.com,
+        linux-security-module@vger.kernel.org, zohar@linux.vnet.ibm.com
+Date: Wed, 26 Nov 2014 14:17:43 +0000
+Message-ID: <20141126141743.3944.88962.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20141126141709.3944.66589.stgit@warthog.procyon.org.uk>
+References: <20141126141709.3944.66589.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.17-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112614-0013-0000-0000-000001FF5B79
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Nov 2014 16:05:39 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+It is possible for a PKCS#7 message to have detached data.  However, to verify
+the signatures on a PKCS#7 message, we have to be able to digest the data.
+Provide a function to supply that data.  An error is given if the PKCS#7
+message included embedded data.
 
-> On Wed, Nov 26, 2014 at 02:54:38PM +0100, Cornelia Huck wrote:
-> > On Tue, 25 Nov 2014 18:43:10 +0200
-> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+This is used in a subsequent patch to supply the data to module signing where
+the signature is in the form of a PKCS#7 message with detached data, whereby
+the detached data is the module content that is signed.
 
-> > > @@ -174,6 +174,37 @@ enum {
-> > > 
-> > >  static inline int vhost_has_feature(struct vhost_virtqueue *vq, int bit)
-> > >  {
-> > > -	return vq->acked_features & (1 << bit);
-> > > +	return vq->acked_features & (1ULL << bit);
-> > 
-> > Should this hunk go into patch 28?
-> 
-> Well, this is needed here since 1 << 32 is not legal C.
-> 
-> I can move it - this means patch 28 will have to move earlier
-> in series though.
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-Yes, I think it makes sense to move patch 28 earlier.
+ crypto/asymmetric_keys/pkcs7_verify.c |   25 +++++++++++++++++++++++++
+ include/crypto/pkcs7.h                |    3 +++
+ 2 files changed, 28 insertions(+)
+
+diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
+index 667064daf66b..ee506bdfea54 100644
+--- a/crypto/asymmetric_keys/pkcs7_verify.c
++++ b/crypto/asymmetric_keys/pkcs7_verify.c
+@@ -382,3 +382,28 @@ int pkcs7_verify(struct pkcs7_message *pkcs7)
+ 	return enopkg;
+ }
+ EXPORT_SYMBOL_GPL(pkcs7_verify);
++
++/**
++ * pkcs7_supply_detached_data - Supply the data needed to verify a PKCS#7 message
++ * @pkcs7: The PKCS#7 message
++ * @data: The data to be verified
++ * @datalen: The amount of data
++ *
++ * Supply the detached data needed to verify a PKCS#7 message.  Note that no
++ * attempt to retain/pin the data is made.  That is left to the caller.  The
++ * data will not be modified by pkcs7_verify() and will not be freed when the
++ * PKCS#7 message is freed.
++ *
++ * Returns -EINVAL if data is already supplied in the message, 0 otherwise.
++ */
++int pkcs7_supply_detached_data(struct pkcs7_message *pkcs7,
++			       const void *data, size_t datalen)
++{
++	if (pkcs7->data) {
++		pr_debug("Data already supplied\n");
++		return -EINVAL;
++	}
++	pkcs7->data = data;
++	pkcs7->data_len = datalen;
++	return 0;
++}
+diff --git a/include/crypto/pkcs7.h b/include/crypto/pkcs7.h
+index 691c79172a26..e235ab4957ee 100644
+--- a/include/crypto/pkcs7.h
++++ b/include/crypto/pkcs7.h
+@@ -34,3 +34,6 @@ extern int pkcs7_validate_trust(struct pkcs7_message *pkcs7,
+  * pkcs7_verify.c
+  */
+ extern int pkcs7_verify(struct pkcs7_message *pkcs7);
++
++extern int pkcs7_supply_detached_data(struct pkcs7_message *pkcs7,
++				      const void *data, size_t datalen);
 
