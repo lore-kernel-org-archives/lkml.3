@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994AbaKZJOH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 04:14:07 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:46687 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287AbaKZJOA (ORCPT
+	id S1752343AbaKZJOw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 04:14:52 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:43601 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879AbaKZJOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 04:14:00 -0500
-Date: Wed, 26 Nov 2014 10:13:49 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        David Hildenbrand <dahi@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH v4 07/42] virtio_config: endian conversion for v1.0
-Message-ID: <20141126101349.72debe9d.cornelia.huck@de.ibm.com>
-In-Reply-To: <20141125213614.GB22343@redhat.com>
-References: <1416933600-21398-1-git-send-email-mst@redhat.com>
-	<1416933600-21398-8-git-send-email-mst@redhat.com>
-	<20141125184557.1e171669.cornelia.huck@de.ibm.com>
-	<20141125213614.GB22343@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112609-0009-0000-0000-00000224CDAE
+	Wed, 26 Nov 2014 04:14:49 -0500
+From: Quentin Lambert <lambert.quentin@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Quentin Lambert <lambert.quentin@gmail.com>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: bpf_jit_comp: simplify trivial boolean return
+Date: Wed, 26 Nov 2014 10:18:17 +0100
+Message-Id: <1416993497-27225-1-git-send-email-lambert.quentin@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Nov 2014 23:36:14 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+Remove if then else statements preceding
+boolean return. Occurences were found using
+Coccinelle.
 
-> On Tue, Nov 25, 2014 at 06:45:57PM +0100, Cornelia Huck wrote:
-> > On Tue, 25 Nov 2014 18:41:52 +0200
-> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > 
-> > > We (ab)use virtio conversion functions for device-specific
-> > > config space accesses.
-> > > 
-> > > Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
-> > > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> > > Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > 
-> > This looks odd with the various sign-offs but you as author...
-> 
-> Signoff tracks all contributors for developer's certificate
-> of origin purposes.
-> 
-> Looking at the patch itself, not a single line (except the subject) seems
-> to be shared with the original patch by Rusty that was posted with the
-> same subject, so I guess I could have dropped them here, but as I
-> refactor code I usually keep all signoffs around as a matter of policy.
-> 
-> Would you like yours to be dropped then?
+The semantic patch used was:
 
-Yes, I don't think it really makes sense anymore, as there's no code
-left.
+@@
+expression expr;
+@@
 
-I also think David's r-b does not apply anymore, does it?
+
+- if ( expr )
+-	return true;
+- else
+-	return false;
++ return expr;
+
+Signed-off-by: Quentin Lambert <lambert.quentin@gmail.com>
+
+---
+ arch/x86/net/bpf_jit_comp.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
+index 3f62734..1542f39 100644
+--- a/arch/x86/net/bpf_jit_comp.c
++++ b/arch/x86/net/bpf_jit_comp.c
+@@ -135,11 +135,9 @@ static const int reg2hex[] = {
+  */
+ static inline bool is_ereg(u32 reg)
+ {
+-	if (reg == BPF_REG_5 || reg == AUX_REG ||
+-	    (reg >= BPF_REG_7 && reg <= BPF_REG_9))
+-		return true;
+-	else
+-		return false;
++	return (reg == BPF_REG_5 ||
++		reg == AUX_REG ||
++		(reg >= BPF_REG_7 && reg <= BPF_REG_9));
+ }
+ 
+ /* add modifiers if 'reg' maps to x64 registers r8..r15 */
 
