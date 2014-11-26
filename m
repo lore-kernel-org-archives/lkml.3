@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408AbaKZN1U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 08:27:20 -0500
-Received: from va-smtp01.263.net ([54.88.144.211]:33107 "EHLO
-	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768AbaKZN1T (ORCPT
+	id S1752551AbaKZN17 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 08:27:59 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:52403 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546AbaKZN15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 08:27:19 -0500
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <96dc860132c76db17be810d954384f43>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
-        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Andy Yan <andy.yan@rock-chips.com>
-Subject: [PATCH v13 02/12] drm: imx: imx-hdmi: return defer if can't get ddc i2c adapter
-Date: Wed, 26 Nov 2014 21:26:51 +0800
-Message-Id: <1417008411-32012-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417008157-31861-1-git-send-email-andy.yan@rock-chips.com>
-References: <1417008157-31861-1-git-send-email-andy.yan@rock-chips.com>
+	Wed, 26 Nov 2014 08:27:57 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH 1/1] of: base, fix of_property_read_string_helper
+ kernel-doc
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: robh+dt@kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Darren Hart <darren.hart@intel.com>
+In-Reply-To: <1416572589-4953-1-git-send-email-jslaby@suse.cz>
+References: <1416572589-4953-1-git-send-email-jslaby@suse.cz>
+Date: Wed, 26 Nov 2014 13:27:53 +0000
+Message-Id: <20141126132753.CE20FC4099B@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drm driver may probe before the i2c bus, so the driver should
-defer probing until it is available
+On Fri, 21 Nov 2014 13:23:09 +0100
+, Jiri Slaby <jslaby@suse.cz>
+ wrote:
+> It referenced of_property_read_string_util whereas the function name
+> is of_property_read_string_helper.
+> 
+> Introduced in a87fa1d81a9fb5e9adca9820e16008c40ad09f33 (of: Fix
+> overflow bug in string property parsing functions). Found out when
+> reviewing the stable 3.12 queue.
+> 
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Darren Hart <darren.hart@intel.com>
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
-Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
+Applied, thanks.
 
----
+g.
 
-Changes in v13: None
-Changes in v12:
-- refactor of_node_put(ddc_node)
-
-Changes in v11: None
-Changes in v10: None
-Changes in v9: None
-Changes in v8: None
-Changes in v7: None
-Changes in v6: None
-Changes in v5: None
-Changes in v4:
-- defer probe ddc i2c adapter
-
-Changes in v3: None
-
- drivers/gpu/drm/imx/imx-hdmi.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpu/drm/imx/imx-hdmi.c b/drivers/gpu/drm/imx/imx-hdmi.c
-index 79daec4..8029a07 100644
---- a/drivers/gpu/drm/imx/imx-hdmi.c
-+++ b/drivers/gpu/drm/imx/imx-hdmi.c
-@@ -1611,10 +1611,12 @@ static int imx_hdmi_bind(struct device *dev, struct device *master, void *data)
- 	ddc_node = of_parse_phandle(np, "ddc-i2c-bus", 0);
- 	if (ddc_node) {
- 		hdmi->ddc = of_find_i2c_adapter_by_node(ddc_node);
--		if (!hdmi->ddc)
-+		of_node_put(ddc_node);
-+		if (!hdmi->ddc) {
- 			dev_dbg(hdmi->dev, "failed to read ddc node\n");
-+			return -EPROBE_DEFER;
-+		}
- 
--		of_node_put(ddc_node);
- 	} else {
- 		dev_dbg(hdmi->dev, "no ddc property found\n");
- 	}
--- 
-1.9.1
+> ---
+>  drivers/of/base.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index 37de43ef22fc..76d8307a1cd5 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -1359,7 +1359,7 @@ int of_property_match_string(struct device_node *np, const char *propname,
+>  EXPORT_SYMBOL_GPL(of_property_match_string);
+>  
+>  /**
+> - * of_property_read_string_util() - Utility helper for parsing string properties
+> + * of_property_read_string_helper() - Utility helper for parsing string properties
+>   * @np:		device node from which the property value is to be read.
+>   * @propname:	name of the property to be searched.
+>   * @out_strs:	output array of string pointers.
+> -- 
+> 2.1.3
+> 
 
