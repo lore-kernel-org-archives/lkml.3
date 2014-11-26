@@ -1,88 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301AbaKZJe2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 04:34:28 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:64314 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811AbaKZJe0 (ORCPT
+	id S1751528AbaKZJgK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 04:36:10 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:37575 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875AbaKZJgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 04:34:26 -0500
-From: Johan Hovold <johan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Tony Lindgren <tony@atomide.com>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>, Felipe Balbi <balbi@ti.com>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>
-Subject: [PATCH] rtc: omap: drop vendor-prefix from power-controller dt property
-Date: Wed, 26 Nov 2014 10:33:35 +0100
-Message-Id: <1416994415-22367-1-git-send-email-johan@kernel.org>
-X-Mailer: git-send-email 2.0.4
+	Wed, 26 Nov 2014 04:36:08 -0500
+From: Andreas Ruprecht <rupran@einserver.de>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andreas Ruprecht <rupran@einserver.de>
+Subject: [PATCH v2] net: netfilter: Fix undefined reference to nf_nat_redirect_* functions
+Date: Wed, 26 Nov 2014 10:35:37 +0100
+Message-Id: <1416994537-1592-1-git-send-email-rupran@einserver.de>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1416928034-10882-1-git-send-email-rupran@einserver.de>
+References: <1416928034-10882-1-git-send-email-rupran@einserver.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drop the vendor-prefix from the "ti,system-power-controller" device-tree
-property name.
+In a configuration with CONFIG_NFT_NAT and
+CONFIG_NETFILTER_XT_TARGET_REDIRECT enabled, undefined references to
+nf_nat_redirect_ipv{4,6}() can occur, when the corresponding options
+CONFIG_NF_NAT_REDIRECT_IPV4 or CONFIG_NF_NAT_REDIRECT_IPV6 are not
+enabled.
 
-It has been agreed to make "system-power-controller" a standard property
-and to drop the vendor-prefix that is currently used by several drivers.
+net/built-in.o: In function `redirect_tg4':
+xt_REDIRECT.c:(.text+0x6d001): undefined reference to `nf_nat_redirect_ipv4'
+net/built-in.o: In function `redirect_tg6':
+xt_REDIRECT.c:(.text+0x6d021): undefined reference to `nf_nat_redirect_ipv6'
 
-Note that drivers that have used "<vendor>,system-power-controller" in a
-released kernel will need to support both versions.
+This is because the file xt_REDIRECT.c is compiled when
+CONFIG_NETFILTER_XT_TARGET_REDIRECT is enabled, which only depends
+on CONFIG_NF_NAT. This option is invisible and can only be selected by
+other Kconfig options. In this particular case, it is selected by
+CONFIG_NFT_NAT.
 
-Signed-off-by: Johan Hovold <johan@kernel.org>
+This patch changes the dependency for CONFIG_NETFILTER_XT_TARGET_REDIRECT
+to only make it visible if at least one of
+{CONFIG_NF_NAT_REDIRECT_IPV4, CONFIG_NF_NAT_REDIRECT_IPV6} are enabled.
+
+Additionally it is necessary to provide stubs for the
+nf_nat_redirect_ipv{4,6} functions in case the header is included but
+the corresponding Kconfig feature is not enabled.
+
+Changes:
+v2: Correct capitalization for CONFIG_NF_NAT_REDIRECT_IPV4 in comment.
+
+Signed-off-by: Andreas Ruprecht <rupran@einserver.de>
 ---
- Documentation/devicetree/bindings/rtc/rtc-omap.txt | 4 ++--
- arch/arm/boot/dts/am335x-boneblack.dts             | 2 +-
- drivers/rtc/rtc-omap.c                             | 2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ include/net/netfilter/ipv4/nf_nat_redirect.h | 14 ++++++++++++++
+ include/net/netfilter/ipv6/nf_nat_redirect.h | 13 +++++++++++++
+ net/netfilter/Kconfig                        |  2 +-
+ 3 files changed, 28 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/rtc/rtc-omap.txt b/Documentation/devicetree/bindings/rtc/rtc-omap.txt
-index 750efd40c72e..4ba4dbd34289 100644
---- a/Documentation/devicetree/bindings/rtc/rtc-omap.txt
-+++ b/Documentation/devicetree/bindings/rtc/rtc-omap.txt
-@@ -13,7 +13,7 @@ Required properties:
- - interrupt-parent: phandle for the interrupt controller
+diff --git a/include/net/netfilter/ipv4/nf_nat_redirect.h b/include/net/netfilter/ipv4/nf_nat_redirect.h
+index 19e1df3a0a4d..56a506dd55cc 100644
+--- a/include/net/netfilter/ipv4/nf_nat_redirect.h
++++ b/include/net/netfilter/ipv4/nf_nat_redirect.h
+@@ -1,9 +1,23 @@
+ #ifndef _NF_NAT_REDIRECT_IPV4_H_
+ #define _NF_NAT_REDIRECT_IPV4_H_
  
- Optional properties:
--- ti,system-power-controller: whether the rtc is controlling the system power
-+- system-power-controller: whether the rtc is controlling the system power
-   through pmic_power_en
++#include <linux/netfilter.h>
++
++#ifdef CONFIG_NF_NAT_REDIRECT_IPV4
+ unsigned int
+ nf_nat_redirect_ipv4(struct sk_buff *skb,
+ 		     const struct nf_nat_ipv4_multi_range_compat *mr,
+ 		     unsigned int hooknum);
  
- Example:
-@@ -24,5 +24,5 @@ rtc@1c23000 {
- 	interrupts = <19
- 		      19>;
- 	interrupt-parent = <&intc>;
--	ti,system-power-controller;
-+	system-power-controller;
- };
-diff --git a/arch/arm/boot/dts/am335x-boneblack.dts b/arch/arm/boot/dts/am335x-boneblack.dts
-index 0c8cdc9520b7..d4affb7e3b61 100644
---- a/arch/arm/boot/dts/am335x-boneblack.dts
-+++ b/arch/arm/boot/dts/am335x-boneblack.dts
-@@ -77,5 +77,5 @@
- };
++#else /* CONFIG_NF_NAT_REDIRECT_IPV4 */
++
++unsigned int
++nf_nat_redirect_ipv4(struct sk_buff *skb,
++		     const struct nf_nat_ipv4_multi_range_compat *mr,
++		     unsigned int hooknum)
++{
++	return NF_ACCEPT;
++}
++#endif /* CONFIG_NF_NAT_REDIRECT_IPV4 */
++
+ #endif /* _NF_NAT_REDIRECT_IPV4_H_ */
+diff --git a/include/net/netfilter/ipv6/nf_nat_redirect.h b/include/net/netfilter/ipv6/nf_nat_redirect.h
+index 1ebdffc461cc..4db9351120ec 100644
+--- a/include/net/netfilter/ipv6/nf_nat_redirect.h
++++ b/include/net/netfilter/ipv6/nf_nat_redirect.h
+@@ -1,8 +1,21 @@
+ #ifndef _NF_NAT_REDIRECT_IPV6_H_
+ #define _NF_NAT_REDIRECT_IPV6_H_
  
- &rtc {
--	ti,system-power-controller;
-+	system-power-controller;
- };
-diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-index fba13e53c278..4f1c6ca97211 100644
---- a/drivers/rtc/rtc-omap.c
-+++ b/drivers/rtc/rtc-omap.c
-@@ -502,7 +502,7 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 		rtc->type = of_id->data;
- 		rtc->is_pmic_controller = rtc->type->has_pmic_mode &&
- 				of_property_read_bool(pdev->dev.of_node,
--						"ti,system-power-controller");
-+						"system-power-controller");
- 	} else {
- 		id_entry = platform_get_device_id(pdev);
- 		rtc->type = (void *)id_entry->driver_data;
++#include <linux/netfilter.h>
++
++#ifdef CONFIG_NF_NAT_REDIRECT_IPV6
+ unsigned int
+ nf_nat_redirect_ipv6(struct sk_buff *skb, const struct nf_nat_range *range,
+ 		     unsigned int hooknum);
+ 
++#else /* CONFIG_NF_NAT_REDIRECT_IPV6 */
++
++unsigned int
++nf_nat_redirect_ipv6(struct sk_buff *skb, const struct nf_nat_range *range,
++		     unsigned int hooknum)
++{
++	return NF_ACCEPT;
++}
++#endif /* CONFIG_NF_NAT_REDIRECT_IPV6 */
++
+ #endif /* _NF_NAT_REDIRECT_IPV6_H_ */
+diff --git a/net/netfilter/Kconfig b/net/netfilter/Kconfig
+index be8db270aa77..0972851cce03 100644
+--- a/net/netfilter/Kconfig
++++ b/net/netfilter/Kconfig
+@@ -844,7 +844,7 @@ config NETFILTER_XT_TARGET_RATEEST
+ 
+ config NETFILTER_XT_TARGET_REDIRECT
+ 	tristate "REDIRECT target support"
+-	depends on NF_NAT
++	depends on NF_NAT_IPV4 || NF_NAT_IPV6
+ 	select NF_NAT_REDIRECT_IPV4 if NF_NAT_IPV4
+ 	select NF_NAT_REDIRECT_IPV6 if NF_NAT_IPV6
+ 	---help---
 -- 
-2.0.4
+1.9.1
 
