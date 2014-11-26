@@ -1,319 +1,430 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726AbaKZNah (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 08:30:37 -0500
-Received: from va-smtp01.263.net ([54.88.144.211]:38841 "EHLO
-	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704AbaKZNad (ORCPT
+	id S1752678AbaKZNaO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 08:30:14 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:57712 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624AbaKZNaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 08:30:33 -0500
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <05978dba79ad1c4a57c85114dbf15dd0>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
-        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Andy Yan <andy.yan@rock-chips.com>
-Subject: [PATCH v13 04/12] drm: imx: imx-hdmi: split phy configuration to platform driver
-Date: Wed, 26 Nov 2014 21:30:04 +0800
-Message-Id: <1417008604-32115-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417008157-31861-1-git-send-email-andy.yan@rock-chips.com>
-References: <1417008157-31861-1-git-send-email-andy.yan@rock-chips.com>
+	Wed, 26 Nov 2014 08:30:07 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-d6-5475d5ddacf6
+From: Jaewon Kim <jaewon02.kim@samsung.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-input@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Jaewon Kim <jaewon02.kim@samsung.com>,
+        Hyunhee Kim <hyunhee.kim@samsung.com>
+Subject: [PATCH v3 1/2] Input: add regulator haptic driver
+Date: Wed, 26 Nov 2014 22:30:01 +0900
+Message-id: <1417008602-22841-2-git-send-email-jaewon02.kim@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1417008602-22841-1-git-send-email-jaewon02.kim@samsung.com>
+References: <1417008602-22841-1-git-send-email-jaewon02.kim@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsWyRsSkUPfu1dIQgzd7lS2uf3nOanF40QtG
+	i88fWtgtdjQcYbXoXXCVzeLmp2+sFpd3zWGzmHF+H5PFoq1f2B04PXbOusvu0bdlFaPH501y
+	AcxRXDYpqTmZZalF+nYJXBlrli9gLLgTWbF+cQNrA+NHry5GTg4JAROJfac/MEHYYhIX7q1n
+	62Lk4hASWMoosa9nHitM0dV1+9ghEosYJdp+bmaCcNqYJCat3MEOUsUmoC3xff1isA4RgVCJ
+	zxdmMYMUMQs0M0lMXHMZbIewgJXEqzf3mEFsFgFVic07F7F0MXJw8Ap4SBxZmw5iSggoSMyZ
+	ZANSwSngKbHp9CGwaiGgiq17L4BdJyEwj11i0qXPrBBjBCS+TT7EAtErK7HpADPE0ZISB1fc
+	YJnAKLyAkWEVo2hqQXJBcVJ6kalecWJucWleul5yfu4mRmCYn/73bOIOxvsHrA8xCnAwKvHw
+	RkqVhgixJpYVV+YeYjQF2jCRWUo0OR8YTXkl8YbGZkYWpiamxkbmlmZK4rw60j+DhQTSE0tS
+	s1NTC1KL4otKc1KLDzEycXBKNTCmLd38UeC1vWvWDAOrKS8j4vc+DH0pZSQWoDBPzTz/Q3zB
+	+6iFly5fVK0Lb7+y89Tb/z/jqjsK13guXjK/aW5c5stXQneWql/cnTT3gLaMF9ukr3sfsfEL
+	v7yb12+fe8Fu3eNdb8/uOSfZHy1yqVqPlVtqyi1GH52VC9Usv5YcUSjxuP5YQLpIiaU4I9FQ
+	i7moOBEAXNziAW4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsVy+t9jAd27V0tDDLY/l7C4/uU5q8XhRS8Y
+	LT5/aGG32NFwhNWid8FVNoubn76xWlzeNYfNYsb5fUwWi7Z+YXfg9Ng56y67R9+WVYwenzfJ
+	BTBHNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gDd
+	oaRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMWLN8AWPBnciK9YsbWBsY
+	P3p1MXJySAiYSFxdt48dwhaTuHBvPVsXIxeHkMAiRom2n5uZIJw2JolJK3eAVbEJaEt8X7+Y
+	FcQWEQiV+HxhFjNIEbNAM5PExDWXmUASwgJWEq/e3GMGsVkEVCU271zE0sXIwcEr4CFxZG06
+	iCkhoCAxZ5INSAWngKfEptOHwKqFgCq27r3ANoGRdwEjwypG0dSC5ILipPRcQ73ixNzi0rx0
+	veT83E2M4Ch6JrWDcWWDxSFGAQ5GJR7eCKnSECHWxLLiytxDjBIczEoivF83AIV4UxIrq1KL
+	8uOLSnNSiw8xmgLdNJFZSjQ5HxjheSXxhsYmZkaWRuaGFkbG5krivDdu5oYICaQnlqRmp6YW
+	pBbB9DFxcEo1MLqp2gUJLHotu8Xt/L9VggoPP2asCu8K5eAW2VussG7y6qlzl6+YUOxkqXBE
+	1jhi16Es9cgmjZpYx23/4ty9ZroL5vc/6BF/lHRsTRenUcUSc4tJjRaXJPteZetkHODktc+N
+	8GMpLe9KWRIosbyU1flR/PLeCo9bq/7o39W/05mcN734lFKfEktxRqKhFnNRcSIARIgw5bgC	AAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hdmi phy configuration is platform specific, which can be adusted
-according to the board to get the best SI
+This patch adds support for haptic driver controlled by
+voltage of regulator. And this driver support for
+Force Feedback interface from input framework
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
-
+Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
+Signed-off-by: Hyunhee Kim <hyunhee.kim@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Tested-by: Chanwoo Choi <cw00.choi@samsung.com>
+Reviewed-by: Chanwoo Choi <cw00.choi@samsung.com>
+Reviewed-by: Pankaj Dubey <pankaj.dubey@samsung.com>
 ---
+ .../devicetree/bindings/input/regulator-haptic.txt |   21 ++
+ drivers/input/misc/Kconfig                         |   11 +
+ drivers/input/misc/Makefile                        |    1 +
+ drivers/input/misc/regulator-haptic.c              |  247 ++++++++++++++++++++
+ include/linux/input/regulator-haptic.h             |   31 +++
+ 5 files changed, 311 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/input/regulator-haptic.txt
+ create mode 100644 drivers/input/misc/regulator-haptic.c
+ create mode 100644 include/linux/input/regulator-haptic.h
 
-Changes in v13:
-- split phy configuration from patch#4
-
-Changes in v12: None
-Changes in v11: None
-Changes in v10: None
-Changes in v9: None
-Changes in v8: None
-Changes in v7: None
-Changes in v6: None
-Changes in v5: None
-Changes in v4: None
-Changes in v3: None
-
- drivers/gpu/drm/imx/imx-hdmi.c       | 85 +++++++-----------------------------
- drivers/gpu/drm/imx/imx-hdmi.h       | 29 ++++++++++++
- drivers/gpu/drm/imx/imx-hdmi_pltfm.c | 57 ++++++++++++++++++++++++
- 3 files changed, 101 insertions(+), 70 deletions(-)
-
-diff --git a/drivers/gpu/drm/imx/imx-hdmi.c b/drivers/gpu/drm/imx/imx-hdmi.c
-index 4c3047f..9503728 100644
---- a/drivers/gpu/drm/imx/imx-hdmi.c
-+++ b/drivers/gpu/drm/imx/imx-hdmi.c
-@@ -711,76 +711,14 @@ static void imx_hdmi_phy_sel_interface_control(struct imx_hdmi *hdmi, u8 enable)
- 			 HDMI_PHY_CONF0_SELDIPIF_MASK);
- }
- 
--enum {
--	RES_8,
--	RES_10,
--	RES_12,
--	RES_MAX,
--};
--
--struct mpll_config {
--	unsigned long mpixelclock;
--	struct {
--		u16 cpce;
--		u16 gmp;
--	} res[RES_MAX];
--};
--
--static const struct mpll_config mpll_config[] = {
--	{
--		45250000, {
--			{ 0x01e0, 0x0000 },
--			{ 0x21e1, 0x0000 },
--			{ 0x41e2, 0x0000 }
--		},
--	}, {
--		92500000, {
--			{ 0x0140, 0x0005 },
--			{ 0x2141, 0x0005 },
--			{ 0x4142, 0x0005 },
--		},
--	}, {
--		148500000, {
--			{ 0x00a0, 0x000a },
--			{ 0x20a1, 0x000a },
--			{ 0x40a2, 0x000a },
--		},
--	}, {
--		~0UL, {
--			{ 0x00a0, 0x000a },
--			{ 0x2001, 0x000f },
--			{ 0x4002, 0x000f },
--		},
--	}
--};
--
--struct curr_ctrl {
--	unsigned long mpixelclock;
--	u16 curr[RES_MAX];
--};
--
--static const struct curr_ctrl curr_ctrl[] = {
--	/*	pixelclk     bpp8    bpp10   bpp12 */
--	{
--		 54000000, { 0x091c, 0x091c, 0x06dc },
--	}, {
--		 58400000, { 0x091c, 0x06dc, 0x06dc },
--	}, {
--		 72000000, { 0x06dc, 0x06dc, 0x091c },
--	}, {
--		 74250000, { 0x06dc, 0x0b5c, 0x091c },
--	}, {
--		118800000, { 0x091c, 0x091c, 0x06dc },
--	}, {
--		216000000, { 0x06dc, 0x0b5c, 0x091c },
--	}
--};
--
- static int hdmi_phy_configure(struct imx_hdmi *hdmi, unsigned char prep,
- 			      unsigned char res, int cscon)
- {
- 	unsigned res_idx, i;
- 	u8 val, msec;
-+	const struct mpll_config *mpll_config = hdmi->plat_data->mpll_cfg;
-+	const struct curr_ctrl   *curr_ctrl = hdmi->plat_data->cur_ctr;
-+	const struct sym_term *sym_term =  hdmi->plat_data->sym_term;
- 
- 	if (prep)
- 		return -EINVAL;
-@@ -826,7 +764,7 @@ static int hdmi_phy_configure(struct imx_hdmi *hdmi, unsigned char prep,
- 	hdmi_phy_test_clear(hdmi, 0);
- 
- 	/* PLL/MPLL Cfg - always match on final entry */
--	for (i = 0; i < ARRAY_SIZE(mpll_config) - 1; i++)
-+	for (i = 0; mpll_config[i].mpixelclock != (~0UL); i++)
- 		if (hdmi->hdmi_data.video_mode.mpixelclock <=
- 		    mpll_config[i].mpixelclock)
- 			break;
-@@ -834,12 +772,12 @@ static int hdmi_phy_configure(struct imx_hdmi *hdmi, unsigned char prep,
- 	hdmi_phy_i2c_write(hdmi, mpll_config[i].res[res_idx].cpce, 0x06);
- 	hdmi_phy_i2c_write(hdmi, mpll_config[i].res[res_idx].gmp, 0x15);
- 
--	for (i = 0; i < ARRAY_SIZE(curr_ctrl); i++)
-+	for (i = 0; curr_ctrl[i].mpixelclock != (~0UL); i++)
- 		if (hdmi->hdmi_data.video_mode.mpixelclock <=
- 		    curr_ctrl[i].mpixelclock)
- 			break;
- 
--	if (i >= ARRAY_SIZE(curr_ctrl)) {
-+	if (curr_ctrl[i].mpixelclock == (~0UL)) {
- 		dev_err(hdmi->dev, "Pixel clock %d - unsupported by HDMI\n",
- 			hdmi->hdmi_data.video_mode.mpixelclock);
- 		return -EINVAL;
-@@ -850,10 +788,17 @@ static int hdmi_phy_configure(struct imx_hdmi *hdmi, unsigned char prep,
- 
- 	hdmi_phy_i2c_write(hdmi, 0x0000, 0x13);  /* PLLPHBYCTRL */
- 	hdmi_phy_i2c_write(hdmi, 0x0006, 0x17);
+diff --git a/Documentation/devicetree/bindings/input/regulator-haptic.txt b/Documentation/devicetree/bindings/input/regulator-haptic.txt
+new file mode 100644
+index 0000000..3ed1c7e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/regulator-haptic.txt
+@@ -0,0 +1,21 @@
++* Regulator Haptic Device Tree Bindings
 +
-+	for (i = 0; sym_term[i].mpixelclock != (~0UL); i++)
-+		if (hdmi->hdmi_data.video_mode.mpixelclock <=
-+		    sym_term[i].mpixelclock)
-+			break;
++Required Properties:
++ - compatible : Should be "regulator-haptic"
++ - haptic-supply : Power supply to the haptic motor.
++	[*] refer Documentation/devicetree/bindings/regulator/regulator.txt
 +
- 	/* RESISTANCE TERM 133Ohm Cfg */
--	hdmi_phy_i2c_write(hdmi, 0x0005, 0x19);  /* TXTERM */
-+	hdmi_phy_i2c_write(hdmi, sym_term[i].term, 0x19);  /* TXTERM */
- 	/* PREEMP Cgf 0.00 */
--	hdmi_phy_i2c_write(hdmi, 0x800d, 0x09);  /* CKSYMTXCTRL */
-+	hdmi_phy_i2c_write(hdmi, sym_term[i].sym_ctr, 0x09);  /* CKSYMTXCTRL */
++ - max-microvolt : The maximum voltage value supplied to the haptic motor.
++		[The unit of the voltage is a micro]
 +
- 	/* TX/CK LVL 10 */
- 	hdmi_phy_i2c_write(hdmi, 0x01ad, 0x0E);  /* VLEVCTRL */
- 	/* REMOVE CLK TERM */
-diff --git a/drivers/gpu/drm/imx/imx-hdmi.h b/drivers/gpu/drm/imx/imx-hdmi.h
-index 14e593e..bced9ef 100644
---- a/drivers/gpu/drm/imx/imx-hdmi.h
-+++ b/drivers/gpu/drm/imx/imx-hdmi.h
-@@ -1037,6 +1037,35 @@ enum imx_hdmi_devtype {
++ - min-microvolt : The minimum voltage value supplied to the haptic motor.
++		[The unit of the voltage is a micro]
++
++Example:
++
++	haptics {
++		compatible = "regulator-haptic";
++		haptic-supply = <&motor_regulator>;
++		max-microvolt = <2700000>;
++		min-microvolt = <1100000>;
++	};
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 23297ab..e5e556d 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -394,6 +394,17 @@ config INPUT_CM109
+ 	  To compile this driver as a module, choose M here: the module will be
+ 	  called cm109.
  
- struct imx_hdmi_plat_data {
- 	enum imx_hdmi_devtype dev_type;
-+	const struct mpll_config *mpll_cfg;
-+	const struct curr_ctrl *cur_ctr;
-+	const struct sym_term *sym_term;
++config INPUT_REGULATOR_HAPTIC
++	tristate "regulator haptics support"
++	select INPUT_FF_MEMLESS
++	help
++	  This option enables device driver support for the haptic controlled
++	  by regulator. This driver supports ff-memless interface
++	  from input framework.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called regulator-haptic.
++
+ config INPUT_RETU_PWRBUTTON
+ 	tristate "Retu Power button Driver"
+ 	depends on MFD_RETU
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index 19c7603..1f135af 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -53,6 +53,7 @@ obj-$(CONFIG_INPUT_PMIC8XXX_PWRKEY)	+= pmic8xxx-pwrkey.o
+ obj-$(CONFIG_INPUT_POWERMATE)		+= powermate.o
+ obj-$(CONFIG_INPUT_PWM_BEEPER)		+= pwm-beeper.o
+ obj-$(CONFIG_INPUT_RB532_BUTTON)	+= rb532_button.o
++obj-$(CONFIG_INPUT_REGULATOR_HAPTIC)	+= regulator-haptic.o
+ obj-$(CONFIG_INPUT_RETU_PWRBUTTON)	+= retu-pwrbutton.o
+ obj-$(CONFIG_INPUT_GPIO_ROTARY_ENCODER)	+= rotary_encoder.o
+ obj-$(CONFIG_INPUT_SGI_BTNS)		+= sgi_btns.o
+diff --git a/drivers/input/misc/regulator-haptic.c b/drivers/input/misc/regulator-haptic.c
+new file mode 100644
+index 0000000..c61dd99
+--- /dev/null
++++ b/drivers/input/misc/regulator-haptic.c
+@@ -0,0 +1,247 @@
++/*
++ * Regulator haptic driver
++ *
++ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
++ * Author: Jaewon Kim <jaewon02.kim@samsung.com>
++ * Author: Hyunhee Kim <hyunhee.kim@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/input.h>
++#include <linux/input/regulator-haptic.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/consumer.h>
++#include <linux/slab.h>
++
++#define MAX_MAGNITUDE_SHIFT	16
++
++struct regulator_haptic {
++	struct device *dev;
++	struct input_dev *input_dev;
++	struct regulator *regulator;
++	struct work_struct work;
++
++	bool enabled;
++	bool suspend_state;
++	unsigned int max_volt;
++	unsigned int min_volt;
++	unsigned int intensity;
++	unsigned int magnitude;
 +};
 +
-+enum {
-+	RES_8,
-+	RES_10,
-+	RES_12,
-+	RES_MAX,
++static void regulator_haptic_enable(struct regulator_haptic *haptic, bool state)
++{
++	int error;
++
++	if (haptic->enabled == state)
++		return;
++
++	if (state)
++		error = regulator_enable(haptic->regulator);
++	else
++		error = regulator_disable(haptic->regulator);
++	if (error) {
++		dev_err(haptic->dev, "cannot enable regulator\n");
++		return;
++	}
++
++	haptic->enabled = state;
++}
++
++static void regulator_haptic_work(struct work_struct *work)
++{
++	struct regulator_haptic *haptic = container_of(work,
++					struct regulator_haptic, work);
++	int error;
++
++	error = regulator_set_voltage(haptic->regulator,
++			haptic->intensity + haptic->min_volt, haptic->max_volt);
++	if (error) {
++		dev_err(haptic->dev, "cannot set regulator voltage\n");
++		return;
++	}
++
++	if (haptic->magnitude)
++		regulator_haptic_enable(haptic, true);
++	else
++		regulator_haptic_enable(haptic, false);
++}
++
++static int regulator_haptic_play_effect(struct input_dev *input, void *data,
++					struct ff_effect *effect)
++{
++	struct regulator_haptic *haptic = input_get_drvdata(input);
++	u64 volt_mag_multi;
++
++	haptic->magnitude = effect->u.rumble.strong_magnitude;
++	if (!haptic->magnitude)
++		haptic->magnitude = effect->u.rumble.weak_magnitude;
++
++
++	volt_mag_multi = (u64)(haptic->max_volt - haptic->min_volt) *
++					haptic->magnitude;
++	haptic->intensity = (unsigned int)(volt_mag_multi >>
++					MAX_MAGNITUDE_SHIFT);
++
++	schedule_work(&haptic->work);
++
++	return 0;
++}
++
++static void regulator_haptic_close(struct input_dev *input)
++{
++	struct regulator_haptic *haptic = input_get_drvdata(input);
++
++	cancel_work_sync(&haptic->work);
++	regulator_haptic_enable(haptic, false);
++}
++
++#ifdef CONFIG_OF
++static int regulator_haptic_parse_dt(struct regulator_haptic *haptic)
++{
++	struct device_node *node = haptic->dev->of_node;
++	int error;
++
++	error = of_property_read_u32(node, "max-microvolt", &haptic->max_volt);
++	if (error) {
++		dev_err(haptic->dev, "cannot parse max-microvolt\n");
++		return error;
++	}
++
++	error = of_property_read_u32(node, "min-microvolt", &haptic->min_volt);
++	if (error) {
++		dev_err(haptic->dev, "cannot parse min-microvolt\n");
++		return error;
++	}
++
++	return 0;
++}
++#else
++static int regulator_haptic_parse_dt(struct regulator_haptic *haptic)
++{
++	return 0;
++}
++#endif /* CONFIG_OF */
++
++static int regulator_haptic_probe(struct platform_device *pdev)
++{
++	struct regulator_haptic *haptic;
++	struct regulator_haptic_data *data;
++	struct input_dev *input_dev;
++	int error;
++
++	haptic = devm_kzalloc(&pdev->dev, sizeof(*haptic), GFP_KERNEL);
++	if (!haptic)
++		return -ENOMEM;
++
++	haptic->dev = &pdev->dev;
++	haptic->enabled = false;
++	haptic->suspend_state = false;
++	INIT_WORK(&haptic->work, regulator_haptic_work);
++
++	if (pdev->dev.of_node) {
++		error = regulator_haptic_parse_dt(haptic);
++		if (error) {
++			dev_err(&pdev->dev, "failed to parse device tree\n");
++			return error;
++		}
++	} else {
++		data = dev_get_platdata(&pdev->dev);
++		if (data) {
++			dev_err(&pdev->dev, "failed to get platdata\n");
++			return -EINVAL;
++		}
++
++		haptic->regulator = data->regulator;
++		haptic->max_volt = data->max_volt;
++		haptic->min_volt = data->min_volt;
++	}
++
++	haptic->regulator = devm_regulator_get(&pdev->dev, "haptic");
++	if (IS_ERR(haptic->regulator)) {
++		dev_err(&pdev->dev, "failed to get regulator\n");
++		return PTR_ERR(haptic->regulator);
++	}
++
++	input_dev = devm_input_allocate_device(&pdev->dev);
++	if (!input_dev)
++		return  -ENOMEM;
++
++	haptic->input_dev = input_dev;
++	haptic->input_dev->name = "regulator-haptic";
++	haptic->input_dev->dev.parent = &pdev->dev;
++	haptic->input_dev->close = regulator_haptic_close;
++	input_set_drvdata(haptic->input_dev, haptic);
++	input_set_capability(haptic->input_dev, EV_FF, FF_RUMBLE);
++
++	error = input_ff_create_memless(input_dev, NULL,
++			      regulator_haptic_play_effect);
++	if (error) {
++		dev_err(&pdev->dev, "failed to create force-feedback\n");
++		return error;
++	}
++
++	error = input_register_device(haptic->input_dev);
++	if (error) {
++		dev_err(&pdev->dev, "failed to register input device\n");
++		return error;
++	}
++
++	platform_set_drvdata(pdev, haptic);
++
++	return 0;
++}
++
++static int __maybe_unused regulator_haptic_suspend(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct regulator_haptic *haptic = platform_get_drvdata(pdev);
++
++	if (haptic->enabled) {
++		regulator_haptic_enable(haptic, false);
++		haptic->suspend_state = true;
++	}
++
++	return 0;
++}
++
++static int __maybe_unused regulator_haptic_resume(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct regulator_haptic *haptic = platform_get_drvdata(pdev);
++
++	if (haptic->suspend_state) {
++		regulator_haptic_enable(haptic, true);
++		haptic->suspend_state = false;
++	}
++
++	return 0;
++}
++
++static SIMPLE_DEV_PM_OPS(regulator_haptic_pm_ops,
++		regulator_haptic_suspend, regulator_haptic_resume);
++
++static struct of_device_id regulator_haptic_dt_match[] = {
++	{ .compatible = "regulator-haptic" },
++	{},
 +};
 +
-+struct mpll_config {
-+	unsigned long mpixelclock;
-+	struct {
-+		u16 cpce;
-+		u16 gmp;
-+	} res[RES_MAX];
-+};
-+
-+struct curr_ctrl {
-+	unsigned long mpixelclock;
-+	u16 curr[RES_MAX];
-+};
-+
-+struct sym_term {
-+	unsigned long mpixelclock;
-+	u16 sym_ctr;    /*clock symbol and transmitter control*/
-+	u16 term;       /*transmission termination value*/
- };
- 
- int imx_hdmi_bind(struct device *dev, struct device *master,
-diff --git a/drivers/gpu/drm/imx/imx-hdmi_pltfm.c b/drivers/gpu/drm/imx/imx-hdmi_pltfm.c
-index a7983f2..519a22d 100644
---- a/drivers/gpu/drm/imx/imx-hdmi_pltfm.c
-+++ b/drivers/gpu/drm/imx/imx-hdmi_pltfm.c
-@@ -31,6 +31,57 @@ struct imx_hdmi_priv {
- 	struct regmap *regmap;
- };
- 
-+static const struct mpll_config imx_mpll_cfg[] = {
-+	{
-+		45250000, {
-+			{ 0x01e0, 0x0000 },
-+			{ 0x21e1, 0x0000 },
-+			{ 0x41e2, 0x0000 }
-+		},
-+	}, {
-+		92500000, {
-+			{ 0x0140, 0x0005 },
-+			{ 0x2141, 0x0005 },
-+			{ 0x4142, 0x0005 },
++static struct platform_driver regulator_haptic_driver = {
++	.probe		= regulator_haptic_probe,
++	.driver		= {
++		.name		= "regulator-haptic",
++		.of_match_table = regulator_haptic_dt_match,
++		.pm		= &regulator_haptic_pm_ops,
 +	},
-+	}, {
-+		148500000, {
-+			{ 0x00a0, 0x000a },
-+			{ 0x20a1, 0x000a },
-+			{ 0x40a2, 0x000a },
-+		},
-+	}, {
-+		~0UL, {
-+			{ 0x00a0, 0x000a },
-+			{ 0x2001, 0x000f },
-+			{ 0x4002, 0x000f },
-+		},
-+	}
++};
++module_platform_driver(regulator_haptic_driver);
++
++MODULE_AUTHOR("Jaewon Kim <jaewon02.kim@samsung.com>");
++MODULE_AUTHOR("Hyunhee Kim <hyunhee.kim@samsung.com>");
++MODULE_DESCRIPTION("Regulator haptic driver");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/input/regulator-haptic.h b/include/linux/input/regulator-haptic.h
+new file mode 100644
+index 0000000..05ae038
+--- /dev/null
++++ b/include/linux/input/regulator-haptic.h
+@@ -0,0 +1,31 @@
++/*
++ * Regulator Haptic Platform Data
++ *
++ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
++ * Author: Jaewon Kim <jaewon02.kim@samsung.com>
++ * Author: Hyunhee Kim <hyunhee.kim@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef _REGULATOR_HAPTIC_H
++#define _REGULATOR_HAPTIC_H
++
++/*
++ * struct regulator_haptic_data - Platform device data
++ *
++ * @regulator: Power supply to the haptic motor
++ * @max_volt: maximum voltage value supplied to the haptic motor.
++ * 		<The unit of the voltage is a micro>
++ * @min_volt: minimum voltage value supplied to the haptic motor.
++ * 		<The unit of the voltage is a micro>
++ */
++struct regulator_haptic_data {
++	struct regulator *regulator;
++	unsigned int max_volt;
++	unsigned int min_volt;
 +};
 +
-+static const struct curr_ctrl imx_cur_ctr[] = {
-+	/*      pixelclk     bpp8    bpp10   bpp12 */
-+	{
-+		54000000, { 0x091c, 0x091c, 0x06dc },
-+	}, {
-+		58400000, { 0x091c, 0x06dc, 0x06dc },
-+	}, {
-+		72000000, { 0x06dc, 0x06dc, 0x091c },
-+	}, {
-+		74250000, { 0x06dc, 0x0b5c, 0x091c },
-+	}, {
-+		118800000, { 0x091c, 0x091c, 0x06dc },
-+	}, {
-+		216000000, { 0x06dc, 0x0b5c, 0x091c },
-+	}
-+};
-+
-+static const struct sym_term imx_sym_term[] = {
-+	/*pixelclk   symbol   term*/
-+	{ 148500000, 0x800d, 0x0005 },
-+	{ ~0UL,      0x0000, 0x0000 }
-+};
-+
- static int imx_hdmi_parse_dt(struct imx_hdmi_priv *hdmi)
- {
- 	struct device_node *np = hdmi->dev->of_node;
-@@ -103,10 +154,16 @@ static struct drm_encoder_funcs imx_hdmi_encoder_funcs = {
- };
- 
- static struct imx_hdmi_plat_data imx6q_hdmi_drv_data = {
-+	.mpll_cfg = imx_mpll_cfg,
-+	.cur_ctr  = imx_cur_ctr,
-+	.sym_term = imx_sym_term,
- 	.dev_type = IMX6Q_HDMI,
- };
- 
- static struct imx_hdmi_plat_data imx6dl_hdmi_drv_data = {
-+	.mpll_cfg = imx_mpll_cfg,
-+	.cur_ctr  = imx_cur_ctr,
-+	.sym_term = imx_sym_term,
- 	.dev_type = IMX6DL_HDMI,
- };
- 
++#endif /* _REGULATOR_HAPTIC_H */
 -- 
-1.9.1
+1.7.9.5
 
