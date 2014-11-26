@@ -1,493 +1,390 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319AbaKZXqq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 18:46:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44707 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804AbaKZXqo (ORCPT
+	id S1753219AbaKZXwH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 18:52:07 -0500
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:48711 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793AbaKZXwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 18:46:44 -0500
-Date: Wed, 26 Nov 2014 15:46:43 -0800
-From: akpm@linux-foundation.org
-To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz
-Subject: mmotm 2014-11-26-15-45 uploaded
-Message-ID: <54766663.VGzzAAJGEXyzmF2E%akpm@linux-foundation.org>
-User-Agent: Heirloom mailx 12.5 6/20/10
+	Wed, 26 Nov 2014 18:52:04 -0500
+Date: Wed, 26 Nov 2014 19:09:24 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: navneet kumar <navneetk@nvidia.com>
+Cc: Lukasz Majewski <l.majewski@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        Caesar Wang <caesar.wang@rock-chips.com>
+Subject: Re: [PATCH v2 3/4] thermal: of: Extend of-thermal to export table of
+ trip points
+Message-ID: <20141126230922.GA2612@developer>
+References: <1412872737-624-1-git-send-email-l.majewski@samsung.com>
+ <1416500488-7232-1-git-send-email-l.majewski@samsung.com>
+ <1416500488-7232-4-git-send-email-l.majewski@samsung.com>
+ <20141125203629.GA14292@developer>
+ <20141126093510.4233ff7f@amdc2363>
+ <20141126151828.GC3925@developer>
+ <54763B66.90208@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="X1bOJ3K7DJ5YkBrT"
+Content-Disposition: inline
+In-Reply-To: <54763B66.90208@nvidia.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mm-of-the-moment snapshot 2014-11-26-15-45 has been uploaded to
 
-   http://www.ozlabs.org/~akpm/mmotm/
-
-mmotm-readme.txt says
-
-README for mm-of-the-moment:
-
-http://www.ozlabs.org/~akpm/mmotm/
-
-This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-more than once a week.
-
-You will need quilt to apply these patches to the latest Linus release (3.x
-or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
-http://ozlabs.org/~akpm/mmotm/series
-
-The file broken-out.tar.gz contains two datestamp files: .DATE and
-.DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
-followed by the base kernel version against which this patch series is to
-be applied.
-
-This tree is partially included in linux-next.  To see which patches are
-included in linux-next, consult the `series' file.  Only the patches
-within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
-linux-next.
-
-A git tree which contains the memory management portion of this tree is
-maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-by Michal Hocko.  It contains the patches which are between the
-"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
-file, http://www.ozlabs.org/~akpm/mmotm/series.
+--X1bOJ3K7DJ5YkBrT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
 
-A full copy of the full kernel tree with the linux-next and mmotm patches
-already applied is available through git within an hour of the mmotm
-release.  Individual mmotm releases are tagged.  The master branch always
-points to the latest release, so it's constantly rebasing.
+Hello Navneet,
 
-http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
+On Wed, Nov 26, 2014 at 12:43:18PM -0800, navneet kumar wrote:
+>=20
+> Hi Eduardo, Lukasz,
+>=20
+> [Combining my concerns as a single text blob here]
+>=20
+> I. Firstly, with the current patch
+> 	1. is it really needed to duplicate the struct thermal_trip? Why don=E2=
+=80=99t
+> 	we get rid of the __thermal_trip and stay with the 'thermal_trip' ? it
+> 	is not a big change.
+>=20
+> 	2. gtrips is not updated on "set_trip_temp" etc. actions via sysfs. (am
+> 	I missing something?).
+>=20
 
-To develop on top of mmotm git:
+Good! Comments are always welcome, that's how we make patches :-).
 
-  $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-  $ git remote update mmotm
-  $ git checkout -b topic mmotm/master
-  <make changes, commit>
-  $ git send-email mmotm/master.. [...]
+Both above make sense to me.
 
-To rebase a branch with older patches to a new mmotm release:
+> II. The other concern is more of a design question
+> 	1. Do we intend to keep the of-thermal as a middle layer between the
+> 	thermal_core and the sensor device? OR, is the role of of-thermal just
+> 	to parse the DT and opt out ? currently of-thermal is somewhat a hybrid
+> 	of these as, in addition to parsing the dt, it holds on to the data
+> 	related to trip points etc. etc.
+>=20
 
-  $ git remote update mmotm
-  $ git rebase --onto mmotm/master <topic base> topic
+of-thermal has always been as your latter statement, and I intend to keep i=
+t as it should
+be, just a of parser for thermal data.
+
+> 	2. assuming latter is true (OF is just a dt parser helper): we should
+> 	not be adding more intelligence and dependencies linked to the OF.
+>=20
+
+Yes this is right. We should never be adding intelligence to it, except
+for parsing the thermal data out of device tree and adding the proper
+structures inside the kernel.
+
+> 	3. assuming former is true (OF is a well-defined middle layer): All is
+> 	good till the point OF maintains the trip points (which is a good thing
+> 	since, OF caches on to the data); BUT, if we expose this information to
+> 	the sensor device too (as this patch is doing),
+>=20
+
+the former is not true.
+
+> 		3a. we violate the layering principle :-)
+>=20
+
+well, even if it was, I disagree here. :-) The split between data
+coming from DT and the driver is still in place. Besides, there is other
+layers that expose some of their data, and that doesn't violate their
+layering principles. CPUfreq, for one closer example, exposes its freq tabl=
+e.
+
+It would be different if by exposing this data, the users would be
+affecting the behavior of the layer. And that is not the intention of
+cpufreq table. In the same way, that is not the intention of this patch.
+
+> 		3b. more importantly, this is all just excessive logic that we
+> 		put in which *could be useful* only if we intend to extend the
+> 		role of OF as a trip point management layer that does more than
+> 		just holding on to the data. This may include -
+>=20
+> 			-> The sensor devices to know nothing about the
+> 			trip_points, instead the sensor devices would work on
+> 			"temperature thresholds" and OF would map sensor
+> 			thresholds to the actual trip points as needed
+> 			(configured from DT); while the sensor devices stick to
+> 			using "thresholds".
+>=20
+> 			-> Queuing from above, sensors, most of the time, only
+> 			need to know a high and a low temp threshold; which
+> 			essentially is a subset of the active/passive etc. trip
+> 			points. Calculation of that based on the current temp,
+> 			as of today is replicated across all the sensor drivers
+> 			and can be hoisted up to the of-thermal.
+>=20
+
+There is no intention to add such logic to of thermal. The main reason
+is of-thermal should never be competing with thermal core. Any extension
+in of-thermal needs to be supported by thermal core.
+
+I believe all the above is left currently to thermal zone device
+drivers. The problem with of-thermal is that it had to be born as a
+thermal zone device driver. And that is because..
+
+> Seems like this is the opportune time to make a call about the role of of=
+-thermal?
+>=20
+
+=2E. the point one may be missing here is the fact that with current
+thermal subsystem implementation, handling thermal devices is somewhat
+different from other devices within the kernel.
+
+The real design issue (or not an issue) we have is the fact that thermal
+drivers adds both the driver and the device. Changing that is somewhat
+disruptive. Not impossible, but requires considering the existing driver's =
+code.
+
+If we had a better split from who adds the device and who provides the
+driver, then of-thermal would never be a "glue layer" or born as thermal
+zone device driver. It would simply, parse DT, add the devices, done.
+
+Then, drivers would register themselves as handlers for specific thermal
+devices. That is the correct design, based on common design found in other
+parts of the kernel. Another little missing end would be the "compatible"
+string for thermal zone devices in DT. But as I said, it should not be a
+blocker.
+
+So, given the current situation, we have essentially two options: (a)
+stick to the same design we have for now, having of-thermal as dummy as
+possible, and grow in small steps towards the correct design; or (b)
+redesign thermal core to have a better split between devices and
+drivers, then adjust of-thermal.
 
 
+For now, the path we are taking is (a). In fact, to fit the needs of
+coming drivers, specially considering they are based on DT booting
+platforms, it is always tempting to add intelligence to of-thermal. But,
+as I mentioned, I want to avoid growing intelligence in it, for obvious
+reasons.
 
+> On 11/26/2014 07:18 AM, Eduardo Valentin wrote:
+> > * PGP Signed by an unknown key
+> >=20
+> > Hello,
+> >=20
+> > On Wed, Nov 26, 2014 at 09:35:10AM +0100, Lukasz Majewski wrote:
+> >> Hi Eduardo,
+> >>
+> >>> Hello Lukasz,
+> >>>
+> >>> On Thu, Nov 20, 2014 at 05:21:27PM +0100, Lukasz Majewski wrote:
+> >>>> This patch extends the of-thermal.c to export copy of trip points
+> >>>> for a given thermal zone.
+> >>>>
+> >>>> Thermal drivers should use of_thermal_get_trip_points() method to
+> >>>> get pointer to table of thermal trip points.
+> >>>>
+> >>>> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> >>>> ---
+> >>>> Changes for v2:
+> >>>> - New patch - as suggested by Eduardo Valentin
+> >>>> ---
+> >>>>  drivers/thermal/of-thermal.c   | 33
+> >>>> +++++++++++++++++++++++++++++++++ drivers/thermal/thermal_core.h |
+> >>>> 7 +++++++ include/linux/thermal.h        | 14 ++++++++++++++
+> >>>>  3 files changed, 54 insertions(+)
+> >>>>
+> >>>> diff --git a/drivers/thermal/of-thermal.c
+> >>>> b/drivers/thermal/of-thermal.c index 336af7f..33921c5 100644
+> >>>> --- a/drivers/thermal/of-thermal.c
+> >>>> +++ b/drivers/thermal/of-thermal.c
+> >>>> @@ -89,6 +89,7 @@ struct __thermal_zone {
+> >>>>  	/* trip data */
+> >>>>  	int ntrips;
+> >>>>  	struct __thermal_trip *trips;
+> >>>> +	struct thermal_trip *gtrips;
+> Do we really need this duplication ?
+> >>>> =20
+> >>>>  	/* cooling binding data */
+> >>>>  	int num_tbps;
+> >>>> @@ -152,6 +153,27 @@ bool of_thermal_is_trip_en(struct
+> >>>> thermal_zone_device *tz, int trip) return true;
+> >>>>  }
+> >>>> =20
+> >>>> +/**
+> >>>> + * of_thermal_get_trip_points - function to get access to a
+> >>>> globally exported
+> >>>> + *				trip points
+> >>>> + *
+> >>>> + * @tz:	pointer to a thermal zone
+> >>>> + *
+> >>>> + * This function provides a pointer to the copy of trip points
+> >>>> table
+> >>>> + *
+> >>>> + * Return: pointer to trip points table, NULL otherwise
+> >>>> + */
+> >>>> +const struct thermal_trip * const
+> >>>> +of_thermal_get_trip_points(struct thermal_zone_device *tz)
+> >>>> +{
+> >>>> +	struct __thermal_zone *data =3D tz->devdata;
+> >>>> +
+> >>>> +	if (!data)
+> >>>> +		return NULL;
+> >>>> +
+> >>>> +	return data->gtrips;
+> >>>> +}
+> >>>> +
+> >>>
+> >>> EXPORT_SYMBOL_GPL(of_thermal_get_trip_points);
+> >>
+> >> Ok.
+> >>
+> >>>
+> >>>>  static int of_thermal_get_trend(struct thermal_zone_device *tz,
+> >>>> int trip, enum thermal_trend *trend)
+> >>>>  {
+> >>>> @@ -767,6 +789,16 @@ thermal_of_build_thermal_zone(struct
+> >>>> device_node *np) goto free_tbps;
+> >>>>  	}
+> >>>> =20
+> >>>> +	tz->gtrips =3D kcalloc(tz->ntrips, sizeof(*tz->gtrips),
+> >>>> GFP_KERNEL);
+> >>>> +	if (!tz->gtrips) {
+> >>>> +		ret =3D -ENOMEM;
+> >>>> +		goto free_tbps;
+> >>>> +	}
+> >>>> +
+> >>>> +	for (i =3D 0; i < tz->ntrips; i++)
+> >>>> +		memcpy(&(tz->gtrips[i]),
+> >>>> &(tz->trips[i].temperature),
+> >>>> +		       sizeof(*tz->gtrips));
+> >>>> +
+> >>>>  finish:
+> >>>>  	of_node_put(child);
+> >>>>  	tz->mode =3D THERMAL_DEVICE_DISABLED;
+> >>>> @@ -793,6 +825,7 @@ static inline void of_thermal_free_zone(struct
+> >>>> __thermal_zone *tz) {
+> >>>>  	int i;
+> >>>> =20
+> >>>> +	kfree(tz->gtrips);
+> >>>>  	for (i =3D 0; i < tz->num_tbps; i++)
+> >>>>  		of_node_put(tz->tbps[i].cooling_device);
+> >>>>  	kfree(tz->tbps);
+> Couldn't find the code that updates *gtrips as a result of set_trip_temp =
+via
+> sysfs.
+>=20
+> >>>> diff --git a/drivers/thermal/thermal_core.h
+> >>>> b/drivers/thermal/thermal_core.h index 466208c..a9580ca 100644
+> >>>> --- a/drivers/thermal/thermal_core.h
+> >>>> +++ b/drivers/thermal/thermal_core.h
+> >>>> @@ -91,6 +91,8 @@ int of_parse_thermal_zones(void);
+> >>>>  void of_thermal_destroy_zones(void);
+> >>>>  int of_thermal_get_ntrips(struct thermal_zone_device *);
+> >>>>  bool of_thermal_is_trip_en(struct thermal_zone_device *, int);
+> >>>> +const struct thermal_trip * const
+> >>>> +of_thermal_get_trip_points(struct thermal_zone_device *);
+> >>>>  #else
+> >>>>  static inline int of_parse_thermal_zones(void) { return 0; }
+> >>>>  static inline void of_thermal_destroy_zones(void) { }
+> >>>> @@ -102,6 +104,11 @@ static inline bool
+> >>>> of_thermal_is_trip_en(struct thermal_zone_device *, int) {
+> >>>
+> >>> This produces compilation error when CONFIG_THERMAL_OF is not set.
+> >>> Name the parameters to fix.
+> >>
+> >> As all the other cases, I will fix that.
+> >>
+> >>>
+> >>>>  	return 0;
+> >>>>  }
+> >>>> +static inline const struct thermal_trip * const
+> >>>> +of_thermal_get_trip_points(struct thermal_zone_device *)
+> >>>> +{
+> >>>> +	return NULL;
+> >>>> +}
+> >>>>  #endif
+> >>>> =20
+> >>>>  #endif /* __THERMAL_CORE_H__ */
+> >>>> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> >>>> index 5bc28a7..88d7249 100644
+> >>>> --- a/include/linux/thermal.h
+> >>>> +++ b/include/linux/thermal.h
+> >>>> @@ -303,6 +303,20 @@ struct thermal_zone_of_device_ops {
+> >>>>  	int (*get_trend)(void *, long *);
+> >>>>  };
+> >>>> =20
+> >>>> +/**
+> >>>> + * struct thermal_trip - Structure representing themal trip points
+> >>>> exported from
+> >>>> + *                       of-thermal
+> >>>> + *
+> >>>
+> >>> The only problem I have with this name is that would look like it is
+> >>> in use in all thermal framework, which is not really the case. But I
+> >>> do think having a type here is a good thing. So, not sure :-)
+> >>
+> >> It can stay to be struct thermal_trip or we can rename it to
+> >> struct of_thermal_trip.
+> >>
+> >> I'm fine with both names.
+> >=20
+> > Leave it as 'thermal_trip'.
+> >=20
+> >>
+> >>>
+> >>>> + * @temperature:	trip point temperature
+> >>>> + * @hysteresis:		trip point hysteresis
+> >>>> + * @type:		trip point type
+> >>>> + */
+> >>>> +struct thermal_trip {
+> >>>> +	unsigned long int temperature;
+> >>>> +	unsigned long int hysteresis;
+> >>>> +	enum thermal_trip_type type;
+> >>>> +};
+> >>>> +
+> >>>>  /* Function declarations */
+> >>>>  #ifdef CONFIG_THERMAL_OF
+> >>>>  struct thermal_zone_device *
+> >>>> --=20
+> >>>> 2.0.0.rc2
+> >>>>
+> >>
+> >>
+> >>
+> >> --=20
+> >> Best regards,
+> >>
+> >> Lukasz Majewski
+> >>
+> >> Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+> >=20
+> > * Unknown Key
+> > * 0x7DA4E256
+> >=20
 
-The directory http://www.ozlabs.org/~akpm/mmots/ (mm-of-the-second)
-contains daily snapshots of the -mm tree.  It is updated more frequently
-than mmotm, and is untested.
+--X1bOJ3K7DJ5YkBrT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-A git copy of this tree is available at
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-	http://git.cmpxchg.org/?p=linux-mmots.git;a=summary
+iQEcBAEBAgAGBQJUdl2CAAoJEMLUO4d9pOJWsX4H/3UuQpIVOQ8+5D/kpQoPyDhu
+GAOU64jPCgkDkfohyFkKIA4L5iXqfwAqxwirjxZ6ZlB5ZR8whGHHadmXBwCA4hp8
+I2LmkHJRtNXE2/KfW++VALuxz3WcQVgDFRWH747f7Kg+nlfFmEFVCJXh9aJCYr1o
+t0flOgvleng5cwr2/sVF/V6G6M/o1PfHboX4vsT9NPTqhWHs2r5MCo/mr4+gjqAb
+5mIEK5MarN3dxGOsP6RCVLRZQAzfHWgXmbm+dlBWR0MDKhXJdjAmoSiL6kZEp9e+
+4ZS5DMJPIT+VrdZsm7+O3g+NIFuClHCkRV8fcG4c9FVVj6dW4nqdC1HT/DauEuk=
+=YKCp
+-----END PGP SIGNATURE-----
 
-and use of this tree is similar to
-http://git.cmpxchg.org/?p=linux-mmotm.git, described above.
-
-
-This mmotm tree contains the following patches against 3.18-rc6:
-(patches marked "*" will be included in linux-next)
-
-  origin.patch
-  i-need-old-gcc.patch
-  arch-alpha-kernel-systblss-remove-debug-check.patch
-* mm-do-not-overwrite-reserved-pages-counter-at-show_mem.patch
-* mm-frontswap-invalidate-expired-data-on-a-dup-store-failure.patch
-* mm-vmpressurec-fix-race-in-vmpressure_work_fn.patch
-* mm-vmpressurec-fix-race-in-vmpressure_work_fn-fix.patch
-* drivers-input-evdevc-dont-kfree-a-vmalloc-address.patch
-* ipc-semc-fully-initialize-sem_array-before-making-it-visible.patch
-* fat-fix-oops-on-corrupted-vfat-fs.patch
-* fs-cifs-remove-obsolete-__constant.patch
-* fs-cifs-filec-replace-countsize-kzalloc-by-kcalloc.patch
-* fs-cifs-smb2filec-replace-countsize-kzalloc-by-kcalloc.patch
-* dma-debug-introduce-dma_debug_disabled.patch
-* dma-debug-prevent-early-callers-from-crashing.patch
-* input-route-kbd-leds-through-the-generic-leds-layer.patch
-* input-route-kbd-leds-through-the-generic-leds-layer-fix.patch
-* input-route-kbd-leds-through-the-generic-leds-layer-fix-2.patch
-* input-route-kbd-leds-through-the-generic-leds-layer-fix-3.patch
-* scripts-kernel-doc-dont-eat-struct-members-with-__aligned.patch
-* fs-ext4-fsyncc-generic_file_fsync-call-based-on-barrier-flag.patch
-* ocfs2-dlm-let-sender-retry-if-dlm_dispatch_assert_master-failed-with-enomem.patch
-* ocfs2-fix-an-off-by-one-bug_on-statement.patch
-* ocfs2-fix-xattr-check-in-ocfs2_get_xattr_nolock.patch
-* ocfs2-remove-bogus-test-from-ocfs2_read_locked_inode.patch
-* ocfs2-report-error-from-o2hb_do_disk_heartbeat-to-user.patch
-* o2dlm-fix-a-race-between-purge-and-master-query.patch
-* ocfs2-o2net-fix-connect-expired.patch
-* remove-filesize-checks-for-sync-i-o-journal-commit.patch
-* ocfs2-fix-error-handling-when-creating-debugfs-root-in-ocfs2_init.patch
-* ocfs2-do-not-set-ocfs2_lock_upconvert_finishing-if-nonblocking-lock-can-not-be-granted-at-once.patch
-* ocfs2-do-not-set-filesystem-readonly-if-link-down.patch
-* ocfs2-remove-bogus-null-check-in-ocfs2_move_extents.patch
-* o2dlm-fix-null-pointer-dereference-in-o2dlm_blocking_ast_wrapper.patch
-* o2dlm-fix-null-pointer-dereference-in-o2dlm_blocking_ast_wrapper-checkpatch-fixes.patch
-* ocfs2-free-inode-when-i_count-becomes-zero.patch
-* ocfs2-call-ocfs2_journal_access_di-before-ocfs2_journal_dirty-in-ocfs2_write_end_nolock.patch
-* ocfs2-avoid-access-invalid-address-when-read-o2dlm-debug-messages.patch
-* ocfs2-avoid-access-invalid-address-when-read-o2dlm-debug-messages-v2.patch
-* ocfs2-dlm-fix-race-between-dispatched_work-and-dlm_lockres_grab_inflight_worker.patch
-* ocfs2-reflink-fix-slow-unlink-for-refcounted-file.patch
-* ocfs2-fix-journal-commit-deadlock.patch
-* ocfs2-eliminate-the-static-flag-of-some-functions.patch
-* ocfs2-add-functions-to-add-and-remove-inode-in-orphan-dir.patch
-* ocfs2-add-functions-to-add-and-remove-inode-in-orphan-dir-fix.patch
-* ocfs2-add-orphan-recovery-types-in-ocfs2_recover_orphans.patch
-* ocfs2-implement-ocfs2_direct_io_write.patch
-* ocfs2-allocate-blocks-in-ocfs2_direct_io_get_blocks.patch
-* ocfs2-do-not-fallback-to-buffer-i-o-write-if-appending.patch
-* ocfs2-do-not-fallback-to-buffer-i-o-write-if-fill-holes.patch
-* ocfs2-fix-leftover-orphan-entry-caused-by-append-o_direct-write-crash.patch
-* bio-modify-__bio_add_page-to-accept-pages-that-dont-start-a-new-segment.patch
-* block-restore-proc-partitions-to-not-display-non-partitionable-removable-devices.patch
-* char_dev-remove-pointless-assignment-from-__register_chrdev_region.patch
-  mm.patch
-* mm-slab-slub-coding-style-whitespaces-and-tabs-mixture.patch
-* slab-print-slabinfo-header-in-seq-show.patch
-* mm-slab-reverse-iteration-on-find_mergeable.patch
-* mm-slub-fix-format-mismatches-in-slab_err-callers.patch
-* slab-improve-checking-for-invalid-gfp_flags.patch
-* slab-replace-smp_read_barrier_depends-with-lockless_dereference.patch
-* mm-memcontrol-lockless-page-counters.patch
-* mm-memcontrol-lockless-page-counters-fix.patch
-* mm-memcontrol-lockless-page-counters-fix-fix.patch
-* mm-memcontrol-lockless-page-counters-fix-2.patch
-* mm-hugetlb_cgroup-convert-to-lockless-page-counters.patch
-* kernel-res_counter-remove-the-unused-api.patch
-* kernel-res_counter-remove-the-unused-api-fix.patch
-* kernel-res_counter-remove-the-unused-api-fix-2.patch
-* mm-memcontrol-convert-reclaim-iterator-to-simple-css-refcounting.patch
-* mm-memcontrol-convert-reclaim-iterator-to-simple-css-refcounting-fix.patch
-* mm-memcontrol-take-a-css-reference-for-each-charged-page.patch
-* mm-memcontrol-remove-obsolete-kmemcg-pinning-tricks.patch
-* mm-memcontrol-continue-cache-reclaim-from-offlined-groups.patch
-* mm-memcontrol-remove-synchroneous-stock-draining-code.patch
-* mm-page_alloc-convert-boot-printks-without-log-level-to-pr_info.patch
-* vmalloc-replace-printk-with-pr_warn.patch
-* vmscan-replace-printk-with-pr_err.patch
-* mm-introduce-single-zone-pcplists-drain.patch
-* mm-page_isolation-drain-single-zone-pcplists.patch
-* mm-cma-drain-single-zone-pcplists.patch
-* mm-memory_hotplug-failure-drain-single-zone-pcplists.patch
-* cma-make-default-cma-area-size-zero-for-x86.patch
-* mm-verify-compound-order-when-freeing-a-page.patch
-* mm-vmscan-count-only-dirty-pages-as-congested.patch
-* mm-compaction-pass-classzone_idx-and-alloc_flags-to-watermark-checking.patch
-* mm-compaction-pass-classzone_idx-and-alloc_flags-to-watermark-checking-fix.patch
-* mm-compaction-simplify-deferred-compaction.patch
-* mm-compaction-simplify-deferred-compaction-fix.patch
-* mm-compaction-defer-only-on-compact_complete.patch
-* mm-compaction-always-update-cached-scanner-positions.patch
-* mm-compaction-always-update-cached-scanner-positions-fix.patch
-* mm-compaction-always-update-cached-scanner-positions-fix-checkpatch-fixes.patch
-* mm-compaction-more-focused-lru-and-pcplists-draining.patch
-* mm-compaction-more-focused-lru-and-pcplists-draining-fix.patch
-* mm-numa-balancing-rearrange-kconfig-entry.patch
-* memcg-simplify-unreclaimable-groups-handling-in-soft-limit-reclaim.patch
-* mm-memcontrol-update-mem_cgroup_page_lruvec-documentation.patch
-* mm-memcontrol-clarify-migration-where-old-page-is-uncharged.patch
-* memcg-remove-activate_kmem_mutex.patch
-* mm-memcontrol-micro-optimize-mem_cgroup_split_huge_fixup.patch
-* mm-memcontrol-uncharge-pages-on-swapout.patch
-* mm-memcontrol-uncharge-pages-on-swapout-fix.patch
-* mm-memcontrol-remove-unnecessary-pcg_memsw-memoryswap-charge-flag.patch
-* mm-memcontrol-remove-unnecessary-pcg_mem-memory-charge-flag.patch
-* mm-memcontrol-remove-unnecessary-pcg_used-pc-mem_cgroup-valid-flag.patch
-* mm-memcontrol-remove-unnecessary-pcg_used-pc-mem_cgroup-valid-flag-fix.patch
-* mm-memcontrol-inline-memcg-move_lock-locking.patch
-* mm-memcontrol-dont-pass-a-null-memcg-to-mem_cgroup_end_move.patch
-* mm-memcontrol-fold-mem_cgroup_start_move-mem_cgroup_end_move.patch
-* mm-memcontrol-fold-mem_cgroup_start_move-mem_cgroup_end_move-fix.patch
-* mm-hugetlb-correct-bit-shift-in-hstate_sizelog.patch
-* memcg-remove-mem_cgroup_reclaimable-check-from-soft-reclaim.patch
-* memcg-use-generic-slab-iterators-for-showing-slabinfo.patch
-* thp-do-not-mark-zero-page-pmd-write-protected-explicitly.patch
-* mm-memcontrol-shorten-the-page-statistics-update-slowpath.patch
-* mm-memcontrol-remove-bogus-null-check-after-mem_cgroup_from_task.patch
-* mm-memcontrol-pull-the-null-check-from-__mem_cgroup_same_or_subtree.patch
-* mm-memcontrol-drop-bogus-rcu-locking-from-mem_cgroup_same_or_subtree.patch
-* mm-fix-huge-zero-page-accounting-in-smaps-report.patch
-* mm-fix-huge-zero-page-accounting-in-smaps-report-fix.patch
-* mm-fix-huge-zero-page-accounting-in-smaps-report-fix-2.patch
-* mm-fix-huge-zero-page-accounting-in-smaps-report-fix-2-fix.patch
-* mm-memcg-fix-potential-undefined-when-for-page-stat-accounting.patch
-* mm-hugetlb-fix-__unmap_hugepage_range.patch
-* mm-fix-a-spelling-mistake.patch
-* frontswap-fix-the-condition-in-bug_on.patch
-* mm-memcontrol-remove-stale-page_cgroup_lock-comment.patch
-* mm-embed-the-memcg-pointer-directly-into-struct-page.patch
-* mm-embed-the-memcg-pointer-directly-into-struct-page-fix.patch
-* mm-page_cgroup-rename-file-to-mm-swap_cgroupc.patch
-* mm-move-page-mem_cgroup-bad-page-handling-into-generic-code.patch
-* mm-move-page-mem_cgroup-bad-page-handling-into-generic-code-fix.patch
-* mm-move-page-mem_cgroup-bad-page-handling-into-generic-code-fix-2.patch
-* mmfs-introduce-helpers-around-the-i_mmap_mutex.patch
-* mm-use-new-helper-functions-around-the-i_mmap_mutex.patch
-* mm-convert-i_mmap_mutex-to-rwsem.patch
-* mm-convert-i_mmap_mutex-to-rwsem-fix.patch
-* mm-rmap-share-the-i_mmap_rwsem.patch
-* uprobes-share-the-i_mmap_rwsem.patch
-* mm-xip-share-the-i_mmap_rwsem.patch
-* mm-memory-failure-share-the-i_mmap_rwsem.patch
-* mm-nommu-share-the-i_mmap_rwsem.patch
-* mm-memoryc-share-the-i_mmap_rwsem.patch
-* lib-bitmap-added-alignment-offset-for-bitmap_find_next_zero_area.patch
-* mm-cma-align-to-physical-address-not-cma-region-position.patch
-* memcg-__mem_cgroup_free-remove-stale-disarm_static_keys-comment.patch
-* memcg-dont-check-mm-in-__memcg_kmem_get_cachenewpage_charge.patch
-* memcg-do-not-abuse-memcg_kmem_skip_account.patch
-* memblock-refactor-functions-to-set-clear-memblock_hotplug.patch
-* mm-page_isolation-check-pfn-validity-before-access.patch
-* mm-page_allocc-__alloc_pages_nodemask-dont-alter-arg-gfp_mask.patch
-* mm-debug-pagealloc-cleanup-page-guard-code.patch
-* mm-rmap-calculate-page-offset-when-needed.patch
-* mm-mincore-add-hwpoison-page-handle.patch
-* mm-mincore-add-hwpoison-page-handle-checkpatch-fixes.patch
-* ksm-replace-smp_read_barrier_depends-with-lockless_dereference.patch
-* memcg-zap-kmem_account_flags.patch
-* memcg-only-check-memcg_kmem_skip_account-in-__memcg_kmem_get_cache.patch
-* memcg-turn-memcg_kmem_skip_account-into-a-bit-field.patch
-* hugetlb-fix-hugepages=-entry-in-kernel-parameterstxt.patch
-* hugetlb-alloc_bootmem_huge_page-use-is_aligned.patch
-* hugetlb-hugetlb_register_all_nodes-add-__init-marker.patch
-* mm-export-find_extend_vma-and-handle_mm_fault-for-driver-use.patch
-* iommu-amd-use-handle_mm_fault-directly-v2.patch
-* memory-hotplug-remove-redundant-call-of-page_to_pfn.patch
-* mm-move-swp_entry_t-definition-to-include-linux-mm_typesh.patch
-* mm-page_alloc-store-updated-page-migratetype-to-avoid-misusing-stale-value.patch
-* mm-page_alloc-store-updated-page-migratetype-to-avoid-misusing-stale-value-fix.patch
-* mm-remove-the-useless-gfp-in-__memcg_kmem_get_cache.patch
-* remove-unnecessary-is_valid_nodemask.patch
-* include-linux-kmemleakh-needs-slabh.patch
-* mm-gfp-escalatedly-define-gfp_highuser-and-gfp_highuser_movable.patch
-* mm-support-madvisemadv_free.patch
-* x86-add-pmd_-for-thp.patch
-* x86-add-pmd_-for-thp-fix.patch
-* sparc-add-pmd_-for-thp.patch
-* powerpc-add-pmd_-for-thp.patch
-* arm-add-pmd_mkclean-for-thp.patch
-* arm64-add-pmd_-for-thp.patch
-* mm-dont-split-thp-page-when-syscall-is-called.patch
-* mm-page_ext-resurrect-struct-page-extending-code-for-debugging.patch
-* mm-debug-pagealloc-prepare-boottime-configurable-on-off.patch
-* mm-debug-pagealloc-make-debug-pagealloc-boottime-configurable.patch
-* mm-nommu-use-alloc_pages_exact-rather-than-its-own-implementation.patch
-* stacktrace-introduce-snprint_stack_trace-for-buffer-output.patch
-* mm-page_owner-keep-track-of-page-owners.patch
-* mm-page_owner-correct-owner-information-for-early-allocated-pages.patch
-* documentation-add-new-page_owner-document.patch
-* mmvmacache-count-number-of-system-wide-flushes.patch
-* mm-vmscan-invoke-slab-shrinkers-from-shrink_zone.patch
-* fs-seq_file-fallback-to-vmalloc-instead-of-oom-kill-processes.patch
-* fs-seq_file-fallback-to-vmalloc-instead-of-oom-kill-processes-fix.patch
-* mm-oom-remove-gfp-helper-function.patch
-* mm-fix-anon_vma_clone-error-treatment.patch
-* mm-introduce-do_shared_fault-and-drop-do_fault-fix-fix.patch
-* fs-mpagec-forgotten-write_sync-in-case-of-data-integrity-write.patch
-* zsmalloc-merge-size_class-to-reduce-fragmentation.patch
-* zram-remove-bio-parameter-from-zram_bvec_rw.patch
-* zram-change-parameter-from-vaild_io_request.patch
-* zram-implement-rw_page-operation-of-zram.patch
-* zram-implement-rw_page-operation-of-zram-fix.patch
-* zram-implement-rw_page-operation-of-zram-fix-2.patch
-* zram-implement-rw_page-operation-of-zram-fix-2-cleanup.patch
-* zram-implement-rw_page-operation-of-zram-fix-3.patch
-* zsmalloc-fix-zs_init-cpu-notifier-error-handling.patch
-* zsmalloc-fix-zs_init-cpu-notifier-error-handling-fix-2.patch
-* zsmalloc-fix-zs_init-cpu-notifier-error-handling-fix.patch
-* zsmalloc-correct-fragile-_atomic-use.patch
-* mm-zsmalloc-support-allocating-obj-with-size-of-zs_max_alloc_size.patch
-* mm-zram-correct-zram_zero-flag-bit-position.patch
-* mm-zsmalloc-avoid-duplicate-assignment-of-prev_class.patch
-* mm-zswap-add-__init-to-some-functions-in-zswap.patch
-* mm-zswap-deletion-of-an-unnecessary-check-before-the-function-call-free_percpu.patch
-* mm-zbud-init-user-ops-only-when-it-is-needed.patch
-* do_shared_fault-check-that-mmap_sem-is-held.patch
-* security-smack-replace-kzalloc-with-kmem_cache-for-inode_smack.patch
-* fs-proc-use-a-rb-tree-for-the-directory-entries.patch
-* fs-proc-use-a-rb-tree-for-the-directory-entries-fix.patch
-* procfs-fix-error-handling-of-proc_register.patch
-* fs-proc-use-rb_entry_safe-instead-of-rb_entry.patch
-* proc-task_state-read-cred-group_info-outside-of-task_lock.patch
-* proc-task_state-deuglify-the-max_fds-calculation.patch
-* proc-task_state-move-the-main-seq_printf-outside-of-rcu_read_lock.patch
-* proc-task_state-ptrace_parent-doesnt-need-pid_alive-check.patch
-* sched_show_task-fix-unsafe-usage-of-real_parent.patch
-* exit-reparent-use-ptrace_entry-rather-than-sibling-for-exit_dead-tasks.patch
-* exit-reparent-cleanup-the-changing-of-parent.patch
-* exit-reparent-cleanup-the-changing-of-parent-fix.patch
-* exit-reparent-cleanup-the-usage-of-reparent_leader.patch
-* exit-ptrace-shift-reap-dead-code-from-exit_ptrace-to-forget_original_parent.patch
-* ia64-trivial-replace-get_unused_fd-by-get_unused_fd_flags0.patch
-* ppc-cell-trivial-replace-get_unused_fd-by-get_unused_fd_flags0.patch
-* binfmt_misc-trivial-replace-get_unused_fd-by-get_unused_fd_flags0.patch
-* file-trivial-replace-get_unused_fd-by-get_unused_fd_flags0.patch
-* file-remove-get_unused_fd-macro.patch
-* kernel-add-panic_on_warn.patch
-* kernel-add-panic_on_warn-v7.patch
-* kernel-add-panic_on_warn-v9.patch
-* drivers-misc-ti-st-st_corec-fix-null-dereference-on-protocol-type-check.patch
-* printk-remove-used-once-early_vprintk.patch
-* tile-neaten-early_printk-uses.patch
-* tile-use-pr_warn-instead-of-pr_warning.patch
-* printk-add-and-use-loglevel_level-defines-for-kern_level-equivalents.patch
-* printk-drop-logbuf_cpu-volatile-qualifier.patch
-* lib-vsprintf-add-%pt-format-specifier.patch
-* maintainers-update-ivtv-mailing-lists-as-subscriber-only.patch
-* drivers-video-backlight-backlightc-remove-backlight-sysfs-uevent.patch
-* mm-utilc-add-kstrimdup.patch
-* lib-add-crc64-ecma-module.patch
-* checkpatch-add-an-error-test-for-no-space-before-comma.patch
-* checkpatch-add-error-on-use-of-attributeweak-or-__weak-declarations.patch
-* checkpatch-improve-test-for-no-space-after-cast.patch
-* checkpatch-improve-warning-message-for-needless-if-case.patch
-* checkpatch-fix-use-via-symlink-make-missing-spelling-file-non-fatal.patch
-* checkpatch-try-to-avoid-mask-and-shift-errors.patch
-* checkpatch-reduce-maintainers-update-message-frequency.patch
-* checkpatch-add-strict-test-for-function-pointer-calling-style.patch
-* checkpatch-allow-certain-si-units-with-three-characters.patch
-* checkpatch-add-strict-preference-for-defines-using-bitfoo.patch
-* checkpatch-add-test-for-consecutive-string-fragments.patch
-* checkpatch-add-strict-pointer-comparison-to-null-test.patch
-* checkpatch-add-ability-to-fix-coalesce-string-fragments-on-multiple-lines.patch
-* binfmt_misc-add-comments-debug-logs.patch
-* binfmt_misc-clean-up-code-style-a-bit.patch
-* fs-binfmt_miscc-use-gfp_kernel-instead-of-gfp_user.patch
-* init-allow-config_init_fallback=n-to-disable-defaults-if-init=-fails.patch
-* init-allow-config_init_fallback=n-to-disable-defaults-if-init=-fails-checkpatch-fixes.patch
-* init-remove-config_init_fallback.patch
-* ncpfs-return-proper-error-from-ncp_ioc_setroot-ioctl.patch
-* drivers-rtc-interfacec-check-the-validation-of-rtc_time-in-__rtc_read_time.patch
-* rtc-omap-fix-clock-source-configuration.patch
-* rtc-omap-fix-missing-wakealarm-attribute.patch
-* rtc-omap-fix-interrupt-disable-at-probe.patch
-* rtc-omap-clean-up-probe-error-handling.patch
-* rtc-omap-fix-class-device-registration.patch
-* rtc-omap-remove-unused-register-base-define.patch
-* rtc-omap-use-dev_info.patch
-* rtc-omap-make-platform-device-id-table-const.patch
-* rtc-omap-add-device-abstraction.patch
-* rtc-omap-remove-driver_name-macro.patch
-* rtc-omap-add-structured-device-type-info.patch
-* rtc-omap-silence-bogus-power-up-reset-message-at-probe.patch
-* rtc-omap-add-helper-to-read-raw-bcd-time.patch
-* rtc-omap-add-helper-to-read-32-bit-registers.patch
-* rtc-omap-add-support-for-pmic_power_en.patch
-* rtc-omap-add-support-for-pmic_power_en-v3.patch
-* rtc-omap-add-support-for-pmic_power_en-v3-fix.patch
-* rtc-omap-add-support-for-pmic_power_en-v4.patch
-* rtc-omap-enable-wake-up-from-power-off.patch
-* rtc-omap-fix-minor-coding-style-issues.patch
-* rtc-omap-add-copyright-entry.patch
-* arm-dts-am33xx-update-rtc-node-compatible-property.patch
-* arm-dts-am335x-boneblack-enable-power-off-and-rtc-wake-up.patch
-* rtc-pcf8563-remove-leftover-code.patch
-* rtc-pcf8563-fix-write-of-invalid-bits-to-st2-reg.patch
-* rtc-pcf8563-fix-wrong-time-from-read_alarm.patch
-* rtc-pcf8563-handle-consequeces-of-lacking-second-alarm-reg.patch
-* rtc-pcf8563-save-battery-power.patch
-* rtc-pcf8563-clear-expired-alarm-at-boot-time.patch
-* drivers-rtc-rtc-sirfsocc-add-alarm_irq_enable-support.patch
-* drivers-rtc-rtc-sirfsocc-add-alarm_irq_enable-support-fix.patch
-* drivers-rtc-rtc-sirfsocc-replace-local_irq_disable-by-spin_lock_irq-for-smp-safety.patch
-* rtc-ds1374-add-watchdog-support.patch
-* rtc-ds1374-add-watchdog-support-checkpatch-fixes.patch
-* rtc-ds1307-add-support-for-mcp7940x-chips.patch
-* of-add-vendor-prefix-for-pericom-technology.patch
-* rtc-ds1307-add-device-tree-bindings-documentation.patch
-* rtc-ds1307-add-device-tree-support.patch
-* rtc-rtc-isl12057-fix-masking-of-register-values.patch
-* rtc-rtc-isl12057-add-support-for-century-bit.patch
-* rtc-rtc-isl12057-add-proper-handling-of-oscillator-failure-bit.patch
-* rtc-rtc-isl12057-fix-isil-vs-isl-naming-for-intersil.patch
-* rtc-rtc-isl12057-report-error-code-upon-failure-in-dev_err-calls.patch
-* rtc-rtc-isl12057-add-alarm-support-to-intersil-isl12057-rtc-driver.patch
-* rtc-omap-drop-vendor-prefix-from-power-controller-dt-property.patch
-* befs-remove-dead-code.patch
-* hfsplus-fix-longname-handling.patch
-* fat-add-fat_fallocate-operation.patch
-* fat-skip-cluster-allocation-on-fallocated-region.patch
-* fat-permit-to-return-phy-block-number-by-fibmap-in-fallocated-region.patch
-* documentation-filesystems-vfattxt-update-the-limitation-for-fat-fallocate.patch
-* fat-fix-data-past-eof-resulting-from-fsx-testsuite.patch
-* fat-fix-data-past-eof-resulting-from-fsx-testsuite-v2.patch
-* usermodehelper-dont-use-clone_vfork-for-____call_usermodehelper.patch
-* usermodehelper-kill-the-kmod_thread_locker-logic.patch
-* exit-wait-cleanup-the-ptrace_reparented-checks.patch
-* exit-wait-cleanup-the-ptrace_reparented-checks-fix.patch
-* exit-wait-dont-use-zombie-real_parent.patch
-* exit-wait-drop-tasklist_lock-before-psig-c-accounting.patch
-* exit-release_task-fix-the-comment-about-group-leader-accounting.patch
-* exit-proc-dont-try-to-flush-proc-tgid-task-tgid.patch
-* exit-reparent-fix-the-dead-parent-pr_set_child_subreaper-reparenting.patch
-* exit-reparent-fix-the-cross-namespace-pr_set_child_subreaper-reparenting.patch
-* exit-reparent-s-while_each_thread-for_each_thread-in-find_new_reaper.patch
-* exit-reparent-document-the-has_child_subreaper-checks.patch
-* exit-reparent-introduce-find_child_reaper.patch
-* exit-reparent-introduce-find_alive_thread.patch
-* exit-reparent-avoid-find_new_reaper-if-no-children.patch
-* exit-reparent-call-forget_original_parent-under-tasklist_lock.patch
-* exit-exit_notify-re-use-dead-list-to-autoreap-current.patch
-* syscalls-implement-execveat-system-call.patch
-* x86-hook-up-execveat-system-call.patch
-* syscalls-add-selftest-for-execveat2.patch
-* sparc-hook-up-execveat-system-call.patch
-* sparc-hook-up-execveat-system-call-v10.patch
-* kexec-remove-unnecessary-kern_err-from-kexecc.patch
-* kdump-vmcoreinfo-report-actual-value-of-phys_base.patch
-* sysctl-terminate-strings-also-on-r.patch
-* sysctl-terminate-strings-also-on-r-fix.patch
-* gcov-enable-gcov_profile_all-from-arch-kconfigs.patch
-* fs-affs-filec-forward-declaration-clean-up.patch
-* fs-affs-amigaffsc-use-va_format-instead-of-buffer-vnsprintf.patch
-* fs-affs-filec-adding-support-to-o_direct.patch
-* fs-affs-filec-remove-obsolete-pagesize-check.patch
-* ratelimit-add-initialization-macro.patch
-* fault-inject-add-ratelimit-option-v2.patch
-* make-initrd-compression-algorithm-selection-not-expert.patch
-* decompress_bunzip2-off-by-one-in-get_next_block.patch
-* lib-consistency-of-compress-formats-for-kernel-image.patch
-* ipc-semc-chance-memory-barrier-in-sem_lock-to-smp_rmb.patch
-* ipc-semc-chance-memory-barrier-in-sem_lock-to-smp_rmb-fix.patch
-* ipc-semc-chance-memory-barrier-in-sem_lock-to-smp_rmb-fix-fix.patch
-* ipc-semc-increase-semmsl-semmni-semopm.patch
-* ipc-msg-increase-msgmni-remove-scaling.patch
-* ipc-msg-increase-msgmni-remove-scaling-checkpatch-fixes.patch
-* mm-fix-overly-aggressive-shmdt-when-calls-span-multiple-segments.patch
-* shmdt-use-i_size_read-instead-of-i_size.patch
-  linux-next.patch
-  linux-next-rejects.patch
-  linux-next-git-rejects.patch
-* drivers-gpio-gpio-zevioc-fix-build.patch
-* drivers-staging-media-makefile-fix-build.patch
-* slab-fix-cpuset-check-in-fallback_alloc.patch
-* slub-fix-cpuset-check-in-get_any_partial.patch
-* mm-cma-make-kmemleak-ignore-cma-regions.patch
-* mm-cma-split-cma-reserved-in-dmesg-log.patch
-* fs-proc-include-cma-info-in-proc-meminfo.patch
-* lib-show_mem-this-patch-adds-cma-reserved-infromation.patch
-* lib-show_mem-this-patch-adds-cma-reserved-infromation-fix.patch
-* fallocate-create-fan_modify-and-in_modify-events.patch
-* tools-testing-selftests-makefile-alphasort-the-targets-list.patch
-* fsnotify-unify-inode-and-mount-marks-handling.patch
-* fsnotify-remove-destroy_list-from-fsnotify_mark.patch
-* mm-replace-remap_file_pages-syscall-with-emulation.patch
-* w1-call-put_device-if-device_register-fails.patch
-* mm-add-strictlimit-knob-v2.patch
-  make-sure-nobodys-leaking-resources.patch
-  journal_add_journal_head-debug.patch
-  journal_add_journal_head-debug-fix.patch
-  releasing-resources-with-children.patch
-  make-frame_pointer-default=y.patch
-  kernel-forkc-export-kernel_thread-to-modules.patch
-  mutex-subsystem-synchro-test-module.patch
-  slab-leaks3-default-y.patch
-  add-debugging-aid-for-memory-initialisation-problems.patch
-  workaround-for-a-pci-restoring-bug.patch
+--X1bOJ3K7DJ5YkBrT--
