@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283AbaKZMtu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 07:49:50 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:49074 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990AbaKZMtr (ORCPT
+	id S1752016AbaKZMuG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 07:50:06 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:50790 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816AbaKZMuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 07:49:47 -0500
-Message-ID: <5475CC66.6080600@linaro.org>
-Date: Wed, 26 Nov 2014 13:49:42 +0100
+	Wed, 26 Nov 2014 07:50:03 -0500
+Message-ID: <5475CC75.5030300@linaro.org>
+Date: Wed, 26 Nov 2014 13:49:57 +0100
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Sonny Rao <sonnyrao@chromium.org>, linux-arm-kernel@lists.infradead.org
-CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Doug Anderson <dianders@chromium.org>,
+To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>
+CC: Doug Anderson <dianders@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
         Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
         Will Deacon <will.deacon@arm.com>,
@@ -22,128 +25,61 @@ CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         Sudeep Holla <Sudeep.Holla@arm.com>,
         Mark Rutland <Mark.Rutland@arm.com>,
         Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        Nathan Lynch <Nathan_Lynch@mentor.com>, robh+dt@kernel.org
+        Marc Zyngier <marc.zyngier@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        Rob Herring <robh+dt@kernel.org>, Sonny Rao <sonnyrao@chromium.org>
 Subject: Re: [PATCH v4] clocksource: arch_timer: Allow the device tree to
  specify uninitialized timer registers
-References: <1412753627-28287-1-git-send-email-sonnyrao@chromium.org>
-In-Reply-To: <1412753627-28287-1-git-send-email-sonnyrao@chromium.org>
+References: <1412753627-28287-1-git-send-email-sonnyrao@chromium.org> <4822206.0yqmIumDEc@diego> <5475C802.4050903@linaro.org> <11522840.iniX5CHHHk@diego>
+In-Reply-To: <11522840.iniX5CHHHk@diego>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2014 09:33 AM, Sonny Rao wrote:
-> From: Doug Anderson <dianders@chromium.org>
+On 11/26/2014 01:48 PM, Heiko Stübner wrote:
+> Am Mittwoch, 26. November 2014, 13:30:58 schrieb Daniel Lezcano:
+>> On 11/26/2014 01:06 PM, Heiko Stübner wrote:
+>>> Hi Daniel,
+>>>
+>>> Am Mittwoch, 26. November 2014, 12:51:08 schrieb Daniel Lezcano:
+>>>> Hi Doug, Olof,
+>>>>
+>>>> IIUC, it sounds like this patch is needed from some other patches in
+>>>> arm-soc. Olof was proposing to take this patch through its tree to
+>>>> facilitate the integration.
+>>>>
+>>>> Olof, is it this patch you were worried about ?
+>>>
+>>> I think this is one of two patches in question.
+>>>
+>>> "clocksource: arch_timer: Fix code to use physical timers when requested"
+>>> [0] would be the second one.
+>>>
+>>> And the patch for arm-soc that Olof means would be "ARM: dts: rk3288: add
+>>> arm,cpu-registers-not-fw-configured" [1].
+>>
+>> Ok, so IIUC, "clocksource: arch_timer: Fix code to use physical timers
+>> when requested" should go via arm's tree, right ?
 >
-> Some 32-bit (ARMv7) systems are architected like this:
+> If I'm reading Olof's irc-comments from yesterday correctly, that is right and
+> the 3 patches should go in together:
 >
-> * The firmware doesn't know and doesn't care about hypervisor mode and
->    we don't want to add the complexity of hypervisor there.
->
-> * The firmware isn't involved in SMP bringup or resume.
->
-> * The ARCH timer come up with an uninitialized offset (CNTVOFF)
->    between the virtual and physical counters.  Each core gets a
->    different random offset.
->
-> * The device boots in "Secure SVC" mode.
->
-> * Nothing has touched the reset value of CNTHCTL.PL1PCEN or
->    CNTHCTL.PL1PCTEN (both default to 1 at reset)
->
-> On systems like the above, it doesn't make sense to use the virtual
-> counter.  There's nobody managing the offset and each time a core goes
-> down and comes back up it will get reinitialized to some other random
-> value.
->
-> This adds an optional property which can inform the kernel of this
-> situation, and firmware is free to remove the property if it is going
-> to initialize the CNTVOFF registers when each CPU comes out of reset.
->
-> Currently, the best course of action in this case is to use the
-> physical timer, which is why it is important that CNTHCTL hasn't been
-> changed from its reset value and it's a reasonable assumption given
-> that the firmware has never entered HYP mode.
->
-> Note that it's been said that on ARMv8 systems the firmware and
-> kernel really can't be architected as described above.  That means
-> using the physical timer like this really only makes sense for ARMv7
-> systems.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
-> Reviewed-by: Mark Rutland <mark.rutland@arm.com>
+> - "clocksource: arch_timer: Fix code to use physical timers
+>    when requested" fixes the use of physical timers in general
+> - "clocksource: arch_timer: Allow the device tree to specify uninitialized
+>    timer registers" allows this to be set from dt
+> - "ARM: dts: rk3288: add arm,cpu-registers-not-fw-configured" enables this on
+>    rk3288
 
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Ok, then I drop them from my tree and will let Olof to handle them.
 
-I would be nice to have Catalin's ack.
-
-Thanks
+Thanks !
 
    -- Daniel
-
-> ---
-> Changes in v2:
-> - Add "#ifdef CONFIG_ARM" as per Will Deacon
->
-> Changes in v3:
-> - change property name to arm,cntvoff-not-fw-configured and specify
->    that the value of CNTHCTL.PL1PC(T)EN must still be the reset value
->    of 1 as per Mark Rutland
->
-> Changes in v4:
-> - change property name to arm,cpu-registers-not-fw-configured and
->    specify that all cpu registers must have architected reset values
->    per Mark Rutland
-> - change from "#ifdef CONFIG_ARM" to "if (IS_ENABLED(CONFIG_ARM))" per
->    Arnd Bergmann
-> ---
->   Documentation/devicetree/bindings/arm/arch_timer.txt | 8 ++++++++
->   drivers/clocksource/arm_arch_timer.c                 | 8 ++++++++
->   2 files changed, 16 insertions(+)
->
-> diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
-> index 37b2caf..256b4d8 100644
-> --- a/Documentation/devicetree/bindings/arm/arch_timer.txt
-> +++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
-> @@ -22,6 +22,14 @@ to deliver its interrupts via SPIs.
->   - always-on : a boolean property. If present, the timer is powered through an
->     always-on power domain, therefore it never loses context.
->
-> +** Optional properties:
-> +
-> +- arm,cpu-registers-not-fw-configured : Firmware does not initialize
-> +  any of the generic timer CPU registers, which contain their
-> +  architecturally-defined reset values. Only supported for 32-bit
-> +  systems which follow the ARMv7 architected reset values.
-> +
-> +
->   Example:
->
->   	timer {
-> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-> index 8daf056..799139f 100644
-> --- a/drivers/clocksource/arm_arch_timer.c
-> +++ b/drivers/clocksource/arm_arch_timer.c
-> @@ -654,6 +654,14 @@ static void __init arch_timer_init(struct device_node *np)
->   	arch_timer_detect_rate(NULL, np);
->
->   	/*
-> +	 * If we cannot rely on firmware initializing the timer registers then
-> +	 * we should use the physical timers instead.
-> +	 */
-> +	if (IS_ENABLED(CONFIG_ARM) &&
-> +	    of_property_read_bool(np, "arm,cpu-registers-not-fw-configured"))
-> +			arch_timer_use_virtual = false;
-> +
-> +	/*
->   	 * If HYP mode is available, we know that the physical timer
->   	 * has been configured to be accessible from PL1. Use it, so
->   	 * that a guest can use the virtual timer instead.
->
 
 
 -- 
