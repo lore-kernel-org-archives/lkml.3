@@ -1,109 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446AbaKZK7Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 05:59:25 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:49469 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988AbaKZK7X convert rfc822-to-8bit (ORCPT
+	id S1751930AbaKZLGD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 06:06:03 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:48358 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848AbaKZLGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 05:59:23 -0500
-Date: Wed, 26 Nov 2014 10:59:18 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: "arm@kernel.org" <arm@kernel.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        device tree <devicetree@vger.kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 2/2] arm64: Add Juno board device tree.
-Message-ID: <20141126105918.GB828@e106497-lin.cambridge.arm.com>
-References: <1415727131-4572-1-git-send-email-Liviu.Dudau@arm.com>
- <1415727131-4572-3-git-send-email-Liviu.Dudau@arm.com>
- <5475ABC0.3090007@arm.com>
+	Wed, 26 Nov 2014 06:06:00 -0500
+Message-ID: <5475B40F.5030209@linaro.org>
+Date: Wed, 26 Nov 2014 11:05:51 +0000
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <5475ABC0.3090007@arm.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 26 Nov 2014 10:59:20.0651 (UTC) FILETIME=[07D6C9B0:01D00968]
-X-MC-Unique: 114112610592104201
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+To: Marc Zyngier <marc.zyngier@arm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>
+CC: Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Daniel Drake <drake@endlessm.com>,
+        Dmitry Pervushin <dpervushin@gmail.com>,
+        Tim Sander <tim@krieglstein.org>
+Subject: Re: [PATCH 3.18-rc3 v9 1/5] irqchip: gic: Finer grain locking for
+ gic_raise_softirq
+References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org> <1416936401-5147-1-git-send-email-daniel.thompson@linaro.org> <1416936401-5147-2-git-send-email-daniel.thompson@linaro.org> <5474BF19.3040707@arm.com>
+In-Reply-To: <5474BF19.3040707@arm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 10:30:24AM +0000, Marc Zyngier wrote:
-> Hi Liviu,
+On 25/11/14 17:40, Marc Zyngier wrote:
+> Hi Daniel,
 > 
-> On 11/11/14 17:32, Liviu Dudau wrote:
-> > This adds support for ARM's Juno development board (rev 0).
-> > It enables most of the board peripherals: UART, I2C, USB, MMC and
-> > 100Mb ethernet. There is no support at the moment for clock setting
-> > and HDLCD driver which depends on it.
-> > 
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> > ---
-> >  arch/arm64/boot/dts/arm/Makefile              |   1 +
-> >  arch/arm64/boot/dts/arm/juno-clocks.dtsi      |  45 ++++++
-> >  arch/arm64/boot/dts/arm/juno-motherboard.dtsi | 129 +++++++++++++++
-> >  arch/arm64/boot/dts/arm/juno.dts              | 218 ++++++++++++++++++++++++++
-> >  4 files changed, 393 insertions(+)
-> >  create mode 100644 arch/arm64/boot/dts/arm/juno-clocks.dtsi
-> >  create mode 100644 arch/arm64/boot/dts/arm/juno-motherboard.dtsi
-> >  create mode 100644 arch/arm64/boot/dts/arm/juno.dts
-> > 
+> On 25/11/14 17:26, Daniel Thompson wrote:
+>> irq_controller_lock is used for multiple purposes within the gic driver.
+>> Primarily it is used to make register read-modify-write sequences atomic.
+>> It is also used by gic_raise_softirq() in order that the big.LITTLE
+>> migration logic can figure out when it is safe to migrate interrupts
+>> between physical cores.
+>>
+>> The second usage of irq_controller_lock is difficult to discern when
+>> reviewing the code because the migration itself takes place outside
+>> the lock.
+>>
+>> This patch makes the second usage more explicit by splitting it out into
+>> a separate lock and providing better comments.
 > 
-> [...]
-> 
-> > diff --git a/arch/arm64/boot/dts/arm/juno.dts b/arch/arm64/boot/dts/arm/juno.dts
-> > new file mode 100644
-> > index 0000000..097ecc4
-> > --- /dev/null
-> > +++ b/arch/arm64/boot/dts/arm/juno.dts
-> 
-> [...]
-> 
-> > +       timer {
-> > +               compatible = "arm,armv8-timer";
-> > +               interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
-> > +                            <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
-> > +                            <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
-> > +                            <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>;
-> > +       };
-> 
-> Sorry, I should have spotted this earlier: all these interrupts are
-> *level*, not edge. This happens to work because the GIC's config
-> register is RO for PPIs on Juno, but still...
+> While we're at it, how about an additional patch that would make this
+> lock disappear entirely when the big-little stuff is not compiled in,
+> which is likely to be the case on a lot of (dare I say most?) systems?
+> That will save expensive barriers that we definitely could do without.
 
-Yes, I've seen your other email to Suravee regarding interrupt triggering and I was trying to
-find the relevant bits in Juno to tell me why I've put the info in DT this way. Maybe I *did*
-copy-paste this part from FVP DT though.
+Will do.
 
-I will send a patch to Olof to update.
 
-Best regards,
-Liviu
-
+> It otherwise looks good to me.
 > 
 > Thanks,
 > 
 > 	M.
-> -- 
-> Jazz is not dead. It just smells funny...
 > 
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+>> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Cc: Jason Cooper <jason@lakedaemon.net>
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>> Cc: Marc Zyngier <marc.zyngier@arm.com>
+>> ---
+>>  drivers/irqchip/irq-gic.c | 21 ++++++++++++++++++---
+>>  1 file changed, 18 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+>> index 38493ff28fa5..bb4bc20573ea 100644
+>> --- a/drivers/irqchip/irq-gic.c
+>> +++ b/drivers/irqchip/irq-gic.c
+>> @@ -73,6 +73,12 @@ struct gic_chip_data {
+>>  static DEFINE_RAW_SPINLOCK(irq_controller_lock);
+>>  
+>>  /*
+>> + * This lock is used by the big.LITTLE migration code to ensure no
+>> + * IPIs can be pended on the old core after the map has been updated.
+>> + */
+>> +static DEFINE_RAW_SPINLOCK(cpu_map_migration_lock);
+>> +
+>> +/*
+>>   * The GIC mapping of CPU interfaces does not necessarily match
+>>   * the logical CPU numbering.  Let's use a mapping as returned
+>>   * by the GIC itself.
+>> @@ -624,7 +630,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+>>  	int cpu;
+>>  	unsigned long flags, map = 0;
+>>  
+>> -	raw_spin_lock_irqsave(&irq_controller_lock, flags);
+>> +	raw_spin_lock_irqsave(&cpu_map_migration_lock, flags);
+>>  
+>>  	/* Convert our logical CPU mask into a physical one. */
+>>  	for_each_cpu(cpu, mask)
+>> @@ -639,7 +645,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+>>  	/* this always happens on GIC0 */
+>>  	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
+>>  
+>> -	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
+>> +	raw_spin_unlock_irqrestore(&cpu_map_migration_lock, flags);
+>>  }
+>>  #endif
+>>  
+>> @@ -710,8 +716,17 @@ void gic_migrate_target(unsigned int new_cpu_id)
+>>  
+>>  	raw_spin_lock(&irq_controller_lock);
+>>  
+>> -	/* Update the target interface for this logical CPU */
+>> +	/*
+>> +	 * Update the target interface for this logical CPU
+>> +	 *
+>> +	 * From the point we release the cpu_map_migration_lock any new
+>> +	 * SGIs will be pended on the new cpu which makes the set of SGIs
+>> +	 * pending on the old cpu static. That means we can defer the
+>> +	 * migration until after we have released the irq_controller_lock.
+>> +	 */
+>> +	raw_spin_lock(&cpu_map_migration_lock);
+>>  	gic_cpu_map[cpu] = 1 << new_cpu_id;
+>> +	raw_spin_unlock(&cpu_map_migration_lock);
+>>  
+>>  	/*
+>>  	 * Find all the peripheral interrupts targetting the current
+>>
+> 
+> 
 
