@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751597AbaKZTM2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 14:12:28 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:61393 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199AbaKZTM1 (ORCPT
+	id S1752285AbaKZTOE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 14:14:04 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:52381 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975AbaKZTOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 14:12:27 -0500
+	Wed, 26 Nov 2014 14:14:00 -0500
+Message-ID: <5476266E.9040901@mentor.com>
+Date: Wed, 26 Nov 2014 21:13:50 +0200
+From: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <547624C7.3020003@oracle.com>
-References: <1417010419-3827-1-git-send-email-sasha.levin@oracle.com>
-	<1417010419-3827-2-git-send-email-sasha.levin@oracle.com>
-	<CAPAsAGztsLxPbYfLzmDmGUeezhs_q_Az=Q9oNHRqnpBXjAajjg@mail.gmail.com>
-	<54761406.9090602@oracle.com>
-	<CA+55aFz8TUtKtkPzQVHAS+-RfNmd6W=CQq4BRcEux+mf8tYtqw@mail.gmail.com>
-	<547624C7.3020003@oracle.com>
-Date: Wed, 26 Nov 2014 11:12:26 -0800
-X-Google-Sender-Auth: 5R5tEVmfjC-3QWvoACTKSp6V3aI
-Message-ID: <CA+55aFwCUyy3gF9M7JXuyRGgOzELVbPAe0T_7giqufgGCn3XKg@mail.gmail.com>
-Subject: Re: [RFC 2/2] kvm: eventfd: detect integer overflow using check_*_overflow
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrey Ryabinin <ryabinin.a.a@gmail.com>, mingo <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Mark Brown <broonie@kernel.org>
+CC: Liam Girdwood <lgirdwood@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: Question about fixed regulator DT properties
+References: <546B5EF9.3080102@mentor.com> <546CAB49.8030103@mentor.com> <20141125121749.GV7712@sirena.org.uk> <54760D6A.9080306@mentor.com> <20141126175304.GM7712@sirena.org.uk>
+In-Reply-To: <20141126175304.GM7712@sirena.org.uk>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [137.202.0.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 11:06 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
->
-> I'm pretty sure that this is something GCC will warn you about in the
-> compilation stage.
+Hi, MarkOn 26.11.2014 19:53, Mark Brown wrote:
+> On Wed, Nov 26, 2014 at 07:27:06PM +0200, Vladimir Zapolskiy wrote:
+>> On 25.11.2014 14:17, Mark Brown wrote:
+> 
+>> b) "regulator-boot-on" does not mean that the regulator is controlled by
+>> bootloader or firmware exclusively.
+> 
+> That's correct...
+> 
+>>>>> Should documentation be updated to reflect "regulator-boot-on" role that
+>>>>> a regulator is re-enabled by the kernel?
+> 
+>>> I'm confused about this.  That's the sole purpose of the flag and as far
+>>> as I can tell it's what the documentation says.
+> 
+>> Documentation/devicetree/bindings/regulator/regulator.txt says:
+> 
+>>   - regulator-boot-on: bootloader/firmware enabled regulator
+> 
+>> I would suggest to add Linux kernel to that list of regulator
+>> controllers, if it is the intention. In its current state the
+>> documentation makes an impression that "regulator-boot-on" property
+>> instructs the kernel to ignore regulator setup, since it is already
+>> controlled by bootloader or firmware.
+> 
+> No, not at all.  It's referring to the state when Linux starts.
+> 
 
-It does? I've never seen it, but maybe it's a new thing.
+thank you for clarification, to grasp the underlying policy let me ask
+for some more information.
 
-The gcc signedness warnings have historically been so wretched that
-it's just sad, and they have to be turned off.
+If I want to enable a fixed regulator (not controlled by
+bootloader/firmware) by Linux on boot or when fixed.ko module is bound,
+shall I specify the same "regulator-boot-on" property? At least this is
+the practical way to enable a fixed and/or gpio regulator right now, but
+is it correct?
 
-> kernel/time/ntp.c:process_adjtimex_modes():
->
->         if (txc->modes & ADJ_FREQUENCY) {
->                 time_freq = txc->freq * PPM_SCALE;   <=== Undefined overflow
->                 time_freq = min(time_freq, MAXFREQ_SCALED);
->                 time_freq = max(time_freq, -MAXFREQ_SCALED);
->                 /* update pps_freq */
->                 pps_set_freq(time_freq);
->         }
->
-> The multiplication is between signed integers, and it overflows (user triggerable).
+Or should the regulator always be enabled externally (assuming
+"regulator-always-on" is omitted) after registration independently on
+"regulator-boot-on" property?
 
-Well, we check that the end result - overflowed or not - is in a sane
-range. So this might fall under the heading of "user gets what he asks
-for".
-
-                         Linus
+--
+With best wishes,
+Vladimir
