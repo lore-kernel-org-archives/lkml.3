@@ -1,33 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741AbaKZXXI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 18:23:08 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59264 "EHLO
+	id S1754538AbaKZXTP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 18:19:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58963 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634AbaKZXXG (ORCPT
+	with ESMTP id S1750861AbaKZXTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 18:23:06 -0500
-Date: Wed, 26 Nov 2014 15:22:12 -0800
+	Wed, 26 Nov 2014 18:19:13 -0500
+Date: Wed, 26 Nov 2014 15:13:23 -0800
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-1dbc321f50262cc1218be65cd352957df6f98a1a@git.kernel.org>
-Cc: gregkh@linuxfoundation.org, tglx@linutronix.de, hpa@zytor.com,
-        yinghai@kernel.org, tony.luck@intel.com, bp@alien8.de,
-        benh@kernel.crashing.org, rdunlap@infradead.org, rjw@rjwysocki.net,
-        mingo@kernel.org, len.brown@intel.com, jroedel@suse.de,
-        joro@8bytes.org, konrad.wilk@oracle.com, jiang.liu@linux.intel.com,
-        linux-kernel@vger.kernel.org, bhelgaas@google.com, pavel@ucw.cz
-Reply-To: bp@alien8.de, rdunlap@infradead.org, rjw@rjwysocki.net,
+Message-ID: <tip-afc1bcbe31c10f5ae16df532398f1bb164448558@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, joro@8bytes.org,
+        bhelgaas@google.com, rjw@rjwysocki.net, bp@alien8.de,
+        andriy.shevchenko@linux.intel.com, rdunlap@infradead.org,
+        hpa@zytor.com, yinghai@kernel.org, grant.likely@linaro.org,
+        konrad.wilk@oracle.com, tglx@linutronix.de, tony.luck@intel.com,
         benh@kernel.crashing.org, gregkh@linuxfoundation.org,
-        yinghai@kernel.org, tony.luck@intel.com, tglx@linutronix.de,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, bhelgaas@google.com,
-        pavel@ucw.cz, len.brown@intel.com, mingo@kernel.org, joro@8bytes.org,
-        jroedel@suse.de, jiang.liu@linux.intel.com, konrad.wilk@oracle.com
-In-Reply-To: <1416901802-24211-37-git-send-email-jiang.liu@linux.intel.com>
-References: <1416901802-24211-37-git-send-email-jiang.liu@linux.intel.com>
+        jiang.liu@linux.intel.com
+Reply-To: tony.luck@intel.com, tglx@linutronix.de, konrad.wilk@oracle.com,
+        grant.likely@linaro.org, jiang.liu@linux.intel.com,
+        gregkh@linuxfoundation.org, benh@kernel.crashing.org,
+        bhelgaas@google.com, joro@8bytes.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, yinghai@kernel.org, hpa@zytor.com,
+        rdunlap@infradead.org, andriy.shevchenko@linux.intel.com, bp@alien8.de,
+        rjw@rjwysocki.net
+In-Reply-To: <1416901802-24211-4-git-send-email-jiang.liu@linux.intel.com>
+References: <1416901802-24211-4-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] ACPI, irq, x86:
-  Kill private function mp_register_gsi()/ mp_unregister_gsi()
-Git-Commit-ID: 1dbc321f50262cc1218be65cd352957df6f98a1a
+Subject: [tip:x86/apic] x86, irq: Kill unused pre_init_apic_IRQ0()
+Git-Commit-ID: afc1bcbe31c10f5ae16df532398f1bb164448558
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -40,17 +41,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1dbc321f50262cc1218be65cd352957df6f98a1a
-Gitweb:     http://git.kernel.org/tip/1dbc321f50262cc1218be65cd352957df6f98a1a
+Commit-ID:  afc1bcbe31c10f5ae16df532398f1bb164448558
+Gitweb:     http://git.kernel.org/tip/afc1bcbe31c10f5ae16df532398f1bb164448558
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Tue, 25 Nov 2014 15:50:00 +0800
+AuthorDate: Tue, 25 Nov 2014 15:49:27 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 26 Nov 2014 23:52:50 +0100
+CommitDate: Wed, 26 Nov 2014 23:52:46 +0100
 
-ACPI, irq, x86: Kill private function mp_register_gsi()/ mp_unregister_gsi()
+x86, irq: Kill unused pre_init_apic_IRQ0()
 
-Function mp_register_gsi() is only called once, so fold it into caller
-acpi_register_gsi_ioapic(). Do the same for mp_unregister_gsi().
+Now there's no user of pre_init_apic_IRQ0(), so kill it.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -63,97 +63,49 @@ Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
 Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Pavel Machek <pavel@ucw.cz>
-Link: http://lkml.kernel.org/r/1416901802-24211-37-git-send-email-jiang.liu@linux.intel.com
+Cc: Grant Likely <grant.likely@linaro.org>
+Link: http://lkml.kernel.org/r/1416901802-24211-4-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Tested-by: Joerg Roedel <jroedel@suse.de>
+Tested-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- arch/x86/kernel/acpi/boot.c | 57 ++++++++++++++-------------------------------
- 1 file changed, 18 insertions(+), 39 deletions(-)
+ arch/x86/include/asm/io_apic.h |  1 -
+ arch/x86/kernel/apic/io_apic.c | 17 -----------------
+ 2 files changed, 18 deletions(-)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 509a48f..e54a8d7 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -400,42 +400,6 @@ static int mp_config_acpi_gsi(struct device *dev, u32 gsi, int trigger,
- 	return 0;
- }
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index bf006cc..3207143 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -204,7 +204,6 @@ extern int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
+ 			    irq_hw_number_t hwirq);
+ extern void mp_irqdomain_unmap(struct irq_domain *domain, unsigned int virq);
+ extern int mp_set_gsi_attr(u32 gsi, int trigger, int polarity, int node);
+-extern void __init pre_init_apic_IRQ0(void);
  
--static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
--			   int polarity)
--{
--	int irq, node;
--	struct irq_alloc_info info;
--
--	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
--		return gsi;
--
--	trigger = trigger == ACPI_EDGE_SENSITIVE ? 0 : 1;
--	polarity = polarity == ACPI_ACTIVE_HIGH ? 0 : 1;
--	node = dev ? dev_to_node(dev) : NUMA_NO_NODE;
--	ioapic_set_alloc_attr(&info, node, trigger, polarity);
--	irq = mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC, &info);
--	if (irq < 0)
--		return irq;
--
--	/* Don't set up the ACPI SCI because it's already set up */
--	if (enable_update_mptable && acpi_gbl_FADT.sci_interrupt != gsi)
--		mp_config_acpi_gsi(dev, gsi, trigger, polarity);
--
--	return irq;
--}
--
--static void mp_unregister_gsi(u32 gsi)
--{
--	int irq;
--
--	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
--		return;
--
--	irq = mp_map_gsi_to_irq(gsi, 0, NULL);
--	if (irq > 0)
--		mp_unmap_irq(irq);
--}
--
- static struct irq_domain_ops acpi_irqdomain_ops = {
- 	.alloc = mp_irqdomain_alloc,
- 	.free = mp_irqdomain_free,
-@@ -657,10 +621,21 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
- 				    int trigger, int polarity)
- {
- 	int irq = gsi;
--
- #ifdef CONFIG_X86_IO_APIC
-+	int node;
-+	struct irq_alloc_info info;
-+
-+	node = dev ? dev_to_node(dev) : NUMA_NO_NODE;
-+	trigger = trigger == ACPI_EDGE_SENSITIVE ? 0 : 1;
-+	polarity = polarity == ACPI_ACTIVE_HIGH ? 0 : 1;
-+	ioapic_set_alloc_attr(&info, node, trigger, polarity);
-+
- 	mutex_lock(&acpi_ioapic_lock);
--	irq = mp_register_gsi(dev, gsi, trigger, polarity);
-+	irq = mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC, &info);
-+	/* Don't set up the ACPI SCI because it's already set up */
-+	if (irq >= 0 && enable_update_mptable &&
-+	    acpi_gbl_FADT.sci_interrupt != gsi)
-+		mp_config_acpi_gsi(dev, gsi, trigger, polarity);
- 	mutex_unlock(&acpi_ioapic_lock);
- #endif
+ extern void mp_save_irq(struct mpc_intsrc *m);
  
-@@ -670,8 +645,12 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
- static void acpi_unregister_gsi_ioapic(u32 gsi)
- {
- #ifdef CONFIG_X86_IO_APIC
-+	int irq;
-+
- 	mutex_lock(&acpi_ioapic_lock);
--	mp_unregister_gsi(gsi);
-+	irq = mp_map_gsi_to_irq(gsi, 0, NULL);
-+	if (irq > 0)
-+		mp_unmap_irq(irq);
- 	mutex_unlock(&acpi_ioapic_lock);
- #endif
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 51936be..919afe7 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3088,20 +3088,3 @@ int mp_set_gsi_attr(u32 gsi, int trigger, int polarity, int node)
+ 
+ 	return ret;
  }
+-
+-/* Enable IOAPIC early just for system timer */
+-void __init pre_init_apic_IRQ0(void)
+-{
+-	struct io_apic_irq_attr attr = { 0, 0, 0, 0 };
+-
+-	printk(KERN_INFO "Early APIC setup for system timer0\n");
+-#ifndef CONFIG_SMP
+-	physid_set_mask_of_physid(boot_cpu_physical_apicid,
+-					 &phys_cpu_present_map);
+-#endif
+-	setup_local_APIC();
+-
+-	io_apic_setup_irq_pin(0, 0, &attr);
+-	irq_set_chip_and_handler_name(0, &ioapic_chip, handle_edge_irq,
+-				      "edge");
+-}
