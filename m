@@ -1,93 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840AbaKZOyx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 09:54:53 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:38829 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297AbaKZOyv (ORCPT
+	id S1752944AbaKZO4P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 09:56:15 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:44641 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752854AbaKZO4N convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 09:54:51 -0500
-Date: Wed, 26 Nov 2014 15:54:40 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v4 26/42] vhost/net: force len for TX to host endian
-Message-ID: <20141126155440.4f49b70f.cornelia.huck@de.ibm.com>
-In-Reply-To: <20141126144400.GA8086@redhat.com>
-References: <1416933600-21398-1-git-send-email-mst@redhat.com>
-	<1416933600-21398-27-git-send-email-mst@redhat.com>
-	<20141126153102.3f5b8fc9.cornelia.huck@de.ibm.com>
-	<20141126144400.GA8086@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112614-0021-0000-0000-000001EC447E
+	Wed, 26 Nov 2014 09:56:13 -0500
+Date: Wed, 26 Nov 2014 16:56:09 +0200
+From: Mihai =?UTF-8?B?RG9uyJt1?= <mihai.dontu@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Dave Jones <davej@redhat.com>, pgynther@google.com, marcel@holtmann.org,
+        linux-bluetooth@vger.kernel.org, Takashi Iwai <tiwai@suse.de>
+Subject: Re: bluetooth related firmware loader spew on resume.
+Message-ID: <20141126165609.41ee0c24@mdontu-l.dsd.ro>
+In-Reply-To: <20141111181228.GA27815@redhat.com>
+References: <20141111181228.GA27815@redhat.com>
+Organization: Home
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Nov 2014 16:44:00 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
-
-> On Wed, Nov 26, 2014 at 03:31:02PM +0100, Cornelia Huck wrote:
-> > On Tue, 25 Nov 2014 18:43:14 +0200
-> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > 
-> > > We use native endian-ness internally but never
-> > > expose it to guest.
-> > > 
-> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > ---
-> > >  drivers/vhost/net.c | 10 +++++-----
-> > >  1 file changed, 5 insertions(+), 5 deletions(-)
-> > > 
-> > > diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> > > index 8dae2f7..dce5c58 100644
-> > > --- a/drivers/vhost/net.c
-> > > +++ b/drivers/vhost/net.c
-> > > @@ -48,15 +48,15 @@ MODULE_PARM_DESC(experimental_zcopytx, "Enable Zero Copy TX;"
-> > >   * status internally; used for zerocopy tx only.
-> > >   */
-> > >  /* Lower device DMA failed */
-> > > -#define VHOST_DMA_FAILED_LEN	3
-> > > +#define VHOST_DMA_FAILED_LEN	((__force __virtio32)3)
-> > >  /* Lower device DMA done */
-> > > -#define VHOST_DMA_DONE_LEN	2
-> > > +#define VHOST_DMA_DONE_LEN	((__force __virtio32)2)
-> > >  /* Lower device DMA in progress */
-> > > -#define VHOST_DMA_IN_PROGRESS	1
-> > > +#define VHOST_DMA_IN_PROGRESS	((__force __virtio32)1)
-> > >  /* Buffer unused */
-> > > -#define VHOST_DMA_CLEAR_LEN	0
-> > > +#define VHOST_DMA_CLEAR_LEN	((__force __virtio32)0)
-> > 
-> > I find these constants a bit confusing: What does __virtio32 mean
-> > without the context of a vq or device?
-> > 
-> > > 
-> > > -#define VHOST_DMA_IS_DONE(len) ((len) >= VHOST_DMA_DONE_LEN)
-> > > +#define VHOST_DMA_IS_DONE(len) ((__force u32)(len) >= (__force u32)VHOST_DMA_DONE_LEN)
-> > 
-> > And here you cast it to a plain u32 again.
-> > 
-> > I looked at the final code, and you seem either to use the above
-> > constants for .len or do a cpu_to_vhost32(). Wouldn't you need to
-> > convert the constants as well?
+On Tue, 11 Nov 2014 13:12:28 -0500 Dave Jones wrote:
+> Since the addition of 10d4c6736ea "Bluetooth: btusb: Add Broadcom patch
+> RAM support", I (and a number of other people[*]) have been seeing
+> this trace on resume from suspend.
 > 
-> I tried to explain it in the commit message.
-> It's a hack in vhost: it keeps virtio used structure in host
-> memory, but abuses length field for internal housekeeping.
-> This works because length in used ring for tx is always 0.
+> WARNING: CPU: 1 PID: 8565 at drivers/base/firmware_class.c:1127 _request_firmware+0x4c1/0x7c0()
+> CPU: 1 PID: 8565 Comm: kworker/u17:0 Not tainted 3.17.2-200.fc20.x86_64 #1
+> Hardware name: LENOVO 2356JK8/2356JK8, BIOS G7ET94WW (2.54 ) 04/30/2013
+> Workqueue: hci0 hci_power_on [bluetooth]
+> 0000000000000000 00000000f52a564b ffff8800a8c63be8 ffffffff817271cc
+> 0000000000000000 ffff8800a8c63c20 ffffffff81094ced ffff8800a8c63d10
+> ffff8801365ddf00 ffff8801387b4b00 ffff8800a8c63d08 00000000fffffff5
+> Call Trace:
+> [<ffffffff817271cc>] dump_stack+0x45/0x56
+> [<ffffffff81094ced>] warn_slowpath_common+0x7d/0xa0
+> [<ffffffff81094e1a>] warn_slowpath_null+0x1a/0x20
+> [<ffffffff814965c1>] _request_firmware+0x4c1/0x7c0
+> [<ffffffff8137b9b9>] ? snprintf+0x49/0x70
+> [<ffffffff814968f1>] request_firmware+0x31/0x50
+> [<ffffffffa0943bf3>] btusb_setup_bcm_patchram+0x83/0x550 [btusb]
+> [<ffffffff8148ecf6>] ? rpm_idle+0xd6/0x2b0
+> [<ffffffffa0649051>] hci_dev_do_open+0xe1/0xa60 [bluetooth]
+> ACPI: \_SB_.PCI0.LPC_.EC__.BAT1: docking
+> Restarting tasks ... 
+> [<ffffffff810bcb3d>] ? ttwu_do_activate.constprop.90+0x5d/0x70
+> [<ffffffffa064a1c0>] hci_power_on+0x40/0x1e0 [bluetooth]
+> [<ffffffff810f53fb>] ? lock_timer_base.isra.34+0x2b/0x50
+> [<ffffffff810acc39>] process_one_work+0x149/0x3d0
+> [<ffffffff810ad2bb>] worker_thread+0x11b/0x490
+> [<ffffffff810ad1a0>] ? rescuer_thread+0x2e0/0x2e0
+> [<ffffffff810b2318>] kthread+0xd8/0xf0
+> [<ffffffff810b2240>] ? kthread_create_on_node+0x190/0x190
+> [<ffffffff8172e7bc>] ret_from_fork+0x7c/0xb0
+> [<ffffffff810b2240>] ? kthread_create_on_node+0x190/0x190
+> ---[ end trace 75a0e9c7f33ebb4c ]---
+> bluetooth hci0: firmware: brcm/BCM20702A0-0a5c-21e6.hcd will not be loaded
+> Bluetooth: hci0: BCM: patch brcm/BCM20702A0-0a5c-21e6.hcd not found
+> 
+> 
+> At first I thought it was just over-reaction to the file being missing, but
+> looking at the WARN_ON, it appears that we're trying to invoke the firmware
+> loader before userspace is back up ?
+> 
+> In this (and probably other related) kernel, CONFIG_FW_LOADER_USER_HELPER is unset,
+> in case that matters at all.
+> 
+> 	Dave
+> 
+> [*] https://bugzilla.kernel.org/show_bug.cgi?id=81821
+>     https://bugzilla.redhat.com/show_bug.cgi?id=1133378
 
-Ah, ok. It might make sense to add this explanation to the patch :)
+I have the following during normal boot:
 
+[    5.620796] Bluetooth: hci0: read Intel version: 370710018002030d00
+[    5.620822] bluetooth hci0: Direct firmware load for intel/ibt-hw-37.7.10-fw-1.80.2.3.d.bseq failed with error -2
+[    5.620827] Bluetooth: hci0 failed to open Intel firmware file: intel/ibt-hw-37.7.10-fw-1.80.2.3.d.bseq(-2)
+[    5.620920] bluetooth hci0: Direct firmware load for intel/ibt-hw-37.7.bseq failed with error -2
+[    5.620922] Bluetooth: hci0 failed to open default Intel fw file: intel/ibt-hw-37.7.bseq
+[    5.629910] EXT4-fs (sda2): mounted filesystem with ordered data mode. Opts: (null)
+[    5.629916] VFS: Mounted root (ext4 filesystem) readonly on device 8:2.
+
+The driver is trying to load the firmware before root is mounted. Do I
+really need an initramfs?
+
+Thanks,
+
+-- 
+Mihai Donțu
