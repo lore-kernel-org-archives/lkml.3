@@ -1,32 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570AbaKZXUA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 18:20:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59020 "EHLO
+	id S1754583AbaKZXUO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 18:20:14 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59051 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415AbaKZXT6 (ORCPT
+	with ESMTP id S1751415AbaKZXUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 18:19:58 -0500
-Date: Wed, 26 Nov 2014 15:09:02 -0800
+	Wed, 26 Nov 2014 18:20:08 -0500
+Date: Wed, 26 Nov 2014 15:19:07 -0800
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-c07a443c77c4fe7d9f85c18e127020653bb8a45c@git.kernel.org>
-Cc: rjw@rjwysocki.net, benh@kernel.crashing.org, gregkh@linuxfoundation.org,
-        joro@8bytes.org, linux-kernel@vger.kernel.org, tony.luck@intel.com,
-        bhelgaas@google.com, tglx@linutronix.de, mingo@kernel.org,
-        konrad.wilk@oracle.com, jiang.liu@linux.intel.com, bp@alien8.de,
-        hpa@zytor.com, yinghai@kernel.org, rdunlap@infradead.org
-Reply-To: joro@8bytes.org, linux-kernel@vger.kernel.org, tony.luck@intel.com,
-        rjw@rjwysocki.net, benh@kernel.crashing.org,
-        gregkh@linuxfoundation.org, bp@alien8.de, jiang.liu@linux.intel.com,
-        hpa@zytor.com, yinghai@kernel.org, rdunlap@infradead.org,
-        bhelgaas@google.com, tglx@linutronix.de, mingo@kernel.org,
-        konrad.wilk@oracle.com
-In-Reply-To: <1416894816-23245-14-git-send-email-jiang.liu@linux.intel.com>
-References: <1416894816-23245-14-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <tip-61736ef031f4771bf3a63929535c46486b076220@git.kernel.org>
+Cc: yinghai@kernel.org, bp@alien8.de, gregkh@linuxfoundation.org,
+        rdunlap@infradead.org, konrad.wilk@oracle.com, tglx@linutronix.de,
+        grant.likely@linaro.org, jroedel@suse.de, mingo@kernel.org,
+        tony.luck@intel.com, linux-kernel@vger.kernel.org,
+        jiang.liu@linux.intel.com, hpa@zytor.com, rjw@rjwysocki.net,
+        benh@kernel.crashing.org, bhelgaas@google.com, joro@8bytes.org
+Reply-To: tony.luck@intel.com, mingo@kernel.org, jiang.liu@linux.intel.com,
+        linux-kernel@vger.kernel.org, rjw@rjwysocki.net, hpa@zytor.com,
+        gregkh@linuxfoundation.org, bp@alien8.de, yinghai@kernel.org,
+        konrad.wilk@oracle.com, rdunlap@infradead.org, grant.likely@linaro.org,
+        tglx@linutronix.de, jroedel@suse.de, bhelgaas@google.com,
+        benh@kernel.crashing.org, joro@8bytes.org
+In-Reply-To: <1416901802-24211-26-git-send-email-jiang.liu@linux.intel.com>
+References: <1416901802-24211-26-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, PCI, MSI:
-  Use hierarchy irqdomain to manage MSI interrupts
-Git-Commit-ID: c07a443c77c4fe7d9f85c18e127020653bb8a45c
+Subject: [tip:x86/apic] x86, irq: Move irq_cfg.irq_2_pin into io_apic.c
+Git-Commit-ID: 61736ef031f4771bf3a63929535c46486b076220
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -39,331 +39,552 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c07a443c77c4fe7d9f85c18e127020653bb8a45c
-Gitweb:     http://git.kernel.org/tip/c07a443c77c4fe7d9f85c18e127020653bb8a45c
+Commit-ID:  61736ef031f4771bf3a63929535c46486b076220
+Gitweb:     http://git.kernel.org/tip/61736ef031f4771bf3a63929535c46486b076220
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Tue, 25 Nov 2014 13:53:22 +0800
+AuthorDate: Tue, 25 Nov 2014 15:49:49 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 26 Nov 2014 18:59:25 +0100
+CommitDate: Wed, 26 Nov 2014 23:52:48 +0100
 
-x86, PCI, MSI: Use hierarchy irqdomain to manage MSI interrupts
+x86, irq: Move irq_cfg.irq_2_pin into io_apic.c
 
-Enhance MSI code to support hierarchy irqdomain, it helps to make
-the architecture more clear.
+Now only io_apic.c accesses struct irq_cfg.irq_2_pin, so move irq_2_pin
+into struct mp_chip_data in io_apic.c to clean up struct irq_cfg further.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: iommu@lists.linux-foundation.org
 Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
 Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
-Cc: Joerg Roedel <joro@8bytes.org>
-Link: http://lkml.kernel.org/r/1416894816-23245-14-git-send-email-jiang.liu@linux.intel.com
+Cc: Grant Likely <grant.likely@linaro.org>
+Link: http://lkml.kernel.org/r/1416901802-24211-26-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Tested-by: Joerg Roedel <jroedel@suse.de>
 ---
- arch/x86/Kconfig                     |   1 +
- arch/x86/include/asm/hw_irq.h        |   9 ++-
- arch/x86/include/asm/irq_remapping.h |   6 +-
- arch/x86/include/asm/msi.h           |   7 ++
- arch/x86/kernel/apic/msi.c           | 141 +++++++++++++++++++----------------
- arch/x86/kernel/apic/vector.c        |   2 +
- drivers/iommu/irq_remapping.c        |   1 -
- 7 files changed, 94 insertions(+), 73 deletions(-)
+ arch/x86/include/asm/hw_irq.h  |   7 --
+ arch/x86/kernel/apic/io_apic.c | 164 +++++++++++++++++++----------------------
+ arch/x86/kernel/apic/vector.c  |   3 -
+ 3 files changed, 77 insertions(+), 97 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 14385eb..e05be74 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -883,6 +883,7 @@ config X86_LOCAL_APIC
- 	depends on X86_64 || SMP || X86_32_NON_STANDARD || X86_UP_APIC || PCI_MSI
- 	select GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
- 	select IRQ_DOMAIN_HIERARCHY
-+	select PCI_MSI_IRQ_DOMAIN if PCI_MSI
- 
- config X86_IO_APIC
- 	def_bool X86_64 || SMP || X86_32_NON_STANDARD || X86_UP_IOAPIC
 diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index bd7881c..270c432 100644
+index 494d541..1ce5f81 100644
 --- a/arch/x86/include/asm/hw_irq.h
 +++ b/arch/x86/include/asm/hw_irq.h
-@@ -110,9 +110,10 @@ struct irq_2_irte {
+@@ -176,13 +176,6 @@ struct irq_cfg {
+ 	unsigned int		dest_apicid;
+ 	u8			vector;
+ 	u8			move_in_progress : 1;
+-	union {
+-#ifdef CONFIG_X86_IO_APIC
+-		struct {
+-			struct list_head	irq_2_pin;
+-		};
+-#endif
+-	};
  };
- #endif	/* CONFIG_IRQ_REMAP */
  
-+struct irq_domain;
+ extern struct irq_domain *x86_vector_domain;
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 2a10cb9..69aa3b0 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -80,7 +80,13 @@ static DEFINE_MUTEX(ioapic_mutex);
+ static unsigned int ioapic_dynirq_base;
+ static int ioapic_initialized;
+ 
++struct irq_pin_list {
++	struct list_head list;
++	int apic, pin;
++};
 +
- #ifdef	CONFIG_X86_LOCAL_APIC
- struct irq_data;
--struct irq_domain;
- struct pci_dev;
- struct msi_desc;
+ struct mp_chip_data {
++	struct list_head irq_2_pin;
+ 	struct IO_APIC_route_entry entry;
+ 	int trigger;
+ 	int polarity;
+@@ -212,16 +218,6 @@ void mp_save_irq(struct mpc_intsrc *m)
+ 		panic("Max # of irq sources exceeded!!\n");
+ }
  
-@@ -214,6 +215,12 @@ static inline void lock_vector_lock(void) {}
- static inline void unlock_vector_lock(void) {}
- #endif	/* CONFIG_X86_LOCAL_APIC */
- 
-+#ifdef	CONFIG_PCI_MSI
-+extern void arch_init_msi_domain(struct irq_domain *domain);
-+#else
-+static inline void arch_init_msi_domain(struct irq_domain *domain) { }
-+#endif
-+
- /* Statistics */
- extern atomic_t irq_err_count;
- extern atomic_t irq_mis_count;
-diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
-index 3421f10..3b11f5a 100644
---- a/arch/x86/include/asm/irq_remapping.h
-+++ b/arch/x86/include/asm/irq_remapping.h
-@@ -68,11 +68,7 @@ irq_remapping_get_irq_domain(struct irq_alloc_info *info);
- extern void irq_remapping_print_chip(struct irq_data *data, struct seq_file *p);
- 
- /* Create PCI MSI/MSIx irqdomain, use @parent as the parent irqdomain. */
--static inline struct irq_domain *
--arch_create_msi_irq_domain(struct irq_domain *parent)
+-struct irq_pin_list {
+-	struct list_head list;
+-	int apic, pin;
+-};
+-
+-static struct irq_pin_list *alloc_irq_pin_list(int node)
 -{
--	return NULL;
+-	return kzalloc_node(sizeof(struct irq_pin_list), GFP_ATOMIC, node);
 -}
-+extern struct irq_domain *arch_create_msi_irq_domain(struct irq_domain *parent);
+-
+ static void alloc_ioapic_saved_registers(int idx)
+ {
+ 	size_t size;
+@@ -376,16 +372,17 @@ static void ioapic_mask_entry(int apic, int pin)
+  * shared ISA-space IRQs, so we have to support them. We are super
+  * fast in the common case, and fast for shared ISA-space IRQs.
+  */
+-static int __add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pin)
++static int __add_pin_to_irq_node(struct mp_chip_data *data,
++				 int node, int apic, int pin)
+ {
+ 	struct irq_pin_list *entry;
  
- /* Get parent irqdomain for interrupt remapping irqdomain */
- static inline struct irq_domain *arch_get_ir_parent_domain(void)
-diff --git a/arch/x86/include/asm/msi.h b/arch/x86/include/asm/msi.h
-new file mode 100644
-index 0000000..93724cc
---- /dev/null
-+++ b/arch/x86/include/asm/msi.h
-@@ -0,0 +1,7 @@
-+#ifndef _ASM_X86_MSI_H
-+#define _ASM_X86_MSI_H
-+#include <asm/hw_irq.h>
-+
-+typedef struct irq_alloc_info msi_alloc_info_t;
-+
-+#endif /* _ASM_X86_MSI_H */
-diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
-index 10d9ae8..e82ab79 100644
---- a/arch/x86/kernel/apic/msi.c
-+++ b/arch/x86/kernel/apic/msi.c
-@@ -3,6 +3,8 @@
-  *
-  * Copyright (C) 1997, 1998, 1999, 2000, 2009 Ingo Molnar, Hajnalka Szabo
-  *	Moved from arch/x86/kernel/apic/io_apic.c.
-+ * Jiang Liu <jiang.liu@linux.intel.com>
-+ *	Convert to hierarchy irqdomain
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -21,6 +23,8 @@
- #include <asm/apic.h>
- #include <asm/irq_remapping.h>
+ 	/* don't allow duplicates */
+-	for_each_irq_pin(entry, cfg->irq_2_pin)
++	for_each_irq_pin(entry, data->irq_2_pin)
+ 		if (entry->apic == apic && entry->pin == pin)
+ 			return 0;
  
-+static struct irq_domain *msi_default_domain;
-+
- void native_compose_msi_msg(struct pci_dev *pdev,
- 			    unsigned int irq, unsigned int dest,
- 			    struct msi_msg *msg, u8 hpet_id)
-@@ -114,102 +118,107 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+-	entry = alloc_irq_pin_list(node);
++	entry = kzalloc_node(sizeof(struct irq_pin_list), GFP_ATOMIC, node);
+ 	if (!entry) {
+ 		pr_err("can not alloc irq_pin_list (%d,%d,%d)\n",
+ 		       node, apic, pin);
+@@ -393,16 +390,16 @@ static int __add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pi
+ 	}
+ 	entry->apic = apic;
+ 	entry->pin = pin;
++	list_add_tail(&entry->list, &data->irq_2_pin);
+ 
+-	list_add_tail(&entry->list, &cfg->irq_2_pin);
  	return 0;
  }
  
--static int
--msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+-static void __remove_pin_from_irq(struct irq_cfg *cfg, int apic, int pin)
++static void __remove_pin_from_irq(struct mp_chip_data *data, int apic, int pin)
+ {
+ 	struct irq_pin_list *tmp, *entry;
+ 
+-	list_for_each_entry_safe(entry, tmp, &cfg->irq_2_pin, list)
++	list_for_each_entry_safe(entry, tmp, &data->irq_2_pin, list)
+ 		if (entry->apic == apic && entry->pin == pin) {
+ 			list_del(&entry->list);
+ 			kfree(entry);
+@@ -410,22 +407,23 @@ static void __remove_pin_from_irq(struct irq_cfg *cfg, int apic, int pin)
+ 		}
+ }
+ 
+-static void add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pin)
++static void add_pin_to_irq_node(struct mp_chip_data *data,
++				int node, int apic, int pin)
+ {
+-	if (__add_pin_to_irq_node(cfg, node, apic, pin))
++	if (__add_pin_to_irq_node(data, node, apic, pin))
+ 		panic("IO-APIC: failed to add irq-pin. Can not proceed\n");
+ }
+ 
+ /*
+  * Reroute an IRQ to a different pin.
+  */
+-static void __init replace_pin_at_irq_node(struct irq_cfg *cfg, int node,
++static void __init replace_pin_at_irq_node(struct mp_chip_data *data, int node,
+ 					   int oldapic, int oldpin,
+ 					   int newapic, int newpin)
+ {
+ 	struct irq_pin_list *entry;
+ 
+-	for_each_irq_pin(entry, cfg->irq_2_pin) {
++	for_each_irq_pin(entry, data->irq_2_pin) {
+ 		if (entry->apic == oldapic && entry->pin == oldpin) {
+ 			entry->apic = newapic;
+ 			entry->pin = newpin;
+@@ -435,7 +433,7 @@ static void __init replace_pin_at_irq_node(struct irq_cfg *cfg, int node,
+ 	}
+ 
+ 	/* old apic/pin didn't exist, so just add new ones */
+-	add_pin_to_irq_node(cfg, node, newapic, newpin);
++	add_pin_to_irq_node(data, node, newapic, newpin);
+ }
+ 
+ static void __io_apic_modify_irq(struct irq_pin_list *entry,
+@@ -453,13 +451,13 @@ static void __io_apic_modify_irq(struct irq_pin_list *entry,
+ 		final(entry);
+ }
+ 
+-static void io_apic_modify_irq(struct irq_cfg *cfg,
++static void io_apic_modify_irq(struct mp_chip_data *data,
+ 			       int mask_and, int mask_or,
+ 			       void (*final)(struct irq_pin_list *entry))
+ {
+ 	struct irq_pin_list *entry;
+ 
+-	for_each_irq_pin(entry, cfg->irq_2_pin)
++	for_each_irq_pin(entry, data->irq_2_pin)
+ 		__io_apic_modify_irq(entry, mask_and, mask_or, final);
+ }
+ 
+@@ -475,39 +473,31 @@ static void io_apic_sync(struct irq_pin_list *entry)
+ 	readl(&io_apic->data);
+ }
+ 
+-static void mask_ioapic(struct irq_cfg *cfg)
++static void mask_ioapic_irq(struct irq_data *irq_data)
+ {
++	struct mp_chip_data *data = irq_data->chip_data;
+ 	unsigned long flags;
+ 
+ 	raw_spin_lock_irqsave(&ioapic_lock, flags);
+-	io_apic_modify_irq(cfg, ~0, IO_APIC_REDIR_MASKED, &io_apic_sync);
++	io_apic_modify_irq(data, ~0, IO_APIC_REDIR_MASKED, &io_apic_sync);
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+ }
+ 
+-static void mask_ioapic_irq(struct irq_data *data)
 -{
--	struct irq_cfg *cfg = irqd_cfg(data);
--	struct msi_msg msg;
--	unsigned int dest;
--	int ret;
+-	mask_ioapic(irqd_cfg(data));
+-}
 -
--	ret = apic_set_affinity(data, mask, &dest);
--	if (ret)
--		return ret;
--
--	__get_cached_msi_msg(data->msi_desc, &msg);
--
--	msg.data &= ~MSI_DATA_VECTOR_MASK;
--	msg.data |= MSI_DATA_VECTOR(cfg->vector);
--	msg.address_lo &= ~MSI_ADDR_DEST_ID_MASK;
--	msg.address_lo |= MSI_ADDR_DEST_ID(dest);
--
--	__pci_write_msi_msg(data->msi_desc, &msg);
--
--	return IRQ_SET_MASK_OK_NOCOPY;
+-static void __unmask_ioapic(struct irq_cfg *cfg)
++static void __unmask_ioapic(struct mp_chip_data *data)
+ {
+-	io_apic_modify_irq(cfg, ~IO_APIC_REDIR_MASKED, 0, NULL);
++	io_apic_modify_irq(data, ~IO_APIC_REDIR_MASKED, 0, NULL);
+ }
+ 
+-static void unmask_ioapic(struct irq_cfg *cfg)
++static void unmask_ioapic_irq(struct irq_data *irq_data)
+ {
++	struct mp_chip_data *data = irq_data->chip_data;
+ 	unsigned long flags;
+ 
+ 	raw_spin_lock_irqsave(&ioapic_lock, flags);
+-	__unmask_ioapic(cfg);
++	__unmask_ioapic(data);
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+ }
+ 
+-static void unmask_ioapic_irq(struct irq_data *data)
+-{
+-	unmask_ioapic(irqd_cfg(data));
 -}
 -
  /*
-  * IRQ Chip for MSI PCI/PCI-X/PCI-Express Devices,
-  * which implement the MSI or MSI-X Capability Structure.
-  */
--static struct irq_chip msi_chip = {
-+static struct irq_chip pci_msi_controller = {
- 	.name			= "PCI-MSI",
- 	.irq_unmask		= pci_msi_unmask_irq,
- 	.irq_mask		= pci_msi_mask_irq,
--	.irq_ack		= apic_ack_edge,
--	.irq_set_affinity	= msi_set_affinity,
--	.irq_retrigger		= apic_retrigger_irq,
-+	.irq_ack		= irq_chip_ack_parent,
-+	.irq_set_affinity	= msi_domain_set_affinity,
-+	.irq_retrigger		= irq_chip_retrigger_hierarchy,
-+	.irq_print_chip		= irq_remapping_print_chip,
-+	.irq_compose_msi_msg	= irq_msi_compose_msg,
-+	.irq_write_msi_msg	= pci_msi_domain_write_msg,
- 	.flags			= IRQCHIP_SKIP_SET_WAKE,
- };
+  * IO-APIC versions below 0x20 don't support EOI register.
+  * For the record, here is the information about various versions:
+@@ -548,13 +538,13 @@ static void __eoi_ioapic_pin(int apic, int pin, int vector)
+ 	}
+ }
  
--int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
--		  unsigned int irq_base, unsigned int irq_offset)
-+int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+-void eoi_ioapic_pin(int vector, struct irq_cfg *cfg)
++void eoi_ioapic_pin(int vector, struct mp_chip_data *data)
  {
--	struct irq_chip *chip = &msi_chip;
--	struct msi_msg msg;
--	unsigned int irq = irq_base + irq_offset;
--	int ret;
-+	struct irq_domain *domain;
-+	struct irq_alloc_info info;
+ 	unsigned long flags;
+ 	struct irq_pin_list *entry;
  
--	ret = msi_compose_msg(dev, irq, &msg, -1);
--	if (ret < 0)
--		return ret;
-+	init_irq_alloc_info(&info, NULL);
-+	info.type = X86_IRQ_ALLOC_TYPE_MSI;
-+	info.msi_dev = dev;
+ 	raw_spin_lock_irqsave(&ioapic_lock, flags);
+-	for_each_irq_pin(entry, cfg->irq_2_pin)
++	for_each_irq_pin(entry, data->irq_2_pin)
+ 		__eoi_ioapic_pin(entry->apic, entry->pin, vector);
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+ }
+@@ -1061,11 +1051,10 @@ static int alloc_isa_irq_from_domain(struct irq_domain *domain,
+ 	 * entry. The IOAPIC entry
+ 	 */
+ 	if (irq_data && irq_data->parent_data) {
+-		struct irq_cfg *cfg = irqd_cfg(irq_data);
+-
+ 		if (!mp_check_pin_attr(irq, info))
+ 			return -EBUSY;
+-		if (__add_pin_to_irq_node(cfg, node, ioapic, info->ioapic_pin))
++		if (__add_pin_to_irq_node(irq_data->chip_data, node, ioapic,
++					  info->ioapic_pin))
+ 			return -ENOMEM;
+ 	} else {
+ 		irq = __irq_domain_alloc_irqs(domain, irq, 1, node, info, true);
+@@ -1387,9 +1376,7 @@ static void __init print_IO_APIC(int ioapic_idx)
+ void __init print_IO_APICs(void)
+ {
+ 	int ioapic_idx;
+-	struct irq_cfg *cfg;
+ 	unsigned int irq;
+-	struct irq_chip *chip;
  
--	irq_set_msi_desc_off(irq_base, irq_offset, msidesc);
-+	domain = irq_remapping_get_irq_domain(&info);
-+	if (domain == NULL)
-+		domain = msi_default_domain;
-+	if (domain == NULL)
-+		return -ENOSYS;
+ 	printk(KERN_DEBUG "number of MP IRQ sources: %d.\n", mp_irq_entries);
+ 	for_each_ioapic(ioapic_idx)
+@@ -1409,18 +1396,20 @@ void __init print_IO_APICs(void)
+ 	printk(KERN_DEBUG "IRQ to pin mappings:\n");
+ 	for_each_active_irq(irq) {
+ 		struct irq_pin_list *entry;
++		struct irq_chip *chip;
++		struct mp_chip_data *data;
  
--	/*
--	 * MSI-X message is written per-IRQ, the offset is always 0.
--	 * MSI message denotes a contiguous group of IRQs, written for 0th IRQ.
--	 */
--	if (!irq_offset)
--		pci_write_msi_msg(irq, &msg);
-+	return pci_msi_domain_alloc_irqs(domain, dev, nvec, type);
-+}
- 
--	setup_remapped_irq(irq, irq_cfg(irq), chip);
-+void native_teardown_msi_irq(unsigned int irq)
-+{
-+	irq_domain_free_irqs(irq, 1);
-+}
- 
--	irq_set_chip_and_handler_name(irq, chip, handle_edge_irq, "edge");
-+static irq_hw_number_t pci_msi_get_hwirq(struct msi_domain_info *info,
-+					 msi_alloc_info_t *arg)
-+{
-+	return arg->msi_hwirq;
-+}
- 
--	dev_dbg(&dev->dev, "irq %d for MSI/MSI-X\n", irq);
-+static int pci_msi_prepare(struct irq_domain *domain, struct device *dev,
-+			   int nvec, msi_alloc_info_t *arg)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct msi_desc *desc = first_pci_msi_entry(pdev);
+ 		chip = irq_get_chip(irq);
+ 		if (chip != &ioapic_chip && chip != &ioapic_ir_chip)
+ 			continue;
+-
+-		cfg = irq_cfg(irq);
+-		if (!cfg)
++		data = irq_get_chip_data(irq);
++		if (!data)
+ 			continue;
+-		if (list_empty(&cfg->irq_2_pin))
++		if (list_empty(&data->irq_2_pin))
+ 			continue;
 +
-+	init_irq_alloc_info(arg, NULL);
-+	arg->msi_dev = pdev;
-+	if (desc->msi_attrib.is_msix) {
-+		arg->type = X86_IRQ_ALLOC_TYPE_MSIX;
-+	} else {
-+		arg->type = X86_IRQ_ALLOC_TYPE_MSI;
-+		arg->flags |= X86_IRQ_ALLOC_CONTIGOUS_VECTORS;
-+	}
+ 		printk(KERN_DEBUG "IRQ%d ", irq);
+-		for_each_irq_pin(entry, cfg->irq_2_pin)
++		for_each_irq_pin(entry, data->irq_2_pin)
+ 			pr_cont("-> %d:%d", entry->apic, entry->pin);
+ 		pr_cont("\n");
+ 	}
+@@ -1730,7 +1719,7 @@ static unsigned int startup_ioapic_irq(struct irq_data *data)
+ 		if (legacy_pic->irq_pending(irq))
+ 			was_pending = 1;
+ 	}
+-	__unmask_ioapic(irqd_cfg(data));
++	__unmask_ioapic(data->chip_data);
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
  
- 	return 0;
- }
+ 	return was_pending;
+@@ -1745,13 +1734,15 @@ static unsigned int startup_ioapic_irq(struct irq_data *data)
+  * races.
+  */
  
--int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
-+static void pci_msi_set_desc(msi_alloc_info_t *arg, struct msi_desc *desc)
+-static void __target_IO_APIC_irq(unsigned int irq, unsigned int dest, struct irq_cfg *cfg)
++static void __target_IO_APIC_irq(unsigned int irq, struct irq_cfg *cfg,
++				 struct mp_chip_data *data)
  {
--	struct msi_desc *msidesc;
--	int irq, ret;
-+	arg->msi_hwirq = pci_msi_domain_calc_hwirq(arg->msi_dev, desc);
-+}
+ 	int apic, pin;
+ 	struct irq_pin_list *entry;
+ 	u8 vector = cfg->vector;
++	unsigned int dest = SET_APIC_LOGICAL_ID(cfg->dest_apicid);
  
--	/* Multiple MSI vectors only supported with interrupt remapping */
--	if (type == PCI_CAP_ID_MSI && nvec > 1)
--		return 1;
-+static struct msi_domain_ops pci_msi_domain_ops = {
-+	.get_hwirq	= pci_msi_get_hwirq,
-+	.msi_prepare	= pci_msi_prepare,
-+	.set_desc	= pci_msi_set_desc,
-+};
+-	for_each_irq_pin(entry, cfg->irq_2_pin) {
++	for_each_irq_pin(entry, data->irq_2_pin) {
+ 		unsigned int reg;
  
--	list_for_each_entry(msidesc, &dev->msi_list, list) {
--		irq = irq_domain_alloc_irqs(NULL, 1, NUMA_NO_NODE, NULL);
--		if (irq <= 0)
--			return -ENOSPC;
-+static struct msi_domain_info pci_msi_domain_info = {
-+	.flags		= MSI_FLAG_USE_DEF_DOM_OPS | MSI_FLAG_USE_DEF_CHIP_OPS |
-+			  MSI_FLAG_MULTI_PCI_MSI | MSI_FLAG_PCI_MSIX,
-+	.ops		= &pci_msi_domain_ops,
-+	.chip		= &pci_msi_controller,
-+	.handler	= handle_edge_irq,
-+	.handler_name	= "edge",
-+};
+ 		apic = entry->apic;
+@@ -1768,13 +1759,13 @@ static void __target_IO_APIC_irq(unsigned int irq, unsigned int dest, struct irq
+ atomic_t irq_mis_count;
  
--		ret = setup_msi_irq(dev, msidesc, irq, 0);
--		if (ret < 0) {
--			irq_domain_free_irqs(irq, 1);
--			return ret;
--		}
-+void arch_init_msi_domain(struct irq_domain *parent)
-+{
-+	if (disable_apic)
-+		return;
- 
--	}
--	return 0;
-+	msi_default_domain = pci_msi_create_irq_domain(NULL,
-+					&pci_msi_domain_info, parent);
-+	if (!msi_default_domain)
-+		pr_warn("failed to initialize irqdomain for MSI/MSI-x.\n");
- }
- 
--void native_teardown_msi_irq(unsigned int irq)
-+#ifdef CONFIG_IRQ_REMAP
-+struct irq_domain *arch_create_msi_irq_domain(struct irq_domain *parent)
+ #ifdef CONFIG_GENERIC_PENDING_IRQ
+-static bool io_apic_level_ack_pending(struct irq_cfg *cfg)
++static bool io_apic_level_ack_pending(struct mp_chip_data *data)
  {
--	irq_domain_free_irqs(irq, 1);
-+	return msi_create_irq_domain(NULL, &pci_msi_domain_info, parent);
- }
-+#endif
+ 	struct irq_pin_list *entry;
+ 	unsigned long flags;
  
- #ifdef CONFIG_DMAR_TABLE
- static int
+ 	raw_spin_lock_irqsave(&ioapic_lock, flags);
+-	for_each_irq_pin(entry, cfg->irq_2_pin) {
++	for_each_irq_pin(entry, data->irq_2_pin) {
+ 		unsigned int reg;
+ 		int pin;
+ 
+@@ -1791,18 +1782,17 @@ static bool io_apic_level_ack_pending(struct irq_cfg *cfg)
+ 	return false;
+ }
+ 
+-static inline bool ioapic_irqd_mask(struct irq_data *data, struct irq_cfg *cfg)
++static inline bool ioapic_irqd_mask(struct irq_data *data)
+ {
+ 	/* If we are moving the irq we need to mask it */
+ 	if (unlikely(irqd_is_setaffinity_pending(data))) {
+-		mask_ioapic(cfg);
++		mask_ioapic_irq(data);
+ 		return true;
+ 	}
+ 	return false;
+ }
+ 
+-static inline void ioapic_irqd_unmask(struct irq_data *data,
+-				      struct irq_cfg *cfg, bool masked)
++static inline void ioapic_irqd_unmask(struct irq_data *data, bool masked)
+ {
+ 	if (unlikely(masked)) {
+ 		/* Only migrate the irq if the ack has been received.
+@@ -1831,31 +1821,30 @@ static inline void ioapic_irqd_unmask(struct irq_data *data,
+ 		 * accurate and is causing problems then it is a hardware bug
+ 		 * and you can go talk to the chipset vendor about it.
+ 		 */
+-		if (!io_apic_level_ack_pending(cfg))
++		if (!io_apic_level_ack_pending(data->chip_data))
+ 			irq_move_masked_irq(data);
+-		unmask_ioapic(cfg);
++		unmask_ioapic_irq(data);
+ 	}
+ }
+ #else
+-static inline bool ioapic_irqd_mask(struct irq_data *data, struct irq_cfg *cfg)
++static inline bool ioapic_irqd_mask(struct irq_data *data)
+ {
+ 	return false;
+ }
+-static inline void ioapic_irqd_unmask(struct irq_data *data,
+-				      struct irq_cfg *cfg, bool masked)
++static inline void ioapic_irqd_unmask(struct irq_data *data, bool masked)
+ {
+ }
+ #endif
+ 
+-static void ioapic_ack_level(struct irq_data *data)
++static void ioapic_ack_level(struct irq_data *irq_data)
+ {
+-	struct irq_cfg *cfg = irqd_cfg(data);
++	struct irq_cfg *cfg = irqd_cfg(irq_data);
+ 	unsigned long v;
+ 	bool masked;
+ 	int i;
+ 
+ 	irq_complete_move(cfg);
+-	masked = ioapic_irqd_mask(data, cfg);
++	masked = ioapic_irqd_mask(irq_data);
+ 
+ 	/*
+ 	 * It appears there is an erratum which affects at least version 0x11
+@@ -1907,10 +1896,10 @@ static void ioapic_ack_level(struct irq_data *data)
+ 	 */
+ 	if (!(v & (1 << (i & 0x1f)))) {
+ 		atomic_inc(&irq_mis_count);
+-		eoi_ioapic_pin(cfg->vector, cfg);
++		eoi_ioapic_pin(cfg->vector, irq_data->chip_data);
+ 	}
+ 
+-	ioapic_irqd_unmask(data, cfg, masked);
++	ioapic_irqd_unmask(irq_data, masked);
+ }
+ 
+ static void ioapic_ir_ack_level(struct irq_data *irq_data)
+@@ -1924,7 +1913,7 @@ static void ioapic_ir_ack_level(struct irq_data *irq_data)
+ 	 * EOI we use the pin number.
+ 	 */
+ 	ack_APIC_irq();
+-	eoi_ioapic_pin(data->entry.vector, irqd_cfg(irq_data));
++	eoi_ioapic_pin(data->entry.vector, data);
+ }
+ 
+ static int ioapic_set_affinity(struct irq_data *irq_data,
+@@ -1932,7 +1921,6 @@ static int ioapic_set_affinity(struct irq_data *irq_data,
+ {
+ 	struct irq_data *parent = irq_data->parent_data;
+ 	struct mp_chip_data *data = irq_data->chip_data;
+-	unsigned int dest, irq = irq_data->irq;
+ 	struct irq_cfg *cfg;
+ 	unsigned long flags;
+ 	int ret;
+@@ -1943,9 +1931,7 @@ static int ioapic_set_affinity(struct irq_data *irq_data,
+ 		cfg = irqd_cfg(irq_data);
+ 		data->entry.dest = SET_APIC_LOGICAL_ID(cfg->dest_apicid);
+ 		data->entry.vector = cfg->vector;
+-		/* Only the high 8 bits are valid. */
+-		dest = SET_APIC_LOGICAL_ID(cfg->dest_apicid);
+-		__target_IO_APIC_irq(irq, dest, cfg);
++		__target_IO_APIC_irq(irq_data->irq, cfg, irq_data->chip_data);
+ 	}
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+ 
+@@ -2106,10 +2092,11 @@ early_param("disable_timer_pin_1", disable_timer_pin_setup);
+ static int mp_alloc_timer_irq(int ioapic, int pin)
+ {
+ 	int irq = -1;
+-	struct irq_alloc_info info;
+ 	struct irq_domain *domain = mp_ioapic_irqdomain(ioapic);
+ 
+ 	if (domain) {
++		struct irq_alloc_info info;
++
+ 		ioapic_set_alloc_attr(&info, NUMA_NO_NODE, 0, 0);
+ 		info.ioapic_id = mpc_ioapic_id(ioapic);
+ 		info.ioapic_pin = pin;
+@@ -2131,7 +2118,9 @@ static int mp_alloc_timer_irq(int ioapic, int pin)
+  */
+ static inline void __init check_timer(void)
+ {
+-	struct irq_cfg *cfg = irq_cfg(0);
++	struct irq_data *irq_data = irq_get_irq_data(0);
++	struct mp_chip_data *data = irq_data->chip_data;
++	struct irq_cfg *cfg = irqd_cfg(irq_data);
+ 	int node = cpu_to_node(0);
+ 	int apic1, pin1, apic2, pin2;
+ 	unsigned long flags;
+@@ -2195,9 +2184,9 @@ static inline void __init check_timer(void)
+ 			int idx;
+ 			idx = find_irq_entry(apic1, pin1, mp_INT);
+ 			if (idx != -1 && irq_trigger(idx))
+-				unmask_ioapic(cfg);
++				unmask_ioapic_irq(irq_get_chip_data(0));
+ 		}
+-		irq_domain_activate_irq(irq_get_irq_data(0));
++		irq_domain_activate_irq(irq_data);
+ 		if (timer_irq_works()) {
+ 			if (disable_timer_pin_1 > 0)
+ 				clear_IO_APIC_pin(0, pin1);
+@@ -2217,8 +2206,8 @@ static inline void __init check_timer(void)
+ 		/*
+ 		 * legacy devices should be connected to IO APIC #0
+ 		 */
+-		replace_pin_at_irq_node(cfg, node, apic1, pin1, apic2, pin2);
+-		irq_domain_activate_irq(irq_get_irq_data(0));
++		replace_pin_at_irq_node(data, node, apic1, pin1, apic2, pin2);
++		irq_domain_activate_irq(irq_data);
+ 		legacy_pic->unmask(0);
+ 		if (timer_irq_works()) {
+ 			apic_printk(APIC_QUIET, KERN_INFO "....... works.\n");
+@@ -3034,6 +3023,7 @@ int mp_irqdomain_alloc(struct irq_domain *domain, unsigned int virq,
+ 		return ret;
+ 	}
+ 
++	INIT_LIST_HEAD(&data->irq_2_pin);
+ 	irq_data->hwirq = info->ioapic_pin;
+ 	irq_data->chip = (domain->parent == x86_vector_domain) ?
+ 			  &ioapic_chip : &ioapic_ir_chip;
+@@ -3041,7 +3031,7 @@ int mp_irqdomain_alloc(struct irq_domain *domain, unsigned int virq,
+ 	mp_irqdomain_get_attr(mp_pin_to_gsi(ioapic, pin), data, info);
+ 
+ 	cfg = irqd_cfg(irq_data);
+-	add_pin_to_irq_node(cfg, info->ioapic_node, ioapic, pin);
++	add_pin_to_irq_node(data, ioapic_alloc_attr_node(info), ioapic, pin);
+ 	if (info->ioapic_entry)
+ 		mp_setup_entry(cfg, data, info->ioapic_entry);
+ 	mp_register_handler(virq, data->trigger);
+@@ -3059,15 +3049,16 @@ int mp_irqdomain_alloc(struct irq_domain *domain, unsigned int virq,
+ void mp_irqdomain_free(struct irq_domain *domain, unsigned int virq,
+ 		       unsigned int nr_irqs)
+ {
+-	struct irq_cfg *cfg = irq_cfg(virq);
+ 	struct irq_data *irq_data;
++	struct mp_chip_data *data;
+ 
+ 	BUG_ON(nr_irqs != 1);
+ 	irq_data = irq_domain_get_irq_data(domain, virq);
+ 	if (irq_data && irq_data->chip_data) {
+-		__remove_pin_from_irq(cfg, mp_irqdomain_ioapic_idx(domain),
++		data = irq_data->chip_data;
++		__remove_pin_from_irq(data, mp_irqdomain_ioapic_idx(domain),
+ 				      (int)irq_data->hwirq);
+-		WARN_ON(!list_empty(&cfg->irq_2_pin));
++		WARN_ON(!list_empty(&data->irq_2_pin));
+ 		kfree(irq_data->chip_data);
+ 	}
+ 	irq_domain_free_irqs_top(domain, virq, nr_irqs);
+@@ -3079,10 +3070,9 @@ void mp_irqdomain_activate(struct irq_domain *domain,
+ 	unsigned long flags;
+ 	struct irq_pin_list *entry;
+ 	struct mp_chip_data *data = irq_data->chip_data;
+-	struct irq_cfg *cfg = irqd_cfg(irq_data);
+ 
+ 	raw_spin_lock_irqsave(&ioapic_lock, flags);
+-	for_each_irq_pin(entry, cfg->irq_2_pin)
++	for_each_irq_pin(entry, data->irq_2_pin)
+ 		__ioapic_write_entry(entry->apic, entry->pin, data->entry);
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+ }
 diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
-index f8340c7..e971c87 100644
+index ca30365..91a8950 100644
 --- a/arch/x86/kernel/apic/vector.c
 +++ b/arch/x86/kernel/apic/vector.c
-@@ -364,6 +364,8 @@ int __init arch_early_irq_init(void)
- 	BUG_ON(x86_vector_domain == NULL);
- 	irq_set_default_host(x86_vector_domain);
- 
-+	arch_init_msi_domain(x86_vector_domain);
-+
- 	return arch_early_ioapic_init();
- }
- 
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index 04ea521..6ec0099 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -171,7 +171,6 @@ static void __init irq_remapping_modify_x86_ops(void)
- 	x86_io_apic_ops.set_affinity	= set_remapped_irq_affinity;
- 	x86_io_apic_ops.setup_entry	= setup_ioapic_remapped_entry;
- 	x86_io_apic_ops.eoi_ioapic_pin	= eoi_ioapic_pin_remapped;
--	x86_msi.setup_msi_irqs		= irq_remapping_setup_msi_irqs;
- 	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
- 	x86_msi.compose_msi_msg		= compose_remapped_msi_msg;
- }
+@@ -68,9 +68,6 @@ static struct irq_cfg *alloc_irq_cfg(int node)
+ 		goto out_cfg;
+ 	if (!zalloc_cpumask_var_node(&cfg->old_domain, GFP_KERNEL, node))
+ 		goto out_domain;
+-#ifdef	CONFIG_X86_IO_APIC
+-	INIT_LIST_HEAD(&cfg->irq_2_pin);
+-#endif
+ 	return cfg;
+ out_domain:
+ 	free_cpumask_var(cfg->domain);
