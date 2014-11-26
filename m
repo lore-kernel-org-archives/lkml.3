@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633AbaKZRz2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 12:55:28 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:20745 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753115AbaKZRz0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 12:55:26 -0500
-Message-ID: <54761406.9090602@oracle.com>
-Date: Wed, 26 Nov 2014 12:55:18 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753541AbaKZR47 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 12:56:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44709 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751028AbaKZR45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 12:56:57 -0500
+Message-ID: <54761424.8060203@redhat.com>
+Date: Wed, 26 Nov 2014 18:55:48 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-CC: mingo <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 2/2] kvm: eventfd: detect integer overflow using check_*_overflow
-References: <1417010419-3827-1-git-send-email-sasha.levin@oracle.com>	<1417010419-3827-2-git-send-email-sasha.levin@oracle.com> <CAPAsAGztsLxPbYfLzmDmGUeezhs_q_Az=Q9oNHRqnpBXjAajjg@mail.gmail.com>
-In-Reply-To: <CAPAsAGztsLxPbYfLzmDmGUeezhs_q_Az=Q9oNHRqnpBXjAajjg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
+To: Joe Perches <joe@perches.com>
+CC: Alexei Starovoitov <alexei.starovoitov@gmail.com>,
+        Quentin Lambert <lambert.quentin@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: bpf_jit_comp: simplify trivial boolean return
+References: <CAADnVQK8mn4ZHwbhBArosEw3Bmsc5vJfOzAeRE3R_1S7dbNfkg@mail.gmail.com> <1417021108.19695.5.camel@perches.com>
+In-Reply-To: <1417021108.19695.5.camel@perches.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2014 12:50 PM, Andrey Ryabinin wrote:
-> 2014-11-26 17:00 GMT+03:00 Sasha Levin <sasha.levin@oracle.com>:
->> > Detect integer overflows using safe operations rather than relying on
->> > undefined behaviour.
->> >
-> Unsigned overflow is defined.
-> args->addr and args->len  both unsigned, so there is no UB here.
-> 
+On 11/26/2014 05:58 PM, Joe Perches wrote:
+...
+>> imo existing code is fine and I don't think the time spent
+>> reviewing such changes is worth it when there is no
+>> improvement in readability.
 
-Good point. Do you think there's an advantage in using GCC's overflow
-checker in this case?
++1
 
+> Is there any value in reordering these tests for frequency
+> or maybe using | instead of || to avoid multiple jumps?
 
-Thanks,
-Sasha
+No, it's not a fast-path.
