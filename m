@@ -1,50 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437AbaKZNEi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 08:04:38 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:40909 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918AbaKZNEg (ORCPT
+	id S1752515AbaKZNGT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 08:06:19 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:51376 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaKZNGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 08:04:36 -0500
-Date: Wed, 26 Nov 2014 14:04:23 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v4 23/42] virtio_net: bigger header when VERSION_1 is
- set
-Message-ID: <20141126140423.0611192b.cornelia.huck@de.ibm.com>
-In-Reply-To: <1416933600-21398-24-git-send-email-mst@redhat.com>
-References: <1416933600-21398-1-git-send-email-mst@redhat.com>
-	<1416933600-21398-24-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112613-0025-0000-0000-000002997C09
+	Wed, 26 Nov 2014 08:06:18 -0500
+Message-ID: <5475D044.5060607@linaro.org>
+Date: Wed, 26 Nov 2014 14:06:12 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Yanchang Li <yl22@csr.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: [GIT PULL] clockevents: new material for 3.19
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Nov 2014 18:43:02 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-> With VERSION_1 virtio_net uses same header size
-> whether mergeable buffers are enabled or not.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  drivers/net/virtio_net.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+Hi Thomas,
 
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+This pull request contains the following changes:
+
+  * Ezequiel Garcia added the missing 'clock_enabled' calls before 
+getting the clocks' rate, switched to the reference clock for both the 
+timer and the watchdog on a37, and updated the DT bindings documentation 
+accordingly
+
+  * Yanchang Li removed the hard coded clock rate and let use the 
+configurable one
+
+Thanks !
+
+   -- Daniel
+
+
+The following changes since commit 867f667fb9c6734e06cc24e96fc7f06a7e772084:
+
+   Merge tag 'renesas-clocksource-for-v3.18' of 
+git://git.kernel.org/pub/scm/linux/kernel/git/horms/renesas into 
+clockevents/3.18 (2014-09-29 01:59:51 +0200)
+
+are available in the git repository at:
+
+
+   http://git.linaro.org/people/daniel.lezcano/linux.git clockevents/3.19
+
+for you to fetch changes up to 4a22d9c93af1f2b2c40354c4bc59fd007f33f05e:
+
+   clocksource: armada-370-xp: Use the reference clock on A375 SoC 
+(2014-11-26 13:51:08 +0100)
+
+----------------------------------------------------------------
+Ezequiel Garcia (3):
+       clocksource: armada-370-xp: Add missing clock enable
+       watchdog: orion: Use the reference clock on Armada 375 SoC
+       clocksource: armada-370-xp: Use the reference clock on A375 SoC
+
+Yanchang Li (1):
+       clocksource: sirf: Remove hard-coded clock rate
+
+ 
+Documentation/devicetree/bindings/timer/marvell,armada-370-xp-timer.txt 
+|  9 ++++++---
+  Documentation/devicetree/bindings/watchdog/marvel.txt 
+   | 13 +++++++++++++
+  drivers/clocksource/time-armada-370-xp.c 
+   | 30 ++++++++++++++++++++++++++++++
+  drivers/clocksource/timer-marco.c 
+   | 23 +++++++++--------------
+  drivers/watchdog/orion_wdt.c 
+   | 42 +++++++++++++++++++++++++++++++++++++++++-
+  5 files changed, 99 insertions(+), 18 deletions(-)
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
