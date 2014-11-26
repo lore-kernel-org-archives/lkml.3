@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311AbaKZGlx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 01:41:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39079 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751764AbaKZGlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 01:41:52 -0500
-Message-ID: <54757627.7060105@redhat.com>
-Date: Wed, 26 Nov 2014 14:41:43 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752313AbaKZGp2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 01:45:28 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:56031 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752226AbaKZGp1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 01:45:27 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18slP8lrOiKbiRjXpb5zTfAs7JXuc64MZc=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 4F17862422C
+Date: Wed, 26 Nov 2014 01:45:25 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] irqchip: Fixes for v3.18 (round 2)
+Message-ID: <20141126064525.GZ22670@titan.lakedaemon.net>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com
-Subject: Re: [PATCH net-next] tun/macvtap: use consume_skb() instead of kfree_skb()
- in tun/macvtap_do_read()
-References: <1416982084-12212-1-git-send-email-jasowang@redhat.com> <1416983160.29427.52.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1416983160.29427.52.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2014 02:26 PM, Eric Dumazet wrote:
-> On Wed, 2014-11-26 at 14:08 +0800, Jason Wang wrote:
->> To be more friendly with drop monitor, we should use comsume_skb() instead
->> of kfree_skb() in tun/macvtap_do_read(). Otherwise, the packets will be
->> marked as dropped.
->>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> ---
->>  drivers/net/macvtap.c | 2 +-
->>  drivers/net/tun.c     | 2 +-
->>  2 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
->> index 42a80d3..74d1b23 100644
->> --- a/drivers/net/macvtap.c
->> +++ b/drivers/net/macvtap.c
->> @@ -862,7 +862,7 @@ static ssize_t macvtap_do_read(struct macvtap_queue *q,
->>  		}
->>  		iov_iter_init(&iter, READ, iv, segs, len);
->>  		ret = macvtap_put_user(q, skb, &iter);
->> -		kfree_skb(skb);
->> +		consume_skb(skb);
->>  		break;
->>  	}
->>  
->> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
->> index ac53a73..d7edeaf 100644
->> --- a/drivers/net/tun.c
->> +++ b/drivers/net/tun.c
->> @@ -1363,7 +1363,7 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
->>  
->>  	iov_iter_init(&iter, READ, iv, segs, len);
->>  	ret = tun_put_user(tun, tfile, skb, &iter);
->> -	kfree_skb(skb);
->> +	consume_skb(skb);
->>  
->>  	return ret;
->>  }
->
-> These patches keep going on, but they are wrong.
->
-> If you care about drop monitor, then you want to not hide drops but
-> precisely report them.
->
-> Surely tun_put_user() can return an error, and then packet _is_ dropped.
+Thomas,
 
-True, I miss this. Will post V2. Thanks
+Here's the last couple of fixes.
 
+This is an incremental pull request from tags/irqchip-urgent-3.18 up to
+tags/irqchip-urgent-3.18-2 in the irqchip/urgent branch.
+
+Please pull.
+
+thx,
+
+Jason.
+
+
+The following changes since commit 758e8366754d3fa57da978fef9d2c652f7b55c02:
+
+  irqchip: armada-370-xp: Fix MPIC interrupt handling (2014-11-02 01:31:10 +0000)
+
+are available in the git repository at:
+
+  git://git.infradead.org/users/jcooper/linux.git tags/irqchip-urgent-3.18-2
+
+for you to fetch changes up to d99ba4465a08138966083d6c256b2f66e85a5095:
+
+  irqchip: brcmstb-l2: Fix error handling of irq_of_parse_and_map (2014-11-26 06:28:42 +0000)
+
+----------------------------------------------------------------
+irqchip fixes for v3.18 (round 2)
+
+ - atmel-aic
+    - Fix irqdomain init
+
+ - bcm{7120,stb}-l2
+    - Fix error handling in irq_of_parse_and_map
+
+----------------------------------------------------------------
+Boris Brezillon (1):
+      irqchip: atmel-aic: Fix irqdomain initialization
+
+Dmitry Torokhov (2):
+      irqchip: bcm7120-l2: Fix error handling of irq_of_parse_and_map
+      irqchip: brcmstb-l2: Fix error handling of irq_of_parse_and_map
+
+ drivers/irqchip/irq-atmel-aic-common.c | 6 +++---
+ drivers/irqchip/irq-bcm7120-l2.c       | 4 ++--
+ drivers/irqchip/irq-brcmstb-l2.c       | 4 ++--
+ 3 files changed, 7 insertions(+), 7 deletions(-)
