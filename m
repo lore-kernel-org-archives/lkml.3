@@ -1,75 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752313AbaKZGp2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 01:45:28 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:56031 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226AbaKZGp1 (ORCPT
+	id S1752389AbaKZGqQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 01:46:16 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:60818 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364AbaKZGqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 01:45:27 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18slP8lrOiKbiRjXpb5zTfAs7JXuc64MZc=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 4F17862422C
-Date: Wed, 26 Nov 2014 01:45:25 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] irqchip: Fixes for v3.18 (round 2)
-Message-ID: <20141126064525.GZ22670@titan.lakedaemon.net>
+	Wed, 26 Nov 2014 01:46:14 -0500
+Message-ID: <54757734.4060301@linaro.org>
+Date: Wed, 26 Nov 2014 01:46:12 -0500
+From: David Long <dave.long@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Will Deacon <will.deacon@arm.com>
+CC: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        William Cohen <wcohen@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/5] arm64: Kprobes with single stepping support
+References: <1416292375-29560-1-git-send-email-dave.long@linaro.org> <1416292375-29560-2-git-send-email-dave.long@linaro.org> <20141118145643.GO18842@arm.com> <CA+b37P337jcTCPTg4Ydxh6TKwqmyMngt-eEowzfsTNBDZ7-NEg@mail.gmail.com> <20141119112553.GC15985@arm.com> <546CAF5A.4060901@linaro.org>
+In-Reply-To: <546CAF5A.4060901@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
+On 11/19/14 09:55, David Long wrote:
+> On 11/19/14 06:25, Will Deacon wrote:
+>> On Wed, Nov 19, 2014 at 11:21:24AM +0000, Sandeepa Prabhu wrote:
+>>> On 18 November 2014 20:26, Will Deacon <will.deacon@arm.com> wrote:
+>>>
+>>>> One thing I noticed looking through this patch is that we're
+>>>> effectively
+>>>> reinventing a bunch of the instruction decoding logic that we
+>>>> already have
+>>>> in the kernel (introduced since Sandeepa last sent his patch).
+>>>>
+>>>> Could you take a look at include/asm/insn.h and kernel/insn.c
+>>>> please, and
+>>>> see if you can at least consolidate some of this? Some of it should
+>>>> be easy
+>>>> (i.e. reusing masks, using existing #defines to construct BRK
+>>>> encodings),
+>>>> but I appreciate there may be places where kprobes needs to add
+>>>> extra bits,
+>>>> in which case I'd really like to keep this all together if at all
+>>>> possible.
+>>>>
+>>>> We're currently in a position where the module loader, BPF jit,
+>>>> ftrace and
+>>>> the proposed alternative patching scheme are all using the same
+>>>> instruction
+>>>> manipulation functions, so we should try to continue that trend if
+>>>> we can.
+>>> Will,
+>>>
+>>> kernel/insn.c support generating instruction encodings(forming opcodes
+>>> with given specifications), so for kprobes, only BRK encoding can use
+>>> this mechanism.
+>>> For instruction simulation, the instruction behavior should be
+>>> simulated on saved pt_regs, which is not supported on insn.c routines,
+>>> so still need probes-simulate-insn.c. Please point me if I am missing
+>>> something here.
+>>
+>> I was thinking of the magic hex numbers in the kprobes decode tables,
+>> which
+>> seem to correspond directly to the instruction classes described in
+>> insn.c
+>>
+>> Keeping the actual emulation code separate makes sense.
+>>
+>> Will
+>
+> Of course that follows the model of the much more complex arm32
+> kprobes/uprobes decoding.  I can have a go at replacing it with insn.c
+> calls.
+>
+> -dl
+>
 
-Here's the last couple of fixes.
+While the existing aarch64_get_insn_class() function in insn.c is 
+somewhat useful here what is really needed is a function that identifies 
+if an instruction uses the pc (branch, load literal, load address). 
+Such instructions cannot be arbitrarily moved around in isolation, and 
+do not fall neatly into the existing "class"es.  I've written a simple 
+aarch64_insn_uses_pc() function to add to insn.c but I'd like to hear 
+agreement that this is a good approach before sending out the patch. 
+Thoughts?
 
-This is an incremental pull request from tags/irqchip-urgent-3.18 up to
-tags/irqchip-urgent-3.18-2 in the irqchip/urgent branch.
+-dl
 
-Please pull.
-
-thx,
-
-Jason.
-
-
-The following changes since commit 758e8366754d3fa57da978fef9d2c652f7b55c02:
-
-  irqchip: armada-370-xp: Fix MPIC interrupt handling (2014-11-02 01:31:10 +0000)
-
-are available in the git repository at:
-
-  git://git.infradead.org/users/jcooper/linux.git tags/irqchip-urgent-3.18-2
-
-for you to fetch changes up to d99ba4465a08138966083d6c256b2f66e85a5095:
-
-  irqchip: brcmstb-l2: Fix error handling of irq_of_parse_and_map (2014-11-26 06:28:42 +0000)
-
-----------------------------------------------------------------
-irqchip fixes for v3.18 (round 2)
-
- - atmel-aic
-    - Fix irqdomain init
-
- - bcm{7120,stb}-l2
-    - Fix error handling in irq_of_parse_and_map
-
-----------------------------------------------------------------
-Boris Brezillon (1):
-      irqchip: atmel-aic: Fix irqdomain initialization
-
-Dmitry Torokhov (2):
-      irqchip: bcm7120-l2: Fix error handling of irq_of_parse_and_map
-      irqchip: brcmstb-l2: Fix error handling of irq_of_parse_and_map
-
- drivers/irqchip/irq-atmel-aic-common.c | 6 +++---
- drivers/irqchip/irq-bcm7120-l2.c       | 4 ++--
- drivers/irqchip/irq-brcmstb-l2.c       | 4 ++--
- 3 files changed, 7 insertions(+), 7 deletions(-)
