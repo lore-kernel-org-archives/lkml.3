@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752226AbaKZLjZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 06:39:25 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:52114 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848AbaKZLjX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 06:39:23 -0500
+	id S1752234AbaKZLqk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 06:46:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34755 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751134AbaKZLqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 06:46:39 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <87y4qy7wci.fsf@x220.int.ebiederm.org>
+References: <87y4qy7wci.fsf@x220.int.ebiederm.org> <20141125005255.4974.54193.stgit@pluto.fritz.box> <20141125010734.4974.85347.stgit@pluto.fritz.box> <20141125215248.GA7958@redhat.com> <20141125220637.GA10008@redhat.com>
+To: ebiederm@xmission.com (Eric W. Biederman)
+Cc: dhowells@redhat.com, Oleg Nesterov <oleg@redhat.com>,
+        Ian Kent <ikent@redhat.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Benjamin Coddington <bcodding@redhat.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: [RFC PATCH 3/4] kmod - add call_usermodehelper_ns() helper
 MIME-Version: 1.0
-In-Reply-To: <20141126171914.19ad9151@canb.auug.org.au>
-References: <20141126171914.19ad9151@canb.auug.org.au>
-Date: Wed, 26 Nov 2014 12:39:14 +0100
-Message-ID: <CAEDV+g+OmDVRsKwFQj0sgrdK2d6LEeHOiZUfk6RTnu8UN=v=yg@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the kvm-arm tree with the kvm tree
-From: Christoffer Dall <christofferdall@christofferdall.dk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Marc Zyngier <marc.zyngier@arm.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <1368.1417002382.1@warthog.procyon.org.uk>
+Date: Wed, 26 Nov 2014 11:46:22 +0000
+Message-ID: <1369.1417002382@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Stephen, it was (obviously) the right fix.
+Eric W. Biederman <ebiederm@xmission.com> wrote:
 
--Christoffer
+> Ian if we were to merge this I believe you would win the award for
+> easiest path to a root shell.
 
-On Wed, Nov 26, 2014 at 7:19 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> Today's linux-next merge of the kvm-arm tree got a conflict in
-> arch/ia64/kvm/kvm-ia64.c between commit 003f7de62589 ("KVM: ia64:
-> remove") from the kvm tree and commit bf4bea8e9a90 ("kvm: fix
-> kvm_is_mmio_pfn() and rename to kvm_is_reserved_pfn()") from the
-> kvm-arm tree.
->
-> I fixed it up (the former removed the file, so I did that) and can
-> carry the fix as necessary (no action is required).
->
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+Is there any particular reason the upcalled program has to be run as root?
+Could the kernel not run it as something else - perhaps the caller's UID,GID
+or even something anonymous?
+
+Also, call_sbin_request_key() could be given a parameter to call something
+other than /sbin/request-key, and key_type::request_key could be used.
+
+David
