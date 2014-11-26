@@ -1,92 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608AbaKZNwc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 08:52:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42289 "EHLO mx1.redhat.com"
+	id S1752622AbaKZNxk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 08:53:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37807 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750967AbaKZNwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 08:52:31 -0500
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>, devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Dexuan Cui <decui@microsoft.com>
-Subject: [PATCH] Drivers: hv: vmbus: prevent cpu offlining on newer hypervisors
-Date: Wed, 26 Nov 2014 14:52:22 +0100
-Message-Id: <1417009942-10216-1-git-send-email-vkuznets@redhat.com>
+	id S1750951AbaKZNxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 08:53:38 -0500
+Date: Wed, 26 Nov 2014 14:53:22 +0100
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        wanpeng.li@linux.intel.com, namit@cs.technion.ac.il,
+        hpa@linux.intel.com, Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: [CFT PATCH v2 2/2] KVM: x86: support XSAVES usage in the host
+Message-ID: <20141126135322.GA4887@potion.brq.redhat.com>
+References: <1416847414-22253-1-git-send-email-pbonzini@redhat.com>
+ <1416847414-22253-3-git-send-email-pbonzini@redhat.com>
+ <20141126120753.GA31982@potion.redhat.com>
+ <5475D20A.90505@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5475D20A.90505@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When an SMP Hyper-V guest is running on top of 2012R2 Server and secondary
-cpus are sent offline (with echo 0 > /sys/devices/system/cpu/cpu$cpu/online)
-the system freeze is observed. This happens due to the fact that on newer
-hypervisors (Win8, WS2012R2, ...) vmbus channel handlers are distributed
-across all cpus (see init_vp_index() function in drivers/hv/channel_mgmt.c)
-and on cpu offlining nobody reassigns them to CPU0. Prevent cpu offlining
-when vmbus is loaded until the issue is fixed host-side.
+2014-11-26 14:13+0100, Paolo Bonzini:
+> On 26/11/2014 13:07, Radim Krčmář wrote:
+> > 2014-11-24 17:43+0100, Paolo Bonzini:
+> >> Userspace is expecting non-compacted format for KVM_GET_XSAVE, but
+> >> struct xsave_struct might be using the compacted format.  Convert
+> >> in order to preserve userspace ABI.
+> >>
+> >> Likewise, userspace is passing non-compacted format for KVM_SET_XSAVE
+> >> but the kernel will pass it to XRSTORS, and we need to convert back.
+> > 
+> > Future instructions might force us to calling xsave/xrstor directly, so
+> > we could do that even now and save the explicit conversion ...
+> > 
+> > What I mean is:  we could be using the native xsave.*/xrstor.* while in
+> > kernel and use xsave/xrstor for communication with userspace.
+> > Hardware would take care of everything in the conversion.
+> > 
+> > get_xsave = native_xrstor(guest_xsave);  xsave(aligned_userspace_buffer)
+> > set_xsave = xrstor(aligned_userspace_buffer);  native_xsave(guest_xsave)
+> > 
+> > Could that work?
+> 
+> It could, though it is more like
+> 
+>    get_fpu()
+>    native_xrstor(guest_xsave)
+>    xsave(buffer)
+>    put_fpu()
+> 
+> and vice versa.  Also, the userspace buffer is mos likely not aligned,
+> so you need some kind of bounce buffer.  It can be done if the CPUID
+> turns out to be a bottleneck, apart from that it'd most likely be slower.
 
-This patch also disables hibernation but it is OK as it is also broken (MCE
-error is hit on resume). Suspend still works.
+Yeah, it was mostly making this code more future-proof ... it is easier
+to convince xsave.h to export its structures if CPUID is the problem.
+(I still see some hope for Linux, so performance isn't my primary goal.)
 
-Tested with WS2008R2 and WS2012R2.
-
-Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
----
- drivers/hv/vmbus_drv.c | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
-
-diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-index 4d6b269..9a82249 100644
---- a/drivers/hv/vmbus_drv.c
-+++ b/drivers/hv/vmbus_drv.c
-@@ -32,6 +32,7 @@
- #include <linux/completion.h>
- #include <linux/hyperv.h>
- #include <linux/kernel_stat.h>
-+#include <linux/cpu.h>
- #include <asm/hyperv.h>
- #include <asm/hypervisor.h>
- #include <asm/mshyperv.h>
-@@ -671,6 +672,13 @@ static void vmbus_isr(void)
- 		tasklet_schedule(&msg_dpc);
- }
- 
-+#ifdef CONFIG_HOTPLUG_CPU
-+static int hyperv_cpu_disable(void)
-+{
-+	return -1;
-+}
-+#endif
-+
- /*
-  * vmbus_bus_init -Main vmbus driver initialization routine.
-  *
-@@ -711,6 +719,12 @@ static int vmbus_bus_init(int irq)
- 	if (ret)
- 		goto err_alloc;
- 
-+#ifdef CONFIG_HOTPLUG_CPU
-+	if ((vmbus_proto_version != VERSION_WS2008) &&
-+	    (vmbus_proto_version != VERSION_WIN7))
-+		smp_ops.cpu_disable = hyperv_cpu_disable;
-+#endif
-+
- 	vmbus_request_offers();
- 
- 	return 0;
-@@ -964,6 +978,11 @@ static void __exit vmbus_exit(void)
- 	bus_unregister(&hv_bus);
- 	hv_cleanup();
- 	acpi_bus_unregister_driver(&vmbus_acpi_driver);
-+#ifdef CONFIG_HOTPLUG_CPU
-+	if ((vmbus_proto_version != VERSION_WS2008) &&
-+	    (vmbus_proto_version != VERSION_WIN7))
-+		smp_ops.cpu_disable = native_cpu_disable;
-+#endif
- }
- 
- 
--- 
-1.9.3
-
+I'm quite interested in CPUID now though, so I'll try to benchmark it,
+someday.
