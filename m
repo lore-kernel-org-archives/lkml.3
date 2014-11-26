@@ -1,127 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229AbaKZE6E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 23:58:04 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:44973 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972AbaKZE6B (ORCPT
+	id S1751281AbaKZFFt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 00:05:49 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:33330 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731AbaKZFFr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 23:58:01 -0500
-Message-ID: <54755E7D.3060903@oracle.com>
-Date: Wed, 26 Nov 2014 00:00:45 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@suse.de>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Richard Hendershot <rshendershot@mchsi.com>,
-        David Vrabel <david.vrabel@citrix.com>, x86-ml <x86@kernel.org>
-Subject: Re: [PATCH 3.17 100/141] x86, microcode: Fix accessing dis_ucode_ldr
- on 32-bit
-References: <20141125182410.GB4128@pd.tnic> <5474CDCE.6040000@oracle.com> <20141125184351.GC4128@pd.tnic> <5474D0A1.2020600@oracle.com> <20141125190849.GF4128@pd.tnic> <5474D86E.6020608@oracle.com> <20141125202628.GG4128@pd.tnic> <20141125203634.GA6433@laptop.dumpdata.com> <20141125211708.GH4128@pd.tnic> <5474FBC6.7090603@oracle.com> <20141125221800.GI4128@pd.tnic>
-In-Reply-To: <20141125221800.GI4128@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 26 Nov 2014 00:05:47 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: [PATCH v6] ath3k: Add support of MCI 13d3:3408 bt device
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <5474BA38.2070908@gmail.com>
+Date: Wed, 26 Nov 2014 14:05:39 +0900
+Cc: linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C8849DFB-5159-4C62-A861-D393034E4895@holtmann.org>
+References: <5474BA38.2070908@gmail.com>
+To: Dmitry Tunin <hanipouspilot@gmail.com>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2014 05:18 PM, Borislav Petkov wrote:
-> Adding x86 people.
->
-> On Tue, Nov 25, 2014 at 04:59:34PM -0500, Boris Ostrovsky wrote:
->> This should be cpuid(0x1, &eax, &ebx, &ecx, &edx). Otherwise we are not
->> getting bits that the hypervisor wants the guest to see (on Xen cpuid()
->> turns into hypercall, on baremetal it's native).
->>
->> With that change it works and
->>
->> Tested-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Hi Dmitry,
 
-Sigh... I take this back. It breaks 32-bit baremetal. I haven't looked 
-any further but it seems to be dying very early. I suspect cpuid pv_op 
-is not set up yet. If that's true, perhaps you could check whether it is 
-valid in x86_guest()?
+> Add support for bluetooth MCI WB335 (AR9565) Wi-Fi+bt module.
+> This bluetooth module requires loading patch and sysconfig by ath3k driver.
+> 
+> T:  Bus=01 Lev=02 Prnt=03 Port=00 Cnt=01 Dev#= 20 Spd=12   MxCh= 0
+> D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+> P:  Vendor=13d3 ProdID=3408 Rev= 0.02
+> C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+> A:  FirstIf#= 0 IfCount= 2 Cls=e0(wlcon) Sub=01 Prot=01
+> I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+> E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+> E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+> I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+> I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+> I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+> I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+> I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+> I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+> 
+> 
+> CC: stable@vger.kernel.org
+> Signed-off-by: Dmitry Tunin <hanipouspilot@gmail.com>
 
-I won't be able to do anything tomorrow morning, the best I can hope for 
-is evening.
+so you really need to make sure to send only one version. I now have two patches labeled as v6 and I have no idea which one is recent and which one I am suppose to apply.
 
+I tried applying this one, but it failed. Patches need to be based against bluetooth-next tree.
 
--boris
+Applying: ath3k: Add support of MCI 13d3:3408 bt device
+error: patch failed: drivers/bluetooth/ath3k.c:105
+error: drivers/bluetooth/ath3k.c: patch does not apply
+error: patch failed: drivers/bluetooth/btusb.c:182
+error: drivers/bluetooth/btusb.c: patch does not apply
+Patch failed at 0001 ath3k: Add support of MCI 13d3:3408 bt device
 
+Regards
 
-
-> Thanks for testing.
->
->> (May be worth adding a comment as to what is_guest() is checking for since
->> 31 is a magic number).
-> See below.
->
->> BTW, the crash had nothing to do with accessing dis_ucode_ldr, we are
->> crashing much later, in load_ucode_intel_ap(), trying to access
->> *initrd_start_p. And the reason we didn't crash before was because compiler
->> optimized out whole load_ucode_ap() since check_loader_disabled_ap() was
->> always true.
-> Right, and my fix actually uncovered the original issue :-\
->
-> Ok, here's a v2 which adds the check to the late loader too, for
-> completeness. I'll write a proper commit message tomorrow.
->
-> ---
-> diff --git a/arch/x86/include/asm/microcode.h b/arch/x86/include/asm/microcode.h
-> index 64dc362506b7..654907db5f09 100644
-> --- a/arch/x86/include/asm/microcode.h
-> +++ b/arch/x86/include/asm/microcode.h
-> @@ -87,4 +87,9 @@ static inline int __init save_microcode_in_initrd(void)
->   }
->   #endif
->   
-> +/* Check whether we're running as a guest on a hypervisor. */
-> +static inline bool x86_guest(void)
-> +{
-> +	return !!(cpuid_ecx(1) & BIT(31));
-> +}
->   #endif /* _ASM_X86_MICROCODE_H */
-> diff --git a/arch/x86/kernel/cpu/microcode/core.c b/arch/x86/kernel/cpu/microcode/core.c
-> index 2ce9051174e6..0b6db2a97f61 100644
-> --- a/arch/x86/kernel/cpu/microcode/core.c
-> +++ b/arch/x86/kernel/cpu/microcode/core.c
-> @@ -557,6 +557,9 @@ static int __init microcode_init(void)
->   	struct cpuinfo_x86 *c = &cpu_data(0);
->   	int error;
->   
-> +	if (x86_guest())
-> +		return 0;
-> +
->   	if (dis_ucode_ldr)
->   		return 0;
->   
-> diff --git a/arch/x86/kernel/cpu/microcode/core_early.c b/arch/x86/kernel/cpu/microcode/core_early.c
-> index 2c017f242a78..dfa93e74c370 100644
-> --- a/arch/x86/kernel/cpu/microcode/core_early.c
-> +++ b/arch/x86/kernel/cpu/microcode/core_early.c
-> @@ -98,6 +98,9 @@ void __init load_ucode_bsp(void)
->   {
->   	int vendor, x86;
->   
-> +	if (x86_guest())
-> +		return;
-> +
->   	if (check_loader_disabled_bsp())
->   		return;
->   
-> @@ -134,6 +137,9 @@ void load_ucode_ap(void)
->   {
->   	int vendor, x86;
->   
-> +	if (x86_guest())
-> +		return;
-> +
->   	if (check_loader_disabled_ap())
->   		return;
->   
->
+Marcel
 
