@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbaKZFYi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 00:24:38 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:48256 "EHLO bear.ext.ti.com"
+	id S1752217AbaKZFY4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 00:24:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59272 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751243AbaKZFYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 00:24:37 -0500
-Message-ID: <547563E7.7080106@ti.com>
-Date: Wed, 26 Nov 2014 10:53:51 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752041AbaKZFYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 00:24:54 -0500
+Message-ID: <54756424.6020409@suse.com>
+Date: Wed, 26 Nov 2014 06:24:52 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Mark Rutland <mark.rutland@arm.com>,
-        <devicetree@vger.kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 6/7] ARM: mvebu: add PHY support to the dts for the
- USB controllers on Armada 375
-References: <1415879269-29711-1-git-send-email-gregory.clement@free-electrons.com> <1415879269-29711-7-git-send-email-gregory.clement@free-electrons.com> <20141122020811.GO22670@titan.lakedaemon.net> <5470556B.6080608@free-electrons.com> <20141126035929.GJ22670@titan.lakedaemon.net> <54756164.3070206@ti.com> <20141126051701.GU22670@titan.lakedaemon.net>
-In-Reply-To: <20141126051701.GU22670@titan.lakedaemon.net>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: the arch/x86 maintainers <x86@kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: frequent lockups in 3.18rc4
+References: <20141114213124.GB3344@redhat.com>	<CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>	<20141115213405.GA31971@redhat.com>	<20141116014006.GA5016@redhat.com>	<CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>	<20141126002501.GA11752@redhat.com>	<CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>	<5475596A.9010301@suse.com> <CA+55aFx1SiFBzmA=k9jHxi3cZE3Ei_+2NHepujgf86KEvkz8eQ@mail.gmail.com>
+In-Reply-To: <CA+55aFx1SiFBzmA=k9jHxi3cZE3Ei_+2NHepujgf86KEvkz8eQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/26/2014 06:09 AM, Linus Torvalds wrote:
+>
+> On Nov 25, 2014 8:39 PM, "Jürgen Groß" <jgross@suse.com
+> <mailto:jgross@suse.com>> wrote:
+>  >
+>  > I COULD trigger it with 3.17. Took much longer, but I've seen it once.
+>  > And from Xen hypervisor data it was clear it was the same bug (cpu
+>  > spinning in pmd_lock()).
+>
+> I'm still hoping you can give a back trace. I'd like to know what access
+> it is that can trigger this, and preferably what the call chain to it was...
+
+Working on it. Triggering it via sysrq(l) isn't working: machine hung
+up. I'll try a dump, but this might take some time due to the machine
+size...
+
+If this isn't working I can always modify the hypervisor to show me
+more of the kernel stack in that situation. This will be a pure dump,
+but it should be possible to extract the back trace from that.
+
+>
+> I do believe it happened in 3.17, I just want to understand the but more
+> - not just apply the fix..
+
+Sure.
+
+>
+> Most of Dave's lockup back traces did not have the whole page fault in
+> them, so while Dave has seen this too, there might be different symptoms...
+
+Stay tuned... :-)
 
 
-On Wednesday 26 November 2014 10:47 AM, Jason Cooper wrote:
-> On Wed, Nov 26, 2014 at 10:43:08AM +0530, Kishon Vijay Abraham I wrote:
->> Hi,
->>
->> On Wednesday 26 November 2014 09:29 AM, Jason Cooper wrote:
->>> On Sat, Nov 22, 2014 at 10:20:43AM +0100, Gregory CLEMENT wrote:
->>>> Hi Jason,
->>>>
->>>> On 22/11/2014 03:08, Jason Cooper wrote:
->>>>> On Thu, Nov 13, 2014 at 12:47:48PM +0100, Gregory CLEMENT wrote:
->>>>>> Now that the USB cluster node has been added, use it as a PHY provider
->>>>>> for the USB controller linked to it: the first EHCI and the xHCI.
->>>>>>
->>>>>> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
->>
->> Looks like I'm not cc'ed in v4 of this patch series :-(
-> 
-> I've bounced emails maybe three times in my life.  Thought it might work
-> here.  Did it?
+Juergen
 
-Actually I'm CC'ed, just that search didn't find it. Sorry for the noise.
-
-Thanks
-Kishon
-> 
-> thx,
-> 
-> Jason.
-> 
