@@ -1,104 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302AbaKZEst (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 23:48:49 -0500
-Received: from mga02.intel.com ([134.134.136.20]:60465 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752175AbaKZEsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 23:48:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,460,1413270000"; 
-   d="scan'208";a="614155599"
-From: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mika Westerberg <mika.westerberg@intel.com>,
-        Denis Turischev <denis.turischev@compulab.co.il>,
-        Alexandre Courbot <gnurou@gmail.com>
-Subject: [PATCHv4 2/3] gpio: sch: Add support for Intel Quark X1000 SoC
-Date: Wed, 26 Nov 2014 12:47:59 +0800
-Message-Id: <1416977280-27319-3-git-send-email-rebecca.swee.fun.chang@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1416977280-27319-1-git-send-email-rebecca.swee.fun.chang@intel.com>
-References: <1416977280-27319-1-git-send-email-rebecca.swee.fun.chang@intel.com>
+	id S1752334AbaKZEuS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 23:50:18 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:46179 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055AbaKZEuQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 23:50:16 -0500
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+To: keescook@chromium.org, catalin.marinas@arm.com, will.deacon@arm.com
+Cc: dsaxena@linaro.org, arndb@arndb.de, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>
+Subject: [PATCH v9 0/6] arm64: add seccomp support
+Date: Wed, 26 Nov 2014 13:49:45 +0900
+Message-Id: <1416977391-24231-1-git-send-email-takahiro.akashi@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel Quark X1000 provides a total of 16 GPIOs. The GPIOs are split between
-the legacy I/O bridge and the GPIO controller.
+This patch series enables secure computing (system call filtering) on arm64,
+and contains related enhancements and bug fixes.
 
-GPIO-SCH is the GPIO pins on legacy bridge for Intel Quark SoC.
-Intel Quark X1000 has 2 GPIOs powered by the core power well and 6 from
-the suspend power well.
+  NOTE: This versions contain a workaround against possible BUG_ON() failure
+  at audit_syscall_exit(), but doesn't contain an extra optimization, as I
+  submitted for arm, of excluding syscall enter/exit tracing against invalid
+  system calls due to an issue that I reported in:
+       http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/292170.html
 
-This piece of work is derived from Dan O'Donovan's initial work for Quark
-X1000 enabling.
+The code was tested on ARMv8 fast model with 64-bit/32-bit userspace using:
+ * libseccomp v2.1.1 with modifications for arm64, especially its "live"
+   tests: No.20, 21 and 24.
+ * modified version of Kees' seccomp test for 'changing/skipping a syscall'
+   and seccomp() system call
+ * in-house tests for 'changing/skipping a system call' by tracing with
+   ptrace(SETREGSET, NT_SYSTEM_CALL) (that is, not via seccomp filter)'
+with and without audit tracing.
 
-Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/gpio/Kconfig    |   11 +++++++++--
- drivers/gpio/gpio-sch.c |    6 ++++++
- 2 files changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 414d055..24c4f83 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -394,25 +394,32 @@ config GPIO_VR41XX
- 	  Say yes here to support the NEC VR4100 series General-purpose I/O Uint
- 
- config GPIO_SCH
--	tristate "Intel SCH/TunnelCreek/Centerton GPIO"
-+	tristate "Intel SCH/TunnelCreek/Centerton/Quark X1000 GPIO"
- 	depends on PCI && X86
- 	select MFD_CORE
- 	select LPC_SCH
- 	help
- 	  Say yes here to support GPIO interface on Intel Poulsbo SCH,
--	  Intel Tunnel Creek processor or Intel Centerton processor.
-+	  Intel Tunnel Creek processor, Intel Centerton processor or
-+	  Intel Quark X1000 SoC.
-+
- 	  The Intel SCH contains a total of 14 GPIO pins. Ten GPIOs are
- 	  powered by the core power rail and are turned off during sleep
- 	  modes (S3 and higher). The remaining four GPIOs are powered by
- 	  the Intel SCH suspend power supply. These GPIOs remain
- 	  active during S3. The suspend powered GPIOs can be used to wake the
- 	  system from the Suspend-to-RAM state.
-+
- 	  The Intel Tunnel Creek processor has 5 GPIOs powered by the
- 	  core power rail and 9 from suspend power supply.
-+
- 	  The Intel Centerton processor has a total of 30 GPIO pins.
- 	  Twenty-one are powered by the core power rail and 9 from the
- 	  suspend power supply.
- 
-+	  The Intel Quark X1000 SoC has 2 GPIOs powered by the core
-+	  power well and 6 from the suspend power well.
-+
- config GPIO_ICH
- 	tristate "Intel ICH GPIO"
- 	depends on PCI && X86
-diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
-index 7967f14..1a465bb 100644
---- a/drivers/gpio/gpio-sch.c
-+++ b/drivers/gpio/gpio-sch.c
-@@ -205,6 +205,12 @@ static int sch_gpio_probe(struct platform_device *pdev)
- 		sch->chip.ngpio = 30;
- 		break;
- 
-+	case PCI_DEVICE_ID_INTEL_QUARK_X1000_ILB:
-+		sch->core_base = 0;
-+		sch->resume_base = 2;
-+		sch->chip.ngpio = 8;
-+		break;
-+
- 	default:
- 		return -ENODEV;
- 	}
+Changes v8 -> v9:
+* removed a restriction on syscall(-1) by setting a default errno [2/6]
+
+Changes v7 -> v8:
+* changed an interface of changing a syscall number from ptrace(SET_SYSCALL)
+  to ptrace(SETREGSET, NT_ARM_SYSTEM_CALL) [1/6]
+* removed IS_SKILL_SYSCALL macro [2/6]
+* clarified comments in syscall_trace_enter() [2/6]
+* changed unsigned int to compat_uint_t in compat_siginfo._sigsys [5/6]
+* moved to a new calling interface of secure_computing(void) [6/6]
+
+Changes v6 -> v7:
+* simplified the condition of checking for user-issued syscall(-1) at
+  syscall_trace_enter() [2/6]
+* defines __NR_seccomp_sigreturn only if arch-specific def doesn't exist.
+  As Kees suggests, this is necessary for x86 and others. [3/6]
+* removed "#ifdef __ARCH_SIGSYS" which is always true on arm64. [5/6]
+* changed to call syscall_trace_exit() even if secure_computing fails. [6/6]
+  In v6, syscall_trace_enter() returns RET_SYSCALL_SKIP_TRACE (== -2) and
+  skips syscall_trace_exit() to minimize the overhead, but this case can be
+  easily confused with user-issued (and invalid) syscall(-2).
+  Anyway, this is now a consistent behavior with arm and other archs.
+
+Changes v5 -> v6:
+* rebased to v3.17-rc
+* changed the interface of changing/skipping a system call from re-writing
+  x8 register [v5 1/3] to using dedicated PTRACE_SET_SYSCALL command
+  [1/6, 2/6]
+  Patch [1/6] contains a checkpatch error around a switch statement, but it
+  won't be fixed as in compat_arch_ptrace().
+* added a new system call, seccomp(), for compat task [4/6]
+* added SIGSYS siginfo for compat task [5/6]
+* changed to always execute audit exit tracing to avoid OOPs [2/6, 6/6]
+
+Changes v4 -> v5:
+* rebased to v3.16-rc
+* add patch [1/3] to allow ptrace to change a system call
+  (please note that this patch should be applied even without seccomp.)
+
+Changes v3 -> v4:
+* removed the following patch and moved it to "arm64: prerequisites for
+  audit and ftrace" patchset since it is required for audit and ftrace in
+  case of !COMPAT, too.
+  "arm64: is_compat_task is defined both in asm/compat.h and linux/compat.h"
+
+Changes v2 -> v3:
+* removed unnecessary 'type cast' operations [2/3]
+* check for a return value (-1) of secure_computing() explicitly [2/3]
+* aligned with the patch, "arm64: split syscall_trace() into separate
+  functions for enter/exit" [2/3]
+* changed default of CONFIG_SECCOMP to n [2/3]
+
+Changes v1 -> v2:
+* added generic seccomp.h for arm64 to utilize it [1,2/3] 
+* changed syscall_trace() to return more meaningful value (-EPERM)
+  on seccomp failure case [2/3]
+* aligned with the change in "arm64: make a single hook to syscall_trace()
+  for all syscall features" v2 [2/3]
+* removed is_compat_task() definition from compat.h [3/3]
+
+AKASHI Takahiro (6):
+  arm64: ptrace: add NT_ARM_SYSTEM_CALL regset
+  arm64: ptrace: allow tracer to skip a system call
+  asm-generic: add generic seccomp.h for secure computing mode 1
+  arm64: add seccomp syscall for compat task
+  arm64: add SIGSYS siginfo for compat task
+  arm64: add seccomp support
+
+ arch/arm64/Kconfig                |   14 +++++++++++++
+ arch/arm64/include/asm/compat.h   |    7 +++++++
+ arch/arm64/include/asm/seccomp.h  |   25 +++++++++++++++++++++++
+ arch/arm64/include/asm/unistd.h   |    3 +++
+ arch/arm64/include/asm/unistd32.h |    3 ++-
+ arch/arm64/kernel/entry.S         |   10 +++++++++-
+ arch/arm64/kernel/ptrace.c        |   40 +++++++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/signal32.c      |    6 ++++++
+ include/asm-generic/seccomp.h     |   30 ++++++++++++++++++++++++++++
+ include/uapi/linux/elf.h          |    1 +
+ 10 files changed, 137 insertions(+), 2 deletions(-)
+ create mode 100644 arch/arm64/include/asm/seccomp.h
+ create mode 100644 include/asm-generic/seccomp.h
+
 -- 
 1.7.9.5
 
