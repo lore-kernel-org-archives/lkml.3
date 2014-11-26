@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622AbaKZNxk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 08:53:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37807 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951AbaKZNxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 08:53:38 -0500
-Date: Wed, 26 Nov 2014 14:53:22 +0100
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        wanpeng.li@linux.intel.com, namit@cs.technion.ac.il,
-        hpa@linux.intel.com, Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: [CFT PATCH v2 2/2] KVM: x86: support XSAVES usage in the host
-Message-ID: <20141126135322.GA4887@potion.brq.redhat.com>
-References: <1416847414-22253-1-git-send-email-pbonzini@redhat.com>
- <1416847414-22253-3-git-send-email-pbonzini@redhat.com>
- <20141126120753.GA31982@potion.redhat.com>
- <5475D20A.90505@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5475D20A.90505@redhat.com>
+	id S1752650AbaKZNyz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 08:54:55 -0500
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:44126 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974AbaKZNyw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 08:54:52 -0500
+Date: Wed, 26 Nov 2014 14:54:38 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v4 25/42] vhost: add memory access wrappers
+Message-ID: <20141126145438.4421c00d.cornelia.huck@de.ibm.com>
+In-Reply-To: <1416933600-21398-26-git-send-email-mst@redhat.com>
+References: <1416933600-21398-1-git-send-email-mst@redhat.com>
+	<1416933600-21398-26-git-send-email-mst@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112613-0029-0000-0000-000001E14204
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-26 14:13+0100, Paolo Bonzini:
-> On 26/11/2014 13:07, Radim Krčmář wrote:
-> > 2014-11-24 17:43+0100, Paolo Bonzini:
-> >> Userspace is expecting non-compacted format for KVM_GET_XSAVE, but
-> >> struct xsave_struct might be using the compacted format.  Convert
-> >> in order to preserve userspace ABI.
-> >>
-> >> Likewise, userspace is passing non-compacted format for KVM_SET_XSAVE
-> >> but the kernel will pass it to XRSTORS, and we need to convert back.
-> > 
-> > Future instructions might force us to calling xsave/xrstor directly, so
-> > we could do that even now and save the explicit conversion ...
-> > 
-> > What I mean is:  we could be using the native xsave.*/xrstor.* while in
-> > kernel and use xsave/xrstor for communication with userspace.
-> > Hardware would take care of everything in the conversion.
-> > 
-> > get_xsave = native_xrstor(guest_xsave);  xsave(aligned_userspace_buffer)
-> > set_xsave = xrstor(aligned_userspace_buffer);  native_xsave(guest_xsave)
-> > 
-> > Could that work?
-> 
-> It could, though it is more like
-> 
->    get_fpu()
->    native_xrstor(guest_xsave)
->    xsave(buffer)
->    put_fpu()
-> 
-> and vice versa.  Also, the userspace buffer is mos likely not aligned,
-> so you need some kind of bounce buffer.  It can be done if the CPUID
-> turns out to be a bottleneck, apart from that it'd most likely be slower.
+On Tue, 25 Nov 2014 18:43:10 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-Yeah, it was mostly making this code more future-proof ... it is easier
-to convince xsave.h to export its structures if CPUID is the problem.
-(I still see some hope for Linux, so performance isn't my primary goal.)
+"These wrappers are needed to handle virtio endianness conversions."
 
-I'm quite interested in CPUID now though, so I'll try to benchmark it,
-someday.
+?
+
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  drivers/vhost/vhost.h | 33 ++++++++++++++++++++++++++++++++-
+>  1 file changed, 32 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+> index 3eda654..b9032e8 100644
+> --- a/drivers/vhost/vhost.h
+> +++ b/drivers/vhost/vhost.h
+> @@ -174,6 +174,37 @@ enum {
+> 
+>  static inline int vhost_has_feature(struct vhost_virtqueue *vq, int bit)
+>  {
+> -	return vq->acked_features & (1 << bit);
+> +	return vq->acked_features & (1ULL << bit);
+
+Should this hunk go into patch 28?
+
+> +}
+
