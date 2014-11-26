@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410AbaKZSoZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 13:44:25 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:59084 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390AbaKZSoY (ORCPT
+	id S1752812AbaKZSuY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 13:50:24 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:27175 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183AbaKZSuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 13:44:24 -0500
-Message-ID: <1417027459.29427.63.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH net] r8152: drop the tx packet with invalid length
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: hayeswang@realtek.com, netdev@vger.kernel.org, nic_swsd@realtek.com,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Date: Wed, 26 Nov 2014 10:44:19 -0800
-In-Reply-To: <20141126.120658.498602780456343676.davem@davemloft.net>
-References: <1394712342-15778-104-Taiwan-albertk@realtek.com>
-	 <1417020748.29427.59.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20141126.120658.498602780456343676.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	Wed, 26 Nov 2014 13:50:22 -0500
+Message-ID: <547620E6.10306@oracle.com>
+Date: Wed, 26 Nov 2014 13:50:14 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, mingo@kernel.org
+Subject: Re: [RFC 1/2] compiler: use compiler to detect integer overflows
+References: <1417010419-3827-1-git-send-email-sasha.levin@oracle.com> <CA+55aFzyDC=o_Beg+8hjW8+TQXYWCgQo_yfjgHsTz0LRTiomWA@mail.gmail.com>
+In-Reply-To: <CA+55aFzyDC=o_Beg+8hjW8+TQXYWCgQo_yfjgHsTz0LRTiomWA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-26 at 12:06 -0500, David Miller wrote:
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Wed, 26 Nov 2014 08:52:28 -0800
+On 11/26/2014 12:55 PM, Linus Torvalds wrote:
+> On Nov 26, 2014 6:00 AM, "Sasha Levin" <sasha.levin@oracle.com <mailto:sasha.levin@oracle.com>> wrote:
+>>
+>> We've used to detect integer overflows by causing an overflow and testing the
+>> result. For example, to test for addition overflow we would:
+>>
+>>         if (a + b < a)
+>>                 /* Overflow detected */
+>>
+>> While it works, this is actually an undefined behaviour and we're not
+>> guaranteed to have integers overflowing this way.
 > 
-> > On Wed, 2014-11-26 at 17:56 +0800, Hayes Wang wrote:
-> >> Drop the tx packet which is more than the size of agg_buf_sz. When
-> >> creating a bridge with the device, we may get the tx packet with
-> >> TSO and the length is more than the gso_max_size which is set by
-> >> the driver through netif_set_gso_max_size(). Such packets couldn't
-> >> be transmitted and should be dropped directly.
-> >> 
-> >> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
->  ...
-> > Looks like a candidate for ndo_gso_check(), so that we do not drop, but
-> > instead segment from netif_needs_gso()/validate_xmit_skb()
+> Bullshit.
 > 
-> You mean have the bridge implement the ndo_gso_check() method right?
+> Integer overflow is completely well defined in unsigned types.
+> 
+> Don't make up things like this.
 
-No, I meant this particular driver.
+Yes, I messed up and picked case where both types are unsigned in my example
+patch. Apologies.
 
-Note that netif_skb_features() does only this check :
+The kernel still has it's share of *signed* integer overflows. Example? fadvise64_64():
 
-if (gso_segs > dev->gso_max_segs || gso_segs < dev->gso_min_segs)
-      features &= ~NETIF_F_GSO_MASK;
+	loff_t offset, len;
+	[...]
+	loff_t endbyte;
+	[...]
+        /* Careful about overflows. Len == 0 means "as much as possible" */
+        endbyte = offset + len;
+        if (!len || endbyte < len)
+                endbyte = -1;
+        else
+                endbyte--;              /* inclusive */
 
 
-Ie not testing gso_max_size
-
-It looks like all these particular tests should be moved on
-ndo_gso_check(), to remove code from netif_skb_features()
+In essence, it's checking (offset + len < len), all of which are signed.
 
 
-
+Thanks,
+Sasha
