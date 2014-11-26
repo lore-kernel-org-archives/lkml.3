@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347AbaKZI7a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 03:59:30 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:60223 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751016AbaKZI72 (ORCPT
+	id S1751332AbaKZJAk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 04:00:40 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:37072 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834AbaKZJAj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 03:59:28 -0500
-Message-ID: <5475966E.5060602@gmail.com>
-Date: Wed, 26 Nov 2014 11:59:26 +0300
-From: Dmitry Tunin <hanipouspilot@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Marcel Holtmann <marcel@holtmann.org>
-CC: linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
-Subject: Re: [PATCH v6] ath3k: Add support of MCI 13d3:3408 bt device
-References: <5474BA38.2070908@gmail.com> <C8849DFB-5159-4C62-A861-D393034E4895@holtmann.org> <54758990.2050908@gmail.com> <4CFFA987-E3B3-49D4-ACBE-55CC7C3566BD@holtmann.org>
-In-Reply-To: <4CFFA987-E3B3-49D4-ACBE-55CC7C3566BD@holtmann.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Nov 2014 04:00:39 -0500
+Content-Type: text/plain; charset=utf-8
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: [CFT PATCH v2 0/2] KVM: support XSAVES usage in the host
+From: Nadav Amit <nadav.amit@gmail.com>
+In-Reply-To: <20141126012439.GA20090@kernel>
+Date: Wed, 26 Nov 2014 11:00:34 +0200
+Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm list <kvm@vger.kernel.org>, Nadav Amit <namit@cs.technion.ac.il>,
+        hpa@linux.intel.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D53D39D4-3880-4633-B3B5-5EE16D7F2E0B@gmail.com>
+References: <1416847414-22253-1-git-send-email-pbonzini@redhat.com> <20141125101331.GA28985@kernel> <54745BB0.8080304@redhat.com> <400361E2-995A-44B4-B35A-0D35793B49DD@gmail.com> <54748F70.70402@redhat.com> <DEE91387-BFE2-4F83-9711-25B2B65CF655@gmail.com> <20141126012439.GA20090@kernel>
+To: Wanpeng Li <wanpeng.li@linux.intel.com>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I do not blame anyone. I am not paid for submitting patches. I've done 
-some work to find a solution. You can treat my post as a bug report.
+Wanpeng Li <wanpeng.li@linux.intel.com> wrote:
 
-I know it as a very hard 'extra work' to edit my mail, or remove a 
-duplicate of a 3 line patch. But the whole thing is too much of an extra 
-work for me. I am not interested any more. If this patch is ignored, I 
-don't care, since MY bluetooth module works.
+> Hi all,
+> On Tue, Nov 25, 2014 at 04:50:06PM +0200, Nadav Amit wrote:
+>>> On Nov 25, 2014, at 16:17, Paolo Bonzini <pbonzini@redhat.com> wrote:
+>>> 
+>>> 
+>>> 
+>>> On 25/11/2014 15:05, Nadav Amit wrote:
+>>>>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>>>>> index 373b0ab9a32e..ca26681455c2 100644
+>>>>> --- a/arch/x86/kvm/x86.c
+>>>>> +++ b/arch/x86/kvm/x86.c
+>>>>> @@ -6955,6 +6955,9 @@ int fx_init(struct kvm_vcpu *vcpu)
+>>>>> 		return err;
+>>>>> 
+>>>>> 	fpu_finit(&vcpu->arch.guest_fpu);
+>>>>> +	if (cpu_has_xsaves)
+>>>>> +		vcpu->arch.guest_fpu.state->xsave.xsave_hdr.xcomp_bv =
+>>>>> +			host_xcr0 | XSTATE_COMPACTION_ENABLED;
+>>>>> 
+>>>>> 	/*
+>>>>> 	 * Ensure guest xcr0 is valid for loading
+>>>> 
+>>>> The second version works for me (w/qemu v2.1.0; Linux 3.13 guest). I
+> 
+> Could you try 3.17 guest which has xsaves enabled? Because I'm not sure if 
+> the below codes from Paolo is enough to mask XSAVES, should we also add 
+> F(XSAVES)?
+I guess this paragraph is intended for me. As I said before, I got limited
+access to the machine - I will not be able to run these experiments before
+Sunday, and I am not sure that I will have time to fully debug it. If you
+insist, the very least please run some experiments running a 3.16 (or older)
+guest kernel and running 3.17 with ‘noxsaves’ kernel parameter.
 
-My patch was against 3.18rc5. I do not plan to download any other 
-branches, build and test them anyway.
+> +       const u32 kvm_supported_word10_x86_features =
+> +               F(XSAVEOPT) | F(XSAVEC) | F(XGETBV1);
+> +
+> 
+> In addition, the 3.17 guest is still hang as I mentioned even if I add the 
+> F(XSAVES) to the kvm_supported_word10_x86_features.
+> 
+>>>> did not need to apply this patch on top. [although I am not sure whether
+>>>> relying on userspace to call KVM_SET_XSAVE early enough is a good practice].
+>>> 
+>>> Did you actually try the patch? :)  If it works, I'm tempted to apply it
+>>> anyway.
+>> Yes, I tried it both with and without this patch.
+>> Due to time constraints I only tested minimal functionality (Linux boot).
+>> I will run more tests in the near future. Anyhow, you can put the:
+>> 
+>> Tested-by: Nadav Amit <namit@cs.technion.ac.il>
+>> 
+>>>> One disclaimer: Since I got limited time with the machine, I executed
+>>>> a slightly modified kernel/qemu, and not the latest version.
+>>>> Anyhow, I don’t think these differences can have any impact.
+>>> 
+>>> Yes, that is no problem.
+>> 
+>> I am just worried that Wanpeng reported it fails, while I report it works...
+> 
+> I have another patch which enable xsaves in KVM and the patch is still
+> under debug with Paolo's patch "KVM: x86: support XSAVES usage in the host",
+> so the 1/2 patch from Paolo can be dropped if my patch is ready. Anyway,
+> a quick fix is needed before enable xsaves in kvm. 
+xsaves is already enabled in KVM (the host) since 3.17. It just didn’t work…
 
-And tell Canonical that it is not good to send users upstream. It is 
-distro maintainers job, not users.
+Nadav
 
-Regards,
-
-Dmitry
-
-26.11.2014 11:50, Marcel Holtmann wrote:
-> Hi Dmitry,
->
->> I spent already hours on sending this fucking email. The patch works for me. And if someone else is interested in working of this device feel free and do it yourself.
->
-> so you are blaming the maintainers. Thank you very much :(
->
-> Maybe reading Documentation/SubmittingPatches and just following the steps in there would get you what you wanted. Others have successfully submitted tons and tons of patches.
->
-> Regards
->
-> Marcel
->
