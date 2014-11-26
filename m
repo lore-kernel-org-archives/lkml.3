@@ -1,102 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751072AbaKZJaN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 04:30:13 -0500
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:50237 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834AbaKZJaL (ORCPT
+	id S1751433AbaKZJbC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 04:31:02 -0500
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:52094 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751212AbaKZJa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 04:30:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <54759CB6.9020704@linaro.org>
-References: <1416993266-16514-1-git-send-email-kiran.kumar@linaro.org>
-	<54759CB6.9020704@linaro.org>
-Date: Wed, 26 Nov 2014 15:00:10 +0530
-Message-ID: <CA+RfmHaoXKHudybKRCsTByYW7JWEQBrc3CfwoyS6NKdG_cunhw@mail.gmail.com>
-Subject: Re: [RFC v3] debug: prevent entering debug mode on errors
-From: Kiran Raparthy <kiran.kumar@linaro.org>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Colin Cross <ccross@android.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 26 Nov 2014 04:30:59 -0500
+Message-ID: <1416994256.29407.43.camel@x220>
+Subject: Re: [PATCH] x86: defconfig: Enable CONFIG_FHANDLE
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Richard Weinberger <richard@nod.at>
+Cc: Greg KH <gregkh@linuxfoundation.org>, x86@kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, rafael.j.wysocki@intel.com,
+        linux-kernel@vger.kernel.org
+Date: Wed, 26 Nov 2014 10:30:56 +0100
+In-Reply-To: <54758B9C.3050107@nod.at>
+References: <1416958612-7448-1-git-send-email-richard@nod.at>
+	 <20141125235108.GB3138@kroah.com> <54751A95.60805@nod.at>
+	 <20141126005542.GA14758@kroah.com> <54758B9C.3050107@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 26 Nov 2014 09:30:56.0081 (UTC) FILETIME=[AE11A410:01D0095B]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 November 2014 at 14:56, Daniel Thompson
-<daniel.thompson@linaro.org> wrote:
-> On 26/11/14 09:14, Kiran Raparthy wrote:
->> From: Colin Cross <ccross@android.com>
->>
->> debug: prevent entering debug mode on errors
->>
->> On non-developer devices kgdb prevents CONFIG_PANIC_TIMEOUT from rebooting the
->> device after a panic.
->>
->> In case of panics and exceptions, to honor CONFIG_PANIC_TIMEOUT, prevent
->> entering debug mode to avoid getting stuck waiting for the user to interact
->> with debugger.
->>
->> Cc: Jason Wessel <jason.wessel@windriver.com>
->> Cc: kgdb-bugreport@lists.sourceforge.net
->> Cc: linux-kernel@vger.kernel.org
->> Cc: Android Kernel Team <kernel-team@android.com>
->> Cc: John Stultz <john.stultz@linaro.org>
->> Cc: Sumit Semwal <sumit.semwal@linaro.org>
->> Signed-off-by: Colin Cross <ccross@android.com>
->> [Kiran: Added context to commit message.
->> panic_timeout is used instead of break_on_panic and
->> break_on_exception to honor CONFIG_PANIC_TIMEOUT]
->> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
->
-> When this gets upgrade from RFC to PATCH then feel free to add:
-> Reviewed-by: Daniel Thompson <daniel.thompson@linaro.org>
-Sure.
-Regards,
-Kiran
->
->> ---
->>  kernel/debug/debug_core.c | 17 +++++++++++++++++
->>  1 file changed, 17 insertions(+)
->>
->> diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
->> index 1adf62b..0012a1f 100644
->> --- a/kernel/debug/debug_core.c
->> +++ b/kernel/debug/debug_core.c
->> @@ -689,6 +689,14 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
->>
->>       if (arch_kgdb_ops.enable_nmi)
->>               arch_kgdb_ops.enable_nmi(0);
->> +     /*
->> +      * Avoid entering the debugger if we were triggered due to an oops
->> +      * but panic_timeout indicates the system should automatically
->> +      * reboot on panic. We don't want to get stuck waiting for input
->> +      * on such systems, especially if its "just" an oops.
->> +      */
->> +     if (signo != SIGTRAP && panic_timeout)
->> +             return 1;
->>
->>       memset(ks, 0, sizeof(struct kgdb_state));
->>       ks->cpu                 = raw_smp_processor_id();
->> @@ -821,6 +829,15 @@ static int kgdb_panic_event(struct notifier_block *self,
->>                           unsigned long val,
->>                           void *data)
->>  {
->> +     /*
->> +      * Avoid entering the debugger if we were triggered due to a panic
->> +      * We don't want to get stuck waiting for input from user in such case.
->> +      * panic_timeout indicates the system should automatically
->> +      * reboot on panic.
->> +      */
->> +     if (panic_timeout)
->> +             return NOTIFY_DONE;
->> +
->>       if (dbg_kdb_mode)
->>               kdb_printf("PANIC: %s\n", (char *)data);
->>       kgdb_breakpoint();
->>
->
+On Wed, 2014-11-26 at 09:13 +0100, Richard Weinberger wrote:
+> Am 26.11.2014 um 01:55 schrieb Greg KH:
+> > On Wed, Nov 26, 2014 at 01:11:01AM +0100, Richard Weinberger wrote:
+> >> Am 26.11.2014 um 00:51 schrieb Greg KH:
+> >>> On Wed, Nov 26, 2014 at 12:36:52AM +0100, Richard Weinberger wrote:
+> >>>> systemd has a hard dependency on CONFIG_FHANDLE.
+> >>>
+> >>> It's been this way for a very long time, why is this suddenly an issue?
+> >>
+> >> Because nobody cared to create patch and just called systemd names? ;-)
+> > 
+> > systemd documents what is needed in order for it to boot properly quite
+> > well, I don't see why this needs to be here.
+> 
+> Because not every kernel developer knows the contents of the damn systemd readme file.
+> Face it, systemd is common userspace and if a defconfig is unable to boot common userspace
+> we have a problem.
+> 
+> Yesterday I was hunting down a regression in libvirt on the shiny new openSUSE 13.2,
+> I had to build an older kernel.
+> So I did a defconfig because I know that config has all drivers for my KVM setup.
+> (No, I my laptop don't has to power to build the bloated .config from suse)
+
+Isn't that considered best practice? Ie, you use a .config provided by
+the distribution that you run - of which you know that it will boot your
+(hardware/software) setup - as a base to build new kernels. That's what
+I do, while my most powerful machine tends to be a laptop bought after
+its production already stopped (ie, in clearance sales).
+
+> But systemd went nuts (in terms of doing completely crap things beside of not spawning
+> a getty).
+> After one hour of painful systemd debugging I found out that I was missing
+> CONFIG_FHANDLE.
+> 
+> I really don't understand why you are so opposed to that change.
+> Let's make thing easier for us.
+> 
+> >>> Do these files even make any sense anymore?  Who uses them?  The distros
+> >>> sure do not...
+> >>
+> >> Maybe I'm oldschool but I expect a defconfig kernel to be able to boot a
+> >> recent distro.
+> > 
+> > You are :)
+> > How does the defconfig know your hardware in order to be able to find
+> > the root disk properly?  Video device?  USB keyboard?  and so on...
+
+I think I never tried booting a kernel built with a defconfig file. But
+are the (hardware/software) setups used by people that build their own
+kernel so diverse that it will make a defconfig that covers (a
+substantial portion of) that group grow too big? Ie, we end up with
+something that looks a lot like what distributions use?
+
+> > I thought we were getting rid of the defconfig files entirely one of
+> > these days, didn't some arches already do this?
+
+Looking at
+    git ls-files "*defconfig*" | sed -e "s/arch\///; s/\/.*//" | sort -u
+
+it seems all arches have at least one defconfig file. I do think,
+however, that arch/arm dropped a substantial number of defconfig files a
+few years back.
+
+Anyhow, why should we get rid of the defconfig files entirely? Because
+they aren't really useful, since they won't help in building a kernel
+that actually boots the targeted systems? Or is it because of the churn
+involved in keeping them up to date? (Last time I checked most of them
+had accumulated quite a bit of outdated stuff. But the kconfig tools
+don't mind, they just skip what isn't used in the Kconfig files
+anymore.)
+
+If it's churn, perhaps the defconfig files could be moved into a
+separate repository. In that repository they should be regenerated for
+every release (and every -rc). That ought to be possible automagically.
+The only actual fixes would then be for the problems people notice when
+using those defconfig files. I'm not sure how to detect for that
+repository which defconfig files can be dropped entirely - because their
+targets are not supported anymore. That seems to happen often enough
+with obscure, outdated, etc. ARM boards, things like that.
+
+> Please don't.
+
+
+Paul Bolle
+
