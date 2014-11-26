@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaKZJST (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 04:18:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33846 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750879AbaKZJSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 04:18:16 -0500
-Date: Wed, 26 Nov 2014 10:18:24 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-cc: Seth Jennings <sjenning@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Petr Mladek <pmladek@suse.cz>, Miroslav Benes <mbenes@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
-        x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 0/3] Kernel Live Patching
-In-Reply-To: <547596C6.2050303@hitachi.com>
-Message-ID: <alpine.LNX.2.00.1411261014510.23174@pobox.suse.cz>
-References: <1416935709-404-1-git-send-email-sjenning@redhat.com> <547596C6.2050303@hitachi.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752441AbaKZJTF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 04:19:05 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:47574 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114AbaKZJTA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 04:19:00 -0500
+Date: Wed, 26 Nov 2014 10:18:47 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v4 09/42] virtio: set FEATURES_OK
+Message-ID: <20141126101847.615daac4.cornelia.huck@de.ibm.com>
+In-Reply-To: <20141125213823.GC22343@redhat.com>
+References: <1416933600-21398-1-git-send-email-mst@redhat.com>
+	<1416933600-21398-10-git-send-email-mst@redhat.com>
+	<20141125184811.3191f8db.cornelia.huck@de.ibm.com>
+	<20141125213823.GC22343@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112609-0041-0000-0000-000002421292
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Nov 2014, Masami Hiramatsu wrote:
+On Tue, 25 Nov 2014 23:38:23 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-> > Note to Steve:
-> > Masami's IPMODIFY patch is heading for -next via your tree.  Once it arrives,
-> > I'll rebase and make the change to set IPMODIFY.  Do not pull this for -next
-> > yet.  This version (v4) is for review and gathering acks.
+> On Tue, Nov 25, 2014 at 06:48:11PM +0100, Cornelia Huck wrote:
+> > On Tue, 25 Nov 2014 18:42:01 +0200
+> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > 
+> > > set FEATURES_OK as per virtio 1.0 spec
+> > > 
+> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > ---
+> > >  include/uapi/linux/virtio_config.h |  2 ++
+> > >  drivers/virtio/virtio.c            | 29 ++++++++++++++++++++++-------
+> > >  2 files changed, 24 insertions(+), 7 deletions(-)
+> > > 
+> > 
+> > > +	if (virtio_has_feature(dev, VIRTIO_F_VERSION_1)) {
+> > > +		add_status(dev, VIRTIO_CONFIG_S_FEATURES_OK);
+> > > +		status = dev->config->get_status(dev);
+> > > +		if (!(status & VIRTIO_CONFIG_S_FEATURES_OK)) {
+> > > +			printk(KERN_ERR "virtio: device refuses features: %x\n",
+> > > +			       status);
+> > 
+> > Can you use dev_err() to include the information which device failed?
 > 
-> BTW, as we discussed IPMODIFY is an exclusive flag. So if we allocate 
-> ftrace_ops for each function in each patch, it could be conflict each 
-> other.
+> I'm not sure - is dev_err OK to use from probe?
 
-Yup, this corresponds to what Petr brought up yesterday. There are cases 
-where all solutions (kpatch, kgraft, klp) would allocate multiple 
-ftrace_ops for a single function entry (think of patching one function 
-multiple times in a row).
+The dev_* functions should be fine anytime, but the driver has already
+been set before ->probe is called anyway.
 
-So it's not as easy as just setting the flag.
-
-> Maybe we need to have another ops hashtable to find such conflict and 
-> new handler to handle it.
-
-If I understand your proposal correctly, that would sound like a hackish 
-workaround, trying to basically trick the IPMODIFY flag semantics you just 
-implemented :)
-
-What I'd propose instead is to make sure that we always have 
-just a ftrace_ops per function entry, and only update the pointers there 
-as necessary. Fortunately we can do the switch atomically, by making use 
-of ->private.
-
--- 
-Jiri Kosina
-SUSE Labs
