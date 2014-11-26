@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953AbaKZBpX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 20:45:23 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:30746 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389AbaKZBpV (ORCPT
+	id S1752051AbaKZBsR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 20:48:17 -0500
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:53034 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751863AbaKZBsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 20:45:21 -0500
-Date: Tue, 25 Nov 2014 17:45:15 -0800
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] dm-bufio: fix memleak when using a dm_buffer's inline bio
-Message-ID: <20141126014515.GE10050@birch.djwong.org>
+	Tue, 25 Nov 2014 20:48:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20141126002501.GA11752@redhat.com>
+References: <20141114213124.GB3344@redhat.com>
+	<CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
+	<20141115213405.GA31971@redhat.com>
+	<20141116014006.GA5016@redhat.com>
+	<CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
+	<20141126002501.GA11752@redhat.com>
+Date: Tue, 25 Nov 2014 17:48:15 -0800
+X-Google-Sender-Auth: fRnxX3CSZRUgCpi9xa1c7olX6SE
+Message-ID: <CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When dm-bufio sets out to use the bio built into a struct dm_buffer to
-issue an IO, it needs to call bio_reset after it's done with the bio
-so that we can free things attached to the bio such as the integrity
-payload.  Therefore, inject our own endio callback to take care of
-the bio_reset after calling submit_io's end_io callback.
+On Tue, Nov 25, 2014 at 4:25 PM, Dave Jones <davej@redhat.com> wrote:
+>
+> The reason I'm checking in at this point, is that I'm starting to see different
+> bugs at this point, so I don't know if I can call this good or bad, unless
+> someone has a fix for what I'm seeing now.
 
-Test case:
-1. modprobe scsi_debug delay=0 dif=1 dix=199 ato=1 dev_size_mb=300
-2. Set up a dm-bufio client, e.g. dm-verity, on the scsi_debug device
-3. Repeatedly read metadata and watch kmalloc-192 leak!
+Hmm. The three last "bad" biisects are all just 3.17-rc1 plus staging fixes.
 
-Fix is against 3.18-rc6.
+> Reminiscent of a bug a couple releases ago. Processes about to exit, but stuck
+> in the kernel continuously faulting..
+> http://codemonkey.org.uk/junk/weird-hang.txt
+> The one I'm thinking of got fixed way before 3.17 though.
 
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
----
- drivers/md/dm-bufio.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+Well, the staging tree was based on that 3.17-rc1 tree, so it may well
+have the bug without the fix.
 
-diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
-index afe7971..2967ecc 100644
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -532,6 +532,16 @@ static void use_dmio(struct dm_buffer *b, int rw, sector_t block,
- 		end_io(&b->bio, r);
- }
- 
-+/* Reset the bio to free attached bio integrity profiles when we're done */
-+static void inline_endio(struct bio *bio, int error)
-+{
-+	bio_end_io_t *end_fn;
-+
-+	end_fn = bio->bi_private;
-+	end_fn(bio, error);
-+	bio_reset(bio);
-+}
-+
- static void use_inline_bio(struct dm_buffer *b, int rw, sector_t block,
- 			   bio_end_io_t *end_io)
- {
-@@ -543,7 +553,8 @@ static void use_inline_bio(struct dm_buffer *b, int rw, sector_t block,
- 	b->bio.bi_max_vecs = DM_BUFIO_INLINE_VECS;
- 	b->bio.bi_iter.bi_sector = block << b->c->sectors_per_block_bits;
- 	b->bio.bi_bdev = b->c->bdev;
--	b->bio.bi_end_io = end_io;
-+	b->bio.bi_end_io = inline_endio;
-+	b->bio.bi_private = end_io;
- 
- 	/*
- 	 * We assume that if len >= PAGE_SIZE ptr is page-aligned.
+You have also marked 3.18-rc1 bad *twice*, along with the network
+merge, and the tty merge. That's just odd. But it doesn't make the
+bisect wrong, it just means that you fat-fingered thing and marked the
+same thing bad a couple of times.
+
+Nothing to worry about, unless it's a sign of early Parkinsons...
+
+> Does that trace ring a bell of something else I could try on top of
+> each bisection point ?
+
+Hmm.
+
+Smells somewhat like the "pipe/page fault oddness" bug you reported.
+
+That one caused endless page faults on fault_in_pages_writeable()
+because of a page table entry that the VM thought was present, but the
+CPU thought was missing.
+
+That caused the whole "pte_protnone()" thing, and trying to get rid of
+the PTE_NUMA bit, but those patches have *not* been merged. And you
+were ever able to reproduce it., so we left it as pending.
+
+But if you actually really think that the bisect log you posted is
+real and true and actually is the bug you're chasing, I have bad news
+for you: do a "gitk --bisect", and you'll see that all the remaining
+commits are just to staging drivers.
+
+So that would either imply you have some staging driver (unlikely), or
+more likely that 3.17 really already has the problem, it's just that
+it needs some particular code alignment or phase of the moon or
+something to trigger.
+
+                 Linus
