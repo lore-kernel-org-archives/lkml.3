@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714AbaKZPlA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 10:41:00 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:54135 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753688AbaKZPk5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 10:40:57 -0500
-Date: Wed, 26 Nov 2014 16:40:45 +0100
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Cornelia Huck <cornelia.huck@de.ibm.com>, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>, rusty@au1.ibm.com,
-        nab@linux-iscsi.org, pbonzini@redhat.com,
-        Thomas Huth <thuth@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v4 13/42] virtio_blk: v1.0 support
-Message-ID: <20141126164045.0e9bfadd@thinkpad-w530>
-In-Reply-To: <20141125214342.GE22343@redhat.com>
-References: <1416933600-21398-1-git-send-email-mst@redhat.com>
-	<1416933600-21398-14-git-send-email-mst@redhat.com>
-	<20141125185516.7570c6e7.cornelia.huck@de.ibm.com>
-	<20141125214342.GE22343@redhat.com>
-Organization: IBM Deutschland GmbH
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1753801AbaKZPlW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 10:41:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46169 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753663AbaKZPlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 10:41:18 -0500
+Date: Wed, 26 Nov 2014 09:40:42 -0600
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Miroslav Benes <mbenes@suse.cz>
+Cc: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Petr Mladek <pmladek@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 2/3] kernel: add support for live patching
+Message-ID: <20141126154042.GB29079@treble.hsd1.ky.comcast.net>
+References: <1416935709-404-1-git-send-email-sjenning@redhat.com>
+ <1416935709-404-3-git-send-email-sjenning@redhat.com>
+ <alpine.LNX.2.00.1411261451570.10866@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112615-0005-0000-0000-0000023C9D7C
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1411261451570.10866@pobox.suse.cz>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, Nov 25, 2014 at 06:55:16PM +0100, Cornelia Huck wrote:
-> > On Tue, 25 Nov 2014 18:42:18 +0200
-> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > 
-> > > Based on patch by Cornelia Huck.
-> > > 
-> > > Note: for consistency, and to avoid sparse errors,
-> > >       convert all fields, even those no longer in use
-> > >       for virtio v1.0.
-> > > 
-> > > Reviewed-by: Thomas Huth <thuth@linux.vnet.ibm.com>
-> > > Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
-> > > Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > ---
-> > >  include/uapi/linux/virtio_blk.h | 15 ++++-----
-> > >  drivers/block/virtio_blk.c      | 70 ++++++++++++++++++++++++-----------------
-> > >  2 files changed, 49 insertions(+), 36 deletions(-)
-> > > 
-> > 
-> > Is this sufficiently unchanged so that the original r-bs still hold?
+Hi Miroslav,
+
+Just addressing one of your comments below.  I'll let Seth respond to
+the others :-)
+
+On Wed, Nov 26, 2014 at 03:19:17PM +0100, Miroslav Benes wrote:
+> > +/**
+> > + * struct klp_func - function structure for live patching
+> > + * @old_name:	name of the function to be patched
+> > + * @new_func:	pointer to the patched function code
+> > + * @old_addr:	a hint conveying at what address the old function
+> > + *		can be found (optional, vmlinux patches only)
+> > + */
+> > +struct klp_func {
+> > +	/* external */
+> > +	const char *old_name;
+> > +	void *new_func;
+> > +	/*
+> > +	 * The old_addr field is optional and can be used to resolve
+> > +	 * duplicate symbol names in the vmlinux object.  If this
+> > +	 * information is not present, the symbol is located by name
+> > +	 * with kallsyms. If the name is not unique and old_addr is
+> > +	 * not provided, the patch application fails as there is no
+> > +	 * way to resolve the ambiguity.
+> > +	 */
+> > +	unsigned long old_addr;
 > 
-> You are right, I'm afraid I'll have to drop these.
-> Thomas, David, care to comment?
+> I wonder if we really need old_addr as an external field. I assume that 
+> userspace tool in kpatch use it as a "hint" for kernel part and thus 
+> kallsyms is not needed there (and it solves ambiguity problem as well). 
+> But I am not sure if it is gonna be the same in upstream. When kernel is 
+> randomized (CONFIG_RANDOMIZE_BASE is set to 'y', though default is 'n') 
+> old_addr is not usable (and we throw it away in the code). Without 
+> old_addr being set by the user we could spare some of code (calls to 
+> klp_verify_vmlinux_symbol and such). 
 
-I've got this on my list, will try to find some spare time tomorrow!
+Even with CONFIG_RANDOMIZE_BASE, the function offsets will be the same
+regardless of the base address.  So we could still use old_addr to
+determine the offset.
 
-> Even better - have the cycles to review the latest version?
-
-Yes, will try.
-
+> So the question is whether future userspace tool in upstream would need it 
+> and would use it. Please note that I do not mean it as a kpatch or kgraft 
+> way to do things, I'm just not sure about old_addr being "public" and want 
+> do discuss the options.
 > 
+> The ambiguity of symbols was discussed in some other thread in lkml in 
+> october (I guess) with no conclusion IIRC...
 
+We need to resolve ambiguity somehow, and old_addr is a way to do that.
+Do you have any other ideas?
+
+-- 
+Josh
