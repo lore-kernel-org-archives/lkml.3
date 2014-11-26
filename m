@@ -1,78 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504AbaKZGxA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 01:53:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59986 "EHLO mx2.suse.de"
+	id S1752270AbaKZHDU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 02:03:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39010 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752484AbaKZGw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 01:52:58 -0500
-Message-ID: <547578C8.7020703@suse.com>
-Date: Wed, 26 Nov 2014 07:52:56 +0100
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752031AbaKZHDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 02:03:18 -0500
+Date: Wed, 26 Nov 2014 09:02:58 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
+        paulus@samba.org, akpm@linux-foundation.org, heiko.carstens@de.ibm.com,
+        schwidefsky@de.ibm.com, borntraeger@de.ibm.com
+Subject: Re: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
+ atomic
+Message-ID: <20141126070258.GA25523@redhat.com>
+References: <1416915806-24757-1-git-send-email-dahi@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: the arch/x86 maintainers <x86@kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: frequent lockups in 3.18rc4
-References: <20141114213124.GB3344@redhat.com>	<CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>	<20141115213405.GA31971@redhat.com>	<20141116014006.GA5016@redhat.com>	<CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>	<20141126002501.GA11752@redhat.com>	<CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>	<5475596A.9010301@suse.com>	<CA+55aFx1SiFBzmA=k9jHxi3cZE3Ei_+2NHepujgf86KEvkz8eQ@mail.gmail.com>	<54756424.6020409@suse.com>	<CA+55aFzVyTi_pR4y3=Z3y1bWkXbvgoJaykoyn0pUE7eTYgr+ZQ@mail.gmail.com> <CA+55aFzOSfdvgrkfiN=zZg4mSoot-tJQiVRh5ENW2-rzmLMy1w@mail.gmail.com>
-In-Reply-To: <CA+55aFzOSfdvgrkfiN=zZg4mSoot-tJQiVRh5ENW2-rzmLMy1w@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416915806-24757-1-git-send-email-dahi@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2014 07:21 AM, Linus Torvalds wrote:
-> On Tue, Nov 25, 2014 at 9:52 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> And leave it running for a while, and see if the trace is always the
->> same, or if there are variations on it...
->
-> Amusing.
->
-> Lookie here:
->
->     http://lists.xenproject.org/archives/html/xen-changelog/2005-08/msg00310.html
->
-> That's from 2005.
+On Tue, Nov 25, 2014 at 12:43:24PM +0100, David Hildenbrand wrote:
+> I recently discovered that commit 662bbcb2747c2422cf98d3d97619509379eee466
+> removed/skipped all might_sleep checks for might_fault() calls when in atomic.
 
-:-)
+Yes.  You can add e.g. might_sleep in your code if, for some reason, it is
+illegal to call it in an atomic context.
+But faults are legal in atomic if you handle the possible
+errors, and faults do not necessary cause caller to sleep, so might_fault
+should not call might_sleep.
 
->
-> Anyway, I don't see why the cr3 issue matters, *unless* there is some
-> situation where the scheduler can run with interrupts enabled. And why
-> this is Xen-related, I have no idea.
->
-> The Xen patches seem to have lost that
->
->   /* On Xen the line below does not always work. Needs investigating! */
->
-> line when backporting the 2.6.29 patches to Xen. And clearly nobody
-> investigated.
->
-> So please do get me back-traces, and we'll investigate. Better late
-> than never. But it does sound Xen-specific - although it's possible
-> that Xen just triggers some timing (and has apparently been able to
-> trigger it since 2005) that DaveJ now triggers on his one machine.
+> Reason was to allow calling copy_(to|from)_user while in pagefault_disabled(),
+> because otherwise, CONFIG_DEBUG_ATOMIC_SLEEP would find false positives.
 
-Yeah, this sounds plausible.
-
-I'm working on the back traces right now, hope to have them soon.
+That wasn't the only reason BTW.
+Andi Kleen also showed that compiler did a terrible job optimizing
+get/put user when might_sleep was called.
+See e.g. this thread:
+https://lkml.org/lkml/2013/8/14/652
+There was even an lwn.net article about it, that I don't seem to be
+able to locate.
+So might_sleep is not appropriate for lightweight operations like __get_user,
+which people literally expect to be a single instruction.
 
 
-Juergen
+I also have a project going which handles very short packets by copying
+them into guest memory directly without waking up a thread.
+I do it by calling recvmsg on a socket, then switching to
+a thread if I get back EFAULT.
+Not yet clean enough to upstream but it does seem to cut
+the latency down quite a bit, so I'd like to have the option.
 
->
-> So DaveJ, even though this does appear Xen-centric (Xentric?) and
-> you're running on bare hardware, maybe you could do the same thing in
-> that x86-64 vmalloc_fault(). The timing with Jürgen is kind of
-> intriguing - if 3.18-rc made it happen much more often for him, maybe
-> it really is very timing-sensitive, and you actually are seeing a
-> non-Xen version of the same thing...
->
->                             Linus
->
 
+Generally, a caller that does something like this under a spinlock:
+        preempt_disable
+        pagefault_disable
+        error = copy_to_user
+        pagefault_enable
+        preempt_enable_no_resched
+
+is not doing anything wrong and should not get a warning,
+as long as error is handled correctly later.
+
+You can also find the discussion around the patches
+educational:
+http://article.gmane.org/gmane.comp.emulators.kvm.devel/109928
+
+> However
+> we have the inatomic variants of these function for this purpose.
+
+Does inatomic install fixups now?
+
+Last I checked, it didn't so it did not satisfy this purpose.
+See this comment from x86:
+
+ * Copy data from kernel space to user space.  Caller must check
+ * the specified block with access_ok() before calling this function.
+ * The caller should also make sure he pins the user space address
+ * so that we don't result in page fault and sleep.
+
+
+Also - switching to inatomic would scatter if (atomic) all
+over code. It's much better to simply call the same
+function (e.g. recvmsg) and have it fail gracefully:
+after all, we have code to handle get/put user errors
+anyway.
+
+> The result of this change was that all guest access (that correctly uses
+> might_fault()) doesn't perform atomic checks when CONFIG_DEBUG_ATOMIC_SLEEP is
+> enabled. We lost a mighty debugging feature for user access.
+
+What's the path you are trying to debug?
+
+If your code can faults, then it's safe to call
+from atomic context.
+If it can't, it must pin the page.  You can not do access_ok checks and
+then assume access won't fault.
+
+> As I wasn't able to come up with any other reason why this should be
+> necessary, I suggest turning the might_sleep() checks on again in the
+> might_fault() code.
+
+Faults triggered with pagefault_disabled do not cause
+caller to sleep, merely to fail and get an error,
+so might_sleep is simply wrong.
+
+> 
+> pagefault_disable/pagefault_enable seems to be used mainly for futex, perf event
+> and kmap.
+> 
+> Going over all changes since that commit, it seems like most code already uses the
+> inatomic variants of copy_(to|from)_user. Code relying on (get|put)_user during
+> pagefault_disable() don't make use of any might_fault() in their (get|put)_user
+> implementation. Examples:
+> - arch/m68k/include/asm/futex.h
+> - arch/parisc/include/asm/futex.h
+> - arch/sh/include/asm/futex-irq.h
+> - arch/tile/include/asm/futex.h
+> So changing might_fault() back to trigger might_sleep() won't change a thing for
+> them. Hope I haven't missed anything.
+
+Did you check the generated code?
+On x86 it seems to me this patchset is definitely going to
+slow things down, in fact putting back in a performance regression
+that Andi found.
+
+
+> I only identified one might_fault() that would get triggered by get_user() on
+> powerpc and fixed it by using the inatomic variant (not tested). I am not sure
+> if we need some non-sleeping access_ok() prior to __get_user_inatomic().
+> 
+> By looking at the code I was wondering where the correct place for might_fault()
+> calls is? Doesn't seem to be very consistent. Examples:
+> 
+>                    | asm-generic | arm | arm64 | frv | m32r | x86 and s390
+> ---------------------------------------------------------------------------
+> get_user()         |   Yes       | Yes | Yes   | No  | Yes  |     Yes
+> __get_user()       |   No        | Yes | No    | No  | Yes  |     No
+> put_user()         |   Yes       | Yes | Yes   | No  | Yes  |     Yes
+> __put_user()       |   No        | Yes | No    | No  | Yes  |     No
+> copy_to_user()     |   Yes       | No  | No    | Yes | Yes  |     Yes
+> __copy_to_user()   |   No        | No  | No    | Yes | No   |     No
+> copy_from_user()   |   Yes       | No  | No    | Yes | Yes  |     Yes
+> __copy_from_user() |   No        | No  | No    | Yes | No   |     No
+> 
+
+I think it would be a mistake to make this change.
+
+Most call-sites handle faults in atomic just fine by
+returning error to caller.
+
+> So I would have assume that the way asm-generic, x86 and s390 (+ propably
+> others) do this is the right way?
+> So we can speed up multiple calls to e.g. copy_to_user() by doing the access
+> check manually (and also the might_fault() if relevant), then calling
+> __copy_to_user().
+> 
+> So in general, I conclude that the concept is:
+> 1. __.* variants perform no checking and don't call might_fault()
+> 2. [a-z].* variants perform access checking (access_ok() if implemented)
+> 3. [a-z].* variants call might_fault()
+> 4. .*_inatomic variants usually don't perform access checks
+> 5. .*_inatomic variants don't call might_fault()
+> 6. If common code uses the __.* variants, it has to trigger access_ok() and
+>    call might_fault()
+> 7. For pagefault_disable(), the inatomic variants are to be used
+
+inatomic variants don't seem to handle faults, so you
+must pin any memory you pass to them.
+
+
+> Comments? Opinions?
+> 
+
+If the same address is accessed multiple times, access_ok + __
+variant can be used to speed access up a bit.
+This is rarely the case, but this is the case for e.g. vhost.
+But access_ok does not guarantee that no fault will trigger:
+there's really no way to do that ATM except pinning the page.
+
+
+> David Hildenbrand (2):
+>   powerpc/fsl-pci: atomic get_user when pagefault_disabled
+>   mm, sched: trigger might_sleep() in might_fault() when atomic
+> 
+>  arch/powerpc/sysdev/fsl_pci.c |  2 +-
+>  include/linux/kernel.h        |  8 ++++++--
+>  mm/memory.c                   | 11 ++++-------
+>  3 files changed, 11 insertions(+), 10 deletions(-)
+> 
+> -- 
+> 1.8.5.5
