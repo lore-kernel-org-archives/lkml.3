@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871AbaKZWoz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 17:44:55 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:35541 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753573AbaKZWnV (ORCPT
+	id S1753895AbaKZWpf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 17:45:35 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:59946 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753357AbaKZWnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 17:43:21 -0500
+	Wed, 26 Nov 2014 17:43:19 -0500
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>
 Cc: linux-kernel@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: [PATCH v2 06/11] media: marvell-ccic: use vb2_ops_wait_prepare/finish helper
-Date: Wed, 26 Nov 2014 22:42:29 +0000
-Message-Id: <1417041754-8714-7-git-send-email-prabhakar.csengg@gmail.com>
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH v2 05/11] media: sh_veu: use vb2_ops_wait_prepare/finish helper
+Date: Wed, 26 Nov 2014 22:42:28 +0000
+Message-Id: <1417041754-8714-6-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417041754-8714-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1417041754-8714-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -30,72 +30,91 @@ to be initalized to a mutex so that vb2 helpers
 vb2_ops_wait_prepare/finish() can make use of it.
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
 ---
- drivers/media/platform/marvell-ccic/mcam-core.c | 29 +++++--------------------
- 1 file changed, 5 insertions(+), 24 deletions(-)
+ drivers/media/platform/sh_veu.c | 35 +++++++----------------------------
+ 1 file changed, 7 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/media/platform/marvell-ccic/mcam-core.c b/drivers/media/platform/marvell-ccic/mcam-core.c
-index ce00cba..4ec29c0 100644
---- a/drivers/media/platform/marvell-ccic/mcam-core.c
-+++ b/drivers/media/platform/marvell-ccic/mcam-core.c
-@@ -1102,26 +1102,6 @@ static void mcam_vb_buf_queue(struct vb2_buffer *vb)
- 		mcam_read_setup(cam);
+diff --git a/drivers/media/platform/sh_veu.c b/drivers/media/platform/sh_veu.c
+index be3b3bc..7884117 100644
+--- a/drivers/media/platform/sh_veu.c
++++ b/drivers/media/platform/sh_veu.c
+@@ -242,20 +242,6 @@ static void sh_veu_job_abort(void *priv)
+ 	veu->aborting = true;
  }
  
--
--/*
-- * vb2 uses these to release the mutex when waiting in dqbuf.  I'm
-- * not actually sure we need to do this (I'm not sure that vb2_dqbuf() needs
-- * to be called with the mutex held), but better safe than sorry.
-- */
--static void mcam_vb_wait_prepare(struct vb2_queue *vq)
+-static void sh_veu_lock(void *priv)
 -{
--	struct mcam_camera *cam = vb2_get_drv_priv(vq);
+-	struct sh_veu_dev *veu = priv;
 -
--	mutex_unlock(&cam->s_mutex);
+-	mutex_lock(&veu->fop_lock);
 -}
 -
--static void mcam_vb_wait_finish(struct vb2_queue *vq)
+-static void sh_veu_unlock(void *priv)
 -{
--	struct mcam_camera *cam = vb2_get_drv_priv(vq);
+-	struct sh_veu_dev *veu = priv;
 -
--	mutex_lock(&cam->s_mutex);
+-	mutex_unlock(&veu->fop_lock);
 -}
 -
- /*
-  * These need to be called with the mutex held from vb2
-  */
-@@ -1191,8 +1171,8 @@ static const struct vb2_ops mcam_vb2_ops = {
- 	.buf_queue		= mcam_vb_buf_queue,
- 	.start_streaming	= mcam_vb_start_streaming,
- 	.stop_streaming		= mcam_vb_stop_streaming,
--	.wait_prepare		= mcam_vb_wait_prepare,
--	.wait_finish		= mcam_vb_wait_finish,
-+	.wait_prepare		= vb2_ops_wait_prepare,
-+	.wait_finish		= vb2_ops_wait_finish,
+ static void sh_veu_process(struct sh_veu_dev *veu,
+ 			   struct vb2_buffer *src_buf,
+ 			   struct vb2_buffer *dst_buf)
+@@ -950,36 +936,28 @@ static void sh_veu_buf_queue(struct vb2_buffer *vb)
+ 	v4l2_m2m_buf_queue(veu->m2m_ctx, vb);
+ }
+ 
+-static void sh_veu_wait_prepare(struct vb2_queue *q)
+-{
+-	sh_veu_unlock(vb2_get_drv_priv(q));
+-}
+-
+-static void sh_veu_wait_finish(struct vb2_queue *q)
+-{
+-	sh_veu_lock(vb2_get_drv_priv(q));
+-}
+-
+ static const struct vb2_ops sh_veu_qops = {
+ 	.queue_setup	 = sh_veu_queue_setup,
+ 	.buf_prepare	 = sh_veu_buf_prepare,
+ 	.buf_queue	 = sh_veu_buf_queue,
+-	.wait_prepare	 = sh_veu_wait_prepare,
+-	.wait_finish	 = sh_veu_wait_finish,
++	.wait_prepare	 = vb2_ops_wait_prepare,
++	.wait_finish	 = vb2_ops_wait_finish,
  };
  
+ static int sh_veu_queue_init(void *priv, struct vb2_queue *src_vq,
+ 			     struct vb2_queue *dst_vq)
+ {
++	struct sh_veu_dev *veu = priv;
+ 	int ret;
  
-@@ -1252,8 +1232,8 @@ static const struct vb2_ops mcam_vb2_sg_ops = {
- 	.buf_cleanup		= mcam_vb_sg_buf_cleanup,
- 	.start_streaming	= mcam_vb_start_streaming,
- 	.stop_streaming		= mcam_vb_stop_streaming,
--	.wait_prepare		= mcam_vb_wait_prepare,
--	.wait_finish		= mcam_vb_wait_finish,
-+	.wait_prepare		= vb2_ops_wait_prepare,
-+	.wait_finish		= vb2_ops_wait_finish,
- };
+ 	memset(src_vq, 0, sizeof(*src_vq));
+ 	src_vq->type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+ 	src_vq->io_modes = VB2_MMAP | VB2_USERPTR;
+-	src_vq->drv_priv = priv;
++	src_vq->drv_priv = veu;
+ 	src_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
+ 	src_vq->ops = &sh_veu_qops;
+ 	src_vq->mem_ops = &vb2_dma_contig_memops;
++	src_vq->lock = &veu->fop_lock;
  
- #endif /* MCAM_MODE_DMA_SG */
-@@ -1265,6 +1245,7 @@ static int mcam_setup_vb2(struct mcam_camera *cam)
- 	memset(vq, 0, sizeof(*vq));
- 	vq->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
- 	vq->drv_priv = cam;
-+	vq->lock = &cam->s_mutex;
- 	INIT_LIST_HEAD(&cam->buffers);
- 	switch (cam->buffer_mode) {
- 	case B_DMA_contig:
+ 	ret = vb2_queue_init(src_vq);
+ 	if (ret < 0)
+@@ -988,10 +966,11 @@ static int sh_veu_queue_init(void *priv, struct vb2_queue *src_vq,
+ 	memset(dst_vq, 0, sizeof(*dst_vq));
+ 	dst_vq->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+ 	dst_vq->io_modes = VB2_MMAP | VB2_USERPTR;
+-	dst_vq->drv_priv = priv;
++	dst_vq->drv_priv = veu;
+ 	dst_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
+ 	dst_vq->ops = &sh_veu_qops;
+ 	dst_vq->mem_ops = &vb2_dma_contig_memops;
++	dst_vq->lock = &veu->fop_lock;
+ 
+ 	return vb2_queue_init(dst_vq);
+ }
 -- 
 1.9.1
 
