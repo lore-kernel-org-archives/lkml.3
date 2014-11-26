@@ -1,67 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407AbaKZWnO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 17:43:14 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:52964 "EHLO
+	id S1753559AbaKZWnS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 17:43:18 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:56630 "EHLO
 	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651AbaKZWnN (ORCPT
+	with ESMTP id S1753357AbaKZWnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 17:43:13 -0500
+	Wed, 26 Nov 2014 17:43:15 -0500
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>
 Cc: linux-kernel@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v2 00/11] media: use vb2_ops_wait_prepare/finish helper
-Date: Wed, 26 Nov 2014 22:42:23 +0000
-Message-Id: <1417041754-8714-1-git-send-email-prabhakar.csengg@gmail.com>
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH v2 02/11] media: ti-vpe: use vb2_ops_wait_prepare/finish helper
+Date: Wed, 26 Nov 2014 22:42:25 +0000
+Message-Id: <1417041754-8714-3-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417041754-8714-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1417041754-8714-1-git-send-email-prabhakar.csengg@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+This patch drops driver specific wait_prepare() and
+wait_finish() callbacks from vb2_ops and instead uses
+the the helpers vb2_ops_wait_prepare/finish() provided
+by the vb2 core, the lock member of the queue needs
+to be initalized to a mutex so that vb2 helpers
+vb2_ops_wait_prepare/finish() can make use of it.
 
-This patch set uses the vb2 ops helpers for wait_prepare and
-wait_finish callbacks for drivers which using vb2 helpers.
-This patchset is compile tested only.
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+---
+ drivers/media/platform/ti-vpe/vpe.c | 19 +++++--------------
+ 1 file changed, 5 insertions(+), 14 deletions(-)
 
-Changes for v2:
-a: Included proper commit message.
-b: included Ack.
-
-Lad, Prabhakar (11):
-  media: s3c-camif: use vb2_ops_wait_prepare/finish helper
-  media: ti-vpe: use vb2_ops_wait_prepare/finish helper
-  media: exynos-gsc: use vb2_ops_wait_prepare/finish helper
-  media: soc_camera: use vb2_ops_wait_prepare/finish helper
-  media: sh_veu: use vb2_ops_wait_prepare/finish helper
-  media: marvell-ccic: use vb2_ops_wait_prepare/finish helper
-  media: s5p-tv: use vb2_ops_wait_prepare/finish helper
-  media: blackfin: use vb2_ops_wait_prepare/finish helper
-  media: s5p-mfc: use vb2_ops_wait_prepare/finish helper
-  media: davinci: vpif_capture: use vb2_ops_wait_prepare/finish helper
-  media: usb: uvc: use vb2_ops_wait_prepare/finish helper
-
- drivers/media/platform/blackfin/bfin_capture.c     | 17 ++---------
- drivers/media/platform/davinci/vpif_capture.c      |  2 ++
- drivers/media/platform/exynos-gsc/gsc-core.h       | 12 --------
- drivers/media/platform/exynos-gsc/gsc-m2m.c        |  6 ++--
- drivers/media/platform/marvell-ccic/mcam-core.c    | 29 ++++--------------
- drivers/media/platform/s3c-camif/camif-capture.c   | 17 ++---------
- drivers/media/platform/s5p-mfc/s5p_mfc.c           |  1 +
- drivers/media/platform/s5p-mfc/s5p_mfc_dec.c       | 20 ++-----------
- drivers/media/platform/s5p-mfc/s5p_mfc_enc.c       | 20 ++-----------
- drivers/media/platform/s5p-tv/mixer_video.c        | 21 ++-----------
- drivers/media/platform/sh_veu.c                    | 35 +++++-----------------
- drivers/media/platform/soc_camera/atmel-isi.c      |  7 +++--
- drivers/media/platform/soc_camera/mx3_camera.c     |  7 +++--
- drivers/media/platform/soc_camera/rcar_vin.c       |  7 +++--
- .../platform/soc_camera/sh_mobile_ceu_camera.c     |  7 +++--
- drivers/media/platform/soc_camera/soc_camera.c     | 16 ----------
- drivers/media/platform/ti-vpe/vpe.c                | 19 ++++--------
- drivers/media/usb/uvc/uvc_queue.c                  | 18 ++---------
- 18 files changed, 59 insertions(+), 202 deletions(-)
-
+diff --git a/drivers/media/platform/ti-vpe/vpe.c b/drivers/media/platform/ti-vpe/vpe.c
+index 9a081c2..d5d745d 100644
+--- a/drivers/media/platform/ti-vpe/vpe.c
++++ b/drivers/media/platform/ti-vpe/vpe.c
+@@ -1913,30 +1913,19 @@ static void vpe_buf_queue(struct vb2_buffer *vb)
+ 	v4l2_m2m_buf_queue(ctx->m2m_ctx, vb);
+ }
+ 
+-static void vpe_wait_prepare(struct vb2_queue *q)
+-{
+-	struct vpe_ctx *ctx = vb2_get_drv_priv(q);
+-	vpe_unlock(ctx);
+-}
+-
+-static void vpe_wait_finish(struct vb2_queue *q)
+-{
+-	struct vpe_ctx *ctx = vb2_get_drv_priv(q);
+-	vpe_lock(ctx);
+-}
+-
+ static struct vb2_ops vpe_qops = {
+ 	.queue_setup	 = vpe_queue_setup,
+ 	.buf_prepare	 = vpe_buf_prepare,
+ 	.buf_queue	 = vpe_buf_queue,
+-	.wait_prepare	 = vpe_wait_prepare,
+-	.wait_finish	 = vpe_wait_finish,
++	.wait_prepare	 = vb2_ops_wait_prepare,
++	.wait_finish	 = vb2_ops_wait_finish,
+ };
+ 
+ static int queue_init(void *priv, struct vb2_queue *src_vq,
+ 		      struct vb2_queue *dst_vq)
+ {
+ 	struct vpe_ctx *ctx = priv;
++	struct vpe_dev *dev = ctx->dev;
+ 	int ret;
+ 
+ 	memset(src_vq, 0, sizeof(*src_vq));
+@@ -1947,6 +1936,7 @@ static int queue_init(void *priv, struct vb2_queue *src_vq,
+ 	src_vq->ops = &vpe_qops;
+ 	src_vq->mem_ops = &vb2_dma_contig_memops;
+ 	src_vq->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_COPY;
++	src_vq->lock = &dev->dev_mutex;
+ 
+ 	ret = vb2_queue_init(src_vq);
+ 	if (ret)
+@@ -1960,6 +1950,7 @@ static int queue_init(void *priv, struct vb2_queue *src_vq,
+ 	dst_vq->ops = &vpe_qops;
+ 	dst_vq->mem_ops = &vb2_dma_contig_memops;
+ 	dst_vq->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_COPY;
++	dst_vq->lock = &dev->dev_mutex;
+ 
+ 	return vb2_queue_init(dst_vq);
+ }
 -- 
 1.9.1
 
