@@ -1,57 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653AbaKZOh3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 09:37:29 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:30284 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836AbaKZOh1 (ORCPT
+	id S1752836AbaKZOhv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 09:37:51 -0500
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:61457 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752661AbaKZOht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 09:37:27 -0500
-Date: Wed, 26 Nov 2014 17:37:19 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch] tracing: off by one in __trace_array_vprintk()
-Message-ID: <20141126143719.GT4893@mwanda>
-References: <20141126140621.GA18740@mwanda>
- <20141126092706.5d4038d4@gandalf.local.home>
+	Wed, 26 Nov 2014 09:37:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141126092706.5d4038d4@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <20141125222556.GA7712@sirena.org.uk>
+References: <1416853893-1993-1-git-send-email-andrew.smirnov@gmail.com>
+	<20141125124229.GY7712@sirena.org.uk>
+	<CAHQ1cqGvDft1t5MkaqT-xsfBygdghA3mK_a7x+Z3L6HtvqrwhA@mail.gmail.com>
+	<20141125134048.GE7712@sirena.org.uk>
+	<CAHQ1cqHSdV4XTxwnPYfdBK8mVYQk9O3akynSM_hUGmVDMRU3FA@mail.gmail.com>
+	<20141125222556.GA7712@sirena.org.uk>
+Date: Wed, 26 Nov 2014 06:37:47 -0800
+Message-ID: <CAHQ1cqHc8SRePFktaEtH33YLTQPhCS0vnh2YQ1S+xQc1AHAV4g@mail.gmail.com>
+Subject: Re: [RFC, PATCH, RESEND] spi, spidev: Add support for long SPI transfers
+From: Andrey Smirnov <andrew.smirnov@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, Andrey Yurovsky <yurovsky@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 09:27:06AM -0500, Steven Rostedt wrote:
-> On Wed, 26 Nov 2014 17:06:21 +0300
-> Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> 
-> > This check says "goto out;" if we had to truncate the string.
-> > 
-> > The "tbuffer" buffer has TRACE_BUF_SIZE bytes.  The vsnprintf() function
-> > returns the number of characters (not counting the NUL char) which would
-> > have been printed if there were space.  If we we tried to print
-> > TRACE_BUF_SIZE characters, the last character would have been truncated
-> > to make space for the NUL character so we should "goto out;".
-> > 
-> 
-> Oh, and the NUL character is never copied. We copy the string into the
-> buffer with:
-> 
-> 	memcpy(&entry->buf, tbuffer, len);
-> 
-> Where len does not include NUL, and why we add it ourselves.
+>> OK, I think I use too generic terms and descriptions and maybe that's
+>> why it is not very clear what I mean. Just to give more context I am
+>> working with i.MX6 SPI peripheral, and AFAIK I have two options of
+>> using it:
+>
+> Ah, i.MX...  When I've worked with it I managed the chip select with
+> GPIO since it was flipping the chip select per word.
 
-Yeah.  I noticed that.  Probably we should change the memcpy() to:
+Yep, that's pretty much what I am observing, except now the size of
+the "word" is configurable.
 
-	memcpy(&entry->buf, tbuffer, len + 1);
+>
+>> - Use a generic GPIO as SS/CS. This way everything works exactly as
+>> you describe, but unfortunately using GPIO leads to a significant
+>> overhead for SS/CS assertion/deassertion.
+>
+> It's really surprising that it's expensive to use a GPIO, I've not seen
+> other users complaining about that.  Do we understand why (I'm guessing
+> you have some extremely performance sensitive application here so you're
+> just more picky than most)?
 
-and remove separate NUL assignment?  It's a speedup!  I'll do it in v2.
+Yeah, I agree, I have a niche use case and just happen to be more
+picky because of that. I have a rather slow clock (8Mhz out of
+potential 20Mhz) that is out of my control; rather verbose protocol
+which has 32bits+ of overhead per 32bit of data with fixed transaction
+length of 64bits(so I get a lot of small equally sized transactions);
+sizeable chunk of data to transfer 4K of 32bit words. On top of that
+the system needs to do those 4K transfers as fast as possible so my
+timing requirements are very severe as well.
 
-regards,
-dan carpenter
+>
+>> - Use hardware controlled SS/CS in which case peripheral toggles the
+>> line every "burst" it transmits, "burst" is n bits where n can be from
+>> 1 to 2^12
+>>  For 1 <= n <= 32, and software SS/CS the concept of a "burst" matches
+>> the meaning of "bits_per_word" field and this is exactly how it is
+>> setup in the driver.
+>
+> But if we go over 32 bits it doesn't do the byte swapping?
 
+*Sigh* It's FIFO is little endian as well so it does do byte swapping.
+
+> Hardware designers are wonderful, creative people sometimes.  In general this
+> isn't going to be sufficient for all transfers even with the non swapped
+> case since it means we can't do more than one transfer per message
+> unless we start coalescing in the core and putting in dummies for cases
+> where transfers change (we should do these things, they're a win in
+> general since we can just set the message up and let the hardware do the
+> transfer, but it's not completely trivial).
+>
+>> So with all of this in mind what I am trying to achive is to have
+>> longest transaction with minimal CS/SS switching overhead. The change
+>> in my patch allows me to set the length of a burst to its limit.
+>
+> The driver should probably just be doing that where it can, it seems
+> like the burst size should be based on the transfer length not the word
+> size - we might need to just manually mangle the data for short
+> transfers.
+
+Yeah, I thought about this idea yesterday as well. I agree this is
+probably the right way to solve this. I'll have my hack as a temporary
+kludge and will try to improve the driver in the mean time.
+
+Thank you for you input and please ignore the patch that I sent.
+
+Andrey
