@@ -1,37 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635AbaKZIsk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 03:48:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35063 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809AbaKZIsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 03:48:38 -0500
-Message-ID: <1416991708.10813.4.camel@nilsson.home.kraxel.org>
-Subject: Re: [PATCH v4 18/42] virtio_blk: make serial attribute static
-From: Gerd Hoffmann <kraxel@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, rusty@au1.ibm.com,
-        virtualization@lists.linux-foundation.org, pbonzini@redhat.com,
-        David Miller <davem@davemloft.net>
-Date: Wed, 26 Nov 2014 09:48:28 +0100
-In-Reply-To: <1416933600-21398-19-git-send-email-mst@redhat.com>
-References: <1416933600-21398-1-git-send-email-mst@redhat.com>
-	 <1416933600-21398-19-git-send-email-mst@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751641AbaKZIv6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 03:51:58 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:46876 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaKZIv5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 03:51:57 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: [PATCH v6] ath3k: Add support of MCI 13d3:3408 bt device
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <54758990.2050908@gmail.com>
+Date: Wed, 26 Nov 2014 17:50:55 +0900
+Cc: linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4CFFA987-E3B3-49D4-ACBE-55CC7C3566BD@holtmann.org>
+References: <5474BA38.2070908@gmail.com> <C8849DFB-5159-4C62-A861-D393034E4895@holtmann.org> <54758990.2050908@gmail.com>
+To: Dmitry Tunin <hanipouspilot@gmail.com>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Di, 2014-11-25 at 18:42 +0200, Michael S. Tsirkin wrote:
-> It's never declared so no need to make it extern.
+Hi Dmitry,
 
-Hmm, can't see patches 14 -> 17 on the maling list
-(virtualization@lists.linux-foundation.org).  Also no cover letter.
-Someone eating mails?
+> I spent already hours on sending this fucking email. The patch works for me. And if someone else is interested in working of this device feel free and do it yourself.
 
-cheers,
-  Gerd
+so you are blaming the maintainers. Thank you very much :(
 
+Maybe reading Documentation/SubmittingPatches and just following the steps in there would get you what you wanted. Others have successfully submitted tons and tons of patches.
+
+Regards
+
+Marcel
 
