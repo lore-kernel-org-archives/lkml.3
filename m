@@ -1,82 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111AbaKZEjK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 23:39:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59040 "EHLO mx2.suse.de"
+	id S1752130AbaKZEoR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 23:44:17 -0500
+Received: from ozlabs.org ([103.22.144.67]:34640 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751712AbaKZEjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 23:39:08 -0500
-Message-ID: <5475596A.9010301@suse.com>
-Date: Wed, 26 Nov 2014 05:39:06 +0100
-From: =?UTF-8?B?SsO8cmdlbiBHcm/Dnw==?= <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751795AbaKZEoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 23:44:15 -0500
+Date: Wed, 26 Nov 2014 15:44:06 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Romain Perier <romain.perier@gmail.com>
+Subject: linux-next: manual merge of the devicetree tree with the pm, mfd
+ and regulator trees
+Message-ID: <20141126154406.434ab873@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-References: <20141114213124.GB3344@redhat.com>	<CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>	<20141115213405.GA31971@redhat.com>	<20141116014006.GA5016@redhat.com>	<CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>	<20141126002501.GA11752@redhat.com> <CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>
-In-Reply-To: <CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/5ddrhoO2Y3g=xvwA18WGNJj"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2014 02:48 AM, Linus Torvalds wrote:
-> On Tue, Nov 25, 2014 at 4:25 PM, Dave Jones <davej@redhat.com> wrote:
->>
->> The reason I'm checking in at this point, is that I'm starting to see different
->> bugs at this point, so I don't know if I can call this good or bad, unless
->> someone has a fix for what I'm seeing now.
->
-> Hmm. The three last "bad" biisects are all just 3.17-rc1 plus staging fixes.
->
->> Reminiscent of a bug a couple releases ago. Processes about to exit, but stuck
->> in the kernel continuously faulting..
->> http://codemonkey.org.uk/junk/weird-hang.txt
->> The one I'm thinking of got fixed way before 3.17 though.
->
-> Well, the staging tree was based on that 3.17-rc1 tree, so it may well
-> have the bug without the fix.
->
-> You have also marked 3.18-rc1 bad *twice*, along with the network
-> merge, and the tty merge. That's just odd. But it doesn't make the
-> bisect wrong, it just means that you fat-fingered thing and marked the
-> same thing bad a couple of times.
->
-> Nothing to worry about, unless it's a sign of early Parkinsons...
->
->> Does that trace ring a bell of something else I could try on top of
->> each bisection point ?
->
-> Hmm.
->
-> Smells somewhat like the "pipe/page fault oddness" bug you reported.
->
-> That one caused endless page faults on fault_in_pages_writeable()
-> because of a page table entry that the VM thought was present, but the
-> CPU thought was missing.
->
-> That caused the whole "pte_protnone()" thing, and trying to get rid of
-> the PTE_NUMA bit, but those patches have *not* been merged. And you
-> were ever able to reproduce it., so we left it as pending.
->
-> But if you actually really think that the bisect log you posted is
-> real and true and actually is the bug you're chasing, I have bad news
-> for you: do a "gitk --bisect", and you'll see that all the remaining
-> commits are just to staging drivers.
->
-> So that would either imply you have some staging driver (unlikely), or
-> more likely that 3.17 really already has the problem, it's just that
-> it needs some particular code alignment or phase of the moon or
-> something to trigger.
+--Sig_/5ddrhoO2Y3g=xvwA18WGNJj
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I COULD trigger it with 3.17. Took much longer, but I've seen it once.
-And from Xen hypervisor data it was clear it was the same bug (cpu
-spinning in pmd_lock()).
+Hi Grant,
 
+Today's linux-next merge of the devicetree tree got a conflict in
+include/linux/of.h between commits b31384fa5de3 ("Driver core: Unified
+device properties interface for platform firmware") from the pm tree
+and a4b4e0461ec5 ("of: Add standard property for poweroff capability")
+from the mfd and regulator trees and commit 7518b5890d8a ("of/overlay:
+Introduce DT overlay support") from the devicetree tree.
 
-Juergen
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc include/linux/of.h
+index facd94e45462,aa01cf5852f8..000000000000
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@@ -23,7 -23,7 +23,8 @@@
+  #include <linux/spinlock.h>
+  #include <linux/topology.h>
+  #include <linux/notifier.h>
+ +#include <linux/property.h>
++ #include <linux/list.h>
+ =20
+  #include <asm/byteorder.h>
+  #include <asm/errno.h>
+@@@ -108,27 -111,18 +114,27 @@@ static inline struct device_node *of_no
+  static inline void of_node_put(struct device_node *node) { }
+  #endif /* !CONFIG_OF_DYNAMIC */
+ =20
+ -#ifdef CONFIG_OF
+ -
+  /* Pointer for first entry in chain of all nodes. */
+- extern struct device_node *of_allnodes;
++ extern struct device_node *of_root;
+  extern struct device_node *of_chosen;
+  extern struct device_node *of_aliases;
+  extern struct device_node *of_stdout;
+  extern raw_spinlock_t devtree_lock;
+ =20
+ +#ifdef CONFIG_OF
+ +static inline bool is_of_node(struct fwnode_handle *fwnode)
+ +{
+ +	return fwnode && fwnode->type =3D=3D FWNODE_OF;
+ +}
+ +
+ +static inline struct device_node *of_node(struct fwnode_handle *fwnode)
+ +{
+ +	return fwnode ? container_of(fwnode, struct device_node, fwnode) : NULL;
+ +}
+ +
+  static inline bool of_have_populated_dt(void)
+  {
+- 	return of_allnodes !=3D NULL;
++ 	return of_root !=3D NULL;
+  }
+ =20
+  static inline bool of_node_is_root(const struct device_node *node)
+@@@ -956,14 -959,33 +992,44 @@@ static inline int of_reconfig_get_state
+  extern int of_resolve_phandles(struct device_node *tree);
+ =20
+  /**
+ + * of_system_has_poweroff_source - Tells if poweroff-source is found for =
+device_node
+ + * @np: Pointer to the given device_node
+ + *
+ + * return true if present false otherwise
+ + */
+ +static inline bool of_system_has_poweroff_source(const struct device_node=
+ *np)
+ +{
+ +	return of_property_read_bool(np, "poweroff-source");
+ +}
+ +
+++/**
++  * Overlay support
++  */
++=20
++ #ifdef CONFIG_OF_OVERLAY
++=20
++ /* ID based overlays; the API for external users */
++ int of_overlay_create(struct device_node *tree);
++ int of_overlay_destroy(int id);
++ int of_overlay_destroy_all(void);
++=20
++ #else
++=20
++ static inline int of_overlay_create(struct device_node *tree)
++ {
++ 	return -ENOTSUPP;
++ }
++=20
++ static inline int of_overlay_destroy(int id)
++ {
++ 	return -ENOTSUPP;
++ }
++=20
++ static inline int of_overlay_destroy_all(void)
++ {
++ 	return -ENOTSUPP;
++ }
++=20
++ #endif
++=20
+  #endif /* _LINUX_OF_H */
+
+--Sig_/5ddrhoO2Y3g=xvwA18WGNJj
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUdVqbAAoJEMDTa8Ir7ZwV6KoP/0VLKOmqhHM1SR1QNYyk6R2i
+TdkHavhTvCxX/1lyRXd/smlqfj1k3BPFVTaw7Qi8L9UVAm9vvH3RzWaTPYWqCYYo
+UQAoWNejybtWIgp+RygqDDF7weaB2EsvYIwMMNluxCGmt2aC7BIcUJLgDAeUNo7Q
+0XDA5lCX/ifqpQD4982QkNtp8ihJNjUFa/TH7qfwmFTpyj1ftu3TWVr/n+sEi9j0
+l7MOw3cgul4BdI8xVWrw6LBO9pgXzZ8PJ44pUftUfbT1YVDKf4m5V6FBJAMICFh0
+Ua/speGDi6QGvXO2fBhrdb7mbps3eeeUDIdGU+4bm09vIL0316rUOOykugJ4Fg4C
+Riz4OKkX0ORa5pQDZsnsI6SgMzw3HgMVcG/TqJvCBLSWmwtwFgXZwTue36kV/cxY
+iXGLDoSrNpOxMNZIIXexq/Dj70KCVb3ly73K4yloKQfbk6nVaxIWB/XWXryXVIhR
+IySHJQZbxdoo56FbD1xvj1QyzlNNQoRULAVk+sADrkF/I0lsWeEOYMdyZYe0gQTm
+TUh/vzG8SqWfUj8uupgFycLxUw6olZenQ0g+LvcULX+d5YMFbRT8w2PLzAFsPYOh
+k3rD2jxOMs/iJyzLC5yzfrcwqb7le1tGAFcVVvcOHch1css/lXbpEzr0Pl4X4n7I
+6z9EfpV3OmDuExFg8zI7
+=52Jd
+-----END PGP SIGNATURE-----
+
+--Sig_/5ddrhoO2Y3g=xvwA18WGNJj--
