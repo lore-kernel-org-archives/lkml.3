@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114AbaKZNs4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 08:48:56 -0500
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:42676 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750845AbaKZNsz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 08:48:55 -0500
-Message-ID: <5475DA1C.50307@st.com>
-Date: Wed, 26 Nov 2014 14:48:12 +0100
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752525AbaKZNtq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 08:49:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41665 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750884AbaKZNtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 08:49:45 -0500
+Date: Wed, 26 Nov 2014 14:49:56 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Huang Bo <huangbobupt@163.com>
+cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 1/1] HID: add BETOP game controller force feedback
+ support
+In-Reply-To: <5475D7CC.1080606@163.com>
+Message-ID: <alpine.LNX.2.00.1411261449140.23174@pobox.suse.cz>
+References: <3e9f782f.a7fa.149df95fef7.Coremail.huangbobupt@163.com> <alpine.LNX.2.00.1411251534010.23174@pobox.suse.cz> <3497222f.2152a.149ec27f2c1.Coremail.huangbobupt@163.com> <alpine.LNX.2.00.1411261414160.23174@pobox.suse.cz>
+ <5475D7CC.1080606@163.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Peter Griffin <peter.griffin@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <patrice.chotard@st.com>, <srinivas.kandagatla@gmail.com>,
-        arnd Bergmann <arnd@arndb.de>, olof Johansson <olof@lixom.net>
-Cc: <lee.jones@linaro.org>
-Subject: Re: [PATCH] MAINTAINERS: Add ahci_st.c to ARCH/STI architecture
-References: <1416386694-7402-1-git-send-email-peter.griffin@linaro.org>
-In-Reply-To: <1416386694-7402-1-git-send-email-peter.griffin@linaro.org>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.28,0.0.0000
- definitions=2014-11-26_04:2014-11-26,2014-11-26,1970-01-01 signatures=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Wed, 26 Nov 2014, Huang Bo wrote:
 
-On 11/19/2014 09:44 AM, Peter Griffin wrote:
-> This patch adds the ahci_st.c driver found on STMicroelectronics
-> stih41x consumer electronics SoC's into the STI arch section
-> of the maintainers file.
->
-> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
-Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
+> > It's unfortunately whitespace damaged again. If it's not possible to set 
+> > up your e-mail client not to cause whitespace damage to patches (please 
+> > see Documentation/email-clients.txt for some hints), attach the patch as 
+> > an e-mail attachment.
+> >
+> From: Huang Bo <huangbobupt@163.com>
+> 
+> Adds force feedback support for BETOP USB game controllers.
+> These devices are mass produced in China.
 
-Arnd, Olof, could you pick this one directly?
-I only have this single patch remaining for v3.19, so didn't planned to 
-send another pull-request.
+Alright, so you apparently wrote the code with incorrect formatting, as 
+even the version you attached doesn't have the formatting right.
+
+Please reformat the code according to Documentation/CodingStyle and 
+resubmit.
 
 Thanks,
-Maxime
 
+-- 
+Jiri Kosina
+SUSE Labs
