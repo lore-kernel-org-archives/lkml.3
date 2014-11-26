@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326AbaKZFRJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 00:17:09 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:55783 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310AbaKZFRG convert rfc822-to-8bit (ORCPT
+	id S1752348AbaKZFRV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 00:17:21 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:48083 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752329AbaKZFRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 00:17:06 -0500
+	Wed, 26 Nov 2014 00:17:16 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/+XtXV6Wd/IJrFAfJ6iBxtRvfNfxLV4n8=
+X-DKIM: OpenDKIM Filter v2.0.1 titan CB54A6240D9
+Date: Wed, 26 Nov 2014 00:17:01 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 6/7] ARM: mvebu: add PHY support to the dts for the
+ USB controllers on Armada 375
+Message-ID: <20141126051701.GU22670@titan.lakedaemon.net>
+References: <1415879269-29711-1-git-send-email-gregory.clement@free-electrons.com>
+ <1415879269-29711-7-git-send-email-gregory.clement@free-electrons.com>
+ <20141122020811.GO22670@titan.lakedaemon.net>
+ <5470556B.6080608@free-electrons.com>
+ <20141126035929.GJ22670@titan.lakedaemon.net>
+ <54756164.3070206@ti.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: [PATCH v3] Bluetooth: automatically flushable packets aren't allowed on LE links
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <CAK8d-a+MJBBLkU_=UQGKVmxnM-sYJ=pW7aj0XQ5aa5AuR2G_Wg@mail.gmail.com>
-Date: Wed, 26 Nov 2014 14:16:47 +0900
-Cc: Johan Hedberg <johan.hedberg@gmail.com>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        BlueZ development <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <50D951D4-0A99-4D77-814C-D80A209B3D4F@holtmann.org>
-References: <1416419951-27659-1-git-send-email-stevenrwalter@gmail.com> <20141120113813.GA23288@t440s.lan> <80321467-10AB-489E-A47E-44B0ECEE4BE1@holtmann.org> <CAK8d-aL+3eB4WZeqO1sv9p3440EVXQiqF6QiTU5YNAKAbZ7f-w@mail.gmail.com> <CAK8d-a+MJBBLkU_=UQGKVmxnM-sYJ=pW7aj0XQ5aa5AuR2G_Wg@mail.gmail.com>
-To: Steven Walter <stevenrwalter@gmail.com>
-X-Mailer: Apple Mail (2.1993)
+Content-Disposition: inline
+In-Reply-To: <54756164.3070206@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
-
->>>> I think Marcel was after just providing a clarifying code comment in
->>>> both places - having two branches of an if-statement doing exactly the
->>>> same thing looks a bit weird to me. To make thins completely clear I'd
->>>> suggest adding a simple helper function that you can call from both
->>>> places to get the needed flags, something like the following:
->>> 
->>> I am actually fine with just adding a comment explaining the complex if
->>> statement on why it is correct. It is just a helper for everybody to
->>> understand what and why it is done that way.
->> 
->> 
->> Is the comment I added sufficient, or should I add one for the other if
->> condition as well?  To me, the second condition is pretty straightforward:
->> if the caller requested it and the hardware supports it, use NO_FLUSH.  The
->> relationship between FLUSH/NO_FLUSH and low-energy is much less clear and
->> more justifies a comment, in my opinion.
+On Wed, Nov 26, 2014 at 10:43:08AM +0530, Kishon Vijay Abraham I wrote:
+> Hi,
 > 
-> Did a miss a reply to this?  How would you like the next iteration of
-> the patch to look?
+> On Wednesday 26 November 2014 09:29 AM, Jason Cooper wrote:
+> > On Sat, Nov 22, 2014 at 10:20:43AM +0100, Gregory CLEMENT wrote:
+> >> Hi Jason,
+> >>
+> >> On 22/11/2014 03:08, Jason Cooper wrote:
+> >>> On Thu, Nov 13, 2014 at 12:47:48PM +0100, Gregory CLEMENT wrote:
+> >>>> Now that the USB cluster node has been added, use it as a PHY provider
+> >>>> for the USB controller linked to it: the first EHCI and the xHCI.
+> >>>>
+> >>>> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> 
+> Looks like I'm not cc'ed in v4 of this patch series :-(
 
-can you just send a v4 and I have a look at it. I thing it is best to keep the original patch with the rather complicated if statement you had. And then add a comment in front of it, why it is that way and that it is correct this way.
+I've bounced emails maybe three times in my life.  Thought it might work
+here.  Did it?
 
-Regards
+thx,
 
-Marcel
-
+Jason.
