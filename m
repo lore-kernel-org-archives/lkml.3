@@ -1,32 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728AbaKZXWy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 18:22:54 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59241 "EHLO
+	id S1754741AbaKZXXI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 18:23:08 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59264 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105AbaKZXWv (ORCPT
+	with ESMTP id S1751634AbaKZXXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 18:22:51 -0500
-Date: Wed, 26 Nov 2014 15:21:57 -0800
+	Wed, 26 Nov 2014 18:23:06 -0500
+Date: Wed, 26 Nov 2014 15:22:12 -0800
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-9523785062ca8b0f2fdaddc5718d71adfc0d15b3@git.kernel.org>
-Cc: benh@kernel.crashing.org, jroedel@suse.de, mingo@kernel.org,
-        JBeulich@suse.com, gregkh@linuxfoundation.org, joro@8bytes.org,
-        tony.luck@intel.com, bhelgaas@google.com, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, jiang.liu@linux.intel.com, rjw@rjwysocki.net,
-        konrad.wilk@oracle.com, tglx@linutronix.de, yinghai@kernel.org,
-        bp@alien8.de, rdunlap@infradead.org
-Reply-To: mingo@kernel.org, benh@kernel.crashing.org, jroedel@suse.de,
-        gregkh@linuxfoundation.org, joro@8bytes.org, JBeulich@suse.com,
-        bhelgaas@google.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tony.luck@intel.com, bp@alien8.de, rdunlap@infradead.org,
-        tglx@linutronix.de, konrad.wilk@oracle.com, yinghai@kernel.org,
-        jiang.liu@linux.intel.com, rjw@rjwysocki.net
-In-Reply-To: <1416901802-24211-36-git-send-email-jiang.liu@linux.intel.com>
-References: <1416901802-24211-36-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <tip-1dbc321f50262cc1218be65cd352957df6f98a1a@git.kernel.org>
+Cc: gregkh@linuxfoundation.org, tglx@linutronix.de, hpa@zytor.com,
+        yinghai@kernel.org, tony.luck@intel.com, bp@alien8.de,
+        benh@kernel.crashing.org, rdunlap@infradead.org, rjw@rjwysocki.net,
+        mingo@kernel.org, len.brown@intel.com, jroedel@suse.de,
+        joro@8bytes.org, konrad.wilk@oracle.com, jiang.liu@linux.intel.com,
+        linux-kernel@vger.kernel.org, bhelgaas@google.com, pavel@ucw.cz
+Reply-To: bp@alien8.de, rdunlap@infradead.org, rjw@rjwysocki.net,
+        benh@kernel.crashing.org, gregkh@linuxfoundation.org,
+        yinghai@kernel.org, tony.luck@intel.com, tglx@linutronix.de,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        pavel@ucw.cz, len.brown@intel.com, mingo@kernel.org, joro@8bytes.org,
+        jroedel@suse.de, jiang.liu@linux.intel.com, konrad.wilk@oracle.com
+In-Reply-To: <1416901802-24211-37-git-send-email-jiang.liu@linux.intel.com>
+References: <1416901802-24211-37-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq: Refine the way to calculate NR_IRQS
-Git-Commit-ID: 9523785062ca8b0f2fdaddc5718d71adfc0d15b3
+Subject: [tip:x86/apic] ACPI, irq, x86:
+  Kill private function mp_register_gsi()/ mp_unregister_gsi()
+Git-Commit-ID: 1dbc321f50262cc1218be65cd352957df6f98a1a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -39,18 +40,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9523785062ca8b0f2fdaddc5718d71adfc0d15b3
-Gitweb:     http://git.kernel.org/tip/9523785062ca8b0f2fdaddc5718d71adfc0d15b3
+Commit-ID:  1dbc321f50262cc1218be65cd352957df6f98a1a
+Gitweb:     http://git.kernel.org/tip/1dbc321f50262cc1218be65cd352957df6f98a1a
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Tue, 25 Nov 2014 15:49:59 +0800
+AuthorDate: Tue, 25 Nov 2014 15:50:00 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 26 Nov 2014 23:52:49 +0100
+CommitDate: Wed, 26 Nov 2014 23:52:50 +0100
 
-x86, irq: Refine the way to calculate NR_IRQS
+ACPI, irq, x86: Kill private function mp_register_gsi()/ mp_unregister_gsi()
 
-Now we have made MSI independent of IOAPIC, so we need to refine the
-way to calculate NR_IRQS to support configuration with MSI enabled but
-IOAPIC disabled.
+Function mp_register_gsi() is only called once, so fold it into caller
+acpi_register_gsi_ioapic(). Do the same for mp_unregister_gsi().
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -63,45 +63,97 @@ Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
 Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
-Cc: Jan Beulich <JBeulich@suse.com>
-Link: http://lkml.kernel.org/r/1416901802-24211-36-git-send-email-jiang.liu@linux.intel.com
+Cc: Len Brown <len.brown@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>
+Link: http://lkml.kernel.org/r/1416901802-24211-37-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Tested-by: Joerg Roedel <jroedel@suse.de>
 ---
- arch/x86/include/asm/irq_vectors.h | 18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ arch/x86/kernel/acpi/boot.c | 57 ++++++++++++++-------------------------------
+ 1 file changed, 18 insertions(+), 39 deletions(-)
 
-diff --git a/arch/x86/include/asm/irq_vectors.h b/arch/x86/include/asm/irq_vectors.h
-index 666c89e..b26cb12 100644
---- a/arch/x86/include/asm/irq_vectors.h
-+++ b/arch/x86/include/asm/irq_vectors.h
-@@ -155,18 +155,22 @@ static inline int invalid_vm86_irq(int irq)
-  * static arrays.
-  */
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 509a48f..e54a8d7 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -400,42 +400,6 @@ static int mp_config_acpi_gsi(struct device *dev, u32 gsi, int trigger,
+ 	return 0;
+ }
  
--#define NR_IRQS_LEGACY			  16
-+#define NR_IRQS_LEGACY			16
- 
--#define IO_APIC_VECTOR_LIMIT		( 32 * MAX_IO_APICS )
-+#define CPU_VECTOR_LIMIT		(64 * NR_CPUS)
-+#define IO_APIC_VECTOR_LIMIT		(32 * MAX_IO_APICS)
- 
--#ifdef CONFIG_X86_IO_APIC
--# define CPU_VECTOR_LIMIT		(64 * NR_CPUS)
--# define NR_IRQS					\
-+#if defined(CONFIG_X86_IO_APIC) && defined(CONFIG_PCI_MSI)
-+#define NR_IRQS						\
- 	(CPU_VECTOR_LIMIT > IO_APIC_VECTOR_LIMIT ?	\
- 		(NR_VECTORS + CPU_VECTOR_LIMIT)  :	\
- 		(NR_VECTORS + IO_APIC_VECTOR_LIMIT))
--#else /* !CONFIG_X86_IO_APIC: */
--# define NR_IRQS			NR_IRQS_LEGACY
-+#elif defined(CONFIG_X86_IO_APIC)
-+#define	NR_IRQS				(NR_VECTORS + IO_APIC_VECTOR_LIMIT)
-+#elif defined(CONFIG_PCI_MSI)
-+#define NR_IRQS				(NR_VECTORS + CPU_VECTOR_LIMIT)
-+#else
-+#define NR_IRQS				NR_IRQS_LEGACY
+-static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
+-			   int polarity)
+-{
+-	int irq, node;
+-	struct irq_alloc_info info;
+-
+-	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
+-		return gsi;
+-
+-	trigger = trigger == ACPI_EDGE_SENSITIVE ? 0 : 1;
+-	polarity = polarity == ACPI_ACTIVE_HIGH ? 0 : 1;
+-	node = dev ? dev_to_node(dev) : NUMA_NO_NODE;
+-	ioapic_set_alloc_attr(&info, node, trigger, polarity);
+-	irq = mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC, &info);
+-	if (irq < 0)
+-		return irq;
+-
+-	/* Don't set up the ACPI SCI because it's already set up */
+-	if (enable_update_mptable && acpi_gbl_FADT.sci_interrupt != gsi)
+-		mp_config_acpi_gsi(dev, gsi, trigger, polarity);
+-
+-	return irq;
+-}
+-
+-static void mp_unregister_gsi(u32 gsi)
+-{
+-	int irq;
+-
+-	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
+-		return;
+-
+-	irq = mp_map_gsi_to_irq(gsi, 0, NULL);
+-	if (irq > 0)
+-		mp_unmap_irq(irq);
+-}
+-
+ static struct irq_domain_ops acpi_irqdomain_ops = {
+ 	.alloc = mp_irqdomain_alloc,
+ 	.free = mp_irqdomain_free,
+@@ -657,10 +621,21 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
+ 				    int trigger, int polarity)
+ {
+ 	int irq = gsi;
+-
+ #ifdef CONFIG_X86_IO_APIC
++	int node;
++	struct irq_alloc_info info;
++
++	node = dev ? dev_to_node(dev) : NUMA_NO_NODE;
++	trigger = trigger == ACPI_EDGE_SENSITIVE ? 0 : 1;
++	polarity = polarity == ACPI_ACTIVE_HIGH ? 0 : 1;
++	ioapic_set_alloc_attr(&info, node, trigger, polarity);
++
+ 	mutex_lock(&acpi_ioapic_lock);
+-	irq = mp_register_gsi(dev, gsi, trigger, polarity);
++	irq = mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC, &info);
++	/* Don't set up the ACPI SCI because it's already set up */
++	if (irq >= 0 && enable_update_mptable &&
++	    acpi_gbl_FADT.sci_interrupt != gsi)
++		mp_config_acpi_gsi(dev, gsi, trigger, polarity);
+ 	mutex_unlock(&acpi_ioapic_lock);
  #endif
  
- #endif /* _ASM_X86_IRQ_VECTORS_H */
+@@ -670,8 +645,12 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
+ static void acpi_unregister_gsi_ioapic(u32 gsi)
+ {
+ #ifdef CONFIG_X86_IO_APIC
++	int irq;
++
+ 	mutex_lock(&acpi_ioapic_lock);
+-	mp_unregister_gsi(gsi);
++	irq = mp_map_gsi_to_irq(gsi, 0, NULL);
++	if (irq > 0)
++		mp_unmap_irq(irq);
+ 	mutex_unlock(&acpi_ioapic_lock);
+ #endif
+ }
