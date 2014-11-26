@@ -1,150 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752067AbaKZJp2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 04:45:28 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:62885 "EHLO SMTP.CITRIX.COM"
+	id S1752208AbaKZJqJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 04:46:09 -0500
+Received: from arrakis.dune.hu ([78.24.191.176]:39976 "EHLO arrakis.dune.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750848AbaKZJpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 04:45:25 -0500
-X-IronPort-AV: E=Sophos;i="5.07,461,1413244800"; 
-   d="scan'208";a="196705424"
-Message-ID: <1416995122.11944.29.camel@citrix.com>
-Subject: Re: [Xen-devel] Regression in netfilter code under Xen
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-CC: xen-devel <xen-devel@lists.xenproject.org>, Wei Liu <wei.liu2@citrix.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <programme110@gmail.com>, David Vrabel <david.vrabel@citrix.com>,
-        <davem@davemloft.net>
-Date: Wed, 26 Nov 2014 09:45:22 +0000
-In-Reply-To: <5474E537.7010707@oracle.com>
-References: <5474E537.7010707@oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
+	id S1750879AbaKZJqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 04:46:06 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+In-Reply-To: <CAJiQ=7CvpFWxDY1uad2bZz8MBG0Mvg2Jx8WBp6gHi-kD4TDvXA@mail.gmail.com>
+References: <1416796846-28149-1-git-send-email-cernekee@gmail.com>
+ <1416796846-28149-7-git-send-email-cernekee@gmail.com> <CAOiHx=ntm7AO5BU2Ge0JDC5nDgXSZwQDm05s5VTM8mLqYmCZRw@mail.gmail.com>
+ <CAJiQ=7CvpFWxDY1uad2bZz8MBG0Mvg2Jx8WBp6gHi-kD4TDvXA@mail.gmail.com>
+From: Jonas Gorski <jogo@openwrt.org>
+Date: Wed, 26 Nov 2014 10:45:35 +0100
+Message-ID: <CAOiHx=m+At9u=eepphG89kcusOKbBi1qqxT8k-Qyx-OMdMAJKw@mail.gmail.com>
+Subject: Re: [PATCH V3 06/11] irqchip: bcm7120-l2: Change DT binding to allow
+ non-contiguous IRQEN/IRQSTAT
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Jon Fraser <jfraser@broadcom.com>, Dmitry Torokhov <dtor@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Brian Norris <computersforpeace@gmail.com>,
+        MIPS Mailing List <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-25 at 15:23 -0500, Boris Ostrovsky wrote:
-> We have a regression due to (5195c14c8: netfilter: conntrack: fix race 
-> in __nf_conntrack_confirm against get_next_corpse). I have not been able 
-> to reproduce this on baremetal but dom0 crashes reliably after a few 
-> seconds of idle time.
+On Wed, Nov 26, 2014 at 6:18 AM, Kevin Cernekee <cernekee@gmail.com> wrote:
+> On Mon, Nov 24, 2014 at 6:31 AM, Jonas Gorski <jogo@openwrt.org> wrote:
+>> On Mon, Nov 24, 2014 at 3:40 AM, Kevin Cernekee <cernekee@gmail.com> wrote:
+>>> To date, all supported controllers have had the IRQEN register at offset
+>>> 0x00 and the IRQSTAT register at 0x04.  So in DT we would typically see
+>>> something like:
+>>>
+>>>     reg = <0xf0406800 0x8>;
+>>>
+>>> We still want to support this format, but we also need to support cases
+>>> where IRQEN and IRQSTAT aren't adjacent.  So, we will amend the driver to
+>>> accept an alternate format that looks like this:
+>>>
+>>>     reg = <0xf0406800 0x4 0xf0406804 0x4>;
+>>>
+>>> i.e. if the first resource_size() == 4, assume that the first resource
+>>> points to IRQEN and that the next resource points to IRQSTAT.  If the
+>>> first resource_size() == 8, retain the current behavior.
+>>>
+>>> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+>>
+>> Hmm ... the more I think about this, the less I like it.
+>>
+>> Using the amount and size of the reg-properties to infer a certain
+>> layout seems rather hackish and dirty to me. Maybe we should just use
+>> different compatible match ids for that? E.g. brcm,bm7120-l2-intc for
+>> the 32-bit en/stat pairs, and e.g. brcm,bcm6368-l2-intc for the 64-bit
+>> wide one. Or maybe make the bcm63xx one a separate driver and let it
+>> share code with the bcm7120-l2-intc driver.
+>
+> In my current proposal, it is easy to specify an arbitrary number of
+> enable/status pairs located in any order and spread across different
+> parts of the register space.  Even register indices (0,2,4,...) are
+> enable registers, and odd register indices are status registers.
+>
+> If I'm interpreting your post correctly, you don't agree that we need
+> this level of flexibility.  But looking over the register listings,
+> here are the cases we need to cover:
+>
+>
+> 6828,6318: 4x mask(exthi,extlo,hi,lo),status(exthi,extlo,hi,lo)
+>
+> TP0ExtIrqMaskHi
+> TP0ExtIrqMaskLo
+> TP0IrqMaskHi
+> TP0IrqMaskLo
+> TP0ExtIrqStatusHi
+> TP0ExtIrqStatusLo
+> TP0IrqStatusHi
+> TP0IrqStatusLo
+>
+> TP1ExtIrqMaskHi
+> TP1ExtIrqMaskLo
+> ...
+>
+>
+> 6816,6362,6328: 2x extmask,mask,extstatus,status
+>
+> ExtraChipIrqMask
+> ChipIrqMask
+> ExtraChipIrqStatus
+> ChipIrqStatus
+> ExtraChipIrqMask1 [1=TP1]
+> ChipIrqMask1
+> ExtraChipIrqStatus1
+> ChipIrqStatus1
+>
+>
+> 6368: similar to above, but with yet another naming convention:
+>
+> IRQMASK_MIPS0_Hi
+> IRQMASK_MIPS0_Lo
+> IRQSTATUS_MIPS0_Hi
+> IRQSTATUS_MIPS0_Lo
+> IRQMASK_MIPS1_Hi
+> IRQMASK_MIPS1_Lo
+> IRQSTATUS_MIPS1_Hi
+> IRQSTATUS_MIPS1_Lo
+>
+> 6838,3384: interleaved "mystery meat" mask/status (same IRQ source
+> names, with the output of each bcm7120-l2 routed to several different
+> processors/threads):
+>
+> PeriphIRQMASK0
+> PeriphIRQSTATUS0
+> PeriphIRQMASK1 <- mine, if running on Zephyr
+> PeriphIRQSTATUS1 <- mine, if running on Zephyr
+> PeriphIRQMASK2
+> PeriphIRQSTATUS2
+> PeriphIRQMASK3 <- mine, if running on Viper
+> PeriphIRQSTATUS3 <- mine, if running on Viper
+>
+> But wait, there's more!  There wasn't enough space in this block for
+>>32 IRQ bits, so the upper bits spilled over into a separate
+> "INT_EXT_PER" block that lives elsewhere in the register space:
+>
+> PeriphIRQMASK0_2
+> PeriphIRQSTATUS0_2
+> PeriphIRQMASK1_2 <- mine, if running on Zephyr
+> PeriphIRQSTATUS1_2 <- mine, if running on Zephyr
+> PeriphIRQMASK2_2
+> PeriphIRQSTATUS2_2
+> PeriphIRQMASK3_2 <- mine, if running on Viper
+> PeriphIRQSTATUS3_2 <- mine, if running on Viper
+>
+> The "INT_PER" and "INT_EXT_PER" outputs are ORed into the same MIPS
+> IRQ lines, so we need to treat them as two sides of a single
+> controller.  AFAICT, unlike a shared device IRQ, there is no way to
+> share a MIPS IRQ line between two controller instances.
+>
+> Additionally, we have a few other random MASK/STATUS pairs scattered
+> around (ZMIPS, CMIPS blocks), and then we also have DQM IRQs with
+> multiple mask registers + single status register:
+>
+> CMIPS_NOT_EMPTY_IRQ_MSK
+> CMIPS1_NOT_EMPTY_IRQ_MSK <- mine, if running on Viper
+> ZMIPS_NOT_EMPTY_IRQ_MSK <- mine, if running on Zephyr
+> PMC_NOT_EMPTY_IRQ_MSK
+> DFAP_NOT_EMPTY_IRQ_MSK
+> NOT_EMPTY_IRQ_STS
 
-Are guests running when this happens? (IOW is netback possibly
-involved).
+There are also 63268 and 6828, which follow the 6318/6328 layout;
+6818, which follows the 6368 layout, as well as 6358 (Yes I know, very
+unlikely to ever get SMP support due to its stupid shared TLB design):
 
->  This doesn't appear to be dependent on Xen version 
-> --- I saw it on at least a 4.2 and unstable).
-> 
-> I don't know much about networking (and will be out for most of the rest 
-> of the week) so I wonder whether anyone has any ideas. The stack is below.
-> 
-> 
-> Thanks.
-> -boris
-> 
-> # 
-> [ 
-> 54.901368] general protection fault: 0000 [#1] SMP
-> [   54.919324] Modules linked in: dm_multipath dm_mod xen_evtchn 
-> iscsi_boot_sysfs iscsi_tcp libiscsi_tcp libiscsi scsi_transport 
-> libcrc32c crc32c_generic crc32c_intel sg sr_mod cdrom sd_mod i915 fbcon 
-> tileblit font bitblit softcursor tpm_tis ahci libahci libata 
-> drm_kms_helper video scsi_mod e1000e wmi xen_blkfront xen_netfront 
-> fb_sys_fops sysimgblt sysfillrect syscopyarea xenfs xen_privcmd
-> [   54.996767] CPU: 1 PID: 0 Comm: swapper/1 Not tainted 
-> 3.18.0-rc5upstream-00179-g8a84e01 #1
-> [   55.016730] Hardware name: LENOVO ThinkServer TS130/        , BIOS 
-> 9HKT47AUS 01/10/2012
-> [   55.036873] task: ffff880037e48a10 ti: ffff880037e54000 task.ti: 
-> ffff880037e54000
-> [   55.057338] RIP: e030:[<ffffffff815ea29e>] [<ffffffff815ea29e>] 
-> nf_ct_del_from_dying_or_unconfirmed_list+0x3e/0x70
-> [   55.[   55.099069] RAX: dead000000200200 RBX: ffffe8ffffc89108 RCX: 
-> ffffffff81cc5820
-> [   55.119918] RDX: 0000000080000001 RSI: 0000000000000011 RDI: 
-> ffffe8ffffc89108
-> [   55.140768] RBP: ffff88003e283908 R08: 00000000c5f889ff R09: 
-> 00000000a1a10f28
-> [   55.161785] R10: ffff880037e5f1b8 R11: 0000000000000001 R12: 
-> ffff880037e5f148
-> [   55.183005] R13: ffffffff815e6a6b R14: ffff88002bed8400 R15: 
-> ffff88002bb30000
-> [   55.204214] FS:  00007f668f694700(0000) GS[   55.225733] CS: e033 
-> DS: 002b ES: 002b CR0: 0000000080050033
-> [   55.247220] CR2: 00007f66c0a598eb CR3: 000000002bc39000 CR4: 
-> 0000000000042660
-> [   55.268863] Stack:
-> [   55.290200]  ffff880037e5f148 ffffffff81c98080 ffff88003e283928 
-> ffffffff815eb59d
-> [   55.312068]  ffff88002bed8400 ffff88002bed8400 ffff88003e283938 
-> ffffffff815e689a
-> [   55.333849]  ffff88003e283958 ffffffff815a37a5 ffff88003e283968 
-> ffff88002bed8400
-> [   55.355449] Call Trace:
-> [   55.376552]  <IRQ>
-> [   55.376728]  [<ffffffff815eb59d>] destroy_conntrack+0x5d/0xc0
-> [   55.418187]  [<ffffffff815e689a>] nf_conntrack_destroy+0x1a/0x40
-> [   55.439349]  [<ffffffff815a37a5>] skb_release_head_state+0x85/0xd0
-> [   55.460468]  [<ffffffff815a5d61>] skb_release_all+0x11/0x30
-> [   55.481440]  [<ffffffff815a5dd1>] __kfree_skb+0x11/0xc0
-> [   55.502239]  [<ffffffff815a5f78>] kfree_skb+0x38/0xa0
-> [   55.522661]  [<ffffffff816044b0>] ? ip_rcv+0x3a0/0x3a0
-> [   55.542811]  [<ffffffff816044b0>] ? ip_rcv+0x3a0/0x3a0
-> [   55.562543]  [<ffffffff815e6a6b>] nf_hook_slow+0x10b/0x120
-> [   55.582100]  [<ffffffff816044b0>] ? ip_rcv+0x3a0/0x3a0
-> [   55.601470]  [<ffffffff8170a02b>] ? _raw_spin_unlock_irqrestore+0[   
-> 55.620900] [<ffffffff81604713>] ip_local_deliver+0x73/0x80
-> [   55.640154]  [<ffffffff81603dc9>] ip_rcv_finish+0x109/0x310
-> [   55.659244]  [<ffffffff8160439c>] ip_rcv+0x28c/0x3a0
-> [   55.678287]  [<ffffffff815b69ae>] 
-> __netif_receive_skb_core+0x58e/0x[   55.697287] [<ffffffff815b6b4d>] 
-> __netif_receive_skb+0x1d/0x70
-> [   55.715820]  [<ffffffff815b6d9e>] netif_receive_skb_internal+0x1e/0xb0
-> [   55.734442]  [<ffffffff815b6e47>] netif_receive_skb+0x17/0x70
-> [   55.752898]  [<ffffffff816c17e2>] br_handle_frame_finish+0x192/0x360
-> [   55.771709]  [<ffffffff816c156d>] br_handle_frame+0
-> [   55.790274]  [<ffffffff816c13f0>] ? br_handle_local_finish+0x40/0x40
-> [   55.808760]  [<ffffffff815b65f7>] __netif_receive_skb_core+0x1d7/0x710
-> [   55.827302]  [<ffffffff815b6b4d>] __netif_receive_skb+0x1d/0x70
-> [   55.845594]  [<ffffffff815b6d9e>] netif_receive_skb_internal+0x1e/0xb0
-> [   55.863836]  [<ffffffff815b7a38>] napi_gro_receive+0x118/0x1a0
-> [   55.881549]  [<ffffffff814c430f>] tg3_poll_work+0xe1f/0x1[   
-> 55.898629]  [<ffffffff814d75c9>] tg3_poll+0x69/0x3c0
-> [   55.915010]  [<ffffffff815b7523>] net_rx_action+0x103/0x290
-> [   55.930840]  [<ffffffff810a7713>] __do_softirq+0xf3/0x2e0
-> [   55.946310]  [<ffffffff810a7a2d>] irq_exit+0xcd/0xe0
-> [   55.961399]  [<ffffffff8140d4c7>] xen_evtchn_do_upcall+0x37/0x50
-> 766]  [<ffffffff8170c1fe>] xen_do_hypervisor_callback+0x1e/0x30
-> [   55.990802]  <EOI>
-> [   55.990977]  [<ffffffff810013aa>] ? xen_hypercall_sched_op+0xa/0x20
-> [   56.018897]  [<ffffffff810013aa>] ? xen_hypercall_sched_op+0xa/0x20
-> [   56.032815]  [<ffffffff810454b0>] ? xen_safe_halt+0x10/0x20
-> [   56.046583]  [<ffffffff81059e3a>] ? default_idle+0x1a/0xd0
-> [   56.060307]  [<ffffffff8105950a>] ? arch_cpu_idle+0xa/0x10
-> [   56.073920]  [<ffffffff810de483>] ? cpu_startup_entry+0x2d3/0[   
-> 56.100421]  [<ffffffff8104c355>] ? cpu_bringup_and_idle+0x25/0x40
-> [   56.113427] Code: 98 08 08 00 00 0f b7 47 08 48 03 1c c5 a0 42 cc 81 
-> 48 89 df e8 94 fc 11 00 49 8b 44 24 18 48 85 c0 74 2d 49[   
-> 56.141507] RIP  [<ffffffff815ea29e>] 
-> nf_ct_del_from_dying_or_unconfirmed_list+0x3e/0x70
-> [   56.155425]  RSP <ffff88003e2838f8>
-> [   56.169234] ---[ end trace 4c64578e4c629cc4 ]---
-> [   56.182913] Kernel panic - not syncing: Fatal exception in interrupt
-> [   56.197026] Kernel Offset: 0x0 from 0xffffffff81000k  text console
-> (XEN) [2014-11-23 06:05:48] Domain 0 crashed: rebooting machine in 5 
-> seconds.
-> (XEN) [2014-11-23 06:05:53] Resetting with ACPI MEMORY or I/O RESET_REG.
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+IrqMask
+IrqStatus
+(several unrelated registers)
+IrqMask1
+IrqStatus1
+
+and 63381:
+
+IrqStatusHi
+IrqStatusLo
+ExtIrqStatusHi
+ExtIrqStatusLo
+IrqMask0Hi
+IrqMask0Lo
+ExtIrqMask0Hi
+ExtIrqMask0Lo
+IrqMask1Hi
+IrqMask1Lo
+ExtIrqMask1Hi
+ExtIrqMask1Lo
+
+I see also a 60333, which has three 32bit Mask/Status pairs per
+thread, also none of the higher irqs seem to be used according to
+_intr.h).
+
+> I suppose another alternative is to ioremap() a range large enough to
+> cover enable + status, and then specify the offset of each one in
+> another property.  This does run the risk of overlapping mappings.
+>
+>> This would avoid having to specify a lot of regs (let's assume we also
+>> add support for affinity)
+>
+> I concede that I have no idea how affinity should be handled here.
+> AFAICT it is completely off limits on BCM3384 because we just don't
+> have enough L2 outputs to offer proper masking for all of the
+> threads/CPUs in the system.
+
+Affinity support is "easy"; expect one set of registers for each
+output irq specified, and if there is only one, then we don't support
+it / fill the affinity pointers.
+
+> Perhaps we could write a simple, SMP-capable driver for the
+> saner/newer SoCs, and use the flexible-but-non-SMP version for the
+> complicated ones.
+
+As far as I can see, we have three distinct layouts here:
+
+a) An arbitrary number of 32-bit Mask/Status-pairs (3384/6838). No per
+thread support (well, not sure about 60333).
+
+b) An arbitrary length (32 to 128 bit) Mask register, followed by a
+same length Status register (63xx except 63381, 6818, 6828); repeated
+for each thread.
+
+c) A single arbitrary length (currently only 128 bit) Status register,
+followed by per thread same length Mask registers (63381).
+
+On a first glance this could translate to three distinct
+drivers/compatible properties, where each expects different reg = <>;
+contents.
+
+For a), it should be enough to expand the current 7120-l2 driver to
+accept/use more than one 0x8 length register, which should simplify
+the register map setup.
+
+For b) we could add a a new compatible name (maybe bcm6358-l2, because
+that was AFAICT the first one with blocks) that will use the 8 to 32
+byte length regs (one for each block). For now we could ignore the SMP
+capability of it and make it a variant of the 7120-l2 driver, and when
+we add SMP support, split it into a second different driver if we want
+to avoid having all the spinlock for register accesses even for a).
+
+We could then even easily document/add the extra block registers /
+interrrupts in documentation / the dtsi files before actually
+supporting them, because we only have a fixed amount of regs/irqs to
+expect in the !SMP case and can easily ignore the extra
+registers/interrupts.
+
+For c) we could add a a third compatible name (bcm63381-l2), also with
+its own setup routine. I would guess it doesn't matter if both
+thread's irqstatus register pointers point to the same region.
+
+>> and cause a lot of io(re)map calls
+>
+> Is the ioremap() call really that big of a deal?
+>
+> On MIPS it's basically computing CKSEG1ADDR(phys_addr).  On ARM, the
+> top level (with 64 to 128+ IRQs) goes through the GIC.  On both,
+> ioremap() is a one-time cost at startup.
+
+For a single driver it probably doesn't hurt that much, but AFAIK
+these are also stored in a table, so if all drivers did this, the
+table easily becomes huge. This isn't a very strong argument, just
+more a smaller nitpick.
 
 
+Jonas
