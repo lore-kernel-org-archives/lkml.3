@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306AbaKZQCt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 11:02:49 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:53504 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753153AbaKZQCp (ORCPT
+	id S1753345AbaKZQEf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 11:04:35 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41954 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028AbaKZQEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 11:02:45 -0500
-Message-ID: <5475F99B.3090307@de.ibm.com>
-Date: Wed, 26 Nov 2014 17:02:35 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 26 Nov 2014 11:04:33 -0500
+Date: Wed, 26 Nov 2014 17:04:07 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Sekhar Nori <nsekhar@ti.com>,
+        linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Mike Looijmans <milo-software@users.sourceforge.net>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>,
+        Murali Karicheri <m-karicheri2@ti.com>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 5/5] i2c: davinci: use ICPFUNC to toggle I2C as gpio
+ for bus recovery
+Message-ID: <20141126160407.GN4431@pengutronix.de>
+References: <1417010393-30598-1-git-send-email-grygorii.strashko@ti.com>
+ <1417010393-30598-6-git-send-email-grygorii.strashko@ti.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: David Hildenbrand <dahi@linux.vnet.ibm.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
-        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com, mingo@kernel.org
-Subject: Re: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
- atomic
-References: <1416915806-24757-1-git-send-email-dahi@linux.vnet.ibm.com> <20141126070258.GA25523@redhat.com> <20141126110504.511b733a@thinkpad-w530> <20141126151729.GB9612@redhat.com> <5475F218.4050207@de.ibm.com> <20141126153732.GA10568@redhat.com>
-In-Reply-To: <20141126153732.GA10568@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112616-0013-0000-0000-000001FFCE48
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1417010393-30598-6-git-send-email-grygorii.strashko@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.11.2014 um 16:37 schrieb Michael S. Tsirkin:
-> On Wed, Nov 26, 2014 at 04:30:32PM +0100, Christian Borntraeger wrote:
->> Am 26.11.2014 um 16:17 schrieb Michael S. Tsirkin:
->>> On Wed, Nov 26, 2014 at 11:05:04AM +0100, David Hildenbrand wrote:
->>>>> What's the path you are trying to debug?
->>>>
->>>> Well, we had a problem where we held a spin_lock and called
->>>> copy_(from|to)_user(). We experienced very random deadlocks that took some guy
->>>> almost a week to debug. The simple might_sleep() check would have showed this
->>>> error immediately.
->>>
->>
->>> This must have been a very old kernel.
->>> A modern kernel will return an error from copy_to_user.
->>
->> I disagree. copy_to_user will not return while holding a spinlock, because it does not know! How should it?
->> See: spin_lock will call preempt_disable, but thats a no-op for a non-preempt kernel. So the mere fact that we hold a spin_lock is not known by any user access function. (or others). No?
->>
->> Christian
->>
->>
+Hello,
+
+On Wed, Nov 26, 2014 at 03:59:53PM +0200, Grygorii Strashko wrote:
+> Having a board where the I2C bus locks up occasionally made it clear
+> that the bus recovery in the i2c-davinci driver will only work on
+> some boards, because on regular boards, this will only toggle GPIO
+> lines that aren't muxed to the actual pins.
 > 
-> Well might_sleep() merely checks preempt count and irqs_disabled too.
-> If you want debugging things to trigger, you need to enable
-> a bunch of config options.  That's not new.
+> The I2C controller on SoCs like da850 (and da830), Keystone 2 has the
+> built-in capability to bit-bang its lines by using the ICPFUNC registers
+> of the i2c controller.
+> Implement the suggested procedure by toggling SCL and checking SDA using
+> the ICPFUNC registers of the I2C controller when present. Allow platforms
+> to indicate the presence of the ICPFUNC registers with a has_pfunc platform
+> data flag and add optional DT property "ti,has-pfunc" to indicate
+> the same in DT.
+On what does it depend if this pfunc stuff works or not? Only the SoC,
+or also on some board specific properties? Given the former using the
+compatible string to detect its availability would be better. (In this
+case also sorry, didn't consider this case when requesting the property
+in the last round.)
 
-You miss the point of the whole thread: The problem is that even with debug options enabled, holding a spinlock would not trigger a bug on copy_to_user. So the problem is not the good path, the problem is that a debugging aid for detecting a broken case was lost. Even with all kernel debugging enabled.
+The patch looks ok.
 
-That is because CONFIG_DEBUG_ATOMIC_SLEEP selects PREEMPT_COUNT. That means: spin_lock will then be considered as in_atomic and no message comes. Without CONFIG_DEBUG_ATOMIC_SLEEP spin_lock will not touch the preempt_count but we also dont see a message because might_fault is now a nop
+Best regards
+Uwe
 
-I understand that you dont like Davids changes due to other side effects that you have mentioned. So lets focus on how we can fix the debug option. Ok?
-
-Christian
-
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
