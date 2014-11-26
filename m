@@ -1,220 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850AbaKZPbH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 10:31:07 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:37708 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892AbaKZPbC (ORCPT
+	id S1753865AbaKZPbd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 10:31:33 -0500
+Received: from mail.parknet.co.jp ([210.171.160.6]:54806 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753005AbaKZPbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 10:31:02 -0500
+	Wed, 26 Nov 2014 10:31:31 -0500
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH] fat: Fix oops on corrupted vfat fs
+Date: Thu, 27 Nov 2014 00:31:28 +0900
+Message-ID: <873896x9kf.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/25.0.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20141126151435.GB3925@developer>
-References: <1416963070-5806-1-git-send-email-a.kesavan@samsung.com>
-	<20141126144504.GA3808@developer>
-	<CAM4voa=OidszVoxRCnXPTKTyGZn5QXv7YWgGRF+JyHmHi+SCPw@mail.gmail.com>
-	<20141126151435.GB3925@developer>
-Date: Wed, 26 Nov 2014 21:01:01 +0530
-Message-ID: <CAM4voam99ONvnov98fYk+8srJ27ySvsBKL4CAf-9gWUiWcpgwQ@mail.gmail.com>
-Subject: Re: [PATCH v2] thermal: exynos: add special clock support
-From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Amit Kachhap <amit.daniel@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        =?UTF-8?B?7LWc7LCs7Jqw?= <cw00.choi@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eduardo,
 
-On Wed, Nov 26, 2014 at 8:44 PM, Eduardo Valentin <edubezval@gmail.com> wrote:
-> Abhilash,
->
-> On Wed, Nov 26, 2014 at 08:34:19PM +0530, Abhilash Kesavan wrote:
->> Hi Eduardo,
->>
->> On Wed, Nov 26, 2014 at 8:15 PM, Eduardo Valentin <edubezval@gmail.com> wrote:
->> >
->> > Abhilash,
->> >
->> > On Wed, Nov 26, 2014 at 06:21:10AM +0530, Abhilash Kesavan wrote:
->> >> Exynos7 has a special clock required for the functional operation
->> >> of the TMU that is not present in earlier SoCs. Add support for
->> >> this clock and update the binding documentation.
->> >>
->> >> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
->> >> ---
->> >> Changes since v1:
->> >>       - Added a per-soc flag to indicate the presence of special clock
->> >>       - Changed the name of special clock from "tmu_sclk" to "sclk"
->> >>       - Fixed the error handling for sclk
->> >>
->> >> Tested on 5420 and 5800 based chromebooks, no change in existing behavior.
->> >>
->> >>  .../devicetree/bindings/thermal/exynos-thermal.txt |    3 ++
->> >>  drivers/thermal/samsung/exynos_tmu.c               |   31 ++++++++++++++++----
->> >>  2 files changed, 29 insertions(+), 5 deletions(-)
->> >>
->> >> diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
->> >> index ae738f5..acf4705 100644
->> >> --- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
->> >> +++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
->> >> @@ -32,10 +32,13 @@
->> >>  - clocks : The main clocks for TMU device
->> >>       -- 1. operational clock for TMU channel
->> >>       -- 2. optional clock to access the shared registers of TMU channel
->> >> +     -- 3. optional special clock for functional operation
->> >>  - clock-names : Thermal system clock name
->> >>       -- "tmu_apbif" operational clock for current TMU channel
->> >>       -- "tmu_triminfo_apbif" clock to access the shared triminfo register
->> >>               for current TMU channel
->> >> +     -- "sclk" clock for functional operation of the current TMU
->> >> +             channel
->> >>  - vtmu-supply: This entry is optional and provides the regulator node supplying
->> >>               voltage to TMU. If needed this entry can be placed inside
->> >>               board/platform specific dts file.
->> >> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
->> >> index d44d91d..8ed8409 100644
->> >> --- a/drivers/thermal/samsung/exynos_tmu.c
->> >> +++ b/drivers/thermal/samsung/exynos_tmu.c
->> >> @@ -123,11 +123,14 @@
->> >>   * @base: base address of the single instance of the TMU controller.
->> >>   * @base_second: base address of the common registers of the TMU controller.
->> >>   * @irq: irq number of the TMU controller.
->> >> + * @needs_sclk: SoC specific flag indicating that sclk is required for
->> >> +     functional operation of the TMU controller.
->> >>   * @soc: id of the SOC type.
->> >>   * @irq_work: pointer to the irq work structure.
->> >>   * @lock: lock to implement synchronization.
->> >>   * @clk: pointer to the clock structure.
->> >>   * @clk_sec: pointer to the clock structure for accessing the base_second.
->> >> + * @sclk: pointer to the clock structure for accessing the tmu special clock.
->> >>   * @temp_error1: fused value of the first point trim.
->> >>   * @temp_error2: fused value of the second point trim.
->> >>   * @regulator: pointer to the TMU regulator structure.
->> >> @@ -144,10 +147,11 @@ struct exynos_tmu_data {
->> >>       void __iomem *base;
->> >>       void __iomem *base_second;
->> >>       int irq;
->> >> +     bool needs_sclk;
->> >>       enum soc_type soc;
->> >>       struct work_struct irq_work;
->> >>       struct mutex lock;
->> >> -     struct clk *clk, *clk_sec;
->> >> +     struct clk *clk, *clk_sec, *sclk;
->> >>       u8 temp_error1, temp_error2;
->> >>       struct regulator *regulator;
->> >>       struct thermal_sensor_conf *reg_conf;
->> >> @@ -883,10 +887,24 @@ static int exynos_tmu_probe(struct platform_device *pdev)
->> >>               goto err_clk_sec;
->> >>       }
->> >>
->> >> +     if (data->needs_sclk) {
->> >
->> > Based on the trend we see from Bartlomiej's and Lukasz' works, you
->> > should be asking for SoC version, not adding a flag. Can you please
->> > crosscheck with them?
->>
->> I planned to populate this flag as true for Exynos7 in
->> exynos_map_dt_data() where other soc specific methods are being setup.
->
-> Well, that I wouldn't expect different, otherwise how your code is
-> supposed to work, right?
+a) don't bother with ->d_time for positives - we only check it for negatives
+anyway.
+b) make sure to set it at unlink and rmdir time - at *that* point soon-to-be
+negative dentry matches then-current directory contents
+c) don't go into renaming of old alias in vfat_lookup() unless it has
+the same parent (which it will, unless we are seeing corrupted image)
 
-yes :)
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: <stable@vger.kernel.org> # 3.17.x
+[Make change minimum, don't call d_move() for dir]
+Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+---
 
->
->>
->> Bartlomiej/Lukasz can you kindly comment on if you would prefer the
->> check to be based on the SoC version.
->>
->
->
-> Have a look on how Bartz has removed the flag based code in my -linus
-> branch. Here is an example:
-> https://git.kernel.org/cgit/linux/kernel/git/evalenti/linux-soc-thermal.git/commit/?h=linus&id=ef3f80fc7f79c32a1b015afcbffce2a2630011a4
+ fs/fat/namei_vfat.c |   20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
-OK, I see what you mean. I'll wait for Bartlomiej and Lukasz to weigh
-in as well. If they are in favor of using the SoC version then I will
-fold this into the patch adding support for Exynos7 (to be posted
-after all of Lukasz' patches are in)
-
-Thanks,
-Abhilash
->
->> Regards,
->> Abhilash
->> >
->> > Cheers,
->> >
->> > Eduardo Valentin
->> >
->> >> +             data->sclk = devm_clk_get(&pdev->dev, "sclk");
->> >> +             if (IS_ERR(data->sclk)) {
->> >> +                     dev_err(&pdev->dev, "Failed to get sclk\n");
->> >> +                     goto err_clk;
->> >> +             } else {
->> >> +                     ret = clk_prepare_enable(data->sclk);
->> >> +                     if (ret) {
->> >> +                             dev_err(&pdev->dev, "Failed to enable sclk\n");
->> >> +                             goto err_clk;
->> >> +                     }
->> >> +             }
->> >> +     }
->> >> +
->> >>       ret = exynos_tmu_initialize(pdev);
->> >>       if (ret) {
->> >>               dev_err(&pdev->dev, "Failed to initialize TMU\n");
->> >> -             goto err_clk;
->> >> +             goto err_sclk;
->> >>       }
->> >>
->> >>       exynos_tmu_control(pdev, true);
->> >> @@ -896,7 +914,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
->> >>                               sizeof(struct thermal_sensor_conf), GFP_KERNEL);
->> >>       if (!sensor_conf) {
->> >>               ret = -ENOMEM;
->> >> -             goto err_clk;
->> >> +             goto err_sclk;
->> >>       }
->> >>       sprintf(sensor_conf->name, "therm_zone%d", data->id);
->> >>       sensor_conf->read_temperature = (int (*)(void *))exynos_tmu_read;
->> >> @@ -928,7 +946,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
->> >>       ret = exynos_register_thermal(sensor_conf);
->> >>       if (ret) {
->> >>               dev_err(&pdev->dev, "Failed to register thermal interface\n");
->> >> -             goto err_clk;
->> >> +             goto err_sclk;
->> >>       }
->> >>       data->reg_conf = sensor_conf;
->> >>
->> >> @@ -936,10 +954,12 @@ static int exynos_tmu_probe(struct platform_device *pdev)
->> >>               IRQF_TRIGGER_RISING | IRQF_SHARED, dev_name(&pdev->dev), data);
->> >>       if (ret) {
->> >>               dev_err(&pdev->dev, "Failed to request irq: %d\n", data->irq);
->> >> -             goto err_clk;
->> >> +             goto err_sclk;
->> >>       }
->> >>
->> >>       return 0;
->> >> +err_sclk:
->> >> +     clk_disable_unprepare(data->sclk);
->> >>  err_clk:
->> >>       clk_unprepare(data->clk);
->> >>  err_clk_sec:
->> >> @@ -956,6 +976,7 @@ static int exynos_tmu_remove(struct platform_device *pdev)
->> >>
->> >>       exynos_tmu_control(pdev, false);
->> >>
->> >> +     clk_disable_unprepare(data->sclk);
->> >>       clk_unprepare(data->clk);
->> >>       if (!IS_ERR(data->clk_sec))
->> >>               clk_unprepare(data->clk_sec);
->> >> --
->> >> 1.7.9.5
->> >>
+diff -puN fs/fat/namei_vfat.c~fat-corrupt-fs-fix fs/fat/namei_vfat.c
+--- linux/fs/fat/namei_vfat.c~fat-corrupt-fs-fix	2014-11-10 01:09:08.782815944 +0900
++++ linux-hirofumi/fs/fat/namei_vfat.c	2014-11-10 01:56:47.283117983 +0900
+@@ -736,7 +736,12 @@ static struct dentry *vfat_lookup(struct
+ 	}
+ 
+ 	alias = d_find_alias(inode);
+-	if (alias && !vfat_d_anon_disconn(alias)) {
++	/*
++	 * Checking "alias->d_parent == dentry->d_parent" to make sure
++	 * FS is not corrupted (especially double linked dir).
++	 */
++	if (alias && alias->d_parent == dentry->d_parent &&
++	    !vfat_d_anon_disconn(alias)) {
+ 		/*
+ 		 * This inode has non anonymous-DCACHE_DISCONNECTED
+ 		 * dentry. This means, the user did ->lookup() by an
+@@ -755,12 +760,9 @@ static struct dentry *vfat_lookup(struct
+ 
+ out:
+ 	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+-	dentry->d_time = dentry->d_parent->d_inode->i_version;
+-	dentry = d_splice_alias(inode, dentry);
+-	if (dentry)
+-		dentry->d_time = dentry->d_parent->d_inode->i_version;
+-	return dentry;
+-
++	if (!inode)
++		dentry->d_time = dir->i_version;
++	return d_splice_alias(inode, dentry);
+ error:
+ 	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	return ERR_PTR(err);
+@@ -793,7 +795,6 @@ static int vfat_create(struct inode *dir
+ 	inode->i_mtime = inode->i_atime = inode->i_ctime = ts;
+ 	/* timestamp is already written, so mark_inode_dirty() is unneeded. */
+ 
+-	dentry->d_time = dentry->d_parent->d_inode->i_version;
+ 	d_instantiate(dentry, inode);
+ out:
+ 	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+@@ -824,6 +825,7 @@ static int vfat_rmdir(struct inode *dir,
+ 	clear_nlink(inode);
+ 	inode->i_mtime = inode->i_atime = CURRENT_TIME_SEC;
+ 	fat_detach(inode);
++	dentry->d_time = dir->i_version;
+ out:
+ 	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 
+@@ -849,6 +851,7 @@ static int vfat_unlink(struct inode *dir
+ 	clear_nlink(inode);
+ 	inode->i_mtime = inode->i_atime = CURRENT_TIME_SEC;
+ 	fat_detach(inode);
++	dentry->d_time = dir->i_version;
+ out:
+ 	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 
+@@ -889,7 +892,6 @@ static int vfat_mkdir(struct inode *dir,
+ 	inode->i_mtime = inode->i_atime = inode->i_ctime = ts;
+ 	/* timestamp is already written, so mark_inode_dirty() is unneeded. */
+ 
+-	dentry->d_time = dentry->d_parent->d_inode->i_version;
+ 	d_instantiate(dentry, inode);
+ 
+ 	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+_
