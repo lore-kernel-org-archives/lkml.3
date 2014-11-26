@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331AbaKZPDb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 10:03:31 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:48278 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753312AbaKZPD2 (ORCPT
+	id S1753358AbaKZPEM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 10:04:12 -0500
+Received: from static.88-198-71-155.clients.your-server.de ([88.198.71.155]:57191
+	"EHLO socrates.bennee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753339AbaKZPEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 10:03:28 -0500
-From: =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
-To: axboe@fb.com, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
-Subject: [PATCH] null_blk: boundary check queue_mode and irqmode
-Date: Wed, 26 Nov 2014 16:02:58 +0100
-Message-Id: <1417014178-13007-1-git-send-email-m@bjorling.me>
-X-Mailer: git-send-email 1.9.1
+	Wed, 26 Nov 2014 10:04:10 -0500
+References: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org> <1416931805-23223-3-git-send-email-alex.bennee@linaro.org> <CAFEAcA9P6aX+mh3rEMy=Z7SKF=kRrxgYefLwFcrk806QQpwiuQ@mail.gmail.com>
+From: Alex =?utf-8?Q?Benn=C3=A9e?= <alex.bennee@linaro.org>
+To: Peter Maydell <peter.maydell@linaro.org>
+Cc: kvm-devel <kvm@vger.kernel.org>,
+        arm-mail-list <linux-arm-kernel@lists.infradead.org>,
+        "kvmarm\@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, Alexander Graf <agraf@suse.de>,
+        "J. Kiszka" <jan.kiszka@siemens.com>,
+        David Hildenbrand <dahi@linux.vnet.ibm.com>,
+        Bharat Bhushan <r65777@freescale.com>, bp@suse.de,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/7] KVM: arm: guest debug, define API headers
+In-reply-to: <CAFEAcA9P6aX+mh3rEMy=Z7SKF=kRrxgYefLwFcrk806QQpwiuQ@mail.gmail.com>
+Date: Wed, 26 Nov 2014 15:04:10 +0000
+Message-ID: <87ppcaknpx.fsf@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 127.0.0.1
+X-SA-Exim-Mail-From: alex.bennee@linaro.org
+X-SA-Exim-Scanned: No (on socrates.bennee.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When either queue_mode or irq_mode parameter is set outside its boundaries, the
-driver will not complete requests. This stalls driver initialization when
-partitions are probed. Fix by setting out of bound values to the parameters
-default.
 
-Signed-off-by: Matias Bjørling <m@bjorling.me>
----
- drivers/block/null_blk.c | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+Peter Maydell <peter.maydell@linaro.org> writes:
 
-diff --git a/drivers/block/null_blk.c b/drivers/block/null_blk.c
-index caa6121..efe9f76 100644
---- a/drivers/block/null_blk.c
-+++ b/drivers/block/null_blk.c
-@@ -506,7 +506,7 @@ static int null_add_dev(void)
- 		rv = init_driver_queues(nullb);
- 		if (rv)
- 			goto out_cleanup_blk_queue;
--	} else {
-+	} else if (queue_mode == NULL_Q_RQ) {
- 		nullb->q = blk_init_queue_node(null_request_fn, &nullb->lock, home_node);
- 		if (!nullb->q) {
- 			rv = -ENOMEM;
-@@ -574,6 +574,18 @@ static int __init null_init(void)
- 		bs = PAGE_SIZE;
- 	}
- 
-+	if (queue_mode < 0 || queue_mode > NULL_Q_MQ) {
-+		pr_warn("null_blk: invalid queue mode\n");
-+		pr_warn("null_blk: defaults queue mode to multiqueue\n");
-+		queue_mode = NULL_Q_MQ;
-+	}
-+
-+	if (irqmode < 0 || irqmode > NULL_IRQ_TIMER) {
-+		pr_warn("null_blk: invalid irq mode\n");
-+		pr_warn("null_blk: defauls irq mode to softirq\n");
-+		irqmode = NULL_IRQ_SOFTIRQ;
-+	}
-+
- 	if (queue_mode == NULL_Q_MQ && use_per_node_hctx) {
- 		if (submit_queues < nr_online_nodes) {
- 			pr_warn("null_blk: submit_queues param is set to %u.",
+> On 25 November 2014 at 16:10, Alex Bennée <alex.bennee@linaro.org> wrote:
+>> +/* Exit types which define why we did a debug exit */
+>> +#define KVM_DEBUG_EXIT_ERROR           0x0
+>> +#define KVM_DEBUG_EXIT_SINGLE_STEP     0x1
+>> +#define KVM_DEBUG_EXIT_SW_BKPT         0x2
+>> +#define KVM_DEBUG_EXIT_HW_BKPT         0x3
+>> +#define KVM_DEBUG_EXIT_HW_WTPT         0x4
+>
+> The names of these imply that they're generic, but they're
+> defined in an arch-specific header file...
+
+Yeah, I think these will die and I'll just export the syndrome
+information directly to QEMU.
+
 -- 
-1.9.1
-
+Alex Bennée
