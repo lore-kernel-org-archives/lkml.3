@@ -1,114 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704AbaKZQ5K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 11:57:10 -0500
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:59515 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750906AbaKZQ5I (ORCPT
+	id S1752870AbaKZQ5O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 11:57:14 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:53507 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751565AbaKZQ5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 11:57:08 -0500
-Message-ID: <1417021025.29407.66.camel@x220>
-Subject: Re: [PATCH 5/8] of/overlay: Introduce DT overlay support
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Rob Herring <robh+dt@kernel.org>
-Date: Wed, 26 Nov 2014 17:57:05 +0100
-In-Reply-To: <CACxGe6tw1FJsSvf-7u2Lx143_-GOWr3b-fLu1kCzK4JCCEwGSA@mail.gmail.com>
-References: <1416533715-9758-1-git-send-email-grant.likely@linaro.org>
-	 <1416533715-9758-6-git-send-email-grant.likely@linaro.org>
-	 <1417007515.29407.54.camel@x220>
-	 <CACxGe6tw1FJsSvf-7u2Lx143_-GOWr3b-fLu1kCzK4JCCEwGSA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	Wed, 26 Nov 2014 11:57:11 -0500
+Date: Wed, 26 Nov 2014 17:57:08 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org, Huang Shijie <shijie8@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
+Subject: Re: [PATCH v5 1/3] mtd: nand: gpmi: add gpmi_move_bits function
+Message-ID: <20141126175708.1acb90ac@bbrezillon>
+In-Reply-To: <1417020793-3354-2-git-send-email-boris.brezillon@free-electrons.com>
+References: <1417020793-3354-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1417020793-3354-2-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 26 Nov 2014 16:57:05.0052 (UTC) FILETIME=[019E75C0:01D0099A]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-26 at 15:18 +0000, Grant Likely wrote:
-> On Wed, Nov 26, 2014 at 1:11 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> > On Fri, 2014-11-21 at 01:35 +0000, Grant Likely wrote:
-> >> From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-> >>
-> >> Overlays are a method to dynamically modify part of the kernel's
-> >> device tree with dynamically loaded data. Add the core functionality to
-> >> parse, apply and remove an overlay changeset. The core functionality
-> >> takes care of managing the overlay data format and performing the add
-> >> and remove. Drivers are expected to use the overlay functionality to
-> >> support custom expansion busses commonly found on consumer development
-> >> boards like the BeagleBone or Raspberry Pi.
-> >>
-> >> The overlay code uses CONFIG_OF_DYNAMIC changesets to perform the low
-> >> level work of modifying the devicetree.
-> >>
-> >> Documentation about internal and APIs is provided in
-> >>       Documentation/devicetree/overlay-notes.txt
-> >>
-> >> v2:
-> >> - Switch from __of_node_alloc() to __of_node_dup()
-> >> - Documentation fixups
-> >> - Remove 2-pass processing of properties
-> >> - Remove separate ov_lock; just use the DT mutex.
-> >> v1:
-> >> - Drop delete capability using '-' prefix. The '-' prefixed names
-> >> are valid properties and nodes and there is no need for it just yet.
-> >> - Do not update special properties - name & phandle ones.
-> >> - Change order of node attachment, so that the special property update
-> >> works.
-> >>
-> >> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-> >> Signed-off-by: Grant Likely <grant.likely@linaro.org>
-> >
-> > Now commit 7518b5890d8a ("of/overlay: Introduce DT overlay support"),
-> > included in today's linux-next (next-20141126).
+On Wed, 26 Nov 2014 17:53:11 +0100
+Boris Brezillon <boris.brezillon@free-electrons.com> wrote:
+
+> Add a new function to move bits (not bytes) from a memory region to
+> another one.
+> This function is similar to memmove except it acts at bit level.
+> This function is needed to implement GPMI raw access functions, given the
+> fact that ECC engine does not pad ECC bits to the next byte boundary.
 > 
-> Yes, I pushed it out yesterday. Beyond merely stating a fact, I don't
-> understand what you're trying to point out here. Is this commit
-> causing a problem?
-
-Yes, the issue I pointed out in my next remark.
-
-And I add a boring line like that to my messages to make sure its
-readers (which could be me, in case nothing happens within a week or
-two) have all the facts at hand when handling them. It spares them the
-trouble to look up these facts themselves.
-
-Perhaps this lines was ambiguous. Should I rephrase it? Please note that
-I usually use proper sentences. This one was a bit blunt. 
-
-> >>[...]
-> >> diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
-> >> index fbe8f8d418f7..18b2e2539f84 100644
-> >> --- a/drivers/of/Kconfig
-> >> +++ b/drivers/of/Kconfig
-> >> @@ -84,4 +84,11 @@ config OF_RESERVED_MEM
-> >>  config OF_RESOLVE
-> >>       bool
-> >>
-> >> +config OF_OVERLAY
-> >> +     bool
-> >> +     depends on OF
-> >> +     select OF_DYNAMIC
-> >> +     select OF_DEVICE
-> >
-> > There's currently no Kconfig symbol OF_DEVICE. So this select is now a
-> > nop. Will that symbol be added in a future patch?
+> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> ---
+>  drivers/mtd/nand/gpmi-nand/gpmi-lib.c  | 151 +++++++++++++++++++++++++++++++++
+>  drivers/mtd/nand/gpmi-nand/gpmi-nand.h |   4 +
+>  2 files changed, 155 insertions(+)
 > 
-> That's a hanger-on from an earlier version of the patch. I'll apply a
-> fixup patch to remove it.
+> diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
+> index 87e658c..77eff0e 100644
+> --- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
+> +++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
+> @@ -1353,3 +1353,154 @@ int gpmi_read_page(struct gpmi_nand_data *this,
+>  	set_dma_type(this, DMA_FOR_READ_ECC_PAGE);
+>  	return start_dma_with_bch_irq(this, desc);
+>  }
+> +
+> +/**
+> + * gpmi_move_bits - move bits from one memory region to another
+> + * @dst: destination buffer
+> + * @dst_bit_off: bit offset we're starting to write at
+> + * @src: source buffer
+> + * @src_bit_off: bit offset we're starting to read from
+> + * @nbits: number of bits to copy
+> + *
+> + * This functions copies bits from one memory region to another, and is used by
+> + * the GPMI driver to copy ECC sections which are not guaranteed to be byte
+> + * aligned.
 
-I've seen your fixup already. It turns out OF_DEVICE is a symbol that
-was removed in v3.11.
+I forgot to add that src and dst should not overlap, otherwise it won't
+work...
 
-Thanks!
+> + *
+> + */
+> +void gpmi_move_bits(u8 *dst, size_t dst_bit_off,
+> +		    const u8 *src, size_t src_bit_off,
+> +		    size_t nbits)
+> +{
+> +	size_t i;
+> +	size_t nbytes;
+> +	u32 src_buffer = 0;
+> +	size_t bits_in_src_buffer = 0;
+> +
+> +	if (!nbits)
+> +		return;
+> +
+> +	/*
+> +	 * Move src and dst pointers to the closest byte pointer and store bit
+> +	 * offsets within a byte.
+> +	 */
+> +	src += src_bit_off / 8;
+> +	src_bit_off %= 8;
+> +
+> +	dst += dst_bit_off / 8;
+> +	dst_bit_off %= 8;
+> +
+> +	/*
+> +	 * Initialize the src_buffer value with bits available in the first
+> +	 * byte of data so that we end up with a byte aligned src pointer.
+> +	 */
+> +	if (src_bit_off) {
+> +		src_buffer = src[0] >> src_bit_off;
+> +		if (nbits >= (8 - src_bit_off)) {
+> +			bits_in_src_buffer += 8 - src_bit_off;
+> +		} else {
+> +			src_buffer &= GENMASK(nbits - 1, 0);
+> +			bits_in_src_buffer += nbits;
+> +		}
+> +		nbits -= bits_in_src_buffer;
+> +		src++;
+> +	}
+> +
+> +	/* Calculate the number of bytes that can be copied from src to dst. */
+> +	nbytes = nbits / 8;
+> +
+> +	/* Try to align dst to a byte boundary. */
+> +	if (dst_bit_off) {
+> +		if (bits_in_src_buffer < (8 - dst_bit_off) && nbytes) {
+> +			src_buffer |= src[0] << bits_in_src_buffer;
+> +			bits_in_src_buffer += 8;
+> +			src++;
+> +			nbytes--;
+> +		}
+> +
+> +		if (bits_in_src_buffer >= (8 - dst_bit_off)) {
+> +			dst[0] &= GENMASK(dst_bit_off - 1, 0);
+> +			dst[0] |= src_buffer << dst_bit_off;
+> +			src_buffer >>= (8 - dst_bit_off);
+> +			bits_in_src_buffer -= (8 - dst_bit_off);
+> +			dst_bit_off = 0;
+> +			dst++;
+> +			if (bits_in_src_buffer > 7) {
+> +				bits_in_src_buffer -= 8;
+> +				dst[0] = src_buffer;
+> +				dst++;
+> +				src_buffer >>= 8;
+> +			}
+> +		}
+> +	}
+> +
+> +	if (!bits_in_src_buffer && !dst_bit_off) {
+> +		/*
+> +		 * Both src and dst pointers are byte aligned, thus we can
+> +		 * just use the optimized memcpy function.
+> +		 */
+> +		if (nbytes)
+> +			memcpy(dst, src, nbytes);
+> +	} else {
+> +		/*
+> +		 * src buffer is not byte aligned, hence we have to copy each
+> +		 * src byte to the src_buffer variable before extracting a byte
+> +		 * to store in dst.
+> +		 */
+> +		for (i = 0; i < nbytes; i++) {
+> +			src_buffer |= src[i] << bits_in_src_buffer;
+> +			dst[i] = src_buffer;
+> +			src_buffer >>= 8;
+> +		}
+> +	}
+> +	/* Update dst and src pointers */
+> +	dst += nbytes;
+> +	src += nbytes;
+> +
+> +	/*
+> +	 * nbits is the number of remaining bits. It should not exceed 8 as
+> +	 * we've already copied as much bytes as possible.
+> +	 */
+> +	nbits %= 8;
+> +
+> +	/*
+> +	 * If there's no more bits to copy to the destination and src buffer
+> +	 * was already byte aligned, then we're done.
+> +	 */
+> +	if (!nbits && !bits_in_src_buffer)
+> +		return;
+> +
+> +	/* Copy the remaining bits to src_buffer */
+> +	if (nbits)
+> +		src_buffer |= (*src & GENMASK(nbits - 1, 0)) <<
+> +			      bits_in_src_buffer;
+> +	bits_in_src_buffer += nbits;
+> +
+> +	/*
+> +	 * In case there were not enough bits to get a byte aligned dst buffer
+> +	 * prepare the src_buffer variable to match the dst organization (shift
+> +	 * src_buffer by dst_bit_off and retrieve the least significant bits
+> +	 * from dst).
+> +	 */
+> +	if (dst_bit_off)
+> +		src_buffer = (src_buffer << dst_bit_off) |
+> +			     (*dst & GENMASK(dst_bit_off - 1, 0));
+> +	bits_in_src_buffer += dst_bit_off;
+> +
+> +	/*
+> +	 * Keep most significant bits from dst if we end up with an unaligned
+> +	 * number of bits.
+> +	 */
+> +	nbytes = bits_in_src_buffer / 8;
+> +	if (bits_in_src_buffer % 8) {
+> +		src_buffer |= (dst[nbytes] &
+> +			       GENMASK(7, bits_in_src_buffer % 8)) <<
+> +			      (nbytes * 8);
+> +		nbytes++;
+> +	}
+> +
+> +	/* Copy the remaining bytes to dst */
+> +	for (i = 0; i < nbytes; i++) {
+> +		dst[i] = src_buffer;
+> +		src_buffer >>= 8;
+> +	}
+> +}
+> diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.h b/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
+> index 32c6ba4..17d0736 100644
+> --- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
+> +++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
+> @@ -290,6 +290,10 @@ extern int gpmi_send_page(struct gpmi_nand_data *,
+>  extern int gpmi_read_page(struct gpmi_nand_data *,
+>  			dma_addr_t payload, dma_addr_t auxiliary);
+>  
+> +void gpmi_move_bits(u8 *dst, size_t dst_bit_off,
+> +		    const u8 *src, size_t src_bit_off,
+> +		    size_t nbits);
+> +
+>  /* BCH : Status Block Completion Codes */
+>  #define STATUS_GOOD		0x00
+>  #define STATUS_ERASED		0xff
 
 
-Paul Bolle
 
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
