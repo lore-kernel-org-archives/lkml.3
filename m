@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530AbaKZVwA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 16:52:00 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:55971 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975AbaKZVv5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 16:51:57 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Dave Gerlach <d-gerlach@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        Ohad Ben-Cohen <ohad@wizery.com>, Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@linaro.org>, Tony Lindgren <tony@atomide.com>,
-        Benoit Cousson <bcousson@baylibre.com>
-Subject: Re: [RFC PATCH 2/3] soc: ti: Add wkup_m3_ipc driver
-Date: Wed, 26 Nov 2014 22:51:50 +0100
-Message-ID: <2763467.KfXHXHxPJd@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <3334d8483dca2d061cf43da9c047ec27f31e8719.1417029919.git.d-gerlach@ti.com>
-References: <cover.1417029919.git.d-gerlach@ti.com> <3334d8483dca2d061cf43da9c047ec27f31e8719.1417029919.git.d-gerlach@ti.com>
+	id S1753489AbaKZVvv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 16:51:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34674 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751975AbaKZVvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 16:51:43 -0500
+Date: Wed, 26 Nov 2014 16:51:08 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, martin.petersen@oracle.com,
+        mst@redhat.com, rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        qemu-devel@nongnu.org, dm-devel@redhat.com,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: virtio_blk: fix defaults for max_hw_sectors and max_segment_size
+Message-ID: <20141126215108.GA32077@redhat.com>
+References: <20141120190058.GA31214@redhat.com>
+ <20141121095456.GB8866@infradead.org>
+ <20141121154920.GA7644@redhat.com>
+ <54762E9A.2070007@kernel.dk>
+ <20141126205106.GA31815@redhat.com>
+ <54763DEC.3050207@kernel.dk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:bxE9mIeL7jSh913fQOKjSG/+7lkWeOY94b4naVk7OFu
- CEaKGRJYeQkYres3Z9897Nq2y98Bh/P1uvnn3JSdB5dnpBrroS
- Gzyku4G3+e0IGV38jiQOHTYVGNtSSXhX/tGnzL09XHWnfN28Ya
- 17RVkRoU6ig79xQ2j4DH0IU+ler1VMtpsfI3hjmgUGOkYF3EwN
- TRofcqufs7YtepzJelTRWFbqmHahFt0IIxI4Z/op4ow9I6QxVn
- 0oCKjccS+dW+QahrJfLKSFq7f0OGzqlxV1Jcb0/XIVj0cRKEiD
- tncwpO4JdMVMHNIAaUtfU4vQZ9x+JRJo7y2xCXxzakFVsT9S8c
- lb+BSySKDBiI8JjvIXXs=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54763DEC.3050207@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 26 November 2014 15:38:09 Dave Gerlach wrote:
-> +
-> +static const struct wkup_m3_wakeup_src wakeups[] = {
-> +       {.irq_nr = 35,  .src = "USB0_PHY"},
-> +       {.irq_nr = 36,  .src = "USB1_PHY"},
-> +       {.irq_nr = 40,  .src = "I2C0"},
-> +       {.irq_nr = 41,  .src = "RTC Timer"},
-> +       {.irq_nr = 42,  .src = "RTC Alarm"},
-> +       {.irq_nr = 43,  .src = "Timer0"},
-> +       {.irq_nr = 44,  .src = "Timer1"},
-> +       {.irq_nr = 45,  .src = "UART"},
-> +       {.irq_nr = 46,  .src = "GPIO0"},
-> +       {.irq_nr = 48,  .src = "MPU_WAKE"},
-> +       {.irq_nr = 49,  .src = "WDT0"},
-> +       {.irq_nr = 50,  .src = "WDT1"},
-> +       {.irq_nr = 51,  .src = "ADC_TSC"},
-> +       {.irq_nr = 0,   .src = "Unknown"},
-> +};
+On Wed, Nov 26 2014 at  3:54pm -0500,
+Jens Axboe <axboe@kernel.dk> wrote:
+
+> On 11/26/2014 01:51 PM, Mike Snitzer wrote:
+> > On Wed, Nov 26 2014 at  2:48pm -0500,
+> > Jens Axboe <axboe@kernel.dk> wrote:
+> > 
+> >>
+> >> That code isn't even in mainline, as far as I can tell...
+> > 
+> > Right, it is old RHEL6 code.
+> > 
+> > But I've yet to determine what changed upstream that enables this to
+> > "just work" with a really large max_sectors (I haven't been looking
+> > either).
 > 
+> Kind of hard for the rest of us to say, since it's triggering a BUG in
+> code we don't have :-)
 
-This seems awfully specific to some SoC version, and not aware of
-IRQ domains. It also seems to be only used in a dev_dbg statement,
-so I guess you could just kill this off entirely.
+I never asked you or others to weigh in on old RHEL6 code.  Once I
+realized upstream worked even if max_sectors is _really_ high I said
+"sorry for the noise".
 
-> +static struct rproc *wkup_m3_get_rproc(struct device *dev)
-> +{
-> +       struct device_node *node;
-> +       struct rproc *rp;
-> +
-> +       node = of_parse_phandle(dev->of_node, "ti,rproc", 0);
-> +       if (!node)
-> +               return NULL;
-> +
-> +       dev = bus_find_device(&platform_bus_type, NULL, node, match);
-> +       if (!dev)
-> +               return NULL;
-> +
-> +       rp = dev_get_drvdata(dev);
-> +       return rp;
+But while you're here, I wouldn't mind getting your take on virtio-blk
+setting max_hw_sectors to -1U.
 
-This is wrong on a number of levels. I suspect what you really want
-is an interface exported from drivers/remoteproc that looks up
-a 'struct rproc' and performs the necessary reference counting.
-
-That one can just use of_find_node_by_phandle() to get to
-a device_node and use that to look up the rproc device in
-a linked list it maintains.
-
-	Arnd
+As I said in my original reply to mst: it only makes sense to set a
+really high initial upper bound like that in a driver if that driver
+goes on to stack an underlying device's limit.
