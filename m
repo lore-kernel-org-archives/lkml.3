@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685AbaKZOQI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 09:16:08 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:49098 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751290AbaKZOQH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 09:16:07 -0500
-Date: Wed, 26 Nov 2014 09:15:43 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        nick <xerofoify@gmail.com>, gleb@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Another Obsolete Fix me in trace.h?
-Message-ID: <20141126091543.52dc5bfe@gandalf.local.home>
-In-Reply-To: <20141126124022.GC6795@potion.brq.redhat.com>
-References: <5472B5B5.5090201@gmail.com>
-	<54730475.9040000@redhat.com>
-	<54730B33.1080101@siemens.com>
-	<20141124210000.GB6795@potion.brq.redhat.com>
-	<20141124161901.6266925c@gandalf.local.home>
-	<20141124214939.GA6671@potion.brq.redhat.com>
-	<20141126124022.GC6795@potion.brq.redhat.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	id S1752750AbaKZOQi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 09:16:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42162 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750907AbaKZOQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 09:16:37 -0500
+Message-ID: <1417011395.5928.4.camel@linux-0dmf.site>
+Subject: Re: bluetooth related firmware loader spew on resume.
+From: Oliver Neukum <oneukum@suse.de>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: Takashi Iwai <tiwai@suse.de>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, pgynther@google.com,
+        linux-bluetooth@vger.kernel.org
+Date: Wed, 26 Nov 2014 15:16:35 +0100
+In-Reply-To: <0E1D95E7-64D2-4BEA-AFAA-4B119838F24E@holtmann.org>
+References: <20141111181228.GA27815@redhat.com>
+	 <s5hsih7xmgg.wl-tiwai@suse.de>
+	 <D19A9DA1-3706-4351-B2E9-25D5ABA662E7@holtmann.org>
+	 <s5h7fyijqc9.wl-tiwai@suse.de> <1416996623.3171.7.camel@linux-0dmf.site>
+	 <0E1D95E7-64D2-4BEA-AFAA-4B119838F24E@holtmann.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Nov 2014 13:40:26 +0100
-Radim Krčmář <rkrcmar@redhat.com> wrote:
-
-> 2014-11-24 22:49+0100, Radim Krčmář:
-> > 2014-11-24 16:19-0500, Steven Rostedt:
-> > > That wouldn't be too hard to implement.
+On Wed, 2014-11-26 at 23:05 +0900, Marcel Holtmann wrote:
+> Hi Oliver,
+> 
+> >> In order to paper over this, we may also remember the failing firmware
+> >> and avoid loading it.  This might be an easer way than the endless
+> >> fight against UMH race...
 > > 
-> > I'll look at the patch tommorrow.
+> > 
+> > the full fix would be to implement reset_resume() for btusb.
+> > It seems to me that setup() should be split in two methods,
+> > one to request the firmware from user space and the second
+> > to transfer it to the device. reset_resume() would just need
+> > to repeat the second operation.
 > 
-> The kernel part is trivial.
-> Most of the code is going to be in tools/lib/traceevent/event-parse.c.
-> 
-> I wasn't sure whether to
-> 1) define new 'enum print_arg_type' for our function and do exactly what
->    other __print* did
-> 2) extend existing PRINT_FUNC with variable arguments and register it as
->    a "global" event handler
-> 
-> as (2) makes more sense to me, but we already had it when some __print*
-> was implemented ... (and I didn't want to dig too deep into the project)
+> so when you do hci_register_dev, then hdev->setup is only called once. I really mean only once per lifetime of the hci_dev. So you would need to unregister the hci_dev first before hdev->setup will ever be called again. So I am not sure this is actually the problem here. The problem here is entirely within request_firmware() unless of course we run through the USB probe handlers again. Which I do not see happening here.
 
-Add a new hardcoded instance. The PRINT_FUNC is for plugins that have a
-unique function for the events they handle. Notice that event-parse
-does not define any func handlers. If this is to be generic, then lets
-make it specified as a new enum.
+It seems most likely to me that probing is indeed done again.
+btusb does not implement reset_resume(). If power goes away
+as is usual on S3/4 the device is reenumerated. The original
+trace has a call to btusb_setup_bcm_patchram().
+What else could be happening?
 
-Thanks,
+	Regards
+		Oliver
 
--- Steve
+
+
