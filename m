@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbaKZNzL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 08:55:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41795 "EHLO mx2.suse.de"
+	id S1752562AbaKZN5R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 08:57:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47188 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750974AbaKZNzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 08:55:10 -0500
-Date: Wed, 26 Nov 2014 14:55:08 +0100
-From: Michal Marek <mmarek@suse.cz>
-To: Masahiro Yamada <yamada.m@jp.panasonic.com>
-Cc: linux-kbuild@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kbuild: collect shorthands into scripts/Kbuild.include
-Message-ID: <20141126135508.GA6911@sepie.suse.cz>
-References: <1416997873-3872-1-git-send-email-yamada.m@jp.panasonic.com>
+	id S1750902AbaKZN5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 08:57:16 -0500
+Message-ID: <5475DC30.4010104@redhat.com>
+Date: Wed, 26 Nov 2014 14:57:04 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416997873-3872-1-git-send-email-yamada.m@jp.panasonic.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        wanpeng.li@linux.intel.com, namit@cs.technion.ac.il,
+        hpa@linux.intel.com, Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: [CFT PATCH v2 2/2] KVM: x86: support XSAVES usage in the host
+References: <1416847414-22253-1-git-send-email-pbonzini@redhat.com> <1416847414-22253-3-git-send-email-pbonzini@redhat.com> <20141126120753.GA31982@potion.redhat.com> <5475D20A.90505@redhat.com> <20141126135322.GA4887@potion.brq.redhat.com>
+In-Reply-To: <20141126135322.GA4887@potion.brq.redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 07:31:13PM +0900, Masahiro Yamada wrote:
-> The shorthand "clean" is defined in both the top Makefile and
-> scripts/Makefile.clean.  Likewise, the "hdr-inst" is defined in
-> both the top Makefile and scripts/Makefile.headersinst.
-> 
-> To reduce code duplication, this commit collects them into
-> scripts/Kbuild.include like the "build" and "modbuiltin" shorthands.
-> It requires scripts/Makefile.clean to include scripts/Kbuild.include,
-> but its impact on the performance of "make clean" should be
-> negligible.
-> 
-> Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
-> ---
-> 
-> Marek, please decide if this patch should be applied or not.
-> 
-> I am not so sure if 10% of performance regression is acceptable.
-> I do not mind at all if this patch is rejected.
-> 
-> Before this commit, on my box,
-> 
-> $ time make clean
-> 
-> real	0m2.916s
-> user	0m1.040s
-> sys	0m2.005s
-> 
-> After,
-> 
-> real	0m3.221s
-> user	0m1.109s
-> sys	0m2.271s
 
-0.3s is even less than my guess. And as I said, you can run make clean
-in parallel, so I'm not thrilled. Applied to kbuild.git#kbuild.
 
-Thanks,
-Michal
+On 26/11/2014 14:53, Radim Krčmář wrote:
+>>> > > get_xsave = native_xrstor(guest_xsave);  xsave(aligned_userspace_buffer)
+>>> > > set_xsave = xrstor(aligned_userspace_buffer);  native_xsave(guest_xsave)
+>>> > > 
+>>> > > Could that work?
+>> > 
+>> > It could, though it is more like
+>> > 
+>> >    get_fpu()
+>> >    native_xrstor(guest_xsave)
+>> >    xsave(buffer)
+>> >    put_fpu()
+>> > 
+>> > and vice versa.  Also, the userspace buffer is mos likely not aligned,
+>> > so you need some kind of bounce buffer.  It can be done if the CPUID
+>> > turns out to be a bottleneck, apart from that it'd most likely be slower.
+> Yeah, it was mostly making this code more future-proof ... it is easier
+> to convince xsave.h to export its structures if CPUID is the problem.
+> (I still see some hope for Linux, so performance isn't my primary goal.)
+> 
+> I'm quite interested in CPUID now though, so I'll try to benchmark it,
+> someday.
+
+I'm not sure what is more future proof. :)  I wonder if native_xrstor
+could be a problem the day XRSTORS actually sets/restores MSRs as the
+processor documentation promises.  We do not need that to pass them to
+userspace via KVM_GET/SET_XSAVE because we have KVM_GET/SET_MSR for
+that, but it may cause problems if get_xsave uses XRSTORS and thus sets
+the MSRs to unanticipated values.  Difficult to say without more
+information on Intel's plans.
+
+Paolo
