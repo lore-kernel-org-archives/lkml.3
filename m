@@ -1,111 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350AbaKZR2y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 12:28:54 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:38816 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752213AbaKZR2x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 12:28:53 -0500
-Date: Wed, 26 Nov 2014 09:28:42 -0800
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: device-mapper development <dm-devel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Alasdair Kergon <agk@redhat.com>
-Subject: Re: [dm-devel] dm-bufio: fix memleak when using a dm_buffer's inline
- bio
-Message-ID: <20141126172842.GG10050@birch.djwong.org>
-References: <20141126014515.GE10050@birch.djwong.org>
- <20141126034103.GA26585@redhat.com>
- <20141126040008.GF10050@birch.djwong.org>
- <20141126142832.GB29855@redhat.com>
+	id S1752827AbaKZRbP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 12:31:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34949 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751057AbaKZRbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 12:31:14 -0500
+Date: Wed, 26 Nov 2014 18:31:02 +0100
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        wanpeng.li@linux.intel.com, namit@cs.technion.ac.il,
+        hpa@linux.intel.com, Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: [CFT PATCH v2 2/2] KVM: x86: support XSAVES usage in the host
+Message-ID: <20141126173102.GA7770@potion.brq.redhat.com>
+References: <1416847414-22253-1-git-send-email-pbonzini@redhat.com>
+ <1416847414-22253-3-git-send-email-pbonzini@redhat.com>
+ <20141126120753.GA31982@potion.redhat.com>
+ <5475D20A.90505@redhat.com>
+ <20141126135322.GA4887@potion.brq.redhat.com>
+ <5475DC30.4010104@redhat.com>
+ <20141126144252.GB4887@potion.brq.redhat.com>
+ <5475FF50.4030400@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141126142832.GB29855@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5475FF50.4030400@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 09:28:32AM -0500, Mike Snitzer wrote:
-> On Tue, Nov 25 2014 at 11:00pm -0500,
-> Darrick J. Wong <darrick.wong@oracle.com> wrote:
-> 
-> > On Tue, Nov 25, 2014 at 10:41:04PM -0500, Mike Snitzer wrote:
-> > > On Tue, Nov 25 2014 at  8:45pm -0500,
-> > > Darrick J. Wong <darrick.wong@oracle.com> wrote:
-> > > 
-> > > > When dm-bufio sets out to use the bio built into a struct dm_buffer to
-> > > > issue an IO, it needs to call bio_reset after it's done with the bio
-> > > > so that we can free things attached to the bio such as the integrity
-> > > > payload.  Therefore, inject our own endio callback to take care of
-> > > > the bio_reset after calling submit_io's end_io callback.
-> > > > 
-> > > > Test case:
-> > > > 1. modprobe scsi_debug delay=0 dif=1 dix=199 ato=1 dev_size_mb=300
-> > > > 2. Set up a dm-bufio client, e.g. dm-verity, on the scsi_debug device
-> > > > 3. Repeatedly read metadata and watch kmalloc-192 leak!
-> > > > 
-> > > > Fix is against 3.18-rc6.
-> > > > 
-> > > > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-> > > 
-> > > Thanks for reporting/fixing this.
-> > > 
-> > > Alternatively I think we could just call bio_reset() in submit_io(),
-> > > e.g.:
-> > > 
-> > > diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
-> > > index afe7971..e7036e3 100644
-> > > --- a/drivers/md/dm-bufio.c
-> > > +++ b/drivers/md/dm-bufio.c
-> > > @@ -579,6 +579,8 @@ static void submit_io(struct dm_buffer *b, int rw, sector_t block,
-> > >  	if (rw == WRITE && b->c->write_callback)
-> > >  		b->c->write_callback(b);
-> > >  
-> > > +	bio_reset(&b->bio);
-> > > +
-> > >  	if (b->c->block_size <= DM_BUFIO_INLINE_VECS * PAGE_SIZE &&
-> > >  	    b->data_mode != DATA_MODE_VMALLOC)
-> > >  		use_inline_bio(b, rw, block, end_io);
-> > > 
-> > > What do you think?
+2014-11-26 17:26+0100, Paolo Bonzini:
+> On 26/11/2014 15:42, Radim Krčmář wrote:
+> >> I'm not sure what is more future proof. :)  I wonder if native_xrstor
+> >> could be a problem the day XRSTORS actually sets/restores MSRs as the
+> >> processor documentation promises.
 > > 
-> > I decided to call bio_reset after calling end_io so that we can free
-> > the integrity buffer as soon as we're done with the bio.  Calling
-> > bio_reset just prior to the next submit_bio as this snippet does means
-> > that the integrity buffer remains attached to the bio until just
-> > before the next submit_bio call, which could be a while.
-> > 
-> > Also, I think use_dmio results in a new bio being used instead of the
-> > bio embedded in the dm_buffer, so it shouldn't be necessary to reset
-> > the bio if the previous IO had use_dmio'd.
+> > XRSTORS won't affect the guest in any way, we are just going to use it
+> > to convert the xsave, so any side-effects are going to stay in the host.
+> > (This could break the host though.)
 > 
-> OK, yeah, a new embedded bio is created as a side-effect of allocating a
-> new dm_buffer.  So we have to use bi_end_io like you've done.
+> Yes, that's the problem. :)
+
+(It would be a bug in Linux's xsave API, if we were using it correctly.)
+
+> > My main presumption is that XSAVE*->XRSTOR*->XSAVE->XRSTOR has the same
+> > result as XSAVE->XRSTOR, because we are only interested in the state,
+> > not in any metadata.
+> > (If it isn't possible to combine intructions, like XSAVE after XRSTORS,
+> >  this solution won't work.)
 > 
-> I didn't like seeing your use of .bi_private (because in the context of
-> bios that are passed into DM: .bi_private must always be preserved so as
-> not to break upper layers of the IO stack that might be using it).
+> Yes, that should be right.  But actually what KVM would do it is
+> XRSTOR->XSAVE*->XRSTOR*->XSAVE.  The problem here is the side effects of
+> doing XRSTORS far from a guest entry...
 
-<nod> I hadn't considered that not restoring .bi_private without
-comment would raise eyebrows in a space where the norm is that they
-must always be preserved.  :)
+The entry can be aborted after doing XRSTORS, so we are going to know if
+this doesn't work :)
 
-> But in the context of bufio's embedded bio, using .bi_private seems
-> fine.  Just needs a comment.  I'll fixup and get your patch staged (and
-> will CC stable).
+>                                         though that would likely be
+> handled by load_guest_fpu/put_guest_fpu.
 
-The staged patch looks good, thank you!
-
---D
-
-> 
-> Thanks again,
-> Mike
-> 
-> --
-> dm-devel mailing list
-> dm-devel@redhat.com
-> https://www.redhat.com/mailman/listinfo/dm-devel
+Yes, I don't see a principal difference between manipulating xsave for
+vmentry and this conversion, it can be wrapped in the same way.
