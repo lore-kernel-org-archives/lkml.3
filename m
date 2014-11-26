@@ -1,142 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386AbaKZFST (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 00:18:19 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:62164 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091AbaKZFSS (ORCPT
+	id S1752415AbaKZFTI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 00:19:08 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:47821 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133AbaKZFTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 00:18:18 -0500
-Message-ID: <5475628D.2080301@gmail.com>
-Date: Wed, 26 Nov 2014 13:18:05 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 26 Nov 2014 00:19:06 -0500
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH v9 05/10] sched: make scale_rt invariant with frequency
-References: <1415033687-23294-1-git-send-email-vincent.guittot@linaro.org> <1415033687-23294-6-git-send-email-vincent.guittot@linaro.org> <5473E867.6030607@gmail.com> <CAKfTPtCSJhTR2=1_g2UVxeEEKocBs+ouco4Z5SRO2oRSJ-O2mA@mail.gmail.com>
-In-Reply-To: <CAKfTPtCSJhTR2=1_g2UVxeEEKocBs+ouco4Z5SRO2oRSJ-O2mA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAOiHx=ntm7AO5BU2Ge0JDC5nDgXSZwQDm05s5VTM8mLqYmCZRw@mail.gmail.com>
+References: <1416796846-28149-1-git-send-email-cernekee@gmail.com>
+ <1416796846-28149-7-git-send-email-cernekee@gmail.com> <CAOiHx=ntm7AO5BU2Ge0JDC5nDgXSZwQDm05s5VTM8mLqYmCZRw@mail.gmail.com>
+From: Kevin Cernekee <cernekee@gmail.com>
+Date: Tue, 25 Nov 2014 21:18:44 -0800
+Message-ID: <CAJiQ=7CvpFWxDY1uad2bZz8MBG0Mvg2Jx8WBp6gHi-kD4TDvXA@mail.gmail.com>
+Subject: Re: [PATCH V3 06/11] irqchip: bcm7120-l2: Change DT binding to allow
+ non-contiguous IRQEN/IRQSTAT
+To: Jonas Gorski <jogo@openwrt.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Jon Fraser <jfraser@broadcom.com>, Dmitry Torokhov <dtor@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Brian Norris <computersforpeace@gmail.com>,
+        MIPS Mailing List <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vincent,
-On 11/25/14, 9:52 PM, Vincent Guittot wrote:
-> On 25 November 2014 at 03:24, Wanpeng Li <kernellwp@gmail.com> wrote:
->> Hi Vincent,
->> On 11/4/14, 12:54 AM, Vincent Guittot wrote:
->>> The average running time of RT tasks is used to estimate the remaining
->>> compute
->>> capacity for CFS tasks. This remaining capacity is the original capacity
->>> scaled
->>> down by a factor (aka scale_rt_capacity). This estimation of available
->>> capacity
->>> must also be invariant with frequency scaling.
->>>
->>> A frequency scaling factor is applied on the running time of the RT tasks
->>> for
->>> computing scale_rt_capacity.
->>>
->>> In sched_rt_avg_update, we scale the RT execution time like below:
->>> rq->rt_avg += rt_delta * arch_scale_freq_capacity() >>
->>> SCHED_CAPACITY_SHIFT
->>>
->>> Then, scale_rt_capacity can be summarized by:
->>> scale_rt_capacity = SCHED_CAPACITY_SCALE -
->>>                  ((rq->rt_avg << SCHED_CAPACITY_SHIFT) / period)
+On Mon, Nov 24, 2014 at 6:31 AM, Jonas Gorski <jogo@openwrt.org> wrote:
+> On Mon, Nov 24, 2014 at 3:40 AM, Kevin Cernekee <cernekee@gmail.com> wrote:
+>> To date, all supported controllers have had the IRQEN register at offset
+>> 0x00 and the IRQSTAT register at 0x04.  So in DT we would typically see
+>> something like:
 >>
->> The 'period' aka 'total' in the scale_rt_capacity(), why it is
->> sched_avg_period() + delta instead of sched_avg_period()?
-> The default value of sched_avg_period is 1sec which is "long" so we
-> take into account the time consumed by RT tasks in the ongoing period
-> .
-
-Do you mean 'sched_avg_period() + delta' should be replaced by 'delta' 
-since sched_avg_period() is "long"?
-
-Regards,
-Wanpeng Li
-
+>>     reg = <0xf0406800 0x8>;
+>>
+>> We still want to support this format, but we also need to support cases
+>> where IRQEN and IRQSTAT aren't adjacent.  So, we will amend the driver to
+>> accept an alternate format that looks like this:
+>>
+>>     reg = <0xf0406800 0x4 0xf0406804 0x4>;
+>>
+>> i.e. if the first resource_size() == 4, assume that the first resource
+>> points to IRQEN and that the next resource points to IRQSTAT.  If the
+>> first resource_size() == 8, retain the current behavior.
+>>
+>> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 >
->> Regards,
->> Wanpeng Li
->>
->>
->>> We can optimize by removing right and left shift in the computation of
->>> rq->rt_avg
->>> and scale_rt_capacity
->>>
->>> The call to arch_scale_frequency_capacity in the rt scheduling path might
->>> be
->>> a concern for RT folks because I'm not sure whether we can rely on
->>> arch_scale_freq_capacity to be short and efficient ?
->>>
->>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->>> ---
->>>    kernel/sched/fair.c  | 17 +++++------------
->>>    kernel/sched/sched.h |  4 +++-
->>>    2 files changed, 8 insertions(+), 13 deletions(-)
->>>
->>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->>> index a5039da..b37c27b 100644
->>> --- a/kernel/sched/fair.c
->>> +++ b/kernel/sched/fair.c
->>> @@ -5785,7 +5785,7 @@ unsigned long __weak arch_scale_cpu_capacity(struct
->>> sched_domain *sd, int cpu)
->>>    static unsigned long scale_rt_capacity(int cpu)
->>>    {
->>>          struct rq *rq = cpu_rq(cpu);
->>> -       u64 total, available, age_stamp, avg;
->>> +       u64 total, used, age_stamp, avg;
->>>          s64 delta;
->>>          /*
->>> @@ -5801,19 +5801,12 @@ static unsigned long scale_rt_capacity(int cpu)
->>>          total = sched_avg_period() + delta;
->>>    -     if (unlikely(total < avg)) {
->>> -               /* Ensures that capacity won't end up being negative */
->>> -               available = 0;
->>> -       } else {
->>> -               available = total - avg;
->>> -       }
->>> +       used = div_u64(avg, total);
->>>    -     if (unlikely((s64)total < SCHED_CAPACITY_SCALE))
->>> -               total = SCHED_CAPACITY_SCALE;
->>> +       if (likely(used < SCHED_CAPACITY_SCALE))
->>> +               return SCHED_CAPACITY_SCALE - used;
->>>    -     total >>= SCHED_CAPACITY_SHIFT;
->>> -
->>> -       return div_u64(available, total);
->>> +       return 1;
->>>    }
->>>      static void update_cpu_capacity(struct sched_domain *sd, int cpu)
->>> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
->>> index c34bd11..fc5b152 100644
->>> --- a/kernel/sched/sched.h
->>> +++ b/kernel/sched/sched.h
->>> @@ -1312,9 +1312,11 @@ static inline int hrtick_enabled(struct rq *rq)
->>>      #ifdef CONFIG_SMP
->>>    extern void sched_avg_update(struct rq *rq);
->>> +extern unsigned long arch_scale_freq_capacity(struct sched_domain *sd,
->>> int cpu);
->>> +
->>>    static inline void sched_rt_avg_update(struct rq *rq, u64 rt_delta)
->>>    {
->>> -       rq->rt_avg += rt_delta;
->>> +       rq->rt_avg += rt_delta * arch_scale_freq_capacity(NULL,
->>> cpu_of(rq));
->>>          sched_avg_update(rq);
->>>    }
->>>    #else
->>
+> Hmm ... the more I think about this, the less I like it.
+>
+> Using the amount and size of the reg-properties to infer a certain
+> layout seems rather hackish and dirty to me. Maybe we should just use
+> different compatible match ids for that? E.g. brcm,bm7120-l2-intc for
+> the 32-bit en/stat pairs, and e.g. brcm,bcm6368-l2-intc for the 64-bit
+> wide one. Or maybe make the bcm63xx one a separate driver and let it
+> share code with the bcm7120-l2-intc driver.
 
+In my current proposal, it is easy to specify an arbitrary number of
+enable/status pairs located in any order and spread across different
+parts of the register space.  Even register indices (0,2,4,...) are
+enable registers, and odd register indices are status registers.
+
+If I'm interpreting your post correctly, you don't agree that we need
+this level of flexibility.  But looking over the register listings,
+here are the cases we need to cover:
+
+
+6828,6318: 4x mask(exthi,extlo,hi,lo),status(exthi,extlo,hi,lo)
+
+TP0ExtIrqMaskHi
+TP0ExtIrqMaskLo
+TP0IrqMaskHi
+TP0IrqMaskLo
+TP0ExtIrqStatusHi
+TP0ExtIrqStatusLo
+TP0IrqStatusHi
+TP0IrqStatusLo
+
+TP1ExtIrqMaskHi
+TP1ExtIrqMaskLo
+...
+
+
+6816,6362,6328: 2x extmask,mask,extstatus,status
+
+ExtraChipIrqMask
+ChipIrqMask
+ExtraChipIrqStatus
+ChipIrqStatus
+ExtraChipIrqMask1 [1=TP1]
+ChipIrqMask1
+ExtraChipIrqStatus1
+ChipIrqStatus1
+
+
+6368: similar to above, but with yet another naming convention:
+
+IRQMASK_MIPS0_Hi
+IRQMASK_MIPS0_Lo
+IRQSTATUS_MIPS0_Hi
+IRQSTATUS_MIPS0_Lo
+IRQMASK_MIPS1_Hi
+IRQMASK_MIPS1_Lo
+IRQSTATUS_MIPS1_Hi
+IRQSTATUS_MIPS1_Lo
+
+
+
+6838,3384: interleaved "mystery meat" mask/status (same IRQ source
+names, with the output of each bcm7120-l2 routed to several different
+processors/threads):
+
+PeriphIRQMASK0
+PeriphIRQSTATUS0
+PeriphIRQMASK1 <- mine, if running on Zephyr
+PeriphIRQSTATUS1 <- mine, if running on Zephyr
+PeriphIRQMASK2
+PeriphIRQSTATUS2
+PeriphIRQMASK3 <- mine, if running on Viper
+PeriphIRQSTATUS3 <- mine, if running on Viper
+
+But wait, there's more!  There wasn't enough space in this block for
+>32 IRQ bits, so the upper bits spilled over into a separate
+"INT_EXT_PER" block that lives elsewhere in the register space:
+
+PeriphIRQMASK0_2
+PeriphIRQSTATUS0_2
+PeriphIRQMASK1_2 <- mine, if running on Zephyr
+PeriphIRQSTATUS1_2 <- mine, if running on Zephyr
+PeriphIRQMASK2_2
+PeriphIRQSTATUS2_2
+PeriphIRQMASK3_2 <- mine, if running on Viper
+PeriphIRQSTATUS3_2 <- mine, if running on Viper
+
+The "INT_PER" and "INT_EXT_PER" outputs are ORed into the same MIPS
+IRQ lines, so we need to treat them as two sides of a single
+controller.  AFAICT, unlike a shared device IRQ, there is no way to
+share a MIPS IRQ line between two controller instances.
+
+Additionally, we have a few other random MASK/STATUS pairs scattered
+around (ZMIPS, CMIPS blocks), and then we also have DQM IRQs with
+multiple mask registers + single status register:
+
+CMIPS_NOT_EMPTY_IRQ_MSK
+CMIPS1_NOT_EMPTY_IRQ_MSK <- mine, if running on Viper
+ZMIPS_NOT_EMPTY_IRQ_MSK <- mine, if running on Zephyr
+PMC_NOT_EMPTY_IRQ_MSK
+DFAP_NOT_EMPTY_IRQ_MSK
+NOT_EMPTY_IRQ_STS
+
+I suppose another alternative is to ioremap() a range large enough to
+cover enable + status, and then specify the offset of each one in
+another property.  This does run the risk of overlapping mappings.
+
+
+> This would avoid having to specify a lot of regs (let's assume we also
+> add support for affinity)
+
+I concede that I have no idea how affinity should be handled here.
+AFAICT it is completely off limits on BCM3384 because we just don't
+have enough L2 outputs to offer proper masking for all of the
+threads/CPUs in the system.
+
+Perhaps we could write a simple, SMP-capable driver for the
+saner/newer SoCs, and use the flexible-but-non-SMP version for the
+complicated ones.
+
+
+> and cause a lot of io(re)map calls
+
+Is the ioremap() call really that big of a deal?
+
+On MIPS it's basically computing CKSEG1ADDR(phys_addr).  On ARM, the
+top level (with 64 to 128+ IRQs) goes through the GIC.  On both,
+ioremap() is a one-time cost at startup.
