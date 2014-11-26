@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137AbaKZMms (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 07:42:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60787 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311AbaKZMmq (ORCPT
+	id S1751338AbaKZMou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 07:44:50 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:44062 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750836AbaKZMos convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 07:42:46 -0500
-Date: Wed, 26 Nov 2014 04:43:06 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jungseung Lee <js07.lee@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] fs/binfmt_elf.c: fix inconsistent vma dump size
-Message-Id: <20141126044306.36e16cad.akpm@linux-foundation.org>
-In-Reply-To: <CAPP0e=Myz8B9x1pRp3q37wGEwSaACBJfUJPcf6MCzN7K4nG=sg@mail.gmail.com>
-References: <1416683799-678-1-git-send-email-js07.lee@gmail.com>
-	<20141125133857.bb2d71659287df6aa908de5b@linux-foundation.org>
-	<CAPP0e=M9eUkn+riY3E+5fTOkrxH+Btr_arByg+E4ROH+ifcZ1g@mail.gmail.com>
-	<CAPP0e=Myz8B9x1pRp3q37wGEwSaACBJfUJPcf6MCzN7K4nG=sg@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Nov 2014 07:44:48 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Doug Anderson <dianders@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        Rob Herring <robh+dt@kernel.org>, Sonny Rao <sonnyrao@chromium.org>
+Subject: Re: [PATCH v4] clocksource: arch_timer: Allow the device tree to specify uninitialized timer registers
+Date: Wed, 26 Nov 2014 13:48:32 +0100
+Message-ID: <11522840.iniX5CHHHk@diego>
+User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <5475C802.4050903@linaro.org>
+References: <1412753627-28287-1-git-send-email-sonnyrao@chromium.org> <4822206.0yqmIumDEc@diego> <5475C802.4050903@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Nov 2014 21:37:54 +0900 Jungseung Lee <js07.lee@gmail.com> wrote:
-
-> 2014-11-26 15:51 GMT+09:00 Jungseung Lee <js07.lee@gmail.com>:
+Am Mittwoch, 26. November 2014, 13:30:58 schrieb Daniel Lezcano:
+> On 11/26/2014 01:06 PM, Heiko Stübner wrote:
+> > Hi Daniel,
+> > 
+> > Am Mittwoch, 26. November 2014, 12:51:08 schrieb Daniel Lezcano:
+> >> Hi Doug, Olof,
+> >> 
+> >> IIUC, it sounds like this patch is needed from some other patches in
+> >> arm-soc. Olof was proposing to take this patch through its tree to
+> >> facilitate the integration.
+> >> 
+> >> Olof, is it this patch you were worried about ?
+> > 
+> > I think this is one of two patches in question.
+> > 
+> > "clocksource: arch_timer: Fix code to use physical timers when requested"
+> > [0] would be the second one.
+> > 
+> > And the patch for arm-soc that Olof means would be "ARM: dts: rk3288: add
+> > arm,cpu-registers-not-fw-configured" [1].
 > 
-> >>> @@ -2093,7 +2083,20 @@ static int elf_core_dump(struct coredump_params *cprm)
-> >>>
-> >>>       dataoff = offset = roundup(offset, ELF_EXEC_PAGESIZE);
-> >>>
-> >>> -     offset += elf_core_vma_data_size(gate_vma, cprm->mm_flags);
-> >>> +     vma_filesz = kmalloc(sizeof(*vma_filesz) * (segs - 1), GFP_KERNEL);
-> >>
-> >> Use kmalloc_array() here, in case a disaster has occurred...
-> >>
-> > I'll try to find another way how to pass or save vma size with consistency.
-> >
-> it looks like just to replace kmalloc to vmalloc could be solution.
-> I'll send patch, thanks.
+> Ok, so IIUC, "clocksource: arch_timer: Fix code to use physical timers
+> when requested" should go via arm's tree, right ?
 
-Solution to what?  I was merely suggesting the use of kmalloc_array()
-instead of open-coded kmalloc(n * m).
+If I'm reading Olof's irc-comments from yesterday correctly, that is right and 
+the 3 patches should go in together:
 
+- "clocksource: arch_timer: Fix code to use physical timers
+  when requested" fixes the use of physical timers in general
+- "clocksource: arch_timer: Allow the device tree to specify uninitialized
+  timer registers" allows this to be set from dt
+- "ARM: dts: rk3288: add arm,cpu-registers-not-fw-configured" enables this on
+  rk3288
+
+
+Heiko
