@@ -1,57 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358AbaKZPEM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 10:04:12 -0500
-Received: from static.88-198-71-155.clients.your-server.de ([88.198.71.155]:57191
-	"EHLO socrates.bennee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753339AbaKZPEK (ORCPT
+	id S1753376AbaKZPEX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 10:04:23 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:44248 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753339AbaKZPEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 10:04:10 -0500
-References: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org> <1416931805-23223-3-git-send-email-alex.bennee@linaro.org> <CAFEAcA9P6aX+mh3rEMy=Z7SKF=kRrxgYefLwFcrk806QQpwiuQ@mail.gmail.com>
-From: Alex =?utf-8?Q?Benn=C3=A9e?= <alex.bennee@linaro.org>
-To: Peter Maydell <peter.maydell@linaro.org>
-Cc: kvm-devel <kvm@vger.kernel.org>,
-        arm-mail-list <linux-arm-kernel@lists.infradead.org>,
-        "kvmarm\@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>, Alexander Graf <agraf@suse.de>,
-        "J. Kiszka" <jan.kiszka@siemens.com>,
-        David Hildenbrand <dahi@linux.vnet.ibm.com>,
-        Bharat Bhushan <r65777@freescale.com>, bp@suse.de,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/7] KVM: arm: guest debug, define API headers
-In-reply-to: <CAFEAcA9P6aX+mh3rEMy=Z7SKF=kRrxgYefLwFcrk806QQpwiuQ@mail.gmail.com>
-Date: Wed, 26 Nov 2014 15:04:10 +0000
-Message-ID: <87ppcaknpx.fsf@linaro.org>
+	Wed, 26 Nov 2014 10:04:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 127.0.0.1
-X-SA-Exim-Mail-From: alex.bennee@linaro.org
-X-SA-Exim-Scanned: No (on socrates.bennee.com); SAEximRunCond expanded to false
+In-Reply-To: <20141126144504.GA3808@developer>
+References: <1416963070-5806-1-git-send-email-a.kesavan@samsung.com>
+	<20141126144504.GA3808@developer>
+Date: Wed, 26 Nov 2014 20:34:19 +0530
+Message-ID: <CAM4voa=OidszVoxRCnXPTKTyGZn5QXv7YWgGRF+JyHmHi+SCPw@mail.gmail.com>
+Subject: Re: [PATCH v2] thermal: exynos: add special clock support
+From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Amit Kachhap <amit.daniel@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        =?UTF-8?B?7LWc7LCs7Jqw?= <cw00.choi@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Eduardo,
 
-Peter Maydell <peter.maydell@linaro.org> writes:
-
-> On 25 November 2014 at 16:10, Alex Bennée <alex.bennee@linaro.org> wrote:
->> +/* Exit types which define why we did a debug exit */
->> +#define KVM_DEBUG_EXIT_ERROR           0x0
->> +#define KVM_DEBUG_EXIT_SINGLE_STEP     0x1
->> +#define KVM_DEBUG_EXIT_SW_BKPT         0x2
->> +#define KVM_DEBUG_EXIT_HW_BKPT         0x3
->> +#define KVM_DEBUG_EXIT_HW_WTPT         0x4
+On Wed, Nov 26, 2014 at 8:15 PM, Eduardo Valentin <edubezval@gmail.com> wrote:
 >
-> The names of these imply that they're generic, but they're
-> defined in an arch-specific header file...
+> Abhilash,
+>
+> On Wed, Nov 26, 2014 at 06:21:10AM +0530, Abhilash Kesavan wrote:
+>> Exynos7 has a special clock required for the functional operation
+>> of the TMU that is not present in earlier SoCs. Add support for
+>> this clock and update the binding documentation.
+>>
+>> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+>> ---
+>> Changes since v1:
+>>       - Added a per-soc flag to indicate the presence of special clock
+>>       - Changed the name of special clock from "tmu_sclk" to "sclk"
+>>       - Fixed the error handling for sclk
+>>
+>> Tested on 5420 and 5800 based chromebooks, no change in existing behavior.
+>>
+>>  .../devicetree/bindings/thermal/exynos-thermal.txt |    3 ++
+>>  drivers/thermal/samsung/exynos_tmu.c               |   31 ++++++++++++++++----
+>>  2 files changed, 29 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+>> index ae738f5..acf4705 100644
+>> --- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+>> +++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+>> @@ -32,10 +32,13 @@
+>>  - clocks : The main clocks for TMU device
+>>       -- 1. operational clock for TMU channel
+>>       -- 2. optional clock to access the shared registers of TMU channel
+>> +     -- 3. optional special clock for functional operation
+>>  - clock-names : Thermal system clock name
+>>       -- "tmu_apbif" operational clock for current TMU channel
+>>       -- "tmu_triminfo_apbif" clock to access the shared triminfo register
+>>               for current TMU channel
+>> +     -- "sclk" clock for functional operation of the current TMU
+>> +             channel
+>>  - vtmu-supply: This entry is optional and provides the regulator node supplying
+>>               voltage to TMU. If needed this entry can be placed inside
+>>               board/platform specific dts file.
+>> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+>> index d44d91d..8ed8409 100644
+>> --- a/drivers/thermal/samsung/exynos_tmu.c
+>> +++ b/drivers/thermal/samsung/exynos_tmu.c
+>> @@ -123,11 +123,14 @@
+>>   * @base: base address of the single instance of the TMU controller.
+>>   * @base_second: base address of the common registers of the TMU controller.
+>>   * @irq: irq number of the TMU controller.
+>> + * @needs_sclk: SoC specific flag indicating that sclk is required for
+>> +     functional operation of the TMU controller.
+>>   * @soc: id of the SOC type.
+>>   * @irq_work: pointer to the irq work structure.
+>>   * @lock: lock to implement synchronization.
+>>   * @clk: pointer to the clock structure.
+>>   * @clk_sec: pointer to the clock structure for accessing the base_second.
+>> + * @sclk: pointer to the clock structure for accessing the tmu special clock.
+>>   * @temp_error1: fused value of the first point trim.
+>>   * @temp_error2: fused value of the second point trim.
+>>   * @regulator: pointer to the TMU regulator structure.
+>> @@ -144,10 +147,11 @@ struct exynos_tmu_data {
+>>       void __iomem *base;
+>>       void __iomem *base_second;
+>>       int irq;
+>> +     bool needs_sclk;
+>>       enum soc_type soc;
+>>       struct work_struct irq_work;
+>>       struct mutex lock;
+>> -     struct clk *clk, *clk_sec;
+>> +     struct clk *clk, *clk_sec, *sclk;
+>>       u8 temp_error1, temp_error2;
+>>       struct regulator *regulator;
+>>       struct thermal_sensor_conf *reg_conf;
+>> @@ -883,10 +887,24 @@ static int exynos_tmu_probe(struct platform_device *pdev)
+>>               goto err_clk_sec;
+>>       }
+>>
+>> +     if (data->needs_sclk) {
+>
+> Based on the trend we see from Bartlomiej's and Lukasz' works, you
+> should be asking for SoC version, not adding a flag. Can you please
+> crosscheck with them?
 
-Yeah, I think these will die and I'll just export the syndrome
-information directly to QEMU.
+I planned to populate this flag as true for Exynos7 in
+exynos_map_dt_data() where other soc specific methods are being setup.
 
--- 
-Alex Bennée
+Bartlomiej/Lukasz can you kindly comment on if you would prefer the
+check to be based on the SoC version.
+
+Regards,
+Abhilash
+>
+> Cheers,
+>
+> Eduardo Valentin
+>
+>> +             data->sclk = devm_clk_get(&pdev->dev, "sclk");
+>> +             if (IS_ERR(data->sclk)) {
+>> +                     dev_err(&pdev->dev, "Failed to get sclk\n");
+>> +                     goto err_clk;
+>> +             } else {
+>> +                     ret = clk_prepare_enable(data->sclk);
+>> +                     if (ret) {
+>> +                             dev_err(&pdev->dev, "Failed to enable sclk\n");
+>> +                             goto err_clk;
+>> +                     }
+>> +             }
+>> +     }
+>> +
+>>       ret = exynos_tmu_initialize(pdev);
+>>       if (ret) {
+>>               dev_err(&pdev->dev, "Failed to initialize TMU\n");
+>> -             goto err_clk;
+>> +             goto err_sclk;
+>>       }
+>>
+>>       exynos_tmu_control(pdev, true);
+>> @@ -896,7 +914,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
+>>                               sizeof(struct thermal_sensor_conf), GFP_KERNEL);
+>>       if (!sensor_conf) {
+>>               ret = -ENOMEM;
+>> -             goto err_clk;
+>> +             goto err_sclk;
+>>       }
+>>       sprintf(sensor_conf->name, "therm_zone%d", data->id);
+>>       sensor_conf->read_temperature = (int (*)(void *))exynos_tmu_read;
+>> @@ -928,7 +946,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
+>>       ret = exynos_register_thermal(sensor_conf);
+>>       if (ret) {
+>>               dev_err(&pdev->dev, "Failed to register thermal interface\n");
+>> -             goto err_clk;
+>> +             goto err_sclk;
+>>       }
+>>       data->reg_conf = sensor_conf;
+>>
+>> @@ -936,10 +954,12 @@ static int exynos_tmu_probe(struct platform_device *pdev)
+>>               IRQF_TRIGGER_RISING | IRQF_SHARED, dev_name(&pdev->dev), data);
+>>       if (ret) {
+>>               dev_err(&pdev->dev, "Failed to request irq: %d\n", data->irq);
+>> -             goto err_clk;
+>> +             goto err_sclk;
+>>       }
+>>
+>>       return 0;
+>> +err_sclk:
+>> +     clk_disable_unprepare(data->sclk);
+>>  err_clk:
+>>       clk_unprepare(data->clk);
+>>  err_clk_sec:
+>> @@ -956,6 +976,7 @@ static int exynos_tmu_remove(struct platform_device *pdev)
+>>
+>>       exynos_tmu_control(pdev, false);
+>>
+>> +     clk_disable_unprepare(data->sclk);
+>>       clk_unprepare(data->clk);
+>>       if (!IS_ERR(data->clk_sec))
+>>               clk_unprepare(data->clk_sec);
+>> --
+>> 1.7.9.5
+>>
