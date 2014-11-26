@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451AbaKZJV0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 04:21:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39953 "EHLO mx1.redhat.com"
+	id S1751571AbaKZJ0F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 04:26:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33957 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751882AbaKZJVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 04:21:24 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: mst@redhat.com, vyasevic@redhat.com, Jason Wang <jasowang@redhat.com>
-Subject: [PATCH net-next] macvlan: delay the header check for dodgy packets into lower device
-Date: Wed, 26 Nov 2014 17:21:14 +0800
-Message-Id: <1416993674-11177-1-git-send-email-jasowang@redhat.com>
+	id S1751036AbaKZJ0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 04:26:02 -0500
+Date: Wed, 26 Nov 2014 10:26:13 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+cc: Seth Jennings <sjenning@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Petr Mladek <pmladek@suse.cz>, Miroslav Benes <mbenes@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
+        x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 0/3] Kernel Live Patching
+In-Reply-To: <alpine.LNX.2.00.1411261014510.23174@pobox.suse.cz>
+Message-ID: <alpine.LNX.2.00.1411261025430.23174@pobox.suse.cz>
+References: <1416935709-404-1-git-send-email-sjenning@redhat.com> <547596C6.2050303@hitachi.com> <alpine.LNX.2.00.1411261014510.23174@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We do header check twice for a dodgy packet. One is done before
-macvlan_start_xmit(), another is done before lower device's
-ndo_start_xmit(). The first one seems redundant so this patch tries to
-delay header check until a packet reaches its lower device (or macvtap)
-through always enabling NETIF_F_GSO_ROBUST for macvlan device.
+On Wed, 26 Nov 2014, Jiri Kosina wrote:
 
-Cc: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/net/macvlan.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+> What I'd propose instead is to make sure that we always have 
+> just a ftrace_ops per function entry, and only update the pointers there 
 
-diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-index bfb0b6e..11d4b35 100644
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -742,11 +742,12 @@ static struct lock_class_key macvlan_netdev_xmit_lock_key;
- static struct lock_class_key macvlan_netdev_addr_lock_key;
- 
- #define ALWAYS_ON_FEATURES \
--	(NETIF_F_SG | NETIF_F_GEN_CSUM | NETIF_F_GSO_SOFTWARE | NETIF_F_LLTX)
-+	(NETIF_F_SG | NETIF_F_GEN_CSUM | NETIF_F_GSO_SOFTWARE | NETIF_F_LLTX | \
-+	 NETIF_F_GSO_ROBUST)
- 
- #define MACVLAN_FEATURES \
- 	(NETIF_F_SG | NETIF_F_ALL_CSUM | NETIF_F_HIGHDMA | NETIF_F_FRAGLIST | \
--	 NETIF_F_GSO | NETIF_F_TSO | NETIF_F_UFO | NETIF_F_GSO_ROBUST | \
-+	 NETIF_F_GSO | NETIF_F_TSO | NETIF_F_UFO | \
- 	 NETIF_F_TSO_ECN | NETIF_F_TSO6 | NETIF_F_GRO | NETIF_F_RXCSUM | \
- 	 NETIF_F_HW_VLAN_CTAG_FILTER | NETIF_F_HW_VLAN_STAG_FILTER)
- 
+"... just a _single_ ..."
+
 -- 
-1.9.1
-
+Jiri Kosina
+SUSE Labs
