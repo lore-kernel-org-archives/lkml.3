@@ -1,158 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277AbaKZMYe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 07:24:34 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:43907 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751708AbaKZMYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 07:24:31 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Doug Anderson <dianders@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        Rob Herring <robh+dt@kernel.org>, Sonny Rao <sonnyrao@chromium.org>
-Subject: Re: [PATCH v4] clocksource: arch_timer: Allow the device tree to specify uninitialized timer registers
-Date: Wed, 26 Nov 2014 13:06:35 +0100
-Message-ID: <4822206.0yqmIumDEc@diego>
-User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <5475BEAC.9020208@linaro.org>
-References: <1412753627-28287-1-git-send-email-sonnyrao@chromium.org> <CAD=FV=VhaMo4fNide3a2S6jdLiq2pyOqY3hmx7ai0iDTPxCsPA@mail.gmail.com> <5475BEAC.9020208@linaro.org>
+	id S1752505AbaKZMYv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 07:24:51 -0500
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:47165 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370AbaKZMYt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 07:24:49 -0500
+Date: Wed, 26 Nov 2014 12:19:03 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: josh@joshtriplett.org, rdunlap@infradead.org, pieter@boesman.nl,
+        alexander.h.duyck@intel.com, viro@zeniv.linux.org.uk, ast@plumgrid.com,
+        akpm@linux-foundation.org, beber@meleeweb.net,
+        catalina.mocanu@gmail.com, dborkman@redhat.com, edumazet@google.com,
+        ebiederm@xmission.com, fabf@skynet.be,
+        fuse-devel@lists.sourceforge.net, geert@linux-m68k.org,
+        hughd@google.com, iulia.manda21@gmail.com, JBeulich@suse.com,
+        bfields@fieldses.org, jlayton@poochiereds.net,
+        linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        mcgrof@suse.com, mattst88@gmail.com, mgorman@suse.de, mst@redhat.com,
+        miklos@szeredi.hu, netdev@vger.kernel.org, oleg@redhat.com,
+        Paul.Durrant@citrix.com, paulmck@linux.vnet.ibm.com,
+        pefoley2@pefoley.com, tgraf@suug.ch, therbert@google.com,
+        trond.myklebust@primarydata.com, willemb@google.com,
+        xiaoguangrong@linux.vnet.ibm.com, zhenglong.cai@cs2c.com.cn
+Subject: Re: [PATCH v4 0/7] kernel tinification: optionally compile out
+ splice family of syscalls (splice, vmsplice, tee and sendfile)
+Message-ID: <20141126121903.5231c854@lxorguk.ukuu.org.uk>
+In-Reply-To: <20141125.140441.401150380839514113.davem@davemloft.net>
+References: <5474ABB6.3030400@infradead.org>
+	<20141125.121305.2094097848188324942.davem@davemloft.net>
+	<20141125185310.GA24891@cloud>
+	<20141125.140441.401150380839514113.davem@davemloft.net>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On Tue, 25 Nov 2014 14:04:41 -0500 (EST)
+David Miller <davem@davemloft.net> wrote:
 
-Am Mittwoch, 26. November 2014, 12:51:08 schrieb Daniel Lezcano:
-> Hi Doug, Olof,
+> From: josh@joshtriplett.org
+> Date: Tue, 25 Nov 2014 10:53:10 -0800
 > 
-> IIUC, it sounds like this patch is needed from some other patches in
-> arm-soc. Olof was proposing to take this patch through its tree to
-> facilitate the integration.
+> > It's not a "slippery slope"; it's been our standard practice for ages.
 > 
-> Olof, is it this patch you were worried about ?
+> We've never put an entire class of generic system calls behind
+> a config option.
 
-I think this is one of two patches in question.
+Try running an original MCC Linux binary and C lib on a current kernel
 
-"clocksource: arch_timer: Fix code to use physical timers when requested" [0] 
-would be the second one.
+We've put *entire binary formats* behind a config option. We've put older
+syscalls behind it, we've put sysfs behind it, sysctl behind it, the
+older microcode interfaces behind it, ISA bus as a concept behind
+options. VDSO, IPC, even 32bit support ... the list goes on and on.
 
-And the patch for arm-soc that Olof means would be "ARM: dts: rk3288: add 
-arm,cpu-registers-not-fw-configured" [1].
+I'd say those were far more generic on the whole than splice/sendfile.
 
-
-Heiko
-
-[0] 
-https://git.linaro.org/people/daniel.lezcano/linux.git/commit/04f71c2cae54dc26b2a236c787ea8d56c174150b
-[1] https://lkml.org/lkml/2014/11/25/975
-
-> 
-> Thanks
-> 
->    -- Daniel
-> 
-> On 11/20/2014 12:01 AM, Doug Anderson wrote:
-> > Daniel,
-> > 
-> > On Wed, Oct 8, 2014 at 12:33 AM, Sonny Rao <sonnyrao@chromium.org> wrote:
-> >> From: Doug Anderson <dianders@chromium.org>
-> >> 
-> >> Some 32-bit (ARMv7) systems are architected like this:
-> >> 
-> >> * The firmware doesn't know and doesn't care about hypervisor mode and
-> >> 
-> >>    we don't want to add the complexity of hypervisor there.
-> >> 
-> >> * The firmware isn't involved in SMP bringup or resume.
-> >> 
-> >> * The ARCH timer come up with an uninitialized offset (CNTVOFF)
-> >> 
-> >>    between the virtual and physical counters.  Each core gets a
-> >>    different random offset.
-> >> 
-> >> * The device boots in "Secure SVC" mode.
-> >> 
-> >> * Nothing has touched the reset value of CNTHCTL.PL1PCEN or
-> >> 
-> >>    CNTHCTL.PL1PCTEN (both default to 1 at reset)
-> >> 
-> >> On systems like the above, it doesn't make sense to use the virtual
-> >> counter.  There's nobody managing the offset and each time a core goes
-> >> down and comes back up it will get reinitialized to some other random
-> >> value.
-> >> 
-> >> This adds an optional property which can inform the kernel of this
-> >> situation, and firmware is free to remove the property if it is going
-> >> to initialize the CNTVOFF registers when each CPU comes out of reset.
-> >> 
-> >> Currently, the best course of action in this case is to use the
-> >> physical timer, which is why it is important that CNTHCTL hasn't been
-> >> changed from its reset value and it's a reasonable assumption given
-> >> that the firmware has never entered HYP mode.
-> >> 
-> >> Note that it's been said that on ARMv8 systems the firmware and
-> >> kernel really can't be architected as described above.  That means
-> >> using the physical timer like this really only makes sense for ARMv7
-> >> systems.
-> >> 
-> >> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> >> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
-> >> Reviewed-by: Mark Rutland <mark.rutland@arm.com>
-> >> ---
-> >> Changes in v2:
-> >> - Add "#ifdef CONFIG_ARM" as per Will Deacon
-> >> 
-> >> Changes in v3:
-> >> - change property name to arm,cntvoff-not-fw-configured and specify
-> >> 
-> >>    that the value of CNTHCTL.PL1PC(T)EN must still be the reset value
-> >>    of 1 as per Mark Rutland
-> >> 
-> >> Changes in v4:
-> >> - change property name to arm,cpu-registers-not-fw-configured and
-> >> 
-> >>    specify that all cpu registers must have architected reset values
-> >>    per Mark Rutland
-> >> 
-> >> - change from "#ifdef CONFIG_ARM" to "if (IS_ENABLED(CONFIG_ARM))" per
-> >> 
-> >>    Arnd Bergmann
-> >> 
-> >> ---
-> >> 
-> >>   Documentation/devicetree/bindings/arm/arch_timer.txt | 8 ++++++++
-> >>   drivers/clocksource/arm_arch_timer.c                 | 8 ++++++++
-> >>   2 files changed, 16 insertions(+)
-> > 
-> > Do you know what the status of this patch is?  This patch and Sonny's
-> > patch at <https://patchwork.kernel.org/patch/5051901/> are needed on
-> > Rockchip rk3288 for some specific things:
-> > 
-> > 1. To make SMP happy with coreboot.
-> > 
-> > 2. To (I assume) make SMP happy after S2R (no matter which firmware is
-> > used since I don't think anyone has PSCI for rk3288).
-> > 
-> > ...we still need a DTS entry atop these patches, but that's trivial to
-> > add once these land.
-> > 
-> > Thanks!
-
+Alan
