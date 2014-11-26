@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505AbaKZMYv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 07:24:51 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:47165 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752370AbaKZMYt (ORCPT
+	id S1752519AbaKZMZh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 07:25:37 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:39053 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770AbaKZMZf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 07:24:49 -0500
-Date: Wed, 26 Nov 2014 12:19:03 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: josh@joshtriplett.org, rdunlap@infradead.org, pieter@boesman.nl,
-        alexander.h.duyck@intel.com, viro@zeniv.linux.org.uk, ast@plumgrid.com,
-        akpm@linux-foundation.org, beber@meleeweb.net,
-        catalina.mocanu@gmail.com, dborkman@redhat.com, edumazet@google.com,
-        ebiederm@xmission.com, fabf@skynet.be,
-        fuse-devel@lists.sourceforge.net, geert@linux-m68k.org,
-        hughd@google.com, iulia.manda21@gmail.com, JBeulich@suse.com,
-        bfields@fieldses.org, jlayton@poochiereds.net,
-        linux-api@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        mcgrof@suse.com, mattst88@gmail.com, mgorman@suse.de, mst@redhat.com,
-        miklos@szeredi.hu, netdev@vger.kernel.org, oleg@redhat.com,
-        Paul.Durrant@citrix.com, paulmck@linux.vnet.ibm.com,
-        pefoley2@pefoley.com, tgraf@suug.ch, therbert@google.com,
-        trond.myklebust@primarydata.com, willemb@google.com,
-        xiaoguangrong@linux.vnet.ibm.com, zhenglong.cai@cs2c.com.cn
-Subject: Re: [PATCH v4 0/7] kernel tinification: optionally compile out
- splice family of syscalls (splice, vmsplice, tee and sendfile)
-Message-ID: <20141126121903.5231c854@lxorguk.ukuu.org.uk>
-In-Reply-To: <20141125.140441.401150380839514113.davem@davemloft.net>
-References: <5474ABB6.3030400@infradead.org>
-	<20141125.121305.2094097848188324942.davem@davemloft.net>
-	<20141125185310.GA24891@cloud>
-	<20141125.140441.401150380839514113.davem@davemloft.net>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Nov 2014 07:25:35 -0500
+Content-Type: text/plain; charset=koi8-r
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH 2/3] i2c: slave-eeprom: add eeprom simulator driver
+From: Alexander Kochetkov <al.kochet@gmail.com>
+In-Reply-To: <20141122181229.GB9698@katana>
+Date: Wed, 26 Nov 2014 15:25:29 +0300
+Cc: Stijn Devriendt <highguy@gmail.com>, linux-i2c@vger.kernel.org,
+        linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        Simon Horman <horms@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, Jean Delvare <jdelvare@suse.de>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <2A7C987F-15E0-46FD-A711-E7F5BA9893FC@gmail.com>
+References: <1416326695-13083-1-git-send-email-wsa@the-dreams.de> <1416326695-13083-3-git-send-email-wsa@the-dreams.de> <CAOY=C6FSXWn2AKn9gp0oU69U8VkkyJAE7MMUTZsToy0P_Tf6AA@mail.gmail.com> <20141122181229.GB9698@katana>
+To: Wolfram Sang <wsa@the-dreams.de>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Nov 2014 14:04:41 -0500 (EST)
-David Miller <davem@davemloft.net> wrote:
 
-> From: josh@joshtriplett.org
-> Date: Tue, 25 Nov 2014 10:53:10 -0800
-> 
-> > It's not a "slippery slope"; it's been our standard practice for ages.
-> 
-> We've never put an entire class of generic system calls behind
-> a config option.
+22 нояб. 2014 г., в 21:12, Wolfram Sang <wsa@the-dreams.de> написал(а):
 
-Try running an original MCC Linux binary and C lib on a current kernel
+> IMO a repeated start is to ensure that two messages arrive at the slave
+> without interruption from another master. I can't think why a slave
+> should know which type of start that was. In fact, if it does that would
+> raise an eyebrow for me. Do you have an example?
 
-We've put *entire binary formats* behind a config option. We've put older
-syscalls behind it, we've put sysfs behind it, sysctl behind it, the
-older microcode interfaces behind it, ISA bus as a concept behind
-options. VDSO, IPC, even 32bit support ... the list goes on and on.
+It is used to implement Device ID reading.
+Not sure, that the feature is really needed for the first release.
 
-I'd say those were far more generic on the whole than splice/sendfile.
+See [1] "3.1.17 Device ID" chapter on page "20 of 64"
+See [2] "7.2.2 Device ID (PCA9671 ID field)" chapter
 
-Alan
+[1] UM10204 I2C-bus specification and user manual (http://www.nxp.com/documents/user_manual/UM10204.pdf)
+[2] PCA9671 (http://www.nxp.com/documents/data_sheet/PCA9671.pdf)
+
+Alexander.
+
