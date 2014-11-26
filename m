@@ -1,53 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527AbaKZM2k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 07:28:40 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57191 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484AbaKZM2i (ORCPT
+	id S1751632AbaKZMbH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 07:31:07 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:55308 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782AbaKZMbF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 07:28:38 -0500
-From: Athira Lekshmi C V <andnlnbn18@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: paul.gortmaker@windriver.com, gulsah.1004@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Athira Lekshmi C V <andnlnbn18@gmail.com>
-Subject: [PATCH] Drivers:staging:octeon: Fixed checkpatch warning
-Date: Wed, 26 Nov 2014 17:58:37 +0530
-Message-Id: <1417004917-1398-1-git-send-email-andnlnbn18@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 26 Nov 2014 07:31:05 -0500
+Message-ID: <5475C802.4050903@linaro.org>
+Date: Wed, 26 Nov 2014 13:30:58 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>
+CC: Doug Anderson <dianders@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        Rob Herring <robh+dt@kernel.org>, Sonny Rao <sonnyrao@chromium.org>
+Subject: Re: [PATCH v4] clocksource: arch_timer: Allow the device tree to
+ specify uninitialized timer registers
+References: <1412753627-28287-1-git-send-email-sonnyrao@chromium.org> <CAD=FV=VhaMo4fNide3a2S6jdLiq2pyOqY3hmx7ai0iDTPxCsPA@mail.gmail.com> <5475BEAC.9020208@linaro.org> <4822206.0yqmIumDEc@diego>
+In-Reply-To: <4822206.0yqmIumDEc@diego>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed the checkpatch warning:
-WARNING: Missing a blank line after declarations
+On 11/26/2014 01:06 PM, Heiko Stübner wrote:
+> Hi Daniel,
+>
+> Am Mittwoch, 26. November 2014, 12:51:08 schrieb Daniel Lezcano:
+>> Hi Doug, Olof,
+>>
+>> IIUC, it sounds like this patch is needed from some other patches in
+>> arm-soc. Olof was proposing to take this patch through its tree to
+>> facilitate the integration.
+>>
+>> Olof, is it this patch you were worried about ?
+>
+> I think this is one of two patches in question.
+>
+> "clocksource: arch_timer: Fix code to use physical timers when requested" [0]
+> would be the second one.
+>
+> And the patch for arm-soc that Olof means would be "ARM: dts: rk3288: add
+> arm,cpu-registers-not-fw-configured" [1].
 
-Signed-off-by: Athira Lekshmi C V <andnlnbn18@gmail.com>
----
- drivers/staging/octeon/ethernet-rx.c |    2 ++
- 1 file changed, 2 insertions(+)
+Ok, so IIUC, "clocksource: arch_timer: Fix code to use physical timers 
+when requested" should go via arm's tree, right ?
 
-diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
-index 44e372f..a7ff01c 100644
---- a/drivers/staging/octeon/ethernet-rx.c
-+++ b/drivers/staging/octeon/ethernet-rx.c
-@@ -84,6 +84,7 @@ static int cvm_irq_cpu;
- static void cvm_oct_enable_napi(void *_)
- {
- 	int cpu = smp_processor_id();
-+
- 	napi_schedule(&cvm_oct_napi[cpu].napi);
- }
- 
-@@ -296,6 +297,7 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
- 			union cvmx_pow_wq_int_cntx counts;
- 			int backlog;
- 			int cores_in_use = core_state.baseline_cores - atomic_read(&core_state.available_cores);
-+
- 			counts.u64 = cvmx_read_csr(CVMX_POW_WQ_INT_CNTX(pow_receive_group));
- 			backlog = counts.s.iq_cnt + counts.s.ds_cnt;
- 			if (backlog > budget * cores_in_use && napi != NULL)
+
+
+> Heiko
+>
+> [0]
+> https://git.linaro.org/people/daniel.lezcano/linux.git/commit/04f71c2cae54dc26b2a236c787ea8d56c174150b
+> [1] https://lkml.org/lkml/2014/11/25/975
+>
+>>
+>> Thanks
+>>
+>>     -- Daniel
+>>
+>> On 11/20/2014 12:01 AM, Doug Anderson wrote:
+>>> Daniel,
+>>>
+>>> On Wed, Oct 8, 2014 at 12:33 AM, Sonny Rao <sonnyrao@chromium.org> wrote:
+>>>> From: Doug Anderson <dianders@chromium.org>
+>>>>
+>>>> Some 32-bit (ARMv7) systems are architected like this:
+>>>>
+>>>> * The firmware doesn't know and doesn't care about hypervisor mode and
+>>>>
+>>>>     we don't want to add the complexity of hypervisor there.
+>>>>
+>>>> * The firmware isn't involved in SMP bringup or resume.
+>>>>
+>>>> * The ARCH timer come up with an uninitialized offset (CNTVOFF)
+>>>>
+>>>>     between the virtual and physical counters.  Each core gets a
+>>>>     different random offset.
+>>>>
+>>>> * The device boots in "Secure SVC" mode.
+>>>>
+>>>> * Nothing has touched the reset value of CNTHCTL.PL1PCEN or
+>>>>
+>>>>     CNTHCTL.PL1PCTEN (both default to 1 at reset)
+>>>>
+>>>> On systems like the above, it doesn't make sense to use the virtual
+>>>> counter.  There's nobody managing the offset and each time a core goes
+>>>> down and comes back up it will get reinitialized to some other random
+>>>> value.
+>>>>
+>>>> This adds an optional property which can inform the kernel of this
+>>>> situation, and firmware is free to remove the property if it is going
+>>>> to initialize the CNTVOFF registers when each CPU comes out of reset.
+>>>>
+>>>> Currently, the best course of action in this case is to use the
+>>>> physical timer, which is why it is important that CNTHCTL hasn't been
+>>>> changed from its reset value and it's a reasonable assumption given
+>>>> that the firmware has never entered HYP mode.
+>>>>
+>>>> Note that it's been said that on ARMv8 systems the firmware and
+>>>> kernel really can't be architected as described above.  That means
+>>>> using the physical timer like this really only makes sense for ARMv7
+>>>> systems.
+>>>>
+>>>> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>>>> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+>>>> Reviewed-by: Mark Rutland <mark.rutland@arm.com>
+>>>> ---
+>>>> Changes in v2:
+>>>> - Add "#ifdef CONFIG_ARM" as per Will Deacon
+>>>>
+>>>> Changes in v3:
+>>>> - change property name to arm,cntvoff-not-fw-configured and specify
+>>>>
+>>>>     that the value of CNTHCTL.PL1PC(T)EN must still be the reset value
+>>>>     of 1 as per Mark Rutland
+>>>>
+>>>> Changes in v4:
+>>>> - change property name to arm,cpu-registers-not-fw-configured and
+>>>>
+>>>>     specify that all cpu registers must have architected reset values
+>>>>     per Mark Rutland
+>>>>
+>>>> - change from "#ifdef CONFIG_ARM" to "if (IS_ENABLED(CONFIG_ARM))" per
+>>>>
+>>>>     Arnd Bergmann
+>>>>
+>>>> ---
+>>>>
+>>>>    Documentation/devicetree/bindings/arm/arch_timer.txt | 8 ++++++++
+>>>>    drivers/clocksource/arm_arch_timer.c                 | 8 ++++++++
+>>>>    2 files changed, 16 insertions(+)
+>>>
+>>> Do you know what the status of this patch is?  This patch and Sonny's
+>>> patch at <https://patchwork.kernel.org/patch/5051901/> are needed on
+>>> Rockchip rk3288 for some specific things:
+>>>
+>>> 1. To make SMP happy with coreboot.
+>>>
+>>> 2. To (I assume) make SMP happy after S2R (no matter which firmware is
+>>> used since I don't think anyone has PSCI for rk3288).
+>>>
+>>> ...we still need a DTS entry atop these patches, but that's trivial to
+>>> add once these land.
+>>>
+>>> Thanks!
+>
+
+
 -- 
-1.7.9.5
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
