@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752023AbaKZFKv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 00:10:51 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:43086 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750962AbaKZFKu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 00:10:50 -0500
-Message-ID: <547560C3.1090907@linux.vnet.ibm.com>
-Date: Wed, 26 Nov 2014 10:40:27 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752118AbaKZFLr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 00:11:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54255 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751054AbaKZFLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 00:11:45 -0500
+Date: Wed, 26 Nov 2014 00:11:31 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: =?iso-8859-1?Q?J=FCrgen_Gro=DF?= <jgross@suse.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141126051131.GA21318@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	=?iso-8859-1?Q?J=FCrgen_Gro=DF?= <jgross@suse.com>,
+	the arch/x86 maintainers <x86@kernel.org>,
+	Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <20141114213124.GB3344@redhat.com>
+ <CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
+ <20141115213405.GA31971@redhat.com>
+ <20141116014006.GA5016@redhat.com>
+ <CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
+ <20141126002501.GA11752@redhat.com>
+ <CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>
+ <5475596A.9010301@suse.com>
+ <CA+55aFx1SiFBzmA=k9jHxi3cZE3Ei_+2NHepujgf86KEvkz8eQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Shuah Khan <shuahkh@osg.samsung.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org
-CC: peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de,
-        james.hogan@imgtec.com, avagin@openvz.org, Paul.Clothier@imgtec.com,
-        palves@redhat.com, oleg@redhat.com, dhowells@redhat.com,
-        davej@redhat.com, davem@davemloft.net, mikey@neuling.org,
-        benh@kernel.crashing.org, sukadev@linux.vnet.ibm.com,
-        mpe@ellerman.id.au, sam.bobroff@au1.ibm.com, kirjanov@gmail.com
-Subject: Re: [V5 7/7] selftests, powerpc: Add test case for TM related ptrace
- interface
-References: <1416902731-22446-1-git-send-email-khandual@linux.vnet.ibm.com> <1416902731-22446-8-git-send-email-khandual@linux.vnet.ibm.com> <5474B72A.7040403@osg.samsung.com>
-In-Reply-To: <5474B72A.7040403@osg.samsung.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112605-0029-0000-0000-000000AD99FA
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFx1SiFBzmA=k9jHxi3cZE3Ei_+2NHepujgf86KEvkz8eQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2014 10:36 PM, Shuah Khan wrote:
-> On 11/25/2014 01:05 AM, Anshuman Khandual wrote:
->> > This patch adds one more test case called 'tm-ptrace' targeting TM
->> > related ptrace interface. This test creates one child process to
->> > run some basic TM transactions and the parent process attaches the
->> > child to do some ptrace probing using the recently added regset
->> > interfaces. The parent process then compares the received values
->> > against the expected values to verify whether it has passed the
->> > given test or not.
->> > 
->> > Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
->> > ---
->> >  tools/testing/selftests/powerpc/tm/Makefile    |   2 +-
->> >  tools/testing/selftests/powerpc/tm/tm-ptrace.c | 542 +++++++++++++++++++++++++
->> >  2 files changed, 543 insertions(+), 1 deletion(-)
->> >  create mode 100644 tools/testing/selftests/powerpc/tm/tm-ptrace.c
->> > 
->> > diff --git a/tools/testing/selftests/powerpc/tm/Makefile b/tools/testing/selftests/powerpc/tm/Makefile
->> > index 2cede23..71d400a 100644
->> > --- a/tools/testing/selftests/powerpc/tm/Makefile
->> > +++ b/tools/testing/selftests/powerpc/tm/Makefile
->> > @@ -1,4 +1,4 @@
->> > -PROGS := tm-resched-dscr
->> > +PROGS := tm-resched-dscr tm-ptrace
->> >  
-> Could you please add .gitignore for the binaries in this directory
-> to avoid git status including the binaries it in its output.
+On Tue, Nov 25, 2014 at 09:09:45PM -0800, Linus Torvalds wrote:
+ > On Nov 25, 2014 8:39 PM, "Jürgen Groß" <jgross@suse.com> wrote:
+ > >
+ > > I COULD trigger it with 3.17. Took much longer, but I've seen it once.
+ > > And from Xen hypervisor data it was clear it was the same bug (cpu
+ > > spinning in pmd_lock()).
+ > 
+ > I'm still hoping you can give a back trace. I'd like to know what access it
+ > is that can trigger this, and preferably what the call chain to it was...
+ > 
+ > I do believe it happened in 3.17, I just want to understand the but more -
+ > not just apply the fix..
+ > 
+ > Most of Dave's lockup back traces did not have the whole page fault in
+ > them, so while Dave has seen this too, there might be different symptoms...
 
-Sure, will add one.
+Before giving 3.17 a multi-day workout, I'll try rc6 with Jürgen's patch
+to see if that makes any difference at all for me.
+
+	Dave
 
