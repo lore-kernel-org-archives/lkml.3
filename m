@@ -1,95 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936AbaKZWqJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 17:46:09 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:44144 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651AbaKZWnQ (ORCPT
+	id S1753512AbaKZWqH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 17:46:07 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:60776 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658AbaKZWqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 17:43:16 -0500
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: linux-kernel@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH v2 03/11] media: exynos-gsc: use vb2_ops_wait_prepare/finish helper
-Date: Wed, 26 Nov 2014 22:42:26 +0000
-Message-Id: <1417041754-8714-4-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417041754-8714-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1417041754-8714-1-git-send-email-prabhakar.csengg@gmail.com>
+	Wed, 26 Nov 2014 17:46:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <1416903008-4160-1-git-send-email-addy.ke@rock-chips.com>
+References: <1415970338-2637-1-git-send-email-addy.ke@rock-chips.com>
+	<1416903008-4160-1-git-send-email-addy.ke@rock-chips.com>
+Date: Wed, 26 Nov 2014 14:46:00 -0800
+X-Google-Sender-Auth: f6YFSbacZheXcywepkyx-slMxQo
+Message-ID: <CAD=FV=UmG1okxJ5JV-1cuRRQJi7EEPXc7Q90sWjfMWBqb7VSMw@mail.gmail.com>
+Subject: Re: [PATCH v2] mmc: dw_mmc: add quirk for broken data transfer over scheme
+From: Doug Anderson <dianders@chromium.org>
+To: Addy Ke <addy.ke@rock-chips.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Alexandru Stan <amstan@chromium.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, lintao <lintao@rock-chips.com>,
+        chenfen <chenfen@rock-chips.com>, zyf <zyf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        zhangqing <zhangqing@rock-chips.com>, Lin Huang <hl@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch drops driver specific wait_prepare() and
-wait_finish() callbacks from vb2_ops and instead uses
-the the helpers vb2_ops_wait_prepare/finish() provided
-by the vb2 core, the lock member of the queue needs
-to be initalized to a mutex so that vb2 helpers
-vb2_ops_wait_prepare/finish() can make use of it.
+Hi,
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
----
- drivers/media/platform/exynos-gsc/gsc-core.h | 12 ------------
- drivers/media/platform/exynos-gsc/gsc-m2m.c  |  6 ++++--
- 2 files changed, 4 insertions(+), 14 deletions(-)
+On Tue, Nov 25, 2014 at 12:10 AM, Addy Ke <addy.ke@rock-chips.com> wrote:
+> This patch add a new quirk to add a s/w timer to notify the driver
+> to terminate current transfer and report a data timeout to the core,
+> if DTO interrupt does NOT come within the given time.
+>
+> dw_mmc call mmc_request_done func to finish transfer depends on
+> DTO interrupt. If DTO interrupt does not come in sending data state,
+> the current transfer will be blocked.
+>
+> But this case really exists, when driver reads tuning data from
+> card on RK3288-pink2 board. I measured waveforms by oscilloscope
+> and found that card clock was always on and data lines were always
+> holded high level in sending data state.
+>
+> We got the reply from synopsys:
+> There are two counters but both use the same value of [31:8] bits.
+> Data timeout counter doesn't wait for stop clock and you should get
+> DRTO even when the clock is not stopped.
+> Host Starvation timeout counter is triggered with stop clock condition.
+>
+> This means that host should get DRTO and DTO interrupt.
+>
+> But we really don't get any data-related interrupt in RK3X SoCs.
+> And driver can't get data transfer state, it can do nothing but wait for.
 
-diff --git a/drivers/media/platform/exynos-gsc/gsc-core.h b/drivers/media/platform/exynos-gsc/gsc-core.h
-index 0abdb17..fa572aa 100644
---- a/drivers/media/platform/exynos-gsc/gsc-core.h
-+++ b/drivers/media/platform/exynos-gsc/gsc-core.h
-@@ -466,18 +466,6 @@ static inline void gsc_hw_clear_irq(struct gsc_dev *dev, int irq)
- 	writel(cfg, dev->regs + GSC_IRQ);
- }
- 
--static inline void gsc_lock(struct vb2_queue *vq)
--{
--	struct gsc_ctx *ctx = vb2_get_drv_priv(vq);
--	mutex_lock(&ctx->gsc_dev->lock);
--}
--
--static inline void gsc_unlock(struct vb2_queue *vq)
--{
--	struct gsc_ctx *ctx = vb2_get_drv_priv(vq);
--	mutex_unlock(&ctx->gsc_dev->lock);
--}
--
- static inline bool gsc_ctx_state_is_set(u32 mask, struct gsc_ctx *ctx)
- {
- 	unsigned long flags;
-diff --git a/drivers/media/platform/exynos-gsc/gsc-m2m.c b/drivers/media/platform/exynos-gsc/gsc-m2m.c
-index 74e1de6..d5cffef 100644
---- a/drivers/media/platform/exynos-gsc/gsc-m2m.c
-+++ b/drivers/media/platform/exynos-gsc/gsc-m2m.c
-@@ -267,8 +267,8 @@ static struct vb2_ops gsc_m2m_qops = {
- 	.queue_setup	 = gsc_m2m_queue_setup,
- 	.buf_prepare	 = gsc_m2m_buf_prepare,
- 	.buf_queue	 = gsc_m2m_buf_queue,
--	.wait_prepare	 = gsc_unlock,
--	.wait_finish	 = gsc_lock,
-+	.wait_prepare	 = vb2_ops_wait_prepare,
-+	.wait_finish	 = vb2_ops_wait_finish,
- 	.stop_streaming	 = gsc_m2m_stop_streaming,
- 	.start_streaming = gsc_m2m_start_streaming,
- };
-@@ -590,6 +590,7 @@ static int queue_init(void *priv, struct vb2_queue *src_vq,
- 	src_vq->mem_ops = &vb2_dma_contig_memops;
- 	src_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
- 	src_vq->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_COPY;
-+	src_vq->lock = &ctx->gsc_dev->lock;
- 
- 	ret = vb2_queue_init(src_vq);
- 	if (ret)
-@@ -603,6 +604,7 @@ static int queue_init(void *priv, struct vb2_queue *src_vq,
- 	dst_vq->mem_ops = &vb2_dma_contig_memops;
- 	dst_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
- 	dst_vq->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_COPY;
-+	dst_vq->lock = &ctx->gsc_dev->lock;
- 
- 	return vb2_queue_init(dst_vq);
- }
--- 
-1.9.1
+Have you asked someone on your IC team to confirm this is an SoC
+errata on your SoC?  ...or is there something else we could be doing
+wrong (overclocking?  jitter in the clock?  bad dividers?) that could
+be causing this problem?
 
+
+>  #ifdef CONFIG_OF
+>  static struct dw_mci_of_quirks {
+>         char *quirk;
+> @@ -2513,6 +2549,9 @@ static struct dw_mci_of_quirks {
+>         }, {
+>                 .quirk  = "disable-wp",
+>                 .id     = DW_MCI_QUIRK_NO_WRITE_PROTECT,
+> +       }, {
+> +               .quirk  = "broken-dto",
+> +               .id     = DW_MCI_QUIRK_BROKEN_DTO,
+
+You're adding a device tree property without any binding.  If you need
+to add this please send a patch before this one modifying the device
+tree bindings.
+
+...but that brings up the question: do you _really_ need to add a
+property?  You already know that all rk3288 SoCs need this and you
+already know that you're an rk3288 SoC.  Just add this quirk in the
+rk3288 code always and be done with it.  ...and if this is also needed
+on other Rockchip parts, add it there too.
+
+-Doug
