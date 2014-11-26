@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613AbaKZWqz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 17:46:55 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:55410 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673AbaKZWnO (ORCPT
+	id S1753942AbaKZWrS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 17:47:18 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:36495 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752535AbaKZWrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 17:43:14 -0500
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: linux-kernel@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-Subject: [PATCH v2 01/11] media: s3c-camif: use vb2_ops_wait_prepare/finish helper
-Date: Wed, 26 Nov 2014 22:42:24 +0000
-Message-Id: <1417041754-8714-2-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417041754-8714-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1417041754-8714-1-git-send-email-prabhakar.csengg@gmail.com>
+	Wed, 26 Nov 2014 17:47:16 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
+        Josh Cartwright <joshc@codeaurora.org>
+Subject: [PATCH] spmi: Remove shutdown/suspend/resume kernel-doc
+Date: Wed, 26 Nov 2014 14:47:09 -0800
+Message-Id: <1417042029-11227-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 2.1.0.61.ge50deb1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch drops driver specific wait_prepare() and
-wait_finish() callbacks from vb2_ops and instead uses
-the the helpers vb2_ops_wait_prepare/finish() provided
-by the vb2 core, the lock member of the queue needs
-to be initalized to a mutex so that vb2 helpers
-vb2_ops_wait_prepare/finish() can make use of it.
+These members of the driver structure are not present.
+Remove them from the kernel-doc.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Cc: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Cc: Josh Cartwright <joshc@codeaurora.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/media/platform/s3c-camif/camif-capture.c | 17 +++--------------
- 1 file changed, 3 insertions(+), 14 deletions(-)
+ include/linux/spmi.h | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/drivers/media/platform/s3c-camif/camif-capture.c b/drivers/media/platform/s3c-camif/camif-capture.c
-index aa40c82..54479d6 100644
---- a/drivers/media/platform/s3c-camif/camif-capture.c
-+++ b/drivers/media/platform/s3c-camif/camif-capture.c
-@@ -536,24 +536,12 @@ static void buffer_queue(struct vb2_buffer *vb)
- 	spin_unlock_irqrestore(&camif->slock, flags);
- }
- 
--static void camif_lock(struct vb2_queue *vq)
--{
--	struct camif_vp *vp = vb2_get_drv_priv(vq);
--	mutex_lock(&vp->camif->lock);
--}
--
--static void camif_unlock(struct vb2_queue *vq)
--{
--	struct camif_vp *vp = vb2_get_drv_priv(vq);
--	mutex_unlock(&vp->camif->lock);
--}
--
- static const struct vb2_ops s3c_camif_qops = {
- 	.queue_setup	 = queue_setup,
- 	.buf_prepare	 = buffer_prepare,
- 	.buf_queue	 = buffer_queue,
--	.wait_prepare	 = camif_unlock,
--	.wait_finish	 = camif_lock,
-+	.wait_prepare	 = vb2_ops_wait_prepare,
-+	.wait_finish	 = vb2_ops_wait_finish,
- 	.start_streaming = start_streaming,
- 	.stop_streaming	 = stop_streaming,
- };
-@@ -1161,6 +1149,7 @@ int s3c_camif_register_video_node(struct camif_dev *camif, int idx)
- 	q->buf_struct_size = sizeof(struct camif_buffer);
- 	q->drv_priv = vp;
- 	q->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC;
-+	q->lock = &vp->camif->lock;
- 
- 	ret = vb2_queue_init(q);
- 	if (ret)
+diff --git a/include/linux/spmi.h b/include/linux/spmi.h
+index 91f5eab9e428..f84212cd3b7d 100644
+--- a/include/linux/spmi.h
++++ b/include/linux/spmi.h
+@@ -134,9 +134,6 @@ void spmi_controller_remove(struct spmi_controller *ctrl);
+  *		this structure.
+  * @probe:	binds this driver to a SPMI device.
+  * @remove:	unbinds this driver from the SPMI device.
+- * @shutdown:	standard shutdown callback used during powerdown/halt.
+- * @suspend:	standard suspend callback used during system suspend.
+- * @resume:	standard resume callback used during system resume.
+  *
+  * If PM runtime support is desired for a slave, a device driver can call
+  * pm_runtime_put() from their probe() routine (and a balancing
 -- 
-1.9.1
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
 
