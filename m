@@ -1,136 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930AbaKZLGD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 06:06:03 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:48358 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848AbaKZLGA (ORCPT
+	id S1752041AbaKZLL6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 06:11:58 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46437 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751036AbaKZLL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 06:06:00 -0500
-Message-ID: <5475B40F.5030209@linaro.org>
-Date: Wed, 26 Nov 2014 11:05:51 +0000
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-CC: Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Wed, 26 Nov 2014 06:11:57 -0500
+Date: Wed, 26 Nov 2014 11:11:07 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Marc Zyngier <Marc.Zyngier@arm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Tim Sander <tim@krieglstein.org>
-Subject: Re: [PATCH 3.18-rc3 v9 1/5] irqchip: gic: Finer grain locking for
- gic_raise_softirq
-References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org> <1416936401-5147-1-git-send-email-daniel.thompson@linaro.org> <1416936401-5147-2-git-send-email-daniel.thompson@linaro.org> <5474BF19.3040707@arm.com>
-In-Reply-To: <5474BF19.3040707@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>
+Subject: Re: [PATCH v11 1/2] irqchip: gicv2m: Add support for ARM GICv2m
+ MSI(-X) doorbell
+Message-ID: <20141126111107.GA4340@leverpostej>
+References: <1416941243-7181-1-git-send-email-marc.zyngier@arm.com>
+ <1416941243-7181-2-git-send-email-marc.zyngier@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416941243-7181-2-git-send-email-marc.zyngier@arm.com>
+Thread-Topic: [PATCH v11 1/2] irqchip: gicv2m: Add support for ARM GICv2m
+ MSI(-X) doorbell
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+acceptlanguage: en-GB, en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/11/14 17:40, Marc Zyngier wrote:
-> Hi Daniel,
-> 
-> On 25/11/14 17:26, Daniel Thompson wrote:
->> irq_controller_lock is used for multiple purposes within the gic driver.
->> Primarily it is used to make register read-modify-write sequences atomic.
->> It is also used by gic_raise_softirq() in order that the big.LITTLE
->> migration logic can figure out when it is safe to migrate interrupts
->> between physical cores.
->>
->> The second usage of irq_controller_lock is difficult to discern when
->> reviewing the code because the migration itself takes place outside
->> the lock.
->>
->> This patch makes the second usage more explicit by splitting it out into
->> a separate lock and providing better comments.
-> 
-> While we're at it, how about an additional patch that would make this
-> lock disappear entirely when the big-little stuff is not compiled in,
-> which is likely to be the case on a lot of (dare I say most?) systems?
-> That will save expensive barriers that we definitely could do without.
+Hi Marc,
 
-Will do.
+On Tue, Nov 25, 2014 at 06:47:22PM +0000, Marc Zyngier wrote:
+> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> 
+> ARM GICv2m specification extends GICv2 to support MSI(-X) with
+> a new register frame. This allows a GICv2 based system to support
+> MSI with minimal changes.
+> 
+> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> [maz: converted the driver to use stacked irq domains,
+>       updated changelog]
+> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+> ---
+>  arch/arm64/Kconfig              |   1 +
+>  drivers/irqchip/Kconfig         |   6 +
+>  drivers/irqchip/Makefile        |   1 +
+>  drivers/irqchip/irq-gic-v2m.c   | 333 ++++++++++++++++++++++++++++++++++++++++
+>  drivers/irqchip/irq-gic.c       |   4 +
+>  include/linux/irqchip/arm-gic.h |   2 +
+>  6 files changed, 347 insertions(+)
+>  create mode 100644 drivers/irqchip/irq-gic-v2m.c
 
+[...]
 
-> It otherwise looks good to me.
-> 
-> Thanks,
-> 
-> 	M.
-> 
->> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> Cc: Jason Cooper <jason@lakedaemon.net>
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Cc: Marc Zyngier <marc.zyngier@arm.com>
->> ---
->>  drivers/irqchip/irq-gic.c | 21 ++++++++++++++++++---
->>  1 file changed, 18 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
->> index 38493ff28fa5..bb4bc20573ea 100644
->> --- a/drivers/irqchip/irq-gic.c
->> +++ b/drivers/irqchip/irq-gic.c
->> @@ -73,6 +73,12 @@ struct gic_chip_data {
->>  static DEFINE_RAW_SPINLOCK(irq_controller_lock);
->>  
->>  /*
->> + * This lock is used by the big.LITTLE migration code to ensure no
->> + * IPIs can be pended on the old core after the map has been updated.
->> + */
->> +static DEFINE_RAW_SPINLOCK(cpu_map_migration_lock);
->> +
->> +/*
->>   * The GIC mapping of CPU interfaces does not necessarily match
->>   * the logical CPU numbering.  Let's use a mapping as returned
->>   * by the GIC itself.
->> @@ -624,7 +630,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
->>  	int cpu;
->>  	unsigned long flags, map = 0;
->>  
->> -	raw_spin_lock_irqsave(&irq_controller_lock, flags);
->> +	raw_spin_lock_irqsave(&cpu_map_migration_lock, flags);
->>  
->>  	/* Convert our logical CPU mask into a physical one. */
->>  	for_each_cpu(cpu, mask)
->> @@ -639,7 +645,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
->>  	/* this always happens on GIC0 */
->>  	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
->>  
->> -	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
->> +	raw_spin_unlock_irqrestore(&cpu_map_migration_lock, flags);
->>  }
->>  #endif
->>  
->> @@ -710,8 +716,17 @@ void gic_migrate_target(unsigned int new_cpu_id)
->>  
->>  	raw_spin_lock(&irq_controller_lock);
->>  
->> -	/* Update the target interface for this logical CPU */
->> +	/*
->> +	 * Update the target interface for this logical CPU
->> +	 *
->> +	 * From the point we release the cpu_map_migration_lock any new
->> +	 * SGIs will be pended on the new cpu which makes the set of SGIs
->> +	 * pending on the old cpu static. That means we can defer the
->> +	 * migration until after we have released the irq_controller_lock.
->> +	 */
->> +	raw_spin_lock(&cpu_map_migration_lock);
->>  	gic_cpu_map[cpu] = 1 << new_cpu_id;
->> +	raw_spin_unlock(&cpu_map_migration_lock);
->>  
->>  	/*
->>  	 * Find all the peripheral interrupts targetting the current
->>
-> 
-> 
+> +static int gicv2m_irq_domain_alloc(struct irq_domain *domain, unsigned int virq,
+> +				   unsigned int nr_irqs, void *args)
+> +{
+> +	struct v2m_data *v2m = domain->host_data;
+> +	int hwirq, offset, err = 0;
+> +
+> +	spin_lock(&v2m->msi_cnt_lock);
+> +	offset = find_first_zero_bit(v2m->bm, v2m->nr_spis);
+> +	if (offset < v2m->nr_spis)
+> +		__set_bit(offset, v2m->bm);
+> +	else
+> +		err = -ENOSPC;
+> +	spin_unlock(&v2m->msi_cnt_lock);
+> +
+> +	if (err)
+> +		return err;
+> +
+> +	hwirq = v2m->spi_start + offset;
+> +
+> +	err = gicv2m_irq_gic_domain_alloc(domain, virq, hwirq);
+> +	if (err) {
+> +		gicv2m_unalloc_msi(v2m, hwirq);
+> +		return err;
+> +	}
+> +
+> +	irq_domain_set_hwirq_and_chip(domain, virq, hwirq,
+> +				      &gicv2m_irq_chip, v2m);
+> +
+> +	return 0;
+> +}
+> +
+> +static void gicv2m_irq_domain_free(struct irq_domain *domain,
+> +				   unsigned int virq, unsigned int nr_irqs)
+> +{
+> +	struct irq_data *d = irq_domain_get_irq_data(domain, virq);
+> +	struct v2m_data *v2m = irq_data_get_irq_chip_data(d);
+> +
+> +	BUG_ON(nr_irqs != 1);
 
+We didn't check nr_irqs at all in gicv2m_irq_domain_alloc, which seems a
+bit odd given this BUG_ON.
+
+Is the caller responsible for checking we only allocated one irq, or is
+it only valid to ask for one?
+
+> +	gicv2m_unalloc_msi(v2m, d->hwirq);
+> +	irq_domain_free_irqs_parent(domain, virq, nr_irqs);
+> +}
+> +
+> +static const struct irq_domain_ops gicv2m_domain_ops = {
+> +	.alloc			= gicv2m_irq_domain_alloc,
+> +	.free			= gicv2m_irq_domain_free,
+> +};
+> +
+> +static bool is_msi_spi_valid(u32 base, u32 num)
+> +{
+> +	if (base < V2M_MIN_SPI) {
+> +		pr_err("Invalid MSI base SPI (base:%u)\n", base);
+> +		return false;
+> +	}
+> +
+> +	if ((num == 0) || (base + num > V2M_MAX_SPI)) {
+> +		pr_err("Number of SPIs (%u) exceed maximum (%u)\n",
+> +		       num, V2M_MAX_SPI - V2M_MIN_SPI + 1);
+
+That warning is a bit odd for the num == 0 case. Perhaps
+s/exceed/invalid,/ ?
+
+> +		return false;
+> +	}
+> +
+> +	return true;
+> +}
+> +
+
+[...]
+
+> +static int __init gicv2m_init_one(struct device_node *node,
+> +				  struct irq_domain *parent)
+> +{
+> +	int ret;
+> +	struct v2m_data *v2m;
+> +
+> +	v2m = kzalloc(sizeof(struct v2m_data), GFP_KERNEL);
+
+Minor nit: sizeof(*v2m) would be preferable.
+
+> +	if (!v2m) {
+> +		pr_err("Failed to allocate struct v2m_data.\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	ret = of_address_to_resource(node, 0, &v2m->res);
+> +	if (ret) {
+> +		pr_err("Failed to allocate v2m resource.\n");
+> +		goto err_free_v2m;
+> +	}
+> +
+> +	v2m->base = ioremap(v2m->res.start, resource_size(&v2m->res));
+> +	if (!v2m->base) {
+> +		pr_err("Failed to map GICv2m resource\n");
+> +		ret = -ENOMEM;
+> +		goto err_free_v2m;
+> +	}
+> +
+> +	if (!of_property_read_u32(node, "arm,msi-base-spi", &v2m->spi_start) &&
+> +	    !of_property_read_u32(node, "arm,msi-num-spis", &v2m->nr_spis)) {
+> +		pr_info("Overriding V2M MSI_TYPER (base:%u, num:%u)\n",
+> +			v2m->spi_start, v2m->nr_spis);
+
+It would be nice if we could warn if only one of these properties is
+present.
+
+Thanks,
+Mark.
