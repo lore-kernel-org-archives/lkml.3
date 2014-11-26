@@ -1,83 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752112AbaKZLXV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 06:23:21 -0500
-Received: from mail.us.es ([193.147.175.20]:44995 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751092AbaKZLXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 06:23:19 -0500
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus1 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.98.4/19682. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-103.2/7.5):. 
- Processed in 1.925516 secs); 26 Nov 2014 11:23:13 -0000
-X-Spam-ASN: AS12715 87.216.0.0/16
-X-Envelope-From: pneira@us.es
-Date: Wed, 26 Nov 2014 12:24:49 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Andreas Ruprecht <rupran@einserver.de>
-Cc: Florian Westphal <fw@strlen.de>, Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] net: netfilter: Fix undefined reference to
- nf_nat_redirect_* functions
-Message-ID: <20141126112449.GA4700@salvia>
-References: <1416928034-10882-1-git-send-email-rupran@einserver.de>
- <1416994537-1592-1-git-send-email-rupran@einserver.de>
- <20141126102402.GA24801@breakpoint.cc>
- <5475AC6F.9010902@einserver.de>
+	id S1752344AbaKZLZx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 06:25:53 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:39584 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957AbaKZLZw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 06:25:52 -0500
+Message-ID: <5475B8B8.7090401@arm.com>
+Date: Wed, 26 Nov 2014 11:25:44 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5475AC6F.9010902@einserver.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>
+Subject: Re: [PATCH v11 1/2] irqchip: gicv2m: Add support for ARM GICv2m MSI(-X)
+ doorbell
+References: <1416941243-7181-1-git-send-email-marc.zyngier@arm.com> <1416941243-7181-2-git-send-email-marc.zyngier@arm.com> <20141126111107.GA4340@leverpostej>
+In-Reply-To: <20141126111107.GA4340@leverpostej>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 11:33:19AM +0100, Andreas Ruprecht wrote:
-> Sure.
+Hi Mark,
+
+On 26/11/14 11:11, Mark Rutland wrote:
+> Hi Marc,
 > 
-> When the file is compiled, i.e. CONFIG_NETFILTER_XT_TARGET_REDIRECT is
-> selected, all headers will be included and all functions inside the file
-> will be compiled, regardless of other Kconfig options.
+> On Tue, Nov 25, 2014 at 06:47:22PM +0000, Marc Zyngier wrote:
+>> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+>>
+>> ARM GICv2m specification extends GICv2 to support MSI(-X) with
+>> a new register frame. This allows a GICv2 based system to support
+>> MSI with minimal changes.
+>>
+>> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+>> [maz: converted the driver to use stacked irq domains,
+>>       updated changelog]
+>> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+>> ---
+>>  arch/arm64/Kconfig              |   1 +
+>>  drivers/irqchip/Kconfig         |   6 +
+>>  drivers/irqchip/Makefile        |   1 +
+>>  drivers/irqchip/irq-gic-v2m.c   | 333 ++++++++++++++++++++++++++++++++++++++++
+>>  drivers/irqchip/irq-gic.c       |   4 +
+>>  include/linux/irqchip/arm-gic.h |   2 +
+>>  6 files changed, 347 insertions(+)
+>>  create mode 100644 drivers/irqchip/irq-gic-v2m.c
 > 
-> This means redirect_tg6 and redirect_tg4 will be compiled (which doesn't
-> necessarily mean they will be _called_) but the linker needs to resolve
-> nf_nat_redirect_ipv4() due to the compilation of the redirect_tg4()
-> function.
+> [...]
 > 
-> nf_nat_redirect_ip4() is defined in
-> net/ipv4/netfilter/nf_nat_redirect_ipv4.c but this file is only included
-> into the build when CONFIG_NF_NAT_REDIRECT_IPV4 is enabled.
+>> +static int gicv2m_irq_domain_alloc(struct irq_domain *domain, unsigned int virq,
+>> +				   unsigned int nr_irqs, void *args)
+>> +{
+>> +	struct v2m_data *v2m = domain->host_data;
+>> +	int hwirq, offset, err = 0;
+>> +
+>> +	spin_lock(&v2m->msi_cnt_lock);
+>> +	offset = find_first_zero_bit(v2m->bm, v2m->nr_spis);
+>> +	if (offset < v2m->nr_spis)
+>> +		__set_bit(offset, v2m->bm);
+>> +	else
+>> +		err = -ENOSPC;
+>> +	spin_unlock(&v2m->msi_cnt_lock);
+>> +
+>> +	if (err)
+>> +		return err;
+>> +
+>> +	hwirq = v2m->spi_start + offset;
+>> +
+>> +	err = gicv2m_irq_gic_domain_alloc(domain, virq, hwirq);
+>> +	if (err) {
+>> +		gicv2m_unalloc_msi(v2m, hwirq);
+>> +		return err;
+>> +	}
+>> +
+>> +	irq_domain_set_hwirq_and_chip(domain, virq, hwirq,
+>> +				      &gicv2m_irq_chip, v2m);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static void gicv2m_irq_domain_free(struct irq_domain *domain,
+>> +				   unsigned int virq, unsigned int nr_irqs)
+>> +{
+>> +	struct irq_data *d = irq_domain_get_irq_data(domain, virq);
+>> +	struct v2m_data *v2m = irq_data_get_irq_chip_data(d);
+>> +
+>> +	BUG_ON(nr_irqs != 1);
 > 
-> Now when a kernel config enables CONFIG_NETFILTER_XT_TARGET_REDIRECT but
-> _not_ CONFIG_NF_NAT_REDIRECT_IPV4, the declaration of
-> nf_nat_redirect_ipv4() from the header
-> <net/netfilter/ipv4/nf_nat_redirect.h> will have no definition (i.e., no
-> implementation), causing the linker to report an "undefined reference".
+> We didn't check nr_irqs at all in gicv2m_irq_domain_alloc, which seems a
+> bit odd given this BUG_ON.
 > 
-> Same logic goes for nf_nat_redirect_ipv6().
+> Is the caller responsible for checking we only allocated one irq, or is
+> it only valid to ask for one?
 
-I'd suggest alternatives to resolve this problem:
+We already have a strong guarantee from the alloc path that we'll never
+see nr_irqs != 1, as we don't support MULTI_MSI just yet.
 
-1) Split xt_REDIRECT into ipt_REDIRECT and ip6t_REDIRECT, so we
-restore the state of how this was back in 2012. The main motivation
-behind that change was to reduce memory consumption by combining both
-modules. In other modules, these combinations have been causing us
-problems specifically when IPv6 symbols are used and it's not that
-clean since IPv6 specific code remains there unused in the module even
-if CONFIG_IPV6=n.
+This BUG_ON() is more a debug leftover.
 
-2) Merge nf_nat_redirect_ipv4 and nf_nat_redirect_ipv6 into
-nf_nat_redirect, so we inconditionally build IPv6 redirect code, thus
-xt_REDIRECT always finds the IPv6 symbol that needs even if it doesn't
-use it.
+>> +	gicv2m_unalloc_msi(v2m, d->hwirq);
+>> +	irq_domain_free_irqs_parent(domain, virq, nr_irqs);
+>> +}
+>> +
+>> +static const struct irq_domain_ops gicv2m_domain_ops = {
+>> +	.alloc			= gicv2m_irq_domain_alloc,
+>> +	.free			= gicv2m_irq_domain_free,
+>> +};
+>> +
+>> +static bool is_msi_spi_valid(u32 base, u32 num)
+>> +{
+>> +	if (base < V2M_MIN_SPI) {
+>> +		pr_err("Invalid MSI base SPI (base:%u)\n", base);
+>> +		return false;
+>> +	}
+>> +
+>> +	if ((num == 0) || (base + num > V2M_MAX_SPI)) {
+>> +		pr_err("Number of SPIs (%u) exceed maximum (%u)\n",
+>> +		       num, V2M_MAX_SPI - V2M_MIN_SPI + 1);
+> 
+> That warning is a bit odd for the num == 0 case. Perhaps
+> s/exceed/invalid,/ ?
 
-3) Add #ifdef to xt_REDIRECT.c to make IPv6 specific code, this should
-be a simple and small patch, but it results in #ifdef pollution.
+Sure.
 
-Comments?
+>> +		return false;
+>> +	}
+>> +
+>> +	return true;
+>> +}
+>> +
+> 
+> [...]
+> 
+>> +static int __init gicv2m_init_one(struct device_node *node,
+>> +				  struct irq_domain *parent)
+>> +{
+>> +	int ret;
+>> +	struct v2m_data *v2m;
+>> +
+>> +	v2m = kzalloc(sizeof(struct v2m_data), GFP_KERNEL);
+> 
+> Minor nit: sizeof(*v2m) would be preferable.
+> 
+>> +	if (!v2m) {
+>> +		pr_err("Failed to allocate struct v2m_data.\n");
+>> +		return -ENOMEM;
+>> +	}
+>> +
+>> +	ret = of_address_to_resource(node, 0, &v2m->res);
+>> +	if (ret) {
+>> +		pr_err("Failed to allocate v2m resource.\n");
+>> +		goto err_free_v2m;
+>> +	}
+>> +
+>> +	v2m->base = ioremap(v2m->res.start, resource_size(&v2m->res));
+>> +	if (!v2m->base) {
+>> +		pr_err("Failed to map GICv2m resource\n");
+>> +		ret = -ENOMEM;
+>> +		goto err_free_v2m;
+>> +	}
+>> +
+>> +	if (!of_property_read_u32(node, "arm,msi-base-spi", &v2m->spi_start) &&
+>> +	    !of_property_read_u32(node, "arm,msi-num-spis", &v2m->nr_spis)) {
+>> +		pr_info("Overriding V2M MSI_TYPER (base:%u, num:%u)\n",
+>> +			v2m->spi_start, v2m->nr_spis);
+> 
+> It would be nice if we could warn if only one of these properties is
+> present.
 
-Thanks.
+Yup. I'll tighten that in an additional patch, as Jason has already
+queued this.
+
+Thanks,
+
+	M.
+-- 
+Jazz is not dead. It just smells funny...
