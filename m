@@ -1,88 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862AbaKZAZN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 19:25:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37631 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751486AbaKZAZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 19:25:11 -0500
-Date: Tue, 25 Nov 2014 19:25:01 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141126002501.GA11752@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	the arch/x86 maintainers <x86@kernel.org>
-References: <20141114213124.GB3344@redhat.com>
- <CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
- <20141115213405.GA31971@redhat.com>
- <20141116014006.GA5016@redhat.com>
- <CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
+	id S1751563AbaKZAeJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 19:34:09 -0500
+Received: from g2t2352.austin.hp.com ([15.217.128.51]:46059 "EHLO
+	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002AbaKZAeH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 19:34:07 -0500
+Message-ID: <54751FF6.5050808@hp.com>
+Date: Tue, 25 Nov 2014 19:33:58 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
+        Douglas Hatch <doug.hatch@hp.com>
+Subject: Re: [PATCH v12 09/11] pvqspinlock, x86: Add para-virtualization support
+References: <1413483040-58399-1-git-send-email-Waiman.Long@hp.com> <1413483040-58399-10-git-send-email-Waiman.Long@hp.com> <20141024085437.GV21513@worktop.programming.kicks-ass.net> <544E830C.6070307@hp.com> <20141027180252.GC12989@laptop.dumpdata.com>
+In-Reply-To: <20141027180252.GC12989@laptop.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 15, 2014 at 10:33:19PM -0800, Linus Torvalds wrote:
+On 10/27/2014 02:02 PM, Konrad Rzeszutek Wilk wrote:
+> On Mon, Oct 27, 2014 at 01:38:20PM -0400, Waiman Long wrote:
+>>
+>> My concern is that spin_unlock() can be called in many places, including
+>> loadable kernel modules. Can the paravirt_patch_ident_32() function able to
+>> patch all of them in reasonable time? How about a kernel module loaded later
+>> at run time?
+> It has too. When the modules are loaded the .paravirt symbols are exposed
+> and the module loader patches that.
+>
+> And during bootup time (before modules are loaded) it also patches everything
+> - when it only runs on one CPU.
+>
 
- > I have no ideas left. I'd go for a bisection - rather than try random
- > things, at least bisection will get us a smaller set of suspects if
- > you can go through a few cycles of it. Even if you decide that you
- > want to run for most of a day before you are convinced it's all good,
- > a couple of days should get you a handful of bisection points (that's
- > assuming you hit a couple of bad ones too that turn bad in a shorter
- > while). And 4 or five bisections should get us from 11k commits down
- > to the ~600 commit range. That would be a huge improvement.
+I have been changing the patching code to patch the unlock call sites 
+and it seems to be working now. However, when I manually inserted a 
+kernel module using insmod and run the code in the newly inserted 
+module, I got memory access violation as follows:
 
-There's 8 bisections remaining. The log so far:
+BUG: unable to handle kernel NULL pointer dereference at           (null)
+IP: [<          (null)>]           (null)
+PGD 18d62f3067 PUD 18d476f067 PMD 0
+Oops: 0010 [#1] SMP
+Modules linked in: locktest(OE) ebtable_nat ebtables xt_CHECKSUM 
+iptable_mangle bridge autofs4 8021q garp stp llc ipt_REJECT 
+nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT 
+nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter 
+ip6_tables ipv6 vhost_net macvtap macvlan vhost tun uinput ppdev 
+parport_pc parport sg microcode pcspkr virtio_balloon 
+snd_hda_codec_generic virtio_console snd_hda_intel snd_hda_controller 
+snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_timer snd 
+soundcore virtio_net i2c_piix4 i2c_core ext4(E) jbd2(E) mbcache(E) 
+floppy(E) virtio_blk(E) sr_mod(E) cdrom(E) virtio_pci(E) virtio_ring(E) 
+virtio(E) pata_acpi(E) ata_generic(E) ata_piix(E) dm_mirror(E) 
+dm_region_hash(E) dm_log(E) dm_mod(E) [last unloaded: speedstep_lib]
+CPU: 1 PID: 3907 Comm: run-locktest Tainted: G        W  OE  
+3.17.0-pvqlock #3
+Hardware name: Red Hat KVM, BIOS Bochs 01/01/2011
+task: ffff8818cc5baf90 ti: ffff8818b7094000 task.ti: ffff8818b7094000
+RIP: 0010:[<0000000000000000>]  [<          (null)>]           (null)
+RSP: 0018:ffff8818b7097db0  EFLAGS: 00010246
+RAX: 0000000000000000 RBX: 00000000004c4b40 RCX: 0000000000000000
+RDX: 0000000000000001 RSI: 0000000000000000 RDI: ffff8818d3f052c0
+RBP: ffff8818b7097dd8 R08: 0000000080522014 R09: 0000000000000000
+R10: 0000000000001000 R11: 0000000000000001 R12: 0000000000000001
+R13: 0000000000000000 R14: 0000000000000001 R15: ffff8818b7097ea0
+FS:  00007fb828ece700(0000) GS:ffff88193ec20000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000000 CR3: 00000018cc7e9000 CR4: 00000000000006e0
+Stack:
+  ffffffffa06ff395 ffff8818d465e000 ffffffff8164bec0 0000000000000001
+  0000000000000050 ffff8818b7097e18 ffffffffa06ff785 ffff8818b7097e38
+  0000000000000246 0000000054755e3a 0000000039f8ba72 ffff8818c174f000
+Call Trace:
+  [<ffffffffa06ff395>] ? test_spinlock+0x65/0x90 [locktest]
+  [<ffffffffa06ff785>] etime_show+0xd5/0x120 [locktest]
+  [<ffffffff812a2dc6>] kobj_attr_show+0x16/0x20
+  [<ffffffff8121a7fa>] sysfs_kf_seq_show+0xca/0x1b0
+  [<ffffffff81218a13>] kernfs_seq_show+0x23/0x30
+  [<ffffffff811c82db>] seq_read+0xbb/0x400
+  [<ffffffff812197e5>] kernfs_fop_read+0x35/0x40
+  [<ffffffff811a4223>] vfs_read+0xa3/0x110
+  [<ffffffff811a47e6>] SyS_read+0x56/0xd0
+  [<ffffffff810f3e16>] ? __audit_syscall_exit+0x216/0x2c0
+  [<ffffffff815b3ca9>] system_call_fastpath+0x16/0x1b
+Code:  Bad RIP value.
+  RSP <ffff8818b7097db0>
+CR2: 0000000000000000
+---[ end trace 69d0e259c9ec632f ]---
 
-git bisect start
-# good: [bfe01a5ba2490f299e1d2d5508cbbbadd897bbe9] Linux 3.17
-git bisect good bfe01a5ba2490f299e1d2d5508cbbbadd897bbe9
-# bad: [f114040e3ea6e07372334ade75d1ee0775c355e1] Linux 3.18-rc1
-git bisect bad f114040e3ea6e07372334ade75d1ee0775c355e1
-# bad: [f114040e3ea6e07372334ade75d1ee0775c355e1] Linux 3.18-rc1
-git bisect bad f114040e3ea6e07372334ade75d1ee0775c355e1
-# bad: [35a9ad8af0bb0fa3525e6d0d20e32551d226f38e] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next
-git bisect bad 35a9ad8af0bb0fa3525e6d0d20e32551d226f38e
-# bad: [35a9ad8af0bb0fa3525e6d0d20e32551d226f38e] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next
-git bisect bad 35a9ad8af0bb0fa3525e6d0d20e32551d226f38e
-# bad: [683a52a10148e929fb4844f9237f059a47c0b01b] Merge tag 'tty-3.18-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty
-git bisect bad 683a52a10148e929fb4844f9237f059a47c0b01b
-# bad: [683a52a10148e929fb4844f9237f059a47c0b01b] Merge tag 'tty-3.18-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty
-git bisect bad 683a52a10148e929fb4844f9237f059a47c0b01b
-# bad: [76272ab3f348d303eb31a5a061601ca8e0f9c5ce] staging: rtl8821ae: remove driver
-git bisect bad 76272ab3f348d303eb31a5a061601ca8e0f9c5ce
-# bad: [e988e1f3f975a9d6013c6356c5b9369540c091f9] staging: comedi: ni_at_a2150: range check board index
-git bisect bad e988e1f3f975a9d6013c6356c5b9369540c091f9
-# bad: [bd8107b2b2dc9fb1113bfe1a9cf2533ee19c57ee] Staging: bcm: Bcmchar.c: Renamed variable: "RxCntrlMsgBitMask" -> "rx_cntrl_msg_bit_mask"
-git bisect bad bd8107b2b2dc9fb1113bfe1a9cf2533ee19c57ee
-# bad: [91ed283ab563727932d6cf92b74dd15226635870] staging: rtl8188eu: Remove unused function rtw_IOL_append_WD_cmd()
-git bisect bad 91ed283ab563727932d6cf92b74dd15226635870
+It seems like call site patching isn't properly done or the kernel 
+module that I built was missing some critical information necessary for 
+the proper linking. Anyway, I will include the unlock call patching code 
+as a separate patch as it seems there may be problem under certain 
+circumstance.
 
+BTW, the kernel panic problem that your team reported had been fixed. 
+The fix will be in the next version of the patch.
 
-The reason I'm checking in at this point, is that I'm starting to see different
-bugs at this point, so I don't know if I can call this good or bad, unless
-someone has a fix for what I'm seeing now.
-
-Reminiscent of a bug a couple releases ago. Processes about to exit, but stuck
-in the kernel continuously faulting..
-http://codemonkey.org.uk/junk/weird-hang.txt
-The one I'm thinking of got fixed way before 3.17 though.
-
-Does that trace ring a bell of something else I could try on top of
-each bisection point ?
-
-I rebooted and restarted my test at the current bisection point,
-hopefully it'll show up as 'bad' before the bug above happens again.
-
-	Dave
-
+-Longman
