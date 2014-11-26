@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147AbaKZQmO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 11:42:14 -0500
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:36481 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926AbaKZQmK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 11:42:10 -0500
+	id S1752470AbaKZQqw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 11:46:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47804 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750947AbaKZQqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 11:46:51 -0500
+Message-ID: <547603CD.6060708@redhat.com>
+Date: Wed, 26 Nov 2014 17:46:05 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Date: Wed, 26 Nov 2014 08:42:09 -0800
-Message-ID: <CAADnVQK8mn4ZHwbhBArosEw3Bmsc5vJfOzAeRE3R_1S7dbNfkg@mail.gmail.com>
-Subject: Re: [PATCH] x86: bpf_jit_comp: simplify trivial boolean return
-From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-To: Quentin Lambert <lambert.quentin@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: =?UTF-8?B?QWxleCBCZW5uw6ll?= <alex.bennee@linaro.org>,
+        Andrew Jones <drjones@redhat.com>
+CC: kvm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kvmarm@lists.cs.columbia.edu, christoffer.dall@linaro.org,
+        marc.zyngier@arm.com, peter.maydell@linaro.org, agraf@suse.de,
+        Catalin Marinas <catalin.marinas@arm.com>, jan.kiszka@siemens.com,
+        Will Deacon <will.deacon@arm.com>,
+        open list <linux-kernel@vger.kernel.org>, dahi@linux.vnet.ibm.com,
+        r65777@freescale.com, bp@suse.de
+Subject: Re: [PATCH 2/7] KVM: arm: guest debug, define API headers
+References: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org> <1416931805-23223-3-git-send-email-alex.bennee@linaro.org> <20141126143122.GB3245@hawk.usersys.redhat.com> <87sih6knzr.fsf@linaro.org>
+In-Reply-To: <87sih6knzr.fsf@linaro.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 1:18 AM, Quentin Lambert
-<lambert.quentin@gmail.com> wrote:
-> Remove if then else statements preceding
-> boolean return. Occurences were found using
-> Coccinelle.
->
-> The semantic patch used was:
->
-> @@
-> expression expr;
-> @@
->
->
-> - if ( expr )
-> -       return true;
-> - else
-> -       return false;
-> + return expr;
->
-> Signed-off-by: Quentin Lambert <lambert.quentin@gmail.com>
->
-> ---
->  arch/x86/net/bpf_jit_comp.c |    8 +++-----
->  1 file changed, 3 insertions(+), 5 deletions(-)
->
-> diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
-> index 3f62734..1542f39 100644
-> --- a/arch/x86/net/bpf_jit_comp.c
-> +++ b/arch/x86/net/bpf_jit_comp.c
-> @@ -135,11 +135,9 @@ static const int reg2hex[] = {
->   */
->  static inline bool is_ereg(u32 reg)
->  {
-> -       if (reg == BPF_REG_5 || reg == AUX_REG ||
-> -           (reg >= BPF_REG_7 && reg <= BPF_REG_9))
-> -               return true;
-> -       else
-> -               return false;
-> +       return (reg == BPF_REG_5 ||
-> +               reg == AUX_REG ||
-> +               (reg >= BPF_REG_7 && reg <= BPF_REG_9));
 
-please remove extra () around the whole expression, and
-align in properly, and
-don't move reg==AUX_REG check to a different line.
-Subject is not warranted. I don't think it's a simplification.
-imo existing code is fine and I don't think the time spent
-reviewing such changes is worth it when there is no
-improvement in readability.
+
+On 26/11/2014 15:58, Alex Bennée wrote:
+> 
+> Andrew Jones <drjones@redhat.com> writes:
+> 
+>> On Tue, Nov 25, 2014 at 04:10:00PM +0000, Alex Bennée wrote:
+>>> This commit defines the API headers for guest debugging. There are two
+>>> architecture specific debug structures:
+> <snip>
+>>> +/* Architecture related debug defines - upper 16 bits of
+>>> + * kvm_guest_debug->control
+>>> + */
+>>> +#define KVM_GUESTDBG_USE_SW_BP_SHIFT	16
+>>> +#define KVM_GUESTDBG_USE_SW_BP		(1 << KVM_GUESTDBG_USE_SW_BP_SHIFT)
+>>> +#define KVM_GUESTDBG_USE_HW_BP_SHIFT	17
+>>> +#define KVM_GUESTDBG_USE_HW_BP		(1 << KVM_GUESTDBG_USE_HW_BP_SHIFT)
+>>> +
+>>
+>> I see this are defined in arch/x86/include/uapi/asm/kvm.h,
+>> so you needed to reproduce them here, but shouldn't they
+>> be promoted to include/uapi/linux/kvm.h instead?
+> 
+> Well if we move them to common uapi we either restrict the $ARCH
+> specific options that don't have SW/HW BKPTS (would be weird but...) or
+> make them generic in the lower 16 bits (breaks API).
+> 
+> But in principle I have no objection if other don't.
+
+I think it's a matter of personal taste.  "Architecture-specific" means
+"not all architectures may support it", but it's certainly a good idea
+to reuse the same value if multiple architectures do support a #define.
+
+What you did is fine, another possibility is to do
+
+    #define __KVM_GUESTDBG_USE_SW_BP   (1 << 16)
+
+in include/uapi/linux/kvm.h, and
+
+    #define KVM_GUESTDBG_USE_SW_BP __KVM_GUESTDBG_USE_SW_BP
+
+in the arch-specific file.  Andrew, is this closer to what you intended?
+
+Paolo
