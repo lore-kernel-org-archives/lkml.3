@@ -1,59 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006AbaKZP7Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 10:59:25 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47445 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606AbaKZP7X (ORCPT
+	id S1753114AbaKZQCm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 11:02:42 -0500
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:53468 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967AbaKZQCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 10:59:23 -0500
-Date: Wed, 26 Nov 2014 16:59:20 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Sekhar Nori <nsekhar@ti.com>,
-        linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Mike Looijmans <milo-software@users.sourceforge.net>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Santosh Shilimkar <ssantosh@kernel.org>,
-        Murali Karicheri <m-karicheri2@ti.com>
-Subject: Re: [PATCH v2 4/5] i2c: davinci: use bus recovery infrastructure
-Message-ID: <20141126155920.GM4431@pengutronix.de>
-References: <1417010393-30598-1-git-send-email-grygorii.strashko@ti.com>
- <1417010393-30598-5-git-send-email-grygorii.strashko@ti.com>
+	Wed, 26 Nov 2014 11:02:40 -0500
+Date: Wed, 26 Nov 2014 17:02:23 +0100
+From: David Hildenbrand <dahi@linux.vnet.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
+        paulus@samba.org, akpm@linux-foundation.org, heiko.carstens@de.ibm.com,
+        schwidefsky@de.ibm.com, borntraeger@de.ibm.com, mingo@kernel.org
+Subject: Re: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
+ atomic
+Message-ID: <20141126170223.3b108b94@thinkpad-w530>
+In-Reply-To: <20141126154717.GB10568@redhat.com>
+References: <1416915806-24757-1-git-send-email-dahi@linux.vnet.ibm.com>
+	<20141126070258.GA25523@redhat.com>
+	<20141126110504.511b733a@thinkpad-w530>
+	<20141126151729.GB9612@redhat.com>
+	<20141126152334.GA9648@redhat.com>
+	<20141126163207.63810fcb@thinkpad-w530>
+	<20141126154717.GB10568@redhat.com>
+Organization: IBM Deutschland GmbH
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1417010393-30598-5-git-send-email-grygorii.strashko@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112616-0013-0000-0000-000001FFCE28
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-
-On Wed, Nov 26, 2014 at 03:59:52PM +0200, Grygorii Strashko wrote:
-> This patch converts Davinci I2C driver to use I2C bus recovery
-> infrastructure, introduced by commit 5f9296ba21b3 ("i2c: Add
-> bus recovery infrastructure").
+> > This is what happened on our side (very recent kernel):
+> > 
+> > spin_lock(&lock)
+> > copy_to_user(...)
+> > spin_unlock(&lock)
 > 
-> The i2c_bus_recovery_info is configured for Davinci I2C adapter
-> only in case if scl_pin is provided in platform data at least.
-My German feeling for English tells me:
-s/if//; s/at least//;
+> That's a deadlock even without copy_to_user - it's
+> enough for the thread to be preempted and another one
+> to try taking the lock.
+> 
+> 
+> > 1. s390 locks/unlocks a spin lock with a compare and swap, using the _cpu id_
+> >    as "old value"
+> > 2. we slept during copy_to_user()
+> > 3. the thread got scheduled onto another cpu
+> > 4. spin_unlock failed as the _cpu id_ didn't match (another cpu that locked
+> >    the spinlock tried to unlocked it).
+> > 5. lock remained locked -> deadlock
+> > 
+> > Christian came up with the following explanation:
+> > Without preemption, spin_lock() will not touch the preempt counter.
+> > disable_pfault() will always touch it.
+> > 
+> > Therefore, with preemption disabled, copy_to_user() has no idea that it is
+> > running in atomic context - and will therefore try to sleep.
+> >
+> > So copy_to_user() will on s390:
+> > 1. run "as atomic" while spin_lock() with preemption enabled.
+> > 2. run "as not atomic" while spin_lock() with preemption disabled.
+> > 3.  run "as atomic" while pagefault_disabled() with preemption enabled or
+> > disabled.
+> > 4. run "as not atomic" when really not atomic.
 
-With that changed you can add my Ack.
+should have been more clear at that point: 
+preemption enabled == kernel compiled with preemption support
+preemption disabled == kernel compiled without preemption support
 
-Best regards
-Uwe
+> > 
+> > And exactly nr 2. is the thing that produced the deadlock in our scenario and
+> > the reason why I want a might_sleep() :)
+> 
+> IMHO it's not copy to user that causes the problem.
+> It's the misuse of spinlocks with preemption on.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+As I said, preemption was off.
+
+> 
+> So might_sleep would make you think copy_to_user is
+> the problem, and e.g. let you paper over it by
+> moving copy_to_user out.
+
+Actually implementing different way of locking easily fixed the problem for us.
+The old might_sleep() checks would have given us the problem within a few
+seconds (I tested it).
+
+> 
+> Enable lock prover and you will see what the real
+> issue is, which is you didn't disable preempt.
+> and if you did, copy_to_user would be okay.
+> 
+
+Our kernel is compiled without preemption and we turned on all lock/atomic
+sleep debugging aid. No problem was detected.
+
+----
+But the question is if we shouldn't rather provide a:
+
+  copy_to_user_nosleep() implementation that can be called from
+    pagefault_disable() because it won't sleep.
+and a
+  copy_to_user_sleep() implementation that cannot be called from
+    pagefault_disable().
+
+Another way to fix it would be a reworked pagefault_disable() function that
+somehow sets "a flag", so copy_to_user() knows that it is in fact called from a
+valid context, not just from "some atomic" context. So we could trigger
+might_sleep() when detecting a !pagefault_disable context.
+
