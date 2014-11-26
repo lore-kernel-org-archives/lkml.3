@@ -1,50 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592AbaKZN3M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 08:29:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36917 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750937AbaKZN3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 08:29:10 -0500
-Date: Wed, 26 Nov 2014 15:28:52 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v4 24/42] virtio_net: enable v1.0 support
-Message-ID: <20141126132852.GB5127@redhat.com>
-References: <1416933600-21398-1-git-send-email-mst@redhat.com>
- <1416933600-21398-25-git-send-email-mst@redhat.com>
- <20141126140857.6ff85e4b.cornelia.huck@de.ibm.com>
+	id S1752615AbaKZN3p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 08:29:45 -0500
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:36463 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973AbaKZN3m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 08:29:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141126140857.6ff85e4b.cornelia.huck@de.ibm.com>
+In-Reply-To: <1416834381-11314-1-git-send-email-gautam.vivek@samsung.com>
+References: <CAGOxZ53TUvZhSDLfeCuyvBwVcrkQhFnftQzk1DbkU_krdoFbZA@mail.gmail.com>
+ <1416834381-11314-1-git-send-email-gautam.vivek@samsung.com>
+From: Alim Akhtar <alim.akhtar@gmail.com>
+Date: Wed, 26 Nov 2014 18:59:01 +0530
+Message-ID: <CAGOxZ52XtT-Aq-HJFq7GAzfAq6GEdrzKeez_=fwJR-Z2rkUF+g@mail.gmail.com>
+Subject: Re: [PATCH V2 2/2] arm64: exynos: Add bus1 pinctrl node on exynos7
+To: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>, devicetree@vger.kernel.org,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        "robh+dt" <robh+dt@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>, kgene@kernel.org,
+        Alim Akhtar <alim.akhtar@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 02:08:57PM +0100, Cornelia Huck wrote:
-> On Tue, 25 Nov 2014 18:43:06 +0200
-> "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> 
-> > Now that we have completed 1.0 support, enable it in our driver.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  drivers/net/virtio_net.c | 1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> 
-> Hm. The spec states that mac is driver-writable in the legacy case.
-> Don't we need to fence writing it in virtnet_set_mac_address() in the
-> virtio 1.0 case?
+Hi Vivek,
 
-You are right. I'll add a patch to fix that one: we
-should return -EOPNOTSUPP unless
-	VIRTIO_NET_F_CTRL_MAC_ADDR or
-	VERSION_1 is clear and VIRTIO_NET_F_MAC is set.
+On Mon, Nov 24, 2014 at 6:36 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+> BUS1 pinctrl provides gpios for usb and power regulator
+> available on exynos7-espresso board. So add relevant device
+> node for pinctrl-bus1.
+>
+> Signed-off-by: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> ---
+>
+Looks good to me.
+Reviewed-by: Alim Akhtar <alim.akhtar@samsung.com>
+
+> This patch was part of series:
+> "[PATCH 00/11] Exynos7: Adding USB 3.0 support"
+>  https://lkml.org/lkml/2014/11/21/247
+>
+> Changes since V1:
+>  - Added support for all pin banks which are part of BUS1 pin controller.
+>
+>  arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi |   82 +++++++++++++++++++++++
+>  arch/arm64/boot/dts/exynos/exynos7.dtsi         |    7 ++
+>  2 files changed, 89 insertions(+)
+>
+> diff --git a/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi b/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi
+> index 2eef4a2..c367f0a 100644
+> --- a/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi
+> +++ b/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi
+> @@ -335,6 +335,88 @@
+>         };
+>  };
+>
+> +&pinctrl_bus1 {
+> +       gpf0: gpf0 {
+> +               gpio-controller;
+> +               #gpio-cells = <2>;
+> +
+> +               interrupt-controller;
+> +               #interrupt-cells = <2>;
+> +       };
+> +
+> +       gpf1: gpf1 {
+> +               gpio-controller;
+> +               #gpio-cells = <2>;
+> +
+> +               interrupt-controller;
+> +               #interrupt-cells = <2>;
+> +       };
+> +
+> +       gpf2: gpf2 {
+> +               gpio-controller;
+> +               #gpio-cells = <2>;
+> +
+> +               interrupt-controller;
+> +               #interrupt-cells = <2>;
+> +       };
+> +
+> +       gpf3: gpf3 {
+> +               gpio-controller;
+> +               #gpio-cells = <2>;
+> +
+> +               interrupt-controller;
+> +               #interrupt-cells = <2>;
+> +       };
+> +
+> +       gpf4: gpf4 {
+> +               gpio-controller;
+> +               #gpio-cells = <2>;
+> +
+> +               interrupt-controller;
+> +               #interrupt-cells = <2>;
+> +       };
+> +
+> +       gpf5: gpf5 {
+> +               gpio-controller;
+> +               #gpio-cells = <2>;
+> +
+> +               interrupt-controller;
+> +               #interrupt-cells = <2>;
+> +       };
+> +
+> +       gpg1: gpg1 {
+> +               gpio-controller;
+> +               #gpio-cells = <2>;
+> +
+> +               interrupt-controller;
+> +               #interrupt-cells = <2>;
+> +       };
+> +
+> +       gpg2: gpg2 {
+> +               gpio-controller;
+> +               #gpio-cells = <2>;
+> +
+> +               interrupt-controller;
+> +               #interrupt-cells = <2>;
+> +       };
+> +
+> +       gph1: gph1 {
+> +               gpio-controller;
+> +               #gpio-cells = <2>;
+> +
+> +               interrupt-controller;
+> +               #interrupt-cells = <2>;
+> +       };
+> +
+> +       gpv6: gpv6 {
+> +               gpio-controller;
+> +               #gpio-cells = <2>;
+> +
+> +               interrupt-controller;
+> +               #interrupt-cells = <2>;
+> +       };
+> +};
+> +
+>  &pinctrl_nfc {
+>         gpj0: gpj0 {
+>                 gpio-controller;
+> diff --git a/arch/arm64/boot/dts/exynos/exynos7.dtsi b/arch/arm64/boot/dts/exynos/exynos7.dtsi
+> index 1d9e4c9..e633b02 100644
+> --- a/arch/arm64/boot/dts/exynos/exynos7.dtsi
+> +++ b/arch/arm64/boot/dts/exynos/exynos7.dtsi
+> @@ -26,6 +26,7 @@
+>                 pinctrl5 = &pinctrl_ese;
+>                 pinctrl6 = &pinctrl_fsys0;
+>                 pinctrl7 = &pinctrl_fsys1;
+> +               pinctrl8 = &pinctrl_bus1;
+>         };
+>
+>         cpus {
+> @@ -242,6 +243,12 @@
+>                         interrupts = <0 383 0>;
+>                 };
+>
+> +               pinctrl_bus1: pinctrl@14870000 {
+> +                       compatible = "samsung,exynos7-pinctrl";
+> +                       reg = <0x14870000 0x1000>;
+> +                       interrupts = <0 384 0>;
+> +               };
+> +
+>                 pinctrl_nfc: pinctrl@14cd0000 {
+>                         compatible = "samsung,exynos7-pinctrl";
+>                         reg = <0x14cd0000 0x1000>;
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
+
+-- 
+Regards,
+Alim
