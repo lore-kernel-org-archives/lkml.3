@@ -1,359 +1,527 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929AbaKZXJa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 18:09:30 -0500
-Received: from pb-smtp1.int.icgroup.com ([208.72.237.35]:56704 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752089AbaKZXJZ (ORCPT
+	id S1753949AbaKZXJi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 18:09:38 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58244 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089AbaKZXJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 18:09:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type; q=dns; s=
-	sasl; b=XTFHcia/0Ue9kZNFeONuuatJVZT2ePDwsNSKQQqJGmyPSMvuzvhacAAp
-	VjsG2VD9HCB+w6R5aeds6RrfzWpWanB1RELysanH5ZLop4y/4T67qjR4GG7KGt9v
-	bcBVN1QGdjrL/w1vCNPYpwzBGOrzbC3UrMBq1dypEGLd01vaTes=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v2.2.0
-Date: Wed, 26 Nov 2014 15:09:22 -0800
-Message-ID: <xmqqr3wpo8yl.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 26 Nov 2014 18:09:35 -0500
+Date: Wed, 26 Nov 2014 15:08:31 -0800
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-ecf87b38d902dd0369e8c7039749183dfc309707@git.kernel.org>
+Cc: gregkh@linuxfoundation.org, tglx@linutronix.de, jiang.liu@linux.intel.com,
+        rjw@rjwysocki.net, rdunlap@infradead.org, konrad.wilk@oracle.com,
+        joro@8bytes.org, bhelgaas@google.com, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, jroedel@suse.de, tony.luck@intel.com,
+        hpa@zytor.com, yinghai@kernel.org, mingo@kernel.org, bp@alien8.de
+Reply-To: yinghai@kernel.org, hpa@zytor.com, mingo@kernel.org, bp@alien8.de,
+        benh@kernel.crashing.org, jroedel@suse.de, tony.luck@intel.com,
+        rdunlap@infradead.org, rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, joro@8bytes.org, konrad.wilk@oracle.com,
+        tglx@linutronix.de, gregkh@linuxfoundation.org,
+        jiang.liu@linux.intel.com
+In-Reply-To: <1416894816-23245-12-git-send-email-jiang.liu@linux.intel.com>
+References: <1416894816-23245-12-git-send-email-jiang.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] iommu/amd:
+  Enhance AMD IR driver to suppport hierarchy irqdomain
+Git-Commit-ID: ecf87b38d902dd0369e8c7039749183dfc309707
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Pobox-Relay-ID: 42BFE4F6-75C1-11E4-8C3D-42529F42C9D4-77302942!pb-smtp1.pobox.com
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest feature release Git v2.2 is now available at the usual
-places.  Big thanks go to 77 contributors, among which 20 are new
-people, who made 550+ changes in total since Git v2.1 was released.
-
-The tarballs are found at:
-
-    https://www.kernel.org/pub/software/scm/git/
-
-The following public repositories all have a copy of the 'v2.2.0'
-tag and the 'master' branch that the tag points at:
-
-  url = https://kernel.googlesource.com/pub/scm/git/git
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
-
-Git v2.2 Release Notes
-======================
-
-Updates since v2.1
-------------------
-
-Ports
-
- * Building on older MacOS X systems automatically sets
-   the necessary NO_APPLE_COMMON_CRYPTO build-time option.
-
- * Building with NO_PTHREADS has been resurrected.
-
- * Compilation options have been updated a bit to better support the
-   z/OS port.
-
-
-UI, Workflows & Features
-
- * "git archive" learned to filter what gets archived with a pathspec.
-
- * "git config --edit --global" starts from a skeletal per-user
-   configuration file contents, instead of a total blank, when the
-   user does not already have any global config.  This immediately
-   reduces the need to later ask "Have you forgotten to set
-   core.user?", and we can add more to the template as we gain
-   more experience.
-
- * "git stash list -p" used to be almost always a no-op because each
-   stash entry is represented as a merge commit.  It learned to show
-   the difference between the base commit version and the working tree
-   version, which is in line with what "git stash show" gives.
-
- * Sometimes users want to report a bug they experience on their
-   repository, but they are not at liberty to share the contents of
-   the repository.  "fast-export" was taught an "--anonymize" option
-   to replace blob contents, names of people, paths and log
-   messages with bland and simple strings to help them.
-
- * "git difftool" learned an option to stop feeding paths to the
-   diff backend when it exits with a non-zero status.
-
- * "git grep" learned to paint (or not paint) partial matches on
-   context lines when showing "grep -C<num>" output in color.
-
- * "log --date=iso" uses a slight variant of the ISO 8601 format that is
-   more human readable.  A new "--date=iso-strict" option gives
-   datetime output that conforms more strictly.
-
- * The logic "git prune" uses is more resilient against various corner
-   cases.
-
- * A broken reimplementation of Git could write an invalid index that
-   records both stage #0 and higher-stage entries for the same path.
-   We now notice and reject such an index, as there is no sensible
-   fallback (we do not know if the broken tool wanted to resolve and
-   forgot to remove the higher-stage entries, or if it wanted to unresolve
-   and forgot to remove the stage #0 entry).
-
- * The temporary files "git mergetool" uses are renamed to avoid too
-   many dots in them (e.g. a temporary file for "hello.c" used to be
-   named e.g. "hello.BASE.4321.c" but now uses underscore instead,
-   e.g. "hello_BASE_4321.c", to allow us to have multiple variants).
-
- * The temporary files "git mergetool" uses can be placed in a newly
-   created temporary directory, instead of the current directory, by
-   setting the mergetool.writeToTemp configuration variable.
-
- * "git mergetool" understands "--tool bc" now, as version 4 of
-   BeyondCompare can be driven the same way as its version 3 and it
-   feels awkward to say "--tool bc3" to run version 4.
-
- * The "pre-receive" and "post-receive" hooks are no longer required
-   to consume their input fully (not following this requirement used
-   to result in intermittent errors in "git push").
-
- * The pretty-format specifier "%d", which expands to " (tagname)"
-   for a tagged commit, gained a cousin "%D" that just gives the
-   "tagname" without frills.
-
- * "git push" learned "--signed" push, that allows a push (i.e.
-   request to update the refs on the other side to point at a new
-   history, together with the transmission of necessary objects) to be
-   signed, so that it can be verified and audited, using the GPG
-   signature of the person who pushed, that the tips of branches at a
-   public repository really point the commits the pusher wanted to,
-   without having to "trust" the server.
-
- * "git interpret-trailers" is a new filter to programmatically edit
-   the tail end of the commit log messages, e.g. "Signed-off-by:".
-
- * "git help everyday" shows the "Everyday Git in 20 commands or so"
-   document, whose contents have been updated to match more modern
-   Git practice.
-
- * On the "git svn" front, work progresses to reduce memory consumption and
-   to improve handling of mergeinfo.
-
-
-Performance, Internal Implementation, Development Support etc.
-
- * The API to manipulate the "refs" has been restructured to make it
-   more transactional, with the eventual goal to allow all-or-none
-   atomic updates and migrating the storage to something other than
-   the traditional filesystem based one (e.g. databases).
-
- * The lockfile API and its users have been cleaned up.
-
- * We no longer attempt to keep track of individual dependencies to
-   the header files in the build procedure, relying instead on automated
-   dependency generation support from modern compilers.
-
- * In tests, we have been using NOT_{MINGW,CYGWIN} test prerequisites
-   long before negated prerequisites e.g. !MINGW were invented.
-   The former has been converted to the latter to avoid confusion.
-
- * Optimized looking up a remote's configuration in a repository with very many
-   remotes defined.
-
- * There are cases where you lock and open to write a file, close it
-   to show the updated contents to an external processes, and then have
-   to update the file again while still holding the lock; now the
-   lockfile API has support for such an access pattern.
-
- * The API to allocate the structure to keep track of commit
-   decoration has been updated to make it less cumbersome to use.
-
- * An in-core caching layer to let us avoid reading the same
-   configuration files several times has been added.  A few commands
-   have been converted to use this subsystem.
-
- * Various code paths have been cleaned up and simplified by using
-   the "strbuf", "starts_with()", and "skip_prefix()" APIs more.
-
- * A few codepaths that died when large blobs that would not fit in
-   core are involved in their operation have been taught to punt
-   instead, by e.g. marking a too-large blob as not to be diffed.
-
- * A few more code paths in "commit" and "checkout" have been taught
-   to repopulate the cache-tree in the index, to help speed up later
-   "write-tree" (used in "commit") and "diff-index --cached" (used in
-   "status").
-
- * A common programming mistake to assign the same short option name
-   to two separate options is detected by the parse_options() API to help
-   developers.
-
- * The code path to write out the packed-refs file has been optimized,
-   which especially matters in a repository with a large number of
-   refs.
-
- * The check to see if a ref $F can be created by making sure no
-   existing ref has $F/ as its prefix has been optimized, which
-   especially matters in a repository with a large number of existing
-   refs.
-
- * "git fsck" was taught to check the contents of tag objects a bit more.
-
- * "git hash-object" was taught a "--literally" option to help
-   debugging.
-
- * When running a required clean filter, we do not have to mmap the
-   original before feeding the filter.  Instead, stream the file
-   contents directly to the filter and process its output.
-
- * The scripts in the test suite can be run with the "-x" option to show
-   a shell-trace of each command they run.
-
- * The "run-command" API learned to manage the argv and environment
-   arrays for child process, alleviating the need for the callers to
-   allocate and deallocate them.
-
- * Some people use AsciiDoctor, instead of AsciiDoc, to format our
-   documentation set; the documentation has been adjusted to be usable
-   by both, as AsciiDoctor is pickier than AsciiDoc about its input
-   mark-up.
-
-
-Also contains various documentation updates and code clean-ups.
-
-
-Fixes since v2.1
-----------------
-
-Unless otherwise noted, all the fixes since v2.1 in the maintenance
-track are contained in this release (see the maintenance releases'
-notes for details).
-
- * "git log --pretty/format=" with an empty format string did not
-   mean the more obvious "No output whatsoever" but "Use default
-   format", which was counterintuitive.
-
- * "git -c section.var command" and "git -c section.var= command"
-   should pass the configuration value differently (the former should be a
-   boolean true, the latter should be an empty string).
-
- * Applying a patch not generated by Git in a subdirectory used to
-   check for whitespace breakage using the attributes of incorrect
-   paths. Also whitespace checks were performed even for paths
-   excluded via the "git apply --exclude=<path>" mechanism.
-
- * "git bundle create" with a date-range specification was meant to
-   exclude tags outside the range, but it didn't.
-
- * "git add x" where x used to be a directory and is now a
-   symbolic link to a directory misbehaved.
-
- * The prompt script checked the $GIT_DIR/ref/stash file to see if there
-   is a stash, which was a no-no.
-
- * Pack-protocol documentation had a minor typo.
-
- * "git checkout -m" did not switch to another branch while carrying
-   the local changes forward when a path was deleted from the index.
-
- * "git daemon" (with NO_IPV6 build configuration) used to incorrectly
-   use the hostname even when gethostbyname() reported that the given
-   hostname is not found.
-   (merge 107efbe rs/daemon-fixes later to maint).
-
- * With sufficiently long refnames, "git fast-import" could have
-   overflowed an on-stack buffer.
-
- * After "pack-refs --prune" packed refs at the top-level, it failed
-   to prune them.
-
- * Progress output from "git gc --auto" was visible in "git fetch -q".
-
- * We used to pass -1000 to poll(2), expecting it to also mean "no
-   timeout", which should be spelled as -1.
-
- * "git rebase" documentation was unclear that it is required to
-   specify on what <upstream> the rebase is to be done when telling it
-   to first check out <branch>.
-   (merge 95c6826 so/rebase-doc later to maint).
-
- * "git push" over HTTP transport had an artificial limit on the number of
-   refs that can be pushed, imposed by the command line length.
-   (merge 26be19b jk/send-pack-many-refspecs later to maint).
-
- * When receiving an invalid pack stream that records the same object
-   twice, multiple threads got confused due to a race.
-   (merge ab791dd jk/index-pack-threading-races later to maint).
-
- * An attempt to remove the entire tree in the "git fast-import" input
-   stream caused it to misbehave.
-   (merge 2668d69 mb/fast-import-delete-root later to maint).
-
- * Reachability check (used in "git prune" and friends) did not add a
-   detached HEAD as a starting point to traverse objects still in use.
-   (merge c40fdd0 mk/reachable-protect-detached-head later to maint).
-
- * "git config --add section.var val" when section.var already has an
-   empty-string value used to lose the empty-string value.
-   (merge c1063be ta/config-add-to-empty-or-true-fix later to maint).
-
- * "git fsck" failed to report that it found corrupt objects via its
-   exit status in some cases.
-   (merge 30d1038 jk/fsck-exit-code-fix later to maint).
-
- * Use of the "--verbose" option used to break "git branch --merged".
-   (merge 12994dd jk/maint-branch-verbose-merged later to maint).
-
- * Some MUAs mangle a line in a message that begins with "From " to
-   ">From " when writing to a mailbox file, and feeding such an input
-   to "git am" used to lose such a line.
-   (merge 85de86a jk/mbox-from-line later to maint).
-
- * "rev-parse --verify --quiet $name" is meant to quietly exit with a
-   non-zero status when $name is not a valid object name, but still
-   gave error messages in some cases.
-
- * A handful of C source files have been updated to include
-   "git-compat-util.h" as the first thing, to conform better to our
-   coding guidelines.
-   (merge 1c4b660 da/include-compat-util-first-in-c later to maint).
-
- * The t7004 test, which tried to run Git with small stack space, has been
-   updated to use a bit larger stack to avoid false breakage on some
-   platforms.
-   (merge b9a1907 sk/tag-contains-wo-recursion later to maint).
-
- * A few documentation pages had example sections marked up not quite
-   correctly, which passed AsciiDoc but failed with AsciiDoctor.
-   (merge c30c43c bc/asciidoc-pretty-formats-fix later to maint).
-   (merge f8a48af bc/asciidoc later to maint).
-
- * "gitweb" used deprecated CGI::startfrom, which was removed from
-   CGI.pm as of 4.04; use CGI::start_from instead.
-   (merge 4750f4b rm/gitweb-start-form later to maint).
-
- * Newer versions of 'meld' break the auto-detection we use to see if
-   they are new enough to support the `--output` option.
-   (merge b12d045 da/mergetool-meld later to maint).
-
- * "git pack-objects" forgot to disable the codepath to generate the
-   object reachability bitmap when it needs to split the resulting
-   pack.
-   (merge 2113471 jk/pack-objects-no-bitmap-when-splitting later to maint).
-
- * The code to use cache-tree trusted the on-disk data too much and
-   fell into an infinite loop upon seeing an incorrectly recorded
-   index file.
-   (merge 729dbbd jk/cache-tree-protect-from-broken-libgit2 later to maint).
-
- * "git fetch" into a repository where branch B was deleted earlier,
-   back when it had reflog enabled, and then branch B/C is fetched
-   into it without reflog enabled, which is arguably an unlikely
-   corner case, unnecessarily failed.
-   (merge aae828b jk/fetch-reflog-df-conflict later to maint).
-
- * "git log --first-parent -L..." used to crash.
-   (merge a8787c5 tm/line-log-first-parent later to maint).
+Commit-ID:  ecf87b38d902dd0369e8c7039749183dfc309707
+Gitweb:     http://git.kernel.org/tip/ecf87b38d902dd0369e8c7039749183dfc309707
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Tue, 25 Nov 2014 13:53:20 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 26 Nov 2014 18:59:24 +0100
+
+iommu/amd: Enhance AMD IR driver to suppport hierarchy irqdomain
+
+Enhance AMD interrupt remapping driver to support hierarchy irqdomain,
+it will simplify the code eventually.
+
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Acked-by: Joerg Roedel <jroedel@suse.de>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: iommu@lists.linux-foundation.org
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Joerg Roedel <joro@8bytes.org>
+Link: http://lkml.kernel.org/r/1416894816-23245-12-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ drivers/iommu/amd_iommu.c       | 329 +++++++++++++++++++++++++++++++++++++++-
+ drivers/iommu/amd_iommu_init.c  |   4 +
+ drivers/iommu/amd_iommu_proto.h |   9 ++
+ drivers/iommu/amd_iommu_types.h |   5 +
+ 4 files changed, 341 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index 6fda7cc..d027423 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -33,6 +33,7 @@
+ #include <linux/export.h>
+ #include <linux/irq.h>
+ #include <linux/msi.h>
++#include <linux/irqdomain.h>
+ #include <asm/irq_remapping.h>
+ #include <asm/io_apic.h>
+ #include <asm/apic.h>
+@@ -3854,6 +3855,16 @@ union irte {
+ 	} fields;
+ };
+ 
++struct amd_ir_data {
++	struct irq_2_irte			irq_2_irte;
++	union irte				irte_entry;
++	union {
++		struct msi_msg			msi_entry;
++	};
++};
++
++static struct irq_chip amd_ir_chip;
++
+ #define DTE_IRQ_PHYS_ADDR_MASK	(((1ULL << 45)-1) << 6)
+ #define DTE_IRQ_REMAP_INTCTL    (2ULL << 60)
+ #define DTE_IRQ_TABLE_LEN       (8ULL << 1)
+@@ -3947,7 +3958,8 @@ out_unlock:
+ 	return table;
+ }
+ 
+-static int alloc_irq_index(struct irq_cfg *cfg, u16 devid, int count)
++static int alloc_irq_index(struct irq_cfg *cfg, struct irq_2_irte *irte_info,
++			   u16 devid, int count)
+ {
+ 	struct irq_remap_table *table;
+ 	unsigned long flags;
+@@ -3969,15 +3981,12 @@ static int alloc_irq_index(struct irq_cfg *cfg, u16 devid, int count)
+ 			c = 0;
+ 
+ 		if (c == count)	{
+-			struct irq_2_irte *irte_info;
+-
+ 			for (; c != 0; --c)
+ 				table->table[index - c + 1] = IRTE_ALLOCATED;
+ 
+ 			index -= count - 1;
+ 
+ 			cfg->remapped	      = 1;
+-			irte_info             = &cfg->irq_2_irte;
+ 			irte_info->devid      = devid;
+ 			irte_info->index      = index;
+ 
+@@ -4222,7 +4231,7 @@ static int msi_alloc_irq(struct pci_dev *pdev, int irq, int nvec)
+ 		return -EINVAL;
+ 
+ 	devid = get_device_id(&pdev->dev);
+-	index = alloc_irq_index(cfg, devid, nvec);
++	index = alloc_irq_index(cfg, &cfg->irq_2_irte, devid, nvec);
+ 
+ 	return index < 0 ? MAX_IRQS_PER_TABLE : index;
+ }
+@@ -4269,7 +4278,7 @@ static int alloc_hpet_msi(unsigned int irq, unsigned int id)
+ 	if (devid < 0)
+ 		return devid;
+ 
+-	index = alloc_irq_index(cfg, devid, 1);
++	index = alloc_irq_index(cfg, &cfg->irq_2_irte, devid, 1);
+ 	if (index < 0)
+ 		return index;
+ 
+@@ -4280,6 +4289,72 @@ static int alloc_hpet_msi(unsigned int irq, unsigned int id)
+ 	return 0;
+ }
+ 
++static int get_devid(struct irq_alloc_info *info)
++{
++	int devid = -1;
++
++	switch (info->type) {
++	case X86_IRQ_ALLOC_TYPE_IOAPIC:
++		devid     = get_ioapic_devid(info->ioapic_id);
++		break;
++	case X86_IRQ_ALLOC_TYPE_HPET:
++		devid     = get_hpet_devid(info->hpet_id);
++		break;
++	case X86_IRQ_ALLOC_TYPE_MSI:
++	case X86_IRQ_ALLOC_TYPE_MSIX:
++		devid = get_device_id(&info->msi_dev->dev);
++		break;
++	default:
++		BUG_ON(1);
++		break;
++	}
++
++	return devid;
++}
++
++static struct irq_domain *get_ir_irq_domain(struct irq_alloc_info *info)
++{
++	int devid;
++	struct amd_iommu *iommu;
++
++	if (!info)
++		return NULL;
++
++	devid = get_devid(info);
++	if (devid >= 0) {
++		iommu = amd_iommu_rlookup_table[devid];
++		if (iommu)
++			return iommu->ir_domain;
++	}
++
++	return NULL;
++}
++
++static struct irq_domain *get_irq_domain(struct irq_alloc_info *info)
++{
++	int devid;
++	struct amd_iommu *iommu;
++
++	if (!info)
++		return NULL;
++
++	switch (info->type) {
++	case X86_IRQ_ALLOC_TYPE_MSI:
++	case X86_IRQ_ALLOC_TYPE_MSIX:
++		devid = get_device_id(&info->msi_dev->dev);
++		if (devid >= 0) {
++			iommu = amd_iommu_rlookup_table[devid];
++			if (iommu)
++				return iommu->msi_domain;
++		}
++		break;
++	default:
++		break;
++	}
++
++	return NULL;
++}
++
+ struct irq_remap_ops amd_iommu_irq_ops = {
+ 	.supported		= amd_iommu_supported,
+ 	.prepare		= amd_iommu_prepare,
+@@ -4294,5 +4369,247 @@ struct irq_remap_ops amd_iommu_irq_ops = {
+ 	.msi_alloc_irq		= msi_alloc_irq,
+ 	.msi_setup_irq		= msi_setup_irq,
+ 	.alloc_hpet_msi		= alloc_hpet_msi,
++	.get_ir_irq_domain	= get_ir_irq_domain,
++	.get_irq_domain		= get_irq_domain,
++};
++
++static void irq_remapping_prepare_irte(struct amd_ir_data *data,
++				       struct irq_cfg *irq_cfg,
++				       struct irq_alloc_info *info,
++				       int devid, int index, int sub_handle)
++{
++	union irte *irte = &data->irte_entry;
++	struct irq_2_irte *irte_info = &data->irq_2_irte;
++	struct msi_msg *msg = &data->msi_entry;
++	struct IO_APIC_route_entry *entry;
++
++	irq_cfg->remapped = 1;
++	data->irq_2_irte.devid = devid;
++	data->irq_2_irte.index = index + sub_handle;
++
++	/* Setup IRTE for IOMMU */
++	irte->val = 0;
++	irte->fields.vector      = irq_cfg->vector;
++	irte->fields.int_type    = apic->irq_delivery_mode;
++	irte->fields.destination = irq_cfg->dest_apicid;
++	irte->fields.dm          = apic->irq_dest_mode;
++	irte->fields.valid       = 1;
++
++	switch (info->type) {
++	case X86_IRQ_ALLOC_TYPE_IOAPIC:
++		/* Setup IOAPIC entry */
++		entry = info->ioapic_entry;
++		info->ioapic_entry = NULL;
++		memset(entry, 0, sizeof(*entry));
++		entry->vector        = index;
++		entry->mask          = 0;
++		entry->trigger       = info->ioapic_trigger;
++		entry->polarity      = info->ioapic_polarity;
++		/* Mask level triggered irqs. */
++		if (info->ioapic_trigger)
++			entry->mask = 1;
++		break;
++
++	case X86_IRQ_ALLOC_TYPE_HPET:
++	case X86_IRQ_ALLOC_TYPE_MSI:
++	case X86_IRQ_ALLOC_TYPE_MSIX:
++		msg->address_hi = MSI_ADDR_BASE_HI;
++		msg->address_lo = MSI_ADDR_BASE_LO;
++		msg->data = irte_info->index;
++		break;
++
++	default:
++		BUG_ON(1);
++		break;
++	}
++}
++
++static int irq_remapping_alloc(struct irq_domain *domain, unsigned int virq,
++			       unsigned int nr_irqs, void *arg)
++{
++	struct irq_alloc_info *info = arg;
++	struct amd_ir_data *data;
++	struct irq_data *irq_data;
++	struct irq_cfg *cfg;
++	int i, ret, devid;
++	int index = -1;
++
++	if (!info)
++		return -EINVAL;
++	if (nr_irqs > 1 && info->type != X86_IRQ_ALLOC_TYPE_MSI &&
++	    info->type != X86_IRQ_ALLOC_TYPE_MSIX)
++		return -EINVAL;
++
++	/*
++	 * With IRQ remapping enabled, don't need contigious CPU vectors
++	 * to support multiple MSI interrupts.
++	 */
++	if (info->type == X86_IRQ_ALLOC_TYPE_MSI)
++		info->flags &= ~X86_IRQ_ALLOC_CONTIGOUS_VECTORS;
++
++	devid = get_devid(info);
++	if (devid < 0)
++		return -EINVAL;
++
++	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
++	if (ret < 0)
++		return ret;
++
++	ret = -ENOMEM;
++	data = kzalloc(sizeof(*data), GFP_KERNEL);
++	if (!data)
++		goto out_free_parent;
++
++	if (info->type == X86_IRQ_ALLOC_TYPE_IOAPIC) {
++		if (get_irq_table(devid, true))
++			index = info->ioapic_pin;
++		else
++			ret = -ENOMEM;
++	} else {
++		cfg = irq_cfg(virq);
++		index = alloc_irq_index(cfg, &data->irq_2_irte, devid, nr_irqs);
++	}
++	if (index < 0) {
++		pr_warn("Failed to allocate IRTE\n");
++		kfree(data);
++		goto out_free_parent;
++	}
++
++	for (i = 0; i < nr_irqs; i++) {
++		irq_data = irq_domain_get_irq_data(domain, virq + i);
++		cfg = irqd_cfg(irq_data);
++		if (!irq_data || !cfg) {
++			ret = -EINVAL;
++			goto out_free_data;
++		}
++
++		if (i > 0) {
++			data = kzalloc(sizeof(*data), GFP_KERNEL);
++			if (!data)
++				goto out_free_data;
++		}
++		irq_data->hwirq = (devid << 16) + i;
++		irq_data->chip_data = data;
++		irq_data->chip = &amd_ir_chip;
++		irq_remapping_prepare_irte(data, cfg, info, devid, index, i);
++		irq_set_status_flags(virq + i, IRQ_MOVE_PCNTXT);
++	}
++	return 0;
++
++out_free_data:
++	for (i--; i >= 0; i--) {
++		irq_data = irq_domain_get_irq_data(domain, virq + i);
++		if (irq_data)
++			kfree(irq_data->chip_data);
++	}
++	for (i = 0; i < nr_irqs; i++)
++		free_irte(devid, index + i);
++out_free_parent:
++	irq_domain_free_irqs_common(domain, virq, nr_irqs);
++	return ret;
++}
++
++static void irq_remapping_free(struct irq_domain *domain, unsigned int virq,
++			       unsigned int nr_irqs)
++{
++	struct irq_data *irq_data;
++	struct amd_ir_data *data;
++	struct irq_2_irte *irte_info;
++	int i;
++
++	for (i = 0; i < nr_irqs; i++) {
++		irq_data = irq_domain_get_irq_data(domain, virq  + i);
++		if (irq_data && irq_data->chip_data) {
++			data = irq_data->chip_data;
++			irte_info = &data->irq_2_irte;
++			free_irte(irte_info->devid, irte_info->index);
++			kfree(data);
++		}
++	}
++	irq_domain_free_irqs_common(domain, virq, nr_irqs);
++}
++
++static void irq_remapping_activate(struct irq_domain *domain,
++				   struct irq_data *irq_data)
++{
++	struct amd_ir_data *data = irq_data->chip_data;
++	struct irq_2_irte *irte_info = &data->irq_2_irte;
++
++	modify_irte(irte_info->devid, irte_info->index, data->irte_entry);
++}
++
++static void irq_remapping_deactivate(struct irq_domain *domain,
++				     struct irq_data *irq_data)
++{
++	struct amd_ir_data *data = irq_data->chip_data;
++	struct irq_2_irte *irte_info = &data->irq_2_irte;
++	union irte entry;
++
++	entry.val = 0;
++	modify_irte(irte_info->devid, irte_info->index, data->irte_entry);
++}
++
++static struct irq_domain_ops amd_ir_domain_ops = {
++	.alloc = irq_remapping_alloc,
++	.free = irq_remapping_free,
++	.activate = irq_remapping_activate,
++	.deactivate = irq_remapping_deactivate,
+ };
++
++static int amd_ir_set_affinity(struct irq_data *data,
++			       const struct cpumask *mask, bool force)
++{
++	struct amd_ir_data *ir_data = data->chip_data;
++	struct irq_2_irte *irte_info = &ir_data->irq_2_irte;
++	struct irq_cfg *cfg = irqd_cfg(data);
++	struct irq_data *parent = data->parent_data;
++	int ret;
++
++	ret = parent->chip->irq_set_affinity(parent, mask, force);
++	if (ret < 0 || ret == IRQ_SET_MASK_OK_DONE)
++		return ret;
++
++	/*
++	 * Atomically updates the IRTE with the new destination, vector
++	 * and flushes the interrupt entry cache.
++	 */
++	ir_data->irte_entry.fields.vector = cfg->vector;
++	ir_data->irte_entry.fields.destination = cfg->dest_apicid;
++	modify_irte(irte_info->devid, irte_info->index, ir_data->irte_entry);
++
++	/*
++	 * After this point, all the interrupts will start arriving
++	 * at the new destination. So, time to cleanup the previous
++	 * vector allocation.
++	 */
++	if (cfg->move_in_progress)
++		send_cleanup_vector(cfg);
++
++	return IRQ_SET_MASK_OK_DONE;
++}
++
++static void ir_compose_msi_msg(struct irq_data *irq_data, struct msi_msg *msg)
++{
++	struct amd_ir_data *ir_data = irq_data->chip_data;
++
++	*msg = ir_data->msi_entry;
++}
++
++static struct irq_chip amd_ir_chip = {
++	.irq_ack = ir_ack_apic_edge,
++	.irq_set_affinity = amd_ir_set_affinity,
++	.irq_compose_msi_msg = ir_compose_msi_msg,
++};
++
++int amd_iommu_create_irq_domain(struct amd_iommu *iommu)
++{
++	iommu->ir_domain = irq_domain_add_tree(NULL, &amd_ir_domain_ops, iommu);
++	if (!iommu->ir_domain)
++		return -ENOMEM;
++
++	iommu->ir_domain->parent = arch_get_ir_parent_domain();
++	iommu->msi_domain = arch_create_msi_irq_domain(iommu->ir_domain);
++
++	return 0;
++}
+ #endif
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index b0522f1..de3390a 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -1124,6 +1124,10 @@ static int __init init_iommu_one(struct amd_iommu *iommu, struct ivhd_header *h)
+ 	if (ret)
+ 		return ret;
+ 
++	ret = amd_iommu_create_irq_domain(iommu);
++	if (ret)
++		return ret;
++
+ 	/*
+ 	 * Make sure IOMMU is not considered to translate itself. The IVRS
+ 	 * table tells us so, but this is a lie!
+diff --git a/drivers/iommu/amd_iommu_proto.h b/drivers/iommu/amd_iommu_proto.h
+index 95ed6de..612a221 100644
+--- a/drivers/iommu/amd_iommu_proto.h
++++ b/drivers/iommu/amd_iommu_proto.h
+@@ -63,6 +63,15 @@ extern u8 amd_iommu_pc_get_max_counters(u16 devid);
+ extern int amd_iommu_pc_get_set_reg_val(u16 devid, u8 bank, u8 cntr, u8 fxn,
+ 				    u64 *value, bool is_write);
+ 
++#ifdef CONFIG_IRQ_REMAP
++extern int amd_iommu_create_irq_domain(struct amd_iommu *iommu);
++#else
++static inline int amd_iommu_create_irq_domain(struct amd_iommu *iommu)
++{
++	return 0;
++}
++#endif
++
+ #define PPR_SUCCESS			0x0
+ #define PPR_INVALID			0x1
+ #define PPR_FAILURE			0xf
+diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
+index cec51a8..ef12d74 100644
+--- a/drivers/iommu/amd_iommu_types.h
++++ b/drivers/iommu/amd_iommu_types.h
+@@ -392,6 +392,7 @@ struct amd_iommu_fault {
+ 
+ 
+ struct iommu_domain;
++struct irq_domain;
+ 
+ /*
+  * This structure contains generic data for  IOMMU protection domains
+@@ -574,6 +575,10 @@ struct amd_iommu {
+ 	/* The maximum PC banks and counters/bank (PCSup=1) */
+ 	u8 max_banks;
+ 	u8 max_counters;
++#ifdef CONFIG_IRQ_REMAP
++	struct irq_domain *ir_domain;
++	struct irq_domain *msi_domain;
++#endif
+ };
+ 
+ struct devid_map {
