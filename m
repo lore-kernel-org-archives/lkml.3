@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944AbaKZO4P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 09:56:15 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:44641 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752854AbaKZO4N convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 09:56:13 -0500
-Date: Wed, 26 Nov 2014 16:56:09 +0200
-From: Mihai =?UTF-8?B?RG9uyJt1?= <mihai.dontu@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Dave Jones <davej@redhat.com>, pgynther@google.com, marcel@holtmann.org,
-        linux-bluetooth@vger.kernel.org, Takashi Iwai <tiwai@suse.de>
-Subject: Re: bluetooth related firmware loader spew on resume.
-Message-ID: <20141126165609.41ee0c24@mdontu-l.dsd.ro>
-In-Reply-To: <20141111181228.GA27815@redhat.com>
-References: <20141111181228.GA27815@redhat.com>
-Organization: Home
+	id S1753046AbaKZO5K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 09:57:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53804 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752018AbaKZO5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 09:57:08 -0500
+Date: Wed, 26 Nov 2014 16:56:42 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-scsi@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH v4 38/42] virtio_scsi: v1.0 support
+Message-ID: <20141126145642.GA9359@redhat.com>
+References: <1416933600-21398-1-git-send-email-mst@redhat.com>
+ <1416933600-21398-39-git-send-email-mst@redhat.com>
+ <20141126155103.1f6725ce.cornelia.huck@de.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141126155103.1f6725ce.cornelia.huck@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Nov 2014 13:12:28 -0500 Dave Jones wrote:
-> Since the addition of 10d4c6736ea "Bluetooth: btusb: Add Broadcom patch
-> RAM support", I (and a number of other people[*]) have been seeing
-> this trace on resume from suspend.
+On Wed, Nov 26, 2014 at 03:51:03PM +0100, Cornelia Huck wrote:
+> On Tue, 25 Nov 2014 18:44:08 +0200
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
 > 
-> WARNING: CPU: 1 PID: 8565 at drivers/base/firmware_class.c:1127 _request_firmware+0x4c1/0x7c0()
-> CPU: 1 PID: 8565 Comm: kworker/u17:0 Not tainted 3.17.2-200.fc20.x86_64 #1
-> Hardware name: LENOVO 2356JK8/2356JK8, BIOS G7ET94WW (2.54 ) 04/30/2013
-> Workqueue: hci0 hci_power_on [bluetooth]
-> 0000000000000000 00000000f52a564b ffff8800a8c63be8 ffffffff817271cc
-> 0000000000000000 ffff8800a8c63c20 ffffffff81094ced ffff8800a8c63d10
-> ffff8801365ddf00 ffff8801387b4b00 ffff8800a8c63d08 00000000fffffff5
-> Call Trace:
-> [<ffffffff817271cc>] dump_stack+0x45/0x56
-> [<ffffffff81094ced>] warn_slowpath_common+0x7d/0xa0
-> [<ffffffff81094e1a>] warn_slowpath_null+0x1a/0x20
-> [<ffffffff814965c1>] _request_firmware+0x4c1/0x7c0
-> [<ffffffff8137b9b9>] ? snprintf+0x49/0x70
-> [<ffffffff814968f1>] request_firmware+0x31/0x50
-> [<ffffffffa0943bf3>] btusb_setup_bcm_patchram+0x83/0x550 [btusb]
-> [<ffffffff8148ecf6>] ? rpm_idle+0xd6/0x2b0
-> [<ffffffffa0649051>] hci_dev_do_open+0xe1/0xa60 [bluetooth]
-> ACPI: \_SB_.PCI0.LPC_.EC__.BAT1: docking
-> Restarting tasks ... 
-> [<ffffffff810bcb3d>] ? ttwu_do_activate.constprop.90+0x5d/0x70
-> [<ffffffffa064a1c0>] hci_power_on+0x40/0x1e0 [bluetooth]
-> [<ffffffff810f53fb>] ? lock_timer_base.isra.34+0x2b/0x50
-> [<ffffffff810acc39>] process_one_work+0x149/0x3d0
-> [<ffffffff810ad2bb>] worker_thread+0x11b/0x490
-> [<ffffffff810ad1a0>] ? rescuer_thread+0x2e0/0x2e0
-> [<ffffffff810b2318>] kthread+0xd8/0xf0
-> [<ffffffff810b2240>] ? kthread_create_on_node+0x190/0x190
-> [<ffffffff8172e7bc>] ret_from_fork+0x7c/0xb0
-> [<ffffffff810b2240>] ? kthread_create_on_node+0x190/0x190
-> ---[ end trace 75a0e9c7f33ebb4c ]---
-> bluetooth hci0: firmware: brcm/BCM20702A0-0a5c-21e6.hcd will not be loaded
-> Bluetooth: hci0: BCM: patch brcm/BCM20702A0-0a5c-21e6.hcd not found
+> > Note: for consistency, and to avoid sparse errors,
+> >   convert all fields, even those no longer in use
+> >   for virtio v1.0.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  include/linux/virtio_scsi.h | 32 +++++++++++++++-------------
+> >  drivers/scsi/virtio_scsi.c  | 51 ++++++++++++++++++++++++++++-----------------
+> >  2 files changed, 49 insertions(+), 34 deletions(-)
+> > 
 > 
+> > @@ -158,7 +158,7 @@ static void virtscsi_complete_cmd(struct virtio_scsi *vscsi, void *buf)
+> >  		sc, resp->response, resp->status, resp->sense_len);
+> > 
+> >  	sc->result = resp->status;
+> > -	virtscsi_compute_resid(sc, resp->resid);
+> > +	virtscsi_compute_resid(sc, __virtio32_to_cpu(vscsi->vdev, resp->resid));
 > 
-> At first I thought it was just over-reaction to the file being missing, but
-> looking at the WARN_ON, it appears that we're trying to invoke the firmware
-> loader before userspace is back up ?
-> 
-> In this (and probably other related) kernel, CONFIG_FW_LOADER_USER_HELPER is unset,
-> in case that matters at all.
-> 
-> 	Dave
-> 
-> [*] https://bugzilla.kernel.org/show_bug.cgi?id=81821
->     https://bugzilla.redhat.com/show_bug.cgi?id=1133378
+> Confused. Don't you need the non-underscore versions if you pass in a
+> vdev as first parameter?
 
-I have the following during normal boot:
+Ouch, this built because vscsi->vdev is true.
+thanks!
 
-[    5.620796] Bluetooth: hci0: read Intel version: 370710018002030d00
-[    5.620822] bluetooth hci0: Direct firmware load for intel/ibt-hw-37.7.10-fw-1.80.2.3.d.bseq failed with error -2
-[    5.620827] Bluetooth: hci0 failed to open Intel firmware file: intel/ibt-hw-37.7.10-fw-1.80.2.3.d.bseq(-2)
-[    5.620920] bluetooth hci0: Direct firmware load for intel/ibt-hw-37.7.bseq failed with error -2
-[    5.620922] Bluetooth: hci0 failed to open default Intel fw file: intel/ibt-hw-37.7.bseq
-[    5.629910] EXT4-fs (sda2): mounted filesystem with ordered data mode. Opts: (null)
-[    5.629916] VFS: Mounted root (ext4 filesystem) readonly on device 8:2.
-
-The driver is trying to load the firmware before root is mounted. Do I
-really need an initramfs?
-
-Thanks,
-
--- 
-Mihai Donțu
+> >  	switch (resp->response) {
+> >  	case VIRTIO_SCSI_S_OK:
+> >  		set_host_byte(sc, DID_OK);
