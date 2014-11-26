@@ -1,101 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751665AbaKZMx2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 07:53:28 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:54956 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783AbaKZMx1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 07:53:27 -0500
-Message-ID: <5475CD41.8090903@linaro.org>
-Date: Wed, 26 Nov 2014 13:53:21 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751965AbaKZMyd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 07:54:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45573 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750870AbaKZMyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 07:54:32 -0500
+Message-ID: <5475CD79.5050305@redhat.com>
+Date: Wed, 26 Nov 2014 13:54:17 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>
-CC: Doug Anderson <dianders@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        Rob Herring <robh+dt@kernel.org>, Sonny Rao <sonnyrao@chromium.org>
-Subject: Re: [PATCH v4] clocksource: arch_timer: Allow the device tree to
- specify uninitialized timer registers
-References: <1412753627-28287-1-git-send-email-sonnyrao@chromium.org> <11522840.iniX5CHHHk@diego> <5475CC75.5030300@linaro.org> <19683112.9S9LAQsUEX@diego>
-In-Reply-To: <19683112.9S9LAQsUEX@diego>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Wanpeng Li <wanpeng.li@linux.intel.com>, Nadav Amit <nadav.amit@gmail.com>
+CC: linux-kernel@vger.kernel.org, kvm list <kvm@vger.kernel.org>,
+        namit@cs.technion.ac.il, hpa@linux.intel.com
+Subject: Re: [CFT PATCH v2 0/2] KVM: support XSAVES usage in the host
+References: <1416847414-22253-1-git-send-email-pbonzini@redhat.com> <20141125101331.GA28985@kernel> <54745BB0.8080304@redhat.com> <400361E2-995A-44B4-B35A-0D35793B49DD@gmail.com> <54748F70.70402@redhat.com> <DEE91387-BFE2-4F83-9711-25B2B65CF655@gmail.com> <20141126012439.GA20090@kernel>
+In-Reply-To: <20141126012439.GA20090@kernel>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2014 01:55 PM, Heiko Stübner wrote:
-> Am Mittwoch, 26. November 2014, 13:49:57 schrieb Daniel Lezcano:
->> On 11/26/2014 01:48 PM, Heiko Stübner wrote:
->>> Am Mittwoch, 26. November 2014, 13:30:58 schrieb Daniel Lezcano:
->>>> On 11/26/2014 01:06 PM, Heiko Stübner wrote:
->>>>> Hi Daniel,
->>>>>
->>>>> Am Mittwoch, 26. November 2014, 12:51:08 schrieb Daniel Lezcano:
->>>>>> Hi Doug, Olof,
->>>>>>
->>>>>> IIUC, it sounds like this patch is needed from some other patches in
->>>>>> arm-soc. Olof was proposing to take this patch through its tree to
->>>>>> facilitate the integration.
->>>>>>
->>>>>> Olof, is it this patch you were worried about ?
->>>>>
->>>>> I think this is one of two patches in question.
->>>>>
->>>>> "clocksource: arch_timer: Fix code to use physical timers when
->>>>> requested"
->>>>> [0] would be the second one.
->>>>>
->>>>> And the patch for arm-soc that Olof means would be "ARM: dts: rk3288:
->>>>> add
->>>>> arm,cpu-registers-not-fw-configured" [1].
->>>>
->>>> Ok, so IIUC, "clocksource: arch_timer: Fix code to use physical timers
->>>> when requested" should go via arm's tree, right ?
->>>
->>> If I'm reading Olof's irc-comments from yesterday correctly, that is right
->>> and the 3 patches should go in together:
->>>
->>> - "clocksource: arch_timer: Fix code to use physical timers
->>>
->>>     when requested" fixes the use of physical timers in general
->>>
->>> - "clocksource: arch_timer: Allow the device tree to specify uninitialized
->>>
->>>     timer registers" allows this to be set from dt
->>>
->>> - "ARM: dts: rk3288: add arm,cpu-registers-not-fw-configured" enables this
->>> on>
->>>     rk3288
+
+
+On 26/11/2014 02:24, Wanpeng Li wrote:
+> Hi all,
+> On Tue, Nov 25, 2014 at 04:50:06PM +0200, Nadav Amit wrote:
 >>
->> Ok, then I drop them from my tree and will let Olof to handle them.
->
-> But maybe you could give them an Ack :-)
+>>> On Nov 25, 2014, at 16:17, Paolo Bonzini <pbonzini@redhat.com> wrote:
+>>>
+>>>
+>>>
+>>> On 25/11/2014 15:05, Nadav Amit wrote:
+>>>>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>>>>> index 373b0ab9a32e..ca26681455c2 100644
+>>>>> --- a/arch/x86/kvm/x86.c
+>>>>> +++ b/arch/x86/kvm/x86.c
+>>>>> @@ -6955,6 +6955,9 @@ int fx_init(struct kvm_vcpu *vcpu)
+>>>>> 		return err;
+>>>>>
+>>>>> 	fpu_finit(&vcpu->arch.guest_fpu);
+>>>>> +	if (cpu_has_xsaves)
+>>>>> +		vcpu->arch.guest_fpu.state->xsave.xsave_hdr.xcomp_bv =
+>>>>> +			host_xcr0 | XSTATE_COMPACTION_ENABLED;
+>>>>>
+>>>>> 	/*
+>>>>> 	 * Ensure guest xcr0 is valid for loading
+>>>>
+>>>> The second version works for me (w/qemu v2.1.0; Linux 3.13 guest). I
+> 
+> Could you try 3.17 guest which has xsaves enabled? Because I'm not sure if 
+> the below codes from Paolo is enough to mask XSAVES, should we also add 
+> F(XSAVES)?
+> 
+> +       const u32 kvm_supported_word10_x86_features =
+> +               F(XSAVEOPT) | F(XSAVEC) | F(XGETBV1);
+> +
+> 
+> In addition, the 3.17 guest is still hang as I mentioned even if I add the 
+> F(XSAVES) to the kvm_supported_word10_x86_features.
 
-Already done :)
+Note that the point is _hiding_ XSAVES while leaving
+XSAVEOPT/XSAVEC/XGETBV1 enabled.  This series only fixes the problems
+with xsaves in the host, it doesn't try making XSAVES work in the guest.
 
-   -- Daniel
+> I have another patch which enable xsaves in KVM and the patch is still
+> under debug with Paolo's patch "KVM: x86: support XSAVES usage in the host",
+> so the 1/2 patch from Paolo can be dropped if my patch is ready. Anyway,
+> a quick fix is needed before enable xsaves in kvm. 
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+Please add XSAVES to kvm_supported_word10_x86_features in your patches
+instead.  We still need to mask any (not yet defined) feature in bit 4
+and above of CPUID[EAX=0xd,ECX].EAX.
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Paolo
