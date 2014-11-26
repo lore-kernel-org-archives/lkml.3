@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634AbaKZOOY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 09:14:24 -0500
-Received: from mga14.intel.com ([192.55.52.115]:47724 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750845AbaKZOOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 09:14:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="421765787"
-Date: Wed, 26 Nov 2014 06:14:22 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        zheng.z.yan@intel.com, peterz@infradead.org, eranian@google.com
-Subject: Re: perf/x86/intel/uncore: Add Haswell-EP uncore support
-Message-ID: <20141126141422.GM10824@tassilo.jf.intel.com>
-References: <20141013152950.11DE26610F1@gitolite.kernel.org>
- <20141125232050.GA9408@redhat.com>
+	id S1752685AbaKZOQI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 09:16:08 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:49098 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751290AbaKZOQH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 09:16:07 -0500
+Date: Wed, 26 Nov 2014 09:15:43 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+Cc: Jan Kiszka <jan.kiszka@siemens.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        nick <xerofoify@gmail.com>, gleb@kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Another Obsolete Fix me in trace.h?
+Message-ID: <20141126091543.52dc5bfe@gandalf.local.home>
+In-Reply-To: <20141126124022.GC6795@potion.brq.redhat.com>
+References: <5472B5B5.5090201@gmail.com>
+	<54730475.9040000@redhat.com>
+	<54730B33.1080101@siemens.com>
+	<20141124210000.GB6795@potion.brq.redhat.com>
+	<20141124161901.6266925c@gandalf.local.home>
+	<20141124214939.GA6671@potion.brq.redhat.com>
+	<20141126124022.GC6795@potion.brq.redhat.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141125232050.GA9408@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I couldn't quickly decipher which MSRs we're writing to here in the SDM,
-> but are these really 64-bit wide registers that need 32 bits always set to zero ?
+On Wed, 26 Nov 2014 13:40:26 +0100
+Radim Krčmář <rkrcmar@redhat.com> wrote:
 
-Yes the filter MSRs are only 32bit.
+> 2014-11-24 22:49+0100, Radim Krčmář:
+> > 2014-11-24 16:19-0500, Steven Rostedt:
+> > > That wouldn't be too hard to implement.
+> > 
+> > I'll look at the patch tommorrow.
+> 
+> The kernel part is trivial.
+> Most of the code is going to be in tools/lib/traceevent/event-parse.c.
+> 
+> I wasn't sure whether to
+> 1) define new 'enum print_arg_type' for our function and do exactly what
+>    other __print* did
+> 2) extend existing PRINT_FUNC with variable arguments and register it as
+>    a "global" event handler
+> 
+> as (2) makes more sense to me, but we already had it when some __print*
+> was implemented ... (and I didn't want to dig too deep into the project)
 
-> I'm wondering if these should be just wrmsr's instead of wrmsrl's.
+Add a new hardcoded instance. The PRINT_FUNC is for plugins that have a
+unique function for the events they handle. Notice that event-parse
+does not define any func handlers. If this is to be generic, then lets
+make it specified as a new enum.
 
-Can we just shut up coverity please?
+Thanks,
 
-wrmsr() is stupid and error prone and should have never been added as an
-interface.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+-- Steve
