@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345AbaKZQEf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 11:04:35 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41954 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028AbaKZQEd (ORCPT
+	id S1753444AbaKZQFA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 11:05:00 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:39856 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753374AbaKZQE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 11:04:33 -0500
-Date: Wed, 26 Nov 2014 17:04:07 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Sekhar Nori <nsekhar@ti.com>,
-        linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Mike Looijmans <milo-software@users.sourceforge.net>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Santosh Shilimkar <ssantosh@kernel.org>,
-        Murali Karicheri <m-karicheri2@ti.com>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 5/5] i2c: davinci: use ICPFUNC to toggle I2C as gpio
- for bus recovery
-Message-ID: <20141126160407.GN4431@pengutronix.de>
-References: <1417010393-30598-1-git-send-email-grygorii.strashko@ti.com>
- <1417010393-30598-6-git-send-email-grygorii.strashko@ti.com>
+	Wed, 26 Nov 2014 11:04:57 -0500
+Date: Wed, 26 Nov 2014 16:04:56 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Alexander Duyck <alexander.h.duyck@redhat.com>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mathieu.desnoyers@polymtl.ca" <mathieu.desnoyers@polymtl.ca>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "mikey@neuling.org" <mikey@neuling.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "donald.c.skidmore@intel.com" <donald.c.skidmore@intel.com>,
+        "matthew.vick@intel.com" <matthew.vick@intel.com>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "jeffrey.t.kirsher@intel.com" <jeffrey.t.kirsher@intel.com>,
+        "romieu@fr.zoreil.com" <romieu@fr.zoreil.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "nic_swsd@realtek.com" <nic_swsd@realtek.com>,
+        "michael@ellerman.id.au" <michael@ellerman.id.au>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "oleg@redhat.com" <oleg@redhat.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH v5 2/4] arch: Add lightweight memory barriers dma_rmb()
+ and dma_wmb()
+Message-ID: <20141126160456.GJ14866@arm.com>
+References: <20141119012205.9563.95544.stgit@ahduyck-server>
+ <20141119012400.9563.21117.stgit@ahduyck-server>
+ <20141125140130.GC8541@arm.com>
+ <5474ADB4.5070200@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1417010393-30598-6-git-send-email-grygorii.strashko@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <5474ADB4.5070200@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Wed, Nov 26, 2014 at 03:59:53PM +0200, Grygorii Strashko wrote:
-> Having a board where the I2C bus locks up occasionally made it clear
-> that the bus recovery in the i2c-davinci driver will only work on
-> some boards, because on regular boards, this will only toggle GPIO
-> lines that aren't muxed to the actual pins.
+On Tue, Nov 25, 2014 at 04:26:28PM +0000, Alexander Duyck wrote:
+> On 11/25/2014 06:01 AM, Will Deacon wrote:
+> > If we ever see platforms using Linux/dma_alloc_coherent with devices
+> > mastering from a different outer-shareable domain that the one containing
+> > the CPUs, then we'll need to revisit this.
 > 
-> The I2C controller on SoCs like da850 (and da830), Keystone 2 has the
-> built-in capability to bit-bang its lines by using the ICPFUNC registers
-> of the i2c controller.
-> Implement the suggested procedure by toggling SCL and checking SDA using
-> the ICPFUNC registers of the I2C controller when present. Allow platforms
-> to indicate the presence of the ICPFUNC registers with a has_pfunc platform
-> data flag and add optional DT property "ti,has-pfunc" to indicate
-> the same in DT.
-On what does it depend if this pfunc stuff works or not? Only the SoC,
-or also on some board specific properties? Given the former using the
-compatible string to detect its availability would be better. (In this
-case also sorry, didn't consider this case when requesting the property
-in the last round.)
+> Would we just need a system wide memory barrier in that case instead of 
+> an outer shareable memory barrier, or would we need to look as something 
+> like a sync barrier?
 
-The patch looks ok.
+I think dmb(sy) would do the trick, but let's cross that bridge if/when we
+have to.
 
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Will
