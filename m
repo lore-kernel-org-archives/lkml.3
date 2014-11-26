@@ -1,128 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874AbaKZAPi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 19:15:38 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:41194 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045AbaKZAPg convert rfc822-to-8bit (ORCPT
+	id S1751559AbaKZAWU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 19:22:20 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:52639 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869AbaKZAWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 19:15:36 -0500
-References: <1416891578-14171-1-git-send-email-ethan.zhao@oracle.com> <1416891578-14171-2-git-send-email-ethan.zhao@oracle.com> <547498BC.9020704@intel.com>
-Mime-Version: 1.0 (1.0)
-In-Reply-To: <547498BC.9020704@intel.com>
-Content-Type: text/plain;
-	charset=gb2312
-Content-Transfer-Encoding: 8BIT
-Message-Id: <51EBF1F9-C972-4A40-BC44-944E4DD71CDD@gmail.com>
-Cc: Ethan Zhao <ethan.zhao@oracle.com>,
-        "linda.knippers@hp.com" <linda.knippers@hp.com>,
-        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "dirk.j.brandewie@intel.com" <dirk.j.brandewie@intel.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-X-Mailer: iPad Mail (12B435)
-From: ethan <ethan.kernel@gmail.com>
-Subject: Re: [PATCH 1/2 v3] intel_pstate: skip this driver if Sun server has _PPC method
-Date: Wed, 26 Nov 2014 08:15:32 +0800
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
+	Tue, 25 Nov 2014 19:22:18 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH] i2c: core: Fix probing of i2c slaves without interrupts
+Date: Wed, 26 Nov 2014 02:22:42 +0200
+Message-ID: <1869027.VfW5YtiRHN@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <1416224580-4782-1-git-send-email-geert+renesas@glider.be>
+References: <1416224580-4782-1-git-send-email-geert+renesas@glider.be>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dirk,
+Hi Geert,
 
-> 在 2014年11月25日，22:57，Dirk Brandewie <dirk.brandewie@gmail.com> 写道：
+On Monday 17 November 2014 12:43:00 Geert Uytterhoeven wrote:
+> Since commit 2fd36c55264926e2 ("i2c: core: Map OF IRQ at probe time"),
+> i2c slaves without interrupts (e.g. da9210 and at24 on r8a7791/koelsch)
+> fail to probe:
 > 
->> On 11/24/2014 08:59 PM, Ethan Zhao wrote:
->> Oracle Sun X86 servers have dynamic power capping capability that works via
->> ACPI _PPC method etc, so skip loading this driver if Sun server has ACPI _PPC
->> enabled.
-> How about this patch? only compile tested.
+>     at24: probe of 2-0050 failed with error -22
 > 
-Looks good to me, and obviously my one is much simpler :)
-I will test it and give you feed back.
+>     da9210: probe of 6-0068 failed with error -22
+> 
+> This happens because the call to of_irq_get() in i2c_device_probe()
+> returns -EINVAL.
+> 
+> If a device node does not have an "interrupts" property,
+> of_irq_parse_one() fails. Unlike irq_of_parse_and_map(), of_irq_get()
+> does not ignore errors from of_irq_parse_one(), but forwards them.
+> 
+> Make i2c_device_probe() ignore all errors but -EPROBE_DEFER to fix this,
+> just like platform_get_irq() and platform_get_irq_byname() already do.
 
-Thanks,
-Ethan
+Thank you for fixing my mistake.
 
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index 3468387..db7b8b2 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -1025,15 +1025,46 @@ static bool intel_pstate_no_acpi_pss(void)
->    return true;
-> }
+> Fixes: 2fd36c55264926e2 ("i2c: core: Map OF IRQ at probe time")
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+
+Just for the record, even if it's too late,
+
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+> ---
+>  drivers/i2c/i2c-core.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 > 
-> +static bool intel_pstate_has_acpi_ppc(void)
-> +{
-> +    int i;
-> +
-> +    for_each_possible_cpu(i) {
-> +        struct acpi_processor *pr = per_cpu(processors, i);
-> +
-> +        if (!pr)
-> +            continue;
-> +        if (acpi_has_method(pr->handle, "_PPC"))
-> +            return true;
-> +    }
-> +    return false;
-> +}
-> +
-> +enum {
-> +    PSS,
-> +    PCC,
-> +};
-> +
-> struct hw_vendor_info {
->    u16  valid;
->    char oem_id[ACPI_OEM_ID_SIZE];
->    char oem_table_id[ACPI_OEM_TABLE_ID_SIZE];
-> +    int  oem_pwr_table;
-> };
+> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+> index a0768d6dffc28aae..cf830915713b387a 100644
+> --- a/drivers/i2c/i2c-core.c
+> +++ b/drivers/i2c/i2c-core.c
+> @@ -629,8 +629,10 @@ static int i2c_device_probe(struct device *dev)
+>  	if (!client->irq && dev->of_node) {
+>  		int irq = of_irq_get(dev->of_node, 0);
 > 
-> /* Hardware vendor-specific info that has its own power management modes */
-> static struct hw_vendor_info vendor_info[] = {
-> -    {1, "HP    ", "ProLiant"},
-> +    {1, "HP    ", "ProLiant", PSS},
-> +    {1, "ORACLE", "X4-2    ", PCC},
-> +    {1, "ORACLE", "X4-2L   ", PCC},
-> +    {1, "ORACLE", "X4-2B   ", PCC},
-> +    {1, "ORACLE", "X3-2    ", PCC},
-> +    {1, "ORACLE", "X3-2L   ", PCC},
-> +    {1, "ORACLE", "X3-2B   ", PCC},
-> +    {1, "ORACLE", "X4470M2 ", PCC},
-> +    {1, "ORACLE", "X4270M3 ", PCC},
-> +    {1, "ORACLE", "X4270M2 ", PCC},
-> +    {1, "ORACLE", "X4170M2 ", PCC},
->    {0, "", ""},
-> };
+> -		if (irq < 0)
+> +		if (irq == -EPROBE_DEFER)
+>  			return irq;
+> +		if (irq < 0)
+> +			irq = 0;
 > 
-> @@ -1057,15 +1088,20 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
-> 
->    for (v_info = vendor_info; v_info->valid; v_info++) {
->        if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
-> -            !strncmp(hdr.oem_table_id, v_info->oem_table_id, ACPI_OEM_TABLE_ID_SIZE) &&
-> -            intel_pstate_no_acpi_pss())
-> -            return true;
-> +            !strncmp(hdr.oem_table_id, v_info->oem_table_id, ACPI_OEM_TABLE_ID_SIZE))
-> +            switch (v_info->oem_pwr_table) {
-> +            case PSS:
-> +                return intel_pstate_no_acpi_pss();
-> +            case PCC:
-> +                return intel_pstate_has_acpi_ppc();
-> +            }
->    }
-> 
->    return false;
-> }
-> #else /* CONFIG_ACPI not enabled */
-> static inline bool intel_pstate_platform_pwr_mgmt_exists(void) { return false; }
-> +static inline bool intel_pstate_has_acpi_ppc(void) { return false; }
-> #endif /* CONFIG_ACPI */
-> 
-> static int __init intel_pstate_init(void)
-> 
-> 
+>  		client->irq = irq;
+>  	}
+
+-- 
+Regards,
+
+Laurent Pinchart
+
