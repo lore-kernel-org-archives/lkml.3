@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390AbaKZGWS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 01:22:18 -0500
-Received: from ozlabs.org ([103.22.144.67]:41553 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751331AbaKZGWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 01:22:17 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Mike Snitzer <snitzer@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, martin.petersen@oracle.com,
-        hch@infradead.org, dm-devel@redhat.com
-Subject: Re: virtio_blk: fix defaults for max_hw_sectors and max_segment_size
-In-Reply-To: <20141120211521.GA846@redhat.com>
-References: <20141120190058.GA31214@redhat.com> <20141120203044.GA9078@redhat.com> <20141120211521.GA846@redhat.com>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 26 Nov 2014 16:28:27 +1030
-Message-ID: <87bnnuy03g.fsf@rustcorp.com.au>
+	id S1752430AbaKZGWc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 01:22:32 -0500
+Received: from mail-oi0-f44.google.com ([209.85.218.44]:45246 "EHLO
+	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364AbaKZGWa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 01:22:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1416944441-12066-3-git-send-email-sbranden@broadcom.com>
+References: <sbranden@broadcom.com>
+	<1416944441-12066-1-git-send-email-sbranden@broadcom.com>
+	<1416944441-12066-3-git-send-email-sbranden@broadcom.com>
+Date: Tue, 25 Nov 2014 22:22:30 -0800
+Message-ID: <CAD7vxxKgcu9QLY8qH8WR0b_5WBu+MNxcemmZ8syYa__JaC6tsQ@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] pwm: kona: Fix incorrect enable after channel
+ polarity change
+From: Tim Kryger <tim.kryger@gmail.com>
+To: Scott Branden <sbranden@broadcom.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>, Ray Jui <rjui@broadcom.com>,
+        Arun Ramamurthy <arunrama@broadcom.com>,
+        bcm-kernel-feedback-list@broadcom.com, linux-pwm@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Snitzer <snitzer@redhat.com> writes:
-> On Thu, Nov 20 2014 at  3:30pm -0500,
-> Michael S. Tsirkin <mst@redhat.com> wrote:
+On Tue, Nov 25, 2014 at 11:40 AM, Scott Branden <sbranden@broadcom.com> wrote:
+> From: Arun Ramamurthy <arunrama@broadcom.com>
 >
->> On Thu, Nov 20, 2014 at 02:00:59PM -0500, Mike Snitzer wrote:
->> > virtio_blk incorrectly established -1U as the default for these
->> > queue_limits.  Set these limits to sane default values to avoid crashing
->> > the kernel.
-> ...
->> > Attempting to mkfs.xfs against a thin device from this thin-pool quickly
->> > resulted in fs/direct-io.c:dio_send_cur_page()'s BUG_ON.
->> 
->> Why exactly does it BUG_ON?
->> Did some memory allocation fail?
+> The pwm core code requires a separate call for enabling the channel
+> and hence the driver does not need to set pwm_trigger after a
+> polarity change
+
+The framework does restrict when polarity changes can occur but it
+isn't clear to me that there is any reason to delay applying the
+polarity change.  Keep in mind that polarity matters even when a PWM
+is disabled.  While disabled, the output should be equivalent to an
+enabled configuration with zero duty.  Thus for normal polarity the
+output is constant low and for inversed polarity the output is
+constant high. I believe there is an expectation that the output is
+updated to reflect the requested polarity change prior to returning to
+the caller.
+
 >
-> No idea, kernel log doesn't say.. all it has is "kernel BUG" pointing to
-> fs/direct-io.c:dio_send_cur_page()'s BUG_ON.
+> Signed-off-by: Arun Ramamurthy <arunrama@broadcom.com>
+> Reviewed-by: Ray Jui <rjui@broadcom.com>
+> Signed-off-by: Scott Branden <sbranden@broadcom.com>
+> ---
+>  drivers/pwm/pwm-bcm-kona.c | 5 -----
+>  1 file changed, 5 deletions(-)
 >
-> I could dig deeper on _why_ but honestly, there really isn't much point.
-
-There is *always* a point in understanding the code you are modifying.
-
-> virtio-blk doesn't get to live in fantasy-land just because it happens
-> to think it is limitless.
-
-Calm down please.
-
-We don't have a sector limit.  We have a segment limit, which is set
-above this line.
-
-Cheers,
-Rusty.
+> diff --git a/drivers/pwm/pwm-bcm-kona.c b/drivers/pwm/pwm-bcm-kona.c
+> index 29eef9e..fa0b5bf 100644
+> --- a/drivers/pwm/pwm-bcm-kona.c
+> +++ b/drivers/pwm/pwm-bcm-kona.c
+> @@ -173,11 +173,6 @@ static int kona_pwmc_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
+>
+>         writel(value, kp->base + PWM_CONTROL_OFFSET);
+>
+> -       kona_pwmc_apply_settings(kp, chan);
+> -
+> -       /* Wait for waveform to settle before gating off the clock */
+> -       ndelay(400);
+> -
+>         clk_disable_unprepare(kp->clk);
+>
+>         return 0;
+> --
+> 2.1.3
+>
