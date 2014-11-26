@@ -1,125 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385AbaKZRzA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 12:55:00 -0500
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:37102 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751393AbaKZRy7 (ORCPT
+	id S1753583AbaKZRzR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 12:55:17 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39616 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751393AbaKZRzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 12:54:59 -0500
-Message-ID: <547613F0.4060805@hp.com>
-Date: Wed, 26 Nov 2014 12:54:56 -0500
-From: Linda Knippers <linda.knippers@hp.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 26 Nov 2014 12:55:12 -0500
+Date: Wed, 26 Nov 2014 17:53:04 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Message-ID: <20141126175304.GM7712@sirena.org.uk>
+References: <546B5EF9.3080102@mentor.com>
+ <546CAB49.8030103@mentor.com>
+ <20141125121749.GV7712@sirena.org.uk>
+ <54760D6A.9080306@mentor.com>
 MIME-Version: 1.0
-To: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Ethan Zhao <ethan.zhao@oracle.com>, viresh.kumar@linaro.org,
-        rjw@rjwysocki.net, corbet@lwn.net
-CC: dirk.j.brandewie@intel.com, linux-doc@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ethan.kernel@gmail.com
-Subject: Re: [PATCH 1/2 v3] intel_pstate: skip this driver if Sun server has
- _PPC method
-References: <1416891578-14171-1-git-send-email-ethan.zhao@oracle.com> <1416891578-14171-2-git-send-email-ethan.zhao@oracle.com> <547498BC.9020704@intel.com>
-In-Reply-To: <547498BC.9020704@intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+hzVtCVhCZp1LI1Y"
+Content-Disposition: inline
+In-Reply-To: <54760D6A.9080306@mentor.com>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: Question about fixed regulator DT properties
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2014 9:57 AM, Dirk Brandewie wrote:
-> On 11/24/2014 08:59 PM, Ethan Zhao wrote:
->> Oracle Sun X86 servers have dynamic power capping capability that works via
->> ACPI _PPC method etc, so skip loading this driver if Sun server has ACPI _PPC
->> enabled.
->>
-> 
-> How about this patch? only compile tested.
 
-It looks much better to me.  I'll give it a try.
+--+hzVtCVhCZp1LI1Y
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- ljk
+On Wed, Nov 26, 2014 at 07:27:06PM +0200, Vladimir Zapolskiy wrote:
+> On 25.11.2014 14:17, Mark Brown wrote:
 
-> 
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index 3468387..db7b8b2 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -1025,15 +1025,46 @@ static bool intel_pstate_no_acpi_pss(void)
->      return true;
->  }
-> 
-> +static bool intel_pstate_has_acpi_ppc(void)
-> +{
-> +    int i;
-> +
-> +    for_each_possible_cpu(i) {
-> +        struct acpi_processor *pr = per_cpu(processors, i);
-> +
-> +        if (!pr)
-> +            continue;
-> +        if (acpi_has_method(pr->handle, "_PPC"))
-> +            return true;
-> +    }
-> +    return false;
-> +}
-> +
-> +enum {
-> +    PSS,
-> +    PCC,
-> +};
-> +
->  struct hw_vendor_info {
->      u16  valid;
->      char oem_id[ACPI_OEM_ID_SIZE];
->      char oem_table_id[ACPI_OEM_TABLE_ID_SIZE];
-> +    int  oem_pwr_table;
->  };
-> 
->  /* Hardware vendor-specific info that has its own power management modes */
->  static struct hw_vendor_info vendor_info[] = {
-> -    {1, "HP    ", "ProLiant"},
-> +    {1, "HP    ", "ProLiant", PSS},
-> +    {1, "ORACLE", "X4-2    ", PCC},
-> +    {1, "ORACLE", "X4-2L   ", PCC},
-> +    {1, "ORACLE", "X4-2B   ", PCC},
-> +    {1, "ORACLE", "X3-2    ", PCC},
-> +    {1, "ORACLE", "X3-2L   ", PCC},
-> +    {1, "ORACLE", "X3-2B   ", PCC},
-> +    {1, "ORACLE", "X4470M2 ", PCC},
-> +    {1, "ORACLE", "X4270M3 ", PCC},
-> +    {1, "ORACLE", "X4270M2 ", PCC},
-> +    {1, "ORACLE", "X4170M2 ", PCC},
->      {0, "", ""},
->  };
-> 
-> @@ -1057,15 +1088,20 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
-> 
->      for (v_info = vendor_info; v_info->valid; v_info++) {
->          if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
-> -            !strncmp(hdr.oem_table_id, v_info->oem_table_id,
-> ACPI_OEM_TABLE_ID_SIZE) &&
-> -            intel_pstate_no_acpi_pss())
-> -            return true;
-> +            !strncmp(hdr.oem_table_id, v_info->oem_table_id,
-> ACPI_OEM_TABLE_ID_SIZE))
-> +            switch (v_info->oem_pwr_table) {
-> +            case PSS:
-> +                return intel_pstate_no_acpi_pss();
-> +            case PCC:
-> +                return intel_pstate_has_acpi_ppc();
-> +            }
->      }
-> 
->      return false;
->  }
->  #else /* CONFIG_ACPI not enabled */
->  static inline bool intel_pstate_platform_pwr_mgmt_exists(void) { return false; }
-> +static inline bool intel_pstate_has_acpi_ppc(void) { return false; }
->  #endif /* CONFIG_ACPI */
-> 
->  static int __init intel_pstate_init(void)
-> 
-> 
+> b) "regulator-boot-on" does not mean that the regulator is controlled by
+> bootloader or firmware exclusively.
 
+That's correct...
+
+> >>> Should documentation be updated to reflect "regulator-boot-on" role that
+> >>> a regulator is re-enabled by the kernel?
+
+> > I'm confused about this.  That's the sole purpose of the flag and as far
+> > as I can tell it's what the documentation says.
+
+> Documentation/devicetree/bindings/regulator/regulator.txt says:
+
+>   - regulator-boot-on: bootloader/firmware enabled regulator
+
+> I would suggest to add Linux kernel to that list of regulator
+> controllers, if it is the intention. In its current state the
+> documentation makes an impression that "regulator-boot-on" property
+> instructs the kernel to ignore regulator setup, since it is already
+> controlled by bootloader or firmware.
+
+No, not at all.  It's referring to the state when Linux starts.
+
+--+hzVtCVhCZp1LI1Y
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUdhOAAAoJECTWi3JdVIfQq6UH/jt3gaVEV5KPfzrDUZHiTkoI
+H931grOZ4XPifKIIv3FjAB2Bb0gTj9g5R3Y/1DeZ6yPyjdOQ3hSGXo8C6ARoYn6k
+LgUcpz6sUufE7OOLk5AfnX4KK6BA/L/nkPYKkw2ISjLqmFF2c8G5d3oUZp+V0FWH
+ZlZN/ST1kOXOjLPzt95AgDg2bIcS0vBp1omzRHx4vIHQHP5sPX9f6nHHLfFD60hG
+VqK/GQq1w4NEXFiat0GtMgHDu+r2LmGcRFK0h+FkI1KI5y/9g1UzKvE7rh6cI8/j
+O+uIvOA4wuB0Y9XJgDj2RaVrM/s/DUlzAqQ7bHqPVdyyPxegR4rlbYnM4StziaA=
+=hEx/
+-----END PGP SIGNATURE-----
+
+--+hzVtCVhCZp1LI1Y--
