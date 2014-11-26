@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848AbaKZOFz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 09:05:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51022 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750927AbaKZOFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 09:05:53 -0500
-Date: Wed, 26 Nov 2014 16:05:39 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v4 25/42] vhost: add memory access wrappers
-Message-ID: <20141126140539.GA5528@redhat.com>
-References: <1416933600-21398-1-git-send-email-mst@redhat.com>
- <1416933600-21398-26-git-send-email-mst@redhat.com>
- <20141126145438.4421c00d.cornelia.huck@de.ibm.com>
-MIME-Version: 1.0
+	id S1752658AbaKZOGB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 09:06:01 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:55644 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981AbaKZOF6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 09:05:58 -0500
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141126145438.4421c00d.cornelia.huck@de.ibm.com>
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: bluetooth related firmware loader spew on resume.
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1416996623.3171.7.camel@linux-0dmf.site>
+Date: Wed, 26 Nov 2014 23:05:20 +0900
+Cc: Takashi Iwai <tiwai@suse.de>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, pgynther@google.com,
+        linux-bluetooth@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0E1D95E7-64D2-4BEA-AFAA-4B119838F24E@holtmann.org>
+References: <20141111181228.GA27815@redhat.com> <s5hsih7xmgg.wl-tiwai@suse.de> <D19A9DA1-3706-4351-B2E9-25D5ABA662E7@holtmann.org> <s5h7fyijqc9.wl-tiwai@suse.de> <1416996623.3171.7.camel@linux-0dmf.site>
+To: Oliver Neukum <oneukum@suse.de>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 02:54:38PM +0100, Cornelia Huck wrote:
-> On Tue, 25 Nov 2014 18:43:10 +0200
-> "Michael S. Tsirkin" <mst@redhat.com> wrote:
+Hi Oliver,
+
+>> In order to paper over this, we may also remember the failing firmware
+>> and avoid loading it.  This might be an easer way than the endless
+>> fight against UMH race...
 > 
-> "These wrappers are needed to handle virtio endianness conversions."
 > 
-> ?
+> the full fix would be to implement reset_resume() for btusb.
+> It seems to me that setup() should be split in two methods,
+> one to request the firmware from user space and the second
+> to transfer it to the device. reset_resume() would just need
+> to repeat the second operation.
 
-yes, it's same as virtio ones. I'll add this text, thanks.
+so when you do hci_register_dev, then hdev->setup is only called once. I really mean only once per lifetime of the hci_dev. So you would need to unregister the hci_dev first before hdev->setup will ever be called again. So I am not sure this is actually the problem here. The problem here is entirely within request_firmware() unless of course we run through the USB probe handlers again. Which I do not see happening here.
 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  drivers/vhost/vhost.h | 33 ++++++++++++++++++++++++++++++++-
-> >  1 file changed, 32 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-> > index 3eda654..b9032e8 100644
-> > --- a/drivers/vhost/vhost.h
-> > +++ b/drivers/vhost/vhost.h
-> > @@ -174,6 +174,37 @@ enum {
-> > 
-> >  static inline int vhost_has_feature(struct vhost_virtqueue *vq, int bit)
-> >  {
-> > -	return vq->acked_features & (1 << bit);
-> > +	return vq->acked_features & (1ULL << bit);
-> 
-> Should this hunk go into patch 28?
+And we have hdev->setup this way since normally the Bluetooth devices keep their firmware patches and not forget about them and suspend-resume cycles. If the USB device of course jumps of the bus during it then all bets are off anyway.
 
-Well, this is needed here since 1 << 32 is not legal C.
+Regards
 
-I can move it - this means patch 28 will have to move earlier
-in series though.
+Marcel
 
-
-
-> > +}
