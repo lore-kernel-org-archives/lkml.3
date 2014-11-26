@@ -1,87 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751937AbaKZULS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 15:11:18 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:46246 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107AbaKZULP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 15:11:15 -0500
-From: Kevin Hilman <khilman@kernel.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Ulrich Hecht <ulrich.hecht+renesas@gmail.com>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC 0/3] Add "Simple" / Renesas Bus State Controller Driver
-References: <1416859808-18503-1-git-send-email-geert+renesas@glider.be>
-	<6261300.I132f1jLqB@wuerfel>
-	<CAMuHMdVjpL-QgS0aAdMo4EHXibhpKCJC73yY+HDY=+Ae=LMigA@mail.gmail.com>
-Date: Wed, 26 Nov 2014 12:11:12 -0800
-In-Reply-To: <CAMuHMdVjpL-QgS0aAdMo4EHXibhpKCJC73yY+HDY=+Ae=LMigA@mail.gmail.com>
-	(Geert Uytterhoeven's message of "Mon, 24 Nov 2014 21:27:06 +0100")
-Message-ID: <7h4mtlen8f.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1752064AbaKZUNr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 15:13:47 -0500
+Received: from arrakis.dune.hu ([78.24.191.176]:48137 "EHLO arrakis.dune.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750770AbaKZUNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 15:13:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAJiQ=7DXQX8h-1+K4-NSWjFqmr8nDCU62KzcyKKXiuvLUSHpEg@mail.gmail.com>
+References: <1416796846-28149-1-git-send-email-cernekee@gmail.com>
+ <1416796846-28149-7-git-send-email-cernekee@gmail.com> <CAOiHx=ntm7AO5BU2Ge0JDC5nDgXSZwQDm05s5VTM8mLqYmCZRw@mail.gmail.com>
+ <CAJiQ=7CvpFWxDY1uad2bZz8MBG0Mvg2Jx8WBp6gHi-kD4TDvXA@mail.gmail.com>
+ <CAOiHx=m+At9u=eepphG89kcusOKbBi1qqxT8k-Qyx-OMdMAJKw@mail.gmail.com>
+ <CAOiHx=k_4r=jtQdi0ABvfKAw0JtHY9Z46pVUfetDmKz4d0XoFQ@mail.gmail.com> <CAJiQ=7DXQX8h-1+K4-NSWjFqmr8nDCU62KzcyKKXiuvLUSHpEg@mail.gmail.com>
+From: Jonas Gorski <jogo@openwrt.org>
+Date: Wed, 26 Nov 2014 21:13:15 +0100
+Message-ID: <CAOiHx=mRonqUR_u8msKiSJVLoJMJT8CXhJeo6oQMFF+AxRE=6Q@mail.gmail.com>
+Subject: Re: [PATCH V3 06/11] irqchip: bcm7120-l2: Change DT binding to allow
+ non-contiguous IRQEN/IRQSTAT
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Jon Fraser <jfraser@broadcom.com>, Dmitry Torokhov <dtor@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Brian Norris <computersforpeace@gmail.com>,
+        MIPS Mailing List <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> writes:
-
-> Hi Arnd,
->
-> On Mon, Nov 24, 2014 at 9:15 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Monday 24 November 2014 21:10:05 Geert Uytterhoeven wrote:
->>> As this minimal BSC driver isn't hardware-specific at all, I'm wondering
->>> if there's a simpler way to do this?
->>>   - Should the driver be renamed to "simple-bus", and match "simple-bus"?
->>>   - Should this be moved to core code, without an explicit driver for
->>>     "simple-bus"? I.e. should the driver core just enable runtime PM for
->>>     all devices not bound to a driver, as they may represent buses with
->>>     child devices that do rely on runtime PM?
+On Wed, Nov 26, 2014 at 7:54 PM, Kevin Cernekee <cernekee@gmail.com> wrote:
+> On Wed, Nov 26, 2014 at 2:25 AM, Jonas Gorski <jogo@openwrt.org> wrote:
+>> On Wed, Nov 26, 2014 at 10:45 AM, Jonas Gorski <jogo@openwrt.org> wrote:
+>>> As far as I can see, we have three distinct layouts here:
 >>>
->>> Thanks for your comments and suggestions!
+>>> a) An arbitrary number of 32-bit Mask/Status-pairs (3384/6838). No per
+>>> thread support (well, not sure about 60333).
+>>>
+>>> b) An arbitrary length (32 to 128 bit) Mask register, followed by a
+>>> same length Status register (63xx except 63381, 6818, 6828); repeated
+>>> for each thread.
+>>>
+>>> c) A single arbitrary length (currently only 128 bit) Status register,
+>>> followed by per thread same length Mask registers (63381).
+>>>
+>>> On a first glance this could translate to three distinct
+>>> drivers/compatible properties, where each expects different reg = <>;
+>>> contents.
+>>>
+>>> For a), it should be enough to expand the current 7120-l2 driver to
+>>> accept/use more than one 0x8 length register, which should simplify
+>>> the register map setup.
+>>>
+>>> For b) we could add a a new compatible name (maybe bcm6358-l2, because
+>>> that was AFAICT the first one with blocks) that will use the 8 to 32
+>>> byte length regs (one for each block). For now we could ignore the SMP
+>>> capability of it and make it a variant of the 7120-l2 driver, and when
+>>> we add SMP support, split it into a second different driver if we want
+>>> to avoid having all the spinlock for register accesses even for a).
+>>>
+>>> We could then even easily document/add the extra block registers /
+>>> interrrupts in documentation / the dtsi files before actually
+>>> supporting them, because we only have a fixed amount of regs/irqs to
+>>> expect in the !SMP case and can easily ignore the extra
+>>> registers/interrupts.
+>>>
+>>> For c) we could add a a third compatible name (bcm63381-l2), also with
+>>> its own setup routine. I would guess it doesn't matter if both
+>>> thread's irqstatus register pointers point to the same region.
 >>
->> My understanding of simple-bus is that it's something that does
->> not have any power-management capabilities, and I'd rather not
->> add clocks or interrupts to it.
+>> This split-up is especially tempting to me after I had a closer look
+>> at the current 7120-l2 driver, which already accepts more than one
+>> interrupt, but uses it in a different way. So even if we try to make
+>> it very flexible with only one compatible property,
+>>
+>>    reg = <irqstatus0 irqmask0 irqstatus1 irqmask1>;
+>>    interrupts = <irq0>, <irq1>;
+>>
+>> Could then mean either irq0 is for interrupts 0..31 (mask/status0) and
+>> irq1 for interrupts 32 .. 64 (mask/status1), or irq0 is for interrupts
+>> 0..31 on cpu0, and irq1 is for interrupts 0..31 on cpu1, and then
+>> would require an additional property to tell them apart, for which we
+>> then also could just use a different compatible name, and have (IMHO)
+>> a lot less headache.  (I wonder why we couldn't just have had more
+>> than one instance of 7120-l2 in the dts for the first case)
 >
-> OK.
+> I don't think we've used this driver to implement the first case yet.
 >
->> What I think makes more sense is to have a bus driver for it
->> in drivers/bus, remove the "simple-bus" compatibility value
->> and have the driver take care of registering the power domain
->> and probing the child devices using of_platform_populate on
->> itself.
+> The initial use of the driver was for the BCM7xxx IRQ0 block, which is
+> wired up according to the ASCII art diagram in
+> Documentation/devicetree/bindings/interrupt-controller/brcm,bcm7120-l2-intc.txt
+> .  i.e. different sets of bits in a single irqstatus0/irqmask0 pair
+> map to different parent IRQs.  The bits handled by each parent IRQ are
+> indicated in the brcm,int-map-mask property.
 >
-> Registering power domains is already handled by the core code.
->
-> So compared to my RFC code, I only have to
->   1. Drop "simple-bus" from the compatible property in the .dtsi,
->   2. Call of_platform_populate() from renesas_bsc_probe(), to
->      register the child devices, now the core code no longer does that.
->
-> I find it a bit strange having to add _more_ code, as the core code handles
-> registering child devices fine. Doing it from my bus driver only protects
-> against people trying to run a kernel without my bus driver included
-> (which currently works fine, as long as no PM domain or clock is involved,
->  e.g. if the clock is forgotten in the SoC's .dtsi :-).
+> And now on BCM3384, of course, we're seeing the output from two 32-bit
+> irqstatus/irqmask words ORed together into a single parent IRQ, for
+> periph_intc.  The other instances do have their own DT nodes.
 
-I actually rather like the simple bus driver in it's current form, where
-the device and pm-domain registration is taken care of by the
-core. Since it's really not HW specific at all, maybe just rename it
-simple-pm-bus or something like that?
+Ah indeed, I read it wrong. But it still the same "problem" of regs +
+> 1 parent interrupts already having a different meaning for bcm7120
+than what they will have for bcm63xx.
 
-Kevin
+I just successfully* booted bcm63xx with my proposed changes to
+bcm7120-l2-intc with a hacked together bcm6358-l2-intc probe routine,
+and I now think even less that having these two in one driver merged
+is a good idea. Especially if we want to support the affinity stuff.
+There seems to be quite a bit that will need to be changed for it.
 
+
+Jonas
+
+* took me a while to find your OF_DECLARE_2() for the mips-intc - sneaky ;p.
+
+P.S: I wonder how this patchset is supposed to go, as it depends on
+earlier bcm7120/generic irqchip patches marked in patchwork as "other
+subsystem".
