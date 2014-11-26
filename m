@@ -1,85 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002AbaKZCko (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 21:40:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33355 "EHLO mx1.redhat.com"
+	id S1752054AbaKZCmO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 21:42:14 -0500
+Received: from ozlabs.org ([103.22.144.67]:35458 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750938AbaKZCkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 21:40:42 -0500
-Date: Tue, 25 Nov 2014 21:40:32 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141126024032.GA13246@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	the arch/x86 maintainers <x86@kernel.org>
-References: <20141114213124.GB3344@redhat.com>
- <CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
- <20141115213405.GA31971@redhat.com>
- <20141116014006.GA5016@redhat.com>
- <CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
- <20141126002501.GA11752@redhat.com>
- <CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>
+	id S1751930AbaKZCmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 21:42:12 -0500
+Date: Wed, 26 Nov 2014 13:41:52 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>, "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>
+Subject: linux-next: manual merge of the block tree with the ext4 tree
+Message-ID: <20141126134152.49cd4296@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/VteD/TK2atdBXWzc6ZQvB4x"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 05:48:15PM -0800, Linus Torvalds wrote:
+--Sig_/VteD/TK2atdBXWzc6ZQvB4x
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
- > You have also marked 3.18-rc1 bad *twice*, along with the network
- > merge, and the tty merge. That's just odd. But it doesn't make the
- > bisect wrong, it just means that you fat-fingered thing and marked the
- > same thing bad a couple of times.
- > 
- > Nothing to worry about, unless it's a sign of early Parkinsons...
+Hi Jens,
 
-Intentional on my part, without realizing the first one was recorded.
-First time, it printed the usual bisect text, but then complained my
-tree was dirty (which it was). I unapplied the stuff I had, and did
-the bisect command a 2nd time..
+Today's linux-next merge of the block tree got a conflict in
+fs/fs-writeback.c between commit 74ba19abbeae ("vfs: add support for a
+lazytime mount option") from the ext4 tree and commit 9c6ac78eb352
+("writeback: fix a subtle race condition in I_DIRTY clearing") from the
+block tree.
 
- > > Does that trace ring a bell of something else I could try on top of
- > > each bisection point ?
- > 
- > Hmm.
- > 
- > Smells somewhat like the "pipe/page fault oddness" bug you reported.
- > 
- > That one caused endless page faults on fault_in_pages_writeable()
- > because of a page table entry that the VM thought was present, but the
- > CPU thought was missing.
- > 
- > That caused the whole "pte_protnone()" thing, and trying to get rid of
- > the PTE_NUMA bit, but those patches have *not* been merged. And you
- > were ever able to reproduce it., so we left it as pending.
+I fixed it up (maybe, please check - see below) and can carry the fix
+as necessary (no action is required).
 
-ah, yeah, now it comes back to me.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
- > But if you actually really think that the bisect log you posted is
- > real and true and actually is the bug you're chasing, I have bad news
- > for you: do a "gitk --bisect", and you'll see that all the remaining
- > commits are just to staging drivers.
- > 
- > So that would either imply you have some staging driver (unlikely), or
- > more likely that 3.17 really already has the problem, it's just that
- > it needs some particular code alignment or phase of the moon or
- > something to trigger.
+diff --cc fs/fs-writeback.c
+index cab2d6d74828,2d609a5fbfea..000000000000
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@@ -480,12 -479,28 +480,28 @@@ __writeback_single_inode(struct inode *
+  	 * write_inode()
+  	 */
+  	spin_lock(&inode->i_lock);
+- 	/* Clear I_DIRTY_PAGES if we've written out all dirty pages */
+- 	if (!mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
+- 		inode->i_state &=3D ~I_DIRTY_PAGES;
++=20
+  	dirty =3D inode->i_state & I_DIRTY;
+- 	inode->i_state &=3D ~(I_DIRTY_SYNC | I_DIRTY_DATASYNC | I_DIRTY_TIME);
+ -	inode->i_state &=3D ~I_DIRTY;
+++	inode->i_state &=3D ~(I_DIRTY | I_DIRTY_TIME);
++=20
++ 	/*
++ 	 * Paired with smp_mb() in __mark_inode_dirty().  This allows
++ 	 * __mark_inode_dirty() to test i_state without grabbing i_lock -
++ 	 * either they see the I_DIRTY bits cleared or we see the dirtied
++ 	 * inode.
++ 	 *
++ 	 * I_DIRTY_PAGES is always cleared together above even if @mapping
++ 	 * still has dirty pages.  The flag is reinstated after smp_mb() if
++ 	 * necessary.  This guarantees that either __mark_inode_dirty()
++ 	 * sees clear I_DIRTY_PAGES or we see PAGECACHE_TAG_DIRTY.
++ 	 */
++ 	smp_mb();
++=20
++ 	if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
++ 		inode->i_state |=3D I_DIRTY_PAGES;
++=20
+  	spin_unlock(&inode->i_lock);
++=20
+  	/* Don't write the inode if only I_DIRTY_PAGES was set */
+  	if (dirty & (I_DIRTY_SYNC | I_DIRTY_DATASYNC)) {
+  		int err =3D write_inode(inode, wbc);
 
-Maybe I'll try 3.17 + perf fix for an even longer runtime.
-Like over thanksgiving or something.
+--Sig_/VteD/TK2atdBXWzc6ZQvB4x
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
-If some of the bisection points so far had been 'good', I would
-go back and re-check, but every step of the way I've been able
-to reproduce it.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-	Dave
+iQIcBAEBCAAGBQJUdT4BAAoJEMDTa8Ir7ZwVWDsQAJVwTxFXnyS3m1F7jrDCWnDL
+HuZ6UUfvKIXOiRd2qULJkW9/novbaKaGs6TUQh8L3xWTW7Wi9qb/8zehi7cbVUgi
+I3zk3ugnbLSoWNMPhwUsSSh5ar17HJHNo7/qgf0B4cGYLbsZ8ALjGz4FmhbWgcly
+L49oUTSrCC1MpqIOZX/kPsf/8JuqsLs289YIqg/xdxy5e0fQSY+oWmO7cViR2sTQ
+FZRVlkwhBalaRIQqjrRrwvQT/AyWksT5wFpvd8IVnEruX6v09rK9610KlFwUpSyl
+ndN8PGgTKn2uoDBdRbeNWaVlJeT5JxkJjg8Kq8FukvTsSMx7ObUsjjer2nptz4Da
+LYc/l+eAGI1CP4eIvlTnzmPvMa7s4VS2u2UH0b/KONXphA4LrNguS3lzZFiBcDaK
+hHTCKJlsDeF4tcqX9Hs9RO33mkfOnRu8K2nfajLzMu0LasnMxkqqNF0g008JxOIv
+1Od5JQxcoD1PsUB7lHJJ8LFvCVS/0bo/4+UhLTOJiZemuEDSPRVoBAqm4F09vv3z
+/UnJMIfJU4F2AJPKQqfMgcq0UeoTIqmXDjiER6l7re65ssRl7lvihc9r0Gr4/wz9
+QiPf4Fdii0bGoB8bhIAJY/6Ha9fX0qLpNqPqjlQVH13YKjruB1BsP7JS3838/2iH
+xkGPYs8o8zCLeB0R2G6z
+=bI3d
+-----END PGP SIGNATURE-----
 
+--Sig_/VteD/TK2atdBXWzc6ZQvB4x--
