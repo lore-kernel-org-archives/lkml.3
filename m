@@ -1,33 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334AbaKZXRe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 18:17:34 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58793 "EHLO
+	id S1754367AbaKZXRr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 18:17:47 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58811 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754096AbaKZXRa (ORCPT
+	with ESMTP id S1754342AbaKZXRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 18:17:30 -0500
-Date: Wed, 26 Nov 2014 15:16:34 -0800
+	Wed, 26 Nov 2014 18:17:45 -0500
+Date: Wed, 26 Nov 2014 15:16:50 -0800
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-e89d2293022b55daadbde81b9050eed532d2b7d1@git.kernel.org>
-Cc: bp@alien8.de, linux-kernel@vger.kernel.org, grant.likely@linaro.org,
-        hpa@zytor.com, tony.luck@intel.com, wangyijing@huawei.com,
-        tglx@linutronix.de, gregkh@linuxfoundation.org, yinghai@kernel.org,
-        joro@8bytes.org, mingo@kernel.org, konrad.wilk@oracle.com,
-        rdunlap@infradead.org, bhelgaas@google.com, benh@kernel.crashing.org,
-        jiang.liu@linux.intel.com, jroedel@suse.de, rjw@rjwysocki.net
-Reply-To: jiang.liu@linux.intel.com, rjw@rjwysocki.net, jroedel@suse.de,
-        benh@kernel.crashing.org, joro@8bytes.org, mingo@kernel.org,
-        konrad.wilk@oracle.com, bhelgaas@google.com, rdunlap@infradead.org,
-        tglx@linutronix.de, wangyijing@huawei.com, gregkh@linuxfoundation.org,
-        yinghai@kernel.org, grant.likely@linaro.org, hpa@zytor.com,
-        tony.luck@intel.com, linux-kernel@vger.kernel.org, bp@alien8.de
-In-Reply-To: <1416901802-24211-16-git-send-email-jiang.liu@linux.intel.com>
-References: <1416901802-24211-16-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <tip-66cb4424740b7584d8ffe22d5c2850f7c773a840@git.kernel.org>
+Cc: benh@kernel.crashing.org, rdunlap@infradead.org, bp@alien8.de,
+        konrad.wilk@oracle.com, bhelgaas@google.com, tglx@linutronix.de,
+        yinghai@kernel.org, gregkh@linuxfoundation.org, hpa@zytor.com,
+        jiang.liu@linux.intel.com, linux-kernel@vger.kernel.org,
+        rjw@rjwysocki.net, mingo@kernel.org, joro@8bytes.org,
+        tony.luck@intel.com
+Reply-To: tony.luck@intel.com, joro@8bytes.org, rjw@rjwysocki.net,
+        mingo@kernel.org, gregkh@linuxfoundation.org, yinghai@kernel.org,
+        jiang.liu@linux.intel.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        konrad.wilk@oracle.com, bp@alien8.de, tglx@linutronix.de,
+        bhelgaas@google.com, rdunlap@infradead.org, benh@kernel.crashing.org
+In-Reply-To: <1416901802-24211-17-git-send-email-jiang.liu@linux.intel.com>
+References: <1416901802-24211-17-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq:
-  Kill x86_io_apic_ops.eoi_ioapic_pin and related interfaces
-Git-Commit-ID: e89d2293022b55daadbde81b9050eed532d2b7d1
+Subject: [tip:x86/apic] x86, irq: Kill GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
+Git-Commit-ID: 66cb4424740b7584d8ffe22d5c2850f7c773a840
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -40,193 +38,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e89d2293022b55daadbde81b9050eed532d2b7d1
-Gitweb:     http://git.kernel.org/tip/e89d2293022b55daadbde81b9050eed532d2b7d1
+Commit-ID:  66cb4424740b7584d8ffe22d5c2850f7c773a840
+Gitweb:     http://git.kernel.org/tip/66cb4424740b7584d8ffe22d5c2850f7c773a840
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Tue, 25 Nov 2014 15:49:39 +0800
+AuthorDate: Tue, 25 Nov 2014 15:49:40 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Wed, 26 Nov 2014 23:52:47 +0100
 
-x86, irq: Kill x86_io_apic_ops.eoi_ioapic_pin and related interfaces
+x86, irq: Kill GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
 
-Now there is no user of x86_io_apic_ops.eoi_ioapic_pin anymore, so kill
-it.
+There's no user of irq_alloc_hwirqs(), irq_alloc_hwirq(), irq_free_hwirqs()
+and irq_free_hwirq() anymore, so kill GENERIC_IRQ_LEGACY_ALLOC_HWIRQ and
+related code.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: iommu@lists.linux-foundation.org
 Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
 Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Yijing Wang <wangyijing@huawei.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Link: http://lkml.kernel.org/r/1416901802-24211-16-git-send-email-jiang.liu@linux.intel.com
+Link: http://lkml.kernel.org/r/1416901802-24211-17-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Tested-by: Joerg Roedel <jroedel@suse.de>
 ---
- arch/x86/include/asm/io_apic.h  |  7 -------
- arch/x86/include/asm/x86_init.h |  1 -
- arch/x86/kernel/apic/io_apic.c  | 20 ++++----------------
- arch/x86/kernel/x86_init.c      |  1 -
- drivers/iommu/irq_remapping.c   | 19 -------------------
- 5 files changed, 4 insertions(+), 44 deletions(-)
+ arch/x86/Kconfig              |  1 -
+ arch/x86/kernel/apic/vector.c | 34 ----------------------------------
+ 2 files changed, 35 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 5fba350..3b54f0f 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -150,10 +150,6 @@ struct irq_cfg;
- extern void ioapic_insert_resources(void);
- extern int arch_early_ioapic_init(void);
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index e05be74..9d783a7 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -881,7 +881,6 @@ config X86_UP_IOAPIC
+ config X86_LOCAL_APIC
+ 	def_bool y
+ 	depends on X86_64 || SMP || X86_32_NON_STANDARD || X86_UP_APIC || PCI_MSI
+-	select GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
+ 	select IRQ_DOMAIN_HIERARCHY
+ 	select PCI_MSI_IRQ_DOMAIN if PCI_MSI
  
--extern void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg);
--
--extern void native_eoi_ioapic_pin(int apic, int pin, int vector);
--
- extern int save_ioapic_entries(void);
- extern void mask_ioapic_entries(void);
- extern int restore_ioapic_entries(void);
-@@ -237,8 +233,6 @@ static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned
- 	x86_io_apic_ops.modify(apic, reg, value);
+diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
+index 4b8fad9..31dc4a8 100644
+--- a/arch/x86/kernel/apic/vector.c
++++ b/arch/x86/kernel/apic/vector.c
+@@ -660,40 +660,6 @@ void irq_force_complete_move(int irq)
  }
- 
--extern void io_apic_eoi(unsigned int apic, unsigned int vector);
--
- extern void setup_IO_APIC(void);
- extern void enable_IO_APIC(void);
- extern void disable_IO_APIC(void);
-@@ -282,7 +276,6 @@ static inline void disable_ioapic_support(void) { }
- #define native_io_apic_write		NULL
- #define native_io_apic_modify		NULL
- #define native_disable_io_apic		NULL
--#define native_eoi_ioapic_pin		NULL
  #endif
  
- #endif /* _ASM_X86_IO_APIC_H */
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index f9f83cf..4ada3d3 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -191,7 +191,6 @@ struct x86_io_apic_ops {
- 	void		(*write)  (unsigned int apic, unsigned int reg, unsigned int value);
- 	void		(*modify) (unsigned int apic, unsigned int reg, unsigned int value);
- 	void		(*disable)(void);
--	void		(*eoi_ioapic_pin)(int apic, int pin, int vector);
- };
- 
- extern struct x86_init_ops x86_init;
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 26fa504..2a10cb9 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -268,7 +268,7 @@ static __attribute_const__ struct io_apic __iomem *io_apic_base(int idx)
- 		+ (mpc_ioapic_addr(idx) & ~PAGE_MASK);
- }
- 
--void io_apic_eoi(unsigned int apic, unsigned int vector)
-+static inline void io_apic_eoi(unsigned int apic, unsigned int vector)
- {
- 	struct io_apic __iomem *io_apic = io_apic_base(apic);
- 	writel(vector, &io_apic->eoi);
-@@ -524,7 +524,7 @@ static void unmask_ioapic_irq(struct irq_data *data)
-  * Otherwise, we simulate the EOI message manually by changing the trigger
-  * mode to edge and then back to level, with RTE being masked during this.
-  */
--void native_eoi_ioapic_pin(int apic, int pin, int vector)
-+static void __eoi_ioapic_pin(int apic, int pin, int vector)
- {
- 	if (mpc_ioapic_ver(apic) >= 0x20) {
- 		io_apic_eoi(apic, vector);
-@@ -555,19 +555,7 @@ void eoi_ioapic_pin(int vector, struct irq_cfg *cfg)
- 
- 	raw_spin_lock_irqsave(&ioapic_lock, flags);
- 	for_each_irq_pin(entry, cfg->irq_2_pin)
--		native_eoi_ioapic_pin(entry->apic, entry->pin, vector);
--	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
--}
--
--void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg)
+-/*
+- * Dynamic irq allocate and deallocation. Should be replaced by irq domains!
+- */
+-int arch_setup_hwirq(unsigned int irq, int node)
 -{
--	struct irq_pin_list *entry;
+-	struct irq_cfg *cfg;
 -	unsigned long flags;
+-	int ret;
 -
--	raw_spin_lock_irqsave(&ioapic_lock, flags);
--	for_each_irq_pin(entry, cfg->irq_2_pin)
--		x86_io_apic_ops.eoi_ioapic_pin(entry->apic, entry->pin,
--					       cfg->vector);
-+		__eoi_ioapic_pin(entry->apic, entry->pin, vector);
- 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
- }
- 
-@@ -603,7 +591,7 @@ static void clear_IO_APIC_pin(unsigned int apic, unsigned int pin)
- 			ioapic_write_entry(apic, pin, entry);
- 		}
- 		raw_spin_lock_irqsave(&ioapic_lock, flags);
--		native_eoi_ioapic_pin(apic, pin, entry.vector);
-+		__eoi_ioapic_pin(apic, pin, entry.vector);
- 		raw_spin_unlock_irqrestore(&ioapic_lock, flags);
- 	}
- 
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index f7e8eab..f612dc0 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -144,5 +144,4 @@ struct x86_io_apic_ops x86_io_apic_ops = {
- 	.write			= native_io_apic_write,
- 	.modify			= native_io_apic_modify,
- 	.disable		= native_disable_io_apic,
--	.eoi_ioapic_pin		= native_eoi_ioapic_pin,
- };
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index 13243ac..d175d69 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -44,21 +44,9 @@ static void irq_remapping_disable_io_apic(void)
- 		disconnect_bsp_APIC(0);
- }
- 
--static void eoi_ioapic_pin_remapped(int apic, int pin, int vector)
--{
--	/*
--	 * Intr-remapping uses pin number as the virtual vector
--	 * in the RTE. Actual vector is programmed in
--	 * intr-remapping table entry. Hence for the io-apic
--	 * EOI we use the pin number.
--	 */
--	io_apic_eoi(apic, pin);
+-	cfg = alloc_irq_cfg(node);
+-	if (!cfg)
+-		return -ENOMEM;
+-
+-	raw_spin_lock_irqsave(&vector_lock, flags);
+-	ret = __assign_irq_vector(irq, cfg, apic->target_cpus());
+-	raw_spin_unlock_irqrestore(&vector_lock, flags);
+-
+-	if (!ret)
+-		irq_set_chip_data(irq, cfg);
+-	else
+-		free_irq_cfg(cfg);
+-	return ret;
 -}
 -
- static void __init irq_remapping_modify_x86_ops(void)
- {
- 	x86_io_apic_ops.disable		= irq_remapping_disable_io_apic;
--	x86_io_apic_ops.eoi_ioapic_pin	= eoi_ioapic_pin_remapped;
- }
- 
- static __init int setup_nointremap(char *str)
-@@ -194,12 +182,6 @@ void ir_ack_apic_edge(struct irq_data *data)
- 	ack_APIC_irq();
- }
- 
--static void ir_ack_apic_level(struct irq_data *data)
+-void arch_teardown_hwirq(unsigned int irq)
 -{
--	ack_APIC_irq();
--	eoi_ioapic_irq(data->irq, irqd_cfg(data));
+-	struct irq_cfg *cfg = irq_cfg(irq);
+-
+-	free_remapped_irq(irq);
+-	clear_irq_vector(irq, cfg);
+-	irq_set_chip_data(irq, NULL);
+-	free_irq_cfg(cfg);
 -}
 -
- void irq_remapping_print_chip(struct irq_data *data, struct seq_file *p)
+ static void __init print_APIC_field(int base)
  {
- 	/*
-@@ -222,7 +204,6 @@ void irq_remap_modify_chip_defaults(struct irq_chip *chip)
- {
- 	chip->irq_print_chip = ir_print_prefix;
- 	chip->irq_ack = ir_ack_apic_edge;
--	chip->irq_eoi = ir_ack_apic_level;
- }
- 
- bool setup_remapped_irq(int irq, struct irq_cfg *cfg, struct irq_chip *chip)
+ 	int i;
