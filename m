@@ -1,95 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793AbaKZP2u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 10:28:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58393 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753664AbaKZP2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 10:28:48 -0500
-Date: Wed, 26 Nov 2014 10:28:43 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Akira Hayakawa <ruby.wktk@gmail.com>
-Cc: dm-devel@redhat.com, gregkh@linuxfoundation.org,
-        masami.hiramatsu@gmail.com, linux-kernel@vger.kernel.org,
-        corbet@lwn.net
-Subject: Re: dm-writeboost: About inclusion into mainline
-Message-ID: <20141126152843.GC30136@redhat.com>
-References: <5475EB77.3050004@gmail.com>
+	id S1753627AbaKZPak (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 10:30:40 -0500
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:55061 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752717AbaKZPai (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 10:30:38 -0500
+Message-ID: <5475F218.4050207@de.ibm.com>
+Date: Wed, 26 Nov 2014 16:30:32 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5475EB77.3050004@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Michael S. Tsirkin" <mst@redhat.com>,
+        David Hildenbrand <dahi@linux.vnet.ibm.com>
+CC: linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
+        paulus@samba.org, akpm@linux-foundation.org, heiko.carstens@de.ibm.com,
+        schwidefsky@de.ibm.com, mingo@kernel.org
+Subject: Re: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
+ atomic
+References: <1416915806-24757-1-git-send-email-dahi@linux.vnet.ibm.com> <20141126070258.GA25523@redhat.com> <20141126110504.511b733a@thinkpad-w530> <20141126151729.GB9612@redhat.com>
+In-Reply-To: <20141126151729.GB9612@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112615-0009-0000-0000-000002268F62
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26 2014 at 10:02am -0500,
-Akira Hayakawa <ruby.wktk@gmail.com> wrote:
-
-> Hi,
+Am 26.11.2014 um 16:17 schrieb Michael S. Tsirkin:
+> On Wed, Nov 26, 2014 at 11:05:04AM +0100, David Hildenbrand wrote:
+>>> What's the path you are trying to debug?
+>>
+>> Well, we had a problem where we held a spin_lock and called
+>> copy_(from|to)_user(). We experienced very random deadlocks that took some guy
+>> almost a week to debug. The simple might_sleep() check would have showed this
+>> error immediately.
 > 
-> I am wondering what's the next step of dm-writeboost, my log-structured SSD-caching driver.
-> I want to discuss this.
-> 
-> I will start from introducing my activity on dm-writeboost.
-> It was more than a year ago that I proposed my dm-writeboost for staging.
-> Mike Snitzer, a maintainer of device-mapper, rejected it because dm-writeboost at that moment wasn't even suitable for staging.
-> (http://www.redhat.com/archives/dm-devel/2013-September/msg00075.html)
-> It is clear that the comment was really right. The code was actually terrible.
-> Since then, with helps of DM guys, dm-writeboost's design and implementation has been polished.
-> And it was included into Joe's linux-2.6 where he develops his drivers.
-> (https://github.com/jthornber/linux-2.6/tree/thin-dev/drivers/md)
-> I found some bugs and fixed them after this inclusion. I am confident the quality is good enough for staging.
-> 
-> Now, I can't find the way how I go over the wall.
-> It seems that third party drivers are rarely merged into the md.
-> The fact is, no third party driver (meaning proposed by other than RH) was included since I am involved with device-mapper, for 2 years.
-> I am really afraid dm-writeboost will never be into the md ever after.
-> 
-> In one sense, this sounds too conservative. New features are always rejected. As a result, third party developers, including me, are losing their willingness.
 
-You're painting with a really wide-brush here.  Both dm-verity and
-dm-switch started out as targets from 3rd party developers (Google and
-Dell/Equallogic respectively).  But while their feature was needed their
-implementation was lacking, so Mikulas rewrote them before they were
-included.
+> This must have been a very old kernel.
+> A modern kernel will return an error from copy_to_user.
 
-But yes, in general, I need to do better about getting to
-review/inclusion of 3rd party DM targets.  I have my hands full
-maintaining what DM targets we already have (not to mention DM core
-itself).
+I disagree. copy_to_user will not return while holding a spinlock, because it does not know! How should it?
+See: spin_lock will call preempt_disable, but thats a no-op for a non-preempt kernel. So the mere fact that we hold a spin_lock is not known by any user access function. (or others). No?
 
-It isn't just full targets (like DM dedup or DM lightnvm) that need
-proper review.  It is also DM core changes like adding blk-mq support to
-request-based DM.  Those changes are very much on my TODO.  DM dedup and
-the blk-mq changes near the top!
+Christian
 
-But as you can see from what I've staged for 3.19 inclusion I haven't
-been sitting around idle:
-https://git.kernel.org/cgit/linux/kernel/git/device-mapper/linux-dm.git/log/?h=dm-for-3.19
 
-Though you'll note that the focus of development has been on improving
-both DM thinp and DM cache (and DM core as needed).  Those targets are
-the bread winners from my perspective (lots of consumers and need for
-enterprise stability).
 
-All said, I _should_ be able to dedicate time to my backlog of DM review
-tasks the first few weeks of Decemeber.  But sadly that doesn't include
-time for dm-writeboost yet.
-
-> As you know, developing driver is a hard work and spend lot of
-> time. Actually, I spent hundreds or thousands of my private hours on
-> my driver (hoping that my driver will be included and become famous)
-> but I am almost giving up dm-writeboost if it has no hope. I know,
-> storage softwares should become safe-side but I also know that
-> willingness is the only key for non-paid development.
-
-If you're looking for fame you're developing the wrong software.  You're
-working on a well-worn software layer.
-
-Upstream has both dm-cache and bcache.  Please demonstrate that
-dm-writeboost offers an advantage over either of these already upstream
-caching solutions with at least _some_ convincing benchmark data.
-
-Mike
