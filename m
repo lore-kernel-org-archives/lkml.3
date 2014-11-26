@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752385AbaKZHek (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 02:34:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60596 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752143AbaKZHeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 02:34:37 -0500
-Date: Wed, 26 Nov 2014 08:34:30 +0100
-From: Joerg Roedel <jroedel@suse.de>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: Dave Airlie <airlied@gmail.com>, Mark Yao <mark.yao@rock-chips.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>, linux-api@vger.kernel.org,
-        linux-rockchip@lists.infradead.org,
-        Douglas Anderson <dianders@chromium.org>,
-        =?iso-8859-1?Q?St=E9phane?= Marchesin <marcheu@chromium.org>,
-        dbehr@chromium.org, Olof Johansson <olof@lixom.net>,
-        Daniel Kurtz <djkurtz@chromium.org>, Eddie Cai <cf@rock-chips.com>,
-        simon xue <xxm@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Kever Yang <kever.yang@rock-chips.com>, yxj@rock-chips.com,
-        xw@rock-chips.com
-Subject: Re: [PATCH v14 0/3] Add drm driver for Rockchip Socs
-Message-ID: <20141126073430.GD3156@suse.de>
-References: <1416447994-9921-1-git-send-email-mark.yao@rock-chips.com>
- <23617908.6oA5uRuO3l@diego>
- <CAPM=9tzvvb5U+8KaCO+K6CJi=rwWOkoW+4ZSFW_Oo9gTncvkWA@mail.gmail.com>
- <1557742.FTdLsE0bVs@diego>
+	id S1752336AbaKZHkf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 02:40:35 -0500
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:43931 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113AbaKZHke (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 02:40:34 -0500
+Date: Wed, 26 Nov 2014 02:40:14 -0500 (EST)
+From: Pankaj Gupta <pagupta@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, jasowang@redhat.com,
+        dgibson@redhat.com, vfalico@gmail.com, edumazet@google.com,
+        vyasevic@redhat.com, hkchu@google.com, xemul@parallels.com,
+        therbert@google.com, bhutchings@solarflare.com, xii@google.com,
+        stephen@networkplumber.org, jiri@resnulli.us,
+        sergei shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Message-ID: <538874253.4658840.1416987614805.JavaMail.zimbra@redhat.com>
+In-Reply-To: <20141125.132717.122094133335261929.davem@davemloft.net>
+References: <1416854044-10124-1-git-send-email-pagupta@redhat.com> <20141125.132717.122094133335261929.davem@davemloft.net>
+Subject: Re: [PATCH v2 net-next 3/3] tuntap: reduce the size of tun_struct
+ by using flex array.
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1557742.FTdLsE0bVs@diego>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.6]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF23 (Linux)/8.0.6_GA_5922)
+Thread-Topic: tuntap: reduce the size of tun_struct by using flex array.
+Thread-Index: 4PwEqcvOiZYqviY4KNbhrjkiOLUdkA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 01:37:51AM +0100, Heiko Stübner wrote:
+
 > 
-> Joerg, is your arm/rockchip branch [0] considered stable?
+> From: Pankaj Gupta <pagupta@redhat.com>
+> Date: Tue, 25 Nov 2014 00:04:04 +0530
 > 
-> [0] https://git.kernel.org/cgit/linux/kernel/git/joro/iommu.git/log/?h=arm/rockchip
->
+> > This patch switches to flex array to implement the flow caches, it brings
+> > several advantages:
+> > 
+> > - Reduce the size of the tun_struct structure, which allows us to increase
+> > the
+> >   upper limit of queues in future.
+> > - Avoid higher order memory allocation. It will be useful when switching to
+> >   pure hashing in flow cache which may demand a larger size array in
+> >   future.
+> > 
+> > After this patch, the size of tun_struct on x86_64 reduced from 8512 to
+> > 328
+> > 
+> > Signed-off-by: Jason Wang <jasowang@redhat.com>
+> > Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
+> > Reviewed-by: David Gibson <dgibson@redhat.com>
+> 
+> I see no reason to use flex arrays for this, you are preallocaing the
+> memory so if anything flex array is adding an unnecessary level of
+> redirection for every access in return for no real gains.
+> 
+> Just allocate the thing normally using kzalloc() or whatever.
 
-Yes, this branch will not be rebased. It can be pulled into another
-tree.
-
-
-	Joerg
+I agree. Will do the changes and submit v3.
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
