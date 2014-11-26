@@ -1,128 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751964AbaKZBnl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 20:43:41 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:60800 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbaKZBnj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 20:43:39 -0500
-Message-ID: <54752FF0.7080602@huawei.com>
-Date: Wed, 26 Nov 2014 09:42:08 +0800
-From: Hanjun Guo <guohanjun@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1752048AbaKZBpY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 20:45:24 -0500
+Received: from mga14.intel.com ([192.55.52.115]:26016 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751409AbaKZBpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 20:45:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,459,1413270000"; 
+   d="scan'208";a="628315046"
+Date: Wed, 26 Nov 2014 09:24:39 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Nadav Amit <nadav.amit@gmail.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm list <kvm@vger.kernel.org>, namit@cs.technion.ac.il,
+        hpa@linux.intel.com
+Subject: Re: [CFT PATCH v2 0/2] KVM: support XSAVES usage in the host
+Message-ID: <20141126012439.GA20090@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1416847414-22253-1-git-send-email-pbonzini@redhat.com>
+ <20141125101331.GA28985@kernel>
+ <54745BB0.8080304@redhat.com>
+ <400361E2-995A-44B4-B35A-0D35793B49DD@gmail.com>
+ <54748F70.70402@redhat.com>
+ <DEE91387-BFE2-4F83-9711-25B2B65CF655@gmail.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, "Olof Johansson" <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Will Deacon" <will.deacon@arm.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        "Jon Masters" <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        "Lorenzo Pieralisi" <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>, <Charles.Garcia-Tobin@arm.com>,
-        <Kangkang.Shen@huawei.com>, <linux-acpi@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linaro-acpi@lists.linaro.org>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: Re: [PATCH v5 02/18] ACPI / table: Add new function to get table
- entries
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <1581499.U8906vqSiO@vostro.rjw.lan> <5473F99D.6090505@huawei.com> <1591450.lUZUanAOs6@vostro.rjw.lan>
-In-Reply-To: <1591450.lUZUanAOs6@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.17.188]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <DEE91387-BFE2-4F83-9711-25B2B65CF655@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/26 5:20, Rafael J. Wysocki wrote:
-> On Tuesday, November 25, 2014 11:38:05 AM Hanjun Guo wrote:
->> On 2014/11/24 22:51, Rafael J. Wysocki wrote:
->>> On Monday, November 24, 2014 07:03:54 PM Hanjun Guo wrote:
->>>> On 2014-11-24 9:27, Rafael J. Wysocki wrote:
->>>>> On Friday, October 17, 2014 09:36:58 PM Hanjun Guo wrote:
->>>>>> From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
->>>>>>
->>>>>> The acpi_table_parse() function has a callback that
->>>>>> passes a pointer to a table_header. Add a new function
->>>>>> which takes this pointer and parses its entries. This
->>>>>> eliminates the need to re-traverse all the tables for
->>>>>> each call. e.g. as in acpi_table_parse_madt() which is
->>>>>> normally called after acpi_table_parse().
->>>>>>
->>>>>> Acked-by: Grant Likely <grant.likely@linaro.org>
->>>>>> Signed-off-by: Ashwin Chaugule <ashwin.chaugule@linaro.org>
->>>>>> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
->>>>>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->>>>>> ---
->>>>>>  drivers/acpi/tables.c |   67 ++++++++++++++++++++++++++++++++++---------------
->>>>>>  include/linux/acpi.h  |    4 +++
->>>>>>  2 files changed, 51 insertions(+), 20 deletions(-)
->>>>>>
->>>>>> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
->>>>>> index 6d5a6cd..21ae521 100644
->>>>>> --- a/drivers/acpi/tables.c
->>>>>> +++ b/drivers/acpi/tables.c
->>>>>> @@ -192,17 +192,14 @@ void acpi_table_print_madt_entry(struct acpi_subtable_header *header)
->>>>>>  
->>>>>>  
->>>>>>  int __init
->>>>>> -acpi_table_parse_entries(char *id,
->>>>>> -			     unsigned long table_size,
->>>>>> -			     int entry_id,
->>>>>> -			     acpi_tbl_entry_handler handler,
->>>>>> -			     unsigned int max_entries)
->>>>>> +acpi_parse_entries(unsigned long table_size,
->>>>>> +		acpi_tbl_entry_handler handler,
->>>>>> +		struct acpi_table_header *table_header,
->>>>>> +		int entry_id, unsigned int max_entries)
->>>>>>  {
->>>>>> -	struct acpi_table_header *table_header = NULL;
->>>>>>  	struct acpi_subtable_header *entry;
->>>>>> -	unsigned int count = 0;
->>>>>> +	int count = 0;
->>>>>>  	unsigned long table_end;
->>>>>> -	acpi_size tbl_size;
->>>>>>  
->>>>>>  	if (acpi_disabled)
->>>>>>  		return -ENODEV;
->>>>>> @@ -210,13 +207,11 @@ acpi_table_parse_entries(char *id,
->>>>>>  	if (!handler)
->>>>>>  		return -EINVAL;
->>>>>>  
->>>>>> -	if (strncmp(id, ACPI_SIG_MADT, 4) == 0)
->>>>>> -		acpi_get_table_with_size(id, acpi_apic_instance, &table_header, &tbl_size);
->>>>>> -	else
->>>>>> -		acpi_get_table_with_size(id, 0, &table_header, &tbl_size);
->>>>>> +	if (!table_size)
->>>>>> +		return -EINVAL;
->>>>>>  
->>>>>>  	if (!table_header) {
->>>>>> -		pr_warn("%4.4s not present\n", id);
->>>>>> +		pr_warn("Table header not present\n");
->>>>> The message doesn't make sense any more if the table signature is not printed.
->> For this message, since no table id is passed, and this message is printed in
->> acpi_table_parse_entries() before this function is called, I think we can check
->> the table_header before call this function and remove the printed message here.
-> table_header needs to be checked against NULL in the caller and the message
-> printed from there to my eyes.
+Hi all,
+On Tue, Nov 25, 2014 at 04:50:06PM +0200, Nadav Amit wrote:
+>
+>> On Nov 25, 2014, at 16:17, Paolo Bonzini <pbonzini@redhat.com> wrote:
+>> 
+>> 
+>> 
+>> On 25/11/2014 15:05, Nadav Amit wrote:
+>>>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>>>> index 373b0ab9a32e..ca26681455c2 100644
+>>>> --- a/arch/x86/kvm/x86.c
+>>>> +++ b/arch/x86/kvm/x86.c
+>>>> @@ -6955,6 +6955,9 @@ int fx_init(struct kvm_vcpu *vcpu)
+>>>> 		return err;
+>>>> 
+>>>> 	fpu_finit(&vcpu->arch.guest_fpu);
+>>>> +	if (cpu_has_xsaves)
+>>>> +		vcpu->arch.guest_fpu.state->xsave.xsave_hdr.xcomp_bv =
+>>>> +			host_xcr0 | XSTATE_COMPACTION_ENABLED;
+>>>> 
+>>>> 	/*
+>>>> 	 * Ensure guest xcr0 is valid for loading
+>>> 
+>>> The second version works for me (w/qemu v2.1.0; Linux 3.13 guest). I
 
-ok, I think table id should pass to this function, I will rework this patch
-and resend.
+Could you try 3.17 guest which has xsaves enabled? Because I'm not sure if 
+the below codes from Paolo is enough to mask XSAVES, should we also add 
+F(XSAVES)?
 
-Thanks
-Hanjun
++       const u32 kvm_supported_word10_x86_features =
++               F(XSAVEOPT) | F(XSAVEC) | F(XGETBV1);
++
 
+In addition, the 3.17 guest is still hang as I mentioned even if I add the 
+F(XSAVES) to the kvm_supported_word10_x86_features.
 
+>>> did not need to apply this patch on top. [although I am not sure whether
+>>> relying on userspace to call KVM_SET_XSAVE early enough is a good practice].
+>> 
+>> Did you actually try the patch? :)  If it works, I'm tempted to apply it
+>> anyway.
+>Yes, I tried it both with and without this patch.
+>Due to time constraints I only tested minimal functionality (Linux boot).
+>I will run more tests in the near future. Anyhow, you can put the:
+>
+>Tested-by: Nadav Amit <namit@cs.technion.ac.il>
+>
+>> 
+>>> One disclaimer: Since I got limited time with the machine, I executed
+>>> a slightly modified kernel/qemu, and not the latest version.
+>>> Anyhow, I don’t think these differences can have any impact.
+>> 
+>> Yes, that is no problem.
+>
+>I am just worried that Wanpeng reported it fails, while I report it works...
+>
+
+I have another patch which enable xsaves in KVM and the patch is still
+under debug with Paolo's patch "KVM: x86: support XSAVES usage in the host",
+so the 1/2 patch from Paolo can be dropped if my patch is ready. Anyway,
+a quick fix is needed before enable xsaves in kvm. 
+
+Regards,
+Wanpeng Li 
+
+>Nadav
