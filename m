@@ -1,111 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751342AbaKZNIV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 08:08:21 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:46005 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884AbaKZNIU (ORCPT
+	id S1752065AbaKZNI0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 08:08:26 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:63989 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378AbaKZNIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 08:08:20 -0500
+	Wed, 26 Nov 2014 08:08:22 -0500
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: tglx@linutronix.de
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         ezequiel.garcia@free-electrons.com, yl22@csr.com
-Subject: [PATCH 1/4] clocksource: sirf: Remove hard-coded clock rate
-Date: Wed, 26 Nov 2014 14:08:11 +0100
-Message-Id: <1417007294-19869-1-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 2/4] clocksource: armada-370-xp: Add missing clock enable
+Date: Wed, 26 Nov 2014 14:08:12 +0100
+Message-Id: <1417007294-19869-2-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <5475D044.5060607@linaro.org>
+In-Reply-To: <1417007294-19869-1-git-send-email-daniel.lezcano@linaro.org>
 References: <5475D044.5060607@linaro.org>
+ <1417007294-19869-1-git-send-email-daniel.lezcano@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yanchang Li <yl22@csr.com>
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 
-The customers may want to adjust the whole PLL and dividers according to
-different user scenerios, and this causes the parent clock of sirf clocksource
-not be divided exactly by the current hard-coded 1MHz clock rate.
-This patch removes the hard-coded rate and makes the clocksource driver more
-adaptive to the external changes.
+This commit makes sure the timer clock is prepared and enabled
+before retrieving its rate.
 
-Signed-off-by: Yanchang Li <yl22@csr.com>
-Signed-off-by: Barry Song <Baohua.Song@csr.com>
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Acked-by: Wim Van Sebroeck <wim@iguana.be>
+Reviewed-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Tested-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- drivers/clocksource/timer-marco.c | 23 +++++++++--------------
- 1 file changed, 9 insertions(+), 14 deletions(-)
+ drivers/clocksource/time-armada-370-xp.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/clocksource/timer-marco.c b/drivers/clocksource/timer-marco.c
-index caf7a20..361a789 100644
---- a/drivers/clocksource/timer-marco.c
-+++ b/drivers/clocksource/timer-marco.c
-@@ -20,8 +20,6 @@
- #include <linux/of_address.h>
- #include <linux/sched_clock.h>
+diff --git a/drivers/clocksource/time-armada-370-xp.c b/drivers/clocksource/time-armada-370-xp.c
+index 0451e62..d8555f9 100644
+--- a/drivers/clocksource/time-armada-370-xp.c
++++ b/drivers/clocksource/time-armada-370-xp.c
+@@ -293,6 +293,7 @@ static void __init armada_xp_timer_init(struct device_node *np)
  
--#define MARCO_CLOCK_FREQ 1000000
--
- #define SIRFSOC_TIMER_32COUNTER_0_CTRL			0x0000
- #define SIRFSOC_TIMER_32COUNTER_1_CTRL			0x0004
- #define SIRFSOC_TIMER_MATCH_0				0x0018
-@@ -40,6 +38,8 @@
+ 	/* The 25Mhz fixed clock is mandatory, and must always be available */
+ 	BUG_ON(IS_ERR(clk));
++	clk_prepare_enable(clk);
+ 	timer_clk = clk_get_rate(clk);
  
- #define SIRFSOC_TIMER_REG_CNT 6
+ 	armada_370_xp_timer_common_init(np);
+@@ -305,6 +306,7 @@ static void __init armada_370_timer_init(struct device_node *np)
+ 	struct clk *clk = of_clk_get(np, 0);
  
-+static unsigned long marco_timer_rate;
-+
- static const u32 sirfsoc_timer_reg_list[SIRFSOC_TIMER_REG_CNT] = {
- 	SIRFSOC_TIMER_WATCHDOG_EN,
- 	SIRFSOC_TIMER_32COUNTER_0_CTRL,
-@@ -195,7 +195,7 @@ static int sirfsoc_local_timer_setup(struct clock_event_device *ce)
- 	ce->rating = 200;
- 	ce->set_mode = sirfsoc_timer_set_mode;
- 	ce->set_next_event = sirfsoc_timer_set_next_event;
--	clockevents_calc_mult_shift(ce, MARCO_CLOCK_FREQ, 60);
-+	clockevents_calc_mult_shift(ce, marco_timer_rate, 60);
- 	ce->max_delta_ns = clockevent_delta2ns(-2, ce);
- 	ce->min_delta_ns = clockevent_delta2ns(2, ce);
- 	ce->cpumask = cpumask_of(cpu);
-@@ -257,7 +257,6 @@ static void __init sirfsoc_clockevent_init(void)
- /* initialize the kernel jiffy timer source */
- static void __init sirfsoc_marco_timer_init(struct device_node *np)
- {
--	unsigned long rate;
- 	u32 timer_div;
- 	struct clk *clk;
+ 	BUG_ON(IS_ERR(clk));
++	clk_prepare_enable(clk);
+ 	timer_clk = clk_get_rate(clk) / TIMER_DIVIDER;
+ 	timer25Mhz = false;
  
-@@ -266,16 +265,12 @@ static void __init sirfsoc_marco_timer_init(struct device_node *np)
- 
- 	BUG_ON(clk_prepare_enable(clk));
- 
--	rate = clk_get_rate(clk);
--
--	BUG_ON(rate < MARCO_CLOCK_FREQ);
--	BUG_ON(rate % MARCO_CLOCK_FREQ);
-+	marco_timer_rate = clk_get_rate(clk);
- 
--	/* Initialize the timer dividers */
--	timer_div = rate / MARCO_CLOCK_FREQ - 1;
--	writel_relaxed(timer_div << 16, sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL);
--	writel_relaxed(timer_div << 16, sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_0_CTRL);
--	writel_relaxed(timer_div << 16, sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_1_CTRL);
-+	/* timer dividers: 0, not divided */
-+	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL);
-+	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_0_CTRL);
-+	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_1_CTRL);
- 
- 	/* Initialize timer counters to 0 */
- 	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_LOAD_LO);
-@@ -288,7 +283,7 @@ static void __init sirfsoc_marco_timer_init(struct device_node *np)
- 	/* Clear all interrupts */
- 	writel_relaxed(0xFFFF, sirfsoc_timer_base + SIRFSOC_TIMER_INTR_STATUS);
- 
--	BUG_ON(clocksource_register_hz(&sirfsoc_clocksource, MARCO_CLOCK_FREQ));
-+	BUG_ON(clocksource_register_hz(&sirfsoc_clocksource, marco_timer_rate));
- 
- 	sirfsoc_clockevent_init();
- }
 -- 
 1.9.1
 
