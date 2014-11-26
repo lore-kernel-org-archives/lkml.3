@@ -1,309 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638AbaKZQuo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 11:50:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60453 "EHLO mx1.redhat.com"
+	id S1752765AbaKZQuw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 11:50:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34740 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750937AbaKZQun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 11:50:43 -0500
-Date: Wed, 26 Nov 2014 17:49:55 +0100
-From: Andrew Jones <drjones@redhat.com>
-To: Alex =?iso-8859-1?Q?Benn=E9e?= <alex.bennee@linaro.org>
-Cc: kvm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kvmarm@lists.cs.columbia.edu, christoffer.dall@linaro.org,
-        marc.zyngier@arm.com, peter.maydell@linaro.org, agraf@suse.de,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Gleb Natapov <gleb@kernel.org>, jan.kiszka@siemens.com,
-        Will Deacon <will.deacon@arm.com>,
-        open list <linux-kernel@vger.kernel.org>, dahi@linux.vnet.ibm.com,
-        r65777@freescale.com, pbonzini@redhat.com, bp@suse.de
-Subject: Re: [PATCH 6/7] KVM: arm64: re-factor hyp.S debug register code
-Message-ID: <20141126164954.GF3245@hawk.usersys.redhat.com>
-References: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org>
- <1416931805-23223-7-git-send-email-alex.bennee@linaro.org>
+	id S1752467AbaKZQuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 11:50:44 -0500
+Date: Wed, 26 Nov 2014 18:50:24 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: David Hildenbrand <dahi@linux.vnet.ibm.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
+        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com, mingo@kernel.org
+Subject: Re: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
+ atomic
+Message-ID: <20141126165024.GA11202@redhat.com>
+References: <1416915806-24757-1-git-send-email-dahi@linux.vnet.ibm.com>
+ <20141126070258.GA25523@redhat.com>
+ <20141126110504.511b733a@thinkpad-w530>
+ <20141126151729.GB9612@redhat.com>
+ <20141126152334.GA9648@redhat.com>
+ <20141126163207.63810fcb@thinkpad-w530>
+ <20141126154717.GB10568@redhat.com>
+ <20141126170223.3b108b94@thinkpad-w530>
+ <20141126161947.GA10850@redhat.com>
+ <5476002B.30900@de.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1416931805-23223-7-git-send-email-alex.bennee@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5476002B.30900@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 04:10:04PM +0000, Alex Bennée wrote:
-> This is a pre-cursor to sharing the code with the guest debug support.
-> This replaces the big macro that fishes data out of a fixed location
-> with a more general helper macro to restore a set of debug registers. It
-> uses macro substitution so it can be re-used for debug control and value
-> registers. It does however rely on the debug registers being 64 bit
-> aligned (as they happen to be in the hyp ABI).
+On Wed, Nov 26, 2014 at 05:30:35PM +0100, Christian Borntraeger wrote:
+> Am 26.11.2014 um 17:19 schrieb Michael S. Tsirkin:
+> > On Wed, Nov 26, 2014 at 05:02:23PM +0100, David Hildenbrand wrote:
+> >>>> This is what happened on our side (very recent kernel):
+> >>>>
+> >>>> spin_lock(&lock)
+> >>>> copy_to_user(...)
+> >>>> spin_unlock(&lock)
+> >>>
+> >>> That's a deadlock even without copy_to_user - it's
+> >>> enough for the thread to be preempted and another one
+> >>> to try taking the lock.
+> >>>
+> >>>
+> >>>> 1. s390 locks/unlocks a spin lock with a compare and swap, using the _cpu id_
+> >>>>    as "old value"
+> >>>> 2. we slept during copy_to_user()
+> >>>> 3. the thread got scheduled onto another cpu
+> >>>> 4. spin_unlock failed as the _cpu id_ didn't match (another cpu that locked
+> >>>>    the spinlock tried to unlocked it).
+> >>>> 5. lock remained locked -> deadlock
+> >>>>
+> >>>> Christian came up with the following explanation:
+> >>>> Without preemption, spin_lock() will not touch the preempt counter.
+> >>>> disable_pfault() will always touch it.
+> >>>>
+> >>>> Therefore, with preemption disabled, copy_to_user() has no idea that it is
+> >>>> running in atomic context - and will therefore try to sleep.
+> >>>>
+> >>>> So copy_to_user() will on s390:
+> >>>> 1. run "as atomic" while spin_lock() with preemption enabled.
+> >>>> 2. run "as not atomic" while spin_lock() with preemption disabled.
+> >>>> 3.  run "as atomic" while pagefault_disabled() with preemption enabled or
+> >>>> disabled.
+> >>>> 4. run "as not atomic" when really not atomic.
+> >>
+> >> should have been more clear at that point: 
+> >> preemption enabled == kernel compiled with preemption support
+> >> preemption disabled == kernel compiled without preemption support
+> >>
+> >>>>
+> >>>> And exactly nr 2. is the thing that produced the deadlock in our scenario and
+> >>>> the reason why I want a might_sleep() :)
+> >>>
+> >>> IMHO it's not copy to user that causes the problem.
+> >>> It's the misuse of spinlocks with preemption on.
+> >>
+> >> As I said, preemption was off.
+> > 
+> > off -> disabled at compile time?
+> > 
+> > But the code is broken for people that do enable it.
+> [...]
+> > You should normally disable preemption if you take
+> > spinlocks.
 > 
-> Signed-off-by: Alex Bennée <alex.bennee@linaro.org>
+> Your are telling that any sequence of
+> spin_lock
+> ...
+> spin_unlock
 > 
-> diff --git a/arch/arm64/kvm/hyp.S b/arch/arm64/kvm/hyp.S
-> index c0bc218..b38ce3d 100644
-> --- a/arch/arm64/kvm/hyp.S
-> +++ b/arch/arm64/kvm/hyp.S
-> @@ -490,65 +490,12 @@
->  	msr	mdscr_el1,	x25
->  .endm
->  
-> -.macro restore_debug
-> -	// x2: base address for cpu context
-> -	// x3: tmp register
-> -
-> -	mrs	x26, id_aa64dfr0_el1
-> -	ubfx	x24, x26, #12, #4	// Extract BRPs
-> -	ubfx	x25, x26, #20, #4	// Extract WRPs
-> -	mov	w26, #15
-> -	sub	w24, w26, w24		// How many BPs to skip
-> -	sub	w25, w26, w25		// How many WPs to skip
-> -
-> -	add	x3, x2, #CPU_SYSREG_OFFSET(DBGBCR0_EL1)
-> -
-> -	adr	x26, 1f
-> -	add	x26, x26, x24, lsl #2
-> -	br	x26
-> -1:
-> -	ldr	x20, [x3, #(15 * 8)]
-> -	ldr	x19, [x3, #(14 * 8)]
-> -	ldr	x18, [x3, #(13 * 8)]
-> -	ldr	x17, [x3, #(12 * 8)]
-> -	ldr	x16, [x3, #(11 * 8)]
-> -	ldr	x15, [x3, #(10 * 8)]
-> -	ldr	x14, [x3, #(9 * 8)]
-> -	ldr	x13, [x3, #(8 * 8)]
-> -	ldr	x12, [x3, #(7 * 8)]
-> -	ldr	x11, [x3, #(6 * 8)]
-> -	ldr	x10, [x3, #(5 * 8)]
-> -	ldr	x9, [x3, #(4 * 8)]
-> -	ldr	x8, [x3, #(3 * 8)]
-> -	ldr	x7, [x3, #(2 * 8)]
-> -	ldr	x6, [x3, #(1 * 8)]
-> -	ldr	x5, [x3, #(0 * 8)]
-> -
-> +.macro setup_debug_registers type
-> +        // x3: pointer to register set
-> +        // x4: number of registers to copy
-> +        // x5..x20/x26 trashed
-                     ^ comma instead?
->  	adr	x26, 1f
-> -	add	x26, x26, x24, lsl #2
-> -	br	x26
-> -1:
-> -	msr	dbgbcr15_el1, x20
-> -	msr	dbgbcr14_el1, x19
-> -	msr	dbgbcr13_el1, x18
-> -	msr	dbgbcr12_el1, x17
-> -	msr	dbgbcr11_el1, x16
-> -	msr	dbgbcr10_el1, x15
-> -	msr	dbgbcr9_el1, x14
-> -	msr	dbgbcr8_el1, x13
-> -	msr	dbgbcr7_el1, x12
-> -	msr	dbgbcr6_el1, x11
-> -	msr	dbgbcr5_el1, x10
-> -	msr	dbgbcr4_el1, x9
-> -	msr	dbgbcr3_el1, x8
-> -	msr	dbgbcr2_el1, x7
-> -	msr	dbgbcr1_el1, x6
-> -	msr	dbgbcr0_el1, x5
-> -
-> -	add	x3, x2, #CPU_SYSREG_OFFSET(DBGBVR0_EL1)
-> -
-> -	adr	x26, 1f
-> -	add	x26, x26, x24, lsl #2
-> +	add	x26, x26, x4, lsl #2
->  	br	x26
->  1:
->  	ldr	x20, [x3, #(15 * 8)]
-> @@ -569,116 +516,25 @@
->  	ldr	x5, [x3, #(0 * 8)]
->  
->  	adr	x26, 1f
-> -	add	x26, x26, x24, lsl #2
-> -	br	x26
-> -1:
-> -	msr	dbgbvr15_el1, x20
-> -	msr	dbgbvr14_el1, x19
-> -	msr	dbgbvr13_el1, x18
-> -	msr	dbgbvr12_el1, x17
-> -	msr	dbgbvr11_el1, x16
-> -	msr	dbgbvr10_el1, x15
-> -	msr	dbgbvr9_el1, x14
-> -	msr	dbgbvr8_el1, x13
-> -	msr	dbgbvr7_el1, x12
-> -	msr	dbgbvr6_el1, x11
-> -	msr	dbgbvr5_el1, x10
-> -	msr	dbgbvr4_el1, x9
-> -	msr	dbgbvr3_el1, x8
-> -	msr	dbgbvr2_el1, x7
-> -	msr	dbgbvr1_el1, x6
-> -	msr	dbgbvr0_el1, x5
-> -
-> -	add	x3, x2, #CPU_SYSREG_OFFSET(DBGWCR0_EL1)
-> -
-> -	adr	x26, 1f
-> -	add	x26, x26, x25, lsl #2
-> +	add	x26, x26, x4, lsl #2
->  	br	x26
->  1:
-> -	ldr	x20, [x3, #(15 * 8)]
-> -	ldr	x19, [x3, #(14 * 8)]
-> -	ldr	x18, [x3, #(13 * 8)]
-> -	ldr	x17, [x3, #(12 * 8)]
-> -	ldr	x16, [x3, #(11 * 8)]
-> -	ldr	x15, [x3, #(10 * 8)]
-> -	ldr	x14, [x3, #(9 * 8)]
-> -	ldr	x13, [x3, #(8 * 8)]
-> -	ldr	x12, [x3, #(7 * 8)]
-> -	ldr	x11, [x3, #(6 * 8)]
-> -	ldr	x10, [x3, #(5 * 8)]
-> -	ldr	x9, [x3, #(4 * 8)]
-> -	ldr	x8, [x3, #(3 * 8)]
-> -	ldr	x7, [x3, #(2 * 8)]
-> -	ldr	x6, [x3, #(1 * 8)]
-> -	ldr	x5, [x3, #(0 * 8)]
-> -
-> -	adr	x26, 1f
-> -	add	x26, x26, x25, lsl #2
-> -	br	x26
-> -1:
-> -	msr	dbgwcr15_el1, x20
-> -	msr	dbgwcr14_el1, x19
-> -	msr	dbgwcr13_el1, x18
-> -	msr	dbgwcr12_el1, x17
-> -	msr	dbgwcr11_el1, x16
-> -	msr	dbgwcr10_el1, x15
-> -	msr	dbgwcr9_el1, x14
-> -	msr	dbgwcr8_el1, x13
-> -	msr	dbgwcr7_el1, x12
-> -	msr	dbgwcr6_el1, x11
-> -	msr	dbgwcr5_el1, x10
-> -	msr	dbgwcr4_el1, x9
-> -	msr	dbgwcr3_el1, x8
-> -	msr	dbgwcr2_el1, x7
-> -	msr	dbgwcr1_el1, x6
-> -	msr	dbgwcr0_el1, x5
-> -
-> -	add	x3, x2, #CPU_SYSREG_OFFSET(DBGWVR0_EL1)
-> -
-> -	adr	x26, 1f
-> -	add	x26, x26, x25, lsl #2
-> -	br	x26
-> -1:
-> -	ldr	x20, [x3, #(15 * 8)]
-> -	ldr	x19, [x3, #(14 * 8)]
-> -	ldr	x18, [x3, #(13 * 8)]
-> -	ldr	x17, [x3, #(12 * 8)]
-> -	ldr	x16, [x3, #(11 * 8)]
-> -	ldr	x15, [x3, #(10 * 8)]
-> -	ldr	x14, [x3, #(9 * 8)]
-> -	ldr	x13, [x3, #(8 * 8)]
-> -	ldr	x12, [x3, #(7 * 8)]
-> -	ldr	x11, [x3, #(6 * 8)]
-> -	ldr	x10, [x3, #(5 * 8)]
-> -	ldr	x9, [x3, #(4 * 8)]
-> -	ldr	x8, [x3, #(3 * 8)]
-> -	ldr	x7, [x3, #(2 * 8)]
-> -	ldr	x6, [x3, #(1 * 8)]
-> -	ldr	x5, [x3, #(0 * 8)]
-> -
-> -	adr	x26, 1f
-> -	add	x26, x26, x25, lsl #2
-> -	br	x26
-> -1:
-> -	msr	dbgwvr15_el1, x20
-> -	msr	dbgwvr14_el1, x19
-> -	msr	dbgwvr13_el1, x18
-> -	msr	dbgwvr12_el1, x17
-> -	msr	dbgwvr11_el1, x16
-> -	msr	dbgwvr10_el1, x15
-> -	msr	dbgwvr9_el1, x14
-> -	msr	dbgwvr8_el1, x13
-> -	msr	dbgwvr7_el1, x12
-> -	msr	dbgwvr6_el1, x11
-> -	msr	dbgwvr5_el1, x10
-> -	msr	dbgwvr4_el1, x9
-> -	msr	dbgwvr3_el1, x8
-> -	msr	dbgwvr2_el1, x7
-> -	msr	dbgwvr1_el1, x6
-> -	msr	dbgwvr0_el1, x5
-> -
-> -	ldr	x21, [x2, #CPU_SYSREG_OFFSET(MDCCINT_EL1)]
-> -	msr	mdccint_el1, x21
-> +	msr	\type\()15_el1, x20
-> +	msr	\type\()14_el1, x19
-> +	msr	\type\()13_el1, x18
-> +	msr	\type\()12_el1, x17
-> +	msr	\type\()11_el1, x16
-> +	msr	\type\()10_el1, x15
-> +	msr	\type\()9_el1, x14
-> +	msr	\type\()8_el1, x13
-> +	msr	\type\()7_el1, x12
-> +	msr	\type\()6_el1, x11
-> +	msr	\type\()5_el1, x10
-> +	msr	\type\()4_el1, x9
-> +	msr	\type\()3_el1, x8
-> +	msr	\type\()2_el1, x7
-> +	msr	\type\()1_el1, x6
-> +	msr	\type\()0_el1, x5
->  .endm
->  
->  .macro skip_32bit_state tmp, target
-> @@ -929,8 +785,34 @@ __save_debug:
->  	save_debug
->  	ret
->  
-> +/* Restore saved guest debug state */
->  __restore_debug:
-> -	restore_debug
-> +	// x2: base address for cpu context
-> +	// x3: ptr to guest registers passed to setup_debug_registers
-
-I'm not sure we need to describe x3 here, as it's input for
-setup_debug_registers, and thus described there. If it's preferred
-though, then we should also describe x4.
-
-> +	// x5..x20/x26: trashed
-
-And x3 and x4, and x21,x24,x25
-
-> +
-> +	mrs	x26, id_aa64dfr0_el1
-> +	ubfx	x24, x26, #12, #4	// Extract BRPs
-> +	ubfx	x25, x26, #20, #4	// Extract WRPs
-> +	mov	w26, #15
-> +	sub	w24, w26, w24		// How many BPs to skip
-> +	sub	w25, w26, w25		// How many WPs to skip
-> +
-> +	mov     x4, x24
-> +	add	x3, x2, #CPU_SYSREG_OFFSET(DBGBCR0_EL1)
-> +	setup_debug_registers dbgbcr
-> +	add	x3, x2, #CPU_SYSREG_OFFSET(DBGBVR0_EL1)
-> +	setup_debug_registers dbgbvr
-> +
-> +	mov     x4, x25
-> +	add	x3, x2, #CPU_SYSREG_OFFSET(DBGWCR0_EL1)
-> +	setup_debug_registers dbgwcr
-> +	add	x3, x2, #CPU_SYSREG_OFFSET(DBGWVR0_EL1)
-> +	setup_debug_registers dbgwvr
-> +
-> +	ldr	x21, [x2, #CPU_SYSREG_OFFSET(MDCCINT_EL1)]
-> +	msr	mdccint_el1, x21
-> +
->  	ret
-
-
-How about doing the same refactoring on save_debug just for
-consistency and code shrinkage?
-
->  
->  __save_fpsimd:
-> -- 
-> 2.1.3
+> is broken with CONFIG_PREEMPT?
+> Michael, that is bullshit. spin_lock will take care of CONFIG_PREEMPT just fine. 
 > 
-> _______________________________________________
-> kvmarm mailing list
-> kvmarm@lists.cs.columbia.edu
-> https://lists.cs.columbia.edu/mailman/listinfo/kvmarm
+> Only sequences like
+> spin_lock
+> ...
+> schedule
+> ...
+> spin_unlock
+> are broken.
+> 
+> But as I said. That is not the problem that we are discussing here.
+> 
+> Christian
+
+I'm saying spin_lock without _irqsave is often a bug.
+
+
+I am also saying this code in mm/fault.c:
+__do_page_fault
+...
+        /*
+         * If we're in an interrupt, have no user context or are running
+         * in an atomic region then we must not take the fault:
+         */
+        if (unlikely(in_atomic() || !mm)) {
+                bad_area_nosemaphore(regs, error_code, address);
+                return;
+        }
+
+means that a fault won't cause sleep if called in atomic context.
+
+And a bunch of code relies on this.
+
+This is why might_fault does:
+
+         * it would be nicer only to annotate paths which are not under
+         * pagefault_disable, however that requires a larger audit and
+         * providing helpers like get_user_atomic.
+         */
+        if (in_atomic())
+                return;
+
+        __might_sleep(__FILE__, __LINE__, 0);
+
+
+If you see this violated, let's figure out why.
+
+-- 
+MST
