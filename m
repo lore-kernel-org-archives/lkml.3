@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872AbaKZRTE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 12:19:04 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:43559 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005AbaKZRTC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 12:19:02 -0500
-Message-Id: <201411261718.sAQHIsgd027807@aserz7022.oracle.com>
-Date: Wed, 26 Nov 2014 12:18:48 -0500
-Subject: Re: [Xen-devel] [PATCH] xen-pciback: Add MODULE_ALIAS for pciback.
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        Ian Campbell <ian.campbell@citrix.com>
+	id S1752179AbaKZRWG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 12:22:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36259 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750881AbaKZRWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 12:22:04 -0500
+Date: Wed, 26 Nov 2014 19:21:39 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: David Hildenbrand <dahi@linux.vnet.ibm.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
+        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com, mingo@kernel.org
+Subject: Re: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
+ atomic
+Message-ID: <20141126172139.GA11746@redhat.com>
+References: <20141126070258.GA25523@redhat.com>
+ <20141126110504.511b733a@thinkpad-w530>
+ <20141126151729.GB9612@redhat.com>
+ <20141126152334.GA9648@redhat.com>
+ <20141126163207.63810fcb@thinkpad-w530>
+ <20141126154717.GB10568@redhat.com>
+ <5475FAB1.1000802@de.ibm.com>
+ <20141126163216.GB10850@redhat.com>
+ <547604FC.4030300@de.ibm.com>
+ <20141126170447.GC11202@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141126170447.GC11202@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAQHJBv7017791
 
-
-On Nov 26, 2014 11:39 AM, "Luis R. Rodriguez" <mcgrof@do-not-panic.com> wrote:
->
-> On Wed, Aug 20, 2014 at 1:26 PM, Ian Campbell <ian.campbell@citrix.com> wrote: 
-> > On Wed, 2014-08-20 at 13:20 -0400, Konrad Rzeszutek Wilk wrote: 
-> >> On Wed, Aug 20, 2014 at 06:18:52PM +0100, Ian Campbell wrote: 
-> >> > On Wed, 2014-08-20 at 12:40 -0400, Konrad Rzeszutek Wilk wrote: 
-> >> > > The rest of the Xen device drivers use an module alias 
-> >> > > to load devices when they shop up in XenBus. 
-> >> > 
-> >> > "show". 
-> >> > > 
-> >> > >Â  MODULE_LICENSE("Dual BSD/GPL"); 
-> >> > >Â  MODULE_ALIAS("xen-backend:pci"); 
-> >> > > +MODULE_ALIAS("xen:pci"); 
-> >> > 
-> >> > Isn't that xen-backend:pci already the right thing for a backend device? 
-> >> > xen: is for frontends, I thought. 
-> >> 
-> >> Oh, you are right. Cool! Thanks! 
+On Wed, Nov 26, 2014 at 07:04:47PM +0200, Michael S. Tsirkin wrote:
+> On Wed, Nov 26, 2014 at 05:51:08PM +0100, Christian Borntraeger wrote:
+> > > But this one was > giving users in field false positives.
 > > 
-> > The patch turned out to be even more trivial than expected ;-) 
->
-> Is this what we expected to be pending work for the item "device 
-> hotplug (MODULE_ALIAS)" on the upstream TODO list? 
->
-> http://wiki.xenproject.org/wiki/XenParavirtOps#Upstream_delta_details 
->
-> This was simply to just auto load that driver when needed right? 
->
+> > So lets try to fix those, ok? If we cant, then tough luck.
+> 
+> Sure.
+> I think the simplest way might be to make spinlock disable
+> premption when CONFIG_DEBUG_ATOMIC_SLEEP is enabled.
 
-Right which it does now.
+Specifically maybe DEBUG_ATOMIC_SLEEP should select PREEMPT_COUNT?
 
-> Also as for actual PCI device hotplug support: 
->
-> http://wiki.xen.org/wiki/Xen_PCI_Passthrough#Hotplug 
->
-> I don't think we need a delta for that do we? 
 
-Nope. This one is all done.
->
-> Luis 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> As a result, userspace access will fail and caller will
+> get a nice error.
+> 
+> 
+> 
+> > But coming up with wrong statements is not helpful.
+> 
+> True. Sorry that I did that.
+> 
+> > > 
+> > > The point is that *_user is safe with preempt off.
+> > > It returns an error gracefully.
+> > > It does not sleep.
+> > > It does not trigger the scheduler in that context.
+> > 
+> > There are special cases where your statement is true. But its not in general.
+> > copy_to_user might fault and that fault might sleep and reschedule.
+> 
+> Yes. But not if called inatomic.
+> 
+> 
+> 
+> > For example handle_mm_fault might go down to pud_alloc, pmd_alloc etc and all these functions could do an GFP_KERNEL allocation. Which might sleep. Which will schedule.
+> > 
+> > 
+> > > 
+> > > 
+> > > David's patch makes it say it does, so it's wrong.
+> > > 
+> > > 
+> > > 
+> 
+> Absolutely.
+> I think you can already debug your case easily, by enabling CONFIG_PREEMPT.
+> This seems counter-intuitive, and distro debug kernels don't seem to do this.
+> 
+> -- 
+> MST
