@@ -1,63 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753197AbaKZO2A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 09:28:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42564 "EHLO mx2.suse.de"
+	id S1753207AbaKZO2h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 09:28:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58806 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752981AbaKZO17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 09:27:59 -0500
-Message-ID: <1417012077.5928.11.camel@linux-0dmf.site>
-Subject: Re: bluetooth related firmware loader spew on resume.
-From: Oliver Neukum <oneukum@suse.de>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Marcel Holtmann <marcel@holtmann.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, pgynther@google.com,
-        linux-bluetooth@vger.kernel.org
-Date: Wed, 26 Nov 2014 15:27:57 +0100
-In-Reply-To: <s5htx1mvyo8.wl-tiwai@suse.de>
-References: <20141111181228.GA27815@redhat.com>
-	 <s5hsih7xmgg.wl-tiwai@suse.de>
-	 <D19A9DA1-3706-4351-B2E9-25D5ABA662E7@holtmann.org>
-	 <s5h7fyijqc9.wl-tiwai@suse.de> <1416996623.3171.7.camel@linux-0dmf.site>
-	 <0E1D95E7-64D2-4BEA-AFAA-4B119838F24E@holtmann.org>
-	 <s5htx1mvyo8.wl-tiwai@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752730AbaKZO2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 09:28:36 -0500
+Date: Wed, 26 Nov 2014 09:28:32 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: device-mapper development <dm-devel@redhat.com>,
+        linux-kernel@vger.kernel.org, Alasdair Kergon <agk@redhat.com>
+Subject: Re: dm-bufio: fix memleak when using a dm_buffer's inline bio
+Message-ID: <20141126142832.GB29855@redhat.com>
+References: <20141126014515.GE10050@birch.djwong.org>
+ <20141126034103.GA26585@redhat.com>
+ <20141126040008.GF10050@birch.djwong.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141126040008.GF10050@birch.djwong.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-26 at 15:12 +0100, Takashi Iwai wrote:
-> At Wed, 26 Nov 2014 23:05:20 +0900,
-> Marcel Holtmann wrote:
+On Tue, Nov 25 2014 at 11:00pm -0500,
+Darrick J. Wong <darrick.wong@oracle.com> wrote:
+
+> On Tue, Nov 25, 2014 at 10:41:04PM -0500, Mike Snitzer wrote:
+> > On Tue, Nov 25 2014 at  8:45pm -0500,
+> > Darrick J. Wong <darrick.wong@oracle.com> wrote:
 > > 
-> > Hi Oliver,
-> > 
-> > >> In order to paper over this, we may also remember the failing firmware
-> > >> and avoid loading it.  This might be an easer way than the endless
-> > >> fight against UMH race...
+> > > When dm-bufio sets out to use the bio built into a struct dm_buffer to
+> > > issue an IO, it needs to call bio_reset after it's done with the bio
+> > > so that we can free things attached to the bio such as the integrity
+> > > payload.  Therefore, inject our own endio callback to take care of
+> > > the bio_reset after calling submit_io's end_io callback.
 > > > 
+> > > Test case:
+> > > 1. modprobe scsi_debug delay=0 dif=1 dix=199 ato=1 dev_size_mb=300
+> > > 2. Set up a dm-bufio client, e.g. dm-verity, on the scsi_debug device
+> > > 3. Repeatedly read metadata and watch kmalloc-192 leak!
 > > > 
-> > > the full fix would be to implement reset_resume() for btusb.
-> > > It seems to me that setup() should be split in two methods,
-> > > one to request the firmware from user space and the second
-> > > to transfer it to the device. reset_resume() would just need
-> > > to repeat the second operation.
+> > > Fix is against 3.18-rc6.
+> > > 
+> > > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
 > > 
-> > so when you do hci_register_dev, then hdev->setup is only called once. I really mean only once per lifetime of the hci_dev. So you would need to unregister the hci_dev first before hdev->setup will ever be called again. So I am not sure this is actually the problem here. The problem here is entirely within request_firmware() unless of course we run through the USB probe handlers again. Which I do not see happening here.
+> > Thanks for reporting/fixing this.
 > > 
-> > And we have hdev->setup this way since normally the Bluetooth devices keep their firmware patches and not forget about them and suspend-resume cycles. If the USB device of course jumps of the bus during it then all bets are off anyway.
+> > Alternatively I think we could just call bio_reset() in submit_io(),
+> > e.g.:
+> > 
+> > diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
+> > index afe7971..e7036e3 100644
+> > --- a/drivers/md/dm-bufio.c
+> > +++ b/drivers/md/dm-bufio.c
+> > @@ -579,6 +579,8 @@ static void submit_io(struct dm_buffer *b, int rw, sector_t block,
+> >  	if (rw == WRITE && b->c->write_callback)
+> >  		b->c->write_callback(b);
+> >  
+> > +	bio_reset(&b->bio);
+> > +
+> >  	if (b->c->block_size <= DM_BUFIO_INLINE_VECS * PAGE_SIZE &&
+> >  	    b->data_mode != DATA_MODE_VMALLOC)
+> >  		use_inline_bio(b, rw, block, end_io);
+> > 
+> > What do you think?
 > 
-> Usually you can avoid unnecessary rebinding when you provide a proper
-> reset_resume callback.  I guess that's what Oliver suggested.
+> I decided to call bio_reset after calling end_io so that we can free
+> the integrity buffer as soon as we're done with the bio.  Calling
+> bio_reset just prior to the next submit_bio as this snippet does means
+> that the integrity buffer remains attached to the bio until just
+> before the next submit_bio call, which could be a while.
+> 
+> Also, I think use_dmio results in a new bio being used instead of the
+> bio embedded in the dm_buffer, so it shouldn't be necessary to reset
+> the bio if the previous IO had use_dmio'd.
 
-Yes, but even in reset_resume() you would need to redo the setup
-part, as the device lost power. The basic problem of requesting
-the firmware wouldn't be solved.
+OK, yeah, a new embedded bio is created as a side-effect of allocating a
+new dm_buffer.  So we have to use bi_end_io like you've done.
 
-	Regards
-		Oliver
+I didn't like seeing your use of .bi_private (because in the context of
+bios that are passed into DM: .bi_private must always be preserved so as
+not to break upper layers of the IO stack that might be using it).
 
+But in the context of bufio's embedded bio, using .bi_private seems
+fine.  Just needs a comment.  I'll fixup and get your patch staged (and
+will CC stable).
 
+Thanks again,
+Mike
