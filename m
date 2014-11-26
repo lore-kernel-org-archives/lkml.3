@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167AbaKZEsP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 23:48:15 -0500
+	id S1752186AbaKZEsT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 23:48:19 -0500
 Received: from mga02.intel.com ([134.134.136.20]:60465 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752055AbaKZEsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 23:48:13 -0500
+	id S1752055AbaKZEsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 23:48:15 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,460,1413270000"; 
-   d="scan'208";a="614155568"
+   d="scan'208";a="614155581"
 From: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
@@ -16,77 +16,165 @@ Cc: GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
         Mika Westerberg <mika.westerberg@intel.com>,
         Denis Turischev <denis.turischev@compulab.co.il>,
         Alexandre Courbot <gnurou@gmail.com>
-Subject: [PATCHv4 0/3] Enable Quark X1000 support in gpio-sch
-Date: Wed, 26 Nov 2014 12:47:57 +0800
-Message-Id: <1416977280-27319-1-git-send-email-rebecca.swee.fun.chang@intel.com>
+Subject: [PATCHv4 1/3] gpio: sch: Consolidate similar algorithms
+Date: Wed, 26 Nov 2014 12:47:58 +0800
+Message-Id: <1416977280-27319-2-git-send-email-rebecca.swee.fun.chang@intel.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1416977280-27319-1-git-send-email-rebecca.swee.fun.chang@intel.com>
+References: <1416977280-27319-1-git-send-email-rebecca.swee.fun.chang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Consolidating similar algorithms into common functions to make
+GPIO SCH simpler and manageable.
 
-This is a revised version for enabling Quark X1000 support in gpio-sch.
-This version of patch series had changed according to the feedback provided
-by Alexandre and Mika.
+Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+---
+ drivers/gpio/gpio-sch.c |   81 ++++++++++++++++-------------------------------
+ 1 file changed, 28 insertions(+), 53 deletions(-)
 
-Change log for V4:
-Patch 1:
-- Removed redundant/duplicated functions of sch_gpio_register_set() and
-  sch_gpio_register_clear(). The function call had been replaced by
-  sch_gpio_reg_set(gc, gpio, reg, 1) in place of sch_gpio_register_set() and
-  sch_gpio_reg_set(gc, gpio, reg, 0) for sch_gpio_register_clear().
-- Resolved double spinlock issue caught by Alexandre.
-
-Patch 3:
-- Dropped the usage of "if" block that checking irq_data struct
-- Restructured the irq detect by using platform_get_irq(pdev, 0) instead of
-  platform_get_resource(pdev, IORESOURCE_IRQ, 0) to get IRQ resources from
-  MFD LPS-SCH.
-
-The patches need to be patched on top of Mika Westerberg's commit at:
-gpio: sch: Consolidate core and resume banks
-http://marc.info/?l=linux-kernel&m=141392647225885&w=2
-
-The patches has been verifed and tested working on Galileo Board. GPIO sysfs
-was able to export gpio pins and changing pin direction. GPIO values were
-able to controlled and interrupt was enabled.
-
-Please help to review the patches so that we can make it to upstream kernel
-as soon as possible. Thanks for all the review comments during this period of
-review cycle.
-
-Regards,
-Rebecca
-
-Change log for V3:
-Patch 3:
-- Change variable type of irq_support to bool.
-- Update error message and remove redundant code.
-- Revert gpiochip_remove() to avoid it to return a value.
-
-Change log for V2:
-Patch 1:
-- Move sch_gpio_get() and sch_gpio_set() to avoid forward declaration.
-- Changed sch_gpio_enable()/sch_gpio_disable() to sch_gpio_register_set()/
-  sch_gpio_register_clear().
-
-Patch 3:
-- Changed all sch_gpio_enable()/sch_gpio_disable() to sch_gpio_register_set()/
-  sch_gpio_register_clear().
-
-Version 1:
-Initial version.
-
-Chang Rebecca Swee Fun (3):
-  gpio: sch: Consolidate similar algorithms
-  gpio: sch: Add support for Intel Quark X1000 SoC
-  gpio: sch: Enable IRQ support for Quark X1000
-
- drivers/gpio/Kconfig    |   11 +-
- drivers/gpio/gpio-sch.c |  316 ++++++++++++++++++++++++++++++++++++++---------
- 2 files changed, 266 insertions(+), 61 deletions(-)
-
+diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
+index 99720c8..7967f14 100644
+--- a/drivers/gpio/gpio-sch.c
++++ b/drivers/gpio/gpio-sch.c
+@@ -63,75 +63,59 @@ static unsigned sch_gpio_bit(struct sch_gpio *sch, unsigned gpio)
+ 	return gpio % 8;
+ }
+ 
+-static void sch_gpio_enable(struct sch_gpio *sch, unsigned gpio)
++static int sch_gpio_reg_get(struct gpio_chip *gc, unsigned gpio, unsigned reg)
+ {
++	struct sch_gpio *sch = to_sch_gpio(gc);
+ 	unsigned short offset, bit;
+-	u8 enable;
+-
+-	spin_lock(&sch->lock);
++	u8 curr_dirs;
+ 
+-	offset = sch_gpio_offset(sch, gpio, GEN);
++	offset = sch_gpio_offset(sch, gpio, reg);
+ 	bit = sch_gpio_bit(sch, gpio);
+ 
+-	enable = inb(sch->iobase + offset);
+-	if (!(enable & (1 << bit)))
+-		outb(enable | (1 << bit), sch->iobase + offset);
++	curr_dirs = !!(inb(sch->iobase + offset) & BIT(bit));
+ 
+-	spin_unlock(&sch->lock);
++	return curr_dirs;
+ }
+ 
+-static int sch_gpio_direction_in(struct gpio_chip *gc, unsigned  gpio_num)
++static void sch_gpio_reg_set(struct gpio_chip *gc, unsigned gpio, unsigned reg,
++			     int val)
+ {
+ 	struct sch_gpio *sch = to_sch_gpio(gc);
+-	u8 curr_dirs;
+ 	unsigned short offset, bit;
++	u8 curr_dirs;
+ 
+-	spin_lock(&sch->lock);
+-
+-	offset = sch_gpio_offset(sch, gpio_num, GIO);
+-	bit = sch_gpio_bit(sch, gpio_num);
++	offset = sch_gpio_offset(sch, gpio, reg);
++	bit = sch_gpio_bit(sch, gpio);
+ 
+ 	curr_dirs = inb(sch->iobase + offset);
+ 
+-	if (!(curr_dirs & (1 << bit)))
+-		outb(curr_dirs | (1 << bit), sch->iobase + offset);
++	if (val)
++		outb(curr_dirs | BIT(bit), sch->iobase + offset);
++	else
++		outb((curr_dirs & ~BIT(bit)), sch->iobase + offset);
++}
+ 
++static int sch_gpio_direction_in(struct gpio_chip *gc, unsigned gpio_num)
++{
++	struct sch_gpio *sch = to_sch_gpio(gc);
++
++	spin_lock(&sch->lock);
++	sch_gpio_reg_set(sch, gpio_num, GIO, 1);
+ 	spin_unlock(&sch->lock);
+ 	return 0;
+ }
+ 
+ static int sch_gpio_get(struct gpio_chip *gc, unsigned gpio_num)
+ {
+-	struct sch_gpio *sch = to_sch_gpio(gc);
+-	int res;
+-	unsigned short offset, bit;
+-
+-	offset = sch_gpio_offset(sch, gpio_num, GLV);
+-	bit = sch_gpio_bit(sch, gpio_num);
+-
+-	res = !!(inb(sch->iobase + offset) & (1 << bit));
+-
+-	return res;
++	return sch_gpio_reg_get(gc, gpio_num, GLV);
+ }
+ 
+ static void sch_gpio_set(struct gpio_chip *gc, unsigned gpio_num, int val)
+ {
+ 	struct sch_gpio *sch = to_sch_gpio(gc);
+-	u8 curr_vals;
+-	unsigned short offset, bit;
+ 
+ 	spin_lock(&sch->lock);
+-
+-	offset = sch_gpio_offset(sch, gpio_num, GLV);
+-	bit = sch_gpio_bit(sch, gpio_num);
+-
+-	curr_vals = inb(sch->iobase + offset);
+-
+-	if (val)
+-		outb(curr_vals | (1 << bit), sch->iobase + offset);
+-	else
+-		outb((curr_vals & ~(1 << bit)), sch->iobase + offset);
+-
++	sch_gpio_reg_set(gc, gpio_num, GLV, val);
+ 	spin_unlock(&sch->lock);
+ }
+ 
+@@ -139,18 +123,9 @@ static int sch_gpio_direction_out(struct gpio_chip *gc, unsigned gpio_num,
+ 				  int val)
+ {
+ 	struct sch_gpio *sch = to_sch_gpio(gc);
+-	u8 curr_dirs;
+-	unsigned short offset, bit;
+ 
+ 	spin_lock(&sch->lock);
+-
+-	offset = sch_gpio_offset(sch, gpio_num, GIO);
+-	bit = sch_gpio_bit(sch, gpio_num);
+-
+-	curr_dirs = inb(sch->iobase + offset);
+-	if (curr_dirs & (1 << bit))
+-		outb(curr_dirs & ~(1 << bit), sch->iobase + offset);
+-
++	sch_gpio_reg_set(sch, gpio_num, GIO, 0);
+ 	spin_unlock(&sch->lock);
+ 
+ 	/*
+@@ -209,13 +184,13 @@ static int sch_gpio_probe(struct platform_device *pdev)
+ 		 * GPIO7 is configured by the CMC as SLPIOVR
+ 		 * Enable GPIO[9:8] core powered gpios explicitly
+ 		 */
+-		sch_gpio_enable(sch, 8);
+-		sch_gpio_enable(sch, 9);
++		sch_gpio_reg_set(sch, 8, GEN, 1);
++		sch_gpio_reg_set(sch, 9, GEN, 1);
+ 		/*
+ 		 * SUS_GPIO[2:0] enabled by default
+ 		 * Enable SUS_GPIO3 resume powered gpio explicitly
+ 		 */
+-		sch_gpio_enable(sch, 13);
++		sch_gpio_reg_set(sch, 13, GEN, 1);
+ 		break;
+ 
+ 	case PCI_DEVICE_ID_INTEL_ITC_LPC:
 -- 
 1.7.9.5
 
