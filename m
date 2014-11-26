@@ -1,149 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190AbaKZBiH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 20:38:07 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:51929 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146AbaKZBfj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 20:35:39 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kenneth Westfield <kwestfie@codeaurora.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Rajendra Nayak <rnayak@codeaurora.org>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v2 1/8] clk: Add __clk_mux_determine_rate_closest
-Date: Tue, 25 Nov 2014 17:35:28 -0800
-Message-Id: <1416965735-10583-2-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 2.1.0.61.ge50deb1
-In-Reply-To: <1416965735-10583-1-git-send-email-sboyd@codeaurora.org>
-References: <1416965735-10583-1-git-send-email-sboyd@codeaurora.org>
+	id S1752127AbaKZBiy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 20:38:54 -0500
+Received: from mga11.intel.com ([192.55.52.93]:11842 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751065AbaKZBix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 20:38:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="421535318"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: David Woodhouse <dwmw2@infradead.org>, Joerg Roedel <joro@8bytes.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] iommu/vt-d: Fix an off-by-one bug in __domain_mapping()
+Date: Wed, 26 Nov 2014 09:42:10 +0800
+Message-Id: <1416966130-866-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some clock drivers want to find the closest rate on the input of
-a mux instead of a rate that's less than or equal to the desired
-rate. Add a generic mux function to support this.
+There's an off-by-one bug in function __domain_mapping(), which may
+trigger the BUG_ON(nr_pages < lvl_pages) when
+	(nr_pages + 1) & superpage_mask == 0
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+The issue was introduced by commit 9051aa0268dc "intel-iommu: Combine
+domain_pfn_mapping() and domain_sg_mapping()", which sets sg_res to
+"nr_pages + 1" to avoid some of the 'sg_res==0' code paths.
+
+It's safe to remove extra "+1" because sg_res is only used to calculate
+page size now.
+
+Reported-And-Tested-by: Sudeep Dutt <sudeep.dutt@intel.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: <stable@vger.kernel.org> # 3.1
 ---
- drivers/clk/clk.c            | 47 +++++++++++++++++++++++++++++++++++---------
- include/linux/clk-provider.h |  9 +++++++--
- 2 files changed, 45 insertions(+), 11 deletions(-)
+Hi David and Joerg,
+	This issue was introduced in v2.6.31, but intel-iommu.c has
+been moved into drivers/iommu in v3.1. So what's the preferred way
+to deal with stable kernels between v2.6.31 and v3.1?
+Thanks!
+Gerry
+---
+ drivers/iommu/intel-iommu.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 4896ae9e23da..675f37a7329f 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -700,14 +700,20 @@ struct clk *__clk_lookup(const char *name)
- 	return NULL;
- }
- 
--/*
-- * Helper for finding best parent to provide a given frequency. This can be used
-- * directly as a determine_rate callback (e.g. for a mux), or from a more
-- * complex clock that may combine a mux with other operations.
-- */
--long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
--			      unsigned long *best_parent_rate,
--			      struct clk **best_parent_p)
-+static bool mux_is_better_rate(unsigned long rate, unsigned long now,
-+			   unsigned long best, unsigned long flags)
-+{
-+	if (flags & CLK_MUX_ROUND_CLOSEST)
-+		return abs(now - rate) < abs(best - rate);
-+
-+	return now <= rate && now > best;
-+}
-+
-+static long
-+clk_mux_determine_rate_flags(struct clk_hw *hw, unsigned long rate,
-+			     unsigned long *best_parent_rate,
-+			     struct clk **best_parent_p,
-+			     unsigned long flags)
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index a27d6cb1a793..b26ad10ec697 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -1983,7 +1983,7 @@ static int __domain_mapping(struct dmar_domain *domain, unsigned long iov_pfn,
  {
- 	struct clk *clk = hw->clk, *parent, *best_parent = NULL;
- 	int i, num_parents;
-@@ -735,7 +741,7 @@ long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
- 			parent_rate = __clk_round_rate(parent, rate);
- 		else
- 			parent_rate = __clk_get_rate(parent);
--		if (parent_rate <= rate && parent_rate > best) {
-+		if (mux_is_better_rate(rate, parent_rate, best, flags)) {
- 			best_parent = parent;
- 			best = parent_rate;
- 		}
-@@ -748,8 +754,31 @@ out:
+ 	struct dma_pte *first_pte = NULL, *pte = NULL;
+ 	phys_addr_t uninitialized_var(pteval);
+-	unsigned long sg_res;
++	unsigned long sg_res = 0;
+ 	unsigned int largepage_lvl = 0;
+ 	unsigned long lvl_pages = 0;
  
- 	return best;
- }
-+
-+/*
-+ * Helper for finding best parent to provide a given frequency. This can be used
-+ * directly as a determine_rate callback (e.g. for a mux), or from a more
-+ * complex clock that may combine a mux with other operations.
-+ */
-+long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
-+			      unsigned long *best_parent_rate,
-+			      struct clk **best_parent_p)
-+{
-+	return clk_mux_determine_rate_flags(hw, rate, best_parent_rate,
-+					    best_parent_p, 0);
-+}
- EXPORT_SYMBOL_GPL(__clk_mux_determine_rate);
+@@ -1994,10 +1994,8 @@ static int __domain_mapping(struct dmar_domain *domain, unsigned long iov_pfn,
  
-+long __clk_mux_determine_rate_closest(struct clk_hw *hw, unsigned long rate,
-+			      unsigned long *best_parent_rate,
-+			      struct clk **best_parent_p)
-+{
-+	return clk_mux_determine_rate_flags(hw, rate, best_parent_rate,
-+					    best_parent_p,
-+					    CLK_MUX_ROUND_CLOSEST);
-+}
-+EXPORT_SYMBOL_GPL(__clk_mux_determine_rate_closest);
-+
- /***        clk api        ***/
+ 	prot &= DMA_PTE_READ | DMA_PTE_WRITE | DMA_PTE_SNP;
  
- void __clk_unprepare(struct clk *clk)
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index be21af149f11..446faed3f79f 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -383,6 +383,8 @@ struct clk *clk_register_divider_table(struct device *dev, const char *name,
-  *	register, and mask of mux bits are in higher 16-bit of this register.
-  *	While setting the mux bits, higher 16-bit should also be updated to
-  *	indicate changing mux bits.
-+ * CLK_MUX_ROUND_CLOSEST - Use the parent rate that is closest to the desired
-+ *	frequency.
-  */
- struct clk_mux {
- 	struct clk_hw	hw;
-@@ -397,7 +399,8 @@ struct clk_mux {
- #define CLK_MUX_INDEX_ONE		BIT(0)
- #define CLK_MUX_INDEX_BIT		BIT(1)
- #define CLK_MUX_HIWORD_MASK		BIT(2)
--#define CLK_MUX_READ_ONLY	BIT(3) /* mux setting cannot be changed */
-+#define CLK_MUX_READ_ONLY		BIT(3) /* mux can't be changed */
-+#define CLK_MUX_ROUND_CLOSEST		BIT(4)
+-	if (sg)
+-		sg_res = 0;
+-	else {
+-		sg_res = nr_pages + 1;
++	if (!sg) {
++		sg_res = nr_pages;
+ 		pteval = ((phys_addr_t)phys_pfn << VTD_PAGE_SHIFT) | prot;
+ 	}
  
- extern const struct clk_ops clk_mux_ops;
- extern const struct clk_ops clk_mux_ro_ops;
-@@ -555,7 +558,9 @@ struct clk *__clk_lookup(const char *name);
- long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
- 			      unsigned long *best_parent_rate,
- 			      struct clk **best_parent_p);
--
-+long __clk_mux_determine_rate_closest(struct clk_hw *hw, unsigned long rate,
-+			      unsigned long *best_parent_rate,
-+			      struct clk **best_parent_p);
- /*
-  * FIXME clock api without lock protection
-  */
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
+1.7.10.4
 
