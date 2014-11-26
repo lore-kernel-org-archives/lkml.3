@@ -1,380 +1,880 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752297AbaKZK4X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 05:56:23 -0500
-Received: from mga01.intel.com ([192.55.52.88]:45218 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951AbaKZK4V convert rfc822-to-8bit (ORCPT
+	id S1752372AbaKZK6H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 05:58:07 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:59942 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811AbaKZK6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 05:56:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="421700407"
-From: "Berthier, Emmanuel" <emmanuel.berthier@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "Jarzmik, Robert" <robert.jarzmik@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] [LBR] Dump LBRs on Oops
-Thread-Topic: [PATCH] [LBR] Dump LBRs on Oops
-Thread-Index: AQHQBa06swP7VVqtjkGZ0Sl9b+2CXJxr0WOAgAbwn5A=
-Date: Wed, 26 Nov 2014 10:56:16 +0000
-Message-ID: <65CD3FC07F3BF942ABE211646D72D770356EA9E0@IRSMSX110.ger.corp.intel.com>
-References: <1416589419-9952-1-git-send-email-emmanuel.berthier@intel.com>
- <alpine.DEB.2.11.1411212240390.6439@nanos>
-In-Reply-To: <alpine.DEB.2.11.1411212240390.6439@nanos>
-Accept-Language: fr-FR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.33.239.182]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 26 Nov 2014 05:58:05 -0500
+Date: Wed, 26 Nov 2014 16:19:13 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ALSA: korg1212: cleanup of printk
+Message-ID: <20141126104912.GA1085@sudip-PC>
+References: <1416730251-5194-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <s5hh9xottl9.wl-tiwai@suse.de>
+ <1416849910.8797.1.camel@perches.com>
+ <20141125062132.GA3380@sudip-PC>
+ <1416941965.8358.6.camel@perches.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416941965.8358.6.camel@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> Sent: Saturday, November 22, 2014 1:51 AM On Fri, 21 Nov 2014, 
-> Emmanuel Berthier wrote:
+On Tue, Nov 25, 2014 at 10:59:25AM -0800, Joe Perches wrote:
+> On Tue, 2014-11-25 at 11:51 +0530, Sudip Mukherjee wrote:
+> > problems with this way:
+> > 1) macro name is little misleading - macro says printk, but we are using dev_dbg
+> > 2) if some one later wants to add something to this file, and doesnot want to use the variable name korg1212 in his function.
+> > 
+> > any suggestions ?
 > 
-> > The purpose of this patch is to stop LBR at the early stage of 
-> > Exception Handling, and dump its content later in the dumpstack 
-> > process.
+> Some code is so old and unlikely to be ever used
+> again, it may be better to move it to an "ancient
+> and crufty" folder and forget about it.
 > 
-> And that's useful in what way? The changelog should not tell WHAT the 
-> patch does. It should tell WHY it is useful and what are the usecases/benefits.
-> Neither does it tell how that feature can be used/enabled/disabled and 
-> how it provides useful information.
-> Where is that sample output which demonstrates that this is something 
-> which adds debugging value rather than another level of pointless featuritis?
+> This may be one of those.
+> 
+> If the debugging was written in a more current style,
+> it might look like this: (with various format/argument
+> mismatches fixed, formatting changes, etc)
 
-Oops, right. 
+ok. and can't we delete some of the messages like "DSP download is complete." and then printing the statename. there are lots of messages like that which is just printing the function name and the statename ..
 
-Let's take the case of a stack corruption:
+and, even if i modify it a little and send it, most of the work has been done by you. so how do i send the patch in your name or add your name in the patch ? I have not done anything so my name should not be there.
 
-static int corrupt_stack(void *data, u64 val)  {  long long ptr[1];
+thanks
+sudip
 
-	asm ("");
-	ptr[0]=0;
-	ptr[1]=0;
-	ptr[2]=0;
-	ptr[3]=0;
-
-	return -1;
- }
-
-The standard Panic will report:
-
- BUG: unable to handle kernel NULL pointer dereference at           (null)
- IP: [<          (null)>]           (null)
- PGD 48605067 PUD 0
- Oops: 0010 [#1] PREEMPT SMP
- task: ffff8800384f6300 ti: ffff880035c70000 task.ti: ffff880035c70000
- RIP: 0010:[<0000000000000000>]  [<          (null)>]           (null)
- RSP: 0018:ffff880035c71ec8  EFLAGS: 00010246
- RAX: 00000000ffffffff RBX: fffffffffffffff2 RCX: 000000000000002a
- RDX: ffff880035c71e90 RSI: 0000000000000001 RDI: 0000000000000000
- RBP: 0000000000000000 R08: 0000000000000001 R09: 0000000000000001
- R10: 000000000000000a R11: f000000000000000 R12: ffff880033be0e50
- R13: 0000000000000002 R14: 0000000000000002 R15: ffff880033be0e00
- FS:  0000000000000000(0000) GS:ffff88007ea80000(0063) knlGS:00000000f76cd280
- CS:  0010 DS: 002b ES: 002b CR0: 0000000080050033
- CR2: 0000000000000000 CR3: 000000003871b000 CR4: 00000000001007e0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Stack:
-  0000000000000000 00000000f802bb54 ffff880075e85680 0000000000000002
-  00000000f802bb54 ffff880035c71f50 0000000000000000 ffff880035c71f38
-  ffffffff821b8266 ffff880075e85680 00000000f802bb54 0000000000000002  Call Trace:
-  [<ffffffff821b8266>] ? vfs_write+0xb6/0x1c0
-  [<ffffffff821b86fd>] ? SyS_write+0x4d/0x90
-  [<ffffffff82817c65>] ? sysenter_dispatch+0x7/0x23
- Code:  Bad RIP value.
- RIP  [<          (null)>]           (null)
-  RSP <ffff880035c71ec8>
- CR2: 0000000000000000
-
-The purpose of this patch is to use the LBR as a small instruction trace.
-The result will be:
-
- Last Branch Records:
-  _to: [<ffffffff82810980>] page_fault+0x0/0x70
- from: [<0000000000000000>] 0x0
-  _to: [<0000000000000000>] 0x0
- from: [<ffffffff8263693c>] corrupt_stack+0x3c/0x40
-  _to: [<ffffffff82636900>] corrupt_stack+0x0/0x40
- from: [<ffffffff821dde6a>] simple_attr_write+0xca/0xf0
-  _to: [<ffffffff821dde63>] simple_attr_write+0xc3/0xf0
- from: [<ffffffff8235387f>] simple_strtoll+0xf/0x20
-  _to: [<ffffffff8235387e>] simple_strtoll+0xe/0x20
- from: [<ffffffff82351d5b>] simple_strtoull+0x4b/0x50
-  _to: [<ffffffff82351d4e>] simple_strtoull+0x3e/0x50
- from: [<ffffffff82351d48>] simple_strtoull+0x38/0x50
-  _to: [<ffffffff82351d3d>] simple_strtoull+0x2d/0x50
- from: [<ffffffff8235b4cb>] _parse_integer+0x9b/0xc0
-  _to: [<ffffffff8235b4b0>] _parse_integer+0x80/0xc0
- from: [<ffffffff8235b497>] _parse_integer+0x67/0xc0
- 
-> > --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> > +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> > @@ -4,7 +4,9 @@
-> >  #include <asm/perf_event.h>
-> >  #include <asm/msr.h>
-> >  #include <asm/insn.h>
-> > -
-> > +#ifdef CONFIG_LBR_DUMP_ON_EXCEPTION #include <asm/processor.h> 
-> > +#endif
 > 
-> We just can include that file unconditionally.
-
-Ok for patch 2.
-
-> >  #include "perf_event.h"
-> >
-> >  enum {
-> > @@ -135,6 +137,9 @@ static void __intel_pmu_lbr_enable(void)
-> >  	u64 debugctl;
-> >  	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
-> >
-> > +	if (IS_ENABLED(CONFIG_LBR_DUMP_ON_EXCEPTION))
-> > +		lbr_dump_on_exception = 0;
+> I don't have this card (does anyone?), so it's compiled
+> but untested.
+> ---
+>  sound/pci/korg1212/korg1212.c | 363 +++++++++++++++++++++---------------------
+>  1 file changed, 184 insertions(+), 179 deletions(-)
 > 
-> With certain compilers you might get a surprise here, because they are 
-> too stupid to remove that 'lbr_dump_on_exception = 0;' right away. 
-> They kill it in the optimization phase. So they complain about 
-> lbr_dump_on_exception not being defined.
+> diff --git a/sound/pci/korg1212/korg1212.c b/sound/pci/korg1212/korg1212.c
+> index 59d21c9..9dd7f96 100644
+> --- a/sound/pci/korg1212/korg1212.c
+> +++ b/sound/pci/korg1212/korg1212.c
+> @@ -38,20 +38,9 @@
+>  
+>  #include <asm/io.h>
+>  
+> -// ----------------------------------------------------------------------------
+> -// Debug Stuff
+> -// ----------------------------------------------------------------------------
+> -#define K1212_DEBUG_LEVEL		0
+> -#if K1212_DEBUG_LEVEL > 0
+> -#define K1212_DEBUG_PRINTK(fmt,args...)	printk(KERN_DEBUG fmt,##args)
+> -#else
+> -#define K1212_DEBUG_PRINTK(fmt,...)
+> -#endif
+> -#if K1212_DEBUG_LEVEL > 1
+> -#define K1212_DEBUG_PRINTK_VERBOSE(fmt,args...)	printk(KERN_DEBUG fmt,##args)
+> -#else
+> -#define K1212_DEBUG_PRINTK_VERBOSE(fmt,...)
+> -#endif
+> +/* #define K1212_DEBUG_MEMORY_RANGES */
+> +#define k1212_dbg(k1212, fmt, ...)                      \
+> +	dev_dbg((k1212)->card->dev, fmt, ##__VA_ARGS__)
+>  
+>  // ----------------------------------------------------------------------------
+>  // Record/Play Buffer Allocation Method. If K1212_LARGEALLOC is defined all 
+> @@ -530,12 +519,12 @@ static int snd_korg1212_Send1212Command(struct snd_korg1212 *korg1212,
+>  	int rc = K1212_CMDRET_Success;
+>  
+>          if (!korg1212->outDoorbellPtr) {
+> -		K1212_DEBUG_PRINTK_VERBOSE("K1212_DEBUG: CardUninitialized\n");
+> +		k1212_dbg(korg1212, "CardUninitialized\n");
+>                  return K1212_CMDRET_CardUninitialized;
+>  	}
+>  
+> -	K1212_DEBUG_PRINTK("K1212_DEBUG: Card <- 0x%08x 0x%08x [%s]\n",
+> -			   doorbellVal, mailBox0Val, stateName[korg1212->cardState]);
+> +	k1212_dbg(korg1212, "Card <- 0x%08x 0x%08x [%s]\n",
+> +		  doorbellVal, mailBox0Val, stateName[korg1212->cardState]);
+>          for (retryCount = 0; retryCount < MAX_COMMAND_RETRIES; retryCount++) {
+>  		writel(mailBox3Val, korg1212->mailbox3Ptr);
+>                  writel(mailBox2Val, korg1212->mailbox2Ptr);
+> @@ -562,7 +551,7 @@ static int snd_korg1212_Send1212Command(struct snd_korg1212 *korg1212,
+>                  mailBox3Lo = readl(korg1212->mailbox3Ptr);
+>                  if (mailBox3Lo & COMMAND_ACK_MASK) {
+>                  	if ((mailBox3Lo & DOORBELL_VAL_MASK) == (doorbellVal & DOORBELL_VAL_MASK)) {
+> -				K1212_DEBUG_PRINTK_VERBOSE("K1212_DEBUG: Card <- Success\n");
+> +				k1212_dbg(korg1212, "Card <- Success\n");
+>                                  rc = K1212_CMDRET_Success;
+>  				break;
+>                          }
+> @@ -571,7 +560,7 @@ static int snd_korg1212_Send1212Command(struct snd_korg1212 *korg1212,
+>          korg1212->cmdRetryCount += retryCount;
+>  
+>  	if (retryCount >= MAX_COMMAND_RETRIES) {
+> -		K1212_DEBUG_PRINTK_VERBOSE("K1212_DEBUG: Card <- NoAckFromCard\n");
+> +		k1212_dbg(korg1212, "Card <- NoAckFromCard\n");
+>          	rc = K1212_CMDRET_NoAckFromCard;
+>  	}
+>  
+> @@ -612,8 +601,8 @@ static void snd_korg1212_timer_func(unsigned long data)
+>  		korg1212->stop_pending_cnt = 0;
+>  		korg1212->dsp_stop_is_processed = 1;
+>  		wake_up(&korg1212->wait);
+> -		K1212_DEBUG_PRINTK_VERBOSE("K1212_DEBUG: Stop ack'ed [%s]\n",
+> -					   stateName[korg1212->cardState]);
+> +		k1212_dbg(korg1212, "Stop ack'ed [%s]\n",
+> +			  stateName[korg1212->cardState]);
+>  	} else {
+>  		if (--korg1212->stop_pending_cnt > 0) {
+>  			/* reprogram timer */
+> @@ -624,8 +613,8 @@ static void snd_korg1212_timer_func(unsigned long data)
+>  			korg1212->sharedBufferPtr->cardCommand = 0;
+>  			korg1212->dsp_stop_is_processed = 1;
+>  			wake_up(&korg1212->wait);
+> -			K1212_DEBUG_PRINTK("K1212_DEBUG: Stop timeout [%s]\n",
+> -					   stateName[korg1212->cardState]);
+> +			k1212_dbg(korg1212, "Stop timeout [%s]\n",
+> +				  stateName[korg1212->cardState]);
+>  		}
+>  	}
+>  	spin_unlock_irqrestore(&korg1212->lock, flags);
+> @@ -660,8 +649,8 @@ static inline void snd_korg1212_setCardState(struct snd_korg1212 * korg1212, enu
+>  
+>  static int snd_korg1212_OpenCard(struct snd_korg1212 * korg1212)
+>  {
+> -	K1212_DEBUG_PRINTK("K1212_DEBUG: OpenCard [%s] %d\n",
+> -			   stateName[korg1212->cardState], korg1212->opencnt);
+> +	k1212_dbg(korg1212, "OpenCard [%s] %d\n",
+> +		  stateName[korg1212->cardState], korg1212->opencnt);
+>  	mutex_lock(&korg1212->open_mutex);
+>          if (korg1212->opencnt++ == 0) {
+>  		snd_korg1212_TurnOffIdleMonitor(korg1212);
+> @@ -674,8 +663,8 @@ static int snd_korg1212_OpenCard(struct snd_korg1212 * korg1212)
+>  
+>  static int snd_korg1212_CloseCard(struct snd_korg1212 * korg1212)
+>  {
+> -	K1212_DEBUG_PRINTK("K1212_DEBUG: CloseCard [%s] %d\n",
+> -			   stateName[korg1212->cardState], korg1212->opencnt);
+> +	k1212_dbg(korg1212, "CloseCard [%s] %d\n",
+> +		  stateName[korg1212->cardState], korg1212->opencnt);
+>  
+>  	mutex_lock(&korg1212->open_mutex);
+>  	if (--(korg1212->opencnt)) {
+> @@ -687,8 +676,8 @@ static int snd_korg1212_CloseCard(struct snd_korg1212 * korg1212)
+>                  int rc = snd_korg1212_Send1212Command(korg1212, K1212_DB_SelectPlayMode,
+>                                  K1212_MODE_StopPlay, 0, 0, 0);
+>  		if (rc)
+> -			K1212_DEBUG_PRINTK("K1212_DEBUG: CloseCard - RC = %d [%s]\n",
+> -					   rc, stateName[korg1212->cardState]);
+> +			k1212_dbg(korg1212, "CloseCard - RC = %d [%s]\n",
+> +				  rc, stateName[korg1212->cardState]);
+>  		if (rc != K1212_CMDRET_Success) {
+>  			mutex_unlock(&korg1212->open_mutex);
+>                          return 0;
+> @@ -711,8 +700,8 @@ static int snd_korg1212_SetupForPlay(struct snd_korg1212 * korg1212)
+>  {
+>  	int rc;
+>  
+> -	K1212_DEBUG_PRINTK("K1212_DEBUG: SetupForPlay [%s] %d\n",
+> -			   stateName[korg1212->cardState], korg1212->setcnt);
+> +	k1212_dbg(korg1212, "SetupForPlay [%s] %d\n",
+> +		  stateName[korg1212->cardState], korg1212->setcnt);
+>  
+>          if (korg1212->setcnt++)
+>  		return 0;
+> @@ -721,8 +710,8 @@ static int snd_korg1212_SetupForPlay(struct snd_korg1212 * korg1212)
+>          rc = snd_korg1212_Send1212Command(korg1212, K1212_DB_SelectPlayMode,
+>                                          K1212_MODE_SetupPlay, 0, 0, 0);
+>  	if (rc)
+> -		K1212_DEBUG_PRINTK("K1212_DEBUG: SetupForPlay - RC = %d [%s]\n",
+> -				   rc, stateName[korg1212->cardState]);
+> +		k1212_dbg(korg1212, "SetupForPlay - RC = %d [%s]\n",
+> +			  rc, stateName[korg1212->cardState]);
+>          if (rc != K1212_CMDRET_Success) {
+>                  return 1;
+>          }
+> @@ -734,8 +723,8 @@ static int snd_korg1212_TriggerPlay(struct snd_korg1212 * korg1212)
+>  {
+>  	int rc;
+>  
+> -	K1212_DEBUG_PRINTK("K1212_DEBUG: TriggerPlay [%s] %d\n",
+> -			   stateName[korg1212->cardState], korg1212->playcnt);
+> +	k1212_dbg(korg1212, "TriggerPlay [%s] %d\n",
+> +		  stateName[korg1212->cardState], korg1212->playcnt);
+>  
+>          if (korg1212->playcnt++)
+>  		return 0;
+> @@ -743,8 +732,8 @@ static int snd_korg1212_TriggerPlay(struct snd_korg1212 * korg1212)
+>          snd_korg1212_setCardState(korg1212, K1212_STATE_PLAYING);
+>          rc = snd_korg1212_Send1212Command(korg1212, K1212_DB_TriggerPlay, 0, 0, 0, 0);
+>  	if (rc)
+> -		K1212_DEBUG_PRINTK("K1212_DEBUG: TriggerPlay - RC = %d [%s]\n",
+> -				   rc, stateName[korg1212->cardState]);
+> +		k1212_dbg(korg1212, "TriggerPlay - RC = %d [%s]\n",
+> +			  rc, stateName[korg1212->cardState]);
+>          if (rc != K1212_CMDRET_Success) {
+>                  return 1;
+>          }
+> @@ -754,8 +743,8 @@ static int snd_korg1212_TriggerPlay(struct snd_korg1212 * korg1212)
+>  /* spinlock already held */
+>  static int snd_korg1212_StopPlay(struct snd_korg1212 * korg1212)
+>  {
+> -	K1212_DEBUG_PRINTK("K1212_DEBUG: StopPlay [%s] %d\n",
+> -			   stateName[korg1212->cardState], korg1212->playcnt);
+> +	k1212_dbg(korg1212, "StopPlay [%s] %d\n",
+> +		  stateName[korg1212->cardState], korg1212->playcnt);
+>  
+>          if (--(korg1212->playcnt)) 
+>  		return 0;
+> @@ -784,8 +773,8 @@ static void snd_korg1212_EnableCardInterrupts(struct snd_korg1212 * korg1212)
+>  static int snd_korg1212_SetMonitorMode(struct snd_korg1212 *korg1212,
+>  				       enum MonitorModeSelector mode)
+>  {
+> -	K1212_DEBUG_PRINTK("K1212_DEBUG: SetMonitorMode [%s]\n",
+> -			   stateName[korg1212->cardState]);
+> +	k1212_dbg(korg1212, "SetMonitorMode [%s]\n",
+> +		  stateName[korg1212->cardState]);
+>  
+>          switch (mode) {
+>  	case K1212_MONMODE_Off:
+> @@ -866,8 +855,8 @@ static int snd_korg1212_SetRate(struct snd_korg1212 *korg1212, int rate)
+>  					  ClockSourceSelector[korg1212->clkSrcRate],
+>  					  0, 0, 0);
+>  	if (rc)
+> -		K1212_DEBUG_PRINTK("K1212_DEBUG: Set Clock Source Selector - RC = %d [%s]\n",
+> -				   rc, stateName[korg1212->cardState]);
+> +		k1212_dbg(korg1212, "Set Clock Source Selector - RC = %d [%s]\n",
+> +			  rc, stateName[korg1212->cardState]);
+>  
+>          return 0;
+>  }
+> @@ -902,8 +891,8 @@ static int snd_korg1212_WriteADCSensitivity(struct snd_korg1212 *korg1212)
+>          u16       count;
+>  	unsigned long flags;
+>  
+> -	K1212_DEBUG_PRINTK("K1212_DEBUG: WriteADCSensivity [%s]\n",
+> -			   stateName[korg1212->cardState]);
+> +	k1212_dbg(korg1212, "WriteADCSensivity [%s]\n",
+> +		  stateName[korg1212->cardState]);
+>  
+>          // ----------------------------------------------------------------------------
+>          // initialize things.  The local init bit is always set when writing to the
+> @@ -1026,8 +1015,8 @@ static int snd_korg1212_WriteADCSensitivity(struct snd_korg1212 *korg1212)
+>                  int rc = snd_korg1212_Send1212Command(korg1212, K1212_DB_SelectPlayMode,
+>                                  K1212_MODE_MonitorOn, 0, 0, 0);
+>  	        if (rc)
+> -			K1212_DEBUG_PRINTK("K1212_DEBUG: WriteADCSensivity - RC = %d [%s]\n",
+> -					   rc, stateName[korg1212->cardState]);
+> +			k1212_dbg(korg1212, "WriteADCSensivity - RC = %d [%s]\n",
+> +				  rc, stateName[korg1212->cardState]);
+>          }
+>  
+>  	spin_unlock_irqrestore(&korg1212->lock, flags);
+> @@ -1039,8 +1028,8 @@ static void snd_korg1212_OnDSPDownloadComplete(struct snd_korg1212 *korg1212)
+>  {
+>          int channel, rc;
+>  
+> -        K1212_DEBUG_PRINTK("K1212_DEBUG: DSP download is complete. [%s]\n",
+> -			   stateName[korg1212->cardState]);
+> +	k1212_dbg(korg1212, "DSP download is complete. [%s]\n",
+> +		  stateName[korg1212->cardState]);
+>  
+>          // ----------------------------------------------------
+>          // tell the card to boot
+> @@ -1048,8 +1037,8 @@ static void snd_korg1212_OnDSPDownloadComplete(struct snd_korg1212 *korg1212)
+>          rc = snd_korg1212_Send1212Command(korg1212, K1212_DB_BootFromDSPPage4, 0, 0, 0, 0);
+>  
+>  	if (rc)
+> -		K1212_DEBUG_PRINTK("K1212_DEBUG: Boot from Page 4 - RC = %d [%s]\n",
+> -				   rc, stateName[korg1212->cardState]);
+> +		k1212_dbg(korg1212, "Boot from Page 4 - RC = %d [%s]\n",
+> +			  rc, stateName[korg1212->cardState]);
+>  	msleep(DSP_BOOT_DELAY_IN_MS);
+>  
+>          // --------------------------------------------------------------------------------
+> @@ -1065,8 +1054,8 @@ static void snd_korg1212_OnDSPDownloadComplete(struct snd_korg1212 *korg1212)
+>          );
+>  
+>  	if (rc)
+> -		K1212_DEBUG_PRINTK("K1212_DEBUG: Configure Buffer Memory - RC = %d [%s]\n",
+> -				   rc, stateName[korg1212->cardState]);
+> +		k1212_dbg(korg1212, "Configure Buffer Memory - RC = %d [%s]\n",
+> +			  rc, stateName[korg1212->cardState]);
+>  
+>          udelay(INTERCOMMAND_DELAY);
+>  
+> @@ -1079,8 +1068,8 @@ static void snd_korg1212_OnDSPDownloadComplete(struct snd_korg1212 *korg1212)
+>          );
+>  
+>  	if (rc)
+> -		K1212_DEBUG_PRINTK("K1212_DEBUG: Configure Misc Memory - RC = %d [%s]\n",
+> -				   rc, stateName[korg1212->cardState]);
+> +		k1212_dbg(korg1212, "Configure Misc Memory - RC = %d [%s]\n",
+> +			  rc, stateName[korg1212->cardState]);
+>  
+>          // --------------------------------------------------------------------------------
+>          // Initialize the routing and volume tables, then update the card's state.
+> @@ -1100,15 +1089,15 @@ static void snd_korg1212_OnDSPDownloadComplete(struct snd_korg1212 *korg1212)
+>  					  ClockSourceSelector[korg1212->clkSrcRate],
+>  					  0, 0, 0);
+>  	if (rc)
+> -		K1212_DEBUG_PRINTK("K1212_DEBUG: Set Clock Source Selector - RC = %d [%s]\n",
+> -				   rc, stateName[korg1212->cardState]);
+> +		k1212_dbg(korg1212, "Set Clock Source Selector - RC = %d [%s]\n",
+> +			  rc, stateName[korg1212->cardState]);
+>  
+>  	rc = snd_korg1212_TurnOnIdleMonitor(korg1212);
+>  	snd_korg1212_setCardState(korg1212, K1212_STATE_READY);
+>  
+>  	if (rc)
+> -		K1212_DEBUG_PRINTK("K1212_DEBUG: Set Monitor On - RC = %d [%s]\n",
+> -				   rc, stateName[korg1212->cardState]);
+> +		k1212_dbg(korg1212, "Set Monitor On - RC = %d [%s]\n",
+> +			  rc, stateName[korg1212->cardState]);
+>  
+>  	snd_korg1212_setCardState(korg1212, K1212_STATE_DSP_COMPLETE);
+>  }
+> @@ -1133,9 +1122,9 @@ static irqreturn_t snd_korg1212_interrupt(int irq, void *dev_id)
+>  
+>          switch (doorbellValue) {
+>                  case K1212_DB_DSPDownloadDone:
+> -                        K1212_DEBUG_PRINTK("K1212_DEBUG: IRQ DNLD count - %ld, %x, [%s].\n",
+> -					   korg1212->irqcount, doorbellValue,
+> -					   stateName[korg1212->cardState]);
+> +			k1212_dbg(korg1212, "IRQ DNLD count - %ld, %x, [%s]\n",
+> +				  korg1212->irqcount, doorbellValue,
+> +				  stateName[korg1212->cardState]);
+>                          if (korg1212->cardState == K1212_STATE_DSP_IN_PROCESS) {
+>  				korg1212->dsp_is_loaded = 1;
+>  				wake_up(&korg1212->wait);
+> @@ -1146,9 +1135,9 @@ static irqreturn_t snd_korg1212_interrupt(int irq, void *dev_id)
+>                  // an error occurred - stop the card
+>                  // ------------------------------------------------------------------------
+>                  case K1212_DB_DMAERROR:
+> -			K1212_DEBUG_PRINTK_VERBOSE("K1212_DEBUG: IRQ DMAE count - %ld, %x, [%s].\n",
+> -						   korg1212->irqcount, doorbellValue,
+> -						   stateName[korg1212->cardState]);
+> +			k1212_dbg(korg1212, "IRQ DMAE count - %ld, %x, [%s].\n",
+> +				  korg1212->irqcount, doorbellValue,
+> +				  stateName[korg1212->cardState]);
+>  			snd_printk(KERN_ERR "korg1212: DMA Error\n");
+>  			korg1212->errorcnt++;
+>  			korg1212->totalerrorcnt++;
+> @@ -1161,16 +1150,17 @@ static irqreturn_t snd_korg1212_interrupt(int irq, void *dev_id)
+>                  // the semaphore in case someone is waiting for this.
+>                  // ------------------------------------------------------------------------
+>                  case K1212_DB_CARDSTOPPED:
+> -                        K1212_DEBUG_PRINTK_VERBOSE("K1212_DEBUG: IRQ CSTP count - %ld, %x, [%s].\n",
+> -						   korg1212->irqcount, doorbellValue,
+> -						   stateName[korg1212->cardState]);
+> +			k1212_dbg(korg1212, "IRQ CSTP count - %ld, %x, [%s]\n",
+> +				  korg1212->irqcount, doorbellValue,
+> +				  stateName[korg1212->cardState]);
+>  			korg1212->sharedBufferPtr->cardCommand = 0;
+>                          break;
+>  
+>                  default:
+> -			K1212_DEBUG_PRINTK_VERBOSE("K1212_DEBUG: IRQ DFLT count - %ld, %x, cpos=%d [%s].\n",
+> -			       korg1212->irqcount, doorbellValue, 
+> -			       korg1212->currentBuffer, stateName[korg1212->cardState]);
+> +			k1212_dbg(korg1212, "IRQ DFLT count - %ld, %x, cpos=%d [%s]\n",
+> +				  korg1212->irqcount, doorbellValue,
+> +				  korg1212->currentBuffer,
+> +				  stateName[korg1212->cardState]);
+>                          if ((korg1212->cardState > K1212_STATE_SETUP) || korg1212->idleMonitorOn) {
+>                                  korg1212->currentBuffer++;
+>  
+> @@ -1206,8 +1196,8 @@ static int snd_korg1212_downloadDSPCode(struct snd_korg1212 *korg1212)
+>  {
+>  	int rc;
+>  
+> -        K1212_DEBUG_PRINTK("K1212_DEBUG: DSP download is starting... [%s]\n",
+> -			   stateName[korg1212->cardState]);
+> +	k1212_dbg(korg1212, "DSP download is starting... [%s]\n",
+> +		  stateName[korg1212->cardState]);
+>  
+>          // ---------------------------------------------------------------
+>          // verify the state of the card before proceeding.
+> @@ -1221,8 +1211,8 @@ static int snd_korg1212_downloadDSPCode(struct snd_korg1212 *korg1212)
+>                                       UpperWordSwap(korg1212->dma_dsp.addr),
+>                                       0, 0, 0);
+>  	if (rc)
+> -		K1212_DEBUG_PRINTK("K1212_DEBUG: Start DSP Download RC = %d [%s]\n",
+> -				   rc, stateName[korg1212->cardState]);
+> +		k1212_dbg(korg1212, "Start DSP Download RC = %d [%s]\n",
+> +			  rc, stateName[korg1212->cardState]);
+>  
+>  	korg1212->dsp_is_loaded = 0;
+>  	wait_event_timeout(korg1212->wait, korg1212->dsp_is_loaded, HZ * CARD_BOOT_TIMEOUT);
+> @@ -1281,16 +1271,16 @@ static int snd_korg1212_silence(struct snd_korg1212 *korg1212, int pos, int coun
+>  	struct KorgAudioFrame * dst =  korg1212->playDataBufsPtr[0].bufferData + pos;
+>  	int i;
+>  
+> -	K1212_DEBUG_PRINTK_VERBOSE("K1212_DEBUG: snd_korg1212_silence pos=%d offset=%d size=%d count=%d\n",
+> -				   pos, offset, size, count);
+> +	k1212_dbg(korg1212, "snd_korg1212_silence pos=%d offset=%d size=%d count=%d\n",
+> +		  pos, offset, size, count);
+>  	if (snd_BUG_ON(pos + count > K1212_MAX_SAMPLES))
+>  		return -EINVAL;
+>  
+>  	for (i=0; i < count; i++) {
+> -#if K1212_DEBUG_LEVEL > 0
+> +#ifdef K1212_DEBUG_MEMORY_RANGES
+>  		if ( (void *) dst < (void *) korg1212->playDataBufsPtr ||
+>  		     (void *) dst > (void *) korg1212->playDataBufsPtr[8].bufferData ) {
+> -			printk(KERN_DEBUG "K1212_DEBUG: snd_korg1212_silence KERNEL EFAULT dst=%p iter=%d\n",
+> +			printk(KERN_DEBUG "snd_korg1212_silence KERNEL EFAULT dst=%p iter=%d\n",
+>  			       dst, i);
+>  			return -EFAULT;
+>  		}
+> @@ -1307,22 +1297,24 @@ static int snd_korg1212_copy_to(struct snd_korg1212 *korg1212, void __user *dst,
+>  	struct KorgAudioFrame * src =  korg1212->recordDataBufsPtr[0].bufferData + pos;
+>  	int i, rc;
+>  
+> -	K1212_DEBUG_PRINTK_VERBOSE("K1212_DEBUG: snd_korg1212_copy_to pos=%d offset=%d size=%d\n",
+> -				   pos, offset, size);
+> +	k1212_dbg(korg1212, "snd_korg1212_copy_to pos=%d offset=%d size=%d\n",
+> +		  pos, offset, size);
+>  	if (snd_BUG_ON(pos + count > K1212_MAX_SAMPLES))
+>  		return -EINVAL;
+>  
+>  	for (i=0; i < count; i++) {
+> -#if K1212_DEBUG_LEVEL > 0
+> +#ifdef K1212_DEBUG_MEMORY_RANGES
+>  		if ( (void *) src < (void *) korg1212->recordDataBufsPtr ||
+>  		     (void *) src > (void *) korg1212->recordDataBufsPtr[8].bufferData ) {
+> -			printk(KERN_DEBUG "K1212_DEBUG: snd_korg1212_copy_to KERNEL EFAULT, src=%p dst=%p iter=%d\n", src, dst, i);
+> +			printk(KERN_DEBUG "snd_korg1212_copy_to KERNEL EFAULT, src=%p dst=%p iter=%d\n",
+> +			       src, dst, i);
+>  			return -EFAULT;
+>  		}
+>  #endif
+>  		rc = copy_to_user(dst + offset, src, size);
+>  		if (rc) {
+> -			K1212_DEBUG_PRINTK("K1212_DEBUG: snd_korg1212_copy_to USER EFAULT src=%p dst=%p iter=%d\n", src, dst, i);
+> +			k1212_dbg(korg1212, "snd_korg1212_copy_to USER EFAULT src=%p dst=%p iter=%d\n",
+> +				  src, dst, i);
+>  			return -EFAULT;
+>  		}
+>  		src++;
+> @@ -1337,23 +1329,25 @@ static int snd_korg1212_copy_from(struct snd_korg1212 *korg1212, void __user *sr
+>  	struct KorgAudioFrame * dst =  korg1212->playDataBufsPtr[0].bufferData + pos;
+>  	int i, rc;
+>  
+> -	K1212_DEBUG_PRINTK_VERBOSE("K1212_DEBUG: snd_korg1212_copy_from pos=%d offset=%d size=%d count=%d\n",
+> -				   pos, offset, size, count);
+> +	k1212_dbg(korg1212, "snd_korg1212_copy_from pos=%d offset=%d size=%d count=%d\n",
+> +		  pos, offset, size, count);
+>  
+>  	if (snd_BUG_ON(pos + count > K1212_MAX_SAMPLES))
+>  		return -EINVAL;
+>  
+>  	for (i=0; i < count; i++) {
+> -#if K1212_DEBUG_LEVEL > 0
+> +#ifdef K1212_DEBUG_MEMORY_RANGES
+>  		if ( (void *) dst < (void *) korg1212->playDataBufsPtr ||
+>  		     (void *) dst > (void *) korg1212->playDataBufsPtr[8].bufferData ) {
+> -			printk(KERN_DEBUG "K1212_DEBUG: snd_korg1212_copy_from KERNEL EFAULT, src=%p dst=%p iter=%d\n", src, dst, i);
+> +			printk(KERN_DEBUG "snd_korg1212_copy_from KERNEL EFAULT, src=%p dst=%p iter=%d\n",
+> +			       src, dst, i);
+>  			return -EFAULT;
+>  		}
+>  #endif
+>  		rc = copy_from_user((void*) dst + offset, src, size);
+>  		if (rc) {
+> -			K1212_DEBUG_PRINTK("K1212_DEBUG: snd_korg1212_copy_from USER EFAULT src=%p dst=%p iter=%d\n", src, dst, i);
+> +			k1212_dbg(korg1212, "snd_korg1212_copy_from USER EFAULT src=%p dst=%p iter=%d\n",
+> +				  src, dst, i);
+>  			return -EFAULT;
+>  		}
+>  		dst++;
+> @@ -1367,8 +1361,8 @@ static void snd_korg1212_free_pcm(struct snd_pcm *pcm)
+>  {
+>          struct snd_korg1212 *korg1212 = pcm->private_data;
+>  
+> -	K1212_DEBUG_PRINTK("K1212_DEBUG: snd_korg1212_free_pcm [%s]\n",
+> -			   stateName[korg1212->cardState]);
+> +	k1212_dbg(korg1212, "snd_korg1212_free_pcm [%s]\n",
+> +		  stateName[korg1212->cardState]);
+>  
+>          korg1212->pcm = NULL;
+>  }
+> @@ -1379,8 +1373,8 @@ static int snd_korg1212_playback_open(struct snd_pcm_substream *substream)
+>          struct snd_korg1212 *korg1212 = snd_pcm_substream_chip(substream);
+>          struct snd_pcm_runtime *runtime = substream->runtime;
+>  
+> -	K1212_DEBUG_PRINTK("K1212_DEBUG: snd_korg1212_playback_open [%s]\n",
+> -			   stateName[korg1212->cardState]);
+> +	k1212_dbg(korg1212, "snd_korg1212_playback_open [%s]\n",
+> +		  stateName[korg1212->cardState]);
+>  
+>  	snd_korg1212_OpenCard(korg1212);
+>  
+> @@ -1408,8 +1402,8 @@ static int snd_korg1212_capture_open(struct snd_pcm_substream *substream)
+>          struct snd_korg1212 *korg1212 = snd_pcm_substream_chip(substream);
+>          struct snd_pcm_runtime *runtime = substream->runtime;
+>  
+> -	K1212_DEBUG_PRINTK("K1212_DEBUG: snd_korg1212_capture_open [%s]\n",
+> -			   stateName[korg1212->cardState]);
+> +	k1212_dbg(korg1212, "snd_korg1212_capture_open [%s]\n",
+> +		  stateName[korg1212->cardState]);
+>  
+>  	snd_korg1212_OpenCard(korg1212);
+>  
+> @@ -1435,8 +1429,8 @@ static int snd_korg1212_playback_close(struct snd_pcm_substream *substream)
+>          unsigned long flags;
+>          struct snd_korg1212 *korg1212 = snd_pcm_substream_chip(substream);
+>  
+> -	K1212_DEBUG_PRINTK("K1212_DEBUG: snd_korg1212_playback_close [%s]\n",
+> -			   stateName[korg1212->cardState]);
+> +	k1212_dbg(korg1212, "snd_korg1212_playback_close [%s]\n",
+> +		  stateName[korg1212->cardState]);
+>  
+>  	snd_korg1212_silence(korg1212, 0, K1212_MAX_SAMPLES, 0, korg1212->channels * 2);
+>  
+> @@ -1457,8 +1451,8 @@ static int snd_korg1212_capture_close(struct snd_pcm_substream *substream)
+>          unsigned long flags;
+>          struct snd_korg1212 *korg1212 = snd_pcm_substream_chip(substream);
+>  
+> -	K1212_DEBUG_PRINTK("K1212_DEBUG: snd_korg1212_capture_close [%s]\n",
+> -			   stateName[korg1212->cardState]);
+> +	k1212_dbg(korg1212, "snd_korg1212_capture_close [%s]\n",
+> +		  stateName[korg1212->cardState]);
+>  
+>          spin_lock_irqsave(&korg1212->lock, flags);
+>  
+> @@ -1475,14 +1469,14 @@ static int snd_korg1212_capture_close(struct snd_pcm_substream *substream)
+>  static int snd_korg1212_ioctl(struct snd_pcm_substream *substream,
+>  			     unsigned int cmd, void *arg)
+>  {
+> -	K1212_DEBUG_PRINTK("K1212_DEBUG: snd_korg1212_ioctl: cmd=%d\n", cmd);
+> -
+>  	if (cmd == SNDRV_PCM_IOCTL1_CHANNEL_INFO ) {
+> +		struct snd_korg1212 *korg1212 = snd_pcm_substream_chip(substream);
+>  		struct snd_pcm_channel_info *info = arg;
+>          	info->offset = 0;
+>          	info->first = info->channel * 16;
+>          	info->step = 256;
+> -		K1212_DEBUG_PRINTK("K1212_DEBUG: channel_info %d:, offset=%ld, first=%d, step=%d\n", info->channel, info->offset, info->first, info->step);
+> +		k1212_dbg(korg1212, "channel_info %d:, offset=%ld, first=%d, step=%d\n",
+> +			  info->channel, info->offset, info->first, info->step);
+>  		return 0;
+>  	}
+>  
+> @@ -1498,8 +1492,8 @@ static int snd_korg1212_hw_params(struct snd_pcm_substream *substream,
+>  	pid_t this_pid;
+>  	pid_t other_pid;
+>  
+> -	K1212_DEBUG_PRINTK("K1212_DEBUG: snd_korg1212_hw_params [%s]\n",
+> -			   stateName[korg1212->cardState]);
+> +	k1212_dbg(korg1212, "snd_korg1212_hw_params [%s]\n",
+> +		  stateName[korg1212->cardState]);
+>  
+>          spin_lock_irqsave(&korg1212->lock, flags);
+>  
+> @@ -1546,15 +1540,15 @@ static int snd_korg1212_prepare(struct snd_pcm_substream *substream)
+>          struct snd_korg1212 *korg1212 = snd_pcm_substream_chip(substream);
+>  	int rc;
+>  
+> -	K1212_DEBUG_PRINTK("K1212_DEBUG: snd_korg1212_prepare [%s]\n",
+> -			   stateName[korg1212->cardState]);
+> +	k1212_dbg(korg1212, "snd_korg1212_prepare [%s]\n",
+> +		  stateName[korg1212->cardState]);
+>  
+>  	spin_lock_irq(&korg1212->lock);
+>  
+>  	/* FIXME: we should wait for ack! */
+>  	if (korg1212->stop_pending_cnt > 0) {
+> -		K1212_DEBUG_PRINTK("K1212_DEBUG: snd_korg1212_prepare - Stop is pending... [%s]\n",
+> -				   stateName[korg1212->cardState]);
+> +		k1212_dbg(korg1212, "snd_korg1212_prepare - Stop is pending... [%s]\n",
+> +			  stateName[korg1212->cardState]);
+>          	spin_unlock_irq(&korg1212->lock);
+>  		return -EAGAIN;
+>  		/*
+> @@ -1579,16 +1573,16 @@ static int snd_korg1212_trigger(struct snd_pcm_substream *substream,
+>          struct snd_korg1212 *korg1212 = snd_pcm_substream_chip(substream);
+>  	int rc;
+>  
+> -	K1212_DEBUG_PRINTK("K1212_DEBUG: snd_korg1212_trigger [%s] cmd=%d\n",
+> -			   stateName[korg1212->cardState], cmd);
+> +	k1212_dbg(korg1212, "snd_korg1212_trigger [%s] cmd=%d\n",
+> +		  stateName[korg1212->cardState], cmd);
+>  
+>  	spin_lock(&korg1212->lock);
+>          switch (cmd) {
+>                  case SNDRV_PCM_TRIGGER_START:
+>  /*
+>  			if (korg1212->running) {
+> -				K1212_DEBUG_PRINTK_VERBOSE("K1212_DEBUG: snd_korg1212_trigger: Already running?\n");
+> -				break;
+> +			k1212_dbg(korg1212, "snd_korg1212_trigger: Already running?\n");
+> +			break;
+>  			}
+>  */
+>                          korg1212->running++;
+> @@ -1598,8 +1592,8 @@ static int snd_korg1212_trigger(struct snd_pcm_substream *substream,
+>                  case SNDRV_PCM_TRIGGER_STOP:
+>  /*
+>  			if (!korg1212->running) {
+> -				K1212_DEBUG_PRINTK_VERBOSE("K1212_DEBUG: snd_korg1212_trigger: Already stopped?\n");
+> -				break;
+> +			k1212_dbg(korg1212, "snd_korg1212_trigger: Already stopped?\n");
+> +			break;
+>  			}
+>  */
+>                          korg1212->running--;
+> @@ -1621,8 +1615,8 @@ static snd_pcm_uframes_t snd_korg1212_playback_pointer(struct snd_pcm_substream
+>  
+>  	pos = korg1212->currentBuffer * kPlayBufferFrames;
+>  
+> -	K1212_DEBUG_PRINTK_VERBOSE("K1212_DEBUG: snd_korg1212_playback_pointer [%s] %ld\n", 
+> -				   stateName[korg1212->cardState], pos);
+> +	k1212_dbg(korg1212, "snd_korg1212_playback_pointer [%s] %ld\n",
+> +		  stateName[korg1212->cardState], pos);
+>  
+>          return pos;
+>  }
+> @@ -1634,8 +1628,8 @@ static snd_pcm_uframes_t snd_korg1212_capture_pointer(struct snd_pcm_substream *
+>  
+>  	pos = korg1212->currentBuffer * kPlayBufferFrames;
+>  
+> -	K1212_DEBUG_PRINTK_VERBOSE("K1212_DEBUG: snd_korg1212_capture_pointer [%s] %ld\n",
+> -				   stateName[korg1212->cardState], pos);
+> +	k1212_dbg(korg1212, "snd_korg1212_capture_pointer [%s] %ld\n",
+> +		  stateName[korg1212->cardState], pos);
+>  
+>          return pos;
+>  }
+> @@ -1648,8 +1642,8 @@ static int snd_korg1212_playback_copy(struct snd_pcm_substream *substream,
+>  {
+>          struct snd_korg1212 *korg1212 = snd_pcm_substream_chip(substream);
+>  
+> -	K1212_DEBUG_PRINTK_VERBOSE("K1212_DEBUG: snd_korg1212_playback_copy [%s] %ld %ld\n",
+> -				   stateName[korg1212->cardState], pos, count);
+> +	k1212_dbg(korg1212, "snd_korg1212_playback_copy [%s] %ld %ld\n",
+> +		  stateName[korg1212->cardState], pos, count);
+>   
+>  	return snd_korg1212_copy_from(korg1212, src, pos, count, 0, korg1212->channels * 2);
+>  
+> @@ -1662,8 +1656,8 @@ static int snd_korg1212_playback_silence(struct snd_pcm_substream *substream,
+>  {
+>          struct snd_korg1212 *korg1212 = snd_pcm_substream_chip(substream);
+>  
+> -	K1212_DEBUG_PRINTK_VERBOSE("K1212_DEBUG: snd_korg1212_playback_silence [%s]\n",
+> -				   stateName[korg1212->cardState]);
+> +	k1212_dbg(korg1212, "snd_korg1212_playback_silence [%s]\n",
+> +		  stateName[korg1212->cardState]);
+>  
+>  	return snd_korg1212_silence(korg1212, pos, count, 0, korg1212->channels * 2);
+>  }
+> @@ -1676,8 +1670,8 @@ static int snd_korg1212_capture_copy(struct snd_pcm_substream *substream,
+>  {
+>          struct snd_korg1212 *korg1212 = snd_pcm_substream_chip(substream);
+>  
+> -	K1212_DEBUG_PRINTK_VERBOSE("K1212_DEBUG: snd_korg1212_capture_copy [%s] %ld %ld\n",
+> -				   stateName[korg1212->cardState], pos, count);
+> +	k1212_dbg(korg1212, "snd_korg1212_capture_copy [%s] %ld %ld\n",
+> +		  stateName[korg1212->cardState], pos, count);
+>  
+>  	return snd_korg1212_copy_to(korg1212, dst, pos, count, 0, korg1212->channels * 2);
+>  }
+> @@ -2138,7 +2132,7 @@ snd_korg1212_free(struct snd_korg1212 *korg1212)
+>  static int snd_korg1212_dev_free(struct snd_device *device)
+>  {
+>          struct snd_korg1212 *korg1212 = device->device_data;
+> -        K1212_DEBUG_PRINTK("K1212_DEBUG: Freeing device\n");
+> +	k1212_dbg(korg1212, "Freeing device\n");
+>  	return snd_korg1212_free(korg1212);
+>  }
+>  
+> @@ -2210,15 +2204,15 @@ static int snd_korg1212_create(struct snd_card *card, struct pci_dev *pci,
+>  	ioport_size = pci_resource_len(korg1212->pci, 1);
+>  	iomem2_size = pci_resource_len(korg1212->pci, 2);
+>  
+> -        K1212_DEBUG_PRINTK("K1212_DEBUG: resources:\n"
+> -                   "    iomem = 0x%lx (%d)\n"
+> -		   "    ioport  = 0x%lx (%d)\n"
+> -                   "    iomem = 0x%lx (%d)\n"
+> -		   "    [%s]\n",
+> -		   korg1212->iomem, iomem_size,
+> -		   korg1212->ioport, ioport_size,
+> -		   korg1212->iomem2, iomem2_size,
+> -		   stateName[korg1212->cardState]);
+> +	k1212_dbg(korg1212, "resources:\n"
+> +		  "    iomem = 0x%lx (%d)\n"
+> +		  "    ioport  = 0x%lx (%d)\n"
+> +		  "    iomem = 0x%lx (%d)\n"
+> +		  "    [%s]\n",
+> +		  korg1212->iomem, iomem_size,
+> +		  korg1212->ioport, ioport_size,
+> +		  korg1212->iomem2, iomem2_size,
+> +		  stateName[korg1212->cardState]);
+>  
+>          if ((korg1212->iobase = ioremap(korg1212->iomem, iomem_size)) == NULL) {
+>  		snd_printk(KERN_ERR "korg1212: unable to remap memory region 0x%lx-0x%lx\n", korg1212->iomem,
+> @@ -2252,29 +2246,29 @@ static int snd_korg1212_create(struct snd_card *card, struct pci_dev *pci,
+>          korg1212->sensRegPtr = (u16 __iomem *) (korg1212->iobase + SENS_CONTROL_OFFSET);
+>          korg1212->idRegPtr = (u32 __iomem *) (korg1212->iobase + DEV_VEND_ID_OFFSET);
+>  
+> -        K1212_DEBUG_PRINTK("K1212_DEBUG: card registers:\n"
+> -                   "    Status register = 0x%p\n"
+> -                   "    OutDoorbell     = 0x%p\n"
+> -                   "    InDoorbell      = 0x%p\n"
+> -                   "    Mailbox0        = 0x%p\n"
+> -                   "    Mailbox1        = 0x%p\n"
+> -                   "    Mailbox2        = 0x%p\n"
+> -                   "    Mailbox3        = 0x%p\n"
+> -                   "    ControlReg      = 0x%p\n"
+> -                   "    SensReg         = 0x%p\n"
+> -                   "    IDReg           = 0x%p\n"
+> -		   "    [%s]\n",
+> -                   korg1212->statusRegPtr,
+> -		   korg1212->outDoorbellPtr,
+> -		   korg1212->inDoorbellPtr,
+> -                   korg1212->mailbox0Ptr,
+> -                   korg1212->mailbox1Ptr,
+> -                   korg1212->mailbox2Ptr,
+> -                   korg1212->mailbox3Ptr,
+> -                   korg1212->controlRegPtr,
+> -                   korg1212->sensRegPtr,
+> -                   korg1212->idRegPtr,
+> -		   stateName[korg1212->cardState]);
+> +	k1212_dbg(korg1212, "card registers:\n"
+> +		  "    Status register = 0x%p\n"
+> +		  "    OutDoorbell     = 0x%p\n"
+> +		  "    InDoorbell      = 0x%p\n"
+> +		  "    Mailbox0        = 0x%p\n"
+> +		  "    Mailbox1        = 0x%p\n"
+> +		  "    Mailbox2        = 0x%p\n"
+> +		  "    Mailbox3        = 0x%p\n"
+> +		  "    ControlReg      = 0x%p\n"
+> +		  "    SensReg         = 0x%p\n"
+> +		  "    IDReg           = 0x%p\n"
+> +		  "    [%s]\n",
+> +		  korg1212->statusRegPtr,
+> +		  korg1212->outDoorbellPtr,
+> +		  korg1212->inDoorbellPtr,
+> +		  korg1212->mailbox0Ptr,
+> +		  korg1212->mailbox1Ptr,
+> +		  korg1212->mailbox2Ptr,
+> +		  korg1212->mailbox3Ptr,
+> +		  korg1212->controlRegPtr,
+> +		  korg1212->sensRegPtr,
+> +		  korg1212->idRegPtr,
+> +		  stateName[korg1212->cardState]);
+>  
+>  	if (snd_dma_alloc_pages(SNDRV_DMA_TYPE_DEV, snd_dma_pci_data(pci),
+>  				sizeof(struct KorgSharedBuffer), &korg1212->dma_shared) < 0) {
+> @@ -2285,7 +2279,9 @@ static int snd_korg1212_create(struct snd_card *card, struct pci_dev *pci,
+>          korg1212->sharedBufferPtr = (struct KorgSharedBuffer *)korg1212->dma_shared.area;
+>          korg1212->sharedBufferPhy = korg1212->dma_shared.addr;
+>  
+> -        K1212_DEBUG_PRINTK("K1212_DEBUG: Shared Buffer Area = 0x%p (0x%08lx), %d bytes\n", korg1212->sharedBufferPtr, korg1212->sharedBufferPhy, sizeof(struct KorgSharedBuffer));
+> +	k1212_dbg(korg1212, "Shared Buffer Area = 0x%p (0x%08lx), %zu bytes\n",
+> +		  korg1212->sharedBufferPtr, korg1212->sharedBufferPhy,
+> +		  sizeof(struct KorgSharedBuffer));
+>  
+>  #ifndef K1212_LARGEALLOC
+>  
+> @@ -2300,8 +2296,9 @@ static int snd_korg1212_create(struct snd_card *card, struct pci_dev *pci,
+>  	korg1212->playDataBufsPtr = (struct KorgAudioBuffer *)korg1212->dma_play.area;
+>  	korg1212->PlayDataPhy = korg1212->dma_play.addr;
+>  
+> -        K1212_DEBUG_PRINTK("K1212_DEBUG: Play Data Area = 0x%p (0x%08x), %d bytes\n",
+> -		korg1212->playDataBufsPtr, korg1212->PlayDataPhy, korg1212->DataBufsSize);
+> +	k1212_dbg(korg1212, "Play Data Area = 0x%p (0x%08x), %d bytes\n",
+> +		  korg1212->playDataBufsPtr, korg1212->PlayDataPhy,
+> +		  korg1212->DataBufsSize);
+>  
+>  	if (snd_dma_alloc_pages(SNDRV_DMA_TYPE_DEV, snd_dma_pci_data(pci),
+>  				korg1212->DataBufsSize, &korg1212->dma_rec) < 0) {
+> @@ -2312,8 +2309,9 @@ static int snd_korg1212_create(struct snd_card *card, struct pci_dev *pci,
+>          korg1212->recordDataBufsPtr = (struct KorgAudioBuffer *)korg1212->dma_rec.area;
+>          korg1212->RecDataPhy = korg1212->dma_rec.addr;
+>  
+> -        K1212_DEBUG_PRINTK("K1212_DEBUG: Record Data Area = 0x%p (0x%08x), %d bytes\n",
+> -		korg1212->recordDataBufsPtr, korg1212->RecDataPhy, korg1212->DataBufsSize);
+> +	k1212_dbg(korg1212, "Record Data Area = 0x%p (0x%08x), %d bytes\n",
+> +		  korg1212->recordDataBufsPtr, korg1212->RecDataPhy,
+> +		  korg1212->DataBufsSize);
+>  
+>  #else // K1212_LARGEALLOC
+>  
+> @@ -2347,9 +2345,9 @@ static int snd_korg1212_create(struct snd_card *card, struct pci_dev *pci,
+>                  return -ENOMEM;
+>          }
+>  
+> -        K1212_DEBUG_PRINTK("K1212_DEBUG: DSP Code area = 0x%p (0x%08x) %d bytes [%s]\n",
+> -		   korg1212->dma_dsp.area, korg1212->dma_dsp.addr, dsp_code->size,
+> -		   stateName[korg1212->cardState]);
+> +	k1212_dbg(korg1212, "DSP Code area = 0x%p (%pad) %zu bytes [%s]\n",
+> +		  korg1212->dma_dsp.area, &korg1212->dma_dsp.addr,
+> +		  dsp_code->size, stateName[korg1212->cardState]);
+>  
+>  	memcpy(korg1212->dma_dsp.area, dsp_code->data, dsp_code->size);
+>  
+> @@ -2358,7 +2356,8 @@ static int snd_korg1212_create(struct snd_card *card, struct pci_dev *pci,
+>  	rc = snd_korg1212_Send1212Command(korg1212, K1212_DB_RebootCard, 0, 0, 0, 0);
+>  
+>  	if (rc)
+> -		K1212_DEBUG_PRINTK("K1212_DEBUG: Reboot Card - RC = %d [%s]\n", rc, stateName[korg1212->cardState]);
+> +		k1212_dbg(korg1212, "Reboot Card - RC = %d [%s]\n",
+> +			  rc, stateName[korg1212->cardState]);
+>  
+>          if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, korg1212, &ops)) < 0) {
+>                  snd_korg1212_free(korg1212);
+> @@ -2372,18 +2371,24 @@ static int snd_korg1212_create(struct snd_card *card, struct pci_dev *pci,
+>          if (snd_korg1212_downloadDSPCode(korg1212))
+>          	return -EBUSY;
+>  
+> -        K1212_DEBUG_PRINTK("korg1212: dspMemPhy = %08x U[%08x], "
+> -               "PlayDataPhy = %08x L[%08x]\n"
+> -	       "korg1212: RecDataPhy = %08x L[%08x], "
+> -               "VolumeTablePhy = %08x L[%08x]\n"
+> -               "korg1212: RoutingTablePhy = %08x L[%08x], "
+> -               "AdatTimeCodePhy = %08x L[%08x]\n",
+> -	       (int)korg1212->dma_dsp.addr,    UpperWordSwap(korg1212->dma_dsp.addr),
+> -               korg1212->PlayDataPhy,     LowerWordSwap(korg1212->PlayDataPhy),
+> -               korg1212->RecDataPhy,      LowerWordSwap(korg1212->RecDataPhy),
+> -               korg1212->VolumeTablePhy,  LowerWordSwap(korg1212->VolumeTablePhy),
+> -               korg1212->RoutingTablePhy, LowerWordSwap(korg1212->RoutingTablePhy),
+> -               korg1212->AdatTimeCodePhy, LowerWordSwap(korg1212->AdatTimeCodePhy));
+> +	k1212_dbg(korg1212, "dspMemPhy = %08x U[%08x]\n",
+> +		  (int)korg1212->dma_dsp.addr,
+> +		  UpperWordSwap(korg1212->dma_dsp.addr));
+> +	k1212_dbg(korg1212, "PlayDataPhy = %08x L[%08x]\n",
+> +		  korg1212->PlayDataPhy,
+> +		  LowerWordSwap(korg1212->PlayDataPhy));
+> +	k1212_dbg(korg1212, "RecDataPhy = %08x L[%08x]\n",
+> +		  korg1212->RecDataPhy,
+> +		  LowerWordSwap(korg1212->RecDataPhy));
+> +	k1212_dbg(korg1212, "VolumeTablePhy = %08x L[%08x]\n",
+> +		  korg1212->VolumeTablePhy,
+> +		  LowerWordSwap(korg1212->VolumeTablePhy));
+> +	k1212_dbg(korg1212, "RoutingTablePhy = %08x L[%08x]\n",
+> +		  korg1212->RoutingTablePhy,
+> +		  LowerWordSwap(korg1212->RoutingTablePhy));
+> +	k1212_dbg(korg1212, "AdatTimeCodePhy = %08x L[%08x]\n",
+> +		  korg1212->AdatTimeCodePhy,
+> +		  LowerWordSwap(korg1212->AdatTimeCodePhy));
+>  
+>          if ((err = snd_pcm_new(korg1212->card, "korg1212", 0, 1, 1, &korg1212->pcm)) < 0)
+>                  return err;
+> @@ -2446,7 +2451,7 @@ snd_korg1212_probe(struct pci_dev *pci,
+>  	sprintf(card->longname, "%s at 0x%lx, irq %d", card->shortname,
+>  		korg1212->iomem, korg1212->irq);
+>  
+> -        K1212_DEBUG_PRINTK("K1212_DEBUG: %s\n", card->longname);
+> +	k1212_dbg(korg1212, "%s\n", card->longname);
+>  
+>  	if ((err = snd_card_register(card)) < 0) {
+>  		snd_card_free(card);
 > 
-> So you need something like this:
 > 
-> static inline void lbr_set_dump_on_oops(bool enable) { #ifdef 
-> CONFIG_LBR_DUMP_ON_EXCEPTION
->        ....
-> #endif
-> }
-> 
-> and make that
-> 
->      if (IS_ENABLED(CONFIG_LBR_DUMP_ON_EXCEPTION))
->              lbr_set_dump_on_oops(false);
-> 
-> which is completely pointless as you can just call
-> 
->       lbr_set_dump_on_oops(false);
-> 
-> unconditionally and be done with it.
-> 
-> IS_ENABLED(CONFIG_XXX) is not a proper solution for all problems. It 
-> can avoid #ifdefs, but it also can introduce interesting nonsense.
-
-Ok for patch 2.
-
-> >  	if (cpuc->lbr_sel)
-> >  		wrmsrl(MSR_LBR_SELECT, cpuc->lbr_sel->config);
-> >
-> > @@ -147,6 +152,9 @@ static void __intel_pmu_lbr_disable(void)  {
-> >  	u64 debugctl;
-> >
-> > +	if (IS_ENABLED(CONFIG_LBR_DUMP_ON_EXCEPTION))
-> > +		lbr_dump_on_exception = 1;
-> 
-> Now the even more interesting question is, WHY is 
-> lbr_dump_on_exception enabled in __intel_pmu_lbr_disable and disabled 
-> in __intel_pmu_lbr_enable?
-> 
-> This obviously lacks a understandable comment, but before you 
-> elaborate on this see the next comment.
-
-Oh no, I would have liked to explain it right now ;-)
-
-> > +void show_lbrs(void)
-> > +{
-> > +	if (IS_ENABLED(CONFIG_LBR_DUMP_ON_EXCEPTION)) {
-> > +		u64 debugctl;
-> > +		int i, lbr_on;
-> > +
-> > +		rdmsrl(MSR_IA32_DEBUGCTLMSR, debugctl);
-> > +		lbr_on = debugctl & DEBUGCTLMSR_LBR;
-> > +
-> > +		pr_info("Last Branch Records:");
-> > +		if (!lbr_dump_on_exception) {
-> > +			pr_cont(" (Disabled by perf_event)\n");
-> 
-> So, if perf uses LBR we do not print it? What a weird design decision. 
-> If the machine crashes, we want that information no matter whether 
-> perf is active or not. What kind of twisted logic is that?
-
-Ok, let me explain.
-LBR usages are exclusive. Perf uses LBR to calculate some CPU statistics. I use LBR to track code execution before Exceptions.
-So, as soon as we enable perf, I disable LBR dump and vice versa.
-
-> > +		} else if (x86_pmu.lbr_nr == 0) {
-> > +			pr_cont(" (x86_model unknown, check
-> intel_pmu_init())\n");
-> 
-> Huch? Why we get here if the pmu does not support it at all? Why 
-> should we bother to print it? If it's not printed it's not available. It's that simple.
-
-That's a warning to point out that current core is not supported. New cores have to be declared in
-intel_pmu_init() after:
-
-	switch (boot_cpu_data.x86_model) {
-	. . . 
-	case 28: /* Atom */
-	case 38: /* Lincroft */
-	case 39: /* Penwell */
-	case 53: /* Cloverview */
-	case 54: /* Cedarview */
-
-I work on new cores and their names will not be revealed before a while.
-So, next time this feature will be used on a new core, it's important to understand why is not supported and where to make the simple update.
-
-> > +		} else if (lbr_on) {
-> > +			pr_cont(" (not halted)\n");
-> 
-> Why would it be not halted? Code comments are optional, right?
-
-The LBR recording is not halted if we call directly panic() without coming from an exception.
-In this case, LBR dump is irrelevant.
-I will add a comment in patch 2.
-
-> > +		} else {
-> > +			struct cpu_hw_events *cpuc =
-> > +
-> 	this_cpu_ptr(&cpu_hw_events);
-> 
-> A simple #ifdef would have saved you an indentation level and actually 
-> made that code readable. IS_ENABLED() is a proper hammer for some 
-> things but not everything is a nail.
-
-Ok, will correct that in patch 2.
-
-> > +			intel_pmu_lbr_read_64(cpuc);
-> > +
-> > +			pr_cont("\n");
-> > +			for (i = 0; i < cpuc->lbr_stack.nr; i++) {
-> > +				pr_info("   to: [<%016llx>] ",
-> > +						cpuc->lbr_entries[i].to);
-> > +				print_symbol("%s\n", cpuc-
-> >lbr_entries[i].to);
-> > +				pr_info(" from: [<%016llx>] ",
-> > +						cpuc->lbr_entries[i].from);
-> > +				print_symbol("%s\n", cpuc-
-> >lbr_entries[i].from);
-> > +			}
-> > +		}
-> > +	}
-> > +}
-> > +
-> >  void show_regs(struct pt_regs *regs)  {
-> >  	int i;
-> > @@ -314,10 +352,15 @@ void show_regs(struct pt_regs *regs)
-> >  		unsigned char c;
-> >  		u8 *ip;
-> >
-> > +		/*
-> > +		 * Called before show_stack_log_lvl() as it could trig
-> > +		 * page_fault and reenable LBR
-> 
-> Huch? The kernel stack dump is going to page fault? If that happens 
-> then you are in deep shit anyway. I doubt that anything useful gets 
-> out of the machine at this point, LBR or not.
-> 
-> Aside of that if we want to debug with the LBR then we better freeze 
-> that whole thing across a dump and be done with it.
-
-I met that case but did no dig deeply into it...
-
-> > +		 */
-> > +		show_lbrs();
-> 
-> > diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S 
-> > index df088bb..120e989 100644
-> > --- a/arch/x86/kernel/entry_64.S
-> > +++ b/arch/x86/kernel/entry_64.S
-> > @@ -1035,6 +1035,42 @@ apicinterrupt IRQ_WORK_VECTOR \
-> >  	irq_work_interrupt smp_irq_work_interrupt  #endif
-> >
-> > +.macro STOP_LBR
-> > +#ifdef CONFIG_LBR_DUMP_ON_EXCEPTION
-> > +	testl $1, lbr_dump_on_exception
-> > +	jz 1f
-> > +	push %rax
-> > +	push %rcx
-> > +	push %rdx
-> > +	movl $MSR_IA32_DEBUGCTLMSR, %ecx
-> > +	rdmsr
-> > +	and $~1, %eax	/* Disable LBR recording */
-> > +	wrmsr
-> > +	pop %rdx
-> > +	pop %rcx
-> > +	pop %rax
-> > +1:
-> > +#endif
-> > +.endm
-> > +
-> > +.macro START_LBR
-> > +#ifdef CONFIG_LBR_DUMP_ON_EXCEPTION
-> > +	testl $1, lbr_dump_on_exception
-> > +	jz 1f
-> > +	push %rax
-> > +	push %rcx
-> > +	push %rdx
-> > +	movl $MSR_IA32_DEBUGCTLMSR, %ecx
-> > +	rdmsr
-> > +	or $1, %eax		/* Enable LBR recording */
-> 
-> This is really brilliant. So the logic here is:
-> 
-> Perf uses LBR  	LBR state at 	 LBR state at	Dump
->      	  	exception entry	 exception exit
-> 
-> Yes		No change	 No change	No
-> 
-> No		off -> off or	 off -> on	empty
-> 		on  -> off 	 off -> on    	perhaps useful
-> 
-> So how does LBR get magically enabled?
-> 
->    By producing fault #1 and then on the exception exit enabling
->    LBR so that fault #2 can provide data?
-> 
->    That's the only way I can see how to do that if you are not
->    magically tweaking MSR_IA32_DEBUGCTLMSR from user space.
-> 
->    Now that magically works, because you add that stuff into all
->    exception entry/exit stubs.
-> 
->    So it will be enabled magically no matter what and it will also be
->    enabled unconditonally on any machine whether it supports that
->    feature or not. That's the whole reason why you have no 32bit
->    support for this yet.
-> 
-> How is that thing useful when perf uses LBR?
-> 
->    Not at all. We do not gain anything. We explode and have no value
->    at all.
-> 
-> Aside of that what is setting the proper options for LBR recording in 
-> MSR_LBR_SELECT, if available?
-> 
->    Nothing, which is useless as well, as the dump might just conatin
->    completely useless crap. There is a reason why haswell introduced
->    LBR filtering.
-> 
-> So what's the point of this?
-
-Yes, that's a kind of magic ;-)
-I've stated that LBR is incompatible with Perf.
-So, by default, when Perf is not used, LBR will be enabled at the first exception (usually a simple page fault) with default filtering options, i.e no filtering.
-As soon as we start perf, the lbr_dump_on_exception global is unset and LBR start/stop are bypassed.
-LBR filtering is reset during perf stop.
-
-> Thanks,
-> 
-> 	tglx
-
-Thanks a lot for your time!
-Emmanuel.
