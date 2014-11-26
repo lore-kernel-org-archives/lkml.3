@@ -1,35 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492AbaKZUbh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 15:31:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42979 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888AbaKZUbg (ORCPT
+	id S1752645AbaKZUeA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 15:34:00 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:50500 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792AbaKZUd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 15:31:36 -0500
-Date: Wed, 26 Nov 2014 12:31:35 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sanjeev Sharma <sanjeev_sharma@mentor.com>
-Cc: Larry.Finger@lwfinger.net, Jes.Sorensen@redhat.com,
-        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging:rtl8723au: core: fix checkpatch error: that open
- brace { should be on the previous line
-Message-ID: <20141126203135.GA29182@kroah.com>
-References: <1415699937-20318-1-git-send-email-sanjeev_sharma@mentor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415699937-20318-1-git-send-email-sanjeev_sharma@mentor.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 26 Nov 2014 15:33:58 -0500
+Date: Wed, 26 Nov 2014 15:33:56 -0500 (EST)
+Message-Id: <20141126.153356.461494573591656082.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: hayeswang@realtek.com, netdev@vger.kernel.org, nic_swsd@realtek.com,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH net] r8152: drop the tx packet with invalid length
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1417027459.29427.63.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1417020748.29427.59.camel@edumazet-glaptop2.roam.corp.google.com>
+	<20141126.120658.498602780456343676.davem@davemloft.net>
+	<1417027459.29427.63.camel@edumazet-glaptop2.roam.corp.google.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 26 Nov 2014 12:33:58 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 03:28:57PM +0530, Sanjeev Sharma wrote:
-> This is a patch to the rtw_cmd.c file that fixes following
-> Error.
-> 
-> ERROR: that open brace { should be on the previous line
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Wed, 26 Nov 2014 10:44:19 -0800
 
-This patch does much more than that :(
+> On Wed, 2014-11-26 at 12:06 -0500, David Miller wrote:
+>> From: Eric Dumazet <eric.dumazet@gmail.com>
+>> Date: Wed, 26 Nov 2014 08:52:28 -0800
+>> 
+>> > On Wed, 2014-11-26 at 17:56 +0800, Hayes Wang wrote:
+>> >> Drop the tx packet which is more than the size of agg_buf_sz. When
+>> >> creating a bridge with the device, we may get the tx packet with
+>> >> TSO and the length is more than the gso_max_size which is set by
+>> >> the driver through netif_set_gso_max_size(). Such packets couldn't
+>> >> be transmitted and should be dropped directly.
+>> >> 
+>> >> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+>>  ...
+>> > Looks like a candidate for ndo_gso_check(), so that we do not drop, but
+>> > instead segment from netif_needs_gso()/validate_xmit_skb()
+>> 
+>> You mean have the bridge implement the ndo_gso_check() method right?
+> 
+> No, I meant this particular driver.
+> 
+> Note that netif_skb_features() does only this check :
+> 
+> if (gso_segs > dev->gso_max_segs || gso_segs < dev->gso_min_segs)
+>       features &= ~NETIF_F_GSO_MASK;
+> 
+> Ie not testing gso_max_size
+> 
+> It looks like all these particular tests should be moved on
+> ndo_gso_check(), to remove code from netif_skb_features()
+
+A check against gso_max_size is generic enough that it ought to be put
+right into netif_needs_gso() rather then duplicating it into every
+driver's ndo_gso_check() method don't you think?
