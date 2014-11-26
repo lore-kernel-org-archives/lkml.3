@@ -1,105 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120AbaKZD7o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 22:59:44 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:21059 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751844AbaKZD7m (ORCPT
+	id S1752178AbaKZEAP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 23:00:15 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:51755 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752032AbaKZEAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 22:59:42 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18VEOcN499teID31T+zB+jjZe5DLHp1e5s=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 6E8A2623F76
-Date: Tue, 25 Nov 2014 22:59:29 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 6/7] ARM: mvebu: add PHY support to the dts for the
- USB controllers on Armada 375
-Message-ID: <20141126035929.GJ22670@titan.lakedaemon.net>
-References: <1415879269-29711-1-git-send-email-gregory.clement@free-electrons.com>
- <1415879269-29711-7-git-send-email-gregory.clement@free-electrons.com>
- <20141122020811.GO22670@titan.lakedaemon.net>
- <5470556B.6080608@free-electrons.com>
+	Tue, 25 Nov 2014 23:00:13 -0500
+Date: Tue, 25 Nov 2014 20:00:08 -0800
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: device-mapper development <dm-devel@redhat.com>,
+        linux-kernel@vger.kernel.org, Alasdair Kergon <agk@redhat.com>
+Subject: Re: [dm-devel] dm-bufio: fix memleak when using a dm_buffer's inline
+ bio
+Message-ID: <20141126040008.GF10050@birch.djwong.org>
+References: <20141126014515.GE10050@birch.djwong.org>
+ <20141126034103.GA26585@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5470556B.6080608@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20141126034103.GA26585@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 22, 2014 at 10:20:43AM +0100, Gregory CLEMENT wrote:
-> Hi Jason,
+On Tue, Nov 25, 2014 at 10:41:04PM -0500, Mike Snitzer wrote:
+> On Tue, Nov 25 2014 at  8:45pm -0500,
+> Darrick J. Wong <darrick.wong@oracle.com> wrote:
 > 
-> On 22/11/2014 03:08, Jason Cooper wrote:
-> > On Thu, Nov 13, 2014 at 12:47:48PM +0100, Gregory CLEMENT wrote:
-> >> Now that the USB cluster node has been added, use it as a PHY provider
-> >> for the USB controller linked to it: the first EHCI and the xHCI.
-> >>
-> >> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> >> ---
-> >>  arch/arm/boot/dts/armada-375.dtsi | 5 +++++
-> >>  1 file changed, 5 insertions(+)
-> >>
-> >> diff --git a/arch/arm/boot/dts/armada-375.dtsi b/arch/arm/boot/dts/armada-375.dtsi
-> >> index 8f45cf5d2a50..f344ec420c95 100644
-> >> --- a/arch/arm/boot/dts/armada-375.dtsi
-> >> +++ b/arch/arm/boot/dts/armada-375.dtsi
-> >> @@ -14,6 +14,7 @@
-> >>  #include "skeleton.dtsi"
-> >>  #include <dt-bindings/interrupt-controller/arm-gic.h>
-> >>  #include <dt-bindings/interrupt-controller/irq.h>
-> >> +#include <dt-bindings/phy/phy.h>
+> > When dm-bufio sets out to use the bio built into a struct dm_buffer to
+> > issue an IO, it needs to call bio_reset after it's done with the bio
+> > so that we can free things attached to the bio such as the integrity
+> > payload.  Therefore, inject our own endio callback to take care of
+> > the bio_reset after calling submit_io's end_io callback.
 > > 
-> > Odd.  The previous patch in this series simply adds a line to phy.h,
-> > however, I get the following error during 'make dtbs':
+> > Test case:
+> > 1. modprobe scsi_debug delay=0 dif=1 dix=199 ato=1 dev_size_mb=300
+> > 2. Set up a dm-bufio client, e.g. dm-verity, on the scsi_debug device
+> > 3. Repeatedly read metadata and watch kmalloc-192 leak!
 > > 
-> > ########
-> >   DTC     arch/arm/boot/dts/armada-375-db.dtb
-> > In file included from arch/arm/boot/dts/armada-375-db.dts:17:0:arch/arm/boot/dts/armada-375.dtsi:17:33:
-> > fatal error: dt-bindings/phy/phy.h: No such file or directory
-> >  #include <dt-bindings/phy/phy.h>
-> >                                  ^
-> > compilation terminated.
-> > scripts/Makefile.lib:282: recipe for target 'arch/arm/boot/dts/armada-37 5-db.dtb' failed
-> > ########
+> > Fix is against 3.18-rc6.
 > > 
-> > mvebu/dt is based on v3.18-rc1.  Is there a missing dependency
-> > somewhere?  Perhaps we should let Kishon take the whole series and
-> > handle the (hopefully trivial) merge conflict?
+> > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
 > 
-> Actually Kishon asked me to use the dt-bindings/phy/phy.h file which
-> was introduced by the patch "phy: Add PHY header file for DT x Driver
-> defines". So indeed I had to have a dependency on the phy_dt_header
-> branch (which is based on v3.18-rc4 and have only this single commit).
-> The git tree is located at
-> git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git
+> Thanks for reporting/fixing this.
 > 
+> Alternatively I think we could just call bio_reset() in submit_io(),
+> e.g.:
 > 
-> Maybe we could add this branch in mvebu as a dependency as it is done
-> on arm-soc. I suggest this because I would prefer that we continue to
-> be the only ones to merge the device tree files in order to reduce the
-> merge conflict.
+> diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
+> index afe7971..e7036e3 100644
+> --- a/drivers/md/dm-bufio.c
+> +++ b/drivers/md/dm-bufio.c
+> @@ -579,6 +579,8 @@ static void submit_io(struct dm_buffer *b, int rw, sector_t block,
+>  	if (rw == WRITE && b->c->write_callback)
+>  		b->c->write_callback(b);
+>  
+> +	bio_reset(&b->bio);
+> +
+>  	if (b->c->block_size <= DM_BUFIO_INLINE_VECS * PAGE_SIZE &&
+>  	    b->data_mode != DATA_MODE_VMALLOC)
+>  		use_inline_bio(b, rw, block, end_io);
+> 
+> What do you think?
 
-Ok, I've applied patches 5 and 6 to mvebu/dt-usb_phy with a dependency
-on tags/phy-dt-header.
+I decided to call bio_reset after calling end_io so that we can free
+the integrity buffer as soon as we're done with the bio.  Calling
+bio_reset just prior to the next submit_bio as this snippet does means
+that the integrity buffer remains attached to the bio until just
+before the next submit_bio call, which could be a while.
 
-Patches 1-4:
+Also, I think use_dmio results in a new bio being used instead of the
+bio embedded in the dm_buffer, so it shouldn't be necessary to reset
+the bio if the previous IO had use_dmio'd.
 
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+--D
 
-thx,
-
-Jason.
+> 
+> --
+> dm-devel mailing list
+> dm-devel@redhat.com
+> https://www.redhat.com/mailman/listinfo/dm-devel
