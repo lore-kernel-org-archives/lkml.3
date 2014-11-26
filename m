@@ -1,72 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbaKZUek (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 15:34:40 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39784 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240AbaKZUej (ORCPT
+	id S1752426AbaKZUhk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 15:37:40 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:50538 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895AbaKZUhj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 15:34:39 -0500
-Date: Wed, 26 Nov 2014 20:32:29 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>
-Message-ID: <20141126203228.GX7712@sirena.org.uk>
-References: <20141021165441.GA1619@katana>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SAbzvNCM/REt5CdL"
-Content-Disposition: inline
-In-Reply-To: <20141021165441.GA1619@katana>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PULL REQUEST] remove .owner for most platform_drivers
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Wed, 26 Nov 2014 15:37:39 -0500
+Date: Wed, 26 Nov 2014 15:37:36 -0500 (EST)
+Message-Id: <20141126.153736.1815789848350571029.davem@davemloft.net>
+To: jasowang@redhat.com
+Cc: kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, vyasevic@redhat.com
+Subject: Re: [PATCH net-next] macvlan: delay the header check for dodgy
+ packets into lower device
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1416993674-11177-1-git-send-email-jasowang@redhat.com>
+References: <1416993674-11177-1-git-send-email-jasowang@redhat.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 26 Nov 2014 12:37:38 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jason Wang <jasowang@redhat.com>
+Date: Wed, 26 Nov 2014 17:21:14 +0800
 
---SAbzvNCM/REt5CdL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> We do header check twice for a dodgy packet. One is done before
+> macvlan_start_xmit(), another is done before lower device's
+> ndo_start_xmit(). The first one seems redundant so this patch tries to
+> delay header check until a packet reaches its lower device (or macvtap)
+> through always enabling NETIF_F_GSO_ROBUST for macvlan device.
+> 
+> Cc: Patrick McHardy <kaber@trash.net>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-On Tue, Oct 21, 2014 at 06:54:41PM +0200, Wolfram Sang wrote:
-
-> @all: The granularity level is per-directory. Greg was okay with that, speak up
-> if you strongly disagree. I am really going for consistency here, not patch
-> count (and to avoid patches on per-driver level which I already got a few for
-> my subsystem). Also, I have not CCed all the mailing lists, since Greg
-> suggested that he'd pull this series. If people prefer, I can resend this mail
-> with all lists on CC.
-
-Not sure if it'll come up again but it is generally nicer to at least
-tell the subsystem maintainers that there's a patch being sent so
-they're not surprised by conflicts, especially with this sort of
-stylistic change where it's not something there's been much advertisment
-of.  I think there's some scripts that go along with the cocci stuff to
-mail things out without needing to spam everyone in one message.
-
-/me just ran into another conflict with this which he had to think about
-so is being a bit grumpy.
-
---SAbzvNCM/REt5CdL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUdjjcAAoJECTWi3JdVIfQKAUH/Rd80kLhVKPm/K9vk03yfI9L
-fp7wE/qsfwTIvhTGm3rbTqZib0YNDjqszqbUHE1X1Wmy/+tK07Q5OWIAMcSEFANz
-kjd7Y7zA2DuzebKVPn7LAds8Hm7vNVgS9X6JFLAhL31Fpt8/unGv2FR13TiS1YW9
-wAGxj98Q23Y8atKIwxpQl5T3LaSx4P64rx9OBXRdvbQX/zh/zkCIByovfIuERw7F
-PDdJbWktZ8OhAHsvc1/KOUX4POkVlypTa6cgWPGnCAPZtWjlBL5teYcnzPhInS/Y
-ifyUaAOnEZ34K6CAGAuaBSUhQz15gNgNa6skhFIUE+PqV4P7gD3q0fY3EPHP8EA=
-=E54H
------END PGP SIGNATURE-----
-
---SAbzvNCM/REt5CdL--
+Hmmm, it's the idea that if we have a dodgy packet, we want to
+notice that as early as possible in the packet processing path?
