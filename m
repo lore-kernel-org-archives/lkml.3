@@ -1,413 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801AbaKZORk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 09:17:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43912 "EHLO mx1.redhat.com"
+	id S1752828AbaKZORq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 09:17:46 -0500
+Received: from mga03.intel.com ([134.134.136.65]:3136 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750963AbaKZORh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 09:17:37 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 1/5] X.509: Extract both parts of the AuthorityKeyIdentifier
- [ver #2]
-From: David Howells <dhowells@redhat.com>
-To: rusty@rustcorp.com.au
-Cc: mmarek@suse.cz, keyrings@linux-nfs.org, d.kasatkin@samsung.com,
-        linux-kernel@vger.kernel.org, dhowells@redhat.com,
-        linux-security-module@vger.kernel.org, zohar@linux.vnet.ibm.com
-Date: Wed, 26 Nov 2014 14:17:21 +0000
-Message-ID: <20141126141720.3944.40497.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20141126141709.3944.66589.stgit@warthog.procyon.org.uk>
-References: <20141126141709.3944.66589.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.17-dirty
+	id S1751028AbaKZORm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 09:17:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,462,1413270000"; 
+   d="scan'208";a="643887383"
+From: "Berthier, Emmanuel" <emmanuel.berthier@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Jarzmik, Robert" <robert.jarzmik@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] [LBR] Dump LBRs on Oops
+Thread-Topic: [PATCH] [LBR] Dump LBRs on Oops
+Thread-Index: AQHQBa06swP7VVqtjkGZ0Sl9b+2CXJxr0WOAgAbwn5CAACa3gIAAC51A
+Date: Wed, 26 Nov 2014 14:17:35 +0000
+Message-ID: <65CD3FC07F3BF942ABE211646D72D770356EAC51@IRSMSX110.ger.corp.intel.com>
+References: <1416589419-9952-1-git-send-email-emmanuel.berthier@intel.com>
+ <alpine.DEB.2.11.1411212240390.6439@nanos>
+ <65CD3FC07F3BF942ABE211646D72D770356EA9E0@IRSMSX110.ger.corp.intel.com>
+ <alpine.DEB.2.11.1411261318050.3961@nanos>
+In-Reply-To: <alpine.DEB.2.11.1411261318050.3961@nanos>
+Accept-Language: fr-FR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.182]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extract both parts of the AuthorityKeyIdentifier, not just the keyIdentifier,
-as the second part can be used to match X.509 certificates by issuer and
-serialNumber.
+> -----Original Message-----
+> From: Thomas Gleixner [mailto:tglx@linutronix.de]
+> Sent: Wednesday, November 26, 2014 2:08 PM
+> To: Berthier, Emmanuel
+> Cc: mingo@redhat.com; hpa@zytor.com; x86@kernel.org; Jarzmik, Robert;
+> linux-kernel@vger.kernel.org
+> Subject: RE: [PATCH] [LBR] Dump LBRs on Oops
+> 
+> On Wed, 26 Nov 2014, Berthier, Emmanuel wrote:
+> > > So, if perf uses LBR we do not print it? What a weird design decision.
+> > > If the machine crashes, we want that information no matter whether
+> > > perf is active or not. What kind of twisted logic is that?
+> >
+> > Ok, let me explain.
+> > LBR usages are exclusive. Perf uses LBR to calculate some CPU
+> > statistics. I use LBR to track code execution before Exceptions.
+> > So, as soon as we enable perf, I disable LBR dump and vice versa.
+> 
+> That wants to be documented in the code.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+Ok, will be in patch 2
 
- crypto/asymmetric_keys/Makefile           |    8 +-
- crypto/asymmetric_keys/pkcs7_trust.c      |    4 -
- crypto/asymmetric_keys/pkcs7_verify.c     |   12 +-
- crypto/asymmetric_keys/x509_akid.asn1     |   35 +++++++
- crypto/asymmetric_keys/x509_cert_parser.c |  142 ++++++++++++++++++-----------
- crypto/asymmetric_keys/x509_parser.h      |    5 +
- crypto/asymmetric_keys/x509_public_key.c  |    8 +-
- 7 files changed, 145 insertions(+), 69 deletions(-)
- create mode 100644 crypto/asymmetric_keys/x509_akid.asn1
+> > > > +		} else if (x86_pmu.lbr_nr == 0) {
+> > > > +			pr_cont(" (x86_model unknown, check
+> > > intel_pmu_init())\n");
+> > >
+> > > Huch? Why we get here if the pmu does not support it at all? Why
+> > > should we bother to print it? If it's not printed it's not available. It's that
+> simple.
+> >
+> > That's a warning to point out that current core is not supported. New
+> > cores have to be declared in
+> >
+> > intel_pmu_init() after:
+> >
+> > 	switch (boot_cpu_data.x86_model) {
+> > 	. . .
+> > 	case 28: /* Atom */
+> > 	case 38: /* Lincroft */
+> > 	case 39: /* Penwell */
+> > 	case 53: /* Cloverview */
+> > 	case 54: /* Cedarview */
+> >
+> > I work on new cores and their names will not be revealed before a while.
+> > So, next time this feature will be used on a new core, it's important
+> > to understand why is not supported and where to make the simple
+> > update.
+> 
+> We add printks not for people who work on the support of unreleased
+> hardware. They should better know what they are doing. If they can't figure
+> that out they should not touch the kernel in the first place.
 
-diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
-index e47fcd9ac5e8..cd1406f9b14a 100644
---- a/crypto/asymmetric_keys/Makefile
-+++ b/crypto/asymmetric_keys/Makefile
-@@ -15,15 +15,21 @@ obj-$(CONFIG_PUBLIC_KEY_ALGO_RSA) += rsa.o
- obj-$(CONFIG_X509_CERTIFICATE_PARSER) += x509_key_parser.o
- x509_key_parser-y := \
- 	x509-asn1.o \
-+	x509_akid-asn1.o \
- 	x509_rsakey-asn1.o \
- 	x509_cert_parser.o \
- 	x509_public_key.o
- 
--$(obj)/x509_cert_parser.o: $(obj)/x509-asn1.h $(obj)/x509_rsakey-asn1.h
-+$(obj)/x509_cert_parser.o: \
-+	$(obj)/x509-asn1.h \
-+	$(obj)/x509_akid-asn1.h \
-+	$(obj)/x509_rsakey-asn1.h
- $(obj)/x509-asn1.o: $(obj)/x509-asn1.c $(obj)/x509-asn1.h
-+$(obj)/x509_akid-asn1.o: $(obj)/x509_akid-asn1.c $(obj)/x509_akid-asn1.h
- $(obj)/x509_rsakey-asn1.o: $(obj)/x509_rsakey-asn1.c $(obj)/x509_rsakey-asn1.h
- 
- clean-files	+= x509-asn1.c x509-asn1.h
-+clean-files	+= x509_akid-asn1.c x509_akid-asn1.h
- clean-files	+= x509_rsakey-asn1.c x509_rsakey-asn1.h
- 
- #
-diff --git a/crypto/asymmetric_keys/pkcs7_trust.c b/crypto/asymmetric_keys/pkcs7_trust.c
-index 1d29376072da..f802cf118053 100644
---- a/crypto/asymmetric_keys/pkcs7_trust.c
-+++ b/crypto/asymmetric_keys/pkcs7_trust.c
-@@ -85,8 +85,8 @@ static int pkcs7_validate_trust_one(struct pkcs7_message *pkcs7,
- 	/* No match - see if the root certificate has a signer amongst the
- 	 * trusted keys.
- 	 */
--	if (last && last->authority) {
--		key = x509_request_asymmetric_key(trust_keyring, last->authority,
-+	if (last && last->auth_skid) {
-+		key = x509_request_asymmetric_key(trust_keyring, last->auth_skid,
- 						  false);
- 		if (!IS_ERR(key)) {
- 			x509 = last;
-diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
-index cd455450b069..5e956c5b9071 100644
---- a/crypto/asymmetric_keys/pkcs7_verify.c
-+++ b/crypto/asymmetric_keys/pkcs7_verify.c
-@@ -187,11 +187,11 @@ static int pkcs7_verify_sig_chain(struct pkcs7_message *pkcs7,
- 			goto maybe_missing_crypto_in_x509;
- 
- 		pr_debug("- issuer %s\n", x509->issuer);
--		if (x509->authority)
-+		if (x509->auth_skid)
- 			pr_debug("- authkeyid %*phN\n",
--				 x509->authority->len, x509->authority->data);
-+				 x509->auth_skid->len, x509->auth_skid->data);
- 
--		if (!x509->authority ||
-+		if (!x509->auth_skid ||
- 		    strcmp(x509->subject, x509->issuer) == 0) {
- 			/* If there's no authority certificate specified, then
- 			 * the certificate must be self-signed and is the root
-@@ -216,13 +216,13 @@ static int pkcs7_verify_sig_chain(struct pkcs7_message *pkcs7,
- 		 * list to see if the next one is there.
- 		 */
- 		pr_debug("- want %*phN\n",
--			 x509->authority->len, x509->authority->data);
-+			 x509->auth_skid->len, x509->auth_skid->data);
- 		for (p = pkcs7->certs; p; p = p->next) {
- 			if (!p->skid)
- 				continue;
- 			pr_debug("- cmp [%u] %*phN\n",
- 				 p->index, p->skid->len, p->skid->data);
--			if (asymmetric_key_id_same(p->skid, x509->authority))
-+			if (asymmetric_key_id_same(p->skid, x509->auth_skid))
- 				goto found_issuer;
- 		}
- 
-@@ -338,8 +338,6 @@ int pkcs7_verify(struct pkcs7_message *pkcs7)
- 		ret = x509_get_sig_params(x509);
- 		if (ret < 0)
- 			return ret;
--		pr_debug("X.509[%u] %*phN\n",
--			 n, x509->authority->len, x509->authority->data);
- 	}
- 
- 	for (sinfo = pkcs7->signed_infos; sinfo; sinfo = sinfo->next) {
-diff --git a/crypto/asymmetric_keys/x509_akid.asn1 b/crypto/asymmetric_keys/x509_akid.asn1
-new file mode 100644
-index 000000000000..1a33231a75a8
---- /dev/null
-+++ b/crypto/asymmetric_keys/x509_akid.asn1
-@@ -0,0 +1,35 @@
-+-- X.509 AuthorityKeyIdentifier
-+-- rfc5280 section 4.2.1.1
-+
-+AuthorityKeyIdentifier ::= SEQUENCE {
-+	keyIdentifier			[0] IMPLICIT KeyIdentifier		OPTIONAL,
-+	authorityCertIssuer		[1] IMPLICIT GeneralNames		OPTIONAL,
-+	authorityCertSerialNumber	[2] IMPLICIT CertificateSerialNumber	OPTIONAL
-+	}
-+
-+KeyIdentifier ::= OCTET STRING ({ x509_akid_note_kid })
-+
-+CertificateSerialNumber ::= INTEGER ({ x509_akid_note_serial })
-+
-+GeneralNames ::= SEQUENCE OF GeneralName
-+
-+GeneralName ::= CHOICE {
-+	otherName			[0] ANY,
-+	rfc822Name			[1] IA5String,
-+	dNSName				[2] IA5String,
-+	x400Address			[3] ANY,
-+	directoryName			[4] Name ({ x509_akid_note_name }),
-+	ediPartyName			[5] ANY,
-+	uniformResourceIdentifier	[6] IA5String,
-+	iPAddress			[7] OCTET STRING,
-+	registeredID			[8] OBJECT IDENTIFIER
-+	}
-+
-+Name ::= SEQUENCE OF RelativeDistinguishedName
-+
-+RelativeDistinguishedName ::= SET OF AttributeValueAssertion
-+
-+AttributeValueAssertion ::= SEQUENCE {
-+	attributeType		OBJECT IDENTIFIER ({ x509_note_OID }),
-+	attributeValue		ANY ({ x509_extract_name_segment })
-+	}
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index a668d90302d3..e9d6586fdf89 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -18,6 +18,7 @@
- #include "public_key.h"
- #include "x509_parser.h"
- #include "x509-asn1.h"
-+#include "x509_akid-asn1.h"
- #include "x509_rsakey-asn1.h"
- 
- struct x509_parse_context {
-@@ -35,6 +36,10 @@ struct x509_parse_context {
- 	u16		o_offset;		/* Offset of organizationName (O) */
- 	u16		cn_offset;		/* Offset of commonName (CN) */
- 	u16		email_offset;		/* Offset of emailAddress */
-+	unsigned	raw_akid_size;
-+	const void	*raw_akid;		/* Raw authorityKeyId in ASN.1 */
-+	const void	*akid_raw_issuer;	/* Raw directoryName in authorityKeyId */
-+	unsigned	akid_raw_issuer_size;
- };
- 
- /*
-@@ -48,7 +53,8 @@ void x509_free_certificate(struct x509_certificate *cert)
- 		kfree(cert->subject);
- 		kfree(cert->id);
- 		kfree(cert->skid);
--		kfree(cert->authority);
-+		kfree(cert->auth_id);
-+		kfree(cert->auth_skid);
- 		kfree(cert->sig.digest);
- 		mpi_free(cert->sig.rsa.s);
- 		kfree(cert);
-@@ -85,6 +91,18 @@ struct x509_certificate *x509_cert_parse(const void *data, size_t datalen)
- 	if (ret < 0)
- 		goto error_decode;
- 
-+	/* Decode the AuthorityKeyIdentifier */
-+	if (ctx->raw_akid) {
-+		pr_devel("AKID: %u %*phN\n",
-+			 ctx->raw_akid_size, ctx->raw_akid_size, ctx->raw_akid);
-+		ret = asn1_ber_decoder(&x509_akid_decoder, ctx,
-+				       ctx->raw_akid, ctx->raw_akid_size);
-+		if (ret < 0) {
-+			pr_warn("Couldn't decode AuthKeyIdentifier\n");
-+			goto error_decode;
-+		}
-+	}
-+
- 	/* Decode the public key */
- 	ret = asn1_ber_decoder(&x509_rsakey_decoder, ctx,
- 			       ctx->key, ctx->key_size);
-@@ -422,7 +440,6 @@ int x509_process_extension(void *context, size_t hdrlen,
- 	struct x509_parse_context *ctx = context;
- 	struct asymmetric_key_id *kid;
- 	const unsigned char *v = value;
--	int i;
- 
- 	pr_debug("Extension: %u\n", ctx->last_oid);
- 
-@@ -449,57 +466,8 @@ int x509_process_extension(void *context, size_t hdrlen,
- 
- 	if (ctx->last_oid == OID_authorityKeyIdentifier) {
- 		/* Get hold of the CA key fingerprint */
--		if (ctx->cert->authority || vlen < 5)
--			return -EBADMSG;
--
--		/* Authority Key Identifier must be a Constructed SEQUENCE */
--		if (v[0] != (ASN1_SEQ | (ASN1_CONS << 5)))
--			return -EBADMSG;
--
--		/* Authority Key Identifier is not indefinite length */
--		if (unlikely(vlen == ASN1_INDEFINITE_LENGTH))
--			return -EBADMSG;
--
--		if (vlen < ASN1_INDEFINITE_LENGTH) {
--			/* Short Form length */
--			if (v[1] != vlen - 2 ||
--			    v[2] != SEQ_TAG_KEYID ||
--			    v[3] > vlen - 4)
--				return -EBADMSG;
--
--			vlen = v[3];
--			v += 4;
--		} else {
--			/* Long Form length */
--			size_t seq_len = 0;
--			size_t sub = v[1] - ASN1_INDEFINITE_LENGTH;
--
--			if (sub > 2)
--				return -EBADMSG;
--
--			/* calculate the length from subsequent octets */
--			v += 2;
--			for (i = 0; i < sub; i++) {
--				seq_len <<= 8;
--				seq_len |= v[i];
--			}
--
--			if (seq_len != vlen - 2 - sub ||
--			    v[sub] != SEQ_TAG_KEYID ||
--			    v[sub + 1] > vlen - 4 - sub)
--				return -EBADMSG;
--
--			vlen = v[sub + 1];
--			v += (sub + 2);
--		}
--
--		kid = asymmetric_key_generate_id(ctx->cert->raw_issuer,
--						 ctx->cert->raw_issuer_size,
--						 v, vlen);
--		if (IS_ERR(kid))
--			return PTR_ERR(kid);
--		pr_debug("authkeyid %*phN\n", kid->len, kid->data);
--		ctx->cert->authority = kid;
-+		ctx->raw_akid = v;
-+		ctx->raw_akid_size = vlen;
- 		return 0;
- 	}
- 
-@@ -569,3 +537,71 @@ int x509_note_not_after(void *context, size_t hdrlen,
- 	struct x509_parse_context *ctx = context;
- 	return x509_note_time(&ctx->cert->valid_to, hdrlen, tag, value, vlen);
- }
-+
-+/*
-+ * Note a key identifier-based AuthorityKeyIdentifier
-+ */
-+int x509_akid_note_kid(void *context, size_t hdrlen,
-+		       unsigned char tag,
-+		       const void *value, size_t vlen)
-+{
-+	struct x509_parse_context *ctx = context;
-+	struct asymmetric_key_id *kid;
-+
-+	pr_debug("AKID: keyid: %*phN\n", (int)vlen, value);
-+
-+	if (ctx->cert->auth_skid)
-+		return 0;
-+
-+	kid = asymmetric_key_generate_id(ctx->cert->raw_issuer,
-+					 ctx->cert->raw_issuer_size,
-+					 value, vlen);
-+	if (IS_ERR(kid))
-+		return PTR_ERR(kid);
-+	pr_debug("authkeyid %*phN\n", kid->len, kid->data);
-+	ctx->cert->auth_skid = kid;
-+	return 0;
-+}
-+
-+/*
-+ * Note a directoryName in an AuthorityKeyIdentifier
-+ */
-+int x509_akid_note_name(void *context, size_t hdrlen,
-+			unsigned char tag,
-+			const void *value, size_t vlen)
-+{
-+	struct x509_parse_context *ctx = context;
-+
-+	pr_debug("AKID: name: %*phN\n", (int)vlen, value);
-+
-+	ctx->akid_raw_issuer = value;
-+	ctx->akid_raw_issuer_size = vlen;
-+	return 0;
-+}
-+
-+/*
-+ * Note a serial number in an AuthorityKeyIdentifier
-+ */
-+int x509_akid_note_serial(void *context, size_t hdrlen,
-+			  unsigned char tag,
-+			  const void *value, size_t vlen)
-+{
-+	struct x509_parse_context *ctx = context;
-+	struct asymmetric_key_id *kid;
-+
-+	pr_debug("AKID: serial: %*phN\n", (int)vlen, value);
-+
-+	if (!ctx->akid_raw_issuer || ctx->cert->auth_id)
-+		return 0;
-+
-+	kid = asymmetric_key_generate_id(value,
-+					 vlen,
-+					 ctx->akid_raw_issuer,
-+					 ctx->akid_raw_issuer_size);
-+	if (IS_ERR(kid))
-+		return PTR_ERR(kid);
-+
-+	pr_debug("authkeyid %*phN\n", kid->len, kid->data);
-+	ctx->cert->auth_id = kid;
-+	return 0;
-+}
-diff --git a/crypto/asymmetric_keys/x509_parser.h b/crypto/asymmetric_keys/x509_parser.h
-index 3dfe6b5d6f0b..c4d16ddbc2cb 100644
---- a/crypto/asymmetric_keys/x509_parser.h
-+++ b/crypto/asymmetric_keys/x509_parser.h
-@@ -19,9 +19,10 @@ struct x509_certificate {
- 	struct public_key_signature sig;	/* Signature parameters */
- 	char		*issuer;		/* Name of certificate issuer */
- 	char		*subject;		/* Name of certificate subject */
--	struct asymmetric_key_id *id;		/* Serial number + issuer */
-+	struct asymmetric_key_id *id;		/* Issuer + Serial number */
- 	struct asymmetric_key_id *skid;		/* Subject + subjectKeyId (optional) */
--	struct asymmetric_key_id *authority;	/* Authority key identifier (optional) */
-+	struct asymmetric_key_id *auth_id;	/* CA AuthKeyId matching ->id (optional) */
-+	struct asymmetric_key_id *auth_skid;	/* CA AuthKeyId matching ->skid (optional) */
- 	struct tm	valid_from;
- 	struct tm	valid_to;
- 	const void	*tbs;			/* Signed data */
-diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-index a6c42031628e..a3d9ba999da5 100644
---- a/crypto/asymmetric_keys/x509_public_key.c
-+++ b/crypto/asymmetric_keys/x509_public_key.c
-@@ -214,10 +214,10 @@ static int x509_validate_trust(struct x509_certificate *cert,
- 	if (!trust_keyring)
- 		return -EOPNOTSUPP;
- 
--	if (ca_keyid && !asymmetric_key_id_partial(cert->authority, ca_keyid))
-+	if (ca_keyid && !asymmetric_key_id_partial(cert->auth_skid, ca_keyid))
- 		return -EPERM;
- 
--	key = x509_request_asymmetric_key(trust_keyring, cert->authority,
-+	key = x509_request_asymmetric_key(trust_keyring, cert->auth_skid,
- 					  false);
- 	if (!IS_ERR(key))  {
- 		if (!use_builtin_keys
-@@ -274,8 +274,8 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
- 	cert->pub->id_type = PKEY_ID_X509;
- 
- 	/* Check the signature on the key if it appears to be self-signed */
--	if (!cert->authority ||
--	    asymmetric_key_id_same(cert->skid, cert->authority)) {
-+	if (!cert->auth_skid ||
-+	    asymmetric_key_id_same(cert->skid, cert->auth_skid)) {
- 		ret = x509_check_signature(cert->pub, cert); /* self-signed */
- 		if (ret < 0)
- 			goto error_free_cert;
+LoL
+I'm part of those people, I've touched the kernel and I've figured out what was wrong.
+And I would like to be helped next year for the next Core: I'm an old man and I need
+to leave a white stone trail  ;-)
+Could we agree on that one?
+
+> > > >  void show_regs(struct pt_regs *regs)  {
+> > > >  	int i;
+> > > > @@ -314,10 +352,15 @@ void show_regs(struct pt_regs *regs)
+> > > >  		unsigned char c;
+> > > >  		u8 *ip;
+> > > >
+> > > > +		/*
+> > > > +		 * Called before show_stack_log_lvl() as it could trig
+> > > > +		 * page_fault and reenable LBR
+> > >
+> > > Huch? The kernel stack dump is going to page fault? If that happens
+> > > then you are in deep shit anyway. I doubt that anything useful gets
+> > > out of the machine at this point, LBR or not.
+> > >
+> > > Aside of that if we want to debug with the LBR then we better freeze
+> > > that whole thing across a dump and be done with it.
+> >
+> > I met that case but did no dig deeply into it...
+> 
+> Hmm, a corrupted stack might trigger this together with some of the other
+> debug options enabled. So we really might to put it in front.
+
+Didn't catch you. Could you elaborate on that?
+
+> > > > diff --git a/arch/x86/kernel/entry_64.S
+> > > > b/arch/x86/kernel/entry_64.S index df088bb..120e989 100644
+> > > > --- a/arch/x86/kernel/entry_64.S
+> > > > +++ b/arch/x86/kernel/entry_64.S
+> > > > @@ -1035,6 +1035,42 @@ apicinterrupt IRQ_WORK_VECTOR \
+> > > >  	irq_work_interrupt smp_irq_work_interrupt  #endif
+> > > >
+> > > > +.macro STOP_LBR
+> > > > +#ifdef CONFIG_LBR_DUMP_ON_EXCEPTION
+> > > > +	testl $1, lbr_dump_on_exception
+> > > > +	jz 1f
+> > > > +	push %rax
+> > > > +	push %rcx
+> > > > +	push %rdx
+> > > > +	movl $MSR_IA32_DEBUGCTLMSR, %ecx
+> > > > +	rdmsr
+> > > > +	and $~1, %eax	/* Disable LBR recording */
+> > > > +	wrmsr
+> > > > +	pop %rdx
+> > > > +	pop %rcx
+> > > > +	pop %rax
+> > > > +1:
+> > > > +#endif
+> > > > +.endm
+> > > > +
+> > > > +.macro START_LBR
+> > > > +#ifdef CONFIG_LBR_DUMP_ON_EXCEPTION
+> > > > +	testl $1, lbr_dump_on_exception
+> > > > +	jz 1f
+> > > > +	push %rax
+> > > > +	push %rcx
+> > > > +	push %rdx
+> > > > +	movl $MSR_IA32_DEBUGCTLMSR, %ecx
+> > > > +	rdmsr
+> > > > +	or $1, %eax		/* Enable LBR recording */
+> 
+> > So, by default, when Perf is not used, LBR will be enabled at the
+> > first exception (usually a simple page fault) with default filtering
+> > options, i.e no filtering.  As soon as we start perf, the
+> > lbr_dump_on_exception global is unset and LBR start/stop are bypassed.
+> >
+> > LBR filtering is reset during perf stop.
+> 
+> So while I can see how this could be useful there are a few things which need
+> more thought:
+> 
+> 1) We want to enable/disable this at boot time.
+> 
+>    In the disabled case we might also stub out the test/jz and replace
+>    it by an unconditional jump, but that needs more thought.
+
+I can add a cmdline option to disable it at boot time.
+Do you propose to use code instruction patching (same as ftrace) also?
+Is-it really worth to bypass test/jz as page fault handling is much more than few instructions?
+
+> 2) Right now you stop the trace on every exception no matter whether
+>    it comes from user or kernel space.
+> 
+>    Stopping the trace when we handle a user space fault does not make
+>    any sense and inflicts just pointless overhead.
+>
+>    Aside of that if the fault handler then crashes we do not have the
+>    LBR information because we froze it when entering from user space
+>    in the first place.
+
+Agree, but the LBR buffer contains only 8 records: we have to stop it as soon as possible.
+If we add some test/jump/call before stopping it, relevant info will be flushed out.
+
+Thanks.
+
+> Thanks,
+> 
+> 	tglx
+> 
 
