@@ -1,113 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898AbaKZWTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 17:19:10 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:63885 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811AbaKZWTI (ORCPT
+	id S1752635AbaKZWYI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 17:24:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43821 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804AbaKZWYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 17:19:08 -0500
-Date: Wed, 26 Nov 2014 22:19:03 +0000
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ian Campbell <ijc@debian.org>, Andrew Lunn <andrew@lunn.ch>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>
-Subject: Re: [PATCH v2 1/2] of: add optional options parameter to
- of_find_node_by_path()
-Message-ID: <20141126221903.GI2361@bivouac.eciton.net>
-References: <1417023640-23464-1-git-send-email-leif.lindholm@linaro.org>
- <1417023640-23464-2-git-send-email-leif.lindholm@linaro.org>
- <CACxGe6tQ5rWzCUcS+_fFY+rjEyua2khApAoCVKpTuJAghU=N_w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACxGe6tQ5rWzCUcS+_fFY+rjEyua2khApAoCVKpTuJAghU=N_w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 26 Nov 2014 17:24:06 -0500
+Date: Wed, 26 Nov 2014 14:24:04 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [patch] fs, seq_file: fallback to vmalloc instead of oom kill
+ processes
+Message-Id: <20141126142404.bc6b03387d5e869908db5e38@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.10.1411261415500.13014@chino.kir.corp.google.com>
+References: <alpine.DEB.2.10.1411261415500.13014@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 09:06:33PM +0000, Grant Likely wrote:
-> On Wed, Nov 26, 2014 at 5:40 PM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
-> > Update of_find_node_by_path():
-> > 1) Ignore any part of the path beyond and including the ':' separator.
-> > 2) Set the new provided pointer argument to the beginning of the string
-> >    following the ':' separator.
-> >
-> > Coccinelle fixup using:
-> >
-> > @@
-> > expression E1;
-> > @@
-> >
-> > - of_find_node_by_path(E1)
-> > + of_find_node_by_path(E1, NULL)
-> >
-> > drivers/of/resolver.c manually updated, since spatch fails to parse
-> > it correctly.
-> >
-> > Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+On Wed, 26 Nov 2014 14:16:46 -0800 (PST) David Rientjes <rientjes@google.com> wrote:
+
+> Since commit 058504edd026 ("fs/seq_file: fallback to vmalloc allocation"),
+> seq_buf_alloc() falls back to vmalloc() when the kmalloc() for contiguous
+> memory fails.  This was done to address order-4 slab allocations for
+> reading /proc/stat on large machines and noticed because
+> PAGE_ALLOC_COSTLY_ORDER < 4, so there is no infinite loop in the page
+> allocator when allocating new slab for such high-order allocations.
 > 
-> Okay, so you're probably going to kill me for the next comment...
-> After actually looking at this I can see that it's going to be a hard
-> patch to merge because of conflicts. It will need to be merged at the
-> end of a merge window to catch all the users, but that will mean that
-> the important part of the patch won't be able to be queued up in
-> linux-next.
-
-Not to worry - I'll simply keep this to guilt trip you with at some
-point in the future.
-
-Seeing get_maintainer take 1m42s on a quad-i7 with the entire kernel
-tree in disk cache was nearly reward enough :)
-
-> So you were right the first time around. Create a new function name
-> that adds the extra argument and make of_find_node_by_path() a static
-> inline wrapper. That way I can queue it up into linux-next immediately
-> and the cleanup across the tree can be generated and submitted at the
-> very end of the merge window.
-
-That will also make it a lot less invasive to potentially get it
-backported to debian-kernel, so we can have this support for the
-Jessie installer.
-
-I'll whip that up tomorrow morning.
-
-/
-    Leif
-
-> > @@ -380,7 +380,8 @@ static inline struct device_node *of_find_matching_node_and_match(
-> >         return NULL;
-> >  }
-> >
-> > -static inline struct device_node *of_find_node_by_path(const char *path)
-> > +static inline struct device_node *of_find_node_by_path(const char *path,
-> > +       char **opts)
+> Contiguous memory isn't necessary for caller of seq_buf_alloc(), however.
+> Other GFP_KERNEL high-order allocations that are <=
+> PAGE_ALLOC_COSTLY_ORDER will simply loop forever in the page allocator
+> and oom kill processes as a result.
 > 
-> const char **opts
+> We don't want to kill processes so that we can allocate contiguous memory
+> in situations when contiguous memory isn't necessary.
 > 
-> >  {
-> >         return NULL;
-> >  }
-> > diff --git a/sound/soc/fsl/fsl_ssi.c b/sound/soc/fsl/fsl_ssi.c
-> > index e695517..0056963 100644
-> > --- a/sound/soc/fsl/fsl_ssi.c
-> > +++ b/sound/soc/fsl/fsl_ssi.c
-> > @@ -1427,7 +1427,7 @@ static int fsl_ssi_probe(struct platform_device *pdev)
-> >          * device tree.  We also pass the address of the CPU DAI driver
-> >          * structure.
-> >          */
-> > -       sprop = of_get_property(of_find_node_by_path("/"), "compatible", NULL);
-> > +       sprop = of_get_property(of_find_node_by_path("/", NULL), "compatible", NULL);
-> >         /* Sometimes the compatible name has a "fsl," prefix, so we strip it. */
-> >         p = strrchr(sprop, ',');
-> >         if (p)
-> > --
-> > 1.7.10.4
-> >
+> This patch does the kmalloc() allocation with __GFP_NORETRY for
+> high-order allocations.  This still utilizes memory compaction and direct 
+> reclaim in the allocation path, the only difference is that it will fail 
+> immediately instead of oom kill processes when out of memory.
+> 
+> --- a/fs/seq_file.c
+> +++ b/fs/seq_file.c
+> @@ -36,7 +36,7 @@ static void *seq_buf_alloc(unsigned long size)
+>  {
+>  	void *buf;
+>  
+> -	buf = kmalloc(size, GFP_KERNEL | __GFP_NOWARN);
+> +	buf = kmalloc(size, GFP_KERNEL | __GFP_NORETRY | __GFP_NOWARN);
+>  	if (!buf && size > PAGE_SIZE)
+>  		buf = vmalloc(size);
+>  	return buf;
+
+You forgot something.
+
+--- a/fs/seq_file.c~fs-seq_file-fallback-to-vmalloc-instead-of-oom-kill-processes-fix
++++ a/fs/seq_file.c
+@@ -36,6 +36,10 @@ static void *seq_buf_alloc(unsigned long
+ {
+ 	void *buf;
+ 
++	/*
++	 * __GFP_NORETRY to avoid oom-killings with high-order allocations -
++	 * it's better to fall back to vmalloc() than to kill things.
++	 */
+ 	buf = kmalloc(size, GFP_KERNEL | __GFP_NORETRY | __GFP_NOWARN);
+ 	if (!buf && size > PAGE_SIZE)
+ 		buf = vmalloc(size);
+
+Is __GFP_NORETRY our preferred way of preventing oom-killings?  If so,
+it's a bit obscure - wouldn't it be better to create a
+__GFP_NO_OOM_KILL?
+
+There are eleventy billion places where we do the open coded
+kmalloc-or-vmalloc thing.  Sigh.  Perhaps it is time to add a helper
+function which does this, so that all such callers use
+__GFP_NO_OOM_KILL.
+
