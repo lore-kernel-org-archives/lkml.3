@@ -1,138 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719AbaKZUuV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 15:50:21 -0500
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:47236 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750895AbaKZUuS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 15:50:18 -0500
-Message-ID: <54763D07.9010607@hp.com>
-Date: Wed, 26 Nov 2014 15:50:15 -0500
-From: Linda Knippers <linda.knippers@hp.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752721AbaKZUvq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 15:51:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42879 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750811AbaKZUvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 15:51:44 -0500
+Date: Wed, 26 Nov 2014 15:51:06 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, martin.petersen@oracle.com,
+        mst@redhat.com, rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        qemu-devel@nongnu.org, dm-devel@redhat.com,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: virtio_blk: fix defaults for max_hw_sectors and max_segment_size
+Message-ID: <20141126205106.GA31815@redhat.com>
+References: <20141120190058.GA31214@redhat.com>
+ <20141121095456.GB8866@infradead.org>
+ <20141121154920.GA7644@redhat.com>
+ <54762E9A.2070007@kernel.dk>
 MIME-Version: 1.0
-To: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Ethan Zhao <ethan.zhao@oracle.com>, viresh.kumar@linaro.org,
-        rjw@rjwysocki.net, corbet@lwn.net
-CC: dirk.j.brandewie@intel.com, linux-doc@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ethan.kernel@gmail.com
-Subject: Re: [PATCH 1/2 v3] intel_pstate: skip this driver if Sun server has
- _PPC method
-References: <1416891578-14171-1-git-send-email-ethan.zhao@oracle.com> <1416891578-14171-2-git-send-email-ethan.zhao@oracle.com> <547498BC.9020704@intel.com> <547613F0.4060805@hp.com>
-In-Reply-To: <547613F0.4060805@hp.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54762E9A.2070007@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2014 12:54 PM, Linda Knippers wrote:
-> On 11/25/2014 9:57 AM, Dirk Brandewie wrote:
->> On 11/24/2014 08:59 PM, Ethan Zhao wrote:
->>> Oracle Sun X86 servers have dynamic power capping capability that works via
->>> ACPI _PPC method etc, so skip loading this driver if Sun server has ACPI _PPC
->>> enabled.
->>>
->>
->> How about this patch? only compile tested.
-> 
-> It looks much better to me.  I'll give it a try.
+On Wed, Nov 26 2014 at  2:48pm -0500,
+Jens Axboe <axboe@kernel.dk> wrote:
 
-As expected, that works just fine for ProLiant.
-Thanks Dirk.
+> On 11/21/2014 08:49 AM, Mike Snitzer wrote:
+> > On Fri, Nov 21 2014 at  4:54am -0500,
+> > Christoph Hellwig <hch@infradead.org> wrote:
+> > 
+> >> On Thu, Nov 20, 2014 at 02:00:59PM -0500, Mike Snitzer wrote:
+> >>> virtio_blk incorrectly established -1U as the default for these
+> >>> queue_limits.  Set these limits to sane default values to avoid crashing
+> >>> the kernel.  But the virtio-blk protocol should probably be extended to
+> >>> allow proper stacking of the disk's limits from the host.
+> >>>
+> >>> This change fixes a crash that was reported when virtio-blk was used to
+> >>> test linux-dm.git commit 604ea90641b4 ("dm thin: adjust max_sectors_kb
+> >>> based on thinp blocksize") that will initially set max_sectors to
+> >>> max_hw_sectors and then rounddown to the first power-of-2 factor of the
+> >>> DM thin-pool's blocksize.  Basically that commit assumes drivers don't
+> >>> suck when establishing max_hw_sectors so it acted like a canary in the
+> >>> coal mine.
+> >>
+> >> Is that a crash in the host or guest?  What kind of mishandling did you
+> >> see?  Unless the recent virtio standard changed anything the host
+> >> should be able to handle our arbitrary limits, and even if it doesn't
+> >> that something we need to hash out with qemu and the virtio standards
+> >> folks.
+> > 
+> > Some good news: this guest crash isn't an issue with recent kernels (so
+> > upstream, fedora 20, RHEL7, etc aren't impacted -- Jens feel free to
+> > drop my virtio_blk patch; even though some of it's limits are clearly
+> > broken I'll defer to the virtio_blk developers on the best way forward
+> > -- sorry for the noise!).
+> > 
+> > The BUG I saw only seems to impact RHEL6 kernels so far (note to self,
+> > actually _test_ on upstream before reporting a crash against upstream!)
+> > 
+> > [root@RHEL-6 ~]# echo 1073741824 > /sys/block/vdc/queue/max_sectors_kb
+> > [root@RHEL-6 ~]# lvs
+> > 
+> > Message from syslogd@RHEL-6 at Nov 21 15:32:15 ...
+> >  kernel:Kernel panic - not syncing: Fatal exception
+> > 
+> > Here is the RHEL6 guest crash, just for full disclosure:
+> > 
+> > kernel BUG at fs/direct-io.c:696!
+> > invalid opcode: 0000 [#1] SMP
+> > last sysfs file: /sys/devices/virtual/block/dm-4/dev
+> > CPU 0
+> > Modules linked in: nfs lockd fscache auth_rpcgss nfs_acl sunrpc ipv6 ext2 dm_thin_pool dm_bio_prison dm_persistent_data dm_bufio libcrc32c dm_mirror dm_region_hash dm_log dm_mod microcode virtio_balloon i2c_piix4 i2c_core virtio_net ext4 jbd2 mbcache virtio_blk virtio_pci virtio_ring virtio pata_acpi ata_generic ata_piix [last unloaded: speedstep_lib]
+> > 
+> > Pid: 1679, comm: lvs Not tainted 2.6.32 #6 Bochs Bochs
+> > RIP: 0010:[<ffffffff811ce336>]  [<ffffffff811ce336>] __blockdev_direct_IO_newtrunc+0x986/0x1270
+> > RSP: 0018:ffff88011a11ba48  EFLAGS: 00010287
+> > RAX: 0000000000000000 RBX: ffff8801192fbd28 RCX: 0000000000001000
+> > RDX: ffffea0003b3d218 RSI: ffff88011aac4300 RDI: ffff880118572378
+> > RBP: ffff88011a11bbe8 R08: 0000000000000000 R09: 0000000000000000
+> > R10: 0000000000000000 R11: 0000000000000000 R12: ffff8801192fbd00
+> > R13: 0000000000000000 R14: ffff880118c3cac0 R15: 0000000000000000
+> > FS:  00007fde78bc37a0(0000) GS:ffff880028200000(0000) knlGS:0000000000000000
+> > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> > CR2: 00000000012706f0 CR3: 000000011a432000 CR4: 00000000000407f0
+> > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> > Process lvs (pid: 1679, threadinfo ffff88011a11a000, task ffff8801185a4aa0)
+> > Stack:
+> >  ffff88011a11bb48 ffff88011a11baa8 ffff88010000000c ffff88011a11bb18
+> > <d> 0000000000000000 0000000000000000 ffff88011a11bdc8 ffff88011a11beb8
+> > <d> 0000000c1a11baa8 ffff880118c3cb98 0000000000000000 0000000018c3ccb8
+> > Call Trace:
+> >  [<ffffffff811c9e90>] ? blkdev_get_block+0x0/0x20
+> >  [<ffffffff811cec97>] __blockdev_direct_IO+0x77/0xe0
+> >  [<ffffffff811c9e90>] ? blkdev_get_block+0x0/0x20
+> >  [<ffffffff811caf17>] blkdev_direct_IO+0x57/0x60
+> >  [<ffffffff811c9e90>] ? blkdev_get_block+0x0/0x20
+> >  [<ffffffff8112619b>] generic_file_aio_read+0x6bb/0x700
+> >  [<ffffffff811cba60>] ? blkdev_get+0x10/0x20
+> >  [<ffffffff811cba70>] ? blkdev_open+0x0/0xc0
+> >  [<ffffffff8118af4f>] ? __dentry_open+0x23f/0x360
+> >  [<ffffffff811ca2d1>] blkdev_aio_read+0x51/0x80
+> >  [<ffffffff8118dc6a>] do_sync_read+0xfa/0x140
+> >  [<ffffffff8109eaf0>] ? autoremove_wake_function+0x0/0x40
+> >  [<ffffffff811ca22c>] ? block_ioctl+0x3c/0x40
+> >  [<ffffffff811a34c2>] ? vfs_ioctl+0x22/0xa0
+> >  [<ffffffff811a3664>] ? do_vfs_ioctl+0x84/0x580
+> >  [<ffffffff8122cee6>] ? security_file_permission+0x16/0x20
+> >  [<ffffffff8118e625>] vfs_read+0xb5/0x1a0
+> >  [<ffffffff8118e761>] sys_read+0x51/0x90
+> >  [<ffffffff810e5aae>] ? __audit_syscall_exit+0x25e/0x290
+> >  [<ffffffff8100b072>] system_call_fastpath+0x16/0x1b
+> > Code: fe ff ff c7 85 fc fe ff ff 00 00 00 00 48 89 95 10 ff ff ff 8b 95 34 ff ff ff e8 46 ac ff ff 3b 85 34 ff ff ff 0f 84 fc 02 00 00 <0f> 0b eb fe 8b 9d 34 ff ff ff 8b 85 30 ff ff ff 01 d8 85 c0 0f
+> > RIP  [<ffffffff811ce336>] __blockdev_direct_IO_newtrunc+0x986/0x1270
+> >  RSP <ffff88011a11ba48>
+> > ---[ end trace 73be5dcaf8939399 ]---
+> > Kernel panic - not syncing: Fatal exception
+> 
+> That code isn't even in mainline, as far as I can tell...
 
--- ljk
+Right, it is old RHEL6 code.
 
-> 
-> -- ljk
-> 
->>
->> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
->> index 3468387..db7b8b2 100644
->> --- a/drivers/cpufreq/intel_pstate.c
->> +++ b/drivers/cpufreq/intel_pstate.c
->> @@ -1025,15 +1025,46 @@ static bool intel_pstate_no_acpi_pss(void)
->>      return true;
->>  }
->>
->> +static bool intel_pstate_has_acpi_ppc(void)
->> +{
->> +    int i;
->> +
->> +    for_each_possible_cpu(i) {
->> +        struct acpi_processor *pr = per_cpu(processors, i);
->> +
->> +        if (!pr)
->> +            continue;
->> +        if (acpi_has_method(pr->handle, "_PPC"))
->> +            return true;
->> +    }
->> +    return false;
->> +}
->> +
->> +enum {
->> +    PSS,
->> +    PCC,
->> +};
->> +
->>  struct hw_vendor_info {
->>      u16  valid;
->>      char oem_id[ACPI_OEM_ID_SIZE];
->>      char oem_table_id[ACPI_OEM_TABLE_ID_SIZE];
->> +    int  oem_pwr_table;
->>  };
->>
->>  /* Hardware vendor-specific info that has its own power management modes */
->>  static struct hw_vendor_info vendor_info[] = {
->> -    {1, "HP    ", "ProLiant"},
->> +    {1, "HP    ", "ProLiant", PSS},
->> +    {1, "ORACLE", "X4-2    ", PCC},
->> +    {1, "ORACLE", "X4-2L   ", PCC},
->> +    {1, "ORACLE", "X4-2B   ", PCC},
->> +    {1, "ORACLE", "X3-2    ", PCC},
->> +    {1, "ORACLE", "X3-2L   ", PCC},
->> +    {1, "ORACLE", "X3-2B   ", PCC},
->> +    {1, "ORACLE", "X4470M2 ", PCC},
->> +    {1, "ORACLE", "X4270M3 ", PCC},
->> +    {1, "ORACLE", "X4270M2 ", PCC},
->> +    {1, "ORACLE", "X4170M2 ", PCC},
->>      {0, "", ""},
->>  };
->>
->> @@ -1057,15 +1088,20 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
->>
->>      for (v_info = vendor_info; v_info->valid; v_info++) {
->>          if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
->> -            !strncmp(hdr.oem_table_id, v_info->oem_table_id,
->> ACPI_OEM_TABLE_ID_SIZE) &&
->> -            intel_pstate_no_acpi_pss())
->> -            return true;
->> +            !strncmp(hdr.oem_table_id, v_info->oem_table_id,
->> ACPI_OEM_TABLE_ID_SIZE))
->> +            switch (v_info->oem_pwr_table) {
->> +            case PSS:
->> +                return intel_pstate_no_acpi_pss();
->> +            case PCC:
->> +                return intel_pstate_has_acpi_ppc();
->> +            }
->>      }
->>
->>      return false;
->>  }
->>  #else /* CONFIG_ACPI not enabled */
->>  static inline bool intel_pstate_platform_pwr_mgmt_exists(void) { return false; }
->> +static inline bool intel_pstate_has_acpi_ppc(void) { return false; }
->>  #endif /* CONFIG_ACPI */
->>
->>  static int __init intel_pstate_init(void)
->>
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+But I've yet to determine what changed upstream that enables this to
+"just work" with a really large max_sectors (I haven't been looking
+either).
