@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851AbaKZOty (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 09:49:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58420 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836AbaKZOtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 09:49:53 -0500
-Date: Wed, 26 Nov 2014 15:49:34 +0100
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        nick <xerofoify@gmail.com>, gleb@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Another Obsolete Fix me in trace.h?
-Message-ID: <20141126144933.GA5630@potion.brq.redhat.com>
-References: <5472B5B5.5090201@gmail.com>
- <54730475.9040000@redhat.com>
- <54730B33.1080101@siemens.com>
- <20141124210000.GB6795@potion.brq.redhat.com>
- <20141124161901.6266925c@gandalf.local.home>
- <20141124214939.GA6671@potion.brq.redhat.com>
- <20141126124022.GC6795@potion.brq.redhat.com>
- <20141126091543.52dc5bfe@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141126091543.52dc5bfe@gandalf.local.home>
+	id S1752899AbaKZOvU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 09:51:20 -0500
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:35169 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981AbaKZOvS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 09:51:18 -0500
+Date: Wed, 26 Nov 2014 15:51:03 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-scsi@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH v4 38/42] virtio_scsi: v1.0 support
+Message-ID: <20141126155103.1f6725ce.cornelia.huck@de.ibm.com>
+In-Reply-To: <1416933600-21398-39-git-send-email-mst@redhat.com>
+References: <1416933600-21398-1-git-send-email-mst@redhat.com>
+	<1416933600-21398-39-git-send-email-mst@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112614-0025-0000-0000-0000029A1584
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-26 09:15-0500, Steven Rostedt:
-> On Wed, 26 Nov 2014 13:40:26 +0100
-> Radim Krčmář <rkrcmar@redhat.com> wrote:
-> > The kernel part is trivial.
-> > Most of the code is going to be in tools/lib/traceevent/event-parse.c.
-> > 
-> > I wasn't sure whether to
-> > 1) define new 'enum print_arg_type' for our function and do exactly what
-> >    other __print* did
-> > 2) extend existing PRINT_FUNC with variable arguments and register it as
-> >    a "global" event handler
-> > 
-> > as (2) makes more sense to me, but we already had it when some __print*
-> > was implemented ... (and I didn't want to dig too deep into the project)
+On Tue, 25 Nov 2014 18:44:08 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
+
+> Note: for consistency, and to avoid sparse errors,
+>   convert all fields, even those no longer in use
+>   for virtio v1.0.
 > 
-> Add a new hardcoded instance. The PRINT_FUNC is for plugins that have a
-> unique function for the events they handle. Notice that event-parse
-> does not define any func handlers. If this is to be generic, then lets
-> make it specified as a new enum.
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  include/linux/virtio_scsi.h | 32 +++++++++++++++-------------
+>  drivers/scsi/virtio_scsi.c  | 51 ++++++++++++++++++++++++++++-----------------
+>  2 files changed, 49 insertions(+), 34 deletions(-)
+> 
 
-Ok, thanks.
+> @@ -158,7 +158,7 @@ static void virtscsi_complete_cmd(struct virtio_scsi *vscsi, void *buf)
+>  		sc, resp->response, resp->status, resp->sense_len);
+> 
+>  	sc->result = resp->status;
+> -	virtscsi_compute_resid(sc, resp->resid);
+> +	virtscsi_compute_resid(sc, __virtio32_to_cpu(vscsi->vdev, resp->resid));
 
-(It just seemed weird that we have an infrastructure that could allow a
- "generic plugin" to cover this functionality.)
+Confused. Don't you need the non-underscore versions if you pass in a
+vdev as first parameter?
+
+>  	switch (resp->response) {
+>  	case VIRTIO_SCSI_S_OK:
+>  		set_host_byte(sc, DID_OK);
+
