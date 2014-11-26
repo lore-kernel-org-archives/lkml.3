@@ -1,93 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207AbaKZO2h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 09:28:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58806 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752730AbaKZO2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 09:28:36 -0500
-Date: Wed, 26 Nov 2014 09:28:32 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        linux-kernel@vger.kernel.org, Alasdair Kergon <agk@redhat.com>
-Subject: Re: dm-bufio: fix memleak when using a dm_buffer's inline bio
-Message-ID: <20141126142832.GB29855@redhat.com>
-References: <20141126014515.GE10050@birch.djwong.org>
- <20141126034103.GA26585@redhat.com>
- <20141126040008.GF10050@birch.djwong.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141126040008.GF10050@birch.djwong.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752556AbaKZObN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 09:31:13 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:59827 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865AbaKZObK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 09:31:10 -0500
+Date: Wed, 26 Nov 2014 15:31:02 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v4 26/42] vhost/net: force len for TX to host endian
+Message-ID: <20141126153102.3f5b8fc9.cornelia.huck@de.ibm.com>
+In-Reply-To: <1416933600-21398-27-git-send-email-mst@redhat.com>
+References: <1416933600-21398-1-git-send-email-mst@redhat.com>
+	<1416933600-21398-27-git-send-email-mst@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112614-0041-0000-0000-000002438678
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25 2014 at 11:00pm -0500,
-Darrick J. Wong <darrick.wong@oracle.com> wrote:
+On Tue, 25 Nov 2014 18:43:14 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-> On Tue, Nov 25, 2014 at 10:41:04PM -0500, Mike Snitzer wrote:
-> > On Tue, Nov 25 2014 at  8:45pm -0500,
-> > Darrick J. Wong <darrick.wong@oracle.com> wrote:
-> > 
-> > > When dm-bufio sets out to use the bio built into a struct dm_buffer to
-> > > issue an IO, it needs to call bio_reset after it's done with the bio
-> > > so that we can free things attached to the bio such as the integrity
-> > > payload.  Therefore, inject our own endio callback to take care of
-> > > the bio_reset after calling submit_io's end_io callback.
-> > > 
-> > > Test case:
-> > > 1. modprobe scsi_debug delay=0 dif=1 dix=199 ato=1 dev_size_mb=300
-> > > 2. Set up a dm-bufio client, e.g. dm-verity, on the scsi_debug device
-> > > 3. Repeatedly read metadata and watch kmalloc-192 leak!
-> > > 
-> > > Fix is against 3.18-rc6.
-> > > 
-> > > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-> > 
-> > Thanks for reporting/fixing this.
-> > 
-> > Alternatively I think we could just call bio_reset() in submit_io(),
-> > e.g.:
-> > 
-> > diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
-> > index afe7971..e7036e3 100644
-> > --- a/drivers/md/dm-bufio.c
-> > +++ b/drivers/md/dm-bufio.c
-> > @@ -579,6 +579,8 @@ static void submit_io(struct dm_buffer *b, int rw, sector_t block,
-> >  	if (rw == WRITE && b->c->write_callback)
-> >  		b->c->write_callback(b);
-> >  
-> > +	bio_reset(&b->bio);
-> > +
-> >  	if (b->c->block_size <= DM_BUFIO_INLINE_VECS * PAGE_SIZE &&
-> >  	    b->data_mode != DATA_MODE_VMALLOC)
-> >  		use_inline_bio(b, rw, block, end_io);
-> > 
-> > What do you think?
+> We use native endian-ness internally but never
+> expose it to guest.
 > 
-> I decided to call bio_reset after calling end_io so that we can free
-> the integrity buffer as soon as we're done with the bio.  Calling
-> bio_reset just prior to the next submit_bio as this snippet does means
-> that the integrity buffer remains attached to the bio until just
-> before the next submit_bio call, which could be a while.
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  drivers/vhost/net.c | 10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
 > 
-> Also, I think use_dmio results in a new bio being used instead of the
-> bio embedded in the dm_buffer, so it shouldn't be necessary to reset
-> the bio if the previous IO had use_dmio'd.
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index 8dae2f7..dce5c58 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -48,15 +48,15 @@ MODULE_PARM_DESC(experimental_zcopytx, "Enable Zero Copy TX;"
+>   * status internally; used for zerocopy tx only.
+>   */
+>  /* Lower device DMA failed */
+> -#define VHOST_DMA_FAILED_LEN	3
+> +#define VHOST_DMA_FAILED_LEN	((__force __virtio32)3)
+>  /* Lower device DMA done */
+> -#define VHOST_DMA_DONE_LEN	2
+> +#define VHOST_DMA_DONE_LEN	((__force __virtio32)2)
+>  /* Lower device DMA in progress */
+> -#define VHOST_DMA_IN_PROGRESS	1
+> +#define VHOST_DMA_IN_PROGRESS	((__force __virtio32)1)
+>  /* Buffer unused */
+> -#define VHOST_DMA_CLEAR_LEN	0
+> +#define VHOST_DMA_CLEAR_LEN	((__force __virtio32)0)
 
-OK, yeah, a new embedded bio is created as a side-effect of allocating a
-new dm_buffer.  So we have to use bi_end_io like you've done.
+I find these constants a bit confusing: What does __virtio32 mean
+without the context of a vq or device?
 
-I didn't like seeing your use of .bi_private (because in the context of
-bios that are passed into DM: .bi_private must always be preserved so as
-not to break upper layers of the IO stack that might be using it).
+> 
+> -#define VHOST_DMA_IS_DONE(len) ((len) >= VHOST_DMA_DONE_LEN)
+> +#define VHOST_DMA_IS_DONE(len) ((__force u32)(len) >= (__force u32)VHOST_DMA_DONE_LEN)
 
-But in the context of bufio's embedded bio, using .bi_private seems
-fine.  Just needs a comment.  I'll fixup and get your patch staged (and
-will CC stable).
+And here you cast it to a plain u32 again.
 
-Thanks again,
-Mike
+I looked at the final code, and you seem either to use the above
+constants for .len or do a cpu_to_vhost32(). Wouldn't you need to
+convert the constants as well?
+
+> 
+>  enum {
+>  	VHOST_NET_FEATURES = VHOST_FEATURES |
+
