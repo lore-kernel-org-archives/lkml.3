@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962AbaKZV2P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 16:28:15 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:55750 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630AbaKZV2M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 16:28:12 -0500
+	id S1753070AbaKZV2l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 16:28:41 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:58737 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752810AbaKZV2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 16:28:03 -0500
+From: Dave Gerlach <d-gerlach@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
+CC: Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Kevin Hilman <khilman@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Suman Anna <s-anna@ti.com>, Dave Gerlach <d-gerlach@ti.com>
+Subject: [RFC PATCH 2/3] Documentation: dt: add ti,am3353-wkup-m3 bindings
+Date: Wed, 26 Nov 2014 15:27:11 -0600
+Message-ID: <13e848f10614c0a276e54759e606210971d63fe0.1417029919.git.d-gerlach@ti.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <cover.1417029919.git.d-gerlach@ti.com>
+References: <cover.1417029919.git.d-gerlach@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20141126200023.GC22400@wfg-t540p.sh.intel.com>
-References: <20141126200023.GC22400@wfg-t540p.sh.intel.com>
-Date: Wed, 26 Nov 2014 13:28:11 -0800
-Message-ID: <CALAqxLU-AU3M4w1zwdfqZHuOJ6Q6_Qx2LzpiFAG9twdteFuC1Q@mail.gmail.com>
-Subject: Re: [time] WARNING: CPU: 0 PID: 1 at kernel/time/timekeeping.c:1337 update_wall_time()
-From: John Stultz <john.stultz@linaro.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: "pang.xunlei" <pang.xunlei@linaro.org>, LKP <lkp@01.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 12:00 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> Greetings,
->
-> 0day kernel testing robot got the below dmesg and the first bad commit is
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
->
-> commit 6067dc5a8c2b1b57e67eaf1125db1d63c1ed6361
-> Author:     pang.xunlei <pang.xunlei@linaro.org>
-> AuthorDate: Wed Oct 8 15:03:34 2014 +0800
-> Commit:     John Stultz <john.stultz@linaro.org>
-> CommitDate: Fri Nov 21 11:59:56 2014 -0800
->
->     time: Avoid possible NTP adjustment mult overflow.
->
->     Ideally, __clocksource_updatefreq_scale, selects the largest shift
->     value possible for a clocksource. This results in the mult memember of
->     struct clocksource being particularly large, although not so large
->     that NTP would adjust the clock to cause it to overflow.
->
->     That said, nothing actually prohibits an overflow from occuring, its
->     just that it "shouldn't" occur.
->
->     So while very unlikely, and so far never observed, the value of
->     (cs->mult+cs->maxadj) may have a chance to reach very near 0xFFFFFFFF,
->     so there is a possibility it may overflow when doing NTP positive
->     adjustment
->
->     See the following detail: When NTP slewes the clock, kernel goes
->     through update_wall_time()->...->timekeeping_apply_adjustment():
->         tk->tkr.mult += mult_adj;
->
->     Since there is no guard against it, its possible tk->tkr.mult may
->     overflow during this operation.
->
->     This patch avoids any possible mult overflow by judging the overflow
->     case before adding mult_adj to mult, also adds the WARNING message
->     when capturing such case.
->
->     Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
->     [jstultz: Reworded commit message]
->     Signed-off-by: John Stultz <john.stultz@linaro.org>
+Add the device tree bindings document for ti,am3353-wkup-m3 which is
+used by the wkup_m3_rproc driver.
 
+Signed-off-by: Dave Gerlach <d-gerlach@ti.com>
+---
+ .../bindings/remoteproc/wkup_m3_rproc.txt          | 32 ++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/remoteproc/wkup_m3_rproc.txt
 
-So you caught this false-positive issue in my tree, unfortunately just
-mintes before it was pulled into -tip. :)
+diff --git a/Documentation/devicetree/bindings/remoteproc/wkup_m3_rproc.txt b/Documentation/devicetree/bindings/remoteproc/wkup_m3_rproc.txt
+new file mode 100644
+index 0000000..4d64a23
+--- /dev/null
++++ b/Documentation/devicetree/bindings/remoteproc/wkup_m3_rproc.txt
+@@ -0,0 +1,32 @@
++Wakeup M3 Remote Proc Driver
++=====================
++
++TI AMx3 family of devices use a Cortex M3 co-processor to help with various
++low power tasks that cannot be controlled from the MPU. The CM3 requires
++a firmware binary to accomplish this. The wkup_m3 remoteproc driver handles
++the loading of the firmware and booting of the CM3.
++
++Wkup M3 Device Node:
++====================
++A wkup_m3 device node is used to represent a wakeup M3 IP instance within
++a SoC.
++
++Required properties:
++--------------------
++- compatible:		Should be "ti,am3353-wkup-m3" for AM33xx SoCs
++- reg:			Contains the wkup_m3 register address ranges for
++			umem and dmem.
++- ti,hwmods:		Name of the hwmod associated with the mailbox
++- ti,no-reset-on-init:	Reset is handled after fw has been loaded, not at
++			init of hwmod.
++
++Example:
++--------
++/* AM33xx */
++wkup_m3: wkup_m3@44d00000 {
++	compatible = "ti,am3353-wkup-m3";
++	reg = <0x44d00000 0x4000	/* M3 UMEM */
++	       0x44d80000 0x2000>;	/* M3 DMEM */
++	ti,hwmods = "wkup_m3";
++	ti,no-reset-on-init;
++};
+-- 
+2.1.0
 
-I've since submitted a fix which was pulled into -tip just the other
-day, but looks like it isn't yet in the current -next.
-See:
-http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?h=timers/core&id=cb2aa63469f81426c7406227be70b628b42f7a05
-
-It should go away as soon as that patch lands in -next, but do let me
-know if you continue to see this.
-
-thanks
--john
