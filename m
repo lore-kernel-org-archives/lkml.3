@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551AbaKZW7A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 17:59:00 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:42342 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177AbaKZW64 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 17:58:56 -0500
+	id S1753092AbaKZXBa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 18:01:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56227 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751000AbaKZXB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 18:01:29 -0500
+Date: Wed, 26 Nov 2014 18:00:55 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: martin.petersen@oracle.com, mst@redhat.com, rusty@rustcorp.com.au,
+        qemu-devel@nongnu.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>, dm-devel@redhat.com,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: virtio_blk: fix defaults for max_hw_sectors and max_segment_size
+Message-ID: <20141126230055.GA32363@redhat.com>
+References: <20141120190058.GA31214@redhat.com>
+ <20141121095456.GB8866@infradead.org>
+ <20141121154920.GA7644@redhat.com>
+ <54762E9A.2070007@kernel.dk>
+ <20141126205106.GA31815@redhat.com>
+ <54763DEC.3050207@kernel.dk>
+ <20141126215108.GA32077@redhat.com>
+ <54764BD1.2070804@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <CAGr1F2Hm4+aCUz3RqkgUhbJAQtWvUbb2CRDkW5rJSZkwLM_huw@mail.gmail.com>
-References: <1414783141-6947-1-git-send-email-adityakali@google.com>
-	<20141104131030.GA2937@redhat.com>
-	<CAGr1F2Hm4+aCUz3RqkgUhbJAQtWvUbb2CRDkW5rJSZkwLM_huw@mail.gmail.com>
-Date: Wed, 26 Nov 2014 23:58:55 +0100
-Message-ID: <CAFLxGvybiem34J3zrtVhW=4itSdczassNt9RcuxnpJQeAz-JVA@mail.gmail.com>
-Subject: Re: [PATCHv2 0/7] CGroup Namespaces
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Aditya Kali <adityakali@google.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Linux Containers <containers@lists.linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54764BD1.2070804@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 6, 2014 at 6:33 PM, Aditya Kali <adityakali@google.com> wrote:
-> On Tue, Nov 4, 2014 at 5:10 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> On Fri, Oct 31, 2014 at 12:18:54PM -0700, Aditya Kali wrote:
->> [..]
->>>  fs/kernfs/dir.c                  | 194 ++++++++++++++++++++++++++++++++++-----
->>>  fs/kernfs/mount.c                |  48 ++++++++++
->>>  fs/proc/namespaces.c             |   1 +
->>>  include/linux/cgroup.h           |  41 ++++++++-
->>>  include/linux/cgroup_namespace.h |  36 ++++++++
->>>  include/linux/kernfs.h           |   5 +
->>>  include/linux/nsproxy.h          |   2 +
->>>  include/linux/proc_ns.h          |   4 +
->>>  include/uapi/linux/sched.h       |   3 +-
->>>  kernel/Makefile                  |   2 +-
->>>  kernel/cgroup.c                  | 108 +++++++++++++++++-----
->>>  kernel/cgroup_namespace.c        | 148 +++++++++++++++++++++++++++++
->>>  kernel/fork.c                    |   2 +-
->>>  kernel/nsproxy.c                 |  19 +++-
->>
->> Hi Aditya,
->>
->> Can we provide a documentation file for cgroup namespace behavior. Say,
->> Documentation/namespaces/cgroup-namespace.txt.
->>
-> Yes, definitely. I will add it as soon as we have a consensus on the
-> overall series.
+On Wed, Nov 26 2014 at  4:53pm -0500,
+Jens Axboe <axboe@kernel.dk> wrote:
 
-Do you have a public git repository which contains your patches?
+> On 11/26/2014 02:51 PM, Mike Snitzer wrote:
+> > 
+> > But while you're here, I wouldn't mind getting your take on virtio-blk
+> > setting max_hw_sectors to -1U.
+> > 
+> > As I said in my original reply to mst: it only makes sense to set a
+> > really high initial upper bound like that in a driver if that driver
+> > goes on to stack an underlying device's limit.
+> 
+> -1U should just work, IMHO, there's no reason we should need to cap it
+> at some synthetic value.  That said, it seems it should be one of
+> those parameters that should be negotiated up and set appropriately. 
 
--- 
-Thanks,
-//richard
+I'm saying set it to the underlying device's value for max_hw_sectors --
+not some synthetic value.  So I think we're saying the same thing.
+
+But it isn't immediately clear (to me) how that benefits virtio-blk
+users (obviously they are getting by today).  So until that is pinned
+down I imagine nobody will care to extend the virtio-blk protocol to
+allow stacking max_hw_sectors and max_sectors up.
