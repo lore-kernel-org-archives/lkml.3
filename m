@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340AbaKZSeR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 13:34:17 -0500
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:52820 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaKZSeQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 13:34:16 -0500
+	id S1753366AbaKZSgE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 13:36:04 -0500
+Received: from mail-bn1on0133.outbound.protection.outlook.com ([157.56.110.133]:36381
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751183AbaKZSgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 13:36:01 -0500
+Message-ID: <54761D85.7080500@freescale.com>
+Date: Wed, 26 Nov 2014 12:35:49 -0600
+From: German Rivera <German.Rivera@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Date: Wed, 26 Nov 2014 10:34:15 -0800
-Message-ID: <CAADnVQK3iui8cAmhi28=65p2CJbTu45fR98ri8Uh8xLRb=cwnA@mail.gmail.com>
-Subject: Re: [PATCH] x86: bpf_jit_comp: simplify trivial boolean return
-From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Quentin Lambert <lambert.quentin@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Alexander Graf <agraf@suse.de>, <gregkh@linuxfoundation.org>,
+        <arnd@arndb.de>, <linux-kernel@vger.kernel.org>
+CC: <stuart.yoder@freescale.com>, <Kim.Phillips@freescale.com>,
+        <scottwood@freescale.com>, <bhamciu1@freescale.com>,
+        <R89243@freescale.com>, <Geoff.Thorpe@freescale.com>,
+        <bhupesh.sharma@freescale.com>, <nir.erez@freescale.com>,
+        <richard.schmitt@freescale.com>
+Subject: Re: [PATCH 1/3 v4] drivers/bus: Added Freescale Management Complex
+ APIs
+References: <1415901246-24131-1-git-send-email-German.Rivera@freescale.com> <1415901246-24131-2-git-send-email-German.Rivera@freescale.com> <5475A85E.1080204@suse.de>
+In-Reply-To: <5475A85E.1080204@suse.de>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.88.168.50]
+X-ClientProxiedBy: BN1PR02CA0050.namprd02.prod.outlook.com (10.141.56.50) To
+ BY1PR0301MB1303.namprd03.prod.outlook.com (25.161.206.152)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1303;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1303;
+X-Forefront-PRVS: 04073E895A
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(6049001)(24454002)(51704005)(377454003)(479174003)(189002)(164054003)(199003)(40100003)(87266999)(122386002)(54356999)(64706001)(66066001)(20776003)(65806001)(65956001)(107046002)(47776003)(76176999)(50986999)(19580395003)(105586002)(65816999)(99136001)(46102003)(106356001)(80316001)(19580405001)(95666004)(21056001)(23746002)(77156002)(83506001)(62966003)(77096003)(4396001)(42186005)(31966008)(97736003)(101416001)(50466002)(102836001)(99396003)(92566001)(86362001)(33656002)(2201001)(59896002)(87976001)(92726001)(120916001)(36756003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY1PR0301MB1303;H:[10.81.33.65];FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1303;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 10:02 AM, Joe Perches <joe@perches.com> wrote:
-> On Wed, 2014-11-26 at 09:23 -0800, Alexei Starovoitov wrote:
->> On Wed, Nov 26, 2014 at 8:58 AM, Joe Perches <joe@perches.com> wrote:
+On 11/26/2014 04:15 AM, Alexander Graf wrote:
 >
->> > Is there any value in reordering these tests for frequency
->> > or maybe using | instead of || to avoid multiple jumps?
+>
+> On 13.11.14 18:54, J. German Rivera wrote:
+>> APIs to access the Management Complex (MC) hardware
+>> module of Freescale LS2 SoCs. This patch includes
+>> APIs to check the MC firmware version and to manipulate
+>> DPRC objects in the MC.
 >>
->> probably not. It's not a critical path.
->> compiler may fuse conditions depending on values anyway.
->> If it was a critical path, we could have used
->> (1 << reg) & mask trick.
->> I picked explicit 'return true' else 'return false' here,
->> because it felt easier to read. Just a matter of taste.
+>> Signed-off-by: J. German Rivera <German.Rivera@freescale.com>
+>> Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
 >
-> There is a size difference though: (allyesconfig)
+> [...]
 >
-> $ size arch/x86/net/built-in.o*
->    text    data     bss     dec     hex filename
->   12999    1012    4336   18347    47ab arch/x86/net/built-in.o.new
->   13177    1076    4592   18845    499d arch/x86/net/built-in.o.old
+[]
+>> +
+>> +int dprc_get_container_id(struct fsl_mc_io *mc_io, int *container_id)
+>
+> This one is definitely a misnomer. It's a command that operates on the
+> MC object, not a DPRC object. Also it doesn't fetch a random
+> "container_id", it fetches the root container id.
+>
+> Please move it and its definition to the files that operate on the MC
+> management interface.
+>
+Ok, I will make this change in respin v5.
 
-interesting. Compiler obviously thinks that 178 byte increase
-with -O2 is the right trade off. Which I agree with :)
+Thanks,
 
-If I think dropping 'inline' and using -Os will give bigger savings...
-but I suspect 'tinification' folks will compile JIT out anyway...
-
-> ---
-> diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
-> index 3f62734..09e2cea 100644
-> --- a/arch/x86/net/bpf_jit_comp.c
-> +++ b/arch/x86/net/bpf_jit_comp.c
-> @@ -135,11 +135,11 @@ static const int reg2hex[] = {
->   */
->  static inline bool is_ereg(u32 reg)
->  {
-> -       if (reg == BPF_REG_5 || reg == AUX_REG ||
-> -           (reg >= BPF_REG_7 && reg <= BPF_REG_9))
-> -               return true;
-> -       else
-> -               return false;
-> +       return (1 << reg) & (BIT(BPF_REG_5) |
-> +                            BIT(AUX_REG) |
-> +                            BIT(BPF_REG_7) |
-> +                            BIT(BPF_REG_8) |
-> +                            BIT(BPF_REG_9));
-
-thanks for giving it a shot :)
-That's exactly what I had in mind.
-imo it's less readable, but we probably not going
-to mess much with this piece of code anyway.
-Though to be safe in the future, we'd need to
-add BUILD_BUG_ON that largest value (AUX_REG)
-fits in 32bit (or 64bit) and add a comment that
-verifier goes before the JIT and checks that
-insn->src_reg, insn->dst_reg are less than MAX_BPF_REG,
-so argument 'reg' also doesn't trigger too large shift.
-Perfectionists r us. :)
-... or just leave it as-is ;)
+German
+>
+> Alex
+>
