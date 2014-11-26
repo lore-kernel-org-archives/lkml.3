@@ -1,135 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981AbaKZVGD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 16:06:03 -0500
-Received: from cosmos.ssec.wisc.edu ([128.104.109.114]:49442 "EHLO
-	cosmos.ssec.wisc.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750895AbaKZVGA (ORCPT
+	id S1752717AbaKZVG5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 16:06:57 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:57111 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005AbaKZVGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 16:06:00 -0500
-Date: Wed, 26 Nov 2014 15:05:59 -0600
-From: Daniel Forrest <dan.forrest@ssec.wisc.edu>
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: linux-mm <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Tim Hartrick <tim@edgecast.com>, Hugh Dickins <hughd@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        Vlastimil Babka <vbabka@suse.cz>
-Subject: Re: [PATCH v3] mm: prevent endless growth of anon_vma hierarchy
-Message-ID: <20141126210559.GA12060@cosmos.ssec.wisc.edu>
-Reply-To: Daniel Forrest <dan.forrest@ssec.wisc.edu>
-Mail-Followup-To: Konstantin Khlebnikov <koct9i@gmail.com>,
-	linux-mm <linux-mm@kvack.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Rik van Riel <riel@redhat.com>, Tim Hartrick <tim@edgecast.com>,
-	Hugh Dickins <hughd@google.com>,
-	Michel Lespinasse <walken@google.com>,
-	Vlastimil Babka <vbabka@suse.cz>
-References: <20141126191145.3089.90947.stgit@zurg>
+	Wed, 26 Nov 2014 16:06:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141126191145.3089.90947.stgit@zurg>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1417023640-23464-2-git-send-email-leif.lindholm@linaro.org>
+References: <1417023640-23464-1-git-send-email-leif.lindholm@linaro.org> <1417023640-23464-2-git-send-email-leif.lindholm@linaro.org>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Wed, 26 Nov 2014 21:06:33 +0000
+X-Google-Sender-Auth: 0gP6QNiyKafzgEbtJ-0H83yCQTs
+Message-ID: <CACxGe6tQ5rWzCUcS+_fFY+rjEyua2khApAoCVKpTuJAghU=N_w@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] of: add optional options parameter to of_find_node_by_path()
+To: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ian Campbell <ijc@debian.org>, Andrew Lunn <andrew@lunn.ch>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 10:11:45PM +0400, Konstantin Khlebnikov wrote:
+On Wed, Nov 26, 2014 at 5:40 PM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
+> Update of_find_node_by_path():
+> 1) Ignore any part of the path beyond and including the ':' separator.
+> 2) Set the new provided pointer argument to the beginning of the string
+>    following the ':' separator.
+>
+> Coccinelle fixup using:
+>
+> @@
+> expression E1;
+> @@
+>
+> - of_find_node_by_path(E1)
+> + of_find_node_by_path(E1, NULL)
+>
+> drivers/of/resolver.c manually updated, since spatch fails to parse
+> it correctly.
+>
+> Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
 
-> Constantly forking task causes unlimited grow of anon_vma chain.
-> Each next child allocate new level of anon_vmas and links vmas to all
-> previous levels because it inherits pages from them. None of anon_vmas
-> cannot be freed because there might be pages which points to them.
-> 
-> This patch adds heuristic which decides to reuse existing anon_vma instead
-> of forking new one. It counts vmas and direct descendants for each anon_vma.
-> Anon_vma with degree lower than two will be reused at next fork.
-> 
-> As a result each anon_vma has either alive vma or at least two descendants,
-> endless chains are no longer possible and count of anon_vmas is no more than
-> two times more than count of vmas.
+Okay, so you're probably going to kill me for the next comment...
+After actually looking at this I can see that it's going to be a hard
+patch to merge because of conflicts. It will need to be merged at the
+end of a merge window to catch all the users, but that will mean that
+the important part of the patch won't be able to be queued up in
+linux-next.
 
-While I was working on the previous fix for this bug, Andrew Morton
-noticed that the error return from anon_vma_clone() was being dropped
-and replaced with -ENOMEM (which is not itself a bug because the only
-error return value from anon_vma_clone() is -ENOMEM).
+So you were right the first time around. Create a new function name
+that adds the extra argument and make of_find_node_by_path() a static
+inline wrapper. That way I can queue it up into linux-next immediately
+and the cleanup across the tree can be generated and submitted at the
+very end of the merge window.
 
-I did an audit of callers of anon_vma_clone() and discovered an actual
-bug where the error return was being lost.  In __split_vma(), between
-Linux 3.11 and 3.12 the code was changed so the err variable is used
-before the call to anon_vma_clone() and the default initial value of
--ENOMEM is overwritten.  So a failure of anon_vma_clone() will return
-success since err at this point is now zero.
+> @@ -380,7 +380,8 @@ static inline struct device_node *of_find_matching_node_and_match(
+>         return NULL;
+>  }
+>
+> -static inline struct device_node *of_find_node_by_path(const char *path)
+> +static inline struct device_node *of_find_node_by_path(const char *path,
+> +       char **opts)
 
-Below is a patch which fixes this bug and also propagates the error
-return value from anon_vma_clone() in all cases.
+const char **opts
 
-I can send this as a separate patch, but maybe it would be easier if
-you were to incorporate it into yours?
-
-Signed-off-by: Daniel Forrest <dan.forrest@ssec.wisc.edu>
-
----
- mmap.c |   10 +++++++---
- rmap.c |    6 ++++--
- 2 files changed, 11 insertions(+), 5 deletions(-)
-
-diff -rup a/mm/mmap.c b/mm/mmap.c
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -776,8 +776,11 @@ again:			remove_next = 1 + (end > next->
- 		 * shrinking vma had, to cover any anon pages imported.
- 		 */
- 		if (exporter && exporter->anon_vma && !importer->anon_vma) {
--			if (anon_vma_clone(importer, exporter))
--				return -ENOMEM;
-+			int error;
-+
-+			error = anon_vma_clone(importer, exporter);
-+			if (error)
-+				return error;
- 			importer->anon_vma = exporter->anon_vma;
- 		}
- 	}
-@@ -2469,7 +2472,8 @@ static int __split_vma(struct mm_struct 
- 	if (err)
- 		goto out_free_vma;
- 
--	if (anon_vma_clone(new, vma))
-+	err = anon_vma_clone(new, vma);
-+	if (err)
- 		goto out_free_mpol;
- 
- 	if (new->vm_file)
-diff -rup a/mm/rmap.c b/mm/rmap.c
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -274,6 +274,7 @@ int anon_vma_fork(struct vm_area_struct 
- {
- 	struct anon_vma_chain *avc;
- 	struct anon_vma *anon_vma;
-+	int error;
- 
- 	/* Don't bother if the parent process has no anon_vma here. */
- 	if (!pvma->anon_vma)
-@@ -283,8 +284,9 @@ int anon_vma_fork(struct vm_area_struct 
- 	 * First, attach the new VMA to the parent VMA's anon_vmas,
- 	 * so rmap can find non-COWed pages in child processes.
- 	 */
--	if (anon_vma_clone(vma, pvma))
--		return -ENOMEM;
-+	error = anon_vma_clone(vma, pvma);
-+	if (error)
-+		return error;
- 
- 	/* Then add our own anon_vma. */
- 	anon_vma = anon_vma_alloc();
-
--- 
-Daniel K. Forrest		Space Science and
-dan.forrest@ssec.wisc.edu	Engineering Center
-(608) 890 - 0558		University of Wisconsin, Madison
+>  {
+>         return NULL;
+>  }
+> diff --git a/sound/soc/fsl/fsl_ssi.c b/sound/soc/fsl/fsl_ssi.c
+> index e695517..0056963 100644
+> --- a/sound/soc/fsl/fsl_ssi.c
+> +++ b/sound/soc/fsl/fsl_ssi.c
+> @@ -1427,7 +1427,7 @@ static int fsl_ssi_probe(struct platform_device *pdev)
+>          * device tree.  We also pass the address of the CPU DAI driver
+>          * structure.
+>          */
+> -       sprop = of_get_property(of_find_node_by_path("/"), "compatible", NULL);
+> +       sprop = of_get_property(of_find_node_by_path("/", NULL), "compatible", NULL);
+>         /* Sometimes the compatible name has a "fsl," prefix, so we strip it. */
+>         p = strrchr(sprop, ',');
+>         if (p)
+> --
+> 1.7.10.4
+>
