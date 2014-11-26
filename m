@@ -1,100 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069AbaKZDIH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 22:08:07 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:51841 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930AbaKZDIE (ORCPT
+	id S1752044AbaKZDMJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 22:12:09 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:37755 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005AbaKZDMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 22:08:04 -0500
+	Tue, 25 Nov 2014 22:12:06 -0500
+Message-ID: <547544FE.5020706@linux.vnet.ibm.com>
+Date: Tue, 25 Nov 2014 21:11:58 -0600
+From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <3490516.nCDXzA8J8x@wuerfel>
-References: <1416917818-10506-5-git-send-email-chunyan.zhang@spreadtrum.com>
-	<3490516.nCDXzA8J8x@wuerfel>
-Date: Wed, 26 Nov 2014 11:08:01 +0800
-Message-ID: <CAAfSe-uDk-ih2tqU9a3UEzr=BZgU_=+XJm9=zWbE3J4HMOuiog@mail.gmail.com>
-Subject: Re: [PATCH v3 4/5] arm64: Add support for Spreadtrum's Sharkl64
- Platform in Kconfig and defconfig
-From: Lyra Zhang <zhang.lyra@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>, grant.likely@linaro.org,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "jslaby@suse.cz" <jslaby@suse.cz>, Kumar Gala <galak@codeaurora.org>,
-        Mark Brown <broonie@linaro.org>, Mark Rutland <mark.rutland@arm.com>,
-        "m-karicheri2@ti.com" <m-karicheri2@ti.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        "rrichter@cavium.com" <rrichter@cavium.com>,
-        Will Deacon <will.deacon@arm.com>, gnomes@lxorguk.ukuu.org.uk,
-        corbet@lwn.net, jason@lakedaemon.net, Mark Brown <broonie@kernel.org>,
-        heiko@sntech.de, shawn.guo@freescale.com, florian.vaussard@epfl.ch,
-        andrew@lunn.ch, hytszk@gmail.com, Orson Zhai <orsonzhai@gmail.com>,
-        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
-        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
-        lanqing.liu@spreadtrum.com,
-        =?UTF-8?B?V2VpIFFpYW8gKOS5lOS8nyk=?= <wei.qiao@spreadtrum.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "sprdlinux@freelists.org" <sprdlinux@freelists.org>,
-        linux-doc@vger.kernel.org, linux-serial@vger.kernel.org,
-        linux-api@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Grant Likely <grant.likely@linaro.org>
+CC: devicetree@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Mark Brown <broonie@kernel.org>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2 07/14] of/reconfig: Always use the same structure for
+ notifiers
+References: <1416868422-22103-1-git-send-email-grant.likely@linaro.org> <1416868422-22103-8-git-send-email-grant.likely@linaro.org> <1416956874.5089.13.camel@kernel.crashing.org>
+In-Reply-To: <1416956874.5089.13.camel@kernel.crashing.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112603-0005-0000-0000-000006A2814C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-25 20:57 GMT+08:00 Arnd Bergmann <arnd@arndb.de>:
->
-> On Tuesday 25 November 2014 20:16:57 Chunyan Zhang wrote:
-> >
-> > +menuconfig ARCH_SPRD
-> > +       bool "Spreadtrum SoC platform"
-> > +       depends on ARM64
-> > +       help
-> > +         Support for Spreadtrum ARM based SoCs
-> > +
-> > +if ARCH_SPRD
-> > +
-> > +config ARCH_SHARKL64
-> > +       bool "Sharkl64 SoC Platform"
-> > +       help
-> > +         Sharkl64 is a Spreadtrum's SoC Platform which is based
-> > +         on ARM 64-bit processor core including
-> > +           sc9836
-> > +
-> > +endif #ARCH_SPRD
-> > +
->
-> I don't think we need multiple levels here, it should be enough to
-> have either ARCH_SPRD or ARCH_SHARKL64, because all device drivers
-> are going to be optional anyway. Typically a Kconfig symbol covers
-> all SoCs that are related, so if you Spreadtrum are doing both
-> phone and server chips and these are designed independently, you
-> would have two symbols, but if you only expect to see phone chips
-> here that are all derived from the same product line, using ARCH_SPRD
-> to refer to all of them should be enough.
->
->         Arnd
+On 11/25/2014 05:07 PM, Benjamin Herrenschmidt wrote:
+> On Mon, 2014-11-24 at 22:33 +0000, Grant Likely wrote:
+>> The OF_RECONFIG notifier callback uses a different structure depending
+>> on whether it is a node change or a property change. This is silly, and
+>> not very safe. Rework the code to use the same data structure regardless
+>> of the type of notifier.
+> 
+> I fell pretty good about this one except...
+> 
+>> diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
+>> index b9d1dfdbe5bb..9fe6002c1d5a 100644
+>> --- a/arch/powerpc/mm/numa.c
+>> +++ b/arch/powerpc/mm/numa.c
+>> @@ -1711,12 +1711,11 @@ static void stage_topology_update(int core_id)
+>>  static int dt_update_callback(struct notifier_block *nb,
+>>  				unsigned long action, void *data)
+>>  {
+>> -	struct of_prop_reconfig *update;
+>> +	struct of_reconfig_data *update = data;
+>>  	int rc = NOTIFY_DONE;
+>>  
+>>  	switch (action) {
+>>  	case OF_RECONFIG_UPDATE_PROPERTY:
+>> -		update = (struct of_prop_reconfig *)data;
+> 
+> Should we assert/bug on !update->dn / update->prop ?
+> 
+> (Same for the rest of the patch)
+> 
+> Or do you reckon it's pointless ?
+> 
 
+I'm not sure it's worth it, if those are NULL pointers the drivers/of
+code would have tried to use them before invoking the notifier chain.
+We won't make it this far if they're NULL.
 
-For now, we have only one platform(Sharkl64) based on ARM64 been
-submitted, but we're intending to add support for more our platforms
-based on ARM64 or ARM32 in the future. There are many common devices
-on these platforms, such as serial. Our idea would be that if we had a
-'menuconfig ARCH_SPRD' in the Kconfig, these common devices only need
-to depend on ARCH_SPRD in the respective Kconfig, otherwise they may
-depend on a few Kconfig symbols for every platforms which include
-these common devices.
+Otherwise the patch looks good to me,
 
-So, do you think whether we should define a menuconfig(ARCH_SPRD) in
-the Kconfig for this case ?
+Reviewed-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
 
-Thanks!
+-Nathan
 
-Best regards,
-Chunyan
