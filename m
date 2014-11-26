@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744AbaKZWFu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 17:05:50 -0500
-Received: from www.linutronix.de ([62.245.132.108]:53347 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793AbaKZWFt (ORCPT
+	id S1752848AbaKZWHc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 17:07:32 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:38745 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770AbaKZWHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 17:05:49 -0500
-Date: Wed, 26 Nov 2014 23:05:48 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [RFC][PATCH 0/9 v2] ftrace/x86: Clean up of mcount.S code
-In-Reply-To: <20141125115003.856641273@goodmis.org>
-Message-ID: <alpine.DEB.2.11.1411262304010.3961@nanos>
-References: <20141125115003.856641273@goodmis.org>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Wed, 26 Nov 2014 17:07:30 -0500
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH 1/3] video: fbdev: vt8623fb: suppress build warning
+Date: Wed, 26 Nov 2014 22:07:23 +0000
+Message-Id: <1417039645-5313-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Nov 2014, Steven Rostedt wrote:
-> Steven Rostedt (Red Hat) (9):
->       ftrace/x86: Have static tracing also use ftrace_caller_setup
->       ftrace/x86: Move MCOUNT_SAVE_FRAME out of header file
->       ftrace/x86: Rename MCOUNT_SAVE_FRAME and add more detailed comments
->       ftrace/x86: Have save_mcount_regs store RIP in %rdi for first parameter
->       ftrace/x86: Simplify save_mcount_regs on getting RIP
->       ftrace/x86: Add macro MCOUNT_REG_SIZE for amount of stack used to save mcount regs
->       ftrace/x86: Have save_mcount_regs macro also save stack frames if needed
->       ftrace/x86: Get rid of ftrace_caller_setup
->       ftrace/fgraph/x86: Have prepare_ftrace_return() take ip as first parameter
+this patch fixes following build warning:
+drivers/video/fbdev/vt8623fb.c: In function ‘vt8623_pci_probe’:
+drivers/video/fbdev/vt8623fb.c:734:23: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+  par->state.vgabase = (void __iomem *) vga_res.start;
+                       ^
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ drivers/video/fbdev/vt8623fb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I took the last remaining cells of my review damaged brain together to
-go through this with a fine comb. So far I could not find something,
-but I might have missed the obvious.
+diff --git a/drivers/video/fbdev/vt8623fb.c b/drivers/video/fbdev/vt8623fb.c
+index 5c7cbc6..ea7f056 100644
+--- a/drivers/video/fbdev/vt8623fb.c
++++ b/drivers/video/fbdev/vt8623fb.c
+@@ -731,7 +731,7 @@ static int vt8623_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 
+ 	pcibios_bus_to_resource(dev->bus, &vga_res, &bus_reg);
+ 
+-	par->state.vgabase = (void __iomem *) vga_res.start;
++	par->state.vgabase = (void __iomem *) (unsigned long) vga_res.start;
+ 
+ 	/* Find how many physical memory there is on card */
+ 	memsize1 = (vga_rseq(par->state.vgabase, 0x34) + 1) >> 1;
+-- 
+1.9.1
 
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
