@@ -1,185 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752919AbaKZVst (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 16:48:49 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:51051 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344AbaKZVsr (ORCPT
+	id S1753208AbaKZVsy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 16:48:54 -0500
+Received: from mail-oi0-f48.google.com ([209.85.218.48]:45510 "EHLO
+	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752934AbaKZVsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 16:48:47 -0500
-Date: Wed, 26 Nov 2014 16:48:45 -0500 (EST)
-Message-Id: <20141126.164845.1084296709868117001.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 26 Nov 2014 13:48:47 -0800 (PST)
+	Wed, 26 Nov 2014 16:48:50 -0500
+From: George McCollister <george.mccollister@gmail.com>
+Cc: George McCollister <george.mccollister@gmail.com>,
+        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Sebastian Reichel <sre@debian.org>, Harald Geyer <harald@ccbib.org>,
+        Reyad Attiyat <reyad.attiyat@gmail.com>,
+        Daniel Baluta <daniel.baluta@intel.com>,
+        linux-api@vger.kernel.org (open list:ABI/API),
+        linux-kernel@vger.kernel.org (open list),
+        linux-iio@vger.kernel.org (open list:IIO SUBSYSTEM AND...),
+        devel@driverdev.osuosl.org (open list:STAGING SUBSYSTEM)
+Subject: [PATCH 1/2] iio: Add support for waveform output
+Date: Wed, 26 Nov 2014 15:45:40 -0600
+Message-Id: <1417038344-3801-1-git-send-email-george.mccollister@gmail.com>
+X-Mailer: git-send-email 2.1.0
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Output can be held high or low for a specified period of time.
+Support for waveform capture could be added in the future.
 
-Several small fixes here:
+Signed-off-by: George McCollister <george.mccollister@gmail.com>
+---
+ Documentation/ABI/testing/sysfs-bus-iio               | 7 +++++++
+ drivers/iio/industrialio-core.c                       | 3 +++
+ drivers/staging/iio/Documentation/iio_event_monitor.c | 2 ++
+ include/linux/iio/types.h                             | 5 ++++-
+ 4 files changed, 16 insertions(+), 1 deletion(-)
 
-1) Don't crash in tg3 driver when the number of tx queues has
-   been configured to be different from the number of rx queues.
-   From Thadeu Lima de Souza Cascardo.
+diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
+index d760b02..47df169 100644
+--- a/Documentation/ABI/testing/sysfs-bus-iio
++++ b/Documentation/ABI/testing/sysfs-bus-iio
+@@ -1028,3 +1028,10 @@ Contact:	linux-iio@vger.kernel.org
+ Description:
+ 		Raw value of rotation from true/magnetic north measured with
+ 		or without compensation from tilt sensors.
++
++What:		/sys/bus/iio/devices/iio:deviceX/out_waveformY_hightime_raw
++What:		/sys/bus/iio/devices/iio:deviceX/out_waveformY_lowtime_raw
++KernelVersion:	3.18
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Raw value of time for output to be held high or low.
+diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+index af3e76d..343e784 100644
+--- a/drivers/iio/industrialio-core.c
++++ b/drivers/iio/industrialio-core.c
+@@ -70,6 +70,7 @@ static const char * const iio_chan_type_name_spec[] = {
+ 	[IIO_CCT] = "cct",
+ 	[IIO_PRESSURE] = "pressure",
+ 	[IIO_HUMIDITYRELATIVE] = "humidityrelative",
++	[IIO_WAVEFORM] = "waveform",
+ };
+ 
+ static const char * const iio_modifier_names[] = {
+@@ -91,6 +92,8 @@ static const char * const iio_modifier_names[] = {
+ 	[IIO_MOD_NORTH_TRUE] = "from_north_true",
+ 	[IIO_MOD_NORTH_MAGN_TILT_COMP] = "from_north_magnetic_tilt_comp",
+ 	[IIO_MOD_NORTH_TRUE_TILT_COMP] = "from_north_true_tilt_comp",
++	[IIO_MOD_HIGHTIME] = "hightime",
++	[IIO_MOD_LOWTIME] = "lowtime",
+ };
+ 
+ /* relies on pairs of these shared then separate */
+diff --git a/drivers/staging/iio/Documentation/iio_event_monitor.c b/drivers/staging/iio/Documentation/iio_event_monitor.c
+index 569d6f8..690f261 100644
+--- a/drivers/staging/iio/Documentation/iio_event_monitor.c
++++ b/drivers/staging/iio/Documentation/iio_event_monitor.c
+@@ -49,6 +49,7 @@ static const char * const iio_chan_type_name_spec[] = {
+ 	[IIO_CCT] = "cct",
+ 	[IIO_PRESSURE] = "pressure",
+ 	[IIO_HUMIDITYRELATIVE] = "humidityrelative",
++	[IIO_WAVEFORM] = "waveform",
+ };
+ 
+ static const char * const iio_ev_type_text[] = {
+@@ -108,6 +109,7 @@ static bool event_is_known(struct iio_event_data *event)
+ 	case IIO_CCT:
+ 	case IIO_PRESSURE:
+ 	case IIO_HUMIDITYRELATIVE:
++	case IIO_WAVEFORM:
+ 		break;
+ 	default:
+ 		return false;
+diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
+index 4a2af8a..d3b0af1 100644
+--- a/include/linux/iio/types.h
++++ b/include/linux/iio/types.h
+@@ -30,6 +30,7 @@ enum iio_chan_type {
+ 	IIO_CCT,
+ 	IIO_PRESSURE,
+ 	IIO_HUMIDITYRELATIVE,
++	IIO_WAVEFORM,
+ };
+ 
+ enum iio_modifier {
+@@ -59,7 +60,9 @@ enum iio_modifier {
+ 	IIO_MOD_NORTH_MAGN,
+ 	IIO_MOD_NORTH_TRUE,
+ 	IIO_MOD_NORTH_MAGN_TILT_COMP,
+-	IIO_MOD_NORTH_TRUE_TILT_COMP
++	IIO_MOD_NORTH_TRUE_TILT_COMP,
++	IIO_MOD_HIGHTIME,
++	IIO_MOD_LOWTIME,
+ };
+ 
+ enum iio_event_type {
+-- 
+2.1.0
 
-2) VLAN filter not disabled properly in promisc mode in ixgbe
-   driver, from Vlad Yasevich.
-
-3) Fix OOPS on dellink op in VTI tunnel driver, from Xin Long.
-
-4) IPV6 GRE driver WCCP code checks skb->protocol for ETH_P_IP
-   instead of ETH_P_IPV6, whoops.  From Yuri Chislov.
-
-5) Socket matching in ping driver is buggy when packet AF does
-   not match socket's AF.  Fix from Jane Zhou.
-
-6) Fix checksum calculation errors in VXLAN due to where
-   the udp_tunnel6_xmit_skb() helper gets it's saddr/daddr from.
-   From Alexander Duyck.
-
-7) Fix 5G detection problem in rtlwifi driver, from Larry Finger.
-
-8) Fix NULL deref in tcp_v{4,6}_send_reset, from Eric Dumazet.
-
-9) Various missing netlink attribute verifications in bridging
-   code, from Thomas Graf.
-
-10) tcp_recvmsg() unconditionally calls ipv4 ip_recv_error
-    even for ipv6 sockets, whoops.  Fix from Willem de Bruijn.
-
-Please pull, thanks a lot!
-
-The following changes since commit 8a84e01e147f44111988f9d8ccd2eaa30215a0f2:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2014-11-21 17:20:36 -0800)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-for you to fetch changes up to d1c637c51d87e021c12ed66baddf6cfbd11a3e2b:
-
-  Merge tag 'master-2014-11-25' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless (2014-11-26 16:38:35 -0500)
-
-----------------------------------------------------------------
-
-Alexander Duyck (3):
-      ipv6: Do not treat a GSO_TCPV4 request from UDP tunnel over IPv6 as invalid
-      ip6_udp_tunnel: Fix checksum calculation
-      vxlan: Fix boolean flip in VXLAN_F_UDP_ZERO_CSUM6_[TX|RX]
-
-Alexey Khoroshilov (1):
-      xen-netback: do not report success if backend_create_xenvif() fails
-
-Andrew Lutomirski (1):
-      net-timestamp: Fix a documentation typo
-
-Carolyn Wyborny (1):
-      igb: Fixes needed for surprise removal support
-
-Daniel Borkmann (1):
-      ixgbe: fix use after free adapter->state test in ixgbe_remove/ixgbe_probe
-
-David S. Miller (4):
-      Merge branch 'ipv6_vxlan_outer_udp_csum'
-      Merge branch 'bcm_sf2'
-      Merge branch 'bridge_nl_validation'
-      Merge tag 'master-2014-11-25' of git://git.kernel.org/.../linville/wireless
-
-Eric Dumazet (1):
-      tcp: fix possible NULL dereference in tcp_vX_send_reset()
-
-Florian Fainelli (2):
-      net: dsa: bcm_sf2: fix unmapping registers in case of errors
-      net: dsa: bcm_sf2: reset switch prior to initialization
-
-Huacai Chen (1):
-      stmmac: platform: fix default values of the filter bins setting
-
-Jack Morgenstein (1):
-      net/mlx4_core: Limit count field to 24 bits in qp_alloc_res
-
-Jane Zhou (1):
-      net/ping: handle protocol mismatching scenario
-
-John W. Linville (1):
-      Merge tag 'iwlwifi-for-john-2014-11-23' of git://git.kernel.org/.../iwlwifi/iwlwifi-fixes
-
-Julia Lawall (1):
-      solos-pci: fix error return code
-
-Larry Finger (2):
-      rtlwifi: rtl8821ae: Fix 5G detection problem
-      rtlwifi: Change order in device startup
-
-Luciano Coelho (1):
-      iwlwifi: mvm: check TLV flag before trying to use hotspot firmware commands
-
-Michael S. Tsirkin (1):
-      af_packet: fix sparse warning
-
-Pablo Neira (1):
-      Revert "netfilter: conntrack: fix race in __nf_conntrack_confirm against get_next_corpse"
-
-Thadeu Lima de Souza Cascardo (1):
-      tg3: fix ring init when there are more TX than RX channels
-
-Thomas Graf (5):
-      bridge: Validate IFLA_BRIDGE_FLAGS attribute length
-      net: Validate IFLA_BRIDGE_MODE attribute length
-      net: Check for presence of IFLA_AF_SPEC
-      bridge: Add missing policy entry for IFLA_BRPORT_FAST_LEAVE
-      bridge: Sanitize IFLA_EXT_MASK for AF_BRIDGE:RTM_GETLINK
-
-Vlad Yasevich (1):
-      ixgbe: Correctly disable VLAN filter in promiscuous mode
-
-Willem de Bruijn (1):
-      net-timestamp: make tcp_recvmsg call ipv6_recv_error for AF_INET6 socks
-
-Yuri Chislov (1):
-      ipv6: gre: fix wrong skb->protocol in WCCP
-
-lucien (1):
-      ip_tunnel: the lack of vti_link_ops' dellink() cause kernel panic
-
- Documentation/networking/timestamping.txt             |  2 +-
- drivers/atm/solos-pci.c                               |  2 ++
- drivers/net/dsa/bcm_sf2.c                             | 58 +++++++++++++++++++++++++++++----------------------
- drivers/net/ethernet/broadcom/tg3.c                   |  3 ++-
- drivers/net/ethernet/emulex/benet/be_main.c           |  5 +++++
- drivers/net/ethernet/intel/igb/igb_main.c             | 23 +++++++++++++-------
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c         | 17 +++++++++++----
- drivers/net/ethernet/mellanox/mlx4/resource_tracker.c |  2 +-
- drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c | 13 ++++++------
- drivers/net/vxlan.c                                   |  4 ++--
- drivers/net/wireless/iwlwifi/iwl-fw.h                 |  2 ++
- drivers/net/wireless/iwlwifi/mvm/mac80211.c           | 12 ++++++++---
- drivers/net/wireless/rtlwifi/pci.c                    | 20 +++++++++---------
- drivers/net/wireless/rtlwifi/rtl8821ae/hw.c           |  5 +++--
- drivers/net/xen-netback/xenbus.c                      | 15 +++++++------
- include/net/inet_common.h                             |  2 ++
- net/bridge/br_netlink.c                               |  1 +
- net/core/rtnetlink.c                                  | 23 +++++++++++++++-----
- net/ipv4/af_inet.c                                    | 11 ++++++++++
- net/ipv4/ip_vti.c                                     |  1 +
- net/ipv4/ping.c                                       | 14 ++++---------
- net/ipv4/tcp.c                                        |  2 +-
- net/ipv4/tcp_ipv4.c                                   |  5 ++++-
- net/ipv6/ip6_gre.c                                    |  4 ++--
- net/ipv6/ip6_offload.c                                |  3 ++-
- net/ipv6/ip6_udp_tunnel.c                             |  4 +---
- net/ipv6/ip6_vti.c                                    | 11 ++++++++++
- net/ipv6/tcp_ipv6.c                                   |  5 ++++-
- net/netfilter/nf_conntrack_core.c                     | 14 ++++++-------
- net/packet/af_packet.c                                |  2 +-
- 30 files changed, 184 insertions(+), 101 deletions(-)
