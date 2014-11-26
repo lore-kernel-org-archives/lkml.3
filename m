@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751290AbaKZTmC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 14:42:02 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:43820 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028AbaKZTl7 (ORCPT
+	id S1751897AbaKZTpl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 14:45:41 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39754 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793AbaKZTpj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 14:41:59 -0500
+	Wed, 26 Nov 2014 14:45:39 -0500
+Date: Wed, 26 Nov 2014 19:43:25 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Chris Zhong <zyw@rock-chips.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Message-ID: <20141126194325.GV7712@sirena.org.uk>
+References: <1415707485-28563-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1415707485-28563-2-git-send-email-javier.martinez@collabora.co.uk>
 MIME-Version: 1.0
-In-Reply-To: <547488EB.2040507@ti.com>
-References: <1416874644-12070-1-git-send-email-abrestic@chromium.org>
-	<1416874644-12070-8-git-send-email-abrestic@chromium.org>
-	<547488EB.2040507@ti.com>
-Date: Wed, 26 Nov 2014 11:41:58 -0800
-X-Google-Sender-Auth: lRoFRNfCdhEMTpZk9q2BFnTC4CQ
-Message-ID: <CAL1qeaHZCh1AomPTQGKN-ytx7EyW8Gncb64S1ikGk0eB16maRA@mail.gmail.com>
-Subject: Re: [PATCH V6 07/12] pinctrl: tegra-xusb: Add USB PHY support
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Felipe Balbi <balbi@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LvG3mvTpA2cBjRlj"
+Content-Disposition: inline
+In-Reply-To: <1415707485-28563-2-git-send-email-javier.martinez@collabora.co.uk>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/3] regulator: max77802: Document binding for regulator
+ operating modes
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 5:49 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
-> Hi,
->
-> On Tuesday 25 November 2014 05:47 AM, Andrew Bresticker wrote:
->> In addition to the PCIe and SATA PHYs, the XUSB pad controller also
->> supports 3 UTMI, 2 HSIC, and 2 USB3 PHYs.  Each USB3 PHY uses a single
->> PCIe or SATA lane and is mapped to one of the three UTMI ports.
->>
->> The xHCI controller will also send messages intended for the PHY driver,
->> so request and listen for messages on the mailbox's PHY channel.
->>
->> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
->> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->> Reviewed-by: Stephen Warren <swarren@nvidia.com>
->> ---
->> No changes from v5.
->> Changes from v4:
->>  - Disabled USB support on missing mailbox channel instead of failing
->>    to probe.
->>  - Made usb3-port a pinconfig property.
->>  - Addressed review comments from Thierry.
->> No changes from v3.
->> Changes from v2:
->>  - Added support for nvidia,otg-hs-curr-level-offset property.
->>  - Moved mailbox request handling to workqueue.
->>  - Added filtering out of non-PHY mailbox messages.
->>  - Dropped "-otg" from VBUS supplies.
->> Changes from v1:
->>  - Updated to use common mailbox API.
->>  - Added SATA PHY enable sequence for USB3 ports using the SATA lane.
->>  - Made USB3 port-to-lane mappins a top-level binding rather than a pinconfig
->>    binding.
->> ---
->>  drivers/pinctrl/Kconfig              |    1 +
->>  drivers/pinctrl/pinctrl-tegra-xusb.c | 1262 +++++++++++++++++++++++++++++++++-
->>  include/soc/tegra/xusb.h             |    7 +
->>  3 files changed, 1254 insertions(+), 16 deletions(-)
->
-> The devm_phy_create() API has changed (see linux-phy next) and the patch that
-> modified the existing devm_phy_create() in pinctrl-tegra-xusb.c has also been
-> merged in linux-phy tree.
 
-Ok, I'll rebase on top of that.
+--LvG3mvTpA2cBjRlj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Tue, Nov 11, 2014 at 01:04:43PM +0100, Javier Martinez Canillas wrote:
+> Some regulators from the max77802 PMIC support to be configured in one
+> of two operating mode: Output ON (normal) and Output On Low Power Mode.
+
+Applied, thanks.
+
+--LvG3mvTpA2cBjRlj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUdi1cAAoJECTWi3JdVIfQk74H/RuwhvDQuQSYjAciH7PhsDb6
+fejs4N/80NdNeJtyOXLE2B8jDVxySeo9nu6iqWQjlWvqzWpzQkNVetnb+ZRQ2JA3
+sqrcV+lG0a9MvJSXowYSgqZW+J0t5nC2f9r0+JD13bIqMLtYoTLoR4e2y55i/AxZ
+TML5R7eub/bCG/DCOAmgv4qG42zcNT/RXBOu+ujmclvP1xwGHhUgTOHXCpUpPM4X
+cJsBVWHqrrty95ga211FYOLNHVVDK3amW41/8Qg67M8nJq+fwp5z3JtbgI7HEW39
+Jx7DDMTG73vwsamVuiVDPZjTrhINqJgWm+MtRERueLia8Qp15w/jkTPqihgLOwg=
+=2eWC
+-----END PGP SIGNATURE-----
+
+--LvG3mvTpA2cBjRlj--
