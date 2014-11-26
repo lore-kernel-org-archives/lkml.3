@@ -1,166 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447AbaKZSAy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 13:00:54 -0500
-Received: from static.88-198-71-155.clients.your-server.de ([88.198.71.155]:58173
-	"EHLO socrates.bennee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926AbaKZSAw (ORCPT
+	id S1753164AbaKZSCx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 13:02:53 -0500
+Received: from smtprelay0092.hostedemail.com ([216.40.44.92]:47023 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750828AbaKZSCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 13:00:52 -0500
-References: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org> <1416931805-23223-6-git-send-email-alex.bennee@linaro.org> <20141126164057.GE3245@hawk.usersys.redhat.com>
-From: Alex =?utf-8?Q?Benn=C3=A9e?= <alex.bennee@linaro.org>
-To: Andrew Jones <drjones@redhat.com>
-Cc: kvm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kvmarm@lists.cs.columbia.edu, christoffer.dall@linaro.org,
-        marc.zyngier@arm.com, peter.maydell@linaro.org, agraf@suse.de,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, Gleb Natapov <gleb@kernel.org>,
-        jan.kiszka@siemens.com, Will Deacon <will.deacon@arm.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list\:ABI\/API" <linux-api@vger.kernel.org>,
-        dahi@linux.vnet.ibm.com, Catalin Marinas <catalin.marinas@arm.com>,
-        r65777@freescale.com, pbonzini@redhat.com, bp@suse.de
-Subject: Re: [PATCH 5/7] KVM: arm64: guest debug, add support for single-step
-In-reply-to: <20141126164057.GE3245@hawk.usersys.redhat.com>
-Date: Wed, 26 Nov 2014 18:00:45 +0000
-Message-ID: <87lhmxlu42.fsf@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 127.0.0.1
-X-SA-Exim-Mail-From: alex.bennee@linaro.org
-X-SA-Exim-Scanned: No (on socrates.bennee.com); SAEximRunCond expanded to false
+	Wed, 26 Nov 2014 13:02:51 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3866:3867:3870:3871:3872:4321:5007:6119:6261:6742:7974:8603:10004:10400:10848:11026:11232:11658:11914:12517:12519:12555:12740:13069:13161:13229:13311:13357:13972:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: way33_8cc430988cc4c
+X-Filterd-Recvd-Size: 2760
+Message-ID: <1417024965.19695.7.camel@perches.com>
+Subject: Re: [PATCH] x86: bpf_jit_comp: simplify trivial boolean return
+From: Joe Perches <joe@perches.com>
+To: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+Cc: Quentin Lambert <lambert.quentin@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 26 Nov 2014 10:02:45 -0800
+In-Reply-To: <CAADnVQKtYkKtsd9rUFm2yfMoh7F_SRFPVP8hpvSY00KpmB-NNg@mail.gmail.com>
+References: <CAADnVQKtYkKtsd9rUFm2yfMoh7F_SRFPVP8hpvSY00KpmB-NNg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2014-11-26 at 09:23 -0800, Alexei Starovoitov wrote:
+> On Wed, Nov 26, 2014 at 8:58 AM, Joe Perches <joe@perches.com> wrote:
 
-Andrew Jones <drjones@redhat.com> writes:
+> > Is there any value in reordering these tests for frequency
+> > or maybe using | instead of || to avoid multiple jumps?
+> 
+> probably not. It's not a critical path.
+> compiler may fuse conditions depending on values anyway.
+> If it was a critical path, we could have used
+> (1 << reg) & mask trick.
+> I picked explicit 'return true' else 'return false' here,
+> because it felt easier to read. Just a matter of taste.
 
-> On Tue, Nov 25, 2014 at 04:10:03PM +0000, Alex Bennée wrote:
->> This adds support for single-stepping the guest. As userspace can and
->> will manipulate guest registers before restarting any tweaking of the
->> registers has to occur just before control is passed back to the guest.
->> Furthermore while guest debugging is in effect we need to squash the
->> ability of the guest to single-step itself as we have no easy way of
->> re-entering the guest after the exception has been delivered to the
->> hypervisor.
->> 
->> Signed-off-by: Alex Bennée <alex.bennee@linaro.org>
->> 
->> diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
->> index 48d26bb..a76daae 100644
->> --- a/arch/arm/kvm/arm.c
->> +++ b/arch/arm/kvm/arm.c
->> @@ -38,6 +38,7 @@
->>  #include <asm/tlbflush.h>
->>  #include <asm/cacheflush.h>
->>  #include <asm/virt.h>
->> +#include <asm/debug-monitors.h>
->>  #include <asm/kvm_arm.h>
->>  #include <asm/kvm_asm.h>
->>  #include <asm/kvm_mmu.h>
->> @@ -300,6 +301,17 @@ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
->>  	kvm_arm_set_running_vcpu(NULL);
->>  }
->>  
->> +/**
->> + * kvm_arch_vcpu_ioctl_set_guest_debug - Setup guest debugging
->> + * @kvm:	pointer to the KVM struct
->> + * @kvm_guest_debug: the ioctl data buffer
->> + *
->> + * This sets up the VM for guest debugging. Care has to be taken when
->> + * manipulating guest registers as these will be set/cleared by the
->> + * hyper-visor controller, typically before each kvm_run event. As a
->> + * result modification of the guest registers needs to take place
->> + * after they have been restored in the hyp.S trampoline code.
->> + */
->>  int kvm_arch_vcpu_ioctl_set_guest_debug(struct kvm_vcpu *vcpu,
->>  					struct kvm_guest_debug *dbg)
->>  {
->> @@ -317,8 +329,8 @@ int kvm_arch_vcpu_ioctl_set_guest_debug(struct kvm_vcpu *vcpu,
->>  
->>  	/* Single Step */
->>  	if (vcpu->guest_debug & KVM_GUESTDBG_SINGLESTEP) {
->> -		kvm_info("SS requested, not yet implemented\n");
->> -		return -EINVAL;
->> +		kvm_info("SS requested\n");
->> +		route_el2 = true;
->>  	}
->>  
->>  	/* Software Break Points */
->> diff --git a/arch/arm64/kernel/asm-offsets.c b/arch/arm64/kernel/asm-offsets.c
->> index 8da1043..78e5ae1 100644
->> --- a/arch/arm64/kernel/asm-offsets.c
->> +++ b/arch/arm64/kernel/asm-offsets.c
->> @@ -121,6 +121,7 @@ int main(void)
->>    DEFINE(VCPU_FAR_EL2,		offsetof(struct kvm_vcpu, arch.fault.far_el2));
->>    DEFINE(VCPU_HPFAR_EL2,	offsetof(struct kvm_vcpu, arch.fault.hpfar_el2));
->>    DEFINE(VCPU_DEBUG_FLAGS,	offsetof(struct kvm_vcpu, arch.debug_flags));
->> +  DEFINE(GUEST_DEBUG,		offsetof(struct kvm_vcpu, guest_debug));
->>    DEFINE(VCPU_HCR_EL2,		offsetof(struct kvm_vcpu, arch.hcr_el2));
->>    DEFINE(VCPU_MDCR_EL2,	offsetof(struct kvm_vcpu, arch.mdcr_el2));
->>    DEFINE(VCPU_IRQ_LINES,	offsetof(struct kvm_vcpu, arch.irq_lines));
->> diff --git a/arch/arm64/kvm/handle_exit.c b/arch/arm64/kvm/handle_exit.c
->> index 28dc92b..6def054 100644
->> --- a/arch/arm64/kvm/handle_exit.c
->> +++ b/arch/arm64/kvm/handle_exit.c
->> @@ -91,6 +91,25 @@ static int kvm_handle_bkpt(struct kvm_vcpu *vcpu, struct kvm_run *run)
->>  	return 0;
->>  }
->>  
->> +/**
->> + * kvm_handle_ss - handle single step exceptions
->> + *
->> + * @vcpu:	the vcpu pointer
->
-> same @run comment as other handler header in previous patch
+There is a size difference though: (allyesconfig)
 
-Yeah I think I'll be merging them all together given the comments about
-passing syndrome info directly.
+$ size arch/x86/net/built-in.o*
+   text	   data	    bss	    dec	    hex	filename
+  12999	   1012	   4336	  18347	   47ab	arch/x86/net/built-in.o.new
+  13177	   1076	   4592	  18845	   499d	arch/x86/net/built-in.o.old
+---
+diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
+index 3f62734..09e2cea 100644
+--- a/arch/x86/net/bpf_jit_comp.c
++++ b/arch/x86/net/bpf_jit_comp.c
+@@ -135,11 +135,11 @@ static const int reg2hex[] = {
+  */
+ static inline bool is_ereg(u32 reg)
+ {
+-	if (reg == BPF_REG_5 || reg == AUX_REG ||
+-	    (reg >= BPF_REG_7 && reg <= BPF_REG_9))
+-		return true;
+-	else
+-		return false;
++	return (1 << reg) & (BIT(BPF_REG_5) |
++			     BIT(AUX_REG) |
++			     BIT(BPF_REG_7) |
++			     BIT(BPF_REG_8) |
++			     BIT(BPF_REG_9));
+ }
+ 
+ /* add modifiers if 'reg' maps to x64 registers r8..r15 */
 
->> + *
->> + * See: ARM ARM D2.12 for the details. While the host is routing debug
->> + * exceptions to it's handlers we have to suppress the ability of the
->> + * guest to trigger exceptions.
->> + */
->> +static int kvm_handle_ss(struct kvm_vcpu *vcpu, struct kvm_run *run)
->> +{
->> +	WARN_ON(!(vcpu->guest_debug & KVM_GUESTDBG_SINGLESTEP));
->
-> I'm not sure about this WARN_ON. Is there some scenario you were
-> thinking of when you put it here? Is there some scenario where this
-> could trigger so frequently we kill the log buffer?
 
-The main one I had in mind was not suppressing the guest's attempt to
-step while guest debugging was running.
-
-<snip>
->>  
->> -/* for KVM_SET_GUEST_DEBUG */
->> -
->> -#define KVM_GUESTDBG_ENABLE		0x00000001
->> -#define KVM_GUESTDBG_SINGLESTEP		0x00000002
->> -
->>  struct kvm_guest_debug {
->>  	__u32 control;
->>  	__u32 pad;
->> @@ -1189,4 +1186,15 @@ struct kvm_assigned_msix_entry {
->>  	__u16 padding[3];
->>  };
->>  
->> +#endif /* __ASSEMBLY__ */
->> +
->> +/* for KVM_SET_GUEST_DEBUG */
->> +
->> +#define KVM_GUESTDBG_ENABLE_SHIFT	0
->> +#define KVM_GUESTDBG_ENABLE		(1 << KVM_GUESTDBG_ENABLE_SHIFT)
->> +#define KVM_GUESTDBG_SINGLESTEP_SHIFT	1
->> +#define KVM_GUESTDBG_SINGLESTEP	(1 << KVM_GUESTDBG_SINGLESTEP_SHIFT)
->
-> EALIGN: we can tab these defines up better
-
-Sure, I'll clean those up.
-
--- 
-Alex Bennée
