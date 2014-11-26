@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751743AbaKZT5p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 14:57:45 -0500
-Received: from relay1.mentorg.com ([192.94.38.131]:56977 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaKZT5o (ORCPT
+	id S1752132AbaKZT7a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 14:59:30 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:58432 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804AbaKZT73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 14:57:44 -0500
-Message-ID: <547630AD.1010108@mentor.com>
-Date: Wed, 26 Nov 2014 21:57:33 +0200
-From: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Wed, 26 Nov 2014 14:59:29 -0500
+Date: Wed, 26 Nov 2014 11:59:24 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Dudley Du <dudl@cypress.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [BUG] [PATCH] next: cyapa: fix inop touchpad after resume on
+ Acer C720
+Message-ID: <20141126195924.GA27014@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Dudley Du <dudl@cypress.com>, linux-kernel@vger.kernel.org
+References: <20141124085059.GA15770@hudson.localdomain>
+ <20141125100703.GA9287@hudson.localdomain>
+ <fea6267ce871452683eb1a5dee1a9476@BN1PR06MB070.namprd06.prod.outlook.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Liam Girdwood <lgirdwood@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: Question about fixed regulator DT properties
-References: <546B5EF9.3080102@mentor.com> <546CAB49.8030103@mentor.com> <20141125121749.GV7712@sirena.org.uk> <54760D6A.9080306@mentor.com> <20141126175304.GM7712@sirena.org.uk> <5476266E.9040901@mentor.com> <20141126192021.GU7712@sirena.org.uk>
-In-Reply-To: <20141126192021.GU7712@sirena.org.uk>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [137.202.0.76]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <fea6267ce871452683eb1a5dee1a9476@BN1PR06MB070.namprd06.prod.outlook.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.11.2014 21:20, Mark Brown wrote:
-> On Wed, Nov 26, 2014 at 09:13:50PM +0200, Vladimir Zapolskiy wrote:
+Dudley,
+
+On Wed, Nov 26, 2014 at 06:01:05AM +0000, Dudley Du wrote:
+> Hi Jermiah,
+      ^^^
+	 Jeremiah,
 > 
->> If I want to enable a fixed regulator (not controlled by
->> bootloader/firmware) by Linux on boot or when fixed.ko module is bound,
->> shall I specify the same "regulator-boot-on" property? At least this is
->> the practical way to enable a fixed and/or gpio regulator right now, but
->> is it correct?
+> Does your code merged from chromiumos gerrit?
+> If so, the patch you used seems very old, because the log shown the cyapa driver module name still be "cyapa", and it has already been changed to "cyapatp" for log time.
+> Currently, I have already removed all old pathces from the gerrit system, now only v11 pathces existing in gerrit system.
+> Could you please try to refetch again,
+> or
+> could you try the v11 patches that from http://patchwork.kernel.org/bundle/dudlx/input_cyapa_v11/
+> or
+
+I am not pulling from your gerrit system.  I am pulling from linux-next.
+
+  http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git
+
+Yes, my bug is for an older patch, however this patch is still in
+linux-next as of the latest 20140326.
+
+  commit b1cfa7b4388285c0f0b486f152ab0cb18612c779
+
+  http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=b1cfa7b4388285c0f0b486f152ab0cb18612c779
+
+I replied to your latest patch set because it was working on the same
+part of the code and I thought it might be related.  Perhaps your new
+code fixes all the problems, I'm not sure.
+
+> The attached zip file contians the v11 patches for chromiumos projects, same as currently existing in gerrit system.
+> Besides the first and the latest patches which are specifical for chromionos, the reset pathces are exactly same as the cyapa v11 pathces that submitted to this kernel commuinty.
 > 
-> It depends what you're trying to accomplish by doing this.
-
-If "regulator-boot-on" is specified and the regulator is enabled by
-bootloader/firmware, then the kernel re-enables it.
-
-If "regulator-boot-on" is specified and the regulator is untouched by
-bootloader/firmware, then the kernel simply enables it.
-
-As far as I understand the latter side-effect is exploited on quite many
-ARM boards, when there is no defined regulator consumer, but I agree
-that it looks hackish. My assumption is that probably fixed regulator
-logic around "regulator-boot-on" property should be changed, so that the
-kernel will not attempt to physically re-enable/enable the
-"regulator-boot-on" regulator at all, then misusage of the property
-should gone forced by necessity of finding a proper regulator consumer.
-
->> Or should the regulator always be enabled externally (assuming
->> "regulator-always-on" is omitted) after registration independently on
->> "regulator-boot-on" property?
+> Thanks,
+> Dudley
 > 
-> Best practice is that there should be a consumer which keeps the
-> regulator enabled whenever it is required.  There should normally be
-> little use for boot-on, it's mostly there to ease handover from the
-> bootloader in cases where we can't read the hardware state - if you're
-> not sure if you should use it the chances are you shouldn't.
-> 
+> > -----Original Message-----
+> > From: Jeremiah Mahler [mailto:jmmahler@gmail.com]
+> > Sent: 2014?11?25? 18:07
+> > To: Dudley Du
+> > Cc: linux-kernel@vger.kernel.org
+> > Subject: [BUG] [PATCH] next: cyapa: fix inop touchpad after resume on Acer C720
+> >
+> > On an Acer C720 running linux-next (20141124) the touchpad will become
+> > inoperative after a resume.  Reloading the cyapa driver restores normal
+> > +enable_irq(client->irq);
+[]
 
-Right, thank you for explanation.
-
---
-With best wishes,
-Vladimir
+-- 
+- Jeremiah Mahler
