@@ -1,84 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751559AbaKZAWU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Nov 2014 19:22:20 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:52639 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869AbaKZAWS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Nov 2014 19:22:18 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH] i2c: core: Fix probing of i2c slaves without interrupts
-Date: Wed, 26 Nov 2014 02:22:42 +0200
-Message-ID: <1869027.VfW5YtiRHN@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1416224580-4782-1-git-send-email-geert+renesas@glider.be>
-References: <1416224580-4782-1-git-send-email-geert+renesas@glider.be>
+	id S1751862AbaKZAZN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Nov 2014 19:25:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37631 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751486AbaKZAZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Nov 2014 19:25:11 -0500
+Date: Tue, 25 Nov 2014 19:25:01 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141126002501.GA11752@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	the arch/x86 maintainers <x86@kernel.org>
+References: <20141114213124.GB3344@redhat.com>
+ <CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
+ <20141115213405.GA31971@redhat.com>
+ <20141116014006.GA5016@redhat.com>
+ <CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+On Sat, Nov 15, 2014 at 10:33:19PM -0800, Linus Torvalds wrote:
 
-On Monday 17 November 2014 12:43:00 Geert Uytterhoeven wrote:
-> Since commit 2fd36c55264926e2 ("i2c: core: Map OF IRQ at probe time"),
-> i2c slaves without interrupts (e.g. da9210 and at24 on r8a7791/koelsch)
-> fail to probe:
-> 
->     at24: probe of 2-0050 failed with error -22
-> 
->     da9210: probe of 6-0068 failed with error -22
-> 
-> This happens because the call to of_irq_get() in i2c_device_probe()
-> returns -EINVAL.
-> 
-> If a device node does not have an "interrupts" property,
-> of_irq_parse_one() fails. Unlike irq_of_parse_and_map(), of_irq_get()
-> does not ignore errors from of_irq_parse_one(), but forwards them.
-> 
-> Make i2c_device_probe() ignore all errors but -EPROBE_DEFER to fix this,
-> just like platform_get_irq() and platform_get_irq_byname() already do.
+ > I have no ideas left. I'd go for a bisection - rather than try random
+ > things, at least bisection will get us a smaller set of suspects if
+ > you can go through a few cycles of it. Even if you decide that you
+ > want to run for most of a day before you are convinced it's all good,
+ > a couple of days should get you a handful of bisection points (that's
+ > assuming you hit a couple of bad ones too that turn bad in a shorter
+ > while). And 4 or five bisections should get us from 11k commits down
+ > to the ~600 commit range. That would be a huge improvement.
 
-Thank you for fixing my mistake.
+There's 8 bisections remaining. The log so far:
 
-> Fixes: 2fd36c55264926e2 ("i2c: core: Map OF IRQ at probe time")
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+git bisect start
+# good: [bfe01a5ba2490f299e1d2d5508cbbbadd897bbe9] Linux 3.17
+git bisect good bfe01a5ba2490f299e1d2d5508cbbbadd897bbe9
+# bad: [f114040e3ea6e07372334ade75d1ee0775c355e1] Linux 3.18-rc1
+git bisect bad f114040e3ea6e07372334ade75d1ee0775c355e1
+# bad: [f114040e3ea6e07372334ade75d1ee0775c355e1] Linux 3.18-rc1
+git bisect bad f114040e3ea6e07372334ade75d1ee0775c355e1
+# bad: [35a9ad8af0bb0fa3525e6d0d20e32551d226f38e] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next
+git bisect bad 35a9ad8af0bb0fa3525e6d0d20e32551d226f38e
+# bad: [35a9ad8af0bb0fa3525e6d0d20e32551d226f38e] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next
+git bisect bad 35a9ad8af0bb0fa3525e6d0d20e32551d226f38e
+# bad: [683a52a10148e929fb4844f9237f059a47c0b01b] Merge tag 'tty-3.18-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty
+git bisect bad 683a52a10148e929fb4844f9237f059a47c0b01b
+# bad: [683a52a10148e929fb4844f9237f059a47c0b01b] Merge tag 'tty-3.18-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty
+git bisect bad 683a52a10148e929fb4844f9237f059a47c0b01b
+# bad: [76272ab3f348d303eb31a5a061601ca8e0f9c5ce] staging: rtl8821ae: remove driver
+git bisect bad 76272ab3f348d303eb31a5a061601ca8e0f9c5ce
+# bad: [e988e1f3f975a9d6013c6356c5b9369540c091f9] staging: comedi: ni_at_a2150: range check board index
+git bisect bad e988e1f3f975a9d6013c6356c5b9369540c091f9
+# bad: [bd8107b2b2dc9fb1113bfe1a9cf2533ee19c57ee] Staging: bcm: Bcmchar.c: Renamed variable: "RxCntrlMsgBitMask" -> "rx_cntrl_msg_bit_mask"
+git bisect bad bd8107b2b2dc9fb1113bfe1a9cf2533ee19c57ee
+# bad: [91ed283ab563727932d6cf92b74dd15226635870] staging: rtl8188eu: Remove unused function rtw_IOL_append_WD_cmd()
+git bisect bad 91ed283ab563727932d6cf92b74dd15226635870
 
-Just for the record, even if it's too late,
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+The reason I'm checking in at this point, is that I'm starting to see different
+bugs at this point, so I don't know if I can call this good or bad, unless
+someone has a fix for what I'm seeing now.
 
-> ---
->  drivers/i2c/i2c-core.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index a0768d6dffc28aae..cf830915713b387a 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -629,8 +629,10 @@ static int i2c_device_probe(struct device *dev)
->  	if (!client->irq && dev->of_node) {
->  		int irq = of_irq_get(dev->of_node, 0);
-> 
-> -		if (irq < 0)
-> +		if (irq == -EPROBE_DEFER)
->  			return irq;
-> +		if (irq < 0)
-> +			irq = 0;
-> 
->  		client->irq = irq;
->  	}
+Reminiscent of a bug a couple releases ago. Processes about to exit, but stuck
+in the kernel continuously faulting..
+http://codemonkey.org.uk/junk/weird-hang.txt
+The one I'm thinking of got fixed way before 3.17 though.
 
--- 
-Regards,
+Does that trace ring a bell of something else I could try on top of
+each bisection point ?
 
-Laurent Pinchart
+I rebooted and restarted my test at the current bisection point,
+hopefully it'll show up as 'bad' before the bug above happens again.
+
+	Dave
 
