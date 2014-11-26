@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaKZOmL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 09:42:11 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:35944 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751597AbaKZOmJ (ORCPT
+	id S1753209AbaKZOnK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 09:43:10 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:29923 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750991AbaKZOnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 09:42:09 -0500
-Date: Wed, 26 Nov 2014 14:41:53 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Jason Cooper <jason@lakedaemon.net>, Michal Marek <mmarek@suse.cz>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: kbuild: Fix forced rebuild after 'make dtbs'
-Message-ID: <20141126144153.GK3836@n2100.arm.linux.org.uk>
-References: <CACRpkdYmJWy1_vs0tWRA7SvkQnvbXXKqf7pHpH5b5tZ6vR+KJg@mail.gmail.com>
- <1414961549-31666-1-git-send-email-jason@lakedaemon.net>
- <5474F78F.2060906@suse.cz>
- <20141125235150.GH3836@n2100.arm.linux.org.uk>
- <20141126005710.GE22670@titan.lakedaemon.net>
- <CACRpkdZJoWbQeuZ4ZXGbQr0+SNG_9ZA+cQkAA0C2F9rnZDYtyQ@mail.gmail.com>
+	Wed, 26 Nov 2014 09:43:08 -0500
+Date: Wed, 26 Nov 2014 09:43:06 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] tracing: off by one in __trace_array_vprintk()
+Message-ID: <20141126094306.4f465616@gandalf.local.home>
+In-Reply-To: <20141126143719.GT4893@mwanda>
+References: <20141126140621.GA18740@mwanda>
+	<20141126092706.5d4038d4@gandalf.local.home>
+	<20141126143719.GT4893@mwanda>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZJoWbQeuZ4ZXGbQr0+SNG_9ZA+cQkAA0C2F9rnZDYtyQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 02:57:42PM +0100, Linus Walleij wrote:
-> make -f Makefile -j5 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
-> KBUILD_OUTPUT=build-u300 u300_defconfig
-> make -f Makefile -j5 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
-> KBUILD_OUTPUT=build-u300 zImage CONFIG_DEBUG_SECTION_MISMATCH=y
-> make -f Makefile -j5 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
-> KBUILD_OUTPUT=build-u300 dtbs
-> make -f Makefile -j5 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
-> KBUILD_OUTPUT=build-u300 zImage CONFIG_DEBUG_SECTION_MISMATCH=y
+On Wed, 26 Nov 2014 17:37:19 +0300
+Dan Carpenter <dan.carpenter@oracle.com> wrote:
+
+> On Wed, Nov 26, 2014 at 09:27:06AM -0500, Steven Rostedt wrote:
+> > On Wed, 26 Nov 2014 17:06:21 +0300
+> > Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> > 
+> > > This check says "goto out;" if we had to truncate the string.
+> > > 
+> > > The "tbuffer" buffer has TRACE_BUF_SIZE bytes.  The vsnprintf() function
+> > > returns the number of characters (not counting the NUL char) which would
+> > > have been printed if there were space.  If we we tried to print
+> > > TRACE_BUF_SIZE characters, the last character would have been truncated
+> > > to make space for the NUL character so we should "goto out;".
+> > > 
+> > 
+> > Oh, and the NUL character is never copied. We copy the string into the
+> > buffer with:
+> > 
+> > 	memcpy(&entry->buf, tbuffer, len);
+> > 
+> > Where len does not include NUL, and why we add it ourselves.
 > 
-> -> Rebuilds everything.
+> Yeah.  I noticed that.  Probably we should change the memcpy() to:
 > 
-> This doesn't occur before the offending commit. So it only happens
-> when specifying extra environment variables on the command line.
+> 	memcpy(&entry->buf, tbuffer, len + 1);
+> 
+> and remove separate NUL assignment?  It's a speedup!  I'll do it in v2.
+> 
 
-I suspect if you also provide the CONFIG_DEBUG_SECTION_MISMATCH=y on the
-dtbs line, everything will work properly.
+I highly doubt it's much of a speed up. And we do that by sacrificing
+that one byte of buffer, which would lose the printk if len does equal
+TRACE_BUF_SIZE.
 
-The problem is that dtbs line executes a prepare, which I guess rebuilds
-the bounds stuff.  So, the dtbs target results in it being rebuilt without
-the section mismatch, and then you re-execute a make with it, causing
-the bounds stuff to be rebuilt again.
+I don't see a bug here. What exactly are you trying to fix?
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+-- Steve
