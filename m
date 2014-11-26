@@ -1,32 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206AbaKZXP1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 18:15:27 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58631 "EHLO
+	id S1754213AbaKZXPl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 18:15:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58656 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753945AbaKZXPX (ORCPT
+	with ESMTP id S1750793AbaKZXPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 18:15:23 -0500
-Date: Wed, 26 Nov 2014 15:14:29 -0800
+	Wed, 26 Nov 2014 18:15:38 -0500
+Date: Wed, 26 Nov 2014 15:14:44 -0800
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-5c1eb3863d080848e04f196f9af30d8d70ab0fe6@git.kernel.org>
-Cc: tglx@linutronix.de, mingo@kernel.org, bp@alien8.de, jroedel@suse.de,
-        gregkh@linuxfoundation.org, yinghai@kernel.org, bhelgaas@google.com,
-        joro@8bytes.org, linux-kernel@vger.kernel.org, grant.likely@linaro.org,
-        tony.luck@intel.com, benh@kernel.crashing.org, rdunlap@infradead.org,
-        hpa@zytor.com, jiang.liu@linux.intel.com, rjw@rjwysocki.net,
-        konrad.wilk@oracle.com
-Reply-To: rjw@rjwysocki.net, konrad.wilk@oracle.com, grant.likely@linaro.org,
-        tony.luck@intel.com, benh@kernel.crashing.org, rdunlap@infradead.org,
-        hpa@zytor.com, jiang.liu@linux.intel.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, bhelgaas@google.com, joro@8bytes.org,
-        yinghai@kernel.org, tglx@linutronix.de, mingo@kernel.org,
-        jroedel@suse.de, bp@alien8.de
-In-Reply-To: <1416901802-24211-8-git-send-email-jiang.liu@linux.intel.com>
-References: <1416901802-24211-8-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <tip-ca088857c213f42ad2a0a8ea2088f8f95a2fb5ad@git.kernel.org>
+Cc: bp@alien8.de, yinghai@kernel.org, rdunlap@infradead.org,
+        grant.likely@linaro.org, jroedel@suse.de, konrad.wilk@oracle.com,
+        rjw@rjwysocki.net, jiang.liu@linux.intel.com,
+        gregkh@linuxfoundation.org, benh@kernel.crashing.org,
+        tglx@linutronix.de, hpa@zytor.com, tony.luck@intel.com,
+        linux-kernel@vger.kernel.org, joro@8bytes.org, bhelgaas@google.com,
+        mingo@kernel.org
+Reply-To: rdunlap@infradead.org, yinghai@kernel.org, bp@alien8.de,
+        jiang.liu@linux.intel.com, rjw@rjwysocki.net, konrad.wilk@oracle.com,
+        jroedel@suse.de, grant.likely@linaro.org, tglx@linutronix.de,
+        benh@kernel.crashing.org, gregkh@linuxfoundation.org, mingo@kernel.org,
+        bhelgaas@google.com, joro@8bytes.org, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, tony.luck@intel.com
+In-Reply-To: <1416901802-24211-9-git-send-email-jiang.liu@linux.intel.com>
+References: <1416901802-24211-9-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq: Simplify the way to print IOAPIC entry
-Git-Commit-ID: 5c1eb3863d080848e04f196f9af30d8d70ab0fe6
+Subject: [tip:x86/apic] x86, irq:
+  Introduce helper functions to support hierarchy irqdomain for IOAPIC
+Git-Commit-ID: ca088857c213f42ad2a0a8ea2088f8f95a2fb5ad
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -39,18 +41,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5c1eb3863d080848e04f196f9af30d8d70ab0fe6
-Gitweb:     http://git.kernel.org/tip/5c1eb3863d080848e04f196f9af30d8d70ab0fe6
+Commit-ID:  ca088857c213f42ad2a0a8ea2088f8f95a2fb5ad
+Gitweb:     http://git.kernel.org/tip/ca088857c213f42ad2a0a8ea2088f8f95a2fb5ad
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Tue, 25 Nov 2014 15:49:31 +0800
+AuthorDate: Tue, 25 Nov 2014 15:49:32 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Wed, 26 Nov 2014 23:52:46 +0100
 
-x86, irq: Simplify the way to print IOAPIC entry
+x86, irq: Introduce helper functions to support hierarchy irqdomain for IOAPIC
 
-Simplify the way to print IOAPIC entry content, so we could kill
-native_io_apic_print_entries(), intel_ir_io_apic_print_entries()
-and x86_io_apic_ops.print_entries() later.
+Introduce several helper functions, which will be used to enable
+hierarchy irqdomain for IOAPIC.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -64,58 +65,101 @@ Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
 Cc: Grant Likely <grant.likely@linaro.org>
-Link: http://lkml.kernel.org/r/1416901802-24211-8-git-send-email-jiang.liu@linux.intel.com
+Link: http://lkml.kernel.org/r/1416901802-24211-9-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Tested-by: Joerg Roedel <jroedel@suse.de>
 ---
- arch/x86/kernel/apic/io_apic.c | 30 ++++++++++++++++++++++++++++--
- 1 file changed, 28 insertions(+), 2 deletions(-)
+ arch/x86/kernel/apic/io_apic.c | 59 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 59 insertions(+)
 
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 74a0e95..b2618d4 100644
+index b2618d4..721be8c 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1424,6 +1424,33 @@ void ioapic_zap_locks(void)
- 	raw_spin_lock_init(&ioapic_lock);
+@@ -67,6 +67,8 @@
+ #define for_each_irq_pin(entry, head) \
+ 	list_for_each_entry(entry, &head, list)
+ 
++int acpi_get_override_irq(u32 gsi, int *trigger, int *polarity);
++
+ /*
+  *      Is the SiS APIC rmw bug present ?
+  *      -1 = don't know, 0 = no, 1 = yes
+@@ -82,6 +84,7 @@ struct mp_chip_data {
+ 	struct IO_APIC_route_entry entry;
+ 	int trigger;
+ 	int polarity;
++	u32 count;
+ 	bool isa_irq;
+ };
+ 
+@@ -945,6 +948,42 @@ void ioapic_set_alloc_attr(struct irq_alloc_info *info, int node,
+ 	info->ioapic_valid = 1;
  }
  
-+static void io_apic_print_entries(unsigned int apic, unsigned int nr_entries)
++static void ioapic_copy_alloc_attr(struct irq_alloc_info *dst,
++				   struct irq_alloc_info *src,
++				   u32 gsi, int ioapic_idx, int pin)
 +{
-+	int i;
-+	char buf[256];
-+	struct IO_APIC_route_entry entry;
-+	struct IR_IO_APIC_route_entry *ir_entry = (void *)&entry;
++	int trigger, polarity;
 +
-+	printk(KERN_DEBUG "IOAPIC %d:\n", apic);
-+	for (i = 0; i <= nr_entries; i++) {
-+		entry = ioapic_read_entry(apic, i);
-+		snprintf(buf, sizeof(buf),
-+			 " pin%02x, %s, %s, %s, V(%02X), IRR(%1d), S(%1d)",
-+			 i, entry.mask ? "enabled" : "disabled",
-+			 entry.trigger ? "level" : "edge",
-+			 entry.polarity ? "high" : "low",
-+			 entry.vector, entry.irr, entry.delivery_status);
-+		if (ir_entry->format)
-+			printk(KERN_DEBUG "%s, remapped, I(%04X),  Z(%X)\n",
-+			       buf, (ir_entry->index << 15) | ir_entry->index,
-+			       ir_entry->zero);
-+		else
-+			printk(KERN_DEBUG "%s, %s, D(%02X), M(%1d)\n",
-+			       buf, entry.dest_mode ? "logical" : "physical",
-+			       entry.dest, entry.delivery_mode);
++	copy_irq_alloc_info(dst, src);
++	dst->type = X86_IRQ_ALLOC_TYPE_IOAPIC;
++	dst->ioapic_id = mpc_ioapic_id(ioapic_idx);
++	dst->ioapic_pin = pin;
++	dst->ioapic_valid = 1;
++	if (src && src->ioapic_valid) {
++		dst->ioapic_node = src->ioapic_node;
++		dst->ioapic_trigger = src->ioapic_trigger;
++		dst->ioapic_polarity = src->ioapic_polarity;
++	} else {
++		dst->ioapic_node = NUMA_NO_NODE;
++		if (acpi_get_override_irq(gsi, &trigger, &polarity) >= 0) {
++			dst->ioapic_trigger = trigger;
++			dst->ioapic_polarity = polarity;
++		} else {
++			/*
++			 * PCI interrupts are always polarity one level
++			 * triggered.
++			 */
++			dst->ioapic_trigger = 1;
++			dst->ioapic_polarity = 1;
++		}
 +	}
 +}
 +
- static void __init print_IO_APIC(int ioapic_idx)
++static int ioapic_alloc_attr_node(struct irq_alloc_info *info)
++{
++	return (info && info->ioapic_valid) ? info->ioapic_node : NUMA_NO_NODE;
++}
++
+ static void mp_register_handler(unsigned int irq, unsigned long trigger)
  {
- 	union IO_APIC_reg_00 reg_00;
-@@ -1477,8 +1504,7 @@ static void __init print_IO_APIC(int ioapic_idx)
- 	}
- 
- 	printk(KERN_DEBUG ".... IRQ redirection table:\n");
--
--	x86_io_apic_ops.print_entries(ioapic_idx, reg_01.bits.entries);
-+	io_apic_print_entries(ioapic_idx, reg_01.bits.entries);
+ 	irq_flow_handler_t hdl;
+@@ -962,6 +1001,26 @@ static void mp_register_handler(unsigned int irq, unsigned long trigger)
+ 	__irq_set_handler(irq, hdl, 0, fasteoi ? "fasteoi" : "edge");
  }
  
- void __init print_IO_APICs(void)
++static bool mp_check_pin_attr(int irq, struct irq_alloc_info *info)
++{
++	struct mp_chip_data *data = irq_get_chip_data(irq);
++
++	/*
++	 * setup_IO_APIC_irqs() programs all legacy IRQs with default trigger
++	 * and polarity attirbutes. So allow the first user to reprogram the
++	 * pin with real trigger and polarity attributes.
++	 */
++	if (irq < nr_legacy_irqs() && data->count == 1) {
++		if (info->ioapic_trigger != data->trigger)
++			mp_register_handler(irq, data->trigger);
++		data->entry.trigger = data->trigger = info->ioapic_trigger;
++		data->entry.polarity = data->polarity = info->ioapic_polarity;
++	}
++
++	return data->trigger == info->ioapic_trigger &&
++	       data->polarity == info->ioapic_polarity;
++}
++
+ static int alloc_irq_from_domain(struct irq_domain *domain, u32 gsi, int pin,
+ 				 struct irq_alloc_info *info)
+ {
