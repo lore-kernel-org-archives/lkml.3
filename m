@@ -1,31 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950AbaKZXMp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 18:12:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58476 "EHLO
+	id S1754133AbaKZXND (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 18:13:03 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58496 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753696AbaKZXMj (ORCPT
+	with ESMTP id S1753709AbaKZXNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 18:12:39 -0500
-Date: Wed, 26 Nov 2014 15:11:51 -0800
+	Wed, 26 Nov 2014 18:13:00 -0500
+Date: Wed, 26 Nov 2014 15:12:07 -0800
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-7fa48d748b0871b91263b57a0ca119a7e972d29a@git.kernel.org>
-Cc: hpa@zytor.com, bp@alien8.de, rdunlap@infradead.org, mingo@kernel.org,
-        gregkh@linuxfoundation.org, tony.luck@intel.com, joro@8bytes.org,
-        konrad.wilk@oracle.com, bhelgaas@google.com, rjw@rjwysocki.net,
-        jiang.liu@linux.intel.com, benh@kernel.crashing.org,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org, yinghai@kernel.org
-Reply-To: tony.luck@intel.com, joro@8bytes.org, gregkh@linuxfoundation.org,
-        konrad.wilk@oracle.com, rjw@rjwysocki.net, bhelgaas@google.com,
-        hpa@zytor.com, bp@alien8.de, rdunlap@infradead.org, mingo@kernel.org,
-        tglx@linutronix.de, yinghai@kernel.org, linux-kernel@vger.kernel.org,
-        jiang.liu@linux.intel.com, benh@kernel.crashing.org
-In-Reply-To: <1416894816-23245-25-git-send-email-jiang.liu@linux.intel.com>
-References: <1416894816-23245-25-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <tip-51911edac211c75cef7c95d4874e2b1f77134a85@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, bp@alien8.de, benh@kernel.crashing.org,
+        rjw@rjwysocki.net, hpa@zytor.com, tony.luck@intel.com,
+        yinghai@kernel.org, mingo@kernel.org, jiang.liu@linux.intel.com,
+        joro@8bytes.org, bhelgaas@google.com, konrad.wilk@oracle.com,
+        tglx@linutronix.de, gregkh@linuxfoundation.org, rdunlap@infradead.org
+Reply-To: tglx@linutronix.de, bhelgaas@google.com, konrad.wilk@oracle.com,
+        rdunlap@infradead.org, gregkh@linuxfoundation.org, rjw@rjwysocki.net,
+        benh@kernel.crashing.org, linux-kernel@vger.kernel.org, bp@alien8.de,
+        joro@8bytes.org, mingo@kernel.org, jiang.liu@linux.intel.com,
+        yinghai@kernel.org, tony.luck@intel.com, hpa@zytor.com
+In-Reply-To: <1416894816-23245-26-git-send-email-jiang.liu@linux.intel.com>
+References: <1416894816-23245-26-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, PCI/MSI:
-  Simplify the way to deal with remapped MSI interrupts
-Git-Commit-ID: 7fa48d748b0871b91263b57a0ca119a7e972d29a
+Subject: [tip:x86/apic] PCI/MSI: Replace msi_update_msg()
+  with irq_chip_compose_msi_msg()
+Git-Commit-ID: 51911edac211c75cef7c95d4874e2b1f77134a85
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,17 +38,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7fa48d748b0871b91263b57a0ca119a7e972d29a
-Gitweb:     http://git.kernel.org/tip/7fa48d748b0871b91263b57a0ca119a7e972d29a
+Commit-ID:  51911edac211c75cef7c95d4874e2b1f77134a85
+Gitweb:     http://git.kernel.org/tip/51911edac211c75cef7c95d4874e2b1f77134a85
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Tue, 25 Nov 2014 13:53:33 +0800
+AuthorDate: Tue, 25 Nov 2014 13:53:34 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Wed, 26 Nov 2014 18:59:26 +0100
 
-x86, PCI/MSI: Simplify the way to deal with remapped MSI interrupts
+PCI/MSI: Replace msi_update_msg() with irq_chip_compose_msi_msg()
 
-Simplify the way to deal with remapped MSI interrupts, so we could
-kill irq_chip.irq_print_chip later.
+Function irq_chip_compose_msi_msg() can achieve the same goal as
+msi_update_msg(), so kill msi_update_msg().
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -61,78 +61,53 @@ Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
 Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
-Link: http://lkml.kernel.org/r/1416894816-23245-25-git-send-email-jiang.liu@linux.intel.com
+Link: http://lkml.kernel.org/r/1416894816-23245-26-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/kernel/apic/msi.c | 28 ++++++++++++++++++++++++----
- 1 file changed, 24 insertions(+), 4 deletions(-)
+ arch/x86/kernel/apic/msi.c | 19 ++-----------------
+ 1 file changed, 2 insertions(+), 17 deletions(-)
 
 diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
-index 2bf1348..8e8f243 100644
+index 8e8f243..15429aa 100644
 --- a/arch/x86/kernel/apic/msi.c
 +++ b/arch/x86/kernel/apic/msi.c
-@@ -77,7 +77,6 @@ static struct irq_chip pci_msi_controller = {
- 	.irq_ack		= irq_chip_ack_parent,
- 	.irq_set_affinity	= msi_domain_set_affinity,
- 	.irq_retrigger		= irq_chip_retrigger_hierarchy,
--	.irq_print_chip		= irq_remapping_print_chip,
- 	.irq_compose_msi_msg	= irq_msi_compose_msg,
- 	.irq_write_msi_msg	= pci_msi_domain_write_msg,
- 	.flags			= IRQCHIP_SKIP_SET_WAKE,
-@@ -143,7 +142,7 @@ static struct msi_domain_ops pci_msi_domain_ops = {
- 
- static struct msi_domain_info pci_msi_domain_info = {
- 	.flags		= MSI_FLAG_USE_DEF_DOM_OPS | MSI_FLAG_USE_DEF_CHIP_OPS |
--			  MSI_FLAG_MULTI_PCI_MSI | MSI_FLAG_PCI_MSIX,
-+			  MSI_FLAG_PCI_MSIX,
- 	.ops		= &pci_msi_domain_ops,
- 	.chip		= &pci_msi_controller,
- 	.handler	= handle_edge_irq,
-@@ -162,9 +161,29 @@ void arch_init_msi_domain(struct irq_domain *parent)
+@@ -53,19 +53,6 @@ static void irq_msi_compose_msg(struct irq_data *data, struct msi_msg *msg)
+ 		MSI_DATA_VECTOR(cfg->vector);
  }
  
- #ifdef CONFIG_IRQ_REMAP
-+static struct irq_chip pci_msi_ir_controller = {
-+	.name			= "IR-PCI-MSI",
-+	.irq_unmask		= pci_msi_unmask_irq,
-+	.irq_mask		= pci_msi_mask_irq,
-+	.irq_ack		= irq_chip_ack_parent,
-+	.irq_set_affinity	= msi_domain_set_affinity,
-+	.irq_retrigger		= irq_chip_retrigger_hierarchy,
-+	.irq_write_msi_msg	= pci_msi_domain_write_msg,
-+	.flags			= IRQCHIP_SKIP_SET_WAKE,
-+};
-+
-+static struct msi_domain_info pci_msi_ir_domain_info = {
-+	.flags		= MSI_FLAG_USE_DEF_DOM_OPS | MSI_FLAG_USE_DEF_CHIP_OPS |
-+			  MSI_FLAG_MULTI_PCI_MSI | MSI_FLAG_PCI_MSIX,
-+	.ops		= &pci_msi_domain_ops,
-+	.chip		= &pci_msi_ir_controller,
-+	.handler	= handle_edge_irq,
-+	.handler_name	= "edge",
-+};
-+
- struct irq_domain *arch_create_msi_irq_domain(struct irq_domain *parent)
- {
--	return msi_create_irq_domain(NULL, &pci_msi_domain_info, parent);
-+	return pci_msi_create_irq_domain(NULL, &pci_msi_ir_domain_info, parent);
- }
- #endif
+-static void msi_update_msg(struct msi_msg *msg, struct irq_data *irq_data)
+-{
+-	struct irq_cfg *cfg = irqd_cfg(irq_data);
+-
+-	msg->data &= ~MSI_DATA_VECTOR_MASK;
+-	msg->data |= MSI_DATA_VECTOR(cfg->vector);
+-	msg->address_lo &= ~MSI_ADDR_DEST_ID_MASK;
+-	msg->address_lo |= MSI_ADDR_DEST_ID(cfg->dest_apicid);
+-	if (x2apic_enabled())
+-		msg->address_hi = MSI_ADDR_BASE_HI |
+-				  MSI_ADDR_EXT_DEST_ID(cfg->dest_apicid);
+-}
+-
+ /*
+  * IRQ Chip for MSI PCI/PCI-X/PCI-Express Devices,
+  * which implement the MSI or MSI-X Capability Structure.
+@@ -198,8 +185,7 @@ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
  
-@@ -325,7 +344,6 @@ static struct irq_chip hpet_msi_controller = {
- 	.irq_ack = irq_chip_ack_parent,
- 	.irq_set_affinity = hpet_msi_set_affinity,
- 	.irq_retrigger = irq_chip_retrigger_hierarchy,
--	.irq_print_chip = irq_remapping_print_chip,
- 	.irq_compose_msi_msg = irq_msi_compose_msg,
- 	.flags = IRQCHIP_SKIP_SET_WAKE,
- };
-@@ -402,6 +420,8 @@ struct irq_domain *hpet_create_irq_domain(int hpet_id)
- 	parent = irq_remapping_get_ir_irq_domain(&info);
- 	if (parent == NULL)
- 		parent = x86_vector_domain;
-+	else
-+		hpet_msi_controller.name = "IR-HPET-MSI";
+ 	ret = parent->chip->irq_set_affinity(parent, mask, force);
+ 	if (ret >= 0) {
+-		dmar_msi_read(data->irq, &msg);
+-		msi_update_msg(&msg, data);
++		irq_chip_compose_msi_msg(data, &msg);
+ 		dmar_msi_write(data->irq, &msg);
+ 	}
  
- 	return irq_domain_add_hierarchy(parent, 0, 0, NULL, &hpet_domain_ops,
- 					(void *)(long)hpet_id);
+@@ -329,8 +315,7 @@ static int hpet_msi_set_affinity(struct irq_data *data,
+ 
+ 	ret = parent->chip->irq_set_affinity(parent, mask, force);
+ 	if (ret >= 0 && ret != IRQ_SET_MASK_OK_DONE) {
+-		hpet_msi_read(data->handler_data, &msg);
+-		msi_update_msg(&msg, data);
++		irq_chip_compose_msi_msg(data, &msg);
+ 		hpet_msi_write(data->handler_data, &msg);
+ 	}
+ 
