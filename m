@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630AbaKZVci (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 16:32:38 -0500
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:59637 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792AbaKZVcg (ORCPT
+	id S1752932AbaKZVdD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 16:33:03 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:53696 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752567AbaKZVdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 16:32:36 -0500
-Date: Wed, 26 Nov 2014 13:32:34 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Lukasz Pawelczyk <l.pawelczyk@samsung.com>
-cc: Lukasz Pawelczyk <havner@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        Sameer Nanda <snanda@chromium.org>,
-        Guillaume Morin <guillaume@morinfr.org>, Li Zefan <lizefan@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel/exit.c: make sure current's nsproxy != NULL while
- checking caps
-In-Reply-To: <1417011661-19230-1-git-send-email-l.pawelczyk@samsung.com>
-Message-ID: <alpine.DEB.2.10.1411261326170.32216@chino.kir.corp.google.com>
-References: <1417011661-19230-1-git-send-email-l.pawelczyk@samsung.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 26 Nov 2014 16:33:00 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Dave Gerlach <d-gerlach@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arch@vger.kernel.org,
+        devicetree@vger.kernel.org, Russ Dill <russ.dill@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>, Tony Lindgren <tony@atomide.com>,
+        Anson.Huang@freescale.com, Russ Dill <Russ.Dill@ti.com>
+Subject: Re: [RFC PATCH 1/2] asm-generic: io: Add exec versions of ioremap
+Date: Wed, 26 Nov 2014 22:32:47 +0100
+Message-ID: <2060921.TrTof4X6qj@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <cb5e9dd7bd71b13551cd3f32f28feb405ea9fcdd.1417029918.git.d-gerlach@ti.com>
+References: <cover.1417029918.git.d-gerlach@ti.com> <cb5e9dd7bd71b13551cd3f32f28feb405ea9fcdd.1417029918.git.d-gerlach@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:IyED4T9aOvA/vJlfImMyb0lFTlWmSC+RRMSW53vUJMA
+ mrY2JDRJunpnGwMJhwcIkMY86ErSiU7eAJMvJpqVUSKhSOG2c1
+ uVBNakuK2keyJuaNPtKrE5PiJE1F6xpPMonw2ON19qmnPzU/G0
+ 392f61E9wOFfDG8IV5JZm0mbYmLj7bGpnCwIYcl22At1m/35DS
+ fU3tneL9U8RbYMAFLxBUjTOrSV7PeIqbE3BuSlkpLsyOx8C+Zx
+ UZnR/PfzbVstCyNKjPvoa/bsaUwc8JjFUom1YHBxT2NezGVFQQ
+ AIjf8fYpOo6TiAHmODFehlkVyD2evY/qlK5PN8zEDDVV/wPd8b
+ 05r2XGgZB1dzZ2fm2shE=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Nov 2014, Lukasz Pawelczyk wrote:
-
-> There is a rare case where current's nsproxy might be NULL but we are
-> required to check for credentials and capabilities. It sometimes happens
-> during an exit() syscall while destroying user's session (logging out).
-> 
-> My understanding is that while we have to use task_nsproxy() to get
-> task's nsproxy and check whether it's NULL, for the 'current' we don't
-> have to and it's expected not to be NULL. There is a code in the kernel
-> currently that does current->nsproxy->user_ns without any checks.
-> 
-> There seem to be no crash currently because of this, but with other LSM
-> modules or in future there might be. This is the backtrace:
-> 
-> 0  smk_tskacc (task=0xffff88003b0b92e0, obj_known=0x2 <irq_stack_union+2>, mode=2, a=0xffff88003be53dd8) at security/smack/smack_access.c:261
-> 1  0xffffffff8130e2aa in smk_curacc (obj_known=<optimized out>, mode=<optimized out>, a=<optimized out>) at security/smack/smack_access.c:318
-> 2  0xffffffff8130a50d in smack_task_kill (p=0xffff88003b0b92e0, info=<optimized out>, sig=<optimized out>, secid=<optimized out>) at security/smack/smack_lsm.c:2071
-> 3  0xffffffff812ea4f6 in security_task_kill (p=<optimized out>, info=<optimized out>, sig=<optimized out>, secid=<optimized out>) at security/security.c:952
-> 4  0xffffffff8109ac80 in check_kill_permission (sig=15, info=0x0 <irq_stack_union>, t=0xffff88003b0b8000) at kernel/signal.c:796
-> 5  0xffffffff8109d3ab in group_send_sig_info (sig=15, info=0x0 <irq_stack_union>, p=0xffff88003b0b8000) at kernel/signal.c:1296
-> 6  0xffffffff8108e527 in forget_original_parent (father=<optimized out>) at kernel/exit.c:575
-> 7  exit_notify (group_dead=<optimized out>, tsk=<optimized out>) at kernel/exit.c:606
-> 8  do_exit (code=<optimized out>) at kernel/exit.c:775
-> 9  0xffffffff8108ec0f in do_group_exit (exit_code=0) at kernel/exit.c:891
-> 10 0xffffffff8108ec84 in SYSC_exit_group (error_code=<optimized out>) at kernel/exit.c:902
-> 11 SyS_exit_group (error_code=<optimized out>) at kernel/exit.c:900
-> 
-> LSM task_kill() hook is triggered and current->nsproxy within is NULL.
-> 
-> This happens during an exit() syscall because exit_task_namespaces() is
-> called before the exit_notify(). This patch changes their order.
+On Wednesday 26 November 2014 15:14:00 Dave Gerlach wrote:
+> @@ -66,6 +66,11 @@ extern void ioport_unmap(void __iomem *);
+>  #define ioremap_wc ioremap_nocache
+>  #endif
+>  
+> +#ifndef ARCH_HAS_IOREMAP_EXEC
+> +#define ioremap_exec ioremap
+> +#define ioremap_exec_nocache ioremap_nocache
+> +#endif
+> +
+>  #ifdef CONFIG_PCI
+>  /* Destroy a virtual mapping cookie for a PCI BAR (memory or IO) */
+>  struct pci_dev;
 > 
 
-This is a classic case of a patch being proposed for a problem that only 
-occurs on kernels that include other patches that are not upstream.  The 
-order that things are deconstructed in the exit path is complex and 
-carefully choreographed, changing it comes at significant risk.  That risk 
-would be justified if a patch were being proposed for upstream that fixes 
-an upstream problem.  It becomes too much of a maintenance nightmare to 
-try to address problems and keep issues from arising for non-upstream 
-patches.  Thus, I don't think this is something that we want.
+ioremap and ioremap_nocache are the same, and there is no
+architecture-independent interface to map an MMIO range as
+cached because a lot of architectures can't do that.
+
+Also, I think there are architectures that cannot execute
+from uncached memory, so I think adding this as a generic
+API is not a good idea.
+
+	Arnd
