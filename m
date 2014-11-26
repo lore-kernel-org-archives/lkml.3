@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714AbaKZNN2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 08:13:28 -0500
-Received: from static.88-198-71-155.clients.your-server.de ([88.198.71.155]:56553
-	"EHLO socrates.bennee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752567AbaKZNNZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 08:13:25 -0500
-References: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org> <1416931805-23223-3-git-send-email-alex.bennee@linaro.org> <5474B6BC.2060309@redhat.com> <CAFEAcA-ikeiciAh4RXpKQQ_pY9FRePxR7nEBUEjcaaxB0ZAAtA@mail.gmail.com> <5474BAD8.7010307@redhat.com>
-From: Alex =?utf-8?Q?Benn=C3=A9e?= <alex.bennee@linaro.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Peter Maydell <peter.maydell@linaro.org>, kvm-devel <kvm@vger.kernel.org>,
-        arm-mail-list <linux-arm-kernel@lists.infradead.org>,
-        "kvmarm\@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>, Alexander Graf <agraf@suse.de>,
-        "J. Kiszka" <jan.kiszka@siemens.com>,
-        David Hildenbrand <dahi@linux.vnet.ibm.com>,
-        Bharat Bhushan <r65777@freescale.com>, bp@suse.de,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/7] KVM: arm: guest debug, define API headers
-In-reply-to: <5474BAD8.7010307@redhat.com>
-Date: Wed, 26 Nov 2014 13:13:25 +0000
-Message-ID: <87vbm2ksui.fsf@linaro.org>
+	id S1752720AbaKZNOC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 08:14:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47926 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750871AbaKZNOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 08:14:00 -0500
+Message-ID: <5475D20A.90505@redhat.com>
+Date: Wed, 26 Nov 2014 14:13:46 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        wanpeng.li@linux.intel.com, namit@cs.technion.ac.il,
+        hpa@linux.intel.com, Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: [CFT PATCH v2 2/2] KVM: x86: support XSAVES usage in the host
+References: <1416847414-22253-1-git-send-email-pbonzini@redhat.com> <1416847414-22253-3-git-send-email-pbonzini@redhat.com> <20141126120753.GA31982@potion.redhat.com>
+In-Reply-To: <20141126120753.GA31982@potion.redhat.com>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 127.0.0.1
-X-SA-Exim-Mail-From: alex.bennee@linaro.org
-X-SA-Exim-Scanned: No (on socrates.bennee.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Paolo Bonzini <pbonzini@redhat.com> writes:
 
-> On 25/11/2014 18:13, Peter Maydell wrote:
->> On 25 November 2014 at 17:05, Paolo Bonzini <pbonzini@redhat.com> wrote:
->>> > So there is no register that says "this breakpoint has triggered" or
->>> > "this watchpoint has triggered"?
->> Nope. You take a debug exception; the syndrome register tells
->> you if it was a bp or a wp, and if it was a wp the fault address
->> register tells you the address being accessed (if it was a bp
->> you know the program counter, obviously). The debugger is expected
->> to be able to figure it out from there, if it cares.
->
-> That's already good enough---do the KVM_DEBUG_EXIT_* constants match the
-> syndrome register, or if not why?
+On 26/11/2014 13:07, Radim Krčmář wrote:
+> 2014-11-24 17:43+0100, Paolo Bonzini:
+>> Userspace is expecting non-compacted format for KVM_GET_XSAVE, but
+>> struct xsave_struct might be using the compacted format.  Convert
+>> in order to preserve userspace ABI.
+>>
+>> Likewise, userspace is passing non-compacted format for KVM_SET_XSAVE
+>> but the kernel will pass it to XRSTORS, and we need to convert back.
+> 
+> Future instructions might force us to calling xsave/xrstor directly, so
+> we could do that even now and save the explicit conversion ...
+> 
+> What I mean is:  we could be using the native xsave.*/xrstor.* while in
+> kernel and use xsave/xrstor for communication with userspace.
+> Hardware would take care of everything in the conversion.
+> 
+> get_xsave = native_xrstor(guest_xsave);  xsave(aligned_userspace_buffer)
+> set_xsave = xrstor(aligned_userspace_buffer);  native_xsave(guest_xsave)
+> 
+> Could that work?
 
-No they don't. I did consider it at the time but I was wary of pulling
-too much over into the uapi headers wholesale. If your happy to do that
-I'll include the change in my next version.
+It could, though it is more like
 
-I could also rationalise the exit handlers as they all pretty much do
-the same thing (save for the exit/syndrome related info). Again I was
-keeping things nicely separated in case any particular exception needed
-excessive special case handling.
+   get_fpu()
+   native_xrstor(guest_xsave)
+   xsave(buffer)
+   put_fpu()
 
-Would you like those changes?
+and vice versa.  Also, the userspace buffer is mos likely not aligned,
+so you need some kind of bounce buffer.  It can be done if the CPUID
+turns out to be a bottleneck, apart from that it'd most likely be slower.
 
->
-> Paolo
-
--- 
-Alex Bennée
+Paolo
