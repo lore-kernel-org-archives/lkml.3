@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753767AbaKZP2i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 10:28:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39889 "EHLO mx1.redhat.com"
+	id S1753793AbaKZP2u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 10:28:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58393 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753747AbaKZP2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 10:28:35 -0500
-Date: Wed, 26 Nov 2014 09:27:59 -0600
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Seth Jennings <sjenning@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>, Petr Mladek <pmladek@suse.cz>,
-        Miroslav Benes <mbenes@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
-        x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 0/3] Kernel Live Patching
-Message-ID: <20141126152759.GA29079@treble.hsd1.ky.comcast.net>
-References: <1416935709-404-1-git-send-email-sjenning@redhat.com>
- <547596C6.2050303@hitachi.com>
- <alpine.LNX.2.00.1411261014510.23174@pobox.suse.cz>
+	id S1753664AbaKZP2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 10:28:48 -0500
+Date: Wed, 26 Nov 2014 10:28:43 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Akira Hayakawa <ruby.wktk@gmail.com>
+Cc: dm-devel@redhat.com, gregkh@linuxfoundation.org,
+        masami.hiramatsu@gmail.com, linux-kernel@vger.kernel.org,
+        corbet@lwn.net
+Subject: Re: dm-writeboost: About inclusion into mainline
+Message-ID: <20141126152843.GC30136@redhat.com>
+References: <5475EB77.3050004@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1411261014510.23174@pobox.suse.cz>
-User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
+In-Reply-To: <5475EB77.3050004@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 10:18:24AM +0100, Jiri Kosina wrote:
-> On Wed, 26 Nov 2014, Masami Hiramatsu wrote:
-> 
-> > > Note to Steve:
-> > > Masami's IPMODIFY patch is heading for -next via your tree.  Once it arrives,
-> > > I'll rebase and make the change to set IPMODIFY.  Do not pull this for -next
-> > > yet.  This version (v4) is for review and gathering acks.
-> > 
-> > BTW, as we discussed IPMODIFY is an exclusive flag. So if we allocate 
-> > ftrace_ops for each function in each patch, it could be conflict each 
-> > other.
-> 
-> Yup, this corresponds to what Petr brought up yesterday. There are cases 
-> where all solutions (kpatch, kgraft, klp) would allocate multiple 
-> ftrace_ops for a single function entry (think of patching one function 
-> multiple times in a row).
-> 
-> So it's not as easy as just setting the flag.
-> 
-> > Maybe we need to have another ops hashtable to find such conflict and 
-> > new handler to handle it.
-> 
-> If I understand your proposal correctly, that would sound like a hackish 
-> workaround, trying to basically trick the IPMODIFY flag semantics you just 
-> implemented :)
+On Wed, Nov 26 2014 at 10:02am -0500,
+Akira Hayakawa <ruby.wktk@gmail.com> wrote:
 
-I think Masami may be proposing something similar to what we do in
-kpatch today.  We have a single ftrace_ops and handler which is used for
-all functions.  The handler accesses a global hash of kpatch_func
-structs which is indexed by the original function's IP address.
+> Hi,
+> 
+> I am wondering what's the next step of dm-writeboost, my log-structured SSD-caching driver.
+> I want to discuss this.
+> 
+> I will start from introducing my activity on dm-writeboost.
+> It was more than a year ago that I proposed my dm-writeboost for staging.
+> Mike Snitzer, a maintainer of device-mapper, rejected it because dm-writeboost at that moment wasn't even suitable for staging.
+> (http://www.redhat.com/archives/dm-devel/2013-September/msg00075.html)
+> It is clear that the comment was really right. The code was actually terrible.
+> Since then, with helps of DM guys, dm-writeboost's design and implementation has been polished.
+> And it was included into Joe's linux-2.6 where he develops his drivers.
+> (https://github.com/jthornber/linux-2.6/tree/thin-dev/drivers/md)
+> I found some bugs and fixed them after this inclusion. I am confident the quality is good enough for staging.
+> 
+> Now, I can't find the way how I go over the wall.
+> It seems that third party drivers are rarely merged into the md.
+> The fact is, no third party driver (meaning proposed by other than RH) was included since I am involved with device-mapper, for 2 years.
+> I am really afraid dm-writeboost will never be into the md ever after.
+> 
+> In one sense, this sounds too conservative. New features are always rejected. As a result, third party developers, including me, are losing their willingness.
 
-It actually works out pretty well because it nicely encapsulates the
-knowledge about which functions are patched in a single place.  And it
-makes it easy to track function versions (for incremental patching and
-rollback).
+You're painting with a really wide-brush here.  Both dm-verity and
+dm-switch started out as targets from 3rd party developers (Google and
+Dell/Equallogic respectively).  But while their feature was needed their
+implementation was lacking, so Mikulas rewrote them before they were
+included.
 
-> What I'd propose instead is to make sure that we always have 
-> just a ftrace_ops per function entry, and only update the pointers there 
-> as necessary. Fortunately we can do the switch atomically, by making use 
-> of ->private.
+But yes, in general, I need to do better about getting to
+review/inclusion of 3rd party DM targets.  I have my hands full
+maintaining what DM targets we already have (not to mention DM core
+itself).
 
-But how would you update multiple functions atomically, to enforce
-per-thread consistency?
+It isn't just full targets (like DM dedup or DM lightnvm) that need
+proper review.  It is also DM core changes like adding blk-mq support to
+request-based DM.  Those changes are very much on my TODO.  DM dedup and
+the blk-mq changes near the top!
 
--- 
-Josh
+But as you can see from what I've staged for 3.19 inclusion I haven't
+been sitting around idle:
+https://git.kernel.org/cgit/linux/kernel/git/device-mapper/linux-dm.git/log/?h=dm-for-3.19
+
+Though you'll note that the focus of development has been on improving
+both DM thinp and DM cache (and DM core as needed).  Those targets are
+the bread winners from my perspective (lots of consumers and need for
+enterprise stability).
+
+All said, I _should_ be able to dedicate time to my backlog of DM review
+tasks the first few weeks of Decemeber.  But sadly that doesn't include
+time for dm-writeboost yet.
+
+> As you know, developing driver is a hard work and spend lot of
+> time. Actually, I spent hundreds or thousands of my private hours on
+> my driver (hoping that my driver will be included and become famous)
+> but I am almost giving up dm-writeboost if it has no hope. I know,
+> storage softwares should become safe-side but I also know that
+> willingness is the only key for non-paid development.
+
+If you're looking for fame you're developing the wrong software.  You're
+working on a well-worn software layer.
+
+Upstream has both dm-cache and bcache.  Please demonstrate that
+dm-writeboost offers an advantage over either of these already upstream
+caching solutions with at least _some_ convincing benchmark data.
+
+Mike
