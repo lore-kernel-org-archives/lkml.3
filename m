@@ -1,139 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752774AbaKZNfj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 08:35:39 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:57850 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026AbaKZNfi (ORCPT
+	id S1752779AbaKZNgG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 08:36:06 -0500
+Received: from va-smtp01.263.net ([54.88.144.211]:47331 "EHLO
+	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238AbaKZNgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 08:35:38 -0500
-From: zhangxingcai <zhangxingcai@huawei.com>
-To: <dwmw2@infradead.org>, <computersforpeace@gmail.com>
-CC: <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <fengfuqiu@huawei.com>, <tanhaijun@huawei.com>,
-        <zhangxingcai@huawei.com>
-Subject: [PATCH 3/3] [PATCH] mtd: fix concurrent access to mtd->usecount
-Date: Wed, 26 Nov 2014 21:36:30 +0800
-Message-ID: <1417008990-24413-1-git-send-email-zhangxingcai@huawei.com>
-X-Mailer: git-send-email 2.1.3
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.67.54.255]
-X-CFilter-Loop: Reflected
+	Wed, 26 Nov 2014 08:36:04 -0500
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <ec59a94368dcaba0fe0e94ead447f972>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
+        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Andy Yan <andy.yan@rock-chips.com>
+Subject: [PATCH v13 10/12] drm: bridge/dw_hdmi: add function dw_hdmi_phy_enable_spare
+Date: Wed, 26 Nov 2014 21:35:27 +0800
+Message-Id: <1417008927-32410-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417008157-31861-1-git-send-email-andy.yan@rock-chips.com>
+References: <1417008157-31861-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_mtd_device() is called to increment mtd->usecount when we access
-mtd via /dev/mtd1 or /dev/mtdblock1, but mtd_table_mutex lock is used in the former
-via get_mtd_device(), while &dev->lock lock is used in the latter.  Therefore mtd->usecount is
-not properly protected if we access /dev/mtd1 and /dev/mtdblock1 at the same time.
+RK3288 HDMI will not work without the spare bit of
+HDMI_PHY_CONF0 enable
 
-call graph as follows:
-/dev/mtd1 --> mtdchar_open() --> get_mtd_device() --> <hold mtd_table_mutex> --> __get_mtd_device() --> <increment mtd->usecount>
-/dev/mtdblock1 --> blktrans_open() --><hold &dev->lock> --> __get_mtd_device() --> <increment mtd->usecount>
-
-Actually we triggerd the BUG_ON in put_mtd_device() on 2.6.34 kernel
-due to this race.
-
-To fix this convert mtd->usecount from int to atomic_t.
-
-<0>------------[ cut here ]------------
-<2>kernel BUG at drivers/mtd/mtdcore.c:565!
-Oops: Exception in kernel mode, sig: 5 [#1]
-PREEMPT SMP NR_CPUS=4 LTT NESTING LEVEL : 0
-P2041 RDB
-<0>last sysfs file: /sys/mbe_detect/ecc_mbe_detect
-...
-NIP [c037a808] put_mtd_device+0x58/0x80
-LR [c037a808] put_mtd_device+0x58/0x80
-Call Trace:
-[ca453e90] [c037a808] put_mtd_device+0x58/0x80 (unreliable)
-[ca453eb0] [c037ced8] mtd_close+0x48/0x70
-[ca453ed0] [c0119078] __fput+0xe8/0x220
-[ca453ef0] [c01144fc] filp_close+0x6c/0xb0
-[ca453f10] [c01145fc] sys_close+0xbc/0x180
-[ca453f40] [c0010ae8] ret_from_syscall+0x0/0x4
-
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Zhang Xingcai <zhangxingcai@huawei.com>
+Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
 ---
- drivers/mtd/maps/vmu-flash.c |  2 +-
- drivers/mtd/mtdcore.c        | 12 ++++++------
- include/linux/mtd/mtd.h      |  2 +-
- 3 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/mtd/maps/vmu-flash.c b/drivers/mtd/maps/vmu-flash.c
-index 6b223cf..0a10779 100644
---- a/drivers/mtd/maps/vmu-flash.c
-+++ b/drivers/mtd/maps/vmu-flash.c
-@@ -721,7 +721,7 @@ static int vmu_can_unload(struct maple_device *mdev)
- 	card = maple_get_drvdata(mdev);
- 	for (x = 0; x < card->partitions; x++) {
- 		mtd = &((card->mtd)[x]);
--		if (mtd->usecount > 0)
-+		if (atomic_read(&mtd->usecount) > 0)
- 			return 0;
- 	}
- 	return 1;
-diff --git a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
-index 4c61187..95e7cfc 100644
---- a/drivers/mtd/mtdcore.c
-+++ b/drivers/mtd/mtdcore.c
-@@ -402,7 +402,7 @@ int add_mtd_device(struct mtd_info *mtd)
- 		goto fail_locked;
- 
- 	mtd->index = i;
--	mtd->usecount = 0;
-+	atomic_set(&mtd->usecount, 0);
- 
- 	/* default value if not set by driver */
- 	if (mtd->bitflip_threshold == 0)
-@@ -492,9 +492,9 @@ int del_mtd_device(struct mtd_info *mtd)
- 	list_for_each_entry(not, &mtd_notifiers, list)
- 		not->remove(mtd);
- 
--	if (mtd->usecount) {
-+	if (atomic_read(&mtd->usecount)) {
- 		printk(KERN_NOTICE "Removing MTD device #%d (%s) with use count %d\n",
--		       mtd->index, mtd->name, mtd->usecount);
-+		       mtd->index, mtd->name, atomic_read(&mtd->usecount));
- 		ret = -EBUSY;
- 	} else {
- 		device_unregister(&mtd->dev);
-@@ -702,7 +702,7 @@ int __get_mtd_device(struct mtd_info *mtd)
- 			return err;
- 		}
- 	}
--	mtd->usecount++;
-+	atomic_inc(&mtd->usecount);
- 	return 0;
+Changes in v13: None
+Changes in v12: None
+Changes in v11: None
+Changes in v10: None
+Changes in v9: None
+Changes in v8: None
+Changes in v7: None
+Changes in v6: None
+Changes in v5: None
+Changes in v4: None
+Changes in v3: None
+
+ drivers/gpu/drm/bridge/dw_hdmi.c | 7 +++++++
+ drivers/gpu/drm/bridge/dw_hdmi.h | 3 ++-
+ 2 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
+index 8aa5f61..160f8c7 100644
+--- a/drivers/gpu/drm/bridge/dw_hdmi.c
++++ b/drivers/gpu/drm/bridge/dw_hdmi.c
+@@ -715,6 +715,13 @@ static void dw_hdmi_phy_enable_tmds(struct dw_hdmi *hdmi, u8 enable)
+ 			 HDMI_PHY_CONF0_ENTMDS_MASK);
  }
- EXPORT_SYMBOL_GPL(__get_mtd_device);
-@@ -756,8 +756,8 @@ EXPORT_SYMBOL_GPL(put_mtd_device);
  
- void __put_mtd_device(struct mtd_info *mtd)
++static void dw_hdmi_phy_enable_spare(struct dw_hdmi *hdmi, u8 enable)
++{
++	hdmi_mask_writeb(hdmi, enable, HDMI_PHY_CONF0,
++			 HDMI_PHY_CONF0_SPARECTRL_OFFSET,
++			 HDMI_PHY_CONF0_SPARECTRL_MASK);
++}
++
+ static void dw_hdmi_phy_gen2_pddq(struct dw_hdmi *hdmi, u8 enable)
  {
--	--mtd->usecount;
--	BUG_ON(mtd->usecount < 0);
-+	atomic_dec(&mtd->usecount);
-+	BUG_ON(atomic_read(&mtd->usecount) < 0);
- 
- 	if (mtd->_put_device)
- 		mtd->_put_device(mtd);
-diff --git a/include/linux/mtd/mtd.h b/include/linux/mtd/mtd.h
-index 031ff3a..af98132 100644
---- a/include/linux/mtd/mtd.h
-+++ b/include/linux/mtd/mtd.h
-@@ -250,7 +250,7 @@ struct mtd_info {
- 
- 	struct module *owner;
- 	struct device dev;
--	int usecount;
-+	atomic_t usecount;
- };
- 
- int mtd_erase(struct mtd_info *mtd, struct erase_info *instr);
+ 	hdmi_mask_writeb(hdmi, enable, HDMI_PHY_CONF0,
+diff --git a/drivers/gpu/drm/bridge/dw_hdmi.h b/drivers/gpu/drm/bridge/dw_hdmi.h
+index baa7849..175dbc8 100644
+--- a/drivers/gpu/drm/bridge/dw_hdmi.h
++++ b/drivers/gpu/drm/bridge/dw_hdmi.h
+@@ -837,7 +837,8 @@ enum {
+ 	HDMI_PHY_CONF0_PDZ_OFFSET = 7,
+ 	HDMI_PHY_CONF0_ENTMDS_MASK = 0x40,
+ 	HDMI_PHY_CONF0_ENTMDS_OFFSET = 6,
+-	HDMI_PHY_CONF0_SPARECTRL = 0x20,
++	HDMI_PHY_CONF0_SPARECTRL_MASK = 0x20,
++	HDMI_PHY_CONF0_SPARECTRL_OFFSET = 5,
+ 	HDMI_PHY_CONF0_GEN2_PDDQ_MASK = 0x10,
+ 	HDMI_PHY_CONF0_GEN2_PDDQ_OFFSET = 4,
+ 	HDMI_PHY_CONF0_GEN2_TXPWRON_MASK = 0x8,
 -- 
-2.1.3
+1.9.1
 
