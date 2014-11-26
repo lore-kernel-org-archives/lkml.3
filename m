@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556AbaKZObN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 09:31:13 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:59827 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750865AbaKZObK (ORCPT
+	id S1752806AbaKZObS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 09:31:18 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:45159 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752595AbaKZObP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 09:31:10 -0500
-Date: Wed, 26 Nov 2014 15:31:02 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v4 26/42] vhost/net: force len for TX to host endian
-Message-ID: <20141126153102.3f5b8fc9.cornelia.huck@de.ibm.com>
-In-Reply-To: <1416933600-21398-27-git-send-email-mst@redhat.com>
-References: <1416933600-21398-1-git-send-email-mst@redhat.com>
-	<1416933600-21398-27-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112614-0041-0000-0000-000002438678
+	Wed, 26 Nov 2014 09:31:15 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-a3-5475e4315252
+From: Lukasz Pawelczyk <l.pawelczyk@samsung.com>
+To: Casey Schaufler <casey@schaufler-ca.com>,
+        James Morris <james.l.morris@oracle.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Lukasz Pawelczyk <havner@gmail.com>,
+        Lukasz Pawelczyk <l.pawelczyk@samsung.com>
+Subject: [PATCH 1/2] smack: miscellaneous small fixes in function comments
+Date: Wed, 26 Nov 2014 15:31:06 +0100
+Message-id: <1417012267-21298-1-git-send-email-l.pawelczyk@samsung.com>
+X-Mailer: git-send-email 1.9.3
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAJMWRmVeSWpSXmKPExsVy+t/xq7qGT0pDDLbv47W4t+0Xm8X/1zoW
+	fY+DLM5MWshkcXnXHDaLDz2P2CzOXzjH7sDusXPWXXaPa7sjPT4+vcXi0bdlFaPH0f2L2Dw+
+	b5ILYIvisklJzcksSy3St0vgyphw7xFzwRa+ig+9f5kbGBdxdzFyckgImEisfHuUCcIWk7hw
+	bz0biC0ksJRRYtF3iS5GLiC7l0li1ZFPrCAJNgEDie8X9jKDJEQEjjNK9D3byQiSYBYIlbg2
+	YzoziC0s4CWx78MqsKksAqoSL5e1gdm8Au4SOzZ+YYHYJifRu+0N8wRG7gWMDKsYRVNLkwuK
+	k9JzjfSKE3OLS/PS9ZLzczcxQkLl6w7GpcesDjEKcDAq8fDeiCsJEWJNLCuuzD3EKMHBrCTC
+	m3qnNESINyWxsiq1KD++qDQntfgQIxMHp1QDY89ia681biulJnXo2Hx/vUr0ZDDPnTUf1C/z
+	PH0klC+jd9ffSOEfW/q71xOlitI7Z35yrpdzFVDr99MQOtL4546bfF5F7cPsrc33HILWvZTK
+	XaLWV8sX9/tZ/99ojUrnFaVpn5u7nuZLOb1rLjkz88ahrddqv2eFHxU5LLFPau/To3oSUhGn
+	lViKMxINtZiLihMB9a1Nd/MBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Nov 2014 18:43:14 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+Signed-off-by: Lukasz Pawelczyk <l.pawelczyk@samsung.com>
+---
+ security/smack/smack_lsm.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
-> We use native endian-ness internally but never
-> expose it to guest.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  drivers/vhost/net.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index 8dae2f7..dce5c58 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -48,15 +48,15 @@ MODULE_PARM_DESC(experimental_zcopytx, "Enable Zero Copy TX;"
->   * status internally; used for zerocopy tx only.
->   */
->  /* Lower device DMA failed */
-> -#define VHOST_DMA_FAILED_LEN	3
-> +#define VHOST_DMA_FAILED_LEN	((__force __virtio32)3)
->  /* Lower device DMA done */
-> -#define VHOST_DMA_DONE_LEN	2
-> +#define VHOST_DMA_DONE_LEN	((__force __virtio32)2)
->  /* Lower device DMA in progress */
-> -#define VHOST_DMA_IN_PROGRESS	1
-> +#define VHOST_DMA_IN_PROGRESS	((__force __virtio32)1)
->  /* Buffer unused */
-> -#define VHOST_DMA_CLEAR_LEN	0
-> +#define VHOST_DMA_CLEAR_LEN	((__force __virtio32)0)
-
-I find these constants a bit confusing: What does __virtio32 mean
-without the context of a vq or device?
-
-> 
-> -#define VHOST_DMA_IS_DONE(len) ((len) >= VHOST_DMA_DONE_LEN)
-> +#define VHOST_DMA_IS_DONE(len) ((__force u32)(len) >= (__force u32)VHOST_DMA_DONE_LEN)
-
-And here you cast it to a plain u32 again.
-
-I looked at the final code, and you seem either to use the above
-constants for .len or do a cpu_to_vhost32(). Wouldn't you need to
-convert the constants as well?
-
-> 
->  enum {
->  	VHOST_NET_FEATURES = VHOST_FEATURES |
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index 2717cdd..d1b14d5 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -202,6 +202,7 @@ static int smk_bu_credfile(const struct cred *cred, struct file *file,
+ 
+ /**
+  * smk_fetch - Fetch the smack label from a file.
++ * @name: type of the label (attribute)
+  * @ip: a pointer to the inode
+  * @dp: a pointer to the dentry
+  *
+@@ -254,7 +255,9 @@ struct inode_smack *new_inode_smack(struct smack_known *skp)
+ 
+ /**
+  * new_task_smack - allocate a task security blob
+- * @smack: a pointer to the Smack label to use in the blob
++ * @task: a pointer to the Smack label for the running task
++ * @forked: a pointer to the Smack label for the forked task
++ * @gfp: type of the memory for the allocation
+  *
+  * Returns the new blob or NULL if there's no memory available
+  */
+@@ -277,8 +280,9 @@ static struct task_smack *new_task_smack(struct smack_known *task,
+ 
+ /**
+  * smk_copy_rules - copy a rule set
+- * @nhead - new rules header pointer
+- * @ohead - old rules header pointer
++ * @nhead: new rules header pointer
++ * @ohead: old rules header pointer
++ * @gfp: type of the memory for the allocation
+  *
+  * Returns 0 on success, -ENOMEM on error
+  */
+@@ -3835,11 +3839,11 @@ static void smack_key_free(struct key *key)
+ 	key->security = NULL;
+ }
+ 
+-/*
++/**
+  * smack_key_permission - Smack access on a key
+  * @key_ref: gets to the object
+  * @cred: the credentials to use
+- * @perm: unused
++ * @perm: requested key permissions
+  *
+  * Return 0 if the task has read and write to the object,
+  * an error code otherwise
+-- 
+1.9.3
 
