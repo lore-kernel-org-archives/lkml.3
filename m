@@ -1,124 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203AbaKZQFT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 11:05:19 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:54408 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753374AbaKZQFQ convert rfc822-to-8bit (ORCPT
+	id S1753569AbaKZQGB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 11:06:01 -0500
+Received: from smtprelay0134.hostedemail.com ([216.40.44.134]:55091 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753154AbaKZQGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 11:05:16 -0500
-Message-ID: <5475FA39.6090801@arm.com>
-Date: Wed, 26 Nov 2014 16:05:13 +0000
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>
-CC: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "kamalesh@linux.vnet.ibm.com" <kamalesh@linux.vnet.ibm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "riel@redhat.com" <riel@redhat.com>, "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Paul Turner <pjt@google.com>, Ben Segall <bsegall@google.com>
-Subject: Re: [PATCH v9 04/10] sched: Make sched entity usage tracking scale-invariant
-References: <1415033687-23294-1-git-send-email-vincent.guittot@linaro.org> <1415033687-23294-5-git-send-email-vincent.guittot@linaro.org> <20141121123544.GE23177@e105550-lin.cambridge.arm.com>
-In-Reply-To: <20141121123544.GE23177@e105550-lin.cambridge.arm.com>
-X-OriginalArrivalTime: 26 Nov 2014 16:05:14.0464 (UTC) FILETIME=[C3906600:01D00992]
-X-MC-Unique: 114112616051416601
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+	Wed, 26 Nov 2014 11:06:00 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2525:2553:2565:2682:2685:2693:2828:2859:2908:2911:2916:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:4425:5007:6261:7903:7974:9010:9025:9040:9388:10004:10049:10400:10450:10455:10848:11232:11658:11914:12043:12050:12292:12517:12519:12679:12682:12740:13161:13229:13255:13845:14096:14097:19904:19999:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: wound94_8b31ec054484a
+X-Filterd-Recvd-Size: 3680
+Message-ID: <1417017955.19695.3.camel@perches.com>
+Subject: Re: [PATCH] staging: media: lirc: lirc_zilog.c: fix quoted strings
+ split across lines
+From: Joe Perches <joe@perches.com>
+To: Luis de Bethencourt <luis@debethencourt.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        jarod <jarod@wilsonet.com>, "m.chehab" <m.chehab@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "mahfouz.saif.elyazal" <mahfouz.saif.elyazal@gmail.com>,
+        "dan.carpenter" <dan.carpenter@oracle.com>,
+        "tuomas.tynkkynen" <tuomas.tynkkynen@iki.fi>,
+        "gulsah.1004" <gulsah.1004@gmail.com>,
+        linux-media <linux-media@vger.kernel.org>, devel@driverdev.osuosl.org
+Date: Wed, 26 Nov 2014 08:05:55 -0800
+In-Reply-To: <CAPA4HGVJ_gJacLtgtQSJgSjgks9_7aGSuy2+aLOtkz01+Ng7CQ@mail.gmail.com>
+References: <20141125201905.GA10900@biggie>
+	 <1416947244.8358.12.camel@perches.com> <20141125204056.GA12162@biggie>
+	 <1416949207.8358.14.camel@perches.com> <20141125211428.GA12346@biggie>
+	 <1416966580.8358.17.camel@perches.com>
+	 <CAPA4HGVJ_gJacLtgtQSJgSjgks9_7aGSuy2+aLOtkz01+Ng7CQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/11/14 12:35, Morten Rasmussen wrote:
-> On Mon, Nov 03, 2014 at 04:54:41PM +0000, Vincent Guittot wrote:
->> From: Morten Rasmussen <morten.rasmussen@arm.com>
->>
+On Wed, 2014-11-26 at 15:42 +0000, Luis de Bethencourt wrote:
+> On 26 November 2014 at 01:49, Joe Perches <joe@perches.com> wrote:
+[]
+> > There is a script I posted a while back that
+> > groups various checkpatch "types" together and
+> > makes it a bit easier to do cleanup style
+> > patches.
+> >
+> > https://lkml.org/lkml/2014/7/11/794
+> That is useful! I just run it on staging/octeon/ and it wrote two patches.
+> Will submit them in a minute.
 
-Could we rename this patch to 'sched: Make usage tracking frequency
-scale-invariant'?
+Please make sure and write better commit messages
+than the script produces.
 
-The reason is, since we scale sched_avg::running_avg_sum according to
-the cpu frequency, not only sched_entity but also rq is affected (both
-contain sched_avg) and cfs_rq too since cfs_rq::utilization_load_avg is
-\sum (sched_entity::sched_avg::utilization_avg_contrib)
+> > Using checkpatch to get familiar with kernel
+> > development is fine and all, but fixing actual
+> > defects and submitting new code is way more
+> > useful.
+[]
+> I agree. I was just using checkpatch to learn about the development process.
+> How to create patches, submit patches, follow review, and such. Better to
+> do it
+> with small changes like this first.
 
-And so far we're only considering frequency scale-invariance and not cpu
-(or uArch) scale-invariance for the utilization/usage related per-entity
-load tracking bits.
+That's a good way to start.
 
->> Apply frequency scale-invariance correction factor to usage tracking.
-> 
-> s/usage/utilization/
-> 
->> Each segment of the running_load_avg geometric series is now scaled by the
->> current frequency so the utilization_avg_contrib of each entity will be
-> 
-> s/entity/sched_entity/
-> 
->> invariant with frequency scaling. As a result, utilization_load_avg which is
->> the sum of utilization_avg_contrib, becomes invariant too. So the usage level
-> 
-> s/sum of utilization_avg_contrib/sum of sched_entity
-> utilization_avg_contribs/
-> 
-> s/usage/utilization/
-> 
->> that is returned by get_cpu_usage, stays relative to the max frequency as the
->> cpu_capacity which is is compared against.
-> 
-> The last bit doesn't parse right. '... Maybe it is better to drop
-> the reference to get_cpu_usage which hasn't been defined yet and rewrite
-> the thing to:
-> 
-> Apply frequency scale-invariance correction factor to utilization
-> tracking. Each segment of the running_load_avg geometric series is now
+> Which makes me wonder. Is my patch accepted? Will it be merged? I can do the
+> proposed logging macro additions in a few days. Not sure yet how the final
+> step of the process when patches get accepted and merged works.
 
-s/running_load_avg/running_avg_sum
+You will generally get an email from a maintainer
+when patches are accepted/rejected or you get
+feedback asking for various changes.
 
-Couldn't find running_load_avg in the current code.
+Greg KH does that for drivers/staging but not for
+drivers/staging/media.  Mauro Carvalho Chehab does.
 
-What about using sched_avg::running_avg_sum instead of running_avg_sum?
-At least for me it is very complicated to distinguish the different
-per-entity load tracking data elements on the various scheduler data
-structures (like rq, se, cfs_rq) when I read per-entity load tracking
-related patch header.
+These emails are not immediate.  It can take 2 or 3
+weeks for a response.  Sometimes longer, sometimes
+shorter, sometimes no response ever comes.
 
-> scaled by the current frequency so the utilization_avg_contrib of each
-> entity will be invariant with frequency scaling. As a result,
-> utilization_load_avg which is the sum of sched_entity
-> utilization_avg_contribs becomes invariant too and is now relative to
-> the max utilization at the max frequency (=cpu_capacity).
+After a month or so, if you get no response, maybe
+the maintainer never saw it.  You should maybe
+expand the cc: list for the email.
 
-max frequency of _the_ cpu. It does not have to be the max frequency of
-the system though.
-The difference between the max. frequencies between the cpus of the
-system is part of the cpu invariant scaling ('cpu' equal to 'uarch' plus
-'max frequency in the system'). See 'clock-frequency' dtb property of
-node cpu in arch/arm/kernel/topology.c. Frequency scale invariance is
-about DVFS and this is per cpu.
+When the patch is more than a trivial style cleanup,
+Andrew Morton generally picks up orphan patches.
 
-> 
-> I think we should add:
-> 
-> arch_scale_freq_capacity() is reintroduced to provide the frequency
-> compensation scaling factor.
-> 
->> Then, we want the keep the load tracking values in a 32bits type, which implies
-> 
-> s/Then, we/We/
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+For some subsystems, there are "tracking" mechanisms
+like patchwork:
 
+For instance, netdev (net/ and drivers/net/) uses:
+http://patchwork.ozlabs.org/project/netdev/list/
+and David Miller, the primary networking maintainer
+is very prompt about updating it.
+
+There's this list of patchwork entries, but maintainer
+activity of these lists vary:
+
+https://patchwork.kernel.org/
 
