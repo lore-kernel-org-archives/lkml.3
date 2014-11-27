@@ -1,91 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774AbaK0Lja (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 06:39:30 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40188 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754102AbaK0Lj1 (ORCPT
+	id S1754821AbaK0Ljl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 06:39:41 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:58134 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754102AbaK0Lji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 06:39:27 -0500
-Date: Thu, 27 Nov 2014 11:38:20 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
-Cc: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+	Thu, 27 Nov 2014 06:39:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141126094838.GB17980@distanz.ch>
+References: <1416917818-10506-1-git-send-email-chunyan.zhang@spreadtrum.com>
+	<1416917818-10506-6-git-send-email-chunyan.zhang@spreadtrum.com>
+	<20141126094838.GB17980@distanz.ch>
+Date: Thu, 27 Nov 2014 19:39:36 +0800
+Message-ID: <CAAfSe-sdMVG-JV9DjQ0YYqe++r3MtgADReQHr1x54Z8xjp8pRA@mail.gmail.com>
+Subject: Re: [PATCH v3 5/5] tty/serial: Add Spreadtrum sc9836-uart driver support
+From: Lyra Zhang <zhang.lyra@gmail.com>
+To: Tobias Klauser <tklauser@distanz.ch>
+Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
+        Grant Likely <grant.likely@linaro.org>,
         "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
         "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
         "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "broonie@linaro.org" <broonie@linaro.org>,
+        "jslaby@suse.cz" <jslaby@suse.cz>, Kumar Gala <galak@codeaurora.org>,
+        Mark Brown <broonie@linaro.org>, Mark Rutland <mark.rutland@arm.com>,
         "m-karicheri2@ti.com" <m-karicheri2@ti.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "artagnon@gmail.com" <artagnon@gmail.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
         "rrichter@cavium.com" <rrichter@cavium.com>,
-        Will Deacon <Will.Deacon@arm.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "heiko@sntech.de" <heiko@sntech.de>,
-        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
-        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
-        "andrew@lunn.ch" <andrew@lunn.ch>,
-        "hytszk@gmail.com" <hytszk@gmail.com>,
-        "orsonzhai@gmail.com" <orsonzhai@gmail.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        gnomes@lxorguk.ukuu.org.uk, Jonathan Corbet <corbet@lwn.net>,
+        jason@lakedaemon.net, Mark Brown <broonie@kernel.org>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        shawn.guo@freescale.com, florian.vaussard@epfl.ch, andrew@lunn.ch,
+        Hayato Suzuki <hytszk@gmail.com>, Orson Zhai <orsonzhai@gmail.com>,
         "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
-        "zhizhou.zhang@spreadtrum.com" <zhizhou.zhang@spreadtrum.com>,
-        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
-        "zhang.lyra@gmail.com" <zhang.lyra@gmail.com>,
-        "wei.qiao@spreadtrum.com" <wei.qiao@spreadtrum.com>,
+        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
+        lanqing.liu@spreadtrum.com,
+        =?UTF-8?B?V2VpIFFpYW8gKOS5lOS8nyk=?= <wei.qiao@spreadtrum.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "sprdlinux@freelists.org" <sprdlinux@freelists.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Subject: Re: [PATCH v3 1/5] Documentation: DT: Renamed of-serial.txt to
- 8250.txt
-Message-ID: <20141127113819.GD857@leverpostej>
-References: <Sharkl64-v3>
- <1416917818-10506-1-git-send-email-chunyan.zhang@spreadtrum.com>
- <1416917818-10506-2-git-send-email-chunyan.zhang@spreadtrum.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416917818-10506-2-git-send-email-chunyan.zhang@spreadtrum.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        linux-doc@vger.kernel.org, linux-serial@vger.kernel.org,
+        linux-api@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 12:16:54PM +0000, Chunyan Zhang wrote:
-> The file of-serial.txt was only for 8250 compatible UART implementations,
-> so renamed it to 8250.txt to avoid confusing other persons.
-> This is recommended by Arnd, see:
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-September/291455.html
-> 
-> Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+2014-11-26 17:48 GMT+08:00 Tobias Klauser <tklauser@distanz.ch>:
+> On 2014-11-25 at 13:16:58 +0100, Chunyan Zhang <chunyan.zhang@spreadtrum.com> wrote:
 
-My prior Ack [1] still applies (given you've just changed the way the
-patch was generated, as Arnd and I suggested).
+>> ---
+[...]
+>> +
+>> +config SERIAL_SPRD_CONSOLE
+>> +        bool "SPRD UART console support"
+>> +        depends on SERIAL_SPRD=y
+>> +        select SERIAL_CORE_CONSOLE
+>> +     select SERIAL_EARLYCON
+>> +        help
+>> +       Support for early debug console using Spreadtrum's serial. This enables
+>> +       the console before standard serial driver is probed. This is enabled
+>> +       with "earlycon" on the kernel command line. The console is
+>> +       enabled when early_param is processed.
+>> +
+>>  endmenu
+>
+> Please consistently use tabs instead of spaces for indentation. The help
+> text should be indented by one tabe + 2 spaces.
+>
 
-Mark.
+OK, I will note it later.
+[...]
 
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/295152.html
+>> +static inline int handle_lsr_errors(struct uart_port *port,
+>> +     unsigned int *flag, unsigned int *lsr)
+>
+> This line should be aligned with the opening ( above.
+>
+OK, will change.
 
-> ---
->  .../bindings/serial/{of-serial.txt => 8250.txt}    |    0
->  1 file changed, 0 insertions(+), 0 deletions(-)
->  rename Documentation/devicetree/bindings/serial/{of-serial.txt => 8250.txt} (100%)
-> 
-> diff --git a/Documentation/devicetree/bindings/serial/of-serial.txt b/Documentation/devicetree/bindings/serial/8250.txt
-> similarity index 100%
-> rename from Documentation/devicetree/bindings/serial/of-serial.txt
-> rename to Documentation/devicetree/bindings/serial/8250.txt
-> -- 
-> 1.7.9.5
-> 
-> 
+>> +static inline void sprd_rx(int irq, void *dev_id)
+>> +{
+>> +     struct uart_port *port = (struct uart_port *)dev_id;
+>
+> No need to cast a void pointer.
+>
+
+>> +static void sprd_console_write(struct console *co, const char *s,
+>> +                                   unsigned int count)
+>> +{
+>> +     struct uart_port *port = (struct uart_port *)sprd_port[co->index];
+>
+> Better explicitly access the .port member of sprd_port[co->index] here
+> instead of casting.
+>
+
+>> +     port = (struct uart_port *)sprd_port[co->index];
+>
+> Same here, use the .port member of struct sprd_port[co->index].
+>
+>> +     if (port == NULL) {
+>> +             pr_info("srial port %d not yet initialized\n", co->index);
+>
+> Typo: should be serial instead of srial.
+>
+
+>> +     up->mapbase = mem->start;
+>> +     up->membase = ioremap(mem->start, resource_size(mem));
+>
+> Return value of ioremap() should be checked for NULL.
+>
+>> +static int sprd_resume(struct platform_device *dev)
+>> +{
+>> +     int id = dev->id;
+>> +     struct uart_port *port = (struct uart_port *)sprd_port[id];
+>
+> Access the .port member instead of the cast.
+>
+OK, will change all of the problems you pointed out in v4.
+Thanks for your review.
+
+Chunyan
