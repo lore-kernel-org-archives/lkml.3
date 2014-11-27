@@ -1,98 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266AbaK0I5Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 03:57:16 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42442 "EHLO mail.kernel.org"
+	id S1755236AbaK0ItR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 03:49:17 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:53576 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755194AbaK0ItS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:49:18 -0500
-From: lizf@kernel.org
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Markos Chandras <markos.chandras@imgtec.com>,
-        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 65/91] MIPS: mcount: Adjust stack pointer for static trace in MIPS32
-Date: Thu, 27 Nov 2014 16:42:48 +0800
-Message-Id: <1417077794-9299-65-git-send-email-lizf@kernel.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
-References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
+	id S1755194AbaK0ItI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:49:08 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Sonny Rao <sonnyrao@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-rockchip@lists.infradead.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Douglas Anderson <dianders@chromium.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Mark yao <mark.yao@rock-chips.com>,
+        Kever Yang <kever.yang@rock-chips.com>
+Subject: Re: [PATCH] clk: rockchip: rk3288 export i2s0_clkout for use in DT
+Date: Thu, 27 Nov 2014 09:52:55 +0100
+Message-ID: <56685599.NrGFKacCZ1@diego>
+User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <CAPz6YkXOS08hv7x+DM3roTuZYMbh9n4=kpTrH8NGYUffczQwLA@mail.gmail.com>
+References: <1416381319-31117-1-git-send-email-sonnyrao@chromium.org> <3863623.tcGxuFQcZa@diego> <CAPz6YkXOS08hv7x+DM3roTuZYMbh9n4=kpTrH8NGYUffczQwLA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markos Chandras <markos.chandras@imgtec.com>
+Am Mittwoch, 26. November 2014, 19:47:10 schrieb Sonny Rao:
+> On Wed, Nov 26, 2014 at 3:32 PM, Heiko Stübner <heiko@sntech.de> wrote:
+> > Am Dienstag, 18. November 2014, 23:15:19 schrieb Sonny Rao:
+> >> This exposes the clock that comes out of the i2s block which generally
+> >> goes to the audio codec.
+> >> 
+> >> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+> > 
+> > applied to my clk branch after removing the CLK_SET_RATE_PARENT
+> 
+> Hi, sorry for the delay, and thanks for fixing it.  I think when I
+> applied the patch to next-20141118 that had a CLK_SET_RATE_PARENT in
+> it from this patch:
+> 
+> commit fc69ed70c16a31d6a77ec47a30a9fe941f763f1e
+> Author: Jianqun <jay.xu@rock-chips.com>
+> Date:   Tue Sep 30 11:12:04 2014 +0800
+> 
+>     clk: rockchip: rk3288: i2s_frac adds flag to set parent's rate
+> 
+> 
+> I agree that is is not necessary and maybe not desirable.  Thanks again!
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+glad to be of help :-)
 
-------------------
+Just for reference, the commit removing this CLK_SET_RATE_PARENT is [0] that 
+incidentally got pulled in by Mike on the same 20141118 and was therefore part 
+of linux-next 20141119
 
 
-commit 8a574cfa2652545eb95595d38ac2a0bb501af0ae upstream.
 
-Every mcount() call in the MIPS 32-bit kernel is done as follows:
-
-[...]
-move at, ra
-jal _mcount
-addiu sp, sp, -8
-[...]
-
-but upon returning from the mcount() function, the stack pointer
-is not adjusted properly. This is explained in details in 58b69401c797
-(MIPS: Function tracer: Fix broken function tracing).
-
-Commit ad8c396936e3 ("MIPS: Unbreak function tracer for 64-bit kernel.)
-fixed the stack manipulation for 64-bit but it didn't fix it completely
-for MIPS32.
-
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/7792/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: Zefan Li <lizefan@huawei.com>
----
- arch/mips/kernel/mcount.S | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
-
-diff --git a/arch/mips/kernel/mcount.S b/arch/mips/kernel/mcount.S
-index 4c968e7..55eca41 100644
---- a/arch/mips/kernel/mcount.S
-+++ b/arch/mips/kernel/mcount.S
-@@ -119,7 +119,11 @@ NESTED(_mcount, PT_SIZE, ra)
- 	 nop
- #endif
- 	b	ftrace_stub
-+#ifdef CONFIG_32BIT
-+	 addiu sp, sp, 8
-+#else
- 	 nop
-+#endif
- 
- static_trace:
- 	MCOUNT_SAVE_REGS
-@@ -129,6 +133,9 @@ static_trace:
- 	 move	a1, AT		/* arg2: parent's return address */
- 
- 	MCOUNT_RESTORE_REGS
-+#ifdef CONFIG_32BIT
-+	addiu sp, sp, 8
-+#endif
- 	.globl ftrace_stub
- ftrace_stub:
- 	RETURN_BACK
-@@ -177,6 +184,11 @@ NESTED(ftrace_graph_caller, PT_SIZE, ra)
- 	jal	prepare_ftrace_return
- 	 nop
- 	MCOUNT_RESTORE_REGS
-+#ifndef CONFIG_DYNAMIC_FTRACE
-+#ifdef CONFIG_32BIT
-+	addiu sp, sp, 8
-+#endif
-+#endif
- 	RETURN_BACK
- 	END(ftrace_graph_caller)
- 
--- 
-1.9.1
-
+[0] https://git.kernel.org/cgit/linux/kernel/git/mmind/linux-rockchip.git/commit/?id=8f06f5d392b3fbd58a5d7e00b047b6ee08c6d9b0
