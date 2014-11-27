@@ -1,162 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117AbaK0Lgu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 06:36:50 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:63352 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753251AbaK0Lgs (ORCPT
+	id S1754646AbaK0Lhk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 06:37:40 -0500
+Received: from smtp121.iad3a.emailsrvr.com ([173.203.187.121]:35419 "EHLO
+	smtp121.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752633AbaK0Lhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 06:36:48 -0500
-Message-ID: <54770CBF.3040309@gmail.com>
-Date: Thu, 27 Nov 2014 19:36:31 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] sched/rt: don't try to balance rt_runtime when it is
- futile
-References: <1400080115-12339-1-git-send-email-paul.gortmaker@windriver.com> <20140514154459.GE4570@linux.vnet.ibm.com> <20140514191100.GA24155@windriver.com>
-In-Reply-To: <20140514191100.GA24155@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Nov 2014 06:37:37 -0500
+X-Sender-Id: abbotti@mev.co.uk
+From: Ian Abbott <abbotti@mev.co.uk>
+To: <driverdev-devel@linuxdriverproject.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/3] staging: comedi: adl_pci9118: eliminate DMA buffer defragmentation step
+Date: Thu, 27 Nov 2014 11:37:19 +0000
+Message-Id: <1417088239-20460-4-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1417088239-20460-1-git-send-email-abbotti@mev.co.uk>
+References: <1417088239-20460-1-git-send-email-abbotti@mev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
-On 5/15/14, 3:11 AM, Paul Gortmaker wrote:
-> [Added Frederic to Cc: since we are now talking nohz stuff]
->
-> [Re: [PATCH] sched/rt: don't try to balance rt_runtime when it is futile] On 14/05/2014 (Wed 08:44) Paul E. McKenney wrote:
->
->> On Wed, May 14, 2014 at 11:08:35AM -0400, Paul Gortmaker wrote:
->>> As of the old commit ac086bc22997a2be24fc40fc8d46522fe7e03d11
->>> ("sched: rt-group: smp balancing") the concept of borrowing per
->>> cpu rt_runtime from one core to another was introduced.
->>>
->>> However, this prevents the RT throttling message from ever being
->>> emitted when someone does a common (but mistaken) attempt at
->>> using too much CPU in RT context.  Consider the following test:
->>>
->>>    echo "main() {for(;;);}" > full_load.c
->>>    gcc full_load.c -o full_load
->>>    taskset -c 1 ./full_load &
->>>    chrt -r -p 80 `pidof full_load`
->>>
->>> When run on x86_64 defconfig, what happens is as follows:
->>>
->>> -task runs on core1 for 95% of an rt_period as documented in
->>>   the file Documentation/scheduler/sched-rt-group.txt
->>>
->>> -at 95%, the code in balance_runtime sees this threshold and
->>>   calls do_balance_runtime()
->>>
->>> -do_balance_runtime sees that core 1 is in need, and does this:
->>> 	---------------
->>>          if (rt_rq->rt_runtime + diff > rt_period)
->>>                  diff = rt_period - rt_rq->rt_runtime;
->>>          iter->rt_runtime -= diff;
->>>          rt_rq->rt_runtime += diff;
->>> 	---------------
->>>   which extends core1's rt_runtime by 5%, making it 100% of rt_period
->>>   by stealing 5% from core0 (or possibly some other core).
->>>
->>> However, the next time core1's rt_rq enters sched_rt_runtime_exceeded(),
->>> we hit this near the top of that function:
->>> 	---------------
->>>          if (runtime >= sched_rt_period(rt_rq))
->>>                  return 0;
->>> 	---------------
->>> and hence we'll _never_ look at/set any of the throttling checks and
->>> messages in sched_rt_runtime_exceeded().  Instead, we will happily
->>> plod along for CONFIG_RCU_CPU_STALL_TIMEOUT seconds, at which point
->>> the RCU subsystem will get angry and trigger an NMI in response to
->>> what it rightly sees as a WTF situation.
->> In theory, one way of making RCU OK with an RT usermode CPU hog is to
->> build with Frederic's CONFIG_NO_HZ_FULL=y.  This will cause RCU to see
->> CPUs having a single runnable usermode task as idle, preventing the RCU
->> CPU stall warning.  This does work well for mainline kernel in the lab.
-> Agreed; wanting to test that locally for myself meant moving to a more
-> modern machine, as the older PentiumD doesn't support NO_HZ_FULL.  But
+The DMA operations used by the driver may have been set up to acquire
+data from unwanted channels in addition to the wanted channels.
+Currently, `interrupt_pci9118_ai_dma()` calls `defragment_dma_buffer()`
+to move all the wanted data to the start of the DMA buffer and then
+calls `comedi_buf_write_samples()` to copy it all to the comedi async
+buffer.  Those two functions used to be called from
+`move_block_from_dma()` which was absorbed into
+`interrupt_pci9118_ai_dma()`.
 
-Could you point out which hw feature support NO_HZ_FULL? How to check it 
-through cpuid?
+Reinstate `move_block_from_dma()` but rewrite it to copy data directly
+from the wanted fragments of the DMA buffer to the comedi async buffer
+without defragmenting the buffer first.
 
-Regards,
-Wanpeng Li
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+---
+ drivers/staging/comedi/drivers/adl_pci9118.c | 67 +++++++++++++++++++---------
+ 1 file changed, 46 insertions(+), 21 deletions(-)
 
-> on the newer box (dual socket six cores in each) I found the stall
-> harder to trigger w/o going back to using the threadirqs boot arg as
-> used in the earlier lkml post referenced below. (Why?  Not sure...)
->
-> Once I did that though (boot vanilla linux-next with threadirqs) I
-> confirmed what you said; i.e. that we would reliably get a stall with
-> the defconfig of NOHZ_IDLE=y but not with NOHZ_FULL=y (and hence also
-> RCU_USER_QS=y).
->
->> In practice, not sure how much testing CONFIG_NO_HZ_FULL=y has received
->> for -rt kernels in production environments.
->>
->> But leaving practice aside for the moment...
->>
-> [...]
->
->>> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
->>> index ea4d500..698aac9 100644
->>> --- a/kernel/sched/rt.c
->>> +++ b/kernel/sched/rt.c
->>> @@ -774,6 +774,15 @@ static int balance_runtime(struct rt_rq *rt_rq)
->>>   	if (!sched_feat(RT_RUNTIME_SHARE))
->>>   		return more;
->>>
->>> +	/*
->>> +	 * Stealing from another core won't help us at all if
->>> +	 * we have nothing to migrate over there, or only one
->>> +	 * task that is running up all the rt_time.  In fact it
->>> +	 * will just inhibit the throttling message in that case.
->>> +	 */
->>> +	if (!rt_rq->rt_nr_migratory || rt_rq->rt_nr_total == 1)
->> How about something like the following to take NO_HZ_FULL into account?
->>
->> +	if ((!rt_rq->rt_nr_migratory || rt_rq->rt_nr_total == 1) &&
->> +	    !tick_nohz_full_cpu(cpu))
-> Yes, I think special casing nohz_full can make sense, but maybe not
-> exactly here in balance_runtime?  Since the underlying reasoning doesn't
-> change on nohz_full ; if only one task is present, or nothing can
-> migrate, then the call to do_balance_runtime is largely useless - we'll
-> walk possibly all cpus in search of an rt_rq to steal from, and what we
-> steal, we can't use - so we've artificially crippled the other rt_rq for
-> nothing other than to artifically inflate our rt_runtime and thus allow
-> 100% usage.
->
-> Given that, perhaps a separate change to sched_rt_runtime_exceeded()
-> that works out the CPU from the rt_rq, and returns zero if it is a
-> nohz_full cpu?  Does that make sense?  Then the nohz_full people won't
-> get the throttling message even if they go 100%.
->
-> Paul.
-> --
->
->> 							Thanx, Paul
->>
->>> +		return more;
->>> +
->>>   	if (rt_rq->rt_time > rt_rq->rt_runtime) {
->>>   		raw_spin_unlock(&rt_rq->rt_runtime_lock);
->>>   		more = do_balance_runtime(rt_rq);
->>> -- 
->>> 1.8.2.3
->>>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c b/drivers/staging/comedi/drivers/adl_pci9118.c
+index c0ea733..2660358 100644
+--- a/drivers/staging/comedi/drivers/adl_pci9118.c
++++ b/drivers/staging/comedi/drivers/adl_pci9118.c
+@@ -502,29 +502,56 @@ static unsigned int valid_samples_in_act_dma_buf(struct comedi_device *dev,
+ 	return n_samples;
+ }
+ 
+-static unsigned int defragment_dma_buffer(struct comedi_device *dev,
+-					  struct comedi_subdevice *s,
+-					  unsigned short *dma_buffer,
+-					  unsigned int num_samples)
++static void move_block_from_dma(struct comedi_device *dev,
++				struct comedi_subdevice *s,
++				unsigned short *dma_buffer,
++				unsigned int n_raw_samples)
+ {
+ 	struct pci9118_private *devpriv = dev->private;
+ 	struct comedi_cmd *cmd = &s->async->cmd;
+-	unsigned int i = 0, j = 0;
+-	unsigned int start_pos = devpriv->ai_add_front,
+-	    stop_pos = devpriv->ai_add_front + cmd->chanlist_len;
+-	unsigned int raw_scanlen = devpriv->ai_add_front + cmd->chanlist_len +
+-	    devpriv->ai_add_back;
++	unsigned int start_pos = devpriv->ai_add_front;
++	unsigned int stop_pos = start_pos + cmd->chanlist_len;
++	unsigned int span_len = stop_pos + devpriv->ai_add_back;
++	unsigned int dma_pos = devpriv->ai_act_dmapos;
++	unsigned int x;
+ 
+-	for (i = 0; i < num_samples; i++) {
+-		if (devpriv->ai_act_dmapos >= start_pos &&
+-		    devpriv->ai_act_dmapos < stop_pos) {
+-			dma_buffer[j++] = dma_buffer[i];
++	if (span_len == cmd->chanlist_len) {
++		/* All samples are to be copied. */
++		comedi_buf_write_samples(s, dma_buffer, n_raw_samples);
++		dma_pos += n_raw_samples;
++	} else {
++		/*
++		 * Not all samples are to be copied.  Buffer contents consist
++		 * of a possibly non-whole number of spans and a region of
++		 * each span is to be copied.
++		 */
++		while (n_raw_samples) {
++			if (dma_pos < start_pos) {
++				/* Skip samples before start position. */
++				x = start_pos - dma_pos;
++				if (x > n_raw_samples)
++					x = n_raw_samples;
++				dma_pos += x;
++				n_raw_samples -= x;
++				if (!n_raw_samples)
++					break;
++			}
++			if (dma_pos < stop_pos) {
++				/* Copy samples before stop position. */
++				x = stop_pos - dma_pos;
++				if (x > n_raw_samples)
++					x = n_raw_samples;
++				comedi_buf_write_samples(s, dma_buffer, x);
++				dma_pos += x;
++				n_raw_samples -= x;
++			}
++			/* Advance to next span. */
++			start_pos += span_len;
++			stop_pos += span_len;
+ 		}
+-		devpriv->ai_act_dmapos++;
+-		devpriv->ai_act_dmapos %= raw_scanlen;
+ 	}
+-
+-	return j;
++	/* Update position in span for next time. */
++	devpriv->ai_act_dmapos = dma_pos % span_len;
+ }
+ 
+ static void pci9118_exttrg_enable(struct comedi_device *dev, bool enable)
+@@ -681,10 +708,8 @@ static void interrupt_pci9118_ai_dma(struct comedi_device *dev,
+ 		}
+ 	}
+ 
+-	if (n_all) {
+-		n_valid = defragment_dma_buffer(dev, s, dmabuf->virt, n_all);
+-		comedi_buf_write_samples(s, dmabuf->virt, n_valid);
+-	}
++	if (n_all)
++		move_block_from_dma(dev, s, dmabuf->virt, n_all);
+ 
+ 	if (!devpriv->ai_neverending) {
+ 		if (s->async->scans_done >= cmd->stop_arg)
+-- 
+2.1.3
 
