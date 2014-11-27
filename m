@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754290AbaK0G1s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 01:27:48 -0500
-Received: from mga11.intel.com ([192.55.52.93]:41151 "EHLO mga11.intel.com"
+	id S1754266AbaK0G1q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 01:27:46 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:59586 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753978AbaK0G04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754150AbaK0G04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Nov 2014 01:26:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="422135597"
-From: Lv Zheng <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Bob Moore <robert.moore@intel.com>,
-        "David E. Box" <david.e.box@linux.intel.com>
-Subject: [PATCH 5/6] ACPICA: Disassembler: Emit correct string for 0 stop bits.
-Date: Thu, 27 Nov 2014 14:26:28 +0800
-Message-Id: <6a3b2fcc1aaad67e0a02ee24402db0d284948a84.1416899966.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1416899966.git.lv.zheng@intel.com>
-References: <cover.1416899966.git.lv.zheng@intel.com>
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 24/25] Phy: DT binding documentation for the Armada 375 USB cluster binding
+Date: Thu, 27 Nov 2014 11:56:16 +0530
+Message-ID: <1417069577-1169-25-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1417069577-1169-1-git-send-email-kishon@ti.com>
+References: <1417069577-1169-1-git-send-email-kishon@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bob Moore <robert.moore@intel.com>
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-Was stop_bits_none, corrected to stop_bits_zero.
-David E. Box.
+Armada 375 comes with an USB2 host and device controller and an USB3
+controller. The USB cluster control register allows to manage common
+features of both USB controllers. This commit adds the Device Tree
+binding documentation for this piece of hardware.
 
-Signed-off-by: David E. Box <david.e.box@linux.intel.com>
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/acpi/acpica/utresrc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ .../devicetree/bindings/phy/phy-mvebu.txt          |   21 ++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-diff --git a/drivers/acpi/acpica/utresrc.c b/drivers/acpi/acpica/utresrc.c
-index 5cd017c..bc1ff82 100644
---- a/drivers/acpi/acpica/utresrc.c
-+++ b/drivers/acpi/acpica/utresrc.c
-@@ -263,7 +263,7 @@ const char *acpi_gbl_bpb_decode[] = {
- /* UART serial bus stop bits */
- 
- const char *acpi_gbl_sb_decode[] = {
--	"StopBitsNone",
-+	"StopBitsZero",
- 	"StopBitsOne",
- 	"StopBitsOnePlusHalf",
- 	"StopBitsTwo"
+diff --git a/Documentation/devicetree/bindings/phy/phy-mvebu.txt b/Documentation/devicetree/bindings/phy/phy-mvebu.txt
+index 6cb3364..f95b626 100644
+--- a/Documentation/devicetree/bindings/phy/phy-mvebu.txt
++++ b/Documentation/devicetree/bindings/phy/phy-mvebu.txt
+@@ -20,3 +20,24 @@ Example:
+ 			#phy-cells = <0>;
+ 			status = "ok";
+ 		};
++
++Armada 375 USB cluster
++----------------------
++
++Armada 375 comes with an USB2 host and device controller and an USB3
++controller. The USB cluster control register allows to manage common
++features of both USB controllers.
++
++Required properties:
++
++- compatible: "marvell,armada-375-usb-cluster"
++- reg: Should contain usb cluster register location and length.
++- #phy-cells : from the generic phy bindings, must be 1. Possible
++values are 1 (USB2), 2 (USB3).
++
++Example:
++		usbcluster: usb-cluster@18400 {
++			compatible = "marvell,armada-375-usb-cluster";
++			reg = <0x18400 0x4>;
++			#phy-cells = <1>
++		};
 -- 
-1.7.10
+1.7.9.5
 
