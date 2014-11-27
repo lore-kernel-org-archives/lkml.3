@@ -1,163 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876AbaK0R0I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 12:26:08 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:54581 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067AbaK0R0G (ORCPT
+	id S1751587AbaK0R1S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 12:27:18 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:37731 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875AbaK0R1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 12:26:06 -0500
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-To: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        alex.williamson@redhat.com, linux@arm.linux.org.uk
-Cc: will.deacon@arm.com, tech@virtualopensystems.com,
-        christoffer.dall@linaro.org, eric.auger@linaro.org,
-        kim.phillips@freescale.com, marc.zyngier@arm.com,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        linux-api@vger.kernel.org (open list:ABI/API),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [REPORT PATCH] driver core: amba: add device binding path 'driver_override'
-Date: Thu, 27 Nov 2014 18:25:50 +0100
-Message-Id: <1417109154-10331-1-git-send-email-a.motakis@virtualopensystems.com>
-X-Mailer: git-send-email 2.1.3
+	Thu, 27 Nov 2014 12:27:17 -0500
+Date: Thu, 27 Nov 2014 18:27:13 +0100
+From: Luis de Bethencourt <luis@debethencourt.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        paul.gortmaker@windriver.com, eunb.song@samsung.com,
+        aaro.koskinen@iki.fi, devel@driverdev.osuosl.org
+Subject: Re: [PATCH v2] staging: octeon: Fix checkpatch warnings
+Message-ID: <20141127172713.GA4096@ks395439.kimsufi.com>
+References: <20141127161432.GA32577@ks395439.kimsufi.com>
+ <1417106040.1135.1.camel@perches.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417106040.1135.1.camel@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As already demonstrated with PCI [1] and the platform bus [2], a
-driver_override property in sysfs can be used to bypass the id matching
-of a device to a AMBA driver. This can be used by VFIO to bind to any AMBA
-device requested by the user.
+On Thu, Nov 27, 2014 at 08:34:00AM -0800, Joe Perches wrote:
+> On Thu, 2014-11-27 at 17:18 +0100, Luis de Bethencourt wrote:
+> > Fixing 80 character limit warnings in octeon/ethernet-rx.c
+> 
+> Hello again Luis.
+> 
+> Another thing you might consider is to  align
+> multiple line statements to the appropriate
+> open parenthesis.
 
-[1] http://lists-archives.com/linux-kernel/28030441-pci-introduce-new-device-binding-path-using-pci_dev-driver_override.html
-[2] https://www.redhat.com/archives/libvir-list/2014-April/msg00382.html
+Sure :) I will do this and merge it into the patch in a few hours.
 
-Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-Reviewed-by: Kim Phillips <kim.phillips@freescale.com>
----
- Documentation/ABI/testing/sysfs-bus-amba | 20 ++++++++++++++
- drivers/amba/bus.c                       | 47 ++++++++++++++++++++++++++++++++
- include/linux/amba/bus.h                 |  1 +
- 3 files changed, 68 insertions(+)
- create mode 100644 Documentation/ABI/testing/sysfs-bus-amba
+> 
+> > diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
+> []
+> > @@ -126,13 +127,15 @@ static inline int cvm_oct_check_rcv_error(cvmx_wqe_t *work)
+> >  
+> >  			if (*ptr == 0xd5) {
+> >  				/*
+> > -				  printk_ratelimited("Port %d received 0xd5 preamble\n", work->ipprt);
+> > +				  printk_ratelimited("Port %d received 0xd5 preamble\n",
+> > +					  work->ipprt);
+> >  				 */
+> 
+> This is in a commented out block, but this
+> would look better like:
+> 
+> 		printk_ratelimited("format",
+> 				   args...);
+> 
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-amba b/Documentation/ABI/testing/sysfs-bus-amba
-new file mode 100644
-index 0000000..e7b5467
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-bus-amba
-@@ -0,0 +1,20 @@
-+What:		/sys/bus/amba/devices/.../driver_override
-+Date:		September 2014
-+Contact:	Antonios Motakis <a.motakis@virtualopensystems.com>
-+Description:
-+		This file allows the driver for a device to be specified which
-+		will override standard OF, ACPI, ID table, and name matching.
-+		When specified, only a driver with a name matching the value
-+		written to driver_override will have an opportunity to bind to
-+		the device. The override is specified by writing a string to the
-+		driver_override file (echo vfio-amba > driver_override)	and may
-+		be cleared with an empty string (echo > driver_override).
-+		This returns the device to standard matching rules binding.
-+		Writing to driver_override does not automatically unbind the
-+		device from its current driver or make any attempt to
-+		automatically load the specified driver. If no driver with a
-+		matching name is currently loaded in the kernel, the device will
-+		not bind to any driver. This also allows devices to opt-out of
-+		driver binding using a driver_override name such as "none".
-+		Only a single driver may be specified in the override, there is
-+		no support for parsing delimiters.
-diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
-index 47bbdc1..14bb08b 100644
---- a/drivers/amba/bus.c
-+++ b/drivers/amba/bus.c
-@@ -18,6 +18,7 @@
- #include <linux/pm_domain.h>
- #include <linux/amba/bus.h>
- #include <linux/sizes.h>
-+#include <linux/limits.h>
- 
- #include <asm/irq.h>
- 
-@@ -43,6 +44,10 @@ static int amba_match(struct device *dev, struct device_driver *drv)
- 	struct amba_device *pcdev = to_amba_device(dev);
- 	struct amba_driver *pcdrv = to_amba_driver(drv);
- 
-+	/* When driver_override is set, only bind to the matching driver */
-+	if (pcdev->driver_override)
-+		return !strcmp(pcdev->driver_override, drv->name);
-+
- 	return amba_lookup(pcdrv->id_table, pcdev) != NULL;
- }
- 
-@@ -59,6 +64,47 @@ static int amba_uevent(struct device *dev, struct kobj_uevent_env *env)
- 	return retval;
- }
- 
-+static ssize_t driver_override_show(struct device *_dev,
-+				    struct device_attribute *attr, char *buf)
-+{
-+	struct amba_device *dev = to_amba_device(_dev);
-+
-+	if (!dev->driver_override)
-+		return 0;
-+
-+	return sprintf(buf, "%s\n", dev->driver_override);
-+}
-+
-+static ssize_t driver_override_store(struct device *_dev,
-+				     struct device_attribute *attr,
-+				     const char *buf, size_t count)
-+{
-+	struct amba_device *dev = to_amba_device(_dev);
-+	char *driver_override, *old = dev->driver_override, *cp;
-+
-+	if (count > PATH_MAX)
-+		return -EINVAL;
-+
-+	driver_override = kstrndup(buf, count, GFP_KERNEL);
-+	if (!driver_override)
-+		return -ENOMEM;
-+
-+	cp = strchr(driver_override, '\n');
-+	if (cp)
-+		*cp = '\0';
-+
-+	if (strlen(driver_override)) {
-+		dev->driver_override = driver_override;
-+	} else {
-+	       kfree(driver_override);
-+	       dev->driver_override = NULL;
-+	}
-+
-+	kfree(old);
-+
-+	return count;
-+}
-+
- #define amba_attr_func(name,fmt,arg...)					\
- static ssize_t name##_show(struct device *_dev,				\
- 			   struct device_attribute *attr, char *buf)	\
-@@ -81,6 +127,7 @@ amba_attr_func(resource, "\t%016llx\t%016llx\t%016lx\n",
- static struct device_attribute amba_dev_attrs[] = {
- 	__ATTR_RO(id),
- 	__ATTR_RO(resource),
-+	__ATTR_RW(driver_override),
- 	__ATTR_NULL,
- };
- 
-diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
-index c324f57..34a7004 100644
---- a/include/linux/amba/bus.h
-+++ b/include/linux/amba/bus.h
-@@ -32,6 +32,7 @@ struct amba_device {
- 	struct clk		*pclk;
- 	unsigned int		periphid;
- 	unsigned int		irq[AMBA_NR_IRQS];
-+	char			*driver_override;
- };
- 
- struct amba_driver {
--- 
-2.1.3
+I agree. Thanks for the pointer.
 
+> 
+> > @@ -212,17 +215,20 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+> >  		did_work_request = 0;
+> >  		if (work == NULL) {
+> >  			union cvmx_pow_wq_int wq_int;
+> > +
+> >  			wq_int.u64 = 0;
+> >  			wq_int.s.iq_dis = 1 << pow_receive_group;
+> >  			wq_int.s.wq_int = 1 << pow_receive_group;
+> >  			cvmx_write_csr(CVMX_POW_WQ_INT, wq_int.u64);
+> >  			break;
+> >  		}
+> > -		pskb = (struct sk_buff **)(cvm_oct_get_buffer_ptr(work->packet_ptr) - sizeof(void *));
+> > +		pskb = (struct sk_buff **)(cvm_oct_get_buffer_ptr(work->packet_ptr) -
+> > +			sizeof(void *));
+> 
+> cvm_oct_get_buffer_ptr returns a void pointer
+> so it doesn't need a cast.
+> 
+> a possible fix is just to remove the cast
+> 
+> 		pskb = cvm_oct_get_buffer_ptr(work->packet_ptr) - sizeof(void *);
+> 
+> >  		prefetch(pskb);
+> 
+> If the cast type above to a ** is to be believed,
+> maybe this should be prefetch(*pskb)
+> 
+> If you do these, they should be separate patches.
+> 
+
+Cool! Once I do the above I will fix this in a separate patch.
+
+Thanks again for your time reviewing Joe,
+Luis
