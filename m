@@ -1,88 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751218AbaK0TvM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 14:51:12 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:54254 "EHLO
+	id S1751301AbaK0TxP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 14:53:15 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:52660 "EHLO
 	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729AbaK0TvK (ORCPT
+	with ESMTP id S1750784AbaK0TxN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 14:51:10 -0500
-Date: Thu, 27 Nov 2014 20:50:55 +0100
-From: Mariusz Gorski <marius.gorski@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, Willy Tarreau <w@1wt.eu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/9] staging: panel: Use defined value or checking
- module params state
-Message-ID: <20141127195054.GA14536@firebird>
-References: <1416429531-11088-1-git-send-email-marius.gorski@gmail.com>
- <1416429531-11088-5-git-send-email-marius.gorski@gmail.com>
- <20141126215801.GA32756@kroah.com>
- <20141127132657.GA12298@firebird>
- <20141127152417.GB23247@kroah.com>
- <20141127155706.GB24149@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141127155706.GB24149@kroah.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Thu, 27 Nov 2014 14:53:13 -0500
+Content-Type: text/plain; charset=utf-8
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: [PATCH 3/4] KVM: x86: allow 256 logical x2APICs again
+From: Nadav Amit <nadav.amit@gmail.com>
+In-Reply-To: <1417114994-25235-4-git-send-email-rkrcmar@redhat.com>
+Date: Thu, 27 Nov 2014 21:53:09 +0200
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Nadav Amit <namit@cs.technion.ac.il>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <22F11C34-E2E4-459B-882B-A944AD0853FD@gmail.com>
+References: <1417114994-25235-1-git-send-email-rkrcmar@redhat.com> <1417114994-25235-4-git-send-email-rkrcmar@redhat.com>
+To: =?utf-8?Q?Radim_Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 07:57:06AM -0800, Greg Kroah-Hartman wrote:
-> On Thu, Nov 27, 2014 at 07:24:17AM -0800, Greg Kroah-Hartman wrote:
-> > On Thu, Nov 27, 2014 at 02:26:59PM +0100, Mariusz Gorski wrote:
-> > > On Wed, Nov 26, 2014 at 01:58:01PM -0800, Greg Kroah-Hartman wrote:
-> > > > On Wed, Nov 19, 2014 at 09:38:46PM +0100, Mariusz Gorski wrote:
-> > > > > Avoid magic number and use a comparison with a defined value instead
-> > > > > that checks whether module param has been set by the user to some
-> > > > > value at loading time.
-> > > > > 
-> > > > > Signed-off-by: Mariusz Gorski <marius.gorski@gmail.com>
-> > > > > Acked-by: Willy Tarreau <w@1wt.eu>
-> > > > > ---
-> > > > > v2: Don't introduce new macros for param value check
-> > > > > 
-> > > > >  drivers/staging/panel/panel.c | 86 +++++++++++++++++++++----------------------
-> > > > >  1 file changed, 43 insertions(+), 43 deletions(-)
-> > > > 
-> > > > Ugh, I messed up here, and applied the first series, which was acked.
-> > > > 
-> > > > Mariusz, can you resend the patches that I didn't apply, I can't seem to
-> > > > get the rest of these to work properly.
-> > > 
-> > > Greg, if I get you here correctly, you've applied all 9 patches from v1
-> > > and none from v2, so what you need now is a v1->v2 patch, right?
-> > 
-> > No, I think I applied the patches sent _before_ the 9 series, it was 4
-> > or 5 or so, you should have gotten an email about them.  Pull my
-> > staging-testing branch and redo your remaining patches please.
+Radim Krčmář <rkrcmar@redhat.com> wrote:
+
+> While fixing an x2apic bug,
+> 17d68b7 KVM: x86: fix guest-initiated crash with x2apic (CVE-2013-6376)
+> we've made only one cluster available.  This means that the amount of
+> logically addressible x2APICs was reduced to 16 and VCPUs kept
+> overwriting themselves in that region, so even the first cluster wasn't
+> set up correctly.
 > 
-> And the reason I got confused was because you didn't label your second
-> set of patches "v2", which it was, I saw two separate series, one with a
-> few patches, and then 2 sets of 9, the second set labeled "v2" so I
-> thought they were independant.  Please think of the poor maintainer who
-> has to decipher things like this when you send them out...
-
-I'm confused right now. As you say, first I've sent a patchset of 4:
-https://lkml.org/lkml/2014/11/11/963
-
-Then, a couple of days later, I've sent the initial patchset of 9:
-https://lkml.org/lkml/2014/11/18/922
-
-And a day I've sent a fixed version of the above patchset, labeled with v2:
-https://lkml.org/lkml/2014/11/19/653
-
-Isn't this the right way to do? I still don't get my mistake. Because
-what I was just about to do is to resend the v2 patchset, but now I'm
-not sure anymore if this is what I'm supposed to do.
-
-BTW: Out of these 3 patchsets, 1st and 3rd should be applied.
-
-> thanks,
+> This patch extends x2APIC support back to the logical_map's limit, and
+> keeps the CVE fixed as messages for non-present APICs are dropped.
 > 
-> greg k-h
+> Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+> ---
+> arch/x86/kvm/lapic.c | 11 ++++++-----
+> arch/x86/kvm/lapic.h |  2 --
+> 2 files changed, 6 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+> index 049d30f..f6e3369 100644
+> --- a/arch/x86/kvm/lapic.c
+> +++ b/arch/x86/kvm/lapic.c
+> @@ -132,8 +132,6 @@ static inline int kvm_apic_id(struct kvm_lapic *apic)
+> 	return (kvm_apic_get_reg(apic, APIC_ID) >> 24) & 0xff;
+> }
+> 
+> -#define KVM_X2APIC_CID_BITS 0
+> -
+> static void recalculate_apic_map(struct kvm *kvm)
+> {
+> 	struct kvm_apic_map *new, *old = NULL;
+> @@ -163,8 +161,7 @@ static void recalculate_apic_map(struct kvm *kvm)
+> 		if (apic_x2apic_mode(apic)) {
+> 			new->ldr_bits = 32;
+> 			new->cid_shift = 16;
+> -			new->cid_mask = (1 << KVM_X2APIC_CID_BITS) - 1;
+> -			new->lid_mask = 0xffff;
+> +			new->cid_mask = new->lid_mask = 0xffff;
+You set cid_mask to 0xffff, while there are only 16 clusters. I think it is
+risky (if you twist my hand would come with a scenario). Yet, why not to set
+cid_mask to (ARRAY_SIZE(map->logical_map) - 1) ?
 
-Cheers,
-Mariusz
+
+Nadav
