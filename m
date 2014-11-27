@@ -1,111 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531AbaK0Gcw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 01:32:52 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:34488 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521AbaK0G02 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 01:26:28 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <gregkh@linuxfoundation.org>
-CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 05/25] phy: miphy28lp: Add SSC support for PCIE
-Date: Thu, 27 Nov 2014 11:55:57 +0530
-Message-ID: <1417069577-1169-6-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1417069577-1169-1-git-send-email-kishon@ti.com>
-References: <1417069577-1169-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752735AbaK0G01 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 01:26:27 -0500
+Received: from mga03.intel.com ([134.134.136.65]:43662 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752521AbaK0G0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 01:26:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,467,1413270000"; 
+   d="scan'208";a="614826549"
+From: Lv Zheng <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        Bob Moore <robert.moore@intel.com>
+Subject: [PATCH 3/6] ACPICA: Disassembler: Add support for C-style operators and expressions.
+Date: Thu, 27 Nov 2014 14:26:12 +0800
+Message-Id: <343281650b3ac8b7354b5293418297012cb74904.1416899966.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <cover.1416899966.git.lv.zheng@intel.com>
+References: <cover.1416899966.git.lv.zheng@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+From: Bob Moore <robert.moore@intel.com>
 
-SSC is the technique of modulating the operating frequency of a signal
-slightly to spread its radiated emissions over a range of frequencies.
-This reduction in the maximum emission for a given frequency helps meet
-radiated emission requirements.
-These settings are applicable for PCIE with Internal clock.
+Now emit ASL+ code which includes C-style operators.
+Optionally, legacy text ASL operators can still be emitted.
 
-Signed-off-by: Harsh Gupta <harsh.gupta@st.com>
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+This patch only affects compiler/disassembler support which is not in the
+Linux kernel.
+
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
 ---
- drivers/phy/phy-miphy28lp.c |   44 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 44 insertions(+)
+ drivers/acpi/acpica/acglobal.h |    1 +
+ drivers/acpi/acpica/aclocal.h  |    2 ++
+ 2 files changed, 3 insertions(+)
 
-diff --git a/drivers/phy/phy-miphy28lp.c b/drivers/phy/phy-miphy28lp.c
-index d2f797c..d8ff895 100644
---- a/drivers/phy/phy-miphy28lp.c
-+++ b/drivers/phy/phy-miphy28lp.c
-@@ -192,6 +192,7 @@
- #define SATA_SPDMODE		1
+diff --git a/drivers/acpi/acpica/acglobal.h b/drivers/acpi/acpica/acglobal.h
+index ebf02cc..7f60582 100644
+--- a/drivers/acpi/acpica/acglobal.h
++++ b/drivers/acpi/acpica/acglobal.h
+@@ -305,6 +305,7 @@ ACPI_INIT_GLOBAL(u8, acpi_gbl_db_output_flags, ACPI_DB_CONSOLE_OUTPUT);
  
- #define MIPHY_SATA_BANK_NB	3
-+#define MIPHY_PCIE_BANK_NB	2
+ ACPI_INIT_GLOBAL(u8, acpi_gbl_no_resource_disassembly, FALSE);
+ ACPI_INIT_GLOBAL(u8, acpi_gbl_ignore_noop_operator, FALSE);
++ACPI_INIT_GLOBAL(u8, acpi_gbl_cstyle_disassembly, TRUE);
  
- struct miphy28lp_phy {
- 	struct phy *phy;
-@@ -591,6 +592,46 @@ static void miphy_sata_tune_ssc(struct miphy28lp_phy *miphy_phy)
- 	}
- }
+ ACPI_GLOBAL(u8, acpi_gbl_db_opt_disasm);
+ ACPI_GLOBAL(u8, acpi_gbl_db_opt_verbose);
+diff --git a/drivers/acpi/acpica/aclocal.h b/drivers/acpi/acpica/aclocal.h
+index c00e7e4..1c218d9 100644
+--- a/drivers/acpi/acpica/aclocal.h
++++ b/drivers/acpi/acpica/aclocal.h
+@@ -722,6 +722,7 @@ union acpi_parse_value {
+ 	ACPI_DISASM_ONLY_MEMBERS (\
+ 	u8                              disasm_flags;   /* Used during AML disassembly */\
+ 	u8                              disasm_opcode;  /* Subtype used for disassembly */\
++	char                            *operator_symbol;/* Used for C-style operator name strings */\
+ 	char                            aml_op_name[16])	/* Op name (debug only) */
  
-+static void miphy_pcie_tune_ssc(struct miphy28lp_phy *miphy_phy)
-+{
-+	void __iomem *base = miphy_phy->base;
-+	u8 val;
-+
-+	/* Compensate Tx impedance to avoid out of range values */
-+	/*
-+	 * Enable the SSC on PLL for all banks
-+	 * SSC Modulation @ 31 KHz and 4000 ppm modulation amp
-+	 */
-+	val = readb_relaxed(base + MIPHY_BOUNDARY_2);
-+	val |= SSC_EN_SW;
-+	writeb_relaxed(val, base + MIPHY_BOUNDARY_2);
-+
-+	val = readb_relaxed(base + MIPHY_BOUNDARY_SEL);
-+	val |= SSC_SEL;
-+	writeb_relaxed(val, base + MIPHY_BOUNDARY_SEL);
-+
-+	for (val = 0; val < MIPHY_PCIE_BANK_NB; val++) {
-+		writeb_relaxed(val, base + MIPHY_CONF);
-+
-+		/* Validate Step component */
-+		writeb_relaxed(0x69, base + MIPHY_PLL_SBR_3);
-+		writeb_relaxed(0x21, base + MIPHY_PLL_SBR_4);
-+
-+		/* Validate Period component */
-+		writeb_relaxed(0x3c, base + MIPHY_PLL_SBR_2);
-+		writeb_relaxed(0x21, base + MIPHY_PLL_SBR_4);
-+
-+		/* Clear any previous request */
-+		writeb_relaxed(0x00, base + MIPHY_PLL_SBR_1);
-+
-+		/* requests the PLL to take in account new parameters */
-+		writeb_relaxed(SET_NEW_CHANGE, base + MIPHY_PLL_SBR_1);
-+
-+		/* To be sure there is no other pending requests */
-+		writeb_relaxed(0x00, base + MIPHY_PLL_SBR_1);
-+	}
-+}
-+
- static inline int miphy28lp_configure_sata(struct miphy28lp_phy *miphy_phy)
- {
- 	void __iomem *base = miphy_phy->base;
-@@ -659,6 +700,9 @@ static inline int miphy28lp_configure_pcie(struct miphy28lp_phy *miphy_phy)
- 	if (err)
- 		return err;
+ /* Flags for disasm_flags field above */
+@@ -827,6 +828,7 @@ struct acpi_parse_state {
+ #define ACPI_PARSEOP_EMPTY_TERMLIST     0x04
+ #define ACPI_PARSEOP_PREDEF_CHECKED     0x08
+ #define ACPI_PARSEOP_SPECIAL            0x10
++#define ACPI_PARSEOP_COMPOUND           0x20
  
-+	if (miphy_phy->ssc)
-+		miphy_pcie_tune_ssc(miphy_phy);
-+
- 	return 0;
- }
- 
+ /*****************************************************************************
+  *
 -- 
-1.7.9.5
+1.7.10
 
