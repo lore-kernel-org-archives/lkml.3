@@ -1,80 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751324AbaK0W4t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 17:56:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45990 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751006AbaK0W4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 17:56:47 -0500
-Date: Thu, 27 Nov 2014 17:56:37 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Don Zickus <dzickus@redhat.com>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141127225637.GA24019@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	the arch/x86 maintainers <x86@kernel.org>,
-	Don Zickus <dzickus@redhat.com>
-References: <20141114213124.GB3344@redhat.com>
- <CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
- <20141115213405.GA31971@redhat.com>
- <20141116014006.GA5016@redhat.com>
- <CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
- <20141126002501.GA11752@redhat.com>
- <CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>
- <20141126024032.GA13246@redhat.com>
- <20141126225745.GA30346@redhat.com>
- <CA+55aFz-JUX6CU-aO+cwLHYtH7BA+dgyUnEGoy8T4S62gEDFpA@mail.gmail.com>
+	id S1751088AbaK0XCu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 18:02:50 -0500
+Received: from www.linutronix.de ([62.245.132.108]:59192 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801AbaK0XCt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 18:02:49 -0500
+Date: Fri, 28 Nov 2014 00:02:47 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Xunlei Pang <pang.xunlei@linaro.org>
+cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Sven Schnelle <svens@stackframe.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Subject: Re: [RFC PATCH 1/4] rtc/mxc: Convert get_alarm_or_time()/set_alarm_or_time()
+ to use time64_t
+In-Reply-To: <1417089760-26848-2-git-send-email-pang.xunlei@linaro.org>
+Message-ID: <alpine.DEB.2.11.1411272350190.3961@nanos>
+References: <1417089760-26848-1-git-send-email-pang.xunlei@linaro.org> <1417089760-26848-2-git-send-email-pang.xunlei@linaro.org>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFz-JUX6CU-aO+cwLHYtH7BA+dgyUnEGoy8T4S62gEDFpA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 11:17:16AM -0800, Linus Torvalds wrote:
- > On Wed, Nov 26, 2014 at 2:57 PM, Dave Jones <davej@redhat.com> wrote:
- > >
- > > So 3.17 also has this problem.
- > > Good news I guess in that it's not a regression, but damn I really didn't
- > > want to have to go digging through the mists of time to find the last 'good' point.
- > 
- > So I'm looking at the watchdog code, and it seems racy wrt parking and startup.
- > 
- > In particular, it sets the high priority *after* starting the hrtimer,
- > and it goes back to SCHED_NORMAL *before* canceling the timer.
- > 
- > Which seems completely ass-backwards. And the smp_hotplug_thread stuff
- > explicitly enables preemption around the setup/cleanup/part/unpark
- > operations.
- > 
- > However, that would be an issue only if trinity might be doing things
- > that enable and disable the watchdog. And doing so under insane loads.
- > Even then it seems unlikely.
- > 
- > The insane loads you have. But even then, could a load average of 169
- > possibly delay running a non-RT process for 22 seconds? Doubtful.
- > 
- > But just in case: do you do cpu hotplug events (that will disable and
- > re-enable the watchdog process?).  Anything else that will part/unpark
- > the hotplug thread?
+On Thu, 27 Nov 2014, Xunlei Pang wrote:
+> We want to convert y2038 unsafe rtc_class_ops.set_mmss() and all its
+> users to use time64_t. mxc_rtc_set_mmss() in "mxc" driver is one of
+> its users, but it uses get_alarm_or_time()/set_alarm_or_time() internal
+> interfaces which are also y2038 unsafe.
+> 
+> So here as a separate patch, it converts these two internal interfaces
+> of "mxc" to use safe time64_t first, so as to make some preparations
+> for the rtc_class_ops.set_mmss() conversion.
+> 
+> Currently, "mxc" is the only driver with such issue.
 
-That's root-only iirc, and I'm not running trinity as root, so that
-shouldn't be happening. There's also no sign of such behaviour in dmesg
-when the problem occurs.
+Well. The driver has some more issues and again you are just blindly
+following your y2038 agenda instead of looking what this stuff is
+actually doing.
+ 
+> -static u32 get_alarm_or_time(struct device *dev, int time_alarm)
+> +static time64_t get_alarm_or_time(struct device *dev, int time_alarm)
+>  {
+>  	struct platform_device *pdev = to_platform_device(dev);
+>  	struct rtc_plat_data *pdata = platform_get_drvdata(pdev);
+> @@ -129,29 +129,28 @@ static u32 get_alarm_or_time(struct device *dev, int time_alarm)
+>  	hr = hr_min >> 8;
+>  	min = hr_min & 0xff;
+>  
+> -	return (((day * 24 + hr) * 60) + min) * 60 + sec;
+> +	return ((((time64_t)day * 24 + hr) * 60) + min) * 60 + sec;
 
- > Quite frankly, I'm just grasping for straws here, but a lot of the
- > watchdog traces really have seemed spurious...
+So why does this convert a split representation, which could be easily
+represented in a struct rtc_time to time64t?
 
-Agreed.
+Now looking at the usage sites:
 
-Currently leaving 3.16 running. 21hrs so far.
+>  static int rtc_update_alarm(struct device *dev, struct rtc_time *alrm)
+>  {
+>  	struct rtc_time alarm_tm, now_tm;
+> -	unsigned long now, time;
+> +	time64_t now, time;
+>  	struct platform_device *pdev = to_platform_device(dev);
+>  	struct rtc_plat_data *pdata = platform_get_drvdata(pdev);
+>  	void __iomem *ioaddr = pdata->ioaddr;
+>  
+>  	now = get_alarm_or_time(dev, MXC_RTC_TIME);
+> -	rtc_time_to_tm(now, &now_tm);
+> +	rtc_time64_to_tm(now, &now_tm);
 
-	Dave
+So here you convert that to struct rtc_time.
+
+>  	alarm_tm.tm_year = now_tm.tm_year;
+>  	alarm_tm.tm_mon = now_tm.tm_mon;
+>  	alarm_tm.tm_mday = now_tm.tm_mday;
+>  	alarm_tm.tm_hour = alrm->tm_hour;
+>  	alarm_tm.tm_min = alrm->tm_min;
+>  	alarm_tm.tm_sec = alrm->tm_sec;
+> -	rtc_tm_to_time(&alarm_tm, &time);
+> +	time = rtc_tm_to_time64(&alarm_tm);
+
+Just to convert it back and then do the reverse operation in
+set_alarm_or_time()
+  
+>  static int mxc_rtc_read_time(struct device *dev, struct rtc_time *tm)
+>  {
+> -	u32 val;
+> +	time64_t val;
+>  
+>  	/* Avoid roll-over from reading the different registers */
+>  	do {
+>  		val = get_alarm_or_time(dev, MXC_RTC_TIME);
+>  	} while (val != get_alarm_or_time(dev, MXC_RTC_TIME));
+>  
+> -	rtc_time_to_tm(val, tm);
+> +	rtc_time64_to_tm(val, tm);
+
+Ditto
+ 
+>  	return 0;
+>  }
+> @@ -333,7 +332,7 @@ static int mxc_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+>  	struct rtc_plat_data *pdata = platform_get_drvdata(pdev);
+>  	void __iomem *ioaddr = pdata->ioaddr;
+>  
+> -	rtc_time_to_tm(get_alarm_or_time(dev, MXC_RTC_ALARM), &alrm->time);
+> +	rtc_time64_to_tm(get_alarm_or_time(dev, MXC_RTC_ALARM), &alrm->time);
+
+Ditto.
+
+Makes a lot of sense? NOT
+
+I did not have to look at the actual code to notice that
+nonsense. Looking at the patch was enough.
+
+Can you folks please stop to run shell scripts without looking at the
+actual code?
+
+This mechanical attempt to fix the 2038 issue w/o switching on
+braincells is just annoying as hell. Dammit, if you touch stuff then
+you better look at it and fix it proper instead of copying the same
+crap over and over.
+
+Thanks,
+
+	tglx
 
