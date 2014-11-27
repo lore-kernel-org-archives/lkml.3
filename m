@@ -1,185 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751026AbaK0SXy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 13:23:54 -0500
-Received: from mail-by2on0067.outbound.protection.outlook.com ([207.46.100.67]:9304
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750792AbaK0SXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 13:23:51 -0500
-Date: Thu, 27 Nov 2014 10:23:37 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
-CC: <wg@grandegger.com>, <mkl@pengutronix.de>, <michal.simek@xilinx.com>,
-        <grant.likely@linaro.org>, <robh+dt@kernel.org>,
-        <devicetree@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-can@vger.kernel.org>,
-        Kedareswara rao Appana <appanad@xilinx.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3] can: Convert to runtime_pm
-References: <6b6db31d46074512a322eae6e4ef64d4@BN1BFFO11FD038.protection.gbl>
+	id S1751163AbaK0S0D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 13:26:03 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:49078 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870AbaK0S0B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 13:26:01 -0500
+Date: Thu, 27 Nov 2014 19:25:58 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Brendan Gregg <brendan.d.gregg@gmail.com>
+Subject: Re: perf report --branch-history segfaul hists browser: Print
+ overhead percent value for first-level callchain
+Message-ID: <20141127182558.GV12538@two.firstfloor.org>
+References: <20141124145227.GE18625@kernel.org>
+ <20141124152312.GA13167@kernel.org>
+ <20141124152541.GB13167@kernel.org>
+ <20141124153204.GC13167@kernel.org>
+ <20141124154841.GD13167@kernel.org>
+ <20141124212308.GE13167@kernel.org>
+ <20141124225244.GS12538@two.firstfloor.org>
+ <20141127154249.GI30226@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <6b6db31d46074512a322eae6e4ef64d4@BN1BFFO11FD038.protection.gbl>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21134.001
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <6268c783e4514fe9bbae2aff8fd75edd@BY2FFO11FD043.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(377424004)(189002)(51704005)(199003)(24454002)(102836001)(31966008)(53416004)(86362001)(106466001)(21056001)(50466002)(54356999)(77096003)(85202003)(76176999)(110136001)(108616004)(95666004)(77156002)(120916001)(62966003)(85182001)(6806004)(83506001)(74316001)(104016003)(47776003)(92566001)(19580405001)(23676002)(99396003)(44976005)(107046002)(20776003)(87936001)(4396001)(46102003)(50986999)(64706001)(19580395003)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2FFO11HUB067;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB067;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB067;
-X-Forefront-PRVS: 040866B734
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB067;
-X-OriginatorOrg: xilinx.com
+In-Reply-To: <20141127154249.GI30226@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kedar,
+Thanks for testing.
 
-On Thu, 2014-11-27 at 06:38PM +0530, Kedareswara rao Appana wrote:
-> Instead of enabling/disabling clocks at several locations in the driver,
-> use the runtime_pm framework. This consolidates the actions for
-> runtime PM in the appropriate callbacks and makes the driver more
-> readable and mantainable.
+> Yeah, you are right:
 > 
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
-> ---
-> Changes for v3:
->   - Converted the driver to use runtime_pm.
-> Changes for v2:
->   - Removed the struct platform_device* from suspend/resume
->     as suggest by Lothar.
-> 
->  drivers/net/can/xilinx_can.c |  119 +++++++++++++++++++++++++----------------
->  1 files changed, 72 insertions(+), 47 deletions(-)
-> 
-> diff --git a/drivers/net/can/xilinx_can.c b/drivers/net/can/xilinx_can.c
-> index 8a998e3..1be28ed 100644
-> --- a/drivers/net/can/xilinx_can.c
-> +++ b/drivers/net/can/xilinx_can.c
-> @@ -32,6 +32,7 @@
->  #include <linux/can/dev.h>
->  #include <linux/can/error.h>
->  #include <linux/can/led.h>
-> +#include <linux/pm_runtime.h>
->  
->  #define DRIVER_NAME	"xilinx_can"
->  
-> @@ -138,7 +139,7 @@ struct xcan_priv {
->  	u32 (*read_reg)(const struct xcan_priv *priv, enum xcan_reg reg);
->  	void (*write_reg)(const struct xcan_priv *priv, enum xcan_reg reg,
->  			u32 val);
-> -	struct net_device *dev;
-> +	struct device *dev;
->  	void __iomem *reg_base;
->  	unsigned long irq_flags;
->  	struct clk *bus_clk;
-> @@ -842,6 +843,13 @@ static int xcan_open(struct net_device *ndev)
->  	struct xcan_priv *priv = netdev_priv(ndev);
->  	int ret;
->  
-> +	ret = pm_runtime_get_sync(priv->dev);
-> +	if (ret < 0) {
-> +		netdev_err(ndev, "%s: runtime CAN resume failed(%d)\n\r",
+> [acme@zoo linux]$ addr2line -e /usr/lib/debug/usr/lib64/firefox/libxul.so.debug 22fefe8
+> BFD: Dwarf Error: Offset (2585882475) greater than or equal to
+> .debug_str size (44321517).
+> BFD: Dwarf Error: Could not find abbrev number 11800.
+> BFD: Dwarf Error: Offset (493511937) greater than or equal to .debug_str
+> size (44321517).
 
-There might be other issues than the resume that make this fail. It
-should probably just say 'pm_runtime_get failed'.
-The CAN in the string should not be needed, the netdev_err macro makes
-sure the device name is printed.
-Can we have a space between 'failed' and the error code?
-There should not be a '\r'
+But addr2line didn't crash? What happens when you run it under valgrind?
 
-> +				__func__, ret);
-> +		return ret;
-> +	}
-> +
->  	ret = request_irq(ndev->irq, xcan_interrupt, priv->irq_flags,
->  			ndev->name, ndev);
->  	if (ret < 0) {
-> @@ -849,29 +857,17 @@ static int xcan_open(struct net_device *ndev)
->  		goto err;
->  	}
->  
-> -	ret = clk_prepare_enable(priv->can_clk);
-> -	if (ret) {
-> -		netdev_err(ndev, "unable to enable device clock\n");
-> -		goto err_irq;
-> -	}
-> -
-> -	ret = clk_prepare_enable(priv->bus_clk);
-> -	if (ret) {
-> -		netdev_err(ndev, "unable to enable bus clock\n");
-> -		goto err_can_clk;
-> -	}
-> -
->  	/* Set chip into reset mode */
->  	ret = set_reset_mode(ndev);
->  	if (ret < 0) {
->  		netdev_err(ndev, "mode resetting failed!\n");
-> -		goto err_bus_clk;
-> +		goto err_irq;
->  	}
->  
->  	/* Common open */
->  	ret = open_candev(ndev);
->  	if (ret)
-> -		goto err_bus_clk;
-> +		goto err_irq;
->  
->  	ret = xcan_chip_start(ndev);
->  	if (ret < 0) {
-> @@ -887,13 +883,11 @@ static int xcan_open(struct net_device *ndev)
->  
->  err_candev:
->  	close_candev(ndev);
-> -err_bus_clk:
-> -	clk_disable_unprepare(priv->bus_clk);
-> -err_can_clk:
-> -	clk_disable_unprepare(priv->can_clk);
->  err_irq:
->  	free_irq(ndev->irq, ndev);
->  err:
-> +	pm_runtime_put(priv->dev);
-> +
->  	return ret;
->  }
->  
-> @@ -910,12 +904,11 @@ static int xcan_close(struct net_device *ndev)
->  	netif_stop_queue(ndev);
->  	napi_disable(&priv->napi);
->  	xcan_chip_stop(ndev);
-> -	clk_disable_unprepare(priv->bus_clk);
-> -	clk_disable_unprepare(priv->can_clk);
->  	free_irq(ndev->irq, ndev);
->  	close_candev(ndev);
->  
->  	can_led_event(ndev, CAN_LED_EVENT_STOP);
-> +	pm_runtime_put(priv->dev);
->  
->  	return 0;
->  }
-> @@ -934,27 +927,21 @@ static int xcan_get_berr_counter(const struct net_device *ndev,
->  	struct xcan_priv *priv = netdev_priv(ndev);
->  	int ret;
->  
-> -	ret = clk_prepare_enable(priv->can_clk);
-> -	if (ret)
-> -		goto err;
-> +	ret = pm_runtime_get_sync(priv->dev);
-> +	if (ret < 0) {
-> +		netdev_err(ndev, "%s: runtime resume failed(%d)\n\r",
-> +				__func__, ret);
+If yes, I can check what it does differently than get_srcline() to make
+it recover better.
 
-As above.
+-Andi
 
-	Sören
