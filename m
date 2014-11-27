@@ -1,162 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188AbaK0FpW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 00:45:22 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:60263 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769AbaK0FpT (ORCPT
+	id S1754197AbaK0Fqi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 00:46:38 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:52088 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842AbaK0Fqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 00:45:19 -0500
-X-Greylist: delayed 773 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Nov 2014 00:45:18 EST
-Message-ID: <5476BA67.6020305@hitachi.com>
-Date: Thu, 27 Nov 2014 14:45:11 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 27 Nov 2014 00:46:36 -0500
+From: "Dudley Du" <dudley.dulixin@gmail.com>
+To: "'Jeremiah Mahler'" <jmmahler@gmail.com>,
+        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
+Cc: <linux-kernel@vger.kernel.org>, "Dudley Du" <dudl@cypress.com>
+References: <20141124085059.GA15770@hudson.localdomain> <20141125100703.GA9287@hudson.localdomain> <af603da34acc4caca630ca58eda7eb1e@BN1PR06MB070.namprd06.prod.outlook.com> <20141126200238.GB27014@hudson.localdomain>
+In-Reply-To: <20141126200238.GB27014@hudson.localdomain>
+Subject: RE: [BUG] [PATCH] next: cyapa: fix inop touchpad after resume on Acer C720
+Date: Thu, 27 Nov 2014 13:45:49 +0800
+Message-ID: <000d01d00a05$7ffe4970$7ffadc50$@gmail.com>
 MIME-Version: 1.0
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: gregkh@linuxfoundation.org, akpm@linux-foundation.org, mmarek@suse.cz,
-        davem@davemloft.net, keescook@chromium.org, tranmanphong@gmail.com,
-        dh.herrmann@gmail.com, hughd@google.com, bobby.prani@gmail.com,
-        ebiederm@xmission.com, serge.hallyn@ubuntu.com,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH v2 03/19] selftests: add install target to enable installing
- selftests
-References: <cover.1415735831.git.shuahkh@osg.samsung.com> <5e33b40696debde24fd04f6711e795a8860b7aee.1415735831.git.shuahkh@osg.samsung.com>
-In-Reply-To: <5e33b40696debde24fd04f6711e795a8860b7aee.1415735831.git.shuahkh@osg.samsung.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_000E_01D00A48.8E2C85F0"
+X-Mailer: Microsoft Outlook 15.0
+Thread-Index: AQLRI7JC94tyVTJgY+eGfVWVB5Bb4JpwMGzQgAAIl1CAAOdzAIAAoTkA
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/12 5:27), Shuah Khan wrote:
-> Add a new make target to enable installing selftests. This
-> new target will call install targets for the tests that are
-> specified in INSTALL_TARGETS. During install, a script is
-> generated to run tests that are installed. This script will
-> be installed in the selftest install directory. Individual
-> test Makefiles are changed to add to the script. This will
-> allow new tests to add install and run test commands to the
-> generated kselftest script. run_tests target runs the
-> generated kselftest script to run tests when it is initiated
-> from from "make kselftest" from top level source directory.
-> 
-> Approach:
-> 
-> make kselftest_target:
-> -- exports kselftest INSTALL_KSFT_PATH
->    default $(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)
-> -- exports path for ksefltest.sh
-> -- runs selftests make install target:
-> 
-> selftests make install target
-> -- creates kselftest.sh script in install install dir
-> -- runs install targets for all INSTALL_TARGETS
->    (Note: ftrace and powerpc aren't included in INSTALL_TARGETS,
->           to not add more content to patch v1 series. This work
->           will happen soon. In this series these two targets are
->           run after running the generated kselftest script, without
->           any regression in the way these tests are run with
->           "make kselftest" prior to this work.)
-> -- install target can be run only from top level source dir.
-> 
-> Individual test make install targets:
-> -- install test programs and/or scripts in install dir
-> -- append to the ksefltest.sh file to add commands to run test
-> -- install target can be run only from top level source dir.
-> 
-> Adds the following new ways to initiate selftests:
-> -- Installing and running kselftest from install directory
->    by running  "make kselftest"
-> -- Running kselftest script from install directory
-> 
-> Maintains the following ways to run tests:
-> -- make -C tools/testing/selftests run_tests
-> -- make -C tools/testing/selftests TARGETS=target run_tests
->    Ability specify targets: e.g TARGETS=net
-> -- make run_tests from tools/testing/selftests
-> -- make run_tests from individual test directories:
->    e.g: make run_tests in tools/testing/selftests/breakpoints
-> 
-> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
-> ---
->  tools/testing/selftests/Makefile | 31 ++++++++++++++++++++++++++++++-
->  1 file changed, 30 insertions(+), 1 deletion(-)
-> 
-> diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
-> index 45f145c..b9bdc1d 100644
-> --- a/tools/testing/selftests/Makefile
-> +++ b/tools/testing/selftests/Makefile
-> @@ -16,6 +16,10 @@ TARGETS += sysctl
->  TARGETS += firmware
->  TARGETS += ftrace
->  
-> +INSTALL_TARGETS = breakpoints cpu-hotplug efivarfs firmware ipc
-> +INSTALL_TARGETS += kcmp memfd memory-hotplug mqueue mount net
-> +INSTALL_TARGETS += ptrace sysctl timers user vm
-> +
->  TARGETS_HOTPLUG = cpu-hotplug
->  TARGETS_HOTPLUG += memory-hotplug
->  
+This is a multipart message in MIME format.
 
-I think KSELFTEST itself should be defined here, since that is not
-a parameter.
+------=_NextPart_000_000E_01D00A48.8E2C85F0
+Content-Type: text/plain;
+	charset="Windows-1252"
+Content-Transfer-Encoding: 7bit
 
-> @@ -24,10 +28,35 @@ all:
->  		make -C $$TARGET; \
->  	done;
->  
-> -run_tests: all
-> +install:
-> +ifdef INSTALL_KSFT_PATH
-> +	make all
-> +	@echo #!/bin/sh\n# Kselftest Run Tests .... >> $(KSELFTEST)
-> +	@echo # This file is generated during kselftest_install >> $(KSELFTEST)
-> +	@echo # Please don't change it !!\n  >> $(KSELFTEST)
-> +	@echo echo ============================== >> $(KSELFTEST)
-> +	for TARGET in $(INSTALL_TARGETS); do \
-> +		echo Installing $$TARGET; \
-> +		make -C $$TARGET install; \
+Jeremiah,
 
-Please pass O= option and others here.
+I didn't make the special patch for the linux-next before, so I don't know why
+this patch is there and have issue.
+Based on current code in the linux-next, I made below patch to fix this issue.
+Could you please try again with attached patch fix.
 
-> +	done;
-> +	chmod +x $(KSELFTEST)
-> +else
-> +	@echo Run make kselftest_install in top level source directory
-> +endif
-> +
-> +run_tests:
-> +ifdef INSTALL_KSFT_PATH
-> +	@cd $(INSTALL_KSFT_PATH); ./kselftest.sh; cd -
+Thanks,
+Dudley
 
-We'd better use some macro instead of ./kselftest.sh?
-
-Thank you,
-
-> +# TODO: include ftrace and powerpc in install targets
-> +	for TARGET in ftrace powerpc; do \
-> +		make -C $$TARGET run_tests; \
-> +	done;
-> +else
-> +	make all
->  	for TARGET in $(TARGETS); do \
->  		make -C $$TARGET run_tests; \
->  	done;
-> +endif
->  
->  hotplug:
->  	for TARGET in $(TARGETS_HOTPLUG); do \
+> -----Original Message-----
+> From: Jeremiah Mahler [mailto:jmmahler@gmail.com]
+> Sent: 2014?11?27? 4:03
+> To: Dudley Du
+> Cc: linux-kernel@vger.kernel.org
+> Subject: Re: [BUG] [PATCH] next: cyapa: fix inop touchpad after resume on Acer
+> C720
 > 
+> Dudley,
+> 
+> On Wed, Nov 26, 2014 at 06:16:00AM +0000, Dudley Du wrote:
+> > More info: I did all testings based on kernel 3.14.0 on Acer C70.
+> >
+> 
+> I am testing with linux-next 3.18-rc6 on an Acer C720.
+> 
+> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/
+> 
+> > Thanks,
+> > Dudley
+> >
+> []
+> 
+> --
+> - Jeremiah Mahler
 
+>From bb717b1c1525ef6b889f0ef735d920eed9e76e72 Mon Sep 17 00:00:00 2001
+From: Dudley Du <dudley.dulixin@gmail.com>
+Date: Thu, 27 Nov 2014 13:35:09 +0800
+Subject: [PATCH] input: cyapa: fix irq error issue in cyapa_resume
+To: dmitry.torokhov@gmail.com,
+    jmmahler@gmail.com
+Cc: bleung@google.com,
+    linux-input@vger.kernel.org
 
+This patch is aimed to fix the irq error happened on cyapa_resume when
+doing suspend/resume testing.
+The root cause of this issue is that the cyapa->irq has been removed but
+still used in the driver.
+
+Signed-off-by: Dudley Du <dudley.dulixin@gmail.com>
+---
+ drivers/input/mouse/cyapa.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
+index c84a9eb..caaba7b 100644
+--- a/drivers/input/mouse/cyapa.c
++++ b/drivers/input/mouse/cyapa.c
+@@ -938,7 +938,7 @@ static int __maybe_unused cyapa_suspend(struct device *dev)
+ 			 power_mode, error);
+ 
+ 	if (device_may_wakeup(dev))
+-		cyapa->irq_wake = (enable_irq_wake(cyapa->irq) == 0);
++		cyapa->irq_wake = (enable_irq_wake(cyapa->client->irq) == 0);
+ 
+ 	mutex_unlock(&input->mutex);
+ 
+@@ -956,7 +956,7 @@ static int __maybe_unused cyapa_resume(struct device *dev)
+ 	mutex_lock(&input->mutex);
+ 
+ 	if (device_may_wakeup(dev) && cyapa->irq_wake)
+-		disable_irq_wake(cyapa->irq);
++		disable_irq_wake(cyapa->client->irq);
+ 
+ 	power_mode = input->users ? PWR_MODE_FULL_ACTIVE : PWR_MODE_OFF;
+ 	error = cyapa_set_power_mode(cyapa, PWR_MODE_FULL_ACTIVE);
+@@ -964,7 +964,7 @@ static int __maybe_unused cyapa_resume(struct device *dev)
+ 		dev_warn(dev, "resume: set power mode to %d failed: %d\n",
+ 			 power_mode, error);
+ 
+-	enable_irq(cyapa->irq);
++	enable_irq(cyapa->client->irq);
+ 
+ 	mutex_unlock(&input->mutex);
+ 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+1.9.1
 
+------=_NextPart_000_000E_01D00A48.8E2C85F0
+Content-Type: application/octet-stream;
+	name="input-cyapa-fix-irq-error-issue-in-cyapa_resume.patch"
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment;
+	filename="input-cyapa-fix-irq-error-issue-in-cyapa_resume.patch"
+
+>From bb717b1c1525ef6b889f0ef735d920eed9e76e72 Mon Sep 17 00:00:00 2001=0A=
+From: Dudley Du <dudley.dulixin@gmail.com>=0A=
+Date: Thu, 27 Nov 2014 13:35:09 +0800=0A=
+Subject: [PATCH] input: cyapa: fix irq error issue in cyapa_resume=0A=
+To: dmitry.torokhov@gmail.com,=0A=
+    jmmahler@gmail.com=0A=
+Cc: bleung@google.com,=0A=
+    linux-input@vger.kernel.org=0A=
+=0A=
+This patch is aimed to fix the irq error happened on cyapa_resume when=0A=
+doing suspend/resume testing.=0A=
+The root cause of this issue is that the cyapa->irq has been removed but=0A=
+still used in the driver.=0A=
+=0A=
+Signed-off-by: Dudley Du <dudley.dulixin@gmail.com>=0A=
+---=0A=
+ drivers/input/mouse/cyapa.c | 6 +++---=0A=
+ 1 file changed, 3 insertions(+), 3 deletions(-)=0A=
+=0A=
+diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c=0A=
+index c84a9eb..caaba7b 100644=0A=
+--- a/drivers/input/mouse/cyapa.c=0A=
++++ b/drivers/input/mouse/cyapa.c=0A=
+@@ -938,7 +938,7 @@ static int __maybe_unused cyapa_suspend(struct =
+device *dev)=0A=
+ 			 power_mode, error);=0A=
+ =0A=
+ 	if (device_may_wakeup(dev))=0A=
+-		cyapa->irq_wake =3D (enable_irq_wake(cyapa->irq) =3D=3D 0);=0A=
++		cyapa->irq_wake =3D (enable_irq_wake(cyapa->client->irq) =3D=3D 0);=0A=
+ =0A=
+ 	mutex_unlock(&input->mutex);=0A=
+ =0A=
+@@ -956,7 +956,7 @@ static int __maybe_unused cyapa_resume(struct device =
+*dev)=0A=
+ 	mutex_lock(&input->mutex);=0A=
+ =0A=
+ 	if (device_may_wakeup(dev) && cyapa->irq_wake)=0A=
+-		disable_irq_wake(cyapa->irq);=0A=
++		disable_irq_wake(cyapa->client->irq);=0A=
+ =0A=
+ 	power_mode =3D input->users ? PWR_MODE_FULL_ACTIVE : PWR_MODE_OFF;=0A=
+ 	error =3D cyapa_set_power_mode(cyapa, PWR_MODE_FULL_ACTIVE);=0A=
+@@ -964,7 +964,7 @@ static int __maybe_unused cyapa_resume(struct device =
+*dev)=0A=
+ 		dev_warn(dev, "resume: set power mode to %d failed: %d\n",=0A=
+ 			 power_mode, error);=0A=
+ =0A=
+-	enable_irq(cyapa->irq);=0A=
++	enable_irq(cyapa->client->irq);=0A=
+ =0A=
+ 	mutex_unlock(&input->mutex);=0A=
+ =0A=
+-- =0A=
+1.9.1=0A=
+=0A=
+
+------=_NextPart_000_000E_01D00A48.8E2C85F0--
 
