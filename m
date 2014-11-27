@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750926AbaK0WeH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 17:34:07 -0500
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:41870 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816AbaK0WeF (ORCPT
+	id S1751173AbaK0Wgk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 17:36:40 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:54387 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729AbaK0Wgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 17:34:05 -0500
+	Thu, 27 Nov 2014 17:36:37 -0500
+Date: Thu, 27 Nov 2014 23:34:02 +0100
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Carlo Caione <carlo@caione.org>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
+        Victor Wan <victor.wan@amlogic.com>
+Subject: Re: [PATCH v3 2/3] pinctrl: add driver for Amlogic Meson SoCs
+Message-ID: <20141127223402.GA11418@gmail.com>
+References: <1416168856-12747-1-git-send-email-b.galvani@gmail.com>
+ <1416168856-12747-3-git-send-email-b.galvani@gmail.com>
+ <CACRpkda-U5OuKdBVGJ8UWprJkAtmTL1m11+AbNskVULPfyS72A@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1803282.Wzz7IausxS@vostro.rjw.lan>
-References: <Pine.LNX.4.44L0.1411271216470.8104-100000@netrider.rowland.org>
-	<1803282.Wzz7IausxS@vostro.rjw.lan>
-Date: Thu, 27 Nov 2014 23:34:03 +0100
-Message-ID: <CAPDyKFpcHawZ8F+2QdDYO=+qbh=uQb+A+2Rq_M7g9VqMnFtM1A@mail.gmail.com>
-Subject: Re: [PATCH 0/4] PM: Use CONFIG_PM instead of CONFIG_PM_RUNTIME in
- core code
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Kevin Hilman <khilman@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkda-U5OuKdBVGJ8UWprJkAtmTL1m11+AbNskVULPfyS72A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
+On Thu, Nov 27, 2014 at 02:48:31PM +0100, Linus Walleij wrote:
+> On Sun, Nov 16, 2014 at 9:14 PM, Beniamino Galvani <b.galvani@gmail.com> wrote:
+> 
+> > This is a driver for the pinmux and GPIO controller available in
+> > Amlogic Meson SoCs. At the moment it only supports Meson8 devices,
+> > however other SoC families like Meson6 and Meson8b (the Cortex-A5
+> > variant) appear to be similar, with just different sets of banks and
+> > registers.
+> >
+> > GPIO interrupts are not supported at the moment due to lack of
+> > documentation.
+> >
+> > Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+> 
+> This is dependent on Sören's patches I guess?
+> 
+> OK I'll merge this once we have that other code sorted out.
 
-> That said whether or not it is ever useful to set PM_RUNTIME alone is a good
-> question.  In my opinion it is useful today, at least on some platforms that
-> don't really support system suspend or hibernation in any form.  However, it
-> may not be the case any more when suspend-to-idle becomes mature enough,
-> because that should just work for any platform without any kind of special
-> support.  We're still missing some timekeeping bits there, but once that
-> gap has been covered, we may just eliminate PM_SLEEP as well if there's a
-> broad consensus on that.
+Yes, this depends on Soren's patches.
 
-That's sounds like a good approach, thanks for sharing your ideas and plans.
-
-Feel free to add my reviewed-by tag to this patchset as well.
-
-Kind regards
-Uffe
+Thanks,
+Beniamino
