@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932155AbaK0Itp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 03:49:45 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42637 "EHLO mail.kernel.org"
+	id S1755404AbaK0Izr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 03:55:47 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42582 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932135AbaK0Itm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:49:42 -0500
+	id S932115AbaK0Iti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:49:38 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@fb.com>,
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 74/91] genhd: fix leftover might_sleep() in blk_free_devt()
-Date: Thu, 27 Nov 2014 16:42:57 +0800
-Message-Id: <1417077794-9299-74-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 72/91] perf: fix perf bug in fork()
+Date: Thu, 27 Nov 2014 16:42:55 +0800
+Message-Id: <1417077794-9299-72-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
 References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
@@ -20,40 +23,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jens Axboe <axboe@fb.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 46f341ffcfb5d8530f7d1e60f3be06cce6661b62 upstream.
+commit 6c72e3501d0d62fc064d3680e5234f3463ec5a86 upstream.
 
-Commit 2da78092 changed the locking from a mutex to a spinlock,
-so we now longer sleep in this context. But there was a leftover
-might_sleep() in there, which now triggers since we do the final
-free from an RCU callback. Get rid of it.
+Oleg noticed that a cleanup by Sylvain actually uncovered a bug; by
+calling perf_event_free_task() when failing sched_fork() we will not yet
+have done the memset() on ->perf_event_ctxp[] and will therefore try and
+'free' the inherited contexts, which are still in use by the parent
+process.  This is bad..
 
-Reported-by: Pontus Fuchs <pontus.fuchs@gmail.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Suggested-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Sylvain 'ythier' Hitier <sylvain.hitier@gmail.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- block/genhd.c | 2 --
- 1 file changed, 2 deletions(-)
+ kernel/events/core.c | 4 +++-
+ kernel/fork.c        | 5 +++--
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/block/genhd.c b/block/genhd.c
-index 54867f4..60f7e6c 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -447,8 +447,6 @@ int blk_alloc_devt(struct hd_struct *part, dev_t *devt)
-  */
- void blk_free_devt(dev_t devt)
- {
--	might_sleep();
--
- 	if (devt == MKDEV(0, 0))
- 		return;
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index c958be1..10c8fdd 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7127,8 +7127,10 @@ int perf_event_init_task(struct task_struct *child)
  
+ 	for_each_task_context_nr(ctxn) {
+ 		ret = perf_event_init_context(child, ctxn);
+-		if (ret)
++		if (ret) {
++			perf_event_free_task(child);
+ 			return ret;
++		}
+ 	}
+ 
+ 	return 0;
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 621c547..878dcb2 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1285,7 +1285,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 		goto bad_fork_cleanup_policy;
+ 	retval = audit_alloc(p);
+ 	if (retval)
+-		goto bad_fork_cleanup_policy;
++		goto bad_fork_cleanup_perf;
+ 	/* copy all the process information */
+ 	retval = copy_semundo(clone_flags, p);
+ 	if (retval)
+@@ -1480,8 +1480,9 @@ bad_fork_cleanup_semundo:
+ 	exit_sem(p);
+ bad_fork_cleanup_audit:
+ 	audit_free(p);
+-bad_fork_cleanup_policy:
++bad_fork_cleanup_perf:
+ 	perf_event_free_task(p);
++bad_fork_cleanup_policy:
+ #ifdef CONFIG_NUMA
+ 	mpol_put(p->mempolicy);
+ bad_fork_cleanup_cgroup:
 -- 
 1.9.1
 
