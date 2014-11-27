@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753795AbaK0ClU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 21:41:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45984 "EHLO
+	id S1753878AbaK0Clk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 21:41:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45976 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753643AbaK0ClQ (ORCPT
+	with ESMTP id S1753442AbaK0ClP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 21:41:16 -0500
-Date: Wed, 26 Nov 2014 18:34:10 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Luis de Bethencourt <luis@debethencourt.com>
-Cc: linux-kernel@vger.kernel.org, eunb.song@samsung.com, gulsah.1004@gmail.com,
-        paul.gortmaker@windriver.com, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] staging: octeon: Fix checkpatch warning
-Message-ID: <20141127023410.GA7283@kroah.com>
-References: <20141125132614.GA23857@biggie>
- <20141126214523.GA10037@kroah.com>
- <20141127003523.GA3249@biggie>
+	Wed, 26 Nov 2014 21:41:15 -0500
+Date: Wed, 26 Nov 2014 16:01:47 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ankit Jindal <ankit.jindal@linaro.org>
+Cc: linux-kernel@vger.kernel.org, "Hans J. Koch" <hjk@hansjkoch.de>,
+        patches@apm.com, linux-arm-kernel@lists.infradead.org,
+        Rob Herring <robh+dt@kernel.org>,
+        Tushar Jagad <tushar.jagad@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        devicetree@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Varka Bhadram <varkabhadram@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>, Anup Patel <anup@brainfault.org>,
+        Andreas =?iso-8859-1?Q?F=E4rber?= <afaerber@suse.de>
+Subject: Re: [PATCH v5 2/6] uio: Add new UIO_MEM_PHYS_CACHE type for mem
+ regions
+Message-ID: <20141127000147.GC5313@kroah.com>
+References: <1416220572-13381-1-git-send-email-ankit.jindal@linaro.org>
+ <1416220572-13381-3-git-send-email-ankit.jindal@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141127003523.GA3249@biggie>
+In-Reply-To: <1416220572-13381-3-git-send-email-ankit.jindal@linaro.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 12:35:23AM +0000, Luis de Bethencourt wrote:
-> On Wed, Nov 26, 2014 at 01:45:23PM -0800, Greg KH wrote:
-> > On Tue, Nov 25, 2014 at 01:26:14PM +0000, Luis de Bethencourt wrote:
-> > > This patch fixes the checkpatch.pl warnings:
-> > > 
-> > > WARNING: line over 80 characters
-> > > +                       int cores_in_use = core_state.baseline_cores - atomic_read(&core_state.available_cores);
-> > > 
-> > > WARNING: line over 80 characters
-> > > +                       skb->data = skb->head + work->packet_ptr.s.addr - cvmx_ptr_to_phys(skb->head);
-> > > 
-> > > Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
-> > > ---
-> > >  drivers/staging/octeon/ethernet-rx.c | 6 ++++--
-> > >  1 file changed, 4 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
-> > > index 44e372f..bd83f55 100644
-> > > --- a/drivers/staging/octeon/ethernet-rx.c
-> > > +++ b/drivers/staging/octeon/ethernet-rx.c
-> > > @@ -295,7 +295,8 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
-> > >  			 */
-> > >  			union cvmx_pow_wq_int_cntx counts;
-> > >  			int backlog;
-> > > -			int cores_in_use = core_state.baseline_cores - atomic_read(&core_state.available_cores);
-> > > +			int cores_in_use = core_state.baseline_cores -
-> > > +				atomic_read(&core_state.available_cores);
-> > >  			counts.u64 = cvmx_read_csr(CVMX_POW_WQ_INT_CNTX(pow_receive_group));
-> > >  			backlog = counts.s.iq_cnt + counts.s.ds_cnt;
-> > >  			if (backlog > budget * cores_in_use && napi != NULL)
-> > > @@ -324,7 +325,8 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
-> > >  		 * buffer.
-> > >  		 */
-> > >  		if (likely(skb_in_hw)) {
-> > > -			skb->data = skb->head + work->packet_ptr.s.addr - cvmx_ptr_to_phys(skb->head);
-> > > +			skb->data = skb->head + work->packet_ptr.s.addr -
-> > > +				cvmx_ptr_to_phys(skb->head);
-> > >  			prefetch(skb->data);
-> > >  			skb->len = work->len;
-> > >  			skb_set_tail_pointer(skb, skb->len);
-> > > -- 
-> > > 2.1.3
-> > 
-> > No longer applies to my tree :(
-> 
-> I'm confused.
-> 
-> I just tried applying it to what I think is your tree is and it worked.
-> https://git.kernel.org/cgit/linux/kernel/git/gregkh/staging.git/log/?h=staging-next
-> 
-> Do I have this wrong?
+On Mon, Nov 17, 2014 at 04:06:08PM +0530, Ankit Jindal wrote:
+> Currently, three types of mem regions are supported: UIO_MEM_PHYS,
+> UIO_MEM_LOGICAL and UIO_MEM_VIRTUAL. Among these UIO_MEM_PHYS helps
+> UIO driver export physcial memory to user space as non-cacheable
+> user memory. Typcially memory-mapped registers of a device are exported
+> to user space as UIO_MEM_PHYS type mem region. The UIO_MEM_PHYS type
+> is not efficient if dma-capable devices are capable of maintaining coherency
+> with CPU caches.
 
-I'm applying patches first to staging-testing to get some 0-day buildbot
-testing before merging them to staging-next these days, as I've been
-burned with common problems too many times.  I took some other octeon
-patches that were sent before yours were that caused the conflict.  If
-you look at staging-testing right now you can see that.
+Not efficient in what way?
 
-Hope this helps,
+> This patch adds new type UIO_MEM_PHYS_CACHE for mem regions to enable
+> cacheable access to physical memory from user space.
+> 
+> Signed-off-by: Ankit Jindal <ankit.jindal@linaro.org>
+> Signed-off-by: Tushar Jagad <tushar.jagad@linaro.org>
+> ---
+>  drivers/uio/uio.c          |   11 ++++++++---
+>  include/linux/uio_driver.h |    1 +
+>  2 files changed, 9 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+> index 97e6444..120a84b 100644
+> --- a/drivers/uio/uio.c
+> +++ b/drivers/uio/uio.c
+> @@ -644,7 +644,7 @@ static const struct vm_operations_struct uio_physical_vm_ops = {
+>  #endif
+>  };
+>  
+> -static int uio_mmap_physical(struct vm_area_struct *vma)
+> +static int uio_mmap_physical(struct vm_area_struct *vma, bool cacheable)
+
+I despise "bool" flags in a function, as they don't give any idea of
+what is going on when you see the function being called.  Please create
+a new function that does this properly, with a correct name, if it's
+needed.
+
+thanks,
 
 greg k-h
