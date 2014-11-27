@@ -1,104 +1,339 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656AbaK0Ba5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 20:30:57 -0500
-Received: from mail-bl2on0123.outbound.protection.outlook.com ([65.55.169.123]:47008
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753528AbaK0Baw convert rfc822-to-8bit (ORCPT
+	id S1753772AbaK0BbU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 20:31:20 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:45113 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753519AbaK0Bav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 20:30:52 -0500
-From: Stuart Yoder <stuart.yoder@freescale.com>
-To: Alexander Graf <agraf@suse.de>, Jose Rivera <German.Rivera@freescale.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Kim Phillips <Kim.Phillips@freescale.com>,
-        Scott Wood <scottwood@freescale.com>,
-        "bhamciu1@freescale.com" <bhamciu1@freescale.com>,
-        "R89243@freescale.com" <R89243@freescale.com>,
-        Geoff Thorpe <Geoff.Thorpe@freescale.com>,
-        "bhupesh.sharma@freescale.com" <bhupesh.sharma@freescale.com>,
-        "nir.erez@freescale.com" <nir.erez@freescale.com>,
-        Richard Schmitt <richard.schmitt@freescale.com>
-Subject: RE: [PATCH 1/3 v4] drivers/bus: Added Freescale Management Complex
- APIs
-Thread-Topic: [PATCH 1/3 v4] drivers/bus: Added Freescale Management Complex
- APIs
-Thread-Index: AQHQCWH+izjvEAXJzUaTeK76eOkwuZxze4awgAAisQCAAAvfAA==
-Date: Thu, 27 Nov 2014 01:15:38 +0000
-Message-ID: <CY1PR0301MB0748E49FD0D2232858A3774F87710@CY1PR0301MB0748.namprd03.prod.outlook.com>
-References: <1415901246-24131-1-git-send-email-German.Rivera@freescale.com>
- <1415901246-24131-2-git-send-email-German.Rivera@freescale.com>
- <5475A85E.1080204@suse.de>
- <CY1PR0301MB0748850351477C53D47A042087700@CY1PR0301MB0748.namprd03.prod.outlook.com>
- <54766F36.3050104@suse.de>
-In-Reply-To: <54766F36.3050104@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.168.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0651;UriScan:;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0651;
-x-forefront-prvs: 040866B734
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(51704005)(189002)(77096003)(77156002)(74316001)(122556002)(54606007)(46102003)(62966003)(76176999)(20776003)(66066001)(54206007)(64706001)(4396001)(40100003)(107046002)(21056001)(86362001)(95666004)(99286002)(106356001)(106116001)(105586002)(92726001)(2201001)(50986999)(33656002)(54356999)(97736003)(76576001)(101416001)(93886004)(2656002)(120916001)(2501002)(99396003)(87936001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0651;H:CY1PR0301MB0748.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1211;
-X-OriginatorOrg: freescale.com
+	Wed, 26 Nov 2014 20:30:51 -0500
+From: Alexandru M Stan <amstan@chromium.org>
+To: Mike Turquette <mturquette@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
+        Doug Anderson <dianders@chromium.org>,
+        addy ke <addy.ke@rock-chips.com>
+Cc: Sonny Rao <sonnyrao@chromium.org>, Kever Yang <kever.yang@rock-chips.com>,
+        linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Alexandru M Stan <amstan@chromium.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 2/2] clk: rockchip: Add support for the mmc clock phases using the framework
+Date: Wed, 26 Nov 2014 17:30:27 -0800
+Message-Id: <1417051827-12564-3-git-send-email-amstan@chromium.org>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
+In-Reply-To: <1417051827-12564-1-git-send-email-amstan@chromium.org>
+References: <1417051827-12564-1-git-send-email-amstan@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>> +int dprc_get_container_id(struct fsl_mc_io *mc_io, int *container_id)
-> >>
-> >> This one is definitely a misnomer. It's a command that operates on the
-> >> MC object, not a DPRC object. Also it doesn't fetch a random
-> >> "container_id", it fetches the root container id.
-> >
-> > It's not strictly the root container. It fetches the container/DPRC ID
-> > associated with the portal you are using.  A virtual machine would use
-> > it to fetch it's container ID.
-> 
-> So does every portal properly react to this call?
+This patch adds the 2 physical clocks for the mmc (drive and sample). They're
+mostly there for the phase properties, but they also show the true clock
+(by dividing by RK3288_MMC_CLKGEN_DIV).
 
-Yes, they should.
+The drive and sample phases are generated by dividing an upstream parent clock
+by 2, this allows us to adjust the phase by 90 deg.
 
-> Or do only container
-> portals react to it?
+There's also an option to have up to 255 delay elements (40-80 picoseconds long).
+This driver uses those elements (under the assumption that they're 60 ps long)
+to generate approximate 22.5 degrees options. 67.5 (22.5*3) might be as high as
+90 deg if the delay elements are as big as 80 ps, so a finer division (smaller
+than 22.5) was not picked because the phase might not be monotonic anymore.
 
-Every portal is associated with some contianer-- either built into
-the container/DPRC object, or in a container/DPRC.
+Suggested-by: Heiko Stuebner <heiko@sntech.de>
+Signed-off-by: Alexandru M Stan <amstan@chromium.org>
+---
+Changes in v4:
+- Changed set_phase to 22.5 increments, it seems better for tuning, better at
+splitting up big ranges where we might have used an iffy phase from the middle.
+- renamed ROCKCHIP_MMC_DELAY_ELEMENT_PSEC
+- saner mask of 0x07ff
+- only set ROCKCHIP_MMC_DELAYNUM_OFFSET when we need it
 
-> In fact, what does make the initial portal special?
+Changes in v3:
+- renamed everything internal from phase to just mmc_clock or mmc
+- added RK3288_MMC_CLKGEN_DIV instead of the magic number
+- added new paragraph to commit message
 
-Nothing...it has the same semantics as any other portal.
+Changes in v2:
+- fixed my cc/to list
+- removed dangling #DEFINE DEBUG
 
-> Who reacts to
-> DPMNG_CMDID_foo calls? Every DPRC or only the initial root?
+ drivers/clk/rockchip/Makefile        |   1 +
+ drivers/clk/rockchip/clk-mmc-phase.c | 154 +++++++++++++++++++++++++++++++++++
+ drivers/clk/rockchip/clk-rk3288.c    |  12 +++
+ drivers/clk/rockchip/clk.c           |   8 ++
+ drivers/clk/rockchip/clk.h           |  23 ++++++
+ 5 files changed, 198 insertions(+)
+ create mode 100644 drivers/clk/rockchip/clk-mmc-phase.c
 
-All portals.  It just means 'what container am I in?'
+diff --git a/drivers/clk/rockchip/Makefile b/drivers/clk/rockchip/Makefile
+index bd8514d..2714097 100644
+--- a/drivers/clk/rockchip/Makefile
++++ b/drivers/clk/rockchip/Makefile
+@@ -6,6 +6,7 @@ obj-y	+= clk-rockchip.o
+ obj-y	+= clk.o
+ obj-y	+= clk-pll.o
+ obj-y	+= clk-cpu.o
++obj-y	+= clk-mmc-phase.o
+ obj-$(CONFIG_RESET_CONTROLLER)	+= softrst.o
+ 
+ obj-y	+= clk-rk3188.o
+diff --git a/drivers/clk/rockchip/clk-mmc-phase.c b/drivers/clk/rockchip/clk-mmc-phase.c
+new file mode 100644
+index 0000000..c842e3b
+--- /dev/null
++++ b/drivers/clk/rockchip/clk-mmc-phase.c
+@@ -0,0 +1,154 @@
++/*
++ * Copyright 2014 Google, Inc
++ * Author: Alexandru M Stan <amstan@chromium.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/slab.h>
++#include <linux/clk-provider.h>
++#include "clk.h"
++
++struct rockchip_mmc_clock {
++	struct clk_hw	hw;
++	void __iomem	*reg;
++	int		id;
++	int		shift;
++};
++
++#define to_mmc_clock(_hw) container_of(_hw, struct rockchip_mmc_clock, hw)
++
++#define RK3288_MMC_CLKGEN_DIV 2
++
++static unsigned long rockchip_mmc_recalc(struct clk_hw *hw,
++					 unsigned long parent_rate)
++{
++	return parent_rate / RK3288_MMC_CLKGEN_DIV;
++}
++
++#define ROCKCHIP_MMC_DELAY_SEL BIT(10)
++#define ROCKCHIP_MMC_DEGREE_MASK 0x3
++#define ROCKCHIP_MMC_DELAYNUM_OFFSET 2
++#define ROCKCHIP_MMC_DELAYNUM_MASK (0xff << ROCKCHIP_MMC_DELAYNUM_OFFSET)
++
++#define PSECS_PER_SEC 1000000000000LL
++
++/*
++ * Each fine delay is between 40ps-80ps. Assume each fine delay is 60ps to
++ * simplify calculations. So 45degs could be anywhere between 33deg and 66deg.
++ */
++#define ROCKCHIP_MMC_DELAY_ELEMENT_PSEC 60
++
++static int rockchip_mmc_get_phase(struct clk_hw *hw)
++{
++	struct rockchip_mmc_clock *mmc_clock = to_mmc_clock(hw);
++	unsigned long rate = clk_get_rate(hw->clk);
++	u32 raw_value;
++	u16 degrees;
++	u32 delay_num = 0;
++
++	raw_value = readl(mmc_clock->reg) >> (mmc_clock->shift);
++
++	degrees = (raw_value & ROCKCHIP_MMC_DEGREE_MASK) * 90;
++
++	if (raw_value & ROCKCHIP_MMC_DELAY_SEL) {
++		/* degrees/delaynum * 10000 */
++		unsigned long factor = (ROCKCHIP_MMC_DELAY_ELEMENT_PSEC / 10) *
++					36 * (rate / 1000000);
++
++		delay_num = (raw_value & ROCKCHIP_MMC_DELAYNUM_MASK);
++		delay_num >>= ROCKCHIP_MMC_DELAYNUM_OFFSET;
++		degrees += delay_num * factor / 10000;
++	}
++
++	return degrees % 360;
++}
++
++static int rockchip_mmc_set_phase(struct clk_hw *hw, int degrees)
++{
++	struct rockchip_mmc_clock *mmc_clock = to_mmc_clock(hw);
++	unsigned long rate = clk_get_rate(hw->clk);
++	u8 nineties, remainder;
++	u8 delay_num;
++	u32 raw_value;
++	u64 delay;
++
++	/* allow 22 to be 22.5 */
++	degrees++;
++	/* floor to 22.5 increment */
++	degrees -= ((degrees) * 10 % 225) / 10;
++
++	nineties = degrees / 90;
++	/* 22.5 multiples */
++	remainder = (degrees % 90) / 22;
++
++	delay = PSECS_PER_SEC;
++	do_div(delay, rate);
++	/* / 360 / 22.5 */
++	do_div(delay, 16);
++	do_div(delay, ROCKCHIP_MMC_DELAY_ELEMENT_PSEC);
++
++	delay *= remainder;
++	delay_num = (u8) min(delay, 255ULL);
++
++	raw_value = delay_num ? ROCKCHIP_MMC_DELAY_SEL : 0;
++	raw_value |= delay_num << ROCKCHIP_MMC_DELAYNUM_OFFSET;
++	raw_value |= nineties;
++	writel(HIWORD_UPDATE(raw_value, 0x07ff, mmc_clock->shift), mmc_clock->reg);
++
++	pr_debug("%s->set_phase(%d) delay_nums=%u reg[0x%p]=0x%03x actual_degrees=%d\n",
++		__clk_get_name(hw->clk), degrees, delay_num,
++		mmc_clock->reg, raw_value>>(mmc_clock->shift),
++		rockchip_mmc_get_phase(hw)
++	);
++
++	return 0;
++}
++
++static const struct clk_ops rockchip_mmc_clk_ops = {
++	.recalc_rate	= rockchip_mmc_recalc,
++	.get_phase	= rockchip_mmc_get_phase,
++	.set_phase	= rockchip_mmc_set_phase,
++};
++
++struct clk *rockchip_clk_register_mmc(const char *name,
++				const char **parent_names, u8 num_parents,
++				void __iomem *reg, int shift)
++{
++	struct clk_init_data init;
++	struct rockchip_mmc_clock *mmc_clock;
++	struct clk *clk;
++
++	mmc_clock = kmalloc(sizeof(*mmc_clock), GFP_KERNEL);
++	if (!mmc_clock)
++		return NULL;
++
++	init.num_parents = num_parents;
++	init.parent_names = parent_names;
++	init.ops = &rockchip_mmc_clk_ops;
++
++	mmc_clock->hw.init = &init;
++	mmc_clock->reg = reg;
++	mmc_clock->shift = shift;
++
++	if (name)
++		init.name = name;
++
++	clk = clk_register(NULL, &mmc_clock->hw);
++	if (IS_ERR(clk))
++		goto err_free;
++
++	return clk;
++
++err_free:
++	kfree(mmc_clock);
++	return NULL;
++}
+diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
+index 2327829..f415f84 100644
+--- a/drivers/clk/rockchip/clk-rk3288.c
++++ b/drivers/clk/rockchip/clk-rk3288.c
+@@ -483,6 +483,18 @@ static struct rockchip_clk_branch rk3288_clk_branches[] __initdata = {
+ 			RK3288_CLKSEL_CON(12), 14, 2, MFLAGS, 8, 6, DFLAGS,
+ 			RK3288_CLKGATE_CON(13), 3, GFLAGS),
+ 
++	MMC(SCLK_SDMMC_DRV,    "sdmmc_drv",    "sclk_sdmmc", RK3288_SDMMC_CON0, 1),
++	MMC(SCLK_SDMMC_SAMPLE, "sdmmc_sample", "sclk_sdmmc", RK3288_SDMMC_CON1, 0),
++
++	MMC(SCLK_SDIO0_DRV,    "sdio0_drv",    "sclk_sdio0", RK3288_SDIO0_CON0, 1),
++	MMC(SCLK_SDIO0_SAMPLE, "sdio0_sample", "sclk_sdio0", RK3288_SDIO0_CON1, 0),
++
++	MMC(SCLK_SDIO1_DRV,    "sdio1_drv",    "sclk_sdio1", RK3288_SDIO1_CON0, 1),
++	MMC(SCLK_SDIO1_SAMPLE, "sdio1_sample", "sclk_sdio1", RK3288_SDIO1_CON1, 0),
++
++	MMC(SCLK_EMMC_DRV,     "emmc_drv",     "sclk_emmc",  RK3288_EMMC_CON0,  1),
++	MMC(SCLK_EMMC_SAMPLE,  "emmc_sample",  "sclk_emmc",  RK3288_EMMC_CON1,  0),
++
+ 	COMPOSITE(0, "sclk_tspout", mux_tspout_p, 0,
+ 			RK3288_CLKSEL_CON(35), 14, 2, MFLAGS, 8, 5, DFLAGS,
+ 			RK3288_CLKGATE_CON(4), 11, GFLAGS),
+diff --git a/drivers/clk/rockchip/clk.c b/drivers/clk/rockchip/clk.c
+index 1e68bff..ae143f8 100644
+--- a/drivers/clk/rockchip/clk.c
++++ b/drivers/clk/rockchip/clk.c
+@@ -279,6 +279,14 @@ void __init rockchip_clk_register_branches(
+ 				list->gate_offset, list->gate_shift,
+ 				list->gate_flags, flags, &clk_lock);
+ 			break;
++		case branch_mmc:
++			clk = rockchip_clk_register_mmc(
++				list->name,
++				list->parent_names, list->num_parents,
++				reg_base + list->muxdiv_offset,
++				list->div_shift
++			);
++			break;
+ 		}
+ 
+ 		/* none of the cases above matched */
+diff --git a/drivers/clk/rockchip/clk.h b/drivers/clk/rockchip/clk.h
+index ca009ab..136e8a9 100644
+--- a/drivers/clk/rockchip/clk.h
++++ b/drivers/clk/rockchip/clk.h
+@@ -48,6 +48,14 @@
+ #define RK3288_GLB_SRST_SND		0x1b4
+ #define RK3288_SOFTRST_CON(x)		(x * 0x4 + 0x1b8)
+ #define RK3288_MISC_CON			0x1e8
++#define RK3288_SDMMC_CON0		0x200
++#define RK3288_SDMMC_CON1		0x204
++#define RK3288_SDIO0_CON0		0x208
++#define RK3288_SDIO0_CON1		0x20c
++#define RK3288_SDIO1_CON0		0x210
++#define RK3288_SDIO1_CON1		0x214
++#define RK3288_EMMC_CON0		0x218
++#define RK3288_EMMC_CON1		0x21c
+ 
+ enum rockchip_pll_type {
+ 	pll_rk3066,
+@@ -152,6 +160,10 @@ struct clk *rockchip_clk_register_cpuclk(const char *name,
+ 			const struct rockchip_cpuclk_rate_table *rates,
+ 			int nrates, void __iomem *reg_base, spinlock_t *lock);
+ 
++struct clk *rockchip_clk_register_mmc(const char *name,
++				const char **parent_names, u8 num_parents,
++				void __iomem *reg, int shift);
++
+ #define PNAME(x) static const char *x[] __initconst
+ 
+ enum rockchip_clk_branch_type {
+@@ -160,6 +172,7 @@ enum rockchip_clk_branch_type {
+ 	branch_divider,
+ 	branch_fraction_divider,
+ 	branch_gate,
++	branch_mmc,
+ };
+ 
+ struct rockchip_clk_branch {
+@@ -352,6 +365,16 @@ struct rockchip_clk_branch {
+ 		.gate_flags	= gf,				\
+ 	}
+ 
++#define MMC(_id, cname, pname, offset, shift)			\
++	{							\
++		.id		= _id,				\
++		.branch_type	= branch_mmc,			\
++		.name		= cname,			\
++		.parent_names	= (const char *[]){ pname },	\
++		.num_parents	= 1,				\
++		.muxdiv_offset	= offset,			\
++		.div_shift	= shift,			\
++	}
+ 
+ void rockchip_clk_init(struct device_node *np, void __iomem *base,
+ 		       unsigned long nr_clks);
+-- 
+2.2.0.rc0.207.ga3a616c
 
-> >> Please move it and its definition to the files that operate on the MC
-> >> management interface.
-> >
-> > Note, the binary interface opcode really is DPRC_CMDID_GET_CONT_ID.
-> >
-> > We can request that the binary interface naming be changed, but wouldn't
-> > it be better to keep the functions separated by opcode type-- having
-> > DPRC_CMDID* opcode-based commands be in one file and DPMNG_CMDID* commands
-> > in a separate file?
-> 
-> It really depends on what the semantics are. If this is a call that's
-> only valid on the MC root, then it should belong there. If it's
-> available on every container portal, it should be part of dprc of course.
-
-It is valid on any portal, including container portals.  For that reason,
-I do think it may make sense for it to be a DPMNG* command.  But, I would
-say leave the files implementing the opcode groupings alone until the MC
-architecture is changed.
-
-Stuart
