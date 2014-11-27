@@ -1,142 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751146AbaK0V4a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 16:56:30 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:63557 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926AbaK0V43 (ORCPT
+	id S1751386AbaK0V5a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 16:57:30 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:56241 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960AbaK0V51 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 16:56:29 -0500
+	Thu, 27 Nov 2014 16:57:27 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Mark yao <mark.yao@rock-chips.com>, Dave Airlie <airlied@gmail.com>,
+        Joerg Roedel <jroedel@suse.de>,
+        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>, linux-api@vger.kernel.org,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Douglas Anderson <dianders@chromium.org>,
+        =?ISO-8859-1?Q?St=E9phane?= Marchesin <marcheu@chromium.org>,
+        Dominik Behr <dbehr@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Eddie Cai <cf@rock-chips.com>, simon xue <xxm@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>,
+        Kever Yang <kever.yang@rock-chips.com>,
+        =?utf-8?B?6Zer5a2d5Yab?= <yxj@rock-chips.com>, xw@rock-chips.com
+Subject: Re: [PATCH v14 0/3] Add drm driver for Rockchip Socs
+Date: Thu, 27 Nov 2014 22:56:32 +0100
+Message-ID: <3124625.mkxyU0zW0C@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAGS+omDDAYtx+02ZBMGnLXygWpfBa283pCU00vP-sahwNnoyFA@mail.gmail.com>
+References: <1416447994-9921-1-git-send-email-mark.yao@rock-chips.com> <5476CDF7.60208@rock-chips.com> <CAGS+omDDAYtx+02ZBMGnLXygWpfBa283pCU00vP-sahwNnoyFA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.11.1411271609510.3961@nanos>
-References: <65CD3FC07F3BF942ABE211646D72D770356EACA5@IRSMSX110.ger.corp.intel.com>
- <1417099205-13309-1-git-send-email-emmanuel.berthier@intel.com> <alpine.DEB.2.11.1411271609510.3961@nanos>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 27 Nov 2014 13:56:07 -0800
-Message-ID: <CALCETrWKiTdzSQ6kKPaufHoW2aTjPtqkQy9cyq_YiBwoowe-+g@mail.gmail.com>
-Subject: Re: [PATCH v2] [LBR] Dump LBRs on Exception
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Emmanuel Berthier <emmanuel.berthier@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        robert.jarzmik@intel.com, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V02:K0:qupwlQKePKSVRgtcseww4xC5uqCel9YQfp6oqfyXeSj
+ nAozG81u3IY3JjUtJUR+xHy853yB4gFdScpSE0GJIuuHPWRq7L
+ RwIjQP65+QtbVH2F5UgUecCL9Z5MITpshQ0Ej2Z6a0xEW4GP9G
+ p6vj9cwarvZjqEEbuHZs2ec3MfKYmXQUj7Zcmbo1LsAlL1xRmQ
+ 0IEsJKIfz6oKhdv4ZQ+Lq2FLYqkoRMhJoPauNN3p1TkmJCFz3r
+ WIHev+trGfGNtD7boHwp0NRI7GYm9Tkgo80xI2KujcDSO80pKm
+ tztH8gsuNy/6RKX6fsphcXU9k3EnrLfHDWNpMPiteF1QKi36RR
+ 2MKWcc3iQpmp2GcX9/AU=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 1:22 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Thu, 27 Nov 2014, Emmanuel Berthier wrote:
->> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
->> index 45fa730..0a69365 100644
->> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
->> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
->> @@ -4,7 +4,7 @@
->>  #include <asm/perf_event.h>
->>  #include <asm/msr.h>
->>  #include <asm/insn.h>
->> -
->
-> This newline is intentional to seperate asm includes from the local
-> one.
->
->>  static void __intel_pmu_lbr_enable(void)
->>  {
->>       u64 debugctl;
->>       struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
->>
->> +     lbr_set_used_by_perf(true);
->
-> This cannot work.
->
-> CPU0                                    CPU1
->
-> __intel_pmu_lbr_enable()
->    lbr_set_used_by_perf(true);
->                                         __intel_pmu_lbr_disable()
->                                           lbr_set_used_by_perf(false);
->
-> This is a per cpu property.
->
-> And there is more to that. Let's look at a single CPU.
->
-> lbr for oops is enabled
->
-> context switch()
->    __intel_pmu_lbr_enable()     -> LBR used by perf, oops dumper disabled
->
-> context switch()
->    __intel_pmu_lbr_disable()    -> LBR not longer used by perf, oops
->                                    dumper enabled
->
-> So after that context switch we crash in the kernel and LBR is empty
-> because we did disable it at the context switch.
->
-> So you need per cpu state, which handles the LBR dumper state:
->
-> #define LBR_OOPS_DISABLED 0x01
-> #define LBR_PERF_USAGE    0x02
->
-> DEFINE_PER_CPU(unsigned long, lbr_dump_state) = LBR_OOPS_DISABLED;
->
-> lbr_perf_enable()
->         this_cpu_add(lbr_dump_state, LBR_PERF_USAGE);
->
-> lbr_perf_disable()
->         if (!this_cpu_sub_return(lbr_dump_state, LBR_PERF_USAGE))
->                 enable_lbr_oops();
->
-> Now of course you need to handle this in the exception path per cpu as
-> well.
->
->>  /*
->>   * Exception entry points.
->>   */
->> @@ -1063,6 +1103,8 @@ ENTRY(\sym)
->>       subq $ORIG_RAX-R15, %rsp
->>       CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
->>
->> +     STOP_LBR
->
-> We really cannot do this unconditionally for every exception. This
-> wants to be conditional, i.e.
->
->        .if \stop_lbr
->        cond_stop_lbr
->        .endif
->
-> So we can select which exceptions actually get that treatment.
-> do_page_fault is probably the only one which is interesting
-> here.
->
-> Now looking at your macro maze, I really wonder whether we can do it a
-> little bit less convoluted. We need to push/pop registers. error_entry
-> saves the registers already and has a (admitedly convoluted)
-> kernel/user space check. But we might be able to do something sane
-> there. Cc'ing Andy as he is the master of that universe.
->
+On Thursday 27 November 2014 14:05:00 Daniel Kurtz wrote:
+> On Thu, Nov 27, 2014 at 2:08 AM, Mark yao <mark.yao@rock-chips.com> wrote:
+> >
+> > On 2014年11月27日 10:12, Dave Airlie wrote:
+> >>>>
+> >>>>
+> >>> Hi Dave
+> >>>      Do you mean that I need send you a branch, based on drm-next, merge with
+> >>> iommu tree and rockchip drm?
+> >>
+> >> Yes, grab drm-next, git pull the arm/rockchip branch from Joerg's
+> >> tree, put rockchip drm
+> >> patches on top, send me pull request.
+> >>
+> >> I'll validate it then.
+> >>
+> >> Dave.
+> >>
+> > Hi Dave
+> >     I have send a pull request to you, with Joerg's iommu arm/rockchip branch.
+> >
+> >     I got a same problem when use "make multi_v7_defconfig" as Heiko said:
+> >         drivers/video/fbdev/Kconfig:5:error: recursive dependency detected!
+> >         drivers/video/fbdev/Kconfig:5:    symbol FB is selected by DRM_KMS_FB_HELPER
+> >         drivers/gpu/drm/Kconfig:34:    symbol DRM_KMS_FB_HELPER is selected by DRM_ROCKCHIP
+> >         drivers/gpu/drm/rockchip/Kconfig:1:    symbol DRM_ROCKCHIP depends on ARM_DMA_USE_IOMMU
+> >         arch/arm/Kconfig:95:    symbol ARM_DMA_USE_IOMMU is selected by VIDEO_OMAP3
+> >         drivers/media/platform/Kconfig:96:    symbol VIDEO_OMAP3 depends on VIDEO_V4L2
+> >         drivers/media/v4l2-core/Kconfig:6:    symbol VIDEO_V4L2 depends on I2C
+> >         drivers/i2c/Kconfig:7:    symbol I2C is selected by FB_DDC
+> >         drivers/video/fbdev/Kconfig:59:    symbol FB_DDC is selected by FB_CYBER2000_DDC
+> >         drivers/video/fbdev/Kconfig:374:    symbol FB_CYBER2000_DDC depends on FB_CYBER2000
+> >         drivers/video/fbdev/Kconfig:362:    symbol FB_CYBER2000 depends on FB
+> >
+> >     I was confused how to solve the recursive dependency, remove depends on ARM_DMA_USE_IOMMU & IOMMU_API?
+> 
+> The "depends on ARM_DMA_USE_IOMMU & IOMMU_API" was suggested by Arnd
+> Bergmann during code review (originally they were selected).
+> 
+> Removing them definitely fixes the dependency recursion.
+> Also, since they are both already selected by ROCKCHIP_IOMMU,
+> everything will build correctly.
+> So, this sounds good to me, but I am no expert on Kconfig.
+> 
 
-Can one of you give me some context as to what this code is intended
-to do?  I haven't followed the thread.
+I think the problem here is VIDEO_OMAP3 (among others), it should do the
+same as rockchips and use 'depends on' instead of 'select'.
 
-In particular, knowing why this needs to be in asm instead of in C
-would be nice, because asm in entry_64.S has an amazing ability to
-have little bugs hiding for years.
+Another problem is the 'select I2C' in FB_DDC, but that would be much harder
+to fix.
 
-There's also the caveat that, especialy for the IST exceptions, you're
-running in a weird context in which lots of things that are usually
-safe are verboten.  Page faults can be tricky too, though.
-
---Andy
-
-> Thanks,
->
->         tglx
->
->
->
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+	Arnd
