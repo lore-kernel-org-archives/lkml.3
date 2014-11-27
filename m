@@ -1,83 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751208AbaK0VwU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 16:52:20 -0500
-Received: from www.linutronix.de ([62.245.132.108]:58990 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729AbaK0VwS (ORCPT
+	id S1751146AbaK0V4a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 16:56:30 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:63557 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926AbaK0V43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 16:52:18 -0500
-Date: Thu, 27 Nov 2014 22:52:08 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: David Hildenbrand <dahi@linux.vnet.ibm.com>
-cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
-        paulus@samba.org, akpm@linux-foundation.org, schwidefsky@de.ibm.com,
-        mingo@kernel.org
-Subject: Re: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
- atomic
-In-Reply-To: <20141127161905.7c6220ee@thinkpad-w530>
-Message-ID: <alpine.DEB.2.11.1411272246110.3961@nanos>
-References: <20141126151729.GB9612@redhat.com> <20141126152334.GA9648@redhat.com> <20141126163207.63810fcb@thinkpad-w530> <20141126154717.GB10568@redhat.com> <5475FAB1.1000802@de.ibm.com> <20141126163216.GB10850@redhat.com> <547604FC.4030300@de.ibm.com>
- <20141126170447.GC11202@redhat.com> <20141127070919.GA4390@osiris> <20141127090301.3ddc3077@thinkpad-w530> <20141127120441.GB4390@osiris> <alpine.DEB.2.11.1411271602320.3961@nanos> <20141127161905.7c6220ee@thinkpad-w530>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Thu, 27 Nov 2014 16:56:29 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <alpine.DEB.2.11.1411271609510.3961@nanos>
+References: <65CD3FC07F3BF942ABE211646D72D770356EACA5@IRSMSX110.ger.corp.intel.com>
+ <1417099205-13309-1-git-send-email-emmanuel.berthier@intel.com> <alpine.DEB.2.11.1411271609510.3961@nanos>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 27 Nov 2014 13:56:07 -0800
+Message-ID: <CALCETrWKiTdzSQ6kKPaufHoW2aTjPtqkQy9cyq_YiBwoowe-+g@mail.gmail.com>
+Subject: Re: [PATCH v2] [LBR] Dump LBRs on Exception
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Emmanuel Berthier <emmanuel.berthier@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        robert.jarzmik@intel.com, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Nov 2014, David Hildenbrand wrote:
-> > OTOH, there is no reason why we need to disable preemption over that
-> > page_fault_disabled() region. There are code pathes which really do
-> > not require to disable preemption for that.
-> > 
-> > We have that seperated in preempt-rt for obvious reasons and IIRC
-> > Peter Zijlstra tried to distangle it in mainline some time ago. I
-> > forgot why that never got merged.
-> > 
-> 
-> Of course, we can completely separate that in our page fault code by doing
-> pagefault_disabled() checks instead of in_atomic() checks (even in add on
-> patches later).
-> 
-> > We tie way too much stuff on the preemption count already, which is a
-> > mightmare because we have no clear distinction of protection
-> > scopes. 
-> 
-> Although it might not be optimal, but keeping a separate counter for
-> pagefault_disable() as part of the preemption counter seems to be the only
-> doable thing right now.
+On Thu, Nov 27, 2014 at 1:22 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Thu, 27 Nov 2014, Emmanuel Berthier wrote:
+>> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+>> index 45fa730..0a69365 100644
+>> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+>> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+>> @@ -4,7 +4,7 @@
+>>  #include <asm/perf_event.h>
+>>  #include <asm/msr.h>
+>>  #include <asm/insn.h>
+>> -
+>
+> This newline is intentional to seperate asm includes from the local
+> one.
+>
+>>  static void __intel_pmu_lbr_enable(void)
+>>  {
+>>       u64 debugctl;
+>>       struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+>>
+>> +     lbr_set_used_by_perf(true);
+>
+> This cannot work.
+>
+> CPU0                                    CPU1
+>
+> __intel_pmu_lbr_enable()
+>    lbr_set_used_by_perf(true);
+>                                         __intel_pmu_lbr_disable()
+>                                           lbr_set_used_by_perf(false);
+>
+> This is a per cpu property.
+>
+> And there is more to that. Let's look at a single CPU.
+>
+> lbr for oops is enabled
+>
+> context switch()
+>    __intel_pmu_lbr_enable()     -> LBR used by perf, oops dumper disabled
+>
+> context switch()
+>    __intel_pmu_lbr_disable()    -> LBR not longer used by perf, oops
+>                                    dumper enabled
+>
+> So after that context switch we crash in the kernel and LBR is empty
+> because we did disable it at the context switch.
+>
+> So you need per cpu state, which handles the LBR dumper state:
+>
+> #define LBR_OOPS_DISABLED 0x01
+> #define LBR_PERF_USAGE    0x02
+>
+> DEFINE_PER_CPU(unsigned long, lbr_dump_state) = LBR_OOPS_DISABLED;
+>
+> lbr_perf_enable()
+>         this_cpu_add(lbr_dump_state, LBR_PERF_USAGE);
+>
+> lbr_perf_disable()
+>         if (!this_cpu_sub_return(lbr_dump_state, LBR_PERF_USAGE))
+>                 enable_lbr_oops();
+>
+> Now of course you need to handle this in the exception path per cpu as
+> well.
+>
+>>  /*
+>>   * Exception entry points.
+>>   */
+>> @@ -1063,6 +1103,8 @@ ENTRY(\sym)
+>>       subq $ORIG_RAX-R15, %rsp
+>>       CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
+>>
+>> +     STOP_LBR
+>
+> We really cannot do this unconditionally for every exception. This
+> wants to be conditional, i.e.
+>
+>        .if \stop_lbr
+>        cond_stop_lbr
+>        .endif
+>
+> So we can select which exceptions actually get that treatment.
+> do_page_fault is probably the only one which is interesting
+> here.
+>
+> Now looking at your macro maze, I really wonder whether we can do it a
+> little bit less convoluted. We need to push/pop registers. error_entry
+> saves the registers already and has a (admitedly convoluted)
+> kernel/user space check. But we might be able to do something sane
+> there. Cc'ing Andy as he is the master of that universe.
+>
 
-It needs to be seperate, if it should be useful. Otherwise we just
-have a extra accounting in preempt_count() which does exactly the same
-thing as we have now: disabling preemption.
+Can one of you give me some context as to what this code is intended
+to do?  I haven't followed the thread.
 
-Now you might say, that we could mask out that part when checking
-preempt_count, but that wont work on x86 as x86 has the preempt
-counter as a per cpu variable and not as a per thread one.
+In particular, knowing why this needs to be in asm instead of in C
+would be nice, because asm in entry_64.S has an amazing ability to
+have little bugs hiding for years.
 
-But if you want to distangle pagefault disable from preempt disable
-then you must move it to the thread, because it is a property of the
-thread. preempt count is very much a per cpu counter as you can only
-go through schedule when it becomes 0.
+There's also the caveat that, especialy for the IST exceptions, you're
+running in a weird context in which lots of things that are usually
+safe are verboten.  Page faults can be tricky too, though.
 
-Btw, I find the x86 representation way more clear, because it
-documents that preempt count is a per cpu BKL and not a magic thread
-property. And sadly that is how preempt count is used ...
+--Andy
 
-> I am not sure if a completely separated counter is even possible,
-> increasing the size of thread_info.
+> Thanks,
+>
+>         tglx
+>
+>
+>
 
-And adding a ulong to thread_info is going to create exactly which
-problem?
 
-Thanks,
 
-	tglx
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
