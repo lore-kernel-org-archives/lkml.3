@@ -1,117 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520AbaK0JB1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 04:01:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45193 "EHLO mx1.redhat.com"
+	id S932104AbaK0JCA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 04:02:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42128 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755152AbaK0JBZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 04:01:25 -0500
-Date: Thu, 27 Nov 2014 09:09:01 +0008
-From: Jason Wang <jasowang@redhat.com>
-Subject: RE: [PATCH v2] hv: hv_fcopy: drop the obsolete message on transfer
- failure
-To: Dexuan Cui <decui@microsoft.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        KY Srinivasan <kys@microsoft.com>,
-        "vkuznets@redhat.com" <vkuznets@redhat.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Message-Id: <1417078861.18179.2@smtp.corp.redhat.com>
-In-Reply-To: <F792CF86EFE20D4AB8064279AFBA51C613E641D8@HKNPRD3002MB017.064d.mgd.msft.net
-	>
-References: <1417073491-19388-1-git-send-email-decui@microsoft.com>
-	<1245181972.17067189.1417072471636.JavaMail.zimbra@redhat.com>
-	<F792CF86EFE20D4AB8064279AFBA51C613E641D8@HKNPRD3002MB017.064d.mgd.msft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+	id S1755016AbaK0Is3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:48:29 -0500
+From: lizf@kernel.org
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
+        Christoph Hellwig <hch@lst.de>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 50/91] libiscsi: fix potential buffer overrun in __iscsi_conn_send_pdu
+Date: Thu, 27 Nov 2014 16:42:33 +0800
+Message-Id: <1417077794-9299-50-git-send-email-lizf@kernel.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
+References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Mike Christie <michaelc@cs.wisc.edu>
+
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+
+------------------
 
 
-On Thu, Nov 27, 2014 at 4:50 PM, Dexuan Cui <decui@microsoft.com> wrote:
->>  -----Original Message-----
->>  From: Jason Wang [mailto:jasowang@redhat.com]
->>  Sent: Thursday, November 27, 2014 15:15 PM
->>  To: Dexuan Cui
->>  Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; 
->> driverdev-
->>  devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com; KY
->>  Srinivasan; vkuznets@redhat.com; Haiyang Zhang
->>  Subject: Re: [PATCH v2] hv: hv_fcopy: drop the obsolete message on 
->> transfer
->>  failure
->>  ----- Original Message -----
->>  > In the case the user-space daemon crashes, hangs or is killed, we
->>  > need to down the semaphore, otherwise, after the daemon starts 
->> next
->>  > time, the obsolete data in fcopy_transaction.message or
->>  > fcopy_transaction.fcopy_msg will be used immediately.
->>  >
->>  > Reviewed-by: Vitaly Kuznetsov <vkuznets@redhat.com>
->>  > Cc: K. Y. Srinivasan <kys@microsoft.com>
->>  > Signed-off-by: Dexuan Cui <decui@microsoft.com>
->>  > ---
->>  >
->>  > v2: I removed the "FCP" prefix as Greg asked.
->>  >
->>  >     I also updated the output message a little:
->>  >     "FCP: failed to acquire the semaphore" -->
->>  >     "can not acquire the semaphore: it is benign"
->>  >
->>  >  drivers/hv/hv_fcopy.c | 9 +++++++++
->>  >  1 file changed, 9 insertions(+)
->>  >
->>  > diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c
->>  > index 23b2ce2..c518ad9 100644
->>  > --- a/drivers/hv/hv_fcopy.c
->>  > +++ b/drivers/hv/hv_fcopy.c
->>  > @@ -86,6 +86,15 @@ static void fcopy_work_func(struct work_struct
->>  *dummy)
->>  >  	 * process the pending transaction.
->>  >  	 */
->>  >  	fcopy_respond_to_host(HV_E_FAIL);
->>  > +
->>  > +	/* In the case the user-space daemon crashes, hangs or is 
->> killed, we
->>  > +	 * need to down the semaphore, otherwise, after the daemon 
->> starts
->>  next
->>  > +	 * time, the obsolete data in fcopy_transaction.message or
->>  > +	 * fcopy_transaction.fcopy_msg will be used immediately.
->>  > +	 */
->>  
->>  Looks still racy, what happens if the daemon start before 
->> down_trylock()
->>  but after fcopy_respont_to_host() here?
-> Jason,
-> Thanks for pointing this out!
-> IMO we can resolve this by adding down_trylock() in fcopy_release().
-> What's your opinion?
+commit db9bfd64b14a3a8f1868d2164518fdeab1b26ad1 upstream.
 
+This patches fixes a potential buffer overrun in __iscsi_conn_send_pdu.
+This function is used by iscsi drivers and userspace to send iscsi PDUs/
+commands. For login commands, we have a set buffer size. For all other
+commands we do not support data buffers.
 
-Looks better and need to cancel the timeout also here?
-> 
-> 
->>  
->>  > +	if (down_trylock(&fcopy_transaction.read_sema))
->>  > +		pr_debug("can not acquire the semaphore: it is benign\n");
->>  
->>  typo
->>  > +
->>  >  }
-> Sorry -- what typo do you mean?
+This was reported by Dan Carpenter here:
+http://www.spinics.net/lists/linux-scsi/msg66838.html
 
-s/benign/begin/ ?
-> 
-> Thanks,
-> -- Dexuan
-> �NrybXǧv^)޺{.n+{zXܨ}Ơz&j:+vzZ++zfh~izw?&)ߢf^jǫym@Aa0hi
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
+Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Zefan Li <lizefan@huawei.com>
+---
+ drivers/scsi/libiscsi.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
+index 82c3fd4..1243d2f 100644
+--- a/drivers/scsi/libiscsi.c
++++ b/drivers/scsi/libiscsi.c
+@@ -718,11 +718,21 @@ __iscsi_conn_send_pdu(struct iscsi_conn *conn, struct iscsi_hdr *hdr,
+ 			return NULL;
+ 		}
+ 
++		if (data_size > ISCSI_DEF_MAX_RECV_SEG_LEN) {
++			iscsi_conn_printk(KERN_ERR, conn, "Invalid buffer len of %u for login task. Max len is %u\n", data_size, ISCSI_DEF_MAX_RECV_SEG_LEN);
++			return NULL;
++		}
++
+ 		task = conn->login_task;
+ 	} else {
+ 		if (session->state != ISCSI_STATE_LOGGED_IN)
+ 			return NULL;
+ 
++		if (data_size != 0) {
++			iscsi_conn_printk(KERN_ERR, conn, "Can not send data buffer of len %u for op 0x%x\n", data_size, opcode);
++			return NULL;
++		}
++
+ 		BUG_ON(conn->c_stage == ISCSI_CONN_INITIAL_STAGE);
+ 		BUG_ON(conn->c_stage == ISCSI_CONN_STOPPED);
+ 
+-- 
+1.9.1
 
