@@ -1,63 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506AbaK0NbS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 08:31:18 -0500
-Received: from mailgw01.mediatek.com ([210.61.82.183]:57277 "EHLO
-	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751223AbaK0NbQ (ORCPT
+	id S1751382AbaK0Nf3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 08:35:29 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:46886 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866AbaK0Nf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 08:31:16 -0500
-X-Listener-Flag: 11101
-Subject: Re: [PATCH v8 3/4] ARM: mediatek: Add sysirq in
- mt6589/mt8135/mt8127 dtsi
-From: Yingjoe Chen <yingjoe.chen@mediatek.com>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-CC: Jason Cooper <jason@lakedaemon.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        <devicetree@vger.kernel.org>, <hc.yen@mediatek.com>,
-        <srv_heupstream@mediatek.com>, <yh.chen@mediatek.com>,
-        <linux-kernel@vger.kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        Yijing Wang <wangyijing@huawei.com>, Rob Herring <robh+dt@kernel.org>,
-        <nathan.chung@mediatek.com>, <yingjoe.chen@gmail.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>, <eddie.huang@mediatek.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <1416902662-19281-4-git-send-email-yingjoe.chen@mediatek.com>
-References: <1416902662-19281-1-git-send-email-yingjoe.chen@mediatek.com>
-	 <1416902662-19281-4-git-send-email-yingjoe.chen@mediatek.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 27 Nov 2014 21:31:12 +0800
-Message-ID: <1417095072.12707.29.camel@mtksdaap41>
+	Thu, 27 Nov 2014 08:35:28 -0500
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-MTK: N
+In-Reply-To: <20141114213256.GA24709@dtor-ws>
+References: <20141114213256.GA24709@dtor-ws>
+Date: Thu, 27 Nov 2014 14:35:27 +0100
+Message-ID: <CACRpkdZsPKMCm1wv09xTPb3j1MbRRiJaeG9A7OjX+e4PreKSwA@mail.gmail.com>
+Subject: Re: [PATCH] gpio-tz1090: fix error handling of irq_of_parse_and_map
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dmitry Torokhov <dtor@chromium.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
+        James Hogan <james.hogan@imgtec.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-11-25 at 16:04 +0800, Yingjoe Chen wrote:
-> Add sysirq settings for mt6589/mt8135/mt8127
-> This also correct timer interrupt flag. The old setting works
-> because boot loader already set polarity for timer interrupt.
-> Without intpol support, the setting was not changed so gic
-> can get the irq correctly.
+On Fri, Nov 14, 2014 at 10:32 PM, Dmitry Torokhov <dtor@chromium.org> wrote:
 
-Hi Matthias,
+> irq_of_parse_and_map() returns 0 on error, so testing for negative
+> result never works.
+>
+> Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
 
-I think this patch should go through you. Would you take a look at this
-patch? Also, mt8135/mt8127 uart support[1] depends on this, should we
-send it again?
+Patch applied with James' ACK.
 
-Thanks.
-
-Joe.C
-
-[1]
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/296147.html
-
-
+Yours,
+Linus Walleij
