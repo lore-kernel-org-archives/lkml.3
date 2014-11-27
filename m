@@ -1,58 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751495AbaK0Pew (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 10:34:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44777 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792AbaK0Pev convert rfc822-to-8bit (ORCPT
+	id S1751554AbaK0Pe7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 10:34:59 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:45796 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132AbaK0Pe4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 10:34:51 -0500
+	Thu, 27 Nov 2014 10:34:56 -0500
+Date: Thu, 27 Nov 2014 15:34:54 +0000
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arm64: ARM: Fix the Generic Timers interrupt active
+ level description
+Message-ID: <20141127153453.GR828@e106497-lin.cambridge.arm.com>
+References: <1417099005-18638-1-git-send-email-Liviu.Dudau@arm.com>
+ <5477389A.8010606@arm.com>
 MIME-Version: 1.0
-In-Reply-To: <201411271624.03066@pali>
-References: <201411271506.20457@pali>
-	<201411271543.23527@pali>
-	<20141127151448.GA23064@kroah.com>
-	<201411271624.03066@pali>
-Date: Thu, 27 Nov 2014 23:34:47 +0800
-Message-ID: <CACVXFVMMpY_99NrhLXeY-PMBFFACZxaE4hsq0+gff0YzHmeywg@mail.gmail.com>
-Subject: Re: wl1251: NVS firmware data
-From: Ming Lei <ming.lei@canonical.com>
-To: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pavel Machek <pavel@ucw.cz>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
-        Sebastian Reichel <sre@ring0.de>,
-        David Gnedt <david.gnedt@davizone.at>
+In-Reply-To: <5477389A.8010606@arm.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 27 Nov 2014 15:34:55.0312 (UTC) FILETIME=[B1AD9500:01D00A57]
+X-MC-Unique: 114112715345407401
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 11:24 PM, Pali Rohár <pali.rohar@gmail.com> wrote:
-> On Thursday 27 November 2014 16:14:48 Greg Kroah-Hartman wrote:
->> On Thu, Nov 27, 2014 at 03:43:23PM +0100, Pali Rohár wrote:
->> > Which userspace helper programs for (automatic) firmware
->> > loading are used? Can be udev configured to use own program
->> > for loading firmware instead that udev integrated which
->> > looking for firmware only in /lib/firmware files?
->>
->> The code to load firmware from userspace has been removed from
->> udev, so that's not going to work at all, sorry.
->>
->> greg k-h
->
-> Ok and how to load (dynamic) firmware files into kernel? What is
-> preferred way if not udev (because it removed that support)?
+On Thu, Nov 27, 2014 at 02:43:38PM +0000, Marc Zyngier wrote:
+> On 27/11/14 14:36, Liviu Dudau wrote:
+> > The Cortex-A5x TRM states in paragraph "9.2 Generic Timer functional
+> > description" that generic timers provide an active-LOW interrupt
+> > output. Fix the device trees to correctly describe this.
+> > 
+> > While doing this update the CPU mask to match the number of described
+> > CPUs as well.
+> > 
+> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> > ---
+> > 
+> > Arnd, Olof: This is on top of linux-next/master as it patches the Juno
+> > as well as all the other ARM DTs.
+> > 
+> >  arch/arm64/boot/dts/arm/foundation-v8.dts  | 8 ++++----
+> >  arch/arm64/boot/dts/arm/juno.dts           | 8 ++++----
+> >  arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts | 8 ++++----
+> >  3 files changed, 12 insertions(+), 12 deletions(-)
+> > 
+> > diff --git a/arch/arm64/boot/dts/arm/foundation-v8.dts b/arch/arm64/boot/dts/arm/foundation-v8.dts
+> > index 4a06090..27f3296 100644
+> > --- a/arch/arm64/boot/dts/arm/foundation-v8.dts
+> > +++ b/arch/arm64/boot/dts/arm/foundation-v8.dts
+> > @@ -78,10 +78,10 @@
+> >  
+> >  	timer {
+> >  		compatible = "arm,armv8-timer";
+> > -		interrupts = <1 13 0xff01>,
+> > -			     <1 14 0xff01>,
+> > -			     <1 11 0xff01>,
+> > -			     <1 10 0xff01>;
+> > +		interrupts = <1 13 0xf08>,
+> > +			     <1 14 0xf08>,
+> > +			     <1 11 0xf08>,
+> > +			     <1 10 0xf08>;
+> >  		clock-frequency = <100000000>;
+> >  	};
+> >  
+> > diff --git a/arch/arm64/boot/dts/arm/juno.dts b/arch/arm64/boot/dts/arm/juno.dts
+> > index 097ecc4..cb3073e 100644
+> > --- a/arch/arm64/boot/dts/arm/juno.dts
+> > +++ b/arch/arm64/boot/dts/arm/juno.dts
+> > @@ -98,10 +98,10 @@
+> >  
+> >  	timer {
+> >  		compatible = "arm,armv8-timer";
+> > -		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
+> > -			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
+> > -			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
+> > -			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>;
+> > +		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_LOW)>,
+> > +			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_LOW)>,
+> > +			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_LOW)>,
+> > +			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_LOW)>;
+> >  	};
+> >  
+> >  	pmu {
+> > diff --git a/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts b/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts
+> > index 572005e..efc59b3 100644
+> > --- a/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts
+> > +++ b/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts
+> > @@ -81,10 +81,10 @@
+> >  
+> >  	timer {
+> >  		compatible = "arm,armv8-timer";
+> > -		interrupts = <1 13 0xff01>,
+> > -			     <1 14 0xff01>,
+> > -			     <1 11 0xff01>,
+> > -			     <1 10 0xff01>;
+> > +		interrupts = <1 13 0xf08>,
+> > +			     <1 14 0xf08>,
+> > +			     <1 11 0xf08>,
+> > +			     <1 10 0xf08>;
+> >  		clock-frequency = <100000000>;
+> >  	};
+> >  
+> > 
+> 
+> Sorry, but that's wrong. Despite the *cores* having an level-low output,
+> the GIC only triggers on *level-high*. Yes, there is probably an
+> inverter in between.
 
-As I said, it isn't difficult to write a helper with uevent monitor for
-your case, and you can refer to mdev or android's implementation.
+BTW, should I also update the bindings example to get this right?
 
-Thanks,
-Ming Lei
+Regards,
+Liviu
+
+> 
+> 	M.
+> -- 
+> Jazz is not dead. It just smells funny...
+> 
+
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
+
