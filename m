@@ -1,125 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187AbaK0IxW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 03:53:22 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42919 "EHLO mail.kernel.org"
+	id S1755329AbaK0Ixs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 03:53:48 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42867 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753388AbaK0IuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:50:05 -0500
+	id S1752756AbaK0It7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:49:59 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 82/91] dm crypt: fix access beyond the end of allocated space
-Date: Thu, 27 Nov 2014 16:43:05 +0800
-Message-Id: <1417077794-9299-82-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tim Niemeyer <tim.niemeyer@corscience.de>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 80/91] bluetooth: hci_ldisc: fix deadlock condition
+Date: Thu, 27 Nov 2014 16:43:03 +0800
+Message-Id: <1417077794-9299-80-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
 References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Felipe Balbi <balbi@ti.com>
 
 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit d49ec52ff6ddcda178fc2476a109cf1bd1fa19ed upstream.
+commit da64c27d3c93ee9f89956b9de86c4127eb244494 upstream.
 
-The DM crypt target accesses memory beyond allocated space resulting in
-a crash on 32 bit x86 systems.
+LDISCs shouldn't call tty->ops->write() from within
+->write_wakeup().
 
-This bug is very old (it dates back to 2.6.25 commit 3a7f6c990ad04 "dm
-crypt: use async crypto").  However, this bug was masked by the fact
-that kmalloc rounds the size up to the next power of two.  This bug
-wasn't exposed until 3.17-rc1 commit 298a9fa08a ("dm crypt: use per-bio
-data").  By switching to using per-bio data there was no longer any
-padding beyond the end of a dm-crypt allocated memory block.
+->write_wakeup() is called with port lock taken and
+IRQs disabled, tty->ops->write() will try to acquire
+the same port lock and we will deadlock.
 
-To minimize allocation overhead dm-crypt puts several structures into one
-block allocated with kmalloc.  The block holds struct ablkcipher_request,
-cipher-specific scratch pad (crypto_ablkcipher_reqsize(any_tfm(cc))),
-struct dm_crypt_request and an initialization vector.
-
-The variable dmreq_start is set to offset of struct dm_crypt_request
-within this memory block.  dm-crypt allocates the block with this size:
-cc->dmreq_start + sizeof(struct dm_crypt_request) + cc->iv_size.
-
-When accessing the initialization vector, dm-crypt uses the function
-iv_of_dmreq, which performs this calculation: ALIGN((unsigned long)(dmreq
-+ 1), crypto_ablkcipher_alignmask(any_tfm(cc)) + 1).
-
-dm-crypt allocated "cc->iv_size" bytes beyond the end of dm_crypt_request
-structure.  However, when dm-crypt accesses the initialization vector, it
-takes a pointer to the end of dm_crypt_request, aligns it, and then uses
-it as the initialization vector.  If the end of dm_crypt_request is not
-aligned on a crypto_ablkcipher_alignmask(any_tfm(cc)) boundary the
-alignment causes the initialization vector to point beyond the allocated
-space.
-
-Fix this bug by calculating the variable iv_size_padding and adding it
-to the allocated size.
-
-Also correct the alignment of dm_crypt_request.  struct dm_crypt_request
-is specific to dm-crypt (it isn't used by the crypto subsystem at all),
-so it is aligned on __alignof__(struct dm_crypt_request).
-
-Also align per_bio_data_size on ARCH_KMALLOC_MINALIGN, so that it is
-aligned as if the block was allocated with kmalloc.
-
-Reported-by: Krzysztof Kolasa <kkolasa@winsoft.pl>
-Tested-by: Milan Broz <gmazyland@gmail.com>
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-[lizf: Backported by Mikulas]
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
+Reported-by: Huang Shijie <b32955@freescale.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Tested-by: Andreas Bießmann <andreas@biessmann.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[tim.niemeyer@corscience.de: rebased on 3.4.103]
+Signed-off-by: Tim Niemeyer <tim.niemeyer@corscience.de>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/md/dm-crypt.c | 20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+ drivers/bluetooth/hci_ldisc.c | 25 ++++++++++++++++++++-----
+ drivers/bluetooth/hci_uart.h  |  2 ++
+ 2 files changed, 22 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
-index 535c3e2..926989d 100644
---- a/drivers/md/dm-crypt.c
-+++ b/drivers/md/dm-crypt.c
-@@ -1566,6 +1566,7 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
- 	unsigned int key_size, opt_params;
- 	unsigned long long tmpll;
- 	int ret;
-+	size_t iv_size_padding;
- 	struct dm_arg_set as;
- 	const char *opt_string;
- 	char dummy;
-@@ -1602,12 +1603,23 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
+diff --git a/drivers/bluetooth/hci_ldisc.c b/drivers/bluetooth/hci_ldisc.c
+index 98a8c05..d4550f9 100644
+--- a/drivers/bluetooth/hci_ldisc.c
++++ b/drivers/bluetooth/hci_ldisc.c
+@@ -118,10 +118,6 @@ static inline struct sk_buff *hci_uart_dequeue(struct hci_uart *hu)
  
- 	cc->dmreq_start = sizeof(struct ablkcipher_request);
- 	cc->dmreq_start += crypto_ablkcipher_reqsize(any_tfm(cc));
--	cc->dmreq_start = ALIGN(cc->dmreq_start, crypto_tfm_ctx_alignment());
--	cc->dmreq_start += crypto_ablkcipher_alignmask(any_tfm(cc)) &
--			   ~(crypto_tfm_ctx_alignment() - 1);
-+	cc->dmreq_start = ALIGN(cc->dmreq_start, __alignof__(struct dm_crypt_request));
+ int hci_uart_tx_wakeup(struct hci_uart *hu)
+ {
+-	struct tty_struct *tty = hu->tty;
+-	struct hci_dev *hdev = hu->hdev;
+-	struct sk_buff *skb;
+-
+ 	if (test_and_set_bit(HCI_UART_SENDING, &hu->tx_state)) {
+ 		set_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
+ 		return 0;
+@@ -129,6 +125,22 @@ int hci_uart_tx_wakeup(struct hci_uart *hu)
+ 
+ 	BT_DBG("");
+ 
++	schedule_work(&hu->write_work);
 +
-+	if (crypto_ablkcipher_alignmask(any_tfm(cc)) < CRYPTO_MINALIGN) {
-+		/* Allocate the padding exactly */
-+		iv_size_padding = -(cc->dmreq_start + sizeof(struct dm_crypt_request))
-+				& crypto_ablkcipher_alignmask(any_tfm(cc));
-+	} else {
-+		/*
-+		 * If the cipher requires greater alignment than kmalloc
-+		 * alignment, we don't know the exact position of the
-+		 * initialization vector. We must assume worst case.
-+		 */
-+		iv_size_padding = crypto_ablkcipher_alignmask(any_tfm(cc));
-+	}
++	return 0;
++}
++
++static void hci_uart_write_work(struct work_struct *work)
++{
++	struct hci_uart *hu = container_of(work, struct hci_uart, write_work);
++	struct tty_struct *tty = hu->tty;
++	struct hci_dev *hdev = hu->hdev;
++	struct sk_buff *skb;
++
++	/* REVISIT: should we cope with bad skbs or ->write() returning
++	 * and error value ?
++	 */
++
+ restart:
+ 	clear_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
  
- 	cc->req_pool = mempool_create_kmalloc_pool(MIN_IOS, cc->dmreq_start +
--			sizeof(struct dm_crypt_request) + cc->iv_size);
-+			sizeof(struct dm_crypt_request) + iv_size_padding + cc->iv_size);
- 	if (!cc->req_pool) {
- 		ti->error = "Cannot allocate crypt request mempool";
- 		goto bad;
+@@ -153,7 +165,6 @@ restart:
+ 		goto restart;
+ 
+ 	clear_bit(HCI_UART_SENDING, &hu->tx_state);
+-	return 0;
+ }
+ 
+ /* ------- Interface to HCI layer ------ */
+@@ -264,6 +275,8 @@ static int hci_uart_tty_open(struct tty_struct *tty)
+ 	hu->tty = tty;
+ 	tty->receive_room = 65536;
+ 
++	INIT_WORK(&hu->write_work, hci_uart_write_work);
++
+ 	spin_lock_init(&hu->rx_lock);
+ 
+ 	/* Flush any pending characters in the driver and line discipline. */
+@@ -298,6 +311,8 @@ static void hci_uart_tty_close(struct tty_struct *tty)
+ 		if (hdev)
+ 			hci_uart_close(hdev);
+ 
++		cancel_work_sync(&hu->write_work);
++
+ 		if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
+ 			if (hdev) {
+ 				hci_unregister_dev(hdev);
+diff --git a/drivers/bluetooth/hci_uart.h b/drivers/bluetooth/hci_uart.h
+index 6cf6ab22..af93d83 100644
+--- a/drivers/bluetooth/hci_uart.h
++++ b/drivers/bluetooth/hci_uart.h
+@@ -66,6 +66,8 @@ struct hci_uart {
+ 	unsigned long		flags;
+ 	unsigned long		hdev_flags;
+ 
++	struct work_struct	write_work;
++
+ 	struct hci_uart_proto	*proto;
+ 	void			*priv;
+ 
 -- 
 1.9.1
 
