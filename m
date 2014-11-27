@@ -1,66 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751132AbaK0RIE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 12:08:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36867 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784AbaK0RIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 12:08:02 -0500
-Message-ID: <54775A6B.9060905@redhat.com>
-Date: Thu, 27 Nov 2014 18:07:55 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>,
+	id S1751438AbaK0RKb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 12:10:31 -0500
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:54099 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173AbaK0RK3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 12:10:29 -0500
+From: David Hildenbrand <dahi@linux.vnet.ibm.com>
+To: linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
         linux-kernel@vger.kernel.org
-CC: kvm@vger.kernel.org
-Subject: Re: [PATCH] KVM: x86: use MSR_ICR instead of a number
-References: <1417018025-1189-1-git-send-email-rkrcmar@redhat.com>
-In-Reply-To: <1417018025-1189-1-git-send-email-rkrcmar@redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Cc: benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
+        heiko.carstens@de.ibm.com, dahi@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, borntraeger@de.ibm.com, mst@redhat.com,
+        tglx@linutronix.de, David.Laight@ACULAB.COM
+Subject: [PATCH RFC 2/2] mm, sched: trigger might_sleep() in might_fault() when pagefaults are disabled
+Date: Thu, 27 Nov 2014 18:10:17 +0100
+Message-Id: <1417108217-42687-3-git-send-email-dahi@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <1417108217-42687-1-git-send-email-dahi@linux.vnet.ibm.com>
+References: <1416915806-24757-1-git-send-email-dahi@linux.vnet.ibm.com>
+ <1417108217-42687-1-git-send-email-dahi@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112717-0017-0000-0000-00000201700D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit 662bbcb2747c2422cf98d3d97619509379eee466 removed might_sleep() checks
+for all user access code (that uses might_fault()).
 
+The reason was to disable wrong "sleep in atomic" warnings in the following
+scenario:
+	pagefault_disable();
+	rc = copy_to_user(...);
+	pagefault_enable();
 
-On 26/11/2014 17:07, Radim Krčmář wrote:
-> 0x830 MSR is 0x300 xAPIC MMIO, which is MSR_ICR.
-> 
-> Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
-> ---
->  This applies on top of Amit's
->    [PATCH v2] KVM: x86: Fix reserved x2apic registers
->  in which I noticed this minor deficit.
-> 
->  arch/x86/kvm/lapic.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-> index 9c90d31..687874f 100644
-> --- a/arch/x86/kvm/lapic.c
-> +++ b/arch/x86/kvm/lapic.c
-> @@ -1887,7 +1887,7 @@ int kvm_x2apic_msr_write(struct kvm_vcpu *vcpu, u32 msr, u64 data)
->  		return 1;
->  
->  	/* if this is ICR write vector before command */
-> -	if (msr == 0x830)
-> +	if (reg == APIC_ICR)
->  		apic_reg_write(apic, APIC_ICR2, (u32)(data >> 32));
->  	return apic_reg_write(apic, reg, (u32)data);
->  }
-> @@ -1908,7 +1908,7 @@ int kvm_x2apic_msr_read(struct kvm_vcpu *vcpu, u32 msr, u64 *data)
->  
->  	if (apic_reg_read(apic, reg, 4, &low))
->  		return 1;
-> -	if (msr == 0x830)
-> +	if (reg == APIC_ICR)
->  		apic_reg_read(apic, APIC_ICR2, 4, &high);
->  
->  	*data = (((u64)high) << 32) | low;
-> 
+Which is valid, as pagefault_disable() increments the preempt counter and
+therefore disables the pagefault handler. copy_to_user() will not sleep and return
+an invalid return code if a page is not available.
 
-Applied, thanks.
+However, as all might_sleep() checks are removed, CONFIG_DEBUG_ATOMIC_SLEEP
+would no longer detect the following scenario:
+	spin_lock(&lock);
+	rc = copy_to_user(...);
+	spin_unlock(&lock);
 
-Paolo
+If the kernel is compiled with preemption turned on, the preempt counter would
+be incremented and copy_to_user() would never sleep. However, with preemption
+turned off, the preempt counter will not be touched, we will therefore sleep in
+atomic context. We really want to enable CONFIG_DEBUG_ATOMIC_SLEEP checks for
+user access functions again, otherwise horrible deadlocks might be hard to debug.
+
+Root of all evil is that pagefault_disable() acted almost as preempt_disable(),
+depending on preemption being turned on/off.
+
+As we now have a fixed pagefault_disable() implementation in place, that uses
+own bits in the preempt counter, we can reenable might_sleep() checks.
+
+This patch reverts commit 662bbcb2747c2422cf98d3d97619509379eee466 taking care
+of the !MMU optimization and the new pagefault_disabled() check.
+
+Signed-off-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
+---
+ include/linux/kernel.h |  9 +++++++--
+ mm/memory.c            | 15 ++++-----------
+ 2 files changed, 11 insertions(+), 13 deletions(-)
+
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 3d770f55..64b5f93 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -225,9 +225,14 @@ static inline u32 reciprocal_scale(u32 val, u32 ep_ro)
+ 	return (u32)(((u64) val * ep_ro) >> 32);
+ }
+ 
+-#if defined(CONFIG_MMU) && \
+-	(defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP))
++#if defined(CONFIG_MMU) && defined(CONFIG_PROVE_LOCKING)
+ void might_fault(void);
++#elif defined(CONFIG_MMU) && defined(CONFIG_DEBUG_ATOMIC_SLEEP)
++static inline void might_fault(void)
++{
++	if (unlikely(!pagefault_disabled()))
++		__might_sleep(__FILE__, __LINE__, 0);
++}
+ #else
+ static inline void might_fault(void) { }
+ #endif
+diff --git a/mm/memory.c b/mm/memory.c
+index 3e50383..0e59db9 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3699,7 +3699,7 @@ void print_vma_addr(char *prefix, unsigned long ip)
+ 	up_read(&mm->mmap_sem);
+ }
+ 
+-#if defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP)
++#ifdef CONFIG_PROVE_LOCKING
+ void might_fault(void)
+ {
+ 	/*
+@@ -3711,17 +3711,10 @@ void might_fault(void)
+ 	if (segment_eq(get_fs(), KERNEL_DS))
+ 		return;
+ 
+-	/*
+-	 * it would be nicer only to annotate paths which are not under
+-	 * pagefault_disable, however that requires a larger audit and
+-	 * providing helpers like get_user_atomic.
+-	 */
+-	if (in_atomic())
+-		return;
+-
+-	__might_sleep(__FILE__, __LINE__, 0);
++	if (unlikely(!pagefault_disabled()))
++		__might_sleep(__FILE__, __LINE__, 0);
+ 
+-	if (current->mm)
++	if (!in_atomic() && current->mm)
+ 		might_lock_read(&current->mm->mmap_sem);
+ }
+ EXPORT_SYMBOL(might_fault);
+-- 
+1.8.5.5
+
