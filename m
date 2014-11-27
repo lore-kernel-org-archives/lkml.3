@@ -1,45 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751509AbaK0FaU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 00:30:20 -0500
-Received: from syn.loicp.eu ([176.31.96.212]:59429 "EHLO mx0.loicp.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750842AbaK0FaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 00:30:18 -0500
-Date: Thu, 27 Nov 2014 06:30:12 +0100
-From: =?utf-8?B?TG/Dr2M=?= Pefferkorn <loic@loicp.eu>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: oleg.drokin@intel.com, andreas.dilger@intel.com, gdonald@gmail.com,
-        keith.mannthey@intel.com, john.hammond@intel.com,
-        devel@driverdev.osuosl.org, HPDD-discuss@ml01.01.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: lustre: fix sparse warnings related to lock
- context imbalance
-Message-ID: <20141127053012.GA9725@iron>
-References: <02a457cec587341d0f1665491f6360323694b008.1417017302.git.loic@loicp.eu>
- <20141126205443.GB10615@kroah.com>
+	id S1753266AbaK0Fc1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 00:32:27 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:56863 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842AbaK0Fc0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 00:32:26 -0500
+Message-ID: <5476B763.1030701@hitachi.com>
+Date: Thu, 27 Nov 2014 14:32:19 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141126205443.GB10615@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: gregkh@linuxfoundation.org, akpm@linux-foundation.org, mmarek@suse.cz,
+        davem@davemloft.net, keescook@chromium.org, tranmanphong@gmail.com,
+        dh.herrmann@gmail.com, hughd@google.com, bobby.prani@gmail.com,
+        ebiederm@xmission.com, serge.hallyn@ubuntu.com,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v2 02/19] kbuild: kselftest_install - add a new make
+ target to install selftests
+References: <cover.1415735831.git.shuahkh@osg.samsung.com> <a2344d4df903d673afe1631118f40917f773cc9a.1415735831.git.shuahkh@osg.samsung.com>
+In-Reply-To: <a2344d4df903d673afe1631118f40917f773cc9a.1415735831.git.shuahkh@osg.samsung.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 12:54:43PM -0800, Greg KH wrote:
+(2014/11/12 5:27), Shuah Khan wrote:
+> Add a new make target to install to install kernel selftests.
+> This new target will build and install selftests. kselftest
+> target now depends on kselftest_install and runs the generated
+> kselftest script to reduce duplicate work and for common look
+> and feel when running tests.
 > 
-> Ugh, how horrid, please just delete these functions and push down the
-> spin_lock/unlock calls down into the places these are called.
->
-> Same for these.
+> Approach:
 > 
-> Same thing here.
+> make kselftest_target:
 
-Hello Greg,
+kselftest_install?
 
-Thanks for your comments, I will write a v2.
+> -- exports kselftest INSTALL_KSFT_PATH
+>    default $(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)
+> -- exports path for ksefltest.sh
+> -- runs selftests make install target:
+
+This direction is OK to me.
+
+BTW, I've found another path to make selftest in Makefile,
+Actually you can do
+
+make -C tools/ selftest
+
+And there are selftest_install and selftest_clean targets (but
+currently it has a bug and doesn't work, anyway)
+
+I think we'd better do subdir make instead of adding these targets.
+This means that "make kselftest*" should be an alias of "make -C tools/ selftest*"
+
+Also, I'd like to request passing some options like as O=$(objtree)
+so that we can make test kmodules in selftests.
+
+Thank you,
+
 
 -- 
-Cheers,
-Loic
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
