@@ -1,85 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751192AbaK0PWd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 10:22:33 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:37288 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750887AbaK0PWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 10:22:31 -0500
-Date: Thu, 27 Nov 2014 09:22:16 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-CC: Sebastian Reichel <sre@debian.org>, Benoit Cousson <bcousson@baylibre.com>,
+	id S1751354AbaK0PXE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 10:23:04 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:56564 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151AbaK0PXC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 10:23:02 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: Re: wl1251: NVS firmware data
+Date: Thu, 27 Nov 2014 16:22:58 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
+Cc: Ming Lei <ming.lei@canonical.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Grazvydas Ignotas <notasas@gmail.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Pavel Machek <pavel@ucw.cz>,
         Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: dts: n900: isp1704 gpio
-Message-ID: <20141127152216.GD30719@saruman>
-Reply-To: <balbi@ti.com>
-References: <201411271513.43349@pali>
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
+        Sebastian Reichel <sre@ring0.de>,
+        David Gnedt <david.gnedt@davizone.at>
+References: <201411271506.20457@pali> <201411271543.23527@pali> <20141127151655.GB23064@kroah.com>
+In-Reply-To: <20141127151655.GB23064@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BQPnanjtCNWHyqYD"
-Content-Disposition: inline
-In-Reply-To: <201411271513.43349@pali>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed;
+  boundary="nextPart2170079.IMLa05Mxia";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201411271622.58916@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---BQPnanjtCNWHyqYD
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+--nextPart2170079.IMLa05Mxia
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
-
-On Thu, Nov 27, 2014 at 03:13:43PM +0100, Pali Roh=E1r wrote:
-> Hello,
+On Thursday 27 November 2014 16:16:55 Greg Kroah-Hartman wrote:
+> On Thu, Nov 27, 2014 at 03:43:23PM +0100, Pali Roh=C3=A1r wrote:
+> > On Thursday 27 November 2014 15:21:44 Ming Lei wrote:
+> > > On Thu, Nov 27, 2014 at 10:06 PM, Pali Roh=C3=A1r
+> >=20
+> > <pali.rohar@gmail.com> wrote:
+> > > > Hello,
+> > > >=20
+> > > > wifi driver wl1251 needs NVS calibration data for
+> > > > working. These data are loaded by driver via
+> > > > request_firmware from userspace file:
+> > > > ti-connectivity/wl1251-nvs.bin. In linux-fimrware git
+> > > > tree there is generic wl1251-nvs.bin file which is used
+> > > > by default.
+> > > >=20
+> > > > Driver wl1251 is used on Nokia N900 cellphone for its
+> > > > wifi chip. This cellphone has one special MTD partition
+> > > > (called CAL) where are stored some configuration data
+> > > > in special binary (key-value) format. And there is also
+> > > > stored correct calibration data for specific device
+> > > > (each device has different data). It is preferred to
+> > > > use those data instead generic one (provided by
+> > > > linux-firmware git tree).
+> > > >=20
+> > > > Now my question is: How to correctly load calibration
+> > > > data from special Nokia N900 CAL partition into wl1251
+> > > > kernel driver?
+> > >=20
+> > > It is better to let user space script handle the request.
+> >=20
+> > Yes, this makes sense. Implementing CAL parser in kernel
+> > wl1251 driver would be hard...
+> >=20
+> > > > By default kernel reads ti-connectivity/wl1251-nvs.bin
+> > > > file from VFS if exists without any userspace support.
+> > > > If it fails then it fallback to loading via udev.
+> > >=20
+> > > You can remove or rename this file so that loading from
+> > > user space can be triggered.
+> >=20
+> > It is no so easy... In case when CAL does not contains NVS
+> > data then we want to use this generic NVS file. And telling
+> > everybody to rename this is file is not good solution...
 >=20
-> in commit "ARM: dts: OMAP3-N900: Add isp1704 support"=20
-> e17337a26962943c27124a14b0794eabe76af437 was added support for=20
-> isp1704 chip with configured gpio "3". Now I looked into legacy=20
-> board rx51 data and there is gpio "67" for isp1704.
+> But that's up to your system configuration, not the kernel.=20
+> Make a userspace package for the firmware that creates it in
+> the format you need it to be in, for the hardware you have,
+> and then there would not be any need for a kernel change,
+> right?
 >=20
-> I would like to ask, why we have different gpio in board data and=20
-> in DTS data? I'm sure that isp1704 worked from legacy board data=20
-> without problem, so I do not understand why in DTS code is=20
-> different gpio number.
+> greg k-h
 
-it's magic! Seriously though, each GPIO bank as 32 GPIOs with numbers
-starting at 0, note that DTS uses the 3rd GPIO line on the 3rd GPIO
-bank.
+Not so simple as you think. Some parts of NVS data are configured=20
+based on location and cellular station. Data are not static.
 
-Bank0 handles GPIOs 0 - 31, Bank1 handles GPIOs 32 - 63, Bank 2 handles
-GPIOs 64 - 95, and so on...
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-Offset 3 on Bank 3 would be 64 + 3 =3D=3D 67. Yay, magic.
-
---=20
-balbi
-
---BQPnanjtCNWHyqYD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--nextPart2170079.IMLa05Mxia
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJUd0GoAAoJEIaOsuA1yqRE43sP/1NBs6sghXFvsYk5yHcqKdmb
-fOQUXsWWvql3P7dEJjtap2iZzTtDRjzXyP69VerQlnf5wX4jrSowSuxTOOGnj7Za
-g8qT2xn4ojzXZyDYVVercT5vlE76ggZjMI7hrNessLnp0u40hMtTTWYfcE65jAB3
-O1KuusLkB4C3v93thWH9f9vl9/jjzknqGbKaLY2aoWCh1ahNN6TM2uKCyTxxhZYy
-k+HF1ZsKTc9rH4r/26jdHz/zdJNdzuwuJhVgpq9aOXboUoNFtUL+Afa++3FQBjVs
-YmWIhk5spe+AXTqi/8wc1NP2VPf9QsEeqxC8/MTwt2AQV24gs2yigyU23tmHWkH3
-zr03vAhSSAZZh3iNRvMm+BJM+mR6A7DoLoKSU03eZmHJtl2GQ84Y1z6q1wXLHM65
-qkafRCuMu8VfyalWhpQSw15vTVRJ1Xs8VOrLCYMg+FgNulCX3oQ8tnH/ka4OR0H4
-TEoNFzdOxw6/MAAYyUjzZSh67JTKSwzSoHECemmUo8tyIrxxQIrN3xZzmaZjNYHL
-Crw2DxmwOZNym8TKvzt5OXkfHPFV2Y/Kvf5Aj+79PnSFxo9HAMJd5eNEhV+SODs8
-snzYlPmCFQWCN9UP6dt2Abe7zzMLyN8dEfiDY/7/4Lda5G8OrEgVH2CdpIyu+fHY
-jImAlAzgJMSZVL0U+uy2
-=gcxi
+iEYEABECAAYFAlR3QdIACgkQi/DJPQPkQ1KwaQCfaX2GiBCEbdteqpXSKrj6eI2/
+lnAAn1bSg7Hzl4/Svoj8xOzdHgzYuplm
+=Vgdj
 -----END PGP SIGNATURE-----
 
---BQPnanjtCNWHyqYD--
+--nextPart2170079.IMLa05Mxia--
