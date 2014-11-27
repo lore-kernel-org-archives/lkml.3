@@ -1,106 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750870AbaK0HIo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 02:08:44 -0500
-Received: from regular1.263xmail.com ([211.150.99.132]:53216 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783AbaK0HIm (ORCPT
+	id S1752218AbaK0HJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 02:09:26 -0500
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:42473 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751771AbaK0HJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 02:08:42 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: mark.yao@rock-chips.com
-X-FST-TO: airlied@gmail.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: mark.yao@rock-chips.com
-X-UNIQUE-TAG: <67f69c6ea75343e2e8bed17e74e0c89b>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <5476CDF7.60208@rock-chips.com>
-Date: Thu, 27 Nov 2014 15:08:39 +0800
-From: Mark yao <mark.yao@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 27 Nov 2014 02:09:24 -0500
+Date: Thu, 27 Nov 2014 08:09:19 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        David Hildenbrand <dahi@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
+        paulus@samba.org, akpm@linux-foundation.org, schwidefsky@de.ibm.com,
+        mingo@kernel.org
+Subject: Re: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
+ atomic
+Message-ID: <20141127070919.GA4390@osiris>
+References: <20141126070258.GA25523@redhat.com>
+ <20141126110504.511b733a@thinkpad-w530>
+ <20141126151729.GB9612@redhat.com>
+ <20141126152334.GA9648@redhat.com>
+ <20141126163207.63810fcb@thinkpad-w530>
+ <20141126154717.GB10568@redhat.com>
+ <5475FAB1.1000802@de.ibm.com>
+ <20141126163216.GB10850@redhat.com>
+ <547604FC.4030300@de.ibm.com>
+ <20141126170447.GC11202@redhat.com>
 MIME-Version: 1.0
-To: Dave Airlie <airlied@gmail.com>
-CC: Joerg Roedel <jroedel@suse.de>,
-        =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>, linux-api@vger.kernel.org,
-        linux-rockchip@lists.infradead.org,
-        Douglas Anderson <dianders@chromium.org>,
-        =?UTF-8?B?U3TDqXBoYW5lIE1hcmNoZXNpbg==?= <marcheu@chromium.org>,
-        dbehr@chromium.org, Olof Johansson <olof@lixom.net>,
-        Daniel Kurtz <djkurtz@chromium.org>, Eddie Cai <cf@rock-chips.com>,
-        simon xue <xxm@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Kever Yang <kever.yang@rock-chips.com>, yxj@rock-chips.com,
-        xw@rock-chips.com
-Subject: Re: [PATCH v14 0/3] Add drm driver for Rockchip Socs
-References: <1416447994-9921-1-git-send-email-mark.yao@rock-chips.com>	<23617908.6oA5uRuO3l@diego>	<CAPM=9tzvvb5U+8KaCO+K6CJi=rwWOkoW+4ZSFW_Oo9gTncvkWA@mail.gmail.com>	<1557742.FTdLsE0bVs@diego>	<20141126073430.GD3156@suse.de>	<CAPM=9tzhZLShA5=ShGTKhyZR6ddKycQDUWBZxXpUBb+1tGp-mQ@mail.gmail.com>	<54768107.2090402@rock-chips.com> <CAPM=9tyZpDEPcipYDq2_qdQ9zK2bnPFYTUL2qDvAd7QoUOm-QQ@mail.gmail.com>
-In-Reply-To: <CAPM=9tyZpDEPcipYDq2_qdQ9zK2bnPFYTUL2qDvAd7QoUOm-QQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141126170447.GC11202@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112707-0009-0000-0000-00000228BB37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年11月27日 10:12, Dave Airlie wrote:
->>>
->> Hi Dave
->>      Do you mean that I need send you a branch, based on drm-next, merge with
->> iommu tree and rockchip drm?
-> Yes, grab drm-next, git pull the arm/rockchip branch from Joerg's
-> tree, put rockchip drm
-> patches on top, send me pull request.
->
-> I'll validate it then.
->
-> Dave.
->
-Hi Dave
-     I have send a pull request to you, with Joerg's iommu arm/rockchip 
-branch.
+On Wed, Nov 26, 2014 at 07:04:47PM +0200, Michael S. Tsirkin wrote:
+> On Wed, Nov 26, 2014 at 05:51:08PM +0100, Christian Borntraeger wrote:
+> > > But this one was > giving users in field false positives.
+> > 
+> > So lets try to fix those, ok? If we cant, then tough luck.
+> 
+> Sure.
+> I think the simplest way might be to make spinlock disable
+> premption when CONFIG_DEBUG_ATOMIC_SLEEP is enabled.
+> 
+> As a result, userspace access will fail and caller will
+> get a nice error.
 
-     I got a same problem when use "make multi_v7_defconfig" as Heiko said:
-         drivers/video/fbdev/Kconfig:5:error: recursive dependency detected!
-         drivers/video/fbdev/Kconfig:5:    symbol FB is selected by 
-DRM_KMS_FB_HELPER
-         drivers/gpu/drm/Kconfig:34:    symbol DRM_KMS_FB_HELPER is 
-selected by DRM_ROCKCHIP
-         drivers/gpu/drm/rockchip/Kconfig:1:    symbol DRM_ROCKCHIP 
-depends on ARM_DMA_USE_IOMMU
-         arch/arm/Kconfig:95:    symbol ARM_DMA_USE_IOMMU is selected by 
-VIDEO_OMAP3
-         drivers/media/platform/Kconfig:96:    symbol VIDEO_OMAP3 
-depends on VIDEO_V4L2
-         drivers/media/v4l2-core/Kconfig:6:    symbol VIDEO_V4L2 depends 
-on I2C
-         drivers/i2c/Kconfig:7:    symbol I2C is selected by FB_DDC
-         drivers/video/fbdev/Kconfig:59:    symbol FB_DDC is selected by 
-FB_CYBER2000_DDC
-         drivers/video/fbdev/Kconfig:374:    symbol FB_CYBER2000_DDC 
-depends on FB_CYBER2000
-         drivers/video/fbdev/Kconfig:362:    symbol FB_CYBER2000 depends 
-on FB
+Yes, _userspace_ now sees unpredictable behaviour, instead of that the
+kernel emits a big loud warning to the console.
 
-     I was confused how to solve the recursive dependency, remove 
-depends on ARM_DMA_USE_IOMMU & IOMMU_API?
+Please consider this simple example:
 
-- Mark
+int bar(char __user *ptr)
+{
+	...
+	if (copy_to_user(ptr, ...)
+		return -EFAULT;
+	...
+}
 
+SYSCALL_DEFINE1(foo, char __user *, ptr)
+{
+	int rc;
 
+	...
+	rc = bar(ptr);
+	if (rc)
+		goto out;
+	...
+out:
+	return rc;	
+}
+
+The above simple system call just works fine, with and without your change,
+however if somebody (incorrectly) changes sys_foo() to the code below:
+
+	spin_lock(&lock);
+	rc = bar(ptr);
+	if (rc)
+		goto out;
+out:
+	spin_unlock(&lock);
+	return rc;	
+
+Broken code like above used to generate warnings. With your change we won't
+see any warnings anymore. Instead we get random and bad behaviour:
+
+For !CONFIG_PREEMPT if the page at ptr is not mapped, the kernel will see
+a fault, potentially schedule and potentially deadlock on &lock.
+Without _any_ warning anymore.
+
+For CONFIG_PREEMPT if the page at ptr is mapped, everthing works. However if
+the page is not mapped, userspace now all of the sudden will see an invalid(!)
+-EFAULT return code, instead of that the kernel resolved the page fault.
+Yes, the kernel can't resolve the fault since we hold a spinlock. But the
+above bogus code did give warnings to give you an idea that something probably
+is not correct.
+
+Who on earth is supposed to debug crap like this???
+
+What we really want is:
+
+Code like
+	spin_lock(&lock);
+	if (copy_to_user(...))
+		rc = ...
+	spin_unlock(&lock);
+really *should* generate warnings like it did before.
+
+And *only* code like
+	spin_lock(&lock);
+	page_fault_disable();
+	if (copy_to_user(...))
+		rc = ...
+	page_fault_enable();
+	spin_unlock(&lock);
+should not generate warnings, since the author hopefully knew what he did.
+
+We could achieve that by e.g. adding a couple of pagefault disabled bits
+within current_thread_info()->preempt_count, which would allow
+pagefault_disable() and pagefault_enable() to modify a different part of
+preempt_count than it does now, so there is a way to tell if pagefaults have
+been explicitly disabled or are just a side effect of preemption being
+disabled.
+This would allow might_fault() to restore its old sane behaviour for the
+!page_fault_disabled() case.
 
