@@ -1,246 +1,297 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751115AbaK0TcX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 14:32:23 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:49201 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750895AbaK0TcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 14:32:21 -0500
-Date: Thu, 27 Nov 2014 20:32:13 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: tip-bot for Jiang Liu <tipbot@zytor.com>
-Cc: linux-tip-commits@vger.kernel.org, mingo@kernel.org, rdunlap@infradead.org,
-        bhelgaas@google.com, hpa@zytor.com, tony.luck@intel.com,
-        rjw@rjwysocki.net, jiang.liu@linux.intel.com, grant.likely@linaro.org,
-        konrad.wilk@oracle.com, gregkh@linuxfoundation.org, tglx@linutronix.de,
-        yinghai@kernel.org, joro@8bytes.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, jroedel@suse.de
-Subject: Re: [tip:x86/apic] x86, irq: Use cached IOAPIC entry instead of
- reading from hardware
-Message-ID: <20141127193213.GB4190@pd.tnic>
-References: <1416901802-24211-30-git-send-email-jiang.liu@linux.intel.com>
- <tip-fda7c08b1349cc4c65f8a5240b10f7e9938604b8@git.kernel.org>
+	id S1751215AbaK0TdU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 14:33:20 -0500
+Received: from smarthost2.wvnet.at ([62.212.174.131]:16461 "EHLO
+	smarthost2.wvnet.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879AbaK0TdT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 14:33:19 -0500
+Message-ID: <54777AE6.7050102@wvnet.at>
+Date: Thu, 27 Nov 2014 20:26:30 +0100
+From: Bernhard Thaler <bernhard.thaler@wvnet.at>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <tip-fda7c08b1349cc4c65f8a5240b10f7e9938604b8@git.kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+CC: David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        stephen@networkplumber.org, netdev@vger.kernel.org,
+        bridge@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, sven@open-mesh.com
+Subject: Re: [PATCH 1/1] bridge: Fix NAT66ed IPv6 packets not being bridged
+ correctly
+References: <1410816448-4401-1-git-send-email-bernhard.thaler@wvnet.at> <20140915.174009.1151039353244879675.davem@davemloft.net> <20141003112119.GA5420@salvia>
+In-Reply-To: <20141003112119.GA5420@salvia>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 03:20:08PM -0800, tip-bot for Jiang Liu wrote:
-> Commit-ID:  fda7c08b1349cc4c65f8a5240b10f7e9938604b8
-> Gitweb:     http://git.kernel.org/tip/fda7c08b1349cc4c65f8a5240b10f7e9938604b8
-> Author:     Jiang Liu <jiang.liu@linux.intel.com>
-> AuthorDate: Tue, 25 Nov 2014 15:49:53 +0800
-> Committer:  Thomas Gleixner <tglx@linutronix.de>
-> CommitDate: Wed, 26 Nov 2014 23:52:49 +0100
+Hi,
+
+I tested Sven's patch in my setup and I think it should be safe to use
+it. It is shorter and cleaner written and he submitted it earlier.
+
+I will be happy to assist you or Sven if any further work is needed.
+
+Regards,
+Bernhard
+
+On 03.10.2014 13:21, Pablo Neira Ayuso wrote:
+> Hi Bernhard,
 > 
-> x86, irq: Use cached IOAPIC entry instead of reading from hardware
+> Sorry for taking a bit to get back to you with feedback. We've been
+> discussing recently some changes in br_netfilter. Basically, to
+> modularize it [1] and this has taken a while.
 > 
-> Use cached IOAPIC entry instead of reading data from IOAPIC hardware
-> registers to improve performance.
+> Regarding your change. Sven Eckelmann (CC'ed in this email) sent a RFC
+> out of the merge window that have remain tagged in my patchwork, you
+> can find it here.
 > 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Cc: Tony Luck <tony.luck@intel.com>
-> Cc: Joerg Roedel <joro@8bytes.org>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-> Cc: Randy Dunlap <rdunlap@infradead.org>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Cc: Borislav Petkov <bp@alien8.de>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Link: http://lkml.kernel.org/r/1416901802-24211-30-git-send-email-jiang.liu@linux.intel.com
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Tested-by: Joerg Roedel <jroedel@suse.de>
-> ---
->  arch/x86/kernel/apic/io_apic.c | 78 ++++++++++++------------------------------
->  1 file changed, 21 insertions(+), 57 deletions(-)
+> http://patchwork.ozlabs.org/patch/381027/
 > 
-> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index a915ee0..8a62933 100644
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -69,8 +69,13 @@
->  int acpi_get_override_irq(u32 gsi, int *trigger, int *polarity);
->  
->  /*
-> - *      Is the SiS APIC rmw bug present ?
-> + * Is the SiS APIC rmw bug present ?
->   *      -1 = don't know, 0 = no, 1 = yes
-> + * When doing a read-modify-write operation on IOAPIC registers, older SiS APIC
-> + * requires we rewrite the index register again where the read already set up
-> + * the index register.
-> + * The code to make use of sis_apic_bug has been removed, but we don't want to
-> + * loss this knowledge.
->   */
->  int sis_apic_bug = -1;
->  
-> @@ -290,22 +295,6 @@ static void io_apic_write(unsigned int apic, unsigned int reg,
->  	writel(value, &io_apic->data);
->  }
->  
-> -/*
-> - * Re-write a value: to be used for read-modify-write
-> - * cycles where the read already set up the index register.
-> - *
-> - * Older SiS APIC requires we rewrite the index register
-> - */
-> -static void io_apic_modify(unsigned int apic, unsigned int reg,
-> -			   unsigned int value)
-> -{
-> -	struct io_apic __iomem *io_apic = io_apic_base(apic);
-> -
-> -	if (sis_apic_bug)
-> -		writel(reg, &io_apic->index);
-> -	writel(value, &io_apic->data);
-> -}
-> -
->  union entry_union {
->  	struct { u32 w1, w2; };
->  	struct IO_APIC_route_entry entry;
-> @@ -442,29 +431,23 @@ static void __init replace_pin_at_irq_node(struct mp_chip_data *data, int node,
->  	add_pin_to_irq_node(data, node, newapic, newpin);
->  }
->  
-> -static void __io_apic_modify_irq(struct irq_pin_list *entry,
-> -				 int mask_and, int mask_or,
-> -				 void (*final)(struct irq_pin_list *entry))
-> -{
-> -	unsigned int reg, pin;
-> -
-> -	pin = entry->pin;
-> -	reg = io_apic_read(entry->apic, 0x10 + pin * 2);
-> -	reg &= mask_and;
-> -	reg |= mask_or;
-> -	io_apic_modify(entry->apic, 0x10 + pin * 2, reg);
-> -	if (final)
-> -		final(entry);
-> -}
-> -
->  static void io_apic_modify_irq(struct mp_chip_data *data,
->  			       int mask_and, int mask_or,
->  			       void (*final)(struct irq_pin_list *entry))
->  {
-> +	union entry_union eu;
->  	struct irq_pin_list *entry;
->  
-> -	for_each_irq_pin(entry, data->irq_2_pin)
-> -		__io_apic_modify_irq(entry, mask_and, mask_or, final);
-> +	eu.entry = data->entry;
-> +	eu.w1 &= mask_and;
-> +	eu.w1 |= mask_or;
-> +	data->entry = eu.entry;
-> +
-> +	for_each_irq_pin(entry, data->irq_2_pin) {
-> +		io_apic_write(entry->apic, 0x10 + 2 * entry->pin, eu.w1);
-> +		if (final)
-> +			final(entry);
-> +	}
->  }
->  
->  static void io_apic_sync(struct irq_pin_list *entry)
-> @@ -1729,28 +1712,6 @@ static unsigned int startup_ioapic_irq(struct irq_data *data)
->  	return was_pending;
->  }
->  
-> -static void __target_IO_APIC_irq(unsigned int irq, struct irq_cfg *cfg,
-> -				 struct mp_chip_data *data)
-> -{
-> -	int apic, pin;
-> -	struct irq_pin_list *entry;
-> -	u8 vector = cfg->vector;
-> -	unsigned int dest = SET_APIC_LOGICAL_ID(cfg->dest_apicid);
-> -
-> -	for_each_irq_pin(entry, data->irq_2_pin) {
-> -		unsigned int reg;
-> -
-> -		apic = entry->apic;
-> -		pin = entry->pin;
-> -
-> -		io_apic_write(apic, 0x11 + pin*2, dest);
-> -		reg = io_apic_read(apic, 0x10 + pin*2);
-> -		reg &= ~IO_APIC_REDIR_VECTOR_MASK;
-> -		reg |= vector;
-> -		io_apic_modify(apic, 0x10 + pin*2, reg);
-> -	}
-> -}
-> -
->  atomic_t irq_mis_count;
->  
->  #ifdef CONFIG_GENERIC_PENDING_IRQ
-> @@ -1916,6 +1877,7 @@ static int ioapic_set_affinity(struct irq_data *irq_data,
->  {
->  	struct irq_data *parent = irq_data->parent_data;
->  	struct mp_chip_data *data = irq_data->chip_data;
-> +	struct irq_pin_list *entry;
->  	struct irq_cfg *cfg;
->  	unsigned long flags;
->  	int ret;
-> @@ -1926,7 +1888,9 @@ static int ioapic_set_affinity(struct irq_data *irq_data,
->  		cfg = irqd_cfg(irq_data);
->  		data->entry.dest = SET_APIC_LOGICAL_ID(cfg->dest_apicid);
->  		data->entry.vector = cfg->vector;
-> -		__target_IO_APIC_irq(irq_data->irq, cfg, irq_data->chip_data);
-> +		for_each_irq_pin(entry, data->irq_2_pin)
-> +			__ioapic_write_entry(entry->apic, entry->pin,
-> +					     data->entry);
->  	}
-
-So let me hold down what tglx and I have been staring at a whole day
-today. This commit breaks booting my AMD laptop with the error messages
-below. The machine ends up in the emergency shell, completely unusable.
-
-When I revert the commit, x86/apic boots fine again. Btw, I was able to
-reproduce the same issue in a kvm guest so something's definitely wrong.
-
-If I revert only the last hunk and do
-
-	__target_IO_APIC_irq(irq_data->irq, cfg, irq_data->chip_data);
-
-instead and leave the loop over the irq pins in that function as the old
-icode did t, the problem disappears.
-
-I've been trying different things but nothing helped so far as to
-pinpoint where the problem lies. Thus this mail to hold down the current
-situation. More staring later, on a clear head.
-
-[    3.465391] PM: Checking hibernation image partition /dev/sda2
-[    3.497559] PM: Hibernation image partition 8:2 present
-[    3.501859] PM: Looking for hibernation image.
-[    6.600378] usb 1-1: New USB device found, idVendor=0627, idProduct=0001
-[    6.608098] usb 1-1: New USB device strings: Mfr=1, Product=3, SerialNumber=5
-[    6.614747] usb 1-1: Product: QEMU USB Tablet
-[    6.617966] usb 1-1: Manufacturer: QEMU
-[    6.632779] usb 1-1: SerialNumber: 42
-[    7.648783] ata2.00: qc timeout (cmd 0xa0)
-[    7.655222] ata2.00: TEST_UNIT_READY failed (err_mask=0x5)
-[    7.818934] ata2.01: NODEV after polling detection
-[    7.849882] ata2.00: configured for MWDMA2
-[    8.585096] input: QEMU QEMU USB Tablet as /devices/pci0000:00/0000:00:01.2/usb1/1-1/1-1:1.0/0003:0627:0001.0001/input/input1
-[    8.598044] hid-generic 0003:0627:0001.0001: input,hidraw0: USB HID v0.01 Pointer [QEMU QEMU USB Tablet] on usb-0000:00:01.2-1/input0
-[   12.852654] ata2.00: qc timeout (cmd 0xa0)
-[   12.855798] ata2.00: TEST_UNIT_READY failed (err_mask=0x5)
-[   12.859555] ata2.00: limiting speed to MWDMA2:PIO3
-[   13.017632] ata2.01: NODEV after polling detection
-[   13.024501] ata2.00: configured for MWDMA2
-[   18.028681] ata2.00: qc timeout (cmd 0xa0)
-[   18.035697] ata2.00: TEST_UNIT_READY failed (err_mask=0x5)
-[   18.042919] ata2.00: disabled
-[   18.045671] ata2: soft resetting link
-[   18.206824] ata2.01: NODEV after polling detection
-[   18.211174] ata2: EH complete
-[   32.873120] ata1: lost interrupt (Status 0x50)
-[   32.881800] ata1.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6 frozen
-[   32.886772] ata1.00: failed command: READ DMA
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+> I would like to see a submission that covers all NAT66 scenarios that
+> we currenty support.
+> 
+> Thanks.
+> 
+> [1] http://comments.gmane.org/gmane.comp.security.firewalls.netfilter.devel/54234
+> 
+> On Mon, Sep 15, 2014 at 05:40:09PM -0400, David Miller wrote:
+>> From: Bernhard Thaler <bernhard.thaler@wvnet.at>
+>> Date: Mon, 15 Sep 2014 23:27:28 +0200
+>>
+>> CC:'ing netfilter-devel and the netfilter maintainer, which is
+>> probably the primary place this patch should have been submitted.
+>>
+>>> Ethernet frames are not bridged to correct interface when packets have
+>>> been NAT66ed; compared to IPv4 logic in code, IPv6 code does not store
+>>> original address (before NAT) on transmit to determine if packet was
+>>> NAT66ed on receive to swap addresses back.
+>>>
+>>> Changes added in br_netfilter.c to store original address, compare
+>>> against it and determine correct output interface. Changes needed in
+>>> netfilter_bridge.h to store IPv6 address in pre-existing union.
+>>> Export of ip6_route_input needed to use it in br_netfilter.c.
+>>>
+>>> Problem may only affect systems doing NAT66 and ethernet bridging at
+>>> the same time. Tested in NAT66 setup on base of an ethernet bridge.
+>>>
+>>> Signed-off-by: Bernhard Thaler <bernhard.thaler@wvnet.at>
+>>> ---
+>>>  include/linux/netfilter_bridge.h |    2 +
+>>>  net/bridge/br_netfilter.c        |  136 ++++++++++++++++++++++++++++----------
+>>>  net/ipv6/route.c                 |    1 +
+>>>  3 files changed, 105 insertions(+), 34 deletions(-)
+>>>
+>>> diff --git a/include/linux/netfilter_bridge.h b/include/linux/netfilter_bridge.h
+>>> index 8ab1c27..3a9cdcd 100644
+>>> --- a/include/linux/netfilter_bridge.h
+>>> +++ b/include/linux/netfilter_bridge.h
+>>> @@ -2,6 +2,7 @@
+>>>  #define __LINUX_BRIDGE_NETFILTER_H
+>>>  
+>>>  #include <uapi/linux/netfilter_bridge.h>
+>>> +#include <uapi/linux/in6.h>
+>>>  
+>>>  
+>>>  enum nf_br_hook_priorities {
+>>> @@ -79,6 +80,7 @@ static inline unsigned int nf_bridge_pad(const struct sk_buff *skb)
+>>>  struct bridge_skb_cb {
+>>>  	union {
+>>>  		__be32 ipv4;
+>>> +		struct in6_addr ipv6;
+>>>  	} daddr;
+>>>  };
+>>>  
+>>> diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
+>>> index a615264..2ae3888 100644
+>>> --- a/net/bridge/br_netfilter.c
+>>> +++ b/net/bridge/br_netfilter.c
+>>> @@ -35,6 +35,9 @@
+>>>  #include <net/ip.h>
+>>>  #include <net/ipv6.h>
+>>>  #include <net/route.h>
+>>> +#include <net/ip6_route.h>
+>>> +#include <net/flow.h>
+>>> +#include <net/dst.h>
+>>>  
+>>>  #include <asm/uaccess.h>
+>>>  #include "br_private.h"
+>>> @@ -42,10 +45,18 @@
+>>>  #include <linux/sysctl.h>
+>>>  #endif
+>>>  
+>>> -#define skb_origaddr(skb)	 (((struct bridge_skb_cb *) \
+>>> -				 (skb->nf_bridge->data))->daddr.ipv4)
+>>> -#define store_orig_dstaddr(skb)	 (skb_origaddr(skb) = ip_hdr(skb)->daddr)
+>>> -#define dnat_took_place(skb)	 (skb_origaddr(skb) != ip_hdr(skb)->daddr)
+>>> +#define skb_origaddr(skb)		(((struct bridge_skb_cb *)\
+>>> +					(skb->nf_bridge->data))->daddr.ipv4)
+>>> +#define skb_origaddr_ipv6(skb)		(((struct bridge_skb_cb *)\
+>>> +					(skb->nf_bridge->data))->daddr.ipv6)
+>>> +#define store_orig_dstaddr(skb)		(skb_origaddr(skb) = ip_hdr(skb)->daddr)
+>>> +#define store_orig_dstaddr_ipv6(skb)	(skb_origaddr_ipv6(skb) = \
+>>> +					ipv6_hdr(skb)->daddr)
+>>> +#define dnat_took_place(skb)		(skb_origaddr(skb) != \
+>>> +					ip_hdr(skb)->daddr)
+>>> +#define dnat_took_place_ipv6(skb)	(memcmp(&skb_origaddr_ipv6(skb), \
+>>> +					&(ipv6_hdr(skb)->daddr), \
+>>> +					sizeof(struct in6_addr)) != 0)
+>>>  
+>>>  #ifdef CONFIG_SYSCTL
+>>>  static struct ctl_table_header *brnf_sysctl_header;
+>>> @@ -340,36 +351,6 @@ int nf_bridge_copy_header(struct sk_buff *skb)
+>>>  	return 0;
+>>>  }
+>>>  
+>>> -/* PF_BRIDGE/PRE_ROUTING *********************************************/
+>>> -/* Undo the changes made for ip6tables PREROUTING and continue the
+>>> - * bridge PRE_ROUTING hook. */
+>>> -static int br_nf_pre_routing_finish_ipv6(struct sk_buff *skb)
+>>> -{
+>>> -	struct nf_bridge_info *nf_bridge = skb->nf_bridge;
+>>> -	struct rtable *rt;
+>>> -
+>>> -	if (nf_bridge->mask & BRNF_PKT_TYPE) {
+>>> -		skb->pkt_type = PACKET_OTHERHOST;
+>>> -		nf_bridge->mask ^= BRNF_PKT_TYPE;
+>>> -	}
+>>> -	nf_bridge->mask ^= BRNF_NF_BRIDGE_PREROUTING;
+>>> -
+>>> -	rt = bridge_parent_rtable(nf_bridge->physindev);
+>>> -	if (!rt) {
+>>> -		kfree_skb(skb);
+>>> -		return 0;
+>>> -	}
+>>> -	skb_dst_set_noref(skb, &rt->dst);
+>>> -
+>>> -	skb->dev = nf_bridge->physindev;
+>>> -	nf_bridge_update_protocol(skb);
+>>> -	nf_bridge_push_encap_header(skb);
+>>> -	NF_HOOK_THRESH(NFPROTO_BRIDGE, NF_BR_PRE_ROUTING, skb, skb->dev, NULL,
+>>> -		       br_handle_frame_finish, 1);
+>>> -
+>>> -	return 0;
+>>> -}
+>>> -
+>>>  /* Obtain the correct destination MAC address, while preserving the original
+>>>   * source MAC address. If we already know this address, we just copy it. If we
+>>>   * don't, we use the neighbour framework to find out. In both cases, we make
+>>> @@ -527,6 +508,92 @@ bridged_dnat:
+>>>  	return 0;
+>>>  }
+>>>  
+>>> +/* PF_BRIDGE/PRE_ROUTING *********************************************
+>>> + * Undo the changes made for ip6tables PREROUTING and continue the
+>>> + * bridge PRE_ROUTING hook.
+>>> + */
+>>> +static int br_nf_pre_routing_finish_ipv6(struct sk_buff *skb)
+>>> +{
+>>> +	struct net_device *dev = skb->dev;
+>>> +	struct ipv6hdr *iph = ipv6_hdr(skb);
+>>> +	struct nf_bridge_info *nf_bridge = skb->nf_bridge;
+>>> +	struct rtable *rt;
+>>> +	struct dst_entry *dst;
+>>> +	struct flowi6 fl6 = {
+>>> +		.flowi6_iif = skb->dev->ifindex,
+>>> +		.daddr = iph->daddr,
+>>> +		.saddr = iph->saddr,
+>>> +		.flowlabel = ip6_flowinfo(iph),
+>>> +		.flowi6_mark = skb->mark,
+>>> +		.flowi6_proto = iph->nexthdr,
+>>> +	};
+>>> +
+>>> +	if (nf_bridge->mask & BRNF_PKT_TYPE) {
+>>> +		skb->pkt_type = PACKET_OTHERHOST;
+>>> +		nf_bridge->mask ^= BRNF_PKT_TYPE;
+>>> +	}
+>>> +	nf_bridge->mask ^= BRNF_NF_BRIDGE_PREROUTING;
+>>> +
+>>> +	if (dnat_took_place_ipv6(skb)) {
+>>> +		ip6_route_input(skb);
+>>> +		/* ip6_route_input is void function,
+>>> +		 * no int returned as in ip4_route_input
+>>> +		 * changes value of skb->_skb_refdst) on success
+>>> +		 */
+>>> +		if (skb->_skb_refdst == 0) {
+>>> +			struct in_device *in_dev = __in_dev_get_rcu(dev);
+>>> +
+>>> +			if (!in_dev || IN_DEV_FORWARD(in_dev))
+>>> +				goto free_skb;
+>>> +
+>>> +			dst = ip6_route_output(dev_net(dev), skb->sk, &fl6);
+>>> +			if (!IS_ERR(dst)) {
+>>> +				/* - Bridged-and-DNAT'ed traffic doesn't
+>>> +				 *   require ip_forwarding.
+>>> +				 */
+>>> +				if (dst->dev == dev) {
+>>> +					skb_dst_set(skb, dst);
+>>> +					goto bridged_dnat;
+>>> +				}
+>>> +				dst_release(dst);
+>>> +			}
+>>> +free_skb:
+>>> +			kfree_skb(skb);
+>>> +			return 0;
+>>> +		} else {
+>>> +			if (skb_dst(skb)->dev == dev) {
+>>> +bridged_dnat:
+>>> +				skb->dev = nf_bridge->physindev;
+>>> +				nf_bridge_update_protocol(skb);
+>>> +				nf_bridge_push_encap_header(skb);
+>>> +				NF_HOOK_THRESH(NFPROTO_BRIDGE,
+>>> +					       NF_BR_PRE_ROUTING,
+>>> +					       skb, skb->dev, NULL,
+>>> +					       br_nf_pre_routing_finish_bridge,
+>>> +					       1);
+>>> +				return 0;
+>>> +			}
+>>> +			memcpy(eth_hdr(skb)->h_dest, dev->dev_addr, ETH_ALEN);
+>>> +			skb->pkt_type = PACKET_HOST;
+>>> +		}
+>>> +	} else {
+>>> +		rt = bridge_parent_rtable(nf_bridge->physindev);
+>>> +		if (!rt) {
+>>> +			kfree_skb(skb);
+>>> +			return 0;
+>>> +		}
+>>> +		skb_dst_set_noref(skb, &rt->dst);
+>>> +	}
+>>> +
+>>> +	skb->dev = nf_bridge->physindev;
+>>> +	nf_bridge_update_protocol(skb);
+>>> +	nf_bridge_push_encap_header(skb);
+>>> +	NF_HOOK_THRESH(NFPROTO_BRIDGE, NF_BR_PRE_ROUTING, skb, skb->dev, NULL,
+>>> +		       br_handle_frame_finish, 1);
+>>> +
+>>> +	return 0;
+>>> +}
+>>> +
+>>>  static struct net_device *brnf_get_logical_dev(struct sk_buff *skb, const struct net_device *dev)
+>>>  {
+>>>  	struct net_device *vlan, *br;
+>>> @@ -658,6 +725,7 @@ static unsigned int br_nf_pre_routing_ipv6(const struct nf_hook_ops *ops,
+>>>  	if (!setup_pre_routing(skb))
+>>>  		return NF_DROP;
+>>>  
+>>> +	store_orig_dstaddr_ipv6(skb);
+>>>  	skb->protocol = htons(ETH_P_IPV6);
+>>>  	NF_HOOK(NFPROTO_IPV6, NF_INET_PRE_ROUTING, skb, skb->dev, NULL,
+>>>  		br_nf_pre_routing_finish_ipv6);
+>>> diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+>>> index f23fbd2..e328905 100644
+>>> --- a/net/ipv6/route.c
+>>> +++ b/net/ipv6/route.c
+>>> @@ -1017,6 +1017,7 @@ void ip6_route_input(struct sk_buff *skb)
+>>>  
+>>>  	skb_dst_set(skb, ip6_route_input_lookup(net, skb->dev, &fl6, flags));
+>>>  }
+>>> +EXPORT_SYMBOL(ip6_route_input);
+>>>  
+>>>  static struct rt6_info *ip6_pol_route_output(struct net *net, struct fib6_table *table,
+>>>  					     struct flowi6 *fl6, int flags)
+>>> -- 
+>>> 1.7.10.4
+>>>
