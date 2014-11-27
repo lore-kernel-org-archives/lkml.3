@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751111AbaK0SbZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 13:31:25 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41139 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861AbaK0SbY (ORCPT
+	id S1751344AbaK0Sbj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 13:31:39 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:13625 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750729AbaK0Sbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 13:31:24 -0500
-Date: Thu, 27 Nov 2014 18:30:58 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene@kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Message-ID: <20141127183058.GB7712@sirena.org.uk>
-References: <1417087253-12306-1-git-send-email-k.kozlowski@samsung.com>
- <1417087253-12306-3-git-send-email-k.kozlowski@samsung.com>
+	Thu, 27 Nov 2014 13:31:38 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuQNAGA2ZVRFpamy/2dsb2JhbABbgw5UWrlABpMxhnpVAoEcFwEBAQEBAXyEAgEBAQEDOB4iARALDgoJFgQLCQMCAQIBJxUJBg0BBwEBiD0N0HcBAQEBAQUBAQEBAQEchjqKWgeESwEEjAuLAohYPYYMhzSFQIF2gjaBZB+CewEBAQ
+X-IPAS-Result: AuQNAGA2ZVRFpamy/2dsb2JhbABbgw5UWrlABpMxhnpVAoEcFwEBAQEBAXyEAgEBAQEDOB4iARALDgoJFgQLCQMCAQIBJxUJBg0BBwEBiD0N0HcBAQEBAQUBAQEBAQEchjqKWgeESwEEjAuLAohYPYYMhzSFQIF2gjaBZB+CewEBAQ
+X-IronPort-AV: E=Sophos;i="5.07,380,1413259200"; 
+   d="scan'208";a="98472540"
+Message-ID: <54776E0A.1020508@voxpopuli.im>
+Date: Thu, 27 Nov 2014 13:31:38 -0500
+From: Alexandre Montplaisir <alexmonthy@voxpopuli.im>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4802fQj3DlSA+WXC"
-Content-Disposition: inline
-In-Reply-To: <1417087253-12306-3-git-send-email-k.kozlowski@samsung.com>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4 2/7] regulator: dt-bindings: Document the ena-gpios
- property
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Jiri Olsa <jolsa@redhat.com>
+CC: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org,
+        Dominique Toupin <dominique.toupin@ericsson.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Jeremie Galarneau <jgalar@efficios.com>,
+        David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Trace Compass Developer Discussions 
+	<tracecompass-dev@eclipse.org>
+Subject: Re: Support for Perf CTF traces now in master (was Re: FW: [RFC 0/5]
+ perf tools: Add perf data CTF conversion)
+References: <53F38C74.4030300@voxpopuli.im> <20140820092858.GA1203@krava.brq.redhat.com> <53F4F38C.4080407@voxpopuli.im> <5457C259.8030605@linutronix.de> <545829CA.7040900@voxpopuli.im> <20141105125028.GA30087@linutronix.de> <545AEA37.601@voxpopuli.im> <5460156E.3050601@voxpopuli.im> <5463DBD5.9080303@voxpopuli.im> <20141127154302.GA4924@krava.brq.redhat.com>
+In-Reply-To: <20141127154302.GA4924@krava.brq.redhat.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---4802fQj3DlSA+WXC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 11/27/2014 10:43 AM, Jiri Olsa wrote:
+> On Wed, Nov 12, 2014 at 05:14:45PM -0500, Alexandre Montplaisir wrote:
+>>
+>> Testing welcome!
+> hi,
+> any other way besides compiling eclipse to test this? For pure mortals
+> with Fedora eclipse rpm.. ;-)
 
-On Thu, Nov 27, 2014 at 12:20:48PM +0100, Krzysztof Kozlowski wrote:
+If you already have an Eclipse installation, you can use the update site:
+http://download.eclipse.org/tracecompass/master/nightly/
+This would install the plugins into that Eclipse install.
 
-> +- ena-gpios: GPIO to use for enable control. Actual implementation depends
-> +  on regulator driver. The bindings documentation for given driver describes
-> +  which regulator actually supports it.
-> +- ena-gpio-open-drain: GPIO is open drain type.
+We will also put nightly builds of the stand-alone version on the 
+download page Very Soon(TM). We just have a few issues left to figure out.
 
-I'm relly not a big fan of adding a fixed name property here with no
-override capability, it means that the naming won't reflect the specific
-regulator design so closely and in practice for many of the PMICs the
-GPIO control can do rather more than just control enables and supports
-reprogramming.  The latter case where we've got a signal which can
-sometimes be simply and enable but sometimes more makes it especially
-worrying to have the property always be there, it's something that might
-work in some configurations but could easily be broken if we try to
-exploit more advanced functionality (things also triggering other
-configuration changes at the same time).
+Cheers,
+Alexandre
 
-Factoring out the code is good but it seems better to have it be
-something which drivers can control, for example by having them
-explicitly specify a property name to use or perhaps a flag to enable
-the default name.
 
-We also need an invert option.
-
---4802fQj3DlSA+WXC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUd23hAAoJECTWi3JdVIfQay8H/jIeCloCCEW8WC1Fzf3AW8ft
-F2rYuuVJnc7vDyzFLIrN6V9pYN2IE2HHdwzat5NCUipdHkZIO0fDXez4Y+YYsdPO
-nSq7o3UxMEwawaxcxjOiGNzVuEwl80PQCGh1Gzn2bvZpwUDsZvBbT/vnRGMe75dr
-ywom1+xXPOCiaxatdvNmWJShQOgQwMfvXIDOh78qbx5baSvlAatShRB3Cr745lb1
-YDHun+mZ/EDarhwPaH9/oS5BjMsPjItVQqHO6ep3JrFHy8faJTdW5yypuW9RdbUS
-hh75PD9fLXoHApI0y4zEXZvytxnlgcSNJChDFBumjir69Ji3V1jYftFRGG94g1M=
-=7Ncs
------END PGP SIGNATURE-----
-
---4802fQj3DlSA+WXC--
