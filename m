@@ -1,24 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906AbaK0MeV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 07:34:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45930 "EHLO mx1.redhat.com"
+	id S1755877AbaK0MeM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 07:34:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51595 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753959AbaK0MeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 07:34:16 -0500
-Date: Thu, 27 Nov 2014 14:33:54 +0200
+	id S1754215AbaK0MeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 07:34:10 -0500
+Date: Thu, 27 Nov 2014 14:33:42 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
         thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Atzm Watanabe <atzm@stratosphere.co.jp>,
-        Eric Dumazet <edumazet@google.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Tom Herbert <therbert@google.com>, netdev@vger.kernel.org
-Subject: [PATCH v5 45/45] af_packet: virtio 1.0 stubs
-Message-ID: <1417091078-24611-46-git-send-email-mst@redhat.com>
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Andy Grover <agrover@redhat.com>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        David Drysdale <drysdale@google.com>,
+        =?us-ascii?B?PT9VVEYtOD9xP1Bpb3RyPTIwS3I9QzM9QjNsPz0=?= 
+	<piotr.krol@3mdeb.com>,
+        stephen hemminger <stephen@networkplumber.org>,
+        linux-api@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: [PATCH v5 43/45] virtio_scsi: export to userspace
+Message-ID: <1417091078-24611-44-git-send-email-mst@redhat.com>
 References: <1417091078-24611-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -29,98 +34,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This merely fixes sparse warnings, without actually
-adding support for the new APIs.
-
-Still working out the best way to enable the new
-functionality.
+Replace uXX by __uXX and _packed by __attribute((packed))
+as seems to be the norm for userspace headers.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- net/packet/af_packet.c | 35 ++++++++++++++++++++++-------------
- 1 file changed, 22 insertions(+), 13 deletions(-)
+ include/uapi/linux/virtio_scsi.h | 74 ++++++++++++++++++++--------------------
+ include/uapi/linux/Kbuild        |  1 +
+ 2 files changed, 38 insertions(+), 37 deletions(-)
 
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index 87d20f4..d4a877e 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -2444,13 +2444,15 @@ static int packet_snd(struct socket *sock, struct msghdr *msg, size_t len)
- 			goto out_unlock;
+diff --git a/include/uapi/linux/virtio_scsi.h b/include/uapi/linux/virtio_scsi.h
+index af44864..42b9370 100644
+--- a/include/uapi/linux/virtio_scsi.h
++++ b/include/uapi/linux/virtio_scsi.h
+@@ -34,78 +34,78 @@
  
- 		if ((vnet_hdr.flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) &&
--		    (vnet_hdr.csum_start + vnet_hdr.csum_offset + 2 >
--		      vnet_hdr.hdr_len))
--			vnet_hdr.hdr_len = vnet_hdr.csum_start +
--						 vnet_hdr.csum_offset + 2;
-+		    (__virtio16_to_cpu(false, vnet_hdr.csum_start) +
-+		     __virtio16_to_cpu(false, vnet_hdr.csum_offset) + 2 >
-+		      __virtio16_to_cpu(false, vnet_hdr.hdr_len)))
-+			vnet_hdr.hdr_len = __cpu_to_virtio16(false,
-+				 __virtio16_to_cpu(false, vnet_hdr.csum_start) +
-+				__virtio16_to_cpu(false, vnet_hdr.csum_offset) + 2);
+ /* SCSI command request, followed by data-out */
+ struct virtio_scsi_cmd_req {
+-	u8 lun[8];		/* Logical Unit Number */
++	__u8 lun[8];		/* Logical Unit Number */
+ 	__virtio64 tag;		/* Command identifier */
+-	u8 task_attr;		/* Task attribute */
+-	u8 prio;		/* SAM command priority field */
+-	u8 crn;
+-	u8 cdb[VIRTIO_SCSI_CDB_SIZE];
+-} __packed;
++	__u8 task_attr;		/* Task attribute */
++	__u8 prio;		/* SAM command priority field */
++	__u8 crn;
++	__u8 cdb[VIRTIO_SCSI_CDB_SIZE];
++} __attribute__((packed));
  
- 		err = -EINVAL;
--		if (vnet_hdr.hdr_len > len)
-+		if (__virtio16_to_cpu(false, vnet_hdr.hdr_len) > len)
- 			goto out_unlock;
+ /* SCSI command request, followed by protection information */
+ struct virtio_scsi_cmd_req_pi {
+-	u8 lun[8];		/* Logical Unit Number */
++	__u8 lun[8];		/* Logical Unit Number */
+ 	__virtio64 tag;		/* Command identifier */
+-	u8 task_attr;		/* Task attribute */
+-	u8 prio;		/* SAM command priority field */
+-	u8 crn;
++	__u8 task_attr;		/* Task attribute */
++	__u8 prio;		/* SAM command priority field */
++	__u8 crn;
+ 	__virtio32 pi_bytesout;	/* DataOUT PI Number of bytes */
+ 	__virtio32 pi_bytesin;		/* DataIN PI Number of bytes */
+-	u8 cdb[VIRTIO_SCSI_CDB_SIZE];
+-} __packed;
++	__u8 cdb[VIRTIO_SCSI_CDB_SIZE];
++} __attribute__((packed));
  
- 		if (vnet_hdr.gso_type != VIRTIO_NET_HDR_GSO_NONE) {
-@@ -2492,7 +2494,8 @@ static int packet_snd(struct socket *sock, struct msghdr *msg, size_t len)
- 	err = -ENOBUFS;
- 	hlen = LL_RESERVED_SPACE(dev);
- 	tlen = dev->needed_tailroom;
--	skb = packet_alloc_skb(sk, hlen + tlen, hlen, len, vnet_hdr.hdr_len,
-+	skb = packet_alloc_skb(sk, hlen + tlen, hlen, len,
-+			       __virtio16_to_cpu(false, vnet_hdr.hdr_len),
- 			       msg->msg_flags & MSG_DONTWAIT, &err);
- 	if (skb == NULL)
- 		goto out_unlock;
-@@ -2534,14 +2537,16 @@ static int packet_snd(struct socket *sock, struct msghdr *msg, size_t len)
+ /* Response, followed by sense data and data-in */
+ struct virtio_scsi_cmd_resp {
+ 	__virtio32 sense_len;		/* Sense data length */
+ 	__virtio32 resid;		/* Residual bytes in data buffer */
+ 	__virtio16 status_qualifier;	/* Status qualifier */
+-	u8 status;		/* Command completion status */
+-	u8 response;		/* Response values */
+-	u8 sense[VIRTIO_SCSI_SENSE_SIZE];
+-} __packed;
++	__u8 status;		/* Command completion status */
++	__u8 response;		/* Response values */
++	__u8 sense[VIRTIO_SCSI_SENSE_SIZE];
++} __attribute__((packed));
  
- 	if (po->has_vnet_hdr) {
- 		if (vnet_hdr.flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) {
--			if (!skb_partial_csum_set(skb, vnet_hdr.csum_start,
--						  vnet_hdr.csum_offset)) {
-+			u16 s = __virtio16_to_cpu(false, vnet_hdr.csum_start);
-+			u16 o = __virtio16_to_cpu(false, vnet_hdr.csum_offset);
-+			if (!skb_partial_csum_set(skb, s, o)) {
- 				err = -EINVAL;
- 				goto out_free;
- 			}
- 		}
+ /* Task Management Request */
+ struct virtio_scsi_ctrl_tmf_req {
+ 	__virtio32 type;
+ 	__virtio32 subtype;
+-	u8 lun[8];
++	__u8 lun[8];
+ 	__virtio64 tag;
+-} __packed;
++} __attribute__((packed));
  
--		skb_shinfo(skb)->gso_size = vnet_hdr.gso_size;
-+		skb_shinfo(skb)->gso_size =
-+			__virtio16_to_cpu(false, vnet_hdr.gso_size);
- 		skb_shinfo(skb)->gso_type = gso_type;
+ struct virtio_scsi_ctrl_tmf_resp {
+-	u8 response;
+-} __packed;
++	__u8 response;
++} __attribute__((packed));
  
- 		/* Header must be checked, and gso_segs computed. */
-@@ -2912,8 +2917,10 @@ static int packet_recvmsg(struct kiocb *iocb, struct socket *sock,
- 			struct skb_shared_info *sinfo = skb_shinfo(skb);
+ /* Asynchronous notification query/subscription */
+ struct virtio_scsi_ctrl_an_req {
+ 	__virtio32 type;
+-	u8 lun[8];
++	__u8 lun[8];
+ 	__virtio32 event_requested;
+-} __packed;
++} __attribute__((packed));
  
- 			/* This is a hint as to how much should be linear. */
--			vnet_hdr.hdr_len = skb_headlen(skb);
--			vnet_hdr.gso_size = sinfo->gso_size;
-+			vnet_hdr.hdr_len =
-+				__cpu_to_virtio16(false, skb_headlen(skb));
-+			vnet_hdr.gso_size =
-+				__cpu_to_virtio16(false, sinfo->gso_size);
- 			if (sinfo->gso_type & SKB_GSO_TCPV4)
- 				vnet_hdr.gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
- 			else if (sinfo->gso_type & SKB_GSO_TCPV6)
-@@ -2931,8 +2938,10 @@ static int packet_recvmsg(struct kiocb *iocb, struct socket *sock,
+ struct virtio_scsi_ctrl_an_resp {
+ 	__virtio32 event_actual;
+-	u8 response;
+-} __packed;
++	__u8 response;
++} __attribute__((packed));
  
- 		if (skb->ip_summed == CHECKSUM_PARTIAL) {
- 			vnet_hdr.flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
--			vnet_hdr.csum_start = skb_checksum_start_offset(skb);
--			vnet_hdr.csum_offset = skb->csum_offset;
-+			vnet_hdr.csum_start = __cpu_to_virtio16(false,
-+					  skb_checksum_start_offset(skb));
-+			vnet_hdr.csum_offset = __cpu_to_virtio16(false,
-+							 skb->csum_offset);
- 		} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
- 			vnet_hdr.flags = VIRTIO_NET_HDR_F_DATA_VALID;
- 		} /* else everything is zero */
+ struct virtio_scsi_event {
+ 	__virtio32 event;
+-	u8 lun[8];
++	__u8 lun[8];
+ 	__virtio32 reason;
+-} __packed;
++} __attribute__((packed));
+ 
+ struct virtio_scsi_config {
+-	u32 num_queues;
+-	u32 seg_max;
+-	u32 max_sectors;
+-	u32 cmd_per_lun;
+-	u32 event_info_size;
+-	u32 sense_size;
+-	u32 cdb_size;
+-	u16 max_channel;
+-	u16 max_target;
+-	u32 max_lun;
+-} __packed;
++	__u32 num_queues;
++	__u32 seg_max;
++	__u32 max_sectors;
++	__u32 cmd_per_lun;
++	__u32 event_info_size;
++	__u32 sense_size;
++	__u32 cdb_size;
++	__u16 max_channel;
++	__u16 max_target;
++	__u32 max_lun;
++} __attribute__((packed));
+ 
+ /* Feature Bits */
+ #define VIRTIO_SCSI_F_INOUT                    0
+diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
+index 44a5581..e61947c 100644
+--- a/include/uapi/linux/Kbuild
++++ b/include/uapi/linux/Kbuild
+@@ -428,6 +428,7 @@ header-y += virtio_net.h
+ header-y += virtio_pci.h
+ header-y += virtio_ring.h
+ header-y += virtio_rng.h
++header-y += virtio_scsi.h
+ header=y += vm_sockets.h
+ header-y += vt.h
+ header-y += wait.h
 -- 
 MST
 
