@@ -1,45 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034AbaK0BMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 20:12:09 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59466 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134AbaK0BMH (ORCPT
+	id S1753305AbaK0BQw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 20:16:52 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:6623 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134AbaK0BQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 20:12:07 -0500
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>
-Subject: Re: probe + report for following branch history. was Re: [PATCH 1/2] perf hists browser: Print overhead percent value for first-level callchain
-References: <1416816807-6495-1-git-send-email-namhyung@kernel.org>
-	<20141124145227.GE18625@kernel.org>
-Date: Thu, 27 Nov 2014 10:12:04 +0900
-In-Reply-To: <20141124145227.GE18625@kernel.org> (Arnaldo Carvalho de Melo's
-	message of "Mon, 24 Nov 2014 11:52:27 -0300")
-Message-ID: <87h9xlo3a3.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 26 Nov 2014 20:16:51 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 26 Nov 2014 17:15:04 -0800
+From: Navneet Kumar <navneetk@nvidia.com>
+To: <rui.zhang@intel.com>, <edubezval@gmail.com>
+CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        navneet kumar <navneetk@nvidia.com>,
+        Diwakar Tundlam <dtundlam@nvidia.com>
+Subject: [PATCH 1/3] thermal: of: support writable trips via dt
+Date: Wed, 26 Nov 2014 17:16:27 -0800
+Message-ID: <1417050989-25405-1-git-send-email-navneetk@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+From: navneet kumar <navneetk@nvidia.com>
 
-On Mon, 24 Nov 2014 11:52:27 -0300, Arnaldo Carvalho de Melo wrote:
-> But the absolute line numbers on 'perf probe -L' and the offsets from function
-> start in 'report' look like low hanging fruits and a way to integrate further
-> 'perf probe' with 'perf report', because both will look at the right file, keyed
-> by the build-id, etc.
+Support writable trip points configuration from the
+device tree. 'OF' reads this configuration and adjusts
+the 'trips' mask accordingly to allow the 'set_trip_xxx'
+calls to be effective.
 
-Okay, will do later :)
+Signed-off-by: Diwakar Tundlam <dtundlam@nvidia.com>
+---
+ drivers/thermal/of-thermal.c | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
-Thanks,
-Namhyung
+diff --git a/drivers/thermal/of-thermal.c b/drivers/thermal/of-thermal.c
+index 62143ba31001..cf9ee3e82fee 100644
+--- a/drivers/thermal/of-thermal.c
++++ b/drivers/thermal/of-thermal.c
+@@ -604,7 +604,8 @@ static int thermal_of_get_trip_type(struct device_node *np,
+  * Return: 0 on success, proper error code otherwise
+  */
+ static int thermal_of_populate_trip(struct device_node *np,
+-				    struct __thermal_trip *trip)
++				    struct __thermal_trip *trip,
++				    bool *trip_writable)
+ {
+ 	int prop;
+ 	int ret;
+@@ -629,6 +630,8 @@ static int thermal_of_populate_trip(struct device_node *np,
+ 		return ret;
+ 	}
+ 
++	*trip_writable = of_property_read_bool(np, "writable");
++
+ 	/* Required for cooling map matching */
+ 	trip->np = np;
+ 	of_node_get(np);
+@@ -657,6 +660,8 @@ thermal_of_build_thermal_zone(struct device_node *np)
+ 	struct __thermal_zone *tz;
+ 	int ret, i;
+ 	u32 prop;
++	bool trip_writable;
++	u64 m = 0;
+ 
+ 	if (!np) {
+ 		pr_err("no thermal zone np\n");
+@@ -700,9 +705,14 @@ thermal_of_build_thermal_zone(struct device_node *np)
+ 
+ 	i = 0;
+ 	for_each_child_of_node(child, gchild) {
+-		ret = thermal_of_populate_trip(gchild, &tz->trips[i++]);
++		trip_writable = false;
++		ret = thermal_of_populate_trip(gchild, &tz->trips[i],
++					       &trip_writable);
+ 		if (ret)
+ 			goto free_trips;
++		if (trip_writable)
++			m |= 1ULL << i;
++		i++;
+ 	}
+ 
+ 	of_node_put(child);
+-- 
+1.8.1.5
+
