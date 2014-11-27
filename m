@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534AbaK0RXe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 12:23:34 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:44760 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466AbaK0RXb (ORCPT
+	id S1751577AbaK0RXj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 12:23:39 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:40084 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540AbaK0RXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 12:23:31 -0500
+	Thu, 27 Nov 2014 12:23:36 -0500
 From: Antonios Motakis <a.motakis@virtualopensystems.com>
 To: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
         alex.williamson@redhat.com
@@ -16,9 +16,9 @@ Cc: will.deacon@arm.com, tech@virtualopensystems.com,
         Antonios Motakis <a.motakis@virtualopensystems.com>,
         kvm@vger.kernel.org (open list:VFIO DRIVER),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v3 4/6] vfio: type1: replace domain wide protection flags with supported capabilities
-Date: Thu, 27 Nov 2014 18:22:54 +0100
-Message-Id: <1417108976-10113-5-git-send-email-a.motakis@virtualopensystems.com>
+Subject: [PATCH v3 6/6] vfio: type1: implement the VFIO_DMA_MAP_FLAG_NOEXEC flag
+Date: Thu, 27 Nov 2014 18:22:56 +0100
+Message-Id: <1417108976-10113-7-git-send-email-a.motakis@virtualopensystems.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1417108976-10113-1-git-send-email-a.motakis@virtualopensystems.com>
 References: <1417108976-10113-1-git-send-email-a.motakis@virtualopensystems.com>
@@ -26,111 +26,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VFIO_IOMMU_TYPE1 keeps track for each domain it knows a list of protection
-flags it always applies to all mappings in the domain. This is used for
-domains that support IOMMU_CAP_CACHE_COHERENCY.
+Some IOMMU drivers, such as the ARM SMMU driver, make available the
+IOMMU_NOEXEC flag to set the page tables for a device as XN (execute never).
+This affects devices such as the ARM PL330 DMA Controller, which respects
+this flag and will refuse to fetch DMA instructions from memory where the
+XN flag has been set.
 
-Refactor this slightly, by keeping track instead that a given domain
-supports the capability, and applying the IOMMU_CACHE protection flag when
-doing the actual DMA mappings.
-
-This will allow us to reuse the behavior for IOMMU_CAP_NOEXEC, which we
-also want to keep track of, but without applying it to all domains that
-support it unless the user explicitly requests it.
+The flag can be used only if all IOMMU domains behind the container support
+the IOMMU_NOEXEC flag. Also, if any mappings are created with the flag, any
+new domains with devices will have to support it as well.
 
 Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
 ---
- drivers/vfio/vfio_iommu_type1.c | 25 +++++++++++++++++--------
- 1 file changed, 17 insertions(+), 8 deletions(-)
+ drivers/vfio/vfio_iommu_type1.c | 25 ++++++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
-index 4a9d666..c54dab8 100644
+index bdf7dc9..8ba8a87 100644
 --- a/drivers/vfio/vfio_iommu_type1.c
 +++ b/drivers/vfio/vfio_iommu_type1.c
-@@ -65,7 +65,7 @@ struct vfio_domain {
- 	struct iommu_domain	*domain;
- 	struct list_head	next;
- 	struct list_head	group_list;
--	int			prot;		/* IOMMU_CACHE */
-+	int			caps;
- };
+@@ -573,6 +573,12 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
+ 	if (!prot || !size || (size | iova | vaddr) & mask)
+ 		return -EINVAL;
  
- struct vfio_dma {
-@@ -486,7 +486,7 @@ static int map_try_harder(struct vfio_domain *domain, dma_addr_t iova,
- 	for (i = 0; i < npage; i++, pfn++, iova += PAGE_SIZE) {
- 		ret = iommu_map(domain->domain, iova,
- 				(phys_addr_t)pfn << PAGE_SHIFT,
--				PAGE_SIZE, prot | domain->prot);
-+				PAGE_SIZE, prot);
- 		if (ret)
- 			break;
- 	}
-@@ -504,11 +504,16 @@ static int vfio_iommu_map(struct vfio_iommu *iommu, dma_addr_t iova,
- 	int ret;
- 
- 	list_for_each_entry(d, &iommu->domain_list, next) {
-+		int dprot = prot;
++	if (map->flags & VFIO_DMA_MAP_FLAG_NOEXEC) {
++		if (!vfio_domains_have_iommu_cap(iommu, IOMMU_CAP_NOEXEC))
++			return -EINVAL;
++		prot |= IOMMU_NOEXEC;
++	}
 +
-+		if (d->caps & IOMMU_CAP_CACHE_COHERENCY)
-+			dprot |= IOMMU_CACHE;
+ 	/* Don't allow IOVA or virtual address wrap */
+ 	if (iova + size - 1 < iova || vaddr + size - 1 < vaddr)
+ 		return -EINVAL;
+@@ -663,6 +669,14 @@ static int vfio_iommu_replay(struct vfio_iommu *iommu,
+ 		dma = rb_entry(n, struct vfio_dma, node);
+ 		iova = dma->iova;
+ 
++		/*
++		 * if any of the mappings to be replayed has the NOEXEC flag
++		 * set, then the new iommu domain must support it
++		 */
++		if ((dma->prot & IOMMU_NOEXEC) &&
++				!(domain->caps & IOMMU_CAP_NOEXEC))
++			return -EINVAL;
 +
- 		ret = iommu_map(d->domain, iova, (phys_addr_t)pfn << PAGE_SHIFT,
--				npage << PAGE_SHIFT, prot | d->prot);
-+				npage << PAGE_SHIFT, dprot);
- 		if (ret) {
- 			if (ret != -EBUSY ||
--			    map_try_harder(d, iova, pfn, npage, prot))
-+			    map_try_harder(d, iova, pfn, npage, dprot))
- 				goto unwind;
- 		}
- 	}
-@@ -621,6 +626,10 @@ static int vfio_iommu_replay(struct vfio_iommu *iommu,
- 	struct vfio_domain *d;
- 	struct rb_node *n;
- 	int ret;
-+	int dprot = 0;
-+
-+	if (domain->caps & IOMMU_CAP_CACHE_COHERENCY)
-+		dprot |= IOMMU_CACHE;
- 
- 	/* Arbitrarily pick the first domain in the list for lookups */
- 	d = list_first_entry(&iommu->domain_list, struct vfio_domain, next);
-@@ -654,7 +663,7 @@ static int vfio_iommu_replay(struct vfio_iommu *iommu,
- 				size += PAGE_SIZE;
- 
- 			ret = iommu_map(domain->domain, iova, phys,
--					size, dma->prot | domain->prot);
-+					size, dma->prot | dprot);
- 			if (ret)
- 				return ret;
- 
-@@ -731,7 +740,7 @@ static int vfio_iommu_type1_attach_group(void *iommu_data,
- 	}
- 
+ 		while (iova < dma->iova + dma->size) {
+ 			phys_addr_t phys = iommu_iova_to_phys(d->domain, iova);
+ 			size_t size;
+@@ -759,6 +773,9 @@ static int vfio_iommu_type1_attach_group(void *iommu_data,
  	if (iommu_capable(bus, IOMMU_CAP_CACHE_COHERENCY))
--		domain->prot |= IOMMU_CACHE;
-+		domain->caps |= IOMMU_CAP_CACHE_COHERENCY;
+ 		domain->caps |= IOMMU_CAP_CACHE_COHERENCY;
  
++	if (iommu_capable(bus, IOMMU_CAP_NOEXEC))
++		domain->caps |= IOMMU_CAP_NOEXEC;
++
  	/*
  	 * Try to match an existing compatible domain.  We don't want to
-@@ -742,7 +751,7 @@ static int vfio_iommu_type1_attach_group(void *iommu_data,
- 	 */
- 	list_for_each_entry(d, &iommu->domain_list, next) {
- 		if (d->domain->ops == domain->domain->ops &&
--		    d->prot == domain->prot) {
-+		    d->caps == domain->caps) {
- 			iommu_detach_group(domain->domain, iommu_group);
- 			if (!iommu_attach_group(d->domain, iommu_group)) {
- 				list_add(&group->next, &d->group_list);
-@@ -884,7 +893,7 @@ static int vfio_domains_have_iommu_cache(struct vfio_iommu *iommu)
- 
- 	mutex_lock(&iommu->lock);
- 	list_for_each_entry(domain, &iommu->domain_list, next) {
--		if (!(domain->prot & IOMMU_CACHE)) {
-+		if (!(domain->caps & IOMMU_CAP_CACHE_COHERENCY)) {
- 			ret = 0;
- 			break;
+ 	 * preclude an IOMMU driver supporting multiple bus_types and being
+@@ -920,6 +937,11 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
+ 				return 0;
+ 			return vfio_domains_have_iommu_cap(iommu,
+ 						  IOMMU_CAP_CACHE_COHERENCY);
++		case VFIO_DMA_NOEXEC_IOMMU:
++			if (!iommu)
++				return 0;
++			return vfio_domains_have_iommu_cap(iommu,
++							   IOMMU_CAP_NOEXEC);
+ 		default:
+ 			return 0;
  		}
+@@ -943,7 +965,8 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
+ 	} else if (cmd == VFIO_IOMMU_MAP_DMA) {
+ 		struct vfio_iommu_type1_dma_map map;
+ 		uint32_t mask = VFIO_DMA_MAP_FLAG_READ |
+-				VFIO_DMA_MAP_FLAG_WRITE;
++				VFIO_DMA_MAP_FLAG_WRITE |
++				VFIO_DMA_MAP_FLAG_NOEXEC;
+ 
+ 		minsz = offsetofend(struct vfio_iommu_type1_dma_map, size);
+ 
 -- 
 2.1.3
 
