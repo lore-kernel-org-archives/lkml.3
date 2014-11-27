@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751682AbaK0P03 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 10:26:29 -0500
-Received: from kazi.fit.vutbr.cz ([147.229.8.12]:47522 "EHLO kazi.fit.vutbr.cz"
+	id S1751151AbaK0P1Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 10:27:25 -0500
+Received: from mga01.intel.com ([192.55.52.88]:19924 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750887AbaK0P02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 10:26:28 -0500
-X-Greylist: delayed 429 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Nov 2014 10:26:27 EST
-Date: Thu, 27 Nov 2014 16:17:41 +0100
-From: Tomas Novotny <tomas@novotny.cz>
-To: rtc-linux@googlegroups.com
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alessandro Zummo <a.zummo@towertech.it>, grant.likely@linaro.org,
-        robh+dt@kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 0/4] rtc: ds1307: add support for device tree and
- mcp7940x
-Message-ID: <20141127161741.52e8d300@tomas>
-In-Reply-To: <1416844164-16782-1-git-send-email-tomas@novotny.cz>
-References: <1416844164-16782-1-git-send-email-tomas@novotny.cz>
-X-Mailer: Claws Mail 3.11.0 (GTK+ 2.24.25; x86_64-suse-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1750831AbaK0P1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 10:27:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,470,1413270000"; 
+   d="scan'208";a="629250403"
+Message-ID: <1417102042.5858.102.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 2/6] UBI: Fastmap: Ensure that only one fastmap work is
+ scheduled
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Thu, 27 Nov 2014 17:27:22 +0200
+In-Reply-To: <1416835236-25185-3-git-send-email-richard@nod.at>
+References: <1416835236-25185-1-git-send-email-richard@nod.at>
+	 <1416835236-25185-3-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Nov 2014 16:49:20 +0100
-Tomas Novotny <tomas@novotny.cz> wrote:
+On Mon, 2014-11-24 at 14:20 +0100, Richard Weinberger wrote:
+> If the WL pool runs out of PEBs we schedule a fastmap write
+> to refill it as soon as possible.
+> Ensure that only one at a time is scheduled otherwise we might end in
+> a fastmap write storm because writing the fastmap can schedule another
+> write if bitflips are detected.
 
-> This series is tested with MCP79401 and it is based on 3.18-rc6.
-> 
-> Tomas Novotny (4):
->   rtc: ds1307: add support for mcp7940x chips
->   of: add vendor prefix for Pericom Technology
->   rtc: ds1307: add device tree bindings documentation
->   rtc: ds1307: add device tree support
-> 
->  .../devicetree/bindings/rtc/maxim,ds1307.txt       |  23 ++++
->  .../devicetree/bindings/vendor-prefixes.txt        |   1 +
->  drivers/rtc/rtc-ds1307.c                           | 149 ++++++++++++---------
->  3 files changed, 110 insertions(+), 63 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/rtc/maxim,ds1307.txt
+Could you please provide some more details about the "write storm". Does
+it happen when there are 2 fastmap works in the queue? Or if they run
+simultaneously? Why the storm happens and white kind of "writes" it
+consists of?
 
-It is now in the -mm and linux-next.
-Thanks to Andrew for pick up,
+Thanks!
 
-Tomas
