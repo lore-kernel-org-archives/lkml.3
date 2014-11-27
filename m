@@ -1,96 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648AbaK0UPR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 15:15:17 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:51781 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880AbaK0UPM (ORCPT
+	id S1752614AbaK0UPD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 15:15:03 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:47023 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370AbaK0ULP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 15:15:12 -0500
-Message-ID: <54778649.8000408@roeck-us.net>
-Date: Thu, 27 Nov 2014 12:15:05 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: lizf@kernel.org, stable@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, satoru.takeuchi@gmail.com,
-        Zefan Li <lizefan@huawei.com>
-Subject: Re: [PATCH 3.4 00/91] 3.4.105-rc1 review
-References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
-In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020206.5477864F.0217,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 3
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Thu, 27 Nov 2014 15:11:15 -0500
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Daniel Drake <drake@endlessm.com>,
+        Dmitry Pervushin <dpervushin@gmail.com>,
+        Tim Sander <tim@krieglstein.org>, Stephen Boyd <sboyd@codeaurora.org>
+Subject: [PATCH 3.18-rc4 v11 6/6] arm: smp: Handle ipi_cpu_backtrace() using FIQ (if available)
+Date: Thu, 27 Nov 2014 20:10:24 +0000
+Message-Id: <1417119024-22844-7-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1417119024-22844-1-git-send-email-daniel.thompson@linaro.org>
+References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
+ <1417119024-22844-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2014 12:36 AM, lizf@kernel.org wrote:
-> From: Zefan Li <lizefan@huawei.com>
->
-> This is the start of the stable review cycle for the 3.4.105 release.
-> There are 91 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by 2014年 11月 29日 星期六 08:05:38 UTC.
-> Anything received after that time might be too late.
->
+Previous changes have introduced both a replacement default FIQ handler
+and an implementation of arch_trigger_all_cpu_backtrace for ARM but
+these are currently independent of each other.
 
-Build results:
-	total: 119 pass: 114 fail: 5
-Failed builds:
-	arm:s3c6400_defconfig
-	arm:nhk8815_defconfig
-	score:defconfig
-	sparc64:allmodconfig
-	xtensa:allmodconfig
+This patch plumbs together these features making it possible, on platforms
+that support it, to trigger backtrace using FIQ.
 
-Qemu test results:
-	total: 23 pass: 22 fail: 1
-Failed tests:
-	arm:arm_versatile_defconfig
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+---
+ arch/arm/include/asm/smp.h | 3 +++
+ arch/arm/kernel/smp.c      | 4 +++-
+ arch/arm/kernel/traps.c    | 3 +++
+ 3 files changed, 9 insertions(+), 1 deletion(-)
 
-The arm build failures are due to
-
-Inconsistent kallsyms data
-This is a bug - please report about it
-Try make KALLSYMS_EXTRA_PASS=1 as a workaround
-make: *** [vmlinux] Error 1
-
-This seems to be toolchain related. I switched from the cross toolchain
-provided with yocto 1.4.2 to the toolchain provided with yocto 1.7.
-This seems to fix the problem. Just mentioning it here in case someone
-uses an older toolchain.
-
-Details are available at http://server.roeck-us.net:8010/builders.
-
-Guenter
+diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
+index 18f5a554134f..b076584ac0fa 100644
+--- a/arch/arm/include/asm/smp.h
++++ b/arch/arm/include/asm/smp.h
+@@ -18,6 +18,8 @@
+ # error "<asm/smp.h> included in non-SMP build"
+ #endif
+ 
++#define SMP_IPI_FIQ_MASK 0x0100
++
+ #define raw_smp_processor_id() (current_thread_info()->cpu)
+ 
+ struct seq_file;
+@@ -79,6 +81,7 @@ extern void arch_send_call_function_single_ipi(int cpu);
+ extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
+ extern void arch_send_wakeup_ipi_mask(const struct cpumask *mask);
+ 
++extern void ipi_cpu_backtrace(struct pt_regs *regs);
+ extern int register_ipi_completion(struct completion *completion, int cpu);
+ 
+ struct smp_operations {
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 14c594a12bef..e923843562d9 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -539,7 +539,7 @@ static void ipi_cpu_stop(unsigned int cpu)
+ 		cpu_relax();
+ }
+ 
+-static void ipi_cpu_backtrace(struct pt_regs *regs)
++void ipi_cpu_backtrace(struct pt_regs *regs)
+ {
+ 	int cpu = smp_processor_id();
+ 
+@@ -580,6 +580,8 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+ 	unsigned int cpu = smp_processor_id();
+ 	struct pt_regs *old_regs = set_irq_regs(regs);
+ 
++	BUILD_BUG_ON(SMP_IPI_FIQ_MASK != BIT(IPI_CPU_BACKTRACE));
++
+ 	if ((unsigned)ipinr < NR_IPI) {
+ 		trace_ipi_entry(ipi_types[ipinr]);
+ 		__inc_irq_stat(cpu, ipi_irqs[ipinr]);
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index 4dc45b38e56e..9eb05be9526e 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -483,6 +483,9 @@ asmlinkage void __exception_irq_entry handle_fiq_as_nmi(struct pt_regs *regs)
+ #ifdef CONFIG_ARM_GIC
+ 	gic_handle_fiq_ipi();
+ #endif
++#ifdef CONFIG_SMP
++	ipi_cpu_backtrace(regs);
++#endif
+ 
+ 	nmi_exit();
+ 
+-- 
+1.9.3
 
