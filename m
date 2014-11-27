@@ -1,83 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079AbaK0ME4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 07:04:56 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:34044 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754714AbaK0MEw (ORCPT
+	id S1755056AbaK0MEy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 07:04:54 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41417 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753427AbaK0MEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 07:04:52 -0500
-Date: Thu, 27 Nov 2014 13:04:41 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: David Hildenbrand <dahi@linux.vnet.ibm.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
-        paulus@samba.org, akpm@linux-foundation.org, schwidefsky@de.ibm.com,
-        mingo@kernel.org
-Subject: Re: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
- atomic
-Message-ID: <20141127120441.GB4390@osiris>
-References: <20141126151729.GB9612@redhat.com>
- <20141126152334.GA9648@redhat.com>
- <20141126163207.63810fcb@thinkpad-w530>
- <20141126154717.GB10568@redhat.com>
- <5475FAB1.1000802@de.ibm.com>
- <20141126163216.GB10850@redhat.com>
- <547604FC.4030300@de.ibm.com>
- <20141126170447.GC11202@redhat.com>
- <20141127070919.GA4390@osiris>
- <20141127090301.3ddc3077@thinkpad-w530>
+	Thu, 27 Nov 2014 07:04:51 -0500
+Date: Thu, 27 Nov 2014 12:03:56 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+Cc: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "m-karicheri2@ti.com" <m-karicheri2@ti.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "artagnon@gmail.com" <artagnon@gmail.com>,
+        "rrichter@cavium.com" <rrichter@cavium.com>,
+        Will Deacon <Will.Deacon@arm.com>, "arnd@arndb.de" <arnd@arndb.de>,
+        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "heiko@sntech.de" <heiko@sntech.de>,
+        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
+        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
+        "andrew@lunn.ch" <andrew@lunn.ch>,
+        "hytszk@gmail.com" <hytszk@gmail.com>,
+        "orsonzhai@gmail.com" <orsonzhai@gmail.com>,
+        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
+        "zhizhou.zhang@spreadtrum.com" <zhizhou.zhang@spreadtrum.com>,
+        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
+        "zhang.lyra@gmail.com" <zhang.lyra@gmail.com>,
+        "wei.qiao@spreadtrum.com" <wei.qiao@spreadtrum.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sprdlinux@freelists.org" <sprdlinux@freelists.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+Subject: Re: [PATCH v3 0/5] Add Spreadtrum Sharkl64 Platform support
+Message-ID: <20141127120356.GF857@leverpostej>
+References: <Sharkl64-v3>
+ <1416917818-10506-1-git-send-email-chunyan.zhang@spreadtrum.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141127090301.3ddc3077@thinkpad-w530>
+In-Reply-To: <1416917818-10506-1-git-send-email-chunyan.zhang@spreadtrum.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112712-0009-0000-0000-0000022A062C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 09:03:01AM +0100, David Hildenbrand wrote:
-> > Code like
-> > 	spin_lock(&lock);
-> > 	if (copy_to_user(...))
-> > 		rc = ...
-> > 	spin_unlock(&lock);
-> > really *should* generate warnings like it did before.
-> > 
-> > And *only* code like
-> > 	spin_lock(&lock);
+Hi,
+
+On Tue, Nov 25, 2014 at 12:16:53PM +0000, Chunyan Zhang wrote:
+> Spreadtrum is a rapid growing chip vendor providing smart phone total solutions.
 > 
-> Is only code like this valid or also with the spin_lock() dropped?
-> (e.g. the access in patch1 if I remember correctly)
+> Sharkl64 Platform is nominated as a SoC infrastructure that supports 4G/3G/2G
+> standards based on ARMv8 multiple core architecture.Now we have only one
+> SoC(SC9836) based on this Platform in developing.
 > 
-> So should page_fault_disable() increment the pagefault counter and the preempt
-> counter or only the first one?
-
-Given that a sequence like
-
-	page_fault_disable();
- 	if (copy_to_user(...))
- 		rc = ...
- 	page_fault_enable();
-
-is correct code right now I think page_fault_disable() should increase both.
-No need for surprising semantic changes.
-
-> So we would have pagefault code rely on:
+> This patchset adds Sharkl64 support in arm64 device tree and the serial driver
+> of SC9836-UART.
 > 
-> in_disabled_pagefault() ( pagefault_disabled() ... whatever ) instead of
-> in_atomic().
+> This patchset also has patches which address "sprd" prefix and DT compatible
+> strings for nodes which appear un-documented.
+> 
+> This version code was tesed on Fast Mode.
 
-No, let's be more defensive: the page fault handler should do nothing if
-in_atomic() just like now. But it could have a quick check and emit a one
-time warning if page faults aren't disabled in addition.
-That might help debugging but keeps the system more likely alive.
+This concerns me a bit because fast models are extremely lenient w.r.t.
+the management of clocks and regulators. Are you sure you have
+everything you need for your UART described?
 
-might_fault() however should call might_sleep() if page faults aren't
-disabled, but that's what you proposed anyway I think.
+> We use boot-wrapper-aarch64 as the bootloader.
 
+Which version of boot-wrapper-aarch64 are you using?
+
+Upstream does not implement PSCI 0.2, but its --enable-psci option will
+inject PSCI 0.1 compatible properties, which leads me to suspect that
+your DT is misleading. The boot wrapper should also program CNTFRQ_EL0
+correctly regardless.
+
+What do you intend to use on real hardware?
+
+Thanks,
+Mark.
+
+> 
+> Changes from v2:
+> * Addressed review comments:
+> 	- Added a specific compitible string 'sc9836-uart' for the serial
+> 	- Added a full serial driver
+> 	- Added the property 'clock-frequency' for timer node in dtsi.
+> 	- Replaceed the old macro prefix 'UART_' with 'SPRD_' in the 
+> 	  Spreadtrum serial driver code.
+> * Revised the name of SoC and board from 'sharkl3' to 'sc9836'
+> * Used dual-license for DTS files
+> * Added a menuconfig 'ARCH_SPRD' in arch/arm64/Kconfig
+> 
+> Changes from v1:
+> * Addressed review comments:
+>         - Added "sprd" prefix to vendor-prefixes.txt
+>         - Created serial/sprd-serial.txt and remove the properties for serial-sprd
+>           from of-serial.txt to it.
+>         - Renamed of-serial.txt to 8250.txt according to Arnd's review comments
+>         - Splited and revised .dts for Sharkl64 Platform
+>         - Changed to PSCI method for cpu power management
+>         - Revised Kconfig Makefile to match the alphabetical ordering
+>         - Renamed serial-sprd-earlycon.c to serial-sprd.c
+> 
+> Chunyan Zhang (3):
+>   Documentation: DT: Renamed of-serial.txt to 8250.txt
+>   Documentation: DT: Add bindings for Spreadtrum SoC Platform
+>   tty/serial: Add Spreadtrum sc9836-uart driver support
+> 
+> Zhizhou Zhang (2):
+>   arm64: dts: Add support for Spreadtrum SC9836 SoC in dts and Makefile
+>   arm64: Add support for Spreadtrum's Sharkl64 Platform in Kconfig and
+>     defconfig
+> 
+>  Documentation/devices.txt                          |    3 +
+>  Documentation/devicetree/bindings/arm/sprd.txt     |   11 +
+>  .../bindings/serial/{of-serial.txt => 8250.txt}    |    0
+>  .../devicetree/bindings/serial/sprd-uart.txt       |    6 +
+>  .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+>  arch/arm64/Kconfig                                 |   17 +
+>  arch/arm64/boot/dts/Makefile                       |    1 +
+>  arch/arm64/boot/dts/sprd-sc9836-openphone.dts      |   85 +++
+>  arch/arm64/boot/dts/sprd-sc9836.dtsi               |  103 +++
+>  arch/arm64/boot/dts/sprd-sharkl64.dtsi             |  105 +++
+>  arch/arm64/configs/defconfig                       |    2 +
+>  drivers/tty/serial/Kconfig                         |   23 +
+>  drivers/tty/serial/Makefile                        |    1 +
+>  drivers/tty/serial/sprd_serial.c                   |  752 ++++++++++++++++++++
+>  include/uapi/linux/serial_core.h                   |    3 +
+>  15 files changed, 1113 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/sprd.txt
+>  rename Documentation/devicetree/bindings/serial/{of-serial.txt => 8250.txt} (100%)
+>  create mode 100644 Documentation/devicetree/bindings/serial/sprd-uart.txt
+>  create mode 100644 arch/arm64/boot/dts/sprd-sc9836-openphone.dts
+>  create mode 100644 arch/arm64/boot/dts/sprd-sc9836.dtsi
+>  create mode 100644 arch/arm64/boot/dts/sprd-sharkl64.dtsi
+>  create mode 100644 drivers/tty/serial/sprd_serial.c
+> 
+> -- 
+> 1.7.9.5
+> 
+> 
