@@ -1,87 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911AbaK0PqN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 10:46:13 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:49770 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888AbaK0PqK (ORCPT
+	id S1751019AbaK0Ps6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 10:48:58 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40817 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783AbaK0Ps4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 10:46:10 -0500
-Date: Thu, 27 Nov 2014 16:45:55 +0100
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Christian Borntraeger" <borntraeger@de.ibm.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "mingo@kernel.org" <mingo@kernel.org>
-Subject: Re: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
- atomic
-Message-ID: <20141127164555.4bcebfe8@thinkpad-w530>
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1C9FDD6A@AcuExch.aculab.com>
-References: <20141126151729.GB9612@redhat.com>
-	<20141126152334.GA9648@redhat.com>
-	<20141126163207.63810fcb@thinkpad-w530>
-	<20141126154717.GB10568@redhat.com>
-	<5475FAB1.1000802@de.ibm.com>
-	<20141126163216.GB10850@redhat.com>
-	<547604FC.4030300@de.ibm.com>
-	<20141126170447.GC11202@redhat.com>
-	<20141127070919.GA4390@osiris>
-	<20141127090301.3ddc3077@thinkpad-w530>
-	<20141127120441.GB4390@osiris>
-	<alpine.DEB.2.11.1411271602320.3961@nanos>
-	<20141127161905.7c6220ee@thinkpad-w530>
-	<063D6719AE5E284EB5DD2968C1650D6D1C9FDD6A@AcuExch.aculab.com>
-Organization: IBM Deutschland GmbH
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	Thu, 27 Nov 2014 10:48:56 -0500
+Message-ID: <547747DF.9070402@arm.com>
+Date: Thu, 27 Nov 2014 15:48:47 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arm64: ARM: Fix the Generic Timers interrupt active level
+ description
+References: <1417099005-18638-1-git-send-email-Liviu.Dudau@arm.com> <5477389A.8010606@arm.com> <20141127153453.GR828@e106497-lin.cambridge.arm.com>
+In-Reply-To: <20141127153453.GR828@e106497-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112715-0029-0000-0000-000001E7D1F2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: David Hildenbrand
-> ...
-> > Although it might not be optimal, but keeping a separate counter for
-> > pagefault_disable() as part of the preemption counter seems to be the only
-> > doable thing right now. I am not sure if a completely separated counter is even
-> > possible, increasing the size of thread_info.
+On 27/11/14 15:34, Liviu Dudau wrote:
+> On Thu, Nov 27, 2014 at 02:43:38PM +0000, Marc Zyngier wrote:
+>> On 27/11/14 14:36, Liviu Dudau wrote:
+>>> The Cortex-A5x TRM states in paragraph "9.2 Generic Timer functional
+>>> description" that generic timers provide an active-LOW interrupt
+>>> output. Fix the device trees to correctly describe this.
+>>>
+>>> While doing this update the CPU mask to match the number of described
+>>> CPUs as well.
+>>>
+>>> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+>>> ---
+>>>
+>>> Arnd, Olof: This is on top of linux-next/master as it patches the Juno
+>>> as well as all the other ARM DTs.
+>>>
+>>>  arch/arm64/boot/dts/arm/foundation-v8.dts  | 8 ++++----
+>>>  arch/arm64/boot/dts/arm/juno.dts           | 8 ++++----
+>>>  arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts | 8 ++++----
+>>>  3 files changed, 12 insertions(+), 12 deletions(-)
+>>>
+>>> diff --git a/arch/arm64/boot/dts/arm/foundation-v8.dts b/arch/arm64/boot/dts/arm/foundation-v8.dts
+>>> index 4a06090..27f3296 100644
+>>> --- a/arch/arm64/boot/dts/arm/foundation-v8.dts
+>>> +++ b/arch/arm64/boot/dts/arm/foundation-v8.dts
+>>> @@ -78,10 +78,10 @@
+>>>  
+>>>  	timer {
+>>>  		compatible = "arm,armv8-timer";
+>>> -		interrupts = <1 13 0xff01>,
+>>> -			     <1 14 0xff01>,
+>>> -			     <1 11 0xff01>,
+>>> -			     <1 10 0xff01>;
+>>> +		interrupts = <1 13 0xf08>,
+>>> +			     <1 14 0xf08>,
+>>> +			     <1 11 0xf08>,
+>>> +			     <1 10 0xf08>;
+>>>  		clock-frequency = <100000000>;
+>>>  	};
+>>>  
+>>> diff --git a/arch/arm64/boot/dts/arm/juno.dts b/arch/arm64/boot/dts/arm/juno.dts
+>>> index 097ecc4..cb3073e 100644
+>>> --- a/arch/arm64/boot/dts/arm/juno.dts
+>>> +++ b/arch/arm64/boot/dts/arm/juno.dts
+>>> @@ -98,10 +98,10 @@
+>>>  
+>>>  	timer {
+>>>  		compatible = "arm,armv8-timer";
+>>> -		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
+>>> -			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
+>>> -			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
+>>> -			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>;
+>>> +		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_LOW)>,
+>>> +			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_LOW)>,
+>>> +			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_LOW)>,
+>>> +			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_LOW)>;
+>>>  	};
+>>>  
+>>>  	pmu {
+>>> diff --git a/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts b/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts
+>>> index 572005e..efc59b3 100644
+>>> --- a/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts
+>>> +++ b/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts
+>>> @@ -81,10 +81,10 @@
+>>>  
+>>>  	timer {
+>>>  		compatible = "arm,armv8-timer";
+>>> -		interrupts = <1 13 0xff01>,
+>>> -			     <1 14 0xff01>,
+>>> -			     <1 11 0xff01>,
+>>> -			     <1 10 0xff01>;
+>>> +		interrupts = <1 13 0xf08>,
+>>> +			     <1 14 0xf08>,
+>>> +			     <1 11 0xf08>,
+>>> +			     <1 10 0xf08>;
+>>>  		clock-frequency = <100000000>;
+>>>  	};
+>>>  
+>>>
+>>
+>> Sorry, but that's wrong. Despite the *cores* having an level-low output,
+>> the GIC only triggers on *level-high*. Yes, there is probably an
+>> inverter in between.
 > 
-> What about adding (say) 0x10000 for the more restrictive test?
-> 
-> 	David
-> 
+> BTW, should I also update the bindings example to get this right?
 
-You mean as part of the preempt counter?
+Definitely. I'm pretty sure I got it wrong too at some point...
 
-The current layout (on my branch) is
-
- * PREEMPT_MASK:        0x000000ff
- * SOFTIRQ_MASK:        0x0000ff00
- * HARDIRQ_MASK:        0x000f0000
- *     NMI_MASK:        0x00100000
- * PREEMPT_ACTIVE:      0x00200000
-
-I would have added
- * PAGEFAULT_MASK:      0x03C00000
-
-So 4 bit == 16 levels (tbd)
-
-By implementing scope checks in the debug case like done for the regular
-preempt_count_inc() preempt_count_dec(), we could catch over/underflows.
-
-Thanks,
-
-David
-
+	M.
+-- 
+Jazz is not dead. It just smells funny...
