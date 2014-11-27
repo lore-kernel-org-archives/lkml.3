@@ -1,209 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850AbaK0Mdy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 07:33:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45765 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755789AbaK0Mdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 07:33:51 -0500
-Date: Thu, 27 Nov 2014 14:33:27 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Jason Wang <jasowang@redhat.com>, Vlad Yasevich <vyasevich@gmail.com>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        Tom Herbert <therbert@google.com>, Ben Hutchings <ben@decadent.org.uk>,
-        netdev@vger.kernel.org
-Subject: [PATCH v5 40/45] macvtap: TUN_VNET_HDR support
-Message-ID: <1417091078-24611-41-git-send-email-mst@redhat.com>
-References: <1417091078-24611-1-git-send-email-mst@redhat.com>
+	id S1755933AbaK0Mft (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 07:35:49 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:59085 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755045AbaK0Mfo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 07:35:44 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kgene.kim@samsung.com,
+        mark.rutland@arm.com, olof@lixom.net, catalin.marinas@arm.com,
+        will.deacon@arm.com, tomasz.figa@gmail.com, thomas.abraham@linaro.org,
+        linus.walleij@linaro.org, kyungmin.park@samsung.com,
+        inki.dae@samsung.com, chanho61.park@samsung.com,
+        geunsik.lim@samsung.com, sw0312.kim@samsung.com,
+        jh80.chung@samsung.com, a.kesavan@samsung.com,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 11/19] clk: samsung: exynos5433: Add clocks for CMU_BUS{0|1|2} domains
+Date: Thu, 27 Nov 2014 13:35:29 +0100
+Message-ID: <3556463.Me1EFEY7Zb@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54771518.1010004@samsung.com>
+References: <1417073716-22997-1-git-send-email-cw00.choi@samsung.com> <54771173.6090408@samsung.com> <54771518.1010004@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417091078-24611-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:l0Z175gLrUk2RjOe2YawD1oSQ1UnNWQXzel9CMeRr63
+ mLF7l15hwiVcrnqHHox70o+SxikHHW+iOkym4hnhSMGqweSZco
+ rT9DXyam0Bx5FpARdtlozGB7zLdrEsHymTtWHqEvQ7RHhwrMjm
+ gQKHjEw0+26D4N/A5EpgnJJ5fcVoTQxw+idO0lomE+M/TdcqAf
+ cbstuhOj5C45opXU0XD2Xe94cymGCrGYN25aMbjjD2UTkjjOVf
+ 6T2y/L1tfEQCIwArppEMjLs3JfZGmLWyYYdhEQlxVaI6gpnxi2
+ ubviABa7ks8IgwJlS+jlx2UFpo8TJ5It+5NMaZQDUTSW3kx8rJ
+ oa08cI/cKoNbPWha/q1M=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/net/macvtap.c | 68 ++++++++++++++++++++++++++++++++-------------------
- 1 file changed, 43 insertions(+), 25 deletions(-)
+On Thursday 27 November 2014 13:12:08 Sylwester Nawrocki wrote:
+> On 27/11/14 12:56, Chanwoo Choi wrote:
+> > On 11/27/2014 08:41 PM, Arnd Bergmann wrote:
+> >> > On Thursday 27 November 2014 16:35:08 Chanwoo Choi wrote:
+> >>> >> +  - "samsung,exynos5433-cmu-bus0", "samsung,exynos5433-cmu-bus1"
+> >>> >> +    and "samsung,exynos5433-cmu-bus2" - clock controller compatible for CMU_BUS
+> >>> >> +    which generates global data buses clock and global peripheral buses clock.
+> >>> >>  
+> >>> >>  - reg: physical base address of the controller and length of memory mapped
+> >>> >>    region.
+> >>> >>
+> >> > 
+> >> > This looks like you are duplicating the bindings and the code, but
+> >> > it's really the same hardware multiple times with minor variations
+> >> > that you should be able to describe properly here. Why not make
+> >> > three nodes with the same compatible string and have them handled
+> >> > by the same code?
+> >
+> > Each CMU_BUSx domain of Exynos5433 have different base address as following:
+> > - CMU_BUS0's base address and range : 0x1360_0000 ~ 0x1360_0b04
+> > - CMU_BUS1's base address and range : 0x1480_0000 ~ 0x1480_0b04
+> > - CMU_BUS2's base address and range : 0x1340_0000 ~ 0x1340_0b04
+> > 
+> > So, I implement CMU_BUSx domain which has each compatible string.
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index 880cc09..af90ab5 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -45,6 +45,18 @@ struct macvtap_queue {
- 	struct list_head next;
- };
- 
-+#define MACVTAP_FEATURES (IFF_VNET_HDR | IFF_VNET_LE | IFF_MULTI_QUEUE)
-+
-+static inline u16 macvtap16_to_cpu(struct macvtap_queue *q, __virtio16 val)
-+{
-+	return __virtio16_to_cpu(q->flags & IFF_VNET_LE, val);
-+}
-+
-+static inline __virtio16 cpu_to_macvtap16(struct macvtap_queue *q, u16 val)
-+{
-+	return __cpu_to_virtio16(q->flags & IFF_VNET_LE, val);
-+}
-+
- static struct proto macvtap_proto = {
- 	.name = "macvtap",
- 	.owner = THIS_MODULE,
-@@ -557,7 +569,8 @@ static inline struct sk_buff *macvtap_alloc_skb(struct sock *sk, size_t prepad,
-  * macvtap_skb_from_vnet_hdr and macvtap_skb_to_vnet_hdr should
-  * be shared with the tun/tap driver.
-  */
--static int macvtap_skb_from_vnet_hdr(struct sk_buff *skb,
-+static int macvtap_skb_from_vnet_hdr(struct macvtap_queue *q,
-+				     struct sk_buff *skb,
- 				     struct virtio_net_hdr *vnet_hdr)
- {
- 	unsigned short gso_type = 0;
-@@ -588,13 +601,13 @@ static int macvtap_skb_from_vnet_hdr(struct sk_buff *skb,
- 	}
- 
- 	if (vnet_hdr->flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) {
--		if (!skb_partial_csum_set(skb, vnet_hdr->csum_start,
--					  vnet_hdr->csum_offset))
-+		if (!skb_partial_csum_set(skb, macvtap16_to_cpu(q, vnet_hdr->csum_start),
-+					  macvtap16_to_cpu(q, vnet_hdr->csum_offset)))
- 			return -EINVAL;
- 	}
- 
- 	if (vnet_hdr->gso_type != VIRTIO_NET_HDR_GSO_NONE) {
--		skb_shinfo(skb)->gso_size = vnet_hdr->gso_size;
-+		skb_shinfo(skb)->gso_size = macvtap16_to_cpu(q, vnet_hdr->gso_size);
- 		skb_shinfo(skb)->gso_type = gso_type;
- 
- 		/* Header must be checked, and gso_segs computed. */
-@@ -604,8 +617,9 @@ static int macvtap_skb_from_vnet_hdr(struct sk_buff *skb,
- 	return 0;
- }
- 
--static void macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
--				   struct virtio_net_hdr *vnet_hdr)
-+static void macvtap_skb_to_vnet_hdr(struct macvtap_queue *q,
-+				    const struct sk_buff *skb,
-+				    struct virtio_net_hdr *vnet_hdr)
- {
- 	memset(vnet_hdr, 0, sizeof(*vnet_hdr));
- 
-@@ -613,8 +627,8 @@ static void macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
- 		struct skb_shared_info *sinfo = skb_shinfo(skb);
- 
- 		/* This is a hint as to how much should be linear. */
--		vnet_hdr->hdr_len = skb_headlen(skb);
--		vnet_hdr->gso_size = sinfo->gso_size;
-+		vnet_hdr->hdr_len = cpu_to_macvtap16(q, skb_headlen(skb));
-+		vnet_hdr->gso_size = cpu_to_macvtap16(q, sinfo->gso_size);
- 		if (sinfo->gso_type & SKB_GSO_TCPV4)
- 			vnet_hdr->gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
- 		else if (sinfo->gso_type & SKB_GSO_TCPV6)
-@@ -628,10 +642,13 @@ static void macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
- 
- 	if (skb->ip_summed == CHECKSUM_PARTIAL) {
- 		vnet_hdr->flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
--		vnet_hdr->csum_start = skb_checksum_start_offset(skb);
- 		if (vlan_tx_tag_present(skb))
--			vnet_hdr->csum_start += VLAN_HLEN;
--		vnet_hdr->csum_offset = skb->csum_offset;
-+			vnet_hdr->csum_start = cpu_to_macvtap16(q,
-+				skb_checksum_start_offset(skb) + VLAN_HLEN);
-+		else
-+			vnet_hdr->csum_start = cpu_to_macvtap16(q,
-+				skb_checksum_start_offset(skb));
-+		vnet_hdr->csum_offset = cpu_to_macvtap16(q, skb->csum_offset);
- 	} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
- 		vnet_hdr->flags = VIRTIO_NET_HDR_F_DATA_VALID;
- 	} /* else everything is zero */
-@@ -666,12 +683,14 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
- 		if (err < 0)
- 			goto err;
- 		if ((vnet_hdr.flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) &&
--		     vnet_hdr.csum_start + vnet_hdr.csum_offset + 2 >
--							vnet_hdr.hdr_len)
--			vnet_hdr.hdr_len = vnet_hdr.csum_start +
--						vnet_hdr.csum_offset + 2;
-+		     macvtap16_to_cpu(q, vnet_hdr.csum_start) +
-+		     macvtap16_to_cpu(q, vnet_hdr.csum_offset) + 2 >
-+			     macvtap16_to_cpu(q, vnet_hdr.hdr_len))
-+			vnet_hdr.hdr_len = cpu_to_macvtap16(q,
-+				 macvtap16_to_cpu(q, vnet_hdr.csum_start) +
-+				 macvtap16_to_cpu(q, vnet_hdr.csum_offset) + 2);
- 		err = -EINVAL;
--		if (vnet_hdr.hdr_len > len)
-+		if (macvtap16_to_cpu(q, vnet_hdr.hdr_len) > len)
- 			goto err;
- 	}
- 
-@@ -684,7 +703,8 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
- 		goto err;
- 
- 	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
--		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
-+		copylen = vnet_hdr.hdr_len ?
-+			macvtap16_to_cpu(q, vnet_hdr.hdr_len) : GOODCOPY_LEN;
- 		if (copylen > good_linear)
- 			copylen = good_linear;
- 		linear = copylen;
-@@ -695,10 +715,10 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
- 
- 	if (!zerocopy) {
- 		copylen = len;
--		if (vnet_hdr.hdr_len > good_linear)
-+		if (macvtap16_to_cpu(q, vnet_hdr.hdr_len) > good_linear)
- 			linear = good_linear;
- 		else
--			linear = vnet_hdr.hdr_len;
-+			linear = macvtap16_to_cpu(q, vnet_hdr.hdr_len);
- 	}
- 
- 	skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, copylen,
-@@ -725,7 +745,7 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
- 	skb->protocol = eth_hdr(skb)->h_proto;
- 
- 	if (vnet_hdr_len) {
--		err = macvtap_skb_from_vnet_hdr(skb, &vnet_hdr);
-+		err = macvtap_skb_from_vnet_hdr(q, skb, &vnet_hdr);
- 		if (err)
- 			goto err_kfree;
- 	}
-@@ -791,7 +811,7 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
- 		if ((len -= vnet_hdr_len) < 0)
- 			return -EINVAL;
- 
--		macvtap_skb_to_vnet_hdr(skb, &vnet_hdr);
-+		macvtap_skb_to_vnet_hdr(q, skb, &vnet_hdr);
- 
- 		if (memcpy_toiovecend(iv, (void *)&vnet_hdr, 0, sizeof(vnet_hdr)))
- 			return -EFAULT;
-@@ -1003,8 +1023,7 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
- 			return -EFAULT;
- 
- 		ret = 0;
--		if ((u & ~(IFF_VNET_HDR | IFF_MULTI_QUEUE)) !=
--		    (IFF_NO_PI | IFF_TAP))
-+		if ((u & ~MACVTAP_FEATURES) != (IFF_NO_PI | IFF_TAP))
- 			ret = -EINVAL;
- 		else
- 			q->flags = u;
-@@ -1036,8 +1055,7 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
- 		return ret;
- 
- 	case TUNGETFEATURES:
--		if (put_user(IFF_TAP | IFF_NO_PI | IFF_VNET_HDR |
--			     IFF_MULTI_QUEUE, up))
-+		if (put_user(IFF_TAP | IFF_NO_PI | MACVTAP_FEATURES, up))
- 			return -EFAULT;
- 		return 0;
- 
--- 
-MST
+But the base address is in the reg property, not in the compatible
+property. What I mean is to have multiple nodes like
 
+	clock-controller@113600000 {
+		reg = <0 0x113600000 0 0x1000>;
+		compatible = "samsung,exynos5433-cmu";
+		#clock-cells = <1>;
+	};
+
+	clock-controller@114800000 {
+		reg = <0 0x114800000 0 0x1000>;
+		compatible = "samsung,exynos5433-cmu";
+		#clock-cells = <1>;
+	};
+
+The code will just map the local registers for each instance and then
+provide the clocks of the right instance when asked for it.
+
+> You can always have multiple entries in the reg property. I've done
+> something like this for the exynos4415 CMU_ISPx units:
+> 
+>         cmu_isp: clock-controller@12060000 {
+>                 compatible = "samsung,exynos4415-cmu-isp";
+>                 reg = <0x12060000 0xB10>, <0x12070000 0xB10>;
+>                 #clock-cells = <1>;
+> 
+>                 assigned-clocks = <&cmu CLK_FOUT_ISP_PLL>;
+>                 assigned-clock-rates = <300000000>;
+>         };
+
+This is a different problem, this is a clock controller with multiple
+sets of registers that are all different. In case of the cmu, it seems
+that they are all the same, you just have multiple copies at different
+locations, and they are connected to different devices.
+
+	Arnd
