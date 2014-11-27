@@ -1,46 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751591AbaK0OVr (ORCPT <rfc822;w@1wt.eu>);
+	id S1751819AbaK0OVu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 09:21:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44437 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552AbaK0OVr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Nov 2014 09:21:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48592 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751021AbaK0OVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 09:21:43 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <12076.1417097856@warthog.procyon.org.uk>
-References: <12076.1417097856@warthog.procyon.org.uk> <545A6464.5070702@tycho.nsa.gov> <20141105154217.2555.578.stgit@warthog.procyon.org.uk> <20141105154318.2555.7052.stgit@warthog.procyon.org.uk> <545A53A9.4060009@tycho.nsa.gov>
-Cc: dhowells@redhat.com, Stephen Smalley <sds@tycho.nsa.gov>,
-        linux-unionfs@vger.kernel.org, selinux@tycho.nsa.gov,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/7] SELinux: The copy-up operation must have read permission on the lower file
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <12172.1417098096.1@warthog.procyon.org.uk>
-Date: Thu, 27 Nov 2014 14:21:36 +0000
-Message-ID: <12173.1417098096@warthog.procyon.org.uk>
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <201411271506.20457@pali>
+References: <201411271506.20457@pali>
+Date: Thu, 27 Nov 2014 22:21:44 +0800
+Message-ID: <CACVXFVMr8jH1ZzyPNG91VDK8DuVjQsHn9ks62sSNjOfUnNsURQ@mail.gmail.com>
+Subject: Re: wl1251: NVS firmware data
+From: Ming Lei <ming.lei@canonical.com>
+To: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Grazvydas Ignotas <notasas@gmail.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
+        Sebastian Reichel <sre@ring0.de>,
+        David Gnedt <david.gnedt@davizone.at>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> wrote:
+On Thu, Nov 27, 2014 at 10:06 PM, Pali Rohár <pali.rohar@gmail.com> wrote:
+> Hello,
+>
+> wifi driver wl1251 needs NVS calibration data for working. These
+> data are loaded by driver via request_firmware from userspace
+> file: ti-connectivity/wl1251-nvs.bin. In linux-fimrware git tree
+> there is generic wl1251-nvs.bin file which is used by default.
+>
+> Driver wl1251 is used on Nokia N900 cellphone for its wifi chip.
+> This cellphone has one special MTD partition (called CAL) where
+> are stored some configuration data in special binary (key-value)
+> format. And there is also stored correct calibration data for
+> specific device (each device has different data). It is preferred
+> to use those data instead generic one (provided by linux-firmware
+> git tree).
+>
+> Now my question is: How to correctly load calibration data from
+> special Nokia N900 CAL partition into wl1251 kernel driver?
 
-> > This means that it expects to trigger those capability checks as part of
-> > its subsequent actions.  Raising those capabilities temporarily in its
-> > credentials will pass the capability module checks but won't address the
-> > corresponding SELinux checks (both capability and file-based), so you'll
-> > end up triggering an entire set of checks against the current process'
-> > credentials.  This same pattern is repeated elsewhere in overlayfs.
-> 
-> Hmmm...  Yes.  I need to check whether the lower file can be read *before*
-> overriding the creds.
+It is better to let user space script handle the request.
 
-Actually, I think ovl_permission() does sufficient checks on the lower inode
-by calling __inode_permission() upon it.
+>
+> By default kernel reads ti-connectivity/wl1251-nvs.bin file from
+> VFS if exists without any userspace support. If it fails then it
+> fallback to loading via udev.
 
-David
+You can remove or rename this file so that loading from user space
+can be triggered.
+
+>
+> Reading correct data from CAL partition is not easy (structure is
+> difficult), but there is open source program which can parse CAL
+> partition and write NVS data to stdout. So adding this CAL parser
+> into kernel is not good idea (program is GPLv3+ code --
+> incompatible with kernel).
+>
+> So how to solve this problem? How to load correct NVS data from
+> CAL partition into wl1251 driver?
+>
+> It is possible to tell kernel to use some helper userspace
+> program for loading data and if it fails then fallback to direct
+> loading? E.g first try to use model specific data and if it fails
+> for some reasons then fallback to reading genetic data.
+
+One solution is to introduce request_firmware_user() and let
+this API handle your case, but CONFIG_FW_LOADER_USER_HELPER
+has to be enabled.
+
+If request_firmware_user() fails, request_firmware_direct() can be
+tried further.
+
+Thanks,
+Ming Lei
