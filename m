@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751304AbaK0WZV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 17:25:21 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:57113 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751040AbaK0WZT (ORCPT
+	id S1751156AbaK0WaS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 17:30:18 -0500
+Received: from www.linutronix.de ([62.245.132.108]:59073 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750938AbaK0WaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 17:25:19 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        USB development list <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] USB / PM: Drop CONFIG_PM_RUNTIME from the USB core
-Date: Thu, 27 Nov 2014 23:46:36 +0100
-Message-ID: <3884361.r5D4k6hhsp@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1736553.sGOphfkJmV@vostro.rjw.lan>
-References: <1736553.sGOphfkJmV@vostro.rjw.lan>
+	Thu, 27 Nov 2014 17:30:17 -0500
+Date: Thu, 27 Nov 2014 23:30:12 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <ak@linux.intel.com>
+cc: Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        zheng.z.yan@intel.com, peterz@infradead.org, eranian@google.com
+Subject: Re: perf/x86/intel/uncore: Add Haswell-EP uncore support
+In-Reply-To: <20141127194910.GO10824@tassilo.jf.intel.com>
+Message-ID: <alpine.DEB.2.11.1411272320580.3961@nanos>
+References: <20141013152950.11DE26610F1@gitolite.kernel.org> <20141125232050.GA9408@redhat.com> <20141126141422.GM10824@tassilo.jf.intel.com> <20141126152646.GA7984@redhat.com> <20141127194910.GO10824@tassilo.jf.intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 27, 2014 11:45:15 PM Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Thu, 27 Nov 2014, Andi Kleen wrote:
+> >  > > I'm wondering if these should be just wrmsr's instead of wrmsrl's.
+> >  > 
+> >  > Can we just shut up coverity please?
+> > 
+> > I can manually dismiss them, I don't think the checker has the
+> > information to determine this for itself.
 > 
-> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-> selected) PM_RUNTIME is always set if PM is set, so quite a few
-> #ifdef blocks depending on CONFIG_PM_RUNTIME may now be changed to
-> depend on CONFIG_PM (or even dropped in some cases).
+> I suspect my out of line MSR patchkit would fix the warning
+> as a side effect, because there would be a function call
+> inbetween and the function always gets full u64.
 > 
-> Replace CONFIG_PM_RUNTIME with CONFIG_PM in the USB core code.
+> https://lkml.org/lkml/2014/10/10/376
+> 
+> So far it hasn't been reviewed. I'll keep reposting.
 
-Forgot to say, commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-selected) is only in linux-next (via linux-pm) at the moment.
+And if you do so, can you please add a proper 0/n cover letter which
+explains the scope of the series. I'm tired of wading through N
+patches to figure out whether this is something I should care of or
+not.
 
-Rafael
+Thanks,
 
+	tglx
