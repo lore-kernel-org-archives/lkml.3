@@ -1,332 +1,396 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317AbaK0Ki4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 05:38:56 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:64567 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752633AbaK0Kix (ORCPT
+	id S1754643AbaK0Klo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 05:41:44 -0500
+Received: from TYO201.gate.nec.co.jp ([210.143.35.51]:49382 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754378AbaK0Kkh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 05:38:53 -0500
-Date: Thu, 27 Nov 2014 11:42:31 +0100
-From: Quentin Lambert <lambert.quentin@gmail.com>
-To: Thomas Winischhofer <thomas@winischhofer.net>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: sis: sis_main.c: converting relevant int to
- bool
-Message-ID: <20141127104231.GA5500@wrath>
+	Thu, 27 Nov 2014 05:40:37 -0500
+From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+To: "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+CC: "Choi, Sy Jong" <sy.jong.choi@intel.com>,
+        Hayato Momma <h-momma@ce.jp.nec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: [PATCH] ixgbe, ixgbevf: Add new mbox API to enable MC promiscuous
+ mode
+Thread-Topic: [PATCH] ixgbe, ixgbevf: Add new mbox API to enable MC
+ promiscuous mode
+Thread-Index: AdAKLemKU6gS19eSQW+mtaeIciEhog==
+Date: Thu, 27 Nov 2014 10:39:54 +0000
+Message-ID: <7F861DC0615E0C47A872E6F3C5FCDDBD05DBFDAD@BPXM14GP.gisp.nec.co.jp>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.205.5.123]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert int variables and functions to boolean when
-relevant. The eligible cases were found using Coccinelle.
+From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
 
-A simplified version of the semantic patch used to find
-candidate is presented below :
-@r exists@
-identifier f;
-local idexpression int x;
-identifier xname;
-@@
+The limitation of the number of multicast address for VF is not enough
+for the large scale server with SR-IOV feature.
+IPv6 requires the multicast MAC address for each IP address to handle
+the Neighbor Solicitation message.
+We couldn't assign over 30 IPv6 addresses to a single VF interface.
 
-f(...) {
-...when any
-(
-  x@xname = 1;
-|
-  x@xname = 0;
-)
-...when any
-}
+The easy way to solve this is enabling multicast promiscuous mode.
+It is good to have a functionality to enable multicast promiscuous mode
+for each VF from VF driver.
 
-@bad exists@
-identifier r.f;
-local idexpression int r.x
-expression e1 != {0, 1}, e2;
-@@
+This patch introduces the new mbox API, IXGBE_VF_SET_MC_PROMISC, to
+enable/disable multicast promiscuous mode in VF. If multicast promiscuous
+mode is enabled the VF can receive all multicast packets.
 
-f(...) {
-...when any
-(
-  x = e1;
-|
-  x + e2
-)
-...when any
-}
+With this patch, the ixgbevf driver automatically enable multicast
+promiscuous mode when the number of multicast addresses is over than 30
+if possible.
 
-@depends on !bad@
-identifier r.f;
-local idexpression int r.x;
-identifier r.xname;
-@@
+This also bump the API version up to 1.2 to check whether the API,
+IXGBE_VF_SET_MC_PROMISC is available.
 
-f(...) {
-...
-++ bool xname;
-- int xname;
-<...
-(
-  x =
-- 1;
-+ true;
-|
-  x =
-- -1;
-+ false;
-)
-...>
-
-}
-
-Signed-off-by: Quentin Lambert <lambert.quentin@gmail.com>
+Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+CC: Choi, Sy Jong <sy.jong.choi@intel.com>
+Reviewed-by: Hayato Momma <h-momma@ce.jp.nec.com>
 ---
- drivers/video/fbdev/sis/sis_main.c | 64 ++++++++++++++++++++------------------
- 1 file changed, 33 insertions(+), 31 deletions(-)
+ drivers/net/ethernet/intel/ixgbe/ixgbe.h          |  1 +
+ drivers/net/ethernet/intel/ixgbe/ixgbe_mbx.h      |  4 ++
+ drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c    | 80 +++++++++++++++++++++++
+ drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c | 13 +++-
+ drivers/net/ethernet/intel/ixgbevf/mbx.h          |  4 ++
+ drivers/net/ethernet/intel/ixgbevf/vf.c           | 29 +++++++-
+ drivers/net/ethernet/intel/ixgbevf/vf.h           |  1 +
+ 7 files changed, 130 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/video/fbdev/sis/sis_main.c b/drivers/video/fbdev/sis/sis_main.c
-index e5d11b1..5884846 100644
---- a/drivers/video/fbdev/sis/sis_main.c
-+++ b/drivers/video/fbdev/sis/sis_main.c
-@@ -108,7 +108,8 @@ sisfb_setdefaultparms(void)
- 
- static void sisfb_search_vesamode(unsigned int vesamode, bool quiet)
- {
--	int i = 0, j = 0;
-+	bool j = false;
-+	int i = 0;
- 
- 	/* We don't know the hardware specs yet and there is no ivideo */
- 
-@@ -137,7 +138,7 @@ static void sisfb_search_vesamode(unsigned int vesamode, bool quiet)
- 					continue;
- 			}
- 			sisfb_mode_idx = i - 1;
--			j = 1;
-+			j = true;
- 			break;
- 		}
- 	}
-@@ -1185,7 +1186,8 @@ sisfb_do_set_var(struct fb_var_screeninfo *var, int isactive, struct fb_info *in
- 	struct sis_video_info *ivideo = (struct sis_video_info *)info->par;
- 	unsigned int htotal = 0, vtotal = 0;
- 	unsigned int drate = 0, hrate = 0;
--	int found_mode = 0, ret;
-+	bool found_mode = false;
-+	int ret;
- 	int old_mode;
- 	u32 pixclock;
- 
-@@ -1228,7 +1230,7 @@ sisfb_do_set_var(struct fb_var_screeninfo *var, int isactive, struct fb_info *in
- 		    (sisbios_mode[ivideo->sisfb_mode_idx].yres == var->yres) &&
- 		    (sisbios_mode[ivideo->sisfb_mode_idx].bpp == var->bits_per_pixel)) {
- 			ivideo->mode_no = sisbios_mode[ivideo->sisfb_mode_idx].mode_no[ivideo->mni];
--			found_mode = 1;
-+			found_mode = true;
- 			break;
- 		}
- 		ivideo->sisfb_mode_idx++;
-@@ -1431,7 +1433,7 @@ sisfb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
- 	struct sis_video_info *ivideo = (struct sis_video_info *)info->par;
- 	unsigned int htotal = 0, vtotal = 0, myrateindex = 0;
- 	unsigned int drate = 0, hrate = 0, maxyres;
--	int found_mode = 0;
-+	bool found_mode = false;
- 	int refresh_rate, search_idx, tidx;
- 	bool recalc_clock = false;
- 	u32 pixclock;
-@@ -1466,7 +1468,7 @@ sisfb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
- 		    (sisbios_mode[search_idx].bpp == var->bits_per_pixel)) {
- 			if((tidx = sisfb_validate_mode(ivideo, search_idx,
- 						ivideo->currentvbflags)) > 0) {
--				found_mode = 1;
-+				found_mode = true;
- 				search_idx = tidx;
- 				break;
- 			}
-@@ -1482,7 +1484,7 @@ sisfb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
- 		       (var->bits_per_pixel == sisbios_mode[search_idx].bpp) ) {
- 			if((tidx = sisfb_validate_mode(ivideo,search_idx,
- 						ivideo->currentvbflags)) > 0) {
--				found_mode = 1;
-+				found_mode = true;
- 				search_idx = tidx;
- 				break;
- 			}
-@@ -3224,7 +3226,7 @@ sisfb_poh_allocate(struct SIS_HEAP *memheap, u32 size)
- {
- 	struct SIS_OH	*pohThis;
- 	struct SIS_OH	*pohRoot;
--	int		bAllocated = 0;
-+	bool            bAllocated = false;
- 
- 	if(size > memheap->max_freesize) {
- 		DPRINTK("sisfb: Can't allocate %dk video memory\n",
-@@ -3236,7 +3238,7 @@ sisfb_poh_allocate(struct SIS_HEAP *memheap, u32 size)
- 
- 	while(pohThis != &memheap->oh_free) {
- 		if(size <= pohThis->size) {
--			bAllocated = 1;
-+			bAllocated = true;
- 			break;
- 		}
- 		pohThis = pohThis->poh_next;
-@@ -3299,13 +3301,13 @@ sisfb_poh_free(struct SIS_HEAP *memheap, u32 base)
- 	struct SIS_OH *poh_next;
- 	u32    ulUpper;
- 	u32    ulLower;
--	int    foundNode = 0;
-+	bool   foundNode = false;
- 
- 	poh_freed = memheap->oh_used.poh_next;
- 
- 	while(poh_freed != &memheap->oh_used) {
- 		if(poh_freed->offset == base) {
--			foundNode = 1;
-+			foundNode = true;
- 			break;
- 		}
- 
-@@ -3892,7 +3894,7 @@ sisfb_reset_mode(struct sis_video_info *ivideo)
- static void
- sisfb_handle_command(struct sis_video_info *ivideo, struct sisfb_cmd *sisfb_command)
- {
--	int mycrt1off;
-+	bool mycrt1off;
- 
- 	switch(sisfb_command->sisfb_cmd) {
- 	case SISFB_CMD_GETVBFLAGS:
-@@ -3919,7 +3921,7 @@ sisfb_handle_command(struct sis_video_info *ivideo, struct sisfb_cmd *sisfb_comm
- 			sisfb_command->sisfb_result[0] = SISFB_CMD_ERR_NOCRT2;
- 		} else {
- 			sisfb_command->sisfb_result[0] = SISFB_CMD_ERR_OK;
--			mycrt1off = sisfb_command->sisfb_arg[0] ? 0 : 1;
-+			mycrt1off = sisfb_command->sisfb_arg[0] ? false : true;
- 			if( ((ivideo->currentvbflags & VB_DISPTYPE_CRT1) && mycrt1off) ||
- 			    ((!(ivideo->currentvbflags & VB_DISPTYPE_CRT1)) && !mycrt1off) ) {
- 				ivideo->sisfb_crt1off = mycrt1off;
-@@ -4037,32 +4039,32 @@ static int __init sisfb_setup(char *options)
- }
- #endif
- 
--static int sisfb_check_rom(void __iomem *rom_base,
-+static bool sisfb_check_rom(void __iomem *rom_base,
- 			   struct sis_video_info *ivideo)
- {
- 	void __iomem *rom;
- 	int romptr;
- 
- 	if((readb(rom_base) != 0x55) || (readb(rom_base + 1) != 0xaa))
--		return 0;
-+		return false;
- 
- 	romptr = (readb(rom_base + 0x18) | (readb(rom_base + 0x19) << 8));
- 	if(romptr > (0x10000 - 8))
--		return 0;
-+		return false;
- 
- 	rom = rom_base + romptr;
- 
- 	if((readb(rom)     != 'P') || (readb(rom + 1) != 'C') ||
- 	   (readb(rom + 2) != 'I') || (readb(rom + 3) != 'R'))
--		return 0;
-+		return false;
- 
- 	if((readb(rom + 4) | (readb(rom + 5) << 8)) != ivideo->chip_vendor)
--		return 0;
-+		return false;
- 
- 	if((readb(rom + 6) | (readb(rom + 7) << 8)) != ivideo->chip_id)
--		return 0;
-+		return false;
- 
--	return 1;
-+	return true;
- }
- 
- static unsigned char *sisfb_find_rom(struct pci_dev *pdev)
-@@ -4215,7 +4217,7 @@ static const unsigned short SiS_DRAMType[17][5] = {
- 	{0x09,0x08,0x01,0x01,0x00}
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe.h b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
+index 5032a60..2a5e3d3 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe.h
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
+@@ -144,6 +144,7 @@ struct vf_data_storage {
+ 	u16 vlans_enabled;
+ 	bool clear_to_send;
+ 	bool pf_set_mac;
++	bool vf_mc_promisc;
+ 	u16 pf_vlan; /* When set, guest VLAN config not allowed. */
+ 	u16 pf_qos;
+ 	u16 tx_rate;
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_mbx.h b/drivers/net/ethernet/intel/ixgbe/ixgbe_mbx.h
+index a5cb755..2963557 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_mbx.h
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_mbx.h
+@@ -73,6 +73,7 @@ enum ixgbe_pfvf_api_rev {
+ 	ixgbe_mbox_api_10,	/* API version 1.0, linux/freebsd VF driver */
+ 	ixgbe_mbox_api_20,	/* API version 2.0, solaris Phase1 VF driver */
+ 	ixgbe_mbox_api_11,	/* API version 1.1, linux/freebsd VF driver */
++	ixgbe_mbox_api_12,	/* API version 1.2, linux/freebsd VF driver */
+ 	/* This value should always be last */
+ 	ixgbe_mbox_api_unknown,	/* indicates that API version is not known */
  };
+@@ -91,6 +92,9 @@ enum ixgbe_pfvf_api_rev {
+ /* mailbox API, version 1.1 VF requests */
+ #define IXGBE_VF_GET_QUEUES	0x09 /* get queue configuration */
  
--static int sisfb_post_300_rwtest(struct sis_video_info *ivideo, int iteration,
-+static bool sisfb_post_300_rwtest(struct sis_video_info *ivideo, int iteration,
- 				 int buswidth, int PseudoRankCapacity,
- 				 int PseudoAdrPinCount, unsigned int mapsize)
++/* mailbox API, version 1.2 VF requests */
++#define IXGBE_VF_SET_MC_PROMISC	0x0a /* VF requests PF to set MC promiscuous */
++
+ /* GET_QUEUES return data indices within the mailbox */
+ #define IXGBE_VF_TX_QUEUES	1	/* number of Tx queues supported */
+ #define IXGBE_VF_RX_QUEUES	2	/* number of Rx queues supported */
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c
+index 01f7081..427993c 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c
+@@ -108,6 +108,10 @@ static int __ixgbe_enable_sriov(struct ixgbe_adapter *adapter)
+ 		adapter->flags2 &= ~(IXGBE_FLAG2_RSC_CAPABLE |
+ 				     IXGBE_FLAG2_RSC_ENABLED);
+ 
++		/* Disable multicast promiscuous mode of each VF at first */
++		for (i = 0; i < adapter->num_vfs; i++)
++			adapter->vfinfo[i].vf_mc_promisc = false;
++
+ 		/* enable spoof checking for all VFs */
+ 		for (i = 0; i < adapter->num_vfs; i++)
+ 			adapter->vfinfo[i].spoofchk_enabled = true;
+@@ -310,6 +314,46 @@ int ixgbe_pci_sriov_configure(struct pci_dev *dev, int num_vfs)
+ 		return ixgbe_pci_sriov_enable(dev, num_vfs);
+ }
+ 
++static int ixgbe_enable_vf_mc_promisc(struct ixgbe_adapter * adapter, u32 vf)
++{
++	struct ixgbe_hw *hw;
++	u32 vmolr;
++
++	if (adapter->vfinfo[vf].vf_mc_promisc)
++		return 0;
++
++	hw = &adapter->hw;
++	vmolr = IXGBE_READ_REG(hw, IXGBE_VMOLR(vf));
++
++	e_info(drv, "VF %u: enabling multicast promiscuous\n", vf);
++
++	vmolr |= IXGBE_VMOLR_MPE;
++
++	IXGBE_WRITE_REG(hw, IXGBE_VMOLR(vf), vmolr);
++
++	return 0;
++}
++
++static int ixgbe_disable_vf_mc_promisc(struct ixgbe_adapter * adapter, u32 vf)
++{
++	struct ixgbe_hw *hw;
++	u32 vmolr;
++
++	if (!adapter->vfinfo[vf].vf_mc_promisc)
++		return 0;
++
++	hw = &adapter->hw;
++	vmolr = IXGBE_READ_REG(hw, IXGBE_VMOLR(vf));
++
++	e_info(drv, "VF %u: disabling multicast promiscuous\n", vf);
++
++	vmolr &= ~IXGBE_VMOLR_MPE;
++
++	IXGBE_WRITE_REG(hw, IXGBE_VMOLR(vf), vmolr);
++
++	return 0;
++}
++
+ static int ixgbe_set_vf_multicasts(struct ixgbe_adapter *adapter,
+ 				   u32 *msgbuf, u32 vf)
  {
-@@ -4275,10 +4277,10 @@ static int sisfb_post_300_rwtest(struct sis_video_info *ivideo, int iteration,
+@@ -324,6 +368,9 @@ static int ixgbe_set_vf_multicasts(struct ixgbe_adapter *adapter,
+ 	u32 mta_reg;
+ 	u32 vmolr = IXGBE_READ_REG(hw, IXGBE_VMOLR(vf));
  
- 		/* Read data */
- 		if(readw(FBAddr + BankNumHigh + PhysicalAdrHigh) == PhysicalAdrHigh)
--			return 1;
-+			return true;
++	/* Disable multicast promiscuous first */
++	ixgbe_disable_vf_mc_promisc(adapter, vf);
++
+ 	/* only so many hash values supported */
+ 	entries = min(entries, IXGBE_MAX_VF_MC_ENTRIES);
+ 
+@@ -426,6 +473,7 @@ static s32 ixgbe_set_vf_lpe(struct ixgbe_adapter *adapter, u32 *msgbuf, u32 vf)
+ #endif /* CONFIG_FCOE */
+ 		switch (adapter->vfinfo[vf].vf_api) {
+ 		case ixgbe_mbox_api_11:
++		case ixgbe_mbox_api_12:
+ 			/*
+ 			 * Version 1.1 supports jumbo frames on VFs if PF has
+ 			 * jumbo frames enabled which means legacy VFs are
+@@ -696,6 +744,9 @@ static int ixgbe_vf_reset_msg(struct ixgbe_adapter *adapter, u32 vf)
+ 		IXGBE_WRITE_REG(hw, IXGBE_PVFTDWBALn(q_per_pool, vf, i), 0);
  	}
  
--	return 0;
-+	return false;
++	/* Disable multicast promiscuous at reset */
++	ixgbe_disable_vf_mc_promisc(adapter, vf);
++
+ 	/* reply to reset with ack and vf mac address */
+ 	msgbuf[0] = IXGBE_VF_RESET;
+ 	if (!is_zero_ether_addr(vf_mac)) {
+@@ -884,6 +935,12 @@ static int ixgbe_negotiate_vf_api(struct ixgbe_adapter *adapter,
+ 	switch (api) {
+ 	case ixgbe_mbox_api_10:
+ 	case ixgbe_mbox_api_11:
++	case ixgbe_mbox_api_12:
++		e_info(drv, "VF %d requested api_version %s\n", vf,
++			(api == ixgbe_mbox_api_12) ? "ixgbe_mbox_api_12" :
++			(api == ixgbe_mbox_api_11) ? "ixgbe_mbox_api_11" :
++			(api == ixgbe_mbox_api_10) ? "ixgbe_mbox_api_10" :
++			"unknown");
+ 		adapter->vfinfo[vf].vf_api = api;
+ 		return 0;
+ 	default:
+@@ -907,6 +964,7 @@ static int ixgbe_get_vf_queues(struct ixgbe_adapter *adapter,
+ 	switch (adapter->vfinfo[vf].vf_api) {
+ 	case ixgbe_mbox_api_20:
+ 	case ixgbe_mbox_api_11:
++	case ixgbe_mbox_api_12:
+ 		break;
+ 	default:
+ 		return -1;
+@@ -934,6 +992,25 @@ static int ixgbe_get_vf_queues(struct ixgbe_adapter *adapter,
+ 	return 0;
  }
  
- static void sisfb_post_300_ramsize(struct pci_dev *pdev, unsigned int mapsize)
-@@ -4539,18 +4541,18 @@ static void sisfb_post_xgi_delay(struct sis_video_info *ivideo, int delay)
- 	}
- }
- 
--static int sisfb_find_host_bridge(struct sis_video_info *ivideo,
-+static bool sisfb_find_host_bridge(struct sis_video_info *ivideo,
- 				  struct pci_dev *mypdev,
- 				  unsigned short pcivendor)
++static int ixgbe_set_vf_mc_promisc(struct ixgbe_adapter *adapter,
++				   u32 *msgbuf, u32 vf)
++{
++	bool enable = !!msgbuf[1];	/* msgbuf contains the flag to enable */
++
++	switch (adapter->vfinfo[vf].vf_api) {
++	case ixgbe_mbox_api_12:
++		break;
++	default:
++		return -1;
++	}
++
++	if (enable)
++		return ixgbe_enable_vf_mc_promisc(adapter, vf);
++	else
++		return ixgbe_disable_vf_mc_promisc(adapter, vf);
++}
++
++
+ static int ixgbe_rcv_msg_from_vf(struct ixgbe_adapter *adapter, u32 vf)
  {
- 	struct pci_dev *pdev = NULL;
- 	unsigned short temp;
--	int ret = 0;
-+	bool ret = false;
- 
- 	while((pdev = pci_get_class(PCI_CLASS_BRIDGE_HOST, pdev))) {
- 		temp = pdev->vendor;
- 		if(temp == pcivendor) {
--			ret = 1;
-+			ret = true;
- 			pci_dev_put(pdev);
- 			break;
- 		}
-@@ -4559,7 +4561,7 @@ static int sisfb_find_host_bridge(struct sis_video_info *ivideo,
- 	return ret;
- }
- 
--static int sisfb_post_xgi_rwtest(struct sis_video_info *ivideo, int starta,
-+static bool sisfb_post_xgi_rwtest(struct sis_video_info *ivideo, int starta,
- 				 unsigned int enda, unsigned int mapsize)
+ 	u32 mbx_size = IXGBE_VFMAILBOX_SIZE;
+@@ -990,6 +1067,9 @@ static int ixgbe_rcv_msg_from_vf(struct ixgbe_adapter *adapter, u32 vf)
+ 	case IXGBE_VF_GET_QUEUES:
+ 		retval = ixgbe_get_vf_queues(adapter, msgbuf, vf);
+ 		break;
++	case IXGBE_VF_SET_MC_PROMISC:
++		retval = ixgbe_set_vf_mc_promisc(adapter, msgbuf, vf);
++		break;
+ 	default:
+ 		e_err(drv, "Unhandled Msg %8.8x\n", msgbuf[0]);
+ 		retval = IXGBE_ERR_MBX;
+diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+index 030a219..3615bdb 100644
+--- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
++++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+@@ -1635,7 +1635,8 @@ static void ixgbevf_init_last_counter_stats(struct ixgbevf_adapter *adapter)
+ static void ixgbevf_negotiate_api(struct ixgbevf_adapter *adapter)
  {
- 	unsigned int pos;
-@@ -4576,18 +4578,18 @@ static int sisfb_post_xgi_rwtest(struct sis_video_info *ivideo, int starta,
- 	sisfb_post_xgi_delay(ivideo, 150);
- 
- 	if(readl(ivideo->video_vbase) != 0)
--		return 0;
-+		return false;
- 
- 	for(i = starta; i <= enda; i++) {
- 		pos = 1 << i;
- 		if(pos < mapsize) {
- 			if(readl(ivideo->video_vbase + pos) != pos)
--				return 0;
-+				return false;
- 		} else
--			return 0;
-+			return false;
+ 	struct ixgbe_hw *hw = &adapter->hw;
+-	int api[] = { ixgbe_mbox_api_11,
++	int api[] = { ixgbe_mbox_api_12,
++		      ixgbe_mbox_api_11,
+ 		      ixgbe_mbox_api_10,
+ 		      ixgbe_mbox_api_unknown };
+ 	int err = 0, idx = 0;
+@@ -1649,6 +1650,12 @@ static void ixgbevf_negotiate_api(struct ixgbevf_adapter *adapter)
+ 		idx++;
  	}
  
--	return 1;
-+	return true;
++	dev_info(&adapter->pdev->dev, "mbox api_version = %s\n",
++		(hw->api_version == ixgbe_mbox_api_12) ? "ixgbe_mbox_api_12" :
++		(hw->api_version == ixgbe_mbox_api_11) ? "ixgbe_mbox_api_11" :
++		(hw->api_version == ixgbe_mbox_api_10) ? "ixgbe_mbox_api_10" :
++		"unknown");
++
+ 	spin_unlock_bh(&adapter->mbx_lock);
  }
  
- static int sisfb_post_xgi_ramsize(struct sis_video_info *ivideo)
+@@ -1827,6 +1834,9 @@ void ixgbevf_down(struct ixgbevf_adapter *adapter)
+ 
+ 	netif_carrier_off(netdev);
+ 
++	/* drop multicast promiscuous mode flag */
++	adapter->hw.mac.mc_promisc = false;
++
+ 	if (!pci_channel_offline(adapter->pdev))
+ 		ixgbevf_reset(adapter);
+ 
+@@ -3279,6 +3289,7 @@ static int ixgbevf_change_mtu(struct net_device *netdev, int new_mtu)
+ 
+ 	switch (adapter->hw.api_version) {
+ 	case ixgbe_mbox_api_11:
++	case ixgbe_mbox_api_12:
+ 		max_possible_frame = IXGBE_MAX_JUMBO_FRAME_SIZE;
+ 		break;
+ 	default:
+diff --git a/drivers/net/ethernet/intel/ixgbevf/mbx.h b/drivers/net/ethernet/intel/ixgbevf/mbx.h
+index 0bc3005..62ef0d8 100644
+--- a/drivers/net/ethernet/intel/ixgbevf/mbx.h
++++ b/drivers/net/ethernet/intel/ixgbevf/mbx.h
+@@ -86,6 +86,7 @@ enum ixgbe_pfvf_api_rev {
+ 	ixgbe_mbox_api_10,	/* API version 1.0, linux/freebsd VF driver */
+ 	ixgbe_mbox_api_20,	/* API version 2.0, solaris Phase1 VF driver */
+ 	ixgbe_mbox_api_11,	/* API version 1.1, linux/freebsd VF driver */
++	ixgbe_mbox_api_12,	/* API version 1.2, linux/freebsd VF driver */
+ 	/* This value should always be last */
+ 	ixgbe_mbox_api_unknown,	/* indicates that API version is not known */
+ };
+@@ -104,6 +105,9 @@ enum ixgbe_pfvf_api_rev {
+ /* mailbox API, version 1.1 VF requests */
+ #define IXGBE_VF_GET_QUEUE	0x09 /* get queue configuration */
+ 
++/* mailbox API, version 1.2 VF requests */
++#define IXGBE_VF_SET_MC_PROMISC	0x0a /* VF requests PF to set MC promiscuous */
++
+ /* GET_QUEUES return data indices within the mailbox */
+ #define IXGBE_VF_TX_QUEUES	1	/* number of Tx queues supported */
+ #define IXGBE_VF_RX_QUEUES	2	/* number of Rx queues supported */
+diff --git a/drivers/net/ethernet/intel/ixgbevf/vf.c b/drivers/net/ethernet/intel/ixgbevf/vf.c
+index 9cddd56..43c1ee3 100644
+--- a/drivers/net/ethernet/intel/ixgbevf/vf.c
++++ b/drivers/net/ethernet/intel/ixgbevf/vf.c
+@@ -120,6 +120,9 @@ static s32 ixgbevf_reset_hw_vf(struct ixgbe_hw *hw)
+ 	memcpy(hw->mac.perm_addr, addr, ETH_ALEN);
+ 	hw->mac.mc_filter_type = msgbuf[IXGBE_VF_MC_TYPE_WORD];
+ 
++	/* after reset, MC promiscuous mode is disabled */
++	hw->mac.mc_promisc = false;
++
+ 	return 0;
+ }
+ 
+@@ -327,8 +330,29 @@ static s32 ixgbevf_update_mc_addr_list_vf(struct ixgbe_hw *hw,
+ 	 */
+ 
+ 	cnt = netdev_mc_count(netdev);
+-	if (cnt > 30)
++	if (cnt > 30) {
++		/*
++		 * If the API has the capability to handle MC promiscuous
++		 * mode, turn it on.
++		 */
++		if (hw->api_version == ixgbe_mbox_api_12) {
++			if (!hw->mac.mc_promisc) {
++				struct ixgbevf_adapter *adapter = hw->back;
++
++				dev_info(&adapter->pdev->dev, "Request MC PROMISC\n");
++
++				/* enabling multicast promiscuous */
++				msgbuf[0] = IXGBE_VF_SET_MC_PROMISC;
++				msgbuf[1] = 1;
++				ixgbevf_write_msg_read_ack(hw, msgbuf, 2);
++
++				hw->mac.mc_promisc = true;
++			}
++
++			return 0;
++		}
+ 		cnt = 30;
++	}
+ 	msgbuf[0] = IXGBE_VF_SET_MULTICAST;
+ 	msgbuf[0] |= cnt << IXGBE_VT_MSGINFO_SHIFT;
+ 
+@@ -344,6 +368,8 @@ static s32 ixgbevf_update_mc_addr_list_vf(struct ixgbe_hw *hw,
+ 
+ 	ixgbevf_write_msg_read_ack(hw, msgbuf, IXGBE_VFMAILBOX_SIZE);
+ 
++	hw->mac.mc_promisc = false;
++
+ 	return 0;
+ }
+ 
+@@ -545,6 +571,7 @@ int ixgbevf_get_queues(struct ixgbe_hw *hw, unsigned int *num_tcs,
+ 	/* do nothing if API doesn't support ixgbevf_get_queues */
+ 	switch (hw->api_version) {
+ 	case ixgbe_mbox_api_11:
++	case ixgbe_mbox_api_12:
+ 		break;
+ 	default:
+ 		return 0;
+diff --git a/drivers/net/ethernet/intel/ixgbevf/vf.h b/drivers/net/ethernet/intel/ixgbevf/vf.h
+index aa8cc8d..59d8cf3 100644
+--- a/drivers/net/ethernet/intel/ixgbevf/vf.h
++++ b/drivers/net/ethernet/intel/ixgbevf/vf.h
+@@ -85,6 +85,7 @@ struct ixgbe_mac_info {
+ 	enum ixgbe_mac_type type;
+ 
+ 	s32  mc_filter_type;
++	bool mc_promisc;
+ 
+ 	bool get_link_status;
+ 	u32  max_tx_queues;
 -- 
-1.9.1
+1.9.0
 
