@@ -1,111 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982AbaK0LWt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 06:22:49 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:31361 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754958AbaK0LWq (ORCPT
+	id S1754878AbaK0LWW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 06:22:22 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:10326 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754670AbaK0LVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 06:22:46 -0500
-X-AuditID: cbfee691-f79b86d000004a5a-40-54770982d054
-Message-id: <54770982.3080502@samsung.com>
-Date: Thu, 27 Nov 2014 20:22:42 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        Mark Rutland <Mark.Rutland@arm.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        "olof@lixom.net" <olof@lixom.net>, Will Deacon <Will.Deacon@arm.com>,
-        "s.nawrocki@samsung.com" <s.nawrocki@samsung.com>,
-        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "inki.dae@samsung.com" <inki.dae@samsung.com>,
-        "chanho61.park@samsung.com" <chanho61.park@samsung.com>,
-        "geunsik.lim@samsung.com" <geunsik.lim@samsung.com>,
-        "sw0312.kim@samsung.com" <sw0312.kim@samsung.com>,
-        "jh80.chung@samsung.com" <jh80.chung@samsung.com>,
-        "a.kesavan@samsung.com" <a.kesavan@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 15/19] arm64: exynos5433: Enable ARMv8-based Exynos5433 SoC
- support
-References: <1417073716-22997-1-git-send-email-cw00.choi@samsung.com>
- <1417073716-22997-16-git-send-email-cw00.choi@samsung.com>
- <20141127111839.GD11511@e104818-lin.cambridge.arm.com>
-In-reply-to: <20141127111839.GD11511@e104818-lin.cambridge.arm.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsWyRsSkULeJszzEYPFsQ4vHaxYzWfyddIzd
-	4v2yHkaLy/u1LeYfOcdq8WdCK5vFpPsTWCxu/GpjtehdcJXN4mzTG3aLKX+WM1lsenyN1eLy
-	rjlsFjPO72OyWHr9IpPFqeuf2SwOv2lntZgx+SWbxbEZSxgtVu36w2jx8uMJFgdRjzXz1jB6
-	/P41idFj56y77B53ru1h89i8pN7jyokmVo++LasYPT5vkgvgiOKySUnNySxLLdK3S+DKmHt1
-	IWvBWbaKG19lGxjnsXYxcnJICJhIPGv9xQRhi0lcuLeeDcQWEljKKLH4uTZMzd65x1i6GLmA
-	4osYJTpXbGKCcF4zSix8dJ4ZpIpXQEti7fkfYJNYBFQlNr7tAIuzAcX3v7gBNlVUIExi5fQr
-	LBD1ghI/Jt8Ds0UEdCUutE0Bs5kFtnBI7N/uBGILC0RKfN99gx1i2W5Gidf7e4GGcnBwCjhL
-	9P+VhajXkdjfOo0NwpaX2LzmLTNIvYTACQ6Jy1tOsEEcJCDxbfIhFpBeCQFZiU0HmCE+k5Q4
-	uOIGywRGsVlITpqFZOwsJGMXMDKvYhRNLUguKE5KLzLVK07MLS7NS9dLzs/dxAhMDaf/PZu4
-	g/H+AetDjAIcjEo8vBYHykKEWBPLiitzDzGaAl0xkVlKNDkfmIDySuINjc2MLExNTI2NzC3N
-	lMR5daR/BgsJpCeWpGanphakFsUXleakFh9iZOLglGpgnHbNP/+tlNlnsbCsKGW+NgPHZ/Z7
-	J02ZzOPvcELyj+zu6Buf5Zd8Us+ROCarMn+eyUGuacwNvF/+tJmorJvy0OPEq7QV6xT0Nmjf
-	q9/+7KwOyw6RrJfVllHJWW0eN70u7VaPuut+wkwmeOOOl08fzb4fyHnuTO+mxAqNNzzl/I98
-	g8Umb1+4QomlOCPRUIu5qDgRAGB9YiMIAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAKsWRmVeSWpSXmKPExsVy+t9jAd0mzvIQg9vdGhaP1yxmsvg76Ri7
-	xftlPYwWl/drW8w/co7V4s+EVjaLSfcnsFjc+NXGatG74CqbxdmmN+wWU/4sZ7LY9Pgaq8Xl
-	XXPYLGac38dksfT6RSaLU9c/s1kcftPOajFj8ks2i2MzljBarNr1h9Hi5ccTLA6iHmvmrWH0
-	+P1rEqPHzll32T3uXNvD5rF5Sb3HlRNNrB59W1YxenzeJBfAEdXAaJORmpiSWqSQmpecn5KZ
-	l26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkD9JqSQlliTilQKCCxuFhJ3w7ThNAQ
-	N10LmMYIXd+QILgeIwM0kLCGMWPu1YWsBWfZKm58lW1gnMfaxcjJISFgIrF37jEWCFtM4sK9
-	9WxdjFwcQgKLGCU6V2xignBeM0osfHSeGaSKV0BLYu35H0wgNouAqsTGtx1gcTag+P4XN9hA
-	bFGBMImV06+wQNQLSvyYfA/MFhHQlbjQNgXMZhbYwiGxf7sTiC0sECnxffcNdohluxklXu/v
-	BRrKwcEp4CzR/1cWol5HYn/rNDYIW15i85q3zBMYBWYhWTELSdksJGULGJlXMYqmFiQXFCel
-	5xrqFSfmFpfmpesl5+duYgSnnmdSOxhXNlgcYhTgYFTi4bU4UBYixJpYVlyZe4hRgoNZSYSX
-	i7E8RIg3JbGyKrUoP76oNCe1+BCjKTAEJjJLiSbnA9NiXkm8obGJmZGlkbmhhZGxuZI4742b
-	uSFCAumJJanZqakFqUUwfUwcnFINjCsOPl+UmVC67HwWw5Tcw1fPFvIsU2RutfjHYvcsk03v
-	tcflO/YdmUuzzj9gXvXEc2JEpvW0/PeKAhv+f7yw7Fnyypm8b/blzY+Zpb239FOx07Zr1Wk3
-	4zzqlixx8n0cvUqPS7P2TpsC1zTP9/YRXktuiwZqfbBKvDL3idrre6Eznis4GUaZOCixFGck
-	GmoxFxUnAgD05UrpUwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 27 Nov 2014 06:21:16 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-2b-54770929ed85
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene@kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v4 5/7] regulator: max77686: Add GPIO control
+Date: Thu, 27 Nov 2014 12:20:51 +0100
+Message-id: <1417087253-12306-6-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1417087253-12306-1-git-send-email-k.kozlowski@samsung.com>
+References: <1417087253-12306-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnluLIzCtJLcpLzFFi42I5/e/4FV1NzvIQgzt3hC02zljPajH14RM2
+	i/lHzrFavH5haNH/+DWzxdmmN+wW978eZbT4dqWDyWLT42usFpd3zWGzmHF+H5PF2iN32R14
+	PHbOusvusWlVJ5vHnWt72Dw2L6n36NuyitHj8ya5ALYoLpuU1JzMstQifbsEroz3C30KmtQr
+	tpzpYGtg7FboYuTgkBAwkVj5SqKLkRPIFJO4cG89WxcjF4eQwFJGiSkzzzFDOH1MEpu3vmQG
+	qWITMJbYvHwJG4gtIrCCUeL4DUUQm1lgPZPEg21OILawgK3E0ol/WUFsFgFViRMH9jKDLOMV
+	cJfYcMcXYpmcxMljk8FKOAU8JPbeus0CYgsBlex5dYdlAiPvAkaGVYyiqaXJBcVJ6blGesWJ
+	ucWleel6yfm5mxghgfh1B+PSY1aHGAU4GJV4eBlulYUIsSaWFVfmHmKU4GBWEuHlYiwPEeJN
+	SaysSi3Kjy8qzUktPsTIxMEp1cC4Nv2dSpdbw+3FTWtTypU/rQ6o3m9aNnPClw1ZU+bfPSp9
+	NmRx6a8YDjN5rjuaEsxhR1ZkuF5+mmfkO+2vYMjkCQ0ndjfdKfLb72B9rdlXX2fevsk/Gvfp
+	OV3myNNlFZQoiFGcZBB+eTv7Cx8d++Iy990qPvNKdK5//Ja95VDFnI5DnY9V5bKUWIozEg21
+	mIuKEwGy+F1+IgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2014 08:18 PM, Catalin Marinas wrote:
-> On Thu, Nov 27, 2014 at 07:35:12AM +0000, Chanwoo Choi wrote:
->> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
->> index f4536e0..8a5e8a0 100644
->> --- a/arch/arm64/Kconfig
->> +++ b/arch/arm64/Kconfig
->> @@ -152,6 +152,16 @@ config ARCH_EXYNOS
->>  	help
->>  	  This enables support for Samsung Exynos SoC family
->>  
->> +config ARCH_EXYNOS5433
->> +	bool "ARMv8 based Samsung Exynos5433"
->> +	select ARCH_EXYNOS
->> +	select COMMON_CLK_SAMSUNG
->> +	select PINCTRL
->> +	select PINCTRL_EXYNOS
->> +
->> +	help
->> +	  This enables support for Samsung Exynos5433 SoC family
-> 
-> Please update defconfig as well to include this. We aim for the
-> arm64 defconfig to build all the supported SoCs.
-> 
+Add enable control over GPIO for regulators supporting this: LDO20,
+LDO21, LDO22, buck8 and buck9.
 
-OK, I'll add it.
+This is needed for proper (and full) configuration of the Maxim 77686
+PMIC without creating redundant 'regulator-fixed' entries.
 
-Thanks for your review.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/regulator/max77686.c | 58 ++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 53 insertions(+), 5 deletions(-)
 
-Best Regards,
-Chanwoo Choi
+diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
+index 10d206266ac2..0d6bddad0ef4 100644
+--- a/drivers/regulator/max77686.c
++++ b/drivers/regulator/max77686.c
+@@ -26,6 +26,7 @@
+ #include <linux/bug.h>
+ #include <linux/err.h>
+ #include <linux/gpio.h>
++#include <linux/of_gpio.h>
+ #include <linux/slab.h>
+ #include <linux/platform_device.h>
+ #include <linux/regulator/driver.h>
+@@ -46,6 +47,11 @@
+ #define MAX77686_DVS_UVSTEP	12500
+ 
+ /*
++ * Value for configuring buck[89] and LDO{20,21,22} as GPIO control.
++ * It is the same as 'off' for other regulators.
++ */
++#define MAX77686_GPIO_CONTROL		0x0
++/*
+  * Values used for configuring LDOs and bucks.
+  * Forcing low power mode: LDO1, 3-5, 9, 13, 17-26
+  */
+@@ -82,6 +88,8 @@ enum max77686_ramp_rate {
+ };
+ 
+ struct max77686_data {
++	unsigned long long gpio_enabled:MAX77686_REGULATORS;
++
+ 	/* Array indexed by regulator id */
+ 	unsigned int opmode[MAX77686_REGULATORS];
+ };
+@@ -100,6 +108,26 @@ static unsigned int max77686_get_opmode_shift(int id)
+ 	}
+ }
+ 
++/*
++ * When regulator is configured for GPIO control then it
++ * replaces "normal" mode. Any change from low power mode to normal
++ * should actually change to GPIO control.
++ * Map normal mode to proper value for such regulators.
++ */
++static unsigned int max77686_map_normal_mode(struct max77686_data *max77686,
++					     int id)
++{
++	switch (id) {
++	case MAX77686_BUCK8:
++	case MAX77686_BUCK9:
++	case MAX77686_LDO20 ... MAX77686_LDO22:
++		if (max77686->gpio_enabled & (1 << id))
++			return MAX77686_GPIO_CONTROL;
++	}
++
++	return MAX77686_NORMAL;
++}
++
+ /* Some BUCKs and LDOs supports Normal[ON/OFF] mode during suspend */
+ static int max77686_set_suspend_disable(struct regulator_dev *rdev)
+ {
+@@ -136,7 +164,7 @@ static int max77686_set_suspend_mode(struct regulator_dev *rdev,
+ 		val = MAX77686_LDO_LOWPOWER_PWRREQ;
+ 		break;
+ 	case REGULATOR_MODE_NORMAL:			/* ON in Normal Mode */
+-		val = MAX77686_NORMAL;
++		val = max77686_map_normal_mode(max77686, id);
+ 		break;
+ 	default:
+ 		pr_warn("%s: regulator_suspend_mode : 0x%x not supported\n",
+@@ -160,7 +188,7 @@ static int max77686_ldo_set_suspend_mode(struct regulator_dev *rdev,
+ {
+ 	unsigned int val;
+ 	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
+-	int ret;
++	int ret, id = rdev_get_id(rdev);
+ 
+ 	switch (mode) {
+ 	case REGULATOR_MODE_STANDBY:			/* switch off */
+@@ -170,7 +198,7 @@ static int max77686_ldo_set_suspend_mode(struct regulator_dev *rdev,
+ 		val = MAX77686_LDO_LOWPOWER_PWRREQ;
+ 		break;
+ 	case REGULATOR_MODE_NORMAL:			/* ON in Normal Mode */
+-		val = MAX77686_NORMAL;
++		val = max77686_map_normal_mode(max77686, id);
+ 		break;
+ 	default:
+ 		pr_warn("%s: regulator_suspend_mode : 0x%x not supported\n",
+@@ -184,7 +212,7 @@ static int max77686_ldo_set_suspend_mode(struct regulator_dev *rdev,
+ 	if (ret)
+ 		return ret;
+ 
+-	max77686->opmode[rdev_get_id(rdev)] = val;
++	max77686->opmode[id] = val;
+ 	return 0;
+ }
+ 
+@@ -197,7 +225,7 @@ static int max77686_enable(struct regulator_dev *rdev)
+ 	shift = max77686_get_opmode_shift(id);
+ 
+ 	if (max77686->opmode[id] == MAX77686_OFF_PWRREQ)
+-		max77686->opmode[id] = MAX77686_NORMAL;
++		max77686->opmode[id] = max77686_map_normal_mode(max77686, id);
+ 
+ 	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
+ 				  rdev->desc->enable_mask,
+@@ -229,6 +257,25 @@ static int max77686_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
+ 				  MAX77686_RAMP_RATE_MASK, ramp_value << 6);
+ }
+ 
++static int max77686_enable_gpio_control(struct regulator_dev *rdev)
++{
++	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
++	int id = rdev_get_id(rdev);
++
++	switch (id) {
++	case MAX77686_BUCK8:
++	case MAX77686_BUCK9:
++	case MAX77686_LDO20 ... MAX77686_LDO22:
++		max77686->gpio_enabled |= (1 << id);
++
++		return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
++					rdev->desc->enable_mask,
++					MAX77686_GPIO_CONTROL);
++	}
++
++	return -EINVAL;
++}
++
+ static struct regulator_ops max77686_ops = {
+ 	.list_voltage		= regulator_list_voltage_linear,
+ 	.map_voltage		= regulator_map_voltage_linear,
+@@ -239,6 +286,7 @@ static struct regulator_ops max77686_ops = {
+ 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
+ 	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
+ 	.set_suspend_mode	= max77686_set_suspend_mode,
++	.set_ena_gpio		= max77686_enable_gpio_control,
+ };
+ 
+ static struct regulator_ops max77686_ldo_ops = {
+-- 
+1.9.1
+
