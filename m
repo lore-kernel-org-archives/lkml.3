@@ -1,109 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198AbaK0K0n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 05:26:43 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40405 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752995AbaK0K0k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 05:26:40 -0500
-Message-ID: <5476FC55.1020606@arm.com>
-Date: Thu, 27 Nov 2014 10:26:29 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1753372AbaK0Kak (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 05:30:40 -0500
+Received: from mga09.intel.com ([134.134.136.24]:4593 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751280AbaK0Kaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 05:30:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,468,1413270000"; 
+   d="scan'208";a="614921540"
+Date: Thu, 27 Nov 2014 12:30:35 +0200
+From: Laurentiu Palcu <laurentiu.palcu@intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Johan Havold <johan@kernel.org>,
+        Octavian Purdila <octavian.purdila@intel.com>,
+        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 1/2] spi: add support for DLN-2 USB-SPI adapter
+Message-ID: <20141127103034.GP2583@lpalcu-linux>
+References: <1416312599-5176-2-git-send-email-laurentiu.palcu@intel.com>
+ <1416996549-29328-1-git-send-email-laurentiu.palcu@intel.com>
+ <20141126182521.GP7712@sirena.org.uk>
 MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Mark Rutland <Mark.Rutland@arm.com>,
-        "jh80.chung@samsung.com" <jh80.chung@samsung.com>,
-        "geunsik.lim@samsung.com" <geunsik.lim@samsung.com>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
-        "a.kesavan@samsung.com" <a.kesavan@samsung.com>,
-        "inki.dae@samsung.com" <inki.dae@samsung.com>,
-        "sw0312.kim@samsung.com" <sw0312.kim@samsung.com>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "s.nawrocki@samsung.com" <s.nawrocki@samsung.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "chanho61.park@samsung.com" <chanho61.park@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 16/19] arm64: dts: exynos: Add dts files for 64-bit Exynos5433
- SoC
-References: <1417073716-22997-1-git-send-email-cw00.choi@samsung.com> <1417073716-22997-17-git-send-email-cw00.choi@samsung.com>
-In-Reply-To: <1417073716-22997-17-git-send-email-cw00.choi@samsung.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141126182521.GP7712@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/11/14 07:35, Chanwoo Choi wrote:
-> This patch adds new Exynos5433 dtsi to support 64-bit Exynos5433 SoC
-> based on Octal core CPUs (quad Cortex-A57 and quad Cortex-A53).
+On Wed, Nov 26, 2014 at 06:25:21PM +0000, Mark Brown wrote:
+> On Wed, Nov 26, 2014 at 12:09:09PM +0200, Laurentiu Palcu wrote:
 > 
-> Cc: Kukjin Kim <kgene.kim@samsung.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Acked-by: Inki Dae <inki.dae@samsung.com>
-> Acked-by: Geunsik Lim <geunsik.lim@samsung.com>
-> ---
->  arch/arm64/boot/dts/exynos/exynos5433-pinctrl.dtsi | 698 +++++++++++++++++++++
->  arch/arm64/boot/dts/exynos/exynos5433.dtsi         | 523 +++++++++++++++
->  2 files changed, 1221 insertions(+)
->  create mode 100644 arch/arm64/boot/dts/exynos/exynos5433-pinctrl.dtsi
->  create mode 100644 arch/arm64/boot/dts/exynos/exynos5433.dtsi
+> > +static int dln2_spi_transfer_one_message(struct spi_master *master,
+> > +					 struct spi_message *msg)
+> > +{
+> > +	struct dln2_spi *dln2 = spi_master_get_devdata(master);
+> > +	struct spi_device *spi = msg->spi;
+> > +	struct spi_transfer *xfer;
+> > +	int status;
+> > +
+> > +	list_for_each_entry(xfer, &msg->transfers, transfer_list) {
+> > +		u8 attr = 0;
+> > +
+> > +		status = dln2_spi_transfer_setup(dln2, xfer->speed_hz,
+> > +						 xfer->bits_per_word,
+> > +						 spi->mode);
+> > +		if (status < 0) {
+> > +			dev_err(&dln2->pdev->dev, "Cannot setup transfer\n");
+> > +			break;
+> > +		}
+> > +
+> > +		if (!xfer->cs_change &&
+> > +		    !list_is_last(&xfer->transfer_list, &msg->transfers))
+> > +			attr = xfer->cs_change ? 0 : DLN2_SPI_ATTR_LEAVE_SS_LOW;
+> > +
+> > +		status = dln2_spi_rdwr(dln2, xfer->tx_buf, xfer->rx_buf,
+> > +				       xfer->len, attr);
 > 
+> We recently added a spi_transfer_is_last() operation which should allow
+> you to move this to using transfer_one() which is a bit nicer.
+Ok, sounds good!
 
-[...]
+> 
+> > +	/* enable SPI module, we're good to go */
+> > +	ret = dln2_spi_enable(dln2, true);
+> > +	if (ret < 0) {
+> > +		dev_err(&pdev->dev, "Failed to enable SPI module\n");
+> > +		goto exit_free_master;
+> > +	}
+> 
+> It would be nice to have runtime PM operations which keep the device
+> disabled when idle, presumably that'd save a bit of power and it's
+> generally better practice.
+I'll add runtime PM and send a v7.
 
-> diff --git a/arch/arm64/boot/dts/exynos/exynos5433.dtsi b/arch/arm64/boot/dts/exynos/exynos5433.dtsi
-> new file mode 100644
-> index 0000000..3d8b576
-> --- /dev/null
-> +++ b/arch/arm64/boot/dts/exynos/exynos5433.dtsi
-
-[...]
-
-> +               timer {
-> +                       compatible = "arm,armv8-timer";
-> +                       interrupts = <1 13 0xff01>,
-> +                                    <1 14 0xff01>,
-> +                                    <1 11 0xff01>,
-> +                                    <1 10 0xff01>;
-
-This is wrong. Timer interrupts for both A53 and A57 are level triggered.
-
-> +                       clock-frequency = <24000000>;
-
-Please go and fix your firmware. Really...
-
-> +                       use-clocksource-only;
-> +                       use-physical-timer;
-> +               };
-
-Well, that's a total NAK. Neither of these properties are part of the
-binding, and we've already established that none of that would never be
-valid on arm64.
-
-I suggest you finally do what we've been asking for years, which is to
-fix your boot ROM by adding the 5 lines of assembly code that are needed
-instead of repeatedly post the same bogus DT files.
-
-Thanks,
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
+laurentiu
