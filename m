@@ -1,89 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789AbaK0DVS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 22:21:18 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:43005 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681AbaK0DVR (ORCPT
+	id S1753777AbaK0D2j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 22:28:39 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:43324 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752817AbaK0D2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 22:21:17 -0500
-Message-ID: <547698A6.3090703@atmel.com>
-Date: Thu, 27 Nov 2014 11:21:10 +0800
-From: Josh Wu <josh.wu@atmel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 26 Nov 2014 22:28:37 -0500
+Message-ID: <54769A54.3020304@oracle.com>
+Date: Thu, 27 Nov 2014 11:28:20 +0800
+From: ethan zhao <ethan.zhao@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-CC: <linux-media@vger.kernel.org>, <m.chehab@samsung.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] media: v4l2-image-sizes.h: add SVGA, XGA and UXGA
- size definitions
-References: <1416905668-23029-1-git-send-email-josh.wu@atmel.com> <Pine.LNX.4.64.1411252318330.17362@axis700.grange>
-In-Reply-To: <Pine.LNX.4.64.1411252318330.17362@axis700.grange>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+CC: linda.knippers@hp.com, viresh.kumar@linaro.org, rjw@rjwysocki.net,
+        corbet@lwn.net, dirk.j.brandewie@intel.com, linux-doc@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ethan.kernel@gmail.com
+Subject: Re: [PATCH 1/2 v3] intel_pstate: skip this driver if Sun server has
+ _PPC method
+References: <1416891578-14171-1-git-send-email-ethan.zhao@oracle.com> <1416891578-14171-2-git-send-email-ethan.zhao@oracle.com> <547498BC.9020704@intel.com>
+In-Reply-To: <547498BC.9020704@intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Guennadi
+Dirk,
 
-On 11/26/2014 6:23 AM, Guennadi Liakhovetski wrote:
-> Hi Josh,
->
-> On Tue, 25 Nov 2014, Josh Wu wrote:
->
->> Add SVGA, UXGA and XGA size definitions to v4l2-image-sizes.h.
->> The definitions are sorted by alphabet order.
+On 2014/11/25 22:57, Dirk Brandewie wrote:
+> On 11/24/2014 08:59 PM, Ethan Zhao wrote:
+>> Oracle Sun X86 servers have dynamic power capping capability that 
+>> works via
+>> ACPI _PPC method etc, so skip loading this driver if Sun server has 
+>> ACPI _PPC
+>> enabled.
 >>
->> Signed-off-by: Josh Wu <josh.wu@atmel.com>
-> Thanks for your patches. I'm ok with these two, but the second of them
-> depends on the first one, and the first one wouldn't (normally) be going
-> via the soc-camera tree. Mauro, how would you prefer to handle this?
-> Should I pick up and push to you both of them or postpone #2 until the
-> next merge window?
-
-The first patch is already merged in the media_tree. If the soc-camera 
-tree will be merged to the media_tree, then there should have no 
-dependency issue.
-Am I understanding correct?
-
-Best Regards,
-Josh Wu
-
 >
-> Thanks
-> Guennadi
+> How about this patch? only compile tested.
 >
->> ---
->>   include/media/v4l2-image-sizes.h | 9 +++++++++
->>   1 file changed, 9 insertions(+)
->>
->> diff --git a/include/media/v4l2-image-sizes.h b/include/media/v4l2-image-sizes.h
->> index 10daf92..c70c917 100644
->> --- a/include/media/v4l2-image-sizes.h
->> +++ b/include/media/v4l2-image-sizes.h
->> @@ -25,10 +25,19 @@
->>   #define QVGA_WIDTH	320
->>   #define QVGA_HEIGHT	240
->>   
->> +#define SVGA_WIDTH	800
->> +#define SVGA_HEIGHT	680
->> +
->>   #define SXGA_WIDTH	1280
->>   #define SXGA_HEIGHT	1024
->>   
->>   #define VGA_WIDTH	640
->>   #define VGA_HEIGHT	480
->>   
->> +#define UXGA_WIDTH	1600
->> +#define UXGA_HEIGHT	1200
->> +
->> +#define XGA_WIDTH	1024
->> +#define XGA_HEIGHT	768
->> +
->>   #endif /* _IMAGE_SIZES_H */
->> -- 
->> 1.9.1
->>
+> diff --git a/drivers/cpufreq/intel_pstate.c 
+> b/drivers/cpufreq/intel_pstate.c
+> index 3468387..db7b8b2 100644
+> --- a/drivers/cpufreq/intel_pstate.c
+> +++ b/drivers/cpufreq/intel_pstate.c
+> @@ -1025,15 +1025,46 @@ static bool intel_pstate_no_acpi_pss(void)
+>      return true;
+>  }
+>
+> +static bool intel_pstate_has_acpi_ppc(void)
+> +{
+> +    int i;
+> +
+> +    for_each_possible_cpu(i) {
+> +        struct acpi_processor *pr = per_cpu(processors, i);
+> +
+> +        if (!pr)
+> +            continue;
+> +        if (acpi_has_method(pr->handle, "_PPC"))
+> +            return true;
+> +    }
+> +    return false;
+> +}
+> +
+> +enum {
+> +    PSS,
+> +    PCC,
+> +};
+> +
+>  struct hw_vendor_info {
+>      u16  valid;
+>      char oem_id[ACPI_OEM_ID_SIZE];
+>      char oem_table_id[ACPI_OEM_TABLE_ID_SIZE];
+> +    int  oem_pwr_table;
+>  };
+>
+>  /* Hardware vendor-specific info that has its own power management 
+> modes */
+>  static struct hw_vendor_info vendor_info[] = {
+> -    {1, "HP    ", "ProLiant"},
+> +    {1, "HP    ", "ProLiant", PSS},
+> +    {1, "ORACLE", "X4-2    ", PCC},
+> +    {1, "ORACLE", "X4-2L   ", PCC},
+> +    {1, "ORACLE", "X4-2B   ", PCC},
+> +    {1, "ORACLE", "X3-2    ", PCC},
+> +    {1, "ORACLE", "X3-2L   ", PCC},
+> +    {1, "ORACLE", "X3-2B   ", PCC},
+> +    {1, "ORACLE", "X4470M2 ", PCC},
+> +    {1, "ORACLE", "X4270M3 ", PCC},
+> +    {1, "ORACLE", "X4270M2 ", PCC},
+> +    {1, "ORACLE", "X4170M2 ", PCC},
+   But if someone would append line here and...
+     +    {1, "VENDOR","XXXIX", PPC},
+> {0, "", ""},
+>  };
+>
+> @@ -1057,15 +1088,20 @@ static bool 
+> intel_pstate_platform_pwr_mgmt_exists(void)
+>
+>      for (v_info = vendor_info; v_info->valid; v_info++) {
+>          if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
+> -            !strncmp(hdr.oem_table_id, v_info->oem_table_id, 
+> ACPI_OEM_TABLE_ID_SIZE) &&
+> -            intel_pstate_no_acpi_pss())
+> -            return true;
+> +            !strncmp(hdr.oem_table_id, v_info->oem_table_id, 
+> ACPI_OEM_TABLE_ID_SIZE))
+> +            switch (v_info->oem_pwr_table) {
+> +            case PSS:
+> +                return intel_pstate_no_acpi_pss();
+> +            case PCC:
+> +                return intel_pstate_has_acpi_ppc();
+   All good till append the force loading parameter here, looks ugly if 
+someone would add one line to vendor_info[] as above.
+
+                       return intel_pstate_has_acpi_ppc() & (!load_on_sun);
+
+Any idea ?
+
+Thanks,
+Ethan
+
+
+> + }
+>      }
+>
+>      return false;
+>  }
+>  #else /* CONFIG_ACPI not enabled */
+>  static inline bool intel_pstate_platform_pwr_mgmt_exists(void) { 
+> return false; }
+> +static inline bool intel_pstate_has_acpi_ppc(void) { return false; }
+>  #endif /* CONFIG_ACPI */
+>
+>  static int __init intel_pstate_init(void)
+>
+>
 
