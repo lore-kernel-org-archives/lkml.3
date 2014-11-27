@@ -1,91 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751285AbaK0OG0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 09:06:26 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:55634 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaK0OGY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 09:06:24 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: "John W. Linville" <linville@tuxdriver.com>,
-        Grazvydas Ignotas <notasas@gmail.com>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-Subject: wl1251: NVS firmware data
-Date: Thu, 27 Nov 2014 15:06:20 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
-Cc: Pavel Machek <pavel@ucw.cz>, Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
-        Sebastian Reichel <sre@ring0.de>,
-        David Gnedt <david.gnedt@davizone.at>
+	id S1751434AbaK0OHf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 09:07:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58464 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750926AbaK0OHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 09:07:34 -0500
+Date: Thu, 27 Nov 2014 15:07:07 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf tools: Do not fail on processing out of order event
+Message-ID: <20141127140707.GB25752@krava.brq.redhat.com>
+References: <1417016371-30249-1-git-send-email-jolsa@kernel.org>
+ <20141126154459.GD3808@redhat.com>
+ <20141127105603.GA1987@gmail.com>
+ <20141127135259.GI3808@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2511393.6NRFU7IPkM";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201411271506.20457@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141127135259.GI3808@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2511393.6NRFU7IPkM
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Thu, Nov 27, 2014 at 11:53:00AM -0200, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Nov 27, 2014 at 11:56:03AM +0100, Ingo Molnar escreveu:
+> > 
+> > * Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+> > 
+> > > Em Wed, Nov 26, 2014 at 04:39:31PM +0100, Jiri Olsa escreveu:
+> > > > Linus reported perf report command being interrupted due to
+> > > > processing of 'out of order' event, with following error:
+> > > > 
+> > > >   Timestamp below last timeslice flush
+> > > >   0x5733a8 [0x28]: failed to process type: 3
+> > > > 
+> > > > I could reproduce the issue and in my case it was caused by one
+> > > > CPU (mmap) being behind during record and userspace mmap reader
+> > > > seeing the data after other CPUs data were already stored.
+> > > > 
+> > > > It'd be nice to find the source of this hiccup, meanwhile I'm
+> > > > submitting change that does not kill the processing, but only
+> > > > tracks the number of out of order events and warn user.
+> > > 
+> > > Works, for me, thanks for the fast response!
+> > 
+> > Thanks Jiri!
+> > 
+> > > > --- a/tools/perf/util/session.c
+> > > > +++ b/tools/perf/util/session.c
+> > > > @@ -533,15 +533,11 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
+> > > >  		return -ETIME;
+> > > >  
+> > > >  	if (timestamp < oe->last_flush) {
+> > > > -		WARN_ONCE(1, "Timestamp below last timeslice flush\n");
+> > > > -
+> > > > -		pr_oe_time(timestamp,      "out of order event");
+> > > > +		pr_oe_time(timestamp,      "out of order event\n");
+> > > >  		pr_oe_time(oe->last_flush, "last flush, last_flush_type %d\n",
+> > > >  			   oe->last_flush_type);
+> > > >  
+> > > > -		/* We could get out of order messages after forced flush. */
+> > > > -		if (oe->last_flush_type != OE_FLUSH__HALF)
+> > > > -			return -EINVAL;
+> > > > +		s->stats.nr_unordered_events++;
+> > 
+> > Btw., in the forced flush case we'll get out of order events that 
+> > are 'expected'. Shouldn't we count them separately and not warn 
+> > about them, or so?
+> > 
+> > > > +	if (session->stats.nr_unordered_events != 0) {
+> > > > +		ui__warning("%u out of order events recorded.\n",
+> > > > +			    session->stats.nr_unordered_events);
+> > > > +	}
+> > 
+> > Nit: I'd suggest keeping the message printout on a single line:
+> >  
+> > 	if (session->stats.nr_unordered_events != 0) {
+> > 		ui__warning("%u out of order events recorded.\n", session->stats.nr_unordered_events);
+> > 
+> > as IMHO the cure for this col80 linebreak checkpatch warning is 
+> > worse than the disease! :-)
+> > 
+> > Barring those details:
+> > 
+> >   Acked-by: Ingo Molnar <mingo@kernel.org>
+> > 
+> > Arnaldo, I suppose the fix will go upstream via your tree, as a 
+> > pull request for v3.18 fixes?
+> 
+> Right, I can do that.
+> 
+> And I agree with the "expected" for events that are out of the current
+> reordering window, i.e. we can't insert something into previous windows,
+> so those are, humm, what would be a good name:
+> stats->out_of_reordering_window, while stats->reordered, would be for
+> events that were found out of order, but were successfully sorted as
+> part of a flush operation, right?
 
-Hello,
+the forced flush is when we find out we crossed the allowed allocation
+space for the samples queue.. so we take the half of the sorted queue
+and flush it.. for this case we break the flushing logic and we might
+(probably just in theory) get out of order events
 
-wifi driver wl1251 needs NVS calibration data for working. These=20
-data are loaded by driver via request_firmware from userspace=20
-file: ti-connectivity/wl1251-nvs.bin. In linux-fimrware git tree=20
-there is generic wl1251-nvs.bin file which is used by default.
+but IMO both cases of out of order event are equal.. we dont do
+anything special for forced flushed AFAIK
 
-Driver wl1251 is used on Nokia N900 cellphone for its wifi chip.=20
-This cellphone has one special MTD partition (called CAL) where=20
-are stored some configuration data in special binary (key-value)=20
-format. And there is also stored correct calibration data for=20
-specific device (each device has different data). It is preferred=20
-to use those data instead generic one (provided by linux-firmware=20
-git tree).
-
-Now my question is: How to correctly load calibration data from=20
-special Nokia N900 CAL partition into wl1251 kernel driver?
-
-By default kernel reads ti-connectivity/wl1251-nvs.bin file from=20
-VFS if exists without any userspace support. If it fails then it=20
-fallback to loading via udev.
-
-Reading correct data from CAL partition is not easy (structure is=20
-difficult), but there is open source program which can parse CAL=20
-partition and write NVS data to stdout. So adding this CAL parser=20
-into kernel is not good idea (program is GPLv3+ code --=20
-incompatible with kernel).
-
-So how to solve this problem? How to load correct NVS data from=20
-CAL partition into wl1251 driver?
-
-It is possible to tell kernel to use some helper userspace=20
-program for loading data and if it fails then fallback to direct=20
-loading? E.g first try to use model specific data and if it fails=20
-for some reasons then fallback to reading genetic data.
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart2511393.6NRFU7IPkM
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlR3L9wACgkQi/DJPQPkQ1L/qQCgukIuGXsBlSf52W0+ktfjS83g
-kTMAnj1l7WkgutGJdPl3Y7VFRpRDm74t
-=DV3s
------END PGP SIGNATURE-----
-
---nextPart2511393.6NRFU7IPkM--
+jirka
