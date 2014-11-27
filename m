@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530AbaK0SrH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 13:47:07 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:43769 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751485AbaK0SrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 13:47:03 -0500
-Message-ID: <54777174.4070203@ti.com>
-Date: Thu, 27 Nov 2014 20:46:12 +0200
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-CC: <alsa-devel@alsa-project.org>, <linux-omap@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <vinod.koul@intel.com>,
-        <linux-mmc@vger.kernel.org>, <nsekhar@ti.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <khilman@deeprootsystems.com>, Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@kernel.org>, <chris@printf.net>,
-        <dmaengine@vger.kernel.org>, <ulf.hansson@linaro.org>,
-        <linux-spi@vger.kernel.org>
-Subject: Re: [PATCH 2/3] ARM: edma: Rename header file for dmaengine filter
- function definition
-References: <1417084891-17990-1-git-send-email-peter.ujfalusi@ti.com> <8235185.7qUDHu9jso@wuerfel> <547733E3.3020408@ti.com> <3300340.ou8f7H2hIc@wuerfel>
-In-Reply-To: <3300340.ou8f7H2hIc@wuerfel>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
+	id S1751146AbaK0Stm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 13:49:42 -0500
+Received: from smtprelay0059.hostedemail.com ([216.40.44.59]:38928 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750895AbaK0Stk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 13:49:40 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3622:3653:3865:3868:3870:4321:4605:5007:6119:6261:6742:8603:10004:10400:10848:11026:11232:11658:11914:12043:12517:12519:12555:12679:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: bears19_19bd8c9ebff55
+X-Filterd-Recvd-Size: 1799
+Message-ID: <1417114175.4305.3.camel@perches.com>
+Subject: Re: [PATCH] x86: bpf_jit_comp: simplify trivial boolean return
+From: Joe Perches <joe@perches.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: Alexei Starovoitov <alexei.starovoitov@gmail.com>,
+        Quentin Lambert <lambert.quentin@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 27 Nov 2014 10:49:35 -0800
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1C9FDA63@AcuExch.aculab.com>
+References: <CAADnVQK3iui8cAmhi28=65p2CJbTu45fR98ri8Uh8xLRb=cwnA@mail.gmail.com>
+	 <1417032059.16355.4.camel@perches.com>
+	 <063D6719AE5E284EB5DD2968C1650D6D1C9FDA63@AcuExch.aculab.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2014 04:50 PM, Arnd Bergmann wrote:
-> On Thursday 27 November 2014 16:23:31 Peter Ujfalusi wrote:
->> This will only work in case of legacy boot. When booting with DT we do not
->> have pdata and after this patch in dt boot we are not going to be able to get
->> the DMA resources either.
-> 
-> No, when booting with DT, the filter_fn and data are not used at all,
-> we get the dma channel by parsing the DT instead.
+On Thu, 2014-11-27 at 12:25 +0000, David Laight wrote:
+> Why the change in data?
 
-Correct.
+btw: without gcov and using -O2
 
->> I think if we want to do something like this, it has to be done within the
->> dmaengine framework. The dma controller's of_dma_filter_info already have
->> .filter_fn which could be used by the framework.
-> 
-> No, of_dma_filter_info/of_dma_simple_xlate was a mistake, we should never
-> have even introduced that. All drivers that rely on this can simply
-> provide their own xlate function that calls of_dma_get_slave_channel()
-> or one of the related functions.
-> 
-> edma is particularly trivial, it can just use of_dma_xlate_by_chan_id()
-> instead of of_dma_simple_xlate, as it looks up the channel by its number.
+$ size arch/x86/net/bpf_jit_comp.o*
+   text	   data	    bss	    dec	    hex	filename
+   9671	      4	      0	   9675	   25cb	arch/x86/net/bpf_jit_comp.o.new
+  10679	      4	      0	  10683	   29bb	arch/x86/net/bpf_jit_comp.o.old
 
-I see. With this series I did not planed to fix all edma related issues, just
-as a start clean up the related header files. I would rather not add fixes to
-mmc, spi, etc drivers since while you have valid point it is not in the scope
-of this series.
-Can we do the changes you are suggesting in an incremental manner?
 
--- 
-Péter
