@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754451AbaK0GaM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 01:30:12 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41706 "EHLO arroyo.ext.ti.com"
+	id S1753879AbaK0G0l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 01:26:41 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:57518 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753921AbaK0G0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 01:26:42 -0500
+	id S1752887AbaK0G0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 01:26:38 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 15/25] phy: improved lookup method
-Date: Thu, 27 Nov 2014 11:56:07 +0530
-Message-ID: <1417069577-1169-16-git-send-email-kishon@ti.com>
+Subject: [PATCH 12/25] phy: add the Berlin USB PHY driver
+Date: Thu, 27 Nov 2014 11:56:04 +0530
+Message-ID: <1417069577-1169-13-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1417069577-1169-1-git-send-email-kishon@ti.com>
 References: <1417069577-1169-1-git-send-email-kishon@ti.com>
@@ -21,251 +21,280 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
 
-Separates registration of the phy and the lookup. The method
-is copied from clkdev.c,
+Add the driver driving the Marvell Berlin USB PHY. This allows to
+initialize the PHY and to use it from the USB driver later.
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- Documentation/phy.txt   |   60 +++++++++------------------------
- drivers/phy/phy-core.c  |   84 ++++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/phy/phy.h |   16 +++++++++
- 3 files changed, 115 insertions(+), 45 deletions(-)
+ drivers/phy/Kconfig          |    7 ++
+ drivers/phy/Makefile         |    1 +
+ drivers/phy/phy-berlin-usb.c |  224 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 232 insertions(+)
+ create mode 100644 drivers/phy/phy-berlin-usb.c
 
-diff --git a/Documentation/phy.txt b/Documentation/phy.txt
-index c6594af..371361c 100644
---- a/Documentation/phy.txt
-+++ b/Documentation/phy.txt
-@@ -54,18 +54,14 @@ The PHY driver should create the PHY in order for other peripheral controllers
- to make use of it. The PHY framework provides 2 APIs to create the PHY.
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index cfaced9..4144d25 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -15,6 +15,13 @@ config GENERIC_PHY
+ 	  phy users can obtain reference to the PHY. All the users of this
+ 	  framework should select this config.
  
- struct phy *phy_create(struct device *dev, struct device_node *node,
--		       const struct phy_ops *ops,
--		       struct phy_init_data *init_data);
-+		       const struct phy_ops *ops);
- struct phy *devm_phy_create(struct device *dev, struct device_node *node,
--			    const struct phy_ops *ops,
--			    struct phy_init_data *init_data);
-+			    const struct phy_ops *ops);
- 
- The PHY drivers can use one of the above 2 APIs to create the PHY by passing
--the device pointer, phy ops and init_data.
-+the device pointer and phy ops.
- phy_ops is a set of function pointers for performing PHY operations such as
--init, exit, power_on and power_off. *init_data* is mandatory to get a reference
--to the PHY in the case of non-dt boot. See section *Board File Initialization*
--on how init_data should be used.
-+init, exit, power_on and power_off.
- 
- Inorder to dereference the private data (in phy_ops), the phy provider driver
- can use phy_set_drvdata() after creating the PHY and use phy_get_drvdata() in
-@@ -137,42 +133,18 @@ There are exported APIs like phy_pm_runtime_get, phy_pm_runtime_get_sync,
- phy_pm_runtime_put, phy_pm_runtime_put_sync, phy_pm_runtime_allow and
- phy_pm_runtime_forbid for performing PM operations.
- 
--8. Board File Initialization
--
--Certain board file initialization is necessary in order to get a reference
--to the PHY in the case of non-dt boot.
--Say we have a single device that implements 3 PHYs that of USB, SATA and PCIe,
--then in the board file the following initialization should be done.
--
--struct phy_consumer consumers[] = {
--	PHY_CONSUMER("dwc3.0", "usb"),
--	PHY_CONSUMER("pcie.0", "pcie"),
--	PHY_CONSUMER("sata.0", "sata"),
--};
--PHY_CONSUMER takes 2 parameters, first is the device name of the controller
--(PHY consumer) and second is the port name.
--
--struct phy_init_data init_data = {
--	.consumers = consumers,
--	.num_consumers = ARRAY_SIZE(consumers),
--};
--
--static const struct platform_device pipe3_phy_dev = {
--	.name = "pipe3-phy",
--	.id = -1,
--	.dev = {
--		.platform_data = {
--			.init_data = &init_data,
--		},
--	},
--};
--
--then, while doing phy_create, the PHY driver should pass this init_data
--	phy_create(dev, ops, pdata->init_data);
--
--and the controller driver (phy consumer) should pass the port name along with
--the device to get a reference to the PHY
--	phy_get(dev, "pcie");
-+8. PHY Mappings
++config PHY_BERLIN_USB
++	tristate "Marvell Berlin USB PHY Driver"
++	depends on ARCH_BERLIN && RESET_CONTROLLER && HAS_IOMEM && OF
++	select GENERIC_PHY
++	help
++	  Enable this to support the USB PHY on Marvell Berlin SoCs.
 +
-+In order to get reference to a PHY without help from DeviceTree, the framework
-+offers lookups which can be compared to clkdev that allow clk structures to be
-+bound to devices. A lookup can be made be made during runtime when a handle to
-+the struct phy already exists.
-+
-+The framework offers the following API for registering and unregistering the
-+lookups.
-+
-+int phy_create_lookup(struct phy *phy, const char *con_id, const char *dev_id);
-+void phy_remove_lookup(struct phy *phy, const char *con_id, const char *dev_id);
+ config PHY_BERLIN_SATA
+ 	tristate "Marvell Berlin SATA PHY driver"
+ 	depends on ARCH_BERLIN && HAS_IOMEM && OF
+diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+index 30d90a8..68022f6 100644
+--- a/drivers/phy/Makefile
++++ b/drivers/phy/Makefile
+@@ -3,6 +3,7 @@
+ #
  
- 9. DeviceTree Binding
- 
-diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index 1606ce9..bc83077 100644
---- a/drivers/phy/phy-core.c
-+++ b/drivers/phy/phy-core.c
-@@ -26,6 +26,7 @@
- static struct class *phy_class;
- static DEFINE_MUTEX(phy_provider_mutex);
- static LIST_HEAD(phy_provider_list);
-+static LIST_HEAD(phys);
- static DEFINE_IDA(phy_ida);
- 
- static void devm_phy_release(struct device *dev, void *res)
-@@ -84,6 +85,87 @@ static struct phy *phy_lookup(struct device *device, const char *port)
- 	return ERR_PTR(-ENODEV);
- }
- 
-+/**
-+ * phy_create_lookup() - allocate and register PHY/device association
-+ * @phy: the phy of the association
-+ * @con_id: connection ID string on device
-+ * @dev_id: the device of the association
+ obj-$(CONFIG_GENERIC_PHY)		+= phy-core.o
++obj-$(CONFIG_PHY_BERLIN_USB)		+= phy-berlin-usb.o
+ obj-$(CONFIG_PHY_BERLIN_SATA)		+= phy-berlin-sata.o
+ obj-$(CONFIG_BCM_KONA_USB2_PHY)		+= phy-bcm-kona-usb2.o
+ obj-$(CONFIG_PHY_EXYNOS_DP_VIDEO)	+= phy-exynos-dp-video.o
+diff --git a/drivers/phy/phy-berlin-usb.c b/drivers/phy/phy-berlin-usb.c
+new file mode 100644
+index 0000000..f9f1306
+--- /dev/null
++++ b/drivers/phy/phy-berlin-usb.c
+@@ -0,0 +1,224 @@
++/*
++ * Copyright (C) 2014 Marvell Technology Group Ltd.
 + *
-+ * Creates and registers phy_lookup entry.
-+ */
-+int phy_create_lookup(struct phy *phy, const char *con_id, const char *dev_id)
-+{
-+	struct phy_lookup *pl;
-+
-+	if (!phy || !dev_id || !con_id)
-+		return -EINVAL;
-+
-+	pl = kzalloc(sizeof(*pl), GFP_KERNEL);
-+	if (!pl)
-+		return -ENOMEM;
-+
-+	pl->dev_id = dev_id;
-+	pl->con_id = con_id;
-+	pl->phy = phy;
-+
-+	mutex_lock(&phy_provider_mutex);
-+	list_add_tail(&pl->node, &phys);
-+	mutex_unlock(&phy_provider_mutex);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(phy_create_lookup);
-+
-+/**
-+ * phy_remove_lookup() - find and remove PHY/device association
-+ * @phy: the phy of the association
-+ * @con_id: connection ID string on device
-+ * @dev_id: the device of the association
++ * Antoine Tenart <antoine.tenart@free-electrons.com>
++ * Jisheng Zhang <jszhang@marvell.com>
 + *
-+ * Finds and unregisters phy_lookup entry that was created with
-+ * phy_create_lookup().
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2. This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
 + */
-+void phy_remove_lookup(struct phy *phy, const char *con_id, const char *dev_id)
-+{
-+	struct phy_lookup *pl;
 +
-+	if (!phy || !dev_id || !con_id)
-+		return;
++#include <linux/gpio.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/of_device.h>
++#include <linux/of_gpio.h>
++#include <linux/phy/phy.h>
++#include <linux/platform_device.h>
++#include <linux/reset.h>
 +
-+	mutex_lock(&phy_provider_mutex);
-+	list_for_each_entry(pl, &phys, node)
-+		if (pl->phy == phy && !strcmp(pl->dev_id, dev_id) &&
-+		    !strcmp(pl->con_id, con_id)) {
-+			list_del(&pl->node);
-+			kfree(pl);
-+			break;
-+		}
-+	mutex_unlock(&phy_provider_mutex);
-+}
-+EXPORT_SYMBOL_GPL(phy_remove_lookup);
++#define USB_PHY_PLL		0x04
++#define USB_PHY_PLL_CONTROL	0x08
++#define USB_PHY_TX_CTRL0	0x10
++#define USB_PHY_TX_CTRL1	0x14
++#define USB_PHY_TX_CTRL2	0x18
++#define USB_PHY_RX_CTRL		0x20
++#define USB_PHY_ANALOG		0x34
 +
-+static struct phy *phy_find(struct device *dev, const char *con_id)
-+{
-+	const char *dev_id = dev_name(dev);
-+	struct phy_lookup *p, *pl = NULL;
-+	struct phy *phy;
++/* USB_PHY_PLL */
++#define CLK_REF_DIV(x)		((x) << 4)
++#define FEEDBACK_CLK_DIV(x)	((x) << 8)
 +
-+	mutex_lock(&phy_provider_mutex);
-+	list_for_each_entry(p, &phys, node)
-+		if (!strcmp(p->dev_id, dev_id) && !strcmp(p->con_id, con_id)) {
-+			pl = p;
-+			break;
-+		}
-+	mutex_unlock(&phy_provider_mutex);
++/* USB_PHY_PLL_CONTROL */
++#define CLK_STABLE		BIT(0)
++#define PLL_CTRL_PIN		BIT(1)
++#define PLL_CTRL_REG		BIT(2)
++#define PLL_ON			BIT(3)
++#define PHASE_OFF_TOL_125	(0x0 << 5)
++#define PHASE_OFF_TOL_250	BIT(5)
++#define KVC0_CALIB		(0x0 << 9)
++#define KVC0_REG_CTRL		BIT(9)
++#define KVC0_HIGH		(0x0 << 10)
++#define KVC0_LOW		(0x3 << 10)
++#define CLK_BLK_EN		BIT(13)
 +
-+	phy = pl ? pl->phy : ERR_PTR(-ENODEV);
++/* USB_PHY_TX_CTRL0 */
++#define EXT_HS_RCAL_EN		BIT(3)
++#define EXT_FS_RCAL_EN		BIT(4)
++#define IMPCAL_VTH_DIV(x)	((x) << 5)
++#define EXT_RS_RCAL_DIV(x)	((x) << 8)
++#define EXT_FS_RCAL_DIV(x)	((x) << 12)
 +
-+	/* fall-back to the old lookup method for now */
-+	if (IS_ERR(phy))
-+		phy = phy_lookup(dev, con_id);
-+	return phy;
-+}
++/* USB_PHY_TX_CTRL1 */
++#define TX_VDD15_14		(0x0 << 4)
++#define TX_VDD15_15		BIT(4)
++#define TX_VDD15_16		(0x2 << 4)
++#define TX_VDD15_17		(0x3 << 4)
++#define TX_VDD12_VDD		(0x0 << 6)
++#define TX_VDD12_11		BIT(6)
++#define TX_VDD12_12		(0x2 << 6)
++#define TX_VDD12_13		(0x3 << 6)
++#define LOW_VDD_EN		BIT(8)
++#define TX_OUT_AMP(x)		((x) << 9)
 +
- static struct phy_provider *of_phy_provider_lookup(struct device_node *node)
- {
- 	struct phy_provider *phy_provider;
-@@ -455,7 +537,7 @@ struct phy *phy_get(struct device *dev, const char *string)
- 			string);
- 		phy = _of_phy_get(dev->of_node, index);
- 	} else {
--		phy = phy_lookup(dev, string);
-+		phy = phy_find(dev, string);
- 	}
- 	if (IS_ERR(phy))
- 		return phy;
-diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-index 9fda683..849284e 100644
---- a/include/linux/phy/phy.h
-+++ b/include/linux/phy/phy.h
-@@ -110,6 +110,13 @@ struct phy_init_data {
- 	.port		= _port,				\
- }
- 
-+struct phy_lookup {
-+	struct list_head node;
-+	const char *dev_id;
-+	const char *con_id;
-+	struct phy *phy;
++/* USB_PHY_TX_CTRL2 */
++#define TX_CHAN_CTRL_REG(x)	((x) << 0)
++#define DRV_SLEWRATE(x)		((x) << 4)
++#define IMP_CAL_FS_HS_DLY_0	(0x0 << 6)
++#define IMP_CAL_FS_HS_DLY_1	BIT(6)
++#define IMP_CAL_FS_HS_DLY_2	(0x2 << 6)
++#define IMP_CAL_FS_HS_DLY_3	(0x3 << 6)
++#define FS_DRV_EN_MASK(x)	((x) << 8)
++#define HS_DRV_EN_MASK(x)	((x) << 12)
++
++/* USB_PHY_RX_CTRL */
++#define PHASE_FREEZE_DLY_2_CL	(0x0 << 0)
++#define PHASE_FREEZE_DLY_4_CL	BIT(0)
++#define ACK_LENGTH_8_CL		(0x0 << 2)
++#define ACK_LENGTH_12_CL	BIT(2)
++#define ACK_LENGTH_16_CL	(0x2 << 2)
++#define ACK_LENGTH_20_CL	(0x3 << 2)
++#define SQ_LENGTH_3		(0x0 << 4)
++#define SQ_LENGTH_6		BIT(4)
++#define SQ_LENGTH_9		(0x2 << 4)
++#define SQ_LENGTH_12		(0x3 << 4)
++#define DISCON_THRESHOLD_260	(0x0 << 6)
++#define DISCON_THRESHOLD_270	BIT(6)
++#define DISCON_THRESHOLD_280	(0x2 << 6)
++#define DISCON_THRESHOLD_290	(0x3 << 6)
++#define SQ_THRESHOLD(x)		((x) << 8)
++#define LPF_COEF(x)		((x) << 12)
++#define INTPL_CUR_10		(0x0 << 14)
++#define INTPL_CUR_20		BIT(14)
++#define INTPL_CUR_30		(0x2 << 14)
++#define INTPL_CUR_40		(0x3 << 14)
++
++/* USB_PHY_ANALOG */
++#define ANA_PWR_UP		BIT(1)
++#define ANA_PWR_DOWN		BIT(2)
++#define V2I_VCO_RATIO(x)	((x) << 7)
++#define R_ROTATE_90		(0x0 << 10)
++#define R_ROTATE_0		BIT(10)
++#define MODE_TEST_EN		BIT(11)
++#define ANA_TEST_DC_CTRL(x)	((x) << 12)
++
++#define to_phy_berlin_usb_priv(p)	\
++	container_of((p), struct phy_berlin_usb_priv, phy)
++
++static const u32 phy_berlin_pll_dividers[] = {
++	/* Berlin 2 */
++	CLK_REF_DIV(0xc) | FEEDBACK_CLK_DIV(0x54),
++	/* Berlin 2CD */
++	CLK_REF_DIV(0x6) | FEEDBACK_CLK_DIV(0x55),
 +};
 +
- #define	to_phy(a)	(container_of((a), struct phy, dev))
- 
- #define	of_phy_provider_register(dev, xlate)	\
-@@ -174,6 +181,8 @@ struct phy_provider *__devm_of_phy_provider_register(struct device *dev,
- void of_phy_provider_unregister(struct phy_provider *phy_provider);
- void devm_of_phy_provider_unregister(struct device *dev,
- 	struct phy_provider *phy_provider);
-+int phy_create_lookup(struct phy *phy, const char *con_id, const char *dev_id);
-+void phy_remove_lookup(struct phy *phy, const char *con_id, const char *dev_id);
- #else
- static inline int phy_pm_runtime_get(struct phy *phy)
- {
-@@ -345,6 +354,13 @@ static inline void devm_of_phy_provider_unregister(struct device *dev,
- 	struct phy_provider *phy_provider)
- {
- }
-+static inline int
-+phy_create_lookup(struct phy *phy, const char *con_id, const char *dev_id)
++struct phy_berlin_usb_priv {
++	void __iomem		*base;
++	struct phy		*phy;
++	struct reset_control	*rst_ctrl;
++	u32			pll_divider;
++};
++
++static int phy_berlin_usb_power_on(struct phy *phy)
 +{
++	struct phy_berlin_usb_priv *priv = dev_get_drvdata(phy->dev.parent);
++
++	reset_control_reset(priv->rst_ctrl);
++
++	writel(priv->pll_divider,
++	       priv->base + USB_PHY_PLL);
++	writel(CLK_STABLE | PLL_CTRL_REG | PHASE_OFF_TOL_250 | KVC0_REG_CTRL |
++	       CLK_BLK_EN, priv->base + USB_PHY_PLL_CONTROL);
++	writel(V2I_VCO_RATIO(0x5) | R_ROTATE_0 | ANA_TEST_DC_CTRL(0x5),
++	       priv->base + USB_PHY_ANALOG);
++	writel(PHASE_FREEZE_DLY_4_CL | ACK_LENGTH_16_CL | SQ_LENGTH_12 |
++	       DISCON_THRESHOLD_260 | SQ_THRESHOLD(0xa) | LPF_COEF(0x2) |
++	       INTPL_CUR_30, priv->base + USB_PHY_RX_CTRL);
++
++	writel(TX_VDD12_13 | TX_OUT_AMP(0x3), priv->base + USB_PHY_TX_CTRL1);
++	writel(EXT_HS_RCAL_EN | IMPCAL_VTH_DIV(0x3) | EXT_RS_RCAL_DIV(0x4),
++	       priv->base + USB_PHY_TX_CTRL0);
++
++	writel(EXT_HS_RCAL_EN | IMPCAL_VTH_DIV(0x3) | EXT_RS_RCAL_DIV(0x4) |
++	       EXT_FS_RCAL_DIV(0x2), priv->base + USB_PHY_TX_CTRL0);
++
++	writel(EXT_HS_RCAL_EN | IMPCAL_VTH_DIV(0x3) | EXT_RS_RCAL_DIV(0x4),
++	       priv->base + USB_PHY_TX_CTRL0);
++	writel(TX_CHAN_CTRL_REG(0xf) | DRV_SLEWRATE(0x3) | IMP_CAL_FS_HS_DLY_3 |
++	       FS_DRV_EN_MASK(0xd), priv->base + USB_PHY_TX_CTRL2);
++
 +	return 0;
 +}
-+static inline void phy_remove_lookup(struct phy *phy, const char *con_id,
-+				     const char *dev_id) { }
- #endif
- 
- #endif /* __DRIVERS_PHY_H */
++
++static struct phy_ops phy_berlin_usb_ops = {
++	.power_on	= phy_berlin_usb_power_on,
++	.owner		= THIS_MODULE,
++};
++
++static const struct of_device_id phy_berlin_sata_of_match[] = {
++	{
++		.compatible = "marvell,berlin2-usb-phy",
++		.data = &phy_berlin_pll_dividers[0],
++	},
++	{
++		.compatible = "marvell,berlin2cd-usb-phy",
++		.data = &phy_berlin_pll_dividers[1],
++	},
++	{ },
++};
++MODULE_DEVICE_TABLE(of, phy_berlin_sata_of_match);
++
++static int phy_berlin_usb_probe(struct platform_device *pdev)
++{
++	const struct of_device_id *match =
++		of_match_device(phy_berlin_sata_of_match, &pdev->dev);
++	struct phy_berlin_usb_priv *priv;
++	struct resource *res;
++	struct phy_provider *phy_provider;
++
++	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	priv->base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(priv->base))
++		return PTR_ERR(priv->base);
++
++	priv->rst_ctrl = devm_reset_control_get(&pdev->dev, NULL);
++	if (IS_ERR(priv->rst_ctrl))
++		return PTR_ERR(priv->rst_ctrl);
++
++	priv->pll_divider = *((u32 *)match->data);
++
++	priv->phy = devm_phy_create(&pdev->dev, NULL, &phy_berlin_usb_ops,
++				    NULL);
++	if (IS_ERR(priv->phy)) {
++		dev_err(&pdev->dev, "failed to create PHY\n");
++		return PTR_ERR(priv->phy);
++	}
++
++	platform_set_drvdata(pdev, priv);
++
++	phy_provider =
++		devm_of_phy_provider_register(&pdev->dev, of_phy_simple_xlate);
++	if (IS_ERR(phy_provider))
++		return PTR_ERR(phy_provider);
++
++	return 0;
++}
++
++static struct platform_driver phy_berlin_usb_driver = {
++	.probe	= phy_berlin_usb_probe,
++	.driver	= {
++		.name		= "phy-berlin-usb",
++		.owner		= THIS_MODULE,
++		.of_match_table	= phy_berlin_sata_of_match,
++	 },
++};
++module_platform_driver(phy_berlin_usb_driver);
++
++MODULE_AUTHOR("Antoine Tenart <antoine.tenart@free-electrons.com>");
++MODULE_DESCRIPTION("Marvell Berlin PHY driver for USB");
++MODULE_LICENSE("GPL");
 -- 
 1.7.9.5
 
