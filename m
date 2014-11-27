@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950AbaK0IsE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 03:48:04 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41856 "EHLO mail.kernel.org"
+	id S1754973AbaK0IsL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 03:48:11 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41939 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754924AbaK0Ir7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:47:59 -0500
+	id S1754953AbaK0IsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:48:08 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Cong Wang <cwang@twopensource.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 43/91] perf: Fix a race condition in perf_remove_from_context()
-Date: Thu, 27 Nov 2014 16:42:26 +0800
-Message-Id: <1417077794-9299-43-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 45/91] Input: i8042 - add Fujitsu U574 to no_timeout dmi table
+Date: Thu, 27 Nov 2014 16:42:28 +0800
+Message-Id: <1417077794-9299-45-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
 References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
@@ -25,62 +21,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cong Wang <cwang@twopensource.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 3577af70a2ce4853d58e57d832e687d739281479 upstream.
+commit cc18a69c92d0972bc2fc5a047ee3be1e8398171b upstream.
 
-We saw a kernel soft lockup in perf_remove_from_context(),
-it looks like the `perf` process, when exiting, could not go
-out of the retry loop. Meanwhile, the target process was forking
-a child. So either the target process should execute the smp
-function call to deactive the event (if it was running) or it should
-do a context switch which deactives the event.
+https://bugzilla.kernel.org/show_bug.cgi?id=69731
 
-It seems we optimize out a context switch in perf_event_context_sched_out(),
-and what's more important, we still test an obsolete task pointer when
-retrying, so no one actually would deactive that event in this situation.
-Fix it directly by reloading the task pointer in perf_remove_from_context().
-
-This should cure the above soft lockup.
-
-Signed-off-by: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1409696840-843-1-git-send-email-xiyou.wangcong@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reported-by: Jason Robinson <mail@jasonrobinson.me>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- kernel/events/core.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/input/serio/i8042-x86ia64io.h | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 685ce46..c958be1 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1702,6 +1702,16 @@ retry:
- 	 */
- 	if (ctx->is_active) {
- 		raw_spin_unlock_irq(&ctx->lock);
-+		/*
-+		 * Reload the task pointer, it might have been changed by
-+		 * a concurrent perf_event_context_sched_out().
-+		 */
-+		task = ctx->task;
-+		/*
-+		 * Reload the task pointer, it might have been changed by
-+		 * a concurrent perf_event_context_sched_out().
-+		 */
-+		task = ctx->task;
- 		goto retry;
- 	}
+diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
+index 0ec9abb..dc37b32 100644
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -601,6 +601,14 @@ static const struct dmi_system_id __initconst i8042_dmi_notimeout_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv4 Notebook PC"),
+ 		},
+ 	},
++	{
++		/* Fujitsu U574 laptop */
++		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK U574"),
++		},
++	},
+ 	{ }
+ };
  
 -- 
 1.9.1
