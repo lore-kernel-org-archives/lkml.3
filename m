@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825AbaK0Mdr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 07:33:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51423 "EHLO mx1.redhat.com"
+	id S1755869AbaK0Md4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 07:33:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57664 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755779AbaK0Mdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 07:33:41 -0500
-Date: Thu, 27 Nov 2014 14:33:10 +0200
+	id S1755848AbaK0Mdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 07:33:54 -0500
+Date: Thu, 27 Nov 2014 14:33:33 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
         thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Jason Wang <jasowang@redhat.com>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Tom Herbert <therbert@google.com>,
-        Masatake YAMATO <yamato@redhat.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>, Xi Wang <xii@google.com>,
-        netdev@vger.kernel.org
-Subject: [PATCH v5 37/45] tun: drop most type defines
-Message-ID: <1417091078-24611-38-git-send-email-mst@redhat.com>
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-scsi@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH v5 41/45] virtio_scsi: v1.0 support
+Message-ID: <1417091078-24611-42-git-send-email-mst@redhat.com>
 References: <1417091078-24611-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -30,243 +27,262 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's just as easy to use IFF_ flags directly,
-there's no point in adding our own defines.
+Note: for consistency, and to avoid sparse errors,
+  convert all fields, even those no longer in use
+  for virtio v1.0.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- drivers/net/tun.c | 62 +++++++++++++++++++++++++------------------------------
- 1 file changed, 28 insertions(+), 34 deletions(-)
+ include/linux/virtio_scsi.h | 32 +++++++++++++++-------------
+ drivers/scsi/virtio_scsi.c  | 51 ++++++++++++++++++++++++++++-----------------
+ 2 files changed, 49 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index bc89d07..61c000c 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -109,12 +109,6 @@ do {								\
-  * overload it to mean fasync when stored there.
-  */
- #define TUN_FASYNC	IFF_ATTACH_QUEUE
--#define TUN_NO_PI	IFF_NO_PI
--/* This flag has no real effect */
--#define TUN_ONE_QUEUE	IFF_ONE_QUEUE
--#define TUN_PERSIST 	IFF_PERSIST
--#define TUN_VNET_HDR 	IFF_VNET_HDR
--#define TUN_TAP_MQ      IFF_MULTI_QUEUE
+diff --git a/include/linux/virtio_scsi.h b/include/linux/virtio_scsi.h
+index de429d1..af44864 100644
+--- a/include/linux/virtio_scsi.h
++++ b/include/linux/virtio_scsi.h
+@@ -27,13 +27,15 @@
+ #ifndef _LINUX_VIRTIO_SCSI_H
+ #define _LINUX_VIRTIO_SCSI_H
  
- #define TUN_FEATURES (IFF_NO_PI | IFF_ONE_QUEUE | IFF_VNET_HDR | \
- 		      IFF_MULTI_QUEUE)
-@@ -487,7 +481,7 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
- 		if (tun && tun->numqueues == 0 && tun->numdisabled == 0) {
- 			netif_carrier_off(tun->dev);
++#include <linux/virtio_types.h>
++
+ #define VIRTIO_SCSI_CDB_SIZE   32
+ #define VIRTIO_SCSI_SENSE_SIZE 96
  
--			if (!(tun->flags & TUN_PERSIST) &&
-+			if (!(tun->flags & IFF_PERSIST) &&
- 			    tun->dev->reg_state == NETREG_REGISTERED)
- 				unregister_netdevice(tun->dev);
- 		}
-@@ -538,7 +532,7 @@ static void tun_detach_all(struct net_device *dev)
+ /* SCSI command request, followed by data-out */
+ struct virtio_scsi_cmd_req {
+ 	u8 lun[8];		/* Logical Unit Number */
+-	u64 tag;		/* Command identifier */
++	__virtio64 tag;		/* Command identifier */
+ 	u8 task_attr;		/* Task attribute */
+ 	u8 prio;		/* SAM command priority field */
+ 	u8 crn;
+@@ -43,20 +45,20 @@ struct virtio_scsi_cmd_req {
+ /* SCSI command request, followed by protection information */
+ struct virtio_scsi_cmd_req_pi {
+ 	u8 lun[8];		/* Logical Unit Number */
+-	u64 tag;		/* Command identifier */
++	__virtio64 tag;		/* Command identifier */
+ 	u8 task_attr;		/* Task attribute */
+ 	u8 prio;		/* SAM command priority field */
+ 	u8 crn;
+-	u32 pi_bytesout;	/* DataOUT PI Number of bytes */
+-	u32 pi_bytesin;		/* DataIN PI Number of bytes */
++	__virtio32 pi_bytesout;	/* DataOUT PI Number of bytes */
++	__virtio32 pi_bytesin;		/* DataIN PI Number of bytes */
+ 	u8 cdb[VIRTIO_SCSI_CDB_SIZE];
+ } __packed;
+ 
+ /* Response, followed by sense data and data-in */
+ struct virtio_scsi_cmd_resp {
+-	u32 sense_len;		/* Sense data length */
+-	u32 resid;		/* Residual bytes in data buffer */
+-	u16 status_qualifier;	/* Status qualifier */
++	__virtio32 sense_len;		/* Sense data length */
++	__virtio32 resid;		/* Residual bytes in data buffer */
++	__virtio16 status_qualifier;	/* Status qualifier */
+ 	u8 status;		/* Command completion status */
+ 	u8 response;		/* Response values */
+ 	u8 sense[VIRTIO_SCSI_SENSE_SIZE];
+@@ -64,10 +66,10 @@ struct virtio_scsi_cmd_resp {
+ 
+ /* Task Management Request */
+ struct virtio_scsi_ctrl_tmf_req {
+-	u32 type;
+-	u32 subtype;
++	__virtio32 type;
++	__virtio32 subtype;
+ 	u8 lun[8];
+-	u64 tag;
++	__virtio64 tag;
+ } __packed;
+ 
+ struct virtio_scsi_ctrl_tmf_resp {
+@@ -76,20 +78,20 @@ struct virtio_scsi_ctrl_tmf_resp {
+ 
+ /* Asynchronous notification query/subscription */
+ struct virtio_scsi_ctrl_an_req {
+-	u32 type;
++	__virtio32 type;
+ 	u8 lun[8];
+-	u32 event_requested;
++	__virtio32 event_requested;
+ } __packed;
+ 
+ struct virtio_scsi_ctrl_an_resp {
+-	u32 event_actual;
++	__virtio32 event_actual;
+ 	u8 response;
+ } __packed;
+ 
+ struct virtio_scsi_event {
+-	u32 event;
++	__virtio32 event;
+ 	u8 lun[8];
+-	u32 reason;
++	__virtio32 reason;
+ } __packed;
+ 
+ struct virtio_scsi_config {
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index b83846f..d9ec806 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -158,7 +158,7 @@ static void virtscsi_complete_cmd(struct virtio_scsi *vscsi, void *buf)
+ 		sc, resp->response, resp->status, resp->sense_len);
+ 
+ 	sc->result = resp->status;
+-	virtscsi_compute_resid(sc, resp->resid);
++	virtscsi_compute_resid(sc, virtio32_to_cpu(vscsi->vdev, resp->resid));
+ 	switch (resp->response) {
+ 	case VIRTIO_SCSI_S_OK:
+ 		set_host_byte(sc, DID_OK);
+@@ -196,10 +196,13 @@ static void virtscsi_complete_cmd(struct virtio_scsi *vscsi, void *buf)
+ 		break;
  	}
- 	BUG_ON(tun->numdisabled != 0);
  
--	if (tun->flags & TUN_PERSIST)
-+	if (tun->flags & IFF_PERSIST)
- 		module_put(THIS_MODULE);
+-	WARN_ON(resp->sense_len > VIRTIO_SCSI_SENSE_SIZE);
++	WARN_ON(virtio32_to_cpu(vscsi->vdev, resp->sense_len) >
++		VIRTIO_SCSI_SENSE_SIZE);
+ 	if (sc->sense_buffer) {
+ 		memcpy(sc->sense_buffer, resp->sense,
+-		       min_t(u32, resp->sense_len, VIRTIO_SCSI_SENSE_SIZE));
++		       min_t(u32,
++			     virtio32_to_cpu(vscsi->vdev, resp->sense_len),
++			     VIRTIO_SCSI_SENSE_SIZE));
+ 		if (resp->sense_len)
+ 			set_driver_byte(sc, DRIVER_SENSE);
+ 	}
+@@ -323,7 +326,7 @@ static void virtscsi_handle_transport_reset(struct virtio_scsi *vscsi,
+ 	unsigned int target = event->lun[1];
+ 	unsigned int lun = (event->lun[2] << 8) | event->lun[3];
+ 
+-	switch (event->reason) {
++	switch (virtio32_to_cpu(vscsi->vdev, event->reason)) {
+ 	case VIRTIO_SCSI_EVT_RESET_RESCAN:
+ 		scsi_add_device(shost, 0, target, lun);
+ 		break;
+@@ -349,8 +352,8 @@ static void virtscsi_handle_param_change(struct virtio_scsi *vscsi,
+ 	struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
+ 	unsigned int target = event->lun[1];
+ 	unsigned int lun = (event->lun[2] << 8) | event->lun[3];
+-	u8 asc = event->reason & 255;
+-	u8 ascq = event->reason >> 8;
++	u8 asc = virtio32_to_cpu(vscsi->vdev, event->reason) & 255;
++	u8 ascq = virtio32_to_cpu(vscsi->vdev, event->reason) >> 8;
+ 
+ 	sdev = scsi_device_lookup(shost, 0, target, lun);
+ 	if (!sdev) {
+@@ -374,12 +377,14 @@ static void virtscsi_handle_event(struct work_struct *work)
+ 	struct virtio_scsi *vscsi = event_node->vscsi;
+ 	struct virtio_scsi_event *event = &event_node->event;
+ 
+-	if (event->event & VIRTIO_SCSI_T_EVENTS_MISSED) {
+-		event->event &= ~VIRTIO_SCSI_T_EVENTS_MISSED;
++	if (event->event &
++	    cpu_to_virtio32(vscsi->vdev, VIRTIO_SCSI_T_EVENTS_MISSED)) {
++		event->event &= ~cpu_to_virtio32(vscsi->vdev,
++						   VIRTIO_SCSI_T_EVENTS_MISSED);
+ 		scsi_scan_host(virtio_scsi_host(vscsi->vdev));
+ 	}
+ 
+-	switch (event->event) {
++	switch (virtio32_to_cpu(vscsi->vdev, event->event)) {
+ 	case VIRTIO_SCSI_T_NO_EVENT:
+ 		break;
+ 	case VIRTIO_SCSI_T_TRANSPORT_RESET:
+@@ -482,26 +487,28 @@ static int virtscsi_kick_cmd(struct virtio_scsi_vq *vq,
+ 	return err;
  }
  
-@@ -556,7 +550,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file, bool skip_filte
- 		goto out;
+-static void virtio_scsi_init_hdr(struct virtio_scsi_cmd_req *cmd,
++static void virtio_scsi_init_hdr(struct virtio_device *vdev,
++				 struct virtio_scsi_cmd_req *cmd,
+ 				 struct scsi_cmnd *sc)
+ {
+ 	cmd->lun[0] = 1;
+ 	cmd->lun[1] = sc->device->id;
+ 	cmd->lun[2] = (sc->device->lun >> 8) | 0x40;
+ 	cmd->lun[3] = sc->device->lun & 0xff;
+-	cmd->tag = (unsigned long)sc;
++	cmd->tag = cpu_to_virtio64(vdev, (unsigned long)sc);
+ 	cmd->task_attr = VIRTIO_SCSI_S_SIMPLE;
+ 	cmd->prio = 0;
+ 	cmd->crn = 0;
+ }
  
- 	err = -EBUSY;
--	if (!(tun->flags & TUN_TAP_MQ) && tun->numqueues == 1)
-+	if (!(tun->flags & IFF_MULTI_QUEUE) && tun->numqueues == 1)
- 		goto out;
+-static void virtio_scsi_init_hdr_pi(struct virtio_scsi_cmd_req_pi *cmd_pi,
++static void virtio_scsi_init_hdr_pi(struct virtio_device *vdev,
++				    struct virtio_scsi_cmd_req_pi *cmd_pi,
+ 				    struct scsi_cmnd *sc)
+ {
+ 	struct request *rq = sc->request;
+ 	struct blk_integrity *bi;
  
- 	err = -E2BIG;
-@@ -935,7 +929,7 @@ static void tun_net_init(struct net_device *dev)
- 	struct tun_struct *tun = netdev_priv(dev);
+-	virtio_scsi_init_hdr((struct virtio_scsi_cmd_req *)cmd_pi, sc);
++	virtio_scsi_init_hdr(vdev, (struct virtio_scsi_cmd_req *)cmd_pi, sc);
  
- 	switch (tun->flags & TUN_TYPE_MASK) {
--	case TUN_TUN_DEV:
-+	case IFF_TUN:
- 		dev->netdev_ops = &tun_netdev_ops;
+ 	if (!rq || !scsi_prot_sg_count(sc))
+ 		return;
+@@ -509,9 +516,13 @@ static void virtio_scsi_init_hdr_pi(struct virtio_scsi_cmd_req_pi *cmd_pi,
+ 	bi = blk_get_integrity(rq->rq_disk);
  
- 		/* Point-to-Point TUN Device */
-@@ -949,7 +943,7 @@ static void tun_net_init(struct net_device *dev)
- 		dev->tx_queue_len = TUN_READQ_SIZE;  /* We prefer our own queue length */
- 		break;
+ 	if (sc->sc_data_direction == DMA_TO_DEVICE)
+-		cmd_pi->pi_bytesout = blk_rq_sectors(rq) * bi->tuple_size;
++		cmd_pi->pi_bytesout = cpu_to_virtio32(vdev,
++							blk_rq_sectors(rq) *
++							bi->tuple_size);
+ 	else if (sc->sc_data_direction == DMA_FROM_DEVICE)
+-		cmd_pi->pi_bytesin = blk_rq_sectors(rq) * bi->tuple_size;
++		cmd_pi->pi_bytesin = cpu_to_virtio32(vdev,
++						       blk_rq_sectors(rq) *
++						       bi->tuple_size);
+ }
  
--	case TUN_TAP_DEV:
-+	case IFF_TAP:
- 		dev->netdev_ops = &tap_netdev_ops;
- 		/* Ethernet TAP Device */
- 		ether_setup(dev);
-@@ -1040,7 +1034,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 	int err;
- 	u32 rxhash;
+ static int virtscsi_queuecommand(struct virtio_scsi *vscsi,
+@@ -536,11 +547,11 @@ static int virtscsi_queuecommand(struct virtio_scsi *vscsi,
+ 	BUG_ON(sc->cmd_len > VIRTIO_SCSI_CDB_SIZE);
  
--	if (!(tun->flags & TUN_NO_PI)) {
-+	if (!(tun->flags & IFF_NO_PI)) {
- 		if (len < sizeof(pi))
- 			return -EINVAL;
- 		len -= sizeof(pi);
-@@ -1050,7 +1044,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 		offset += sizeof(pi);
+ 	if (virtio_has_feature(vscsi->vdev, VIRTIO_SCSI_F_T10_PI)) {
+-		virtio_scsi_init_hdr_pi(&cmd->req.cmd_pi, sc);
++		virtio_scsi_init_hdr_pi(vscsi->vdev, &cmd->req.cmd_pi, sc);
+ 		memcpy(cmd->req.cmd_pi.cdb, sc->cmnd, sc->cmd_len);
+ 		req_size = sizeof(cmd->req.cmd_pi);
+ 	} else {
+-		virtio_scsi_init_hdr(&cmd->req.cmd, sc);
++		virtio_scsi_init_hdr(vscsi->vdev, &cmd->req.cmd, sc);
+ 		memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
+ 		req_size = sizeof(cmd->req.cmd);
  	}
+@@ -655,7 +666,8 @@ static int virtscsi_device_reset(struct scsi_cmnd *sc)
+ 	cmd->sc = sc;
+ 	cmd->req.tmf = (struct virtio_scsi_ctrl_tmf_req){
+ 		.type = VIRTIO_SCSI_T_TMF,
+-		.subtype = VIRTIO_SCSI_T_TMF_LOGICAL_UNIT_RESET,
++		.subtype = cpu_to_virtio32(vscsi->vdev,
++					     VIRTIO_SCSI_T_TMF_LOGICAL_UNIT_RESET),
+ 		.lun[0] = 1,
+ 		.lun[1] = sc->device->id,
+ 		.lun[2] = (sc->device->lun >> 8) | 0x40,
+@@ -713,7 +725,7 @@ static int virtscsi_abort(struct scsi_cmnd *sc)
+ 		.lun[1] = sc->device->id,
+ 		.lun[2] = (sc->device->lun >> 8) | 0x40,
+ 		.lun[3] = sc->device->lun & 0xff,
+-		.tag = (unsigned long)sc,
++		.tag = cpu_to_virtio64(vscsi->vdev, (unsigned long)sc),
+ 	};
+ 	return virtscsi_tmf(vscsi, cmd);
+ }
+@@ -1073,6 +1085,7 @@ static unsigned int features[] = {
+ 	VIRTIO_SCSI_F_HOTPLUG,
+ 	VIRTIO_SCSI_F_CHANGE,
+ 	VIRTIO_SCSI_F_T10_PI,
++	VIRTIO_F_VERSION_1,
+ };
  
--	if (tun->flags & TUN_VNET_HDR) {
-+	if (tun->flags & IFF_VNET_HDR) {
- 		if (len < tun->vnet_hdr_sz)
- 			return -EINVAL;
- 		len -= tun->vnet_hdr_sz;
-@@ -1067,7 +1061,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 		offset += tun->vnet_hdr_sz;
- 	}
- 
--	if ((tun->flags & TUN_TYPE_MASK) == TUN_TAP_DEV) {
-+	if ((tun->flags & TUN_TYPE_MASK) == IFF_TAP) {
- 		align += NET_IP_ALIGN;
- 		if (unlikely(len < ETH_HLEN ||
- 			     (gso.hdr_len && gso.hdr_len < ETH_HLEN)))
-@@ -1130,8 +1124,8 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 	}
- 
- 	switch (tun->flags & TUN_TYPE_MASK) {
--	case TUN_TUN_DEV:
--		if (tun->flags & TUN_NO_PI) {
-+	case IFF_TUN:
-+		if (tun->flags & IFF_NO_PI) {
- 			switch (skb->data[0] & 0xf0) {
- 			case 0x40:
- 				pi.proto = htons(ETH_P_IP);
-@@ -1150,7 +1144,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 		skb->protocol = pi.proto;
- 		skb->dev = tun->dev;
- 		break;
--	case TUN_TAP_DEV:
-+	case IFF_TAP:
- 		skb->protocol = eth_type_trans(skb, tun->dev);
- 		break;
- 	}
-@@ -1256,10 +1250,10 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 	if (vlan_tx_tag_present(skb))
- 		vlan_hlen = VLAN_HLEN;
- 
--	if (tun->flags & TUN_VNET_HDR)
-+	if (tun->flags & IFF_VNET_HDR)
- 		vnet_hdr_sz = tun->vnet_hdr_sz;
- 
--	if (!(tun->flags & TUN_NO_PI)) {
-+	if (!(tun->flags & IFF_NO_PI)) {
- 		if ((len -= sizeof(pi)) < 0)
- 			return -EINVAL;
- 
-@@ -1592,7 +1586,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 			return -EINVAL;
- 
- 		if (!!(ifr->ifr_flags & IFF_MULTI_QUEUE) !=
--		    !!(tun->flags & TUN_TAP_MQ))
-+		    !!(tun->flags & IFF_MULTI_QUEUE))
- 			return -EINVAL;
- 
- 		if (tun_not_capable(tun))
-@@ -1605,7 +1599,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 		if (err < 0)
- 			return err;
- 
--		if (tun->flags & TUN_TAP_MQ &&
-+		if (tun->flags & IFF_MULTI_QUEUE &&
- 		    (tun->numqueues + tun->numdisabled > 1)) {
- 			/* One or more queue has already been attached, no need
- 			 * to initialize the device again.
-@@ -1628,11 +1622,11 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 		/* Set dev type */
- 		if (ifr->ifr_flags & IFF_TUN) {
- 			/* TUN device */
--			flags |= TUN_TUN_DEV;
-+			flags |= IFF_TUN;
- 			name = "tun%d";
- 		} else if (ifr->ifr_flags & IFF_TAP) {
- 			/* TAP device */
--			flags |= TUN_TAP_DEV;
-+			flags |= IFF_TAP;
- 			name = "tap%d";
- 		} else
- 			return -EINVAL;
-@@ -1825,7 +1819,7 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
- 		ret = tun_attach(tun, file, false);
- 	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
- 		tun = rtnl_dereference(tfile->tun);
--		if (!tun || !(tun->flags & TUN_TAP_MQ) || tfile->detached)
-+		if (!tun || !(tun->flags & IFF_MULTI_QUEUE) || tfile->detached)
- 			ret = -EINVAL;
- 		else
- 			__tun_detach(tfile, false);
-@@ -1931,12 +1925,12 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 		/* Disable/Enable persist mode. Keep an extra reference to the
- 		 * module to prevent the module being unprobed.
- 		 */
--		if (arg && !(tun->flags & TUN_PERSIST)) {
--			tun->flags |= TUN_PERSIST;
-+		if (arg && !(tun->flags & IFF_PERSIST)) {
-+			tun->flags |= IFF_PERSIST;
- 			__module_get(THIS_MODULE);
- 		}
--		if (!arg && (tun->flags & TUN_PERSIST)) {
--			tun->flags &= ~TUN_PERSIST;
-+		if (!arg && (tun->flags & IFF_PERSIST)) {
-+			tun->flags &= ~IFF_PERSIST;
- 			module_put(THIS_MODULE);
- 		}
- 
-@@ -1994,7 +1988,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 	case TUNSETTXFILTER:
- 		/* Can be set only for TAPs */
- 		ret = -EINVAL;
--		if ((tun->flags & TUN_TYPE_MASK) != TUN_TAP_DEV)
-+		if ((tun->flags & TUN_TYPE_MASK) != IFF_TAP)
- 			break;
- 		ret = update_filter(&tun->txflt, (void __user *)arg);
- 		break;
-@@ -2053,7 +2047,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 	case TUNATTACHFILTER:
- 		/* Can be set only for TAPs */
- 		ret = -EINVAL;
--		if ((tun->flags & TUN_TYPE_MASK) != TUN_TAP_DEV)
-+		if ((tun->flags & TUN_TYPE_MASK) != IFF_TAP)
- 			break;
- 		ret = -EFAULT;
- 		if (copy_from_user(&tun->fprog, argp, sizeof(tun->fprog)))
-@@ -2065,7 +2059,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 	case TUNDETACHFILTER:
- 		/* Can be set only for TAPs */
- 		ret = -EINVAL;
--		if ((tun->flags & TUN_TYPE_MASK) != TUN_TAP_DEV)
-+		if ((tun->flags & TUN_TYPE_MASK) != IFF_TAP)
- 			break;
- 		ret = 0;
- 		tun_detach_filter(tun, tun->numqueues);
-@@ -2073,7 +2067,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 
- 	case TUNGETFILTER:
- 		ret = -EINVAL;
--		if ((tun->flags & TUN_TYPE_MASK) != TUN_TAP_DEV)
-+		if ((tun->flags & TUN_TYPE_MASK) != IFF_TAP)
- 			break;
- 		ret = -EFAULT;
- 		if (copy_to_user(argp, &tun->fprog, sizeof(tun->fprog)))
-@@ -2266,10 +2260,10 @@ static void tun_get_drvinfo(struct net_device *dev, struct ethtool_drvinfo *info
- 	strlcpy(info->version, DRV_VERSION, sizeof(info->version));
- 
- 	switch (tun->flags & TUN_TYPE_MASK) {
--	case TUN_TUN_DEV:
-+	case IFF_TUN:
- 		strlcpy(info->bus_info, "tun", sizeof(info->bus_info));
- 		break;
--	case TUN_TAP_DEV:
-+	case IFF_TAP:
- 		strlcpy(info->bus_info, "tap", sizeof(info->bus_info));
- 		break;
- 	}
+ static struct virtio_driver virtio_scsi_driver = {
 -- 
 MST
 
