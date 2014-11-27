@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751517AbaK0Qgs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 11:36:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41461 "EHLO mx2.suse.de"
+	id S1751342AbaK0Qjg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 11:39:36 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750968AbaK0Qgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 11:36:46 -0500
-Date: Thu, 27 Nov 2014 17:36:39 +0100
-From: Borislav Petkov <bp@suse.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>, x86@kernel.org,
-        gregkh@linuxfoundation.org, david.vrabel@citrix.com,
-        stable@vger.kernel.org, rshendershot@mchsi.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.17 100/141] x86, microcode: Fix accessing dis_ucode_ldr
- on 32-bit
-Message-ID: <20141127163639.GJ4828@pd.tnic>
-References: <b4d424e6-81b2-4b21-ab2f-3d403a455f57@default>
- <20141127091228.GA4828@pd.tnic>
- <20141127162118.GA24829@konrad-lan.dumpdata.com>
+	id S1751077AbaK0Qje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 11:39:34 -0500
+Message-ID: <547753C0.6050604@nod.at>
+Date: Thu, 27 Nov 2014 17:39:28 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
+To: dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] UBI: Fastmap: Ensure that only one fastmap work is
+ scheduled
+References: <1416835236-25185-1-git-send-email-richard@nod.at>		 <1416835236-25185-3-git-send-email-richard@nod.at>	 <1417102042.5858.102.camel@sauron.fi.intel.com> <54774DB7.5090200@nod.at> <1417106151.5858.122.camel@sauron.fi.intel.com>
+In-Reply-To: <1417106151.5858.122.camel@sauron.fi.intel.com>
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141127162118.GA24829@konrad-lan.dumpdata.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 11:21:19AM -0500, Konrad Rzeszutek Wilk wrote:
-> > Ok, but let's have a clean design: maybe have a weak default stub which
-> > returns false when PARAVIRT is not enabled in the .config and then add
-> > an override in, say, arch/x86/kernel/paravirt.c which returns true when
-> > running as a guest. Something like that, at least.
+Am 27.11.2014 um 17:35 schrieb Artem Bityutskiy:
+> On Thu, 2014-11-27 at 17:13 +0100, Richard Weinberger wrote:
+>> Am 27.11.2014 um 16:27 schrieb Artem Bityutskiy:
+>>> On Mon, 2014-11-24 at 14:20 +0100, Richard Weinberger wrote:
+>>>> If the WL pool runs out of PEBs we schedule a fastmap write
+>>>> to refill it as soon as possible.
+>>>> Ensure that only one at a time is scheduled otherwise we might end in
+>>>> a fastmap write storm because writing the fastmap can schedule another
+>>>> write if bitflips are detected.
+>>>
+>>> Could you please provide some more details about the "write storm". Does
+>>> it happen when there are 2 fastmap works in the queue? Or if they run
+>>> simultaneously? Why the storm happens and white kind of "writes" it
+>>> consists of?
+>>
+>> If UBI needs to write a new fastmap while wear leveling (by using get_peb_for_wl())
+>> a fastmap work is scheduled.
+>> We cannot write a fastmap in this context because we're in atomic context.
+>> At this point one fastmap write is scheduled. If now get_peb_for_wl() is executed
+>> a second time it will schedule another fastmap work because the pools are still not refilled.
 > 
-> You are describing 'paravirt_enabled()' :-)
+> Sounds like just you do not need any works and any queues at all. All
+> you need is a "please, fastmap me!" flag.
+> 
+> Then this flag should be checked every time we enter the background
+> thread or the fastmap code, and be acted upon.
+> 
+> So the background thread would first check this flag, and if it is set -
+> call the fastmap stuff. The go do the WL works.
+> 
+> Just off-the top of my head, take with grain of salt.
 
-Haha.
+So you want me to redesign it?
+IMHO this is just a matter of taste.
 
-Although I have a suspicion this won't work either because we're loading
-microcode very early on 32-bit, before paging has been enabled, and
-accessing pv_info.paravirt_enabled will probably go boom. AFAICT, from a
-quick glance.
+Face it, my brain does not work like yours. I design things differently.
 
--- 
-Regards/Gruss,
-    Boris.
+Thanks,
+//richard
 
-Sent from a fat crate under my desk. Formatting is fine.
---
