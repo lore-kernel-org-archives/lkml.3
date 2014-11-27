@@ -1,66 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751564AbaK0PR4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 10:17:56 -0500
-Received: from mail-bn1bon0083.outbound.protection.outlook.com ([157.56.111.83]:44090
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751514AbaK0PRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 10:17:53 -0500
-From: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
-To: <dougthompson@xmission.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-edac@vger.kernel.org>,
-        <michal.simek@xilinx.com>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>, <rob@landley.net>, <bp@alien8.de>
-CC: <kpc528@gmail.com>, <kalluripunnaiahchoudary@gmail.com>,
-        <punnaia@xilinx.com>
-Subject: [PATCH v5 1/2] Documentation: devicetree: Add ECC information to synopsys ddr controller
-Date: Thu, 27 Nov 2014 20:47:33 +0530
-X-Mailer: git-send-email 1.7.4
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21132.007
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <1d7215b92ad4406b8bf5c593a9a13167@BN1BFFO11FD020.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(189002)(50986999)(86362001)(31966008)(92566001)(19580405001)(89996001)(77156002)(2201001)(99396003)(20776003)(108616004)(93916002)(120916001)(47776003)(48376002)(87286001)(106466001)(74316001)(50466002)(229853001)(44976005)(77096003)(6806004)(88136002)(21056001)(104016003)(50226001)(53416004)(19580395003)(4396001)(62966003)(87936001)(95666004)(46102003)(107046002)(64706001)(102836001)(33646002)(104166001)(1121002)(107986001)(921003)(24736002)(83996005)(2101003)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB060;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+	id S1751631AbaK0PSN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 10:18:13 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:61354 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139AbaK0PSK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 10:18:10 -0500
+Date: Thu, 27 Nov 2014 16:18:06 +0100
+From: Luis de Bethencourt <luis@debethencourt.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, eunb.song@samsung.com, gulsah.1004@gmail.com,
+        paul.gortmaker@windriver.com, devel@driverdev.osuosl.org
+Subject: Re: [PATCH] staging: octeon: Fix checkpatch warning
+Message-ID: <20141127151806.GA17849@ks395439.kimsufi.com>
+References: <20141125132614.GA23857@biggie>
+ <20141126214523.GA10037@kroah.com>
+ <20141127003523.GA3249@biggie>
+ <20141127023410.GA7283@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB060;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB060;
-X-Forefront-PRVS: 040866B734
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=punnaiah.choudary.kalluri@xilinx.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB060;
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141127023410.GA7283@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add ECC information to synopsys ddr memory controller.
+On Wed, Nov 26, 2014 at 06:34:10PM -0800, Greg KH wrote:
+> On Thu, Nov 27, 2014 at 12:35:23AM +0000, Luis de Bethencourt wrote:
+> > On Wed, Nov 26, 2014 at 01:45:23PM -0800, Greg KH wrote:
+> > > On Tue, Nov 25, 2014 at 01:26:14PM +0000, Luis de Bethencourt wrote:
+> > > > This patch fixes the checkpatch.pl warnings:
+> > > > 
+> > > > WARNING: line over 80 characters
+> > > > +                       int cores_in_use = core_state.baseline_cores - atomic_read(&core_state.available_cores);
+> > > > 
+> > > > WARNING: line over 80 characters
+> > > > +                       skb->data = skb->head + work->packet_ptr.s.addr - cvmx_ptr_to_phys(skb->head);
+> > > > 
+> > > > Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
+> > > > ---
+> > > >  drivers/staging/octeon/ethernet-rx.c | 6 ++++--
+> > > >  1 file changed, 4 insertions(+), 2 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
+> > > > index 44e372f..bd83f55 100644
+> > > > --- a/drivers/staging/octeon/ethernet-rx.c
+> > > > +++ b/drivers/staging/octeon/ethernet-rx.c
+> > > > @@ -295,7 +295,8 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+> > > >  			 */
+> > > >  			union cvmx_pow_wq_int_cntx counts;
+> > > >  			int backlog;
+> > > > -			int cores_in_use = core_state.baseline_cores - atomic_read(&core_state.available_cores);
+> > > > +			int cores_in_use = core_state.baseline_cores -
+> > > > +				atomic_read(&core_state.available_cores);
+> > > >  			counts.u64 = cvmx_read_csr(CVMX_POW_WQ_INT_CNTX(pow_receive_group));
+> > > >  			backlog = counts.s.iq_cnt + counts.s.ds_cnt;
+> > > >  			if (backlog > budget * cores_in_use && napi != NULL)
+> > > > @@ -324,7 +325,8 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+> > > >  		 * buffer.
+> > > >  		 */
+> > > >  		if (likely(skb_in_hw)) {
+> > > > -			skb->data = skb->head + work->packet_ptr.s.addr - cvmx_ptr_to_phys(skb->head);
+> > > > +			skb->data = skb->head + work->packet_ptr.s.addr -
+> > > > +				cvmx_ptr_to_phys(skb->head);
+> > > >  			prefetch(skb->data);
+> > > >  			skb->len = work->len;
+> > > >  			skb_set_tail_pointer(skb, skb->len);
+> > > > -- 
+> > > > 2.1.3
+> > > 
+> > > No longer applies to my tree :(
+> > 
+> > I'm confused.
+> > 
+> > I just tried applying it to what I think is your tree is and it worked.
+> > https://git.kernel.org/cgit/linux/kernel/git/gregkh/staging.git/log/?h=staging-next
+> > 
+> > Do I have this wrong?
+> 
+> I'm applying patches first to staging-testing to get some 0-day buildbot
+> testing before merging them to staging-next these days, as I've been
+> burned with common problems too many times.  I took some other octeon
+> patches that were sent before yours were that caused the conflict.  If
+> you look at staging-testing right now you can see that.
+> 
+> Hope this helps,
+> 
+> greg k-h
 
-Signed-off-by: Punnaiah Choudary Kalluri <punnaia@xilinx.com>
----
- .../bindings/memory-controllers/synopsys.txt       |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+This is very helpful!
 
-diff --git a/Documentation/devicetree/bindings/memory-controllers/synopsys.txt b/Documentation/devicetree/bindings/memory-controllers/synopsys.txt
-index f9c6454..a43d26d 100644
---- a/Documentation/devicetree/bindings/memory-controllers/synopsys.txt
-+++ b/Documentation/devicetree/bindings/memory-controllers/synopsys.txt
-@@ -1,5 +1,9 @@
- Binding for Synopsys IntelliDDR Multi Protocol Memory Controller
- 
-+This controller has an optional ECC support in half-bus width (16-bit)
-+configuration. The ECC controller corrects one bit error and detects
-+two bit errors.
-+
- Required properties:
-  - compatible: Should be 'xlnx,zynq-ddrc-a05'
-  - reg: Base address and size of the controllers memory area
--- 
-1.7.4
+I am about to send a new version of the patch, this time against staging-test.
+Thanks for the time to explain this, and sorry about the previos patch not
+applying.
 
+Luis
