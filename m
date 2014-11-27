@@ -1,82 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751256AbaK0F5a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 00:57:30 -0500
-Received: from ozlabs.org ([103.22.144.67]:54944 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750783AbaK0F53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 00:57:29 -0500
-Date: Thu, 27 Nov 2014 16:57:19 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jason Cooper <jason@lakedaemon.net>, Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>
-Subject: linux-next: manual merge of the irqchip tree with the mips tree
-Message-ID: <20141127165719.2e5cb4e4@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1750947AbaK0GEU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 01:04:20 -0500
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:55751 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812AbaK0GES (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 01:04:18 -0500
+X-Originating-IP: 50.43.41.112
+Date: Wed, 26 Nov 2014 22:04:09 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Tim Bird <tim.bird@sonymobile.com>
+Cc: Shuah Khan <shuahkh@osg.samsung.com>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>
+Subject: Re: [PATCH v4] selftest: size: Add size test for Linux kernel
+Message-ID: <20141127060409.GB2773@thin>
+References: <5476A82B.2060903@sonymobile.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/ou5qZlUcXra13.aOn7wLLDe"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5476A82B.2060903@sonymobile.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/ou5qZlUcXra13.aOn7wLLDe
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, Nov 26, 2014 at 08:27:23PM -0800, Tim Bird wrote:
+> --- /dev/null
+> +++ b/tools/testing/selftests/size/Makefile
+[...]
+> +LIBGCC=$(shell $(CC) -print-libgcc-file-name)
+> +
+> +get_size: get_size.c
+> +	$(CC) --static -ffreestanding -nostartfiles \
+> +		-Wl,--entry=_start get_size.c $(LIBGCC) \
+> +		-o get_size
 
-Hi Jason,
+You don't need -Wl,--entry=_start; that's the default.
 
-Today's linux-next merge of the irqchip tree got a conflict in
-drivers/irqchip/Makefile between commit 8a19b8f19429 ("MIPS: Move GIC
-to drivers/irqchip/") from the mips tree and commit 5fe3bba3088c
-("irqchip: mtk-sysirq: Add sysirq interrupt polarity support") from the
-irqchip tree.
+You shouldn't need to manually find libgcc, either; the compiler should
+do that for you.  What goes wrong if you don't include that?  If you're
+trying to link libgcc statically, try -static-libgcc.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Also, static is normally spelled -static, not --static.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> --- /dev/null
+> +++ b/tools/testing/selftests/size/get_size.c
+[...]
+> +int print(const char *s)
 
-diff --cc drivers/irqchip/Makefile
-index 021833079c91,5761696368f9..000000000000
---- a/drivers/irqchip/Makefile
-+++ b/drivers/irqchip/Makefile
-@@@ -35,7 -37,7 +37,8 @@@ obj-$(CONFIG_TB10X_IRQC)		+=3D irq-tb10x.
-  obj-$(CONFIG_XTENSA)			+=3D irq-xtensa-pic.o
-  obj-$(CONFIG_XTENSA_MX)			+=3D irq-xtensa-mx.o
-  obj-$(CONFIG_IRQ_CROSSBAR)		+=3D irq-crossbar.o
-- obj-$(CONFIG_BRCMSTB_L2_IRQ)		+=3D irq-brcmstb-l2.o \
-- 					   irq-bcm7120-l2.o
-+ obj-$(CONFIG_BCM7120_L2_IRQ)		+=3D irq-bcm7120-l2.o
-+ obj-$(CONFIG_BRCMSTB_L2_IRQ)		+=3D irq-brcmstb-l2.o
-  obj-$(CONFIG_KEYSTONE_IRQ)		+=3D irq-keystone.o
- +obj-$(CONFIG_MIPS_GIC)			+=3D irq-mips-gic.o
-+ obj-$(CONFIG_ARCH_MEDIATEK)		+=3D irq-mtk-sysirq.o
+This function, and all the others apart from _start, should be declared
+static.
 
---Sig_/ou5qZlUcXra13.aOn7wLLDe
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+> +void num_to_str(unsigned long num, char *s)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Likewise, static.
 
-iQIcBAEBCAAGBQJUdr1FAAoJEMDTa8Ir7ZwVCekP/22HEyt2s1yJ0hCTa+RD81lM
-cuuvflHlzpcW+QdslQWs1uepbo8U8o3VHK7NI0U2OvWbeIefpgwLln7x9xtveyRR
-nlTt6ruNjtUIgY9Fy5bB5+1nkN5WbUtpdEvR9UEjBF5zvDYOUmKuAR/0o+85GCFh
-gEdm1diyTAx3sfU7gyhpjpzEwd5zetlm43mpCeKGWT+gExCDdeRP4ZmEDVAt5muh
-FvOR/av0gq83ghZHkpPn9f7Sa9RoDDfJGO3YMldfV3+orizFQTA11X5a/uaxt69T
-GcNxnBlxirJWuQ418Z6nWUiGJwffHZfTvB5ATETXkFRz/CgxchtA0Q2O1W+u6omm
-tOfPjfcIcfIrBob7qH6s6MlVFq5pj9sUGinhVNa8dn1WQsY+XcFgGsZH7UKKX2tQ
-cTIsjWPT+I6zVXtRgDvMEWufyfVeCKBoPjAVzlw8P/NTinrtMe/9p8EK4dSkQbHd
-kZI0ufH+g5kEv1JJIzRtZm5C+ez8PwJUAdHsJsCe5+XQEg1laLsBrqlnKSBMMKZG
-4QeNidgh29pzTKTK+ePZxubNdQt26IBKvi564qec9OLaY3CD+OCDMrdP3t5yBFQj
-ylsEvrx0LsnrPJODqWegbGGQdKpRKb3rBTjGHgvm7UgXmcJv/jnl71RXz6Fzwng4
-pWjvyTFlUgrdgeW27gO3
-=au2s
------END PGP SIGNATURE-----
+> +{
+> +	unsigned long long temp, div;
+> +	int started;
+> +
+> +	temp = num;
+> +	div = 1000000000000000000LL;
+> +	started = 0;
+> +	while (div) {
+> +		if (temp/div || started) {
+> +			*s++ = (unsigned char)(temp/div + '0');
+> +			started = 1;
+> +		}
+> +		temp -= (temp/div)*div;
+> +		div /= 10;
+> +	}
+> +	*s = 0;
+> +}
 
---Sig_/ou5qZlUcXra13.aOn7wLLDe--
+You'd probably end up with significantly smaller code (and no divisions,
+and thus no corner cases on architectures that need a special function
+to do unsigned long long division) if you print in hex.  You could also
+drop the "no leading zeros" logic, and just *always* print a 64-bit
+value as 16 hex digits.
+
+> +int print_num(unsigned long num)
+
+Likewise, static.
+
+> +{
+> +	char num_buf[30];
+> +
+> +	num_to_str(num, num_buf);
+> +	return print(num_buf);
+> +}
+> +
+> +int print_k_value(const char *s, unsigned long num, unsigned long units)
+> +{
+> +	unsigned long long temp;
+> +	int ccode;
+> +
+> +	print(s);
+> +
+> +	temp = num;
+> +	temp = (temp * units)/1024;
+> +	num = temp;
+> +	ccode = print_num(num);
+> +	print("\n");
+> +	return ccode;
+> +}
+
+I'd suggest dropping this entirely, and just always printing the exact
+values returned by sysinfo.  Drop the multiply, too, and just print
+info.mem_unit as well.  It's easy to post-process the value in a more
+capable environment.
+
+> +/* this program has no main(), as startup libraries are not used */
+> +void _start(void)
+> +{
+> +	int ccode;
+> +	struct sysinfo info;
+> +	unsigned long used;
+> +
+> +	print("Testing system size.\n");
+> +	print("1..1\n");
+> +
+> +	ccode = sysinfo(&info);
+> +	if (ccode < 0) {
+> +		print("not ok 1 get size runtime size\n");
+
+Shouldn't the "not ok" here and the "ok" below have the same test
+description?
+
+> +		print("# could not get sysinfo\n");
+> +		_exit(ccode);
+> +	}
+> +	/* ignore cache complexities for now */
+> +	used = info.totalram - info.freeram - info.bufferram;
+> +	print_k_value("ok 1 get runtime memory use # size = ", used,
+> +		info.mem_unit);
+> +
+> +	print("# System runtime memory report (units in Kilobytes):\n");
+> +	print_k_value("#   Total:  ", info.totalram, info.mem_unit);
+> +	print_k_value("#   Free:   ", info.freeram, info.mem_unit);
+> +	print_k_value("#   Buffer: ", info.bufferram, info.mem_unit);
+> +	print_k_value("#   In use: ", used, info.mem_unit);
+> +
+> +	_exit(0);
+> +}
+> -- 
+> 1.8.2.2
+> 
