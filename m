@@ -1,467 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508AbaK0Pkf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 10:40:35 -0500
-Received: from mga02.intel.com ([134.134.136.20]:42265 "EHLO mga02.intel.com"
+	id S1751644AbaK0Pl6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 10:41:58 -0500
+Received: from shark3.inbox.lv ([194.152.32.83]:58457 "EHLO shark3.inbox.lv"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750870AbaK0Pkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 10:40:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,470,1413270000"; 
-   d="scan'208";a="615065226"
-Date: Thu, 27 Nov 2014 17:40:23 +0200
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Stefan Berger <stefanb@linux.vnet.ibm.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>, christophe.ricard@gmail.com,
-        josh.triplett@intel.com, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
-        jason.gunthorpe@obsidianresearch.com,
-        trousers-tech@lists.sourceforge.net
-Subject: Re: [tpmdd-devel] [PATCH v7 08/10] tpm: TPM 2.0 CRB Interface
-Message-ID: <20141127154023.GD24791@intel.com>
-References: <1415713513-16524-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1415713513-16524-9-git-send-email-jarkko.sakkinen@linux.intel.com>
- <5475DE81.50308@linux.vnet.ibm.com>
+	id S1751075AbaK0Pl4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 10:41:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5475DE81.50308@linux.vnet.ibm.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Compose: web=mail.inbox.lv, node=w10.inbox.lv, l=ru, compose=Plaintext
+X-REMOTE-ADDR: 195.13.218.197
+X-HTTP-USER-AGENT: Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML,
+ like Gecko) Chrome/39.0.2171.65 Safari/537.36
+Message-ID: <1417102910.5477463ec9948@mail.inbox.lv>
+Date: Thu, 27 Nov 2014 17:41:50 +0200
+From: "=?UTF-8?B?0JTQtdC90LjRgdC60LAt0YDQtdC00LjRgdC60LA=?=" 
+	<slim@inbox.lv>
+Subject: Re: bug in networking code causes GPF
+To: "Daniel Borkmann" <dborkman@redhat.com>
+Cc: linux-net@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, minipli@googlemail.com, fw@strlen.de
+User-Agent: Inbox.lv Webmail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 09:06:57AM -0500, Stefan Berger wrote:
-> On 11/11/2014 08:45 AM, Jarkko Sakkinen wrote:
-> >tpm_crb is a driver for TPM 2.0 Command Response Buffer (CRB) Interface
-> >as defined in PC Client Platform TPM Profile (PTP) Specification.
-> >
-> >Only polling and single locality is supported as these are the limitations
-> >of the available hardware, Platform Trust Techonlogy (PTT) in Haswell
-> >CPUs.
-> >
-> >The driver always applies CRB with ACPI start because PTT reports using
-> >only ACPI start as start method but as a result of my testing it requires
-> >also CRB start.
-> >
-> >Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> >---
-> >  drivers/char/tpm/Kconfig   |   9 ++
-> >  drivers/char/tpm/Makefile  |   1 +
-> >  drivers/char/tpm/tpm_crb.c | 323 +++++++++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 333 insertions(+)
-> >  create mode 100644 drivers/char/tpm/tpm_crb.c
-> >
-> >diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
-> >index c54cac3..10c9419 100644
-> >--- a/drivers/char/tpm/Kconfig
-> >+++ b/drivers/char/tpm/Kconfig
-> >@@ -122,4 +122,13 @@ config TCG_XEN
-> >  	  To compile this driver as a module, choose M here; the module
-> >  	  will be called xen-tpmfront.
-> >
-> >+config TCG_CRB
-> >+	tristate "TPM 2.0 CRB Interface"
-> >+	depends on X86 && ACPI
-> >+	---help---
-> >+	  If you have a TPM security chip that is compliant with the
-> >+	  TCG CRB 2.0 TPM specification say Yes and it will be accessible
-> >+	  from within Linux.  To compile this driver as a module, choose
-> >+	  M here; the module will be called tpm_crb.
-> >+
-> >  endif # TCG_TPM
-> >diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
-> >index ae56af9..e6d26dd 100644
-> >--- a/drivers/char/tpm/Makefile
-> >+++ b/drivers/char/tpm/Makefile
-> >@@ -22,3 +22,4 @@ obj-$(CONFIG_TCG_INFINEON) += tpm_infineon.o
-> >  obj-$(CONFIG_TCG_IBMVTPM) += tpm_ibmvtpm.o
-> >  obj-$(CONFIG_TCG_ST33_I2C) += tpm_i2c_stm_st33.o
-> >  obj-$(CONFIG_TCG_XEN) += xen-tpmfront.o
-> >+obj-$(CONFIG_TCG_CRB) += tpm_crb.o
-> >diff --git a/drivers/char/tpm/tpm_crb.c b/drivers/char/tpm/tpm_crb.c
-> >new file mode 100644
-> >index 0000000..eb221d5
-> >--- /dev/null
-> >+++ b/drivers/char/tpm/tpm_crb.c
-> >@@ -0,0 +1,323 @@
-> >+/*
-> >+ * Copyright (C) 2014 Intel Corporation
-> >+ *
-> >+ * Authors:
-> >+ * Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> >+ *
-> >+ * Maintained by: <tpmdd-devel@lists.sourceforge.net>
-> >+ *
-> >+ * This device driver implements the TPM interface as defined in
-> >+ * the TCG CRB 2.0 TPM specification.
-> >+ *
-> >+ * This program is free software; you can redistribute it and/or
-> >+ * modify it under the terms of the GNU General Public License
-> >+ * as published by the Free Software Foundation; version 2
-> >+ * of the License.
-> >+ */
-> >+
-> >+#include <linux/acpi.h>
-> >+#include <linux/highmem.h>
-> >+#include <linux/rculist.h>
-> >+#include <linux/module.h>
-> >+#include <linux/platform_device.h>
-> >+#include "tpm.h"
-> >+
-> >+#define ACPI_SIG_TPM2 "TPM2"
-> >+
-> >+static const u8 CRB_ACPI_START_UUID[] = {
-> >+	/* 0000 */ 0xAB, 0x6C, 0xBF, 0x6B, 0x63, 0x54, 0x14, 0x47,
-> >+	/* 0008 */ 0xB7, 0xCD, 0xF0, 0x20, 0x3C, 0x03, 0x68, 0xD4
-> >+};
-> >+
-> >+enum crb_defaults {
-> >+	CRB_ACPI_START_REVISION_ID = 1,
-> >+	CRB_ACPI_START_INDEX = 1,
-> >+};
-> >+
-> >+enum crb_start_method {
-> >+	CRB_SM_ACPI_START = 2,
-> >+	CRB_SM_CRB = 7,
-> >+	CRB_SM_CRB_WITH_ACPI_START = 8,
-> >+};
-> >+
-> >+struct acpi_tpm2 {
-> >+	struct acpi_table_header hdr;
-> >+	u16 platform_class;
-> >+	u16 reserved;
-> >+	u64 control_area_pa;
-> >+	u32 start_method;
-> >+};
-> >+
-> >+enum crb_ca_request {
-> >+	CRB_CA_REQ_GO_IDLE	= BIT(0),
-> >+	CRB_CA_REQ_CMD_READY	= BIT(1),
-> >+};
-> >+
-> >+enum crb_ca_status {
-> >+	CRB_CA_STS_ERROR	= BIT(0),
-> >+	CRB_CA_STS_TPM_IDLE	= BIT(1),
-> >+};
-> >+
-> >+struct crb_control_area {
-> >+	u32 req;
-> >+	u32 sts;
-> >+	u32 cancel;
-> >+	u32 start;
-> >+	u32 int_enable;
-> >+	u32 int_sts;
-> >+	u32 cmd_size;
-> >+	u64 cmd_pa;
-> >+	u32 rsp_size;
-> >+	u64 rsp_pa;
-> >+} __packed;
-> >+
-> >+enum crb_status {
-> >+	CRB_STS_COMPLETE	= BIT(0),
-> >+};
-> >+
-> >+enum crb_flags {
-> >+	CRB_FL_ACPI_START	= BIT(0),
-> >+	CRB_FL_CRB_START	= BIT(1),
-> >+};
-> >+
-> >+struct crb_priv {
-> >+	unsigned int flags;
-> >+	struct crb_control_area *cca;
-> >+	unsigned long cca_pa;
-> >+};
-> >+
-> >+#ifdef CONFIG_PM_SLEEP
-> >+int crb_suspend(struct device *dev)
-> >+{
-> >+	return 0;
-> >+}
-> >+
-> >+static int crb_resume(struct device *dev)
-> >+{
-> >+	struct tpm_chip *chip = dev_get_drvdata(dev);
-> >+
-> >+	(void) tpm2_do_selftest(chip);
-> >+
-> >+	return 0;
-> >+}
-> >+#endif
-> >+
-> >+static SIMPLE_DEV_PM_OPS(crb_pm, crb_suspend, crb_resume);
-> >+
-> >+static u8 crb_status(struct tpm_chip *chip)
-> >+{
-> >+	struct crb_priv *priv = chip->vendor.priv;
-> >+	u8 sts = 0;
-> >+
-> >+	if ((le32_to_cpu(priv->cca->start) & 1) != 1)
-> 
-> Use a #define rather than the magic '1'.
-> 
-> 
-> >+		sts |= CRB_STS_COMPLETE;
-> >+
-> >+	return sts;
-> >+}
-> >+
-> >+static int crb_recv(struct tpm_chip *chip, u8 *buf, size_t count)
-> >+{
-> >+	struct crb_priv *priv = chip->vendor.priv;
-> >+	struct crb_control_area *cca;
-> >+	unsigned int expected;
-> >+	unsigned long offset;
-> >+	u8 *resp;
-> >+
-> >+	cca = priv->cca;
-> >+	if (le32_to_cpu(cca->sts) & CRB_CA_STS_ERROR)
-> >+		return -EIO;
-> >+
-> >+	offset = le64_to_cpu(cca->rsp_pa) - priv->cca_pa;
-> >+	resp = (u8 *) ((unsigned long) cca + offset);
-> 
-> make sure that count >= 6?
-> 
-> >+	memcpy(buf, resp, 6);
-> >+	expected = be32_to_cpup((__be32 *) &buf[2]);
-> >+
-> >+	if (expected > count)
-> >+		return -EIO;
-> >+
-> >+	memcpy(&buf[6], &resp[6], expected - 6);
-> >+
-> >+	return expected;
-> >+}
-> >+
-> >+static int crb_do_acpi_start(struct tpm_chip *chip)
-> >+{
-> >+	union acpi_object *obj;
-> >+	int rc;
-> >+
-> >+	obj = acpi_evaluate_dsm(chip->acpi_dev_handle,
-> >+				CRB_ACPI_START_UUID,
-> >+				CRB_ACPI_START_REVISION_ID,
-> >+				CRB_ACPI_START_INDEX,
-> >+				NULL);
-> >+	if (!obj)
-> >+		return -ENXIO;
-> >+	rc = obj->integer.value == 0 ? 0 : -ENXIO;
-> >+	ACPI_FREE(obj);
-> >+	return rc;
-> >+}
-> >+
-> >+static int crb_send(struct tpm_chip *chip, u8 *buf, size_t len)
-> >+{
-> >+	struct crb_priv *priv = chip->vendor.priv;
-> >+	struct crb_control_area *cca;
-> >+	u8 *cmd;
-> >+	int rc = 0;
-> >+
-> >+	cca = priv->cca;
-> >+
-> >+	if (len > le32_to_cpu(cca->cmd_size)) {
-> >+		dev_err(&chip->dev,
-> >+			"invalid command count value %x %zx\n",
-> >+			(unsigned int) len,
-> >+			(size_t) le32_to_cpu(cca->cmd_size));
-> >+		return -E2BIG;
-> >+	}
-> >+
-> >+	cmd = (u8 *) ((unsigned long) cca + le64_to_cpu(cca->cmd_pa) -
-> >+		      priv->cca_pa);
-> 
-> cca = priv->cca per statement above     -> cmd = cca + x - cca = x
-> 
-> -> cmd = le64_to_cpu(cca->cmd_pa);
-> 
-> Should do the trick, no ?
+well, I will try to disable CONFIG_PAX_MEMORY_SANITIZE.
+Will take some time to make sure that this resolve the issue
 
-Virtual address might be different where CCA is ioremapped.
+Цитирование Daniel Borkmann <dborkman@redhat.com> :
+> On 11/27/2014 02:35 PM, Дениска-редиска wrote:
+> > hello,
+> >
+> > i run ipvs DR on 2 servers under heavy load - up to 1Gbps of traffic.
+> > Time to time the server where ipvs runs master IP (VIP) get general protection fault. Switching master to another server make no difference - after some time GPF come. So I assume it is not hardware issue.
+> >
+> > There are logs from both servers with different kernels (i run kernel with grsecurity patch set from Gentoo hardened portage tree):
 
-> >+	memcpy(cmd, buf, len);
-> >+
-> >+	/* Make sure that cmd is populated before issuing start. */
-> >+	wmb();
-> >+
-> >+	cca->start = cpu_to_le32(1);
-> >+	rc = crb_do_acpi_start(chip);
-> 
-> I had commented on this already. Your TPM seems to no implement the ACPI
-> specs properly, or rather the ACPI table is wrong.
-> You have to check whether the ACPI function needs to be called. The next TPM
-> from a different vendor for whom the ACPI start function is not necessary
-> will need this check here since it will give a return code indicating
-> failure. Then your TPM won't work anymore! I think you should add a check
-> into the crb_do_acpi_start for whether this function needs to be called or
-> whether your TPM is being used (vendor check?) and run this start function
-> then anyway.
+> Hmm, looks pretty much like ...
 
-Yes, now that you said I remember you commenting this before.
-I'll see what I can do and consider this together with the good remarks
-that are below.
+> http://thread.gmane.org/gmane.comp.security.firewalls.netfilter.devel/54903
 
-> >+	return rc;
-> >+}
-> >+
-> >+static void crb_cancel(struct tpm_chip *chip)
-> >+{
-> >+	struct crb_priv *priv = chip->vendor.priv;
-> >+	struct crb_control_area *cca;
-> >+
-> >+	cca = priv->cca;
-> >+	cca->cancel = cpu_to_le32(1);
-> 
-> nit: #define for this ?
-> 
-> >+
-> >+	/* Make sure that cmd is populated before issuing start. */
-> >+	wmb();
-> >+
-> >+	if (crb_do_acpi_start(chip))
-> >+		dev_err(&chip->dev, "ACPI Start failed\n");
-> >+
-> >+	cca->cancel = 0;
-> >+}
-> >+
-> >+static bool crb_req_canceled(struct tpm_chip *chip, u8 status)
-> >+{
-> >+	struct crb_priv *priv = chip->vendor.priv;
-> >+
-> >+	return (le32_to_cpu(priv->cca->cancel) & 1) == 1;
-> >+}
-> >+
-> >+static const struct tpm_class_ops tpm_crb = {
-> >+	.status = crb_status,
-> >+	.recv = crb_recv,
-> >+	.send = crb_send,
-> >+	.cancel = crb_cancel,
-> >+	.req_canceled = crb_req_canceled,
-> >+	.req_complete_mask = CRB_STS_COMPLETE,
-> >+	.req_complete_val = CRB_STS_COMPLETE,
-> >+};
-> >+
-> >+static int crb_acpi_add(struct acpi_device *device)
-> >+{
-> >+	struct tpm_chip *chip;
-> >+	struct acpi_tpm2 *buf;
-> >+	struct crb_priv *priv;
-> >+	struct device *dev = &device->dev;
-> >+	acpi_status status;
-> >+	u32 sm;
-> >+	int rc;
-> >+
-> >+	chip = tpmm_chip_alloc(dev, &tpm_crb);
-> >+	if (IS_ERR(chip))
-> >+		return PTR_ERR(chip);
-> >+
-> >+	chip->flags = TPM_CHIP_FLAG_TPM2;
-> >+
-> >+	status = acpi_get_table(ACPI_SIG_TPM2, 1,
-> >+				(struct acpi_table_header **) &buf);
-> >+	if (ACPI_FAILURE(status)) {
-> >+		dev_err(dev, "failed to get TPM2 ACPI table\n");
-> >+		return -ENODEV;
-> >+	}
-> >+
-> >+	priv = (struct crb_priv *) devm_kzalloc(dev, sizeof(struct crb_priv),
-> >+						GFP_KERNEL);
-> >+	if (!priv) {
-> >+		dev_err(dev, "failed to devm_kzalloc for private data\n");
-> >+		return -ENOMEM;
-> >+	}
-> >+
-> >+	sm = le32_to_cpu(buf->start_method);
-> 
-> I wonder whether you should check whether that ACPI table is big enough to
-> allow you accessing its start_method.
-> 
-> if (buf->length < sizeof(struct acpi_tpm2) ) {
->     return -EXYZ;
-> }
-> 
-> >+
-> >+	if (sm == CRB_SM_CRB || sm == CRB_SM_CRB_WITH_ACPI_START)
-> >+		priv->flags |= CRB_FL_CRB_START;
-> 
-> You set this flag but you don't seem to check it anywhere.
-> 
-> >+
-> >+	if (sm == CRB_SM_ACPI_START || sm == CRB_SM_CRB_WITH_ACPI_START)
-> >+		priv->flags |= CRB_FL_ACPI_START;
-> 
-> 
-> You set this flag but you don't seem to check it anywhere.
-> 
-> 
-> >+
-> >+	priv->cca_pa = le32_to_cpu(buf->control_area_pa);
-> >+	priv->cca = (struct crb_control_area *)
-> >+		devm_ioremap_nocache(dev, buf->control_area_pa, 0x1000);
-> >+	if (!priv->cca) {
-> >+		dev_err(dev, "allocating memory failed\n");
-> >+		return -ENOMEM;
-> >+	}
-> >+
-> >+	chip->vendor.priv = priv;
-> >+
-> >+	/* Default timeouts and durations */
-> >+	chip->vendor.timeout_a = usecs_to_jiffies(TPM2_TIMEOUT_A);
-> >+	chip->vendor.timeout_b = usecs_to_jiffies(TPM2_TIMEOUT_B);
-> >+	chip->vendor.timeout_c = usecs_to_jiffies(TPM2_TIMEOUT_C);
-> >+	chip->vendor.timeout_d = usecs_to_jiffies(TPM2_TIMEOUT_D);
-> >+	chip->vendor.duration[TPM_SHORT] =
-> >+		usecs_to_jiffies(TPM2_DURATION_SHORT);
-> >+	chip->vendor.duration[TPM_MEDIUM] =
-> >+		usecs_to_jiffies(TPM2_DURATION_MEDIUM);
-> >+	chip->vendor.duration[TPM_LONG] =
-> >+		usecs_to_jiffies(TPM2_DURATION_LONG);
-> >+
-> >+	chip->acpi_dev_handle = device->handle;
-> >+
-> >+	rc = tpm2_do_selftest(chip);
-> >+	if (rc)
-> >+		return rc;
-> >+
-> >+	return tpm_chip_register(chip);
-> >+}
-> >+
-> >+int crb_acpi_remove(struct acpi_device *device)
-> >+{
-> >+	struct device *dev = &device->dev;
-> >+	struct tpm_chip *chip = dev_get_drvdata(dev);
-> >+
-> >+	tpm_chip_unregister(chip);
-> >+	return 0;
-> >+}
-> >+
-> >+static struct acpi_device_id crb_device_ids[] = {
-> >+	{"MSFT0101", 0},
-> >+	{"", 0},
-> >+};
-> >+MODULE_DEVICE_TABLE(acpi, crb_device_ids);
-> >+
-> >+static struct acpi_driver crb_acpi_driver = {
-> >+	.name = "tpm_crb",
-> >+	.ids = crb_device_ids,
-> >+	.ops = {
-> >+		.add = crb_acpi_add,
-> >+		.remove = crb_acpi_remove,
-> >+	},
-> >+	.drv = {
-> >+		.pm = &crb_pm,
-> >+	},
-> >+};
-> >+
-> >+module_acpi_driver(crb_acpi_driver);
-> >+MODULE_AUTHOR("Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>");
-> >+MODULE_DESCRIPTION("TPM2 Driver");
-> >+MODULE_VERSION("0.1");
-> >+MODULE_LICENSE("GPL");
-> 
-> Regards,
->     Stefan
+> ... which was a bug in the grsec patch set.
 
-/Jarkko
+> Does your grsec kernel have:
+
+> commit 0fa213cce614ad25a79acbd06f37f1e9022134d9
+> Author: Brad Spengler <spender@grsecurity.net>
+> Date: Fri Oct 31 17:29:20 2014 -0400
+
+> From: Mathias Krause <minipli@googlemail.com>
+> To: PaX Team <pageexec@freemail.hu>
+> Cc: Brad Spengler <spender@grsecurity.net>, Mathias Krause
+> <minipli@googlemail.com>
+> Subject: [PATCH] pax: don't sanitize RCU slab caches
+
+> We cannot sanitize SLAB_DESTROY_BY_RCU slab caches in kmem_cache_free()
+> as there might be readers in this RCU period, wanting to access the
+> object.
+
+> Fix this, for now, by marking those with SLAB_NO_SANITIZE. Hopefully we
+> can have a real fix later on. But this should fix the RCU stalls and
+> netfilter conntrack related problems.
+
+> This patch should go on top of the previous patch.
+
+> Signed-off-by: Mathias Krause <minipli@googlemail.com>
+
+> > [354497.931834] general protection fault: 0000 [#1] SMP
+> > [354497.931903] CPU: 14 PID: 0 Comm: swapper/14 Not tainted 3.13.10-hardened.standart.20140515 #1
+> > [354497.931993] Hardware name: Supermicro H8DG6/H8DGi/H8DG6/H8DGi, BIOS 3.5 11/25/2013
+> > [354497.932082] task: ffff88021e4b2ca0 ti: ffff88021e4b3100 task.ti: ffff88021e4b3100
+> > [354497.932167] RIP: 0010:[<ffffffff81653ca2>] [<ffffffff81653ca2>] ffffffff81653ca2
+> > [354497.932278] RSP: 0000:ffff88021fd03b98 EFLAGS: 00010246
+> > [354497.932330] RAX: 0000000000013ba0 RBX: fefefefefefefefe RCX: 000000000001bc30
+> > [354497.932413] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
+> > [354497.932497] RBP: ffff88021fd03c40 R08: 00000000cacb7f0b R09: ffff88021fd03c58
+> > [354497.932580] R10: ffffffffffffffff R11: ffff88041de33280 R12: 8000000000000000
+> > [354497.932663] R13: 0000000000003786 R14: ffffffff81a82540 R15: 0000000000000000
+> > [354497.932749] FS: 000003853a8a7740(0000) GS:ffff88021fd00000(0000) knlGS:0000000000000000
+> > [354497.932836] CS: 0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> > [354497.932891] CR2: 000003d8a933b2d0 CR3: 000000000174a000 CR4: 00000000000407f0
+> > [354497.932973] Stack:
+> > [354497.933013] 0000000000000000 ffffffff81a82540 00000000de1b1efe 0000000000000000
+> > [354497.933110] ffff88021fd03c40 ffffffff81653f6d ffffffff81a92cc0 ffffffff81a82540
+> > [354497.933206] ffff88041d70c500 0000000000000000 00000000de1b1efe ffffffff81654f6c
+> > [354497.933304] Call Trace:
+> > [354497.933347] <IRQ>
+> > [354497.933357] [<ffffffff81653f6d>] ? __nf_conntrack_find_get+0x28/0x13b
+> > [354497.933484] [<ffffffff81654f6c>] ? nf_conntrack_in+0x253/0x73e
+> > [354497.933544] [<ffffffff8164eeb6>] ? nf_iterate+0x40/0x7d
+> > [354497.933601] [<ffffffff816a90a4>] ? inet_del_offload+0x39/0x39
+> > [354497.933658] [<ffffffff8164ef5f>] ? nf_hook_slow+0x6c/0x104
+> > [354497.933714] [<ffffffff816a90a4>] ? inet_del_offload+0x39/0x39
+> > [354497.933770] [<ffffffff816a98c8>] ? ip_rcv+0x313/0x35f
+> > [354497.933824] [<ffffffff816a93d1>] ? ip_local_deliver_finish+0xb8/0x11f
+> > [354497.933885] [<ffffffff81627dfd>] ? __netif_receive_skb_core+0x44d/0x4e2
+> > [354497.933944] [<ffffffff8162afba>] ? netif_receive_skb+0x4c/0x81
+> > [354497.934000] [<ffffffff8162b488>] ? napi_gro_receive+0x35/0x7a
+> > [354497.934058] [<ffffffff81515ddc>] ? igb_poll+0xa49/0xd13
+> > [354497.934115] [<ffffffff810ce5b1>] ? __wake_up+0x38/0x49
+> > [354497.934169] [<ffffffff8162b773>] ? net_rx_action+0xa6/0x172
+> > [354497.934225] [<ffffffff810a31cc>] ? __do_softirq+0xb9/0x1ae
+> > [354497.934280] [<ffffffff810a3499>] ? irq_exit+0x37/0x7a
+> > [354497.934335] [<ffffffff81003ce2>] ? do_IRQ+0x96/0xb0
+> > [354497.934389] [<ffffffff81725a97>] ? common_interrupt+0x97/0x97
+> > [354497.934441] <EOI>
+> > [354497.934451] [<ffffffff810e3080>] ? update_ts_time_stats+0x30/0x76
+> > [354497.934548] [<ffffffff81009d20>] ? arch_remove_reservations+0x6a/0x6a
+> > [354497.934607] [<ffffffff81009d23>] ? default_idle+0x3/0x9
+> > [354497.934676] [<ffffffff8100a333>] ? arch_cpu_idle+0x6/0x1e
+> > [354497.934732] [<ffffffff81009d20>] ? arch_remove_reservations+0x6a/0x6a
+> > [354497.934791] [<ffffffff810d434a>] ? cpu_startup_entry+0xe9/0x15b
+> > [354497.934850] [<ffffffff81024ccf>] ? start_secondary+0x2f9/0x32c
+> > [354497.934903] Code: c2 85 d2 49 8b 86 d0 04 00 00 74 14 66 45 85 ff 75 0e 65 ff 40 04 e8 85 f6 a4 ff 48 89 d8 eb 69 65 ff 00 48 8b 1b f6 c3 01 75 0f <8b> 43 10 39 45 00 b8 00 00 00 00 74 83 eb 9d 48 d1 eb 4c 39 eb
+> > [354497.935402] RIP [<ffffffff81653ca2>] ffffffff81653ca2
+> > [354497.935456] RSP <ffff88021fd03b98>
+> > [354497.935965] ---[ end trace 7d6f660245b2d541 ]---
+> > [354497.936080] Kernel panic - not syncing: Fatal exception in interrupt
+> > [354498.016801] Rebooting in 10 seconds.
+> >
+> >
+> > [674944.621564] general protection fault: 0000 [#1] SMP
+> > [674944.621637] CPU: 12 PID: 17984 Comm: nginx Not tainted 3.15.10-hardened-r1.standart.20140925 #1
+> > [674944.621728] Hardware name: Supermicro H8DG6/H8DGi/H8DG6/H8DGi, BIOS 3.5 11/25/2013
+> > [674944.621817] task: ffff88021e1d7700 ti: ffff88021e1d7c68 task.ti: ffff88021e1d7c68
+> > [674944.621903] RIP: 0010:[<ffffffff816f2be8>] [<ffffffff816f2be8>] ffffffff816f2be8
+> > [674944.621990] RSP: 0000:ffff88021fc03ce8 EFLAGS: 00010246
+> > [674944.622057] RAX: ffffc90011901000 RBX: 822098c2102098c2 RCX: 000000005823edca
+> > [674944.622143] RDX: fefefefefefefefe RSI: 000000009e90f1ad RDI: ffffffff81a8ad40
+> > [674944.622226] RBP: 000000000050abb3 R08: 000000000050abb3 R09: 000000000001f106
+> > [674944.622310] R10: ffffea00100cbd80 R11: ffffea00100cbd80 R12: 8000000000000000
+> > [674944.622394] R13: ffffffff81a8ad40 R14: 0000000049c3f106 R15: ffffc900119f9830
+> > [674944.622479] FS: 0000029d6fd04740(0000) GS:ffff88021fc00000(0000) knlGS:0000000000000000
+> > [674944.622566] CS: 0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> > [674944.622619] CR2: ffffffffff600400 CR3: 0000000001787000 CR4: 00000000000407f0
+> > [674944.622701] Stack:
+> > [674944.622741] ffffffff816e9360 ffffffff00000050 ffffffff822098c2 abb3000280000000
+> > [674944.622839] ffff88006e9c2b00 ffff88011cbd1bce ffff88021e0c0000 0000000000000008
+> > [674944.622935] ffffffff81a955b0 ffffffff8170920a ffff880100000003 0000000000000008
+> > [674944.623031] Call Trace:
+> > [674944.623077] <IRQ>
+> > [674944.623087] [<ffffffff816e9360>] ? inet_del_offload+0x39/0x39
+> > [674944.623192] [<ffffffff8170920a>] ? tcp_v4_early_demux+0x14c/0x1bd
+> > [674944.623250] [<ffffffff816e93b0>] ? ip_rcv_finish+0x50/0x2c1
+> > [674944.623326] [<ffffffff8165ee92>] ? __netif_receive_skb_core+0x3c8/0x456
+> > [674944.623386] [<ffffffff8165f10c>] ? netif_receive_skb_internal+0x4c/0x81
+> > [674944.623447] [<ffffffff816623b3>] ? napi_gro_receive+0x36/0x7c
+> > [674944.623511] [<ffffffff815485a5>] ? igb_poll+0xa8b/0xd5b
+> > [674944.623572] [<ffffffff810f7fda>] ? __note_gp_changes+0x31/0x61
+> > [674944.623630] [<ffffffff816626cf>] ? net_rx_action+0xa6/0x172
+> > [674944.623688] [<ffffffff810bc995>] ? __do_softirq+0xf6/0x1fb
+> > [674944.623744] [<ffffffff810bcbf4>] ? irq_exit+0x38/0x7c
+> > [674944.623798] [<ffffffff81003ce3>] ? do_IRQ+0xb3/0xce
+> > [674944.623853] [<ffffffff81767217>] ? common_interrupt+0x97/0x97
+> > [674944.623906] <EOI>
+> > [674944.623917] Code: 6a d4 75 0e 48 39 5a c8 74 51 eb 06 3b 44 24 50 74 50 4c 89 4c 24 08 e8 e8 fe ff ff 4c 8b 4c 24 08 eb 83 48 8b 12 f6 c2 01 75 0b <44> 39 72 d0 75 f2 e9 75 ff ff ff 48 d1 ea 4c 39 ca 0f 85 64 ff
+> > [674944.624456] RIP [<ffffffff816f2be8>] ffffffff816f2be8
+> > [674944.624536] RSP <ffff88021fc03ce8>
+> > [674944.625020] ---[ end trace 8035e2b5322bab00 ]---
+> > [674944.625126] Kernel panic - not syncing: Fatal exception in interrupt
+> > [674944.706563] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
+> > [674944.706711] Rebooting in 10 seconds.
+> >
+> >
+> > [7523332.314991] general protection fault: 0000 [#1] SMP
+> > [7523332.315078] CPU: 4 PID: 25432 Comm: nginx Not tainted 3.15.8-hardened.standart.20140901 #1
+> > [7523332.315172] Hardware name: Supermicro H8DG6/H8DGi/H8DG6/H8DGi, BIOS 3.0 09/10/2012
+> > [7523332.315266] task: ffff88041eb98000 ti: ffff88041eb98568 task.ti: ffff88041eb98568
+> > [7523332.315355] RIP: 0010:[<ffffffff8168db79>] [<ffffffff8168db79>] ffffffff8168db79
+> > [7523332.315446] RSP: 0018:ffff88021fa03bf8 EFLAGS: 00010246
+> > [7523332.316983] RAX: 00000000000149c0 RBX: ffffffff81a8ac80 RCX: 00000000000011d5
+> > [7523332.317070] RDX: 0000000000000000 RSI: 0000000000008ea8 RDI: ffffffff81a8acfe
+> > [7523332.317187] RBP: ffff88021fa03c5c R08: 00000000b96542ae R09: ffff88021fa03c74
+> > [7523332.317274] R10: 0000000000000002 R11: ffff880238b8ce00 R12: 8000000000000000
+> > [7523332.317360] R13: fefefefefefefefe R14: 0000000000000000 R15: 0000000047567b68
+> > [7523332.317448] FS: 0000031d200c5740(0000) GS:ffff88021fa00000(0000) knlGS:0000000000000000
+> > [7523332.317538] CS: 0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> > [7523332.317594] CR2: 000004373dcef000 CR3: 0000000001779000 CR4: 00000000000007f0
+> > [7523332.317679] Stack:
+> > [7523332.317722] 0000000000000000 ffffffff81a8ac80 ffff880003e08200 0000000000000000
+> > [7523332.317824] ffffffff81a9bf60 ffffffff8168ef87 ffffffff81a9bf60 ffffffff81a96970
+> > [7523332.317925] 0000000047567b68 ffffffff81a96970 0000000281a90002 0000000000000014
+> > [7523332.318026] Call Trace:
+> > [7523332.318072] <IRQ>
+> > [7523332.318085] [<ffffffff8168ef87>] ? nf_conntrack_in+0x2c1/0x846
+> > [7523332.318199] [<ffffffff81688956>] ? nf_iterate+0x41/0x81
+> > [7523332.318259] [<ffffffff816ea4b8>] ? inet_del_offload+0x39/0x39
+> > [7523332.318321] [<ffffffff81688a0c>] ? nf_hook_slow+0x76/0x111
+> > [7523332.318393] [<ffffffff816ea4b8>] ? inet_del_offload+0x39/0x39
+> > [7523332.318453] [<ffffffff816eacf2>] ? ip_rcv+0x2f4/0x356
+> > [7523332.318512] [<ffffffff81660173>] ? __netif_receive_skb_core+0x3d9/0x410
+> > [7523332.318575] [<ffffffff8166039c>] ? netif_receive_skb_internal+0x6d/0x77
+> > [7523332.318640] [<ffffffff816634c1>] ? napi_gro_receive+0x36/0x7c
+> > [7523332.318702] [<ffffffff8154a30d>] ? igb_poll+0xa46/0xd09
+> > [7523332.318762] [<ffffffff813bbd0d>] ? __list_add+0x1b/0x37
+> > [7523332.318820] [<ffffffff816637d2>] ? net_rx_action+0xa0/0x171
+> > [7523332.318882] [<ffffffff810bcb7a>] ? __do_softirq+0xf7/0x1fa
+> > [7523332.318943] [<ffffffff8176a29c>] ? do_softirq_own_stack+0x1c/0x30
+> > [7523332.318999] <EOI>
+> > [7523332.319013] [<ffffffff810bcccb>] ? do_softirq+0x24/0x2c
+> > [7523332.319112] [<ffffffff810bcd39>] ? __local_bh_enable_ip+0x66/0x74
+> > [7523332.319174] [<ffffffff8172f029>] ? ipt_do_table+0x5c6/0x5f0
+> > [7523332.319235] [<ffffffff81688956>] ? nf_iterate+0x41/0x81
+> > [7523332.319293] [<ffffffff816ed488>] ? ip_options_rcv_srr+0x1c7/0x1c7
+> > [7523332.319354] [<ffffffff81688a0c>] ? nf_hook_slow+0x76/0x111
+> > [7523332.319412] [<ffffffff816ed488>] ? ip_options_rcv_srr+0x1c7/0x1c7
+> > [7523332.319473] [<ffffffff816ee3a2>] ? __ip_local_out+0x64/0x6e
+> > [7523332.319533] [<ffffffff8164f4a3>] ? __sk_dst_check+0x34/0x63
+> > [7523332.319617] [<ffffffff816ee3be>] ? ip_local_out_sk+0x12/0x39
+> > [7523332.319676] [<ffffffff816eea83>] ? ip_queue_xmit+0x2ab/0x2db
+> > [7523332.319739] [<ffffffff81703a1e>] ? tcp_transmit_skb+0x6eb/0x735
+> > [7523332.319801] [<ffffffff81704323>] ? tcp_write_xmit+0x82e/0x969
+> > [7523332.319861] [<ffffffff816f7278>] ? tcp_sendpage+0x50b/0x5e4
+> > [7523332.319923] [<ffffffff811845e9>] ? direct_splice_actor+0x49/0x49
+> > [7523332.319986] [<ffffffff8171a807>] ? inet_sendpage+0xbc/0xe0
+> > [7523332.320045] [<ffffffff8164eacc>] ? kernel_sendpage+0x49/0x59
+> > [7523332.320104] [<ffffffff8164eb23>] ? sock_sendpage+0x47/0x53
+> > [7523332.320163] [<ffffffff81184658>] ? pipe_to_sendpage+0x6f/0x7c
+> > [7523332.320223] [<ffffffff81185aa8>] ? splice_from_pipe_feed+0x7f/0x10e
+> > [7523332.320285] [<ffffffff811845e9>] ? direct_splice_actor+0x49/0x49
+> > [7523332.320347] [<ffffffff81185c2e>] ? __splice_from_pipe+0x3a/0x6b
+> > [7523332.320408] [<ffffffff81185dff>] ? splice_from_pipe+0x66/0x87
+> > [7523332.320468] [<ffffffff811845e9>] ? direct_splice_actor+0x49/0x49
+> > [7523332.320533] [<ffffffff811845df>] ? direct_splice_actor+0x3f/0x49
+> > [7523332.320599] [<ffffffff811860f5>] ? splice_direct_to_actor+0xd3/0x18d
+> > [7523332.320661] [<ffffffff811845a0>] ? generic_pipe_buf_nosteal+0xc/0xc
+> > [7523332.320723] [<ffffffff81186249>] ? do_splice_direct+0x9a/0xb6
+> > [7523332.320783] [<ffffffff8115e7f2>] ? do_sendfile+0x182/0x32a
+> > [7523332.320856] [<ffffffff811602bd>] ? SyS_sendfile64+0x137/0x1bc
+> > [7523332.320916] [<ffffffff81768f37>] ? system_call_fastpath+0x16/0x1b
+> > [7523332.320972] Code: 00 02 00 00 48 c7 c7 4d db 68 81 65 ff 40 04 e8 71 f1 a2 ff 4d 85 ed 75 58 e9 94 01 00 00 65 ff 00 4d 8b 6d 00 41 f6 c5 01 75 18 <41> 8b 55 10 31 c0 39 55 00 41 8a 7d 37 0f 85 14 ff ff ff e9 e7
+> > [7523332.321522] RIP [<ffffffff8168db79>] ffffffff8168db79
+> > [7523332.321579] RSP <ffff88021fa03bf8>
+> > [7523332.322094] ---[ end trace 0e21b79561002306 ]---
+> > [7523332.322210] Kernel panic - not syncing: Fatal exception in interrupt
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe netdev" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at http://vger.kernel.org/majordomo-info.html
+>
+
