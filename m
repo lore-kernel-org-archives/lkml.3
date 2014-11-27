@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570AbaK0JEm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 04:04:42 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41879 "EHLO mail.kernel.org"
+	id S1754435AbaK0JFH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 04:05:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59870 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753105AbaK0IsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:48:01 -0500
-From: lizf@kernel.org
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 44/91] ASoC: samsung-i2s: Check secondary DAI exists before referencing
-Date: Thu, 27 Nov 2014 16:42:27 +0800
-Message-Id: <1417077794-9299-44-git-send-email-lizf@kernel.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
-References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
+	id S1750837AbaK0JE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 04:04:59 -0500
+Date: Thu, 27 Nov 2014 10:05:09 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Huang Bo <huangbobupt@163.com>
+cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 1/1] HID: add BETOP game controller force feedback
+ support
+In-Reply-To: <54768284.4060201@163.com>
+Message-ID: <alpine.LNX.2.00.1411271004260.23174@pobox.suse.cz>
+References: <54768284.4060201@163.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+On Thu, 27 Nov 2014, Huang Bo wrote:
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+> From: Huang Bo <huangbobupt@163.com>
+> 
+> Adds force feedback support for BETOP USB game controllers.
+> These devices are mass produced in China.
 
-------------------
+Thanks. We are almost there, except ...
 
+[ ... snip ... ]
+> +static int betopff_init(struct hid_device *hid)
+> +{
+> +    struct betopff_device *betopff;
+> +    struct hid_report *report;
+> +    struct hid_input *hidinput =
+> +            list_first_entry(&hid->inputs, struct hid_input, list);
+> +    struct list_head *report_list =
+> +            &hid->report_enum[HID_OUTPUT_REPORT].report_list;
+> +    struct input_dev *dev = hidinput->input;
+> +    int field_count = 0;
+> +    int error;
+> +    int i, j;
+> +
+> +    if (list_empty(report_list)) {
+> +        hid_err(hid, "no output reports found\n");
+> +        return -ENODEV;
+> +    }
+> +
+> +    report = list_first_entry(report_list, struct hid_report, list);
+> +    for (i = 0; i < report->maxfield; i++) {
+> +        for (j = 0; j < report->field[i]->report_count; j++) {
+> +            report->field[i]->value[j] = 0x00;
 
-commit 133c2681c4a0c1b589d138c2fdd0f131bdce20ed upstream.
+I asked for a comment to be added here why you are zeroing those out.
 
-In a couple of places the driver is missing a check to ensure there is a
-secondary DAI before it de-references the pointer to it, causing a null
-pointer de-reference. This patch adds a check to avoid this.
+Thanks,
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-[lizf: Backported to 3.4: drop the changes to i2s_shutdown()]
-Signed-off-by: Zefan Li <lizefan@huawei.com>
----
- sound/soc/samsung/i2s.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/sound/soc/samsung/i2s.c b/sound/soc/samsung/i2s.c
-index 6ac7b82..9998719 100644
---- a/sound/soc/samsung/i2s.c
-+++ b/sound/soc/samsung/i2s.c
-@@ -392,7 +392,7 @@ static int i2s_set_sysclk(struct snd_soc_dai *dai,
- 		if (dir == SND_SOC_CLOCK_IN)
- 			rfs = 0;
- 
--		if ((rfs && other->rfs && (other->rfs != rfs)) ||
-+		if ((rfs && other && other->rfs && (other->rfs != rfs)) ||
- 				(any_active(i2s) &&
- 				(((dir == SND_SOC_CLOCK_IN)
- 					&& !(mod & MOD_CDCLKCON)) ||
 -- 
-1.9.1
-
+Jiri Kosina
+SUSE Labs
