@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751151AbaK0P1Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 10:27:25 -0500
-Received: from mga01.intel.com ([192.55.52.88]:19924 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750831AbaK0P1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 10:27:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,470,1413270000"; 
-   d="scan'208";a="629250403"
-Message-ID: <1417102042.5858.102.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 2/6] UBI: Fastmap: Ensure that only one fastmap work is
- scheduled
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 27 Nov 2014 17:27:22 +0200
-In-Reply-To: <1416835236-25185-3-git-send-email-richard@nod.at>
-References: <1416835236-25185-1-git-send-email-richard@nod.at>
-	 <1416835236-25185-3-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751070AbaK0Pa1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 10:30:27 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:55519 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736AbaK0Pa0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 10:30:26 -0500
+From: Anjana Sasindran <anjanasasindran123@gmail.com>
+To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Anjana Sasindran <anjanasasindran123@gmail.com>
+Subject: [PATCH] staging:drivers:rtl8712:drv_types.h: Added blank line after declarations
+Date: Thu, 27 Nov 2014 21:00:03 +0530
+Message-Id: <1417102203-7093-1-git-send-email-anjanasasindran123@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-24 at 14:20 +0100, Richard Weinberger wrote:
-> If the WL pool runs out of PEBs we schedule a fastmap write
-> to refill it as soon as possible.
-> Ensure that only one at a time is scheduled otherwise we might end in
-> a fastmap write storm because writing the fastmap can schedule another
-> write if bitflips are detected.
+        This patch fixes the two checkpatch.pl warnings:
 
-Could you please provide some more details about the "write storm". Does
-it happen when there are 2 fastmap works in the queue? Or if they run
-simultaneously? Why the storm happens and white kind of "writes" it
-consists of?
+        WARNING:Missing a blank line after declaration
 
-Thanks!
+Signed-off-by: Anjana Sasindran <anjanasasindran123@gmail.com>
+---
+ drivers/staging/rtl8712/drv_types.h | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/staging/rtl8712/drv_types.h b/drivers/staging/rtl8712/drv_types.h
+index 3d0a98b..3d8abfa 100644
+--- a/drivers/staging/rtl8712/drv_types.h
++++ b/drivers/staging/rtl8712/drv_types.h
+@@ -1,4 +1,4 @@
+-/******************************************************************************
++0/******************************************************************************
+  *
+  * Copyright(c) 2007 - 2010 Realtek Corporation. All rights reserved.
+  *
+@@ -129,6 +129,7 @@ struct dvobj_priv {
+ 	struct _adapter *padapter;
+ 	u32 nr_endpoint;
+ 	u8   ishighspeed;
++
+ 	uint(*inirp_init)(struct _adapter *adapter);
+ 	uint(*inirp_deinit)(struct _adapter *adapter);
+ 	struct usb_device *pusbdev;
+@@ -166,6 +167,7 @@ struct _adapter {
+ 	 pid_t evtThread;
+ 	struct task_struct *xmitThread;
+ 	pid_t recvThread;
++
+ 	uint(*dvobj_init)(struct _adapter *adapter);
+ 	void (*dvobj_deinit)(struct _adapter *adapter);
+ 	struct net_device *pnetdev;
+-- 
+1.9.1
 
