@@ -1,121 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434AbaK0OHf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 09:07:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58464 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750926AbaK0OHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 09:07:34 -0500
-Date: Thu, 27 Nov 2014 15:07:07 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] perf tools: Do not fail on processing out of order event
-Message-ID: <20141127140707.GB25752@krava.brq.redhat.com>
-References: <1417016371-30249-1-git-send-email-jolsa@kernel.org>
- <20141126154459.GD3808@redhat.com>
- <20141127105603.GA1987@gmail.com>
- <20141127135259.GI3808@redhat.com>
+	id S1751503AbaK0OIW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 09:08:22 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:41107 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926AbaK0OIV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 09:08:21 -0500
+Date: Thu, 27 Nov 2014 10:08:06 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Linux PM <linux-pm@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCH 1/1] thermal: cpu_cooling: check for the readiness of
+ cpufreq layer
+Message-ID: <20141127140803.GA3342@developer>
+References: <1417024212-1775-1-git-send-email-edubezval@gmail.com>
+ <CAKohponxUWVT1mjRfJarNtj-+=rXNOa_ONHUjmdu_+6N+=ZjPQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VbJkn9YxBvnuCH5J"
 Content-Disposition: inline
-In-Reply-To: <20141127135259.GI3808@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAKohponxUWVT1mjRfJarNtj-+=rXNOa_ONHUjmdu_+6N+=ZjPQ@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 11:53:00AM -0200, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Nov 27, 2014 at 11:56:03AM +0100, Ingo Molnar escreveu:
-> > 
-> > * Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
-> > 
-> > > Em Wed, Nov 26, 2014 at 04:39:31PM +0100, Jiri Olsa escreveu:
-> > > > Linus reported perf report command being interrupted due to
-> > > > processing of 'out of order' event, with following error:
-> > > > 
-> > > >   Timestamp below last timeslice flush
-> > > >   0x5733a8 [0x28]: failed to process type: 3
-> > > > 
-> > > > I could reproduce the issue and in my case it was caused by one
-> > > > CPU (mmap) being behind during record and userspace mmap reader
-> > > > seeing the data after other CPUs data were already stored.
-> > > > 
-> > > > It'd be nice to find the source of this hiccup, meanwhile I'm
-> > > > submitting change that does not kill the processing, but only
-> > > > tracks the number of out of order events and warn user.
-> > > 
-> > > Works, for me, thanks for the fast response!
-> > 
-> > Thanks Jiri!
-> > 
-> > > > --- a/tools/perf/util/session.c
-> > > > +++ b/tools/perf/util/session.c
-> > > > @@ -533,15 +533,11 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
-> > > >  		return -ETIME;
-> > > >  
-> > > >  	if (timestamp < oe->last_flush) {
-> > > > -		WARN_ONCE(1, "Timestamp below last timeslice flush\n");
-> > > > -
-> > > > -		pr_oe_time(timestamp,      "out of order event");
-> > > > +		pr_oe_time(timestamp,      "out of order event\n");
-> > > >  		pr_oe_time(oe->last_flush, "last flush, last_flush_type %d\n",
-> > > >  			   oe->last_flush_type);
-> > > >  
-> > > > -		/* We could get out of order messages after forced flush. */
-> > > > -		if (oe->last_flush_type != OE_FLUSH__HALF)
-> > > > -			return -EINVAL;
-> > > > +		s->stats.nr_unordered_events++;
-> > 
-> > Btw., in the forced flush case we'll get out of order events that 
-> > are 'expected'. Shouldn't we count them separately and not warn 
-> > about them, or so?
-> > 
-> > > > +	if (session->stats.nr_unordered_events != 0) {
-> > > > +		ui__warning("%u out of order events recorded.\n",
-> > > > +			    session->stats.nr_unordered_events);
-> > > > +	}
-> > 
-> > Nit: I'd suggest keeping the message printout on a single line:
-> >  
-> > 	if (session->stats.nr_unordered_events != 0) {
-> > 		ui__warning("%u out of order events recorded.\n", session->stats.nr_unordered_events);
-> > 
-> > as IMHO the cure for this col80 linebreak checkpatch warning is 
-> > worse than the disease! :-)
-> > 
-> > Barring those details:
-> > 
-> >   Acked-by: Ingo Molnar <mingo@kernel.org>
-> > 
-> > Arnaldo, I suppose the fix will go upstream via your tree, as a 
-> > pull request for v3.18 fixes?
-> 
-> Right, I can do that.
-> 
-> And I agree with the "expected" for events that are out of the current
-> reordering window, i.e. we can't insert something into previous windows,
-> so those are, humm, what would be a good name:
-> stats->out_of_reordering_window, while stats->reordered, would be for
-> events that were found out of order, but were successfully sorted as
-> part of a flush operation, right?
 
-the forced flush is when we find out we crossed the allowed allocation
-space for the samples queue.. so we take the half of the sorted queue
-and flush it.. for this case we break the flushing logic and we might
-(probably just in theory) get out of order events
+--VbJkn9YxBvnuCH5J
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-but IMO both cases of out of order event are equal.. we dont do
-anything special for forced flushed AFAIK
 
-jirka
+Hello Viresh,
+
+On Thu, Nov 27, 2014 at 09:38:39AM +0530, Viresh Kumar wrote:
+> Few nits..
+>=20
+> On 26 November 2014 at 23:20, Eduardo Valentin <edubezval@gmail.com> wrot=
+e:
+>=20
+> > Signed-off-by: Eduardo Valentin <edubezval@gmail.com>
+> > ---
+>=20
+> The normal practice is to write the non-commitable part here ...
+>=20
+
+err... normal practice by whom? hehe...
+
+My "normal" practice is to allow people to read the diff stat before my
+extra comments :-)
+
+> >  drivers/thermal/cpu_cooling.c                      | 5 +++++
+> >  drivers/thermal/db8500_cpufreq_cooling.c           | 5 -----
+> >  drivers/thermal/imx_thermal.c                      | 5 -----
+> >  drivers/thermal/samsung/exynos_thermal_common.c    | 2 +-
+> >  drivers/thermal/ti-soc-thermal/ti-thermal-common.c | 6 ------
+> >  5 files changed, 6 insertions(+), 17 deletions(-)
+> > ---
+>=20
+> But this works as well :)
+>=20
+
+hehe ok.
+
+> > This is attempt to organize the cpu cooling vs. cpufreq boot sequencing.
+> > The main change in this patch, as in the commit log, is to have the che=
+ck
+> > for the cpufreq layer in the cpu cooling device registration, instead of
+> > in thermal drivers. This way, drivers don't need to bother about it, th=
+ey
+> > just need to propagate the error value.
+> >
+> > This change was tested on top of:
+> > (0) - Viresh's change in cpufreq layer and cpufreq-dt (up to patch 4):
+> > https://patchwork.kernel.org/patch/5384141/
+> > https://patchwork.kernel.org/patch/5384151/
+> > https://patchwork.kernel.org/patch/5384161/
+> > https://patchwork.kernel.org/patch/5384171/
+> > (1) - fix of thermal core:
+> > https://patchwork.kernel.org/patch/5326991/
+> >
+> > After Viresh's changes, cpufreq-dt is properly sequenced with cpu cooli=
+ng
+> > registration. Non-of based drivers also should take advantage if these
+> > changes, as now they do not need to check for cpufreq layer. The check =
+is
+> > where it belongs, in cpu cooling device registration.
+> >
+> > BR, Eduardo Valentin
+> >
+> >
+> > diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_coolin=
+g.c
+> > index 1ab0018..9e6945b 100644
+> > --- a/drivers/thermal/cpu_cooling.c
+> > +++ b/drivers/thermal/cpu_cooling.c
+> > @@ -440,6 +440,11 @@ __cpufreq_cooling_register(struct device_node *np,
+> >         int ret =3D 0, i;
+> >         struct cpufreq_policy policy;
+> >
+> > +       if (!cpufreq_get_current_driver() || !cpufreq_frequency_get_tab=
+le(0)) {
+>=20
+> Only !cpufreq_frequency_get_table(0) is enough here.
+>=20
+
+Yeah, I thought of it too. Just combined what people had in their
+drivers here. But I agree that latter is enough.
+
+> For rest:
+>=20
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+
+Ok.
+
+though.. "normal practice" says  ack's are oftern used by the maintainer
+of the affected code (quoting Documentation/SubmittingPatches) :-)
+BR, Eduardo Valenti
+
+--VbJkn9YxBvnuCH5J
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUdzA7AAoJEMLUO4d9pOJWX3gH/2658mc74Nu2gPLi5YK0Etp4
+Av4yKKK0XKMlGdPr5bkZrn4S5864eKQTkaDM9+9dhoAoGgCToKkZfbTn11bqhUL2
+WGj0JLpBvKlIYHX4nLRwrweVPWYjdzK4sKLL8H1di1WTX2os6l+plPcwutIqv4wn
+Kzia+YdcvOl+O4bbIgIiyeqBoY2pHn7srlp5Adc01YppCzTbWIjcuyaeBJJ0UzvT
+cI6tHg5mNX1BtKMVE/Slu/aIb4hVNoeyB00UhJ9pRL3T8wLoAEFP5mgh1xZe9mjS
+xQJhamtXtGyEKzdpf2c+gZ2c/7oUN7B30jN9/3li8wrd+QxOy6W/21XsjLwZ/x0=
+=5ifV
+-----END PGP SIGNATURE-----
+
+--VbJkn9YxBvnuCH5J--
