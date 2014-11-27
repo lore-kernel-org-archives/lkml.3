@@ -1,121 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372AbaK0Iv1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 03:51:27 -0500
-Received: from mail-bl2on0102.outbound.protection.outlook.com ([65.55.169.102]:19136
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754291AbaK0IvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:51:04 -0500
-From: Dexuan Cui <decui@microsoft.com>
-To: Jason Wang <jasowang@redhat.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        KY Srinivasan <kys@microsoft.com>,
-        "vkuznets@redhat.com" <vkuznets@redhat.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH v2] hv: hv_fcopy: drop the obsolete message on transfer
- failure
-Thread-Topic: [PATCH v2] hv: hv_fcopy: drop the obsolete message on transfer
- failure
-Thread-Index: AdAKHzSfFBUCGSyvReGOHhAi+beE2g==
-Date: Thu, 27 Nov 2014 08:50:35 +0000
-Message-ID: <F792CF86EFE20D4AB8064279AFBA51C613E641D8@HKNPRD3002MB017.064d.mgd.msft.net>
-References: <1417073491-19388-1-git-send-email-decui@microsoft.com>
- <1245181972.17067189.1417072471636.JavaMail.zimbra@redhat.com>
-In-Reply-To: <1245181972.17067189.1417072471636.JavaMail.zimbra@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [141.251.55.133]
-Content-Type: text/plain; charset="utf-8"
+	id S932272AbaK0Ivo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 03:51:44 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43006 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932226AbaK0Iu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:50:29 -0500
+From: lizf@kernel.org
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Benjamin Poirier <bpoirier@suse.de>,
+        Tom Herbert <therbert@google.com>,
+        "David S. Miller" <davem@davemloft.net>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 89/91] net: Do not enable tx-nocache-copy by default
+Date: Thu, 27 Nov 2014 16:43:12 +0800
+Message-Id: <1417077794-9299-89-git-send-email-lizf@kernel.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
+References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(189002)(13464003)(199003)(51704005)(377454003)(52604005)(164054003)(86612001)(81156004)(106466001)(97736003)(107046002)(86362001)(92566001)(92726001)(26826002)(46102003)(77156002)(99396003)(62966003)(77096003)(95666004)(120916001)(76176999)(33656002)(84676001)(31966008)(2656002)(87936001)(64706001)(20776003)(47776003)(66066001)(16796002)(217423001)(551934003)(55846006)(50466002)(4396001)(21056001)(110136001)(54356999)(68736004)(86146001)(44976005)(6806004)(23676002)(50986999)(19580395003)(69596002)(19580405001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN3PR0301MB1204;H:mail.microsoft.com;FPR:;SPF:Pass;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1204;
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1204;
-X-Forefront-PRVS: 040866B734
-Authentication-Results: spf=pass (sender IP is 131.107.125.37)
- smtp.mailfrom=decui@microsoft.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1204;
-X-OriginatorOrg: microsoft.onmicrosoft.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAR8pW6k022383
 
-> -----Original Message-----
-> From: Jason Wang [mailto:jasowang@redhat.com]
-> Sent: Thursday, November 27, 2014 15:15 PM
-> To: Dexuan Cui
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; driverdev-
-> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com; KY
-> Srinivasan; vkuznets@redhat.com; Haiyang Zhang
-> Subject: Re: [PATCH v2] hv: hv_fcopy: drop the obsolete message on transfer
-> failure
-> ----- Original Message -----
-> > In the case the user-space daemon crashes, hangs or is killed, we
-> > need to down the semaphore, otherwise, after the daemon starts next
-> > time, the obsolete data in fcopy_transaction.message or
-> > fcopy_transaction.fcopy_msg will be used immediately.
-> >
-> > Reviewed-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-> > Cc: K. Y. Srinivasan <kys@microsoft.com>
-> > Signed-off-by: Dexuan Cui <decui@microsoft.com>
-> > ---
-> >
-> > v2: I removed the "FCP" prefix as Greg asked.
-> >
-> >     I also updated the output message a little:
-> >     "FCP: failed to acquire the semaphore" -->
-> >     "can not acquire the semaphore: it is benign"
-> >
-> >  drivers/hv/hv_fcopy.c | 9 +++++++++
-> >  1 file changed, 9 insertions(+)
-> >
-> > diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c
-> > index 23b2ce2..c518ad9 100644
-> > --- a/drivers/hv/hv_fcopy.c
-> > +++ b/drivers/hv/hv_fcopy.c
-> > @@ -86,6 +86,15 @@ static void fcopy_work_func(struct work_struct
-> *dummy)
-> >  	 * process the pending transaction.
-> >  	 */
-> >  	fcopy_respond_to_host(HV_E_FAIL);
-> > +
-> > +	/* In the case the user-space daemon crashes, hangs or is killed, we
-> > +	 * need to down the semaphore, otherwise, after the daemon starts
-> next
-> > +	 * time, the obsolete data in fcopy_transaction.message or
-> > +	 * fcopy_transaction.fcopy_msg will be used immediately.
-> > +	 */
-> 
-> Looks still racy, what happens if the daemon start before down_trylock()
-> but after fcopy_respont_to_host() here?
-Jason,
-Thanks for pointing this out!
-IMO we can resolve this by adding down_trylock() in fcopy_release().
-What's your opinion?
+From: Benjamin Poirier <bpoirier@suse.de>
 
-> 
-> > +	if (down_trylock(&fcopy_transaction.read_sema))
-> > +		pr_debug("can not acquire the semaphore: it is benign\n");
-> 
-> typo
-> > +
-> >  }
-Sorry -- what typo do you mean?
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
-Thanks,
--- Dexuan
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+------------------
+
+
+commit cdb3f4a31b64c3a1c6eef40bc01ebc9594c58a8c upstream.
+
+There are many cases where this feature does not improve performance or even
+reduces it.
+
+For example, here are the results from tests that I've run using 3.12.6 on one
+Intel Xeon W3565 and one i7 920 connected by ixgbe adapters. The results are
+from the Xeon, but they're similar on the i7. All numbers report the
+mean¬±stddev over 10 runs of 10s.
+
+1) latency tests similar to what is described in "c6e1a0d net: Allow no-cache
+copy from user on transmit"
+There is no statistically significant difference between tx-nocache-copy
+on/off.
+nic irqs spread out (one queue per cpu)
+
+200x netperf -r 1400,1
+tx-nocache-copy off
+        692000¬±1000 tps
+        50/90/95/99% latency (us): 275¬±2/643.8¬±0.4/799¬±1/2474.4¬±0.3
+tx-nocache-copy on
+        693000¬±1000 tps
+        50/90/95/99% latency (us): 274¬±1/644.1¬±0.7/800¬±2/2474.5¬±0.7
+
+200x netperf -r 14000,14000
+tx-nocache-copy off
+        86450¬±80 tps
+        50/90/95/99% latency (us): 334.37¬±0.02/838¬±1/2100¬±20/3990¬±40
+tx-nocache-copy on
+        86110¬±60 tps
+        50/90/95/99% latency (us): 334.28¬±0.01/837¬±2/2110¬±20/3990¬±20
+
+2) single stream throughput tests
+tx-nocache-copy leads to higher service demand
+
+                        throughput  cpu0        cpu1        demand
+                        (Gb/s)      (Gcycle)    (Gcycle)    (cycle/B)
+
+nic irqs and netperf on cpu0 (1x netperf -T0,0 -t omni -- -d send)
+
+tx-nocache-copy off     9402¬±5      9.4¬±0.2                 0.80¬±0.01
+tx-nocache-copy on      9403¬±3      9.85¬±0.04               0.838¬±0.004
+
+nic irqs on cpu0, netperf on cpu1 (1x netperf -T1,1 -t omni -- -d send)
+
+tx-nocache-copy off     9401¬±5      5.83¬±0.03   5.0¬±0.1     0.923¬±0.007
+tx-nocache-copy on      9404¬±2      5.74¬±0.03   5.523¬±0.009 0.958¬±0.002
+
+As a second example, here are some results from Eric Dumazet with latest
+net-next.
+tx-nocache-copy also leads to higher service demand
+
+(cpu is Intel(R) Xeon(R) CPU X5660  @ 2.80GHz)
+
+lpq83:~# ./ethtool -K eth0 tx-nocache-copy on
+lpq83:~# perf stat ./netperf -H lpq84 -c
+MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to lpq84.prod.google.com () port 0 AF_INET
+Recv   Send    Send                          Utilization       Service Demand
+Socket Socket  Message  Elapsed              Send     Recv     Send    Recv
+Size   Size    Size     Time     Throughput  local    remote   local   remote
+bytes  bytes   bytes    secs.    10^6bits/s  % S      % U      us/KB   us/KB
+
+ 87380  16384  16384    10.00      9407.44   2.50     -1.00    0.522   -1.000
+
+ Performance counter stats for './netperf -H lpq84 -c':
+
+       4282.648396 task-clock                #    0.423 CPUs utilized
+             9,348 context-switches          #    0.002 M/sec
+                88 CPU-migrations            #    0.021 K/sec
+               355 page-faults               #    0.083 K/sec
+    11,812,797,651 cycles                    #    2.758 GHz                     [82.79%]
+     9,020,522,817 stalled-cycles-frontend   #   76.36% frontend cycles idle    [82.54%]
+     4,579,889,681 stalled-cycles-backend    #   38.77% backend  cycles idle    [67.33%]
+     6,053,172,792 instructions              #    0.51  insns per cycle
+                                             #    1.49  stalled cycles per insn [83.64%]
+       597,275,583 branches                  #  139.464 M/sec                   [83.70%]
+         8,960,541 branch-misses             #    1.50% of all branches         [83.65%]
+
+      10.128990264 seconds time elapsed
+
+lpq83:~# ./ethtool -K eth0 tx-nocache-copy off
+lpq83:~# perf stat ./netperf -H lpq84 -c
+MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to lpq84.prod.google.com () port 0 AF_INET
+Recv   Send    Send                          Utilization       Service Demand
+Socket Socket  Message  Elapsed              Send     Recv     Send    Recv
+Size   Size    Size     Time     Throughput  local    remote   local   remote
+bytes  bytes   bytes    secs.    10^6bits/s  % S      % U      us/KB   us/KB
+
+ 87380  16384  16384    10.00      9412.45   2.15     -1.00    0.449   -1.000
+
+ Performance counter stats for './netperf -H lpq84 -c':
+
+       2847.375441 task-clock                #    0.281 CPUs utilized
+            11,632 context-switches          #    0.004 M/sec
+                49 CPU-migrations            #    0.017 K/sec
+               354 page-faults               #    0.124 K/sec
+     7,646,889,749 cycles                    #    2.686 GHz                     [83.34%]
+     6,115,050,032 stalled-cycles-frontend   #   79.97% frontend cycles idle    [83.31%]
+     1,726,460,071 stalled-cycles-backend    #   22.58% backend  cycles idle    [66.55%]
+     2,079,702,453 instructions              #    0.27  insns per cycle
+                                             #    2.94  stalled cycles per insn [83.22%]
+       363,773,213 branches                  #  127.757 M/sec                   [83.29%]
+         4,242,732 branch-misses             #    1.17% of all branches         [83.51%]
+
+      10.128449949 seconds time elapsed
+
+CC: Tom Herbert <therbert@google.com>
+Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Zefan Li <lizefan@huawei.com>
+---
+ net/core/dev.c | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/net/core/dev.c b/net/core/dev.c
+index b47375d..0770364 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -5546,13 +5546,8 @@ int register_netdevice(struct net_device *dev)
+ 	dev->features |= NETIF_F_SOFT_FEATURES;
+ 	dev->wanted_features = dev->features & dev->hw_features;
+ 
+-	/* Turn on no cache copy if HW is doing checksum */
+ 	if (!(dev->flags & IFF_LOOPBACK)) {
+ 		dev->hw_features |= NETIF_F_NOCACHE_COPY;
+-		if (dev->features & NETIF_F_ALL_CSUM) {
+-			dev->wanted_features |= NETIF_F_NOCACHE_COPY;
+-			dev->features |= NETIF_F_NOCACHE_COPY;
+-		}
+ 	}
+ 
+ 	/* Make NETIF_F_HIGHDMA inheritable to VLAN devices.
+-- 
+1.9.1
+
