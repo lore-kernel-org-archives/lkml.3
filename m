@@ -1,161 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751371AbaK0Und (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 15:43:33 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:37362 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035AbaK0Unc (ORCPT
+	id S1751151AbaK0Uwl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 15:52:41 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:52195 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751040AbaK0Uwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 15:43:32 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: Missing MODALIAS in /sys/devices/system/cpu/uevent
-Date: Thu, 27 Nov 2014 21:43:28 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <201411272101.11811@pali> <9796230.2QoPTQHj6x@vostro.rjw.lan> <2091767.N6CqySqsKt@vostro.rjw.lan>
-In-Reply-To: <2091767.N6CqySqsKt@vostro.rjw.lan>
+	Thu, 27 Nov 2014 15:52:38 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart8290514.DDUW7fxBWE";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201411272143.28926@pali>
+In-Reply-To: <87lhmwwpey.fsf_-_@x220.int.ebiederm.org>
+References: <3ccec8a13019b5e8ce7b1d7889677b778b070dc8.1416041823.git.josh@joshtriplett.org>
+ <0895c1f268bc0b01cc6c8ed4607d7c3953f49728.1416041823.git.josh@joshtriplett.org>
+ <546A3942.5040906@schaufler-ca.com> <CALCETrWy-3C1on3+2wE9aqcChBUCUY0i_4AL_Om8CSZ5QB18sQ@mail.gmail.com>
+ <CALCETrVn4gVXp7F=5h-bkN5VWuRMG9BoxgeQfKhX4+ZXxGE=wQ@mail.gmail.com>
+ <546A43CE.2030706@schaufler-ca.com> <87lhmwwpey.fsf_-_@x220.int.ebiederm.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 27 Nov 2014 12:52:16 -0800
+Message-ID: <CALCETrUuWDq2akKfb50AiPHeDDWzPW7ijz1QwnuNiskyZbBEfA@mail.gmail.com>
+Subject: Re: [CFT][PATCH] userns: Avoid problems with negative groups
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Richard Weinberger <richard@nod.at>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart8290514.DDUW7fxBWE
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Thu, Nov 27, 2014 at 8:59 AM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+>
+> Classic unix permission checks have an interesting feature.  The group
+> permissions for a file can be set to less than the other permissions
+> on a file.  Occassionally this is used deliberately to give a certain
+> group of users fewer permissions than the default.
+>
+> Overlooking negative groups has resulted in the permission checks for
+> setting up a group mapping in a user namespace to be too lax.  Tighten
+> the permission checks in new_idmap_permitted to ensure that mapping
+> uids and gids into user namespaces without privilege will not result
+> in new combinations of credentials being available to the users.
+>
+> When setting mappings without privilege only the creator of the user
+> namespace is interesting as all other users that have CAP_SETUID over
+> the user namespace will also have CAP_SETUID over the user namespaces
+> parent.  So the scope of the unprivileged check is reduced to just
+> the case where cred->euid is the namespace creator.
+>
+> For setting a uid mapping without privilege only euid is considered as
+> setresuid can set uid, suid and fsuid from euid without privielege
+> making any combination of uids possible with user namespaces already
+> possible without them.
+>
+> For setting a gid mapping without privilege only egid on a credential
+> without supplementary groups is condsidered, as setresgid can set gid,
+> sgid and fsgid from egid without privilege.  The requirement for no
+> supplementary groups is because CAP_SETUID in a user namespace allows
+> supplementary groups to be cleared, which unfortunately means allowing
+> a credential with supplementary groups would allow new combinations
+> of credentials to exist, and thus would allow defeating negative
+> groups without permission.
+>
+> This change should break userspace by the minimal amount needed
+> to fix this issue.
+>
+> This should fix CVE-2014-8989.
 
-On Thursday 27 November 2014 22:00:32 Rafael J. Wysocki wrote:
-> On Thursday, November 27, 2014 09:59:03 PM Rafael J. Wysocki=20
-wrote:
-> > On Thursday, November 27, 2014 09:56:56 PM Rafael J. Wysocki=20
-wrote:
-> > > On Thursday, November 27, 2014 09:24:30 PM Pali Roh=C3=A1r=20
-wrote:
-> > > > On Thursday 27 November 2014 21:39:42 Rafael J. Wysocki=20
-wrote:
-> > > > > On Thursday, November 27, 2014 09:01:11 PM Pali Roh=C3=A1r=20
-wrote:
-> > > > > > --nextPart2712852.Yg3XtZvm05
-> > > > > > Content-Type: Text/Plain;
-> > > > > >=20
-> > > > > >   charset=3D"utf-8"
-> > > > > >=20
-> > > > > > Content-Transfer-Encoding: quoted-printable
-> > > > > >=20
-> > > > > > Hello,
-> > > > > >=20
-> > > > > > on 3.18-rc5 I have empty cpu uevent file, but
-> > > > > > modalias file is=3D20 populated. See:
-> > > > > >=20
-> > > > > > $ cat /sys/devices/system/cpu/uevent=3D20
-> > > > > > $ cat /sys/devices/system/cpu/modalias=3D20
-> > > > > > cpu:type:x86,ven0000fam0006mod003C:feature:,0000,000
-> > > > > > 1,0002,0 003,0004,0005,0=3D
-> > > > > > 006,0007,0008,0009,000B,000C,000D,000E,000F,0010,001
-> > > > > > 1,0013, 0015,0016,0017,0=3D
-> > > > > > 018,0019,001A,001B,001C,001D,001F,002B,0034,003A,003
-> > > > > > B,003D, 0068,006B,006C,0=3D
-> > > > > > 06D,006F,0070,0072,0074,0075,0076,0078,007C,007D,008
-> > > > > > 0,0081, 0082,0083,0084,0=3D
-> > > > > > 085,0086,0087,0088,0089,008B,008C,008D,008E,008F,009
-> > > > > > 1,0093, 0094,0095,0096,0=3D
-> > > > > > 097,0098,0099,009A,009B,009C,009D,009E,00C0,00C5,00E
-> > > > > > 0,00E1, 00E3,00E5,00E6,0=3D
-> > > > > > 0E7,0100,0101,0102,0103,0104,0120,0121,0123,0124,012
-> > > > > > 5,0127, 0128,0129,012A,0=3D 12B,012D,0140
-> > > > > >=20
-> > > > > > =3D46or all other devices in /sys/devices/ which have
-> > > > > > modalias=3D20 content there is also MODALIAS=3D3D line
-> > > > > > in uevent file.
-> > > > >=20
-> > > > > /sys/devices/system/cpu/ is not a device.  It is a
-> > > > > "collection of all CPUs".
-> > > >=20
-> > > > Ok. But why that inconsistency (missing MODALIAS line)?
-> > > >=20
-> > > > > > Is cpu device special? Or why it is only one device
-> > > > > > which has=3D20 modalias file but is missing
-> > > > > > MODALIAS=3D3D line in uevent file?
-> > > > >=20
-> > > > > Look into the uevent files under
-> > > > > /sys/devices/system/cpu/cpu0/ etc.
-> > > >=20
-> > > > $ cat /sys/devices/system/cpu/cpu0/modalias
-> > > > cat: /sys/devices/system/cpu/cpu0/modalias: No such file
-> > > > or directory
-> > > > $ cat /sys/devices/system/cpu/cpu0/uevent
-> > > > DRIVER=3Dprocessor
-> > > > MODALIAS=3Dcpu:type:x86,ven0000fam0006mod003C:feature:,000
-> > > > 0,0001,0002,0003,0004,0005,0006,0007,0008,0009,000B,000C
-> > > > ,000D,000E,000F,0010,0011,0013,0015,0016,0017,0018,0019,
-> > > > 001A,001B,001C,001D,001F,002B,0034,003A,003B,003D,0068,0
-> > > > 06B,006C,006D,006F,0070,0072,0074,0075,0076,0078,007C,00
-> > > > 7D,0080,0081,0082,0083,0084,0085,0086,0087,0088,0089,008
-> > > > B,008C,008D,008E,008F,0091,0093,0094,0095,0096,0097,0098
-> > > > ,0099,009A,009B,009C,009D,009E,00C0,00C5,00E0,00E1,00E3,
-> > > > 00E5,00E6,00E7,0100,0101,0102,0103,0104,0120,0121,0123,0
-> > > > 124,0125,0127,0128,0129,012A,012B,012D,0140
-> > > >=20
-> > > > So there is no modalias file, but uevent contains
-> > > > MODALIAS line.
-> > > >=20
-> > > > > > What userspace application should use for reading
-> > > > > > modalias=3D20 string? File modalias or file uevent?
-> > > > >=20
-> > > > > The cpu modalias is used to trigger loading of some
-> > > > > CPU-specific modules upfront IIRC.  So yes, it is
-> > > > > special.
-> > > > >=20
-> > > > > My advice would be to follow udev here.
-> > > >=20
-> > > > Yes, I know. For some reasons coretemp.ko is not
-> > > > automatically loaded. I do not know why and I started
-> > > > investigating it. And I found above inconsistency in
-> > > > modalias and uevent...
-> > > >=20
-> > > > $ modinfo coretemp
-> > > > ...
-> > > > alias:        =20
-> > > > cpu:type:x86,ven0000fam*mod*:feature:*00E7*
-> > >=20
-> > > That may be a udev issue.  See
-> > >=20
-> > > http://lists.freedesktop.org/archives/systemd-devel/2013-J
-> > > uly/012165.html
-> >=20
-> > And it was fixed in udev quite some time ago.
->=20
-> By this commit:
->=20
-> http://cgit.freedesktop.org/systemd/systemd/commit/?id=3Dbf7f800
-> f2b3e93ccd1229d4717166f3a4d3af72f
+I think this is both unnecessarily restrictive and that it doesn't fix
+the bug.  For example, I can exploit CVE-2014-8989 without ever
+writing a uid map or a gid map.
 
-Thanks for info! I checked system udev files (Ubuntu 12.04 LTS)=20
-and this patch is not applied.
+IIUC, the only real issue is that user namespaces allow groups to be
+dropped using setgroups that wouldn't otherwise be dropped.  Can we
+get away with adding a per-user-ns flag that determines whether
+setgroups can be used?
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+setgroups would be unusable until the gid_map has been written and
+then it would become usable if and only if the parent userns could use
+setgroups and the opener of gid_map was privileged.
 
---nextPart8290514.DDUW7fxBWE
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+If we wanted to allow finer-grained control, we could allow writing
+control lines like:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+options +setgroups
 
-iEYEABECAAYFAlR3jPAACgkQi/DJPQPkQ1I8pQCfSInMCPthlllAqTbNkXQKR/Td
-6TMAoIJ3fP3+3IigooPMrL/jaGuk4CQp
-=yAKV
------END PGP SIGNATURE-----
+or
 
---nextPart8290514.DDUW7fxBWE--
+options -setgroups
+
+in gid_map, or we could add user_ns_flags that can only be written
+once and only before either uid_map or gid_map is written.
+
+--Andy
+
+>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> ---
+>
+> If people can test and review this change and verify  this and verify it
+> doesn't break anything I can't help breaking I will appreciate it.
+>
+>  kernel/user_namespace.c | 16 ++++++++++++----
+>  1 file changed, 12 insertions(+), 4 deletions(-)
+>
+> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+> index aa312b0dc3ec..b338c42d04fd 100644
+> --- a/kernel/user_namespace.c
+> +++ b/kernel/user_namespace.c
+> @@ -812,16 +812,24 @@ static bool new_idmap_permitted(const struct file *file,
+>                                 struct user_namespace *ns, int cap_setid,
+>                                 struct uid_gid_map *new_map)
+>  {
+> -       /* Allow mapping to your own filesystem ids */
+> -       if ((new_map->nr_extents == 1) && (new_map->extent[0].count == 1)) {
+> +       const struct cred *cred = file->f_cred;
+> +
+> +       /* Allow mapping an id without CAP_SETUID and CAP_SETGID when
+> +        * allowing the root of the user namespace CAP_SETUID or
+> +        * CAP_SETGID restricted to just that id will not change the
+> +        * set of credentials available that user.
+> +        */
+> +       if ((new_map->nr_extents == 1) && (new_map->extent[0].count == 1) &&
+> +           uid_eq(ns->owner, cred->euid)) {
+>                 u32 id = new_map->extent[0].lower_first;
+>                 if (cap_setid == CAP_SETUID) {
+>                         kuid_t uid = make_kuid(ns->parent, id);
+> -                       if (uid_eq(uid, file->f_cred->fsuid))
+> +                       if (uid_eq(uid, cred->euid))
+>                                 return true;
+>                 } else if (cap_setid == CAP_SETGID) {
+>                         kgid_t gid = make_kgid(ns->parent, id);
+> -                       if (gid_eq(gid, file->f_cred->fsgid))
+> +                       if (gid_eq(gid, cred->egid) &&
+> +                           (cred->group_info->ngroups == 0))
+>                                 return true;
+>                 }
+>         }
+> --
+> 1.9.1
+>
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
