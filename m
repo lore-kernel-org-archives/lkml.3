@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940AbaK0CxD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 21:53:03 -0500
-Received: from regular1.263xmail.com ([211.150.99.140]:43730 "EHLO
+	id S1753974AbaK0CxO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 21:53:14 -0500
+Received: from regular1.263xmail.com ([211.150.99.133]:34590 "EHLO
 	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753868AbaK0CxA (ORCPT
+	with ESMTP id S1753868AbaK0CxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 21:53:00 -0500
+	Wed, 26 Nov 2014 21:53:12 -0500
 X-263anti-spam: KSV:0;
 X-MAIL-GRAY: 0
 X-MAIL-DELIVERY: 1
@@ -16,7 +16,7 @@ X-RL-SENDER: roger.chen@rock-chips.com
 X-FST-TO: heiko@sntech.de
 X-SENDER-IP: 127.0.0.1
 X-LOGIN-NAME: roger.chen@rock-chips.com
-X-UNIQUE-TAG: <08d058d67a971892837c7eed0707ca9f>
+X-UNIQUE-TAG: <e36030a267a1e6c5ef4f24d2ecf233ec>
 X-ATTACHMENT-NUM: 0
 X-DNS-TYPE: 0
 From: Roger Chen <roger.chen@rock-chips.com>
@@ -25,9 +25,9 @@ Cc: peppe.cavallaro@st.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
         kever.yang@rock-chips.com, eddie.cai@rock-chips.com,
         roger.chen@rock-chips.com
-Subject: [PATCH v2 3/6] GMAC: modify CRU config for Rockchip RK3288 SoCs integrated GMAC
-Date: Thu, 27 Nov 2014 10:52:58 +0800
-Message-Id: <1417056778-3714-1-git-send-email-roger.chen@rock-chips.com>
+Subject: [PATCH v2 4/6] ARM: dts: rockchip: add gmac info for rk3288
+Date: Thu, 27 Nov 2014 10:53:10 +0800
+Message-Id: <1417056790-3753-1-git-send-email-roger.chen@rock-chips.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1417056591-3570-1-git-send-email-roger.chen@rock-chips.com>
 References: <1417056591-3570-1-git-send-email-roger.chen@rock-chips.com>
@@ -35,51 +35,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-modify CRU config for GMAC driver
+add gmac info in rk3288.dtsi for GMAC driver
 
 Signed-off-by: Roger Chen <roger.chen@rock-chips.com>
 ---
- drivers/clk/rockchip/clk-rk3288.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ arch/arm/boot/dts/rk3288.dtsi |   49 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 49 insertions(+)
 
-diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
-index 2327829..60237dc 100644
---- a/drivers/clk/rockchip/clk-rk3288.c
-+++ b/drivers/clk/rockchip/clk-rk3288.c
-@@ -187,7 +187,7 @@ PNAME(mux_uart2_p)	= { "uart2_src", "uart2_frac", "xin24m" };
- PNAME(mux_uart3_p)	= { "uart3_src", "uart3_frac", "xin24m" };
- PNAME(mux_uart4_p)	= { "uart4_src", "uart4_frac", "xin24m" };
- PNAME(mux_cif_out_p)	= { "cif_src", "xin24m" };
--PNAME(mux_macref_p)	= { "mac_src", "ext_gmac" };
-+PNAME(mux_mac_p)	= { "mac_pll_src", "ext_gmac" };
- PNAME(mux_hsadcout_p)	= { "hsadc_src", "ext_hsadc" };
- PNAME(mux_edp_24m_p)	= { "ext_edp_24m", "xin24m" };
- PNAME(mux_tspout_p)	= { "cpll", "gpll", "npll", "xin27m" };
-@@ -560,18 +560,18 @@ static struct rockchip_clk_branch rk3288_clk_branches[] __initdata = {
- 	MUX(SCLK_UART4, "sclk_uart4", mux_uart4_p, 0,
- 			RK3288_CLKSEL_CON(3), 8, 2, MFLAGS),
+diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+index 0f50d5d..22f7019 100644
+--- a/arch/arm/boot/dts/rk3288.dtsi
++++ b/arch/arm/boot/dts/rk3288.dtsi
+@@ -358,6 +358,22 @@
+ 		status = "disabled";
+ 	};
  
--	COMPOSITE(0, "mac_src", mux_pll_src_npll_cpll_gpll_p, 0,
-+	COMPOSITE(SCLK_MAC_PLL, "mac_pll_src", mux_pll_src_npll_cpll_gpll_p, 0,
- 			RK3288_CLKSEL_CON(21), 0, 2, MFLAGS, 8, 5, DFLAGS,
- 			RK3288_CLKGATE_CON(2), 5, GFLAGS),
--	MUX(0, "macref", mux_macref_p, 0,
-+	MUX(SCLK_MAC, "mac_clk", mux_mac_p, 0,
- 			RK3288_CLKSEL_CON(21), 4, 1, MFLAGS),
--	GATE(0, "sclk_macref_out", "macref", 0,
-+	GATE(SCLK_MACREF_OUT, "sclk_macref_out", "mac_clk", 0,
- 			RK3288_CLKGATE_CON(5), 3, GFLAGS),
--	GATE(SCLK_MACREF, "sclk_macref", "macref", 0,
-+	GATE(SCLK_MACREF, "sclk_macref", "mac_clk", 0,
- 			RK3288_CLKGATE_CON(5), 2, GFLAGS),
--	GATE(SCLK_MAC_RX, "sclk_mac_rx", "macref", 0,
-+	GATE(SCLK_MAC_RX, "sclk_mac_rx", "mac_clk", 0,
- 			RK3288_CLKGATE_CON(5), 0, GFLAGS),
--	GATE(SCLK_MAC_TX, "sclk_mac_tx", "macref", 0,
-+	GATE(SCLK_MAC_TX, "sclk_mac_tx", "mac_clk", 0,
- 			RK3288_CLKGATE_CON(5), 1, GFLAGS),
- 
- 	COMPOSITE(0, "hsadc_src", mux_pll_src_cpll_gpll_p, 0,
++	gmac: ethernet@ff290000 {
++		compatible = "rockchip,rk3288-gmac";
++		reg = <0xff290000 0x10000>;
++		interrupts = <GIC_SPI 27 IRQ_TYPE_LEVEL_HIGH>;
++		interrupt-names = "macirq";
++		rockchip,grf = <&grf>;
++		clocks = <&cru SCLK_MAC>, <&cru SCLK_MAC_PLL>,
++			<&cru SCLK_MAC_RX>, <&cru SCLK_MAC_TX>,
++			<&cru SCLK_MACREF>, <&cru SCLK_MACREF_OUT>,
++			<&cru ACLK_GMAC>, <&cru PCLK_GMAC>;
++		clock-names = "stmmaceth", "clk_mac_pll",
++			"mac_clk_rx", "mac_clk_tx",
++			"clk_mac_ref", "clk_mac_refout",
++			"aclk_mac", "pclk_mac";
++	};
++
+ 	usb_host0_ehci: usb@ff500000 {
+ 		compatible = "generic-ehci";
+ 		reg = <0xff500000 0x100>;
+@@ -1040,5 +1056,38 @@
+ 				rockchip,pins = <7 23 3 &pcfg_pull_none>;
+ 			};
+ 		};
++
++		gmac {
++			rgmii_pins: rgmii-pins {
++				rockchip,pins = <3 30 3 &pcfg_pull_none>,
++						<3 31 3 &pcfg_pull_none>,
++						<3 26 3 &pcfg_pull_none>,
++						<3 27 3 &pcfg_pull_none>,
++						<3 28 3 &pcfg_pull_none>,
++						<3 29 3 &pcfg_pull_none>,
++						<3 24 3 &pcfg_pull_none>,
++						<3 25 3 &pcfg_pull_none>,
++						<4 0 3 &pcfg_pull_none>,
++						<4 5 3 &pcfg_pull_none>,
++						<4 6 3 &pcfg_pull_none>,
++						<4 9 3 &pcfg_pull_none>,
++						<4 4 3 &pcfg_pull_none>,
++						<4 1 3 &pcfg_pull_none>,
++						<4 3 3 &pcfg_pull_none>;
++			};
++
++			rmii_pins: rmii-pins {
++				rockchip,pins = <3 30 3 &pcfg_pull_none>,
++						<3 31 3 &pcfg_pull_none>,
++						<3 28 3 &pcfg_pull_none>,
++						<3 29 3 &pcfg_pull_none>,
++						<4 0 3 &pcfg_pull_none>,
++						<4 5 3 &pcfg_pull_none>,
++						<4 4 3 &pcfg_pull_none>,
++						<4 1 3 &pcfg_pull_none>,
++						<4 2 3 &pcfg_pull_none>,
++						<4 3 3 &pcfg_pull_none>;
++			};
++		};
+ 	};
+ };
 -- 
 1.7.9.5
 
