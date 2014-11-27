@@ -1,89 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945AbaK0M0m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 07:26:42 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:38909 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751512AbaK0M0l convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 07:26:41 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Joe Perches'" <joe@perches.com>,
-        Alexei Starovoitov <alexei.starovoitov@gmail.com>
-CC: Quentin Lambert <lambert.quentin@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        "Patrick McHardy" <kaber@trash.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] x86: bpf_jit_comp: simplify trivial boolean return
-Thread-Topic: [PATCH] x86: bpf_jit_comp: simplify trivial boolean return
-Thread-Index: AQHQCbS8Fl/IWugLR0q7Tb6zBSGc/Zx0Zp1A
-Date: Thu, 27 Nov 2014 12:25:25 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1C9FDA63@AcuExch.aculab.com>
-References: <CAADnVQK3iui8cAmhi28=65p2CJbTu45fR98ri8Uh8xLRb=cwnA@mail.gmail.com>
- <1417032059.16355.4.camel@perches.com>
-In-Reply-To: <1417032059.16355.4.camel@perches.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1754391AbaK0M3N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 07:29:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35588 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751468AbaK0M3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 07:29:11 -0500
+Date: Thu, 27 Nov 2014 13:29:08 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: oom && coredump
+Message-ID: <20141127122908.GB18833@dhcp22.suse.cz>
+References: <20141017171904.GA12263@redhat.com>
+ <20141020184657.GA505@dhcp22.suse.cz>
+ <20141020190620.GA21882@redhat.com>
+ <20141020195618.GA606@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141020195618.GA606@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches
-> On Wed, 2014-11-26 at 10:34 -0800, Alexei Starovoitov wrote:
-> > On Wed, Nov 26, 2014 at 10:02 AM, Joe Perches <joe@perches.com> wrote:
-> > > On Wed, 2014-11-26 at 09:23 -0800, Alexei Starovoitov wrote:
-> > >> On Wed, Nov 26, 2014 at 8:58 AM, Joe Perches <joe@perches.com> wrote:
-> > >
-> > >> > Is there any value in reordering these tests for frequency
-> > >> > or maybe using | instead of || to avoid multiple jumps?
-> > >>
-> > >> probably not. It's not a critical path.
-> > >> compiler may fuse conditions depending on values anyway.
-> > >> If it was a critical path, we could have used
-> > >> (1 << reg) & mask trick.
-> > >> I picked explicit 'return true' else 'return false' here,
-> > >> because it felt easier to read. Just a matter of taste.
-> > >
-> > > There is a size difference though: (allyesconfig)
-> > >
-> > > $ size arch/x86/net/built-in.o*
-> > >    text    data     bss     dec     hex filename
-> > >   12999    1012    4336   18347    47ab arch/x86/net/built-in.o.new
-> > >   13177    1076    4592   18845    499d arch/x86/net/built-in.o.old
+[Sorry this one has somehow completely fallen off my radar]
+
+On Mon 20-10-14 21:56:18, Oleg Nesterov wrote:
+> On 10/20, Oleg Nesterov wrote:
 > >
-> > interesting. Compiler obviously thinks that 178 byte increase
-> > with -O2 is the right trade off. Which I agree with :)
-> >
-> > If I think dropping 'inline' and using -Os will give bigger savings...
+> > And I agree that it
+> > is hardly possible to close this race, and this patch makes the things
+> > better.
 > 
-> This was allyesconfig which already uses -Os
+> speaking of "partial" fixes for oom problems...
 > 
-> Using -O2, there is no difference using inline
-> or not, but the size delta with the bitmask is
-> much larger
+> Perhaps the patch below makes sense? Sure, it is racy, but probably
+> better than nothing. And in any case (imo) this SIGNAL_GROUP_COREDUMP
+> check doesn't look bad, the coredumping task can consume more memory,
+> and we can't assume it is going to actually exit soon.
+
+I am not familiar with this area much (it is too scary...).
+I guess the issue is that OOM killer might try to kill a task which is
+currently in the middle of cordumping which is not killable, right? And
+if it is blocked on memory allocation then we are effectively dead
+locked. Right?
+
+Wouldn't it be better to make coredumping killable? Is this even
+possible?
+
+> And at least we can kill that ugly and wrong ptrace check.
+
+Why is the ptrace check wrong? PF_EXITING should be set after
+ptrace_event(PTRACE_EVENT_EXIT, code). But then I can see
+unlikely(tsk->flags & PF_EXITING) check right after PTRACE_EVENT_EXIT
+notification. Is this the thing?
+
+But I do not get why we do not have to care about PTRACE_EVENT_EXIT once
+SIGNAL_GROUP_COREDUMP is checked anymore or how they are related? What
+prevents the original issue when the OOM victim is blocked by ptrace for
+ever?
+
+> What do you think?
 > 
-> $ size arch/x86/net/built-in.o* (allyesconfig, but not -Os)
->    text	   data	    bss	    dec	    hex	filename
->   13410	    820	   3624	  17854	   45be	arch/x86/net/built-in.o.new
->   16130	    884	   4200	  21214	   52de	arch/x86/net/built-in.o.old
->   16130	    884	   4200	  21214	   52de	arch/x86/net/built-in.o.static
+> Oleg.
+> 
+> --- x/mm/oom_kill.c
+> +++ x/mm/oom_kill.c
+> @@ -254,6 +254,12 @@ static enum oom_constraint constrained_alloc(struct zonelist *zonelist,
+>  }
+>  #endif
+>  
+> +static inline bool task_will_free_mem(struct task_struct *task)
+> +{
+> +	return (task->flags & PF_EXITING) &&
+> +		!(task->signal->flags & SIGNAL_GROUP_COREDUMP);
+> +}
+> +
+>  enum oom_scan_t oom_scan_process_thread(struct task_struct *task,
+>  		unsigned long totalpages, const nodemask_t *nodemask,
+>  		bool force_kill)
+> @@ -281,14 +287,9 @@ enum oom_scan_t oom_scan_process_thread(struct task_struct *task,
+>  	if (oom_task_origin(task))
+>  		return OOM_SCAN_SELECT;
+>  
+> -	if (task->flags & PF_EXITING && !force_kill) {
+> -		/*
+> -		 * If this task is not being ptraced on exit, then wait for it
+> -		 * to finish before killing some other task unnecessarily.
+> -		 */
+> -		if (!(task->group_leader->ptrace & PT_TRACE_EXIT))
+> -			return OOM_SCAN_ABORT;
+> -	}
+> +	if (task_will_free_mem(task) && !force_kill)
+> +		return OOM_SCAN_ABORT;
+> +
+>  	return OOM_SCAN_OK;
+>  }
+>  
+> @@ -426,7 +427,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+>  	 * If the task is already exiting, don't alarm the sysadmin or kill
+>  	 * its children or threads, just set TIF_MEMDIE so it can die quickly
+>  	 */
+> -	if (p->flags & PF_EXITING) {
+> +	if (task_will_free_mem(p)) {
+>  		set_tsk_thread_flag(p, TIF_MEMDIE);
+>  		put_task_struct(p);
+>  		return;
+> @@ -632,7 +633,7 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
+>  	 * select it.  The goal is to allow it to allocate so that it may
+>  	 * quickly exit and free its memory.
+>  	 */
+> -	if (fatal_signal_pending(current) || current->flags & PF_EXITING) {
+> +	if (fatal_signal_pending(current) || task_will_free_mem(current)) {
+>  		set_thread_flag(TIF_MEMDIE);
+>  		return;
+>  	}
+> 
 
-That is quite a big % change in the code size.
-Why the change in data?
-
-	David
-
-
-
+-- 
+Michal Hocko
+SUSE Labs
