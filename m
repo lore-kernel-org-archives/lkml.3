@@ -1,20 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514AbaK0UMI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 15:12:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41218 "EHLO mx1.redhat.com"
+	id S1752528AbaK0UMP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 15:12:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50976 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836AbaK0UMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 15:12:03 -0500
-Date: Thu, 27 Nov 2014 22:11:46 +0200
+	id S1750836AbaK0UMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 15:12:12 -0500
+Date: Thu, 27 Nov 2014 22:11:36 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: [PATCH v6 45/46] vhost/scsi: partial virtio 1.0 support
-Message-ID: <1417118789-18231-46-git-send-email-mst@redhat.com>
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Andy Grover <agrover@redhat.com>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        David Drysdale <drysdale@google.com>,
+        stephen hemminger <stephen@networkplumber.org>,
+        =?us-ascii?B?PT9VVEYtOD9xP1Bpb3RyPTIwS3I9QzM9QjNsPz0=?= 
+	<piotr.krol@3mdeb.com>,
+        Bjarke Istrup Pedersen <gurligebis@gentoo.org>,
+        linux-api@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: [PATCH v6 44/46] virtio_scsi: export to userspace
+Message-ID: <1417118789-18231-45-git-send-email-mst@redhat.com>
 References: <1417118789-18231-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,97 +36,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include all endian conversions as required by virtio 1.0.
-Don't set virtio 1.0 yet, since that requires ANY_LAYOUT
-which we don't yet support.
+Replace uXX by __uXX and _packed by __attribute((packed))
+as seems to be the norm for userspace headers.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Acked-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- drivers/vhost/scsi.c | 22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+ include/uapi/linux/virtio_scsi.h | 74 ++++++++++++++++++++--------------------
+ include/uapi/linux/Kbuild        |  1 +
+ 2 files changed, 38 insertions(+), 37 deletions(-)
 
-diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
-index a17f118..01c01cb 100644
---- a/drivers/vhost/scsi.c
-+++ b/drivers/vhost/scsi.c
-@@ -168,6 +168,7 @@ enum {
- 	VHOST_SCSI_VQ_IO = 2,
- };
+diff --git a/include/uapi/linux/virtio_scsi.h b/include/uapi/linux/virtio_scsi.h
+index af44864..42b9370 100644
+--- a/include/uapi/linux/virtio_scsi.h
++++ b/include/uapi/linux/virtio_scsi.h
+@@ -34,78 +34,78 @@
  
-+/* Note: can't set VIRTIO_F_VERSION_1 yet, since that implies ANY_LAYOUT. */
- enum {
- 	VHOST_SCSI_FEATURES = VHOST_FEATURES | (1ULL << VIRTIO_SCSI_F_HOTPLUG) |
- 					       (1ULL << VIRTIO_SCSI_F_T10_PI)
-@@ -577,8 +578,8 @@ tcm_vhost_allocate_evt(struct vhost_scsi *vs,
- 		return NULL;
- 	}
+ /* SCSI command request, followed by data-out */
+ struct virtio_scsi_cmd_req {
+-	u8 lun[8];		/* Logical Unit Number */
++	__u8 lun[8];		/* Logical Unit Number */
+ 	__virtio64 tag;		/* Command identifier */
+-	u8 task_attr;		/* Task attribute */
+-	u8 prio;		/* SAM command priority field */
+-	u8 crn;
+-	u8 cdb[VIRTIO_SCSI_CDB_SIZE];
+-} __packed;
++	__u8 task_attr;		/* Task attribute */
++	__u8 prio;		/* SAM command priority field */
++	__u8 crn;
++	__u8 cdb[VIRTIO_SCSI_CDB_SIZE];
++} __attribute__((packed));
  
--	evt->event.event = event;
--	evt->event.reason = reason;
-+	evt->event.event = cpu_to_vhost32(vq, event);
-+	evt->event.reason = cpu_to_vhost32(vq, reason);
- 	vs->vs_events_nr++;
+ /* SCSI command request, followed by protection information */
+ struct virtio_scsi_cmd_req_pi {
+-	u8 lun[8];		/* Logical Unit Number */
++	__u8 lun[8];		/* Logical Unit Number */
+ 	__virtio64 tag;		/* Command identifier */
+-	u8 task_attr;		/* Task attribute */
+-	u8 prio;		/* SAM command priority field */
+-	u8 crn;
++	__u8 task_attr;		/* Task attribute */
++	__u8 prio;		/* SAM command priority field */
++	__u8 crn;
+ 	__virtio32 pi_bytesout;	/* DataOUT PI Number of bytes */
+ 	__virtio32 pi_bytesin;		/* DataIN PI Number of bytes */
+-	u8 cdb[VIRTIO_SCSI_CDB_SIZE];
+-} __packed;
++	__u8 cdb[VIRTIO_SCSI_CDB_SIZE];
++} __attribute__((packed));
  
- 	return evt;
-@@ -636,7 +637,7 @@ again:
- 	}
+ /* Response, followed by sense data and data-in */
+ struct virtio_scsi_cmd_resp {
+ 	__virtio32 sense_len;		/* Sense data length */
+ 	__virtio32 resid;		/* Residual bytes in data buffer */
+ 	__virtio16 status_qualifier;	/* Status qualifier */
+-	u8 status;		/* Command completion status */
+-	u8 response;		/* Response values */
+-	u8 sense[VIRTIO_SCSI_SENSE_SIZE];
+-} __packed;
++	__u8 status;		/* Command completion status */
++	__u8 response;		/* Response values */
++	__u8 sense[VIRTIO_SCSI_SENSE_SIZE];
++} __attribute__((packed));
  
- 	if (vs->vs_events_missed) {
--		event->event |= VIRTIO_SCSI_T_EVENTS_MISSED;
-+		event->event |= cpu_to_vhost32(vq, VIRTIO_SCSI_T_EVENTS_MISSED);
- 		vs->vs_events_missed = false;
- 	}
+ /* Task Management Request */
+ struct virtio_scsi_ctrl_tmf_req {
+ 	__virtio32 type;
+ 	__virtio32 subtype;
+-	u8 lun[8];
++	__u8 lun[8];
+ 	__virtio64 tag;
+-} __packed;
++} __attribute__((packed));
  
-@@ -695,12 +696,13 @@ static void vhost_scsi_complete_cmd_work(struct vhost_work *work)
- 			cmd, se_cmd->residual_count, se_cmd->scsi_status);
+ struct virtio_scsi_ctrl_tmf_resp {
+-	u8 response;
+-} __packed;
++	__u8 response;
++} __attribute__((packed));
  
- 		memset(&v_rsp, 0, sizeof(v_rsp));
--		v_rsp.resid = se_cmd->residual_count;
-+		v_rsp.resid = cpu_to_vhost32(cmd->tvc_vq, se_cmd->residual_count);
- 		/* TODO is status_qualifier field needed? */
- 		v_rsp.status = se_cmd->scsi_status;
--		v_rsp.sense_len = se_cmd->scsi_sense_length;
-+		v_rsp.sense_len = cpu_to_vhost32(cmd->tvc_vq,
-+						 se_cmd->scsi_sense_length);
- 		memcpy(v_rsp.sense, cmd->tvc_sense_buf,
--		       v_rsp.sense_len);
-+		       se_cmd->scsi_sense_length);
- 		ret = copy_to_user(cmd->tvc_resp, &v_rsp, sizeof(v_rsp));
- 		if (likely(ret == 0)) {
- 			struct vhost_scsi_virtqueue *q;
-@@ -1095,14 +1097,14 @@ vhost_scsi_handle_vq(struct vhost_scsi *vs, struct vhost_virtqueue *vq)
- 						", but wrong data_direction\n");
- 					goto err_cmd;
- 				}
--				prot_bytes = v_req_pi.pi_bytesout;
-+				prot_bytes = vhost32_to_cpu(vq, v_req_pi.pi_bytesout);
- 			} else if (v_req_pi.pi_bytesin) {
- 				if (data_direction != DMA_FROM_DEVICE) {
- 					vq_err(vq, "Received non zero di_pi_niov"
- 						", but wrong data_direction\n");
- 					goto err_cmd;
- 				}
--				prot_bytes = v_req_pi.pi_bytesin;
-+				prot_bytes = vhost32_to_cpu(vq, v_req_pi.pi_bytesin);
- 			}
- 			if (prot_bytes) {
- 				int tmp = 0;
-@@ -1117,12 +1119,12 @@ vhost_scsi_handle_vq(struct vhost_scsi *vs, struct vhost_virtqueue *vq)
- 				data_first += prot_niov;
- 				data_niov = data_num - prot_niov;
- 			}
--			tag = v_req_pi.tag;
-+			tag = vhost64_to_cpu(vq, v_req_pi.tag);
- 			task_attr = v_req_pi.task_attr;
- 			cdb = &v_req_pi.cdb[0];
- 			lun = ((v_req_pi.lun[2] << 8) | v_req_pi.lun[3]) & 0x3FFF;
- 		} else {
--			tag = v_req.tag;
-+			tag = vhost64_to_cpu(vq, v_req.tag);
- 			task_attr = v_req.task_attr;
- 			cdb = &v_req.cdb[0];
- 			lun = ((v_req.lun[2] << 8) | v_req.lun[3]) & 0x3FFF;
+ /* Asynchronous notification query/subscription */
+ struct virtio_scsi_ctrl_an_req {
+ 	__virtio32 type;
+-	u8 lun[8];
++	__u8 lun[8];
+ 	__virtio32 event_requested;
+-} __packed;
++} __attribute__((packed));
+ 
+ struct virtio_scsi_ctrl_an_resp {
+ 	__virtio32 event_actual;
+-	u8 response;
+-} __packed;
++	__u8 response;
++} __attribute__((packed));
+ 
+ struct virtio_scsi_event {
+ 	__virtio32 event;
+-	u8 lun[8];
++	__u8 lun[8];
+ 	__virtio32 reason;
+-} __packed;
++} __attribute__((packed));
+ 
+ struct virtio_scsi_config {
+-	u32 num_queues;
+-	u32 seg_max;
+-	u32 max_sectors;
+-	u32 cmd_per_lun;
+-	u32 event_info_size;
+-	u32 sense_size;
+-	u32 cdb_size;
+-	u16 max_channel;
+-	u16 max_target;
+-	u32 max_lun;
+-} __packed;
++	__u32 num_queues;
++	__u32 seg_max;
++	__u32 max_sectors;
++	__u32 cmd_per_lun;
++	__u32 event_info_size;
++	__u32 sense_size;
++	__u32 cdb_size;
++	__u16 max_channel;
++	__u16 max_target;
++	__u32 max_lun;
++} __attribute__((packed));
+ 
+ /* Feature Bits */
+ #define VIRTIO_SCSI_F_INOUT                    0
+diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
+index 44a5581..e61947c 100644
+--- a/include/uapi/linux/Kbuild
++++ b/include/uapi/linux/Kbuild
+@@ -428,6 +428,7 @@ header-y += virtio_net.h
+ header-y += virtio_pci.h
+ header-y += virtio_ring.h
+ header-y += virtio_rng.h
++header-y += virtio_scsi.h
+ header=y += vm_sockets.h
+ header-y += vt.h
+ header-y += wait.h
 -- 
 MST
 
