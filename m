@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751330AbaK0RCF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 12:02:05 -0500
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.216]:58605 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831AbaK0RCD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 12:02:03 -0500
-X-RZG-AUTH: :IW0WYUmmW/LXBXEy1oS2GmByExLj9zw/4tEKkyX4yP6D6vUdA4+4uSj51g==
-X-RZG-CLASS-ID: mo00
-Date: Thu, 27 Nov 2014 17:55:40 +0100 (CET)
-From: Martin Vath <martin@mvath.de>
-X-X-Sender: vaeth@biff2
-To: Marcin Szychowski <szycha@gmail.com>
-cc: Bruno Wolff III <bruno@wolff.to>,
-        Phillip Lougher <phillip@squashfs.org.uk>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        texstar@gmail.com, Martin Vaeth <martin@mvath.de>, guanx.bac@gmail.com,
-        dave@vasilevsky.ca, blyons@students.naropa.edu, tokiclover@gmail.com,
-        afm404@gmail.com, hugochevrain@gmail.com
-Subject: Re: [PATCH 0/2] Squashfs: add LZ4 compression
-In-Reply-To: <CAJZww4gzTnbyB4jbFQc0N4G6GJ31pVwv-PNZtDMbUxXMoH-orQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1411271716300.17270@biff2>
-References: <1417075250-6502-1-git-send-email-phillip@squashfs.org.uk> <20141127133754.GA12750@wolff.to> <CAJZww4gzTnbyB4jbFQc0N4G6GJ31pVwv-PNZtDMbUxXMoH-orQ@mail.gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1751183AbaK0RFS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 12:05:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42067 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750887AbaK0RFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 12:05:16 -0500
+Date: Thu, 27 Nov 2014 18:05:13 +0100
+From: Petr Mladek <pmladek@suse.cz>
+To: Seth Jennings <sjenning@redhat.com>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Miroslav Benes <mbenes@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 3/3] samples: add sample live patching module
+Message-ID: <20141127170513.GA22608@pathway.suse.cz>
+References: <1416935709-404-1-git-send-email-sjenning@redhat.com>
+ <1416935709-404-4-git-send-email-sjenning@redhat.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1311509108-1417106034=:17270"
-Content-ID: <alpine.DEB.2.10.1411271734400.17270@biff2>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416935709-404-4-git-send-email-sjenning@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Tue 2014-11-25 11:15:09, Seth Jennings wrote:
+> Add a sample live patching module.
+> 
+> Signed-off-by: Seth Jennings <sjenning@redhat.com>
+> ---
+>  MAINTAINERS                          |  1 +
+>  samples/Kconfig                      |  7 +++
+>  samples/livepatch/Makefile           |  1 +
+>  samples/livepatch/livepatch-sample.c | 87 ++++++++++++++++++++++++++++++++++++
+>  4 files changed, 96 insertions(+)
+>  create mode 100644 samples/livepatch/Makefile
+>  create mode 100644 samples/livepatch/livepatch-sample.c
 
---8323329-1311509108-1417106034=:17270
-Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15; FORMAT=flowed
-Content-Transfer-Encoding: 8BIT
-Content-ID: <alpine.DEB.2.10.1411271734401.17270@biff2>
+[...] 
 
-Hi:
+> diff --git a/samples/livepatch/Makefile b/samples/livepatch/Makefile
+> new file mode 100644
+> index 0000000..7f1cdc1
+> --- /dev/null
+> +++ b/samples/livepatch/Makefile
+> @@ -0,0 +1 @@
+> +obj-$(CONFIG_SAMPLE_LIVE_PATCHING) += livepatch-sample.o
+> diff --git a/samples/livepatch/livepatch-sample.c b/samples/livepatch/livepatch-sample.c
+> new file mode 100644
+> index 0000000..21f159d
 
-> squashfs+lz4 / aufs to speed up my laptop
+The Makefile is ignored because there is missing:
 
-Squashfs proves its usefulness especially in combination
-with aufs or overlayfs; I suppose that this combination
-will become more popular with the spreading of overlayfs
-(e.g. to save disk space etc.)
 
-For users with such a combination, it is especially important
-to get a fast (re)compression of huge directories.
+diff --git a/samples/Makefile b/samples/Makefile
+index 1a60c62e2045..f00257bcc5a7 100644
+--- a/samples/Makefile
++++ b/samples/Makefile
+@@ -1,4 +1,4 @@
+ # Makefile for Linux samples code
+ 
+-obj-$(CONFIG_SAMPLES)	+= kobject/ kprobes/ trace_events/ \
++obj-$(CONFIG_SAMPLES)	+= kobject/ kprobes/ trace_events/ livepatch/ \
+ 			   hw_breakpoint/ kfifo/ kdb/ hidraw/ rpmsg/ seccomp/
 
-The speed of LZ4 for compression in such a setting is really incredible.
-Just for orientation for myself, I made a list of times/sizes
-on some machines I had access to:
 
-https://github.com/vaeth/squashmount/blob/master/compress.txt
-
-(I do not claim that this is a scientific benchmark - just a
-straightforward average over several runs).
-The results for the kernel source and libreoffice are really
-unbelievable, but I repeated them several times (and,
-as you can see, for the kernel sources on different machines).
-
->From the user perspective, it is mainly important that
-the files compressed in this way can be read by the kernel -
-the decompression speed is here secondary, so I made no comparison
-for this case, although lz4 is known to be very fast also
-for decompression.
-
-I would really like to see lz4 support included in the
-squashfs kernel driver. I cannot imagine any negative consequences,
-especially since squashfs and lz4 are in the kernel, anyway.
-
-Sincerely
-Martin Väth
---8323329-1311509108-1417106034=:17270--
+Best Regards,
+Petr
