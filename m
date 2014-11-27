@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576AbaK0Mcj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 07:32:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57120 "EHLO mx1.redhat.com"
+	id S1755606AbaK0Mcr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 07:32:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41738 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755524AbaK0Mc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 07:32:28 -0500
-Date: Thu, 27 Nov 2014 14:32:10 +0200
+	id S1755581AbaK0Mcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 07:32:45 -0500
+Date: Thu, 27 Nov 2014 14:32:24 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com, kvm@vger.kernel.org,
         virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: [PATCH v5 25/45] virtio_net: bigger header when VERSION_1 is set
-Message-ID: <1417091078-24611-26-git-send-email-mst@redhat.com>
+Subject: [PATCH v5 28/45] vhost: add memory access wrappers
+Message-ID: <1417091078-24611-29-git-send-email-mst@redhat.com>
 References: <1417091078-24611-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -26,29 +25,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With VERSION_1 virtio_net uses same header size
-whether mergeable buffers are enabled or not.
+Add guest memory access wrappers to handle virtio endianness
+conversions.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 ---
- drivers/net/virtio_net.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/vhost/vhost.h | 31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 098f443..a0e64cf 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1805,7 +1805,8 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
- 		vi->mergeable_rx_bufs = true;
- 
--	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
-+	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF) ||
-+	    virtio_has_feature(vdev, VIRTIO_F_VERSION_1))
- 		vi->hdr_len = sizeof(struct virtio_net_hdr_mrg_rxbuf);
- 	else
- 		vi->hdr_len = sizeof(struct virtio_net_hdr);
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index c624b09..1f321fd 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -176,4 +176,35 @@ static inline int vhost_has_feature(struct vhost_virtqueue *vq, int bit)
+ {
+ 	return vq->acked_features & (1ULL << bit);
+ }
++
++/* Memory accessors */
++static inline u16 vhost16_to_cpu(struct vhost_virtqueue *vq, __virtio16 val)
++{
++	return __virtio16_to_cpu(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
++}
++
++static inline __virtio16 cpu_to_vhost16(struct vhost_virtqueue *vq, u16 val)
++{
++	return __cpu_to_virtio16(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
++}
++
++static inline u32 vhost32_to_cpu(struct vhost_virtqueue *vq, __virtio32 val)
++{
++	return __virtio32_to_cpu(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
++}
++
++static inline __virtio32 cpu_to_vhost32(struct vhost_virtqueue *vq, u32 val)
++{
++	return __cpu_to_virtio32(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
++}
++
++static inline u64 vhost64_to_cpu(struct vhost_virtqueue *vq, __virtio64 val)
++{
++	return __virtio64_to_cpu(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
++}
++
++static inline __virtio64 cpu_to_vhost64(struct vhost_virtqueue *vq, u64 val)
++{
++	return __cpu_to_virtio64(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
++}
+ #endif
 -- 
 MST
 
