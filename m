@@ -1,88 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687AbaK0BSr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 20:18:47 -0500
-Received: from mail.smart-weblications.de ([188.65.144.61]:40403 "EHLO
-	mail.smart-weblications.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753617AbaK0BSp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 20:18:45 -0500
-X-Greylist: delayed 1003 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Nov 2014 20:18:45 EST
-Message-ID: <547677F6.5050109@smart-weblications.de>
-Date: Thu, 27 Nov 2014 02:01:42 +0100
-From: Smart Weblications GmbH - Florian Wiessner 
-	<f.wiessner@smart-weblications.de>
-Reply-To: f.wiessner@smart-weblications.de
-Organization: Smart Weblications GmbH
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753342AbaK0Bai (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 20:30:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57136 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752342AbaK0Bah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 20:30:37 -0500
+Date: Thu, 27 Nov 2014 02:30:22 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ian Kent <ikent@redhat.com>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        David Howells <dhowells@redhat.com>,
+        Benjamin Coddington <bcodding@redhat.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [RFC PATCH 3/4] kmod - add call_usermodehelper_ns() helper
+Message-ID: <20141127013022.GA3476@redhat.com>
+References: <20141125005255.4974.54193.stgit@pluto.fritz.box> <20141125010734.4974.85347.stgit@pluto.fritz.box> <20141125215248.GA7958@redhat.com> <1416954967.2509.25.camel@pluto.fritz.box>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
-        linux-fsdevel@vger.kernel.org
-Subject: ocfs2_link:812 ERROR: status = -2 - Re: Linux 3.17.4
-References: <20141121201253.GA8623@kroah.com>
-In-Reply-To: <20141121201253.GA8623@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416954967.2509.25.camel@pluto.fritz.box>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 21.11.2014 21:12, schrieb Greg KH:
-> I'm announcing the release of the 3.17.4 kernel.
-> 
-> All users of the 3.17 kernel series must upgrade.
-> 
+I didn't have time to follow this thread today, will try tomorrow.
+Perhaps this was already answered...
 
+On 11/26, Ian Kent wrote:
+>
+> On Tue, 2014-11-25 at 22:52 +0100, Oleg Nesterov wrote:
+> >
+> > and probably we also need this for coredump helpers, we want them
+> > to be per-namespace.
+>
+> To save me some time could you point me to some of the related code
+> please. I don't normally play in that area.
 
-When using ocfs2 on 3.17.4 (i have seen this since 3.14) and
-mount-bind ocfs2 to a lxc-container, when postfix inside the lxc tries to
-write mails to ocfs2 dir using virtual transport, kernel says:
+See call_usermodehelper_*() in do_coredump(). This has the same problems
+(and just in case, of course other problems, starting from the fact that
+core_pattern is global). We need the right root to find the binary, etc.
 
-[ 3812.352564] (virtual,25186,3):ocfs2_link:812 ERROR: status = -2
+> > > +	switch_task_namespaces(current, ns);
+> >
+> > This doesn't look sane because this won't switch task_active_pid_ns().
+>
+> I wondered about that too but I didn't design the open()/setns()
 
-In 3.12 this did not happen.
+No, I don't think we should use setns() in this case...
 
-This code (from postfix virtual transport program 'virtual' seems to cause the
-kernel message:
+> > And otoh. If we actually want to use the caller's mnt_ns/namespaces we
+> > could simply fork/reparent a child which will do execve ?
+>
+> Are you saying that the user space program should be modified to do
+> this?
 
-        newfile = concatenate(newdir, STR(buf), (char *) 0);
-        if ((mail_copy_status = mail_copy(COPY_ATTR(state.msg_attr),
-                                          dst, copy_flags, "\n",
-                                          why)) == 0) {
-            if (sane_link(tmpfile, newfile) < 0
-                && (errno != ENOENT
-                    || (make_dirs(curdir, 0700), make_dirs(newdir, 0700)) < 0
-                    || sane_link(tmpfile, newfile) < 0)) {
-                dsb_simple(why, mbox_dsn(errno, "4.2.0"),
-                           "create maildir file %s: %m", newfile);
-                mail_copy_status = MAIL_COPY_STAT_WRITE;
-            }
-        }
-        if (unlink(tmpfile) < 0)
-            msg_warn("remove %s: %m", tmpfile);
-    }
+No, no, I meant that the kernel could do this (yes, not that trivial)
+on behalf of the caller's process.
 
-This seems like a regression to me since this used to work in 3.12.33
+Oleg.
 
-
-
--- 
-
-Mit freundlichen Grüßen,
-
-Florian Wiessner
-
-Smart Weblications GmbH
-Martinsberger Str. 1
-D-95119 Naila
-
-fon.: +49 9282 9638 200
-fax.: +49 9282 9638 205
-24/7: +49 900 144 000 00 - 0,99 EUR/Min*
-http://www.smart-weblications.de
-
---
-Sitz der Gesellschaft: Naila
-Geschäftsführer: Florian Wiessner
-HRB-Nr.: HRB 3840 Amtsgericht Hof
-*aus dem dt. Festnetz, ggf. abweichende Preise aus dem Mobilfunknetz
