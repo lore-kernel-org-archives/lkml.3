@@ -1,156 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751563AbaK0O2Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 09:28:16 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:54720 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751386AbaK0O2O convert rfc822-to-8bit (ORCPT
+	id S1751689AbaK0O2g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 09:28:36 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:57200 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067AbaK0O2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 09:28:14 -0500
-Date: Thu, 27 Nov 2014 14:28:11 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>
-Cc: Marc Zyngier <Marc.Zyngier@arm.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        Mark Rutland <Mark.Rutland@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "robherring2@gmail.com" <robherring2@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "Lendacky, Thomas" <Thomas.Lendacky@amd.com>,
-        "Schopp, Joel" <Joel.Schopp@amd.com>
-Subject: Re: [PATCH V4] arm64: amd-seattle: Adding device tree for AMD
- Seattle platform
-Message-ID: <20141127142811.GN828@e106497-lin.cambridge.arm.com>
-References: <547458B9.2000805@arm.com>
- <D09A7217.A4E1%suravee.suthikulpanit@amd.com>
+	Thu, 27 Nov 2014 09:28:34 -0500
+Date: Thu, 27 Nov 2014 10:28:25 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Navneet Kumar <navneetk@nvidia.com>
+Cc: rui.zhang@intel.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] thermal: of: consolidate sensor callbacks as ops
+Message-ID: <20141127142823.GC3342@developer>
+References: <1417050989-25405-1-git-send-email-navneetk@nvidia.com>
+ <1417050989-25405-2-git-send-email-navneetk@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <D09A7217.A4E1%suravee.suthikulpanit@amd.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 27 Nov 2014 14:28:12.0677 (UTC) FILETIME=[5FEBF350:01D00A4E]
-X-MC-Unique: 114112714281205701
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i7F3eY7HS/tUJxUd"
 Content-Disposition: inline
+In-Reply-To: <1417050989-25405-2-git-send-email-navneetk@nvidia.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 11:46:50AM +0000, Suthikulpanit, Suravee wrote:
-> Hi Marc,
-> 
-> On 11/25/14, 17:23, "Marc Zyngier" <marc.zyngier@arm.com> wrote:
-> 
-> >Hi Suravee,
-> >
-> >Just spotted a small issue below (looks like a recurring mistake in a
-> >number of DTs I've seem lately):
-> >
-> >On 24/11/14 21:51, suravee.suthikulpanit@amd.com wrote:
-> >> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> >> 
-> >> Initial revision of device tree for AMD Seattle platform.
-> >> 
-> >> Cc: Arnd Bergmann <arnd@arndb.de>
-> >> Cc: Marc Zyngier <marc.zyngier@arm.com>
-> >> Cc: Mark Rutland <mark.rutland@arm.com>
-> >> Cc: Will Deacon <will.deacon@arm.com>
-> >> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> >> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> >> Signed-off-by: Thomas Lendacky <Thomas.Lendacky@amd.com>
-> >> Signed-off-by: Joel Schopp <Joel.Schopp@amd.com>
-> >> ---
-> >> V4 Changes:
-> >>     * Remove unnecessary smb layer and move motherbord to top level
-> >>     * Move include dtsi to top level
-> >>     * Remove apb_pclk from sata0 and i2c
-> >>     * Fix GIC Virtual Maintanance Interrupt from PPI24 (8) to PPI25 (9)
-> >>     * Add 40-bit dma-ranges for motherboard (simple-bus)
-> >>     * Remove dma0 (pl330) entry for now since it only supports 32-bit
-> >>DMA.
-> >>       It is basically not used at the moment. It would also need SMMU
-> >>       to allow dma remapping to 40-bit DMA range.
-> >>     * Add phandle spi0 and spi1
-> >>     * Hook up gpio0 pin 7 with MMC Card Detection (CD) support.
-> >>     * Changes in pcie0 entry:
-> >>         - Add 40-bit dma-ranges
-> >>         - Remove interrupts property
-> >>         - Add interrupt-map/mask property
-> >>         - Fix PCI I/O range
-> >>         - Merge PCI 32-bit ranges
-> >>         - Merge PCI 64-bit ranges
-> >> 
-> >> NOTE: I am not add a new compatible ID for the sata0 as Rob Herring
-> >>       suggested since there is no need at the momement, and I am trying
-> >>       to avoid introducing ID unnecessarily.
-> >> 
-> >>  arch/arm64/Kconfig                          |   5 +
-> >>  arch/arm64/boot/dts/Makefile                |   1 +
-> >>  arch/arm64/boot/dts/amd-seattle-periph.dtsi | 156
-> >>++++++++++++++++++++++++++++
-> >>  arch/arm64/boot/dts/amd-seattle.dts         |  89 ++++++++++++++++
-> >>  4 files changed, 251 insertions(+)
-> >>  create mode 100644 arch/arm64/boot/dts/amd-seattle-periph.dtsi
-> >>  create mode 100644 arch/arm64/boot/dts/amd-seattle.dts
-> >> 
-> >
-> >[...]
-> >
-> >> diff --git a/arch/arm64/boot/dts/amd-seattle.dts
-> >>b/arch/arm64/boot/dts/amd-seattle.dts
-> >> new file mode 100644
-> >> index 0000000..d5fc482
-> >> --- /dev/null
-> >> +++ b/arch/arm64/boot/dts/amd-seattle.dts
-> >> @@ -0,0 +1,89 @@
-> >> +/*
-> >> + * DTS file for AMD Seattle
-> >> + *
-> >> + * Copyright (C) 2014 Advanced Micro Devices, Inc.
-> >> + */
-> >> +
-> >> +/dts-v1/;
-> >> +
-> 
-> [...] 
-> 
-> >> +
-> >> +	timer {
-> >> +		compatible = "arm,armv8-timer";
-> >> +		interrupts = <1 13 0xff01>,
-> >> +			     <1 14 0xff01>,
-> >> +			     <1 11 0xff01>,
-> >> +			     <1 10 0xff01>;
-> >> +	};
-> >
-> >The Cortex-A57 TRM clearly states that these interrupts are level
-> >triggered.
-> 
-> Thanks for pointing this out. I¹ll fix this to <1 1X 0xff04> (4 for the
-> Active-High) then.
 
-Hi Suravee,
+--i7F3eY7HS/tUJxUd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Don't know what Seattle does, but the TRM says that the outputs are active-LOW.
 
-Best regards,
-Liviu
+Hello Navneet,
 
-> 
-> Suravee
-> 
-> >
-> 
-> 
+On Wed, Nov 26, 2014 at 05:16:28PM -0800, Navneet Kumar wrote:
+> From: navneet kumar <navneetk@nvidia.com>
+>=20
+> Consolidate all the sensor callbacks (get_temp/get_trend)
+> into a 'thermal_of_sensor_ops' struct.
+>=20
+> As a part of this, introduce a 'thermal_zone_of_sensor_register2'
+> sensor API that accepts sensor_ops instead of the two callbacks
+> as separate arguments to the register function.
 
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+This is usually not a good thing to do. Specially about the suffix
+'.*2', sounds really broken :-(. Best thing to do is to update the API
+with the improvement, and update all the users of that old API.=20
 
+This is one of the key Linux design decision. Please, have a look at:
+Documentation/stable_api_nonsense.txt
+
+To understand why doing such thing is a bad thing to do.
+
+>=20
+> Modify the older version of register function to call register2.
+>=20
+> Adjust all the references to get_temp/get_trend callbacks.
+>=20
+> Signed-off-by: navneet kumar <navneetk@nvidia.com>
+> ---
+>  drivers/thermal/of-thermal.c | 78 ++++++++++++++++++++++++++++----------=
+------
+>  include/linux/thermal.h      | 14 ++++++++
+>  2 files changed, 64 insertions(+), 28 deletions(-)
+>=20
+> diff --git a/drivers/thermal/of-thermal.c b/drivers/thermal/of-thermal.c
+> index cf9ee3e82fee..3d47a0cf3825 100644
+> --- a/drivers/thermal/of-thermal.c
+> +++ b/drivers/thermal/of-thermal.c
+> @@ -96,8 +96,7 @@ struct __thermal_zone {
+> =20
+>  	/* sensor interface */
+>  	void *sensor_data;
+> -	int (*get_temp)(void *, long *);
+> -	int (*get_trend)(void *, long *);
+> +	struct thermal_of_sensor_ops sops;
+
+Have you seen this patch:
+https://git.kernel.org/cgit/linux/kernel/git/evalenti/linux-soc-thermal.git=
+/commit/?h=3Dlinus&id=3D2251aef64a38db60f4ae7a4a83f9203c6791f196
+
+?
+
+Please rebase your changes on top of my -linus branch:
+git://git.kernel.org/pub/scm/linux/kernel/git/evalenti/linux-soc-thermal.gi=
+t linus
+
+
+BR,
+
+Eduardo Valentin
+>  };
+> =20
+>  /***   DT thermal zone device callbacks   ***/
+> @@ -107,10 +106,10 @@ static int of_thermal_get_temp(struct thermal_zone_=
+device *tz,
+>  {
+>  	struct __thermal_zone *data =3D tz->devdata;
+> =20
+> -	if (!data->get_temp)
+> +	if (!data->sops.get_temp)
+>  		return -EINVAL;
+> =20
+> -	return data->get_temp(data->sensor_data, temp);
+> +	return data->sops.get_temp(data->sensor_data, temp);
+>  }
+> =20
+>  static int of_thermal_get_trend(struct thermal_zone_device *tz, int trip,
+> @@ -120,10 +119,10 @@ static int of_thermal_get_trend(struct thermal_zone=
+_device *tz, int trip,
+>  	long dev_trend;
+>  	int r;
+> =20
+> -	if (!data->get_trend)
+> +	if (!data->sops.get_trend)
+>  		return -EINVAL;
+> =20
+> -	r =3D data->get_trend(data->sensor_data, &dev_trend);
+> +	r =3D data->sops.get_trend(data->sensor_data, &dev_trend);
+>  	if (r)
+>  		return r;
+> =20
+> @@ -324,8 +323,7 @@ static struct thermal_zone_device_ops of_thermal_ops =
+=3D {
+>  static struct thermal_zone_device *
+>  thermal_zone_of_add_sensor(struct device_node *zone,
+>  			   struct device_node *sensor, void *data,
+> -			   int (*get_temp)(void *, long *),
+> -			   int (*get_trend)(void *, long *))
+> +			   struct thermal_of_sensor_ops *sops)
+>  {
+>  	struct thermal_zone_device *tzd;
+>  	struct __thermal_zone *tz;
+> @@ -337,8 +335,9 @@ thermal_zone_of_add_sensor(struct device_node *zone,
+>  	tz =3D tzd->devdata;
+> =20
+>  	mutex_lock(&tzd->lock);
+> -	tz->get_temp =3D get_temp;
+> -	tz->get_trend =3D get_trend;
+> +	if (sops)
+> +		memcpy(&(tz->sops), sops, sizeof(*sops));
+> +
+>  	tz->sensor_data =3D data;
+> =20
+>  	tzd->ops->get_temp =3D of_thermal_get_temp;
+> @@ -349,15 +348,15 @@ thermal_zone_of_add_sensor(struct device_node *zone,
+>  }
+> =20
+>  /**
+> - * thermal_zone_of_sensor_register - registers a sensor to a DT thermal =
+zone
+> + * thermal_zone_of_sensor_register2 - registers a sensor to a DT thermal=
+ zone
+>   * @dev: a valid struct device pointer of a sensor device. Must contain
+>   *       a valid .of_node, for the sensor node.
+>   * @sensor_id: a sensor identifier, in case the sensor IP has more
+>   *             than one sensors
+>   * @data: a private pointer (owned by the caller) that will be passed
+>   *        back, when a temperature reading is needed.
+> - * @get_temp: a pointer to a function that reads the sensor temperature.
+> - * @get_trend: a pointer to a function that reads the sensor temperature=
+ trend.
+> + * @sops: handle to the sensor ops (get_temp/get_trend etc.) provided by=
+ the
+> + *		sensor to OF.
+>   *
+>   * This function will search the list of thermal zones described in devi=
+ce
+>   * tree and look for the zone that refer to the sensor device pointed by
+> @@ -370,21 +369,13 @@ thermal_zone_of_add_sensor(struct device_node *zone,
+>   * The thermal zone temperature trend is provided by the @get_trend func=
+tion
+>   * pointer. When called, it will have the private pointer @data back.
+>   *
+> - * TODO:
+> - * 01 - This function must enqueue the new sensor instead of using
+> - * it as the only source of temperature values.
+> - *
+> - * 02 - There must be a way to match the sensor with all thermal zones
+> - * that refer to it.
+> - *
+>   * Return: On success returns a valid struct thermal_zone_device,
+>   * otherwise, it returns a corresponding ERR_PTR(). Caller must
+>   * check the return value with help of IS_ERR() helper.
+>   */
+>  struct thermal_zone_device *
+> -thermal_zone_of_sensor_register(struct device *dev, int sensor_id,
+> -				void *data, int (*get_temp)(void *, long *),
+> -				int (*get_trend)(void *, long *))
+> +thermal_zone_of_sensor_register2(struct device *dev, int sensor_id,
+> +				void *data, struct thermal_of_sensor_ops *sops)
+>  {
+>  	struct device_node *np, *child, *sensor_np;
+>  	struct thermal_zone_device *tzd =3D ERR_PTR(-ENODEV);
+> @@ -426,9 +417,8 @@ thermal_zone_of_sensor_register(struct device *dev, i=
+nt sensor_id,
+> =20
+>  		if (sensor_specs.np =3D=3D sensor_np && id =3D=3D sensor_id) {
+>  			tzd =3D thermal_zone_of_add_sensor(child, sensor_np,
+> -							 data,
+> -							 get_temp,
+> -							 get_trend);
+> +							  data,
+> +							  sops);
+>  			of_node_put(sensor_specs.np);
+>  			of_node_put(child);
+>  			goto exit;
+> @@ -441,6 +431,38 @@ exit:
+> =20
+>  	return tzd;
+>  }
+> +EXPORT_SYMBOL_GPL(thermal_zone_of_sensor_register2);
+> +
+> +/**
+> + * thermal_zone_of_sensor_register - registers a sensor to a DT thermal =
+zone
+> + * @dev: a valid struct device pointer of a sensor device. Must contain
+> + *       a valid .of_node, for the sensor node.
+> + * @sensor_id: a sensor identifier, in case the sensor IP has more
+> + *             than one sensors
+> + * @data: a private pointer (owned by the caller) that will be passed
+> + *        back, when a temperature reading is needed.
+> + * @get_temp: a pointer to a function that reads the sensor temperature.
+> + * @get_trend: a pointer to a function that reads the sensor temperature=
+ trend.
+> + *
+> + * This function calls thermal_zone_of_sensor_register2 after translating
+> + * the sensor callbacks into a single structi (sops).
+> + *
+> + * Return: Bubbles up the return status from thermal_zone_of_register2
+> + *
+> + */
+> +struct thermal_zone_device *
+> +thermal_zone_of_sensor_register(struct device *dev, int sensor_id,
+> +				void *data, int (*get_temp)(void *, long *),
+> +				int (*get_trend)(void *, long *))
+> +{
+> +	struct thermal_of_sensor_ops sops =3D {
+> +		.get_temp =3D get_temp,
+> +		.get_trend =3D get_trend,
+> +	};
+> +
+> +	return thermal_zone_of_sensor_register2(dev, sensor_id, data, &sops);
+> +
+> +}
+>  EXPORT_SYMBOL_GPL(thermal_zone_of_sensor_register);
+> =20
+>  /**
+> @@ -476,8 +498,8 @@ void thermal_zone_of_sensor_unregister(struct device =
+*dev,
+>  	tzd->ops->get_temp =3D NULL;
+>  	tzd->ops->get_trend =3D NULL;
+> =20
+> -	tz->get_temp =3D NULL;
+> -	tz->get_trend =3D NULL;
+> +	tz->sops.get_temp =3D NULL;
+> +	tz->sops.get_trend =3D NULL;
+>  	tz->sensor_data =3D NULL;
+>  	mutex_unlock(&tzd->lock);
+>  }
+> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> index ef90838b36a0..58341c56a01f 100644
+> --- a/include/linux/thermal.h
+> +++ b/include/linux/thermal.h
+> @@ -289,6 +289,11 @@ struct thermal_genl_event {
+>  	enum events event;
+>  };
+> =20
+> +struct thermal_of_sensor_ops {
+> +	int (*get_temp)(void *, long *);
+> +	int (*get_trend)(void *, long *);
+> +};
+> +
+>  /* Function declarations */
+>  #ifdef CONFIG_THERMAL_OF
+>  struct thermal_zone_device *
+> @@ -297,6 +302,9 @@ thermal_zone_of_sensor_register(struct device *dev, i=
+nt id,
+>  				int (*get_trend)(void *, long *));
+>  void thermal_zone_of_sensor_unregister(struct device *dev,
+>  				       struct thermal_zone_device *tz);
+> +struct thermal_zone_device *
+> +thermal_zone_of_sensor_register2(struct device *dev, int sensor_id,
+> +				void *data, struct thermal_of_sensor_ops *sops);
+>  #else
+>  static inline struct thermal_zone_device *
+>  thermal_zone_of_sensor_register(struct device *dev, int id,
+> @@ -312,6 +320,12 @@ void thermal_zone_of_sensor_unregister(struct device=
+ *dev,
+>  {
+>  }
+> =20
+> +static inline struct thermal_zone_device *
+> +thermal_zone_of_sensor_register2(struct device *dev, int sensor_id,
+> +				void *data, struct thermal_of_sensor_ops *sops)
+> +{
+> +	return NULL;
+> +}
+>  #endif
+>  struct thermal_zone_device *thermal_zone_device_register(const char *, i=
+nt, int,
+>  		void *, struct thermal_zone_device_ops *,
+> --=20
+> 1.8.1.5
+>=20
+
+--i7F3eY7HS/tUJxUd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUdzT9AAoJEMLUO4d9pOJWR50IAJQTB7Ql4BUipgDoUkt98fsp
+NjWuWZg7gwAMYuVpfSZuDJXp4JS4jtqfcFZ/N0cHZatXOrzxY19ufi8+cCDPV7Ns
+QmnQ+vqP//P2DSkRNQLF5R0+w+1x2U22lToyDezv8Xj7jylausNC8Ald4KN7pQGk
+rE/y0REliwrYXW/Zz5NvEIYySEU6sHh+rmtQbDZMVg6xxxJNRabuDgSFzBcNRVzy
+bQFXJrhG5p9nIy2yR49X6beMrLSHcHRidfHNG6/WjGsh3JpihApvS9h8SzkT74i2
+IDpY7zdH1ufbcidfsFkDYoHL8dG1JN+ViH657pE6JzsTcsNoH85xL/3cqwZR670=
+=tvqE
+-----END PGP SIGNATURE-----
+
+--i7F3eY7HS/tUJxUd--
