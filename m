@@ -1,77 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997AbaK0FfB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 00:35:01 -0500
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:55304 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468AbaK0Fe5 (ORCPT
+	id S1754079AbaK0Fmx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 00:42:53 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:50523 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754014AbaK0Fms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 00:34:57 -0500
-Date: Thu, 27 Nov 2014 02:34:40 -0300
-From: Ismael Luceno <ismael.luceno@gmail.com>
-To: Andrey Utkin <andrey.utkin@corp.bluecherry.net>,
-        maintainers@bluecherrydvr.com
-Cc: linux-kernel@vger.kernel.org, jg1.han@samsung.com, crope@iki.fi,
-        mchehab@osg.samsung.com, joe@perches.com, gregkh@linuxfoundation.org,
-        davem@davemloft.net, akpm@linux-foundation.org,
-        linux-media@vger.kernel.org, andrey.krieger.utkin@gmail.com
-Subject: Re: [PATCH] Update MAINTAINERS for solo6x10
-Message-ID: <20141127023440.511f20b8@pirotess.bf.iodev.co.uk>
-In-Reply-To: <1416243563-8087-1-git-send-email-andrey.utkin@corp.bluecherry.net>
-References: <1416243563-8087-1-git-send-email-andrey.utkin@corp.bluecherry.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/5dHBcPfYMKgmJwl0W0aSsme"; protocol="application/pgp-signature"
+	Thu, 27 Nov 2014 00:42:48 -0500
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Andy Lutomirski <luto@amacapital.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH net-next 6/6] samples: bpf: large eBPF program in C
+Date: Wed, 26 Nov 2014 21:42:31 -0800
+Message-Id: <1417066951-1999-7-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1417066951-1999-1-git-send-email-ast@plumgrid.com>
+References: <1417066951-1999-1-git-send-email-ast@plumgrid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/5dHBcPfYMKgmJwl0W0aSsme
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+sockex2_kern.c is purposefully large eBPF program in C.
+llvm compiles ~200 lines of C code into ~300 eBPF instructions.
 
-On Mon, 17 Nov 2014 20:59:23 +0400
-Andrey Utkin <andrey.utkin@corp.bluecherry.net> wrote:
-> Signed-off-by: Andrey Utkin <andrey.utkin@corp.bluecherry.net>
-> ---
->  MAINTAINERS | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
->=20
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index bb38f02..f5cef1b 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -8787,7 +8787,9 @@ S:	Maintained
->  F:	drivers/leds/leds-net48xx.c
-> =20
->  SOFTLOGIC 6x10 MPEG CODEC
-> -M:	Ismael Luceno <ismael.luceno@corp.bluecherry.net>
-> +M:	Bluecherry Maintainers <maintainers@bluecherrydvr.com>
-> +M:	Andrey Utkin <andrey.utkin@corp.bluecherry.net>
-> +M:	Andrey Utkin <andrey.krieger.utkin@gmail.com>
->  L:	linux-media@vger.kernel.org
->  S:	Supported
->  F:	drivers/media/pci/solo6x10/
+It's similar to __skb_flow_dissect() to demonstrate that complex packet parsing
+can be done by eBPF.
+Then it uses (struct flow_keys)->dst IP address (or hash of ipv6 dst) to keep
+stats of number of packets per IP.
+User space loads eBPF program, attaches it to loopback interface and prints
+dest_ip->#packets stats every second.
 
-Please do not remove me, I'm still here, just a little tight on
-the schedule.
+Usage:
+$sudo samples/bpf/sockex2
+ip 127.0.0.1 count 19
+ip 127.0.0.1 count 178115
+ip 127.0.0.1 count 369437
+ip 127.0.0.1 count 559841
+ip 127.0.0.1 count 750539
 
-Though my corp.bluecherry.net address stopped working again...
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+---
+ samples/bpf/Makefile       |    4 +
+ samples/bpf/sockex2_kern.c |  215 ++++++++++++++++++++++++++++++++++++++++++++
+ samples/bpf/sockex2_user.c |   44 +++++++++
+ 3 files changed, 263 insertions(+)
+ create mode 100644 samples/bpf/sockex2_kern.c
+ create mode 100644 samples/bpf/sockex2_user.c
 
---Sig_/5dHBcPfYMKgmJwl0W0aSsme
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+diff --git a/samples/bpf/Makefile b/samples/bpf/Makefile
+index 770d145186c3..b5b3600dcdf5 100644
+--- a/samples/bpf/Makefile
++++ b/samples/bpf/Makefile
+@@ -5,20 +5,24 @@ obj- := dummy.o
+ hostprogs-y := test_verifier test_maps
+ hostprogs-y += sock_example
+ hostprogs-y += sockex1
++hostprogs-y += sockex2
+ 
+ test_verifier-objs := test_verifier.o libbpf.o
+ test_maps-objs := test_maps.o libbpf.o
+ sock_example-objs := sock_example.o libbpf.o
+ sockex1-objs := bpf_load.o libbpf.o sockex1_user.o
++sockex2-objs := bpf_load.o libbpf.o sockex2_user.o
+ 
+ # Tell kbuild to always build the programs
+ always := $(hostprogs-y)
+ always += sockex1_kern.o
++always += sockex2_kern.o
+ 
+ HOSTCFLAGS += -I$(objtree)/usr/include
+ 
+ HOSTCFLAGS_bpf_load.o += -I$(objtree)/usr/include -Wno-unused-variable
+ HOSTLOADLIBES_sockex1 += -lelf
++HOSTLOADLIBES_sockex2 += -lelf
+ 
+ # point this to your LLVM backend with bpf support
+ LLC=$(srctree)/tools/bpf/llvm/bld/Debug+Asserts/bin/llc
+diff --git a/samples/bpf/sockex2_kern.c b/samples/bpf/sockex2_kern.c
+new file mode 100644
+index 000000000000..6f0135f0f217
+--- /dev/null
++++ b/samples/bpf/sockex2_kern.c
+@@ -0,0 +1,215 @@
++#include <uapi/linux/bpf.h>
++#include "bpf_helpers.h"
++#include <uapi/linux/in.h>
++#include <uapi/linux/if.h>
++#include <uapi/linux/if_ether.h>
++#include <uapi/linux/ip.h>
++#include <uapi/linux/ipv6.h>
++#include <uapi/linux/if_tunnel.h>
++#define IP_MF		0x2000
++#define IP_OFFSET	0x1FFF
++
++struct vlan_hdr {
++	__be16 h_vlan_TCI;
++	__be16 h_vlan_encapsulated_proto;
++};
++
++struct flow_keys {
++	__be32 src;
++	__be32 dst;
++	union {
++		__be32 ports;
++		__be16 port16[2];
++	};
++	__u16 thoff;
++	__u8 ip_proto;
++};
++
++static inline int proto_ports_offset(__u64 proto)
++{
++	switch (proto) {
++	case IPPROTO_TCP:
++	case IPPROTO_UDP:
++	case IPPROTO_DCCP:
++	case IPPROTO_ESP:
++	case IPPROTO_SCTP:
++	case IPPROTO_UDPLITE:
++		return 0;
++	case IPPROTO_AH:
++		return 4;
++	default:
++		return 0;
++	}
++}
++
++static inline int ip_is_fragment(struct sk_buff *ctx, __u64 nhoff)
++{
++	return load_half(ctx, nhoff + offsetof(struct iphdr, frag_off))
++		& (IP_MF | IP_OFFSET);
++}
++
++static inline __u32 ipv6_addr_hash(struct sk_buff *ctx, __u64 off)
++{
++	__u64 w0 = load_word(ctx, off);
++	__u64 w1 = load_word(ctx, off + 4);
++	__u64 w2 = load_word(ctx, off + 8);
++	__u64 w3 = load_word(ctx, off + 12);
++
++	return (__u32)(w0 ^ w1 ^ w2 ^ w3);
++}
++
++static inline __u64 parse_ip(struct sk_buff *skb, __u64 nhoff, __u64 *ip_proto,
++			     struct flow_keys *flow)
++{
++	__u64 verlen;
++
++	if (unlikely(ip_is_fragment(skb, nhoff)))
++		*ip_proto = 0;
++	else
++		*ip_proto = load_byte(skb, nhoff + offsetof(struct iphdr, protocol));
++
++	if (*ip_proto != IPPROTO_GRE) {
++		flow->src = load_word(skb, nhoff + offsetof(struct iphdr, saddr));
++		flow->dst = load_word(skb, nhoff + offsetof(struct iphdr, daddr));
++	}
++
++	verlen = load_byte(skb, nhoff + 0/*offsetof(struct iphdr, ihl)*/);
++	if (likely(verlen == 0x45))
++		nhoff += 20;
++	else
++		nhoff += (verlen & 0xF) << 2;
++
++	return nhoff;
++}
++
++static inline __u64 parse_ipv6(struct sk_buff *skb, __u64 nhoff, __u64 *ip_proto,
++			       struct flow_keys *flow)
++{
++	*ip_proto = load_byte(skb,
++			      nhoff + offsetof(struct ipv6hdr, nexthdr));
++	flow->src = ipv6_addr_hash(skb,
++				   nhoff + offsetof(struct ipv6hdr, saddr));
++	flow->dst = ipv6_addr_hash(skb,
++				   nhoff + offsetof(struct ipv6hdr, daddr));
++	nhoff += sizeof(struct ipv6hdr);
++
++	return nhoff;
++}
++
++static inline bool flow_dissector(struct sk_buff *skb, struct flow_keys *flow)
++{
++	__u64 nhoff = ETH_HLEN;
++	__u64 ip_proto;
++	__u64 proto = load_half(skb, 12);
++	int poff;
++
++	if (proto == ETH_P_8021AD) {
++		proto = load_half(skb, nhoff + offsetof(struct vlan_hdr,
++							h_vlan_encapsulated_proto));
++		nhoff += sizeof(struct vlan_hdr);
++	}
++
++	if (proto == ETH_P_8021Q) {
++		proto = load_half(skb, nhoff + offsetof(struct vlan_hdr,
++							h_vlan_encapsulated_proto));
++		nhoff += sizeof(struct vlan_hdr);
++	}
++
++	if (likely(proto == ETH_P_IP))
++		nhoff = parse_ip(skb, nhoff, &ip_proto, flow);
++	else if (proto == ETH_P_IPV6)
++		nhoff = parse_ipv6(skb, nhoff, &ip_proto, flow);
++	else
++		return false;
++
++	switch (ip_proto) {
++	case IPPROTO_GRE: {
++		struct gre_hdr {
++			__be16 flags;
++			__be16 proto;
++		};
++
++		__u64 gre_flags = load_half(skb,
++					    nhoff + offsetof(struct gre_hdr, flags));
++		__u64 gre_proto = load_half(skb,
++					    nhoff + offsetof(struct gre_hdr, proto));
++
++		if (gre_flags & (GRE_VERSION|GRE_ROUTING))
++			break;
++
++		proto = gre_proto;
++		nhoff += 4;
++		if (gre_flags & GRE_CSUM)
++			nhoff += 4;
++		if (gre_flags & GRE_KEY)
++			nhoff += 4;
++		if (gre_flags & GRE_SEQ)
++			nhoff += 4;
++
++		if (proto == ETH_P_8021Q) {
++			proto = load_half(skb,
++					  nhoff + offsetof(struct vlan_hdr,
++							   h_vlan_encapsulated_proto));
++			nhoff += sizeof(struct vlan_hdr);
++		}
++
++		if (proto == ETH_P_IP)
++			nhoff = parse_ip(skb, nhoff, &ip_proto, flow);
++		else if (proto == ETH_P_IPV6)
++			nhoff = parse_ipv6(skb, nhoff, &ip_proto, flow);
++		else
++			return false;
++		break;
++	}
++	case IPPROTO_IPIP:
++		nhoff = parse_ip(skb, nhoff, &ip_proto, flow);
++		break;
++	case IPPROTO_IPV6:
++		nhoff = parse_ipv6(skb, nhoff, &ip_proto, flow);
++		break;
++	default:
++		break;
++	}
++
++	flow->ip_proto = ip_proto;
++	poff = proto_ports_offset(ip_proto);
++	if (poff >= 0) {
++		nhoff += poff;
++		flow->ports = load_word(skb, nhoff);
++	}
++
++	flow->thoff = (__u16) nhoff;
++
++	return true;
++}
++
++struct bpf_map_def SEC("maps") hash_map = {
++	.type = BPF_MAP_TYPE_HASH,
++	.key_size = sizeof(__be32),
++	.value_size = sizeof(long),
++	.max_entries = 1024,
++};
++
++SEC("socket2")
++int bpf_prog2(struct sk_buff *skb)
++{
++	struct flow_keys flow;
++	long *value;
++	u32 key;
++
++	if (!flow_dissector(skb, &flow))
++		return 0;
++
++	key = flow.dst;
++	value = bpf_map_lookup_elem(&hash_map, &key);
++	if (value) {
++		__sync_fetch_and_add(value, 1);
++	} else {
++		long val = 1;
++
++		bpf_map_update_elem(&hash_map, &key, &val, BPF_ANY);
++	}
++	return 0;
++}
++
++char _license[] SEC("license") = "GPL";
+diff --git a/samples/bpf/sockex2_user.c b/samples/bpf/sockex2_user.c
+new file mode 100644
+index 000000000000..d2d5f5a790d3
+--- /dev/null
++++ b/samples/bpf/sockex2_user.c
+@@ -0,0 +1,44 @@
++#include <stdio.h>
++#include <assert.h>
++#include <linux/bpf.h>
++#include "libbpf.h"
++#include "bpf_load.h"
++#include <unistd.h>
++#include <arpa/inet.h>
++
++int main(int ac, char **argv)
++{
++	char filename[256];
++	FILE *f;
++	int i, sock;
++
++	snprintf(filename, sizeof(filename), "%s_kern.o", argv[0]);
++
++	if (load_bpf_file(filename)) {
++		printf("%s", bpf_log_buf);
++		return 1;
++	}
++
++	sock = open_raw_sock("lo");
++
++	assert(setsockopt(sock, SOL_SOCKET, SO_ATTACH_BPF, prog_fd,
++			  sizeof(prog_fd[0])) == 0);
++
++	f = popen("ping -c5 localhost", "r");
++	(void) f;
++
++	for (i = 0; i < 5; i++) {
++		int key = 0, next_key;
++		long long value;
++
++		while (bpf_get_next_key(map_fd[0], &key, &next_key) == 0) {
++			bpf_lookup_elem(map_fd[0], &next_key, &value);
++			printf("ip %s count %lld\n",
++			       inet_ntoa((struct in_addr){htonl(next_key)}),
++			       value);
++			key = next_key;
++		}
++		sleep(1);
++	}
++	return 0;
++}
+-- 
+1.7.9.5
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBAgAGBQJUdrfxAAoJEBH/VE8bKTLbipYIAIOikPOzpbaLS75RzNhNliW9
-/AJNxGDhog0t9DJNjzxMmctSYSJFAqLzQgjkbLnNqGemfyCya9wlzoEZsm14rOY8
-IJHKd0nL/e9E0V9/uKU3OTNUzL7l19Yt6k+wNJwHaNCV3iDmT++Ou/47ePUUZZ2Y
-iD2bLg5zSXAZiD49XASm5Jr09CK9Rh0yI/e7i865XAUQxwMcpB1N7qHMlT/LXcrH
-ISOxoHv8mADJ62rzvwOKSjFx0ShV3jZLtD7W07doUsbB1EdUtH83aj2UfdR6Q5OC
-RLas3BmUMO+l/99DE4FR0oBLbe1koJHM/x1m6wMgo7GvUbHGqh0jmVmpD+hXyyQ=
-=fUqI
------END PGP SIGNATURE-----
-
---Sig_/5dHBcPfYMKgmJwl0W0aSsme--
