@@ -1,74 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751208AbaK0UBQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 15:01:16 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:63388 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792AbaK0UBP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 15:01:15 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Missing MODALIAS in /sys/devices/system/cpu/uevent
-Date: Thu, 27 Nov 2014 21:01:11 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
+	id S1751036AbaK0UHt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 15:07:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39393 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750729AbaK0UHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 15:07:48 -0500
+Date: Thu, 27 Nov 2014 22:07:31 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com
+Subject: [PATCH v6 00/45] linux: towards virtio-1 guest support
+Message-ID: <1417118789-18231-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2712852.Yg3XtZvm05";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201411272101.11811@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2712852.Yg3XtZvm05
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Another revision of the patchset. Second one today -
+sorry about the churn, but I'm going offline for a couple of days,
+so I thought I'd give people something to read for the weekend ;)
+The changes are mostly cosmetic now so - there's a chance this is
+the last revision.
 
-Hello,
+Based on patches by Cornelia and others, but
+with an API that should allow better static checking of code,
+slightly more concervative changes in vring and drivers,
+and compatibility for existing drivers so that
+this series can be applied before all drivers are converted.
 
-on 3.18-rc5 I have empty cpu uevent file, but modalias file is=20
-populated. See:
+virtio net,blk and scsi drivers have been converted.
+They now pass sparse without warnings.
 
-$ cat /sys/devices/system/cpu/uevent=20
-$ cat /sys/devices/system/cpu/modalias=20
-cpu:type:x86,ven0000fam0006mod003C:feature:,0000,0001,0002,0003,0004,0005,0=
-006,0007,0008,0009,000B,000C,000D,000E,000F,0010,0011,0013,0015,0016,0017,0=
-018,0019,001A,001B,001C,001D,001F,002B,0034,003A,003B,003D,0068,006B,006C,0=
-06D,006F,0070,0072,0074,0075,0076,0078,007C,007D,0080,0081,0082,0083,0084,0=
-085,0086,0087,0088,0089,008B,008C,008D,008E,008F,0091,0093,0094,0095,0096,0=
-097,0098,0099,009A,009B,009C,009D,009E,00C0,00C5,00E0,00E1,00E3,00E5,00E6,0=
-0E7,0100,0101,0102,0103,0104,0120,0121,0123,0124,0125,0127,0128,0129,012A,0=
-12B,012D,0140
+net and blk patches have been tested on s390.
+scsi patches pass sparse so they are most likely
+ok too, but haven't been through testing yet -
+they can be dropped from patchset if necessary.
 
-=46or all other devices in /sys/devices/ which have modalias=20
-content there is also MODALIAS=3D line in uevent file.
+Please review, and consider for 3.19
 
-Is cpu device special? Or why it is only one device which has=20
-modalias file but is missing MODALIAS=3D line in uevent file?
+Changes since v5:
+	rewritten feature bit handling, based on suggestion by David:
+	changes are now smaller and easier to review.
+	new patch:
+	  virtio: add low-level APIs for feature bits
+	rewritten patches:
+	  virtio: use u32, not bitmap for features
+	  virtio: add support for 64 bit features.
+	
+Changes since v4:
+	I have dropped 64 bit feature negotiation from
+	most transports (except ccw).
+	For symmetry, I split out ccw bits:
+		  virtio: add support for 64 bit features.
+			adds core and device support for 64 bit features
+		  virtio_ccw: add support for 64 bit features.
+			actually enables 64 bit features in ccw.
+	detail below.
 
-What userspace application should use for reading modalias=20
-string? File modalias or file uevent?
+	this is still really a cosmetic change: just reordering/splitting
+	patches, and dropping code changes that aren't needed.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+	new patches:
+	  mic_virtio: robust feature array size calculation
+	  virtio: assert 32 bit features in transports
 
---nextPart2712852.Yg3XtZvm05
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+	addressed comments by Cornelia:
+		      virtio: disable virtio 1.0 in transports:
+			patch dropped
+		      virtio: memory access APIs
+			tweaked comments as suggested by Cornelia
+		      virtio_config: endian conversion for v1.0
+			dropped reviewed-by tags -
+				they applied to a very old version of patch
+		      virtio: set FEATURES_OK
+			replaced printk by dev_err
+		      virtio: add legacy feature table support
+			comment changes suggested by Cornelia
+		      virtio_blk: v1.0 support
+			dropped reviewed-by tags -
+				they applied to a very old version of patch
+		      virtio_net: enable v1.0 support
+			only write mac for legacy devices
+		      vhost: add memory access wrappers
+			move chunk to vhost: make features 64 bit
+			better patch description
+		      vhost: make features 64 bit
+			moved this patch earlier in series
+		      vhost/net: force len for TX to host endian
+			better patch description
+		      virtio_scsi: v1.0 support
+			fix bug: use high level, not low level wrappers
+			
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+	included reviewed-by tags for patches:
+		KVM: s390 allow virtio_ccw status writes to fail
+				added reviewed-by tag by Cornelia
+		virtio_scsi: v1.0 support
+		virtio_scsi: move to uapi
+		virtio_scsi: export to userspace
+		vhost/scsi: partial virtio 1.0 support
+				added reviewed-by tag by Paolo
 
-iEYEABECAAYFAlR3gwcACgkQi/DJPQPkQ1KfUQCffXtrteNro/ZhSM6pHM7aLqmW
-gbAAn3Kqb6MC+wIhD83UNC6AgY8zHSkp
-=NwAr
------END PGP SIGNATURE-----
+Changes since v3:
+	- move virtio 1.0 feature bit out of transport bits:
+	  for now it's managed by drivers
+	- disable virtio 1.0 feature bit explicitly - for transports
+	  that don't support it
 
---nextPart2712852.Yg3XtZvm05--
+David, assuming patches are acceptable, I'd like them all to be merged through
+virtio or vhost trees to avoid dependency headaches.  Could you please ack
+doing that for net related patches, especially these:
+	  tun: move internal flag defines out of uapi
+	  tun: drop most type defines
+	  tun: add VNET_LE flag
+	  tun: TUN_VNET_LE support, fix sparse warnings for virtio headers
+	  macvtap: TUN_VNET_HDR support
+	  vhost/scsi: partial virtio 1.0 support
+	  af_packet: virtio 1.0 stubs
+
+Alternatively, I can prepare a tree with virtio changes and merge
+that into your net-next - if Rusty approves, or keeps
+silence :)
+
+Could you comment on this please?
+
+Cornelia Huck (3):
+  virtio: allow transports to get avail/used addresses
+  KVM: s390: virtio-ccw revision 1 SET_VQ
+  KVM: s390: enable virtio-ccw revision 1
+
+Michael S. Tsirkin (42):
+  virtio: add low-level APIs for feature bits
+  virtio: use u32, not bitmap for features
+  mic_virtio: robust feature array size calculation
+  virtio: add support for 64 bit features.
+  virtio: assert 32 bit features in transports
+  virtio_ccw: add support for 64 bit features.
+  virtio: add virtio 1.0 feature bit
+  virtio: memory access APIs
+  virtio_ring: switch to new memory access APIs
+  virtio_config: endian conversion for v1.0
+  virtio: set FEATURES_OK
+  virtio: simplify feature bit handling
+  virtio: add legacy feature table support
+  virtio_net: v1.0 endianness
+  virtio_blk: v1.0 support
+  KVM: s390 allow virtio_ccw status writes to fail
+  virtio_blk: make serial attribute static
+  virtio_blk: fix race at module removal
+  virtio_net: pass vi around
+  virtio_net: get rid of virtio_net_hdr/skb_vnet_hdr
+  virtio_net: stricter short buffer length checks
+  virtio_net: bigger header when VERSION_1 is set
+  virtio_net: enable v1.0 support
+  vhost: make features 64 bit
+  vhost: add memory access wrappers
+  vhost/net: force len for TX to host endian
+  vhost: virtio 1.0 endian-ness support
+  vhost/net: virtio 1.0 byte swap
+  vhost/net: larger header for virtio 1.0
+  virtio_net: disable mac write for virtio 1.0
+  vhost/net: enable virtio 1.0
+  vhost/net: suppress compiler warning
+  tun: move internal flag defines out of uapi
+  tun: drop most type defines
+  tun: add VNET_LE flag
+  tun: TUN_VNET_LE support, fix sparse warnings for virtio headers
+  macvtap: TUN_VNET_HDR support
+  virtio_scsi: v1.0 support
+  virtio_scsi: move to uapi
+  virtio_scsi: export to userspace
+  vhost/scsi: partial virtio 1.0 support
+  af_packet: virtio 1.0 stubs
+
+Thomas Huth (1):
+  KVM: s390: Set virtio-ccw transport revision
+
+ drivers/vhost/vhost.h                  |  35 ++++++-
+ include/linux/virtio.h                 |  10 +-
+ include/linux/virtio_byteorder.h       |  59 +++++++++++
+ include/linux/virtio_config.h          | 100 +++++++++++++++++--
+ include/uapi/linux/if_tun.h            |  17 +---
+ include/uapi/linux/virtio_blk.h        |  15 +--
+ include/uapi/linux/virtio_config.h     |   5 +
+ include/uapi/linux/virtio_net.h        |  15 +--
+ include/uapi/linux/virtio_ring.h       |  45 ++++-----
+ include/{ => uapi}/linux/virtio_scsi.h | 106 ++++++++++----------
+ include/uapi/linux/virtio_types.h      |  46 +++++++++
+ tools/virtio/linux/virtio.h            |  22 +----
+ tools/virtio/linux/virtio_config.h     |   2 +-
+ drivers/block/virtio_blk.c             |  75 ++++++++------
+ drivers/char/virtio_console.c          |   2 +-
+ drivers/lguest/lguest_device.c         |  13 ++-
+ drivers/misc/mic/card/mic_virtio.c     |  10 +-
+ drivers/net/macvtap.c                  |  68 ++++++++-----
+ drivers/net/tun.c                      | 170 ++++++++++++++------------------
+ drivers/net/virtio_net.c               | 162 ++++++++++++++++---------------
+ drivers/remoteproc/remoteproc_virtio.c |   7 +-
+ drivers/s390/kvm/kvm_virtio.c          |   7 +-
+ drivers/s390/kvm/virtio_ccw.c          | 172 +++++++++++++++++++++++++++------
+ drivers/scsi/virtio_scsi.c             |  51 ++++++----
+ drivers/vhost/net.c                    |  28 +++---
+ drivers/vhost/scsi.c                   |  22 +++--
+ drivers/vhost/vhost.c                  |  93 +++++++++++-------
+ drivers/virtio/virtio.c                |  74 ++++++++++----
+ drivers/virtio/virtio_mmio.c           |  13 ++-
+ drivers/virtio/virtio_pci.c            |   8 +-
+ drivers/virtio/virtio_ring.c           | 107 +++++++++++---------
+ net/packet/af_packet.c                 |  35 ++++---
+ tools/virtio/virtio_test.c             |   5 +-
+ tools/virtio/vringh_test.c             |  16 +--
+ include/uapi/linux/Kbuild              |   2 +
+ 35 files changed, 1031 insertions(+), 586 deletions(-)
+ create mode 100644 include/linux/virtio_byteorder.h
+ rename include/{ => uapi}/linux/virtio_scsi.h (73%)
+ create mode 100644 include/uapi/linux/virtio_types.h
+
+-- 
+MST
+
