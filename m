@@ -1,229 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592AbaK0BSg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 20:18:36 -0500
-Received: from mout1.fh-giessen.de ([212.201.18.42]:52898 "EHLO
-	mout1.fh-giessen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817AbaK0BSe (ORCPT
+	id S1753687AbaK0BSr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 20:18:47 -0500
+Received: from mail.smart-weblications.de ([188.65.144.61]:40403 "EHLO
+	mail.smart-weblications.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753617AbaK0BSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 20:18:34 -0500
-Message-ID: <54767BE7.8020401@mni.thm.de>
-Date: Thu, 27 Nov 2014 02:18:31 +0100
-From: Tobias Klausmann <tobias.johannes.klausmann@mni.thm.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:36.0) Gecko/20100101 Thunderbird/36.0a1
+	Wed, 26 Nov 2014 20:18:45 -0500
+X-Greylist: delayed 1003 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Nov 2014 20:18:45 EST
+Message-ID: <547677F6.5050109@smart-weblications.de>
+Date: Thu, 27 Nov 2014 02:01:42 +0100
+From: Smart Weblications GmbH - Florian Wiessner 
+	<f.wiessner@smart-weblications.de>
+Reply-To: f.wiessner@smart-weblications.de
+Organization: Smart Weblications GmbH
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Michael Marineau <mike@marineau.org>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>
-CC: David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
-        Ben Skeggs <bskeggs@redhat.com>, dri-devel@lists.freedesktop.org
-Subject: Re: 3.18-rc regression: drm/nouveau: use shared fences for
- readable objects
-References: <CAHW-aUcEipi+NeU3wapLABV41Sud7Qy_=EYXCei9Dmf18SxuZA@mail.gmail.com>	<546C5085.1020300@canonical.com>	<CAHW-aUf7zkWbwDSoL62X9A6pWMAHRGwG=YPQ80o_4OicD7EJPQ@mail.gmail.com>	<546DAC16.80704@canonical.com>	<CAHW-aUcv3g7mGxmZawe-mfMMdFNnkKep-u-JyH9hhJqoaMM2Mw@mail.gmail.com>	<5470C02F.6080103@canonical.com>	<CAHW-aUe8SNbnPwCLsT9rqw3S5meA+feW85UQtWT6HogKsB971Q@mail.gmail.com>	<CAHW-aUdPKQf4yU_NnsRxXrFrW2Zi-v9QyajHaYU-exMzsXH4eg@mail.gmail.com>	<54743306.8080907@canonical.com> <CAHW-aUehsHDp0+XxFeOEaqjagkAcaqG2qy_ROQp=Q4tjuq1ctQ@mail.gmail.com>
-In-Reply-To: <CAHW-aUehsHDp0+XxFeOEaqjagkAcaqG2qy_ROQp=Q4tjuq1ctQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: LKML <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com,
+        linux-fsdevel@vger.kernel.org
+Subject: ocfs2_link:812 ERROR: status = -2 - Re: Linux 3.17.4
+References: <20141121201253.GA8623@kroah.com>
+In-Reply-To: <20141121201253.GA8623@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am 21.11.2014 21:12, schrieb Greg KH:
+> I'm announcing the release of the 3.17.4 kernel.
+> 
+> All users of the 3.17 kernel series must upgrade.
+> 
 
 
-On 26.11.2014 21:29, Michael Marineau wrote:
-> On Mon, Nov 24, 2014 at 11:43 PM, Maarten Lankhorst
-> <maarten.lankhorst@canonical.com> wrote:
->> Hey,
->>
->> Op 22-11-14 om 21:16 schreef Michael Marineau:
->>> On Nov 22, 2014 11:45 AM, "Michael Marineau" <mike@marineau.org> wrote:
->>>> On Nov 22, 2014 8:56 AM, "Maarten Lankhorst" <
->>> maarten.lankhorst@canonical.com> wrote:
->>>>> Hey,
->>>>>
->>>>> Op 22-11-14 om 01:19 schreef Michael Marineau:
->>>>>> On Thu, Nov 20, 2014 at 12:53 AM, Maarten Lankhorst
->>>>>> <maarten.lankhorst@canonical.com> wrote:
->>>>>>> Op 20-11-14 om 05:06 schreef Michael Marineau:
->>>>>>>> On Wed, Nov 19, 2014 at 12:10 AM, Maarten Lankhorst
->>>>>>>> <maarten.lankhorst@canonical.com> wrote:
->>>>>>>>> Hey,
->>>>>>>>>
->>>>>>>>> On 19-11-14 07:43, Michael Marineau wrote:
->>>>>>>>>> On 3.18-rc kernel's I have been intermittently experiencing GPU
->>>>>>>>>> lockups shortly after startup, accompanied with one or both of the
->>>>>>>>>> following errors:
->>>>>>>>>>
->>>>>>>>>> nouveau E[   PFIFO][0000:01:00.0] read fault at 0x000734a000 [PTE]
->>>>>>>>>> from PBDMA0/HOST_CPU on channel 0x007faa3000 [unknown]
->>>>>>>>>> nouveau E[     DRM] GPU lockup - switching to software fbcon
->>>>>>>>>>
->>>>>>>>>> I was able to trace the issue with bisect to commit
->>>>>>>>>> 809e9447b92ffe1346b2d6ec390e212d5307f61c "drm/nouveau: use shared
->>>>>>>>>> fences for readable objects". The lockups appear to have cleared
->>> up
->>>>>>>>>> since reverting that and a few related followup commits:
->>>>>>>>>>
->>>>>>>>>> 809e9447: "drm/nouveau: use shared fences for readable objects"
->>>>>>>>>> 055dffdf: "drm/nouveau: bump driver patchlevel to 1.2.1"
->>>>>>>>>> e3be4c23: "drm/nouveau: specify if interruptible wait is desired
->>> in
->>>>>>>>>> nouveau_fence_sync"
->>>>>>>>>> 15a996bb: "drm/nouveau: assign fence_chan->name correctly"
->>>>>>>>> Weird. I'm not sure yet what causes it.
->>>>>>>>>
->>>>>>>>>
->>> http://cgit.freedesktop.org/~mlankhorst/linux/commit/?h=fixed-fences-for-bisect&id=86be4f216bbb9ea3339843a5658d4c21162c7ee2
->>>>>>>> Building a kernel from that commit gives me an entirely new
->>> behavior:
->>>>>>>> X hangs for at least 10-20 seconds at a time with brief moments of
->>>>>>>> responsiveness before hanging again while gitk on the kernel repo
->>>>>>>> loads. Otherwise the system is responsive. The head of that
->>>>>>>> fixed-fences-for-bisect branch (1c6aafb5) which is the "use shared
->>>>>>>> fences for readable objects" commit I originally bisected to does
->>>>>>>> feature the complete lockups I was seeing before.
->>>>>>> Ok for the sake of argument lets just assume they're separate bugs,
->>> and we should look at xorg
->>>>>>> hanging first.
->>>>>>>
->>>>>>> Is there anything in the dmesg when the hanging happens?
->>>>>>>
->>>>>>> And it's probably 15 seconds, if it's called through
->>> nouveau_fence_wait.
->>>>>>> Try changing else if (!ret) to else if (WARN_ON(!ret)) in that
->>> function, and see if you get some dmesg spam. :)
->>>>>> Adding the WARN_ON to 86be4f21 repots the following:
->>>>>>
->>>>>> [ 1188.676073] ------------[ cut here ]------------
->>>>>> [ 1188.676161] WARNING: CPU: 1 PID: 474 at
->>>>>> drivers/gpu/drm/nouveau/nouveau_fence.c:359
->>>>>> nouveau_fence_wait.part.9+0x33/0x40 [nouveau]()
->>>>>> [ 1188.676166] Modules linked in: rndis_host cdc_ether usbnet mii bnep
->>>>>> ecb btusb bluetooth rfkill bridge stp llc hid_generic usb_storage
->>>>>> joydev mousedev hid_apple usbhid bcm5974 nls_iso8859_1 nls_cp437 vfat
->>>>>> fat nouveau snd_hda_codec_hdmi coretemp x86_pkg_temp_thermal
->>>>>> intel_powerclamp kvm_intel kvm iTCO_wdt crct10dif_pclmul
->>>>>> iTCO_vendor_support crc32c_intel evdev aesni_intel mac_hid aes_x86_64
->>>>>> lrw glue_helper ablk_helper applesmc snd_hda_codec_cirrus cryptd
->>>>>> input_polldev snd_hda_codec_generic mxm_wmi led_class wmi microcode
->>>>>> hwmon snd_hda_intel ttm snd_hda_controller lpc_ich i2c_i801 mfd_core
->>>>>> snd_hda_codec i2c_algo_bit snd_hwdep drm_kms_helper snd_pcm sbs drm
->>>>>> apple_gmux i2ccore snd_timer snd agpgart mei_me soundcore sbshc mei
->>>>>> video xhci_hcd usbcore usb_common apple_bl button battery ac efivars
->>>>>> autofs4
->>>>>> [ 1188.676300]  efivarfs
->>>>>> [ 1188.676308] CPU: 1 PID: 474 Comm: Xorg Tainted: G        W
->>>>>> 3.17.0-rc2-nvtest+ #147
->>>>>> [ 1188.676313] Hardware name: Apple Inc.
->>>>>> MacBookPro11,3/Mac-2BD1B31983FE1663, BIOS
->>>>>> MBP112.88Z.0138.B11.1408291503 08/29/2014
->>>>>> [ 1188.676316]  0000000000000009 ffff88045daebce8 ffffffff814f0c09
->>>>>> 0000000000000000
->>>>>> [ 1188.676325]  ffff88045daebd20 ffffffff8104ea5d ffff88006a6c1468
->>>>>> 00000000fffffff0
->>>>>> [ 1188.676333]  0000000000000000 0000000000000000 ffff88006a6c1000
->>>>>> ffff88045daebd30
->>>>>> [ 1188.676341] Call Trace:
->>>>>> [ 1188.676356]  [<ffffffff814f0c09>] dump_stack+0x4d/0x66
->>>>>> [ 1188.676369]  [<ffffffff8104ea5d>] warn_slowpath_common+0x7d/0xa0
->>>>>> [ 1188.676377]  [<ffffffff8104eb3a>] warn_slowpath_null+0x1a/0x20
->>>>>> [ 1188.676439]  [<ffffffffc04dd523>]
->>>>>> nouveau_fence_wait.part.9+0x33/0x40 [nouveau]
->>>>>> [ 1188.676496]  [<ffffffffc04ddfe6>] nouveau_fence_wait+0x16/0x30
->>> [nouveau]
->>>>>> [ 1188.676552]  [<ffffffffc04e598f>]
->>>>>> nouveau_gem_ioctl_cpu_prep+0xef/0x1f0 [nouveau]
->>>>>> [ 1188.676578]  [<ffffffffc01c2f4c>] drm_ioctl+0x1ec/0x660 [drm]
->>>>>> [ 1188.676590]  [<ffffffff814f9026>] ?
->>> _raw_spin_unlock_irqrestore+0x36/0x70
->>>>>> [ 1188.676600]  [<ffffffff81094f6d>] ? trace_hardirqs_on+0xd/0x10
->>>>>> [ 1188.676655]  [<ffffffffc04da5b4>] nouveau_drm_ioctl+0x54/0xc0
->>> [nouveau]
->>>>>> [ 1188.676663]  [<ffffffff811a8950>] do_vfs_ioctl+0x300/0x520
->>>>>> [ 1188.676671]  [<ffffffff814f9e55>] ? sysret_check+0x22/0x5d
->>>>>> [ 1188.676677]  [<ffffffff811a8bb1>] SyS_ioctl+0x41/0x80
->>>>>> [ 1188.676683]  [<ffffffff814f9e29>] system_call_fastpath+0x16/0x1b
->>>>>> [ 1188.676688] ---[ end trace 6f7a510865b4674f ]---
->>>>>>
->>>>>> Here are the fence events that fired during that particular
->>> fence_wait:
->>>>>>              Xorg   474 [004]  1173.667645: fence:fence_wait_start:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56910
->>>>>>              Xorg   474 [004]  1173.667647: fence:fence_enable_signal:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56910
->>>>>>           swapper     0 [007]  1173.667688: fence:fence_signaled:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56900
->>>>>>           swapper     0 [007]  1173.667692: fence:fence_destroy:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56900
->>>>>>           swapper     0 [007]  1173.667839: fence:fence_signaled:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56901
->>>>>>           swapper     0 [007]  1173.667842: fence:fence_destroy:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56901
->>>>>>           swapper     0 [007]  1173.668021: fence:fence_signaled:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56902
->>>>>>           swapper     0 [007]  1173.668482: fence:fence_signaled:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56903
->>>>>>           swapper     0 [007]  1173.668485: fence:fence_destroy:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56903
->>>>>>           swapper     0 [007]  1173.668489: fence:fence_signaled:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56904
->>>>>>           swapper     0 [007]  1173.668496: fence:fence_signaled:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56905
->>>>>>           swapper     0 [007]  1173.668499: fence:fence_destroy:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56905
->>>>>>           swapper     0 [007]  1173.668502: fence:fence_signaled:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56906
->>>>>>           swapper     0 [007]  1173.668505: fence:fence_signaled:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56907
->>>>>>           swapper     0 [007]  1173.668508: fence:fence_destroy:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56907
->>>>>>           swapper     0 [007]  1173.668511: fence:fence_signaled:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56908
->>>>>>           swapper     0 [007]  1173.668513: fence:fence_destroy:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56908
->>>>>>       kworker/4:1    80 [004]  1173.676265: fence:fence_destroy:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56896
->>>>>>       kworker/4:1    80 [004]  1173.676273: fence:fence_destroy:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56898
->>>>>>       kworker/4:1    80 [004]  1173.676277: fence:fence_destroy:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56902
->>>>>>       kworker/4:1    80 [004]  1173.676280: fence:fence_destroy:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56904
->>>>>>              Xorg   474 [001]  1188.676067: fence:fence_wait_end:
->>>>>> driver=nouveau timeline=Xorg[474] context=2 seqno=56910
->>>>>>
->>>>>> I assume that excludes the context you really want so the full fence
->>>>>> event log and corresponding dmesg output are attached.
->>>>> Yep, the trace events are useful. The fence is emitted and presumably
->>> no event is fired after emission.
->>>>> Lets find out if the nvif crap is buggy or it's a result of some other
->>> issue, what happens when you change:
->>>>> .wait = fence_default_wait,
->>>>> to
->>>>> .wait = nouveau_fence_wait_legacy,
->>>>> in nouveau_fence.c?
->>>> That change works just fine.
->>> The xorg hangs also appear to be resolved by db1cf46 "drm/nouveau: use rcu
->>> in nouveau_gem_ioctl_cpu_prep"
->>>
->> Oh right, I just remembered what was going on there..
->> the .wait was a workaround for a bug in the nvif interface. The hangs should be resolved by applying
->> 7caa63c04029c5882865867470c106ef73eafb2b
->>
->> Can you confirm?
->>
->> Could you also confirm that 1c6aafb5f1b84fa5 "drm/nouveau: use shared fences for readable objects, EDITED" with the
->> above commit applied is the first broken commit?
->>
->> ~Maarten
->>
-> I don't follow, 7caa63c04029c5882865867470c106ef73eafb2b precedes
-> those other commits so there is nothing to apply. Just for kicks I
-> tried reverting it but that made no difference in behavior. Did you
-> mean something else?
->
-No, Maarten brought me on the same track, missing that this commit was 
-already in that branch.
+When using ocfs2 on 3.17.4 (i have seen this since 3.14) and
+mount-bind ocfs2 to a lxc-container, when postfix inside the lxc tries to
+write mails to ocfs2 dir using virtual transport, kernel says:
 
-(Please don't remove me from this thread again, as Maarten requested me 
-to do the same he asked you to do, just easier to follow this, thanks)
+[ 3812.352564] (virtual,25186,3):ocfs2_link:812 ERROR: status = -2
 
-Tobias
+In 3.12 this did not happen.
+
+This code (from postfix virtual transport program 'virtual' seems to cause the
+kernel message:
+
+        newfile = concatenate(newdir, STR(buf), (char *) 0);
+        if ((mail_copy_status = mail_copy(COPY_ATTR(state.msg_attr),
+                                          dst, copy_flags, "\n",
+                                          why)) == 0) {
+            if (sane_link(tmpfile, newfile) < 0
+                && (errno != ENOENT
+                    || (make_dirs(curdir, 0700), make_dirs(newdir, 0700)) < 0
+                    || sane_link(tmpfile, newfile) < 0)) {
+                dsb_simple(why, mbox_dsn(errno, "4.2.0"),
+                           "create maildir file %s: %m", newfile);
+                mail_copy_status = MAIL_COPY_STAT_WRITE;
+            }
+        }
+        if (unlink(tmpfile) < 0)
+            msg_warn("remove %s: %m", tmpfile);
+    }
+
+This seems like a regression to me since this used to work in 3.12.33
+
+
+
+-- 
+
+Mit freundlichen Grüßen,
+
+Florian Wiessner
+
+Smart Weblications GmbH
+Martinsberger Str. 1
+D-95119 Naila
+
+fon.: +49 9282 9638 200
+fax.: +49 9282 9638 205
+24/7: +49 900 144 000 00 - 0,99 EUR/Min*
+http://www.smart-weblications.de
+
+--
+Sitz der Gesellschaft: Naila
+Geschäftsführer: Florian Wiessner
+HRB-Nr.: HRB 3840 Amtsgericht Hof
+*aus dem dt. Festnetz, ggf. abweichende Preise aus dem Mobilfunknetz
