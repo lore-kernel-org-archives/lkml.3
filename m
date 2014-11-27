@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751891AbaK0Opr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 09:45:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55036 "EHLO mx1.redhat.com"
+	id S1751861AbaK0Or3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 09:47:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38531 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751860AbaK0Opp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 09:45:45 -0500
-Date: Thu, 27 Nov 2014 12:45:28 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] perf tools: Do not fail on processing out of order event
-Message-ID: <20141127144528.GL3808@redhat.com>
-References: <1417016371-30249-1-git-send-email-jolsa@kernel.org>
- <20141126154459.GD3808@redhat.com>
- <20141127105603.GA1987@gmail.com>
- <20141127135259.GI3808@redhat.com>
- <20141127140707.GB25752@krava.brq.redhat.com>
- <20141127141626.GK3808@redhat.com>
- <20141127142321.GC25752@krava.brq.redhat.com>
+	id S1750966AbaK0Or1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 09:47:27 -0500
+Date: Thu, 27 Nov 2014 15:47:25 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        linux-api@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
+        zhangyanfei@cn.fujitsu.com,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: [PATCH v17 1/7] mm: support madvise(MADV_FREE)
+Message-ID: <20141127144725.GB19157@dhcp22.suse.cz>
+References: <1413799924-17946-1-git-send-email-minchan@kernel.org>
+ <1413799924-17946-2-git-send-email-minchan@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141127142321.GC25752@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1413799924-17946-2-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Nov 27, 2014 at 03:23:21PM +0100, Jiri Olsa escreveu:
-> On Thu, Nov 27, 2014 at 12:16:26PM -0200, Arnaldo Carvalho de Melo wrote:
-> > Em Thu, Nov 27, 2014 at 03:07:07PM +0100, Jiri Olsa escreveu:
-> > > On Thu, Nov 27, 2014 at 11:53:00AM -0200, Arnaldo Carvalho de Melo wrote:
-> > > > Em Thu, Nov 27, 2014 at 11:56:03AM +0100, Ingo Molnar escreveu:
-> > > > > Arnaldo, I suppose the fix will go upstream via your tree, as a 
-> > > > > pull request for v3.18 fixes?
-> > 
-> > > > Right, I can do that.
-> > 
-> > > > And I agree with the "expected" for events that are out of the current
-> > > > reordering window, i.e. we can't insert something into previous windows,
-> > > > so those are, humm, what would be a good name:
-> > > > stats->out_of_reordering_window, while stats->reordered, would be for
-> > > > events that were found out of order, but were successfully sorted as
-> > > > part of a flush operation, right?
-> >  
-> > > the forced flush is when we find out we crossed the allowed allocation
-> > > space for the samples queue.. so we take the half of the sorted queue
-> > > and flush it.. for this case we break the flushing logic and we might
-> > 
-> > Well, we make it more likely than without a forced flush to find out of
-> > order events, because the window suddenly became smaller, its like we
-> > found a FLUSH event right there, no?
- 
-> yep, still I dont see the need to count those 2 cases separately,
-> both these types (of out of order event) have same implications
-> for the report
+[Late but I didn't get to this soone - I hope this is still up-to-date
+version]
 
-Ok, I misundertood it when thinking it was about reordered events inside
-a flush window versus events for a previous, closed flush window.
-
-Yeah, if we detect events for a previous flush window in a forced flush
-or in a normal flush, its all the same: events we can't consider anymore
-because they are for a closed (old) flush window.
-
-- Arnaldo
- 
-> jirka
+On Mon 20-10-14 19:11:58, Minchan Kim wrote:
+> Linux doesn't have an ability to free pages lazy while other OS
+> already have been supported that named by madvise(MADV_FREE).
 > 
-> > 
-> > > (probably just in theory) get out of order events
-> >  
-> > > but IMO both cases of out of order event are equal.. we dont do
-> > > anything special for forced flushed AFAIK
-> > 
-> > - Arnaldo
+> The gain is clear that kernel can discard freed pages rather than
+> swapping out or OOM if memory pressure happens.
+> 
+> Without memory pressure, freed pages would be reused by userspace
+> without another additional overhead(ex, page fault + allocation
+> + zeroing).
+> 
+> How to work is following as.
+> 
+> When madvise syscall is called, VM clears dirty bit of ptes of
+> the range. If memory pressure happens, VM checks dirty bit of
+> page table and if it found still "clean", it means it's a
+> "lazyfree pages" so VM could discard the page instead of swapping out.
+> Once there was store operation for the page before VM peek a page
+> to reclaim, dirty bit is set so VM can swap out the page instead of
+> discarding.
+
+Is there any patch for madvise man page? I guess the semantic will be
+same/similar to FreeBSD:
+http://www.freebsd.org/cgi/man.cgi?query=madvise&sektion=2
+
+I guess the changelog should be more specific that this is only for the
+private MAP_ANON mappings (same applies to the patch for man).
+
+> Firstly, heavy users would be general allocators(ex, jemalloc,
+> tcmalloc and hope glibc supports it) and jemalloc/tcmalloc already
+> have supported the feature for other OS(ex, FreeBSD)
+> 
+[...]
+> 
+> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+> Cc: Linux API <linux-api@vger.kernel.org>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Jason Evans <je@fb.com>
+> Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Acked-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+[...]
+-- 
+Michal Hocko
+SUSE Labs
