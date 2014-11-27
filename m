@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751276AbaK0RBC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 12:01:02 -0500
-Received: from mailer12-1.incnets.com ([210.6.92.81]:41208 "EHLO
-	mailer12-1.incnets.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831AbaK0RBA convert rfc822-to-8bit (ORCPT
+	id S1751330AbaK0RCF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 12:02:05 -0500
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.216]:58605 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831AbaK0RCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 12:01:00 -0500
-X-Greylist: delayed 2487 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Nov 2014 12:01:00 EST
-X-IMSS-HAND-OFF-DIRECTIVE: mailer1.incnets.com:25
-Date: Fri, 28 Nov 2014 00:19:22 +0800 (HKT)
-From: "mtim00011@aol.com" <richard@houston-pack.com>
-Reply-To: "ericpeters90@yahoo.com.sg" <ericpeters90@yahoo.com.sg>
-Message-ID: <800048155.10058016.1417105162061.JavaMail.root@houston-pack.com>
-Subject: RE: GREETINGS
+	Thu, 27 Nov 2014 12:02:03 -0500
+X-RZG-AUTH: :IW0WYUmmW/LXBXEy1oS2GmByExLj9zw/4tEKkyX4yP6D6vUdA4+4uSj51g==
+X-RZG-CLASS-ID: mo00
+Date: Thu, 27 Nov 2014 17:55:40 +0100 (CET)
+From: Martin Vath <martin@mvath.de>
+X-X-Sender: vaeth@biff2
+To: Marcin Szychowski <szycha@gmail.com>
+cc: Bruno Wolff III <bruno@wolff.to>,
+        Phillip Lougher <phillip@squashfs.org.uk>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        texstar@gmail.com, Martin Vaeth <martin@mvath.de>, guanx.bac@gmail.com,
+        dave@vasilevsky.ca, blyons@students.naropa.edu, tokiclover@gmail.com,
+        afm404@gmail.com, hugochevrain@gmail.com
+Subject: Re: [PATCH 0/2] Squashfs: add LZ4 compression
+In-Reply-To: <CAJZww4gzTnbyB4jbFQc0N4G6GJ31pVwv-PNZtDMbUxXMoH-orQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.10.1411271716300.17270@biff2>
+References: <1417075250-6502-1-git-send-email-phillip@squashfs.org.uk> <20141127133754.GA12750@wolff.to> <CAJZww4gzTnbyB4jbFQc0N4G6GJ31pVwv-PNZtDMbUxXMoH-orQ@mail.gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.32.56.141]
-X-Mailer: Zimbra 7.2.1_GA_2790 (zclient/7.2.1_GA_2790)
-To: undisclosed-recipients:;
-X-TM-AS-MML: No
-X-TM-AS-Product-Ver: IMSVA-8.2.0.1520-7.5.0.1018-21134.000
-X-TM-AS-Result: Yes-63.803-9.9-31-11
-X-imss-scan-details: Yes-63.803-9.9-31-11
-X-TMASE-Version: IMSVA-8.2.0.1520-7.5.1018-21134.000
-X-TMASE-Result: 11-63.803400-5.000000
-X-TMASE-MatchedRID: 84HQ9ZOvImdYeglsbfJJ2lY9Nq4gO093O4rmf5nWGLauts+PvHaQBWLw
-	hQE9ibkV1z8hM2rU8FAFEaAz3ni9kbOwtHjpzRdTRmTOGAmAndJ7TVJDjDj87XSTF6vxjl3XU5J
-	NkzT2GqKGdjq5x807qhcDcEF6XUZOXmWCwCAwAarH40/wT2pAdyTbbsi+pqSF9YRNzvav61iu6U
-	TIWqUYaO+E/1fCTf0/9J0lB7BjjIsyDIdIGryMaLL0tAITGERlpM68w95/MCJi4eSevXljs6PFj
-	JEFr+olTxdUWmbPaZXARVMtI06Rf6xxBb40JqaiQE0XLZW5D6xGn5oAVkHrSNAtbEEX0MxBxEHR
-	ux+uk8jpP8tMOyYmaA==
-X-Out-Spam: TRUE
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1311509108-1417106034=:17270"
+Content-ID: <alpine.DEB.2.10.1411271734400.17270@biff2>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear friend,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-With due respect, My Name is Mr. Eric peters. I work with Benin Mines &
-Energy Industry and also the Head of Finance/contract approval department.
-A deceased contractor has unpaid contract balance payment of five million
-eight hundred thousand euros (â‚¬5.8M) for supply and installation of
-Industrial Equipments to our Industry. If you are interested to receive
-this sum for our use, please let me have your telephone number and full
-names to enable me give you comprehensive details on what we are to do to
-get this transaction concluded. Contact me via my email address:
-ericpeters90@yahoo.com.sg
+--8323329-1311509108-1417106034=:17270
+Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15; FORMAT=flowed
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.DEB.2.10.1411271734401.17270@biff2>
 
-Mr. Eric peters.
+Hi:
+
+> squashfs+lz4 / aufs to speed up my laptop
+
+Squashfs proves its usefulness especially in combination
+with aufs or overlayfs; I suppose that this combination
+will become more popular with the spreading of overlayfs
+(e.g. to save disk space etc.)
+
+For users with such a combination, it is especially important
+to get a fast (re)compression of huge directories.
+
+The speed of LZ4 for compression in such a setting is really incredible.
+Just for orientation for myself, I made a list of times/sizes
+on some machines I had access to:
+
+https://github.com/vaeth/squashmount/blob/master/compress.txt
+
+(I do not claim that this is a scientific benchmark - just a
+straightforward average over several runs).
+The results for the kernel source and libreoffice are really
+unbelievable, but I repeated them several times (and,
+as you can see, for the kernel sources on different machines).
+
+>From the user perspective, it is mainly important that
+the files compressed in this way can be read by the kernel -
+the decompression speed is here secondary, so I made no comparison
+for this case, although lz4 is known to be very fast also
+for decompression.
+
+I would really like to see lz4 support included in the
+squashfs kernel driver. I cannot imagine any negative consequences,
+especially since squashfs and lz4 are in the kernel, anyway.
+
+Sincerely
+Martin Väth
+--8323329-1311509108-1417106034=:17270--
