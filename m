@@ -1,309 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751252AbaK0NYX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 08:24:23 -0500
-Received: from mail-bn1bon0066.outbound.protection.outlook.com ([157.56.111.66]:6403
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751074AbaK0NYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 08:24:22 -0500
-From: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
-To: <wg@grandegger.com>, <mkl@pengutronix.de>, <michal.simek@xilinx.com>,
-        <soren.brinkmann@xilinx.com>, <grant.likely@linaro.org>,
-        <robh+dt@kernel.org>
-CC: <linux-can@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        Kedareswara rao Appana <appanad@xilinx.com>
-Subject: [PATCH v3] can: Convert to runtime_pm
-Date: Thu, 27 Nov 2014 18:38:53 +0530
-X-Mailer: git-send-email 1.7.4
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21132.006
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <6b6db31d46074512a322eae6e4ef64d4@BN1BFFO11FD038.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(189002)(199003)(19580405001)(95666004)(50466002)(106466001)(2201001)(77096003)(93916002)(87936001)(50226001)(99396003)(64706001)(92566001)(21056001)(46102003)(120916001)(4396001)(107046002)(47776003)(77156002)(53416004)(89996001)(44976005)(31966008)(88136002)(33646002)(104166001)(20776003)(19580395003)(104016003)(108616004)(229853001)(74316001)(48376002)(50986999)(87286001)(6806004)(102836001)(86362001)(62966003)(107986001)(24736002)(2101003)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB058;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+	id S1751348AbaK0NYu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 08:24:50 -0500
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:60257 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751035AbaK0NYr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 08:24:47 -0500
+Message-ID: <547725F8.1050106@st.com>
+Date: Thu, 27 Nov 2014 14:24:08 +0100
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB058;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB058;
-X-Forefront-PRVS: 040866B734
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=appana.durga.rao@xilinx.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB058;
-X-OriginatorOrg: xilinx.com
+To: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: <devicetree@vger.kernel.org>, <broonie@kernel.org>, <kernel@stlinux.com>,
+        <linux-spi@vger.kernel.org>
+Subject: Re: [PATCH 1/4] spi: Add new driver for STMicroelectronics' SPI Controller
+References: <1417088636-11994-1-git-send-email-lee.jones@linaro.org> <1417088636-11994-2-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1417088636-11994-2-git-send-email-lee.jones@linaro.org>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-11-27_06:2014-11-27,2014-11-27,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of enabling/disabling clocks at several locations in the driver,
-use the runtime_pm framework. This consolidates the actions for
-runtime PM in the appropriate callbacks and makes the driver more
-readable and mantainable.
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
----
-Changes for v3:
-  - Converted the driver to use runtime_pm.
-Changes for v2:
-  - Removed the struct platform_device* from suspend/resume
-    as suggest by Lothar.
+On 11/27/2014 12:43 PM, Lee Jones wrote:
+> This patch adds support for the SPI portion of ST's SSC device.
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>   drivers/spi/Kconfig  |   8 +
+>   drivers/spi/Makefile |   1 +
+>   drivers/spi/spi-st.c | 535 +++++++++++++++++++++++++++++++++++++++++++++++++++
+>   3 files changed, 544 insertions(+)
+>   create mode 100644 drivers/spi/spi-st.c
+<snip>
 
- drivers/net/can/xilinx_can.c |  119 +++++++++++++++++++++++++----------------
- 1 files changed, 72 insertions(+), 47 deletions(-)
+> +
+> +static int spi_st_probe(struct platform_device *pdev)
+> +{
+> +	struct device_node *np = pdev->dev.of_node;
+> +	struct device *dev = &pdev->dev;
+> +	struct spi_master *master;
+> +	struct resource *res;
+> +	struct spi_st *spi_st;
+> +	int num_cs, cs_gpio, i, ret = 0;
+> +	u32 var;
+> +	
+> +	printk("LEE: %s: %s()[%d]: Probing\n", __FILE__, __func__, __LINE__);
+> +
+> +	master = spi_alloc_master(&pdev->dev, sizeof(*spi_st));
+> +	if (!master) {
+> +		dev_err(&pdev->dev, "failed to allocate spi master\n");
+> +		return -ENOMEM;
+> +	}
+> +	spi_st = spi_master_get_devdata(master);
+> +
+> +	if (!IS_ERR(dev->pins->p)) {
+> +		spi_st->pins_sleep =
+> +			pinctrl_lookup_state(dev->pins->p, PINCTRL_STATE_SLEEP);
+> +		if (IS_ERR(spi_st->pins_sleep))
+> +			dev_warn(&pdev->dev, "could not get sleep pinstate\n");
+> +	}
+> +
+> +	num_cs = of_gpio_named_count(np, "cs-gpios");
+> +
+> +	for (i = 0; i < num_cs; i++) {
+> +		cs_gpio = of_get_named_gpio(np, "cs-gpios", i);
+> +
+> +		if (!gpio_is_valid(cs_gpio)) {
+> +			dev_err(&pdev->dev,
+> +				"%d is not a valid gpio\n", cs_gpio);
+> +			return -EINVAL;
+> +		}
+> +			
+> +		if (devm_gpio_request(&pdev->dev, cs_gpio, pdev->name)) {
+> +			dev_err(&pdev->dev,
+> +				"could not request %d gpio\n", cs_gpio);
+> +			return -EINVAL;
+> +		}
+> +	}
+> +
+> +	spi_st->clk = of_clk_get_by_name(np, "ssc");
+> +	if (IS_ERR(spi_st->clk)) {
+> +		dev_err(&pdev->dev, "Unable to request clock\n");
+> +		ret = PTR_ERR(spi_st->clk);
+> +		goto free_master;
+> +	}
+> +
+> +	ret = clk_prepare_enable(spi_st->clk);
+> +	if (ret)
+> +		goto free_master;
+> +
+> +	master->dev.of_node		= np;
+> +	master->bus_num			= pdev->id;
+> +	master->mode_bits		= MODEBITS;
+> +	spi_st->bitbang.master		= spi_master_get(master);
+> +	spi_st->bitbang.setup_transfer	= spi_st_setup_transfer;
+> +	spi_st->bitbang.txrx_bufs	= spi_st_txrx_bufs;
+> +	spi_st->bitbang.master->setup	= spi_st_setup;
+> +	spi_st->bitbang.master->cleanup	= spi_st_cleanup;
+> +	spi_st->bitbang.chipselect	= spi_st_gpio_chipselect;
+> +	spi_st->dev			= dev;
+> +
+> +	init_completion(&spi_st->done);
+> +
+> +	/* Get resources */
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	spi_st->base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(spi_st->base)) {
+> +		ret = PTR_ERR(spi_st->base);
+> +		goto clk_disable;
+> +	}
+> +
+> +	spi_st->irq = irq_of_parse_and_map(np, 0);
+> +	if (!spi_st->irq) {
+> +		dev_err(&pdev->dev, "IRQ missing or invalid\n");
+> +		ret = -EINVAL;
+> +		goto clk_disable;
+> +	}
+> +
+> +	ret = devm_request_irq(&pdev->dev, spi_st->irq, spi_st_irq, 0,
+> +			       pdev->name, spi_st);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to request irq %d\n", spi_st->irq);
+> +		goto clk_disable;
+> +	}
+> +
+> +	/* Disable I2C and Reset SSC */
+> +	writel_relaxed(0x0, spi_st->base + SSC_I2C);
+> +	var = readw(spi_st->base + SSC_CTL);
+Why not readw_relaxed to be consistent with readl:s?
+> +	var |= SSC_CTL_SR;
+> +	writel_relaxed(var, spi_st->base + SSC_CTL);
+> +
+> +	udelay(1);
+> +	var = readl_relaxed(spi_st->base + SSC_CTL);
+> +	var &= ~SSC_CTL_SR;
+> +	writel_relaxed(var, spi_st->base + SSC_CTL);
+> +
+> +	/* Set SSC into slave mode before reconfiguring PIO pins */
+> +	var = readl_relaxed(spi_st->base + SSC_CTL);
+> +	var &= ~SSC_CTL_MS;
+> +	writel_relaxed(var, spi_st->base + SSC_CTL);
+> +
+> +	/* Start "bitbang" worker */
+> +	ret = spi_bitbang_start(&spi_st->bitbang);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "bitbang start failed [%d]\n", ret);
+> +		goto clk_disable;
+> +	}
+> +
+> +	dev_info(&pdev->dev, "registered SPI Bus %d\n", master->bus_num);
+> +
+> +	platform_set_drvdata(pdev, master);
 
-diff --git a/drivers/net/can/xilinx_can.c b/drivers/net/can/xilinx_can.c
-index 8a998e3..1be28ed 100644
---- a/drivers/net/can/xilinx_can.c
-+++ b/drivers/net/can/xilinx_can.c
-@@ -32,6 +32,7 @@
- #include <linux/can/dev.h>
- #include <linux/can/error.h>
- #include <linux/can/led.h>
-+#include <linux/pm_runtime.h>
- 
- #define DRIVER_NAME	"xilinx_can"
- 
-@@ -138,7 +139,7 @@ struct xcan_priv {
- 	u32 (*read_reg)(const struct xcan_priv *priv, enum xcan_reg reg);
- 	void (*write_reg)(const struct xcan_priv *priv, enum xcan_reg reg,
- 			u32 val);
--	struct net_device *dev;
-+	struct device *dev;
- 	void __iomem *reg_base;
- 	unsigned long irq_flags;
- 	struct clk *bus_clk;
-@@ -842,6 +843,13 @@ static int xcan_open(struct net_device *ndev)
- 	struct xcan_priv *priv = netdev_priv(ndev);
- 	int ret;
- 
-+	ret = pm_runtime_get_sync(priv->dev);
-+	if (ret < 0) {
-+		netdev_err(ndev, "%s: runtime CAN resume failed(%d)\n\r",
-+				__func__, ret);
-+		return ret;
-+	}
-+
- 	ret = request_irq(ndev->irq, xcan_interrupt, priv->irq_flags,
- 			ndev->name, ndev);
- 	if (ret < 0) {
-@@ -849,29 +857,17 @@ static int xcan_open(struct net_device *ndev)
- 		goto err;
- 	}
- 
--	ret = clk_prepare_enable(priv->can_clk);
--	if (ret) {
--		netdev_err(ndev, "unable to enable device clock\n");
--		goto err_irq;
--	}
--
--	ret = clk_prepare_enable(priv->bus_clk);
--	if (ret) {
--		netdev_err(ndev, "unable to enable bus clock\n");
--		goto err_can_clk;
--	}
--
- 	/* Set chip into reset mode */
- 	ret = set_reset_mode(ndev);
- 	if (ret < 0) {
- 		netdev_err(ndev, "mode resetting failed!\n");
--		goto err_bus_clk;
-+		goto err_irq;
- 	}
- 
- 	/* Common open */
- 	ret = open_candev(ndev);
- 	if (ret)
--		goto err_bus_clk;
-+		goto err_irq;
- 
- 	ret = xcan_chip_start(ndev);
- 	if (ret < 0) {
-@@ -887,13 +883,11 @@ static int xcan_open(struct net_device *ndev)
- 
- err_candev:
- 	close_candev(ndev);
--err_bus_clk:
--	clk_disable_unprepare(priv->bus_clk);
--err_can_clk:
--	clk_disable_unprepare(priv->can_clk);
- err_irq:
- 	free_irq(ndev->irq, ndev);
- err:
-+	pm_runtime_put(priv->dev);
-+
- 	return ret;
- }
- 
-@@ -910,12 +904,11 @@ static int xcan_close(struct net_device *ndev)
- 	netif_stop_queue(ndev);
- 	napi_disable(&priv->napi);
- 	xcan_chip_stop(ndev);
--	clk_disable_unprepare(priv->bus_clk);
--	clk_disable_unprepare(priv->can_clk);
- 	free_irq(ndev->irq, ndev);
- 	close_candev(ndev);
- 
- 	can_led_event(ndev, CAN_LED_EVENT_STOP);
-+	pm_runtime_put(priv->dev);
- 
- 	return 0;
- }
-@@ -934,27 +927,21 @@ static int xcan_get_berr_counter(const struct net_device *ndev,
- 	struct xcan_priv *priv = netdev_priv(ndev);
- 	int ret;
- 
--	ret = clk_prepare_enable(priv->can_clk);
--	if (ret)
--		goto err;
-+	ret = pm_runtime_get_sync(priv->dev);
-+	if (ret < 0) {
-+		netdev_err(ndev, "%s: runtime resume failed(%d)\n\r",
-+				__func__, ret);
-+		return ret;
-+	}
- 
--	ret = clk_prepare_enable(priv->bus_clk);
--	if (ret)
--		goto err_clk;
- 
- 	bec->txerr = priv->read_reg(priv, XCAN_ECR_OFFSET) & XCAN_ECR_TEC_MASK;
- 	bec->rxerr = ((priv->read_reg(priv, XCAN_ECR_OFFSET) &
- 			XCAN_ECR_REC_MASK) >> XCAN_ESR_REC_SHIFT);
- 
--	clk_disable_unprepare(priv->bus_clk);
--	clk_disable_unprepare(priv->can_clk);
-+	pm_runtime_put(priv->dev);
- 
- 	return 0;
--
--err_clk:
--	clk_disable_unprepare(priv->can_clk);
--err:
--	return ret;
- }
- 
- 
-@@ -967,15 +954,45 @@ static const struct net_device_ops xcan_netdev_ops = {
- 
- /**
-  * xcan_suspend - Suspend method for the driver
-- * @dev:	Address of the platform_device structure
-+ * @dev:	Address of the net_device structure
-  *
-  * Put the driver into low power mode.
-- * Return: 0 always
-+ * Return: 0 on success and failure value on error
-  */
- static int __maybe_unused xcan_suspend(struct device *dev)
- {
--	struct platform_device *pdev = dev_get_drvdata(dev);
--	struct net_device *ndev = platform_get_drvdata(pdev);
-+	if (!device_may_wakeup(dev))
-+		return pm_runtime_force_suspend(dev);
-+
-+	return 0;
-+}
-+
-+/**
-+ * xcan_resume - Resume from suspend
-+ * @dev:	Address of the net_device structure
-+ *
-+ * Resume operation after suspend.
-+ * Return: 0 on success and failure value on error
-+ */
-+static int __maybe_unused xcan_resume(struct device *dev)
-+{
-+	if (!device_may_wakeup(dev))
-+		return pm_runtime_force_resume(dev);
-+
-+	return 0;
-+
-+}
-+
-+/**
-+ * xcan_runtime_suspend - Runtime suspend method for the driver
-+ * @dev:	Address of the net_device structure
-+ *
-+ * Put the driver into low power mode.
-+ * Return: 0 always
-+ */
-+static int __maybe_unused xcan_runtime_suspend(struct device *dev)
-+{
-+	struct net_device *ndev = dev_get_drvdata(dev);
- 	struct xcan_priv *priv = netdev_priv(ndev);
- 
- 	if (netif_running(ndev)) {
-@@ -993,16 +1010,15 @@ static int __maybe_unused xcan_suspend(struct device *dev)
- }
- 
- /**
-- * xcan_resume - Resume from suspend
-- * @dev:	Address of the platformdevice structure
-+ * xcan_runtime_resume - Runtime resume from suspend
-+ * @dev:	Address of the net_device structure
-  *
-  * Resume operation after suspend.
-  * Return: 0 on success and failure value on error
-  */
--static int __maybe_unused xcan_resume(struct device *dev)
-+static int __maybe_unused xcan_runtime_resume(struct device *dev)
- {
--	struct platform_device *pdev = dev_get_drvdata(dev);
--	struct net_device *ndev = platform_get_drvdata(pdev);
-+	struct net_device *ndev = dev_get_drvdata(dev);
- 	struct xcan_priv *priv = netdev_priv(ndev);
- 	int ret;
- 
-@@ -1030,7 +1046,10 @@ static int __maybe_unused xcan_resume(struct device *dev)
- 	return 0;
- }
- 
--static SIMPLE_DEV_PM_OPS(xcan_dev_pm_ops, xcan_suspend, xcan_resume);
-+static const struct dev_pm_ops xcan_dev_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(xcan_suspend, xcan_resume)
-+	SET_PM_RUNTIME_PM_OPS(xcan_runtime_suspend, xcan_runtime_resume, NULL)
-+};
- 
- /**
-  * xcan_probe - Platform registration call
-@@ -1071,7 +1090,7 @@ static int xcan_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 
- 	priv = netdev_priv(ndev);
--	priv->dev = ndev;
-+	priv->dev = &pdev->dev;
- 	priv->can.bittiming_const = &xcan_bittiming_const;
- 	priv->can.do_set_mode = xcan_do_set_mode;
- 	priv->can.do_get_berr_counter = xcan_get_berr_counter;
-@@ -1137,6 +1156,11 @@ static int xcan_probe(struct platform_device *pdev)
- 
- 	netif_napi_add(ndev, &priv->napi, xcan_rx_poll, rx_max);
- 
-+	pm_runtime_set_active(&pdev->dev);
-+	pm_runtime_irq_safe(&pdev->dev);
-+	pm_runtime_enable(&pdev->dev);
-+	pm_runtime_get_sync(&pdev->dev);
-+
- 	ret = register_candev(ndev);
- 	if (ret) {
- 		dev_err(&pdev->dev, "fail to register failed (err=%d)\n", ret);
-@@ -1144,8 +1168,9 @@ static int xcan_probe(struct platform_device *pdev)
- 	}
- 
- 	devm_can_led_init(ndev);
--	clk_disable_unprepare(priv->bus_clk);
--	clk_disable_unprepare(priv->can_clk);
-+
-+	pm_runtime_put(&pdev->dev);
-+
- 	netdev_dbg(ndev, "reg_base=0x%p irq=%d clock=%d, tx fifo depth:%d\n",
- 			priv->reg_base, ndev->irq, priv->can.clock.freq,
- 			priv->tx_max);
--- 
-1.7.4
+Shouldn't you call devm_spi_register_master ?
+> +
+> +	/* by default the device is on */
+> +	pm_runtime_set_active(&pdev->dev);
+> +	pm_runtime_enable(&pdev->dev);
+> +
+> +	return 0;
+> +
+> +clk_disable:
+> +	clk_disable_unprepare(spi_st->clk);
+> +free_master:
+> +	spi_master_put(master);
+> +
+> +	return ret;
+> +}
+> +
+> +static int spi_st_remove(struct platform_device *pdev)
+> +{
+> +	struct spi_master *master = platform_get_drvdata(pdev);
+> +	struct spi_st *spi_st = spi_master_get_devdata(master);
+> +
+> +	spi_bitbang_stop(&spi_st->bitbang);
+> +	clk_disable_unprepare(spi_st->clk);
+> +
+> +	if (spi_st->pins_sleep)
+> +		pinctrl_select_state(pdev->dev.pins->p, spi_st->pins_sleep);
+You should use pinctrl_pm_select_sleep_state(dev); instead.
+
+> +
+> +	spi_master_put(spi_st->bitbang.master);
+If you use devm_spi_register_master at probe time,
+you shouldn't need to call spi_master_put IIUC.
+
+> +
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_PM_SLEEP
+> +static int spi_st_suspend(struct device *dev)
+> +{
+> +	struct spi_master *master = dev_get_drvdata(dev);
+> +	struct spi_st *spi_st = spi_master_get_devdata(master);
+> +
+> +	writel_relaxed(0, spi_st->base + SSC_IEN);
+> +
+> +	if (!IS_ERR(spi_st->pins_sleep))
+> +		pinctrl_select_state(dev->pins->p, spi_st->pins_sleep);
+Ditto
+> +
+> +	clk_disable_unprepare(spi_st->clk);
+> +
+> +	return 0;
+> +}
+> +
+> +static int spi_st_resume(struct device *dev)
+> +{
+> +	struct spi_master *master = dev_get_drvdata(dev);
+> +	struct spi_st *spi_st = spi_master_get_devdata(master);
+> +	int ret;
+> +
+> +	ret = clk_prepare_enable(spi_st->clk);
+> +
+> +	if (!IS_ERR(dev->pins->default_state))
+> +		pinctrl_select_state(dev->pins->p, dev->pins->default_state);
+     pinctrl_pm_select_default_state(i2c_dev->dev);
+     pinctrl_pm_select_idle_state(i2c_dev->dev);
+
+> +
+> +	return ret;
+> +}
+> +#endif
+> +
+> +static SIMPLE_DEV_PM_OPS(spi_st_pm, spi_st_suspend, spi_st_resume);
+> +
+> +static struct of_device_id stm_spi_match[] = {
+> +	{ .compatible = "st,comms-ssc-spi", },
+> +	{ .compatible = "st,comms-ssc4-spi", },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, stm_spi_match);
+> +
+> +static struct platform_driver spi_st_driver = {
+> +	.driver = {
+> +		.name = "spi-st",
+> +		.pm = &spi_st_pm,
+> +		.of_match_table = of_match_ptr(stm_spi_match),
+> +	},
+> +	.probe = spi_st_probe,
+> +	.remove = spi_st_remove,
+> +};
+> +module_platform_driver(spi_st_driver);
+> +
+> +MODULE_AUTHOR("Patrice Chotard <patrice.chotard@st.com>");
+> +MODULE_DESCRIPTION("STM SSC SPI driver");
+> +MODULE_LICENSE("GPL v2");
 
