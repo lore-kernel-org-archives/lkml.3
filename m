@@ -1,87 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642AbaK0Js0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 04:48:26 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:51346 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753251AbaK0JsY (ORCPT
+	id S1754556AbaK0JuL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 04:50:11 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:46896 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512AbaK0JuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 04:48:24 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        jason@lakedaemon.net, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        kernel@stlinux.com
-Subject: Re: [PATCH v2 2/8] irqchip: Supply new driver for STi based devices
-Date: Thu, 27 Nov 2014 10:47:34 +0100
-Message-ID: <2111250.BPZOtBCtcF@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141127092901.GE4628@x1>
-References: <1416932705-16880-1-git-send-email-lee.jones@linaro.org> <35179358.tOpRGufXmc@wuerfel> <20141127092901.GE4628@x1>
+	Thu, 27 Nov 2014 04:50:07 -0500
+Message-ID: <5476F3C5.8020709@linaro.org>
+Date: Thu, 27 Nov 2014 09:49:57 +0000
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Kf7/cKRrK+CW2mLkeBvC14y9aMhYG5vaXtDa116g0z1
- LFg38zpzmrK127tayz2/l+3/MSqeyUGrpwOWoRJtuG4nlCMJZU
- 6ueoMxzlqZBKOGAc+pmuZ7fvdV1PfaEziFOlPM02L7DCKzvxJD
- CuMlPmMFRvkmCKsqr9emV+zAY80CSWaWwfohTDF/D0xVd6vGpX
- XGyvBEMm9g2KtjfNn2AvUq2Ytkl7pOkP9PTpTxQMQeDzlhFnu5
- bKTZlppZQkN9rJ9lOUIXwE3yiLhHd2S++y+ksilu432hphxXq0
- kLgpEuRg4ZqtSuy05HXm+VaqrmXrvIIr2hA5YAT5+Fqncfw3Lt
- IH9YrcQ9hYC6GUi0EeFE=
-X-UI-Out-Filterresults: notjunk:1;
+To: Colin Cross <ccross@android.com>, Kiran Raparthy <kiran.kumar@linaro.org>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: Re: [RFC v3] debug: prevent entering debug mode on errors
+References: <1416993266-16514-1-git-send-email-kiran.kumar@linaro.org> <CAMbhsRR0XzJ9ouYuoE2z+oCR9jRt8XBEfuVgd7sLJMg24bMKyQ@mail.gmail.com>
+In-Reply-To: <CAMbhsRR0XzJ9ouYuoE2z+oCR9jRt8XBEfuVgd7sLJMg24bMKyQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 November 2014 09:29:01 Lee Jones wrote:
-> On Thu, 27 Nov 2014, Arnd Bergmann wrote:
-> > On Thursday 27 November 2014 09:02:55 Lee Jones wrote:
-> > > On Tue, 25 Nov 2014, Arnd Bergmann wrote:
-> > > 
-> > > > On Tuesday 25 November 2014 16:24:59 Lee Jones wrote:
-> > > > 
-> > > > > diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-> > > > > index b21f12f..e502f15 100644
-> > > > > --- a/drivers/irqchip/Kconfig
-> > > > > +++ b/drivers/irqchip/Kconfig
-> > > > > @@ -93,6 +93,13 @@ config RENESAS_IRQC
-> > > > >     bool
-> > > > >     select IRQ_DOMAIN
-> > > > >  
-> > > > > +config ST_IRQCHIP
-> > > > > +   bool
-> > > > > +   select REGMAP
-> > > > > +   select MFD_SYSCON
-> > > > > +   help
-> > > > > +     Enables SysCfg Controlled IRQs on STi based platforms.
-> > > > > +
-> > > > 
-> > > > I'm confused by the purpose of this code. It's apparently a driver
-> > > > in drivers/irqchip, the Kconfig symbol contains the string IRQCHIP,
-> > > > yet it doesn't actually register an irq_chip.
-> > > > 
-> > > > Also, the name is a bit too generic, ST has lots of different irqchips,
-> > > > and this apparently isn't even one of them 
-> > > 
-> > > Hmm... now you're going to ask me to remember who I had the
-> > > conversation with that alluded to this as the best location for this
-> > > driver.  Unfortunately, I cannot.  Can you think of a better place to
-> > > put it then?
-> > 
-> > I suspect it's in the right place but should actually be an irqchip
-> > driver. I'm having trouble understanding what this code actually does,
-> > can you you explain the functionality in more detail so we can figure
-> > out what to do with it?
+On 26/11/14 17:45, Colin Cross wrote:
+> On Wed, Nov 26, 2014 at 1:14 AM, Kiran Raparthy <kiran.kumar@linaro.org> wrote:
+>> From: Colin Cross <ccross@android.com>
+>>
+>> debug: prevent entering debug mode on errors
+>>
+>> On non-developer devices kgdb prevents CONFIG_PANIC_TIMEOUT from rebooting the
+>> device after a panic.
+>>
+>> In case of panics and exceptions, to honor CONFIG_PANIC_TIMEOUT, prevent
+>> entering debug mode to avoid getting stuck waiting for the user to interact
+>> with debugger.
+>>
+>> Cc: Jason Wessel <jason.wessel@windriver.com>
+>> Cc: kgdb-bugreport@lists.sourceforge.net
+>> Cc: linux-kernel@vger.kernel.org
+>> Cc: Android Kernel Team <kernel-team@android.com>
+>> Cc: John Stultz <john.stultz@linaro.org>
+>> Cc: Sumit Semwal <sumit.semwal@linaro.org>
+>> Signed-off-by: Colin Cross <ccross@android.com>
+>> [Kiran: Added context to commit message.
+>> panic_timeout is used instead of break_on_panic and
+>> break_on_exception to honor CONFIG_PANIC_TIMEOUT]
+>> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+>> ---
+>>  kernel/debug/debug_core.c | 17 +++++++++++++++++
+>>  1 file changed, 17 insertions(+)
+>>
+>> diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
+>> index 1adf62b..0012a1f 100644
+>> --- a/kernel/debug/debug_core.c
+>> +++ b/kernel/debug/debug_core.c
+>> @@ -689,6 +689,14 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
+>>
+>>         if (arch_kgdb_ops.enable_nmi)
+>>                 arch_kgdb_ops.enable_nmi(0);
+>> +       /*
+>> +        * Avoid entering the debugger if we were triggered due to an oops
+>> +        * but panic_timeout indicates the system should automatically
+>> +        * reboot on panic. We don't want to get stuck waiting for input
+>> +        * on such systems, especially if its "just" an oops.
+>> +        */
+>> +       if (signo != SIGTRAP && panic_timeout)
+>> +               return 1;
+>>
+>>         memset(ks, 0, sizeof(struct kgdb_state));
+>>         ks->cpu                 = raw_smp_processor_id();
+>> @@ -821,6 +829,15 @@ static int kgdb_panic_event(struct notifier_block *self,
+>>                             unsigned long val,
+>>                             void *data)
+>>  {
+>> +       /*
+>> +        * Avoid entering the debugger if we were triggered due to a panic
+>> +        * We don't want to get stuck waiting for input from user in such case.
+>> +        * panic_timeout indicates the system should automatically
+>> +        * reboot on panic.
+>> +        */
+>> +       if (panic_timeout)
+>> +               return NOTIFY_DONE;
+>> +
+>>         if (dbg_kdb_mode)
+>>                 kdb_printf("PANIC: %s\n", (char *)data);
+>>         kgdb_breakpoint();
 > 
-> In the simplest terms it's an IRQ unmasker.  A9 Core IRQs are disabled
-> on boot; PMU, CTI (CoreSight), PL310_L2 and EXT.  In order for you to
-> make use of them they need to be unmasked in SYSCFG.
+> The original patch was more useful as it allowed re-enabling break on
+> panic on specific devices where you were trying to debug a
+> reproducible issue.  What about using a module_param similar to
+> kgdbreboot, but setting the default based on CONFIG_PANIC_TIMEOUT to
+> avoid extra configuration?
 
-So you just apply static configuration once, or are there reasons why you
-would mask the interrupts again later?
+This change was due to my review so perhaps I'd better answer this...
 
-If it's all static, why doesn't the boot loader unmask all interrupts before
-starting the kernel?
+panic_timeout is the value of the panic sysctl. In addition to the
+normal sysctl tooling (which I don't think is available on most android
+systems), its value can be set using panic=0 on the kernel command line
+or via /proc/sys/kernel/panic at runtime.
 
-	Arnd
+CONFIG_PANIC_TIMEOUT merely sets the default value of the sysctl. I
+guess perhaps the patch description could be improved to make this clearer.
+
+Therefore, the only loss of function I expected versus the original is
+that it would be hard to get as far as a reproducible panic if the
+system also has a ton of reproducible oopses that we don't want to fix.
+Is such a use-case important?
