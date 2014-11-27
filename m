@@ -1,141 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751216AbaK0Sjj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 13:39:39 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40946 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888AbaK0Sjh (ORCPT
+	id S1751301AbaK0SmN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 13:42:13 -0500
+Received: from smtp01.smtpout.orange.fr ([80.12.242.123]:32684 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947AbaK0SmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 13:39:37 -0500
-Message-ID: <54776FE0.8030600@arm.com>
-Date: Thu, 27 Nov 2014 18:39:28 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Liviu Dudau <Liviu.Dudau@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>
-CC: Mark Rutland <Mark.Rutland@arm.com>, Rob Herring <robherring2@gmail.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] arm64: ARM: Fix the Generic Timers interrupt active
- level description
-References: <1417105283-19575-1-git-send-email-Liviu.Dudau@arm.com>
-In-Reply-To: <1417105283-19575-1-git-send-email-Liviu.Dudau@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Nov 2014 13:42:12 -0500
+X-ME-Helo: beldin.home
+X-ME-Date: Thu, 27 Nov 2014 19:42:10 +0100
+X-ME-IP: 90.11.113.15
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Daniel Mack <daniel@zonque.org>, Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: pxa: fix lubbock interrupts handling
+Date: Thu, 27 Nov 2014 19:42:01 +0100
+Message-Id: <1417113721-9062-1-git-send-email-robert.jarzmik@free.fr>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/11/14 16:21, Liviu Dudau wrote:
-> The Cortex-A5x TRM states in paragraph "9.2 Generic Timer functional
-> description" that generic timers provide a level not edge interrupt
-> output. Fix the device trees to correctly describe this.
-> 
-> While doing this update the CPU mask to match the number of described
-> CPUs as well as the DT bindings documentation for Generic Timers.
-> 
-> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+When gpio-pxa was moved to drivers/pxa, it became a driver, and its
+initialization and probing happen at postcore initcall. The lubbock code
+used to install the chained lubbock interrupt handler at init_irq()
+time.
 
-Acked-by: Marc Zyngier <marc.zyngier@arm.com>
+The consequence of the gpio-pxa change is that the installed chained irq
+handler lubbock_irq_handler() was overwritten in pxa_gpio_probe(_dt)(),
+removing :
+ - the handler
+ - the falling edge detection setting of GPIO0, which revealed the
+   interrupt request from the lubbock IO board.
 
-	M.
+As a fix, move the gpio0 chained handler setup to a place where we have
+the guarantee that pxa_gpio_probe() was called before, so that lubbock
+handler becomes the true IRQ chained handler of GPIO0, demuxing the
+lubbock IO board interrupts.
 
-> ---
-> 
-> Arnd, Olof: This is on top of linux-next/master as it patches Juno's
-> as well as all the other ARM DTs.
-> 
-> --
-> 
->  Documentation/devicetree/bindings/arm/arch_timer.txt | 8 ++++----
->  arch/arm64/boot/dts/arm/foundation-v8.dts            | 8 ++++----
->  arch/arm64/boot/dts/arm/juno.dts                     | 8 ++++----
->  arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts           | 8 ++++----
->  4 files changed, 16 insertions(+), 16 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
-> index 37b2caf..6d2aa87 100644
-> --- a/Documentation/devicetree/bindings/arm/arch_timer.txt
-> +++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
-> @@ -27,10 +27,10 @@ Example:
->  	timer {
->  		compatible = "arm,cortex-a15-timer",
->  			     "arm,armv7-timer";
-> -		interrupts = <1 13 0xf08>,
-> -			     <1 14 0xf08>,
-> -			     <1 11 0xf08>,
-> -			     <1 10 0xf08>;
-> +		interrupts = <1 13 0xf04>,
-> +			     <1 14 0xf04>,
-> +			     <1 11 0xf04>,
-> +			     <1 10 0xf04>;
->  		clock-frequency = <100000000>;
->  	};
->  
-> diff --git a/arch/arm64/boot/dts/arm/foundation-v8.dts b/arch/arm64/boot/dts/arm/foundation-v8.dts
-> index 4a06090..8c0214e 100644
-> --- a/arch/arm64/boot/dts/arm/foundation-v8.dts
-> +++ b/arch/arm64/boot/dts/arm/foundation-v8.dts
-> @@ -78,10 +78,10 @@
->  
->  	timer {
->  		compatible = "arm,armv8-timer";
-> -		interrupts = <1 13 0xff01>,
-> -			     <1 14 0xff01>,
-> -			     <1 11 0xff01>,
-> -			     <1 10 0xff01>;
-> +		interrupts = <1 13 0xf04>,
-> +			     <1 14 0xf04>,
-> +			     <1 11 0xf04>,
-> +			     <1 10 0xf04>;
->  		clock-frequency = <100000000>;
->  	};
->  
-> diff --git a/arch/arm64/boot/dts/arm/juno.dts b/arch/arm64/boot/dts/arm/juno.dts
-> index 097ecc4..551a688 100644
-> --- a/arch/arm64/boot/dts/arm/juno.dts
-> +++ b/arch/arm64/boot/dts/arm/juno.dts
-> @@ -98,10 +98,10 @@
->  
->  	timer {
->  		compatible = "arm,armv8-timer";
-> -		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
-> -			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
-> -			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
-> -			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>;
-> +		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_HIGH)>,
-> +			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_HIGH)>,
-> +			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_HIGH)>,
-> +			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_HIGH)>;
->  	};
->  
->  	pmu {
-> diff --git a/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts b/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts
-> index 572005e..49d1b19 100644
-> --- a/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts
-> +++ b/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts
-> @@ -81,10 +81,10 @@
->  
->  	timer {
->  		compatible = "arm,armv8-timer";
-> -		interrupts = <1 13 0xff01>,
-> -			     <1 14 0xff01>,
-> -			     <1 11 0xff01>,
-> -			     <1 10 0xff01>;
-> +		interrupts = <1 13 0xf04>,
-> +			     <1 14 0xf04>,
-> +			     <1 11 0xf04>,
-> +			     <1 10 0xf04>;
->  		clock-frequency = <100000000>;
->  	};
->  
-> 
+Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+---
+For Thomas: as a side note, I'm not very happy with this patch. What
+            makes me unhappy is that I don't know how to express the
+            dependency between gpio-pxa probe time and
+            irq_set_chained_handler(irq, lubbock_irq_handler).
 
+            At the moment I rely on the fact that
+            lubbock_irq_device_init() is called as device initcall while
+            pxa_gpio_probe() is called as postcore initcall.
 
+            If you have a better idea I'm all ears.
+---
+ arch/arm/mach-pxa/lubbock.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/mach-pxa/lubbock.c b/arch/arm/mach-pxa/lubbock.c
+index d8a1be6..1f138f9 100644
+--- a/arch/arm/mach-pxa/lubbock.c
++++ b/arch/arm/mach-pxa/lubbock.c
+@@ -172,9 +172,6 @@ static void __init lubbock_init_irq(void)
+ 					 handle_level_irq);
+ 		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
+ 	}
+-
+-	irq_set_chained_handler(PXA_GPIO_TO_IRQ(0), lubbock_irq_handler);
+-	irq_set_irq_type(PXA_GPIO_TO_IRQ(0), IRQ_TYPE_EDGE_FALLING);
+ }
+ 
+ #ifdef CONFIG_PM
+@@ -190,7 +187,13 @@ static struct syscore_ops lubbock_irq_syscore_ops = {
+ 
+ static int __init lubbock_irq_device_init(void)
+ {
++	int irq;
++
+ 	if (machine_is_lubbock()) {
++		irq = PXA_GPIO_TO_IRQ(0);
++		irq_set_chained_handler(irq, lubbock_irq_handler);
++		irq_set_irq_type(irq, IRQ_TYPE_EDGE_FALLING);
++
+ 		register_syscore_ops(&lubbock_irq_syscore_ops);
+ 		return 0;
+ 	}
 -- 
-Jazz is not dead. It just smells funny...
+2.1.0
+
