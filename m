@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755666AbaK0Mc7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 07:32:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51108 "EHLO mx1.redhat.com"
+	id S1755693AbaK0MdH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 07:33:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60468 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755611AbaK0Mc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 07:32:56 -0500
-Date: Thu, 27 Nov 2014 14:32:39 +0200
+	id S1755669AbaK0MdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 07:33:01 -0500
+Date: Thu, 27 Nov 2014 14:32:44 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
         thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com, kvm@vger.kernel.org,
         virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: [PATCH v5 31/45] vhost/net: virtio 1.0 byte swap
-Message-ID: <1417091078-24611-32-git-send-email-mst@redhat.com>
+Subject: [PATCH v5 32/45] vhost/net: larger header for virtio 1.0
+Message-ID: <1417091078-24611-33-git-send-email-mst@redhat.com>
 References: <1417091078-24611-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,49 +27,23 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/vhost/net.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/vhost/net.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index dce5c58..cae22f9 100644
+index cae22f9..1ac58d0 100644
 --- a/drivers/vhost/net.c
 +++ b/drivers/vhost/net.c
-@@ -416,7 +416,7 @@ static void handle_tx(struct vhost_net *net)
- 			struct ubuf_info *ubuf;
- 			ubuf = nvq->ubuf_info + nvq->upend_idx;
+@@ -1027,7 +1027,8 @@ static int vhost_net_set_features(struct vhost_net *n, u64 features)
+ 	size_t vhost_hlen, sock_hlen, hdr_len;
+ 	int i;
  
--			vq->heads[nvq->upend_idx].id = head;
-+			vq->heads[nvq->upend_idx].id = cpu_to_vhost32(vq, head);
- 			vq->heads[nvq->upend_idx].len = VHOST_DMA_IN_PROGRESS;
- 			ubuf->callback = vhost_zerocopy_callback;
- 			ubuf->ctx = nvq->ubufs;
-@@ -500,6 +500,7 @@ static int get_rx_bufs(struct vhost_virtqueue *vq,
- 	int headcount = 0;
- 	unsigned d;
- 	int r, nlogs = 0;
-+	u32 len;
- 
- 	while (datalen > 0 && headcount < quota) {
- 		if (unlikely(seg >= UIO_MAXIOV)) {
-@@ -527,13 +528,14 @@ static int get_rx_bufs(struct vhost_virtqueue *vq,
- 			nlogs += *log_num;
- 			log += *log_num;
- 		}
--		heads[headcount].id = d;
--		heads[headcount].len = iov_length(vq->iov + seg, in);
--		datalen -= heads[headcount].len;
-+		heads[headcount].id = cpu_to_vhost32(vq, d);
-+		len = iov_length(vq->iov + seg, in);
-+		heads[headcount].len = cpu_to_vhost32(vq, len);
-+		datalen -= len;
- 		++headcount;
- 		seg += in;
- 	}
--	heads[headcount - 1].len += datalen;
-+	heads[headcount - 1].len = cpu_to_vhost32(vq, len - datalen);
- 	*iovcount = seg;
- 	if (unlikely(log))
- 		*log_num = nlogs;
+-	hdr_len = (features & (1 << VIRTIO_NET_F_MRG_RXBUF)) ?
++	hdr_len = (features & ((1ULL << VIRTIO_NET_F_MRG_RXBUF) |
++			       (1ULL << VIRTIO_F_VERSION_1))) ?
+ 			sizeof(struct virtio_net_hdr_mrg_rxbuf) :
+ 			sizeof(struct virtio_net_hdr);
+ 	if (features & (1 << VHOST_NET_F_VIRTIO_NET_HDR)) {
 -- 
 MST
 
