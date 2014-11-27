@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751195AbaK0Ozu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 09:55:50 -0500
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:49868 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784AbaK0Ozs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 09:55:48 -0500
-Date: Thu, 27 Nov 2014 14:55:42 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, linux-spi@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 2/4] spi: st: Provide Device Tree binding documentation
-Message-ID: <20141127145542.GH4628@x1>
-References: <1417088636-11994-1-git-send-email-lee.jones@linaro.org>
- <1417088636-11994-3-git-send-email-lee.jones@linaro.org>
- <20141127130053.GW7712@sirena.org.uk>
+	id S1750910AbaK0PAG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 10:00:06 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750783AbaK0PAF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 10:00:05 -0500
+Message-ID: <54773C61.5070306@nod.at>
+Date: Thu, 27 Nov 2014 15:59:45 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
+To: dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: Fastmap update v2 (pile 1)
+References: <1416835236-25185-1-git-send-email-richard@nod.at> <1417100034.5858.97.camel@sauron.fi.intel.com>
+In-Reply-To: <1417100034.5858.97.camel@sauron.fi.intel.com>
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141127130053.GW7712@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Nov 2014, Mark Brown wrote:
-
-> On Thu, Nov 27, 2014 at 11:43:54AM +0000, Lee Jones wrote:
+Am 27.11.2014 um 15:53 schrieb Artem Bityutskiy:
+> On Mon, 2014-11-24 at 14:20 +0100, Richard Weinberger wrote:
+>> Artem,
+>>
+>> as requested I'm resending my fastmap work in smaller pieces.
+>> This is pile 1 of 7.
 > 
-> > +Required properties:
-> > +- compatible	: "st,comms-ssc-spi" or "st,comms-ssc4-spi"
-> 
-> What do the two different compatible strings mean (for example, should
-> ssc4 be used for version 4 and higher or is it just a quirk for that
-> version)?
+> Thanks, but could be even smaller and more often, in theory :) You could
+> send 3 or something of these several weeks ago - would be even better -
+> I was much less busy at that point. And next week I am out of office and
+> out of network.
 
-This appears to be historical.  There aren't any functional
-differences i.e. we don't match on them.  I believe the former is a
-more informal, generic name and the latter is the official name of the
-IP block.  The I2C component already upstreamed has the same naming
-conventions by the looks of it.
+Ah, ok. I misunderstood you then.
+I thought you want at most one small series "in flight" of my Fastmap work.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks,
+//richard
