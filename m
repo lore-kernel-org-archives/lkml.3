@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751413AbaK0X1P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 18:27:15 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:54863 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950AbaK0X1O (ORCPT
+	id S1751446AbaK0X2S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 18:28:18 -0500
+Received: from www.linutronix.de ([62.245.132.108]:59272 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816AbaK0X2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 18:27:14 -0500
-From: Stefan Agner <stefan@agner.ch>
-To: shawn.guo@linaro.org, kernel@pengutronix.de
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, stefan@agner.ch
-Subject: [PATCH] ARM vf610: add compatibilty strings of supported Vybrid SoC's
-Date: Fri, 28 Nov 2014 00:27:05 +0100
-Message-Id: <1417130825-2818-1-git-send-email-stefan@agner.ch>
-X-Mailer: git-send-email 2.1.3
+	Thu, 27 Nov 2014 18:28:17 -0500
+Date: Fri, 28 Nov 2014 00:28:16 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: Xunlei Pang <pang.xunlei@linaro.org>, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
+        Sven Schnelle <svens@stackframe.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Subject: Re: [RFC PATCH 2/4] rtc: Convert rtc_class_ops.set_mmss() to use
+ time64_t
+In-Reply-To: <3958728.Cz3JcLN4Uc@wuerfel>
+Message-ID: <alpine.DEB.2.11.1411280026120.3961@nanos>
+References: <1417089760-26848-1-git-send-email-pang.xunlei@linaro.org> <1417089760-26848-3-git-send-email-pang.xunlei@linaro.org> <alpine.DEB.2.11.1411280003020.3961@nanos> <3958728.Cz3JcLN4Uc@wuerfel>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Vybrid SoC family (in the kernel known as vf610) is a familiy
-of multiple similar SoC's. The VF5xx series comes without secondary
-Cortex-M4 core, while the second number VFx1x indicates the presence
-of a L2 cache controller.
+On Fri, 28 Nov 2014, Arnd Bergmann wrote:
+> On Friday 28 November 2014 00:05:34 Thomas Gleixner wrote:
+> > On Thu, 27 Nov 2014, Xunlei Pang wrote:
+> > > -static int coh901331_set_mmss(struct device *dev, unsigned long secs)
+> > > +static int coh901331_set_mmss(struct device *dev, time64_t secs)
+> > >  {
+> > >       struct coh901331_port *rtap = dev_get_drvdata(dev);
+> > >  
+> > >       clk_enable(rtap->clk);
+> > > +     /*
+> > > +      * y2106 issue:
+> > > +      *   On 32bit systems the time64_t secs value gets cast to
+> > > +      *   a 32bit long, and thus we can only write a maximum value
+> > > +      *   of y2016
+> > 
+> > That really makes a lot of sense. Before that patch the driver was
+> > safe up to 2038. Now it is facing the y2016 problem.
+> 
+> Actually the comment is still wrong with the number fixed, I hadn't
+> noticed when I looked at the patch earlier:
+> 
+> The cast happens on both 32-bit and 64-bit, as we cast into a u32
+> value through the writel(). The behavior of this driver doesn't
+> even change with this patch, it was good until y2106 and stays
+> that way because 'unsigned long', 'time64_t' and 'u32' can all represent
+> at least times between 1970 and 2106, the change is just to document
+> the time at which it will break, while changing the API.
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
- Documentation/devicetree/bindings/arm/fsl.txt | 12 ++++++++++++
- arch/arm/mach-imx/mach-vf610.c                |  5 ++++-
- 2 files changed, 16 insertions(+), 1 deletion(-)
+Indeed. I did not bother to think about that as I was already in
+grumpy mode due to the general aproach of creating the maximal churn
+for no value.
+ 
+Thanks,
 
-diff --git a/Documentation/devicetree/bindings/arm/fsl.txt b/Documentation/devicetree/bindings/arm/fsl.txt
-index 4e8b7df..c830b5b 100644
---- a/Documentation/devicetree/bindings/arm/fsl.txt
-+++ b/Documentation/devicetree/bindings/arm/fsl.txt
-@@ -75,6 +75,18 @@ i.MX6q generic board
- Required root node properties:
-     - compatible = "fsl,imx6q";
- 
-+Freescale Vybrid Platform Device Tree Bindings
-+----------------------------------------------
-+
-+For the Vybrid SoC familiy all variants with DDR controller are supported,
-+which is the VF5xx and VF6xx series. Out of historical reasons, in most
-+places the kernel uses vf610 to refer to the whole familiy.
-+
-+Required root node compatible property (one of them):
-+    - compatible = "fsl,vf500";
-+    - compatible = "fsl,vf510";
-+    - compatible = "fsl,vf600";
-+    - compatible = "fsl,vf610";
- 
- Freescale LS1021A Platform Device Tree Bindings
- ------------------------------------------------
-diff --git a/arch/arm/mach-imx/mach-vf610.c b/arch/arm/mach-imx/mach-vf610.c
-index c11ab6a..2e7c75b 100644
---- a/arch/arm/mach-imx/mach-vf610.c
-+++ b/arch/arm/mach-imx/mach-vf610.c
-@@ -13,11 +13,14 @@
- #include <asm/hardware/cache-l2x0.h>
- 
- static const char * const vf610_dt_compat[] __initconst = {
-+	"fsl,vf500",
-+	"fsl,vf510",
-+	"fsl,vf600",
- 	"fsl,vf610",
- 	NULL,
- };
- 
--DT_MACHINE_START(VYBRID_VF610, "Freescale Vybrid VF610 (Device Tree)")
-+DT_MACHINE_START(VYBRID_VF610, "Freescale Vybrid VF5xx/VF6xx (Device Tree)")
- 	.l2c_aux_val	= 0,
- 	.l2c_aux_mask	= ~0,
- 	.dt_compat	= vf610_dt_compat,
--- 
-2.1.3
-
+	tglx
