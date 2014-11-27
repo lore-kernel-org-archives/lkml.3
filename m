@@ -1,118 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860AbaK0JbM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 04:31:12 -0500
-Received: from ozlabs.org ([103.22.144.67]:38560 "EHLO ozlabs.org"
+	id S1754640AbaK0JkQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 04:40:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60471 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754256AbaK0JbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 04:31:08 -0500
-Date: Thu, 27 Nov 2014 20:31:01 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>
-Subject: Re: linux-next: manual merge of the staging tree with the vfs tree
-Message-ID: <20141127203101.346ea550@canb.auug.org.au>
-In-Reply-To: <20141127201156.62487051@canb.auug.org.au>
-References: <20141127201156.62487051@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1752954AbaK0JkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 04:40:12 -0500
+Date: Thu, 27 Nov 2014 10:40:06 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        Jan Kara <jack@suse.cz>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [rfc patch] mm: protect set_page_dirty() from ongoing truncation
+Message-ID: <20141127094006.GC30152@quack.suse.cz>
+References: <1416944921-14164-1-git-send-email-hannes@cmpxchg.org>
+ <20141126140006.d6f71f447b69cd4fadc42c26@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/82qs52q0uDyLnyyClUMX6ux"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141126140006.d6f71f447b69cd4fadc42c26@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/82qs52q0uDyLnyyClUMX6ux
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed 26-11-14 14:00:06, Andrew Morton wrote:
+> On Tue, 25 Nov 2014 14:48:41 -0500 Johannes Weiner <hannes@cmpxchg.org> wrote:
+> 
+> > Tejun, while reviewing the code, spotted the following race condition
+> > between the dirtying and truncation of a page:
+> > 
+> > __set_page_dirty_nobuffers()       __delete_from_page_cache()
+> >   if (TestSetPageDirty(page))
+> >                                      page->mapping = NULL
+> > 				     if (PageDirty())
+> > 				       dec_zone_page_state(page, NR_FILE_DIRTY);
+> > 				       dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+> >     if (page->mapping)
+> >       account_page_dirtied(page)
+> >         __inc_zone_page_state(page, NR_FILE_DIRTY);
+> > 	__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+> > 
+> > which results in an imbalance of NR_FILE_DIRTY and BDI_RECLAIMABLE.
+> > 
+> > Dirtiers usually lock out truncation, either by holding the page lock
+> > directly, or in case of zap_pte_range(), by pinning the mapcount with
+> > the page table lock held.  The notable exception to this rule, though,
+> > is do_wp_page(), for which this race exists.  However, do_wp_page()
+> > already waits for a locked page to unlock before setting the dirty
+> > bit, in order to prevent a race where clear_page_dirty() misses the
+> > page bit in the presence of dirty ptes.  Upgrade that wait to a fully
+> > locked set_page_dirty() to also cover the situation explained above.
+> > 
+> > Afterwards, the code in set_page_dirty() dealing with a truncation
+> > race is no longer needed.  Remove it.
+> > 
+> > Reported-by: Tejun Heo <tj@kernel.org>
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > ---
+> >  mm/memory.c         | 11 ++---------
+> >  mm/page-writeback.c | 33 ++++++++++++---------------------
+> >  2 files changed, 14 insertions(+), 30 deletions(-)
+> > 
+> > It is unfortunate to hold the page lock while balancing dirty pages,
+> > but I don't see what else would protect mapping at that point.
+> 
+> Yes.
+> 
+> I'm a bit surprised that calling balance_dirty_pages() under
+> lock_page() doesn't just go and deadlock.  Memory fails me.
+> 
+> And yes, often the only thing which protects the address_space is
+> lock_page().
+> 
+> set_page_dirty_balance() and balance_dirty_pages() don't actually need
+> the address_space - they just use it to get at the backing_dev_info. 
+> So perhaps what we could do here is the change those functions to take
+> a bdi directly, then change do_wp_page() to do something like
+> 
+> 	lock_page(dirty_page);
+> 	bdi = page->mapping->backing_dev_info;
+> 	need_balance = set_page_dirty2(bdi);
+> 	unlock_page(page);
+> 	if (need_balance)
+> 		balance_dirty_pages_ratelimited2(bdi);
+  Yes, please! Holding lock_page() over balance dirty pages definitely has
+a potential for deadlock (e.g. flusher might block on lock_page() in
+WB_SYNC_ALL pass and then there'd be no one to clean pages and thus release
+process from balance_dirty_pages()).
 
-Hi all,
+> so we no longer require that the address_space be stabilized after
+> lock_page().  Of course something needs to protect the bdi and I'm not
+> sure what that is, but we're talking about umount and that quiesces and
+> evicts lots of things before proceeding, so surely there's something in
+> there which will save us ;)
+  In do_wp_page() the process doing the fault and ending in
+balance_dirty_pages() has to have the page mapped, thus it has to have the
+file open => no umount.
 
-On Thu, 27 Nov 2014 20:11:56 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> diff --cc drivers/staging/lustre/lustre/llite/llite_lib.c
-> index 7b6b9e2e0102,3b0336029da3..000000000000
-> --- a/drivers/staging/lustre/lustre/llite/llite_lib.c
-> +++ b/drivers/staging/lustre/lustre/llite/llite_lib.c
-> @@@ -698,8 -690,10 +690,8 @@@ void lustre_dump_dentry(struct dentry *
->   	list_for_each(tmp, &dentry->d_subdirs)
->   		subdirs++;
->  =20
-> - 	CERROR("dentry %p dump: name=3D%pd parent=3D%p, inode=3D%p, count=3D%u=
-,"
-> - 	       " flags=3D0x%x, fsdata=3D%p, %d subdirs\n", dentry, dentry,
->  -	CERROR("dentry %p dump: name=3D%.*s parent=3D%.*s (%p), inode=3D%p, co=
-unt=3D%u, flags=3D0x%x, fsdata=3D%p, %d subdirs\n",
->  -	       dentry,
->  -	       dentry->d_name.len, dentry->d_name.name,
->  -	       dentry->d_parent->d_name.len, dentry->d_parent->d_name.name,
-> ++	CERROR("dentry %p dump: name=3D%pd parent=3D%p, inode=3D%p, count=3D%u=
-, flags=3D0x%x, fsdata=3D%p, %d subdirs\n",
-> ++	       dentry, dentry,
->   	       dentry->d_parent, dentry->d_inode, d_count(dentry),
->   	       dentry->d_flags, dentry->d_fsdata, subdirs);
->   	if (dentry->d_inode !=3D NULL)
-
-The actual resolution for this file ended up being this:
-
-diff --cc drivers/staging/lustre/lustre/llite/llite_lib.c
-index 7b6b9e2e0102,3b0336029da3..52f0a7e40063
---- a/drivers/staging/lustre/lustre/llite/llite_lib.c
-+++ b/drivers/staging/lustre/lustre/llite/llite_lib.c
-@@@ -698,8 -690,10 +690,8 @@@ void lustre_dump_dentry(struct dentry *
-  	list_for_each(tmp, &dentry->d_subdirs)
-  		subdirs++;
- =20
-- 	CERROR("dentry %p dump: name=3D%pd parent=3D%p, inode=3D%p, count=3D%u,"
-- 	       " flags=3D0x%x, fsdata=3D%p, %d subdirs\n", dentry, dentry,
- -	CERROR("dentry %p dump: name=3D%.*s parent=3D%.*s (%p), inode=3D%p, coun=
-t=3D%u, flags=3D0x%x, fsdata=3D%p, %d subdirs\n",
- -	       dentry,
- -	       dentry->d_name.len, dentry->d_name.name,
- -	       dentry->d_parent->d_name.len, dentry->d_parent->d_name.name,
-++	CERROR("dentry %p dump: name=3D%pd parent=3D%p, inode=3D%p, count=3D%u, =
-flags=3D0x%x, fsdata=3D%p, %d subdirs\n",
-++	       dentry, dentry,
-  	       dentry->d_parent, dentry->d_inode, d_count(dentry),
-  	       dentry->d_flags, dentry->d_fsdata, subdirs);
-  	if (dentry->d_inode !=3D NULL)
-@@@ -709,7 -703,8 +701,8 @@@
-  		return;
- =20
-  	list_for_each(tmp, &dentry->d_subdirs) {
- -		struct dentry *d =3D list_entry(tmp, struct dentry, d_u.d_child);
- +		struct dentry *d =3D list_entry(tmp, struct dentry, d_child);
-+=20
-  		lustre_dump_dentry(d, recur - 1);
-  	}
-  }
-
---=20
-Cheers,
-Stephen Rothwell                   <sfr@canb.auug.org.au>
-
---Sig_/82qs52q0uDyLnyyClUMX6ux
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUdu9aAAoJEMDTa8Ir7ZwVXkIP/1FAi/e+D8ektWNuW2rAXjgb
-5kWH6jqbhzlobEJRVWFcMcLMmXRkCkimFDurwaSdxWSJ4hEvQzNh5+PhZnB6FUCg
-DvpMy31N3vkTWyJv6Npm8fFiExThauwNLgakbNabEpap62rHv3pl9tLX7xPM5OPx
-q4S7MqMBb6ycYNq9Nc60CMwBkMqzP/1YPFsqkYX/XQ1iLs3ZzdRn9ZWBkuUCdnpM
-ua+Pkelx82+jwJkufEAbDyOHAdkNucjy1P7JI6QjqxXQInn4Qbvshd5jrEsWhmdK
-8qmu4/KPn1YRfy7a135xYOvcFDe6E3HklJCQdzKirIem8ny83h6k0V2Wc8fUqvo1
-CsdHPuPIRb/lasJ0tZFlFl0295PqpOHmy0o5gJuDUwtumzcARa+b235x7+w1SSvK
-uGfSnMHTvUZcVEQVAa4W856gutrLXwoJM34HRSzS64n1bhf4I730f4NYEwcWwrU+
-Mhwboy+YlEc4AN8wF5AlgRUVHKwzh4R8PxQz+U8DWwUIfZYhcoiwjiYv5f1tFzZo
-KuNvgXAMqCSpVYbWQ2BnvLYKRYB997W00wkl2Qna5na4tDL4VqD5cHdZ+Qcf3ZF+
-EA9baIdV/eZliWe6cd020oBAKGVaI1uaEtPrFw93fJmb7NsA5OIr225i5wY4cRuG
-GA3DyS8l9sgUKw0CBD/k
-=zkZu
------END PGP SIGNATURE-----
-
---Sig_/82qs52q0uDyLnyyClUMX6ux--
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
