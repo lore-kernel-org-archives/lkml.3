@@ -1,395 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751256AbaK0VSL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 16:18:11 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57132 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979AbaK0VSJ (ORCPT
+	id S1751209AbaK0VXD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 16:23:03 -0500
+Received: from www.linutronix.de ([62.245.132.108]:58862 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836AbaK0VXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 16:18:09 -0500
-Message-ID: <54779501.8060009@pengutronix.de>
-Date: Thu, 27 Nov 2014 22:17:53 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Thu, 27 Nov 2014 16:23:01 -0500
+Date: Thu, 27 Nov 2014 22:22:50 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Emmanuel Berthier <emmanuel.berthier@intel.com>
+cc: "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, robert.jarzmik@intel.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [PATCH v2] [LBR] Dump LBRs on Exception
+In-Reply-To: <1417099205-13309-1-git-send-email-emmanuel.berthier@intel.com>
+Message-ID: <alpine.DEB.2.11.1411271609510.3961@nanos>
+References: <65CD3FC07F3BF942ABE211646D72D770356EACA5@IRSMSX110.ger.corp.intel.com> <1417099205-13309-1-git-send-email-emmanuel.berthier@intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: Kedareswara rao Appana <appana.durga.rao@xilinx.com>, wg@grandegger.com,
-        michal.simek@xilinx.com, soren.brinkmann@xilinx.com,
-        grant.likely@linaro.org, robh+dt@kernel.org
-CC: linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Kedareswara rao Appana <appanad@xilinx.com>
-Subject: Re: [PATCH v3] can: Convert to runtime_pm
-References: <6b6db31d46074512a322eae6e4ef64d4@BN1BFFO11FD038.protection.gbl>
-In-Reply-To: <6b6db31d46074512a322eae6e4ef64d4@BN1BFFO11FD038.protection.gbl>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="iAgmuCPp4DrAM3bOXGRkOemdjPOtrEBK7"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---iAgmuCPp4DrAM3bOXGRkOemdjPOtrEBK7
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Thu, 27 Nov 2014, Emmanuel Berthier wrote:
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> index 45fa730..0a69365 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> @@ -4,7 +4,7 @@
+>  #include <asm/perf_event.h>
+>  #include <asm/msr.h>
+>  #include <asm/insn.h>
+> -
 
-On 11/27/2014 02:08 PM, Kedareswara rao Appana wrote:
-> Instead of enabling/disabling clocks at several locations in the driver=
-,
-> use the runtime_pm framework. This consolidates the actions for
-> runtime PM in the appropriate callbacks and makes the driver more
-> readable and mantainable.
->=20
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
-> ---
-> Changes for v3:
->   - Converted the driver to use runtime_pm.
-> Changes for v2:
->   - Removed the struct platform_device* from suspend/resume
->     as suggest by Lothar.
->=20
->  drivers/net/can/xilinx_can.c |  119 +++++++++++++++++++++++++---------=
--------
->  1 files changed, 72 insertions(+), 47 deletions(-)
->=20
-> diff --git a/drivers/net/can/xilinx_can.c b/drivers/net/can/xilinx_can.=
-c
-> index 8a998e3..1be28ed 100644
-> --- a/drivers/net/can/xilinx_can.c
-> +++ b/drivers/net/can/xilinx_can.c
-> @@ -32,6 +32,7 @@
->  #include <linux/can/dev.h>
->  #include <linux/can/error.h>
->  #include <linux/can/led.h>
-> +#include <linux/pm_runtime.h>
-> =20
->  #define DRIVER_NAME	"xilinx_can"
-> =20
-> @@ -138,7 +139,7 @@ struct xcan_priv {
->  	u32 (*read_reg)(const struct xcan_priv *priv, enum xcan_reg reg);
->  	void (*write_reg)(const struct xcan_priv *priv, enum xcan_reg reg,
->  			u32 val);
-> -	struct net_device *dev;
-> +	struct device *dev;
->  	void __iomem *reg_base;
->  	unsigned long irq_flags;
->  	struct clk *bus_clk;
-> @@ -842,6 +843,13 @@ static int xcan_open(struct net_device *ndev)
->  	struct xcan_priv *priv =3D netdev_priv(ndev);
->  	int ret;
-> =20
-> +	ret =3D pm_runtime_get_sync(priv->dev);
-> +	if (ret < 0) {
-> +		netdev_err(ndev, "%s: runtime CAN resume failed(%d)\n\r",
-> +				__func__, ret);
-> +		return ret;
-> +	}
-> +
->  	ret =3D request_irq(ndev->irq, xcan_interrupt, priv->irq_flags,
->  			ndev->name, ndev);
->  	if (ret < 0) {
-> @@ -849,29 +857,17 @@ static int xcan_open(struct net_device *ndev)
->  		goto err;
->  	}
-> =20
-> -	ret =3D clk_prepare_enable(priv->can_clk);
-> -	if (ret) {
-> -		netdev_err(ndev, "unable to enable device clock\n");
-> -		goto err_irq;
-> -	}
-> -
-> -	ret =3D clk_prepare_enable(priv->bus_clk);
-> -	if (ret) {
-> -		netdev_err(ndev, "unable to enable bus clock\n");
-> -		goto err_can_clk;
-> -	}
-> -
->  	/* Set chip into reset mode */
->  	ret =3D set_reset_mode(ndev);
->  	if (ret < 0) {
->  		netdev_err(ndev, "mode resetting failed!\n");
-> -		goto err_bus_clk;
-> +		goto err_irq;
->  	}
-> =20
->  	/* Common open */
->  	ret =3D open_candev(ndev);
->  	if (ret)
-> -		goto err_bus_clk;
-> +		goto err_irq;
-> =20
->  	ret =3D xcan_chip_start(ndev);
->  	if (ret < 0) {
-> @@ -887,13 +883,11 @@ static int xcan_open(struct net_device *ndev)
-> =20
->  err_candev:
->  	close_candev(ndev);
-> -err_bus_clk:
-> -	clk_disable_unprepare(priv->bus_clk);
-> -err_can_clk:
-> -	clk_disable_unprepare(priv->can_clk);
->  err_irq:
->  	free_irq(ndev->irq, ndev);
->  err:
-> +	pm_runtime_put(priv->dev);
-> +
->  	return ret;
->  }
-> =20
-> @@ -910,12 +904,11 @@ static int xcan_close(struct net_device *ndev)
->  	netif_stop_queue(ndev);
->  	napi_disable(&priv->napi);
->  	xcan_chip_stop(ndev);
-> -	clk_disable_unprepare(priv->bus_clk);
-> -	clk_disable_unprepare(priv->can_clk);
->  	free_irq(ndev->irq, ndev);
->  	close_candev(ndev);
-> =20
->  	can_led_event(ndev, CAN_LED_EVENT_STOP);
-> +	pm_runtime_put(priv->dev);
-> =20
->  	return 0;
->  }
-> @@ -934,27 +927,21 @@ static int xcan_get_berr_counter(const struct net=
-_device *ndev,
->  	struct xcan_priv *priv =3D netdev_priv(ndev);
->  	int ret;
-> =20
-> -	ret =3D clk_prepare_enable(priv->can_clk);
-> -	if (ret)
-> -		goto err;
-> +	ret =3D pm_runtime_get_sync(priv->dev);
-> +	if (ret < 0) {
-> +		netdev_err(ndev, "%s: runtime resume failed(%d)\n\r",
-> +				__func__, ret);
-> +		return ret;
-> +	}
-> =20
-> -	ret =3D clk_prepare_enable(priv->bus_clk);
-> -	if (ret)
-> -		goto err_clk;
-> =20
->  	bec->txerr =3D priv->read_reg(priv, XCAN_ECR_OFFSET) & XCAN_ECR_TEC_M=
-ASK;
->  	bec->rxerr =3D ((priv->read_reg(priv, XCAN_ECR_OFFSET) &
->  			XCAN_ECR_REC_MASK) >> XCAN_ESR_REC_SHIFT);
-> =20
-> -	clk_disable_unprepare(priv->bus_clk);
-> -	clk_disable_unprepare(priv->can_clk);
-> +	pm_runtime_put(priv->dev);
-> =20
->  	return 0;
-> -
-> -err_clk:
-> -	clk_disable_unprepare(priv->can_clk);
-> -err:
-> -	return ret;
->  }
-> =20
-> =20
-> @@ -967,15 +954,45 @@ static const struct net_device_ops xcan_netdev_op=
-s =3D {
-> =20
->  /**
->   * xcan_suspend - Suspend method for the driver
-> - * @dev:	Address of the platform_device structure
-> + * @dev:	Address of the net_device structure
->   *
->   * Put the driver into low power mode.
-> - * Return: 0 always
-> + * Return: 0 on success and failure value on error
->   */
->  static int __maybe_unused xcan_suspend(struct device *dev)
+This newline is intentional to seperate asm includes from the local
+one.
+
+>  static void __intel_pmu_lbr_enable(void)
 >  {
-> -	struct platform_device *pdev =3D dev_get_drvdata(dev);
-> -	struct net_device *ndev =3D platform_get_drvdata(pdev);
-> +	if (!device_may_wakeup(dev))
-> +		return pm_runtime_force_suspend(dev);
-> +
-> +	return 0;
-> +}
-> +
-> +/**
-> + * xcan_resume - Resume from suspend
-> + * @dev:	Address of the net_device structure
-> + *
-> + * Resume operation after suspend.
-> + * Return: 0 on success and failure value on error
-> + */
-> +static int __maybe_unused xcan_resume(struct device *dev)
-> +{
-> +	if (!device_may_wakeup(dev))
-> +		return pm_runtime_force_resume(dev);
-> +
-> +	return 0;
-> +
-> +}
-> +
-> +/**
-> + * xcan_runtime_suspend - Runtime suspend method for the driver
-> + * @dev:	Address of the net_device structure
-> + *
-> + * Put the driver into low power mode.
-> + * Return: 0 always
-> + */
-> +static int __maybe_unused xcan_runtime_suspend(struct device *dev)
-> +{
-> +	struct net_device *ndev =3D dev_get_drvdata(dev);
->  	struct xcan_priv *priv =3D netdev_priv(ndev);
-> =20
->  	if (netif_running(ndev)) {
-> @@ -993,16 +1010,15 @@ static int __maybe_unused xcan_suspend(struct de=
-vice *dev)
->  }
-> =20
->  /**
-> - * xcan_resume - Resume from suspend
-> - * @dev:	Address of the platformdevice structure
-> + * xcan_runtime_resume - Runtime resume from suspend
-> + * @dev:	Address of the net_device structure
->   *
->   * Resume operation after suspend.
->   * Return: 0 on success and failure value on error
+>  	u64 debugctl;
+>  	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+>  
+> +	lbr_set_used_by_perf(true);
+
+This cannot work.
+
+CPU0					CPU1
+
+__intel_pmu_lbr_enable()
+   lbr_set_used_by_perf(true);
+					__intel_pmu_lbr_disable()
+					  lbr_set_used_by_perf(false);
+
+This is a per cpu property.
+
+And there is more to that. Let's look at a single CPU.
+
+lbr for oops is enabled
+
+context switch()
+   __intel_pmu_lbr_enable()	-> LBR used by perf, oops dumper disabled
+
+context switch()
+   __intel_pmu_lbr_disable()	-> LBR not longer used by perf, oops
+   				   dumper enabled
+
+So after that context switch we crash in the kernel and LBR is empty
+because we did disable it at the context switch.
+
+So you need per cpu state, which handles the LBR dumper state:
+
+#define LBR_OOPS_DISABLED 0x01
+#define LBR_PERF_USAGE	  0x02
+
+DEFINE_PER_CPU(unsigned long, lbr_dump_state) = LBR_OOPS_DISABLED;
+
+lbr_perf_enable()
+	this_cpu_add(lbr_dump_state, LBR_PERF_USAGE);
+
+lbr_perf_disable()
+	if (!this_cpu_sub_return(lbr_dump_state, LBR_PERF_USAGE))
+	   	enable_lbr_oops();
+
+Now of course you need to handle this in the exception path per cpu as
+well.
+
+>  /*
+>   * Exception entry points.
 >   */
-> -static int __maybe_unused xcan_resume(struct device *dev)
-> +static int __maybe_unused xcan_runtime_resume(struct device *dev)
->  {
-> -	struct platform_device *pdev =3D dev_get_drvdata(dev);
-> -	struct net_device *ndev =3D platform_get_drvdata(pdev);
-> +	struct net_device *ndev =3D dev_get_drvdata(dev);
->  	struct xcan_priv *priv =3D netdev_priv(ndev);
->  	int ret;
+> @@ -1063,6 +1103,8 @@ ENTRY(\sym)
+>  	subq $ORIG_RAX-R15, %rsp
+>  	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
+>  
+> +	STOP_LBR
 
-=2E..adding the rest of the function to comment it:
+We really cannot do this unconditionally for every exception. This
+wants to be conditional, i.e.
 
-> 	ret =3D clk_enable(priv->bus_clk);
-> 	if (ret) {
-> 		dev_err(dev, "Cannot enable clock.\n");
-> 		return ret;
-> 	}
-> 	ret =3D clk_enable(priv->can_clk);
-> 	if (ret) {
-> 		dev_err(dev, "Cannot enable clock.\n");
-> 		clk_disable_unprepare(priv->bus_clk);
-> 		return ret;
-> 	}
->=20
-> 	priv->write_reg(priv, XCAN_MSR_OFFSET, 0);
-> 	priv->write_reg(priv, XCAN_SRR_OFFSET, XCAN_SRR_CEN_MASK);
-> 	priv->can.state =3D CAN_STATE_ERROR_ACTIVE;
+       .if \stop_lbr
+       cond_stop_lbr
+       .endif
 
-Does it have any side effects, when writing these values when the CAN
-device is not UP? (e.g. when running the berr callback?) Setting its
-state to ERROR active is probably wrong. Do you have to move it into the
-if(netif_running())?
+So we can select which exceptions actually get that treatment.
+do_page_fault is probably the only one which is interesting
+here.
 
-> 	if (netif_running(ndev)) {
-> 		netif_device_attach(ndev);
-> 		netif_start_queue(ndev);
-> 	}
->=20
-> 	return 0;
-> }
+Now looking at your macro maze, I really wonder whether we can do it a
+little bit less convoluted. We need to push/pop registers. error_entry
+saves the registers already and has a (admitedly convoluted)
+kernel/user space check. But we might be able to do something sane
+there. Cc'ing Andy as he is the master of that universe.
 
-> =20
-> @@ -1030,7 +1046,10 @@ static int __maybe_unused xcan_resume(struct dev=
-ice *dev)
->  	return 0;
->  }
-> =20
-> -static SIMPLE_DEV_PM_OPS(xcan_dev_pm_ops, xcan_suspend, xcan_resume);
-> +static const struct dev_pm_ops xcan_dev_pm_ops =3D {
-> +	SET_SYSTEM_SLEEP_PM_OPS(xcan_suspend, xcan_resume)
-> +	SET_PM_RUNTIME_PM_OPS(xcan_runtime_suspend, xcan_runtime_resume, NULL=
-)
-> +};
-> =20
->  /**
->   * xcan_probe - Platform registration call
-> @@ -1071,7 +1090,7 @@ static int xcan_probe(struct platform_device *pde=
-v)
->  		return -ENOMEM;
-> =20
->  	priv =3D netdev_priv(ndev);
-> -	priv->dev =3D ndev;
-> +	priv->dev =3D &pdev->dev;
->  	priv->can.bittiming_const =3D &xcan_bittiming_const;
->  	priv->can.do_set_mode =3D xcan_do_set_mode;
->  	priv->can.do_get_berr_counter =3D xcan_get_berr_counter;
-> @@ -1137,6 +1156,11 @@ static int xcan_probe(struct platform_device *pd=
-ev)
-> =20
->  	netif_napi_add(ndev, &priv->napi, xcan_rx_poll, rx_max);
-> =20
-> +	pm_runtime_set_active(&pdev->dev);
-> +	pm_runtime_irq_safe(&pdev->dev);
+Thanks,
 
-You use just clock_enable()/disable() in the runtime functions, thus you
-can say they are irq_safe. On the other the the zync grpio driver uses
-"full" prepare_enable/disable_unprepare calls. What's best practice here?=
+	tglx
 
 
-> +	pm_runtime_enable(&pdev->dev);
-> +	pm_runtime_get_sync(&pdev->dev);
-> +
->  	ret =3D register_candev(ndev);
->  	if (ret) {
->  		dev_err(&pdev->dev, "fail to register failed (err=3D%d)\n", ret);
 
-I think in case of an error, you have to call pm_runtime_put() here
-
-> @@ -1144,8 +1168,9 @@ static int xcan_probe(struct platform_device *pde=
-v)
->  	}
-> =20
->  	devm_can_led_init(ndev);
-> -	clk_disable_unprepare(priv->bus_clk);
-> -	clk_disable_unprepare(priv->can_clk);
-> +
-> +	pm_runtime_put(&pdev->dev);
-> +
->  	netdev_dbg(ndev, "reg_base=3D0x%p irq=3D%d clock=3D%d, tx fifo depth:=
-%d\n",
->  			priv->reg_base, ndev->irq, priv->can.clock.freq,
->  			priv->tx_max);
->=20
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---iAgmuCPp4DrAM3bOXGRkOemdjPOtrEBK7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUd5UBAAoJECte4hHFiupU/DUP/2UP2/o4NcR+DVCvhI/UMiZw
-XmGOLnTuZyLMGT3hAxsAE3FexbHlJmBotjVYGiZTlawhSPm+mdrQ3XinviSP2MU1
-smbROFQ9suGqC6wPvsol2CU5U5uL4Od+UN1T94fsDR+Ou+XXIR7dzcLWmmhNbSDZ
-BN/CKpUmShM2REQq0xQuIq7EVamOSxJZc+LfTldAexMfno0yFlQK3eRO2WAR8XYb
-LBOvbTRihl0RL14/AWYn9n4ale94jsXawCEI+J5DyPABYijk5AKBEW/RMvXWeYqV
-6p7YYyA314sIEDT+cqjfMsO19TUiLNaBaEAk/aogpQGf12HMVMLJ1I7hZG7vFlYx
-rEmXjGRdy/hv07FX9xMqQSFU3VyitzunG4Z2fAiqiWUD5UuAJ8pfQKsEsuCRtZIS
-dZ1tAGDKd9RAxdbvLc9GUoUPfKc/SBIvCN3kjuMObv6LS14l2ctp6xpRIXcAZzuy
-8knZJLjwrwWV3ijh73JrUxmIPa06RyPpymDXmpMSfV9XHuybKC7/yeU3ajizh729
-gD3q0HrLzjCMYcfHZCzORsrB37x/5nRng2jgrHeyBOiq3ICj+5kqu5IEBzCELbPV
-i6mVIj31G4xFJxDaJGzsN3TYwHo6YiDVjaRriu24g72Ds9dX0xQ9sZr+qECBvyvE
-uOqcWxKdlgQ93M8QXRuk
-=Y+EF
------END PGP SIGNATURE-----
-
---iAgmuCPp4DrAM3bOXGRkOemdjPOtrEBK7--
