@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751261AbaK0Ovj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 09:51:39 -0500
-Received: from mga02.intel.com ([134.134.136.20]:16421 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750871AbaK0Ovh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 09:51:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,469,1413270000"; 
-   d="scan'208";a="615043962"
-Date: Thu, 27 Nov 2014 16:51:31 +0200
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Stefan Berger <stefanb@linux.vnet.ibm.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>, christophe.ricard@gmail.com,
-        josh.triplett@intel.com, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
-        jason.gunthorpe@obsidianresearch.com,
-        trousers-tech@lists.sourceforge.net
-Subject: Re: [tpmdd-devel] [PATCH v7 04/10] tpm: rename chip->dev to
- chip->pdev
-Message-ID: <20141127145111.GC24791@intel.com>
-References: <1415713513-16524-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1415713513-16524-5-git-send-email-jarkko.sakkinen@linux.intel.com>
- <5474F855.7080207@linux.vnet.ibm.com>
+	id S1751454AbaK0Ovr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 09:51:47 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:56447 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968AbaK0Ovo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 09:51:44 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org, linux@arm.linux.org.uk,
+        vinod.koul@intel.com, linux-mmc@vger.kernel.org, nsekhar@ti.com,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        khilman@deeprootsystems.com, Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@kernel.org>, chris@printf.net,
+        dmaengine@vger.kernel.org, ulf.hansson@linaro.org,
+        linux-spi@vger.kernel.org
+Subject: Re: [PATCH 2/3] ARM: edma: Rename header file for dmaengine filter function definition
+Date: Thu, 27 Nov 2014 15:50:46 +0100
+Message-ID: <3300340.ou8f7H2hIc@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <547733E3.3020408@ti.com>
+References: <1417084891-17990-1-git-send-email-peter.ujfalusi@ti.com> <8235185.7qUDHu9jso@wuerfel> <547733E3.3020408@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5474F855.7080207@linux.vnet.ibm.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:8rNRqCNeZi66arAFDly48KqjgEwNucIJbyQs0dUQMs1
+ vUq/UfZf7kqk3gyJv2OHVsAaLyfenR6GyRD6hCng4EUkMY787K
+ KKLnT6jsee3LmwaGg+eLIDV0LT/2ddPLBixfdLQxGQXvUs6GqO
+ XgkwQqdv1IPyGL68idTkVZ0RcE2AHi42bSYLtB48Kbtm8e6MQU
+ KssaCIyQ+OHhwIV2+CdY6A17bF1c3MKe6wKJMM8MTbzf5um2uZ
+ sX4WoI4EhqlLCHcnfewkGmDUCjxiTHaQtEXALfRyoEGvzv31ug
+ BgiQpa30dyy6s5WYwshL1UiUL/c+M5u8h0EJINDPfw+AEKWc6L
+ aYaDBVx/PITZTL0o25Ho=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 04:44:53PM -0500, Stefan Berger wrote:
-> On 11/11/2014 08:45 AM, Jarkko Sakkinen wrote:
-> >Rename chip->dev to chip->pdev to make it explicit that this not the
-> >character device but actually represents the platform device.
-> >
-> >Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> >
-> 
-> 
-> >diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-> >index 69f4003..b3a7c76 100644
-> >--- a/drivers/char/tpm/tpm.h
-> >+++ b/drivers/char/tpm/tpm.h
-> >@@ -98,7 +98,7 @@ struct tpm_vendor_specific {
-> >  #define TPM_PPI_VERSION_LEN		3
-> >
-> >  struct tpm_chip {
-> >-	struct device *dev;	/* Device stuff */
-> >+	struct device *pdev;	/* Device stuff */
-> >  	const struct tpm_class_ops *ops;
-> >
-> >  	int dev_num;		/* /dev/tpm# */
-> 
-> So this is the core requiring the renamings.  I assume you got them all and
-> none were hidden in #if's or so.
+On Thursday 27 November 2014 16:23:31 Peter Ujfalusi wrote:
+> This will only work in case of legacy boot. When booting with DT we do not
+> have pdata and after this patch in dt boot we are not going to be able to get
+> the DMA resources either.
 
-Yup, I basically did :argdo %s/chip->dev/chip->pdev/g for *.[ch].
+No, when booting with DT, the filter_fn and data are not used at all,
+we get the dma channel by parsing the DT instead.
 
-> Reviewed-by: Stefan Berger <stefanb@linux.vnet.ibm.com>
+> I think if we want to do something like this, it has to be done within the
+> dmaengine framework. The dma controller's of_dma_filter_info already have
+> .filter_fn which could be used by the framework.
 
-/Jarkko
+No, of_dma_filter_info/of_dma_simple_xlate was a mistake, we should never
+have even introduced that. All drivers that rely on this can simply
+provide their own xlate function that calls of_dma_get_slave_channel()
+or one of the related functions.
+
+edma is particularly trivial, it can just use of_dma_xlate_by_chan_id()
+instead of of_dma_simple_xlate, as it looks up the channel by its number.
+
+	Arnd
