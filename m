@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709AbaK0ClQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 21:41:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45959 "EHLO
+	id S1753795AbaK0ClU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 21:41:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45984 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753072AbaK0ClO (ORCPT
+	with ESMTP id S1753643AbaK0ClQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 21:41:14 -0500
-Date: Wed, 26 Nov 2014 15:54:25 -0800
+	Wed, 26 Nov 2014 21:41:16 -0500
+Date: Wed, 26 Nov 2014 18:34:10 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Dexuan Cui <decui@microsoft.com>
-Cc: linux-kernel@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
-        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
-        kys@microsoft.com, haiyangz@microsoft.com, vkuznets@redhat.com
-Subject: Re: [PATCH] hv: hv_fcopy: drop the obsolete message on transfer
- failure
-Message-ID: <20141126235425.GA5313@kroah.com>
-References: <1415768606-28538-1-git-send-email-decui@microsoft.com>
+To: Luis de Bethencourt <luis@debethencourt.com>
+Cc: linux-kernel@vger.kernel.org, eunb.song@samsung.com, gulsah.1004@gmail.com,
+        paul.gortmaker@windriver.com, devel@driverdev.osuosl.org
+Subject: Re: [PATCH] staging: octeon: Fix checkpatch warning
+Message-ID: <20141127023410.GA7283@kroah.com>
+References: <20141125132614.GA23857@biggie>
+ <20141126214523.GA10037@kroah.com>
+ <20141127003523.GA3249@biggie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415768606-28538-1-git-send-email-decui@microsoft.com>
+In-Reply-To: <20141127003523.GA3249@biggie>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 11, 2014 at 09:03:26PM -0800, Dexuan Cui wrote:
-> In the case the user-space daemon crashes, hangs or is killed, we
-> need to down the semaphore, otherwise, after the daemon starts next
-> time, the obsolete data in fcopy_transaction.message or
-> fcopy_transaction.fcopy_msg will be used immediately.
+On Thu, Nov 27, 2014 at 12:35:23AM +0000, Luis de Bethencourt wrote:
+> On Wed, Nov 26, 2014 at 01:45:23PM -0800, Greg KH wrote:
+> > On Tue, Nov 25, 2014 at 01:26:14PM +0000, Luis de Bethencourt wrote:
+> > > This patch fixes the checkpatch.pl warnings:
+> > > 
+> > > WARNING: line over 80 characters
+> > > +                       int cores_in_use = core_state.baseline_cores - atomic_read(&core_state.available_cores);
+> > > 
+> > > WARNING: line over 80 characters
+> > > +                       skb->data = skb->head + work->packet_ptr.s.addr - cvmx_ptr_to_phys(skb->head);
+> > > 
+> > > Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
+> > > ---
+> > >  drivers/staging/octeon/ethernet-rx.c | 6 ++++--
+> > >  1 file changed, 4 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
+> > > index 44e372f..bd83f55 100644
+> > > --- a/drivers/staging/octeon/ethernet-rx.c
+> > > +++ b/drivers/staging/octeon/ethernet-rx.c
+> > > @@ -295,7 +295,8 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+> > >  			 */
+> > >  			union cvmx_pow_wq_int_cntx counts;
+> > >  			int backlog;
+> > > -			int cores_in_use = core_state.baseline_cores - atomic_read(&core_state.available_cores);
+> > > +			int cores_in_use = core_state.baseline_cores -
+> > > +				atomic_read(&core_state.available_cores);
+> > >  			counts.u64 = cvmx_read_csr(CVMX_POW_WQ_INT_CNTX(pow_receive_group));
+> > >  			backlog = counts.s.iq_cnt + counts.s.ds_cnt;
+> > >  			if (backlog > budget * cores_in_use && napi != NULL)
+> > > @@ -324,7 +325,8 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+> > >  		 * buffer.
+> > >  		 */
+> > >  		if (likely(skb_in_hw)) {
+> > > -			skb->data = skb->head + work->packet_ptr.s.addr - cvmx_ptr_to_phys(skb->head);
+> > > +			skb->data = skb->head + work->packet_ptr.s.addr -
+> > > +				cvmx_ptr_to_phys(skb->head);
+> > >  			prefetch(skb->data);
+> > >  			skb->len = work->len;
+> > >  			skb_set_tail_pointer(skb, skb->len);
+> > > -- 
+> > > 2.1.3
+> > 
+> > No longer applies to my tree :(
 > 
-> Cc: K. Y. Srinivasan <kys@microsoft.com>
-> Signed-off-by: Dexuan Cui <decui@microsoft.com>
-> ---
->  drivers/hv/hv_fcopy.c | 9 +++++++++
->  1 file changed, 9 insertions(+)
+> I'm confused.
 > 
-> diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c
-> index 23b2ce2..177122a 100644
-> --- a/drivers/hv/hv_fcopy.c
-> +++ b/drivers/hv/hv_fcopy.c
-> @@ -86,6 +86,15 @@ static void fcopy_work_func(struct work_struct *dummy)
->  	 * process the pending transaction.
->  	 */
->  	fcopy_respond_to_host(HV_E_FAIL);
-> +
-> +	/* In the case the user-space daemon crashes, hangs or is killed, we
-> +	 * need to down the semaphore, otherwise, after the daemon starts next
-> +	 * time, the obsolete data in fcopy_transaction.message or
-> +	 * fcopy_transaction.fcopy_msg will be used immediately.
-> +	 */
-> +	if (down_trylock(&fcopy_transaction.read_sema))
-> +		pr_debug("FCP: failed to acquire the semaphore\n");
+> I just tried applying it to what I think is your tree is and it worked.
+> https://git.kernel.org/cgit/linux/kernel/git/gregkh/staging.git/log/?h=staging-next
+> 
+> Do I have this wrong?
 
-Why is "FCP:" needed?  pr_debug() should never need any type of prefix.
+I'm applying patches first to staging-testing to get some 0-day buildbot
+testing before merging them to staging-next these days, as I've been
+burned with common problems too many times.  I took some other octeon
+patches that were sent before yours were that caused the conflict.  If
+you look at staging-testing right now you can see that.
 
-Please fix.
-
-thanks,
+Hope this helps,
 
 greg k-h
