@@ -1,71 +1,467 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751812AbaK0PjR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 10:39:17 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:49147 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223AbaK0PjM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 10:39:12 -0500
-Date: Thu, 27 Nov 2014 15:34:15 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Lyra Zhang <zhang.lyra@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Murali Karicheri <m-karicheri2@ti.com>,
-        Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "jslaby@suse.cz" <jslaby@suse.cz>, Kumar Gala <galak@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        "rrichter@cavium.com" <rrichter@cavium.com>,
-        Will Deacon <will.deacon@arm.com>, Jonathan Corbet <corbet@lwn.net>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        Mark Brown <broonie@kernel.org>,
-        Heiko =?UTF-8?B?U3TDvGJuZXI=?= <heiko@sntech.de>,
-        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
-        "andrew@lunn.ch" <andrew@lunn.ch>, Hayato Suzuki <hytszk@gmail.com>,
-        Orson Zhai <orsonzhai@gmail.com>,
-        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
-        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
-        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
-        "Wei Qiao ( =?UTF-8?B?5LmU5Lyf?=)" <wei.qiao@spreadtrum.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "sprdlinux@freelists.org" <sprdlinux@freelists.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Subject: Re: [PATCH v3 5/5] tty/serial: Add Spreadtrum sc9836-uart driver
- support
-Message-ID: <20141127153415.3c2817b5@lxorguk.ukuu.org.uk>
-In-Reply-To: <CAAfSe-uWvn4MX-+GKuvvd=G2MTfLDCFeLRoUGWp7vvc81wfu0w@mail.gmail.com>
-References: <1416917818-10506-1-git-send-email-chunyan.zhang@spreadtrum.com>
-	<54761BFC.4020705@ti.com>
-	<CAAfSe-uMqy7zwiEK+nDoMPw_oni8L_vq7oW2Me5AY8z8KGpjwQ@mail.gmail.com>
-	<3400511.2SONqVcoEr@wuerfel>
-	<CAAfSe-uWvn4MX-+GKuvvd=G2MTfLDCFeLRoUGWp7vvc81wfu0w@mail.gmail.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1751508AbaK0Pkf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 10:40:35 -0500
+Received: from mga02.intel.com ([134.134.136.20]:42265 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750870AbaK0Pkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 10:40:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,470,1413270000"; 
+   d="scan'208";a="615065226"
+Date: Thu, 27 Nov 2014 17:40:23 +0200
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Stefan Berger <stefanb@linux.vnet.ibm.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>, christophe.ricard@gmail.com,
+        josh.triplett@intel.com, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
+        jason.gunthorpe@obsidianresearch.com,
+        trousers-tech@lists.sourceforge.net
+Subject: Re: [tpmdd-devel] [PATCH v7 08/10] tpm: TPM 2.0 CRB Interface
+Message-ID: <20141127154023.GD24791@intel.com>
+References: <1415713513-16524-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <1415713513-16524-9-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <5475DE81.50308@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5475DE81.50308@linux.vnet.ibm.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Yes, I saw this way in other serial drivers.
-> But, if then, there are two questions for me:
-> 1. Why did some serial drivers need an UN_SHARED irq?
-> 2. How can we choose a right way?
+On Wed, Nov 26, 2014 at 09:06:57AM -0500, Stefan Berger wrote:
+> On 11/11/2014 08:45 AM, Jarkko Sakkinen wrote:
+> >tpm_crb is a driver for TPM 2.0 Command Response Buffer (CRB) Interface
+> >as defined in PC Client Platform TPM Profile (PTP) Specification.
+> >
+> >Only polling and single locality is supported as these are the limitations
+> >of the available hardware, Platform Trust Techonlogy (PTT) in Haswell
+> >CPUs.
+> >
+> >The driver always applies CRB with ACPI start because PTT reports using
+> >only ACPI start as start method but as a result of my testing it requires
+> >also CRB start.
+> >
+> >Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> >---
+> >  drivers/char/tpm/Kconfig   |   9 ++
+> >  drivers/char/tpm/Makefile  |   1 +
+> >  drivers/char/tpm/tpm_crb.c | 323 +++++++++++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 333 insertions(+)
+> >  create mode 100644 drivers/char/tpm/tpm_crb.c
+> >
+> >diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
+> >index c54cac3..10c9419 100644
+> >--- a/drivers/char/tpm/Kconfig
+> >+++ b/drivers/char/tpm/Kconfig
+> >@@ -122,4 +122,13 @@ config TCG_XEN
+> >  	  To compile this driver as a module, choose M here; the module
+> >  	  will be called xen-tpmfront.
+> >
+> >+config TCG_CRB
+> >+	tristate "TPM 2.0 CRB Interface"
+> >+	depends on X86 && ACPI
+> >+	---help---
+> >+	  If you have a TPM security chip that is compliant with the
+> >+	  TCG CRB 2.0 TPM specification say Yes and it will be accessible
+> >+	  from within Linux.  To compile this driver as a module, choose
+> >+	  M here; the module will be called tpm_crb.
+> >+
+> >  endif # TCG_TPM
+> >diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
+> >index ae56af9..e6d26dd 100644
+> >--- a/drivers/char/tpm/Makefile
+> >+++ b/drivers/char/tpm/Makefile
+> >@@ -22,3 +22,4 @@ obj-$(CONFIG_TCG_INFINEON) += tpm_infineon.o
+> >  obj-$(CONFIG_TCG_IBMVTPM) += tpm_ibmvtpm.o
+> >  obj-$(CONFIG_TCG_ST33_I2C) += tpm_i2c_stm_st33.o
+> >  obj-$(CONFIG_TCG_XEN) += xen-tpmfront.o
+> >+obj-$(CONFIG_TCG_CRB) += tpm_crb.o
+> >diff --git a/drivers/char/tpm/tpm_crb.c b/drivers/char/tpm/tpm_crb.c
+> >new file mode 100644
+> >index 0000000..eb221d5
+> >--- /dev/null
+> >+++ b/drivers/char/tpm/tpm_crb.c
+> >@@ -0,0 +1,323 @@
+> >+/*
+> >+ * Copyright (C) 2014 Intel Corporation
+> >+ *
+> >+ * Authors:
+> >+ * Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> >+ *
+> >+ * Maintained by: <tpmdd-devel@lists.sourceforge.net>
+> >+ *
+> >+ * This device driver implements the TPM interface as defined in
+> >+ * the TCG CRB 2.0 TPM specification.
+> >+ *
+> >+ * This program is free software; you can redistribute it and/or
+> >+ * modify it under the terms of the GNU General Public License
+> >+ * as published by the Free Software Foundation; version 2
+> >+ * of the License.
+> >+ */
+> >+
+> >+#include <linux/acpi.h>
+> >+#include <linux/highmem.h>
+> >+#include <linux/rculist.h>
+> >+#include <linux/module.h>
+> >+#include <linux/platform_device.h>
+> >+#include "tpm.h"
+> >+
+> >+#define ACPI_SIG_TPM2 "TPM2"
+> >+
+> >+static const u8 CRB_ACPI_START_UUID[] = {
+> >+	/* 0000 */ 0xAB, 0x6C, 0xBF, 0x6B, 0x63, 0x54, 0x14, 0x47,
+> >+	/* 0008 */ 0xB7, 0xCD, 0xF0, 0x20, 0x3C, 0x03, 0x68, 0xD4
+> >+};
+> >+
+> >+enum crb_defaults {
+> >+	CRB_ACPI_START_REVISION_ID = 1,
+> >+	CRB_ACPI_START_INDEX = 1,
+> >+};
+> >+
+> >+enum crb_start_method {
+> >+	CRB_SM_ACPI_START = 2,
+> >+	CRB_SM_CRB = 7,
+> >+	CRB_SM_CRB_WITH_ACPI_START = 8,
+> >+};
+> >+
+> >+struct acpi_tpm2 {
+> >+	struct acpi_table_header hdr;
+> >+	u16 platform_class;
+> >+	u16 reserved;
+> >+	u64 control_area_pa;
+> >+	u32 start_method;
+> >+};
+> >+
+> >+enum crb_ca_request {
+> >+	CRB_CA_REQ_GO_IDLE	= BIT(0),
+> >+	CRB_CA_REQ_CMD_READY	= BIT(1),
+> >+};
+> >+
+> >+enum crb_ca_status {
+> >+	CRB_CA_STS_ERROR	= BIT(0),
+> >+	CRB_CA_STS_TPM_IDLE	= BIT(1),
+> >+};
+> >+
+> >+struct crb_control_area {
+> >+	u32 req;
+> >+	u32 sts;
+> >+	u32 cancel;
+> >+	u32 start;
+> >+	u32 int_enable;
+> >+	u32 int_sts;
+> >+	u32 cmd_size;
+> >+	u64 cmd_pa;
+> >+	u32 rsp_size;
+> >+	u64 rsp_pa;
+> >+} __packed;
+> >+
+> >+enum crb_status {
+> >+	CRB_STS_COMPLETE	= BIT(0),
+> >+};
+> >+
+> >+enum crb_flags {
+> >+	CRB_FL_ACPI_START	= BIT(0),
+> >+	CRB_FL_CRB_START	= BIT(1),
+> >+};
+> >+
+> >+struct crb_priv {
+> >+	unsigned int flags;
+> >+	struct crb_control_area *cca;
+> >+	unsigned long cca_pa;
+> >+};
+> >+
+> >+#ifdef CONFIG_PM_SLEEP
+> >+int crb_suspend(struct device *dev)
+> >+{
+> >+	return 0;
+> >+}
+> >+
+> >+static int crb_resume(struct device *dev)
+> >+{
+> >+	struct tpm_chip *chip = dev_get_drvdata(dev);
+> >+
+> >+	(void) tpm2_do_selftest(chip);
+> >+
+> >+	return 0;
+> >+}
+> >+#endif
+> >+
+> >+static SIMPLE_DEV_PM_OPS(crb_pm, crb_suspend, crb_resume);
+> >+
+> >+static u8 crb_status(struct tpm_chip *chip)
+> >+{
+> >+	struct crb_priv *priv = chip->vendor.priv;
+> >+	u8 sts = 0;
+> >+
+> >+	if ((le32_to_cpu(priv->cca->start) & 1) != 1)
+> 
+> Use a #define rather than the magic '1'.
+> 
+> 
+> >+		sts |= CRB_STS_COMPLETE;
+> >+
+> >+	return sts;
+> >+}
+> >+
+> >+static int crb_recv(struct tpm_chip *chip, u8 *buf, size_t count)
+> >+{
+> >+	struct crb_priv *priv = chip->vendor.priv;
+> >+	struct crb_control_area *cca;
+> >+	unsigned int expected;
+> >+	unsigned long offset;
+> >+	u8 *resp;
+> >+
+> >+	cca = priv->cca;
+> >+	if (le32_to_cpu(cca->sts) & CRB_CA_STS_ERROR)
+> >+		return -EIO;
+> >+
+> >+	offset = le64_to_cpu(cca->rsp_pa) - priv->cca_pa;
+> >+	resp = (u8 *) ((unsigned long) cca + offset);
+> 
+> make sure that count >= 6?
+> 
+> >+	memcpy(buf, resp, 6);
+> >+	expected = be32_to_cpup((__be32 *) &buf[2]);
+> >+
+> >+	if (expected > count)
+> >+		return -EIO;
+> >+
+> >+	memcpy(&buf[6], &resp[6], expected - 6);
+> >+
+> >+	return expected;
+> >+}
+> >+
+> >+static int crb_do_acpi_start(struct tpm_chip *chip)
+> >+{
+> >+	union acpi_object *obj;
+> >+	int rc;
+> >+
+> >+	obj = acpi_evaluate_dsm(chip->acpi_dev_handle,
+> >+				CRB_ACPI_START_UUID,
+> >+				CRB_ACPI_START_REVISION_ID,
+> >+				CRB_ACPI_START_INDEX,
+> >+				NULL);
+> >+	if (!obj)
+> >+		return -ENXIO;
+> >+	rc = obj->integer.value == 0 ? 0 : -ENXIO;
+> >+	ACPI_FREE(obj);
+> >+	return rc;
+> >+}
+> >+
+> >+static int crb_send(struct tpm_chip *chip, u8 *buf, size_t len)
+> >+{
+> >+	struct crb_priv *priv = chip->vendor.priv;
+> >+	struct crb_control_area *cca;
+> >+	u8 *cmd;
+> >+	int rc = 0;
+> >+
+> >+	cca = priv->cca;
+> >+
+> >+	if (len > le32_to_cpu(cca->cmd_size)) {
+> >+		dev_err(&chip->dev,
+> >+			"invalid command count value %x %zx\n",
+> >+			(unsigned int) len,
+> >+			(size_t) le32_to_cpu(cca->cmd_size));
+> >+		return -E2BIG;
+> >+	}
+> >+
+> >+	cmd = (u8 *) ((unsigned long) cca + le64_to_cpu(cca->cmd_pa) -
+> >+		      priv->cca_pa);
+> 
+> cca = priv->cca per statement above     -> cmd = cca + x - cca = x
+> 
+> -> cmd = le64_to_cpu(cca->cmd_pa);
+> 
+> Should do the trick, no ?
 
-If your hardware can support sharing an IRQ then shared is the right way
-- along with the test Arnd suggested. Some hardware lacks the needed
-facilities to handle shared interrupt.
+Virtual address might be different where CCA is ioremapped.
 
+> >+	memcpy(cmd, buf, len);
+> >+
+> >+	/* Make sure that cmd is populated before issuing start. */
+> >+	wmb();
+> >+
+> >+	cca->start = cpu_to_le32(1);
+> >+	rc = crb_do_acpi_start(chip);
+> 
+> I had commented on this already. Your TPM seems to no implement the ACPI
+> specs properly, or rather the ACPI table is wrong.
+> You have to check whether the ACPI function needs to be called. The next TPM
+> from a different vendor for whom the ACPI start function is not necessary
+> will need this check here since it will give a return code indicating
+> failure. Then your TPM won't work anymore! I think you should add a check
+> into the crb_do_acpi_start for whether this function needs to be called or
+> whether your TPM is being used (vendor check?) and run this start function
+> then anyway.
 
-Alan
+Yes, now that you said I remember you commenting this before.
+I'll see what I can do and consider this together with the good remarks
+that are below.
+
+> >+	return rc;
+> >+}
+> >+
+> >+static void crb_cancel(struct tpm_chip *chip)
+> >+{
+> >+	struct crb_priv *priv = chip->vendor.priv;
+> >+	struct crb_control_area *cca;
+> >+
+> >+	cca = priv->cca;
+> >+	cca->cancel = cpu_to_le32(1);
+> 
+> nit: #define for this ?
+> 
+> >+
+> >+	/* Make sure that cmd is populated before issuing start. */
+> >+	wmb();
+> >+
+> >+	if (crb_do_acpi_start(chip))
+> >+		dev_err(&chip->dev, "ACPI Start failed\n");
+> >+
+> >+	cca->cancel = 0;
+> >+}
+> >+
+> >+static bool crb_req_canceled(struct tpm_chip *chip, u8 status)
+> >+{
+> >+	struct crb_priv *priv = chip->vendor.priv;
+> >+
+> >+	return (le32_to_cpu(priv->cca->cancel) & 1) == 1;
+> >+}
+> >+
+> >+static const struct tpm_class_ops tpm_crb = {
+> >+	.status = crb_status,
+> >+	.recv = crb_recv,
+> >+	.send = crb_send,
+> >+	.cancel = crb_cancel,
+> >+	.req_canceled = crb_req_canceled,
+> >+	.req_complete_mask = CRB_STS_COMPLETE,
+> >+	.req_complete_val = CRB_STS_COMPLETE,
+> >+};
+> >+
+> >+static int crb_acpi_add(struct acpi_device *device)
+> >+{
+> >+	struct tpm_chip *chip;
+> >+	struct acpi_tpm2 *buf;
+> >+	struct crb_priv *priv;
+> >+	struct device *dev = &device->dev;
+> >+	acpi_status status;
+> >+	u32 sm;
+> >+	int rc;
+> >+
+> >+	chip = tpmm_chip_alloc(dev, &tpm_crb);
+> >+	if (IS_ERR(chip))
+> >+		return PTR_ERR(chip);
+> >+
+> >+	chip->flags = TPM_CHIP_FLAG_TPM2;
+> >+
+> >+	status = acpi_get_table(ACPI_SIG_TPM2, 1,
+> >+				(struct acpi_table_header **) &buf);
+> >+	if (ACPI_FAILURE(status)) {
+> >+		dev_err(dev, "failed to get TPM2 ACPI table\n");
+> >+		return -ENODEV;
+> >+	}
+> >+
+> >+	priv = (struct crb_priv *) devm_kzalloc(dev, sizeof(struct crb_priv),
+> >+						GFP_KERNEL);
+> >+	if (!priv) {
+> >+		dev_err(dev, "failed to devm_kzalloc for private data\n");
+> >+		return -ENOMEM;
+> >+	}
+> >+
+> >+	sm = le32_to_cpu(buf->start_method);
+> 
+> I wonder whether you should check whether that ACPI table is big enough to
+> allow you accessing its start_method.
+> 
+> if (buf->length < sizeof(struct acpi_tpm2) ) {
+>     return -EXYZ;
+> }
+> 
+> >+
+> >+	if (sm == CRB_SM_CRB || sm == CRB_SM_CRB_WITH_ACPI_START)
+> >+		priv->flags |= CRB_FL_CRB_START;
+> 
+> You set this flag but you don't seem to check it anywhere.
+> 
+> >+
+> >+	if (sm == CRB_SM_ACPI_START || sm == CRB_SM_CRB_WITH_ACPI_START)
+> >+		priv->flags |= CRB_FL_ACPI_START;
+> 
+> 
+> You set this flag but you don't seem to check it anywhere.
+> 
+> 
+> >+
+> >+	priv->cca_pa = le32_to_cpu(buf->control_area_pa);
+> >+	priv->cca = (struct crb_control_area *)
+> >+		devm_ioremap_nocache(dev, buf->control_area_pa, 0x1000);
+> >+	if (!priv->cca) {
+> >+		dev_err(dev, "allocating memory failed\n");
+> >+		return -ENOMEM;
+> >+	}
+> >+
+> >+	chip->vendor.priv = priv;
+> >+
+> >+	/* Default timeouts and durations */
+> >+	chip->vendor.timeout_a = usecs_to_jiffies(TPM2_TIMEOUT_A);
+> >+	chip->vendor.timeout_b = usecs_to_jiffies(TPM2_TIMEOUT_B);
+> >+	chip->vendor.timeout_c = usecs_to_jiffies(TPM2_TIMEOUT_C);
+> >+	chip->vendor.timeout_d = usecs_to_jiffies(TPM2_TIMEOUT_D);
+> >+	chip->vendor.duration[TPM_SHORT] =
+> >+		usecs_to_jiffies(TPM2_DURATION_SHORT);
+> >+	chip->vendor.duration[TPM_MEDIUM] =
+> >+		usecs_to_jiffies(TPM2_DURATION_MEDIUM);
+> >+	chip->vendor.duration[TPM_LONG] =
+> >+		usecs_to_jiffies(TPM2_DURATION_LONG);
+> >+
+> >+	chip->acpi_dev_handle = device->handle;
+> >+
+> >+	rc = tpm2_do_selftest(chip);
+> >+	if (rc)
+> >+		return rc;
+> >+
+> >+	return tpm_chip_register(chip);
+> >+}
+> >+
+> >+int crb_acpi_remove(struct acpi_device *device)
+> >+{
+> >+	struct device *dev = &device->dev;
+> >+	struct tpm_chip *chip = dev_get_drvdata(dev);
+> >+
+> >+	tpm_chip_unregister(chip);
+> >+	return 0;
+> >+}
+> >+
+> >+static struct acpi_device_id crb_device_ids[] = {
+> >+	{"MSFT0101", 0},
+> >+	{"", 0},
+> >+};
+> >+MODULE_DEVICE_TABLE(acpi, crb_device_ids);
+> >+
+> >+static struct acpi_driver crb_acpi_driver = {
+> >+	.name = "tpm_crb",
+> >+	.ids = crb_device_ids,
+> >+	.ops = {
+> >+		.add = crb_acpi_add,
+> >+		.remove = crb_acpi_remove,
+> >+	},
+> >+	.drv = {
+> >+		.pm = &crb_pm,
+> >+	},
+> >+};
+> >+
+> >+module_acpi_driver(crb_acpi_driver);
+> >+MODULE_AUTHOR("Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>");
+> >+MODULE_DESCRIPTION("TPM2 Driver");
+> >+MODULE_VERSION("0.1");
+> >+MODULE_LICENSE("GPL");
+> 
+> Regards,
+>     Stefan
+
+/Jarkko
