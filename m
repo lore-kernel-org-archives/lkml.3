@@ -1,136 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218AbaK0HJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 02:09:26 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:42473 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771AbaK0HJY (ORCPT
+	id S1751615AbaK0HOp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 02:14:45 -0500
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:43418 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834AbaK0HOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 02:09:24 -0500
-Date: Thu, 27 Nov 2014 08:09:19 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        David Hildenbrand <dahi@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
-        paulus@samba.org, akpm@linux-foundation.org, schwidefsky@de.ibm.com,
-        mingo@kernel.org
-Subject: Re: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
- atomic
-Message-ID: <20141127070919.GA4390@osiris>
-References: <20141126070258.GA25523@redhat.com>
- <20141126110504.511b733a@thinkpad-w530>
- <20141126151729.GB9612@redhat.com>
- <20141126152334.GA9648@redhat.com>
- <20141126163207.63810fcb@thinkpad-w530>
- <20141126154717.GB10568@redhat.com>
- <5475FAB1.1000802@de.ibm.com>
- <20141126163216.GB10850@redhat.com>
- <547604FC.4030300@de.ibm.com>
- <20141126170447.GC11202@redhat.com>
+	Thu, 27 Nov 2014 02:14:44 -0500
+Date: Thu, 27 Nov 2014 02:14:31 -0500 (EST)
+From: Jason Wang <jasowang@redhat.com>
+To: Dexuan Cui <decui@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org, olaf@aepfle.de,
+        apw@canonical.com, kys@microsoft.com, vkuznets@redhat.com,
+        haiyangz@microsoft.com
+Message-ID: <1245181972.17067189.1417072471636.JavaMail.zimbra@redhat.com>
+In-Reply-To: <1417073491-19388-1-git-send-email-decui@microsoft.com>
+References: <1417073491-19388-1-git-send-email-decui@microsoft.com>
+Subject: Re: [PATCH v2] hv: hv_fcopy: drop the obsolete message on transfer
+ failure
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141126170447.GC11202@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112707-0009-0000-0000-00000228BB37
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.6]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - GC39 (Linux)/8.0.6_GA_5922)
+Thread-Topic: hv_fcopy: drop the obsolete message on transfer failure
+Thread-Index: dC/w/W1VLatewoFkX93uyi5FxZIfGQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 07:04:47PM +0200, Michael S. Tsirkin wrote:
-> On Wed, Nov 26, 2014 at 05:51:08PM +0100, Christian Borntraeger wrote:
-> > > But this one was > giving users in field false positives.
-> > 
-> > So lets try to fix those, ok? If we cant, then tough luck.
+
+
+----- Original Message -----
+> In the case the user-space daemon crashes, hangs or is killed, we
+> need to down the semaphore, otherwise, after the daemon starts next
+> time, the obsolete data in fcopy_transaction.message or
+> fcopy_transaction.fcopy_msg will be used immediately.
 > 
-> Sure.
-> I think the simplest way might be to make spinlock disable
-> premption when CONFIG_DEBUG_ATOMIC_SLEEP is enabled.
+> Reviewed-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+> Cc: K. Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Dexuan Cui <decui@microsoft.com>
+> ---
 > 
-> As a result, userspace access will fail and caller will
-> get a nice error.
+> v2: I removed the "FCP" prefix as Greg asked.
+> 
+>     I also updated the output message a little:
+>     "FCP: failed to acquire the semaphore" -->
+>     "can not acquire the semaphore: it is benign"
+> 
+>  drivers/hv/hv_fcopy.c | 9 +++++++++
+>  1 file changed, 9 insertions(+)
+> 
+> diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c
+> index 23b2ce2..c518ad9 100644
+> --- a/drivers/hv/hv_fcopy.c
+> +++ b/drivers/hv/hv_fcopy.c
+> @@ -86,6 +86,15 @@ static void fcopy_work_func(struct work_struct *dummy)
+>  	 * process the pending transaction.
+>  	 */
+>  	fcopy_respond_to_host(HV_E_FAIL);
+> +
+> +	/* In the case the user-space daemon crashes, hangs or is killed, we
+> +	 * need to down the semaphore, otherwise, after the daemon starts next
+> +	 * time, the obsolete data in fcopy_transaction.message or
+> +	 * fcopy_transaction.fcopy_msg will be used immediately.
+> +	 */
 
-Yes, _userspace_ now sees unpredictable behaviour, instead of that the
-kernel emits a big loud warning to the console.
+Looks still racy, what happens if the daemon start before down_trylock()
+but after fcopy_respont_to_host() here?
 
-Please consider this simple example:
+> +	if (down_trylock(&fcopy_transaction.read_sema))
+> +		pr_debug("can not acquire the semaphore: it is benign\n");
 
-int bar(char __user *ptr)
-{
-	...
-	if (copy_to_user(ptr, ...)
-		return -EFAULT;
-	...
-}
-
-SYSCALL_DEFINE1(foo, char __user *, ptr)
-{
-	int rc;
-
-	...
-	rc = bar(ptr);
-	if (rc)
-		goto out;
-	...
-out:
-	return rc;	
-}
-
-The above simple system call just works fine, with and without your change,
-however if somebody (incorrectly) changes sys_foo() to the code below:
-
-	spin_lock(&lock);
-	rc = bar(ptr);
-	if (rc)
-		goto out;
-out:
-	spin_unlock(&lock);
-	return rc;	
-
-Broken code like above used to generate warnings. With your change we won't
-see any warnings anymore. Instead we get random and bad behaviour:
-
-For !CONFIG_PREEMPT if the page at ptr is not mapped, the kernel will see
-a fault, potentially schedule and potentially deadlock on &lock.
-Without _any_ warning anymore.
-
-For CONFIG_PREEMPT if the page at ptr is mapped, everthing works. However if
-the page is not mapped, userspace now all of the sudden will see an invalid(!)
--EFAULT return code, instead of that the kernel resolved the page fault.
-Yes, the kernel can't resolve the fault since we hold a spinlock. But the
-above bogus code did give warnings to give you an idea that something probably
-is not correct.
-
-Who on earth is supposed to debug crap like this???
-
-What we really want is:
-
-Code like
-	spin_lock(&lock);
-	if (copy_to_user(...))
-		rc = ...
-	spin_unlock(&lock);
-really *should* generate warnings like it did before.
-
-And *only* code like
-	spin_lock(&lock);
-	page_fault_disable();
-	if (copy_to_user(...))
-		rc = ...
-	page_fault_enable();
-	spin_unlock(&lock);
-should not generate warnings, since the author hopefully knew what he did.
-
-We could achieve that by e.g. adding a couple of pagefault disabled bits
-within current_thread_info()->preempt_count, which would allow
-pagefault_disable() and pagefault_enable() to modify a different part of
-preempt_count than it does now, so there is a way to tell if pagefaults have
-been explicitly disabled or are just a side effect of preemption being
-disabled.
-This would allow might_fault() to restore its old sane behaviour for the
-!page_fault_disabled() case.
-
+typo
+> +
+>  }
+>  
+>  static int fcopy_handle_handshake(u32 version)
+> --
+> 1.9.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
