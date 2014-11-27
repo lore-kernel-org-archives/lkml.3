@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920AbaK0Ir5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 03:47:57 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41823 "EHLO mail.kernel.org"
+	id S1754889AbaK0Irt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 03:47:49 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41781 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754895AbaK0Irz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:47:55 -0500
+	id S1753251AbaK0Irp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:47:45 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Aurelien Jarno <aurelien@aurel32.net>,
-        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 42/91] MIPS: ZBOOT: add missing <linux/string.h> include
-Date: Thu, 27 Nov 2014 16:42:25 +0800
-Message-Id: <1417077794-9299-42-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Richard Larocque <rlarocque@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Sharvil Nanavati <sharvil@google.com>,
+        John Stultz <john.stultz@linaro.org>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 39/91] alarmtimer: Lock k_itimer during timer callback
+Date: Thu, 27 Nov 2014 16:42:22 +0800
+Message-Id: <1417077794-9299-39-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
 References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
@@ -21,59 +24,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aurelien Jarno <aurelien@aurel32.net>
+From: Richard Larocque <rlarocque@google.com>
 
 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 29593fd5a8149462ed6fad0d522234facdaee6c8 upstream.
+commit 474e941bed9262f5fa2394f9a4a67e24499e5926 upstream.
 
-Commit dc4d7b37 (MIPS: ZBOOT: gather string functions into string.c)
-moved the string related functions into a separate file, which might
-cause the following build error, depending on the configuration:
+Locks the k_itimer's it_lock member when handling the alarm timer's
+expiry callback.
 
-| CC      arch/mips/boot/compressed/decompress.o
-| In file included from linux/arch/mips/boot/compressed/../../../../lib/decompress_unxz.c:234:0,
-|                  from linux/arch/mips/boot/compressed/decompress.c:67:
-| linux/arch/mips/boot/compressed/../../../../lib/xz/xz_dec_stream.c: In function 'fill_temp':
-| linux/arch/mips/boot/compressed/../../../../lib/xz/xz_dec_stream.c:162:2: error: implicit declaration of function 'memcpy' [-Werror=implicit-function-declaration]
-| cc1: some warnings being treated as errors
-| linux/scripts/Makefile.build:308: recipe for target 'arch/mips/boot/compressed/decompress.o' failed
-| make[6]: *** [arch/mips/boot/compressed/decompress.o] Error 1
-| linux/arch/mips/Makefile:308: recipe for target 'vmlinuz' failed
+The regular posix timers defined in posix-timers.c have this lock held
+during timout processing because their callbacks are routed through
+posix_timer_fn().  The alarm timers follow a different path, so they
+ought to grab the lock somewhere else.
 
-It does not fail with the standard configuration, as when
-CONFIG_DYNAMIC_DEBUG is not enabled <linux/string.h> gets included in
-include/linux/dynamic_debug.h. There might be other ways for it to
-get indirectly included.
-
-We can't add the include directly in xz_dec_stream.c as some
-architectures might want to use a different version for the boot/
-directory (see for example arch/x86/boot/string.h).
-
-Signed-off-by: Aurelien Jarno <aurelien@aurel32.net>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/7420/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Sharvil Nanavati <sharvil@google.com>
+Signed-off-by: Richard Larocque <rlarocque@google.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- arch/mips/boot/compressed/decompress.c | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/time/alarmtimer.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mips/boot/compressed/decompress.c b/arch/mips/boot/compressed/decompress.c
-index 5cad0fa..ca51d69 100644
---- a/arch/mips/boot/compressed/decompress.c
-+++ b/arch/mips/boot/compressed/decompress.c
-@@ -13,6 +13,7 @@
+diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
+index c870118..3ce9262 100644
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -454,8 +454,12 @@ static enum alarmtimer_type clock2alarm(clockid_t clockid)
+ static enum alarmtimer_restart alarm_handle_timer(struct alarm *alarm,
+ 							ktime_t now)
+ {
++	unsigned long flags;
+ 	struct k_itimer *ptr = container_of(alarm, struct k_itimer,
+ 						it.alarm.alarmtimer);
++	enum alarmtimer_restart result = ALARMTIMER_NORESTART;
++
++	spin_lock_irqsave(&ptr->it_lock, flags);
+ 	if ((ptr->it_sigev_notify & ~SIGEV_THREAD_ID) != SIGEV_NONE) {
+ 		if (posix_timer_event(ptr, 0) != 0)
+ 			ptr->it_overrun++;
+@@ -465,9 +469,11 @@ static enum alarmtimer_restart alarm_handle_timer(struct alarm *alarm,
+ 	if (ptr->it.alarm.interval.tv64) {
+ 		ptr->it_overrun += alarm_forward(alarm, now,
+ 						ptr->it.alarm.interval);
+-		return ALARMTIMER_RESTART;
++		result = ALARMTIMER_RESTART;
+ 	}
+-	return ALARMTIMER_NORESTART;
++	spin_unlock_irqrestore(&ptr->it_lock, flags);
++
++	return result;
+ }
  
- #include <linux/types.h>
- #include <linux/kernel.h>
-+#include <linux/string.h>
- 
- #include <asm/addrspace.h>
- 
+ /**
 -- 
 1.9.1
 
