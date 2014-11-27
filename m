@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751281AbaK0Xdm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 18:33:42 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:24880 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729AbaK0Xdl convert rfc822-to-8bit (ORCPT
+	id S1751506AbaK0XeF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 18:34:05 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:54871 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082AbaK0XeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 18:33:41 -0500
-MIME-Version: 1.0
-Message-ID: <a04f5f41-fd23-4028-bf83-fcd4aeb70cef@default>
-Date: Thu, 27 Nov 2014 15:33:26 -0800 (PST)
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-To: <bp@suse.de>
-Cc: <konrad.wilk@oracle.com>, <x86@kernel.org>, <gregkh@linuxfoundation.org>,
-        <david.vrabel@citrix.com>, <stable@vger.kernel.org>,
-        <rshendershot@mchsi.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3.17 100/141] x86, microcode: Fix accessing dis_ucode_ldr
- on 32-bit
-X-Mailer: Zimbra on Oracle Beehive
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Thu, 27 Nov 2014 18:34:04 -0500
+From: Stefan Agner <stefan@agner.ch>
+To: shawn.guo@linaro.org, arnd@arndb.de
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        stefan@agner.ch
+Subject: [PATCH] MAINTAINERS: add Freescale Vybrid SoC
+Date: Fri, 28 Nov 2014 00:33:55 +0100
+Message-Id: <1417131235-3077-1-git-send-email-stefan@agner.ch>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add Freescale Vybrid family as a own entry, along with an entry for
+the so far orphan Vybrid device tree files. Also add myself as
+a designated reviewer.
 
------ bp@suse.de wrote:
+Signed-off-by: Stefan Agner <stefan@agner.ch>
+---
+Not sure if this is acceptable, but it would be nice when I get Vybrid
+related stuff automatically...
 
-> On Thu, Nov 27, 2014 at 09:14:11AM -0800, Boris Ostrovsky wrote:
-> > The overnight tests passed. This includes baremetal, HVM and PV(H),
-> > 32- and 64-bit.
-> 
-> Cool. Want to send a proper patch for 3.18 and CC: stable?
-> 
+ MAINTAINERS | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-So I am not convinced that we actually update microcode on baremetal now. 
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 3c64271..6837f23 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -990,6 +990,16 @@ F:	arch/arm/mach-mxs/
+ F:	arch/arm/boot/dts/imx*
+ F:	arch/arm/configs/imx*_defconfig
+ 
++ARM/FREESCALE VYBRID ARM ARCHITECTURE
++M:	Shawn Guo <shawn.guo@linaro.org>
++M:	Sascha Hauer <kernel@pengutronix.de>
++R:	Stefan Agner <stefan@agner.ch>
++L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
++S:	Maintained
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/shawnguo/linux.git
++F:	arch/arm/mach-imx/*vf610*
++F:	arch/arm/boot/dts/vf*
++
+ ARM/GLOMATION GESBC9312SX MACHINE SUPPORT
+ M:	Lennert Buytenhek <kernel@wantstofly.org>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+-- 
+2.1.3
 
-I will look into this but it would have to wait until Monday.
-
--boris
