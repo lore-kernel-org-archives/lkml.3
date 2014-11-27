@@ -1,92 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578AbaK0GeO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 01:34:14 -0500
-Received: from mga11.intel.com ([192.55.52.93]:41088 "EHLO mga11.intel.com"
+	id S1754385AbaK0Gew (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 01:34:52 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41690 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751074AbaK0G0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 01:26:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,467,1413270000"; 
-   d="scan'208";a="629028295"
-From: Lv Zheng <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Bob Moore <robert.moore@intel.com>,
-        "David E. Box" <david.e.box@linux.intel.com>
-Subject: [PATCH 1/6] ACPICA: iASL: Add support for to_PLD macro.
-Date: Thu, 27 Nov 2014 14:26:00 +0800
-Message-Id: <f773c3768a07c39310f54ec92ebda1d319823836.1416899966.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1416899966.git.lv.zheng@intel.com>
-References: <cover.1416899966.git.lv.zheng@intel.com>
+	id S1750852AbaK0G0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 01:26:20 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL 00/25] phy: for 3.19
+Date: Thu, 27 Nov 2014 11:55:52 +0530
+Message-ID: <1417069577-1169-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bob Moore <robert.moore@intel.com>
+Hi Greg,
 
-This macro is intended to simplify the constuction of _PLD buffers.
-NOTE: Prototype only, subject to change before this macro is
-added to the ACPI specification. David E. Box.
+Please find the pull request for 3.19 merge window.
 
-Signed-off-by: David E. Box <david.e.box@linux.intel.com>
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
----
- drivers/acpi/acpica/utxface.c |    4 +++-
- include/acpi/acbuffer.h       |   14 +++++++++++---
- 2 files changed, 14 insertions(+), 4 deletions(-)
+This contains improvements in phy core dealing with non-dt boot.
+It also adds 3 new phy drivers armada375-usb2, berlin-usb and miphy28lp.
 
-diff --git a/drivers/acpi/acpica/utxface.c b/drivers/acpi/acpica/utxface.c
-index 502a849..49c873c 100644
---- a/drivers/acpi/acpica/utxface.c
-+++ b/drivers/acpi/acpica/utxface.c
-@@ -531,7 +531,9 @@ acpi_decode_pld_buffer(u8 *in_buffer,
- 	ACPI_MOVE_32_TO_32(&dword, &buffer[0]);
- 	pld_info->revision = ACPI_PLD_GET_REVISION(&dword);
- 	pld_info->ignore_color = ACPI_PLD_GET_IGNORE_COLOR(&dword);
--	pld_info->color = ACPI_PLD_GET_COLOR(&dword);
-+	pld_info->red = ACPI_PLD_GET_RED(&dword);
-+	pld_info->green = ACPI_PLD_GET_GREEN(&dword);
-+	pld_info->blue = ACPI_PLD_GET_BLUE(&dword);
- 
- 	/* Second 32-bit DWord */
- 
-diff --git a/include/acpi/acbuffer.h b/include/acpi/acbuffer.h
-index 88cb477..d5ec6c8 100644
---- a/include/acpi/acbuffer.h
-+++ b/include/acpi/acbuffer.h
-@@ -111,7 +111,9 @@ struct acpi_gtm_info {
- struct acpi_pld_info {
- 	u8 revision;
- 	u8 ignore_color;
--	u32 color;
-+	u8 red;
-+	u8 green;
-+	u8 blue;
- 	u16 width;
- 	u16 height;
- 	u8 user_visible;
-@@ -155,8 +157,14 @@ struct acpi_pld_info {
- #define ACPI_PLD_GET_IGNORE_COLOR(dword)        ACPI_GET_BITS (dword, 7, ACPI_1BIT_MASK)
- #define ACPI_PLD_SET_IGNORE_COLOR(dword,value)  ACPI_SET_BITS (dword, 7, ACPI_1BIT_MASK, value)	/* Offset 7, Len 1 */
- 
--#define ACPI_PLD_GET_COLOR(dword)               ACPI_GET_BITS (dword, 8, ACPI_24BIT_MASK)
--#define ACPI_PLD_SET_COLOR(dword,value)         ACPI_SET_BITS (dword, 8, ACPI_24BIT_MASK, value)	/* Offset 8, Len 24 */
-+#define ACPI_PLD_GET_RED(dword)                 ACPI_GET_BITS (dword, 8, ACPI_8BIT_MASK)
-+#define ACPI_PLD_SET_RED(dword,value)           ACPI_SET_BITS (dword, 8, ACPI_8BIT_MASK, value)	/* Offset 8, Len 8 */
-+
-+#define ACPI_PLD_GET_GREEN(dword)               ACPI_GET_BITS (dword, 16, ACPI_8BIT_MASK)
-+#define ACPI_PLD_SET_GREEN(dword,value)         ACPI_SET_BITS (dword, 16, ACPI_8BIT_MASK, value)	/* Offset 16, Len 8 */
-+
-+#define ACPI_PLD_GET_BLUE(dword)                ACPI_GET_BITS (dword, 24, ACPI_8BIT_MASK)
-+#define ACPI_PLD_SET_BLUE(dword,value)          ACPI_SET_BITS (dword, 24, ACPI_8BIT_MASK, value)	/* Offset 24, Len 8 */
- 
- /* Second 32-bit dword, bits 33:63 */
- 
+There is a patch that touches drivers/pinctrl since one of the PHY drivers
+is present there and it has to be modified to use the modified
+devm_phy_create API.
+
+Let me know If I have to change something.
+
+Thanks
+Kishon
+
+The following changes since commit 206c5f60a3d902bc4b56dab2de3e88de5eb06108:
+
+  Linux 3.18-rc4 (2014-11-09 14:55:29 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git tags/for-3.19
+
+for you to fetch changes up to eee47538ec1f26198cf5da675975b61d7f16135b:
+
+  phy: add support for USB cluster on the Armada 375 SoC (2014-11-26 11:07:14 +0530)
+
+----------------------------------------------------------------
+Improvements in phy-core specifically on PHY core finds the PHY in the case
+of non-dt boot. Adds three new PHY drivers using the PHY framework and some
+miscellaneous fixes and cleanups.
+
+----------------------------------------------------------------
+Andrew Lunn (1):
+  Phy: DT binding documentation for Marvell MVEBU SATA phy.
+
+Antoine Tenart (2):
+  phy: add the Berlin USB PHY driver
+  Documentation: bindings: add doc for the Berlin USB PHY
+
+Gabriel FERNANDEZ (6):
+  phy: Add PHY header file for DT x Driver defines
+  phy: miphy28lp: Add Device Tree bindings for the MiPHY28lp
+  phy: miphy28lp: Provide support for the MiPHY28lp Generic PHY
+  phy: miphy28lp: Add SSC support for SATA
+  phy: miphy28lp: Add SSC support for PCIE
+  phy: miphy28lp: Tune tx impedance across Soc cuts
+
+Gregory CLEMENT (3):
+  phy: Use PTR_ERR_OR_ZERO to fix warning raised by coccinelle
+  Phy: DT binding documentation for the Armada 375 USB cluster binding
+  phy: add support for USB cluster on the Armada 375 SoC
+
+Heikki Krogerus (5):
+  phy: safer to_phy() macro
+  phy: improved lookup method
+  phy: twl4030: use the new lookup method
+  phy: remove the old lookup method
+  usb: dwc3: host: convey the PHYs to xhci
+
+Kishon Vijay Abraham I (1):
+  phy: phy-core: use the np present in of_phandle_args to get the PHY
+
+Roman Byshko (1):
+  phy: sun4i: add support for USB phy0
+
+Sebastian Hesselbarth (3):
+  phy: berlin-sata: Move PHY_BASE into private data struct
+  phy: berlin-sata: Add support for BG2 SATA PHY
+  phy: berlin-sata: Document BG2 compatible
+
+Vivek Gautam (3):
+  phy: exynos5-usbdrd: Add pipe-clk, utmi-clk and itp-clk support
+  phy: exynos5-usbdrd: Add facility for VBUS-BOOST-5V supply
+  phy: exynos7-usbdrd: Update dependency for ARCH_EXYNOS
+
+ Documentation/devicetree/bindings/ata/marvell.txt  |    6 +
+ .../devicetree/bindings/phy/berlin-sata-phy.txt    |    4 +-
+ .../devicetree/bindings/phy/berlin-usb-phy.txt     |   16 +
+ .../devicetree/bindings/phy/phy-miphy28lp.txt      |  128 ++
+ .../devicetree/bindings/phy/phy-mvebu.txt          |   43 +
+ .../devicetree/bindings/phy/samsung-phy.txt        |    6 +
+ Documentation/phy.txt                              |   60 +-
+ drivers/phy/Kconfig                                |   23 +-
+ drivers/phy/Makefile                               |    3 +
+ drivers/phy/phy-armada375-usb2.c                   |  158 +++
+ drivers/phy/phy-bcm-kona-usb2.c                    |    2 +-
+ drivers/phy/phy-berlin-sata.c                      |   36 +-
+ drivers/phy/phy-berlin-usb.c                       |  223 ++++
+ drivers/phy/phy-core.c                             |  115 +-
+ drivers/phy/phy-exynos-dp-video.c                  |    2 +-
+ drivers/phy/phy-exynos-mipi-video.c                |    2 +-
+ drivers/phy/phy-exynos5-usbdrd.c                   |  139 ++-
+ drivers/phy/phy-exynos5250-sata.c                  |    2 +-
+ drivers/phy/phy-hix5hd2-sata.c                     |    7 +-
+ drivers/phy/phy-miphy28lp.c                        | 1283 ++++++++++++++++++++
+ drivers/phy/phy-miphy365x.c                        |    7 +-
+ drivers/phy/phy-mvebu-sata.c                       |    2 +-
+ drivers/phy/phy-omap-usb2.c                        |    2 +-
+ drivers/phy/phy-qcom-apq8064-sata.c                |    3 +-
+ drivers/phy/phy-qcom-ipq806x-sata.c                |    3 +-
+ drivers/phy/phy-rcar-gen2.c                        |    2 +-
+ drivers/phy/phy-samsung-usb2.c                     |    3 +-
+ drivers/phy/phy-spear1310-miphy.c                  |    2 +-
+ drivers/phy/phy-spear1340-miphy.c                  |    2 +-
+ drivers/phy/phy-stih407-usb.c                      |    2 +-
+ drivers/phy/phy-stih41x-usb.c                      |    7 +-
+ drivers/phy/phy-sun4i-usb.c                        |   11 +-
+ drivers/phy/phy-ti-pipe3.c                         |    2 +-
+ drivers/phy/phy-twl4030-usb.c                      |    9 +-
+ drivers/phy/phy-xgene.c                            |    2 +-
+ drivers/pinctrl/pinctrl-tegra-xusb.c               |    4 +-
+ drivers/usb/dwc3/host.c                            |   22 +-
+ include/dt-bindings/phy/phy.h                      |   19 +
+ include/linux/phy/phy.h                            |   52 +-
+ 39 files changed, 2210 insertions(+), 204 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/phy/berlin-usb-phy.txt
+ create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
+ create mode 100644 Documentation/devicetree/bindings/phy/phy-mvebu.txt
+ create mode 100644 drivers/phy/phy-armada375-usb2.c
+ create mode 100644 drivers/phy/phy-berlin-usb.c
+ create mode 100644 drivers/phy/phy-miphy28lp.c
+ create mode 100644 include/dt-bindings/phy/phy.h
+
 -- 
-1.7.10
+1.7.9.5
 
