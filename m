@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754204AbaK0IqE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 03:46:04 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41014 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754164AbaK0Ip7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754157AbaK0Ip7 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 27 Nov 2014 03:45:59 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40998 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752633AbaK0Ip4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:45:56 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 04/91] get rid of propagate_umount() mistakenly treating slaves as busy.
-Date: Thu, 27 Nov 2014 16:41:47 +0800
-Message-Id: <1417077794-9299-4-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Duncan Laurie <dlaurie@chromium.org>, Jarod Wilson <jarod@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Jani Nikula <jani.nikula@intel.com>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 03/91] drm/i915: Remove bogus __init annotation from DMI callbacks
+Date: Thu, 27 Nov 2014 16:41:46 +0800
+Message-Id: <1417077794-9299-3-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
 References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
@@ -20,67 +23,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Mathias Krause <minipli@googlemail.com>
 
 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 88b368f27a094277143d8ecd5a056116f6a41520 upstream.
+commit bbe1c2740d3a25aa1dbe5d842d2ff09cddcdde0a upstream.
 
-The check in __propagate_umount() ("has somebody explicitly mounted
-something on that slave?") is done *before* taking the already doomed
-victims out of the child lists.
+The __init annotations for the DMI callback functions are wrong as this
+code can be called even after the module has been initialized, e.g. like
+this:
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-[lizf: Backported to 3.4:
- - adjust context
- - s/hlist_for_each_entry/list_for_each_entry/]
+  # echo 1 > /sys/bus/pci/devices/0000:00:02.0/remove
+  # modprobe i915
+  # echo 1 > /sys/bus/pci/rescan
+
+The first command will remove the PCI device from the kernel's device
+list so the second command won't see it right away. But as it registers
+a PCI driver it'll see it on the third command. If the system happens to
+match one of the DMI table entries we'll try to call a function in long
+released memory and generate an Oops, at best.
+
+Fix this by removing the bogus annotation.
+
+Modpost should have caught that one but it ignores section reference
+mismatches from the .rodata section. :/
+
+Fixes: 25e341cfc33d ("drm/i915: quirk away broken OpRegion VBT")
+Fixes: 8ca4013d702d ("CHROMIUM: i915: Add DMI override to skip CRT...")
+Fixes: 425d244c8670 ("drm/i915: ignore LVDS on intel graphics systems...")
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Duncan Laurie <dlaurie@chromium.org>
+Cc: Jarod Wilson <jarod@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>	# Can modpost be fixed?
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- fs/namespace.c | 4 +++-
- fs/pnode.c     | 4 +++-
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/intel_bios.c | 2 +-
+ drivers/gpu/drm/i915/intel_crt.c  | 2 +-
+ drivers/gpu/drm/i915/intel_lvds.c | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 4e46539..2985879 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -1066,6 +1066,9 @@ void umount_tree(struct mount *mnt, int propagate, struct list_head *kill)
- 	for (p = mnt; p; p = next_mnt(p, mnt))
- 		list_move(&p->mnt_hash, &tmp_list);
- 
-+	list_for_each_entry(p, &tmp_list, mnt_hash)
-+		list_del_init(&p->mnt_child);
-+
- 	if (propagate)
- 		propagate_umount(&tmp_list);
- 
-@@ -1076,7 +1079,6 @@ void umount_tree(struct mount *mnt, int propagate, struct list_head *kill)
- 		if (p->mnt_ns)
- 			__mnt_make_shortterm(p);
- 		p->mnt_ns = NULL;
--		list_del_init(&p->mnt_child);
- 		if (mnt_has_parent(p)) {
- 			p->mnt_parent->mnt_ghosts++;
- 			dentry_reset_mounted(p->mnt_mountpoint);
-diff --git a/fs/pnode.c b/fs/pnode.c
-index ab5fa9e..f61dcb4 100644
---- a/fs/pnode.c
-+++ b/fs/pnode.c
-@@ -333,8 +333,10 @@ static void __propagate_umount(struct mount *mnt)
- 		 * umount the child only if the child has no
- 		 * other children
- 		 */
--		if (child && list_empty(&child->mnt_mounts))
-+		if (child && list_empty(&child->mnt_mounts)) {
-+			list_del_init(&child->mnt_child);
- 			list_move_tail(&child->mnt_hash, &mnt->mnt_hash);
-+		}
- 	}
+diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
+index a2c9e56..d9e359a 100644
+--- a/drivers/gpu/drm/i915/intel_bios.c
++++ b/drivers/gpu/drm/i915/intel_bios.c
+@@ -651,7 +651,7 @@ init_vbt_defaults(struct drm_i915_private *dev_priv)
+ 	DRM_DEBUG_KMS("Set default to SSC at %dMHz\n", dev_priv->lvds_ssc_freq);
  }
  
+-static int __init intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
++static int intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
+ {
+ 	DRM_DEBUG_KMS("Falling back to manually reading VBT from "
+ 		      "VBIOS ROM for %s\n",
+diff --git a/drivers/gpu/drm/i915/intel_crt.c b/drivers/gpu/drm/i915/intel_crt.c
+index a83f7ac..b4f71c2 100644
+--- a/drivers/gpu/drm/i915/intel_crt.c
++++ b/drivers/gpu/drm/i915/intel_crt.c
+@@ -564,7 +564,7 @@ static const struct drm_encoder_funcs intel_crt_enc_funcs = {
+ 	.destroy = intel_encoder_destroy,
+ };
+ 
+-static int __init intel_no_crt_dmi_callback(const struct dmi_system_id *id)
++static int intel_no_crt_dmi_callback(const struct dmi_system_id *id)
+ {
+ 	DRM_DEBUG_KMS("Skipping CRT initialization for %s\n", id->ident);
+ 	return 1;
+diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+index b695ab4..77190cc 100644
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -619,7 +619,7 @@ static const struct drm_encoder_funcs intel_lvds_enc_funcs = {
+ 	.destroy = intel_encoder_destroy,
+ };
+ 
+-static int __init intel_no_lvds_dmi_callback(const struct dmi_system_id *id)
++static int intel_no_lvds_dmi_callback(const struct dmi_system_id *id)
+ {
+ 	DRM_DEBUG_KMS("Skipping LVDS initialization for %s\n", id->ident);
+ 	return 1;
 -- 
 1.9.1
 
