@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573AbaK0Biq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 20:38:46 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:48135 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753155AbaK0Bip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 20:38:45 -0500
-Message-ID: <5476809F.3090503@linux.vnet.ibm.com>
-Date: Wed, 26 Nov 2014 20:38:39 -0500
-From: Stefan Berger <stefanb@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753706AbaK0Bkk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 20:40:40 -0500
+Received: from regular1.263xmail.com ([211.150.99.134]:36523 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753275AbaK0Bki (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 20:40:38 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: airlied@gmail.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <076755bccb4edbdf399fdaa7941f17b9>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <54768107.2090402@rock-chips.com>
+Date: Thu, 27 Nov 2014 09:40:23 +0800
+From: Mark yao <mark.yao@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
-        Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>
-CC: christophe.ricard@gmail.com, josh.triplett@intel.com,
-        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Will Arthur <will.c.arthur@intel.com>,
-        tpmdd-devel@lists.sourceforge.net,
-        jason.gunthorpe@obsidianresearch.com,
-        trousers-tech@lists.sourceforge.net
-Subject: Re: [tpmdd-devel] [PATCH v7 09/10] tpm: TPM 2.0 FIFO Interface
-References: <1415713513-16524-1-git-send-email-jarkko.sakkinen@linux.intel.com> <1415713513-16524-10-git-send-email-jarkko.sakkinen@linux.intel.com>
-In-Reply-To: <1415713513-16524-10-git-send-email-jarkko.sakkinen@linux.intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112701-0033-0000-0000-00000128C4CF
+To: Dave Airlie <airlied@gmail.com>, Joerg Roedel <jroedel@suse.de>
+CC: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>, linux-api@vger.kernel.org,
+        linux-rockchip@lists.infradead.org,
+        Douglas Anderson <dianders@chromium.org>,
+        =?UTF-8?B?U3TDqXBoYW5lIE1hcmNoZXNpbg==?= <marcheu@chromium.org>,
+        dbehr@chromium.org, Olof Johansson <olof@lixom.net>,
+        Daniel Kurtz <djkurtz@chromium.org>, Eddie Cai <cf@rock-chips.com>,
+        simon xue <xxm@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Kever Yang <kever.yang@rock-chips.com>, yxj@rock-chips.com,
+        xw@rock-chips.com
+Subject: Re: [PATCH v14 0/3] Add drm driver for Rockchip Socs
+References: <1416447994-9921-1-git-send-email-mark.yao@rock-chips.com>	<23617908.6oA5uRuO3l@diego>	<CAPM=9tzvvb5U+8KaCO+K6CJi=rwWOkoW+4ZSFW_Oo9gTncvkWA@mail.gmail.com>	<1557742.FTdLsE0bVs@diego>	<20141126073430.GD3156@suse.de> <CAPM=9tzhZLShA5=ShGTKhyZR6ddKycQDUWBZxXpUBb+1tGp-mQ@mail.gmail.com>
+In-Reply-To: <CAPM=9tzhZLShA5=ShGTKhyZR6ddKycQDUWBZxXpUBb+1tGp-mQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2014 08:45 AM, Jarkko Sakkinen wrote:
-> From: Will Arthur <will.c.arthur@intel.com>
+On 2014年11月27日 06:53, Dave Airlie wrote:
+> On 26 November 2014 at 17:34, Joerg Roedel <jroedel@suse.de> wrote:
+>> On Wed, Nov 26, 2014 at 01:37:51AM +0100, Heiko Stübner wrote:
+>>> Joerg, is your arm/rockchip branch [0] considered stable?
+>>>
+>>> [0] https://git.kernel.org/cgit/linux/kernel/git/joro/iommu.git/log/?h=arm/rockchip
+>>>
+>> Yes, this branch will not be rebased. It can be pulled into another
+>> tree.
+> Great, so if we can get a rockchip drm tree based on drm-next with
+> that tree pulled into it
+> that would be good.
 >
-> Detect TPM 2.0 by using the extended STS (STS3) register. For TPM 2.0,
-> instead of calling tpm_get_timeouts(), assign duration and timeout
-> values defined in the TPM 2.0 PTP specification.
-
-
+> Dave.
 >
-> Signed-off-by: Will Arthur <will.c.arthur@intel.com>
-> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> ---
->   drivers/char/tpm/tpm_tis.c | 71 ++++++++++++++++++++++++++++++++++++----------
->   1 file changed, 56 insertions(+), 15 deletions(-)
 >
-> diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-> index 7a2c59b..0b3c089 100644
-> --- a/drivers/char/tpm/tpm_tis.c
-> +++ b/drivers/char/tpm/tpm_tis.c
-> @@ -1,5 +1,6 @@
->   /*
->    * Copyright (C) 2005, 2006 IBM Corporation
-> + * Copyright (C) 2014 Intel Corporation
->    *
->    * Authors:
->    * Leendert van Doorn <leendert@watson.ibm.com>
-> @@ -44,6 +45,10 @@ enum tis_status {
->   	TPM_STS_DATA_EXPECT = 0x08,
->   };
 >
-> +enum tis_status3 {
-> +	TPM_STS3_TPM2_FAM = 0x04,
-> +};
-> +
+Hi Dave
+     Do you mean that I need send you a branch, based on drm-next, merge 
+with iommu tree and rockchip drm?
 
-I just looked at the specs: You have to define a mask for bits 2 and 3 
--> 0xc0.
+- Mark
 
-
-> @@ -554,11 +567,28 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
->   	if (!chip->vendor.iobase)
->   		return -EIO;
->
-> +	sts3 = ioread8(chip->vendor.iobase + TPM_STS3(1));
-> +	if (sts3 & TPM_STS3_TPM2_FAM)
-> +		chip->flags = TPM_CHIP_FLAG_TPM2;
-
-And use the mask here.
-
-((sts3 & XYZ_MASK) == TPM_STS3_TPM2_FAM)
-     chip->flags = TPM_CHIP_FLAG_TPM2;
-
-Since the bits 00 indicate TPM 1.2, 01 TPM2 and 10 and 11 are reserved!
-
-
-    Stefan
 
