@@ -1,155 +1,721 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509AbaK0L31 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 06:29:27 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:11310 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753251AbaK0L3Y (ORCPT
+	id S1754324AbaK0Lbr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 06:31:47 -0500
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:42491 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512AbaK0Lbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 06:29:24 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-9b-54770b10ac71
-Message-id: <54770B10.3050804@samsung.com>
-Date: Thu, 27 Nov 2014 20:29:20 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "arnd@arndb.de" <arnd@arndb.de>, "olof@lixom.net" <olof@lixom.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "s.nawrocki@samsung.com" <s.nawrocki@samsung.com>,
-        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "inki.dae@samsung.com" <inki.dae@samsung.com>,
-        "chanho61.park@samsung.com" <chanho61.park@samsung.com>,
-        "geunsik.lim@samsung.com" <geunsik.lim@samsung.com>,
-        "sw0312.kim@samsung.com" <sw0312.kim@samsung.com>,
-        "jh80.chung@samsung.com" <jh80.chung@samsung.com>,
-        "a.kesavan@samsung.com" <a.kesavan@samsung.com>,
+	Thu, 27 Nov 2014 06:31:45 -0500
+MIME-Version: 1.0
+In-Reply-To: <2a4244f4a9594432837db1c82e701a04@BY2FFO11FD013.protection.gbl>
+References: <1416932548-25094-1-git-send-email-punnaia@xilinx.com>
+	<2a4244f4a9594432837db1c82e701a04@BY2FFO11FD013.protection.gbl>
+Date: Thu, 27 Nov 2014 17:01:43 +0530
+X-Google-Sender-Auth: 4Rc00BkGY52NcIDBLlcjmGEZYg8
+Message-ID: <CAGnW=BbTwXqzc7_3S_td_N5nyC_=mVbsZ-HN8WdwzHNPO=jf9Q@mail.gmail.com>
+Subject: Re: [PATCH v4] edac: synps: Added EDAC support for zynq ddr ecc controller
+From: punnaiah choudary kalluri <punnaia@xilinx.com>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>,
+        dougthompson@xmission.com,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 02/19] clk: samsung: Add binding documentation for
- Exynos5433 clock controller
-References: <1417073716-22997-1-git-send-email-cw00.choi@samsung.com>
- <1417073716-22997-3-git-send-email-cw00.choi@samsung.com>
- <20141127112113.GC857@leverpostej>
-In-reply-to: <20141127112113.GC857@leverpostej>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJIsWRmVeSWpSXmKPExsWyRsSkQFeQuzzEYOkJNovHaxYzWfyddIzd
-	4v2yHkaLy/u1LeYfOcdq8WdCK5vFpPsTWCxu/GpjtehdcJXN4mzTG3aLKX+WM1lsenyN1eLy
-	rjlsFjPO72OyWHr9IpPFqeuf2SwOv2lntZgx+SWbxbEZSxgtVu36w2jx8uMJFgdRjzXz1jB6
-	/P41idFj56y77B53ru1h89i8pN7jyokmVo++LasYPT5vkgvgiOKySUnNySxLLdK3S+DK6J69
-	la3gk0RF/4frTA2Mt0S6GDk5JARMJGavesAIYYtJXLi3nq2LkYtDSGApo8TBU+fYYIp2HL7E
-	DpFYxChx5+xZRgjnNaPEhStf2UGqeAW0JBY9ecgKYrMIqEr8PfAcLM4GFN//4gbYJFGBMImV
-	06+wQNQLSvyYfA/MFhFQl+jZ9YUFZCizwC4Oibb3EDcJC6RIbLg3nRli2zJGiaeTvjKBJDgF
-	9CU6TnWCdTML6Ejsb53GBmHLS2xe8xasQULgDIfElSUQ61gEBCS+TT4EZHMAJWQlNh1ghvhN
-	UuLgihssExjFZiE5ahaSsbOQjF3AyLyKUTS1ILmgOCm9yEivODG3uDQvXS85P3cTIzBFnP73
-	rG8H480D1ocYBTgYlXh4LQ6UhQixJpYVV+YeYjQFumIis5Rocj4wEeWVxBsamxlZmJqYGhuZ
-	W5opifMmSP0MFhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cAoyGtj3fr/jnp11o9n07ZqqOvO
-	TstdtGW++vUd/y/kLM3i+m0Wciv8zuzQ0jCpDEkl+WkfJpj8zK97vErSulxY+Lhh1Io/R64d
-	vy0YYNYvt0zQrf9zHXNQj6DfTvnYl5cCPvYXTNS52HFQRfzxpJrMw2w3F/Mq6O5XbarhPNFs
-	8WL72x7vQE4lluKMREMt5qLiRAD/+v1yDAMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMKsWRmVeSWpSXmKPExsVy+t9jAV0B7vIQgz1PLS0er1nMZPF30jF2
-	i/fLehgtLu/Xtph/5ByrxZ8JrWwWk+5PYLG48auN1aJ3wVU2i7NNb9gtpvxZzmSx6fE1VovL
-	u+awWcw4v4/JYun1i0wWp65/ZrM4/Kad1WLG5JdsFsdmLGG0WLXrD6PFy48nWBxEPdbMW8Po
-	8fvXJEaPnbPusnvcubaHzWPzknqPKyeaWD36tqxi9Pi8SS6AI6qB0SYjNTEltUghNS85PyUz
-	L91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6DUlhbLEnFKgUEBicbGSvh2mCaEh
-	broWMI0Rur4hQXA9RgZoIGENY0b37K1sBZ8kKvo/XGdqYLwl0sXIySEhYCKx4/AldghbTOLC
-	vfVsXYxcHEICixgl7pw9ywjhvGaUuHDlK1gVr4CWxKInD1lBbBYBVYm/B56DxdmA4vtf3GAD
-	sUUFwiRWTr/CAlEvKPFj8j0wW0RAXaJn1xcWkKHMArs4JNreP2AESQgLpEhsuDedGWLbMkaJ
-	p5O+MoEkOAX0JTpOdYJ1MwvoSOxvncYGYctLbF7zlnkCo8AsJEtmISmbhaRsASPzKkbR1ILk
-	guKk9FxDveLE3OLSvHS95PzcTYzgBPRMagfjygaLQ4wCHIxKPLwWB8pChFgTy4orcw8xSnAw
-	K4nwcjGWhwjxpiRWVqUW5ccXleakFh9iNAWGwURmKdHkfGByzCuJNzQ2MTOyNDI3tDAyNlcS
-	571xMzdESCA9sSQ1OzW1ILUIpo+Jg1OqgbFb53uPgo+jbMq1kuzPGhu/PbpWefZ74MeYouIe
-	g+0nrzF+Pmcy4/pX8Xn6zjdK/mUmmhTLLN8i9He5DO/StlAXw6DbmufeSD94/I/vp3ONXcFt
-	1yKF34duebwqnhbW/0shdVqaxKxTZ6bf/cQfl/ZsyhefZgtez6evrXue7WL+G5pxzPT6+7NK
-	LMUZiYZazEXFiQDBkF4+VgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-edac@vger.kernel.org, "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Borislav Petkov <bp@alien8.de>, Punnaiah Choudary <kpc528@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Mark,
-
-On 11/27/2014 08:21 PM, Mark Rutland wrote:
-> On Thu, Nov 27, 2014 at 07:34:59AM +0000, Chanwoo Choi wrote:
->> This patch add binding documentation for Exynos5433 clock controller.
->> Exynos5433 has various clock domains So, this documentation explains
->> the detailed clock domains ans usage guide.
+On Thu, Nov 27, 2014 at 4:29 PM, Michal Simek <michal.simek@xilinx.com> wrote:
+> Hi Punnaiah,
+>
+> On 11/25/2014 05:22 PM, Punnaiah Choudary Kalluri wrote:
+>> Added EDAC support for reporting the ecc errors of synopsys ddr controller.
+>> The ddr ecc controller corrects single bit errors and detects double bit
+>> errors.
 >>
->> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
->> Cc: Tomasz Figa <tomasz.figa@gmail.com>
->> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->> Acked-by: Inki Dae <inki.dae@samsung.com>
->> Acked-by: Geunsik Lim <geunsik.lim@samsung.com>
+>> Signed-off-by: Punnaiah Choudary Kalluri <punnaia@xilinx.com>
 >> ---
->>  .../devicetree/bindings/clock/exynos5433-clock.txt | 106 +++++++++++++++++++++
->>  1 file changed, 106 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/clock/exynos5433-clock.txt
+>> Changes for v4:
+>> - Shorten the macro definitions
+>> - Corrected the ddr ip version
+>> - Reverted the file name change
+>> Changes for v3:
+>> - Updated maintainer information
+>> - Driver cleanup as per the review comments
+>> - Shortened the prefix "sysnopsys" to "synps"
+>> Changes for v2:
+>> - Updated the commit header and message
+>> - Renamed the filenames to synopsys_edac
+>> - Corrected the compatilble string, commnets
+>> - Renamed the macros,fucntions and data structures
+>> ---
+>>  .../devicetree/bindings/edac/synopsys_edac.txt     |   18 +
+>>  MAINTAINERS                                        |    1 +
+>>  drivers/edac/Kconfig                               |    7 +
+>>  drivers/edac/Makefile                              |    1 +
+>>  drivers/edac/synopsys_edac.c                       |  543 ++++++++++++++++++++
+>>  5 files changed, 570 insertions(+), 0 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/edac/synopsys_edac.txt
+>>  create mode 100644 drivers/edac/synopsys_edac.c
 >>
->> diff --git a/Documentation/devicetree/bindings/clock/exynos5433-clock.txt b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
+>> diff --git a/Documentation/devicetree/bindings/edac/synopsys_edac.txt b/Documentation/devicetree/bindings/edac/synopsys_edac.txt
+>
+> Binding is already here
+> Documentation/devicetree/bindings/memory-controllers/synopsys.txt
+>
+> can you please just add there ECC information?
+
+Oh ok. Thanks.
+
+>
 >> new file mode 100644
->> index 0000000..72cd0ba
+>> index 0000000..a64497a
 >> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
->> @@ -0,0 +1,106 @@
->> +* Samsung Exynos5433 CMU (Clock Management Units)
+>> +++ b/Documentation/devicetree/bindings/edac/synopsys_edac.txt
+>> @@ -0,0 +1,18 @@
+>> +Synopsys EDAC driver, it does reports the DDR ECC single bit errors that are
+>> +corrected and double bit ecc errors that are detected by the DDR ECC controller.
+>> +ECC support for DDR is available in half-bus width(16 bit) configuration only.
 >> +
->> +The Exynos5433 clock controller generates and supplies clock to various
->> +controllers within the Exynos5433 SoC.
+>> +Required properties:
+>> +- compatible: Should be "xlnx,zynq-ddrc-A05"
+>> +- reg: Should contain DDR controller registers location and length.
 >> +
->> +Required Properties:
+>> +Example:
+>> +++++++++
 >> +
->> +- compatible: should be one of the following.
->> +  - "samsung,exynos5433-cmu-top"   - clock controller compatible for CMU_TOP
->> +    which generates clocks for IMEM/FSYS/G3D/GSCL/HEVC/MSCL/G2D/MFC/PERIC/PERIS
->> +    domains and bus clocks.
->> +  - "samsung,exynos5433-cmu-cpif"  - clock controller compatible for CMU_CPIF
->> +    which generates clocks for LLI (Low Latency Interface) IP.
->> +  - "samsung,exynos5433-cmu-mif"   - clock controller compatible for CMU_MIF
->> +    which generates clocks for DRAM Memory Controller domain.
->> +  - "samsung,exynos5433-cmu-peric" - clock controller compatible for CMU_PERIC
->> +    which generates clocks for UART/I2C/SPI/I2S/PCM/SPDIF/PWM/SLIMBUS IPs.
->> +  - "samsung,exynos5433-cmu-peris" - clock controller compatible for CMU_PERIS
->> +    which generates clocks for PMU/TMU/MCT/WDT/RTC/SECKEY/TZPC IPs.
->> +  - "samsung,exynos5433-cmu-fsys"  - clock controller compatible for CMU_FSYS
->> +    which generates clocks for USB/UFS/SDMMC/TSI/PDMA IPs.
+>> +ddrc0: ddrc@f8006000 {
+>> +     compatible = "xlnx,zynq-ddrc-A05";
+>
+> here should be a05 not A05.
+
+Ok.
+
+>
+>> +     reg = <0xf8006000 0x1000>;
+>> +};
 >> +
->> +- reg: physical base address of the controller and length of memory mapped
->> +  region.
+>> +Synopsys EDAC driver detects the DDR ECC enable state by reading the appropriate
+>> +control register.
+>> diff --git a/MAINTAINERS b/MAINTAINERS
+>> index f10ed39..4a16f97 100644
+>> --- a/MAINTAINERS
+>> +++ b/MAINTAINERS
+>> @@ -1522,6 +1522,7 @@ N:      xilinx
+>>  F:   drivers/clocksource/cadence_ttc_timer.c
+>>  F:   drivers/i2c/busses/i2c-cadence.c
+>>  F:   drivers/mmc/host/sdhci-of-arasan.c
+>> +F:   drivers/edac/synopsys_edac.c
+>>
+>>  ARM SMMU DRIVER
+>>  M:   Will Deacon <will.deacon@arm.com>
+>> diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
+>> index 7072c28..c6d448e 100644
+>> --- a/drivers/edac/Kconfig
+>> +++ b/drivers/edac/Kconfig
+>> @@ -385,4 +385,11 @@ config EDAC_ALTERA_MC
+>>         preloader must initialize the SDRAM before loading
+>>         the kernel.
+>>
+>> +config EDAC_SYNOPSYS
+>> +     tristate "Synopsys DDR Memory Controller"
+>> +     depends on EDAC_MM_EDAC && ARCH_ZYNQ
+>> +     help
+>> +       Support for EDAC on the ECC memory used with the Synopsys DDR
+>> +       memory controller.
 >> +
->> +- #clock-cells: should be 1.
+>>  endif # EDAC
+>> diff --git a/drivers/edac/Makefile b/drivers/edac/Makefile
+>> index 359aa49..9b5a095 100644
+>> --- a/drivers/edac/Makefile
+>> +++ b/drivers/edac/Makefile
+>> @@ -67,3 +67,4 @@ obj-$(CONFIG_EDAC_OCTEON_LMC)               += octeon_edac-lmc.o
+>>  obj-$(CONFIG_EDAC_OCTEON_PCI)                += octeon_edac-pci.o
+>>
+>>  obj-$(CONFIG_EDAC_ALTERA_MC)         += altera_edac.o
+>> +obj-$(CONFIG_EDAC_SYNOPSYS)          += synopsys_edac.o
+>> diff --git a/drivers/edac/synopsys_edac.c b/drivers/edac/synopsys_edac.c
+>> new file mode 100644
+>> index 0000000..3522432
+>> --- /dev/null
+>> +++ b/drivers/edac/synopsys_edac.c
+>> @@ -0,0 +1,543 @@
+>> +/*
+>> + * Synopsys DDR ECC Driver
+>> + * This driver is based on ppc4xx_edac.c drivers
+>> + *
+>> + * Copyright (C) 2012 - 2014 Xilinx, Inc.
+>> + *
+>> + * This program is free software: you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License as published by
+>> + * the Free Software Foundation, either version 2 of the License, or
+>> + * (at your option) any later version.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + *
+>> + * This file is subject to the terms and conditions of the GNU General Public
+>> + * License.  See the file "COPYING" in the main directory of this archive
+>> + * for more details
+>> + */
 >> +
->> +Each clock is assigned an identifier and client nodes can use this identifier
->> +to specify the clock which they consume.
+>> +#include <linux/edac.h>
+>> +#include <linux/module.h>
+>> +#include <linux/platform_device.h>
 >> +
->> +All available clocks are defined as preprocessor macros in
->> +dt-bindings/clock/exynos5433.h header and can be used in device
->> +tree sources.
-> 
-> That header should be added as part of this patch, otehrwise this is
-> incomplete.
+>> +#include "edac_core.h"
+>> +
+>> +/* Number of cs_rows needed per memory controller */
+>> +#define SYNPS_EDAC_NR_CSROWS 1
+>> +
+>> +/* Number of channels per memory controller */
+>> +#define SYNPS_EDAC_NR_CHANS  1
+>> +
+>> +/* Granularity of reported error in bytes */
+>> +#define SYNPS_EDAC_ERR_GRAIN 1
+>> +
+>> +#define SYNPS_EDAC_MSG_SIZE  256
+>> +
+>> +#define SYNPS_EDAC_MOD_STRING        "synps_edac"
+>> +#define SYNPS_EDAC_MOD_VER   "1"
+>> +
+>> +/* Synopsys DDR memory controller registers that are relevant to ECC */
+>> +#define CTRL_OFST            0x0
+>> +#define T_ZQ_OFST            0xA4
+>> +
+>> +/* ECC control register */
+>> +#define ECC_CTRL_OFST                0xC4
+>> +/* ECC log register */
+>> +#define CE_LOG_OFST          0xC8
+>> +/* ECC address register */
+>> +#define CE_ADDR_OFST         0xCC
+>> +/* ECC data[31:0] register */
+>> +#define CE_DATA_31_0_OFST    0xD0
+>> +
+>> +/* Uncorrectable error info regsisters */
+>> +#define UE_LOG_OFST          0xDC
+>> +#define UE_ADDR_OFST         0xE0
+>> +#define UE_DATA_31_0_OFST    0xE4
+>> +
+>> +#define STAT_OFST            0xF0
+>> +#define SCRUB_OFST           0xF4
+>> +
+>> +/* Control regsiter bitfield definitions */
+>> +#define CTRL_BW_MASK         0xC
+>> +#define CTRL_BW_SHIFT                2
+>> +
+>> +#define DDRCTL_WDTH_16               1
+>> +#define DDRCTL_WDTH_32               0
+>> +
+>> +/* ZQ register bitfield definitions */
+>> +#define T_ZQ_DDRMODE_MASK    0x2
+>> +
+>> +/* ECC control register bitfield definitions */
+>> +#define ECC_CTRL_CLR_CE_ERR  0x2
+>> +#define ECC_CTRL_CLR_UE_ERR  0x1
+>> +
+>> +/* ECC correctable/uncorrectable error log register definitions */
+>> +#define CE_LOG_VALID         0x1
+>> +#define CE_LOG_BITPOS_MASK   0xFE
+>> +#define CE_LOG_BITPOS_SHIFT  1
+>> +
+>> +/* ECC correctable/uncorrectable error address register definitions */
+>> +#define ADDR_COL_MASK                0xFFF
+>> +#define ADDR_ROW_MASK                0xFFFF000
+>> +#define ADDR_ROW_SHIFT               12
+>> +#define ADDR_BANK_MASK               0x70000000
+>> +#define ADDR_BANK_SHIFT              28
+>> +
+>> +/* ECC statistic regsiter definitions */
+>> +#define STAT_UECNT_MASK              0xFF
+>> +#define STAT_CECNT_MASK              0xFF00
+>> +#define STAT_CECNT_SHIFT     8
+>> +
+>> +/* ECC scrub regsiter definitions */
+>> +#define SCRUB_MODE_MASK              0x7
+>> +#define SCRUB_MODE_SECDED    0x4
+>> +
+>> +/**
+>> + * struct ecc_error_info - ECC error log information
+>> + * @row:     Row number
+>> + * @col:     Column number
+>> + * @bank:    Bank number
+>> + * @bitpos:  Bit position
+>> + * @data:    Data causing the error
+>> + */
+>> +struct ecc_error_info {
+>> +     u32 row;
+>> +     u32 col;
+>> +     u32 bank;
+>> +     u32 bitpos;
+>> +     u32 data;
+>> +};
+>> +
+>> +/**
+>> + * struct synps_ecc_status - ECC status information to report
+>> + * @ce_count:        Correctable error count
+>> + * @ue_count:        Uncorrectable error count
+>> + * @ceinfo:  Correctable error log information
+>> + * @ueinfo:  Uncorrectable error log information
+>> + */
+>> +struct synps_ecc_status {
+>> +     u32 ce_cnt;
+>> +     u32 ue_cnt;
+>> +     struct ecc_error_info ceinfo;
+>> +     struct ecc_error_info ueinfo;
+>> +};
+>> +
+>> +/**
+>> + * struct synps_edac_priv - DDR memory controller private instance data
+>> + * @baseaddr:                Base address of the DDR controller
+>> + * @ce_count:                Correctable Error count
+>> + * @ue_count:                Uncorrectable Error count
+>> + */
+>> +struct synps_edac_priv {
+>> +     void __iomem *baseaddr;
+>> +     u32 ce_cnt;
+>> +     u32 ue_cnt;
+>> +};
+>> +
+>> +/**
+>> + * synps_edac_geterror_info - Get the current ecc error info
+>> + * @base:    Pointer to the base address of the ddr memory controller
+>> + * @perrstatus:      Pointer to the synopsys ecc status structure
+>> + *
+>> + * This routine determines there is any ecc error or not
+>> + *
+>> + * Return: zero if there is no error otherwise returns 1
+>> + */
+>> +static int synps_edac_geterror_info(void __iomem *base,
+>> +                                 struct synps_ecc_status *p)
+>> +{
+>
+> This is driver internal function. I think that will be just better
+> to return 0 on success and different values otherwise.
+> It should be easy to change it.
 
-OK, I'll merge two patches (patch2 and patch3) by solving this issue.
+OK. I will change.
+>
+>> +     u32 regval;
+>> +     u32 clearval = 0;
+>> +
+>> +     regval = readl(base + STAT_OFST) & (STAT_UECNT_MASK | STAT_CECNT_MASK);
+>> +
+>> +     if (!regval)
+>> +             return 0;
+>> +
+>> +     memset(p, 0, sizeof(*p));
+>> +
+>> +     p->ce_cnt = (regval & STAT_CECNT_MASK) >> STAT_CECNT_SHIFT;
+>> +     p->ue_cnt = regval & STAT_UECNT_MASK;
+>> +
+>> +     regval = readl(base + CE_LOG_OFST);
+>> +     if (!(p->ce_cnt && (regval & CE_LOG_VALID)))
+>> +             goto ue_err;
+>> +
+>> +     p->ceinfo.bitpos = (regval & CE_LOG_BITPOS_MASK) >> CE_LOG_BITPOS_SHIFT;
+>> +     regval = readl(base + CE_ADDR_OFST);
+>> +     p->ceinfo.row = (regval & ADDR_ROW_MASK) >> ADDR_ROW_SHIFT;
+>> +     p->ceinfo.col = regval & ADDR_COL_MASK;
+>> +     p->ceinfo.bank = (regval & ADDR_BANK_MASK) >> ADDR_BANK_SHIFT;
+>> +     p->ceinfo.data = readl(base + CE_DATA_31_0_OFST);
+>> +     edac_dbg(3, "ce bitposition: %d data: %d\n", p->ceinfo.bitpos,
+>> +                                             p->ceinfo.data);
+>> +     clearval = ECC_CTRL_CLR_CE_ERR;
+>> +
+>> +ue_err:
+>> +     regval = readl(base + UE_LOG_OFST);
+>> +     if (!(p->ue_cnt && (regval & CE_LOG_VALID)))
+>> +             goto out;
+>> +
+>> +     regval = readl(base + UE_ADDR_OFST);
+>> +     p->ueinfo.row = (regval & ADDR_ROW_MASK) >> ADDR_ROW_SHIFT;
+>> +     p->ueinfo.col = regval & ADDR_COL_MASK;
+>> +     p->ueinfo.bank = (regval & ADDR_BANK_MASK) >> ADDR_BANK_SHIFT;
+>> +     p->ueinfo.data = readl(base + UE_DATA_31_0_OFST);
+>> +     clearval |= ECC_CTRL_CLR_UE_ERR;
+>> +
+>> +out:
+>> +     writel(clearval, base + ECC_CTRL_OFST);
+>> +     writel(0x0, base + ECC_CTRL_OFST);
+>> +
+>> +     return 1;
+>> +}
+>> +
+>> +/**
+>> + * synps_edac_handle_error - Handle controller error types CE and UE
+>> + * @mci:     Pointer to the edac memory controller instance
+>> + * @perrstatus:      Pointer to the synopsys ecc status structure
+>> + *
+>> + * This routine handles the controller ECC correctable and un correctable
+>> + * error.
+>> + */
+>> +static void synps_edac_handle_error(struct mem_ctl_info *mci,
+>> +                                 struct synps_ecc_status *p)
+>> +{
+>> +     char message[SYNPS_EDAC_MSG_SIZE];
+>> +     struct ecc_error_info *pinf;
+>> +
+>> +     if (p->ce_cnt) {
+>> +             pinf = &p->ceinfo;
+>> +             snprintf(message, SYNPS_EDAC_MSG_SIZE,
+>> +                      "DDR ECC error type :%s Row %d Bank %d Col %d ",
+>> +                      "CE", pinf->row, pinf->bank, pinf->col);
+>> +             edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
+>> +                                  p->ce_cnt, 0, 0, 0, 0, 0, -1,
+>> +                                  message, "");
+>> +     }
+>> +
+>> +     if (p->ue_cnt) {
+>> +             pinf = &p->ueinfo;
+>> +             snprintf(message, SYNPS_EDAC_MSG_SIZE,
+>> +                      "DDR ECC error type :%s Row %d Bank %d Col %d ",
+>> +                      "UE", pinf->row, pinf->bank, pinf->col);
+>> +             edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
+>> +                                  p->ue_cnt, 0, 0, 0, 0, 0, -1,
+>> +                                  message, "");
+>> +     }
+>> +}
+>> +
+>> +/**
+>> + * synps_edac_check - Check controller for ECC errors
+>> + * @mci:     Pointer to the edac memory controller instance
+>> + *
+>> + * This routine is used to check and post ECC errors and is called by
+>> + * the EDAC polling thread
+>> + */
+>> +static void synps_edac_check(struct mem_ctl_info *mci)
+>> +{
+>> +     struct synps_edac_priv *priv = mci->pvt_info;
+>> +     struct synps_ecc_status stat;
+>> +     int status;
+>> +
+>> +     status = synps_edac_geterror_info(priv->baseaddr, &stat);
+>> +     if (!status)
+>> +             return;
+>> +
+>> +     priv->ce_cnt += stat.ce_cnt;
+>> +     priv->ue_cnt += stat.ue_cnt;
+>> +     synps_edac_handle_error(mci, &stat);
+>> +
+>> +     edac_dbg(3, "Total error count ce %d ue %d\n",
+>> +                      priv->ce_cnt, priv->ue_cnt);
+>> +}
+>> +
+>> +/**
+>> + * synps_edac_get_dtype - Return the controller memory width
+>> + * @base:    Pointer to the ddr memory contoller base address
+>> + *
+>> + * This routine returns the EDAC device type width appropriate for the
+>> + * current controller configuration.
+>> + *
+>> + * Return: a device type width enumeration.
+>> + */
+>> +static enum dev_type synps_edac_get_dtype(const void __iomem *base)
+>> +{
+>> +     enum dev_type dt;
+>> +     u32 width;
+>> +
+>> +     width = readl(base + CTRL_OFST);
+>> +     width = (width & CTRL_BW_MASK) >> CTRL_BW_SHIFT;
+>> +
+>> +     switch (width) {
+>> +     case DDRCTL_WDTH_16:
+>> +             dt = DEV_X2;
+>> +             break;
+>> +     case DDRCTL_WDTH_32:
+>> +             dt = DEV_X4;
+>> +             break;
+>> +     default:
+>> +             dt = DEV_UNKNOWN;
+>> +     }
+>> +
+>> +     return dt;
+>> +}
+>> +
+>> +/**
+>> + * synps_edac_get_eccstate - Return the controller ecc enable/disable status
+>> + * @base:    Pointer to the ddr memory contoller base address
+>> + *
+>> + * This routine returns the ECC enable/diable status for the controller
+>> + *
+>> + * Return: a ecc status boolean i.e true/false - enabled/disabled.
+>> + */
+>> +static bool synps_edac_get_eccstate(void __iomem *base)
+>> +{
+>> +     enum dev_type dt;
+>> +     u32 ecctype;
+>> +     bool state = false;
+>> +
+>> +     dt = synps_edac_get_dtype(base);
+>> +     if (dt == DEV_UNKNOWN)
+>> +             return state;
+>> +
+>> +     ecctype = readl(base + SCRUB_OFST) & SCRUB_MODE_MASK;
+>> +
+>> +     if ((ecctype == SCRUB_MODE_SECDED) && (dt == DEV_X2)) {
+>> +             state = true;
+>> +             writel(0x0, base + ECC_CTRL_OFST);
+>> +     }
+>> +
+>> +     return state;
+>> +}
+>> +
+>> +/**
+>> + * synps_edac_get_memsize - reads the size of the attached memory device
+>> + *
+>> + * Return: the memory size in bytes
+>> + */
+>> +static u32 synps_edac_get_memsize(void)
+>> +{
+>> +     struct sysinfo inf;
+>> +
+>> +     si_meminfo(&inf);
+>> +
+>> +     return inf.totalram * inf.mem_unit;
+>> +}
+>> +
+>> +/**
+>> + * synps_edac_get_mtype - Returns controller memory type
+>> + * @base:    pointer to the synopsys ecc status structure
+>> + *
+>> + * This routine returns the EDAC memory type appropriate for the
+>> + * current controller configuration.
+>> + *
+>> + * Return: a memory type enumeration.
+>> + */
+>> +static enum mem_type synps_edac_get_mtype(const void __iomem *base)
+>> +{
+>> +     enum mem_type mt;
+>> +     u32 memtype;
+>> +
+>> +     memtype = readl(base + T_ZQ_OFST);
+>> +
+>> +     if (memtype & T_ZQ_DDRMODE_MASK)
+>> +             mt = MEM_DDR3;
+>> +     else
+>> +             mt = MEM_DDR2;
+>> +
+>> +     return mt;
+>> +}
+>> +
+>> +/**
+>> + * synps_edac_init_csrows - Initialize the cs row data
+>> + * @mci:     Pointer to the edac memory controller instance
+>> + *
+>> + * This routine initializes the chip select rows associated
+>> + * with the EDAC memory controller instance
+>> + *
+>> + * Return: Unconditionally 0.
+>> + */
+>> +static int synps_edac_init_csrows(struct mem_ctl_info *mci)
+>> +{
+>> +     struct csrow_info *csi;
+>> +     struct dimm_info *dimm;
+>> +     struct synps_edac_priv *priv = mci->pvt_info;
+>> +     u32 size;
+>> +     int row, j;
+>> +
+>> +     for (row = 0; row < mci->nr_csrows; row++) {
+>> +             csi = mci->csrows[row];
+>> +             size = synps_edac_get_memsize();
+>> +
+>> +             for (j = 0; j < csi->nr_channels; j++) {
+>> +                     dimm = csi->channels[j]->dimm;
+>> +                     dimm->edac_mode = EDAC_FLAG_SECDED;
+>> +                     dimm->mtype = synps_edac_get_mtype(priv->baseaddr);
+>> +                     dimm->nr_pages =
+>> +                         (size >> PAGE_SHIFT) / csi->nr_channels;
+>> +                     dimm->grain = SYNPS_EDAC_ERR_GRAIN;
+>> +                     dimm->dtype = synps_edac_get_dtype(priv->baseaddr);
+>> +             }
+>> +     }
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +/**
+>> + * synps_edac_mc_init - Initialize driver instance
+>> + * @mci:     Pointer to the edac memory controller instance
+>> + * @pdev:    Pointer to the platform_device struct
+>> + *
+>> + * This routine performs initialization of the EDAC memory controller
+>> + * instance and related driver-private data associated with the
+>> + * memory controller the instance is bound to.
+>> + *
+>> + * Return: 0 if OK; otherwise, < 0 on error.
+>> + */
+>> +static int synps_edac_mc_init(struct mem_ctl_info *mci,
+>> +                              struct platform_device *pdev)
+>> +{
+>> +     int status;
+>> +     struct synps_edac_priv *priv;
+>> +
+>> +     mci->pdev = &pdev->dev;
+>> +     priv = mci->pvt_info;
+>> +     platform_set_drvdata(pdev, mci);
+>> +
+>> +     /* Initialize controller capabilities and configuration */
+>> +     mci->mtype_cap = MEM_FLAG_DDR3 | MEM_FLAG_DDR2;
+>> +     mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
+>> +     mci->scrub_cap = SCRUB_HW_SRC;
+>> +     mci->scrub_mode = SCRUB_NONE;
+>> +
+>> +     mci->edac_cap = EDAC_FLAG_SECDED;
+>> +     mci->ctl_name = "synps_ddr_controller";
+>> +     mci->dev_name = SYNPS_EDAC_MOD_STRING;
+>> +     mci->mod_name = SYNPS_EDAC_MOD_VER;
+>> +     mci->mod_ver = "1";
+>> +
+>> +     edac_op_state = EDAC_OPSTATE_POLL;
+>> +     mci->edac_check = synps_edac_check;
+>> +     mci->ctl_page_to_phys = NULL;
+>> +
+>> +     /*
+>> +      * Initialize the MC control structure 'csrows' table
+>> +      * with the mapping and control information.
+>> +      */
+>> +     status = synps_edac_init_csrows(mci);
+>> +
+>> +     return status;
+>> +}
+>> +
+>> +/**
+>> + * synps_edac_mc_probe - Check controller and bind driver
+>> + * @pdev:    Pointer to the platform_device struct
+>> + *
+>> + * This routine probes a specific controller
+>> + * instance for binding with the driver.
+>> + *
+>> + * Return: 0 if the controller instance was successfully bound to the
+>> + * driver; otherwise, < 0 on error.
+>> + */
+>> +static int synps_edac_mc_probe(struct platform_device *pdev)
+>> +{
+>> +     struct mem_ctl_info *mci;
+>> +     struct edac_mc_layer layers[2];
+>> +     struct synps_edac_priv *priv;
+>> +     int rc;
+>> +     struct resource *res;
+>> +     void __iomem *baseaddr;
+>> +
+>> +     res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +     baseaddr = devm_ioremap_resource(&pdev->dev, res);
+>> +     if (IS_ERR(baseaddr))
+>> +             return PTR_ERR(baseaddr);
+>> +
+>> +     if (synps_edac_get_eccstate(baseaddr) == false) {
+>> +             edac_printk(KERN_INFO, EDAC_MC, "ECC not enabled\n");
+>> +             return -ENXIO;
+>> +     }
+>> +
+>> +     layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
+>> +     layers[0].size = SYNPS_EDAC_NR_CSROWS;
+>> +     layers[0].is_virt_csrow = true;
+>> +     layers[1].type = EDAC_MC_LAYER_CHANNEL;
+>> +     layers[1].size = SYNPS_EDAC_NR_CHANS;
+>> +     layers[1].is_virt_csrow = false;
+>> +
+>> +     mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
+>> +                         sizeof(struct synps_edac_priv));
+>> +     if (!mci) {
+>> +             edac_printk(KERN_ERR, EDAC_MC,
+>> +                     "Failed memory allocation for mc instance\n");
+>> +             return -ENOMEM;
+>> +     }
+>> +
+>> +     priv = mci->pvt_info;
+>> +     priv->baseaddr = baseaddr;
+>> +     rc = synps_edac_mc_init(mci, pdev);
+>> +     if (rc) {
+>> +             edac_printk(KERN_ERR, EDAC_MC,
+>> +                     "Failed to initialize instance\n");
+>> +             goto free_edac_mc;
+>> +     }
+>> +
+>> +     rc = edac_mc_add_mc(mci);
+>> +     if (rc) {
+>> +             edac_printk(KERN_ERR, EDAC_MC,
+>> +                     "Failed to register with EDAC core\n");
+>> +             goto del_edac_mc;
+>> +     }
+>> +
+>> +     return rc;
+>> +
+>> +del_edac_mc:
+>> +     edac_mc_del_mc(&pdev->dev);
+>> +free_edac_mc:
+>> +     edac_mc_free(mci);
+>> +
+>> +     return rc;
+>> +}
+>> +
+>> +/**
+>> + * synps_edac_mc_remove - Unbind driver from controller
+>> + * @pdev:    Pointer to the platform_device struct
+>> + *
+>> + * Return: Unconditionally 0
+>> + */
+>> +static int synps_edac_mc_remove(struct platform_device *pdev)
+>> +{
+>> +     struct mem_ctl_info *mci = platform_get_drvdata(pdev);
+>> +
+>> +     edac_mc_del_mc(&pdev->dev);
+>> +     edac_mc_free(mci);
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static struct of_device_id synps_edac_match[] = {
+>> +     { .compatible = "xlnx,zynq-ddrc-A05", },
+>
+> here should be a05
 
-patch2 : [PATCH 02/19] clk: samsung: Add binding documentation for Exynos5433 clock controller
-patch3 : [PATCH 03/19] clk: samsung: exynos5433: Add clocks using common clock framework
+Ok.
 
-Thanks for your review.
+>
+>> +     { /* end of table */ }
+>> +};
+>> +
+>> +MODULE_DEVICE_TABLE(of, synps_edac_match);
+>> +
+>> +static struct platform_driver synps_edac_mc_driver = {
+>> +     .driver = {
+>> +                .name = "synopsys-edac",
+>> +                .owner = THIS_MODULE,
+>
+> This line is not needed. There were some patches to remove
+> this from all drivers.
 
-Best Regards,
-Chanwoo Choi
+Ok. I will send v5 with these changes
 
-
-
+Thanks,
+Punnaiah
+>
+>> +                .of_match_table = synps_edac_match,
+>> +                },
+>> +     .probe = synps_edac_mc_probe,
+>> +     .remove = synps_edac_mc_remove,
+>> +};
+>> +
+>> +module_platform_driver(synps_edac_mc_driver);
+>> +
+>> +MODULE_AUTHOR("Xilinx Inc");
+>> +MODULE_DESCRIPTION("Synopsys DDR ECC driver");
+>> +MODULE_LICENSE("GPL v2");
+>
+> Thanks,
+> Michal
+>
+>
