@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139AbaK0KOx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 05:14:53 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:44833 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211AbaK0KOu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 05:14:50 -0500
-Date: Thu, 27 Nov 2014 12:14:40 +0200
-From: Johan Hedberg <johan.hedberg@gmail.com>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Steven Walter <stevenrwalter@gmail.com>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        BlueZ development <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] Bluetooth: automatically flushable packets aren't
- allowed on LE links
-Message-ID: <20141127101440.GA11656@t440s>
-Mail-Followup-To: Marcel Holtmann <marcel@holtmann.org>,
-	Steven Walter <stevenrwalter@gmail.com>,
-	"Gustavo F. Padovan" <gustavo@padovan.org>,
-	BlueZ development <linux-bluetooth@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1416419951-27659-1-git-send-email-stevenrwalter@gmail.com>
- <20141120113813.GA23288@t440s.lan>
- <80321467-10AB-489E-A47E-44B0ECEE4BE1@holtmann.org>
- <CAK8d-aL+3eB4WZeqO1sv9p3440EVXQiqF6QiTU5YNAKAbZ7f-w@mail.gmail.com>
- <CAK8d-a+MJBBLkU_=UQGKVmxnM-sYJ=pW7aj0XQ5aa5AuR2G_Wg@mail.gmail.com>
- <50D951D4-0A99-4D77-814C-D80A209B3D4F@holtmann.org>
+	id S1753210AbaK0KTE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 05:19:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33185 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750882AbaK0KTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 05:19:01 -0500
+Date: Thu, 27 Nov 2014 11:18:56 +0100
+From: Jean Delvare <jdelvare@suse.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Benoit Cousson <bcousson@baylibre.com>,
+        Bartosz Golaszewski <bgolaszewski@baylibre.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Patrick Titiano <ptitiano@baylibre.com>,
+        LM Sensors <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH 1/5] hwmon: ina2xx: bail-out from ina2xx_probe() in case
+ of configuration errors
+Message-ID: <20141127111856.5b6fda60@endymion.delvare>
+In-Reply-To: <54762443.90701@roeck-us.net>
+References: <1416930423-12179-1-git-send-email-bgolaszewski@baylibre.com>
+	<1416930423-12179-2-git-send-email-bgolaszewski@baylibre.com>
+	<5474A72D.2000309@roeck-us.net>
+	<CAMpxmJUrs-3oXwYyNh26EnuZRH9bpXrmBBLKM7tmKGx=gSwyuQ@mail.gmail.com>
+	<5474B564.9080902@roeck-us.net>
+	<CAMpxmJVGE444t3gE-=u8kuK_B9rJ=0fw9ZYVuYgQRPdswiPj7Q@mail.gmail.com>
+	<5474C36C.1020004@roeck-us.net>
+	<CAMpxmJUhpX+AAmOS2gcgtJGr0dkeQ7YRyae12oRoW2NkT5drBA@mail.gmail.com>
+	<5474CAC6.8030608@roeck-us.net>
+	<54754364.80705@roeck-us.net>
+	<54759F8A.20303@baylibre.com>
+	<54762443.90701@roeck-us.net>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50D951D4-0A99-4D77-814C-D80A209B3D4F@holtmann.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marcel,
-
-On Wed, Nov 26, 2014, Marcel Holtmann wrote:
-> >>>> I think Marcel was after just providing a clarifying code comment in
-> >>>> both places - having two branches of an if-statement doing exactly the
-> >>>> same thing looks a bit weird to me. To make thins completely clear I'd
-> >>>> suggest adding a simple helper function that you can call from both
-> >>>> places to get the needed flags, something like the following:
-> >>> 
-> >>> I am actually fine with just adding a comment explaining the complex if
-> >>> statement on why it is correct. It is just a helper for everybody to
-> >>> understand what and why it is done that way.
-> >> 
-> >> 
-> >> Is the comment I added sufficient, or should I add one for the other if
-> >> condition as well?  To me, the second condition is pretty straightforward:
-> >> if the caller requested it and the hardware supports it, use NO_FLUSH.  The
-> >> relationship between FLUSH/NO_FLUSH and low-energy is much less clear and
-> >> more justifies a comment, in my opinion.
-> > 
-> > Did a miss a reply to this?  How would you like the next iteration of
-> > the patch to look?
+On Wed, 26 Nov 2014 11:04:35 -0800, Guenter Roeck wrote:
+> On 11/26/2014 01:38 AM, Benoit Cousson wrote:
+> > Unfortunately, that's not dynamic enough for all the use cases we need to support with the probes.
+> > In fact, most customers will rather put the shunts on their board and thus use a shunt-less version of the probe to do the measurement. In that case, there is no way we can hard code, even in a DTS, the shunt value.
+> >
+> > That's for that kind of usage that we do need to be able to set the shunt value at runtime. The probe in that case can be pluged dynamically on different board jumpers to do the measurement.
+> >
+> > Later, thanks to the web UI, the user will be able to configure the shunt value based on the way they were plugged to its boards.
+> >
+> > sysfs seems to be the easiest way to do that. I don't think DT overlay can handle that, since it is depend of the targeted system and not on the measurement system.
+> >
 > 
-> can you just send a v4 and I have a look at it. I thing it is best to
-> keep the original patch with the rather complicated if statement you
-> had. And then add a comment in front of it, why it is that way and
-> that it is correct this way.
+> I just noticed that you did not copy the lm-sensors mailing list.
+> 
+> I am not really happy with this, and want to get some more feedback
+> from the list before I accept more or less arbitrary attributes.
+> Jean, any comments ?
 
-Since this is moving way too slow for such a trivial patch I went ahead
-and added the necessary comments myself and pushed the patch upstream
-(to bluetooth-next). So no need to send new revisions of this one.
+No opinion on the matter, sorry.
 
-Johan
+-- 
+Jean Delvare
+SUSE L3 Support
