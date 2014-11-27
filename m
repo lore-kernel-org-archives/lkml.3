@@ -1,138 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748AbaK0Rff (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 12:35:35 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:65426 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366AbaK0Rfa (ORCPT
+	id S1752141AbaK0RiL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 12:38:11 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:51613 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842AbaK0RiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 12:35:30 -0500
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-To: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        alex.williamson@redhat.com
-Cc: will.deacon@arm.com, tech@virtualopensystems.com,
-        christoffer.dall@linaro.org, eric.auger@linaro.org,
-        kim.phillips@freescale.com, marc.zyngier@arm.com,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        kvm@vger.kernel.org (open list:VFIO DRIVER),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v10 14/20] vfio: add a vfio_ prefix to virqfd_enable and virqfd_disable and export
-Date: Thu, 27 Nov 2014 18:32:54 +0100
-Message-Id: <1417109580-10505-15-git-send-email-a.motakis@virtualopensystems.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1417109580-10505-1-git-send-email-a.motakis@virtualopensystems.com>
-References: <1417109580-10505-1-git-send-email-a.motakis@virtualopensystems.com>
+	Thu, 27 Nov 2014 12:38:08 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: Re: [PATCH 00/11] ARM: at91: remove !DT support for at91rm9200
+Date: Thu, 27 Nov 2014 18:38 +0100
+Message-ID: <27354361.uIQEXGDqXb@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141127171243.GL4508@piout.net>
+References: <cover.1417103399.git.nicolas.ferre@atmel.com> <3550407.q87bWB4Jdt@wuerfel> <20141127171243.GL4508@piout.net>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:pXsJQnIIKUKOub1wkhPxb+1G18DMIdwAM8eIRLLlcYy
+ RGvLILttjX32zhJGENSyvdBccyYz/2o1swJtd/ZY2ZusUgNsML
+ GY+ygeB3jCYFJsEwHX/ZlTc1ihijqEgcvljGvv6TvyQzSxlhPl
+ QhspD2RXrp6eiEeUrcnFWi+IBT3UIjl4oTvLlQXOIQ6VRIoTZR
+ Df/TCsQuM3ZcupWmFGl8HG9zXxhvlJ9ZUstPD11WqQZrin0bIM
+ hYR1bTuW2eeY+RR++1tQOOoAX2EmJR88lY0nKfolh8Bz99dk4i
+ HoV2QAhttl5D+/nYB1esGEwV9V21uPUv7mH9AFjsF0yduH4mMb
+ ZTQx6g2W94RtZNv1VlNU=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We want to reuse virqfd functionality in multiple VFIO drivers; before
-moving these functions to core VFIO, add the vfio_ prefix to the
-virqfd_enable and virqfd_disable functions, and export them so they can
-be used from other modules.
+On Thursday 27 November 2014 18:12:43 Alexandre Belloni wrote:
+> On 27/11/2014 at 17:49:50 +0100, Arnd Bergmann wrote :
+> > On Thursday 27 November 2014 17:06:28 Nicolas Ferre wrote:
+> > > This is the last series of patches that removes the non-Device-Tree board
+> > > support for older Atmel SoCs.
+> > > Again, for the record, it was announced here
+> > > https://lkml.org/lkml/2014/9/10/293 ([ANNOUNCE] ARM: at91: removal of board
+> > > files) two months ago.
+> > > Several files beyond at91rm9200 are touched this time as I tried to remove the
+> > > biggest parts that were related to !DT SoC initializations. More cleanup is
+> > > certainly needed to remove dead code.
+> > > 
+> > > The diffstat is also pretty big as a lot of at91rm9200 boards were remaining.
+> > > 
+> > 
+> > Awesome stuff!
+> > 
+> > Two questions:
+> > 
+> > - is anything holding this up from getting merged in 3.19?
+> > 
+> 
+> If you think this is not too late in the cycle, I would say go ahead 
 
-Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
----
- drivers/vfio/pci/vfio_pci_intrs.c   | 30 ++++++++++++++++--------------
- drivers/vfio/pci/vfio_pci_private.h |  4 ++--
- 2 files changed, 18 insertions(+), 16 deletions(-)
+I'd say we should do it, unless there are last-minute regressions.
 
-diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_intrs.c
-index 553212f..3aaac47 100644
---- a/drivers/vfio/pci/vfio_pci_intrs.c
-+++ b/drivers/vfio/pci/vfio_pci_intrs.c
-@@ -126,10 +126,10 @@ static void virqfd_inject(struct work_struct *work)
- 		virqfd->thread(virqfd->vdev, virqfd->data);
- }
- 
--static int virqfd_enable(struct vfio_pci_device *vdev,
--			 int (*handler)(struct vfio_pci_device *, void *),
--			 void (*thread)(struct vfio_pci_device *, void *),
--			 void *data, struct virqfd **pvirqfd, int fd)
-+int vfio_virqfd_enable(struct vfio_pci_device *vdev,
-+		       int (*handler)(struct vfio_pci_device *, void *),
-+		       void (*thread)(struct vfio_pci_device *, void *),
-+		       void *data, struct virqfd **pvirqfd, int fd)
- {
- 	struct fd irqfd;
- 	struct eventfd_ctx *ctx;
-@@ -215,9 +215,9 @@ err_fd:
- 
- 	return ret;
- }
-+EXPORT_SYMBOL_GPL(vfio_virqfd_enable);
- 
--static void virqfd_disable(struct vfio_pci_device *vdev,
--			   struct virqfd **pvirqfd)
-+void vfio_virqfd_disable(struct vfio_pci_device *vdev, struct virqfd **pvirqfd)
- {
- 	unsigned long flags;
- 
-@@ -237,6 +237,7 @@ static void virqfd_disable(struct vfio_pci_device *vdev,
- 	 */
- 	flush_workqueue(vfio_irqfd_cleanup_wq);
- }
-+EXPORT_SYMBOL_GPL(vfio_virqfd_disable);
- 
- /*
-  * INTx
-@@ -440,8 +441,8 @@ static int vfio_intx_set_signal(struct vfio_pci_device *vdev, int fd)
- static void vfio_intx_disable(struct vfio_pci_device *vdev)
- {
- 	vfio_intx_set_signal(vdev, -1);
--	virqfd_disable(vdev, &vdev->ctx[0].unmask);
--	virqfd_disable(vdev, &vdev->ctx[0].mask);
-+	vfio_virqfd_disable(vdev, &vdev->ctx[0].unmask);
-+	vfio_virqfd_disable(vdev, &vdev->ctx[0].mask);
- 	vdev->irq_type = VFIO_PCI_NUM_IRQS;
- 	vdev->num_ctx = 0;
- 	kfree(vdev->ctx);
-@@ -605,8 +606,8 @@ static void vfio_msi_disable(struct vfio_pci_device *vdev, bool msix)
- 	vfio_msi_set_block(vdev, 0, vdev->num_ctx, NULL, msix);
- 
- 	for (i = 0; i < vdev->num_ctx; i++) {
--		virqfd_disable(vdev, &vdev->ctx[i].unmask);
--		virqfd_disable(vdev, &vdev->ctx[i].mask);
-+		vfio_virqfd_disable(vdev, &vdev->ctx[i].unmask);
-+		vfio_virqfd_disable(vdev, &vdev->ctx[i].mask);
- 	}
- 
- 	if (msix) {
-@@ -639,11 +640,12 @@ static int vfio_pci_set_intx_unmask(struct vfio_pci_device *vdev,
- 	} else if (flags & VFIO_IRQ_SET_DATA_EVENTFD) {
- 		int32_t fd = *(int32_t *)data;
- 		if (fd >= 0)
--			return virqfd_enable(vdev, vfio_pci_intx_unmask_handler,
--					     vfio_send_intx_eventfd, NULL,
--					     &vdev->ctx[0].unmask, fd);
-+			return vfio_virqfd_enable(vdev,
-+						  vfio_pci_intx_unmask_handler,
-+						  vfio_send_intx_eventfd, NULL,
-+						  &vdev->ctx[0].unmask, fd);
- 
--		virqfd_disable(vdev, &vdev->ctx[0].unmask);
-+		vfio_virqfd_disable(vdev, &vdev->ctx[0].unmask);
- 	}
- 
- 	return 0;
-diff --git a/drivers/vfio/pci/vfio_pci_private.h b/drivers/vfio/pci/vfio_pci_private.h
-index 671c17a..2e2f0ea 100644
---- a/drivers/vfio/pci/vfio_pci_private.h
-+++ b/drivers/vfio/pci/vfio_pci_private.h
-@@ -86,8 +86,8 @@ extern ssize_t vfio_pci_vga_rw(struct vfio_pci_device *vdev, char __user *buf,
- extern int vfio_pci_init_perm_bits(void);
- extern void vfio_pci_uninit_perm_bits(void);
- 
--extern int vfio_pci_virqfd_init(void);
--extern void vfio_pci_virqfd_exit(void);
-+extern int vfio_virqfd_init(void);
-+extern void vfio_virqfd_exit(void);
- 
- extern int vfio_config_init(struct vfio_pci_device *vdev);
- extern void vfio_config_free(struct vfio_pci_device *vdev);
--- 
-2.1.3
+> > - Are there any remaining issues that keep us from using multiplatform?
+> >   I know you all have been working on those a lot, but I haven't
+> >   checked what is still missing.
+> > 
+> 
+> As discussed some weeks ago, I prepared patches to switch sama5d[3-4] to
+> multiplatform. We are still missing the SMC and matrix drivers to switch
+> sam9 and rm9200.
+> 
+> The currently affected drivers are:
+>  - drivers/ata/pata_at91.c (SMC)
+>  - drivers/pcmcia/at91_cf.c (SMC)
+>  - drivers/usb/gadget/udc/at91_udc.c (Matrix, this is the only one
+>    for sam9)
+>  - sound/atmel/ac97c.c (that one is still not converted to DT anyway...)
+>  - drivers/watchdog/at91rm9200_wdt.c (WIP, will be converted properly to
+>    an MFD)
+> 
+> I'll resume working on that in December.
 
+Ok, sounds great.
+
+> Do you want me to submit the sama5d[3-4] switch for 3.19? I'll have to
+> rebase on that series. The main remaining issue is that I couldn't work
+> out a way not breaking the defconfigs, even after talking with the
+> Kconfig maintainer so doing first sama5 then sam9/rm9200 will break the
+> defconfigs for sam9/rm9200 twice.
+
+Probably better to do all of mach-at91 at once for 3.20 so we don't break
+anything trying to make both aproaches work together.
+
+	Arnd
