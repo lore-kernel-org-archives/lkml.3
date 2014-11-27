@@ -1,149 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754825AbaK0MDX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 07:03:23 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:62969 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754120AbaK0MDU (ORCPT
+	id S932079AbaK0ME4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 07:04:56 -0500
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:34044 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754714AbaK0MEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 07:03:20 -0500
-From: Xunlei Pang <pang.xunlei@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: rtc-linux@googlegroups.com, Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Sven Schnelle <svens@stackframe.org>,
-        Xunlei Pang <pang.xunlei@linaro.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: [RFC PATCH 1/4] rtc/mxc: Convert get_alarm_or_time()/set_alarm_or_time() to use time64_t
-Date: Thu, 27 Nov 2014 20:02:37 +0800
-Message-Id: <1417089760-26848-2-git-send-email-pang.xunlei@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1417089760-26848-1-git-send-email-pang.xunlei@linaro.org>
-References: <1417089760-26848-1-git-send-email-pang.xunlei@linaro.org>
+	Thu, 27 Nov 2014 07:04:52 -0500
+Date: Thu, 27 Nov 2014 13:04:41 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
+        paulus@samba.org, akpm@linux-foundation.org, schwidefsky@de.ibm.com,
+        mingo@kernel.org
+Subject: Re: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
+ atomic
+Message-ID: <20141127120441.GB4390@osiris>
+References: <20141126151729.GB9612@redhat.com>
+ <20141126152334.GA9648@redhat.com>
+ <20141126163207.63810fcb@thinkpad-w530>
+ <20141126154717.GB10568@redhat.com>
+ <5475FAB1.1000802@de.ibm.com>
+ <20141126163216.GB10850@redhat.com>
+ <547604FC.4030300@de.ibm.com>
+ <20141126170447.GC11202@redhat.com>
+ <20141127070919.GA4390@osiris>
+ <20141127090301.3ddc3077@thinkpad-w530>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141127090301.3ddc3077@thinkpad-w530>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112712-0009-0000-0000-0000022A062C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We want to convert y2038 unsafe rtc_class_ops.set_mmss() and all its
-users to use time64_t. mxc_rtc_set_mmss() in "mxc" driver is one of
-its users, but it uses get_alarm_or_time()/set_alarm_or_time() internal
-interfaces which are also y2038 unsafe.
+On Thu, Nov 27, 2014 at 09:03:01AM +0100, David Hildenbrand wrote:
+> > Code like
+> > 	spin_lock(&lock);
+> > 	if (copy_to_user(...))
+> > 		rc = ...
+> > 	spin_unlock(&lock);
+> > really *should* generate warnings like it did before.
+> > 
+> > And *only* code like
+> > 	spin_lock(&lock);
+> 
+> Is only code like this valid or also with the spin_lock() dropped?
+> (e.g. the access in patch1 if I remember correctly)
+> 
+> So should page_fault_disable() increment the pagefault counter and the preempt
+> counter or only the first one?
 
-So here as a separate patch, it converts these two internal interfaces
-of "mxc" to use safe time64_t first, so as to make some preparations
-for the rtc_class_ops.set_mmss() conversion.
+Given that a sequence like
 
-Currently, "mxc" is the only driver with such issue.
+	page_fault_disable();
+ 	if (copy_to_user(...))
+ 		rc = ...
+ 	page_fault_enable();
 
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
-Signed-off-by: Xunlei Pang <pang.xunlei@linaro.org>
----
- drivers/rtc/rtc-mxc.c |   31 +++++++++++++++----------------
- 1 file changed, 15 insertions(+), 16 deletions(-)
+is correct code right now I think page_fault_disable() should increase both.
+No need for surprising semantic changes.
 
-diff --git a/drivers/rtc/rtc-mxc.c b/drivers/rtc/rtc-mxc.c
-index 419874f..07bff34 100644
---- a/drivers/rtc/rtc-mxc.c
-+++ b/drivers/rtc/rtc-mxc.c
-@@ -106,7 +106,7 @@ static inline int is_imx1_rtc(struct rtc_plat_data *data)
-  * This function is used to obtain the RTC time or the alarm value in
-  * second.
-  */
--static u32 get_alarm_or_time(struct device *dev, int time_alarm)
-+static time64_t get_alarm_or_time(struct device *dev, int time_alarm)
- {
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct rtc_plat_data *pdata = platform_get_drvdata(pdev);
-@@ -129,29 +129,28 @@ static u32 get_alarm_or_time(struct device *dev, int time_alarm)
- 	hr = hr_min >> 8;
- 	min = hr_min & 0xff;
- 
--	return (((day * 24 + hr) * 60) + min) * 60 + sec;
-+	return ((((time64_t)day * 24 + hr) * 60) + min) * 60 + sec;
- }
- 
- /*
-  * This function sets the RTC alarm value or the time value.
-  */
--static void set_alarm_or_time(struct device *dev, int time_alarm, u32 time)
-+static void set_alarm_or_time(struct device *dev, int time_alarm, time64_t time)
- {
--	u32 day, hr, min, sec, temp;
-+	u32 tod, day, hr, min, sec, temp;
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct rtc_plat_data *pdata = platform_get_drvdata(pdev);
- 	void __iomem *ioaddr = pdata->ioaddr;
- 
--	day = time / 86400;
--	time -= day * 86400;
-+	day = div_s64_rem(time, 86400, &tod);
- 
- 	/* time is within a day now */
--	hr = time / 3600;
--	time -= hr * 3600;
-+	hr = tod / 3600;
-+	tod -= hr * 3600;
- 
- 	/* time is within an hour now */
--	min = time / 60;
--	sec = time - min * 60;
-+	min = tod / 60;
-+	sec = tod - min * 60;
- 
- 	temp = (hr << 8) + min;
- 
-@@ -176,20 +175,20 @@ static void set_alarm_or_time(struct device *dev, int time_alarm, u32 time)
- static int rtc_update_alarm(struct device *dev, struct rtc_time *alrm)
- {
- 	struct rtc_time alarm_tm, now_tm;
--	unsigned long now, time;
-+	time64_t now, time;
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct rtc_plat_data *pdata = platform_get_drvdata(pdev);
- 	void __iomem *ioaddr = pdata->ioaddr;
- 
- 	now = get_alarm_or_time(dev, MXC_RTC_TIME);
--	rtc_time_to_tm(now, &now_tm);
-+	rtc_time64_to_tm(now, &now_tm);
- 	alarm_tm.tm_year = now_tm.tm_year;
- 	alarm_tm.tm_mon = now_tm.tm_mon;
- 	alarm_tm.tm_mday = now_tm.tm_mday;
- 	alarm_tm.tm_hour = alrm->tm_hour;
- 	alarm_tm.tm_min = alrm->tm_min;
- 	alarm_tm.tm_sec = alrm->tm_sec;
--	rtc_tm_to_time(&alarm_tm, &time);
-+	time = rtc_tm_to_time64(&alarm_tm);
- 
- 	/* clear all the interrupt status bits */
- 	writew(readw(ioaddr + RTC_RTCISR), ioaddr + RTC_RTCISR);
-@@ -283,14 +282,14 @@ static int mxc_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
-  */
- static int mxc_rtc_read_time(struct device *dev, struct rtc_time *tm)
- {
--	u32 val;
-+	time64_t val;
- 
- 	/* Avoid roll-over from reading the different registers */
- 	do {
- 		val = get_alarm_or_time(dev, MXC_RTC_TIME);
- 	} while (val != get_alarm_or_time(dev, MXC_RTC_TIME));
- 
--	rtc_time_to_tm(val, tm);
-+	rtc_time64_to_tm(val, tm);
- 
- 	return 0;
- }
-@@ -333,7 +332,7 @@ static int mxc_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
- 	struct rtc_plat_data *pdata = platform_get_drvdata(pdev);
- 	void __iomem *ioaddr = pdata->ioaddr;
- 
--	rtc_time_to_tm(get_alarm_or_time(dev, MXC_RTC_ALARM), &alrm->time);
-+	rtc_time64_to_tm(get_alarm_or_time(dev, MXC_RTC_ALARM), &alrm->time);
- 	alrm->pending = ((readw(ioaddr + RTC_RTCISR) & RTC_ALM_BIT)) ? 1 : 0;
- 
- 	return 0;
--- 
-1.7.9.5
+> So we would have pagefault code rely on:
+> 
+> in_disabled_pagefault() ( pagefault_disabled() ... whatever ) instead of
+> in_atomic().
+
+No, let's be more defensive: the page fault handler should do nothing if
+in_atomic() just like now. But it could have a quick check and emit a one
+time warning if page faults aren't disabled in addition.
+That might help debugging but keeps the system more likely alive.
+
+might_fault() however should call might_sleep() if page faults aren't
+disabled, but that's what you proposed anyway I think.
 
