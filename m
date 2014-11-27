@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311AbaK0AqV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 19:46:21 -0500
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:52145 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943AbaK0AqT (ORCPT
+	id S1752983AbaK0A4J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 19:56:09 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:44230 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846AbaK0A4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 19:46:19 -0500
+	Wed, 26 Nov 2014 19:56:06 -0500
+Message-ID: <5476769E.2070209@hitachi.com>
+Date: Thu, 27 Nov 2014 09:55:58 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <20141126225745.GA30346@redhat.com>
-References: <20141114213124.GB3344@redhat.com>
-	<CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
-	<20141115213405.GA31971@redhat.com>
-	<20141116014006.GA5016@redhat.com>
-	<CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
-	<20141126002501.GA11752@redhat.com>
-	<CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>
-	<20141126024032.GA13246@redhat.com>
-	<20141126225745.GA30346@redhat.com>
-Date: Wed, 26 Nov 2014 16:46:18 -0800
-X-Google-Sender-Auth: 4Nf_HcY9Qp9FAV_TvUB1nQO3dj0
-Message-ID: <CA+55aFwripPcJiVMz-h5F23SyQPhnVygYDyX+D9Em=EvryUbEw@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Petr Mladek <pmladek@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        Namhyung Kim <namhyung@kernel.org>, Miroslav Benes <mbenes@suse.cz>,
+        Ingo Molnar <mingo@kernel.org>, Shuah Khan <shuahkh@osg.samsung.com>
+Subject: Re: [PATCH ftrace/core v6 5/5] kselftest, ftrace: Add ftrace IPMODIFY
+ flag test
+References: <20141121102502.11844.82696.stgit@localhost.localdomain> <20141121102537.11844.9781.stgit@localhost.localdomain> <20141121160329.575fd043@gandalf.local.home> <54729CDE.5030700@hitachi.com> <20141123232932.1ed70d18@gandalf.local.home> <54733C80.6060509@hitachi.com> <20141126093103.4531e485@gandalf.local.home>
+In-Reply-To: <20141126093103.4531e485@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 2:57 PM, Dave Jones <davej@redhat.com> wrote:
->
-> So 3.17 also has this problem.
-> Good news I guess in that it's not a regression, but damn I really didn't
-> want to have to go digging through the mists of time to find the last 'good' point.
-> At least it shouldn't hold up 3.18
+(2014/11/26 23:31), Steven Rostedt wrote:
+> On Mon, 24 Nov 2014 23:11:12 +0900
+> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> 
+>> I hope to have CONFIG_KSELFTEST_BINARIES for Kconfig, or make prep_kselftest
+>> target to build these binaries with kernel...
+> 
+> For binaries (not modules), would that the server and client would need
+> the same environment? Make sure they both have the same shared
+> libraries. Or will the binaries all be built statically linked?
 
-Ugh. That still doesn't make me very happy.
+Good point! That would be optional, but I prefer latter by default :)
 
-I'll try to think about this more.
+Thank you,
 
-                  Linus
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
