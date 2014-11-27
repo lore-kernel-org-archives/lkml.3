@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228AbaK0G1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 01:27:14 -0500
-Received: from mga01.intel.com ([192.55.52.88]:44915 "EHLO mga01.intel.com"
+	id S1754174AbaK0G05 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 01:26:57 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:59583 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754175AbaK0G1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 01:27:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,467,1413270000"; 
-   d="scan'208";a="638887397"
-From: Lv Zheng <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Bob Moore <robert.moore@intel.com>
-Subject: [PATCH 6/6] ACPICA: Update version to 20141107.
-Date: Thu, 27 Nov 2014 14:26:35 +0800
-Message-Id: <6da3e37fc53ebdaa2ba5086d054148cb62de23b8.1416899966.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1416899966.git.lv.zheng@intel.com>
-References: <cover.1416899966.git.lv.zheng@intel.com>
+	id S1754101AbaK0G0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 01:26:52 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 21/25] phy: exynos7-usbdrd: Update dependency for ARCH_EXYNOS
+Date: Thu, 27 Nov 2014 11:56:13 +0530
+Message-ID: <1417069577-1169-22-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1417069577-1169-1-git-send-email-kishon@ti.com>
+References: <1417069577-1169-1-git-send-email-kishon@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bob Moore <robert.moore@intel.com>
+From: Vivek Gautam <gautam.vivek@samsung.com>
 
-Version 20141107.
+This PHY controller is also present on Exynos7 platform
+in arch-exynos family.
+So PHY_EXYNOS5_USBDRD should now depend on ARCH_EXYNOS.
 
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- include/acpi/acpixf.h |    2 +-
+ drivers/phy/Kconfig |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
-index ab2acf6..5ba7846 100644
---- a/include/acpi/acpixf.h
-+++ b/include/acpi/acpixf.h
-@@ -46,7 +46,7 @@
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index 4144d25..96d43d5 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -208,7 +208,7 @@ config PHY_EXYNOS5250_USB2
  
- /* Current ACPICA subsystem version in YYYYMMDD format */
- 
--#define ACPI_CA_VERSION                 0x20140926
-+#define ACPI_CA_VERSION                 0x20141107
- 
- #include <acpi/acconfig.h>
- #include <acpi/actypes.h>
+ config PHY_EXYNOS5_USBDRD
+ 	tristate "Exynos5 SoC series USB DRD PHY driver"
+-	depends on ARCH_EXYNOS5 && OF
++	depends on ARCH_EXYNOS && OF
+ 	depends on HAS_IOMEM
+ 	depends on USB_DWC3_EXYNOS
+ 	select GENERIC_PHY
 -- 
-1.7.10
+1.7.9.5
 
