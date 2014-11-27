@@ -1,75 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755405AbaK0I7Q (ORCPT <rfc822;w@1wt.eu>);
+	id S1755476AbaK0I7T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 03:59:19 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:49130 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755162AbaK0I7Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Nov 2014 03:59:16 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42373 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755162AbaK0ItE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:49:04 -0500
-From: lizf@kernel.org
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, John David Anglin <dave.anglin@bell.net>,
-        Helge Deller <deller@gmx.de>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 61/91] parisc: Only use -mfast-indirect-calls option for 32-bit kernel builds
-Date: Thu, 27 Nov 2014 16:42:44 +0800
-Message-Id: <1417077794-9299-61-git-send-email-lizf@kernel.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
-References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
+X-IronPort-AV: E=Sophos;i="5.07,468,1413270000"; 
+   d="scan'208";a="51599262"
+Message-ID: <5476E7E0.8050406@broadcom.com>
+Date: Thu, 27 Nov 2014 09:59:12 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Takashi Iwai <tiwai@suse.de>
+CC: =?UTF-8?B?TWloYWkgRG9uyJt1?= <mihai.dontu@gmail.com>,
+        <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        <pgynther@google.com>, <marcel@holtmann.org>,
+        <linux-bluetooth@vger.kernel.org>
+Subject: Re: bluetooth related firmware loader spew on resume.
+References: <20141111181228.GA27815@redhat.com>	<20141126165609.41ee0c24@mdontu-l.dsd.ro>	<s5hoaruvvje.wl-tiwai@suse.de>	<20141126172615.7b6e2cdb@mdontu-l.dsd.ro>	<s5hk32ivv6k.wl-tiwai@suse.de>	<54761116.5090700@broadcom.com> <s5hwq6hj0dd.wl-tiwai@suse.de>
+In-Reply-To: <s5hwq6hj0dd.wl-tiwai@suse.de>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John David Anglin <dave.anglin@bell.net>
+On 11/26/14 19:13, Takashi Iwai wrote:
+> At Wed, 26 Nov 2014 18:42:46 +0100,
+> Arend van Spriel wrote:
+>>
+>> On 11/26/14 16:27, Takashi Iwai wrote:
+>>> At Wed, 26 Nov 2014 17:26:15 +0200,
+>>> Mihai Donțu wrote:
+>>>>
+>>>> On Wed, 26 Nov 2014 16:19:49 +0100
+>>>> Takashi Iwai<tiwai@suse.de>   wrote:
+>>>>
+>>>>> At Wed, 26 Nov 2014 16:56:09 +0200,
+>>>>> Mihai Donțu wrote:
+>>>>>>
+>>>>>> On Tue, 11 Nov 2014 13:12:28 -0500 Dave Jones wrote:
+>>>>>>> Since the addition of 10d4c6736ea "Bluetooth: btusb: Add Broadcom patch
+>>>>>>> RAM support", I (and a number of other people[*]) have been seeing
+>>>>>>> this trace on resume from suspend.
+>>>>>>>
+>>>>>>> WARNING: CPU: 1 PID: 8565 at drivers/base/firmware_class.c:1127 _request_firmware+0x4c1/0x7c0()
+>>>>>>> CPU: 1 PID: 8565 Comm: kworker/u17:0 Not tainted 3.17.2-200.fc20.x86_64 #1
+>>>>>>> Hardware name: LENOVO 2356JK8/2356JK8, BIOS G7ET94WW (2.54 ) 04/30/2013
+>>>>>>> Workqueue: hci0 hci_power_on [bluetooth]
+>>>>>>> 0000000000000000 00000000f52a564b ffff8800a8c63be8 ffffffff817271cc
+>>>>>>> 0000000000000000 ffff8800a8c63c20 ffffffff81094ced ffff8800a8c63d10
+>>>>>>> ffff8801365ddf00 ffff8801387b4b00 ffff8800a8c63d08 00000000fffffff5
+>>>>>>> Call Trace:
+>>>>>>> [<ffffffff817271cc>] dump_stack+0x45/0x56
+>>>>>>> [<ffffffff81094ced>] warn_slowpath_common+0x7d/0xa0
+>>>>>>> [<ffffffff81094e1a>] warn_slowpath_null+0x1a/0x20
+>>>>>>> [<ffffffff814965c1>] _request_firmware+0x4c1/0x7c0
+>>>>>>> [<ffffffff8137b9b9>] ? snprintf+0x49/0x70
+>>>>>>> [<ffffffff814968f1>] request_firmware+0x31/0x50
+>>>>>>> [<ffffffffa0943bf3>] btusb_setup_bcm_patchram+0x83/0x550 [btusb]
+>>>>>>> [<ffffffff8148ecf6>] ? rpm_idle+0xd6/0x2b0
+>>>>>>> [<ffffffffa0649051>] hci_dev_do_open+0xe1/0xa60 [bluetooth]
+>>>>>>> ACPI: \_SB_.PCI0.LPC_.EC__.BAT1: docking
+>>>>>>> Restarting tasks ...
+>>>>>>> [<ffffffff810bcb3d>] ? ttwu_do_activate.constprop.90+0x5d/0x70
+>>>>>>> [<ffffffffa064a1c0>] hci_power_on+0x40/0x1e0 [bluetooth]
+>>>>>>> [<ffffffff810f53fb>] ? lock_timer_base.isra.34+0x2b/0x50
+>>>>>>> [<ffffffff810acc39>] process_one_work+0x149/0x3d0
+>>>>>>> [<ffffffff810ad2bb>] worker_thread+0x11b/0x490
+>>>>>>> [<ffffffff810ad1a0>] ? rescuer_thread+0x2e0/0x2e0
+>>>>>>> [<ffffffff810b2318>] kthread+0xd8/0xf0
+>>>>>>> [<ffffffff810b2240>] ? kthread_create_on_node+0x190/0x190
+>>>>>>> [<ffffffff8172e7bc>] ret_from_fork+0x7c/0xb0
+>>>>>>> [<ffffffff810b2240>] ? kthread_create_on_node+0x190/0x190
+>>>>>>> ---[ end trace 75a0e9c7f33ebb4c ]---
+>>>>>>> bluetooth hci0: firmware: brcm/BCM20702A0-0a5c-21e6.hcd will not be loaded
+>>>>>>> Bluetooth: hci0: BCM: patch brcm/BCM20702A0-0a5c-21e6.hcd not found
+>>>>>>>
+>>>>>>>
+>>>>>>> At first I thought it was just over-reaction to the file being missing, but
+>>>>>>> looking at the WARN_ON, it appears that we're trying to invoke the firmware
+>>>>>>> loader before userspace is back up ?
+>>>>>>>
+>>>>>>> In this (and probably other related) kernel, CONFIG_FW_LOADER_USER_HELPER is unset,
+>>>>>>> in case that matters at all.
+>>>>>>>
+>>>>>>> 	Dave
+>>>>>>>
+>>>>>>> [*] https://bugzilla.kernel.org/show_bug.cgi?id=81821
+>>>>>>>       https://bugzilla.redhat.com/show_bug.cgi?id=1133378
+>>>>>>
+>>>>>> I have the following during normal boot:
+>>>>>>
+>>>>>> [    5.620796] Bluetooth: hci0: read Intel version: 370710018002030d00
+>>>>>> [    5.620822] bluetooth hci0: Direct firmware load for intel/ibt-hw-37.7.10-fw-1.80.2.3.d.bseq failed with error -2
+>>>>>> [    5.620827] Bluetooth: hci0 failed to open Intel firmware file: intel/ibt-hw-37.7.10-fw-1.80.2.3.d.bseq(-2)
+>>>>>> [    5.620920] bluetooth hci0: Direct firmware load for intel/ibt-hw-37.7.bseq failed with error -2
+>>>>>> [    5.620922] Bluetooth: hci0 failed to open default Intel fw file: intel/ibt-hw-37.7.bseq
+>>>>>> [    5.629910] EXT4-fs (sda2): mounted filesystem with ordered data mode. Opts: (null)
+>>>>>> [    5.629916] VFS: Mounted root (ext4 filesystem) readonly on device 8:2.
+>>>>>>
+>>>>>> The driver is trying to load the firmware before root is mounted. Do I
+>>>>>> really need an initramfs?
+>>>>>
+>>>>> If btusb driver is loaded in initrd, you'd need the corresponding
+>>>>> firmware in initrd, too.
+>>>>
+>>>> The driver is built into the kernel and I don't use an initrd. I could
+>>>> probably create one, but it's a bit tricky with UEFI and a tad harder
+>>>> to maintain.
+>>>
+>>> Then you can build the firmware file into kernel, too.
+>>
+>> huh? The whole idea of the firmware API was to keep (often proprietary)
+>> firmware out of the kernel. Has that strategy been abandoned recently?
+>
+> See CONFIG_EXTRA_FIRMARE.  It doesn't mean to include the binary blob
+> into the kernel source tree.  It just allows to *build* into your
+> kernel.
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+I see. Thanks for the info. I still do not understand the resume 
+scenario. I though firmware api did some sort of caching of the firmware 
+images.
 
-------------------
-
-
-commit d26a7730b5874a5fa6779c62f4ad7c5065a94723 upstream.
-
-In spite of what the GCC manual says, the -mfast-indirect-calls has
-never been supported in the 64-bit parisc compiler. Indirect calls have
-always been done using function descriptors irrespective of the
--mfast-indirect-calls option.
-
-Recently, it was noticed that a function descriptor was always requested
-when the -mfast-indirect-calls option was specified. This caused
-problems when the option was used in  application code and doesn't make
-any sense because the whole point of the option is to avoid using a
-function descriptor for indirect calls.
-
-Fixing this broke 64-bit kernel builds.
-
-I will fix GCC but for now we need the attached change. This results in
-the same kernel code as before.
-
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: Helge Deller <deller@gmx.de>
-Signed-off-by: Zefan Li <lizefan@huawei.com>
----
- arch/parisc/Makefile | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/arch/parisc/Makefile b/arch/parisc/Makefile
-index 19ab7b2..ac93ca2 100644
---- a/arch/parisc/Makefile
-+++ b/arch/parisc/Makefile
-@@ -51,7 +51,12 @@ cflags-y	:= -pipe
- 
- # These flags should be implied by an hppa-linux configuration, but they
- # are not in gcc 3.2.
--cflags-y	+= -mno-space-regs -mfast-indirect-calls
-+cflags-y	+= -mno-space-regs
-+
-+# -mfast-indirect-calls is only relevant for 32-bit kernels.
-+ifndef CONFIG_64BIT
-+cflags-y	+= -mfast-indirect-calls
-+endif
- 
- # Currently we save and restore fpregs on all kernel entry/interruption paths.
- # If that gets optimized, we might need to disable the use of fpregs in the
--- 
-1.9.1
-
+Regards,
+Arend
