@@ -1,736 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532AbaK0OB2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 09:01:28 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:19840 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366AbaK0OBV (ORCPT
+	id S1751303AbaK0ODI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 09:03:08 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:58446 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812AbaK0ODG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 09:01:21 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-b5-54772eadc5bd
-From: Lukasz Pawelczyk <l.pawelczyk@samsung.com>
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        James Morris <james.l.morris@oracle.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Lukasz Pawelczyk <l.pawelczyk@samsung.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Paul Moore <pmoore@redhat.com>,
-        Kees Cook <keescook@chromium.org>, Miklos Szeredi <mszeredi@suse.cz>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
-        Mark Rustad <mark.d.rustad@intel.com>,
-        David Howells <dhowells@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Juri Lelli <juri.lelli@gmail.com>,
-        Daeseok Youn <daeseok.youn@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Dario Faggioli <raistlin@linux.it>, Alex Thorlton <athorlton@sgi.com>,
-        Matthew Dempsky <mdempsky@chromium.org>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Casey Schaufler <casey@schaufler-ca.com>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Linux Containers <containers@lists.linux-foundation.org>
-Cc: Lukasz Pawelczyk <havner@gmail.com>
-Subject: [RFC] lsm: namespace hooks
-Date: Thu, 27 Nov 2014 15:01:06 +0100
-Message-id: <1417096866-25563-2-git-send-email-l.pawelczyk@samsung.com>
-X-Mailer: git-send-email 1.9.3
-In-reply-to: <1417096866-25563-1-git-send-email-l.pawelczyk@samsung.com>
-References: <1417096866-25563-1-git-send-email-l.pawelczyk@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAAyWRe0hTYQDF/e69frsTR5dN7eofBqYUYkul8LOn/tUHPYwwLCNy6lDDqWxN
-	UwrmI5XVVAxS51DL9yvJqejylVi6Ep+5ibFprZeppRn5Is3pf7/DOYfzx6FJfinlQsfE3RFL
-	40SxbtCOerc1YDjyXJgU7N3IQZqmBogWjAUkMrdtQNRQNQfRq6UZClXMCNDPtE0KbbdlcND2
-	vBfKsVxBg9oZgNZrdQANPZSgofynBNKuZkM0odNAtPToE0SaxUWIJguaOGi8t4xA45smEtWu
-	fKBQa88DgAZUvQRaMWxwkNHUQqLMihcEGk79RqGR0WEOmmgtItHIvwHbgANYrVBBXKwYo3CH
-	2sTBZc1ybHh5HevaOgisrfHE5Z1zBB4s3KRwZnU3hR9PVQO8/GWawvqSdYh/dU9CnNNSB/Dr
-	nmfwsmOo3alIcWxMolh69EyYXbQibQsmlBaBu315Y1ABcu8rAU2zzDHWZHBVAu4OOrGj5iao
-	BHY0n6kEbJaiirMnVAS7Mt9NWFOQ8WZXR7tIq+HA1HJZc2cvaTVI5hBbWZxOWVnAHGS7DDpo
-	ZYrxYM21xt0yjznH1hjzib05V1bVtrDb5TKYzdIVcqzM38l8VW6DPMArAzZ1wFEsj0iQhUdJ
-	fIQykUQmj4sSRsRLmsHeqX/aQfmbE32AoYGbPS/MkhjMtxUlypIlfYClSTcHnq9XUjCfFylK
-	ThFL429J5bFiWR8gaK6LAlwqeqKNcnrfqN9Q+h+W04TI2e+0/1tvy5RzuOBkfZA694c59PxQ
-	s+/VGxf0qZaLav3ZAA8UUZj+fVqfdjz1Zv29fYFjEzH22UECS3J1S6Awo8RmP0y33A4K8ZvF
-	/iGVNTbiFNAfmvZ3zb1f/VH6OdxmLXP22u92R/ee4UnbZY0bJYsW+XiSUpnoP8c3FT6yAgAA
+	Thu, 27 Nov 2014 09:03:06 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: cw00.choi@samsung.com
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        "inki.dae@samsung.com" <inki.dae@samsung.com>,
+        "chanho61.park@samsung.com" <chanho61.park@samsung.com>,
+        "geunsik.lim@samsung.com" <geunsik.lim@samsung.com>,
+        "sw0312.kim@samsung.com" <sw0312.kim@samsung.com>,
+        "jh80.chung@samsung.com" <jh80.chung@samsung.com>,
+        "a.kesavan@samsung.com" <a.kesavan@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 11/19] clk: samsung: exynos5433: Add clocks for CMU_BUS{0|1|2} domains
+Date: Thu, 27 Nov 2014 15:02:26 +0100
+Message-ID: <2120788.f3P3CC6nYQ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAGTfZH3KmwhJNFdmeWnujbbUbtLf5vSi6i2dbV62DeCtV7n4TQ@mail.gmail.com>
+References: <1417073716-22997-1-git-send-email-cw00.choi@samsung.com> <2232281.fbydzq3GMs@wuerfel> <CAGTfZH3KmwhJNFdmeWnujbbUbtLf5vSi6i2dbV62DeCtV7n4TQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V02:K0:XaQi88cl6R3l6TRcdmx9hI0r/fpOCCVI+lGtwxfDKmd
+ Dg6zTJMajKPai0FEMOxRtzXTprJZmBcvKLa7eFb8wjWOEszXJC
+ yDpdPrxhgnP7HUJ62FldvAPu4jmI99LUEMx+lu+ns6JWZAJZIi
+ KPy9tYtUTvR3ScWqlWYX610cpdGqzB/OIyDxEmkmSK8S+gHE1c
+ UMZ7pBYr6vyoxU87YbiVWCFAcWITxIYTDsRToGfyRov7oMOY3x
+ f3dhCZkl05vFM9Njfdj2qmcmTZItqMJ8Z8loU5/p5x6vxCn7gc
+ NZPFpqahrntmavcBJ4b92j2G6szu4hhWfYhaFt2F9W6SKzsJZh
+ chVz/P8RlvVdiLcJIkas=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit implements an empty LSM namespace that provides 5 hooks for
-LSM modules to implement. Using those an LSM module can implement its
-own namespace. The first one to take advantage of this mechanism is
-Smack.
+On Thursday 27 November 2014 22:41:49 Chanwoo Choi wrote:
+> 2014년 11월 27일 목요일, Arnd Bergmann<arnd@arndb.de>님이 작성한 메시지:
+> 
+> > On Thursday 27 November 2014 21:58:53 Chanwoo Choi wrote:
+> > > Dear Arnd,
+> > >
+> > > On 11/27/2014 09:35 PM, Arnd Bergmann wrote:
+> > > > On Thursday 27 November 2014 13:12:08 Sylwester Nawrocki wrote:
+> > > >> On 27/11/14 12:56, Chanwoo Choi wrote:
+> > > >>> On 11/27/2014 08:41 PM, Arnd Bergmann wrote:
+> > > >>>>> On Thursday 27 November 2014 16:35:08 Chanwoo Choi wrote:
+> > > >>>>>>> +  - "samsung,exynos5433-cmu-bus0", "samsung,exynos5433-cmu-bus1"
+> > > >>>>>>> +    and "samsung,exynos5433-cmu-bus2" - clock controller
+> > compatible for CMU_BUS
+> > > >>>>>>> +    which generates global data buses clock and global
+> > peripheral buses clock.
+> > > >>>>>>>
+> > > >>>>>>>  - reg: physical base address of the controller and length of
+> > memory mapped
+> > > >>>>>>>    region.
+> > > >>>>>>>
+> > > >>>>>
+> > > >>>>> This looks like you are duplicating the bindings and the code, but
+> > > >>>>> it's really the same hardware multiple times with minor variations
+> > > >>>>> that you should be able to describe properly here. Why not make
+> > > >>>>> three nodes with the same compatible string and have them handled
+> > > >>>>> by the same code?
+> > > >>>
+> > > >>> Each CMU_BUSx domain of Exynos5433 have different base address as
+> > following:
+> > > >>> - CMU_BUS0's base address and range : 0x1360_0000 ~ 0x1360_0b04
+> > > >>> - CMU_BUS1's base address and range : 0x1480_0000 ~ 0x1480_0b04
+> > > >>> - CMU_BUS2's base address and range : 0x1340_0000 ~ 0x1340_0b04
+> > > >>>
+> > > >>> So, I implement CMU_BUSx domain which has each compatible string.
+> > > >
+> > > > But the base address is in the reg property, not in the compatible
+> > > > property. What I mean is to have multiple nodes like
+> > >
+> > > The merged clock driver in mainline have different compatible string
+> > > if base addresss of clock domain is different. So, I implemented each
+> > CMU_BUSx domain
+> > > with different compatible string.
+> >
+> > Why?
+> 
+> 
+> As I explained on below, each clock domain have different clocks.
+> So, clocks have unique clock name.
+> 
+>  If clock driver use only one compatible for various clock domain, clock
+> driver have to know the base address of each domain for distinction of
+> clock domain. I think It is stong dependency between device and driver.
 
-Look into the comments in the security.h below for info about specific
-hooks.
+No, not at all. You can have lots of clock controllers with the same
+compatible string defining different instances of the same IP block,
+e.g. for compatible="fixed-clock".
 
-Signed-off-by: Lukasz Pawelczyk <l.pawelczyk@samsung.com>
----
- fs/proc/namespaces.c          |   4 ++
- include/linux/lsm_namespace.h |  68 +++++++++++++++++++
- include/linux/nsproxy.h       |   2 +
- include/linux/proc_ns.h       |   2 +
- include/linux/security.h      |  80 +++++++++++++++++++++++
- include/uapi/linux/sched.h    |   3 +-
- kernel/fork.c                 |   2 +-
- kernel/nsproxy.c              |  22 ++++++-
- security/Kconfig              |   8 +++
- security/Makefile             |   1 +
- security/capability.c         |  33 ++++++++++
- security/lsm_namespace.c      | 147 ++++++++++++++++++++++++++++++++++++++++++
- security/security.c           |  42 ++++++++++++
- 13 files changed, 408 insertions(+), 6 deletions(-)
- create mode 100644 include/linux/lsm_namespace.h
- create mode 100644 security/lsm_namespace.c
+> >
+> > > >     clock-controller@113600000 {
+> > > >             reg = <0 0x113600000 0 0x1000>;
+> > > >             compatible = "samsung,exynos5433-cmu";
+> > > >             #clock-cells = <1>;
+> > > >     };
+> > > >
+> > > >     clock-controller@114800000 {
+> > > >             reg = <0 0x114800000 0 0x1000>;
+> > > >             compatible = "samsung,exynos5433-cmu";
+> > > >             #clock-cells = <1>;
+> > > >     };
+> > > >
+> > > > The code will just map the local registers for each instance and then
+> > > > provide the clocks of the right instance when asked for it.
+> > >
+> > > Each clock domain has not the same mux/divider/clock. So, just one
+> > compatible
+> > > string could not support all of clock domains.
+> >
+> > What are the specific differences?
+> 
+> 
+> 
+> > I'm not sure that difference among clock domains because I think it is
+> dependent on the opinion of architect of SoC.
+> 
+> cmu_bus0/1/2 are much similar. Just cmu_bus2 has one more mux/gate clock
+> than cmu_bus0/1.
 
-diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
-index 8902609..266e8d8 100644
---- a/fs/proc/namespaces.c
-+++ b/fs/proc/namespaces.c
-@@ -12,10 +12,14 @@
- #include <linux/ipc_namespace.h>
- #include <linux/pid_namespace.h>
- #include <linux/user_namespace.h>
-+#include <linux/lsm_namespace.h>
- #include "internal.h"
- 
- 
- static const struct proc_ns_operations *ns_entries[] = {
-+#ifdef CONFIG_SECURITY_NS
-+	&lsmns_operations,
-+#endif
- #ifdef CONFIG_NET_NS
- 	&netns_operations,
- #endif
-diff --git a/include/linux/lsm_namespace.h b/include/linux/lsm_namespace.h
-new file mode 100644
-index 0000000..7caf3db
---- /dev/null
-+++ b/include/linux/lsm_namespace.h
-@@ -0,0 +1,68 @@
-+/*
-+ * Copyright (C) 2014 Samsung Electronics.
-+ *
-+ * LSM namespaces
-+ *
-+ * Author(s):
-+ *    Lukasz Pawelczyk <l.pawelczyk@samsung.com>
-+ *
-+ * This program is free software, you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef _LINUX_LSM_S_H
-+#define _LINUX_LSM_S_H
-+
-+#include <linux/sched.h>
-+#include <linux/kref.h>
-+
-+struct lsm_namespace {
-+	struct kref			kref;
-+	struct user_namespace		*user_ns;
-+	unsigned int			proc_inum;
-+	/* for LSM usage */
-+	void				*private;
-+};
-+
-+extern struct lsm_namespace init_lsm_ns;
-+
-+#ifdef CONFIG_SECURITY_NS
-+
-+struct lsm_namespace *copy_lsm_ns(unsigned long flags,
-+				  struct user_namespace *user_ns,
-+				  struct lsm_namespace *ns);
-+void free_lsm_ns(struct kref *kref);
-+
-+static inline struct lsm_namespace *get_lsm_ns(struct lsm_namespace *ns)
-+{
-+	kref_get(&ns->kref);
-+	return ns;
-+}
-+
-+static inline void put_lsm_ns(struct lsm_namespace *ns)
-+{
-+	kref_put(&ns->kref, free_lsm_ns);
-+}
-+
-+#else /* CONFIG_SECURITY_NS */
-+
-+static inline struct lsm_namespace *copy_lsm_ns(unsigned long flags,
-+						struct user_namespace *user_ns,
-+						struct lsm_namespace *ns)
-+{
-+	return ns;
-+}
-+
-+static inline struct lsm_namespace *get_lsm_ns(struct lsm_namespace *ns)
-+{
-+	return ns;
-+}
-+
-+static inline void put_lsm_ns(struct lsm_namespace *ns)
-+{
-+}
-+
-+#endif /* CONFIG_SECURITY_NS */
-+
-+#endif /* _LINUX_LSM_S_H */
-diff --git a/include/linux/nsproxy.h b/include/linux/nsproxy.h
-index b4ec59d..58c7de1 100644
---- a/include/linux/nsproxy.h
-+++ b/include/linux/nsproxy.h
-@@ -8,6 +8,7 @@ struct mnt_namespace;
- struct uts_namespace;
- struct ipc_namespace;
- struct pid_namespace;
-+struct lsm_namespace;
- struct fs_struct;
- 
- /*
-@@ -33,6 +34,7 @@ struct nsproxy {
- 	struct mnt_namespace *mnt_ns;
- 	struct pid_namespace *pid_ns_for_children;
- 	struct net 	     *net_ns;
-+	struct lsm_namespace *lsm_ns;
- };
- extern struct nsproxy init_nsproxy;
- 
-diff --git a/include/linux/proc_ns.h b/include/linux/proc_ns.h
-index 34a1e10..b5eaa50 100644
---- a/include/linux/proc_ns.h
-+++ b/include/linux/proc_ns.h
-@@ -27,6 +27,7 @@ extern const struct proc_ns_operations ipcns_operations;
- extern const struct proc_ns_operations pidns_operations;
- extern const struct proc_ns_operations userns_operations;
- extern const struct proc_ns_operations mntns_operations;
-+extern const struct proc_ns_operations lsmns_operations;
- 
- /*
-  * We always define these enumerators
-@@ -37,6 +38,7 @@ enum {
- 	PROC_UTS_INIT_INO	= 0xEFFFFFFEU,
- 	PROC_USER_INIT_INO	= 0xEFFFFFFDU,
- 	PROC_PID_INIT_INO	= 0xEFFFFFFCU,
-+	PROC_LSM_INIT_INO	= 0xEFFFFFFBU,
- };
- 
- #ifdef CONFIG_PROC_FS
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 3b3aeb1..82a6ece 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -144,6 +144,7 @@ extern unsigned long dac_mmap_min_addr;
- /* forward declares to avoid warnings */
- struct sched_param;
- struct request_sock;
-+struct lsm_namespace;
- 
- /* bprm->unsafe reasons */
- #define LSM_UNSAFE_SHARE	1
-@@ -1400,6 +1401,37 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	audit_rule_init.
-  *	@rule contains the allocated rule
-  *
-+ * @lsmns_init:
-+ *	Initialize initial LSM namespace. This function should allocate and
-+ *	fill the private part of the init_lsm_ns.
-+ *
-+ * @lsmns_allow:
-+ *	Run during a request to create/copy new lsm namespace while creating
-+ *	new nsproxy structure. Returning failure here will block the whole
-+ *	operation requested from userspace (e.g. unshare() or clone()).
-+ *	This function can be effectively used to disallow new namespaces
-+ *	creation.
-+ *	@flags contains flags passed to the userspace syscall (e.g. CLONE_*)
-+ *	@user_ns points to the associated user namespace
-+ *	@old_ns pints to the lsm namespace under which the operation happens
-+ *	Return 0 to allow or -ERRNO to disallow.
-+ *
-+ * @lsmns_setns:
-+ *	Run during a setns syscall to add a process to an already existing
-+ *	lsm namespace. Returning failure here will block the operation
-+ *	requested from userspace (setns() with CLONE_NEWLSM).
-+ *	@nsproxy contains a nsproxy to which the lsm namespace will be assigned.
-+ *	@ns contains lsm namespace that is to be incorporated to the nsproxy.
-+ *
-+ * @lsmns_create:
-+ *	Allocates and fills the private part of a new lsm namespace.
-+ *	@ns points to a newly created lsm namespace.
-+ *	Return a pointer to a namespace or ERR_PTR(-ERRNO) on error.
-+ *
-+ * @lsmns_free:
-+ *	Deallocates the private part of a new lsm namespace.
-+ *	@ns points to a lsm namespace about to be destroyed.
-+ *
-  * @inode_notifysecctx:
-  *	Notify the security module of what the security context of an inode
-  *	should be.  Initializes the incore security context managed by the
-@@ -1729,6 +1761,15 @@ struct security_operations {
- 				 struct audit_context *actx);
- 	void (*audit_rule_free) (void *lsmrule);
- #endif /* CONFIG_AUDIT */
-+
-+#ifdef CONFIG_SECURITY_NS
-+	void (*lsmns_init)(void);
-+	int (*lsmns_allow)(unsigned long flags, struct user_namespace *user_ns,
-+			   struct lsm_namespace *old_ns);
-+	int (*lsmns_setns)(struct nsproxy *nsproxy, struct lsm_namespace *ns);
-+	int (*lsmns_create)(struct lsm_namespace *ns);
-+	void (*lsmns_free)(struct lsm_namespace *ns);
-+#endif /* CONFIG_SECURITY_NS */
- };
- 
- /* prototypes */
-@@ -3116,6 +3157,45 @@ static inline void security_audit_rule_free(void *lsmrule)
- #endif /* CONFIG_SECURITY */
- #endif /* CONFIG_AUDIT */
- 
-+#ifdef CONFIG_SECURITY_NS
-+
-+void security_lsmns_init(void);
-+int security_lsmns_allow(unsigned long flags, struct user_namespace *user_ns,
-+			 struct lsm_namespace *old_ns);
-+int security_lsmns_setns(struct nsproxy *nsproxy, struct lsm_namespace *ns);
-+int security_lsmns_create(struct lsm_namespace *ns);
-+void security_lsmns_free(struct lsm_namespace *ns);
-+
-+#else /* CONFIG_SECURITY_NS */
-+
-+static inline void security_lsmns_init(void)
-+{
-+}
-+
-+static inline int security_lsmns_allow(unsigned long flags,
-+				       struct user_namespace *user_ns,
-+				       struct lsm_namespace *old_ns)
-+{
-+	return 0;
-+}
-+
-+static inline int security_lsmns_setns(struct nsproxy *nsproxy,
-+				       struct lsm_namespace *ns)
-+{
-+	return 0;
-+}
-+
-+static inline int security_lsmns_create(struct lsm_namespace *ns)
-+{
-+	return 0;
-+}
-+
-+static inline void security_lsmns_free(struct lsm_namespace *ns)
-+{
-+}
-+
-+#endif /* CONFIG_SECURITY_NS */
-+
- #ifdef CONFIG_SECURITYFS
- 
- extern struct dentry *securityfs_create_file(const char *name, umode_t mode,
-diff --git a/include/uapi/linux/sched.h b/include/uapi/linux/sched.h
-index 34f9d73..5ac7fb9 100644
---- a/include/uapi/linux/sched.h
-+++ b/include/uapi/linux/sched.h
-@@ -21,8 +21,7 @@
- #define CLONE_DETACHED		0x00400000	/* Unused, ignored */
- #define CLONE_UNTRACED		0x00800000	/* set if the tracing process can't force CLONE_PTRACE on this clone */
- #define CLONE_CHILD_SETTID	0x01000000	/* set the TID in the child */
--/* 0x02000000 was previously the unused CLONE_STOPPED (Start in stopped state)
--   and is now available for re-use. */
-+#define CLONE_NEWLSM		0x02000000	/* New LSM namespace */
- #define CLONE_NEWUTS		0x04000000	/* New utsname group? */
- #define CLONE_NEWIPC		0x08000000	/* New ipcs */
- #define CLONE_NEWUSER		0x10000000	/* New user namespace */
-diff --git a/kernel/fork.c b/kernel/fork.c
-index ed4bc33..a5ac809 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1796,7 +1796,7 @@ static int check_unshare_flags(unsigned long unshare_flags)
- 	if (unshare_flags & ~(CLONE_THREAD|CLONE_FS|CLONE_NEWNS|CLONE_SIGHAND|
- 				CLONE_VM|CLONE_FILES|CLONE_SYSVSEM|
- 				CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET|
--				CLONE_NEWUSER|CLONE_NEWPID))
-+				CLONE_NEWUSER|CLONE_NEWPID|CLONE_NEWLSM))
- 		return -EINVAL;
- 	/*
- 	 * Not implemented, but pretend it works if there is nothing to
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index 8e78110..841228d 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -25,6 +25,7 @@
- #include <linux/proc_ns.h>
- #include <linux/file.h>
- #include <linux/syscalls.h>
-+#include <linux/lsm_namespace.h>
- 
- static struct kmem_cache *nsproxy_cachep;
- 
-@@ -39,6 +40,9 @@ struct nsproxy init_nsproxy = {
- #ifdef CONFIG_NET
- 	.net_ns			= &init_net,
- #endif
-+#ifdef CONFIG_SECURITY
-+	.lsm_ns			= &init_lsm_ns,
-+#endif
- };
- 
- static inline struct nsproxy *create_nsproxy(void)
-@@ -67,6 +71,12 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
- 	if (!new_nsp)
- 		return ERR_PTR(-ENOMEM);
- 
-+	new_nsp->lsm_ns = copy_lsm_ns(flags, user_ns, tsk->nsproxy->lsm_ns);
-+	if (IS_ERR(new_nsp->lsm_ns)) {
-+		err = PTR_ERR(new_nsp->lsm_ns);
-+		goto out_lsm;
-+	}
-+
- 	new_nsp->mnt_ns = copy_mnt_ns(flags, tsk->nsproxy->mnt_ns, user_ns, new_fs);
- 	if (IS_ERR(new_nsp->mnt_ns)) {
- 		err = PTR_ERR(new_nsp->mnt_ns);
-@@ -113,6 +123,9 @@ out_uts:
- 	if (new_nsp->mnt_ns)
- 		put_mnt_ns(new_nsp->mnt_ns);
- out_ns:
-+	if (new_nsp->lsm_ns)
-+		put_lsm_ns(new_nsp->lsm_ns);
-+out_lsm:
- 	kmem_cache_free(nsproxy_cachep, new_nsp);
- 	return ERR_PTR(err);
- }
-@@ -128,7 +141,7 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
- 	struct nsproxy *new_ns;
- 
- 	if (likely(!(flags & (CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC |
--			      CLONE_NEWPID | CLONE_NEWNET)))) {
-+			      CLONE_NEWPID | CLONE_NEWNET | CLONE_NEWLSM)))) {
- 		get_nsproxy(old_ns);
- 		return 0;
- 	}
-@@ -157,6 +170,8 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
- 
- void free_nsproxy(struct nsproxy *ns)
- {
-+	if (ns->lsm_ns)
-+		put_lsm_ns(ns->lsm_ns);
- 	if (ns->mnt_ns)
- 		put_mnt_ns(ns->mnt_ns);
- 	if (ns->uts_ns)
-@@ -165,7 +180,8 @@ void free_nsproxy(struct nsproxy *ns)
- 		put_ipc_ns(ns->ipc_ns);
- 	if (ns->pid_ns_for_children)
- 		put_pid_ns(ns->pid_ns_for_children);
--	put_net(ns->net_ns);
-+	if (ns->net_ns)
-+		put_net(ns->net_ns);
- 	kmem_cache_free(nsproxy_cachep, ns);
- }
- 
-@@ -180,7 +196,7 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
- 	int err = 0;
- 
- 	if (!(unshare_flags & (CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC |
--			       CLONE_NEWNET | CLONE_NEWPID)))
-+			       CLONE_NEWNET | CLONE_NEWPID | CLONE_NEWLSM)))
- 		return 0;
- 
- 	user_ns = new_cred ? new_cred->user_ns : current_user_ns();
-diff --git a/security/Kconfig b/security/Kconfig
-index beb86b5..7b2118b 100644
---- a/security/Kconfig
-+++ b/security/Kconfig
-@@ -70,6 +70,14 @@ config SECURITY_PATH
- 	  implement pathname based access controls.
- 	  If you are unsure how to answer this question, answer N.
- 
-+config SECURITY_NS
-+	bool "Security namespace for LSM modules"
-+	depends on SECURITY
-+	help
-+	  This enables security namespaces for Linux Security Modules.
-+	  The implementation is specific to currently selected LSM module.
-+	  If you are unsure how to answer this question, answer N.
-+
- config INTEL_TXT
- 	bool "Enable Intel(R) Trusted Execution Technology (Intel(R) TXT)"
- 	depends on HAVE_INTEL_TXT
-diff --git a/security/Makefile b/security/Makefile
-index 05f1c93..f333265 100644
---- a/security/Makefile
-+++ b/security/Makefile
-@@ -23,6 +23,7 @@ obj-$(CONFIG_SECURITY_TOMOYO)		+= tomoyo/
- obj-$(CONFIG_SECURITY_APPARMOR)		+= apparmor/
- obj-$(CONFIG_SECURITY_YAMA)		+= yama/
- obj-$(CONFIG_CGROUP_DEVICE)		+= device_cgroup.o
-+obj-$(CONFIG_SECURITY_NS)		+= lsm_namespace.o
- 
- # Object integrity file lists
- subdir-$(CONFIG_INTEGRITY)		+= integrity
-diff --git a/security/capability.c b/security/capability.c
-index a74fde6..e043cc9 100644
---- a/security/capability.c
-+++ b/security/capability.c
-@@ -919,6 +919,32 @@ static void cap_audit_rule_free(void *lsmrule)
- }
- #endif /* CONFIG_AUDIT */
- 
-+#ifdef CONFIG_SECURITY_NS
-+void cap_lsmns_init(void)
-+{
-+}
-+
-+int cap_lsmns_allow(unsigned long flags, struct user_namespace *user_ns,
-+		    struct lsm_namespace *old_ns)
-+{
-+	return 0;
-+}
-+
-+int cap_lsmns_setns(struct nsproxy *nsproxy, struct lsm_namespace *ns)
-+{
-+	return 0;
-+}
-+
-+int cap_lsmns_create(struct lsm_namespace *ns)
-+{
-+	return 0;
-+}
-+
-+void cap_lsmns_free(struct lsm_namespace *ns)
-+{
-+}
-+#endif /* CONFIG_SECURITY_NS */
-+
- #define set_to_cap_if_null(ops, function)				\
- 	do {								\
- 		if (!ops->function) {					\
-@@ -1134,4 +1160,11 @@ void __init security_fixup_ops(struct security_operations *ops)
- 	set_to_cap_if_null(ops, audit_rule_match);
- 	set_to_cap_if_null(ops, audit_rule_free);
- #endif
-+#ifdef CONFIG_SECURITY_NS
-+	set_to_cap_if_null(ops, lsmns_init);
-+	set_to_cap_if_null(ops, lsmns_allow);
-+	set_to_cap_if_null(ops, lsmns_setns);
-+	set_to_cap_if_null(ops, lsmns_create);
-+	set_to_cap_if_null(ops, lsmns_free);
-+#endif
- }
-diff --git a/security/lsm_namespace.c b/security/lsm_namespace.c
-new file mode 100644
-index 0000000..8f7ec3b
---- /dev/null
-+++ b/security/lsm_namespace.c
-@@ -0,0 +1,147 @@
-+/*
-+ * Copyright (C) 2014 Samsung Electronics.
-+ *
-+ * LSM namespaces
-+ *
-+ * Author(s):
-+ *    Lukasz Pawelczyk <l.pawelczyk@samsung.com>
-+ *
-+ * This program is free software, you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/lsm_namespace.h>
-+#include <linux/user_namespace.h>
-+#include <linux/nsproxy.h>
-+#include <linux/proc_ns.h>
-+#include <linux/slab.h>
-+#include <linux/security.h>
-+
-+
-+/* private functions */
-+
-+static struct lsm_namespace *create_lsm_ns(struct user_namespace *user_ns,
-+					   struct lsm_namespace *old_ns)
-+{
-+	struct lsm_namespace *ns;
-+	int err;
-+
-+	ns = kmalloc(sizeof(struct lsm_namespace), GFP_KERNEL);
-+	if (ns == NULL)
-+		return ERR_PTR(-ENOMEM);
-+
-+	err = proc_alloc_inum(&ns->proc_inum);
-+	if (err)
-+		goto freeout;
-+
-+	kref_init(&ns->kref);
-+	ns->user_ns = get_user_ns(user_ns);
-+	ns->private = NULL;
-+
-+	err = security_lsmns_create(ns);
-+	if (err) {
-+		put_user_ns(user_ns);
-+		goto freeout;
-+	}
-+
-+	return ns;
-+
-+freeout:
-+	kfree(ns);
-+	return ERR_PTR(err);
-+}
-+
-+/* public functions */
-+
-+struct lsm_namespace *copy_lsm_ns(unsigned long flags,
-+				  struct user_namespace *user_ns,
-+				  struct lsm_namespace *ns)
-+{
-+	int err;
-+
-+	err = security_lsmns_allow(flags, user_ns, ns);
-+	if (err)
-+		return ERR_PTR(err);
-+
-+	if (!(flags & CLONE_NEWLSM))
-+		return get_lsm_ns(ns);
-+	return create_lsm_ns(user_ns, ns);
-+}
-+
-+void free_lsm_ns(struct kref *kref)
-+{
-+	struct lsm_namespace *ns;
-+
-+	ns = container_of(kref, struct lsm_namespace, kref);
-+
-+	security_lsmns_free(ns);
-+
-+	put_user_ns(ns->user_ns);
-+	proc_free_inum(ns->proc_inum);
-+	kfree(ns);
-+}
-+
-+/* proc_ns_operations hooks */
-+
-+static void *lsmns_get(struct task_struct *task)
-+{
-+	struct lsm_namespace *ns = NULL;
-+	struct nsproxy *nsproxy;
-+
-+	task_lock(task);
-+	nsproxy = task->nsproxy;
-+	if (nsproxy)
-+		ns = get_lsm_ns(nsproxy->lsm_ns);
-+	task_unlock(task);
-+
-+	return ns;
-+}
-+
-+static void lsmns_put(void *ns)
-+{
-+	put_lsm_ns(ns);
-+}
-+
-+static int lsmns_install(struct nsproxy *nsproxy, void *ns)
-+{
-+	struct lsm_namespace *new = ns;
-+	int err;
-+
-+	if (!ns_capable(new->user_ns, CAP_SYS_ADMIN) ||
-+	    !ns_capable(current_user_ns(), CAP_SYS_ADMIN))
-+		return -EPERM;
-+
-+	err = security_lsmns_setns(nsproxy, new);
-+	if (err)
-+		return err;
-+
-+	put_lsm_ns(nsproxy->lsm_ns);
-+	nsproxy->lsm_ns = get_lsm_ns(new);
-+
-+	return 0;
-+}
-+
-+static unsigned int lsmns_inum(void *ns)
-+{
-+	struct lsm_namespace *lsm_ns = ns;
-+
-+	return lsm_ns->proc_inum;
-+}
-+
-+const struct proc_ns_operations lsmns_operations = {
-+	.name		= "lsm",
-+	.type		= CLONE_NEWLSM,
-+	.get		= lsmns_get,
-+	.put		= lsmns_put,
-+	.install	= lsmns_install,
-+	.inum		= lsmns_inum,
-+};
-+
-+static __init int lsm_namespaces_init(void)
-+{
-+	security_lsmns_init();
-+
-+	return 0;
-+}
-+subsys_initcall(lsm_namespaces_init);
-diff --git a/security/security.c b/security/security.c
-index e41b1a8..200365f 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -25,10 +25,22 @@
- #include <linux/mount.h>
- #include <linux/personality.h>
- #include <linux/backing-dev.h>
-+#include <linux/lsm_namespace.h>
-+#include <linux/proc_ns.h>
- #include <net/flow.h>
- 
- #define MAX_LSM_EVM_XATTR	2
- 
-+struct lsm_namespace init_lsm_ns = {
-+	.kref = {
-+		.refcount	= ATOMIC_INIT(1),
-+	},
-+	.user_ns		= &init_user_ns,
-+	.proc_inum		= PROC_LSM_INIT_INO,
-+	/* module specific and to be initialized in lsmns_init() */
-+	.private		= NULL,
-+};
-+
- /* Boot-time LSM user choice */
- static __initdata char chosen_lsm[SECURITY_NAME_MAX + 1] =
- 	CONFIG_DEFAULT_SECURITY;
-@@ -1472,3 +1484,33 @@ int security_audit_rule_match(u32 secid, u32 field, u32 op, void *lsmrule,
- }
- 
- #endif /* CONFIG_AUDIT */
-+
-+#ifdef CONFIG_SECURITY_NS
-+
-+void security_lsmns_init(void)
-+{
-+	security_ops->lsmns_init();
-+}
-+
-+int security_lsmns_allow(unsigned long flags, struct user_namespace *user_ns,
-+			 struct lsm_namespace *old_ns)
-+{
-+	return security_ops->lsmns_allow(flags, user_ns, old_ns);
-+}
-+
-+int security_lsmns_setns(struct nsproxy *nsproxy, struct lsm_namespace *ns)
-+{
-+	return security_ops->lsmns_setns(nsproxy, ns);
-+}
-+
-+int security_lsmns_create(struct lsm_namespace *ns)
-+{
-+	return security_ops->lsmns_create(ns);
-+}
-+
-+void security_lsmns_free(struct lsm_namespace *ns)
-+{
-+	security_ops->lsmns_free(ns);
-+}
-+
-+#endif /* CONFIG_SECURITY_NS */
--- 
-1.9.3
+Yes, that's what I mean. You can simply model that extra mux/gate
+in the driver, as long as nothing ever tries to access the clock.
 
+	Arnd
