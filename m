@@ -1,95 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368AbaK0ULM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 15:11:12 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:33873 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341AbaK0ULH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 15:11:07 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Tim Sander <tim@krieglstein.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Subject: [PATCH 3.18-rc4 v11 2/6] irqchip: gic: Optimize locking in gic_raise_softirq
-Date: Thu, 27 Nov 2014 20:10:20 +0000
-Message-Id: <1417119024-22844-3-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1417119024-22844-1-git-send-email-daniel.thompson@linaro.org>
-References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
- <1417119024-22844-1-git-send-email-daniel.thompson@linaro.org>
+	id S1752424AbaK0UL0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 15:11:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38288 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752394AbaK0ULW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 15:11:22 -0500
+Date: Thu, 27 Nov 2014 22:10:54 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        Jason Wang <jasowang@redhat.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Tom Herbert <therbert@google.com>, Masatake YAMATO <yamato@redhat.com>,
+        Xi Wang <xii@google.com>, netdev@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: [PATCH v6 37/46] tun: move internal flag defines out of uapi
+Message-ID: <1417118789-18231-38-git-send-email-mst@redhat.com>
+References: <1417118789-18231-1-git-send-email-mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417118789-18231-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently gic_raise_softirq() unconditionally takes and releases a lock
-whose only purpose is to synchronize with the b.L switcher.
+TUN_ flags are internal and never exposed
+to userspace. Any application using it is almost
+certainly buggy.
 
-Remove this lock if the b.L switcher is not compiled in.
+Move them out to tun.c, we'll remove them in follow-up patches.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Marc Zyngier <marc.zyngier@arm.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/irqchip/irq-gic.c | 19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+ include/uapi/linux/if_tun.h | 16 ++--------
+ drivers/net/tun.c           | 74 ++++++++++++++-------------------------------
+ 2 files changed, 26 insertions(+), 64 deletions(-)
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 94d77118efa8..e875da93f24a 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -76,8 +76,23 @@ static DEFINE_RAW_SPINLOCK(irq_controller_lock);
-  * This lock is used by the big.LITTLE migration code to ensure no IPIs
-  * can be pended on the old core after the map has been updated.
-  */
-+#ifdef CONFIG_BL_SWITCHER
- static DEFINE_RAW_SPINLOCK(cpu_map_migration_lock);
+diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
+index e9502dd..277a260 100644
+--- a/include/uapi/linux/if_tun.h
++++ b/include/uapi/linux/if_tun.h
+@@ -22,21 +22,11 @@
  
-+static inline void bl_migration_lock(unsigned long *flags)
-+{
-+	raw_spin_lock_irqsave(&cpu_map_migration_lock, *flags);
-+}
-+
-+static inline void bl_migration_unlock(unsigned long flags)
-+{
-+	raw_spin_unlock_irqrestore(&cpu_map_migration_lock, flags);
-+}
-+#else
-+static inline void bl_migration_lock(unsigned long *flags) {}
-+static inline void bl_migration_unlock(unsigned long flags) {}
-+#endif
-+
- /*
-  * The GIC mapping of CPU interfaces does not necessarily match
-  * the logical CPU numbering.  Let's use a mapping as returned
-@@ -630,7 +645,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- 	int cpu;
- 	unsigned long flags, map = 0;
+ /* Read queue size */
+ #define TUN_READQ_SIZE	500
+-
+-/* TUN device flags */
+-#define TUN_TUN_DEV 	0x0001	
+-#define TUN_TAP_DEV	0x0002
++/* TUN device type flags: deprecated. Use IFF_TUN/IFF_TAP instead. */
++#define TUN_TUN_DEV 	IFF_TUN
++#define TUN_TAP_DEV	IFF_TAP
+ #define TUN_TYPE_MASK   0x000f
  
--	raw_spin_lock_irqsave(&cpu_map_migration_lock, flags);
-+	bl_migration_lock(&flags);
- 
- 	/* Convert our logical CPU mask into a physical one. */
- 	for_each_cpu(cpu, mask)
-@@ -645,7 +660,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- 	/* this always happens on GIC0 */
- 	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
- 
--	raw_spin_unlock_irqrestore(&cpu_map_migration_lock, flags);
-+	bl_migration_unlock(flags);
- }
+-#define TUN_FASYNC	0x0010
+-#define TUN_NOCHECKSUM	0x0020
+-#define TUN_NO_PI	0x0040
+-/* This flag has no real effect */
+-#define TUN_ONE_QUEUE	0x0080
+-#define TUN_PERSIST 	0x0100	
+-#define TUN_VNET_HDR 	0x0200
+-#define TUN_TAP_MQ      0x0400
+-
+ /* Ioctl defines */
+ #define TUNSETNOCSUM  _IOW('T', 200, int) 
+ #define TUNSETDEBUG   _IOW('T', 201, int) 
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 9dd3746..bc89d07 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -103,6 +103,21 @@ do {								\
+ } while (0)
  #endif
  
++/* TUN device flags */
++
++/* IFF_ATTACH_QUEUE is never stored in device flags,
++ * overload it to mean fasync when stored there.
++ */
++#define TUN_FASYNC	IFF_ATTACH_QUEUE
++#define TUN_NO_PI	IFF_NO_PI
++/* This flag has no real effect */
++#define TUN_ONE_QUEUE	IFF_ONE_QUEUE
++#define TUN_PERSIST 	IFF_PERSIST
++#define TUN_VNET_HDR 	IFF_VNET_HDR
++#define TUN_TAP_MQ      IFF_MULTI_QUEUE
++
++#define TUN_FEATURES (IFF_NO_PI | IFF_ONE_QUEUE | IFF_VNET_HDR | \
++		      IFF_MULTI_QUEUE)
+ #define GOODCOPY_LEN 128
+ 
+ #define FLT_EXACT_COUNT 8
+@@ -1521,32 +1536,7 @@ static struct proto tun_proto = {
+ 
+ static int tun_flags(struct tun_struct *tun)
+ {
+-	int flags = 0;
+-
+-	if (tun->flags & TUN_TUN_DEV)
+-		flags |= IFF_TUN;
+-	else
+-		flags |= IFF_TAP;
+-
+-	if (tun->flags & TUN_NO_PI)
+-		flags |= IFF_NO_PI;
+-
+-	/* This flag has no real effect.  We track the value for backwards
+-	 * compatibility.
+-	 */
+-	if (tun->flags & TUN_ONE_QUEUE)
+-		flags |= IFF_ONE_QUEUE;
+-
+-	if (tun->flags & TUN_VNET_HDR)
+-		flags |= IFF_VNET_HDR;
+-
+-	if (tun->flags & TUN_TAP_MQ)
+-		flags |= IFF_MULTI_QUEUE;
+-
+-	if (tun->flags & TUN_PERSIST)
+-		flags |= IFF_PERSIST;
+-
+-	return flags;
++	return tun->flags & (TUN_FEATURES | IFF_PERSIST | IFF_TUN | IFF_TAP);
+ }
+ 
+ static ssize_t tun_show_flags(struct device *dev, struct device_attribute *attr,
+@@ -1706,28 +1696,8 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 
+ 	tun_debug(KERN_INFO, tun, "tun_set_iff\n");
+ 
+-	if (ifr->ifr_flags & IFF_NO_PI)
+-		tun->flags |= TUN_NO_PI;
+-	else
+-		tun->flags &= ~TUN_NO_PI;
+-
+-	/* This flag has no real effect.  We track the value for backwards
+-	 * compatibility.
+-	 */
+-	if (ifr->ifr_flags & IFF_ONE_QUEUE)
+-		tun->flags |= TUN_ONE_QUEUE;
+-	else
+-		tun->flags &= ~TUN_ONE_QUEUE;
+-
+-	if (ifr->ifr_flags & IFF_VNET_HDR)
+-		tun->flags |= TUN_VNET_HDR;
+-	else
+-		tun->flags &= ~TUN_VNET_HDR;
+-
+-	if (ifr->ifr_flags & IFF_MULTI_QUEUE)
+-		tun->flags |= TUN_TAP_MQ;
+-	else
+-		tun->flags &= ~TUN_TAP_MQ;
++	tun->flags = (tun->flags & ~TUN_FEATURES) |
++		(ifr->ifr_flags & TUN_FEATURES);
+ 
+ 	/* Make sure persistent devices do not get stuck in
+ 	 * xoff state.
+@@ -1890,9 +1860,11 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+ 	if (cmd == TUNGETFEATURES) {
+ 		/* Currently this just means: "what IFF flags are valid?".
+ 		 * This is needed because we never checked for invalid flags on
+-		 * TUNSETIFF. */
+-		return put_user(IFF_TUN | IFF_TAP | IFF_NO_PI | IFF_ONE_QUEUE |
+-				IFF_VNET_HDR | IFF_MULTI_QUEUE,
++		 * TUNSETIFF.  Why do we report IFF_TUN and IFF_TAP which are
++		 * not legal for TUNSETIFF here?  It's probably a bug, but it
++		 * doesn't seem to be worth fixing.
++		 */
++		return put_user(IFF_TUN | IFF_TAP | TUN_FEATURES,
+ 				(unsigned int __user*)argp);
+ 	} else if (cmd == TUNSETQUEUE)
+ 		return tun_set_queue(file, &ifr);
 -- 
-1.9.3
+MST
 
