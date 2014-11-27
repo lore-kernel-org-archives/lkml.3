@@ -1,29 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877AbaK0MeM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 07:34:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51595 "EHLO mx1.redhat.com"
+	id S1755850AbaK0Mdy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 07:33:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45765 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754215AbaK0MeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 07:34:10 -0500
-Date: Thu, 27 Nov 2014 14:33:42 +0200
+	id S1755789AbaK0Mdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 07:33:51 -0500
+Date: Thu, 27 Nov 2014 14:33:27 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
         thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Andy Grover <agrover@redhat.com>,
-        Sakari Ailus <sakari.ailus@linux.intel.com>,
-        David Drysdale <drysdale@google.com>,
-        =?us-ascii?B?PT9VVEYtOD9xP1Bpb3RyPTIwS3I9QzM9QjNsPz0=?= 
-	<piotr.krol@3mdeb.com>,
-        stephen hemminger <stephen@networkplumber.org>,
-        linux-api@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: [PATCH v5 43/45] virtio_scsi: export to userspace
-Message-ID: <1417091078-24611-44-git-send-email-mst@redhat.com>
+        Jason Wang <jasowang@redhat.com>, Vlad Yasevich <vyasevich@gmail.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Tom Herbert <therbert@google.com>, Ben Hutchings <ben@decadent.org.uk>,
+        netdev@vger.kernel.org
+Subject: [PATCH v5 40/45] macvtap: TUN_VNET_HDR support
+Message-ID: <1417091078-24611-41-git-send-email-mst@redhat.com>
 References: <1417091078-24611-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -34,148 +28,182 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace uXX by __uXX and _packed by __attribute((packed))
-as seems to be the norm for userspace headers.
-
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- include/uapi/linux/virtio_scsi.h | 74 ++++++++++++++++++++--------------------
- include/uapi/linux/Kbuild        |  1 +
- 2 files changed, 38 insertions(+), 37 deletions(-)
+ drivers/net/macvtap.c | 68 ++++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 43 insertions(+), 25 deletions(-)
 
-diff --git a/include/uapi/linux/virtio_scsi.h b/include/uapi/linux/virtio_scsi.h
-index af44864..42b9370 100644
---- a/include/uapi/linux/virtio_scsi.h
-+++ b/include/uapi/linux/virtio_scsi.h
-@@ -34,78 +34,78 @@
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index 880cc09..af90ab5 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -45,6 +45,18 @@ struct macvtap_queue {
+ 	struct list_head next;
+ };
  
- /* SCSI command request, followed by data-out */
- struct virtio_scsi_cmd_req {
--	u8 lun[8];		/* Logical Unit Number */
-+	__u8 lun[8];		/* Logical Unit Number */
- 	__virtio64 tag;		/* Command identifier */
--	u8 task_attr;		/* Task attribute */
--	u8 prio;		/* SAM command priority field */
--	u8 crn;
--	u8 cdb[VIRTIO_SCSI_CDB_SIZE];
--} __packed;
-+	__u8 task_attr;		/* Task attribute */
-+	__u8 prio;		/* SAM command priority field */
-+	__u8 crn;
-+	__u8 cdb[VIRTIO_SCSI_CDB_SIZE];
-+} __attribute__((packed));
++#define MACVTAP_FEATURES (IFF_VNET_HDR | IFF_VNET_LE | IFF_MULTI_QUEUE)
++
++static inline u16 macvtap16_to_cpu(struct macvtap_queue *q, __virtio16 val)
++{
++	return __virtio16_to_cpu(q->flags & IFF_VNET_LE, val);
++}
++
++static inline __virtio16 cpu_to_macvtap16(struct macvtap_queue *q, u16 val)
++{
++	return __cpu_to_virtio16(q->flags & IFF_VNET_LE, val);
++}
++
+ static struct proto macvtap_proto = {
+ 	.name = "macvtap",
+ 	.owner = THIS_MODULE,
+@@ -557,7 +569,8 @@ static inline struct sk_buff *macvtap_alloc_skb(struct sock *sk, size_t prepad,
+  * macvtap_skb_from_vnet_hdr and macvtap_skb_to_vnet_hdr should
+  * be shared with the tun/tap driver.
+  */
+-static int macvtap_skb_from_vnet_hdr(struct sk_buff *skb,
++static int macvtap_skb_from_vnet_hdr(struct macvtap_queue *q,
++				     struct sk_buff *skb,
+ 				     struct virtio_net_hdr *vnet_hdr)
+ {
+ 	unsigned short gso_type = 0;
+@@ -588,13 +601,13 @@ static int macvtap_skb_from_vnet_hdr(struct sk_buff *skb,
+ 	}
  
- /* SCSI command request, followed by protection information */
- struct virtio_scsi_cmd_req_pi {
--	u8 lun[8];		/* Logical Unit Number */
-+	__u8 lun[8];		/* Logical Unit Number */
- 	__virtio64 tag;		/* Command identifier */
--	u8 task_attr;		/* Task attribute */
--	u8 prio;		/* SAM command priority field */
--	u8 crn;
-+	__u8 task_attr;		/* Task attribute */
-+	__u8 prio;		/* SAM command priority field */
-+	__u8 crn;
- 	__virtio32 pi_bytesout;	/* DataOUT PI Number of bytes */
- 	__virtio32 pi_bytesin;		/* DataIN PI Number of bytes */
--	u8 cdb[VIRTIO_SCSI_CDB_SIZE];
--} __packed;
-+	__u8 cdb[VIRTIO_SCSI_CDB_SIZE];
-+} __attribute__((packed));
+ 	if (vnet_hdr->flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) {
+-		if (!skb_partial_csum_set(skb, vnet_hdr->csum_start,
+-					  vnet_hdr->csum_offset))
++		if (!skb_partial_csum_set(skb, macvtap16_to_cpu(q, vnet_hdr->csum_start),
++					  macvtap16_to_cpu(q, vnet_hdr->csum_offset)))
+ 			return -EINVAL;
+ 	}
  
- /* Response, followed by sense data and data-in */
- struct virtio_scsi_cmd_resp {
- 	__virtio32 sense_len;		/* Sense data length */
- 	__virtio32 resid;		/* Residual bytes in data buffer */
- 	__virtio16 status_qualifier;	/* Status qualifier */
--	u8 status;		/* Command completion status */
--	u8 response;		/* Response values */
--	u8 sense[VIRTIO_SCSI_SENSE_SIZE];
--} __packed;
-+	__u8 status;		/* Command completion status */
-+	__u8 response;		/* Response values */
-+	__u8 sense[VIRTIO_SCSI_SENSE_SIZE];
-+} __attribute__((packed));
+ 	if (vnet_hdr->gso_type != VIRTIO_NET_HDR_GSO_NONE) {
+-		skb_shinfo(skb)->gso_size = vnet_hdr->gso_size;
++		skb_shinfo(skb)->gso_size = macvtap16_to_cpu(q, vnet_hdr->gso_size);
+ 		skb_shinfo(skb)->gso_type = gso_type;
  
- /* Task Management Request */
- struct virtio_scsi_ctrl_tmf_req {
- 	__virtio32 type;
- 	__virtio32 subtype;
--	u8 lun[8];
-+	__u8 lun[8];
- 	__virtio64 tag;
--} __packed;
-+} __attribute__((packed));
+ 		/* Header must be checked, and gso_segs computed. */
+@@ -604,8 +617,9 @@ static int macvtap_skb_from_vnet_hdr(struct sk_buff *skb,
+ 	return 0;
+ }
  
- struct virtio_scsi_ctrl_tmf_resp {
--	u8 response;
--} __packed;
-+	__u8 response;
-+} __attribute__((packed));
+-static void macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
+-				   struct virtio_net_hdr *vnet_hdr)
++static void macvtap_skb_to_vnet_hdr(struct macvtap_queue *q,
++				    const struct sk_buff *skb,
++				    struct virtio_net_hdr *vnet_hdr)
+ {
+ 	memset(vnet_hdr, 0, sizeof(*vnet_hdr));
  
- /* Asynchronous notification query/subscription */
- struct virtio_scsi_ctrl_an_req {
- 	__virtio32 type;
--	u8 lun[8];
-+	__u8 lun[8];
- 	__virtio32 event_requested;
--} __packed;
-+} __attribute__((packed));
+@@ -613,8 +627,8 @@ static void macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
+ 		struct skb_shared_info *sinfo = skb_shinfo(skb);
  
- struct virtio_scsi_ctrl_an_resp {
- 	__virtio32 event_actual;
--	u8 response;
--} __packed;
-+	__u8 response;
-+} __attribute__((packed));
+ 		/* This is a hint as to how much should be linear. */
+-		vnet_hdr->hdr_len = skb_headlen(skb);
+-		vnet_hdr->gso_size = sinfo->gso_size;
++		vnet_hdr->hdr_len = cpu_to_macvtap16(q, skb_headlen(skb));
++		vnet_hdr->gso_size = cpu_to_macvtap16(q, sinfo->gso_size);
+ 		if (sinfo->gso_type & SKB_GSO_TCPV4)
+ 			vnet_hdr->gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
+ 		else if (sinfo->gso_type & SKB_GSO_TCPV6)
+@@ -628,10 +642,13 @@ static void macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
  
- struct virtio_scsi_event {
- 	__virtio32 event;
--	u8 lun[8];
-+	__u8 lun[8];
- 	__virtio32 reason;
--} __packed;
-+} __attribute__((packed));
+ 	if (skb->ip_summed == CHECKSUM_PARTIAL) {
+ 		vnet_hdr->flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
+-		vnet_hdr->csum_start = skb_checksum_start_offset(skb);
+ 		if (vlan_tx_tag_present(skb))
+-			vnet_hdr->csum_start += VLAN_HLEN;
+-		vnet_hdr->csum_offset = skb->csum_offset;
++			vnet_hdr->csum_start = cpu_to_macvtap16(q,
++				skb_checksum_start_offset(skb) + VLAN_HLEN);
++		else
++			vnet_hdr->csum_start = cpu_to_macvtap16(q,
++				skb_checksum_start_offset(skb));
++		vnet_hdr->csum_offset = cpu_to_macvtap16(q, skb->csum_offset);
+ 	} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
+ 		vnet_hdr->flags = VIRTIO_NET_HDR_F_DATA_VALID;
+ 	} /* else everything is zero */
+@@ -666,12 +683,14 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+ 		if (err < 0)
+ 			goto err;
+ 		if ((vnet_hdr.flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) &&
+-		     vnet_hdr.csum_start + vnet_hdr.csum_offset + 2 >
+-							vnet_hdr.hdr_len)
+-			vnet_hdr.hdr_len = vnet_hdr.csum_start +
+-						vnet_hdr.csum_offset + 2;
++		     macvtap16_to_cpu(q, vnet_hdr.csum_start) +
++		     macvtap16_to_cpu(q, vnet_hdr.csum_offset) + 2 >
++			     macvtap16_to_cpu(q, vnet_hdr.hdr_len))
++			vnet_hdr.hdr_len = cpu_to_macvtap16(q,
++				 macvtap16_to_cpu(q, vnet_hdr.csum_start) +
++				 macvtap16_to_cpu(q, vnet_hdr.csum_offset) + 2);
+ 		err = -EINVAL;
+-		if (vnet_hdr.hdr_len > len)
++		if (macvtap16_to_cpu(q, vnet_hdr.hdr_len) > len)
+ 			goto err;
+ 	}
  
- struct virtio_scsi_config {
--	u32 num_queues;
--	u32 seg_max;
--	u32 max_sectors;
--	u32 cmd_per_lun;
--	u32 event_info_size;
--	u32 sense_size;
--	u32 cdb_size;
--	u16 max_channel;
--	u16 max_target;
--	u32 max_lun;
--} __packed;
-+	__u32 num_queues;
-+	__u32 seg_max;
-+	__u32 max_sectors;
-+	__u32 cmd_per_lun;
-+	__u32 event_info_size;
-+	__u32 sense_size;
-+	__u32 cdb_size;
-+	__u16 max_channel;
-+	__u16 max_target;
-+	__u32 max_lun;
-+} __attribute__((packed));
+@@ -684,7 +703,8 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+ 		goto err;
  
- /* Feature Bits */
- #define VIRTIO_SCSI_F_INOUT                    0
-diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
-index 44a5581..e61947c 100644
---- a/include/uapi/linux/Kbuild
-+++ b/include/uapi/linux/Kbuild
-@@ -428,6 +428,7 @@ header-y += virtio_net.h
- header-y += virtio_pci.h
- header-y += virtio_ring.h
- header-y += virtio_rng.h
-+header-y += virtio_scsi.h
- header=y += vm_sockets.h
- header-y += vt.h
- header-y += wait.h
+ 	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
+-		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
++		copylen = vnet_hdr.hdr_len ?
++			macvtap16_to_cpu(q, vnet_hdr.hdr_len) : GOODCOPY_LEN;
+ 		if (copylen > good_linear)
+ 			copylen = good_linear;
+ 		linear = copylen;
+@@ -695,10 +715,10 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+ 
+ 	if (!zerocopy) {
+ 		copylen = len;
+-		if (vnet_hdr.hdr_len > good_linear)
++		if (macvtap16_to_cpu(q, vnet_hdr.hdr_len) > good_linear)
+ 			linear = good_linear;
+ 		else
+-			linear = vnet_hdr.hdr_len;
++			linear = macvtap16_to_cpu(q, vnet_hdr.hdr_len);
+ 	}
+ 
+ 	skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, copylen,
+@@ -725,7 +745,7 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+ 	skb->protocol = eth_hdr(skb)->h_proto;
+ 
+ 	if (vnet_hdr_len) {
+-		err = macvtap_skb_from_vnet_hdr(skb, &vnet_hdr);
++		err = macvtap_skb_from_vnet_hdr(q, skb, &vnet_hdr);
+ 		if (err)
+ 			goto err_kfree;
+ 	}
+@@ -791,7 +811,7 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+ 		if ((len -= vnet_hdr_len) < 0)
+ 			return -EINVAL;
+ 
+-		macvtap_skb_to_vnet_hdr(skb, &vnet_hdr);
++		macvtap_skb_to_vnet_hdr(q, skb, &vnet_hdr);
+ 
+ 		if (memcpy_toiovecend(iv, (void *)&vnet_hdr, 0, sizeof(vnet_hdr)))
+ 			return -EFAULT;
+@@ -1003,8 +1023,7 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
+ 			return -EFAULT;
+ 
+ 		ret = 0;
+-		if ((u & ~(IFF_VNET_HDR | IFF_MULTI_QUEUE)) !=
+-		    (IFF_NO_PI | IFF_TAP))
++		if ((u & ~MACVTAP_FEATURES) != (IFF_NO_PI | IFF_TAP))
+ 			ret = -EINVAL;
+ 		else
+ 			q->flags = u;
+@@ -1036,8 +1055,7 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
+ 		return ret;
+ 
+ 	case TUNGETFEATURES:
+-		if (put_user(IFF_TAP | IFF_NO_PI | IFF_VNET_HDR |
+-			     IFF_MULTI_QUEUE, up))
++		if (put_user(IFF_TAP | IFF_NO_PI | MACVTAP_FEATURES, up))
+ 			return -EFAULT;
+ 		return 0;
+ 
 -- 
 MST
 
