@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668AbaK0L7r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 06:59:47 -0500
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:33726
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754129AbaK0L7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 06:59:45 -0500
-x-originating-ip: 72.167.245.219
-From: Dexuan Cui <decui@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org, olaf@aepfle.de,
-        apw@canonical.com, jasowang@redhat.com, kys@microsoft.com,
-        vkuznets@redhat.com
-Cc: haiyangz@microsoft.com
-Subject: [PATCH v3] hv: hv_fcopy: drop the obsolete message on transfer failure
-Date: Thu, 27 Nov 2014 05:09:07 -0800
-Message-Id: <1417093747-21073-1-git-send-email-decui@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754745AbaK0L7w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 06:59:52 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:53394 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754247AbaK0L7s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 06:59:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <54761BFC.4020705@ti.com>
+References: <1416917818-10506-1-git-send-email-chunyan.zhang@spreadtrum.com>
+	<1416917818-10506-6-git-send-email-chunyan.zhang@spreadtrum.com>
+	<54761BFC.4020705@ti.com>
+Date: Thu, 27 Nov 2014 19:59:46 +0800
+Message-ID: <CAAfSe-uMqy7zwiEK+nDoMPw_oni8L_vq7oW2Me5AY8z8KGpjwQ@mail.gmail.com>
+Subject: Re: [PATCH v3 5/5] tty/serial: Add Spreadtrum sc9836-uart driver support
+From: Lyra Zhang <zhang.lyra@gmail.com>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "jslaby@suse.cz" <jslaby@suse.cz>, Kumar Gala <galak@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        "rrichter@cavium.com" <rrichter@cavium.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        gnomes@lxorguk.ukuu.org.uk, Jonathan Corbet <corbet@lwn.net>,
+        jason@lakedaemon.net, Mark Brown <broonie@kernel.org>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        florian.vaussard@epfl.ch, andrew@lunn.ch,
+        Hayato Suzuki <hytszk@gmail.com>, Orson Zhai <orsonzhai@gmail.com>,
+        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
+        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
+        lanqing.liu@spreadtrum.com,
+        =?UTF-8?B?V2VpIFFpYW8gKOS5lOS8nyk=?= <wei.qiao@spreadtrum.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sprdlinux@freelists.org" <sprdlinux@freelists.org>,
+        linux-doc@vger.kernel.org, linux-serial@vger.kernel.org,
+        linux-api@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the case the user-space daemon crashes, hangs or is killed, we
-need to down the semaphore, otherwise, after the daemon starts next
-time, the obsolete data in fcopy_transaction.message or
-fcopy_transaction.fcopy_msg will be used immediately.
+2014-11-27 2:29 GMT+08:00 Murali Karicheri <m-karicheri2@ti.com>:
+> On 11/25/2014 07:16 AM, Chunyan Zhang wrote:
+>>
+>> Add a full sc9836-uart driver for SC9836 SoC which is based on the
 
-Cc: Jason Wang <jasowang@redhat.com>
-Cc: Vitaly Kuznetsov <vkuznets@redhat.com>
-Cc: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Dexuan Cui <decui@microsoft.com>
----
+>> +#include<linux/clk.h>
+>
+> How about sorting this includes? asm/irq.h go first followed linux/ in
+> alphabatical order?
 
-v2: I removed the "FCP" prefix as Greg asked.
+>> +static irqreturn_t sprd_handle_irq(int irq, void *dev_id)
+>> +{
+>> +       struct uart_port *port = (struct uart_port *)dev_id;
+>> +       u32 ims;
+>> +
+>> +       ims = serial_in(port, SPRD_IMSR);
+>> +
+>> +       serial_out(port, SPRD_ICLR, ~0);
+>> +
+>> +       if (ims&  (SPRD_IMSR_RX_FIFO_FULL |
+>> +               SPRD_IMSR_BREAK_DETECT | SPRD_IMSR_TIMEOUT)) {
+>> +               sprd_rx(irq, port);
+>> +       }
+>> +       if (ims&  SPRD_IMSR_TX_FIFO_EMPTY)
+>> +               sprd_tx(irq, port);
+>> +
+>> +       return IRQ_HANDLED;
+>
+> You are always returning IRQ_HANDLED and this is registered as a SHARED irq.
+> Is there a chance this handler is called and the irq event doesn't
+> belong to this device?
+>
+> Murali
 
-    I also updated the output message a little:
-    "FCP: failed to acquire the semaphore" --> 
-    "can not acquire the semaphore: it is benign"
+You are right, this is not a SHARED irq. I'll pass 0 for irqflags when
+called 'devm_request_irq' in the next version patch.
 
-v3: I added the code in fcopy_release() as Jason Wang suggested.
-    I removed the pr_debug (it isn't so meaningful)and added a comment instead.
-
- drivers/hv/hv_fcopy.c | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
-
-diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c
-index 23b2ce2..faa6ba6 100644
---- a/drivers/hv/hv_fcopy.c
-+++ b/drivers/hv/hv_fcopy.c
-@@ -86,6 +86,18 @@ static void fcopy_work_func(struct work_struct *dummy)
- 	 * process the pending transaction.
- 	 */
- 	fcopy_respond_to_host(HV_E_FAIL);
-+
-+	/* In the case the user-space daemon crashes, hangs or is killed, we
-+	 * need to down the semaphore, otherwise, after the daemon starts next
-+	 * time, the obsolete data in fcopy_transaction.message or
-+	 * fcopy_transaction.fcopy_msg will be used immediately.
-+	 *
-+	 * NOTE: fcopy_read() happens to get the semaphore (very rare)? We're
-+	 * still OK, because we've reported the failure to the host.
-+	 */
-+	if (down_trylock(&fcopy_transaction.read_sema))
-+		;
-+
- }
- 
- static int fcopy_handle_handshake(u32 version)
-@@ -351,6 +363,13 @@ static int fcopy_release(struct inode *inode, struct file *f)
- 	 */
- 	in_hand_shake = true;
- 	opened = false;
-+
-+	if (cancel_delayed_work_sync(&fcopy_work)) {
-+		/* We haven't up()-ed the semaphore(very rare)? */
-+		if (down_trylock(&fcopy_transaction.read_sema))
-+			;
-+		fcopy_respond_to_host(HV_E_FAIL);
-+	}
- 	return 0;
- }
- 
--- 
-1.9.1
-
+Thank you,
+Chunyan
