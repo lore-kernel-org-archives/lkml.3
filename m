@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932129AbaK0JLE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 04:11:04 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41617 "EHLO mail.kernel.org"
+	id S932150AbaK0JLz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 04:11:55 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41563 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754780AbaK0IrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:47:24 -0500
+	id S1754758AbaK0IrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:47:18 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, John Sung <penmount.touch@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Ilya Dryomov <ilya.dryomov@inktank.com>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 32/91] Input: serport - add compat handling for SPIOCSTYPE ioctl
-Date: Thu, 27 Nov 2014 16:42:15 +0800
-Message-Id: <1417077794-9299-32-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 30/91] libceph: add process_one_ticket() helper
+Date: Thu, 27 Nov 2014 16:42:13 +0800
+Message-Id: <1417077794-9299-30-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
 References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
@@ -21,112 +20,285 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Sung <penmount.touch@gmail.com>
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
 
 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit a80d8b02751060a178bb1f7a6b7a93645a7a308b upstream.
+commit 597cda357716a3cf8d994cb11927af917c8d71fa upstream.
 
-When running a 32-bit inputattach utility in a 64-bit system, there will be
-error code "inputattach: can't set device type". This is caused by the
-serport device driver not supporting compat_ioctl, so that SPIOCSTYPE ioctl
-fails.
+Add a helper for processing individual cephx auth tickets.  Needed for
+the next commit, which deals with allocating ticket buffers.  (Most of
+the diff here is whitespace - view with git diff -b).
 
-Signed-off-by: John Sung <penmount.touch@gmail.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
+Reviewed-by: Sage Weil <sage@redhat.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/input/serio/serport.c | 45 ++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 38 insertions(+), 7 deletions(-)
+ net/ceph/auth_x.c | 228 +++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 124 insertions(+), 104 deletions(-)
 
-diff --git a/drivers/input/serio/serport.c b/drivers/input/serio/serport.c
-index 8755f5f..e4ecf3b 100644
---- a/drivers/input/serio/serport.c
-+++ b/drivers/input/serio/serport.c
-@@ -21,6 +21,7 @@
- #include <linux/init.h>
- #include <linux/serio.h>
- #include <linux/tty.h>
-+#include <linux/compat.h>
- 
- MODULE_AUTHOR("Vojtech Pavlik <vojtech@ucw.cz>");
- MODULE_DESCRIPTION("Input device TTY line discipline");
-@@ -196,28 +197,55 @@ static ssize_t serport_ldisc_read(struct tty_struct * tty, struct file * file, u
- 	return 0;
+diff --git a/net/ceph/auth_x.c b/net/ceph/auth_x.c
+index 96238ba..0eb146d 100644
+--- a/net/ceph/auth_x.c
++++ b/net/ceph/auth_x.c
+@@ -129,17 +129,131 @@ static void remove_ticket_handler(struct ceph_auth_client *ac,
+ 	kfree(th);
  }
  
-+static void serport_set_type(struct tty_struct *tty, unsigned long type)
++static int process_one_ticket(struct ceph_auth_client *ac,
++			      struct ceph_crypto_key *secret,
++			      void **p, void *end,
++			      void *dbuf, void *ticket_buf)
 +{
-+	struct serport *serport = tty->disc_data;
++	struct ceph_x_info *xi = ac->private;
++	int type;
++	u8 tkt_struct_v, blob_struct_v;
++	struct ceph_x_ticket_handler *th;
++	void *dp, *dend;
++	int dlen;
++	char is_enc;
++	struct timespec validity;
++	struct ceph_crypto_key old_key;
++	void *tp, *tpend;
++	struct ceph_timespec new_validity;
++	struct ceph_crypto_key new_session_key;
++	struct ceph_buffer *new_ticket_blob;
++	unsigned long new_expires, new_renew_after;
++	u64 new_secret_id;
++	int ret;
 +
-+	serport->id.proto = type & 0x000000ff;
-+	serport->id.id    = (type & 0x0000ff00) >> 8;
-+	serport->id.extra = (type & 0x00ff0000) >> 16;
-+}
++	ceph_decode_need(p, end, sizeof(u32) + 1, bad);
 +
- /*
-  * serport_ldisc_ioctl() allows to set the port protocol, and device ID
-  */
- 
--static int serport_ldisc_ioctl(struct tty_struct * tty, struct file * file, unsigned int cmd, unsigned long arg)
-+static int serport_ldisc_ioctl(struct tty_struct *tty, struct file *file,
-+			       unsigned int cmd, unsigned long arg)
- {
--	struct serport *serport = (struct serport*) tty->disc_data;
--	unsigned long type;
--
- 	if (cmd == SPIOCSTYPE) {
-+		unsigned long type;
++	type = ceph_decode_32(p);
++	dout(" ticket type %d %s\n", type, ceph_entity_type_name(type));
 +
- 		if (get_user(type, (unsigned long __user *) arg))
- 			return -EFAULT;
- 
--		serport->id.proto = type & 0x000000ff;
--		serport->id.id	  = (type & 0x0000ff00) >> 8;
--		serport->id.extra = (type & 0x00ff0000) >> 16;
-+		serport_set_type(tty, type);
-+		return 0;
++	tkt_struct_v = ceph_decode_8(p);
++	if (tkt_struct_v != 1)
++		goto bad;
++
++	th = get_ticket_handler(ac, type);
++	if (IS_ERR(th)) {
++		ret = PTR_ERR(th);
++		goto out;
 +	}
 +
-+	return -EINVAL;
++	/* blob for me */
++	dlen = ceph_x_decrypt(secret, p, end, dbuf,
++			      TEMP_TICKET_BUF_LEN);
++	if (dlen <= 0) {
++		ret = dlen;
++		goto out;
++	}
++	dout(" decrypted %d bytes\n", dlen);
++	dp = dbuf;
++	dend = dp + dlen;
++
++	tkt_struct_v = ceph_decode_8(&dp);
++	if (tkt_struct_v != 1)
++		goto bad;
++
++	memcpy(&old_key, &th->session_key, sizeof(old_key));
++	ret = ceph_crypto_key_decode(&new_session_key, &dp, dend);
++	if (ret)
++		goto out;
++
++	ceph_decode_copy(&dp, &new_validity, sizeof(new_validity));
++	ceph_decode_timespec(&validity, &new_validity);
++	new_expires = get_seconds() + validity.tv_sec;
++	new_renew_after = new_expires - (validity.tv_sec / 4);
++	dout(" expires=%lu renew_after=%lu\n", new_expires,
++	     new_renew_after);
++
++	/* ticket blob for service */
++	ceph_decode_8_safe(p, end, is_enc, bad);
++	tp = ticket_buf;
++	if (is_enc) {
++		/* encrypted */
++		dout(" encrypted ticket\n");
++		dlen = ceph_x_decrypt(&old_key, p, end, ticket_buf,
++				      TEMP_TICKET_BUF_LEN);
++		if (dlen < 0) {
++			ret = dlen;
++			goto out;
++		}
++		dlen = ceph_decode_32(&tp);
++	} else {
++		/* unencrypted */
++		ceph_decode_32_safe(p, end, dlen, bad);
++		ceph_decode_need(p, end, dlen, bad);
++		ceph_decode_copy(p, ticket_buf, dlen);
++	}
++	tpend = tp + dlen;
++	dout(" ticket blob is %d bytes\n", dlen);
++	ceph_decode_need(&tp, tpend, 1 + sizeof(u64), bad);
++	blob_struct_v = ceph_decode_8(&tp);
++	new_secret_id = ceph_decode_64(&tp);
++	ret = ceph_decode_buffer(&new_ticket_blob, &tp, tpend);
++	if (ret)
++		goto out;
++
++	/* all is well, update our ticket */
++	ceph_crypto_key_destroy(&th->session_key);
++	if (th->ticket_blob)
++		ceph_buffer_put(th->ticket_blob);
++	th->session_key = new_session_key;
++	th->ticket_blob = new_ticket_blob;
++	th->validity = new_validity;
++	th->secret_id = new_secret_id;
++	th->expires = new_expires;
++	th->renew_after = new_renew_after;
++	dout(" got ticket service %d (%s) secret_id %lld len %d\n",
++	     type, ceph_entity_type_name(type), th->secret_id,
++	     (int)th->ticket_blob->vec.iov_len);
++	xi->have_keys |= th->service;
++
++out:
++	return ret;
++
++bad:
++	ret = -EINVAL;
++	goto out;
 +}
 +
-+#ifdef CONFIG_COMPAT
-+#define COMPAT_SPIOCSTYPE	_IOW('q', 0x01, compat_ulong_t)
-+static long serport_ldisc_compat_ioctl(struct tty_struct *tty,
-+				       struct file *file,
-+				       unsigned int cmd, unsigned long arg)
-+{
-+	if (cmd == COMPAT_SPIOCSTYPE) {
-+		void __user *uarg = compat_ptr(arg);
-+		compat_ulong_t compat_type;
-+
-+		if (get_user(compat_type, (compat_ulong_t __user *)uarg))
-+			return -EFAULT;
+ static int ceph_x_proc_ticket_reply(struct ceph_auth_client *ac,
+ 				    struct ceph_crypto_key *secret,
+ 				    void *buf, void *end)
+ {
+-	struct ceph_x_info *xi = ac->private;
+-	int num;
+ 	void *p = buf;
+-	int ret;
+ 	char *dbuf;
+ 	char *ticket_buf;
+ 	u8 reply_struct_v;
++	u32 num;
++	int ret;
  
-+		serport_set_type(tty, compat_type);
- 		return 0;
+ 	dbuf = kmalloc(TEMP_TICKET_BUF_LEN, GFP_NOFS);
+ 	if (!dbuf)
+@@ -150,112 +264,18 @@ static int ceph_x_proc_ticket_reply(struct ceph_auth_client *ac,
+ 	if (!ticket_buf)
+ 		goto out_dbuf;
+ 
+-	ceph_decode_need(&p, end, 1 + sizeof(u32), bad);
+-	reply_struct_v = ceph_decode_8(&p);
++	ceph_decode_8_safe(&p, end, reply_struct_v, bad);
+ 	if (reply_struct_v != 1)
+-		goto bad;
+-	num = ceph_decode_32(&p);
+-	dout("%d tickets\n", num);
+-	while (num--) {
+-		int type;
+-		u8 tkt_struct_v, blob_struct_v;
+-		struct ceph_x_ticket_handler *th;
+-		void *dp, *dend;
+-		int dlen;
+-		char is_enc;
+-		struct timespec validity;
+-		struct ceph_crypto_key old_key;
+-		void *tp, *tpend;
+-		struct ceph_timespec new_validity;
+-		struct ceph_crypto_key new_session_key;
+-		struct ceph_buffer *new_ticket_blob;
+-		unsigned long new_expires, new_renew_after;
+-		u64 new_secret_id;
+-
+-		ceph_decode_need(&p, end, sizeof(u32) + 1, bad);
+-
+-		type = ceph_decode_32(&p);
+-		dout(" ticket type %d %s\n", type, ceph_entity_type_name(type));
+-
+-		tkt_struct_v = ceph_decode_8(&p);
+-		if (tkt_struct_v != 1)
+-			goto bad;
+-
+-		th = get_ticket_handler(ac, type);
+-		if (IS_ERR(th)) {
+-			ret = PTR_ERR(th);
+-			goto out;
+-		}
+-
+-		/* blob for me */
+-		dlen = ceph_x_decrypt(secret, &p, end, dbuf,
+-				      TEMP_TICKET_BUF_LEN);
+-		if (dlen <= 0) {
+-			ret = dlen;
+-			goto out;
+-		}
+-		dout(" decrypted %d bytes\n", dlen);
+-		dend = dbuf + dlen;
+-		dp = dbuf;
+-
+-		tkt_struct_v = ceph_decode_8(&dp);
+-		if (tkt_struct_v != 1)
+-			goto bad;
++		return -EINVAL;
+ 
+-		memcpy(&old_key, &th->session_key, sizeof(old_key));
+-		ret = ceph_crypto_key_decode(&new_session_key, &dp, dend);
+-		if (ret)
+-			goto out;
++	ceph_decode_32_safe(&p, end, num, bad);
++	dout("%d tickets\n", num);
+ 
+-		ceph_decode_copy(&dp, &new_validity, sizeof(new_validity));
+-		ceph_decode_timespec(&validity, &new_validity);
+-		new_expires = get_seconds() + validity.tv_sec;
+-		new_renew_after = new_expires - (validity.tv_sec / 4);
+-		dout(" expires=%lu renew_after=%lu\n", new_expires,
+-		     new_renew_after);
+-
+-		/* ticket blob for service */
+-		ceph_decode_8_safe(&p, end, is_enc, bad);
+-		tp = ticket_buf;
+-		if (is_enc) {
+-			/* encrypted */
+-			dout(" encrypted ticket\n");
+-			dlen = ceph_x_decrypt(&old_key, &p, end, ticket_buf,
+-					      TEMP_TICKET_BUF_LEN);
+-			if (dlen < 0) {
+-				ret = dlen;
+-				goto out;
+-			}
+-			dlen = ceph_decode_32(&tp);
+-		} else {
+-			/* unencrypted */
+-			ceph_decode_32_safe(&p, end, dlen, bad);
+-			ceph_decode_need(&p, end, dlen, bad);
+-			ceph_decode_copy(&p, ticket_buf, dlen);
+-		}
+-		tpend = tp + dlen;
+-		dout(" ticket blob is %d bytes\n", dlen);
+-		ceph_decode_need(&tp, tpend, 1 + sizeof(u64), bad);
+-		blob_struct_v = ceph_decode_8(&tp);
+-		new_secret_id = ceph_decode_64(&tp);
+-		ret = ceph_decode_buffer(&new_ticket_blob, &tp, tpend);
++	while (num--) {
++		ret = process_one_ticket(ac, secret, &p, end,
++					 dbuf, ticket_buf);
+ 		if (ret)
+ 			goto out;
+-
+-		/* all is well, update our ticket */
+-		ceph_crypto_key_destroy(&th->session_key);
+-		if (th->ticket_blob)
+-			ceph_buffer_put(th->ticket_blob);
+-		th->session_key = new_session_key;
+-		th->ticket_blob = new_ticket_blob;
+-		th->validity = new_validity;
+-		th->secret_id = new_secret_id;
+-		th->expires = new_expires;
+-		th->renew_after = new_renew_after;
+-		dout(" got ticket service %d (%s) secret_id %lld len %d\n",
+-		     type, ceph_entity_type_name(type), th->secret_id,
+-		     (int)th->ticket_blob->vec.iov_len);
+-		xi->have_keys |= th->service;
  	}
  
- 	return -EINVAL;
- }
-+#endif
- 
- static void serport_ldisc_write_wakeup(struct tty_struct * tty)
- {
-@@ -241,6 +269,9 @@ static struct tty_ldisc_ops serport_ldisc = {
- 	.close =	serport_ldisc_close,
- 	.read =		serport_ldisc_read,
- 	.ioctl =	serport_ldisc_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl =	serport_ldisc_compat_ioctl,
-+#endif
- 	.receive_buf =	serport_ldisc_receive,
- 	.write_wakeup =	serport_ldisc_write_wakeup
- };
+ 	ret = 0;
 -- 
 1.9.1
 
