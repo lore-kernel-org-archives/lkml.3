@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036AbaK0Iwj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 03:52:39 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42956 "EHLO mail.kernel.org"
+	id S1755187AbaK0IxW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 03:53:22 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42919 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755305AbaK0IuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:50:13 -0500
+	id S1753388AbaK0IuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:50:05 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Marcelo Ricardo Leitner <mleitner@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 85/91] ipv4: avoid parallel route cache gc executions
-Date: Thu, 27 Nov 2014 16:43:08 +0800
-Message-Id: <1417077794-9299-85-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 82/91] dm crypt: fix access beyond the end of allocated space
+Date: Thu, 27 Nov 2014 16:43:05 +0800
+Message-Id: <1417077794-9299-82-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
 References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
@@ -21,104 +20,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marcelo Ricardo Leitner <mleitner@redhat.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-When rt_intern_hash() has to deal with neighbour cache overflowing,
-it triggers the route cache garbage collector in an attempt to free
-some references on neighbour entries.
+commit d49ec52ff6ddcda178fc2476a109cf1bd1fa19ed upstream.
 
-Such call cannot be done async but should also not run in parallel with
-an already-running one, so that they don't collapse fighting over the
-hash lock entries.
+The DM crypt target accesses memory beyond allocated space resulting in
+a crash on 32 bit x86 systems.
 
-This patch thus blocks parallel executions with spinlocks:
-- A call from worker and from rt_intern_hash() are not the same, and
-cannot be merged, thus they will wait each other on rt_gc_lock.
-- Calls to gc from rt_intern_hash() may happen in parallel but we must
-wait for it to finish in order to try again. This dedup and
-synchrinozation is then performed by the locking just before calling
-__do_rt_garbage_collect().
+This bug is very old (it dates back to 2.6.25 commit 3a7f6c990ad04 "dm
+crypt: use async crypto").  However, this bug was masked by the fact
+that kmalloc rounds the size up to the next power of two.  This bug
+wasn't exposed until 3.17-rc1 commit 298a9fa08a ("dm crypt: use per-bio
+data").  By switching to using per-bio data there was no longer any
+padding beyond the end of a dm-crypt allocated memory block.
 
-Signed-off-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+To minimize allocation overhead dm-crypt puts several structures into one
+block allocated with kmalloc.  The block holds struct ablkcipher_request,
+cipher-specific scratch pad (crypto_ablkcipher_reqsize(any_tfm(cc))),
+struct dm_crypt_request and an initialization vector.
+
+The variable dmreq_start is set to offset of struct dm_crypt_request
+within this memory block.  dm-crypt allocates the block with this size:
+cc->dmreq_start + sizeof(struct dm_crypt_request) + cc->iv_size.
+
+When accessing the initialization vector, dm-crypt uses the function
+iv_of_dmreq, which performs this calculation: ALIGN((unsigned long)(dmreq
++ 1), crypto_ablkcipher_alignmask(any_tfm(cc)) + 1).
+
+dm-crypt allocated "cc->iv_size" bytes beyond the end of dm_crypt_request
+structure.  However, when dm-crypt accesses the initialization vector, it
+takes a pointer to the end of dm_crypt_request, aligns it, and then uses
+it as the initialization vector.  If the end of dm_crypt_request is not
+aligned on a crypto_ablkcipher_alignmask(any_tfm(cc)) boundary the
+alignment causes the initialization vector to point beyond the allocated
+space.
+
+Fix this bug by calculating the variable iv_size_padding and adding it
+to the allocated size.
+
+Also correct the alignment of dm_crypt_request.  struct dm_crypt_request
+is specific to dm-crypt (it isn't used by the crypto subsystem at all),
+so it is aligned on __alignof__(struct dm_crypt_request).
+
+Also align per_bio_data_size on ARCH_KMALLOC_MINALIGN, so that it is
+aligned as if the block was allocated with kmalloc.
+
+Reported-by: Krzysztof Kolasa <kkolasa@winsoft.pl>
+Tested-by: Milan Broz <gmazyland@gmail.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+[lizf: Backported by Mikulas]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- net/ipv4/route.c | 21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
+ drivers/md/dm-crypt.c | 20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
 
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 90de2f9..9e7909e 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -986,6 +986,7 @@ static void __do_rt_garbage_collect(int elasticity, int min_interval)
- 	static unsigned long last_gc;
- 	static int rover;
- 	static int equilibrium;
-+	static DEFINE_SPINLOCK(rt_gc_lock);
- 	struct rtable *rth;
- 	struct rtable __rcu **rthp;
- 	unsigned long now = jiffies;
-@@ -997,6 +998,8 @@ static void __do_rt_garbage_collect(int elasticity, int min_interval)
- 	 * do not make it too frequently.
- 	 */
+diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
+index 535c3e2..926989d 100644
+--- a/drivers/md/dm-crypt.c
++++ b/drivers/md/dm-crypt.c
+@@ -1566,6 +1566,7 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
+ 	unsigned int key_size, opt_params;
+ 	unsigned long long tmpll;
+ 	int ret;
++	size_t iv_size_padding;
+ 	struct dm_arg_set as;
+ 	const char *opt_string;
+ 	char dummy;
+@@ -1602,12 +1603,23 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
  
-+	spin_lock(&rt_gc_lock);
+ 	cc->dmreq_start = sizeof(struct ablkcipher_request);
+ 	cc->dmreq_start += crypto_ablkcipher_reqsize(any_tfm(cc));
+-	cc->dmreq_start = ALIGN(cc->dmreq_start, crypto_tfm_ctx_alignment());
+-	cc->dmreq_start += crypto_ablkcipher_alignmask(any_tfm(cc)) &
+-			   ~(crypto_tfm_ctx_alignment() - 1);
++	cc->dmreq_start = ALIGN(cc->dmreq_start, __alignof__(struct dm_crypt_request));
 +
- 	RT_CACHE_STAT_INC(gc_total);
++	if (crypto_ablkcipher_alignmask(any_tfm(cc)) < CRYPTO_MINALIGN) {
++		/* Allocate the padding exactly */
++		iv_size_padding = -(cc->dmreq_start + sizeof(struct dm_crypt_request))
++				& crypto_ablkcipher_alignmask(any_tfm(cc));
++	} else {
++		/*
++		 * If the cipher requires greater alignment than kmalloc
++		 * alignment, we don't know the exact position of the
++		 * initialization vector. We must assume worst case.
++		 */
++		iv_size_padding = crypto_ablkcipher_alignmask(any_tfm(cc));
++	}
  
- 	if (now - last_gc < min_interval &&
-@@ -1089,7 +1092,7 @@ static void __do_rt_garbage_collect(int elasticity, int min_interval)
- 	if (net_ratelimit())
- 		pr_warn("dst cache overflow\n");
- 	RT_CACHE_STAT_INC(gc_dst_overflow);
--	return;
-+	goto out;
- 
- work_done:
- 	expire += min_interval;
-@@ -1097,7 +1100,8 @@ work_done:
- 	    dst_entries_get_fast(&ipv4_dst_ops) < ipv4_dst_ops.gc_thresh ||
- 	    dst_entries_get_slow(&ipv4_dst_ops) < ipv4_dst_ops.gc_thresh)
- 		expire = ip_rt_gc_timeout;
--out:	return;
-+out:
-+	spin_unlock(&rt_gc_lock);
- }
- 
- static void __rt_garbage_collect(struct work_struct *w)
-@@ -1172,7 +1176,7 @@ static struct rtable *rt_intern_hash(unsigned hash, struct rtable *rt,
- 	unsigned long	now;
- 	u32 		min_score;
- 	int		chain_length;
--	int attempts = !in_softirq();
-+	int attempts = 1;
- 
- restart:
- 	chain_length = 0;
-@@ -1308,8 +1312,15 @@ restart:
- 			   can be released. Try to shrink route cache,
- 			   it is most likely it holds some neighbour records.
- 			 */
--			if (attempts-- > 0) {
--				__do_rt_garbage_collect(1, 0);
-+			if (!in_softirq() && attempts-- > 0) {
-+				static DEFINE_SPINLOCK(lock);
-+
-+				if (spin_trylock(&lock)) {
-+					__do_rt_garbage_collect(1, 0);
-+					spin_unlock(&lock);
-+				} else {
-+					spin_unlock_wait(&lock);
-+				}
- 				goto restart;
- 			}
- 
+ 	cc->req_pool = mempool_create_kmalloc_pool(MIN_IOS, cc->dmreq_start +
+-			sizeof(struct dm_crypt_request) + cc->iv_size);
++			sizeof(struct dm_crypt_request) + iv_size_padding + cc->iv_size);
+ 	if (!cc->req_pool) {
+ 		ti->error = "Cannot allocate crypt request mempool";
+ 		goto bad;
 -- 
 1.9.1
 
