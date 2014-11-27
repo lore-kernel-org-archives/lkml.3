@@ -1,53 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751374AbaK0VwX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 16:52:23 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:64733 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952AbaK0VwU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751208AbaK0VwU (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 27 Nov 2014 16:52:20 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org, linux@arm.linux.org.uk,
-        vinod.koul@intel.com, linux-mmc@vger.kernel.org, nsekhar@ti.com,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        khilman@deeprootsystems.com, Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@kernel.org>, chris@printf.net,
-        dmaengine@vger.kernel.org, ulf.hansson@linaro.org,
-        linux-spi@vger.kernel.org
-Subject: Re: [PATCH 2/3] ARM: edma: Rename header file for dmaengine filter function definition
-Date: Thu, 27 Nov 2014 22:52:10 +0100
-Message-ID: <4859328.eEV7jzKEaA@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54777174.4070203@ti.com>
-References: <1417084891-17990-1-git-send-email-peter.ujfalusi@ti.com> <3300340.ou8f7H2hIc@wuerfel> <54777174.4070203@ti.com>
+Received: from www.linutronix.de ([62.245.132.108]:58990 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729AbaK0VwS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 16:52:18 -0500
+Date: Thu, 27 Nov 2014 22:52:08 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: David Hildenbrand <dahi@linux.vnet.ibm.com>
+cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
+        paulus@samba.org, akpm@linux-foundation.org, schwidefsky@de.ibm.com,
+        mingo@kernel.org
+Subject: Re: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
+ atomic
+In-Reply-To: <20141127161905.7c6220ee@thinkpad-w530>
+Message-ID: <alpine.DEB.2.11.1411272246110.3961@nanos>
+References: <20141126151729.GB9612@redhat.com> <20141126152334.GA9648@redhat.com> <20141126163207.63810fcb@thinkpad-w530> <20141126154717.GB10568@redhat.com> <5475FAB1.1000802@de.ibm.com> <20141126163216.GB10850@redhat.com> <547604FC.4030300@de.ibm.com>
+ <20141126170447.GC11202@redhat.com> <20141127070919.GA4390@osiris> <20141127090301.3ddc3077@thinkpad-w530> <20141127120441.GB4390@osiris> <alpine.DEB.2.11.1411271602320.3961@nanos> <20141127161905.7c6220ee@thinkpad-w530>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:wMwH+rn/O7/e11eTcQFtsF22av0Pl4szbFuLe975Nj9
- dSfm1nUkv9joHdf1NyV+bYbxQCY2ZAcm1WgeFeO9yr18Kw2l3x
- q1AzlNorYZMZRHAWnh19YaItOcWAUpHVC+I5RP9tH4Xdd8ofic
- Rm6mMJtxzTT8KWHrcK+r9zGNTs3GSBSeRvvuljuY+IwQbU3m0c
- pSWvdoXeNMdauq7I778IMZLU+4UlaUcRZYzQxnUsb4/H1OwoFv
- Zx35fkhvC+HZ9w/ZjID7jtepwZBq0T67iCoh7azaJQDoRSvx3N
- cm/+gQdnJZBGGEWiE3ySC7OU/Cd6vhPv/pT+MAVoJD+xM3kyIu
- Szb43/aOQ0t4H350zz3s=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 November 2014 20:46:12 Peter Ujfalusi wrote:
+On Thu, 27 Nov 2014, David Hildenbrand wrote:
+> > OTOH, there is no reason why we need to disable preemption over that
+> > page_fault_disabled() region. There are code pathes which really do
+> > not require to disable preemption for that.
+> > 
+> > We have that seperated in preempt-rt for obvious reasons and IIRC
+> > Peter Zijlstra tried to distangle it in mainline some time ago. I
+> > forgot why that never got merged.
+> > 
 > 
-> I see. With this series I did not planed to fix all edma related issues, just
-> as a start clean up the related header files. I would rather not add fixes to
-> mmc, spi, etc drivers since while you have valid point it is not in the scope
-> of this series.
-> Can we do the changes you are suggesting in an incremental manner?
+> Of course, we can completely separate that in our page fault code by doing
+> pagefault_disabled() checks instead of in_atomic() checks (even in add on
+> patches later).
+> 
+> > We tie way too much stuff on the preemption count already, which is a
+> > mightmare because we have no clear distinction of protection
+> > scopes. 
+> 
+> Although it might not be optimal, but keeping a separate counter for
+> pagefault_disable() as part of the preemption counter seems to be the only
+> doable thing right now.
 
-Sure, but I'd leave the existing filter function declaration alone then
-and not move it, since we wouldn't want to keep it in the long run.
+It needs to be seperate, if it should be useful. Otherwise we just
+have a extra accounting in preempt_count() which does exactly the same
+thing as we have now: disabling preemption.
 
-	Arnd
+Now you might say, that we could mask out that part when checking
+preempt_count, but that wont work on x86 as x86 has the preempt
+counter as a per cpu variable and not as a per thread one.
+
+But if you want to distangle pagefault disable from preempt disable
+then you must move it to the thread, because it is a property of the
+thread. preempt count is very much a per cpu counter as you can only
+go through schedule when it becomes 0.
+
+Btw, I find the x86 representation way more clear, because it
+documents that preempt count is a per cpu BKL and not a magic thread
+property. And sadly that is how preempt count is used ...
+
+> I am not sure if a completely separated counter is even possible,
+> increasing the size of thread_info.
+
+And adding a ulong to thread_info is going to create exactly which
+problem?
+
+Thanks,
+
+	tglx
