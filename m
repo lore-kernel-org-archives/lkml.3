@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568AbaK0Hk7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 02:40:59 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:41760 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752773AbaK0HfY (ORCPT
+	id S1754591AbaK0HlC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 02:41:02 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:20556 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752749AbaK0HfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Nov 2014 02:35:24 -0500
-X-AuditID: cbfee691-f79b86d000004a5a-f0-5476d4366259
+X-AuditID: cbfee68e-f79b46d000002b74-ee-5476d437499a
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: kgene.kim@samsung.com, mark.rutland@arm.com, arnd@arndb.de, olof@lixom.net,
@@ -18,39 +18,40 @@ Cc: kgene.kim@samsung.com, mark.rutland@arm.com, arnd@arndb.de, olof@lixom.net,
         geunsik.lim@samsung.com, sw0312.kim@samsung.com,
         jh80.chung@samsung.com, cw00.choi@samsung.com, a.kesavan@samsung.com,
         devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 01/19] pinctrl: exynos: Add support for Exynos5433
-Date: Thu, 27 Nov 2014 16:34:58 +0900
-Message-id: <1417073716-22997-2-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH 04/19] clk: samsung: exynos5433: Add MUX clocks of CMU_TOP
+ domain
+Date: Thu, 27 Nov 2014 16:35:01 +0900
+Message-id: <1417073716-22997-5-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1417073716-22997-1-git-send-email-cw00.choi@samsung.com>
 References: <1417073716-22997-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsWyRsSkUNfsSlmIwYqfuhaP1yxmsvg76Ri7
-	xftlPYwWl/drW1z/8pzVYv6Rc6wWfya0sllMuj+BxeLGrzZWi94FV9kszja9YbeY8mc5k8Wm
-	x9dYLS7vmsNmMeP8PiaLpdcvMlmcuv6ZzeLwm3ZWixmTX7JZHJuxhNFi1a4/jBYvP55gcRDz
-	WDNvDaPH71+TGD12zrrL7nHn2h42j81L6j2unGhi9ejbsorR4/MmuQCOKC6blNSczLLUIn27
-	BK6MpydnsRVsd6m49N+mgXGtVRcjJ4eEgInEltfrWCFsMYkL99azgdhCAksZJS688oap+XNw
-	L1ANF1B8OqPE1ycPGSGcJiaJWysfsINUsQloSex/cQOsW0TAWaJhaiMTSBGzwEdmiYZpF8FW
-	CAs4Saw8swCsiEVAVeLOzvNMIDavgKvElwPf2SDWKUgsWz4TrJ5TwE1i/9eDrBAnuUos+nYF
-	bKiEwFwOifXT/jJBDBKQ+Db5EEsXIwdQQlZi0wFmiDmSEgdX3GCZwCi8gJFhFaNoakFyQXFS
-	epGpXnFibnFpXrpecn7uJkZgXJ7+92ziDsb7B6wPMQpwMCrx8FocKAsRYk0sK67MPcRoCrRh
-	IrOUaHI+MPrzSuINjc2MLExNTI2NzC3NlMR5daR/BgsJpCeWpGanphakFsUXleakFh9iZOLg
-	lGpgjPz/6sfHn/4fNOa/0t+9tUv6OPOaQ/8sYq7923817Z5WDHf0hIoDJ260rDpWarj7ohv7
-	5UkX43IffnR9bVz657fdmQX5T36/sJS36MiYcd6aIcTArMRM3mDN5bNZ20tadskXCS8Jaz13
-	4aFygZIpNzuPdArX/wBftqsz7XNMU5KOv867bhX5QomlOCPRUIu5qDgRAPzfbdXGAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHIsWRmVeSWpSXmKPExsVy+t9jQV2zK2UhBr1zlSwer1nMZPF30jF2
-	i/fLehgtLu/Xtrj+5Tmrxfwj51gt/kxoZbOYdH8Ci8WNX22sFr0LrrJZnG16w24x5c9yJotN
-	j6+xWlzeNYfNYsb5fUwWS69fZLI4df0zm8XhN+2sFjMmv2SzODZjCaPFql1/GC1efjzB4iDm
-	sWbeGkaP378mMXrsnHWX3ePOtT1sHpuX1HtcOdHE6tG3ZRWjx+dNcgEcUQ2MNhmpiSmpRQqp
-	ecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA/ykplCXmlAKFAhKLi5X0
-	7TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM56enMVWsN2l4tJ/mwbGtVZdjJwcEgImEn8O7mWF
-	sMUkLtxbz9bFyMUhJDCdUeLrk4eMEE4Tk8StlQ/YQarYBLQk9r+4wQZiiwg4SzRMbWQCKWIW
-	+Mgs0TDtItgoYQEniZVnFoAVsQioStzZeZ4JxOYVcJX4cuA7G8Q6BYlly2eC1XMKuEns/3oQ
-	zBYCqln07QrTBEbeBYwMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGC4/6Z9A7GVQ0WhxgF
-	OBiVeHgtDpSFCLEmlhVX5h5ilOBgVhLhlVoEFOJNSaysSi3Kjy8qzUktPsRoCnTVRGYp0eR8
-	YErKK4k3NDYxM7I0Mje0MDI2VxLnvXEzN0RIID2xJDU7NbUgtQimj4mDU6qBcbF/vtKOvqWp
-	Wx4oL/zruUHyr7VKpcaCtrvacz823H/94n4YyymzvGhG431botiueM4LOhb4dsEjgd/z9/Fw
-	sO9Krbc/tdDEcXaW0QPuWIMpff9PntdOe6SRe9bq7Nnyt0U259+fWv103+nroae+n/z5Pil7
-	R03oe+7rVfkBRq/jv3NZis56GKfEUpyRaKjFXFScCAAPTA+lEQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsWyRsSkRNf8SlmIQc9kAYvHaxYzWfyddIzd
+	4v2yHkaLy/u1La5/ec5qMf/IOVaLPxNa2Swm3Z/AYnHjVxurRe+Cq2wWZ5vesFtM+bOcyWLT
+	42usFpd3zWGzmHF+H5PF0usXmSxOXf/MZnH4TTurxYzJL9ksjs1YwmixatcfRouXH0+wOIh5
+	rJm3htHj969JjB47Z91l97hzbQ+bx+Yl9R5XTjSxevRtWcXo8XmTXABHFJdNSmpOZllqkb5d
+	AlfGr9+PWQu2hVQcP7+ZtYHxuEcXIyeHhICJxJy1G9ghbDGJC/fWs4HYQgJLGSW2zs6EqXm3
+	5jRLFyMXUHw6o8TR6b+ZIZwmJolbKx+AdbMJaEnsf3EDrFtEwFmiYWojE0gRs8BHZomGaRdZ
+	QRLCAsESazsPsYDYLAKqEgs7rzGD2LwCrhL7Z79lgVinILFs+Uywek4BN4n9Xw+yQpzkKrHo
+	2xWwoRICczkkDk9bzgwxSEDi22SQoRxACVmJTQeYIeZIShxccYNlAqPwAkaGVYyiqQXJBcVJ
+	6UVGesWJucWleel6yfm5mxiBkXn637O+HYw3D1gfYhTgYFTi4bU4UBYixJpYVlyZe4jRFGjD
+	RGYp0eR8YPznlcQbGpsZWZiamBobmVuaKYnzJkj9DBYSSE8sSc1OTS1ILYovKs1JLT7EyMTB
+	KdXA2PVxWrh6euMys9D0sp7QZGdrmZn3TDc5TORaJKFjdlSI9X6TJN/13NlKyvnxfOGlfJuP
+	HL/atCTgw9vlizcIzT/0wWPbjIVlkazVKcxXb10zu/1J1b/90rzzM3zsNxeXhXZ3TKiIkprZ
+	6O3hJlhx8OEH675bbRKLWo3E1/o0C7cKbKgr/u6rxFKckWioxVxUnAgABRu6lscCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPIsWRmVeSWpSXmKPExsVy+t9jQV3zK2UhBjcOMFo8XrOYyeLvpGPs
+	Fu+X9TBaXN6vbXH9y3NWi/lHzrFa/JnQymYx6f4EFosbv9pYLXoXXGWzONv0ht1iyp/lTBab
+	Hl9jtbi8aw6bxYzz+5gsll6/yGRx6vpnNovDb9pZLWZMfslmcWzGEkaLVbv+MFq8/HiCxUHM
+	Y828NYwev39NYvTYOesuu8eda3vYPDYvqfe4cqKJ1aNvyypGj8+b5AI4ohoYbTJSE1NSixRS
+	85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOA/lNSKEvMKQUKBSQWFyvp
+	22GaEBripmsB0xih6xsSBNdjZIAGEtYwZvz6/Zi1YFtIxfHzm1kbGI97dDFyckgImEi8W3Oa
+	BcIWk7hwbz1bFyMXh5DAdEaJo9N/M0M4TUwSt1Y+YAepYhPQktj/4gYbiC0i4CzRMLWRCaSI
+	WeAjs0TDtIusIAlhgWCJtZ2HwMayCKhKLOy8xgxi8wq4Suyf/RZqnYLEsuUzweo5Bdwk9n89
+	CGYLAdUs+naFaQIj7wJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwZH/THoH46oGi0OM
+	AhyMSjy8FgfKQoRYE8uKK3MPMUpwMCuJ8EotAgrxpiRWVqUW5ccXleakFh9iNAW6aiKzlGhy
+	PjAp5ZXEGxqbmBlZGpkbWhgZmyuJ8964mRsiJJCeWJKanZpakFoE08fEwSnVwJh1ZL39Fz1f
+	Vbf3l0z6rr+65nKnnGP3nMtnbFJ/T3nDvtd5OccPDW3b2U4BwQfT9k8WbT6cuGXfs/Ck+6q8
+	7S9Wnc+0///bZsqaLwf3Zy+cM23rhY2ZGUdSC0X0FT3N40VEz5/lW5tZVj+Z08tFV/dYSYz6
+	KufehuRnO2rWrJu7wfYcx4oF1WuVWIozEg21mIuKEwFQo2wmEgMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -58,221 +59,252 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds driver data for Exynos5433 SoC. Exynos5433 includes 228 multi-
-functional input/output port pins and 135 memory port pins. There are 41 general
-port groups and 2 memory port groups.
+This patch adds the MUX (multiplexer) clocks for CMU_TOP domain of Exynos5433.
+CMU_TOP domain provides source clocks to other CMU domains.
 
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
 Cc: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Geunsik Lim <geunsik.lim@samsung.com>
 Acked-by: Inki Dae <inki.dae@samsung.com>
+Acked-by: Geunsik Lim <geunsik.lim@samsung.com>
 ---
- drivers/pinctrl/samsung/pinctrl-exynos.c  | 163 ++++++++++++++++++++++++++++++
- drivers/pinctrl/samsung/pinctrl-samsung.c |   2 +
- drivers/pinctrl/samsung/pinctrl-samsung.h |   1 +
- 3 files changed, 166 insertions(+)
+ drivers/clk/samsung/clk-exynos5433.c   | 89 ++++++++++++++++++++++++++++++++++
+ include/dt-bindings/clock/exynos5433.h | 31 +++++++++++-
+ 2 files changed, 118 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/pinctrl/samsung/pinctrl-exynos.c b/drivers/pinctrl/samsung/pinctrl-exynos.c
-index 8e3e0c0..bd4c4ec 100644
---- a/drivers/pinctrl/samsung/pinctrl-exynos.c
-+++ b/drivers/pinctrl/samsung/pinctrl-exynos.c
-@@ -1268,6 +1268,169 @@ struct samsung_pin_ctrl exynos5420_pin_ctrl[] = {
- 	},
+diff --git a/drivers/clk/samsung/clk-exynos5433.c b/drivers/clk/samsung/clk-exynos5433.c
+index 25b447a..e0d71fd 100644
+--- a/drivers/clk/samsung/clk-exynos5433.c
++++ b/drivers/clk/samsung/clk-exynos5433.c
+@@ -208,6 +208,7 @@ PNAME(mout_mphy_pll_user_p)	= { "fin_pll", "sclk_mphy_pll", };
+ PNAME(mout_mfc_pll_user_p)	= { "fin_pll", "sclk_mfc_pll", };
+ PNAME(mout_bus_pll_user_p)	= { "fin_pll", "sclk_bus_pll", };
+ PNAME(mout_bus_pll_user_t_p)	= { "fin_pll", "mout_bus_pll_user", };
++PNAME(mout_mphy_pll_user_t_p)	= { "fin_pll", "mout_mphy_pll_user", };
+ 
+ PNAME(mout_bus_mfc_pll_user_p)	= { "mout_bus_pll_user", "mout_mfc_pll_user",};
+ PNAME(mout_mfc_bus_pll_user_p)	= { "mout_mfc_pll_user", "mout_bus_pll_user",};
+@@ -215,6 +216,12 @@ PNAME(mout_aclk_cam1_552_b_p)	= { "mout_aclk_cam1_552_a",
+ 				    "mout_mfc_pll_user", };
+ PNAME(mout_aclk_cam1_552_a_p)	= { "mout_isp_pll", "mout_bus_pll_user", };
+ 
++PNAME(mout_aclk_mfc_400_c_p)	= { "mout_aclk_mfc_400_b",
++				    "mout_mphy_pll_user", };
++PNAME(mout_aclk_mfc_400_b_p)	= { "mout_aclk_mfc_400_a",
++				    "mout_bus_pll_user", };
++PNAME(mout_aclk_mfc_400_a_p)	= { "mout_mfc_pll_user", "mout_isp_pll", };
++
+ PNAME(mout_bus_mphy_pll_user_p)	= { "mout_bus_pll_user",
+ 				    "mout_mphy_pll_user", };
+ PNAME(mout_aclk_mscl_b_p)	= { "mout_aclk_mscl_400_a",
+@@ -231,6 +238,13 @@ PNAME(mout_sclk_mmc0_d_p)	= { "mout_sclk_mmc0_c", "mout_isp_pll", };
+ PNAME(mout_sclk_mmc0_c_p)	= { "mout_sclk_mmc0_b", "mout_mphy_pll_user",};
+ PNAME(mout_sclk_mmc0_b_p)	= { "mout_sclk_mmc0_a", "mout_mfc_pll_user", };
+ 
++PNAME(mout_sclk_spdif_p)	= { "sclk_audio0", "sclk_audio1",
++				    "fin_pll", "ioclk_spdif_extclk", };
++PNAME(mout_sclk_audio1_p)	= { "ioclk_audiocdclk1", "fin_pll",
++				    "mout_aud_pll_user_t",};
++PNAME(mout_sclk_audio0_p)	= { "ioclk_audiocdclk0", "fin_pll",
++				    "mout_aud_pll_user_t",};
++
+ static struct samsung_fixed_factor_clock top_fixed_factor_clks[] __initdata = {
+ 	FFACTOR(0, "sclk_bus_pll", "fout_bus_pll", 1, 1, 0),
+ 	FFACTOR(0, "sclk_mfc_pll", "fout_mfc_pll", 1, 1, 0),
+@@ -239,6 +253,14 @@ static struct samsung_fixed_factor_clock top_fixed_factor_clks[] __initdata = {
+ 	FFACTOR(CLK_FIN_PLL, "fin_pll", "xusbxti", 1, 1, 0),
  };
  
-+/* pin banks of exynos5433 pin-controller - ALIVE */
-+static struct samsung_pin_bank exynos5433_pin_banks0[] = {
-+	EXYNOS_PIN_BANK_EINTW(8, 0x000, "gpa0", 0x00),
-+	EXYNOS_PIN_BANK_EINTW(8, 0x020, "gpa1", 0x04),
-+	EXYNOS_PIN_BANK_EINTW(8, 0x040, "gpa2", 0x08),
-+	EXYNOS_PIN_BANK_EINTW(8, 0x060, "gpa3", 0x0c),
++static struct samsung_fixed_rate_clock top_fixed_clks[] __initdata = {
++	/* Xi2s{0|1}CDCLK input clock for I2S/PCM */
++	FRATE(0, "ioclk_audiocdclk1", NULL, CLK_IS_ROOT, 100000000),
++	FRATE(0, "ioclk_audiocdclk0", NULL, CLK_IS_ROOT, 100000000),
++	/* Xi2s1SDI input clock for SPDIF */
++	FRATE(0, "ioclk_spdif_extclk", NULL, CLK_IS_ROOT, 100000000),
 +};
 +
-+/* pin banks of exynos5433 pin-controller - AUD */
-+static struct samsung_pin_bank exynos5433_pin_banks1[] = {
-+	EXYNOS_PIN_BANK_EINTG(7, 0x000, "gpz0", 0x00),
-+	EXYNOS_PIN_BANK_EINTG(4, 0x020, "gpz1", 0x04),
-+};
+ static struct samsung_mux_clock top_mux_clks[] __initdata = {
+ 	/* MUX_SEL_TOP0 */
+ 	MUX(CLK_MOUT_AUD_PLL, "mout_aud_pll", mout_aud_pll_p, MUX_SEL_TOP0,
+@@ -284,6 +306,14 @@ static struct samsung_mux_clock top_mux_clks[] __initdata = {
+ 	MUX(CLK_MOUT_ACLK_G2D_400_A, "mout_aclk_g2d_400_a",
+ 			mout_bus_mfc_pll_user_p, MUX_SEL_TOP3, 0, 1),
+ 
++	/* MUX_SEL_TOP4 */
++	MUX(CLK_MOUT_ACLK_MFC_400_C, "mout_aclk_mfc_400_c",
++			mout_aclk_mfc_400_c_p, MUX_SEL_TOP4, 8, 1),
++	MUX(CLK_MOUT_ACLK_MFC_400_B, "mout_aclk_mfc_400_b",
++			mout_aclk_mfc_400_b_p, MUX_SEL_TOP4, 4, 1),
++	MUX(CLK_MOUT_ACLK_MFC_400_A, "mout_aclk_mfc_400_a",
++			mout_aclk_mfc_400_a_p, MUX_SEL_TOP4, 0, 1),
 +
-+/* pin banks of exynos5433 pin-controller - CPIF */
-+static struct samsung_pin_bank exynos5433_pin_banks2[] = {
-+	EXYNOS_PIN_BANK_EINTG(2, 0x000, "gpv6", 0x00),
-+};
+ 	/* MUX_SEL_TOP_MSCL */
+ 	MUX(CLK_MOUT_SCLK_JPEG_C, "mout_sclk_jpeg_c", mout_sclk_jpeg_c_p,
+ 			MUX_SEL_TOP_MSCL, 8, 1),
+@@ -292,6 +322,20 @@ static struct samsung_mux_clock top_mux_clks[] __initdata = {
+ 	MUX(CLK_MOUT_SCLK_JPEG_A, "mout_sclk_jpeg_a", mout_bus_pll_user_t_p,
+ 			MUX_SEL_TOP_MSCL, 0, 1),
+ 
++	/* MUX_SEL_TOP_CAM1 */
++	MUX(CLK_MOUT_SCLK_ISP_SENSOR2, "mout_sclk_isp_sensor2",
++			mout_bus_pll_user_t_p, MUX_SEL_TOP_CAM1, 24, 1),
++	MUX(CLK_MOUT_SCLK_ISP_SENSOR1, "mout_sclk_isp_sensor1",
++			mout_bus_pll_user_t_p, MUX_SEL_TOP_CAM1, 20, 1),
++	MUX(CLK_MOUT_SCLK_ISP_SENSOR0, "mout_sclk_isp_sensor0",
++			mout_bus_pll_user_t_p, MUX_SEL_TOP_CAM1, 16, 1),
++	MUX(CLK_MOUT_SCLK_ISP_UART, "mout_sclk_isp_uart",
++			mout_bus_pll_user_t_p, MUX_SEL_TOP_CAM1, 8, 1),
++	MUX(CLK_MOUT_SCLK_ISP_SPI1, "mout_sclk_isp_spi1",
++			mout_bus_pll_user_t_p, MUX_SEL_TOP_CAM1, 4, 1),
++	MUX(CLK_MOUT_SCLK_ISP_SPI0, "mout_sclk_isp_spi0",
++			mout_bus_pll_user_t_p, MUX_SEL_TOP_CAM1, 0, 1),
 +
-+/* pin banks of exynos5433 pin-controller - eSE */
-+static struct samsung_pin_bank exynos5433_pin_banks3[] = {
-+	EXYNOS_PIN_BANK_EINTG(3, 0x000, "gpj2", 0x00),
-+};
+ 	/* MUX_SEL_TOP_FSYS0 */
+ 	MUX(CLK_MOUT_SCLK_MMC2_B, "mout_sclk_mmc2_b", mout_sclk_mmc2_b_p,
+ 			MUX_SEL_TOP_FSYS0, 28, 1),
+@@ -310,6 +354,16 @@ static struct samsung_mux_clock top_mux_clks[] __initdata = {
+ 	MUX(CLK_MOUT_SCLK_MMC0_A, "mout_sclk_mmc0_a", mout_bus_pll_user_t_p,
+ 			MUX_SEL_TOP_FSYS0, 0, 1),
+ 
++	/* MUX_SEL_TOP_FSYS1 */
++	MUX(CLK_MOUT_SCLK_PCIE_100, "mout_sclk_pcie_100", mout_bus_pll_user_t_p,
++			MUX_SEL_TOP_FSYS1, 12, 1),
++	MUX(CLK_MOUT_SCLK_UFSUNIPRO, "mout_sclk_ufsunipro",
++			mout_mphy_pll_user_t_p, MUX_SEL_TOP_FSYS1, 8, 1),
++	MUX(CLK_MOUT_SCLK_USBHOST30, "mout_sclk_usbhost30",
++			mout_bus_pll_user_t_p, MUX_SEL_TOP_FSYS1, 4, 1),
++	MUX(CLK_MOUT_SCLK_USBDRD30, "mout_sclk_usbdrd30",
++			mout_bus_pll_user_t_p, MUX_SEL_TOP_FSYS1, 0, 1),
 +
-+/* pin banks of exynos5433 pin-controller - FINGER */
-+static struct samsung_pin_bank exynos5433_pin_banks4[] = {
-+	EXYNOS_PIN_BANK_EINTG(4, 0x000, "gpd5", 0x00),
-+};
+ 	/* MUX_SEL_TOP_PERIC0 */
+ 	MUX(CLK_MOUT_SCLK_SPI4, "mout_sclk_spi4", mout_bus_pll_user_t_p,
+ 			MUX_SEL_TOP_PERIC0, 28, 1),
+@@ -327,6 +381,16 @@ static struct samsung_mux_clock top_mux_clks[] __initdata = {
+ 			MUX_SEL_TOP_PERIC0, 4, 1),
+ 	MUX(CLK_MOUT_SCLK_SPI0, "mout_sclk_spi0", mout_bus_pll_user_t_p,
+ 			MUX_SEL_TOP_PERIC0, 0, 1),
 +
-+/* pin banks of exynos5433 pin-controller - FSYS */
-+static struct samsung_pin_bank exynos5433_pin_banks5[] = {
-+	EXYNOS_PIN_BANK_EINTG(6, 0x000, "gph1", 0x00),
-+	EXYNOS_PIN_BANK_EINTG(7, 0x020, "gpr4", 0x04),
-+	EXYNOS_PIN_BANK_EINTG(5, 0x040, "gpr0", 0x08),
-+	EXYNOS_PIN_BANK_EINTG(8, 0x060, "gpr1", 0x0c),
-+	EXYNOS_PIN_BANK_EINTG(2, 0x080, "gpr2", 0x10),
-+	EXYNOS_PIN_BANK_EINTG(8, 0x0a0, "gpr3", 0x14),
-+};
++	/* MUX_SEL_TOP_PERIC1 */
++	MUX(CLK_MOUT_SCLK_SLIMBUS, "mout_sclk_slimbus", mout_aud_pll_user_p,
++			MUX_SEL_TOP_PERIC1, 16, 1),
++	MUX(CLK_MOUT_SCLK_SPDIF, "mout_sclk_spdif", mout_sclk_spdif_p,
++			MUX_SEL_TOP_PERIC1, 12, 2),
++	MUX(CLK_MOUT_SCLK_AUDIO1, "mout_sclk_audio1", mout_sclk_audio1_p,
++			MUX_SEL_TOP_PERIC1, 4, 2),
++	MUX(CLK_MOUT_SCLK_AUDIO0, "mout_sclk_audio0", mout_sclk_audio0_p,
++			MUX_SEL_TOP_PERIC1, 0, 2),
+ };
+ 
+ static struct samsung_div_clock top_div_clks[] __initdata = {
+@@ -391,6 +455,15 @@ static struct samsung_div_clock top_div_clks[] __initdata = {
+ 			DIV_TOP_PERIC2, 0, 4),
+ 
+ 	/* DIV_TOP_PERIC3 */
++	DIV(CLK_DIV_SCLK_I2S1, "div_sclk_i2s1", "sclk_audio1",
++			DIV_TOP_PERIC4, 16, 6),
++	DIV(CLK_DIV_SCLK_PCM1, "div_sclk_pcm1", "sclk_audio1",
++			DIV_TOP_PERIC4, 8, 8),
++	DIV(CLK_DIV_SCLK_AUDIO1, "div_sclk_audio1", "mout_sclk_audio1",
++			DIV_TOP_PERIC4, 4, 4),
++	DIV(CLK_DIV_SCLK_AUDIO0, "div_sclk_audio0", "mout_sclk_audio0",
++			DIV_TOP_PERIC4, 0, 4),
 +
-+/* pin banks of exynos5433 pin-controller - IMEM */
-+static struct samsung_pin_bank exynos5433_pin_banks6[] = {
-+	EXYNOS_PIN_BANK_EINTG(8, 0x000, "gpf0", 0x00),
-+};
+ 	/* DIV_TOP_PERIC4 */
+ 	DIV(CLK_DIV_SCLK_SPI4_B, "div_sclk_spi4_b", "div_sclk_spi4_a",
+ 			DIV_TOP_PERIC4, 16, 8),
+@@ -424,6 +497,12 @@ static struct samsung_gate_clock top_gate_clks[] __initdata = {
+ 			ENABLE_SCLK_TOP_PERIC, 12, CLK_SET_RATE_PARENT, 0),
+ 	GATE(CLK_SCLK_SPI3_PERIC, "sclk_spi3_peric", "div_sclk_spi3_b",
+ 			ENABLE_SCLK_TOP_PERIC, 11, CLK_SET_RATE_PARENT, 0),
++	GATE(CLK_SCLK_SPDIF_PERIC, "sclk_spdif_peric", "mout_sclk_spdif",
++			ENABLE_SCLK_TOP_PERIC, 9, CLK_SET_RATE_PARENT, 0),
++	GATE(CLK_SCLK_I2S1_PERIC, "sclk_i2s1_peric", "div_sclk_i2s1",
++			ENABLE_SCLK_TOP_PERIC, 8, CLK_SET_RATE_PARENT, 0),
++	GATE(CLK_SCLK_PCM1_PERIC, "sclk_pcm1_peric", "div_sclk_pcm1",
++			ENABLE_SCLK_TOP_PERIC, 7, CLK_SET_RATE_PARENT, 0),
+ 	GATE(CLK_SCLK_UART2_PERIC, "sclk_uart2_peric", "div_sclk_uart2",
+ 			ENABLE_SCLK_TOP_PERIC, 5, 0, 0),
+ 	GATE(CLK_SCLK_UART1_PERIC, "sclk_uart1_peric", "div_sclk_uart1",
+@@ -436,6 +515,14 @@ static struct samsung_gate_clock top_gate_clks[] __initdata = {
+ 			ENABLE_SCLK_TOP_PERIC, 1, CLK_SET_RATE_PARENT, 0),
+ 	GATE(CLK_SCLK_SPI0_PERIC, "sclk_spi0_peric", "div_sclk_spi0_b",
+ 			ENABLE_SCLK_TOP_PERIC, 0, CLK_SET_RATE_PARENT, 0),
 +
-+/* pin banks of exynos5433 pin-controller - NFC */
-+static struct samsung_pin_bank exynos5433_pin_banks7[] = {
-+	EXYNOS_PIN_BANK_EINTG(3, 0x000, "gpj0", 0x00),
-+};
++	/* MUX_ENABLE_TOP_PERIC1 */
++	GATE(CLK_SCLK_SLIMBUS, "sclk_slimbus", "mout_sclk_slimbus",
++			MUX_ENABLE_TOP_PERIC1, 16, 0, 0),
++	GATE(CLK_SCLK_AUDIO1, "sclk_audio1", "div_sclk_audio1",
++			MUX_ENABLE_TOP_PERIC1, 4, 0, 0),
++	GATE(CLK_SCLK_AUDIO0, "sclk_audio0", "div_sclk_audio0",
++			MUX_ENABLE_TOP_PERIC1, 0, 0, 0),
+ };
+ 
+ /*
+@@ -522,6 +609,8 @@ static struct samsung_cmu_info top_cmu_info __initdata = {
+ 	.nr_div_clks		= ARRAY_SIZE(top_div_clks),
+ 	.gate_clks		= top_gate_clks,
+ 	.nr_gate_clks		= ARRAY_SIZE(top_gate_clks),
++	.fixed_clks		= top_fixed_clks,
++	.nr_fixed_clks		= ARRAY_SIZE(top_fixed_clks),
+ 	.fixed_factor_clks	= top_fixed_factor_clks,
+ 	.nr_fixed_factor_clks	= ARRAY_SIZE(top_fixed_factor_clks),
+ 	.nr_clk_ids		= TOP_NR_CLK,
+diff --git a/include/dt-bindings/clock/exynos5433.h b/include/dt-bindings/clock/exynos5433.h
+index c0e995b..3e9960b 100644
+--- a/include/dt-bindings/clock/exynos5433.h
++++ b/include/dt-bindings/clock/exynos5433.h
+@@ -52,6 +52,23 @@
+ #define CLK_MOUT_SCLK_SPI2		44
+ #define CLK_MOUT_SCLK_SPI1		45
+ #define CLK_MOUT_SCLK_SPI0		46
++#define CLK_MOUT_ACLK_MFC_400_C		47
++#define CLK_MOUT_ACLK_MFC_400_B		48
++#define CLK_MOUT_ACLK_MFC_400_A		49
++#define CLK_MOUT_SCLK_ISP_SENSOR2	50
++#define CLK_MOUT_SCLK_ISP_SENSOR1	51
++#define CLK_MOUT_SCLK_ISP_SENSOR0	52
++#define CLK_MOUT_SCLK_ISP_UART		53
++#define CLK_MOUT_SCLK_ISP_SPI1		54
++#define CLK_MOUT_SCLK_ISP_SPI0		55
++#define CLK_MOUT_SCLK_PCIE_100		56
++#define CLK_MOUT_SCLK_UFSUNIPRO		57
++#define CLK_MOUT_SCLK_USBHOST30		58
++#define CLK_MOUT_SCLK_USBDRD30		59
++#define CLK_MOUT_SCLK_SLIMBUS		60
++#define CLK_MOUT_SCLK_SPDIF		61
++#define CLK_MOUT_SCLK_AUDIO1		62
++#define CLK_MOUT_SCLK_AUDIO0		63
+ 
+ #define CLK_DIV_ACLK_FSYS_200		100
+ #define CLK_DIV_ACLK_IMEM_SSSX		101
+@@ -80,6 +97,10 @@
+ #define CLK_DIV_SCLK_SPI4_A		124
+ #define CLK_DIV_SCLK_SPI3_B		125
+ #define CLK_DIV_SCLK_SPI3_A		126
++#define CLK_DIV_SCLK_I2S1		127
++#define CLK_DIV_SCLK_PCM1		128
++#define CLK_DIV_SCLK_AUDIO1		129
++#define CLK_DIV_SCLK_AUDIO0		130
+ 
+ #define CLK_ACLK_PERIC_66		200
+ #define CLK_ACLK_PERIS_66		201
+@@ -95,8 +116,14 @@
+ #define CLK_SCLK_SPI2_PERIC		211
+ #define CLK_SCLK_SPI1_PERIC		212
+ #define CLK_SCLK_SPI0_PERIC		213
+-
+-#define TOP_NR_CLK			214
++#define CLK_SCLK_SPDIF_PERIC		214
++#define CLK_SCLK_I2S1_PERIC		215
++#define CLK_SCLK_PCM1_PERIC		216
++#define CLK_SCLK_SLIMBUS		217
++#define CLK_SCLK_AUDIO1			218
++#define CLK_SCLK_AUDIO0			219
 +
-+/* pin banks of exynos5433 pin-controller - PERIC */
-+static struct samsung_pin_bank exynos5433_pin_banks8[] = {
-+	EXYNOS_PIN_BANK_EINTG(6, 0x000, "gpv7", 0x00),
-+	EXYNOS_PIN_BANK_EINTG(5, 0x020, "gpb0", 0x04),
-+	EXYNOS_PIN_BANK_EINTG(8, 0x040, "gpc0", 0x08),
-+	EXYNOS_PIN_BANK_EINTG(2, 0x060, "gpc1", 0x0c),
-+	EXYNOS_PIN_BANK_EINTG(6, 0x080, "gpc2", 0x10),
-+	EXYNOS_PIN_BANK_EINTG(8, 0x0a0, "gpc3", 0x14),
-+	EXYNOS_PIN_BANK_EINTG(2, 0x0c0, "gpg0", 0x18),
-+	EXYNOS_PIN_BANK_EINTG(4, 0x0e0, "gpd0", 0x1c),
-+	EXYNOS_PIN_BANK_EINTG(6, 0x100, "gpd1", 0x20),
-+	EXYNOS_PIN_BANK_EINTG(8, 0x120, "gpd2", 0x24),
-+	EXYNOS_PIN_BANK_EINTG(5, 0x140, "gpd4", 0x28),
-+	EXYNOS_PIN_BANK_EINTG(2, 0x160, "gpd8", 0x2c),
-+	EXYNOS_PIN_BANK_EINTG(7, 0x180, "gpd6", 0x30),
-+	EXYNOS_PIN_BANK_EINTG(3, 0x1a0, "gpd7", 0x34),
-+	EXYNOS_PIN_BANK_EINTG(5, 0x1c0, "gpg1", 0x38),
-+	EXYNOS_PIN_BANK_EINTG(2, 0x1e0, "gpg2", 0x3c),
-+	EXYNOS_PIN_BANK_EINTG(8, 0x200, "gpg3", 0x40),
-+};
-+
-+/* pin banks of exynos5433 pin-controller - TOUCH */
-+static struct samsung_pin_bank exynos5433_pin_banks9[] = {
-+	EXYNOS_PIN_BANK_EINTG(3, 0x000, "gpj1", 0x00),
-+};
-+
-+/*
-+ * Samsung pinctrl driver data for Exynos5433 SoC. Exynos5433 SoC includes
-+ * four gpio/pin-mux/pinconfig controllers.
-+ */
-+struct samsung_pin_ctrl exynos5433_pin_ctrl[] = {
-+	{
-+		/* pin-controller instance 0 data */
-+		.pin_banks	= exynos5433_pin_banks0,
-+		.nr_banks	= ARRAY_SIZE(exynos5433_pin_banks0),
-+		.eint_wkup_init = exynos_eint_wkup_init,
-+		.suspend	= exynos_pinctrl_suspend,
-+		.resume		= exynos_pinctrl_resume,
-+		.label		= "exynos5433-gpio-ctrl0",
-+	}, {
-+		/* pin-controller instance 1 data */
-+		.pin_banks	= exynos5433_pin_banks1,
-+		.nr_banks	= ARRAY_SIZE(exynos5433_pin_banks1),
-+		.eint_gpio_init = exynos_eint_gpio_init,
-+		.suspend	= exynos_pinctrl_suspend,
-+		.resume		= exynos_pinctrl_resume,
-+		.label		= "exynos5433-gpio-ctrl1",
-+	}, {
-+		/* pin-controller instance 2 data */
-+		.pin_banks	= exynos5433_pin_banks2,
-+		.nr_banks	= ARRAY_SIZE(exynos5433_pin_banks2),
-+		.eint_gpio_init = exynos_eint_gpio_init,
-+		.suspend	= exynos_pinctrl_suspend,
-+		.resume		= exynos_pinctrl_resume,
-+		.label		= "exynos5433-gpio-ctrl2",
-+	}, {
-+		/* pin-controller instance 3 data */
-+		.pin_banks	= exynos5433_pin_banks3,
-+		.nr_banks	= ARRAY_SIZE(exynos5433_pin_banks3),
-+		.eint_gpio_init = exynos_eint_gpio_init,
-+		.suspend	= exynos_pinctrl_suspend,
-+		.resume		= exynos_pinctrl_resume,
-+		.label		= "exynos5433-gpio-ctrl3",
-+	}, {
-+		/* pin-controller instance 4 data */
-+		.pin_banks	= exynos5433_pin_banks4,
-+		.nr_banks	= ARRAY_SIZE(exynos5433_pin_banks4),
-+		.eint_gpio_init = exynos_eint_gpio_init,
-+		.suspend	= exynos_pinctrl_suspend,
-+		.resume		= exynos_pinctrl_resume,
-+		.label		= "exynos5433-gpio-ctrl4",
-+	}, {
-+		/* pin-controller instance 5 data */
-+		.pin_banks	= exynos5433_pin_banks5,
-+		.nr_banks	= ARRAY_SIZE(exynos5433_pin_banks5),
-+		.eint_gpio_init = exynos_eint_gpio_init,
-+		.suspend	= exynos_pinctrl_suspend,
-+		.resume		= exynos_pinctrl_resume,
-+		.label		= "exynos5433-gpio-ctrl5",
-+	}, {
-+		/* pin-controller instance 6 data */
-+		.pin_banks	= exynos5433_pin_banks6,
-+		.nr_banks	= ARRAY_SIZE(exynos5433_pin_banks6),
-+		.eint_gpio_init = exynos_eint_gpio_init,
-+		.suspend	= exynos_pinctrl_suspend,
-+		.resume		= exynos_pinctrl_resume,
-+		.label		= "exynos5433-gpio-ctrl6",
-+	}, {
-+		/* pin-controller instance 7 data */
-+		.pin_banks	= exynos5433_pin_banks7,
-+		.nr_banks	= ARRAY_SIZE(exynos5433_pin_banks7),
-+		.eint_gpio_init = exynos_eint_gpio_init,
-+		.suspend	= exynos_pinctrl_suspend,
-+		.resume		= exynos_pinctrl_resume,
-+		.label		= "exynos5433-gpio-ctrl7",
-+	}, {
-+		/* pin-controller instance 8 data */
-+		.pin_banks	= exynos5433_pin_banks8,
-+		.nr_banks	= ARRAY_SIZE(exynos5433_pin_banks8),
-+		.eint_gpio_init = exynos_eint_gpio_init,
-+		.suspend	= exynos_pinctrl_suspend,
-+		.resume		= exynos_pinctrl_resume,
-+		.label		= "exynos5433-gpio-ctrl8",
-+	}, {
-+		/* pin-controller instance 9 data */
-+		.pin_banks	= exynos5433_pin_banks9,
-+		.nr_banks	= ARRAY_SIZE(exynos5433_pin_banks9),
-+		.eint_gpio_init = exynos_eint_gpio_init,
-+		.suspend	= exynos_pinctrl_suspend,
-+		.resume		= exynos_pinctrl_resume,
-+		.label		= "exynos5433-gpio-ctrl9",
-+	},
-+};
-+
- /* pin banks of exynos7 pin-controller - ALIVE */
- static struct samsung_pin_bank exynos7_pin_banks0[] = {
- 	EXYNOS_PIN_BANK_EINTW(8, 0x000, "gpa0", 0x00),
-diff --git a/drivers/pinctrl/samsung/pinctrl-samsung.c b/drivers/pinctrl/samsung/pinctrl-samsung.c
-index e0ba851..4eb61ea 100644
---- a/drivers/pinctrl/samsung/pinctrl-samsung.c
-+++ b/drivers/pinctrl/samsung/pinctrl-samsung.c
-@@ -1226,6 +1226,8 @@ static const struct of_device_id samsung_pinctrl_dt_match[] = {
- 		.data = (void *)exynos5260_pin_ctrl },
- 	{ .compatible = "samsung,exynos5420-pinctrl",
- 		.data = (void *)exynos5420_pin_ctrl },
-+	{ .compatible = "samsung,exynos5433-pinctrl",
-+		.data = (void *)exynos5433_pin_ctrl },
- 	{ .compatible = "samsung,s5pv210-pinctrl",
- 		.data = (void *)s5pv210_pin_ctrl },
- 	{ .compatible = "samsung,exynos7-pinctrl",
-diff --git a/drivers/pinctrl/samsung/pinctrl-samsung.h b/drivers/pinctrl/samsung/pinctrl-samsung.h
-index e737d1f..d260356 100644
---- a/drivers/pinctrl/samsung/pinctrl-samsung.h
-+++ b/drivers/pinctrl/samsung/pinctrl-samsung.h
-@@ -245,6 +245,7 @@ extern struct samsung_pin_ctrl exynos4415_pin_ctrl[];
- extern struct samsung_pin_ctrl exynos5250_pin_ctrl[];
- extern struct samsung_pin_ctrl exynos5260_pin_ctrl[];
- extern struct samsung_pin_ctrl exynos5420_pin_ctrl[];
-+extern struct samsung_pin_ctrl exynos5433_pin_ctrl[];
- extern const struct samsung_pin_ctrl exynos7_pin_ctrl[];
- extern struct samsung_pin_ctrl s3c64xx_pin_ctrl[];
- extern struct samsung_pin_ctrl s3c2412_pin_ctrl[];
++#define TOP_NR_CLK			220
+ 
+ /* CMU_CPIF */
+ #define CLK_FOUT_MPHY_PLL		1
 -- 
 1.8.5.5
 
