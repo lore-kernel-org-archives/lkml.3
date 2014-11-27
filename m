@@ -1,50 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226AbaK0ItN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 03:49:13 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:61462 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755202AbaK0ItI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755251AbaK0ItT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 03:49:19 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42392 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755198AbaK0ItI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Nov 2014 03:49:08 -0500
-Date: Thu, 27 Nov 2014 08:49:02 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Romain Perier <romain.perier@gmail.com>
-Subject: Re: linux-next: manual merge of the devicetree tree with the pm, mfd
- and regulator trees
-Message-ID: <20141127084902.GC4628@x1>
-References: <20141126154406.434ab873@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141126154406.434ab873@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: lizf@kernel.org
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>,
+        David Rientjes <rientjes@google.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 62/91] sched: Fix unreleased llc_shared_mask bit during CPU hotplug
+Date: Thu, 27 Nov 2014 16:42:45 +0800
+Message-Id: <1417077794-9299-62-git-send-email-lizf@kernel.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
+References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Today's linux-next merge of the devicetree tree got a conflict in
-> include/linux/of.h between commits b31384fa5de3 ("Driver core: Unified
-> device properties interface for platform firmware") from the pm tree
-> and a4b4e0461ec5 ("of: Add standard property for poweroff capability")
-> from the mfd and regulator trees and commit 7518b5890d8a ("of/overlay:
-> Introduce DT overlay support") from the devicetree tree.
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
 
-This patch actually originated from the Regulator tree.  I pulled it in
-to avoid conflicts between MFD and Regulator.  I guess OF needs to do
-the same to avoid a conflict when Linus pulls them in.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
-[...]
+------------------
 
+
+commit 03bd4e1f7265548832a76e7919a81f3137c44fd1 upstream.
+
+The following bug can be triggered by hot adding and removing a large number of
+xen domain0's vcpus repeatedly:
+
+	BUG: unable to handle kernel NULL pointer dereference at 0000000000000004 IP: [..] find_busiest_group
+	PGD 5a9d5067 PUD 13067 PMD 0
+	Oops: 0000 [#3] SMP
+	[...]
+	Call Trace:
+	load_balance
+	? _raw_spin_unlock_irqrestore
+	idle_balance
+	__schedule
+	schedule
+	schedule_timeout
+	? lock_timer_base
+	schedule_timeout_uninterruptible
+	msleep
+	lock_device_hotplug_sysfs
+	online_store
+	dev_attr_store
+	sysfs_write_file
+	vfs_write
+	SyS_write
+	system_call_fastpath
+
+Last level cache shared mask is built during CPU up and the
+build_sched_domain() routine takes advantage of it to setup
+the sched domain CPU topology.
+
+However, llc_shared_mask is not released during CPU disable,
+which leads to an invalid sched domainCPU topology.
+
+This patch fix it by releasing the llc_shared_mask correctly
+during CPU disable.
+
+Yasuaki also reported that this can happen on real hardware:
+
+  https://lkml.org/lkml/2014/7/22/1018
+
+His case is here:
+
+	==
+	Here is an example on my system.
+	My system has 4 sockets and each socket has 15 cores and HT is
+	enabled. In this case, each core of sockes is numbered as
+	follows:
+
+		 | CPU#
+	Socket#0 | 0-14 , 60-74
+	Socket#1 | 15-29, 75-89
+	Socket#2 | 30-44, 90-104
+	Socket#3 | 45-59, 105-119
+
+	Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
+
+	It means that last level cache of Socket#2 is shared with
+	CPU#30-44 and 90-104.
+
+	When hot-removing socket#2 and #3, each core of sockets is
+	numbered as follows:
+
+		 | CPU#
+	Socket#0 | 0-14 , 60-74
+	Socket#1 | 15-29, 75-89
+
+	But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30
+	remains having 0x3fff80000001fffc0000000.
+
+	After that, when hot-adding socket#2 and #3, each core of
+	sockets is numbered as follows:
+
+		 | CPU#
+	Socket#0 | 0-14 , 60-74
+	Socket#1 | 15-29, 75-89
+	Socket#2 | 30-59
+	Socket#3 | 90-119
+
+	Then llc_shared_mask of CPU#30 becomes
+	0x3fff8000fffffffc0000000. It means that last level cache of
+	Socket#2 is shared with CPU#30-59 and 90-104. So the mask has
+	the wrong value.
+
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+Tested-by: Linn Crosetto <linn@hp.com>
+Reviewed-by: Borislav Petkov <bp@suse.de>
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1411547885-48165-1-git-send-email-wanpeng.li@linux.intel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Zefan Li <lizefan@huawei.com>
+---
+ arch/x86/kernel/smpboot.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index d28c595..c7dbf02 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1248,6 +1248,9 @@ static void remove_siblinginfo(int cpu)
+ 
+ 	for_each_cpu(sibling, cpu_sibling_mask(cpu))
+ 		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
++	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
++		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
++	cpumask_clear(cpu_llc_shared_mask(cpu));
+ 	cpumask_clear(cpu_sibling_mask(cpu));
+ 	cpumask_clear(cpu_core_mask(cpu));
+ 	c->phys_proc_id = 0;
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.1
+
