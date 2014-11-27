@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020AbaK0GZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 01:25:26 -0500
-Received: from gate.crashing.org ([63.228.1.57]:48926 "EHLO gate.crashing.org"
+	id S1752209AbaK0G0E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 01:26:04 -0500
+Received: from mga11.intel.com ([192.55.52.93]:41012 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751033AbaK0GZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 01:25:25 -0500
-Message-ID: <1417069495.2852.2.camel@kernel.crashing.org>
-Subject: Re: [PATCH] drivers/core/of: Add symlink to device-tree from
- devices with an OF node
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Rob Herring <robherring2@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Jeremy Kerr <jeremy.kerr@au1.ibm.com>
-Date: Thu, 27 Nov 2014 17:24:55 +1100
-In-Reply-To: <20141127033923.GA28286@kroah.com>
-References: <1415342031.4925.27.camel@kernel.crashing.org>
-	 <1415342117.4925.29.camel@kernel.crashing.org>
-	 <1415596626.5769.14.camel@kernel.crashing.org>
-	 <CAL_JsqKG=vpeGKj3v-2VW9oGQsnmuYMHRfy6LuXDXE=ROjHT4w@mail.gmail.com>
-	 <1415841047.5124.62.camel@kernel.crashing.org>
-	 <20141127033923.GA28286@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751040AbaK0G0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 01:26:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,467,1413270000"; 
+   d="scan'208";a="638887073"
+From: Lv Zheng <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
+Subject: [PATCH 0/6] ACPICA: 20141107 Release
+Date: Thu, 27 Nov 2014 14:25:53 +0800
+Message-Id: <cover.1416899966.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-26 at 19:39 -0800, Greg KH wrote:
+The 20141107 ACPICA kernel-resident subsystem updates are linuxized based
+on the pm/linux-next branch to form this patchset.
 
-> Are you going to resend a changed version of this?
+The patchset has passed the following build/boot tests.
+Build tests are performed as follows:
+1. i386 + default + COFNIG_ACPI=y
+2. i386 + allyes + CONFIG_ACPI=y
+3. i386 + default + COFNIG_ACPI=n
+4. i386 + allyes + CONFIG_ACPI=n
+5. x86_64 + default + COFNIG_ACPI=y
+6. x86_64 + allyes + CONFIG_ACPI=y
+7. x86_64 + default + COFNIG_ACPI=n
+8. x86_64 + allyes + CONFIG_ACPI=n
+Boot tests are performed as follows:
+1. i386 + default + COFNIG_ACPI=y
+2. x86_64 + default + COFNIG_ACPI=y
+Where:
+1. i386: machine named as "Dell Inspiron Mini 1010"
+2. x86_64: machine named as "HP Compaq 8200 Elite SFF PC"
+3. default: kernel configuration with following items enabled:
+   All hardware drivers related to the machines of i386/x86_64
+   All drivers/acpi configurations
+   All platform drivers
 
-Yes, I've been distracted by a few other things, but I suppose I should
-do it :-)
+The divergences checking result:
+Before applying (20140926 Release):
+  852 lines
+After applying (20141107 Release):
+  852 lines
 
-Possibly tomorrow. Arnd, are you doing that helper you suggested to get
-to the of_node or should I ?
+Bob Moore (6):
+  ACPICA: iASL: Add support for to_PLD macro.
+  ACPICA: acpiexec: Add option to specify an object initialization
+    file.
+  ACPICA: Disassembler: Add support for C-style operators and
+    expressions.
+  ACPICA: Disassembler: Update for C-style expressions.
+  ACPICA: Disassembler: Emit correct string for 0 stop bits.
+  ACPICA: Update version to 20141107.
 
-Cheers,
-Ben.
+ drivers/acpi/acpica/acglobal.h |    1 +
+ drivers/acpi/acpica/aclocal.h  |    3 +++
+ drivers/acpi/acpica/utresrc.c  |    2 +-
+ drivers/acpi/acpica/utxface.c  |    4 +++-
+ drivers/acpi/acpica/utxfinit.c |   11 +++++++++++
+ include/acpi/acbuffer.h        |   14 +++++++++++---
+ include/acpi/acpixf.h          |    2 +-
+ 7 files changed, 31 insertions(+), 6 deletions(-)
 
-
-> thanks,
-> 
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+-- 
+1.7.10
 
