@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028AbaK0Ea7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 23:30:59 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:52684 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753222AbaK0Eaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 23:30:55 -0500
-Message-ID: <5476A8AD.4010003@ti.com>
-Date: Thu, 27 Nov 2014 09:59:33 +0530
-From: Vignesh R <vigneshr@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753845AbaK0E5I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 23:57:08 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:41358 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142AbaK0E5G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 23:57:06 -0500
+Message-ID: <5476AF1B.5080709@hitachi.com>
+Date: Thu, 27 Nov 2014 13:56:59 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        <richardcochran@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
-        Brad Griffis <bgriffis@ti.com>,
-        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jan Kardell <jan.kardell@telliq.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-iio@vger.kernel.org>,
-        <linux-input@vger.kernel.org>
-Subject: Re: [PATCH v4 0/6] Touchscreen performance related fixes
-References: <1415941651-28962-1-git-send-email-vigneshr@ti.com> <20141124115116.GA14997@linutronix.de> <547321A2.6010207@ti.com> <547325FA.6020004@linutronix.de>
-In-Reply-To: <547325FA.6020004@linutronix.de>
-Content-Type: text/plain; charset="utf-8"
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Petr Mladek <pmladek@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        Namhyung Kim <namhyung@kernel.org>, Miroslav Benes <mbenes@suse.cz>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: Re: [PATCH ftrace/core v6 5/5] kselftest, ftrace: Add ftrace
+ IPMODIFY flag test
+References: <20141121102502.11844.82696.stgit@localhost.localdomain> <20141121102537.11844.9781.stgit@localhost.localdomain> <20141121160329.575fd043@gandalf.local.home> <54729CDE.5030700@hitachi.com> <20141123232932.1ed70d18@gandalf.local.home> <54733C80.6060509@hitachi.com> <54735A4F.8090602@osg.samsung.com> <5473D9F6.8070701@hitachi.com> <5474955A.5070605@osg.samsung.com> <547495D7.40308@osg.samsung.com> <54757F25.80005@hitachi.com> <54761E8E.7070909@osg.samsung.com>
+In-Reply-To: <54761E8E.7070909@osg.samsung.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2014/11/27 3:40), Shuah Khan wrote:
+> On 11/26/2014 12:20 AM, Masami Hiramatsu wrote:
+>> (2014/11/25 23:44), Shuah Khan wrote:
+> 
+>>>>
+>>>> Good. Please take a look at this thread and give it a try. Please
+>>>> give me feedback as well. This is the first step to get the install
+>>>> feature added and then we can refine it at the selftests level as
+>>>> needed.
+>>>>
+>>>> https://lkml.org/lkml/2014/11/11/851
+>>
+>> OK, I'll try that.
+>> BTW, are those patches included in the below kernel.org tree ?
+>>
+>> https://git.kernel.org/cgit/linux/kernel/git/shuah/linux-kselftest.git/
+> 
+> I just now uploaded it to linux-kselftest.git next branch
+> 
+> Give it a try and let me know what you think.
+
+Thanks, I reviewed that and sent comments on the thread. :)
 
 
-On Monday 24 November 2014 06:05 PM, Sebastian Andrzej Siewior wrote:
-> On 11/24/2014 01:16 PM, Vignesh R wrote:
-> 
->> I have tried running both IIO and TSC at the same time. But I have never
->> seen WARN_ON() even after running for close to 30 min. Can you send me
->> the exact script, so that it will be easy to reproduce?
-> 
-> Sure thing.
-> - one shell
-> 	evtest /dev/input/event2
-> - second shell
-> 	./iio-test.sh
->   with:
-> 
-> |#!/bin/sh
-> |
-> |while [ 1 = 1 ]
-> |do
-> |        cat /sys/bus/iio/devices/iio\:device0/in_voltage4_raw
-> |done
-> 
-> 
-> the kernel config: https://breakpoint.cc/am335x-config
-> 
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-I was able to reproduce this issue. When ADC hits WARN_ON(), the TSC
-steps should be disabled. But, in this case, TSC is sampling the first Y
-co-ordinate and all TSC steps are enabled.
-REG_SE: 0x1ffc1
-ADC_STAT: 0x24
 
-Any idea why this may be happening?
-
-Regards
-Vignesh
