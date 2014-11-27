@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751278AbaK0Qfk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 11:35:40 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	id S1751483AbaK0Qgf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 11:36:35 -0500
+Received: from mga02.intel.com ([134.134.136.20]:29421 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750902AbaK0Qfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 11:35:39 -0500
-Message-ID: <547752D1.6040000@nod.at>
-Date: Thu, 27 Nov 2014 17:35:29 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] UBI: Fastmap: Ensure that all fastmap work is done
- upon WL shutdown
-References: <1416835236-25185-1-git-send-email-richard@nod.at>		 <1416835236-25185-4-git-send-email-richard@nod.at>	 <1417102739.5858.112.camel@sauron.fi.intel.com> <54774C71.50807@nod.at> <1417105793.5858.117.camel@sauron.fi.intel.com>
-In-Reply-To: <1417105793.5858.117.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset=utf-8
+	id S1750968AbaK0Qge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 11:36:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,470,1413270000"; 
+   d="scan'208";a="644627298"
+Message-ID: <1417106151.5858.122.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 2/6] UBI: Fastmap: Ensure that only one fastmap work is
+ scheduled
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Thu, 27 Nov 2014 18:35:51 +0200
+In-Reply-To: <54774DB7.5090200@nod.at>
+References: <1416835236-25185-1-git-send-email-richard@nod.at>
+		 <1416835236-25185-3-git-send-email-richard@nod.at>
+	 <1417102042.5858.102.camel@sauron.fi.intel.com> <54774DB7.5090200@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 27.11.2014 um 17:29 schrieb Artem Bityutskiy:
-> On Thu, 2014-11-27 at 17:08 +0100, Richard Weinberger wrote:
->>> Obviously, there is some misunderstanding. This looks like lack of
->>> separation and misuse of layering. I am missing explanations why I am
->>> wrong...
->>
->> So you want me to use the UBI WL background thread for the scheduled fastmap work?
+On Thu, 2014-11-27 at 17:13 +0100, Richard Weinberger wrote:
+> Am 27.11.2014 um 16:27 schrieb Artem Bityutskiy:
+> > On Mon, 2014-11-24 at 14:20 +0100, Richard Weinberger wrote:
+> >> If the WL pool runs out of PEBs we schedule a fastmap write
+> >> to refill it as soon as possible.
+> >> Ensure that only one at a time is scheduled otherwise we might end in
+> >> a fastmap write storm because writing the fastmap can schedule another
+> >> write if bitflips are detected.
+> > 
+> > Could you please provide some more details about the "write storm". Does
+> > it happen when there are 2 fastmap works in the queue? Or if they run
+> > simultaneously? Why the storm happens and white kind of "writes" it
+> > consists of?
 > 
-> No. It is more like either use it or do not use it.
+> If UBI needs to write a new fastmap while wear leveling (by using get_peb_for_wl())
+> a fastmap work is scheduled.
+> We cannot write a fastmap in this context because we're in atomic context.
+> At this point one fastmap write is scheduled. If now get_peb_for_wl() is executed
+> a second time it will schedule another fastmap work because the pools are still not refilled.
 
-Sorry, I don't understand.
-What do you want to do to?
+Sounds like just you do not need any works and any queues at all. All
+you need is a "please, fastmap me!" flag.
 
->> I didn't do it that way because you said more than once that fastmap is fastmap and
->> WL is WL. Therefore I've separated it.
-> 
-> And "separated" meaning adding this code to wl.c?
-> 
-> +#ifdef CONFIG_MTD_UBI_FASTMAP
-> +       flush_work(&ubi->fm_work);
-> +#endif
-> 
-> Could it be separated some more then?
-> 
+Then this flag should be checked every time we enter the background
+thread or the fastmap code, and be acted upon.
 
-Of course, commit "UBI: Move fastmap specific functions out of wl.c" does.
-But this commit is *bugfix* commit.
+So the background thread would first check this flag, and if it is set -
+call the fastmap stuff. The go do the WL works.
 
-Thanks,
-//richard
+Just off-the top of my head, take with grain of salt.
+
