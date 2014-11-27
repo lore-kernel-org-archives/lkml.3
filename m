@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751401AbaK0GM7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 01:12:59 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:52541 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaK0GM6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 01:12:58 -0500
-Message-ID: <5476C0E2.5050602@hitachi.com>
-Date: Thu, 27 Nov 2014 15:12:50 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Seth Jennings <sjenning@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Petr Mladek <pmladek@suse.cz>, Miroslav Benes <mbenes@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
-        x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 0/3] Kernel Live Patching
-References: <1416935709-404-1-git-send-email-sjenning@redhat.com> <547596C6.2050303@hitachi.com> <alpine.LNX.2.00.1411261014510.23174@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1411261014510.23174@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751028AbaK0GWM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 01:22:12 -0500
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:36193
+	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750714AbaK0GWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 01:22:10 -0500
+x-originating-ip: 72.167.245.219
+From: Dexuan Cui <decui@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org, olaf@aepfle.de,
+        apw@canonical.com, jasowang@redhat.com, kys@microsoft.com,
+        vkuznets@redhat.com
+Cc: haiyangz@microsoft.com
+Subject: [PATCH v2] hv: hv_fcopy: drop the obsolete message on transfer failure
+Date: Wed, 26 Nov 2014 23:31:31 -0800
+Message-Id: <1417073491-19388-1-git-send-email-decui@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/26 18:18), Jiri Kosina wrote:
-> On Wed, 26 Nov 2014, Masami Hiramatsu wrote:
-> 
->>> Note to Steve:
->>> Masami's IPMODIFY patch is heading for -next via your tree.  Once it arrives,
->>> I'll rebase and make the change to set IPMODIFY.  Do not pull this for -next
->>> yet.  This version (v4) is for review and gathering acks.
->>
->> BTW, as we discussed IPMODIFY is an exclusive flag. So if we allocate 
->> ftrace_ops for each function in each patch, it could be conflict each 
->> other.
-> 
-> Yup, this corresponds to what Petr brought up yesterday. There are cases 
-> where all solutions (kpatch, kgraft, klp) would allocate multiple 
-> ftrace_ops for a single function entry (think of patching one function 
-> multiple times in a row).
-> 
-> So it's not as easy as just setting the flag.
-> 
->> Maybe we need to have another ops hashtable to find such conflict and 
->> new handler to handle it.
-> 
-> If I understand your proposal correctly, that would sound like a hackish 
-> workaround, trying to basically trick the IPMODIFY flag semantics you just 
-> implemented :)
-> 
-> What I'd propose instead is to make sure that we always have 
-> just a ftrace_ops per function entry, and only update the pointers there 
-> as necessary. Fortunately we can do the switch atomically, by making use 
-> of ->private.
+In the case the user-space daemon crashes, hangs or is killed, we
+need to down the semaphore, otherwise, after the daemon starts next
+time, the obsolete data in fcopy_transaction.message or
+fcopy_transaction.fcopy_msg will be used immediately.
 
-Would you mean per existing function entry, not per klp-func entry?
-If so, it sounds good to me too :)
+Reviewed-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+Cc: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Dexuan Cui <decui@microsoft.com>
+---
 
-Thank you,
+v2: I removed the "FCP" prefix as Greg asked.
 
+    I also updated the output message a little:
+    "FCP: failed to acquire the semaphore" --> 
+    "can not acquire the semaphore: it is benign"
 
+ drivers/hv/hv_fcopy.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c
+index 23b2ce2..c518ad9 100644
+--- a/drivers/hv/hv_fcopy.c
++++ b/drivers/hv/hv_fcopy.c
+@@ -86,6 +86,15 @@ static void fcopy_work_func(struct work_struct *dummy)
+ 	 * process the pending transaction.
+ 	 */
+ 	fcopy_respond_to_host(HV_E_FAIL);
++
++	/* In the case the user-space daemon crashes, hangs or is killed, we
++	 * need to down the semaphore, otherwise, after the daemon starts next
++	 * time, the obsolete data in fcopy_transaction.message or
++	 * fcopy_transaction.fcopy_msg will be used immediately.
++	 */
++	if (down_trylock(&fcopy_transaction.read_sema))
++		pr_debug("can not acquire the semaphore: it is benign\n");
++
+ }
+ 
+ static int fcopy_handle_handshake(u32 version)
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.9.1
 
