@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751229AbaK0SLz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 13:11:55 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:23831 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861AbaK0SLy (ORCPT
+	id S1751012AbaK0SNg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 13:13:36 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:39843
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750780AbaK0SNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 13:11:54 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19gBaue6fQoljReEf/jjx1b1OXANdB/thk=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 00D7D62597E
-Date: Thu, 27 Nov 2014 13:11:43 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>
-Subject: Re: linux-next: manual merge of the irqchip tree with the mips tree
-Message-ID: <20141127181143.GN22670@titan.lakedaemon.net>
-References: <20141127165719.2e5cb4e4@canb.auug.org.au>
+	Thu, 27 Nov 2014 13:13:34 -0500
+X-IronPort-AV: E=Sophos;i="5.07,471,1413237600"; 
+   d="scan'208";a="90793678"
+Date: Thu, 27 Nov 2014 19:13:10 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+cc: Anisse Astier <anisse@astier.eu>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Darren Hart <dvhart@infradead.org>, Ike Panhc <ike.pan@canonical.com>,
+        Jonathan Woithe <jwoithe@just42.net>,
+        Mattia Dongili <malattia@linux.it>,
+        platform-driver-x86@vger.kernel.org,
+        acpi4asus-user@lists.sourceforge.net,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH 1/1] platform: x86: Deletion of checks before
+ backlight_device_unregister()
+In-Reply-To: <5473AD39.9010309@users.sourceforge.net>
+Message-ID: <alpine.DEB.2.10.1411271908590.2571@hadrien>
+References: <5307CAA2.8060406@users.sourceforge.net> <5317A59D.4@users.sourceforge.net> <547389A6.9090106@users.sourceforge.net> <3842367.ojrMxTW2rH@path> <5473AD39.9010309@users.sourceforge.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141127165719.2e5cb4e4@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen,
 
-On Thu, Nov 27, 2014 at 04:57:19PM +1100, Stephen Rothwell wrote:
-> Hi Jason,
-> 
-> Today's linux-next merge of the irqchip tree got a conflict in
-> drivers/irqchip/Makefile between commit 8a19b8f19429 ("MIPS: Move GIC
-> to drivers/irqchip/") from the mips tree and commit 5fe3bba3088c
-> ("irqchip: mtk-sysirq: Add sysirq interrupt polarity support") from the
-> irqchip tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
 
-Looks good, thanks!
+On Mon, 24 Nov 2014, SF Markus Elfring wrote:
 
-thx,
+> >> This issue was detected by using the Coccinelle software.
+> >
+> > What script was used ?
+>
+> A semantic patch approach which I published on the mailing lists in March
+> is in action on my software development system for a while.
+>
+>
+> > Is it in scripts/coccinelle ?
+>
+> Not yet.
+>
+> I hope that the involved update suggestions got sufficient positive feedback
+> to integrate five scripts there.
 
-Jason.
+The current scripts are very complicated, involving the interaction
+between multiple scripts and a database, and I think they are not very
+suitable for make coccicheck.  Also, the idea of removing the null checks
+is not appropriate in all contexts.  Perhaps it could be possible to add
+a script to the Linux kernel that handles a number of common cases for
+which removing the null test is widely considered to be desirable.
+
+julia
