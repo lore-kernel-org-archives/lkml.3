@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754383AbaK0IqZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 03:46:25 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41133 "EHLO mail.kernel.org"
+	id S1754470AbaK0Iqc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 03:46:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41220 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754344AbaK0IqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:46:22 -0500
+	id S1754387AbaK0Iq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:46:29 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 10/91] percpu: perform tlb flush after pcpu_map_pages() failure
-Date: Thu, 27 Nov 2014 16:41:53 +0800
-Message-Id: <1417077794-9299-10-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, James Ralston <james.d.ralston@intel.com>,
+        Tejun Heo <tj@kernel.org>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 14/91] ahci: Add Device IDs for Intel 9 Series PCH
+Date: Thu, 27 Nov 2014 16:41:57 +0800
+Message-Id: <1417077794-9299-14-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
 References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
@@ -20,41 +20,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
+From: James Ralston <james.d.ralston@intel.com>
 
 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 849f5169097e1ba35b90ac9df76b5bb6f9c0aabd upstream.
+commit 1b071a0947dbce5c184c12262e02540fbc493457 upstream.
 
-If pcpu_map_pages() fails midway, it unmaps the already mapped pages.
-Currently, it doesn't flush tlb after the partial unmapping.  This may
-be okay in most cases as the established mapping hasn't been used at
-that point but it can go wrong and when it goes wrong it'd be
-extremely difficult to track down.
+This patch adds the AHCI mode SATA Device IDs for the Intel 9 Series PCH.
 
-Flush tlb after the partial unmapping.
-
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- mm/percpu-vm.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/ata/ahci.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/mm/percpu-vm.c b/mm/percpu-vm.c
-index 6c055e4..6f3db37 100644
---- a/mm/percpu-vm.c
-+++ b/mm/percpu-vm.c
-@@ -272,6 +272,7 @@ err:
- 		__pcpu_unmap_pages(pcpu_chunk_addr(chunk, tcpu, page_start),
- 				   page_end - page_start);
- 	}
-+	pcpu_post_unmap_tlb_flush(chunk, page_start, page_end);
- 	return err;
- }
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 0a450eb..009a097 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -305,6 +305,14 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(INTEL, 0x9c85), board_ahci }, /* Wildcat Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x9c87), board_ahci }, /* Wildcat Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x9c8f), board_ahci }, /* Wildcat Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c82), board_ahci }, /* 9 Series AHCI */
++	{ PCI_VDEVICE(INTEL, 0x8c83), board_ahci }, /* 9 Series AHCI */
++	{ PCI_VDEVICE(INTEL, 0x8c84), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c85), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c86), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
  
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 -- 
 1.9.1
 
