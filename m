@@ -1,143 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858AbaK0Opl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 09:45:41 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40757 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaK0Opk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 09:45:40 -0500
-Message-ID: <54773906.5030504@arm.com>
-Date: Thu, 27 Nov 2014 14:45:26 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1751891AbaK0Opr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 09:45:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55036 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751860AbaK0Opp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 09:45:45 -0500
+Date: Thu, 27 Nov 2014 12:45:28 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf tools: Do not fail on processing out of order event
+Message-ID: <20141127144528.GL3808@redhat.com>
+References: <1417016371-30249-1-git-send-email-jolsa@kernel.org>
+ <20141126154459.GD3808@redhat.com>
+ <20141127105603.GA1987@gmail.com>
+ <20141127135259.GI3808@redhat.com>
+ <20141127140707.GB25752@krava.brq.redhat.com>
+ <20141127141626.GK3808@redhat.com>
+ <20141127142321.GC25752@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: Liviu Dudau <Liviu.Dudau@arm.com>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>
-CC: "arnd@arndb.de" <arnd@arndb.de>, Mark Rutland <Mark.Rutland@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "robherring2@gmail.com" <robherring2@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "Lendacky, Thomas" <Thomas.Lendacky@amd.com>,
-        "Schopp, Joel" <Joel.Schopp@amd.com>
-Subject: Re: [PATCH V4] arm64: amd-seattle: Adding device tree for AMD Seattle
- platform
-References: <547458B9.2000805@arm.com> <D09A7217.A4E1%suravee.suthikulpanit@amd.com> <20141127142811.GN828@e106497-lin.cambridge.arm.com>
-In-Reply-To: <20141127142811.GN828@e106497-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141127142321.GC25752@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/11/14 14:28, Liviu Dudau wrote:
-> On Tue, Nov 25, 2014 at 11:46:50AM +0000, Suthikulpanit, Suravee wrote:
->> Hi Marc,
->>
->> On 11/25/14, 17:23, "Marc Zyngier" <marc.zyngier@arm.com> wrote:
->>
->>> Hi Suravee,
->>>
->>> Just spotted a small issue below (looks like a recurring mistake in a
->>> number of DTs I've seem lately):
->>>
->>> On 24/11/14 21:51, suravee.suthikulpanit@amd.com wrote:
->>>> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
->>>>
->>>> Initial revision of device tree for AMD Seattle platform.
->>>>
->>>> Cc: Arnd Bergmann <arnd@arndb.de>
->>>> Cc: Marc Zyngier <marc.zyngier@arm.com>
->>>> Cc: Mark Rutland <mark.rutland@arm.com>
->>>> Cc: Will Deacon <will.deacon@arm.com>
->>>> Cc: Catalin Marinas <catalin.marinas@arm.com>
->>>> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
->>>> Signed-off-by: Thomas Lendacky <Thomas.Lendacky@amd.com>
->>>> Signed-off-by: Joel Schopp <Joel.Schopp@amd.com>
->>>> ---
->>>> V4 Changes:
->>>>     * Remove unnecessary smb layer and move motherbord to top level
->>>>     * Move include dtsi to top level
->>>>     * Remove apb_pclk from sata0 and i2c
->>>>     * Fix GIC Virtual Maintanance Interrupt from PPI24 (8) to PPI25 (9)
->>>>     * Add 40-bit dma-ranges for motherboard (simple-bus)
->>>>     * Remove dma0 (pl330) entry for now since it only supports 32-bit
->>>> DMA.
->>>>       It is basically not used at the moment. It would also need SMMU
->>>>       to allow dma remapping to 40-bit DMA range.
->>>>     * Add phandle spi0 and spi1
->>>>     * Hook up gpio0 pin 7 with MMC Card Detection (CD) support.
->>>>     * Changes in pcie0 entry:
->>>>         - Add 40-bit dma-ranges
->>>>         - Remove interrupts property
->>>>         - Add interrupt-map/mask property
->>>>         - Fix PCI I/O range
->>>>         - Merge PCI 32-bit ranges
->>>>         - Merge PCI 64-bit ranges
->>>>
->>>> NOTE: I am not add a new compatible ID for the sata0 as Rob Herring
->>>>       suggested since there is no need at the momement, and I am trying
->>>>       to avoid introducing ID unnecessarily.
->>>>
->>>>  arch/arm64/Kconfig                          |   5 +
->>>>  arch/arm64/boot/dts/Makefile                |   1 +
->>>>  arch/arm64/boot/dts/amd-seattle-periph.dtsi | 156
->>>> ++++++++++++++++++++++++++++
->>>>  arch/arm64/boot/dts/amd-seattle.dts         |  89 ++++++++++++++++
->>>>  4 files changed, 251 insertions(+)
->>>>  create mode 100644 arch/arm64/boot/dts/amd-seattle-periph.dtsi
->>>>  create mode 100644 arch/arm64/boot/dts/amd-seattle.dts
->>>>
->>>
->>> [...]
->>>
->>>> diff --git a/arch/arm64/boot/dts/amd-seattle.dts
->>>> b/arch/arm64/boot/dts/amd-seattle.dts
->>>> new file mode 100644
->>>> index 0000000..d5fc482
->>>> --- /dev/null
->>>> +++ b/arch/arm64/boot/dts/amd-seattle.dts
->>>> @@ -0,0 +1,89 @@
->>>> +/*
->>>> + * DTS file for AMD Seattle
->>>> + *
->>>> + * Copyright (C) 2014 Advanced Micro Devices, Inc.
->>>> + */
->>>> +
->>>> +/dts-v1/;
->>>> +
->>
->> [...] 
->>
->>>> +
->>>> +	timer {
->>>> +		compatible = "arm,armv8-timer";
->>>> +		interrupts = <1 13 0xff01>,
->>>> +			     <1 14 0xff01>,
->>>> +			     <1 11 0xff01>,
->>>> +			     <1 10 0xff01>;
->>>> +	};
->>>
->>> The Cortex-A57 TRM clearly states that these interrupts are level
->>> triggered.
->>
->> Thanks for pointing this out. I¹ll fix this to <1 1X 0xff04> (4 for the
->> Active-High) then.
+Em Thu, Nov 27, 2014 at 03:23:21PM +0100, Jiri Olsa escreveu:
+> On Thu, Nov 27, 2014 at 12:16:26PM -0200, Arnaldo Carvalho de Melo wrote:
+> > Em Thu, Nov 27, 2014 at 03:07:07PM +0100, Jiri Olsa escreveu:
+> > > On Thu, Nov 27, 2014 at 11:53:00AM -0200, Arnaldo Carvalho de Melo wrote:
+> > > > Em Thu, Nov 27, 2014 at 11:56:03AM +0100, Ingo Molnar escreveu:
+> > > > > Arnaldo, I suppose the fix will go upstream via your tree, as a 
+> > > > > pull request for v3.18 fixes?
+> > 
+> > > > Right, I can do that.
+> > 
+> > > > And I agree with the "expected" for events that are out of the current
+> > > > reordering window, i.e. we can't insert something into previous windows,
+> > > > so those are, humm, what would be a good name:
+> > > > stats->out_of_reordering_window, while stats->reordered, would be for
+> > > > events that were found out of order, but were successfully sorted as
+> > > > part of a flush operation, right?
+> >  
+> > > the forced flush is when we find out we crossed the allowed allocation
+> > > space for the samples queue.. so we take the half of the sorted queue
+> > > and flush it.. for this case we break the flushing logic and we might
+> > 
+> > Well, we make it more likely than without a forced flush to find out of
+> > order events, because the window suddenly became smaller, its like we
+> > found a FLUSH event right there, no?
+ 
+> yep, still I dont see the need to count those 2 cases separately,
+> both these types (of out of order event) have same implications
+> for the report
+
+Ok, I misundertood it when thinking it was about reordered events inside
+a flush window versus events for a previous, closed flush window.
+
+Yeah, if we detect events for a previous flush window in a forced flush
+or in a normal flush, its all the same: events we can't consider anymore
+because they are for a closed (old) flush window.
+
+- Arnaldo
+ 
+> jirka
 > 
-> Hi Suravee,
-> 
-> Don't know what Seattle does, but the TRM says that the outputs are active-LOW.
-
-As I said in another thread, 0xff04 *is* the right value. This is an
-interrupt descriptor for the GIC, not a qualifier for the signal that
-comes out of the core.
-
-Thanks.
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
+> > 
+> > > (probably just in theory) get out of order events
+> >  
+> > > but IMO both cases of out of order event are equal.. we dont do
+> > > anything special for forced flushed AFAIK
+> > 
+> > - Arnaldo
