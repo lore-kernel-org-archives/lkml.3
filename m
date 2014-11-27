@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251AbaK0ItT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 03:49:19 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42392 "EHLO mail.kernel.org"
+	id S932088AbaK0It2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 03:49:28 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42463 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755198AbaK0ItI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:49:08 -0500
+	id S1755268AbaK0ItZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:49:25 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>,
-        David Rientjes <rientjes@google.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Joseph Qi <joseph.qi@huawei.com>,
+        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 62/91] sched: Fix unreleased llc_shared_mask bit during CPU hotplug
-Date: Thu, 27 Nov 2014 16:42:45 +0800
-Message-Id: <1417077794-9299-62-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 67/91] ocfs2/dlm: do not get resource spinlock if lockres is new
+Date: Thu, 27 Nov 2014 16:42:50 +0800
+Message-Id: <1417077794-9299-67-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
 References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
@@ -24,127 +23,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
+From: Joseph Qi <joseph.qi@huawei.com>
 
 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 03bd4e1f7265548832a76e7919a81f3137c44fd1 upstream.
+commit 5760a97c7143c208fa3a8f8cad0ed7dd672ebd28 upstream.
 
-The following bug can be triggered by hot adding and removing a large number of
-xen domain0's vcpus repeatedly:
+There is a deadlock case which reported by Guozhonghua:
+  https://oss.oracle.com/pipermail/ocfs2-devel/2014-September/010079.html
 
-	BUG: unable to handle kernel NULL pointer dereference at 0000000000000004 IP: [..] find_busiest_group
-	PGD 5a9d5067 PUD 13067 PMD 0
-	Oops: 0000 [#3] SMP
-	[...]
-	Call Trace:
-	load_balance
-	? _raw_spin_unlock_irqrestore
-	idle_balance
-	__schedule
-	schedule
-	schedule_timeout
-	? lock_timer_base
-	schedule_timeout_uninterruptible
-	msleep
-	lock_device_hotplug_sysfs
-	online_store
-	dev_attr_store
-	sysfs_write_file
-	vfs_write
-	SyS_write
-	system_call_fastpath
+This case is caused by &res->spinlock and &dlm->master_lock
+misordering in different threads.
 
-Last level cache shared mask is built during CPU up and the
-build_sched_domain() routine takes advantage of it to setup
-the sched domain CPU topology.
+It was introduced by commit 8d400b81cc83 ("ocfs2/dlm: Clean up refmap
+helpers").  Since lockres is new, it doesn't not require the
+&res->spinlock.  So remove it.
 
-However, llc_shared_mask is not released during CPU disable,
-which leads to an invalid sched domainCPU topology.
-
-This patch fix it by releasing the llc_shared_mask correctly
-during CPU disable.
-
-Yasuaki also reported that this can happen on real hardware:
-
-  https://lkml.org/lkml/2014/7/22/1018
-
-His case is here:
-
-	==
-	Here is an example on my system.
-	My system has 4 sockets and each socket has 15 cores and HT is
-	enabled. In this case, each core of sockes is numbered as
-	follows:
-
-		 | CPU#
-	Socket#0 | 0-14 , 60-74
-	Socket#1 | 15-29, 75-89
-	Socket#2 | 30-44, 90-104
-	Socket#3 | 45-59, 105-119
-
-	Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
-
-	It means that last level cache of Socket#2 is shared with
-	CPU#30-44 and 90-104.
-
-	When hot-removing socket#2 and #3, each core of sockets is
-	numbered as follows:
-
-		 | CPU#
-	Socket#0 | 0-14 , 60-74
-	Socket#1 | 15-29, 75-89
-
-	But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30
-	remains having 0x3fff80000001fffc0000000.
-
-	After that, when hot-adding socket#2 and #3, each core of
-	sockets is numbered as follows:
-
-		 | CPU#
-	Socket#0 | 0-14 , 60-74
-	Socket#1 | 15-29, 75-89
-	Socket#2 | 30-59
-	Socket#3 | 90-119
-
-	Then llc_shared_mask of CPU#30 becomes
-	0x3fff8000fffffffc0000000. It means that last level cache of
-	Socket#2 is shared with CPU#30-59 and 90-104. So the mask has
-	the wrong value.
-
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-Tested-by: Linn Crosetto <linn@hp.com>
-Reviewed-by: Borislav Petkov <bp@suse.de>
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1411547885-48165-1-git-send-email-wanpeng.li@linux.intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Fixes: 8d400b81cc83 ("ocfs2/dlm: Clean up refmap helpers")
+Signed-off-by: Joseph Qi <joseph.qi@huawei.com>
+Reviewed-by: joyce.xue <xuejiufei@huawei.com>
+Reported-by: Guozhonghua <guozhonghua@h3c.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- arch/x86/kernel/smpboot.c | 3 +++
- 1 file changed, 3 insertions(+)
+ fs/ocfs2/dlm/dlmmaster.c | 18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index d28c595..c7dbf02 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1248,6 +1248,9 @@ static void remove_siblinginfo(int cpu)
+diff --git a/fs/ocfs2/dlm/dlmmaster.c b/fs/ocfs2/dlm/dlmmaster.c
+index 005261c..dbc372e 100644
+--- a/fs/ocfs2/dlm/dlmmaster.c
++++ b/fs/ocfs2/dlm/dlmmaster.c
+@@ -653,12 +653,9 @@ void dlm_lockres_clear_refmap_bit(struct dlm_ctxt *dlm,
+ 	clear_bit(bit, res->refmap);
+ }
  
- 	for_each_cpu(sibling, cpu_sibling_mask(cpu))
- 		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
-+	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
-+		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
-+	cpumask_clear(cpu_llc_shared_mask(cpu));
- 	cpumask_clear(cpu_sibling_mask(cpu));
- 	cpumask_clear(cpu_core_mask(cpu));
- 	c->phys_proc_id = 0;
+-
+-void dlm_lockres_grab_inflight_ref(struct dlm_ctxt *dlm,
++static void __dlm_lockres_grab_inflight_ref(struct dlm_ctxt *dlm,
+ 				   struct dlm_lock_resource *res)
+ {
+-	assert_spin_locked(&res->spinlock);
+-
+ 	res->inflight_locks++;
+ 
+ 	mlog(0, "%s: res %.*s, inflight++: now %u, %ps()\n", dlm->name,
+@@ -666,6 +663,13 @@ void dlm_lockres_grab_inflight_ref(struct dlm_ctxt *dlm,
+ 	     __builtin_return_address(0));
+ }
+ 
++void dlm_lockres_grab_inflight_ref(struct dlm_ctxt *dlm,
++				   struct dlm_lock_resource *res)
++{
++	assert_spin_locked(&res->spinlock);
++	__dlm_lockres_grab_inflight_ref(dlm, res);
++}
++
+ void dlm_lockres_drop_inflight_ref(struct dlm_ctxt *dlm,
+ 				   struct dlm_lock_resource *res)
+ {
+@@ -855,10 +859,8 @@ lookup:
+ 	/* finally add the lockres to its hash bucket */
+ 	__dlm_insert_lockres(dlm, res);
+ 
+-	/* Grab inflight ref to pin the resource */
+-	spin_lock(&res->spinlock);
+-	dlm_lockres_grab_inflight_ref(dlm, res);
+-	spin_unlock(&res->spinlock);
++	/* since this lockres is new it doesn't not require the spinlock */
++	__dlm_lockres_grab_inflight_ref(dlm, res);
+ 
+ 	/* get an extra ref on the mle in case this is a BLOCK
+ 	 * if so, the creator of the BLOCK may try to put the last
 -- 
 1.9.1
 
