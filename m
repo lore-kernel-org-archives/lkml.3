@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012AbaK0Hfg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 02:35:36 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:29957 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656AbaK0HfW (ORCPT
+	id S1754151AbaK0Hgf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 02:36:35 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:41760 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753857AbaK0Hfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 02:35:22 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-09-5476d438778d
+	Thu, 27 Nov 2014 02:35:34 -0500
+X-AuditID: cbfee68e-f79b46d000002b74-14-5476d4388ac5
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: kgene.kim@samsung.com, mark.rutland@arm.com, arnd@arndb.de, olof@lixom.net,
@@ -17,41 +17,44 @@ Cc: kgene.kim@samsung.com, mark.rutland@arm.com, arnd@arndb.de, olof@lixom.net,
         inki.dae@samsung.com, chanho61.park@samsung.com,
         geunsik.lim@samsung.com, sw0312.kim@samsung.com,
         jh80.chung@samsung.com, cw00.choi@samsung.com, a.kesavan@samsung.com,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 15/19] arm64: exynos5433: Enable ARMv8-based Exynos5433 SoC
- support
-Date: Thu, 27 Nov 2014 16:35:12 +0900
-Message-id: <1417073716-22997-16-git-send-email-cw00.choi@samsung.com>
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org
+Subject: [PATCH 19/19] serial: samsung: Add the support for Exynos5433 SoC
+Date: Thu, 27 Nov 2014 16:35:16 +0900
+Message-id: <1417073716-22997-20-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1417073716-22997-1-git-send-email-cw00.choi@samsung.com>
 References: <1417073716-22997-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsWyRsSkRNfiSlmIwd8GFYvHaxYzWfyddIzd
-	4v2yHkaLy/u1La5/ec5qMf/IOVaLPxNa2Swm3Z/AYnHjVxurRe+Cq2wWZ5vesFtM+bOcyWLT
-	42usFpd3zWGzmHF+H5PF0usXmSxOXf/MZnH4TTurxYzJL9ksjs1YwmixatcfRouXH0+wOIh5
-	rJm3htHj969JjB47Z91l97hzbQ+bx+Yl9R5XTjSxevRtWcXo8XmTXABHFJdNSmpOZllqkb5d
-	AlfG5H/b2Qvus1dsmzOLuYFxE1sXIyeHhICJxLPVy6FsMYkL99YD2VwcQgJLGSXuNZ5h6mJk
-	Byv6yAMRns4ocfDaHWYIp4lJ4suVLUwgzWwCWhL7X9wAGyQi4CzRMLWRCaSIWeAjs0TDtIus
-	IAlhgVCJmYuPgxWxCKhK7Pu8B2gSBwevgJvEvgM2EEcoSCxbPhOsnBMovP/rQTBbSMBVYtG3
-	K2AzJQTmckh83XqEFWKOgMS3yYdYQOZICMhKbDrADDFHUuLgihssExiFFzAyrGIUTS1ILihO
-	Si8y0itOzC0uzUvXS87P3cQIjMrT/5717WC8ecD6EKMAB6MSD6/FgbIQIdbEsuLK3EOMpkAb
-	JjJLiSbnA2M/ryTe0NjMyMLUxNTYyNzSTEmcN0HqZ7CQQHpiSWp2ampBalF8UWlOavEhRiYO
-	TqkGxlaBFWZCfne/9Yn4dD5e/O9x1UK/2571U5zOuU9bp8J+9ECJQ9hkN+E5wjmazd/1/51T
-	9CwSjWbJmum3l03fZOXpk39KuOdfsgg+//QpayLndeWlGxN3Tfi90NDBiIfhwu3yL4+YrVyX
-	ev0+wtx6rjmo4r95S2iA7U59t3uzZEM8tSfw7fr0VYmlOCPRUIu5qDgRAOBKXnXFAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDIsWRmVeSWpSXmKPExsVy+t9jQV2LK2UhBjPmS1k8XrOYyeLvpGPs
-	Fu+X9TBaXN6vbXH9y3NWi/lHzrFa/JnQymYx6f4EFosbv9pYLXoXXGWzONv0ht1iyp/lTBab
-	Hl9jtbi8aw6bxYzz+5gsll6/yGRx6vpnNovDb9pZLWZMfslmcWzGEkaLVbv+MFq8/HiCxUHM
-	Y828NYwev39NYvTYOesuu8eda3vYPDYvqfe4cqKJ1aNvyypGj8+b5AI4ohoYbTJSE1NSixRS
-	85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOA/lNSKEvMKQUKBSQWFyvp
-	22GaEBripmsB0xih6xsSBNdjZIAGEtYwZkz+t5294D57xbY5s5gbGDexdTGyc0gImEh85Oli
-	5ASyxCQu3FsPFOXiEBKYzihx8NodZginiUniy5UtTCBVbAJaEvtf3GADsUUEnCUapjYygRQx
-	C3xklmiYdpEVJCEsECoxc/FxsCIWAVWJfZ/3AE3i4OAVcJPYd8AGYpuCxLLlM8HKOYHC+78e
-	BLOFBFwlFn27wjSBkXcBI8MqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjOCYfya9g3FVg8Uh
-	RgEORiUeXosDZSFCrIllxZW5hxglOJiVRHilFgGFeFMSK6tSi/Lji0pzUosPMZoCHTWRWUo0
-	OR+YjvJK4g2NTcyMLI3MDS2MjM2VxHlv3MwNERJITyxJzU5NLUgtgulj4uCUamDM2lhdfvD1
-	cs2Jkhdqco9JH36tzhnF2bJzqY+lbFBMy72Fk5f/Eztfv37xxq6FPUGvFih+9Pu04uPUO1u+
-	Rc+afVS5S12F6Ul804qF193D9k44Wzkr5ZmV3uJZkZMMMo1mrfes+1TAyLvh+N5bBQKa19yY
-	/lXxK2ye8jY5t+bxhh/b4hwsDFiOKrEUZyQaajEXFScCAAUo3XQPAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsWyRsSkQNfySlmIwYsDzBaP1yxmsvg76Ri7
+	xftlPYwWl/drW1z/8pzVYv6Rc6wWfya0slk0L17PZjHp/gQWixu/2lgtPv/exWrRu+Aqm8XZ
+	pjfsFlP+LGey2PT4GqvF5V1z2CxmnN/HZHFmcS+7xdLrF5ksTl3/zGZx+E07q8WMyS/ZLI7N
+	WMJosWrXH0aLlx9PsDhIeqyZt4bR4/evSYweO2fdZfe4c20Pm8f+uWvYPTYvqfe4cqKJ1aNv
+	yypGjzMLjrB7fN4kF8AVxWWTkpqTWZZapG+XwJWxaOo8poKZMhWTn3s2MC4R72Lk5JAQMJH4
+	33+aCcIWk7hwbz1bFyMXh5DAUkaJd/+OMcMUHVl6ih0iMZ1R4uTJeywQThOTxJcrW8Da2QS0
+	JPa/uMEGYosIOEs0TG1kAiliFnjIInH35E6wUcICXhK3n7xk7WLk4GARUJX4sSwXJMwr4Cbx
+	9vYeRohtChLLls9kBbE5geL7vx4Es4UEXCUWfbsCNlNC4AiHRPf9uWAzWQQEJL5NPsQCMlNC
+	QFZi0wGoqyUlDq64wTKBUXgBI8MqRtHUguSC4qT0IiO94sTc4tK8dL3k/NxNjMBIPv3vWd8O
+	xpsHrA8xCnAwKvHwWhwoCxFiTSwrrsw9xGgKtGEis5Rocj4wXeSVxBsamxlZmJqYGhuZW5op
+	ifMmSP0MFhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cBY09kwne+iy8Zv3KW7Dp6a65O64tiq
+	xM69rE+OcRq+2ZIjpqbGYZ9yJPyfe7jnjwthm+4/mtJ3P/P5mbZFfGL28gsvm8++JJWjf9vc
+	Xn/2aSWlrdGmKWqeK+JSvofxGr6amWg7/9nrW/YpnxKlD6oZb7M86ruIZd4HrrZGIb6g04+f
+	fXuuOXOqEktxRqKhFnNRcSIAIcCvDt8CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGKsWRmVeSWpSXmKPExsVy+t9jQV2LK2UhBic3m1k8XrOYyeLvpGPs
+	Fu+X9TBaXN6vbXH9y3NWi/lHzrFa/JnQymbRvHg9m8Wk+xNYLG78amO1+Px7F6tF74KrbBZn
+	m96wW0z5s5zJYtPja6wWl3fNYbOYcX4fk8WZxb3sFkuvX2SyOHX9M5vF4TftrBYzJr9kszg2
+	YwmjxapdfxgtXn48weIg6bFm3hpGj9+/JjF67Jx1l93jzrU9bB77565h99i8pN7jyokmVo++
+	LasYPc4sOMLu8XmTXABXVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5i
+	bqqtkotPgK5bZg7Q40oKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwhrGjEVT
+	5zEVzJSpmPzcs4FxiXgXIyeHhICJxJGlp9ghbDGJC/fWs3UxcnEICUxnlDh58h4LhNPEJPHl
+	yhYmkCo2AS2J/S9usIHYIgLOEg1TG5lAipgFHrJI3D25kxkkISzgJXH7yUvWLkYODhYBVYkf
+	y3JBwrwCbhJvb+9hhNimILFs+UxWEJsTKL7/60EwW0jAVWLRtytMExh5FzAyrGIUTS1ILihO
+	Ss810itOzC0uzUvXS87P3cQIThPPpHcwrmqwOMQowMGoxMNrcaAsRIg1say4MvcQowQHs5II
+	r9QioBBvSmJlVWpRfnxRaU5q8SFGU6CjJjJLiSbnA1NYXkm8obGJmZGlkbmhhZGxuZI4742b
+	uSFCAumJJanZqakFqUUwfUwcnFINjAwNIR5eZ9YtCihfcaxbVekLd665TOjixA3N1mKe74of
+	lC7vXrvIKUVon8p8Y6Hcg6XCcqsL3q518rL11WtxvKv8nU9Nk8tNdnbsDRnPzEA50xmTb3T6
+	b8xYMr16uSMT0yqGnTOFurjaPpjxv2brnHHsyobzdYVbLOr+HlZl5t+a2nm2eWOSEktxRqKh
+	FnNRcSIAWsJKCSkDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,39 +62,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the necessary Kconfig entries to enable
-support for the ARMv8 based Exynos5433 SoC.
+This patch adds new s3c24xx_serial_drv_data structure for Exynos5433 SoC
+because Exynos5433 has different fifo size from existing Exynos4 SoC.
 
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: linux-serial@vger.kernel.org
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Geunsik Lim <geunsik.lim@samsung.com>
 Acked-by: Inki Dae <inki.dae@samsung.com>
+Acked-by: Geunsik Lim <geunsik.lim@samsung.com>
 ---
- arch/arm64/Kconfig | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/tty/serial/samsung.c | 56 ++++++++++++++++++++++++++++----------------
+ 1 file changed, 36 insertions(+), 20 deletions(-)
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index f4536e0..8a5e8a0 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -152,6 +152,16 @@ config ARCH_EXYNOS
- 	help
- 	  This enables support for Samsung Exynos SoC family
+diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
+index 2338ad8..6f1fb9a 100644
+--- a/drivers/tty/serial/samsung.c
++++ b/drivers/tty/serial/samsung.c
+@@ -1766,32 +1766,43 @@ static struct s3c24xx_serial_drv_data s5pv210_serial_drv_data = {
+ #endif
  
-+config ARCH_EXYNOS5433
-+	bool "ARMv8 based Samsung Exynos5433"
-+	select ARCH_EXYNOS
-+	select COMMON_CLK_SAMSUNG
-+	select PINCTRL
-+	select PINCTRL_EXYNOS
+ #if defined(CONFIG_ARCH_EXYNOS)
++#define EXYNOS_COMMON_SERIAL_DRV_DATA				\
++	.info = &(struct s3c24xx_uart_info) {			\
++		.name		= "Samsung Exynos UART",	\
++		.type		= PORT_S3C6400,			\
++		.has_divslot	= 1,				\
++		.rx_fifomask	= S5PV210_UFSTAT_RXMASK,	\
++		.rx_fifoshift	= S5PV210_UFSTAT_RXSHIFT,	\
++		.rx_fifofull	= S5PV210_UFSTAT_RXFULL,	\
++		.tx_fifofull	= S5PV210_UFSTAT_TXFULL,	\
++		.tx_fifomask	= S5PV210_UFSTAT_TXMASK,	\
++		.tx_fifoshift	= S5PV210_UFSTAT_TXSHIFT,	\
++		.def_clk_sel	= S3C2410_UCON_CLKSEL0,		\
++		.num_clks	= 1,				\
++		.clksel_mask	= 0,				\
++		.clksel_shift	= 0,				\
++	},							\
++	.def_cfg = &(struct s3c2410_uartcfg) {			\
++		.ucon		= S5PV210_UCON_DEFAULT,		\
++		.ufcon		= S5PV210_UFCON_DEFAULT,	\
++		.has_fracval	= 1,				\
++	}							\
 +
-+	help
-+	  This enables support for Samsung Exynos5433 SoC family
+ static struct s3c24xx_serial_drv_data exynos4210_serial_drv_data = {
+-	.info = &(struct s3c24xx_uart_info) {
+-		.name		= "Samsung Exynos4 UART",
+-		.type		= PORT_S3C6400,
+-		.has_divslot	= 1,
+-		.rx_fifomask	= S5PV210_UFSTAT_RXMASK,
+-		.rx_fifoshift	= S5PV210_UFSTAT_RXSHIFT,
+-		.rx_fifofull	= S5PV210_UFSTAT_RXFULL,
+-		.tx_fifofull	= S5PV210_UFSTAT_TXFULL,
+-		.tx_fifomask	= S5PV210_UFSTAT_TXMASK,
+-		.tx_fifoshift	= S5PV210_UFSTAT_TXSHIFT,
+-		.def_clk_sel	= S3C2410_UCON_CLKSEL0,
+-		.num_clks	= 1,
+-		.clksel_mask	= 0,
+-		.clksel_shift	= 0,
+-	},
+-	.def_cfg = &(struct s3c2410_uartcfg) {
+-		.ucon		= S5PV210_UCON_DEFAULT,
+-		.ufcon		= S5PV210_UFCON_DEFAULT,
+-		.has_fracval	= 1,
+-	},
++	EXYNOS_COMMON_SERIAL_DRV_DATA,
+ 	.fifosize = { 256, 64, 16, 16 },
+ };
 +
- config ARCH_EXYNOS7
- 	bool "ARMv8 based Samsung Exynos7"
- 	select ARCH_EXYNOS
++static struct s3c24xx_serial_drv_data exynos5433_serial_drv_data = {
++	EXYNOS_COMMON_SERIAL_DRV_DATA,
++	.fifosize = { 64, 256, 16, 256 },
++};
++
+ #define EXYNOS4210_SERIAL_DRV_DATA ((kernel_ulong_t)&exynos4210_serial_drv_data)
++#define EXYNOS5433_SERIAL_DRV_DATA ((kernel_ulong_t)&exynos5433_serial_drv_data)
+ #else
+ #define EXYNOS4210_SERIAL_DRV_DATA (kernel_ulong_t)NULL
++#define EXYNOS5433_SERIAL_DRV_DATA (kernel_ulong_t)NULL
+ #endif
+ 
+ static struct platform_device_id s3c24xx_serial_driver_ids[] = {
+@@ -1813,6 +1824,9 @@ static struct platform_device_id s3c24xx_serial_driver_ids[] = {
+ 	}, {
+ 		.name		= "exynos4210-uart",
+ 		.driver_data	= EXYNOS4210_SERIAL_DRV_DATA,
++	}, {
++		.name		= "exynos5433-uart",
++		.driver_data	= EXYNOS5433_SERIAL_DRV_DATA,
+ 	},
+ 	{ },
+ };
+@@ -1832,6 +1846,8 @@ static const struct of_device_id s3c24xx_uart_dt_match[] = {
+ 		.data = (void *)S5PV210_SERIAL_DRV_DATA },
+ 	{ .compatible = "samsung,exynos4210-uart",
+ 		.data = (void *)EXYNOS4210_SERIAL_DRV_DATA },
++	{ .compatible = "samsung,exynos5433-uart",
++		.data = (void *)EXYNOS5433_SERIAL_DRV_DATA },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, s3c24xx_uart_dt_match);
 -- 
 1.8.5.5
 
