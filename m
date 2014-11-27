@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360AbaK0XYz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 18:24:55 -0500
-Received: from www.linutronix.de ([62.245.132.108]:59254 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaK0XYy (ORCPT
+	id S1751413AbaK0X1P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 18:27:15 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:54863 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750950AbaK0X1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 18:24:54 -0500
-Date: Fri, 28 Nov 2014 00:24:52 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Xunlei Pang <pang.xunlei@linaro.org>
-cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Sven Schnelle <svens@stackframe.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: Re: [RFC PATCH 4/4] rtc/imxdi: Update driver to address time
- issues
-In-Reply-To: <1417089760-26848-5-git-send-email-pang.xunlei@linaro.org>
-Message-ID: <alpine.DEB.2.11.1411280019590.3961@nanos>
-References: <1417089760-26848-1-git-send-email-pang.xunlei@linaro.org> <1417089760-26848-5-git-send-email-pang.xunlei@linaro.org>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 27 Nov 2014 18:27:14 -0500
+From: Stefan Agner <stefan@agner.ch>
+To: shawn.guo@linaro.org, kernel@pengutronix.de
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, stefan@agner.ch
+Subject: [PATCH] ARM vf610: add compatibilty strings of supported Vybrid SoC's
+Date: Fri, 28 Nov 2014 00:27:05 +0100
+Message-Id: <1417130825-2818-1-git-send-email-stefan@agner.ch>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Nov 2014, Xunlei Pang wrote:
-> @@ -213,17 +213,16 @@ static int dryice_rtc_set_mmss(struct device *dev, time64_t secs)
->  {
->  	struct imxdi_dev *imxdi = dev_get_drvdata(dev);
->  	int rc;
-> +	u32 hwtime;
-> +
-> +	rc = rtc_time64_to_hw32(secs, &hwtime);
-> +	if (rc < 0)
-> +		return rc;
->  
->  	/* zero the fractional part first */
->  	rc = di_write_wait(imxdi, 0, DTCLR);
->  	if (rc == 0)
-> -		/*
-> -		 * y2106 issue:
-> -		 *   On 32bit systems the time64_t secs value gets cast to
-> -		 *   a 32bit long, and thus we can only write a maximum value
-> -		 *   of y2016
-> -		 */
-> -		rc = di_write_wait(imxdi, secs, DTCMR);
-> +		rc = di_write_wait(imxdi, hwtime, DTCMR);
+The Vybrid SoC family (in the kernel known as vf610) is a familiy
+of multiple similar SoC's. The VF5xx series comes without secondary
+Cortex-M4 core, while the second number VFx1x indicates the presence
+of a L2 cache controller.
 
-So you repeat the same thing what I complained about last time. First
-you add crap to a driver then you remove it again instead of analyzing
-the necessary conversions in the first place, provide the
-infrastructure and then do a per driver conversion. It's not that
-hard, really and I'm getting tired of your approach.
+Signed-off-by: Stefan Agner <stefan@agner.ch>
+---
+ Documentation/devicetree/bindings/arm/fsl.txt | 12 ++++++++++++
+ arch/arm/mach-imx/mach-vf610.c                |  5 ++++-
+ 2 files changed, 16 insertions(+), 1 deletion(-)
 
-Step 1:	     Provide rtc.set_mmss64
-
-Step 2:	     Implement the epoch helper functions for 32bit hardware
-
-Step 3:	     Convert drivers
-
-Step 4:	     Remove obsolete interfaces
-
-I wont explain that once more, really.
-
-Thanks,
-
-	tglx
+diff --git a/Documentation/devicetree/bindings/arm/fsl.txt b/Documentation/devicetree/bindings/arm/fsl.txt
+index 4e8b7df..c830b5b 100644
+--- a/Documentation/devicetree/bindings/arm/fsl.txt
++++ b/Documentation/devicetree/bindings/arm/fsl.txt
+@@ -75,6 +75,18 @@ i.MX6q generic board
+ Required root node properties:
+     - compatible = "fsl,imx6q";
+ 
++Freescale Vybrid Platform Device Tree Bindings
++----------------------------------------------
++
++For the Vybrid SoC familiy all variants with DDR controller are supported,
++which is the VF5xx and VF6xx series. Out of historical reasons, in most
++places the kernel uses vf610 to refer to the whole familiy.
++
++Required root node compatible property (one of them):
++    - compatible = "fsl,vf500";
++    - compatible = "fsl,vf510";
++    - compatible = "fsl,vf600";
++    - compatible = "fsl,vf610";
+ 
+ Freescale LS1021A Platform Device Tree Bindings
+ ------------------------------------------------
+diff --git a/arch/arm/mach-imx/mach-vf610.c b/arch/arm/mach-imx/mach-vf610.c
+index c11ab6a..2e7c75b 100644
+--- a/arch/arm/mach-imx/mach-vf610.c
++++ b/arch/arm/mach-imx/mach-vf610.c
+@@ -13,11 +13,14 @@
+ #include <asm/hardware/cache-l2x0.h>
+ 
+ static const char * const vf610_dt_compat[] __initconst = {
++	"fsl,vf500",
++	"fsl,vf510",
++	"fsl,vf600",
+ 	"fsl,vf610",
+ 	NULL,
+ };
+ 
+-DT_MACHINE_START(VYBRID_VF610, "Freescale Vybrid VF610 (Device Tree)")
++DT_MACHINE_START(VYBRID_VF610, "Freescale Vybrid VF5xx/VF6xx (Device Tree)")
+ 	.l2c_aux_val	= 0,
+ 	.l2c_aux_mask	= ~0,
+ 	.dt_compat	= vf610_dt_compat,
+-- 
+2.1.3
 
