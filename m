@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751273AbaK0Q35 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 11:29:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33275 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887AbaK0Q34 (ORCPT
+	id S1751209AbaK0Qbb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 11:31:31 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:61038 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750821AbaK0Qba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 11:29:56 -0500
-Date: Thu, 27 Nov 2014 08:28:34 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Mariusz Gorski <marius.gorski@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/9] staging: panel: Use defined value or checking
- module params state
-Message-ID: <20141127162834.GA1404@kroah.com>
-References: <1416429531-11088-1-git-send-email-marius.gorski@gmail.com>
- <1416429531-11088-5-git-send-email-marius.gorski@gmail.com>
- <20141126215801.GA32756@kroah.com>
- <20141127132657.GA12298@firebird>
- <20141127152417.GB23247@kroah.com>
- <20141127155706.GB24149@kroah.com>
- <20141127161406.GB23012@1wt.eu>
+	Thu, 27 Nov 2014 11:31:30 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Bjorn Helgaas <bhelgaas@google.com>, Kevin Hilman <khilman@kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH 0/4] PM: Use CONFIG_PM instead of CONFIG_PM_RUNTIME in core code
+Date: Thu, 27 Nov 2014 17:52:46 +0100
+Message-ID: <2907778.ZNoNjGGGYl@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAPDyKFox8bXyFT0861Tc8YY5HLyq5uPVGkfN0G4fXDKqQynkYQ@mail.gmail.com>
+References: <37310416.jZXoh5nfSC@vostro.rjw.lan> <CAPDyKFox8bXyFT0861Tc8YY5HLyq5uPVGkfN0G4fXDKqQynkYQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141127161406.GB23012@1wt.eu>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 05:14:06PM +0100, Willy Tarreau wrote:
-> On Thu, Nov 27, 2014 at 07:57:06AM -0800, Greg Kroah-Hartman wrote:
-> > And the reason I got confused was because you didn't label your second
-> > set of patches "v2", which it was, I saw two separate series, one with a
-> > few patches, and then 2 sets of 9, the second set labeled "v2" so I
-> > thought they were independant.  Please think of the poor maintainer who
-> > has to decipher things like this when you send them out...
+On Thursday, November 27, 2014 09:57:33 AM Ulf Hansson wrote:
+> On 27 November 2014 at 01:37, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > Hi,
+> >
+> > After commit b2b49ccbdd54 "PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+> > selected" (currently in Linux next) CONFIG_PM_RUNTIME is set whenever
+> > CONFIG_PM is set, so CONFIG_PM can be used in #ifdefs instead of
+> > CONFIG_PM_RUNTIME which simplifies things in quite a few cases.
+> >
+> > For this reason, the following patches modify some core code to use
+> > CONFIG_PM instead of CONFIG_PM_RUNTIME.
+> >
+> > [1/4] Drop a macro which is redundant after the above commit.
+> > [2/4] Use PM instead of PM_RUNTIME in the core device PM code.
+> > [3/4] Use PM instead of PM_RUNTIME in the ACPI core.
+> > [4/4] Use PM instead of PM_RUNTIME in the PCI core.
+> >
+> > They build for me for all of the relevant combinations of options (on x86),
+> > but more testing (on the other architectures) would be welcome.
 > 
-> For Mariusz's defense, this was his first batch. He didn't feel comfortable
-> and asked me how to proceed when sending a series and I forgot to warn him
-> about the "v2" as initially I didn't think there would be a v2, and after I
-> obviously forgot I didn't speak about that. So I share some responsibility
-> for this one.
+> I really like the looks of this patchset!
+> 
+> Noticed that you have applied it for your bleeding edge branch, I
+> suppose that means you will get some "free" testing in linux-next?
+> 
+> Anyway, I have tested it for ux500 (including the genpd support for
+> it, available in linux-next). It works nicely!
+> 
+> I have also tested the two Kconfig options; CONFIG_PM_SLEEP (which
+> selects CONFIG_PM_RUNTIME) and for CONFIG_PM_RUNTIME (with
+> CONFIG_PM_SLEEP unset).
+> 
+> That brings me to a raise a question; why do we need to keep these two
+> configurations options? Couldn't we also have CONFIG_PM_RUNTIME to
+> select CONFIG_PM_SLEEP, that will further simplify things?
 
-I wasn't trying to make anyone feel bad here, just trying to explain why
-I got this all messed up on my end.  Mariusz, consider this a chance to
-learn how to rebase your patches, a very common task for kernel
-developers to have to do :)
+My plan is different.  I'm going to eliminate PM_RUNTIME from the code
+and then replace it with PM as a selectable option.  Then, PM_SLEEP will
+select PM (directly) and PM_RUNTIME can be entirely dropped.
 
-thanks,
+So in the end we'll have one Kconfig option less, which is a win IMO.
 
-greg k-h
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
