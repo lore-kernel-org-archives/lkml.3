@@ -1,141 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823AbaK0LVg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 06:21:36 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:41903 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754719AbaK0LVS (ORCPT
+	id S1754848AbaK0LV5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 06:21:57 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:44171 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754689AbaK0LVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 06:21:18 -0500
-Message-ID: <54770925.1000608@gmail.com>
-Date: Thu, 27 Nov 2014 19:21:09 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org
-CC: linux-rt-users@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] sched/rt: don't try to balance rt_runtime when it is
- futile
-References: <1400080115-12339-1-git-send-email-paul.gortmaker@windriver.com>
-In-Reply-To: <1400080115-12339-1-git-send-email-paul.gortmaker@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Nov 2014 06:21:17 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-20-547709292ef8
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene@kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v4 6/7] mfd/regulator: dt-bindings: max77686: Document gpio
+ properties
+Date: Thu, 27 Nov 2014 12:20:52 +0100
+Message-id: <1417087253-12306-7-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1417087253-12306-1-git-send-email-k.kozlowski@samsung.com>
+References: <1417087253-12306-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t/xK7qanOUhBtd6dS02zljPajH14RM2
+	i/lHzrFavH5haNH/+DWzxdmmN+wW978eZbT4dqWDyWLT42usFpd3zWGzmHF+H5PF2iN32R14
+	PHbOusvusWlVJ5vHnWt72Dw2L6n36NuyitHj8ya5ALYoLpuU1JzMstQifbsEroyGdT1MBR+4
+	Kv6tf8rWwPiNo4uRk0NCwETi4cGpjBC2mMSFe+vZuhi5OIQEljJK7G+YwQLh9DFJbN76khmk
+	ik3AWGLz8iVsILaIwApGieM3FEFsZoH1TBIPtjmB2MICERIP7s0Hq2ERUJV4dvgaE4jNK+Au
+	cXHKJqhtchInj01mBbE5BTwk9t66zQJiCwHV7Hl1h2UCI+8CRoZVjKKppckFxUnpuYZ6xYm5
+	xaV56XrJ+bmbGCHh+GUH4+JjVocYBTgYlXh4Ex6XhQixJpYVV+YeYpTgYFYS4eViLA8R4k1J
+	rKxKLcqPLyrNSS0+xMjEwSnVwFiwqHOainH3pCUHr637ZngvIOzCG1kJrS61JQXvZc+p+L+M
+	v7Tu9uneKL2LbpdfT3o4yz2QedWHAsHbq8rdbgtp3P1VzfCFZ/JL/4rH/C4N18xkV7ZMOp7C
+	s61j8reqmrVuCidMvTp6Tv1+sPHkfSuFwzLXGr+pCUhO8wsP8dyw5m18deqLPU+UWIozEg21
+	mIuKEwEMxE8GJQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
-On 5/14/14, 11:08 PM, Paul Gortmaker wrote:
-> As of the old commit ac086bc22997a2be24fc40fc8d46522fe7e03d11
-> ("sched: rt-group: smp balancing") the concept of borrowing per
-> cpu rt_runtime from one core to another was introduced.
->
-> However, this prevents the RT throttling message from ever being
-> emitted when someone does a common (but mistaken) attempt at
-> using too much CPU in RT context.  Consider the following test:
->
->    echo "main() {for(;;);}" > full_load.c
->    gcc full_load.c -o full_load
->    taskset -c 1 ./full_load &
->    chrt -r -p 80 `pidof full_load`
+Document usage of ena-gpios properties which turn on external/GPIO
+control over regulator.
 
-I try this on 3.18-rc6 w/ CONFIG_RCU_CPU_STALL_TIMEOUT=60 and 
-SCHED_FEAT(RT_RUNTIME_SHARE, true), however I don't see rcu stall 
-warning, where I miss?
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ Documentation/devicetree/bindings/mfd/max77686.txt | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
-Regards,
-Wanpeng Li
-
-> When run on x86_64 defconfig, what happens is as follows:
->
-> -task runs on core1 for 95% of an rt_period as documented in
->   the file Documentation/scheduler/sched-rt-group.txt
->
-> -at 95%, the code in balance_runtime sees this threshold and
->   calls do_balance_runtime()
->
-> -do_balance_runtime sees that core 1 is in need, and does this:
-> 	---------------
->          if (rt_rq->rt_runtime + diff > rt_period)
->                  diff = rt_period - rt_rq->rt_runtime;
->          iter->rt_runtime -= diff;
->          rt_rq->rt_runtime += diff;
-> 	---------------
->   which extends core1's rt_runtime by 5%, making it 100% of rt_period
->   by stealing 5% from core0 (or possibly some other core).
->
-> However, the next time core1's rt_rq enters sched_rt_runtime_exceeded(),
-> we hit this near the top of that function:
-> 	---------------
->          if (runtime >= sched_rt_period(rt_rq))
->                  return 0;
-> 	---------------
-> and hence we'll _never_ look at/set any of the throttling checks and
-> messages in sched_rt_runtime_exceeded().  Instead, we will happily
-> plod along for CONFIG_RCU_CPU_STALL_TIMEOUT seconds, at which point
-> the RCU subsystem will get angry and trigger an NMI in response to
-> what it rightly sees as a WTF situation.
->
-> Granted, there are lots of ways you can do bad things to yourself with
-> RT, but in the current zeitgeist of multicore systems with people
-> dedicating individual cores to individual tasks, I'd say the above is
-> common enough that we should react to it sensibly, and an RCU stall
-> really doesn't translate well to an end user vs a simple message that
-> says "throttling activated".
->
-> One way to get the throttle message instead of the ambiguous and lengthy
-> NMI triggered all core backtrace of the RCU stall is to change the
-> SCHED_FEAT(RT_RUNTIME_SHARE, true) to false.  One could make a good
-> case for this being the default for the out-of-tree preempt-rt series,
-> since folks using that are more apt to be manually tuning the system
-> and won't want an invisible hand coming in and making changes.
->
-> However, in mainline, where it is more likely that there will be
-> n+x (x>0) RT tasks on an n core system, we can leave the sharing on,
-> and still avoid the RCU stalls by noting that there is no point in
-> trying to balance when there are no tasks to migrate, or only a
-> single RT task is present.  Inflating the rt_runtime does nothing
-> in this case other than defeat sched_rt_runtime_exceeded().
->
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> ---
->
-> [I'd mentioned a similar use case here: https://lkml.org/lkml/2013/3/6/338
->   and tglx asked why they wouldn't see the throttle message; it is only
->   now that I had a chance to dig in and figure out why.  Oh, and the patch
->   is against linux-next, in case that matters...]
->
->   kernel/sched/rt.c | 9 +++++++++
->   1 file changed, 9 insertions(+)
->
-> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-> index ea4d500..698aac9 100644
-> --- a/kernel/sched/rt.c
-> +++ b/kernel/sched/rt.c
-> @@ -774,6 +774,15 @@ static int balance_runtime(struct rt_rq *rt_rq)
->   	if (!sched_feat(RT_RUNTIME_SHARE))
->   		return more;
->   
-> +	/*
-> +	 * Stealing from another core won't help us at all if
-> +	 * we have nothing to migrate over there, or only one
-> +	 * task that is running up all the rt_time.  In fact it
-> +	 * will just inhibit the throttling message in that case.
-> +	 */
-> +	if (!rt_rq->rt_nr_migratory || rt_rq->rt_nr_total == 1)
-> +		return more;
-> +
->   	if (rt_rq->rt_time > rt_rq->rt_runtime) {
->   		raw_spin_unlock(&rt_rq->rt_runtime_lock);
->   		more = do_balance_runtime(rt_rq);
+diff --git a/Documentation/devicetree/bindings/mfd/max77686.txt b/Documentation/devicetree/bindings/mfd/max77686.txt
+index 75fdfaf41831..93c4cd07ffc8 100644
+--- a/Documentation/devicetree/bindings/mfd/max77686.txt
++++ b/Documentation/devicetree/bindings/mfd/max77686.txt
+@@ -37,8 +37,12 @@ to get matched with their hardware counterparts as follow:
+   Regulators which can be turned off during system suspend:
+ 	-LDOn	:	2, 6-8, 10-12, 14-16,
+ 	-BUCKn	:	1-4.
+-  Use standard regulator bindings for it ('regulator-off-in-suspend').
+ 
++  Regulators which can be configured for GPIO enable control:
++	-LDOn	:	20, 21, 22
++	-BUCKn	:	8, 9
++  Use standard regulator bindings for these ('regulator-off-in-suspend',
++  'ena-gpios').
+ 
+ Example:
+ 
+@@ -65,4 +69,12 @@ Example:
+ 				regulator-always-on;
+ 				regulator-boot-on;
+ 			};
++
++			buck9_reg {
++				regulator-compatible = "BUCK9";
++				regulator-name = "CAM_ISP_CORE_1.2V";
++				regulator-min-microvolt = <1000000>;
++				regulator-max-microvolt = <1200000>;
++				ena-gpios = <&gpm0 3 GPIO_ACTIVE_HIGH>;
++			};
+ 	}
+-- 
+1.9.1
 
