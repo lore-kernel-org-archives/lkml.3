@@ -1,67 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938AbaK0Mgs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 07:36:48 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:54438 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755118AbaK0Mgp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 07:36:45 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        InKi Dae <inki.dae@samsung.com>,
-        Chanho Park <chanho61.park@samsung.com>, geunsik.lim@samsung.com,
-        "sw0312.kim" <sw0312.kim@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 01/19] pinctrl: exynos: Add support for Exynos5433
-Date: Thu, 27 Nov 2014 13:36:36 +0100
-Message-ID: <4132795.KBVIQFTevx@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CA+Ln22FtvUD1HqH9PCGPCRu8Cyc6u4oNnsrEWyKYODtCT8wKHQ@mail.gmail.com>
-References: <1417073716-22997-1-git-send-email-cw00.choi@samsung.com> <3904347.Bp2gmpYM49@wuerfel> <CA+Ln22FtvUD1HqH9PCGPCRu8Cyc6u4oNnsrEWyKYODtCT8wKHQ@mail.gmail.com>
+	id S932085AbaK0MhG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 07:37:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60784 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755782AbaK0Mdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 07:33:46 -0500
+Date: Thu, 27 Nov 2014 14:33:21 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        Jason Wang <jasowang@redhat.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Tom Herbert <therbert@google.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Masatake YAMATO <yamato@redhat.com>, Xi Wang <xii@google.com>,
+        netdev@vger.kernel.org
+Subject: [PATCH v5 39/45] tun: TUN_VNET_LE support, fix sparse warnings for
+ virtio headers
+Message-ID: <1417091078-24611-40-git-send-email-mst@redhat.com>
+References: <1417091078-24611-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:TIjtzx6k+UJAN9ldTp+yTnk59/pdkZVz2kEVYPFZE+L
- OUnhH/YS2BZNZ1RtXtv8KQzKK/4vYJN1VQCTyMYA/lFeLyW5F9
- 8m0+vjBkSZHsNG3Liturg+l4OzEtcLZkAXv+5fsa/wKZnu0p4f
- h2BVnaoxH9x1D11FUuC4s3eNeUsMH4JvmKrAPADFJTCtkf5Ozs
- XS5f4XB3XaQ63CDe8QQ6Mymbdw2XKof6h5gctmqNF/ooC/vXI5
- hrA3F2Rkgukr8mmNo5tb6sOIC8n7pzuh0txV0KaURLO/gRYJjp
- yJCT/Nag6mdgj6S+FlAi3W934LKnXzNcv7AfkOHXzGSn2s2UV5
- zZAqw2o4AjlzKKpKqn2o=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417091078-24611-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 November 2014 21:14:59 Tomasz Figa wrote:
-> > my impression is that with the
-> > move to arm64, you should come up with a new binding that can fully
-> > describe each controller so you don't have to add new code and bindings
-> > for each future SoC that uses the same scheme.
-> 
-> Still, this is exactly the same thing I thought when initially refactoring this
-> driver 2 years ago and what was dismissed at that time due to people
-> supposedly not wanting that much data in DT. If this point of view has changed,
-> then I fully support your view, though.
+Pretty straight-forward: convert all fields to/from
+virtio endian-ness.
 
-I guess people were at the time underestimating the rate at which Samsung
-comes out with new SoC variants that are all slightly different.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/net/tun.c | 48 +++++++++++++++++++++++++++++-------------------
+ 1 file changed, 29 insertions(+), 19 deletions(-)
 
-	Arnd
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 61c000c..f411ffd 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -111,7 +111,7 @@ do {								\
+ #define TUN_FASYNC	IFF_ATTACH_QUEUE
+ 
+ #define TUN_FEATURES (IFF_NO_PI | IFF_ONE_QUEUE | IFF_VNET_HDR | \
+-		      IFF_MULTI_QUEUE)
++		      IFF_VNET_LE | IFF_MULTI_QUEUE)
+ #define GOODCOPY_LEN 128
+ 
+ #define FLT_EXACT_COUNT 8
+@@ -205,6 +205,16 @@ struct tun_struct {
+ 	u32 flow_count;
+ };
+ 
++static inline u16 tun16_to_cpu(struct tun_struct *tun, __virtio16 val)
++{
++	return __virtio16_to_cpu(tun->flags & IFF_VNET_LE, val);
++}
++
++static inline __virtio16 cpu_to_tun16(struct tun_struct *tun, u16 val)
++{
++	return __cpu_to_virtio16(tun->flags & IFF_VNET_LE, val);
++}
++
+ static inline u32 tun_hashfn(u32 rxhash)
+ {
+ 	return rxhash & 0x3ff;
+@@ -1053,10 +1063,10 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 			return -EFAULT;
+ 
+ 		if ((gso.flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) &&
+-		    gso.csum_start + gso.csum_offset + 2 > gso.hdr_len)
+-			gso.hdr_len = gso.csum_start + gso.csum_offset + 2;
++		    tun16_to_cpu(tun, gso.csum_start) + tun16_to_cpu(tun, gso.csum_offset) + 2 > tun16_to_cpu(tun, gso.hdr_len))
++			gso.hdr_len = cpu_to_tun16(tun, tun16_to_cpu(tun, gso.csum_start) + tun16_to_cpu(tun, gso.csum_offset) + 2);
+ 
+-		if (gso.hdr_len > len)
++		if (tun16_to_cpu(tun, gso.hdr_len) > len)
+ 			return -EINVAL;
+ 		offset += tun->vnet_hdr_sz;
+ 	}
+@@ -1064,7 +1074,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 	if ((tun->flags & TUN_TYPE_MASK) == IFF_TAP) {
+ 		align += NET_IP_ALIGN;
+ 		if (unlikely(len < ETH_HLEN ||
+-			     (gso.hdr_len && gso.hdr_len < ETH_HLEN)))
++			     (gso.hdr_len && tun16_to_cpu(tun, gso.hdr_len) < ETH_HLEN)))
+ 			return -EINVAL;
+ 	}
+ 
+@@ -1075,7 +1085,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 		 * enough room for skb expand head in case it is used.
+ 		 * The rest of the buffer is mapped from userspace.
+ 		 */
+-		copylen = gso.hdr_len ? gso.hdr_len : GOODCOPY_LEN;
++		copylen = gso.hdr_len ? tun16_to_cpu(tun, gso.hdr_len) : GOODCOPY_LEN;
+ 		if (copylen > good_linear)
+ 			copylen = good_linear;
+ 		linear = copylen;
+@@ -1085,10 +1095,10 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 
+ 	if (!zerocopy) {
+ 		copylen = len;
+-		if (gso.hdr_len > good_linear)
++		if (tun16_to_cpu(tun, gso.hdr_len) > good_linear)
+ 			linear = good_linear;
+ 		else
+-			linear = gso.hdr_len;
++			linear = tun16_to_cpu(tun, gso.hdr_len);
+ 	}
+ 
+ 	skb = tun_alloc_skb(tfile, align, copylen, linear, noblock);
+@@ -1115,8 +1125,8 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 	}
+ 
+ 	if (gso.flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) {
+-		if (!skb_partial_csum_set(skb, gso.csum_start,
+-					  gso.csum_offset)) {
++		if (!skb_partial_csum_set(skb, tun16_to_cpu(tun, gso.csum_start),
++					  tun16_to_cpu(tun, gso.csum_offset))) {
+ 			tun->dev->stats.rx_frame_errors++;
+ 			kfree_skb(skb);
+ 			return -EINVAL;
+@@ -1184,7 +1194,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 		if (gso.gso_type & VIRTIO_NET_HDR_GSO_ECN)
+ 			skb_shinfo(skb)->gso_type |= SKB_GSO_TCP_ECN;
+ 
+-		skb_shinfo(skb)->gso_size = gso.gso_size;
++		skb_shinfo(skb)->gso_size = tun16_to_cpu(tun, gso.gso_size);
+ 		if (skb_shinfo(skb)->gso_size == 0) {
+ 			tun->dev->stats.rx_frame_errors++;
+ 			kfree_skb(skb);
+@@ -1276,8 +1286,8 @@ static ssize_t tun_put_user(struct tun_struct *tun,
+ 			struct skb_shared_info *sinfo = skb_shinfo(skb);
+ 
+ 			/* This is a hint as to how much should be linear. */
+-			gso.hdr_len = skb_headlen(skb);
+-			gso.gso_size = sinfo->gso_size;
++			gso.hdr_len = cpu_to_tun16(tun, skb_headlen(skb));
++			gso.gso_size = cpu_to_tun16(tun, sinfo->gso_size);
+ 			if (sinfo->gso_type & SKB_GSO_TCPV4)
+ 				gso.gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
+ 			else if (sinfo->gso_type & SKB_GSO_TCPV6)
+@@ -1285,12 +1295,12 @@ static ssize_t tun_put_user(struct tun_struct *tun,
+ 			else {
+ 				pr_err("unexpected GSO type: "
+ 				       "0x%x, gso_size %d, hdr_len %d\n",
+-				       sinfo->gso_type, gso.gso_size,
+-				       gso.hdr_len);
++				       sinfo->gso_type, tun16_to_cpu(tun, gso.gso_size),
++				       tun16_to_cpu(tun, gso.hdr_len));
+ 				print_hex_dump(KERN_ERR, "tun: ",
+ 					       DUMP_PREFIX_NONE,
+ 					       16, 1, skb->head,
+-					       min((int)gso.hdr_len, 64), true);
++					       min((int)tun16_to_cpu(tun, gso.hdr_len), 64), true);
+ 				WARN_ON_ONCE(1);
+ 				return -EINVAL;
+ 			}
+@@ -1301,9 +1311,9 @@ static ssize_t tun_put_user(struct tun_struct *tun,
+ 
+ 		if (skb->ip_summed == CHECKSUM_PARTIAL) {
+ 			gso.flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
+-			gso.csum_start = skb_checksum_start_offset(skb) +
+-					 vlan_hlen;
+-			gso.csum_offset = skb->csum_offset;
++			gso.csum_start = cpu_to_tun16(tun, skb_checksum_start_offset(skb) +
++						      vlan_hlen);
++			gso.csum_offset = cpu_to_tun16(tun, skb->csum_offset);
+ 		} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
+ 			gso.flags = VIRTIO_NET_HDR_F_DATA_VALID;
+ 		} /* else everything is zero */
+-- 
+MST
+
