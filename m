@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858AbaK0Irl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 03:47:41 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41746 "EHLO mail.kernel.org"
+	id S1754875AbaK0Iro (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 03:47:44 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41764 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753251AbaK0Iri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:47:38 -0500
+	id S1753251AbaK0Irm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:47:42 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Richard Larocque <rlarocque@google.com>,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, Richard Larocque <rlarocque@google.com>,
         Prarit Bhargava <prarit@redhat.com>,
         Sharvil Nanavati <sharvil@google.com>,
         John Stultz <john.stultz@linaro.org>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 37/91] alarmtimer: Return relative times in timer_gettime
-Date: Thu, 27 Nov 2014 16:42:20 +0800
-Message-Id: <1417077794-9299-37-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 38/91] alarmtimer: Do not signal SIGEV_NONE timers
+Date: Thu, 27 Nov 2014 16:42:21 +0800
+Message-Id: <1417077794-9299-38-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
 References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
@@ -31,17 +31,22 @@ From: Richard Larocque <rlarocque@google.com>
 ------------------
 
 
-commit e86fea764991e00a03ff1e56409ec9cacdbda4c9 upstream.
+commit 265b81d23a46c39df0a735a3af4238954b41a4c2 upstream.
 
-Returns the time remaining for an alarm timer, rather than the time at
-which it is scheduled to expire.  If the timer has already expired or it
-is not currently scheduled, the it_value's members are set to zero.
+Avoids sending a signal to alarm timers created with sigev_notify set to
+SIGEV_NONE by checking for that special case in the timeout callback.
 
-This new behavior matches that of the other posix-timers and the POSIX
-specifications.
+The regular posix timers avoid sending signals to SIGEV_NONE timers by
+not scheduling any callbacks for them in the first place.  Although it
+would be possible to do something similar for alarm timers, it's simpler
+to handle this as a special case in the timeout.
 
-This is a change in user-visible behavior, and may break existing
-applications.  Hopefully, few users rely on the old incorrect behavior.
+Prior to this patch, the alarm timer would ignore the sigev_notify value
+and try to deliver signals to the process anyway.  Even worse, the
+sanity check for the value of sigev_signo is skipped when SIGEV_NONE was
+specified, so the signal number could be bogus.  If sigev_signo was an
+unitialized value (as it often would be if SIGEV_NONE is used), then
+it's hard to predict which signal will be sent.
 
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -49,62 +54,29 @@ Cc: Richard Cochran <richardcochran@gmail.com>
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Sharvil Nanavati <sharvil@google.com>
 Signed-off-by: Richard Larocque <rlarocque@google.com>
-[jstultz: minor style tweak]
 Signed-off-by: John Stultz <john.stultz@linaro.org>
-[lizf: Backported to 3.4:
- - add alarm_expires_remaining() introduced by commit 6cffe00f7d4e]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- kernel/time/alarmtimer.c | 24 +++++++++++++++++-------
- 1 file changed, 17 insertions(+), 7 deletions(-)
+ kernel/time/alarmtimer.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
-index b704579..c72d3dd 100644
+index c72d3dd..c870118 100644
 --- a/kernel/time/alarmtimer.c
 +++ b/kernel/time/alarmtimer.c
-@@ -232,6 +232,12 @@ static enum hrtimer_restart alarmtimer_fired(struct hrtimer *timer)
- 
- }
- 
-+ktime_t alarm_expires_remaining(const struct alarm *alarm)
-+{
-+	struct alarm_base *base = &alarm_bases[alarm->type];
-+	return ktime_sub(alarm->node.expires, base->gettime());
-+}
-+
- #ifdef CONFIG_RTC_CLASS
- /**
-  * alarmtimer_suspend - Suspend time callback
-@@ -525,18 +531,22 @@ static int alarm_timer_create(struct k_itimer *new_timer)
-  * @new_timer: k_itimer pointer
-  * @cur_setting: itimerspec data to fill
-  *
-- * Copies the itimerspec data out from the k_itimer
-+ * Copies out the current itimerspec data
-  */
- static void alarm_timer_get(struct k_itimer *timr,
- 				struct itimerspec *cur_setting)
+@@ -456,8 +456,10 @@ static enum alarmtimer_restart alarm_handle_timer(struct alarm *alarm,
  {
--	memset(cur_setting, 0, sizeof(struct itimerspec));
-+	ktime_t relative_expiry_time =
-+		alarm_expires_remaining(&(timr->it.alarm.alarmtimer));
-+
-+	if (ktime_to_ns(relative_expiry_time) > 0) {
-+		cur_setting->it_value = ktime_to_timespec(relative_expiry_time);
-+	} else {
-+		cur_setting->it_value.tv_sec = 0;
-+		cur_setting->it_value.tv_nsec = 0;
+ 	struct k_itimer *ptr = container_of(alarm, struct k_itimer,
+ 						it.alarm.alarmtimer);
+-	if (posix_timer_event(ptr, 0) != 0)
+-		ptr->it_overrun++;
++	if ((ptr->it_sigev_notify & ~SIGEV_THREAD_ID) != SIGEV_NONE) {
++		if (posix_timer_event(ptr, 0) != 0)
++			ptr->it_overrun++;
 +	}
  
--	cur_setting->it_interval =
--			ktime_to_timespec(timr->it.alarm.interval);
--	cur_setting->it_value =
--		ktime_to_timespec(timr->it.alarm.alarmtimer.node.expires);
--	return;
-+	cur_setting->it_interval = ktime_to_timespec(timr->it.alarm.interval);
- }
- 
- /**
+ 	/* Re-add periodic timers */
+ 	if (ptr->it.alarm.interval.tv64) {
 -- 
 1.9.1
 
