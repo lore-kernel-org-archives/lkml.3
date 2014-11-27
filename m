@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751144AbaK0PGC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 10:06:02 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40785 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784AbaK0PGA (ORCPT
+	id S1751197AbaK0PGX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 10:06:23 -0500
+Received: from smtprelay0240.hostedemail.com ([216.40.44.240]:60799 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751151AbaK0PGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 10:06:00 -0500
-Message-ID: <1417100750.4371.1.camel@arm.com>
-Subject: Re: [PATCH v4 1/3] perf: Use monotonic clock as a source for
- timestamps
-From: Pawel Moll <pawel.moll@arm.com>
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tomeu Vizoso <tomeu@tomeuvizoso.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Date: Thu, 27 Nov 2014 15:05:50 +0000
-In-Reply-To: <1415292718-19785-2-git-send-email-pawel.moll@arm.com>
-References: <1415292718-19785-1-git-send-email-pawel.moll@arm.com>
-	 <1415292718-19785-2-git-send-email-pawel.moll@arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
+	Thu, 27 Nov 2014 10:06:21 -0500
+X-Greylist: delayed 472 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Nov 2014 10:06:21 EST
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:3138:3139:3140:3141:3142:3353:3622:3865:3866:3868:3870:3871:3872:3873:3874:4250:4321:5007:6261:6690:7875:7903:10004:10400:10450:10455:10848:10967:11232:11658:11914:12517:12519:12663:12740:13069:13311:13357:14096:14097:19904:19999:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: error74_2cb1228cfe105
+X-Filterd-Recvd-Size: 2559
+Date: Thu, 27 Nov 2014 09:58:25 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>, nsekhar@ti.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        mingo@redhat.com, Christoffer Dall <christoffer.dall@linaro.org>,
+        jslaby@suse.cz,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm: ftrace: Adds support for ftrace operations
+Message-ID: <20141127095825.37f57197@gandalf.local.home>
+In-Reply-To: <CACh+v5Phr-yA8c_bnooR8eLyEpmiMDwCGi2Oy8ArQayuRbeczA@mail.gmail.com>
+References: <1415372352-15664-1-git-send-email-jjhiblot@traphandler.com>
+	<20141107115225.72bc6cbf@gandalf.local.home>
+	<545CFAF4.8030104@traphandler.com>
+	<CACh+v5MDFZj+NOPWdnMgNthn_DxL3nn=CZJ224vMh7hSf84o4Q@mail.gmail.com>
+	<20141125182038.04497ec0@gandalf.local.home>
+	<CACh+v5Phr-yA8c_bnooR8eLyEpmiMDwCGi2Oy8ArQayuRbeczA@mail.gmail.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-11-06 at 16:51 +0000, Pawel Moll wrote:
-> Until now, perf framework never defined the meaning of the timestamps
-> captured as PERF_SAMPLE_TIME sample type. The values were obtaining
-> from local (sched) clock, which is unavailable in userspace. This made
-> it impossible to correlate perf data with any other events. Other
-> tracing solutions have the source configurable (ftrace) or just share
-> a common time domain between kernel and userspace (LTTng).
-> 
-> Follow the trend by using monotonic clock, which is readily available
-> as POSIX CLOCK_MONOTONIC.
-> 
-> Also add a sysctl "perf_sample_time_clk_id" attribute which can be used
-> by the user to obtain the clk_id to be used with POSIX clock API (eg.
-> clock_gettime()) to obtain a time value comparable with perf samples.
-> 
-> Old behaviour can be restored by using "perf_use_local_clock" kernel
-> parameter.
-> 
-> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+On Thu, 27 Nov 2014 11:23:45 +0100
+Jean-Jacques Hiblot <jjhiblot@traphandler.com> wrote:
 
-It's been 3 weeks without any negative feedback (no feedback at all, but
-I take the optimistic view :-)...
+> 2014-11-26 0:20 GMT+01:00 Steven Rostedt <rostedt@goodmis.org>:
+> > On Mon, 24 Nov 2014 10:59:24 +0100
+> > Jean-Jacques Hiblot <jjhiblot@traphandler.com> wrote:
+> >
+> >> Hi Steve,
+> >> did you get a chance of running your tests suite on real hardware with
+> >> this patch? I'd be really interested in the results.
+> >
+> > Yes I finally got it working on my beaglebone white. It passed all the
+> > tests that passed without it. Although I'm not sure this patch itself
+> > was tested as I didn't have kprobes which might use it.
+> >
+> Thanks for testing it. At least it doesn't cause regression.
+> What do you mean by not having krpobes which might use it ? Are you
+> thinking of the kprobe optimization based on ftrace ?
+> 
 
-How about queuing at least this patch alone for the incoming merge
-window? Or at least getting it into -next, with the view at 3.20?
+Yep. My tests use that. But as ARM doesn't have an mfentry where
+functions probed by kprobes at the start are optimized with ftrace, my
+tests wont test it.
 
-Pawel
+I also didn't have kprobes enabled on this board. Is it fully supported
+in ARM, and does kprobes use it there too?
 
+-- Steve
