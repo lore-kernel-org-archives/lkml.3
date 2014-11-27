@@ -1,186 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751169AbaK0Q2z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 11:28:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39690 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750887AbaK0Q2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 11:28:53 -0500
-Date: Thu, 27 Nov 2014 18:28:04 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Hildenbrand <dahi@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        cornelia.huck@de.ibm.com, rusty@au1.ibm.com, nab@linux-iscsi.org,
-        pbonzini@redhat.com, thuth@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Brian Swetland <swetland@google.com>,
+	id S1751219AbaK0Q3J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 11:29:09 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:44860 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751173AbaK0Q3G convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 11:29:06 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'David Hildenbrand'" <dahi@linux.vnet.ibm.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        "Heiko Carstens" <heiko.carstens@de.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Christian Borntraeger <borntraeger@de.ibm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Amit Shah <amit.shah@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Sudeep Dutt <sudeep.dutt@intel.com>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>,
-        Joel Stanley <joel@jms.id.au>,
-        virtualization@lists.linux-foundation.org, lguest@lists.ozlabs.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [PATCH v5 01/45] virtio: use u32, not bitmap for struct
- virtio_device's features
-Message-ID: <20141127162804.GB27124@redhat.com>
-References: <1417091078-24611-1-git-send-email-mst@redhat.com>
- <1417091078-24611-2-git-send-email-mst@redhat.com>
- <20141127171542.3dbb2bc2@thinkpad-w530>
+        "paulus@samba.org" <paulus@samba.org>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "mingo@kernel.org" <mingo@kernel.org>
+Subject: RE: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
+ atomic
+Thread-Topic: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
+ atomic
+Thread-Index: AQHQClV0/jzAGGN4U0aVkHiOIDETdJx0mueggAAC44CAAAjz4A==
+Date: Thu, 27 Nov 2014 16:27:50 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1C9FDDD6@AcuExch.aculab.com>
+References: <20141126151729.GB9612@redhat.com>
+	<20141126152334.GA9648@redhat.com>	<20141126163207.63810fcb@thinkpad-w530>
+	<20141126154717.GB10568@redhat.com>	<5475FAB1.1000802@de.ibm.com>
+	<20141126163216.GB10850@redhat.com>	<547604FC.4030300@de.ibm.com>
+	<20141126170447.GC11202@redhat.com>	<20141127070919.GA4390@osiris>
+	<20141127090301.3ddc3077@thinkpad-w530>	<20141127120441.GB4390@osiris>
+	<alpine.DEB.2.11.1411271602320.3961@nanos>
+	<20141127161905.7c6220ee@thinkpad-w530>
+	<063D6719AE5E284EB5DD2968C1650D6D1C9FDD6A@AcuExch.aculab.com>
+ <20141127164555.4bcebfe8@thinkpad-w530>
+In-Reply-To: <20141127164555.4bcebfe8@thinkpad-w530>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141127171542.3dbb2bc2@thinkpad-w530>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 05:15:42PM +0100, David Hildenbrand wrote:
-> > From: Rusty Russell <rusty@rustcorp.com.au>
-> > 
-> > It seemed like a good idea, but it's actually a pain when we get more
-> > than 32 feature bits.  Just change it to a u32 for now.
-> > 
-> > Cc: Brian Swetland <swetland@google.com>
-> > Cc: Christian Borntraeger <borntraeger@de.ibm.com>
-> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> > Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-> > Acked-by: Pawel Moll <pawel.moll@arm.com>
-> > Acked-by: Ohad Ben-Cohen <ohad@wizery.com>
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
+From: David Hildenbrand [mailto:dahi@linux.vnet.ibm.com]
+> > From: David Hildenbrand
+> > ...
+> > > Although it might not be optimal, but keeping a separate counter for
+> > > pagefault_disable() as part of the preemption counter seems to be the only
+> > > doable thing right now. I am not sure if a completely separated counter is even
+> > > possible, increasing the size of thread_info.
+> >
+> > What about adding (say) 0x10000 for the more restrictive test?
+> >
+> > 	David
+> >
 > 
-> Wouldn't it be easier to turn
->   test_bit(i, dev->features)
+> You mean as part of the preempt counter?
 > 
-> into a simple makro like
->   #define test_bit(i, features) (features & (1 << i))
+> The current layout (on my branch) is
 > 
-> Similar one for clear_bit and set_bit.
-
-I don't really see why it's easier.
-These wrappers resulted in a ton of code
-converting from bit numbers to set_bit calls
-and back.
-
-E.g. with plan integer you can do (a|b|c)
-to get a set with 3 bits.
-
-
+>  * PREEMPT_MASK:        0x000000ff
+>  * SOFTIRQ_MASK:        0x0000ff00
+>  * HARDIRQ_MASK:        0x000f0000
+>  *     NMI_MASK:        0x00100000
+>  * PREEMPT_ACTIVE:      0x00200000
 > 
-> if names collide with existing functions, we could simply rename them to:
-> 
-> set_feature_bit() ...
-> clear_feature_bit() ...
+> I would have added
+>  * PAGEFAULT_MASK:      0x03C00000
 
-In fact that's why we have BIT macro.
+I'm not sure where you'd need to add the bits.
 
-vdev->features & BIT_ULL(x) is only longer by 1
-character than test_feature_bit(vdev, x), and
-it's much clearer than a non standard wrapper.
+I think the above works because disabling 'HARDIRQ' implicitly
+disables 'SOFTIRQ' and 'PREEMPT' (etc), so if 256+ threads
+disable PREEMPT everything still works.
 
-vdev->features & (1ULL << x) is longer by 3 chars.
+So if disabling pagefaults implies that pre-emption is disabled
+(but SOFTIRQ is still allowed) then you need to insert your bit(s)
+between 0xff00 and 0x00ff.
+OTOH if disabling pre-emption implies that pagefaults are disabled
+then you'd need to use the lsb and change all the above values.
 
-I guess this is a suggestion to use BIT / BIT_ULL more.
+Which makes me think that 'PREEMPT_ACTIVE' isn't right at all.
+Two threads disabling NMIs (or 32  disabling HARDIRQ) won't DTRT.
 
-Good point.
+OTOH I'm only guessing at how this is used.
 
-
-> > diff --git a/drivers/misc/mic/card/mic_virtio.c b/drivers/misc/mic/card/mic_virtio.c
-> > index e647947..0acd564 100644
-> > --- a/drivers/misc/mic/card/mic_virtio.c
-> > +++ b/drivers/misc/mic/card/mic_virtio.c
-> > @@ -101,7 +101,7 @@ static void mic_finalize_features(struct virtio_device *vdev)
-> >  	bits = min_t(unsigned, feature_len,
-> >  		sizeof(vdev->features)) * 8;
-> >  	for (i = 0; i < bits; i++) {
-> > -		if (test_bit(i, vdev->features))
-> > +		if (vdev->features & BIT(bits))
-> 
-> Hm, shouldn't that also be "if (vdev->features & (1 << i))"?
-
-Ouch. you are right of course. Will fix.
-
-> >  			iowrite8(ioread8(&out_features[i / 8]) | (1 << (i % 8)),
-> >  				 &out_features[i / 8]);
-> >  	}
-> 
-> >  out_free:
-> >  	kfree(features);
-> >  	kfree(ccw);
-> > diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
-> > index df598dd..7814b1f 100644
-> > --- a/drivers/virtio/virtio.c
-> > +++ b/drivers/virtio/virtio.c
-> > @@ -49,9 +49,9 @@ static ssize_t features_show(struct device *_d,
-> > 
-> >  	/* We actually represent this as a bitstring, as it could be
-> >  	 * arbitrary length in future. */
-> > -	for (i = 0; i < ARRAY_SIZE(dev->features)*BITS_PER_LONG; i++)
-> > +	for (i = 0; i < sizeof(dev->features)*8; i++)
-> 
-> ... sizeof(dev->features) * 8; ...
-> 
-> Do we have a define for 8 ?
-
-We do: BITS_PER_BYTE.
-
-> >  		len += sprintf(buf+len, "%c",
-> > -			       test_bit(i, dev->features) ? '1' : '0');
-> > +			       dev->features & (1ULL << i) ? '1' : '0');
-> >  	len += sprintf(buf+len, "\n");
-> >  	return len;
-> >  }
-> > @@ -168,18 +168,18 @@ static int virtio_dev_probe(struct device *_d)
-> >  	device_features = dev->config->get_features(dev);
-> > 
-> 
-> [...]
-> 
-> > @@ -483,7 +483,7 @@ int main(int argc, char *argv[])
-> > 
-> >  	/* Set up host side. */
-> >  	vring_init(&vrh.vring, RINGSIZE, __user_addr_min, ALIGN);
-> > -	vringh_init_user(&vrh, vdev.features[0], RINGSIZE, true,
-> > +	vringh_init_user(&vrh, vdev.features, RINGSIZE, true,
-> >  			 vrh.vring.desc, vrh.vring.avail, vrh.vring.used);
-> > 
-> >  	/* No descriptor to get yet... */
-> > @@ -652,13 +652,13 @@ int main(int argc, char *argv[])
-> >  	}
-> > 
-> >  	/* Test weird (but legal!) indirect. */
-> > -	if (vdev.features[0] & (1 << VIRTIO_RING_F_INDIRECT_DESC)) {
-> > +	if (vdev.features & (1 << VIRTIO_RING_F_INDIRECT_DESC)) {
-> >  		char *data = __user_addr_max - USER_MEM/4;
-> >  		struct vring_desc *d = __user_addr_max - USER_MEM/2;
-> >  		struct vring vring;
-> > 
-> >  		/* Force creation of direct, which we modify. */
-> > -		vdev.features[0] &= ~(1 << VIRTIO_RING_F_INDIRECT_DESC);
-> > +		vdev.features &= ~(1 << VIRTIO_RING_F_INDIRECT_DESC);
-> 
-> That could then be something like 
-> 
-> clear_feature_bit(VIRTIO_RING_F_INDIRECT_DESC, vdev.features);
-> 
-> (I would prefer such makros over repeating bit actions)
-
-That's the whole reason for the patch.
-
-I guess you disagree with it, but it's much easier
-to deal with simple integers.
+	David
 
 
-> >  		vq = vring_new_virtqueue(0, RINGSIZE, ALIGN, &vdev, true,
-> >  					 __user_addr_min,
-> >  					 never_notify_host,
-> 
-> 
-> But on the whole this looks good to me.
+
