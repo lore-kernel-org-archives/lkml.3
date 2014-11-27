@@ -1,147 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751167AbaK0Oct (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 09:32:49 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:62317 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784AbaK0Ocr (ORCPT
+	id S1751550AbaK0Oc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 09:32:58 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:41940 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192AbaK0Ocz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 09:32:47 -0500
-Date: Thu, 27 Nov 2014 10:32:38 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Navneet Kumar <navneetk@nvidia.com>
-Cc: rui.zhang@intel.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] thermal: of: notify sensor driver on trip updates
-Message-ID: <20141127143236.GD3342@developer>
-References: <1417050989-25405-1-git-send-email-navneetk@nvidia.com>
- <1417050989-25405-3-git-send-email-navneetk@nvidia.com>
+	Thu, 27 Nov 2014 09:32:55 -0500
+Message-ID: <547736EB.2090006@gmail.com>
+Date: Thu, 27 Nov 2014 15:36:27 +0100
+From: Quentin Lambert <lambert.quentin@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C+ts3FVlLX8+P6JN"
-Content-Disposition: inline
-In-Reply-To: <1417050989-25405-3-git-send-email-navneetk@nvidia.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: David Laight <David.Laight@ACULAB.COM>, "'Joe Perches'" <joe@perches.com>,
+        Alexei Starovoitov <alexei.starovoitov@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: bpf_jit_comp: simplify trivial boolean return
+References: <CAADnVQK3iui8cAmhi28=65p2CJbTu45fR98ri8Uh8xLRb=cwnA@mail.gmail.com> <1417032059.16355.4.camel@perches.com> <063D6719AE5E284EB5DD2968C1650D6D1C9FDA63@AcuExch.aculab.com>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1C9FDA63@AcuExch.aculab.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 27/11/2014 13:25, David Laight wrote:
+> From: Joe Perches
+>> On Wed, 2014-11-26 at 10:34 -0800, Alexei Starovoitov wrote:
+>>> On Wed, Nov 26, 2014 at 10:02 AM, Joe Perches <joe@perches.com> wrote:
+>>>> On Wed, 2014-11-26 at 09:23 -0800, Alexei Starovoitov wrote:
+>>>>> On Wed, Nov 26, 2014 at 8:58 AM, Joe Perches <joe@perches.com> wrote:
+>>>>>> Is there any value in reordering these tests for frequency
+>>>>>> or maybe using | instead of || to avoid multiple jumps?
+>>>>> probably not. It's not a critical path.
+>>>>> compiler may fuse conditions depending on values anyway.
+>>>>> If it was a critical path, we could have used
+>>>>> (1 << reg) & mask trick.
+>>>>> I picked explicit 'return true' else 'return false' here,
+>>>>> because it felt easier to read. Just a matter of taste.
+>>>> There is a size difference though: (allyesconfig)
+>>>>
+>>>> $ size arch/x86/net/built-in.o*
+>>>>     text    data     bss     dec     hex filename
+>>>>    12999    1012    4336   18347    47ab arch/x86/net/built-in.o.new
+>>>>    13177    1076    4592   18845    499d arch/x86/net/built-in.o.old
+>>> interesting. Compiler obviously thinks that 178 byte increase
+>>> with -O2 is the right trade off. Which I agree with :)
+>>>
+>>> If I think dropping 'inline' and using -Os will give bigger savings...
+>> This was allyesconfig which already uses -Os
+>>
+>> Using -O2, there is no difference using inline
+>> or not, but the size delta with the bitmask is
+>> much larger
+>>
+>> $ size arch/x86/net/built-in.o* (allyesconfig, but not -Os)
+>>     text	   data	    bss	    dec	    hex	filename
+>>    13410	    820	   3624	  17854	   45be	arch/x86/net/built-in.o.new
+>>    16130	    884	   4200	  21214	   52de	arch/x86/net/built-in.o.old
+>>    16130	    884	   4200	  21214	   52de	arch/x86/net/built-in.o.static
+> That is quite a big % change in the code size.
+> Why the change in data?
+>
+> 	David
+>
+>
+>
+Do you want me to propose a second version, or should I just
+drop it all together ?
 
---C+ts3FVlLX8+P6JN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I am a new contributor so I have no experience in that sort of thing.
 
-Hello Navneet,
-
-On Wed, Nov 26, 2014 at 05:16:29PM -0800, Navneet Kumar wrote:
-> From: navneet kumar <navneetk@nvidia.com>
->=20
-> some thermal sensor hardwares include logic which
-> can raise interrupts at certain programmed temperature
-> thresholds.
->=20
-> Drivers for such sensors should be able to learn the
-> appropriate threshold temperatures for interrupts by querying
-> the thermal framework.
->=20
-> This change provides a mechanism to allow a sensor driver to
-> update it's thresholds when userspace changes a trip point
-> temperature.
->=20
-> While this behavior may not make sense in thermal zones
-> with more than one sensor, no such examples exist in
-> the kernel.
->=20
-> Signed-off-by: navneet kumar <navneetk@nvidia.com>
-> ---
->  drivers/thermal/of-thermal.c | 7 +++++++
->  include/linux/thermal.h      | 1 +
->  2 files changed, 8 insertions(+)
->=20
-> diff --git a/drivers/thermal/of-thermal.c b/drivers/thermal/of-thermal.c
-> index 3d47a0cf3825..3568e4a586dc 100644
-> --- a/drivers/thermal/of-thermal.c
-> +++ b/drivers/thermal/of-thermal.c
-> @@ -258,6 +258,9 @@ static int of_thermal_set_trip_temp(struct thermal_zo=
-ne_device *tz, int trip,
->  	/* thermal framework should take care of data->mask & (1 << trip) */
->  	data->trips[trip].temperature =3D temp;
-> =20
-> +	if (data->sops.trip_update)
-> +		data->sops.trip_update(data->sensor_data, trip);
-> +
->  	return 0;
->  }
-> =20
-> @@ -285,6 +288,9 @@ static int of_thermal_set_trip_hyst(struct thermal_zo=
-ne_device *tz, int trip,
->  	/* thermal framework should take care of data->mask & (1 << trip) */
->  	data->trips[trip].hysteresis =3D hyst;
-> =20
-> +	if (data->sops.trip_update)
-> +		data->sops.trip_update(data->sensor_data, trip);
-> +
->  	return 0;
->  }
-> =20
-> @@ -500,6 +506,7 @@ void thermal_zone_of_sensor_unregister(struct device =
-*dev,
-> =20
->  	tz->sops.get_temp =3D NULL;
->  	tz->sops.get_trend =3D NULL;
-> +	tz->sops.trip_update =3D NULL;
->  	tz->sensor_data =3D NULL;
->  	mutex_unlock(&tzd->lock);
->  }
-> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> index 58341c56a01f..b93e65815175 100644
-> --- a/include/linux/thermal.h
-> +++ b/include/linux/thermal.h
-> @@ -292,6 +292,7 @@ struct thermal_genl_event {
->  struct thermal_of_sensor_ops {
->  	int (*get_temp)(void *, long *);
->  	int (*get_trend)(void *, long *);
-> +	int (*trip_update)(void *, int);
-
-First thing I ask you is to update your work on top of my -linus branch,
-as I already mentioned. Reasoning is that part of the changes you are
-sending is already there.
-
-As for this new callback, I am fine with it as long as it is also
-available for drivers that do not use of-thermal. Once again, of-thermal
-is not a competitor of thermal core. It will never be. It is not a new
-thermal API.=20
-
-That said, it does not make sense to have functionality in of-thermal that
-do not belong to thermal core. Exceptions are, of course, for helping
-doing the same operations we already have in thermal core.
-
-All the best,
-
-Eduardo Valentin
-
->  };
-> =20
->  /* Function declarations */
-> --=20
-> 1.8.1.5
->=20
-
---C+ts3FVlLX8+P6JN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUdzX7AAoJEMLUO4d9pOJWV7EH/R8AN+eWm7eAAaUsXoLK7UdQ
-K4pHHRsLwiNXPyKliZSVdBi+5uGTf/I+SPevGuX8S9mRFt/9JxF8mQb6MDyLWCay
-Bqu2RaZ9Nd4NWZizpq9i0Hc2Qvj2E/kxFjJbGEM7M/P5a5XJrENIQmBqO6vLUP61
-/Ih5B+7nJkI5ILg4NLy96gja1rWGvkvaotT+gnEdSNYdCKtztvCP0Q2e+6CkU8Sx
-v9OoXFhvs2wat159zlO38XqwR/gSpaJpPsUdJzsc+2hIDXCyJPcVb7TYLfsRfW4K
-0Bmm6oVMujKEBRVUoGNO296lxqDIZef8YdBqKM6BSpap+As1kRwI3bE1jkKCQVU=
-=RcWp
------END PGP SIGNATURE-----
-
---C+ts3FVlLX8+P6JN--
+Quentin
