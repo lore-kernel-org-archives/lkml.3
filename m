@@ -1,67 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751446AbaK0X2S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 18:28:18 -0500
-Received: from www.linutronix.de ([62.245.132.108]:59272 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816AbaK0X2R (ORCPT
+	id S1751466AbaK0Xan (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 18:30:43 -0500
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:40018 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866AbaK0Xal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 18:28:17 -0500
-Date: Fri, 28 Nov 2014 00:28:16 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: Xunlei Pang <pang.xunlei@linaro.org>, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
-        Sven Schnelle <svens@stackframe.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: Re: [RFC PATCH 2/4] rtc: Convert rtc_class_ops.set_mmss() to use
- time64_t
-In-Reply-To: <3958728.Cz3JcLN4Uc@wuerfel>
-Message-ID: <alpine.DEB.2.11.1411280026120.3961@nanos>
-References: <1417089760-26848-1-git-send-email-pang.xunlei@linaro.org> <1417089760-26848-3-git-send-email-pang.xunlei@linaro.org> <alpine.DEB.2.11.1411280003020.3961@nanos> <3958728.Cz3JcLN4Uc@wuerfel>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Thu, 27 Nov 2014 18:30:41 -0500
+X-IronPort-AV: E=Sophos;i="5.07,472,1413270000"; 
+   d="scan'208";a="51976286"
+Message-ID: <5477B413.80207@broadcom.com>
+Date: Thu, 27 Nov 2014 15:30:27 -0800
+From: Scott Branden <sbranden@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Tim Kryger <tim.kryger@gmail.com>
+CC: Thierry Reding <thierry.reding@gmail.com>, Ray Jui <rjui@broadcom.com>,
+        Arun Ramamurthy <arunrama@broadcom.com>,
+        <bcm-kernel-feedback-list@broadcom.com>, <linux-pwm@vger.kernel.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 3/4] pwm: kona: Fix enable, disable and config procedures
+References: <sbranden@broadcom.com>	<1416944441-12066-1-git-send-email-sbranden@broadcom.com>	<1416944441-12066-4-git-send-email-sbranden@broadcom.com> <CAD7vxx+FJzgXfik2XgJbw966Fsk-1m1znofuHEtvsDpm6cZY_g@mail.gmail.com>
+In-Reply-To: <CAD7vxx+FJzgXfik2XgJbw966Fsk-1m1znofuHEtvsDpm6cZY_g@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Nov 2014, Arnd Bergmann wrote:
-> On Friday 28 November 2014 00:05:34 Thomas Gleixner wrote:
-> > On Thu, 27 Nov 2014, Xunlei Pang wrote:
-> > > -static int coh901331_set_mmss(struct device *dev, unsigned long secs)
-> > > +static int coh901331_set_mmss(struct device *dev, time64_t secs)
-> > >  {
-> > >       struct coh901331_port *rtap = dev_get_drvdata(dev);
-> > >  
-> > >       clk_enable(rtap->clk);
-> > > +     /*
-> > > +      * y2106 issue:
-> > > +      *   On 32bit systems the time64_t secs value gets cast to
-> > > +      *   a 32bit long, and thus we can only write a maximum value
-> > > +      *   of y2016
-> > 
-> > That really makes a lot of sense. Before that patch the driver was
-> > safe up to 2038. Now it is facing the y2016 problem.
-> 
-> Actually the comment is still wrong with the number fixed, I hadn't
-> noticed when I looked at the patch earlier:
-> 
-> The cast happens on both 32-bit and 64-bit, as we cast into a u32
-> value through the writel(). The behavior of this driver doesn't
-> even change with this patch, it was good until y2106 and stays
-> that way because 'unsigned long', 'time64_t' and 'u32' can all represent
-> at least times between 1970 and 2106, the change is just to document
-> the time at which it will break, while changing the API.
+Hi Tim,
 
-Indeed. I did not bother to think about that as I was already in
-grumpy mode due to the general aproach of creating the maximal churn
-for no value.
- 
-Thanks,
+Thanks for all your comments on the patchset.  We are in the process of 
+reviewing and will provide feedback when that is completed.
 
-	tglx
+Scott
+
+On 14-11-25 11:29 PM, Tim Kryger wrote:
+> On Tue, Nov 25, 2014 at 11:40 AM, Scott Branden <sbranden@broadcom.com> wrote:
+>> From: Arun Ramamurthy <arunrama@broadcom.com>
+>>
+>> - Added helper functions to set and clear smooth and trigger bits
+>> - Added 400ns delays when clearing and setting trigger bit as requied
+>>    by spec
+>> - Added helper function to write prescale and other settings
+>> - Updated config procedure to match spec
+>> - Added code to handle pwn config when channel is disabled
+>> - Updated disable procedure to match spec
+>>
+>> Signed-off-by: Arun Ramamurthy <arunrama@broadcom.com>
+>> Reviewed-by: Ray Jui <rjui@broadcom.com>
+>> Signed-off-by: Scott Branden <sbranden@broadcom.com>
+>> ---
+>>   drivers/pwm/pwm-bcm-kona.c | 100 +++++++++++++++++++++++++++++++++++----------
+>>   1 file changed, 78 insertions(+), 22 deletions(-)
+>
+> The driver is fairly small and this change rewrites a considerable amount of it.
+>
+> Is there a actually specific deficiency that this change is intended to address?
+>
+> I'm not sure all the extra helper functions improve readability.
+>
+>>
+>> diff --git a/drivers/pwm/pwm-bcm-kona.c b/drivers/pwm/pwm-bcm-kona.c
+>> index fa0b5bf..06fa983 100644
+>> --- a/drivers/pwm/pwm-bcm-kona.c
+>> +++ b/drivers/pwm/pwm-bcm-kona.c
+>> @@ -65,6 +65,10 @@
+>>   #define DUTY_CYCLE_HIGH_MIN                    (0x00000000)
+>>   #define DUTY_CYCLE_HIGH_MAX                    (0x00ffffff)
+>>
+>> +/* The delay required after clearing or setting
+>> +   PWMOUT_ENABLE*/
+>> +#define PWMOUT_ENABLE_HOLD_DELAY 400
+>> +
+>>   struct kona_pwmc {
+>>          struct pwm_chip chip;
+>>          void __iomem *base;
+>> @@ -76,28 +80,70 @@ static inline struct kona_pwmc *to_kona_pwmc(struct pwm_chip *_chip)
+>>          return container_of(_chip, struct kona_pwmc, chip);
+>>   }
+>>
+>> -static void kona_pwmc_apply_settings(struct kona_pwmc *kp, unsigned int chan)
+>> +static inline void kona_pwmc_set_trigger(struct kona_pwmc *kp,
+>> +                                        unsigned int chan)
+>>   {
+>>          unsigned int value = readl(kp->base + PWM_CONTROL_OFFSET);
+>>
+>> -       /* Clear trigger bit but set smooth bit to maintain old output */
+>> -       value |= 1 << PWM_CONTROL_SMOOTH_SHIFT(chan);
+>> +       /* set trigger bit to enable channel */
+>> +       value |= 1 << PWM_CONTROL_TRIGGER_SHIFT(chan);
+>> +       writel(value, kp->base + PWM_CONTROL_OFFSET);
+>> +       ndelay(PWMOUT_ENABLE_HOLD_DELAY);
+>> +}
+>> +static inline void kona_pwmc_clear_trigger(struct kona_pwmc *kp,
+>> +                                          unsigned int chan)
+>> +{
+>> +       unsigned int value = readl(kp->base + PWM_CONTROL_OFFSET);
+>> +
+>> +       /* Clear trigger bit */
+>>          value &= ~(1 << PWM_CONTROL_TRIGGER_SHIFT(chan));
+>>          writel(value, kp->base + PWM_CONTROL_OFFSET);
+>> +       ndelay(PWMOUT_ENABLE_HOLD_DELAY);
+>> +}
+>>
+>> -       /* Set trigger bit and clear smooth bit to apply new settings */
+>> +static inline void kona_pwmc_clear_smooth(struct kona_pwmc *kp,
+>> +                                         unsigned int chan)
+>> +{
+>> +       unsigned int value = readl(kp->base + PWM_CONTROL_OFFSET);
+>> +
+>> +       /* Clear smooth bit */
+>>          value &= ~(1 << PWM_CONTROL_SMOOTH_SHIFT(chan));
+>> -       value |= 1 << PWM_CONTROL_TRIGGER_SHIFT(chan);
+>>          writel(value, kp->base + PWM_CONTROL_OFFSET);
+>>   }
+>>
+>> +static inline void kona_pwmc_set_smooth(struct kona_pwmc *kp, unsigned int chan)
+>> +{
+>> +       unsigned int value = readl(kp->base + PWM_CONTROL_OFFSET);
+>> +
+>> +       /*  set smooth bit to maintain old output */
+>> +       value |= 1 << PWM_CONTROL_SMOOTH_SHIFT(chan);
+>> +       writel(value, kp->base + PWM_CONTROL_OFFSET);
+>> +}
+>> +
+>> +static void kona_pwmc_write_settings(struct kona_pwmc *kp, unsigned int chan,
+>> +                                    unsigned long prescale, unsigned long pc,
+>> +                                    unsigned long dc)
+>> +{
+>> +       unsigned int value;
+>> +
+>> +       value = readl(kp->base + PRESCALE_OFFSET);
+>> +       value &= ~PRESCALE_MASK(chan);
+>> +       value |= prescale << PRESCALE_SHIFT(chan);
+>> +       writel(value, kp->base + PRESCALE_OFFSET);
+>> +
+>> +       writel(pc, kp->base + PERIOD_COUNT_OFFSET(chan));
+>> +
+>> +       writel(dc, kp->base + DUTY_CYCLE_HIGH_OFFSET(chan));
+>> +
+>> +}
+>> +
+>>   static int kona_pwmc_config(struct pwm_chip *chip, struct pwm_device *pwm,
+>>                              int duty_ns, int period_ns)
+>>   {
+>>          struct kona_pwmc *kp = to_kona_pwmc(chip);
+>>          u64 val, div, rate;
+>>          unsigned long prescale = PRESCALE_MIN, pc, dc;
+>> -       unsigned int value, chan = pwm->hwpwm;
+>> +       unsigned int ret, chan = pwm->hwpwm;
+>>
+>>          /*
+>>           * Find period count, duty count and prescale to suit duty_ns and
+>> @@ -133,19 +179,30 @@ static int kona_pwmc_config(struct pwm_chip *chip, struct pwm_device *pwm,
+>>                          return -EINVAL;
+>>          }
+>>
+>> -       /* If the PWM channel is enabled, write the settings to the HW */
+>> -       if (test_bit(PWMF_ENABLED, &pwm->flags)) {
+>> -               value = readl(kp->base + PRESCALE_OFFSET);
+>> -               value &= ~PRESCALE_MASK(chan);
+>> -               value |= prescale << PRESCALE_SHIFT(chan);
+>> -               writel(value, kp->base + PRESCALE_OFFSET);
+>>
+>> -               writel(pc, kp->base + PERIOD_COUNT_OFFSET(chan));
+>> +       /* If the PWM channel is not enabled, enable the clock */
+>> +       if (!test_bit(PWMF_ENABLED, &pwm->flags)) {
+>> +               ret = clk_prepare_enable(kp->clk);
+>> +               if (ret < 0) {
+>> +                       dev_err(chip->dev, "failed to enable clock: %d\n", ret);
+>> +                       return ret;
+>> +               }
+>> +       }
+>>
+>> -               writel(dc, kp->base + DUTY_CYCLE_HIGH_OFFSET(chan));
+>> +       /* Set smooth bit to maintain old output */
+>> +       kona_pwmc_set_smooth(kp, chan);
+>> +       kona_pwmc_clear_trigger(kp, chan);
+>> +
+>> +       /* apply new settings */
+>> +       kona_pwmc_write_settings(kp, chan, prescale, pc, dc);
+>> +
+>> +       /*If the PWM is enabled, enable the channel with the new settings
+>> +        and if not  disable the clock*/
+>> +       if (test_bit(PWMF_ENABLED, &pwm->flags))
+>> +               kona_pwmc_set_trigger(kp, chan);
+>> +       else
+>> +               clk_disable_unprepare(kp->clk);
+>>
+>> -               kona_pwmc_apply_settings(kp, chan);
+>> -       }
+>>
+>>          return 0;
+>>   }
+>> @@ -188,7 +245,6 @@ static int kona_pwmc_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+>>                  dev_err(chip->dev, "failed to enable clock: %d\n", ret);
+>>                  return ret;
+>>          }
+>> -
+>>          ret = kona_pwmc_config(chip, pwm, pwm->duty_cycle, pwm->period);
+>>          if (ret < 0) {
+>>                  clk_disable_unprepare(kp->clk);
+>> @@ -203,12 +259,12 @@ static void kona_pwmc_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+>>          struct kona_pwmc *kp = to_kona_pwmc(chip);
+>>          unsigned int chan = pwm->hwpwm;
+>>
+>> +       kona_pwmc_clear_smooth(kp, chan);
+>> +       kona_pwmc_clear_trigger(kp, chan);
+>
+> I believe the output will spike high here.  Likely not what you want...
+>
+>>          /* Simulate a disable by configuring for zero duty */
+>> -       writel(0, kp->base + DUTY_CYCLE_HIGH_OFFSET(chan));
+>> -       kona_pwmc_apply_settings(kp, chan);
+>> -
+>> -       /* Wait for waveform to settle before gating off the clock */
+>> -       ndelay(400);
+>> +       kona_pwmc_write_settings(kp, chan, 0, 0, 0);
+>> +       kona_pwmc_set_polarity(chip, pwm, PWM_POLARITY_NORMAL);
+>
+> This is wrong.  You shouldn't change the polarity when the PWM is disabled.
+>
+> The original polarity isn't even restored when it is re-enabled...
+>
+>> +       kona_pwmc_set_trigger(kp, chan);
+>>
+>>          clk_disable_unprepare(kp->clk);
+>>   }
+>> --
+>> 2.1.3
+>>
+
