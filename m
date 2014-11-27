@@ -1,172 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594AbaK0GeP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 01:34:15 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:59555 "EHLO bear.ext.ti.com"
+	id S1754578AbaK0GeO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 01:34:14 -0500
+Received: from mga11.intel.com ([192.55.52.93]:41088 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951AbaK0G0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 01:26:23 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <gregkh@linuxfoundation.org>
-CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 02/25] phy: miphy28lp: Add Device Tree bindings for the MiPHY28lp
-Date: Thu, 27 Nov 2014 11:55:54 +0530
-Message-ID: <1417069577-1169-3-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1417069577-1169-1-git-send-email-kishon@ti.com>
-References: <1417069577-1169-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751074AbaK0G0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 01:26:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,467,1413270000"; 
+   d="scan'208";a="629028295"
+From: Lv Zheng <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        Bob Moore <robert.moore@intel.com>,
+        "David E. Box" <david.e.box@linux.intel.com>
+Subject: [PATCH 1/6] ACPICA: iASL: Add support for to_PLD macro.
+Date: Thu, 27 Nov 2014 14:26:00 +0800
+Message-Id: <f773c3768a07c39310f54ec92ebda1d319823836.1416899966.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <cover.1416899966.git.lv.zheng@intel.com>
+References: <cover.1416899966.git.lv.zheng@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+From: Bob Moore <robert.moore@intel.com>
 
-The MiPHY28lp is a Generic PHY which can serve various SATA or PCIe
-or USB3 devices.
+This macro is intended to simplify the constuction of _PLD buffers.
+NOTE: Prototype only, subject to change before this macro is
+added to the ACPI specification. David E. Box.
 
-Signed-off-by: alexandre torgue <alexandre.torgue@st.com>
-Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
 ---
- .../devicetree/bindings/phy/phy-miphy28lp.txt      |  126 ++++++++++++++++++++
- 1 file changed, 126 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
+ drivers/acpi/acpica/utxface.c |    4 +++-
+ include/acpi/acbuffer.h       |   14 +++++++++++---
+ 2 files changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
-new file mode 100644
-index 0000000..b7c13ad
---- /dev/null
-+++ b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
-@@ -0,0 +1,126 @@
-+STMicroelectronics STi MIPHY28LP PHY binding
-+============================================
+diff --git a/drivers/acpi/acpica/utxface.c b/drivers/acpi/acpica/utxface.c
+index 502a849..49c873c 100644
+--- a/drivers/acpi/acpica/utxface.c
++++ b/drivers/acpi/acpica/utxface.c
+@@ -531,7 +531,9 @@ acpi_decode_pld_buffer(u8 *in_buffer,
+ 	ACPI_MOVE_32_TO_32(&dword, &buffer[0]);
+ 	pld_info->revision = ACPI_PLD_GET_REVISION(&dword);
+ 	pld_info->ignore_color = ACPI_PLD_GET_IGNORE_COLOR(&dword);
+-	pld_info->color = ACPI_PLD_GET_COLOR(&dword);
++	pld_info->red = ACPI_PLD_GET_RED(&dword);
++	pld_info->green = ACPI_PLD_GET_GREEN(&dword);
++	pld_info->blue = ACPI_PLD_GET_BLUE(&dword);
+ 
+ 	/* Second 32-bit DWord */
+ 
+diff --git a/include/acpi/acbuffer.h b/include/acpi/acbuffer.h
+index 88cb477..d5ec6c8 100644
+--- a/include/acpi/acbuffer.h
++++ b/include/acpi/acbuffer.h
+@@ -111,7 +111,9 @@ struct acpi_gtm_info {
+ struct acpi_pld_info {
+ 	u8 revision;
+ 	u8 ignore_color;
+-	u32 color;
++	u8 red;
++	u8 green;
++	u8 blue;
+ 	u16 width;
+ 	u16 height;
+ 	u8 user_visible;
+@@ -155,8 +157,14 @@ struct acpi_pld_info {
+ #define ACPI_PLD_GET_IGNORE_COLOR(dword)        ACPI_GET_BITS (dword, 7, ACPI_1BIT_MASK)
+ #define ACPI_PLD_SET_IGNORE_COLOR(dword,value)  ACPI_SET_BITS (dword, 7, ACPI_1BIT_MASK, value)	/* Offset 7, Len 1 */
+ 
+-#define ACPI_PLD_GET_COLOR(dword)               ACPI_GET_BITS (dword, 8, ACPI_24BIT_MASK)
+-#define ACPI_PLD_SET_COLOR(dword,value)         ACPI_SET_BITS (dword, 8, ACPI_24BIT_MASK, value)	/* Offset 8, Len 24 */
++#define ACPI_PLD_GET_RED(dword)                 ACPI_GET_BITS (dword, 8, ACPI_8BIT_MASK)
++#define ACPI_PLD_SET_RED(dword,value)           ACPI_SET_BITS (dword, 8, ACPI_8BIT_MASK, value)	/* Offset 8, Len 8 */
 +
-+This binding describes a miphy device that is used to control PHY hardware
-+for SATA, PCIe or USB3.
++#define ACPI_PLD_GET_GREEN(dword)               ACPI_GET_BITS (dword, 16, ACPI_8BIT_MASK)
++#define ACPI_PLD_SET_GREEN(dword,value)         ACPI_SET_BITS (dword, 16, ACPI_8BIT_MASK, value)	/* Offset 16, Len 8 */
 +
-+Required properties (controller (parent) node):
-+- compatible	: Should be "st,miphy28lp-phy".
-+- st,syscfg	: Should be a phandle of the system configuration register group
-+		  which contain the SATA, PCIe or USB3 mode setting bits.
-+
-+Required nodes	:  A sub-node is required for each channel the controller
-+		   provides. Address range information including the usual
-+		   'reg' and 'reg-names' properties are used inside these
-+		   nodes to describe the controller's topology. These nodes
-+		   are translated by the driver's .xlate() function.
-+
-+Required properties (port (child) node):
-+- #phy-cells	: Should be 1 (See second example)
-+		  Cell after port phandle is device type from:
-+			- PHY_TYPE_SATA
-+			- PHY_TYPE_PCI
-+			- PHY_TYPE_USB3
-+- reg		: Address and length of the register set for the device.
-+- reg-names	: The names of the register addresses corresponding to the registers
-+		  filled in "reg". It can also contain the offset of the system configuration
-+		  registers used as glue-logic to setup the device for SATA/PCIe or USB3
-+		  devices.
-+- resets	: phandle to the parent reset controller.
-+- reset-names	: Associated name must be "miphy-sw-rst".
-+
-+Optional properties (port (child) node):
-+- st,osc-rdy		: to check the MIPHY0_OSC_RDY status in the glue-logic. This
-+			  is not available in all the MiPHY. For example, for STiH407, only the
-+			  MiPHY0 has this bit.
-+- st,osc-force-ext	: to select the external oscillator. This can change from
-+			  different MiPHY inside the same SoC.
-+- st,sata_gen		: to select which SATA_SPDMODE has to be set in the SATA system config
-+			  register.
-+- st,px_rx_pol_inv	: to invert polarity of RXn/RXp (respectively negative line and positive
-+			  line).
-+
-+example:
-+
-+		miphy28lp_phy: miphy28lp@9b22000 {
-+			compatible = "st,miphy28lp-phy";
-+			st,syscfg = <&syscfg_core>;
-+			#address-cells	= <1>;
-+			#size-cells	= <1>;
-+			ranges;
-+
-+			phy_port0: port@9b22000 {
-+				reg = <0x9b22000 0xff>,
-+				      <0x9b09000 0xff>,
-+				      <0x9b04000 0xff>,
-+				      <0x114 0x4>, /* sysctrl MiPHY cntrl */
-+				      <0x818 0x4>, /* sysctrl MiPHY status*/
-+				      <0xe0  0x4>, /* sysctrl PCIe */
-+				      <0xec  0x4>; /* sysctrl SATA */
-+				reg-names = "sata-up",
-+					    "pcie-up",
-+					    "pipew",
-+					    "miphy-ctrl-glue",
-+					    "miphy-status-glue",
-+					    "pcie-glue",
-+					    "sata-glue";
-+				#phy-cells = <1>;
-+				st,osc-rdy;
-+				reset-names = "miphy-sw-rst";
-+				resets = <&softreset STIH407_MIPHY0_SOFTRESET>;
-+			};
-+
-+			phy_port1: port@9b2a000 {
-+				reg = <0x9b2a000 0xff>,
-+				      <0x9b19000 0xff>,
-+				      <0x9b14000 0xff>,
-+				      <0x118 0x4>,
-+				      <0x81c 0x4>,
-+				      <0xe4  0x4>,
-+				      <0xf0  0x4>;
-+				reg-names = "sata-up",
-+					    "pcie-up",
-+					    "pipew",
-+					    "miphy-ctrl-glue",
-+					    "miphy-status-glue",
-+					    "pcie-glue",
-+					    "sata-glue";
-+				#phy-cells = <1>;
-+				st,osc-force-ext;
-+				reset-names = "miphy-sw-rst";
-+				resets = <&softreset STIH407_MIPHY1_SOFTRESET>;
-+			};
-+
-+			phy_port2: port@8f95000 {
-+				reg = <0x8f95000 0xff>,
-+				      <0x8f90000 0xff>,
-+				      <0x11c 0x4>,
-+				      <0x820 0x4>;
-+				reg-names = "pipew",
-+				    "usb3-up",
-+				    "miphy-ctrl-glue",
-+				    "miphy-status-glue";
-+				#phy-cells = <1>;
-+				reset-names = "miphy-sw-rst";
-+				resets = <&softreset STIH407_MIPHY2_SOFTRESET>;
-+			};
-+		};
-+
-+
-+Specifying phy control of devices
-+=================================
-+
-+Device nodes should specify the configuration required in their "phys"
-+property, containing a phandle to the miphy device node and an index
-+specifying which configuration to use, as described in phy-bindings.txt.
-+
-+example:
-+		sata0: sata@9b20000  {
-+			...
-+			phys		= <&phy_port0 PHY_TYPE_SATA>;
-+			...
-+		};
-+
-+Macro definitions for the supported miphy configuration can be found in:
-+
-+include/dt-bindings/phy/phy-miphy28lp.h
++#define ACPI_PLD_GET_BLUE(dword)                ACPI_GET_BITS (dword, 24, ACPI_8BIT_MASK)
++#define ACPI_PLD_SET_BLUE(dword,value)          ACPI_SET_BITS (dword, 24, ACPI_8BIT_MASK, value)	/* Offset 24, Len 8 */
+ 
+ /* Second 32-bit dword, bits 33:63 */
+ 
 -- 
-1.7.9.5
+1.7.10
 
