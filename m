@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751183AbaK0RFS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 12:05:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42067 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750887AbaK0RFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 12:05:16 -0500
-Date: Thu, 27 Nov 2014 18:05:13 +0100
-From: Petr Mladek <pmladek@suse.cz>
-To: Seth Jennings <sjenning@redhat.com>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Miroslav Benes <mbenes@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 3/3] samples: add sample live patching module
-Message-ID: <20141127170513.GA22608@pathway.suse.cz>
-References: <1416935709-404-1-git-send-email-sjenning@redhat.com>
- <1416935709-404-4-git-send-email-sjenning@redhat.com>
+	id S1751344AbaK0RF3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 12:05:29 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:54416 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895AbaK0RF0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 12:05:26 -0500
+Message-ID: <547759D3.3010906@gmail.com>
+Date: Thu, 27 Nov 2014 20:05:23 +0300
+From: Dmitry Tunin <hanipouspilot@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416935709-404-4-git-send-email-sjenning@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: platform-driver-x86@vger.kernel.org
+CC: linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+Subject: [PATCH] asus-nb-wmi: X200MA add wapf=4 quirk
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-11-25 11:15:09, Seth Jennings wrote:
-> Add a sample live patching module.
-> 
-> Signed-off-by: Seth Jennings <sjenning@redhat.com>
-> ---
->  MAINTAINERS                          |  1 +
->  samples/Kconfig                      |  7 +++
->  samples/livepatch/Makefile           |  1 +
->  samples/livepatch/livepatch-sample.c | 87 ++++++++++++++++++++++++++++++++++++
->  4 files changed, 96 insertions(+)
->  create mode 100644 samples/livepatch/Makefile
->  create mode 100644 samples/livepatch/livepatch-sample.c
+Wifi led does not follow wireless status, add quirk.
 
-[...] 
+Cc: stable@vger.kernel.org
+Signed-off-by: Dmitry Tunin <hanipouspilot@gmail.com>
+---
+  drivers/platform/x86/asus-nb-wmi.c | 9 +++++++++
+  1 file changed, 9 insertions(+)
 
-> diff --git a/samples/livepatch/Makefile b/samples/livepatch/Makefile
-> new file mode 100644
-> index 0000000..7f1cdc1
-> --- /dev/null
-> +++ b/samples/livepatch/Makefile
-> @@ -0,0 +1 @@
-> +obj-$(CONFIG_SAMPLE_LIVE_PATCHING) += livepatch-sample.o
-> diff --git a/samples/livepatch/livepatch-sample.c b/samples/livepatch/livepatch-sample.c
-> new file mode 100644
-> index 0000000..21f159d
-
-The Makefile is ignored because there is missing:
-
-
-diff --git a/samples/Makefile b/samples/Makefile
-index 1a60c62e2045..f00257bcc5a7 100644
---- a/samples/Makefile
-+++ b/samples/Makefile
-@@ -1,4 +1,4 @@
- # Makefile for Linux samples code
- 
--obj-$(CONFIG_SAMPLES)	+= kobject/ kprobes/ trace_events/ \
-+obj-$(CONFIG_SAMPLES)	+= kobject/ kprobes/ trace_events/ livepatch/ \
- 			   hw_breakpoint/ kfifo/ kdb/ hidraw/ rpmsg/ seccomp/
-
-
-Best Regards,
-Petr
+diff --git a/drivers/platform/x86/asus-nb-wmi.c b/drivers/platform/x86/asus-nb-wmi.c
+index c1a6cd6..9ecf466 100644
+--- a/drivers/platform/x86/asus-nb-wmi.c
++++ b/drivers/platform/x86/asus-nb-wmi.c
+@@ -101,6 +101,15 @@ static const struct dmi_system_id asus_quirks[] = {
+  	},
+  	{
+  		.callback = dmi_matched,
++		.ident = "ASUSTeK COMPUTER INC. X200MA",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "X200MA"),
++		},
++		.driver_data = &quirk_asus_wapf4,
++	},
++	{
++		.callback = dmi_matched,
+  		.ident = "ASUSTeK COMPUTER INC. X401U",
+  		.matches = {
+  			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
+-- 
+1.9.1
