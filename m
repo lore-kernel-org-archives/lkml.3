@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751070AbaK0Pa1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 10:30:27 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:55519 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736AbaK0Pa0 (ORCPT
+	id S1751374AbaK0PbW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 10:31:22 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:34450 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893AbaK0PbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 10:30:26 -0500
-From: Anjana Sasindran <anjanasasindran123@gmail.com>
-To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Anjana Sasindran <anjanasasindran123@gmail.com>
-Subject: [PATCH] staging:drivers:rtl8712:drv_types.h: Added blank line after declarations
-Date: Thu, 27 Nov 2014 21:00:03 +0530
-Message-Id: <1417102203-7093-1-git-send-email-anjanasasindran123@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 27 Nov 2014 10:31:21 -0500
+Message-ID: <1417102277.3512.109.camel@maggy.simpson.net>
+Subject: Re: [PATCH] sched/rt: don't try to balance rt_runtime when it is
+ futile
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Wanpeng Li <kernellwp@gmail.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 27 Nov 2014 08:31:17 -0700
+In-Reply-To: <5476EC32.9030005@gmail.com>
+References: <1400080115-12339-1-git-send-email-paul.gortmaker@windriver.com>
+	 <20140514154459.GE4570@linux.vnet.ibm.com>
+	 <20140514191100.GA24155@windriver.com>
+	 <1400122194.5175.18.camel@marge.simpson.net> <5476EC32.9030005@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-        This patch fixes the two checkpatch.pl warnings:
+On Thu, 2014-11-27 at 17:17 +0800, Wanpeng Li wrote:
 
-        WARNING:Missing a blank line after declaration
+> If the tick is still need to be handled if cpu is isolated w/o nohz full 
+> enabled?
 
-Signed-off-by: Anjana Sasindran <anjanasasindran123@gmail.com>
----
- drivers/staging/rtl8712/drv_types.h | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+"No" would lead to some awkward questions.
 
-diff --git a/drivers/staging/rtl8712/drv_types.h b/drivers/staging/rtl8712/drv_types.h
-index 3d0a98b..3d8abfa 100644
---- a/drivers/staging/rtl8712/drv_types.h
-+++ b/drivers/staging/rtl8712/drv_types.h
-@@ -1,4 +1,4 @@
--/******************************************************************************
-+0/******************************************************************************
-  *
-  * Copyright(c) 2007 - 2010 Realtek Corporation. All rights reserved.
-  *
-@@ -129,6 +129,7 @@ struct dvobj_priv {
- 	struct _adapter *padapter;
- 	u32 nr_endpoint;
- 	u8   ishighspeed;
-+
- 	uint(*inirp_init)(struct _adapter *adapter);
- 	uint(*inirp_deinit)(struct _adapter *adapter);
- 	struct usb_device *pusbdev;
-@@ -166,6 +167,7 @@ struct _adapter {
- 	 pid_t evtThread;
- 	struct task_struct *xmitThread;
- 	pid_t recvThread;
-+
- 	uint(*dvobj_init)(struct _adapter *adapter);
- 	void (*dvobj_deinit)(struct _adapter *adapter);
- 	struct net_device *pnetdev;
--- 
-1.9.1
+	-Mike
 
