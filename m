@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104AbaK0JCA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 04:02:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42128 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755016AbaK0Is3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:48:29 -0500
-From: lizf@kernel.org
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
-        Christoph Hellwig <hch@lst.de>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 50/91] libiscsi: fix potential buffer overrun in __iscsi_conn_send_pdu
-Date: Thu, 27 Nov 2014 16:42:33 +0800
-Message-Id: <1417077794-9299-50-git-send-email-lizf@kernel.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
-References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
+	id S1755411AbaK0JDJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 04:03:09 -0500
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:42861 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754886AbaK0JDB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 04:03:01 -0500
+Date: Thu, 27 Nov 2014 09:02:55 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, tglx@linutronix.de, kernel@stlinux.com,
+        jason@lakedaemon.net
+Subject: Re: [PATCH v2 2/8] irqchip: Supply new driver for STi based devices
+Message-ID: <20141127090255.GD4628@x1>
+References: <1416932705-16880-1-git-send-email-lee.jones@linaro.org>
+ <1416932705-16880-3-git-send-email-lee.jones@linaro.org>
+ <2433040.4NqTrOMmEE@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <2433040.4NqTrOMmEE@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Christie <michaelc@cs.wisc.edu>
+On Tue, 25 Nov 2014, Arnd Bergmann wrote:
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+> On Tuesday 25 November 2014 16:24:59 Lee Jones wrote:
+> 
+> > diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+> > index b21f12f..e502f15 100644
+> > --- a/drivers/irqchip/Kconfig
+> > +++ b/drivers/irqchip/Kconfig
+> > @@ -93,6 +93,13 @@ config RENESAS_IRQC
+> >  	bool
+> >  	select IRQ_DOMAIN
+> >  
+> > +config ST_IRQCHIP
+> > +	bool
+> > +	select REGMAP
+> > +	select MFD_SYSCON
+> > +	help
+> > +	  Enables SysCfg Controlled IRQs on STi based platforms.
+> > +
+> 
+> I'm confused by the purpose of this code. It's apparently a driver
+> in drivers/irqchip, the Kconfig symbol contains the string IRQCHIP,
+> yet it doesn't actually register an irq_chip.
+> 
+> Also, the name is a bit too generic, ST has lots of different irqchips,
+> and this apparently isn't even one of them ;-)
 
-------------------
+Hmm... now you're going to ask me to remember who I had the
+conversation with that alluded to this as the best location for this
+driver.  Unfortunately, I cannot.  Can you think of a better place to
+put it then?
 
-
-commit db9bfd64b14a3a8f1868d2164518fdeab1b26ad1 upstream.
-
-This patches fixes a potential buffer overrun in __iscsi_conn_send_pdu.
-This function is used by iscsi drivers and userspace to send iscsi PDUs/
-commands. For login commands, we have a set buffer size. For all other
-commands we do not support data buffers.
-
-This was reported by Dan Carpenter here:
-http://www.spinics.net/lists/linux-scsi/msg66838.html
-
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
-Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Zefan Li <lizefan@huawei.com>
----
- drivers/scsi/libiscsi.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
-index 82c3fd4..1243d2f 100644
---- a/drivers/scsi/libiscsi.c
-+++ b/drivers/scsi/libiscsi.c
-@@ -718,11 +718,21 @@ __iscsi_conn_send_pdu(struct iscsi_conn *conn, struct iscsi_hdr *hdr,
- 			return NULL;
- 		}
- 
-+		if (data_size > ISCSI_DEF_MAX_RECV_SEG_LEN) {
-+			iscsi_conn_printk(KERN_ERR, conn, "Invalid buffer len of %u for login task. Max len is %u\n", data_size, ISCSI_DEF_MAX_RECV_SEG_LEN);
-+			return NULL;
-+		}
-+
- 		task = conn->login_task;
- 	} else {
- 		if (session->state != ISCSI_STATE_LOGGED_IN)
- 			return NULL;
- 
-+		if (data_size != 0) {
-+			iscsi_conn_printk(KERN_ERR, conn, "Can not send data buffer of len %u for op 0x%x\n", data_size, opcode);
-+			return NULL;
-+		}
-+
- 		BUG_ON(conn->c_stage == ISCSI_CONN_INITIAL_STAGE);
- 		BUG_ON(conn->c_stage == ISCSI_CONN_STOPPED);
- 
 -- 
-1.9.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
