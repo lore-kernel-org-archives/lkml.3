@@ -1,57 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587AbaK0HAr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 02:00:47 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:54916 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751177AbaK0HAq (ORCPT
+	id S1752869AbaK0HCB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 02:02:01 -0500
+Received: from regular1.263xmail.com ([211.150.99.137]:38729 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751229AbaK0HB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 02:00:46 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] fat: Fix oops on corrupted vfat fs
-References: <873896x9kf.fsf@devron.myhome.or.jp>
-	<20141126142805.396bda184367db070f6321d5@linux-foundation.org>
-Date: Thu, 27 Nov 2014 16:00:41 +0900
-In-Reply-To: <20141126142805.396bda184367db070f6321d5@linux-foundation.org>
-	(Andrew Morton's message of "Wed, 26 Nov 2014 14:28:05 -0800")
-Message-ID: <87r3wpw2jq.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/25.0.50 (gnu/linux)
+	Thu, 27 Nov 2014 02:01:58 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <9de5d695e2f30b510dff84f2553a15c1>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <5476CC59.6080607@rock-chips.com>
+Date: Thu, 27 Nov 2014 15:01:45 +0800
+From: Mark yao <mark.yao@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>
+CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
+        olof@lixom.net, djkurtz@chromium.org, cf@rock-chips.com,
+        xxm@rock-chips.com, huangtao@rock-chips.com, kever.yang@rock-chips.com,
+        yxj@rock-chips.com, xw@rock-chips.com,
+        Mark Yao <mark.yao@rock-chips.com>
+Subject: [GIT PULL] core drm support for Rockchip SoCs v14
+References: <1416447994-9921-1-git-send-email-mark.yao@rock-chips.com>
+In-Reply-To: <1416447994-9921-1-git-send-email-mark.yao@rock-chips.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
+Hi Dave
 
-> On Thu, 27 Nov 2014 00:31:28 +0900 OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> wrote:
->
->> a) don't bother with ->d_time for positives - we only check it for negatives
->> anyway.
->> b) make sure to set it at unlink and rmdir time - at *that* point soon-to-be
->> negative dentry matches then-current directory contents
->> c) don't go into renaming of old alias in vfat_lookup() unless it has
->> the same parent (which it will, unless we are seeing corrupted image)
->> 
->> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
->> Cc: <stable@vger.kernel.org> # 3.17.x
->> [Make change minimum, don't call d_move() for dir]
->> Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
-> It's unclear who did the "[Make change minimum.." alteration.
->
-> I do it this way:
-> [hirofumi@mail.parknet.co.jp: make change minimum, don't call d_move() for dir]
+     this pull request is for rockchip drm v14, based on Joerg's iommu 
+arm/rockchip branch.
 
-I see. OK, I will also use your format next time.
+The following changes since commit 656d7077d8ffd1c2492d4a0a354367ab2e545059:
 
-> Also, who was the primary author of this patch?  It *looks* like it was
-> Al, unsure.  If it was indeed Al then this can be communicated by
-> putting his From: line at the very top of the changelog body.
+   dt-bindings: iommu: Add documentation for rockchip iommu (2014-11-03 
+17:29:09 +0100)
 
-Ah, sorry. The patch is written by Al, and I was forgetting to add "From:".
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+are available in the git repository at:
+
+   https://github.com/markyzq/kernel-drm-rockchip.git drm_iommu
+
+for you to fetch changes up to aab18af3a93353bc43897b716fd7e12d5998b9bc:
+
+   dt-bindings: video: Add documentation for rockchip vop (2014-11-27 
+13:38:17 +0800)
+
+----------------------------------------------------------------
+Mark Yao (3):
+       drm: rockchip: Add basic drm driver
+       dt-bindings: video: Add for rockchip display subsytem
+       dt-bindings: video: Add documentation for rockchip vop
+
+  .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
+  .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
+  drivers/gpu/drm/Kconfig                            |    2 +
+  drivers/gpu/drm/Makefile                           |    1 +
+  drivers/gpu/drm/rockchip/Kconfig                   |   17 +
+  drivers/gpu/drm/rockchip/Makefile                  |    8 +
+  drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  483 +++++++
+  drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   55 +
+  drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  200 +++
+  drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
+  drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  210 +++
+  drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   21 +
+  drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  294 ++++
+  drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   54 +
+  drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1459 
+++++++++++++++++++++
+  drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  201 +++
+  16 files changed, 3110 insertions(+)
+  create mode 100644 
+Documentation/devicetree/bindings/video/rockchip-drm.txt
+  create mode 100644 
+Documentation/devicetree/bindings/video/rockchip-vop.txt
+  create mode 100644 drivers/gpu/drm/rockchip/Kconfig
+  create mode 100644 drivers/gpu/drm/rockchip/Makefile
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.c
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.h
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.c
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.h
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.c
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.h
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.c
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.h
+
+
