@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754470AbaK0Iqc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 03:46:32 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41220 "EHLO mail.kernel.org"
+	id S1754548AbaK0Iqk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 03:46:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41293 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754387AbaK0Iq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:46:29 -0500
+	id S1754505AbaK0Iqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:46:38 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, James Ralston <james.d.ralston@intel.com>,
-        Tejun Heo <tj@kernel.org>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 14/91] ahci: Add Device IDs for Intel 9 Series PCH
-Date: Thu, 27 Nov 2014 16:41:57 +0800
-Message-Id: <1417077794-9299-14-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Johan Hovold <johan@kernel.org>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 17/91] USB: sierra: avoid CDC class functions on "68A3" devices
+Date: Thu, 27 Nov 2014 16:42:00 +0800
+Message-Id: <1417077794-9299-17-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
 References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: James Ralston <james.d.ralston@intel.com>
+From: Bjørn Mork <bjorn@mork.no>
 
 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 1b071a0947dbce5c184c12262e02540fbc493457 upstream.
+commit 049255f51644c1105775af228396d187402a5934 upstream.
 
-This patch adds the AHCI mode SATA Device IDs for the Intel 9 Series PCH.
+Sierra Wireless Direct IP devices using the 68A3 product ID
+can be configured for modes including a CDC ECM class function.
+The known example uses interface numbers 12 and 13 for the ECM
+control and data interfaces respectively, consistent with CDC
+MBIM function interface numbering on other Sierra devices.
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+It seems cleaner to restrict this driver to the ff/ff/ff
+vendor specific interfaces rather than increasing the already
+long interface number blacklist.  This should be more future
+proof if Sierra adds more class functions using interface
+numbers not yet in the blacklist.
+
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Johan Hovold <johan@kernel.org>
+[lizf: Backported to 3.4: adjust context]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/ata/ahci.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/serial/sierra.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 0a450eb..009a097 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -305,6 +305,14 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	{ PCI_VDEVICE(INTEL, 0x9c85), board_ahci }, /* Wildcat Point-LP RAID */
- 	{ PCI_VDEVICE(INTEL, 0x9c87), board_ahci }, /* Wildcat Point-LP RAID */
- 	{ PCI_VDEVICE(INTEL, 0x9c8f), board_ahci }, /* Wildcat Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8c82), board_ahci }, /* 9 Series AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x8c83), board_ahci }, /* 9 Series AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x8c84), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8c85), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8c86), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
+diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
+index bd79d68..64df565 100644
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -296,14 +296,16 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x1199, 0x68A2),   /* Sierra Wireless MC77xx in QMI mode */
+ 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
+ 	},
+-	{ USB_DEVICE(0x1199, 0x68A3), 	/* Sierra Wireless Direct IP modems */
++	/* Sierra Wireless Direct IP modems */
++	{ USB_DEVICE_AND_INTERFACE_INFO(0x1199, 0x68A3, 0xFF, 0xFF, 0xFF),
+ 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
+ 	},
+ 	/* AT&T Direct IP LTE modems */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x0F3D, 0x68AA, 0xFF, 0xFF, 0xFF),
+ 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
+ 	},
+-	{ USB_DEVICE(0x0f3d, 0x68A3), 	/* Airprime/Sierra Wireless Direct IP modems */
++	/* Airprime/Sierra Wireless Direct IP modems */
++	{ USB_DEVICE_AND_INTERFACE_INFO(0x0F3D, 0x68A3, 0xFF, 0xFF, 0xFF),
+ 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
+ 	},
  
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 -- 
 1.9.1
 
