@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaK0TFy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 14:05:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44627 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750888AbaK0TEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 14:04:02 -0500
-From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        Gleb Natapov <gleb@kernel.org>, Nadav Amit <namit@cs.technion.ac.il>
-Subject: [PATCH 1/4] KVM: x86: deliver phys lowest-prio
-Date: Thu, 27 Nov 2014 20:03:11 +0100
-Message-Id: <1417114994-25235-2-git-send-email-rkrcmar@redhat.com>
-In-Reply-To: <1417114994-25235-1-git-send-email-rkrcmar@redhat.com>
-References: <1417114994-25235-1-git-send-email-rkrcmar@redhat.com>
+	id S1750966AbaK0TRS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 14:17:18 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:56980 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816AbaK0TRR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 14:17:17 -0500
 MIME-Version: 1.0
+In-Reply-To: <20141126225745.GA30346@redhat.com>
+References: <20141114213124.GB3344@redhat.com>
+	<CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
+	<20141115213405.GA31971@redhat.com>
+	<20141116014006.GA5016@redhat.com>
+	<CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
+	<20141126002501.GA11752@redhat.com>
+	<CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>
+	<20141126024032.GA13246@redhat.com>
+	<20141126225745.GA30346@redhat.com>
+Date: Thu, 27 Nov 2014 11:17:16 -0800
+X-Google-Sender-Auth: VnvgpLxKhVq6MefR1oehwmJ19Bo
+Message-ID: <CA+55aFz-JUX6CU-aO+cwLHYtH7BA+dgyUnEGoy8T4S62gEDFpA@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Don Zickus <dzickus@redhat.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Physical mode can't address more than one APIC, but lowest-prio is
-allowed, so we just reuse our paths.
+On Wed, Nov 26, 2014 at 2:57 PM, Dave Jones <davej@redhat.com> wrote:
+>
+> So 3.17 also has this problem.
+> Good news I guess in that it's not a regression, but damn I really didn't
+> want to have to go digging through the mists of time to find the last 'good' point.
 
-SDM 10.6.2.1 Physical Destination:
-  Also, for any non-broadcast IPI or I/O subsystem initiated interrupt
-  with lowest priority delivery mode, software must ensure that APICs
-  defined in the interrupt address are present and enabled to receive
-  interrupts.
+So I'm looking at the watchdog code, and it seems racy wrt parking and startup.
 
-We could warn on top of that.
+In particular, it sets the high priority *after* starting the hrtimer,
+and it goes back to SCHED_NORMAL *before* canceling the timer.
 
-Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
----
- arch/x86/kvm/lapic.c | 2 --
- 1 file changed, 2 deletions(-)
+Which seems completely ass-backwards. And the smp_hotplug_thread stuff
+explicitly enables preemption around the setup/cleanup/part/unpark
+operations.
 
-diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-index e0e5642..e8ad09d 100644
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -691,8 +691,6 @@ bool kvm_irq_delivery_to_apic_fast(struct kvm *kvm, struct kvm_lapic *src,
- 		goto out;
- 
- 	if (irq->dest_mode == 0) { /* physical mode */
--		if (irq->delivery_mode == APIC_DM_LOWEST)
--			goto out;
- 		dst = &map->phys_map[irq->dest_id & 0xff];
- 	} else {
- 		u32 mda = irq->dest_id << (32 - map->ldr_bits);
--- 
-2.1.0
+However, that would be an issue only if trinity might be doing things
+that enable and disable the watchdog. And doing so under insane loads.
+Even then it seems unlikely.
 
+The insane loads you have. But even then, could a load average of 169
+possibly delay running a non-RT process for 22 seconds? Doubtful.
+
+But just in case: do you do cpu hotplug events (that will disable and
+re-enable the watchdog process?).  Anything else that will part/unpark
+the hotplug thread?
+
+Quite frankly, I'm just grasping for straws here, but a lot of the
+watchdog traces really have seemed spurious...
+
+                   Linus
