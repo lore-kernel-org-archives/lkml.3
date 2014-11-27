@@ -1,79 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274AbaK0Afk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 19:35:40 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:41108 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204AbaK0Afj (ORCPT
+	id S1753264AbaK0Ajh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 19:39:37 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:45886 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699AbaK0Ajf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 19:35:39 -0500
-Date: Thu, 27 Nov 2014 00:35:23 +0000
+	Wed, 26 Nov 2014 19:39:35 -0500
+Date: Thu, 27 Nov 2014 00:39:19 +0000
 From: Luis de Bethencourt <luis@debethencourt.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, eunb.song@samsung.com, gulsah.1004@gmail.com,
-        paul.gortmaker@windriver.com, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] staging: octeon: Fix checkpatch warning
-Message-ID: <20141127003523.GA3249@biggie>
-References: <20141125132614.GA23857@biggie>
- <20141126214523.GA10037@kroah.com>
+To: Joe Perches <joe@perches.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        jarod <jarod@wilsonet.com>, "m.chehab" <m.chehab@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "mahfouz.saif.elyazal" <mahfouz.saif.elyazal@gmail.com>,
+        "dan.carpenter" <dan.carpenter@oracle.com>,
+        "tuomas.tynkkynen" <tuomas.tynkkynen@iki.fi>,
+        "gulsah.1004" <gulsah.1004@gmail.com>,
+        linux-media <linux-media@vger.kernel.org>, devel@driverdev.osuosl.org
+Subject: Re: [PATCH] staging: media: lirc: lirc_zilog.c: fix quoted strings
+ split across lines
+Message-ID: <20141127003919.GB3249@biggie>
+References: <20141125201905.GA10900@biggie>
+ <1416947244.8358.12.camel@perches.com>
+ <20141125204056.GA12162@biggie>
+ <1416949207.8358.14.camel@perches.com>
+ <20141125211428.GA12346@biggie>
+ <1416966580.8358.17.camel@perches.com>
+ <CAPA4HGVJ_gJacLtgtQSJgSjgks9_7aGSuy2+aLOtkz01+Ng7CQ@mail.gmail.com>
+ <1417017955.19695.3.camel@perches.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141126214523.GA10037@kroah.com>
+In-Reply-To: <1417017955.19695.3.camel@perches.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 01:45:23PM -0800, Greg KH wrote:
-> On Tue, Nov 25, 2014 at 01:26:14PM +0000, Luis de Bethencourt wrote:
-> > This patch fixes the checkpatch.pl warnings:
-> > 
-> > WARNING: line over 80 characters
-> > +                       int cores_in_use = core_state.baseline_cores - atomic_read(&core_state.available_cores);
-> > 
-> > WARNING: line over 80 characters
-> > +                       skb->data = skb->head + work->packet_ptr.s.addr - cvmx_ptr_to_phys(skb->head);
-> > 
-> > Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
-> > ---
-> >  drivers/staging/octeon/ethernet-rx.c | 6 ++++--
-> >  1 file changed, 4 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
-> > index 44e372f..bd83f55 100644
-> > --- a/drivers/staging/octeon/ethernet-rx.c
-> > +++ b/drivers/staging/octeon/ethernet-rx.c
-> > @@ -295,7 +295,8 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
-> >  			 */
-> >  			union cvmx_pow_wq_int_cntx counts;
-> >  			int backlog;
-> > -			int cores_in_use = core_state.baseline_cores - atomic_read(&core_state.available_cores);
-> > +			int cores_in_use = core_state.baseline_cores -
-> > +				atomic_read(&core_state.available_cores);
-> >  			counts.u64 = cvmx_read_csr(CVMX_POW_WQ_INT_CNTX(pow_receive_group));
-> >  			backlog = counts.s.iq_cnt + counts.s.ds_cnt;
-> >  			if (backlog > budget * cores_in_use && napi != NULL)
-> > @@ -324,7 +325,8 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
-> >  		 * buffer.
-> >  		 */
-> >  		if (likely(skb_in_hw)) {
-> > -			skb->data = skb->head + work->packet_ptr.s.addr - cvmx_ptr_to_phys(skb->head);
-> > +			skb->data = skb->head + work->packet_ptr.s.addr -
-> > +				cvmx_ptr_to_phys(skb->head);
-> >  			prefetch(skb->data);
-> >  			skb->len = work->len;
-> >  			skb_set_tail_pointer(skb, skb->len);
-> > -- 
-> > 2.1.3
+On Wed, Nov 26, 2014 at 08:05:55AM -0800, Joe Perches wrote:
+> On Wed, 2014-11-26 at 15:42 +0000, Luis de Bethencourt wrote:
+> > On 26 November 2014 at 01:49, Joe Perches <joe@perches.com> wrote:
+> []
+> > > There is a script I posted a while back that
+> > > groups various checkpatch "types" together and
+> > > makes it a bit easier to do cleanup style
+> > > patches.
+> > >
+> > > https://lkml.org/lkml/2014/7/11/794
+> > That is useful! I just run it on staging/octeon/ and it wrote two patches.
+> > Will submit them in a minute.
 > 
-> No longer applies to my tree :(
+> Please make sure and write better commit messages
+> than the script produces.
+> 
 
-I'm confused.
+Will do :)
 
-I just tried applying it to what I think is your tree is and it worked.
-https://git.kernel.org/cgit/linux/kernel/git/gregkh/staging.git/log/?h=staging-next
+> > > Using checkpatch to get familiar with kernel
+> > > development is fine and all, but fixing actual
+> > > defects and submitting new code is way more
+> > > useful.
+> []
+> > I agree. I was just using checkpatch to learn about the development process.
+> > How to create patches, submit patches, follow review, and such. Better to
+> > do it
+> > with small changes like this first.
+> 
+> That's a good way to start.
+> 
+> > Which makes me wonder. Is my patch accepted? Will it be merged? I can do the
+> > proposed logging macro additions in a few days. Not sure yet how the final
+> > step of the process when patches get accepted and merged works.
+> 
+> You will generally get an email from a maintainer
+> when patches are accepted/rejected or you get
+> feedback asking for various changes.
+> 
+> Greg KH does that for drivers/staging but not for
+> drivers/staging/media.  Mauro Carvalho Chehab does.
+> 
+> These emails are not immediate.  It can take 2 or 3
+> weeks for a response.  Sometimes longer, sometimes
+> shorter, sometimes no response ever comes.
+>
 
-Do I have this wrong?
+I understand. Busy people.
+ 
+> After a month or so, if you get no response, maybe
+> the maintainer never saw it.  You should maybe
+> expand the cc: list for the email.
+> 
+> When the patch is more than a trivial style cleanup,
+> Andrew Morton generally picks up orphan patches.
+> 
+> For some subsystems, there are "tracking" mechanisms
+> like patchwork:
+> 
+> For instance, netdev (net/ and drivers/net/) uses:
+> http://patchwork.ozlabs.org/project/netdev/list/
+> and David Miller, the primary networking maintainer
+> is very prompt about updating it.
+> 
+> There's this list of patchwork entries, but maintainer
+> activity of these lists vary:
+> 
+> https://patchwork.kernel.org/
+> 
 
-Sorry :(
+Very interesting.
+
+I will follow the process through and learn on the way.
+
+Thanks Joe!
