@@ -1,66 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751006AbaK0XP4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 18:15:56 -0500
-Received: from mout.kundenserver.de ([212.227.17.10]:54049 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729AbaK0XPy (ORCPT
+	id S1751270AbaK0XQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 18:16:59 -0500
+Received: from www.linutronix.de ([62.245.132.108]:59228 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750938AbaK0XQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 18:15:54 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Kevin Cernekee <cernekee@gmail.com>, grant.likely@linaro.org,
-        kbuild-all@01.org, gregkh@linuxfoundation.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hirokazu Takata <takata@linux-m32r.org>
-Subject: Re: [PATCH V2 2/2] m32r: Add missing big-endian I/O accessors
-Date: Fri, 28 Nov 2014 00:15:08 +0100
-Message-ID: <3737870.23qKxazWvK@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141127222034.GB16647@wfg-t540p.sh.intel.com>
-References: <1417112193-14400-1-git-send-email-cernekee@gmail.com> <1417112193-14400-2-git-send-email-cernekee@gmail.com> <20141127222034.GB16647@wfg-t540p.sh.intel.com>
+	Thu, 27 Nov 2014 18:16:58 -0500
+Date: Fri, 28 Nov 2014 00:16:56 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Xunlei Pang <pang.xunlei@linaro.org>
+cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Sven Schnelle <svens@stackframe.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Subject: Re: [RFC PATCH 3/4] rtc/lib: Provide interfaces to map between 32bit
+ hardware and 64bit time
+In-Reply-To: <1417089760-26848-4-git-send-email-pang.xunlei@linaro.org>
+Message-ID: <alpine.DEB.2.11.1411280005500.3961@nanos>
+References: <1417089760-26848-1-git-send-email-pang.xunlei@linaro.org> <1417089760-26848-4-git-send-email-pang.xunlei@linaro.org>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:fnO+R3Rn/d7owJUiuojt5og8mWYbsKonpcrn0qgmJBC
- DU3LWgeKWAb+k2XVPcMEYoamM3Vk7HaD6TDbYqZHJf0NIewVEm
- k6BDHGFr9FScTm1c2ZR1GTS+RLV8wyDGmRBLvZnuDM68ERazQB
- pc28GZ8wfr270G9Ny8YiwvOt4ZVsorr/ljNxGs//3AT4hW/+Us
- cUOqC/jvpuRdGmvo5KzKQSi2RQC0SWBwqSpb1rNBfLwl/wZcJj
- xJ7jDvdiqVOGuba/1MZTcXddYO4lANE0yC9FhRQx0/ADv6VcP+
- aP0RqOsS2yhjZWIvloFGf+/xx/4esaoON/Uf7WRPlH1KNSh1L1
- tXwPmQ0H1tII0MFL07gI=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 November 2014 14:20:34 Fengguang Wu wrote:
-> Add CC to Hirokazu.
-> 
-> > Side note for Fengguang: both with and without my patches, m32r modules
-> > fail to link using the make.cross script on Ubuntu 14.10:
->  
-> Yes, the memory_start/memory_end link errors are really old m32r
-> specific errors. The config file that can trigger this error is
-> m32r-m32104ut_defconfig.
+On Thu, 27 Nov 2014, Xunlei Pang wrote:
+> +/* Rtc epoch year, can be overrided by command line */
+> +static unsigned int rtc_epoch = 1970;
+> +time64_t rtc_epoch_secs_since_1970;
+> +
+> +static int __init
+> +set_rtc_epoch(char *str)
 
-These should be trivial to fix:
+One line please
 
-diff --git a/arch/m32r/kernel/setup.c b/arch/m32r/kernel/setup.c
-index 0392112a5d70..a5ecef7188ba 100644
---- a/arch/m32r/kernel/setup.c
-+++ b/arch/m32r/kernel/setup.c
-@@ -81,7 +81,10 @@ static struct resource code_resource = {
- };
- 
- unsigned long memory_start;
-+EXPORT_SYMBOL(memory_start);
-+
- unsigned long memory_end;
-+EXPORT_SYMBOL(memory_end);
- 
- void __init setup_arch(char **);
- int get_cpuinfo(char *);
+> +{
+> +	unsigned int epoch;
+> +
+> +	if (kstrtou32(str, 0, &epoch) != 0) {
+> +		printk(KERN_WARNING "Invalid setup epoch %u!\n", epoch);
 
-	Arnd
+Sure that makes a lot of sense to print epoch if the string conversion
+failed. epoch is going to be either uninitialized stack value or 0
+depending on the kstrtou32 implementation.
+
+> +	if (rtc_epoch < 1970)
+> +		printk(KERN_WARNING "Epoch %u is smaller than 1970!\n", epoch);
+
+  pr_warn() ....
+
++__setup("rtc_epoch=", set_rtc_epoch);
+
+Not documented in Documentation/kernel-parameters.txt ...
+
+>  /*
+> + * Convert seconds since rtc epoch to seconds since Unix epoch.
+> + */
+> +time64_t rtc_hw32_to_time64(u32 hwtime)
+> +{
+> +	return (rtc_epoch_secs_since_1970 + hwtime);
+> +}
+> +EXPORT_SYMBOL_GPL(rtc_hw32_to_time64);
+
+So we need a exported function to add a global variable and a function
+argument? inline ?
+
+> +/*
+> + * Convert seconds since Unix epoch to seconds since rtc epoch.
+> + */
+> +int rtc_time64_to_hw32(time64_t time, u32 *hwtime)
+> +{
+> +	/* time must be after rtc epoch */
+> +	if (time < rtc_epoch_secs_since_1970)
+> +		return -EINVAL;
+> +
+> +	/* rtc epoch may be too small? */
+> +	if (time - rtc_epoch_secs_since_1970 > UINT_MAX)
+> +		return -EOVERFLOW;
+
+And what's the caller supposed to do with that information?
+
+> +	*hwtime = time - rtc_epoch_secs_since_1970;
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(rtc_time64_to_hw32);
+
+How is that going to be useful w/o a mechanism to adjust the epoch
+offset at runtime by any means?
+
+Thanks,
+
+	tglx
+
+
