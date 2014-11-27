@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751262AbaK0PHP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 10:07:15 -0500
-Received: from www.linutronix.de ([62.245.132.108]:57280 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050AbaK0PHN (ORCPT
+	id S1750906AbaK0PLI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 10:11:08 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:24227 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781AbaK0PLG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 10:07:13 -0500
-Date: Thu, 27 Nov 2014 16:07:02 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-cc: David Hildenbrand <dahi@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
-        paulus@samba.org, akpm@linux-foundation.org, schwidefsky@de.ibm.com,
-        mingo@kernel.org
-Subject: Re: [RFC 0/2] Reenable might_sleep() checks for might_fault() when
- atomic
-In-Reply-To: <20141127120441.GB4390@osiris>
-Message-ID: <alpine.DEB.2.11.1411271602320.3961@nanos>
-References: <20141126151729.GB9612@redhat.com> <20141126152334.GA9648@redhat.com> <20141126163207.63810fcb@thinkpad-w530> <20141126154717.GB10568@redhat.com> <5475FAB1.1000802@de.ibm.com> <20141126163216.GB10850@redhat.com> <547604FC.4030300@de.ibm.com>
- <20141126170447.GC11202@redhat.com> <20141127070919.GA4390@osiris> <20141127090301.3ddc3077@thinkpad-w530> <20141127120441.GB4390@osiris>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 27 Nov 2014 10:11:06 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-6c-54773f0691f9
+Message-id: <1417101060.1805.21.camel@samsung.com>
+Subject: Re: [RFC] lsm: namespace hooks
+From: Lukasz Pawelczyk <l.pawelczyk@samsung.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        James Morris <james.l.morris@oracle.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Paul Moore <pmoore@redhat.com>,
+        Kees Cook <keescook@chromium.org>, Miklos Szeredi <mszeredi@suse.cz>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Nikolay Aleksandrov <nikolay@redhat.com>,
+        Mark Rustad <mark.d.rustad@intel.com>,
+        David Howells <dhowells@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Juri Lelli <juri.lelli@gmail.com>,
+        Daeseok Youn <daeseok.youn@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Dario Faggioli <raistlin@linux.it>, Alex Thorlton <athorlton@sgi.com>,
+        Matthew Dempsky <mdempsky@chromium.org>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "open list:ABI/API" <linux-api@vger.kernel.org>,
+        linux-security-module@vger.kernel.org,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Lukasz Pawelczyk <havner@gmail.com>
+Date: Thu, 27 Nov 2014 16:11:00 +0100
+In-reply-to: <54773CE7.5040303@nod.at>
+References: <1417096866-25563-1-git-send-email-l.pawelczyk@samsung.com>
+ <1417096866-25563-2-git-send-email-l.pawelczyk@samsung.com>
+ <CAFLxGvzw4N4QFv5Vg1dDf9pdRe+Szbevmqn5QNwjLHN4xrokCg@mail.gmail.com>
+ <1417098928.1805.15.camel@samsung.com> <54773757.8090905@nod.at>
+ <1417099455.1805.17.camel@samsung.com> <54773CE7.5040303@nod.at>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.12.5 (3.12.5-1.fc20)
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA02SW0ySYRjH9/J9fnxQbJ9k+s1cJZvUXJq2Lt5cWd3Ue1mN1TpsisrUJmoQ
+	HrpCF8xInWZlkalT02wupnjAQyqiaVpKeMBseIhlMcXD1DxgmYgX3v2f5/n9n/9z8ZAY14p7
+	k7Hx90WSeGEcj2Djff+6hwKI88mCIP0CBxZoqgg4a87H4Hj9BgGrym0E1C9M4HAu3YHDrfqH
+	TLg1cwJmW6/BHu0EgOuVTQB+fiyG2tUMAg42FRBwIfMHAQvsdgIO52uY0NRezIAmhwWDlUvf
+	cVjXpgCwO6udAZdGNpjQbKnFYF7jLIDKsmoG7E/7hcMBYz8TDta9xODA3263C4eRWp5FoFfy
+	rzhqVFuYqLhGhkaabyLtW39U2mJjoJ4XDhwpK1pxlDdaAdC3wnto8ecYjj4VrhNovnWYQF1t
+	JQSymG2MKx632GejRHGxSSLJydBwdsxUphxL7MVT9Cu5QA4MmAqwSJo6TU/PtzBc2pM2jmsI
+	FWCTXOoNoPWbpZir2AL0So0COCkOdYoeq7Dv6APUMdpQ5GA6NUEF0avGDztbPbb7c7ZnO5sw
+	6jWLNumytyGSxCk/WjMd4WRYFJ9+mla0m2Zi0AuTDsI5wLbNTwpLds/zp+dV67gr2J1eyxvH
+	XcwRWltlx3IApd5jUe/B1HuwYoC9AwdFsshEaUS0ODhQKhRLZfHRgZEJ4hrgeoxlHSj9GNIB
+	KBLw9nPCrUkCrpswSZoq7gA0ifE8OOnnkgVcTpQw9YFIkhAmkcWJpB2AQbK85eCqzstgaAs7
+	5P3IPtbH+51VpqB0iuNfrJOhE+G3Yzq7fOzK93cFm3L3sqBL3isXvVR1tTlmQbVvWe/avj+9
+	Rn0xq/PGKrUYsNTF1ATeUR0dTGZmRJWGXG9UKRv4KVZ0xrNhdHm6OS2nKZsfJvbjTz3X+8z4
+	WgW55QWXw4a8NDxcGiMM9sckUuF/TZH+sfYCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Nov 2014, Heiko Carstens wrote:
-> On Thu, Nov 27, 2014 at 09:03:01AM +0100, David Hildenbrand wrote:
-> > > Code like
-> > > 	spin_lock(&lock);
-> > > 	if (copy_to_user(...))
-> > > 		rc = ...
-> > > 	spin_unlock(&lock);
-> > > really *should* generate warnings like it did before.
-> > > 
-> > > And *only* code like
-> > > 	spin_lock(&lock);
-> > 
-> > Is only code like this valid or also with the spin_lock() dropped?
-> > (e.g. the access in patch1 if I remember correctly)
-> > 
-> > So should page_fault_disable() increment the pagefault counter and the preempt
-> > counter or only the first one?
+On czw, 2014-11-27 at 16:01 +0100, Richard Weinberger wrote:
+> Am 27.11.2014 um 15:44 schrieb Lukasz Pawelczyk:
+> > True, the last one is 0x80000000. I did not notice that. Thanks for
+> > pointing out.
 > 
-> Given that a sequence like
+> Isn't this CLONE_IO?
+
+Yes, I was merely noticing out loud that it's the last bit of 32bit.
+
+After close look though the 0x00001000 appears to be unused
+
+> > Any suggestion on what can be done here? New syscal with flags2?
 > 
-> 	page_fault_disable();
->  	if (copy_to_user(...))
->  		rc = ...
->  	page_fault_enable();
-> 
-> is correct code right now I think page_fault_disable() should increase both.
-> No need for surprising semantic changes.
+> I'm not sure. But a new syscall would be a candidate.
 
-OTOH, there is no reason why we need to disable preemption over that
-page_fault_disabled() region. There are code pathes which really do
-not require to disable preemption for that.
 
-We have that seperated in preempt-rt for obvious reasons and IIRC
-Peter Zijlstra tried to distangle it in mainline some time ago. I
-forgot why that never got merged.
+-- 
+Lukasz Pawelczyk
+Samsung R&D Institute Poland
+Samsung Electronics
 
-We tie way too much stuff on the preemption count already, which is a
-mightmare because we have no clear distinction of protection
-scopes. 
 
-Thanks,
 
-	tglx
