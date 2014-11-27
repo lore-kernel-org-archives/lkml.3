@@ -1,103 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515AbaK0OyZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 09:54:25 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:42165 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750957AbaK0OyY (ORCPT
+	id S1751195AbaK0Ozu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 09:55:50 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:49868 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784AbaK0Ozs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 09:54:24 -0500
-X-Greylist: delayed 1023 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Nov 2014 09:54:23 EST
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Olof Johansson <olof@lixom.net>
-Cc: Mark Rutland <Mark.Rutland@arm.com>, Rob Herring <robherring2@gmail.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Will Deacon <will.deacon@arm.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] arm64: ARM: Fix the Generic Timers interrupt active level description
-Date: Thu, 27 Nov 2014 14:36:45 +0000
-Message-Id: <1417099005-18638-1-git-send-email-Liviu.Dudau@arm.com>
-X-Mailer: git-send-email 2.1.3
+	Thu, 27 Nov 2014 09:55:48 -0500
+Date: Thu, 27 Nov 2014 14:55:42 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, linux-spi@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 2/4] spi: st: Provide Device Tree binding documentation
+Message-ID: <20141127145542.GH4628@x1>
+References: <1417088636-11994-1-git-send-email-lee.jones@linaro.org>
+ <1417088636-11994-3-git-send-email-lee.jones@linaro.org>
+ <20141127130053.GW7712@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141127130053.GW7712@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Cortex-A5x TRM states in paragraph "9.2 Generic Timer functional
-description" that generic timers provide an active-LOW interrupt
-output. Fix the device trees to correctly describe this.
+On Thu, 27 Nov 2014, Mark Brown wrote:
 
-While doing this update the CPU mask to match the number of described
-CPUs as well.
+> On Thu, Nov 27, 2014 at 11:43:54AM +0000, Lee Jones wrote:
+> 
+> > +Required properties:
+> > +- compatible	: "st,comms-ssc-spi" or "st,comms-ssc4-spi"
+> 
+> What do the two different compatible strings mean (for example, should
+> ssc4 be used for version 4 and higher or is it just a quirk for that
+> version)?
 
-Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
----
+This appears to be historical.  There aren't any functional
+differences i.e. we don't match on them.  I believe the former is a
+more informal, generic name and the latter is the official name of the
+IP block.  The I2C component already upstreamed has the same naming
+conventions by the looks of it.
 
-Arnd, Olof: This is on top of linux-next/master as it patches the Juno
-as well as all the other ARM DTs.
-
- arch/arm64/boot/dts/arm/foundation-v8.dts  | 8 ++++----
- arch/arm64/boot/dts/arm/juno.dts           | 8 ++++----
- arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts | 8 ++++----
- 3 files changed, 12 insertions(+), 12 deletions(-)
-
-diff --git a/arch/arm64/boot/dts/arm/foundation-v8.dts b/arch/arm64/boot/dts/arm/foundation-v8.dts
-index 4a06090..27f3296 100644
---- a/arch/arm64/boot/dts/arm/foundation-v8.dts
-+++ b/arch/arm64/boot/dts/arm/foundation-v8.dts
-@@ -78,10 +78,10 @@
- 
- 	timer {
- 		compatible = "arm,armv8-timer";
--		interrupts = <1 13 0xff01>,
--			     <1 14 0xff01>,
--			     <1 11 0xff01>,
--			     <1 10 0xff01>;
-+		interrupts = <1 13 0xf08>,
-+			     <1 14 0xf08>,
-+			     <1 11 0xf08>,
-+			     <1 10 0xf08>;
- 		clock-frequency = <100000000>;
- 	};
- 
-diff --git a/arch/arm64/boot/dts/arm/juno.dts b/arch/arm64/boot/dts/arm/juno.dts
-index 097ecc4..cb3073e 100644
---- a/arch/arm64/boot/dts/arm/juno.dts
-+++ b/arch/arm64/boot/dts/arm/juno.dts
-@@ -98,10 +98,10 @@
- 
- 	timer {
- 		compatible = "arm,armv8-timer";
--		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
--			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
--			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
--			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>;
-+		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_LOW)>,
-+			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_LOW)>,
-+			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_LOW)>,
-+			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_LOW)>;
- 	};
- 
- 	pmu {
-diff --git a/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts b/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts
-index 572005e..efc59b3 100644
---- a/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts
-+++ b/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts
-@@ -81,10 +81,10 @@
- 
- 	timer {
- 		compatible = "arm,armv8-timer";
--		interrupts = <1 13 0xff01>,
--			     <1 14 0xff01>,
--			     <1 11 0xff01>,
--			     <1 10 0xff01>;
-+		interrupts = <1 13 0xf08>,
-+			     <1 14 0xf08>,
-+			     <1 11 0xf08>,
-+			     <1 10 0xf08>;
- 		clock-frequency = <100000000>;
- 	};
- 
 -- 
-2.1.3
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
