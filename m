@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754777AbaK0IrT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 03:47:19 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41555 "EHLO mail.kernel.org"
+	id S1754796AbaK0IrZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 03:47:25 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41586 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754685AbaK0IrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:47:15 -0500
+	id S1753251AbaK0IrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:47:21 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Sage Weil <sage@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Ilya Dryomov <ilya.dryomov@inktank.com>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 29/91] libceph: gracefully handle large reply messages from the mon
-Date: Thu, 27 Nov 2014 16:42:12 +0800
-Message-Id: <1417077794-9299-29-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 31/91] libceph: do not hard code max auth ticket len
+Date: Thu, 27 Nov 2014 16:42:14 +0800
+Message-Id: <1417077794-9299-31-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
 References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
@@ -20,47 +20,205 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sage Weil <sage@redhat.com>
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
 
 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 73c3d4812b4c755efeca0140f606f83772a39ce4 upstream.
+commit c27a3e4d667fdcad3db7b104f75659478e0c68d8 upstream.
 
-We preallocate a few of the message types we get back from the mon.  If we
-get a larger message than we are expecting, fall back to trying to allocate
-a new one instead of blindly using the one we have.
+We hard code cephx auth ticket buffer size to 256 bytes.  This isn't
+enough for any moderate setups and, in case tickets themselves are not
+encrypted, leads to buffer overflows (ceph_x_decrypt() errors out, but
+ceph_decode_copy() doesn't - it's just a memcpy() wrapper).  Since the
+buffer is allocated dynamically anyway, allocated it a bit later, at
+the point where we know how much is going to be needed.
 
-Signed-off-by: Sage Weil <sage@redhat.com>
-Reviewed-by: Ilya Dryomov <ilya.dryomov@inktank.com>
-[lizf: Backported to 3.4: s/front_alloc_len/front_max/g]
+Fixes: http://tracker.ceph.com/issues/8979
+
+Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
+Reviewed-by: Sage Weil <sage@redhat.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- net/ceph/mon_client.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ net/ceph/auth_x.c | 64 +++++++++++++++++++++++++------------------------------
+ 1 file changed, 29 insertions(+), 35 deletions(-)
 
-diff --git a/net/ceph/mon_client.c b/net/ceph/mon_client.c
-index 6765da3..bc293c0 100644
---- a/net/ceph/mon_client.c
-+++ b/net/ceph/mon_client.c
-@@ -1042,7 +1042,15 @@ static struct ceph_msg *mon_alloc_msg(struct ceph_connection *con,
- 	if (!m) {
- 		pr_info("alloc_msg unknown type %d\n", type);
- 		*skip = 1;
-+	} else if (front_len > m->front_max) {
-+		pr_warning("mon_alloc_msg front %d > prealloc %d (%u#%llu)\n",
-+			   front_len, m->front_max,
-+			   (unsigned int)con->peer_name.type,
-+			   le64_to_cpu(con->peer_name.num));
-+		ceph_msg_put(m);
-+		m = ceph_msg_new(type, front_len, GFP_NOFS, false);
- 	}
-+
- 	return m;
+diff --git a/net/ceph/auth_x.c b/net/ceph/auth_x.c
+index 0eb146d..de6662b 100644
+--- a/net/ceph/auth_x.c
++++ b/net/ceph/auth_x.c
+@@ -13,8 +13,6 @@
+ #include "auth_x.h"
+ #include "auth_x_protocol.h"
+ 
+-#define TEMP_TICKET_BUF_LEN	256
+-
+ static void ceph_x_validate_tickets(struct ceph_auth_client *ac, int *pneed);
+ 
+ static int ceph_x_is_authenticated(struct ceph_auth_client *ac)
+@@ -64,7 +62,7 @@ static int ceph_x_encrypt(struct ceph_crypto_key *secret,
  }
  
+ static int ceph_x_decrypt(struct ceph_crypto_key *secret,
+-			  void **p, void *end, void *obuf, size_t olen)
++			  void **p, void *end, void **obuf, size_t olen)
+ {
+ 	struct ceph_x_encrypt_header head;
+ 	size_t head_len = sizeof(head);
+@@ -75,8 +73,14 @@ static int ceph_x_decrypt(struct ceph_crypto_key *secret,
+ 		return -EINVAL;
+ 
+ 	dout("ceph_x_decrypt len %d\n", len);
+-	ret = ceph_decrypt2(secret, &head, &head_len, obuf, &olen,
+-			    *p, len);
++	if (*obuf == NULL) {
++		*obuf = kmalloc(len, GFP_NOFS);
++		if (!*obuf)
++			return -ENOMEM;
++		olen = len;
++	}
++
++	ret = ceph_decrypt2(secret, &head, &head_len, *obuf, &olen, *p, len);
+ 	if (ret)
+ 		return ret;
+ 	if (head.struct_v != 1 || le64_to_cpu(head.magic) != CEPHX_ENC_MAGIC)
+@@ -131,18 +135,19 @@ static void remove_ticket_handler(struct ceph_auth_client *ac,
+ 
+ static int process_one_ticket(struct ceph_auth_client *ac,
+ 			      struct ceph_crypto_key *secret,
+-			      void **p, void *end,
+-			      void *dbuf, void *ticket_buf)
++			      void **p, void *end)
+ {
+ 	struct ceph_x_info *xi = ac->private;
+ 	int type;
+ 	u8 tkt_struct_v, blob_struct_v;
+ 	struct ceph_x_ticket_handler *th;
++	void *dbuf = NULL;
+ 	void *dp, *dend;
+ 	int dlen;
+ 	char is_enc;
+ 	struct timespec validity;
+ 	struct ceph_crypto_key old_key;
++	void *ticket_buf = NULL;
+ 	void *tp, *tpend;
+ 	struct ceph_timespec new_validity;
+ 	struct ceph_crypto_key new_session_key;
+@@ -167,8 +172,7 @@ static int process_one_ticket(struct ceph_auth_client *ac,
+ 	}
+ 
+ 	/* blob for me */
+-	dlen = ceph_x_decrypt(secret, p, end, dbuf,
+-			      TEMP_TICKET_BUF_LEN);
++	dlen = ceph_x_decrypt(secret, p, end, &dbuf, 0);
+ 	if (dlen <= 0) {
+ 		ret = dlen;
+ 		goto out;
+@@ -195,20 +199,25 @@ static int process_one_ticket(struct ceph_auth_client *ac,
+ 
+ 	/* ticket blob for service */
+ 	ceph_decode_8_safe(p, end, is_enc, bad);
+-	tp = ticket_buf;
+ 	if (is_enc) {
+ 		/* encrypted */
+ 		dout(" encrypted ticket\n");
+-		dlen = ceph_x_decrypt(&old_key, p, end, ticket_buf,
+-				      TEMP_TICKET_BUF_LEN);
++		dlen = ceph_x_decrypt(&old_key, p, end, &ticket_buf, 0);
+ 		if (dlen < 0) {
+ 			ret = dlen;
+ 			goto out;
+ 		}
++		tp = ticket_buf;
+ 		dlen = ceph_decode_32(&tp);
+ 	} else {
+ 		/* unencrypted */
+ 		ceph_decode_32_safe(p, end, dlen, bad);
++		ticket_buf = kmalloc(dlen, GFP_NOFS);
++		if (!ticket_buf) {
++			ret = -ENOMEM;
++			goto out;
++		}
++		tp = ticket_buf;
+ 		ceph_decode_need(p, end, dlen, bad);
+ 		ceph_decode_copy(p, ticket_buf, dlen);
+ 	}
+@@ -237,6 +246,8 @@ static int process_one_ticket(struct ceph_auth_client *ac,
+ 	xi->have_keys |= th->service;
+ 
+ out:
++	kfree(ticket_buf);
++	kfree(dbuf);
+ 	return ret;
+ 
+ bad:
+@@ -249,21 +260,10 @@ static int ceph_x_proc_ticket_reply(struct ceph_auth_client *ac,
+ 				    void *buf, void *end)
+ {
+ 	void *p = buf;
+-	char *dbuf;
+-	char *ticket_buf;
+ 	u8 reply_struct_v;
+ 	u32 num;
+ 	int ret;
+ 
+-	dbuf = kmalloc(TEMP_TICKET_BUF_LEN, GFP_NOFS);
+-	if (!dbuf)
+-		return -ENOMEM;
+-
+-	ret = -ENOMEM;
+-	ticket_buf = kmalloc(TEMP_TICKET_BUF_LEN, GFP_NOFS);
+-	if (!ticket_buf)
+-		goto out_dbuf;
+-
+ 	ceph_decode_8_safe(&p, end, reply_struct_v, bad);
+ 	if (reply_struct_v != 1)
+ 		return -EINVAL;
+@@ -272,22 +272,15 @@ static int ceph_x_proc_ticket_reply(struct ceph_auth_client *ac,
+ 	dout("%d tickets\n", num);
+ 
+ 	while (num--) {
+-		ret = process_one_ticket(ac, secret, &p, end,
+-					 dbuf, ticket_buf);
++		ret = process_one_ticket(ac, secret, &p, end);
+ 		if (ret)
+-			goto out;
++			return ret;
+ 	}
+ 
+-	ret = 0;
+-out:
+-	kfree(ticket_buf);
+-out_dbuf:
+-	kfree(dbuf);
+-	return ret;
++	return 0;
+ 
+ bad:
+-	ret = -EINVAL;
+-	goto out;
++	return -EINVAL;
+ }
+ 
+ static int ceph_x_build_authorizer(struct ceph_auth_client *ac,
+@@ -603,13 +596,14 @@ static int ceph_x_verify_authorizer_reply(struct ceph_auth_client *ac,
+ 	struct ceph_x_ticket_handler *th;
+ 	int ret = 0;
+ 	struct ceph_x_authorize_reply reply;
++	void *preply = &reply;
+ 	void *p = au->reply_buf;
+ 	void *end = p + sizeof(au->reply_buf);
+ 
+ 	th = get_ticket_handler(ac, au->service);
+ 	if (IS_ERR(th))
+ 		return PTR_ERR(th);
+-	ret = ceph_x_decrypt(&th->session_key, &p, end, &reply, sizeof(reply));
++	ret = ceph_x_decrypt(&th->session_key, &p, end, &preply, sizeof(reply));
+ 	if (ret < 0)
+ 		return ret;
+ 	if (ret != sizeof(reply))
 -- 
 1.9.1
 
