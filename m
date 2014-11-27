@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614AbaK0UPD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 15:15:03 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:47023 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752370AbaK0ULP (ORCPT
+	id S1752654AbaK0UQL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 15:16:11 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:58449 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752324AbaK0ULJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 15:11:15 -0500
+	Thu, 27 Nov 2014 15:11:09 -0500
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>,
@@ -17,10 +17,11 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>,
         Dirk Behme <dirk.behme@de.bosch.com>,
         Daniel Drake <drake@endlessm.com>,
         Dmitry Pervushin <dpervushin@gmail.com>,
-        Tim Sander <tim@krieglstein.org>, Stephen Boyd <sboyd@codeaurora.org>
-Subject: [PATCH 3.18-rc4 v11 6/6] arm: smp: Handle ipi_cpu_backtrace() using FIQ (if available)
-Date: Thu, 27 Nov 2014 20:10:24 +0000
-Message-Id: <1417119024-22844-7-git-send-email-daniel.thompson@linaro.org>
+        Tim Sander <tim@krieglstein.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Subject: [PATCH 3.18-rc4 v11 3/6] irqchip: gic: Make gic_raise_softirq FIQ-safe
+Date: Thu, 27 Nov 2014 20:10:21 +0000
+Message-Id: <1417119024-22844-4-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1417119024-22844-1-git-send-email-daniel.thompson@linaro.org>
 References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
@@ -29,77 +30,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previous changes have introduced both a replacement default FIQ handler
-and an implementation of arch_trigger_all_cpu_backtrace for ARM but
-these are currently independent of each other.
+It is currently possible for FIQ handlers to re-enter gic_raise_softirq()
+and lock up.
 
-This patch plumbs together these features making it possible, on platforms
-that support it, to trigger backtrace using FIQ.
+    	gic_raise_softirq()
+	   lock(x);
+-~-> FIQ
+        handle_fiq()
+	   gic_raise_softirq()
+	      lock(x);		<-- Lockup
+
+Calling printk() from a FIQ handler can trigger this problem because
+printk() raises an IPI when it needs to wake_up_klogd(). More generally,
+IPIs are the only means for FIQ handlers to safely defer work to less
+restrictive calling context so the function to raise them really needs
+to be FIQ-safe.
+
+This patch fixes the problem by converting the cpu_map_migration_lock
+into a rwlock making it safe to re-enter the function.
+
+Having made it safe to re-enter gic_raise_softirq() we no longer need to
+mask interrupts during gic_raise_softirq() because the b.L migration is
+always performed from task context.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Marc Zyngier <marc.zyngier@arm.com>
 ---
- arch/arm/include/asm/smp.h | 3 +++
- arch/arm/kernel/smp.c      | 4 +++-
- arch/arm/kernel/traps.c    | 3 +++
- 3 files changed, 9 insertions(+), 1 deletion(-)
+ drivers/irqchip/irq-gic.c | 38 +++++++++++++++++++++++++-------------
+ 1 file changed, 25 insertions(+), 13 deletions(-)
 
-diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
-index 18f5a554134f..b076584ac0fa 100644
---- a/arch/arm/include/asm/smp.h
-+++ b/arch/arm/include/asm/smp.h
-@@ -18,6 +18,8 @@
- # error "<asm/smp.h> included in non-SMP build"
- #endif
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index e875da93f24a..5d72823bc5e9 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -75,22 +75,25 @@ static DEFINE_RAW_SPINLOCK(irq_controller_lock);
+ /*
+  * This lock is used by the big.LITTLE migration code to ensure no IPIs
+  * can be pended on the old core after the map has been updated.
++ *
++ * This lock may be locked for reading from both IRQ and FIQ handlers
++ * and therefore must not be locked for writing when these are enabled.
+  */
+ #ifdef CONFIG_BL_SWITCHER
+-static DEFINE_RAW_SPINLOCK(cpu_map_migration_lock);
++static DEFINE_RWLOCK(cpu_map_migration_lock);
  
-+#define SMP_IPI_FIQ_MASK 0x0100
-+
- #define raw_smp_processor_id() (current_thread_info()->cpu)
- 
- struct seq_file;
-@@ -79,6 +81,7 @@ extern void arch_send_call_function_single_ipi(int cpu);
- extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
- extern void arch_send_wakeup_ipi_mask(const struct cpumask *mask);
- 
-+extern void ipi_cpu_backtrace(struct pt_regs *regs);
- extern int register_ipi_completion(struct completion *completion, int cpu);
- 
- struct smp_operations {
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 14c594a12bef..e923843562d9 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -539,7 +539,7 @@ static void ipi_cpu_stop(unsigned int cpu)
- 		cpu_relax();
+-static inline void bl_migration_lock(unsigned long *flags)
++static inline void bl_migration_lock(void)
+ {
+-	raw_spin_lock_irqsave(&cpu_map_migration_lock, *flags);
++	read_lock(&cpu_map_migration_lock);
  }
  
--static void ipi_cpu_backtrace(struct pt_regs *regs)
-+void ipi_cpu_backtrace(struct pt_regs *regs)
+-static inline void bl_migration_unlock(unsigned long flags)
++static inline void bl_migration_unlock(void)
  {
- 	int cpu = smp_processor_id();
- 
-@@ -580,6 +580,8 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
- 	unsigned int cpu = smp_processor_id();
- 	struct pt_regs *old_regs = set_irq_regs(regs);
- 
-+	BUILD_BUG_ON(SMP_IPI_FIQ_MASK != BIT(IPI_CPU_BACKTRACE));
-+
- 	if ((unsigned)ipinr < NR_IPI) {
- 		trace_ipi_entry(ipi_types[ipinr]);
- 		__inc_irq_stat(cpu, ipi_irqs[ipinr]);
-diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-index 4dc45b38e56e..9eb05be9526e 100644
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -483,6 +483,9 @@ asmlinkage void __exception_irq_entry handle_fiq_as_nmi(struct pt_regs *regs)
- #ifdef CONFIG_ARM_GIC
- 	gic_handle_fiq_ipi();
+-	raw_spin_unlock_irqrestore(&cpu_map_migration_lock, flags);
++	read_unlock(&cpu_map_migration_lock);
+ }
+ #else
+-static inline void bl_migration_lock(unsigned long *flags) {}
+-static inline void bl_migration_unlock(unsigned long flags) {}
++static inline void bl_migration_lock(void) {}
++static inline void bl_migration_unlock(void) {}
  #endif
-+#ifdef CONFIG_SMP
-+	ipi_cpu_backtrace(regs);
-+#endif
  
- 	nmi_exit();
+ /*
+@@ -640,12 +643,20 @@ static void __init gic_pm_init(struct gic_chip_data *gic)
+ #endif
  
+ #ifdef CONFIG_SMP
++/*
++ * Raise the specified IPI on all cpus set in mask.
++ *
++ * This function is safe to call from all calling contexts, including
++ * FIQ handlers. It relies on bl_migration_lock() being multiply acquirable
++ * to avoid deadlocks when the function is re-entered at different
++ * exception levels.
++ */
+ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+ {
+ 	int cpu;
+-	unsigned long flags, map = 0;
++	unsigned long map = 0;
+ 
+-	bl_migration_lock(&flags);
++	bl_migration_lock();
+ 
+ 	/* Convert our logical CPU mask into a physical one. */
+ 	for_each_cpu(cpu, mask)
+@@ -660,7 +671,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+ 	/* this always happens on GIC0 */
+ 	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
+ 
+-	bl_migration_unlock(flags);
++	bl_migration_unlock();
+ }
+ #endif
+ 
+@@ -708,7 +719,8 @@ int gic_get_cpu_id(unsigned int cpu)
+  * Migrate all peripheral interrupts with a target matching the current CPU
+  * to the interface corresponding to @new_cpu_id.  The CPU interface mapping
+  * is also updated.  Targets to other CPU interfaces are unchanged.
+- * This must be called with IRQs locally disabled.
++ * This must be called from a task context and with IRQ and FIQ locally
++ * disabled.
+  */
+ void gic_migrate_target(unsigned int new_cpu_id)
+ {
+@@ -739,9 +751,9 @@ void gic_migrate_target(unsigned int new_cpu_id)
+ 	 * pending on the old cpu static. That means we can defer the
+ 	 * migration until after we have released the irq_controller_lock.
+ 	 */
+-	raw_spin_lock(&cpu_map_migration_lock);
++	write_lock(&cpu_map_migration_lock);
+ 	gic_cpu_map[cpu] = 1 << new_cpu_id;
+-	raw_spin_unlock(&cpu_map_migration_lock);
++	write_unlock(&cpu_map_migration_lock);
+ 
+ 	/*
+ 	 * Find all the peripheral interrupts targetting the current
 -- 
 1.9.3
 
