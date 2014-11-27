@@ -1,106 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640AbaK0JkQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 04:40:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60471 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752954AbaK0JkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 04:40:12 -0500
-Date: Thu, 27 Nov 2014 10:40:06 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
-        Jan Kara <jack@suse.cz>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [rfc patch] mm: protect set_page_dirty() from ongoing truncation
-Message-ID: <20141127094006.GC30152@quack.suse.cz>
-References: <1416944921-14164-1-git-send-email-hannes@cmpxchg.org>
- <20141126140006.d6f71f447b69cd4fadc42c26@linux-foundation.org>
+	id S1754733AbaK0Jlb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 04:41:31 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:33029 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754629AbaK0JlZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 04:41:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141126140006.d6f71f447b69cd4fadc42c26@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <bde13d5e7931af9aa90ddc09a79be5c30e3eef94.1417029918.git.d-gerlach@ti.com>
+References: <cover.1417029918.git.d-gerlach@ti.com>
+	<bde13d5e7931af9aa90ddc09a79be5c30e3eef94.1417029918.git.d-gerlach@ti.com>
+Date: Thu, 27 Nov 2014 10:41:23 +0100
+X-Google-Sender-Auth: RdnCy1lk3AmG8oiIKih7tZB6hv4
+Message-ID: <CAMuHMdWn3mgzwX55+OCWwMZwvfXkh7B+n-b0uChAW5gbx9b7Dw@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/2] lib: devres: Add exec versions of
+ devm_ioremap_resource and friends
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Dave Gerlach <d-gerlach@ti.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russ Dill <russ.dill@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>, Tony Lindgren <tony@atomide.com>,
+        Anson.Huang@freescale.com, Josh Triplett <josh@joshtriplett.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 26-11-14 14:00:06, Andrew Morton wrote:
-> On Tue, 25 Nov 2014 14:48:41 -0500 Johannes Weiner <hannes@cmpxchg.org> wrote:
-> 
-> > Tejun, while reviewing the code, spotted the following race condition
-> > between the dirtying and truncation of a page:
-> > 
-> > __set_page_dirty_nobuffers()       __delete_from_page_cache()
-> >   if (TestSetPageDirty(page))
-> >                                      page->mapping = NULL
-> > 				     if (PageDirty())
-> > 				       dec_zone_page_state(page, NR_FILE_DIRTY);
-> > 				       dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
-> >     if (page->mapping)
-> >       account_page_dirtied(page)
-> >         __inc_zone_page_state(page, NR_FILE_DIRTY);
-> > 	__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
-> > 
-> > which results in an imbalance of NR_FILE_DIRTY and BDI_RECLAIMABLE.
-> > 
-> > Dirtiers usually lock out truncation, either by holding the page lock
-> > directly, or in case of zap_pte_range(), by pinning the mapcount with
-> > the page table lock held.  The notable exception to this rule, though,
-> > is do_wp_page(), for which this race exists.  However, do_wp_page()
-> > already waits for a locked page to unlock before setting the dirty
-> > bit, in order to prevent a race where clear_page_dirty() misses the
-> > page bit in the presence of dirty ptes.  Upgrade that wait to a fully
-> > locked set_page_dirty() to also cover the situation explained above.
-> > 
-> > Afterwards, the code in set_page_dirty() dealing with a truncation
-> > race is no longer needed.  Remove it.
-> > 
-> > Reported-by: Tejun Heo <tj@kernel.org>
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > ---
-> >  mm/memory.c         | 11 ++---------
-> >  mm/page-writeback.c | 33 ++++++++++++---------------------
-> >  2 files changed, 14 insertions(+), 30 deletions(-)
-> > 
-> > It is unfortunate to hold the page lock while balancing dirty pages,
-> > but I don't see what else would protect mapping at that point.
-> 
-> Yes.
-> 
-> I'm a bit surprised that calling balance_dirty_pages() under
-> lock_page() doesn't just go and deadlock.  Memory fails me.
-> 
-> And yes, often the only thing which protects the address_space is
-> lock_page().
-> 
-> set_page_dirty_balance() and balance_dirty_pages() don't actually need
-> the address_space - they just use it to get at the backing_dev_info. 
-> So perhaps what we could do here is the change those functions to take
-> a bdi directly, then change do_wp_page() to do something like
-> 
-> 	lock_page(dirty_page);
-> 	bdi = page->mapping->backing_dev_info;
-> 	need_balance = set_page_dirty2(bdi);
-> 	unlock_page(page);
-> 	if (need_balance)
-> 		balance_dirty_pages_ratelimited2(bdi);
-  Yes, please! Holding lock_page() over balance dirty pages definitely has
-a potential for deadlock (e.g. flusher might block on lock_page() in
-WB_SYNC_ALL pass and then there'd be no one to clean pages and thus release
-process from balance_dirty_pages()).
+On Wed, Nov 26, 2014 at 10:14 PM, Dave Gerlach <d-gerlach@ti.com> wrote:
+> --- a/lib/devres.c
+> +++ b/lib/devres.c
+> @@ -72,6 +72,64 @@ void __iomem *devm_ioremap_nocache(struct device *dev, resource_size_t offset,
+>  EXPORT_SYMBOL(devm_ioremap_nocache);
+>
+>  /**
+> + * devm_ioremap_exec - Managed ioremap_exec()
+> + * @dev: Generic device to remap IO address for
+> + * @offset: BUS offset to map
+> + * @size: Size of map
+> + *
+> + * Managed ioremap_exec().  Map is automatically unmapped on driver detach.
+> + */
+> +void __iomem *devm_ioremap_exec(struct device *dev, resource_size_t offset,
+> +                               unsigned long size)
+> +{
 
-> so we no longer require that the address_space be stabilized after
-> lock_page().  Of course something needs to protect the bdi and I'm not
-> sure what that is, but we're talking about umount and that quiesces and
-> evicts lots of things before proceeding, so surely there's something in
-> there which will save us ;)
-  In do_wp_page() the process doing the fault and ending in
-balance_dirty_pages() has to have the page mapped, thus it has to have the
-file open => no umount.
+[...]
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> +       addr = ioremap_exec(offset, size);
+
+[...]
+
+> +}
+> +EXPORT_SYMBOL(devm_ioremap_exec);
+> +
+> +/**
+> + * devm_ioremap_exec_nocache - Managed ioremap_exec_nocache()
+> + * @dev: Generic device to remap IO address for
+> + * @offset: BUS offset to map
+> + * @size: Size of map
+> + *
+> + * Managed ioremap_exec_nocache().  Map is automatically unmapped on driver
+> + * detach.
+> + */
+> +void __iomem *devm_ioremap_exec_nocache(struct device *dev,
+> +                                       resource_size_t offset,
+> +                                       unsigned long size)
+> +{
+
+[...]
+
+> +       addr = ioremap_exec_nocache(offset, size);
+
+[...]
+
+> +}
+> +EXPORT_SYMBOL(devm_ioremap_exec_nocache);
+> +
+
+Both of these are identical to the already-existing devm_ioremap() and
+devm_ioremap_nocache(), except for the call to the underlying
+ioremap*() variant.
+
+Can't the variant selection be done by passing a flag around, set by
+the top-level inline functions, to avoid code duplication?
+Some architecture-specific ioremap() implementations already work that
+way, cfr. arch/m68k/include/asm/io_mm.h:
+
+static inline void __iomem *ioremap(unsigned long physaddr, unsigned long size)
+{
+        return __ioremap(physaddr, size, IOMAP_NOCACHE_SER);
+}
+static inline void __iomem *ioremap_nocache(unsigned long physaddr,
+unsigned lonn
+g size)
+{
+        return __ioremap(physaddr, size, IOMAP_NOCACHE_SER);
+}
+static inline void __iomem *ioremap_writethrough(unsigned long physaddr,
+                                         unsigned long size)
+{
+        return __ioremap(physaddr, size, IOMAP_WRITETHROUGH);
+}
+static inline void __iomem *ioremap_fullcache(unsigned long physaddr,
+                                      unsigned long size)
+{
+        return __ioremap(physaddr, size, IOMAP_FULL_CACHING);
+}
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
