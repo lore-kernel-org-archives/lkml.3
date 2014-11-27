@@ -1,77 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735AbaK0G01 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 01:26:27 -0500
-Received: from mga03.intel.com ([134.134.136.65]:43662 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752521AbaK0G0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 01:26:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,467,1413270000"; 
-   d="scan'208";a="614826549"
-From: Lv Zheng <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Bob Moore <robert.moore@intel.com>
-Subject: [PATCH 3/6] ACPICA: Disassembler: Add support for C-style operators and expressions.
-Date: Thu, 27 Nov 2014 14:26:12 +0800
-Message-Id: <343281650b3ac8b7354b5293418297012cb74904.1416899966.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1416899966.git.lv.zheng@intel.com>
-References: <cover.1416899966.git.lv.zheng@intel.com>
+	id S1754537AbaK0GdN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 01:33:13 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:43050 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751728AbaK0GdK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 01:33:10 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: David Rientjes <rientjes@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] mm/thp: Always allocate transparent hugepages on local node
+In-Reply-To: <alpine.DEB.2.10.1411241317430.21237@chino.kir.corp.google.com>
+References: <1416838791-30023-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20141124150342.GA3889@node.dhcp.inet.fi> <alpine.DEB.2.10.1411241317430.21237@chino.kir.corp.google.com>
+User-Agent: Notmuch/0.19+2~g32855b9 (http://notmuchmail.org) Emacs/25.0.50.1 (x86_64-pc-linux-gnu)
+Date: Thu, 27 Nov 2014 12:02:01 +0530
+Message-ID: <87r3wp887y.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112706-0025-0000-0000-000000985C97
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bob Moore <robert.moore@intel.com>
+David Rientjes <rientjes@google.com> writes:
 
-Now emit ASL+ code which includes C-style operators.
-Optionally, legacy text ASL operators can still be emitted.
+> On Mon, 24 Nov 2014, Kirill A. Shutemov wrote:
+>
+>> > This make sure that we try to allocate hugepages from local node. If
+>> > we can't we fallback to small page allocation based on
+>> > mempolicy. This is based on the observation that allocating pages
+>> > on local node is more beneficial that allocating hugepages on remote node.
+>> 
+>> Local node on allocation is not necessary local node for use.
+>> If policy says to use a specific node[s], we should follow.
+>> 
+>
+> True, and the interaction between thp and mempolicies is fragile: if a 
+> process has a MPOL_BIND mempolicy over a set of nodes, that does not 
+> necessarily mean that we want to allocate thp remotely if it will always 
+> be accessed remotely.  It's simple to benchmark and show that remote 
+> access latency of a hugepage can exceed that of local pages.  MPOL_BIND 
+> itself is a policy of exclusion, not inclusion, and it's difficult to 
+> define when local pages and its cost of allocation is better than remote 
+> thp.
+>
+> For MPOL_BIND, if the local node is allowed then thp should be forced from 
+> that node, if the local node is disallowed then allocate from any node in 
+> the nodemask.  For MPOL_INTERLEAVE, I think we should only allocate thp 
+> from the next node in order, otherwise fail the allocation and fallback to 
+> small pages.  Is this what you meant as well?
+>
 
-This patch only affects compiler/disassembler support which is not in the
-Linux kernel.
+Something like below
 
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
----
- drivers/acpi/acpica/acglobal.h |    1 +
- drivers/acpi/acpica/aclocal.h  |    2 ++
- 2 files changed, 3 insertions(+)
+struct page *alloc_hugepage_vma(gfp_t gfp, struct vm_area_struct *vma,
+				unsigned long addr, int order)
+{
+	struct page *page;
+	nodemask_t *nmask;
+	struct mempolicy *pol;
+	int node = numa_node_id();
+	unsigned int cpuset_mems_cookie;
 
-diff --git a/drivers/acpi/acpica/acglobal.h b/drivers/acpi/acpica/acglobal.h
-index ebf02cc..7f60582 100644
---- a/drivers/acpi/acpica/acglobal.h
-+++ b/drivers/acpi/acpica/acglobal.h
-@@ -305,6 +305,7 @@ ACPI_INIT_GLOBAL(u8, acpi_gbl_db_output_flags, ACPI_DB_CONSOLE_OUTPUT);
- 
- ACPI_INIT_GLOBAL(u8, acpi_gbl_no_resource_disassembly, FALSE);
- ACPI_INIT_GLOBAL(u8, acpi_gbl_ignore_noop_operator, FALSE);
-+ACPI_INIT_GLOBAL(u8, acpi_gbl_cstyle_disassembly, TRUE);
- 
- ACPI_GLOBAL(u8, acpi_gbl_db_opt_disasm);
- ACPI_GLOBAL(u8, acpi_gbl_db_opt_verbose);
-diff --git a/drivers/acpi/acpica/aclocal.h b/drivers/acpi/acpica/aclocal.h
-index c00e7e4..1c218d9 100644
---- a/drivers/acpi/acpica/aclocal.h
-+++ b/drivers/acpi/acpica/aclocal.h
-@@ -722,6 +722,7 @@ union acpi_parse_value {
- 	ACPI_DISASM_ONLY_MEMBERS (\
- 	u8                              disasm_flags;   /* Used during AML disassembly */\
- 	u8                              disasm_opcode;  /* Subtype used for disassembly */\
-+	char                            *operator_symbol;/* Used for C-style operator name strings */\
- 	char                            aml_op_name[16])	/* Op name (debug only) */
- 
- /* Flags for disasm_flags field above */
-@@ -827,6 +828,7 @@ struct acpi_parse_state {
- #define ACPI_PARSEOP_EMPTY_TERMLIST     0x04
- #define ACPI_PARSEOP_PREDEF_CHECKED     0x08
- #define ACPI_PARSEOP_SPECIAL            0x10
-+#define ACPI_PARSEOP_COMPOUND           0x20
- 
- /*****************************************************************************
-  *
--- 
-1.7.10
+retry_cpuset:
+	pol = get_vma_policy(vma, addr);
+	cpuset_mems_cookie = read_mems_allowed_begin();
+
+	if (unlikely(pol->mode == MPOL_INTERLEAVE)) {
+		unsigned nid;
+		nid = interleave_nid(pol, vma, addr, PAGE_SHIFT + order);
+		mpol_cond_put(pol);
+		page = alloc_page_interleave(gfp, order, nid);
+		if (unlikely(!page &&
+			     read_mems_allowed_retry(cpuset_mems_cookie)))
+			goto retry_cpuset;
+		return page;
+	}
+	nmask = policy_nodemask(gfp, pol);
+	if (!nmask || node_isset(node, *nmask)) {
+		mpol_cond_put(pol);
+		page = alloc_hugepage_exact_node(node, gfp, order);
+		if (unlikely(!page &&
+			     read_mems_allowed_retry(cpuset_mems_cookie)))
+			goto retry_cpuset;
+		return page;
+
+	}
+	/*
+	 * if current node is not part of node mask, try
+	 * the allocation from any node, and we can do retry
+	 * in that case.
+	 */
+	page = __alloc_pages_nodemask(gfp, order,
+				      policy_zonelist(gfp, pol, node),
+				      nmask);
+	mpol_cond_put(pol);
+	if (unlikely(!page && read_mems_allowed_retry(cpuset_mems_cookie)))
+		goto retry_cpuset;
+
+	return page;
+}
+
+-aneesh
 
