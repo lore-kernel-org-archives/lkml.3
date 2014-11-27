@@ -1,85 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623AbaK0OUp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 09:20:45 -0500
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:55132 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195AbaK0OUn (ORCPT
+	id S1751211AbaK0OVl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 09:21:41 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:34553 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781AbaK0OVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 09:20:43 -0500
+	Thu, 27 Nov 2014 09:21:39 -0500
+Date: Thu, 27 Nov 2014 10:21:29 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Navneet Kumar <navneetk@nvidia.com>
+Cc: rui.zhang@intel.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Diwakar Tundlam <dtundlam@nvidia.com>
+Subject: Re: [PATCH 1/3] thermal: of: support writable trips via dt
+Message-ID: <20141127142127.GB3342@developer>
+References: <1417050989-25405-1-git-send-email-navneetk@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <CADGdYn6fAScrpz4Va=THtC1ZgT+rYN_gQuE6NnRaCiN4NErg5g@mail.gmail.com>
-References: <1416833572-6880-1-git-send-email-amit.daniel@samsung.com>
-	<1416834256-11225-1-git-send-email-amit.daniel@samsung.com>
-	<1416834256-11225-7-git-send-email-amit.daniel@samsung.com>
-	<CAPDyKFqE_qhrRs3X9s9juyPH_Zcq8vdE_amqKM3VUnMjHtL2Rg@mail.gmail.com>
-	<CADGdYn6fAScrpz4Va=THtC1ZgT+rYN_gQuE6NnRaCiN4NErg5g@mail.gmail.com>
-Date: Thu, 27 Nov 2014 15:20:42 +0100
-Message-ID: <CAPDyKFo0epKqKuwHS_CKMG2hF+J=Fdve9kPK2EVeeR7FvdoJmg@mail.gmail.com>
-Subject: Re: [PATCH RFC v2 07/12] PM / Domains: export pm_genpd_lookup_name
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: amit daniel kachhap <amit.daniel@samsung.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Kevin Hilman <khilman@kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qcHopEYAB45HaUaB"
+Content-Disposition: inline
+In-Reply-To: <1417050989-25405-1-git-send-email-navneetk@nvidia.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 November 2014 at 09:48, amit daniel kachhap
-<amit.daniel@samsung.com> wrote:
-> On Tue, Nov 25, 2014 at 1:05 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->> On 24 November 2014 at 14:04, Amit Daniel Kachhap
->> <amit.daniel@samsung.com> wrote:
->>> This API may be needed to set the power domain parent/child relationship
->>> in the power domain platform driver. The parent relationship is
->>> generally set after the child power domain is registered with the power
->>> domain subsystem. In this case, pm_genpd_lookup_name API might be
->>> useful.
->>
->> I think this is a step in the wrong direction. Instead we should be
->> working on removing the "name" based APIs from genpd.
->>
->> The proper way should be to pass the PM domain as a parameter to the
->> APIs instead.
-> Yes i understand but i had a special requirement for using this API
-> during pd probe.
->  I cannot use hierarchy to represent parent/child pd nodes as it will
-> break the existing SoC's. In my case all the PD nodes are linear. The
-> parent/child relationship are established in the second pass after all
-> the PD entries are registered with the help of this API.
-> Although there a way that i can always keep parent PD's before the
-> child PD's in DT in linear order. Will check this approach.
 
-I had some thinking around this, could the below approach work?
+--qcHopEYAB45HaUaB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I just posted a patch[1] adding a new pm_genpd_lookup() API, which is
-using a "DT device node" to fetch the genpd. The idea is to use that
-API to get the genpd handle which is needed to configure a subdomain
-through pm_genpd_add_subdomain() API.
+Hello Navneet
 
-In principle you will have to walk through the DT a couple of times,
-initialize those domains (and subdomains) which either don't have a
-parent domain or which parent domain already has been initialized. I
-guess you need a somewhat clever loop to do that, but I think it's
-doable.
+On Wed, Nov 26, 2014 at 05:16:27PM -0800, Navneet Kumar wrote:
+> From: navneet kumar <navneetk@nvidia.com>
+>=20
+> Support writable trip points configuration from the
+> device tree. 'OF' reads this configuration and adjusts
+> the 'trips' mask accordingly to allow the 'set_trip_xxx'
+> calls to be effective.
+>=20
+> Signed-off-by: Diwakar Tundlam <dtundlam@nvidia.com>
 
-Obviously we also need to have a generic binding for a "parent
-domain". I like Geert's proposal from the other patch, which means
-using "power-domains = <&pd_xyz>".
+Thanks for sharing your patches!
 
-Kind regards
-Uffe
+> ---
+>  drivers/thermal/of-thermal.c | 14 ++++++++++++--
+>  1 file changed, 12 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/thermal/of-thermal.c b/drivers/thermal/of-thermal.c
+> index 62143ba31001..cf9ee3e82fee 100644
+> --- a/drivers/thermal/of-thermal.c
+> +++ b/drivers/thermal/of-thermal.c
+> @@ -604,7 +604,8 @@ static int thermal_of_get_trip_type(struct device_nod=
+e *np,
+>   * Return: 0 on success, proper error code otherwise
+>   */
+>  static int thermal_of_populate_trip(struct device_node *np,
+> -				    struct __thermal_trip *trip)
+> +				    struct __thermal_trip *trip,
+> +				    bool *trip_writable)
+>  {
+>  	int prop;
+>  	int ret;
+> @@ -629,6 +630,8 @@ static int thermal_of_populate_trip(struct device_nod=
+e *np,
+>  		return ret;
+>  	}
+> =20
+> +	*trip_writable =3D of_property_read_bool(np, "writable");
 
-[1]
-http://marc.info/?l=linux-pm&m=141709766008458&w=2
+New DT properties needs to be properly discussed in device tree mainling
+list. From what I see here, this property does not describe hardware,
+does it?=20
+
+A simple git grep writable Documentation/devicetree/bindings/
+returns nothing. So, I am a bit skeptic having this property is
+allowable.
+
+In any case, can you please send your proposal also copying device tree mai=
+ling list?
+devicetree@vger.kernel.org
+
+Besides, you need to document this new property:
+Documentation/devicetree/bindings/thermal/thermal.txt=20
+
+
+All the best,
+
+Eduardo Valentin
+
+> +
+>  	/* Required for cooling map matching */
+>  	trip->np =3D np;
+>  	of_node_get(np);
+> @@ -657,6 +660,8 @@ thermal_of_build_thermal_zone(struct device_node *np)
+>  	struct __thermal_zone *tz;
+>  	int ret, i;
+>  	u32 prop;
+> +	bool trip_writable;
+> +	u64 m =3D 0;
+> =20
+>  	if (!np) {
+>  		pr_err("no thermal zone np\n");
+> @@ -700,9 +705,14 @@ thermal_of_build_thermal_zone(struct device_node *np)
+> =20
+>  	i =3D 0;
+>  	for_each_child_of_node(child, gchild) {
+> -		ret =3D thermal_of_populate_trip(gchild, &tz->trips[i++]);
+> +		trip_writable =3D false;
+> +		ret =3D thermal_of_populate_trip(gchild, &tz->trips[i],
+> +					       &trip_writable);
+>  		if (ret)
+>  			goto free_trips;
+> +		if (trip_writable)
+> +			m |=3D 1ULL << i;
+> +		i++;
+>  	}
+> =20
+>  	of_node_put(child);
+> --=20
+> 1.8.1.5
+>=20
+
+--qcHopEYAB45HaUaB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUdzNeAAoJEMLUO4d9pOJWCGQIAIpJSIucsTCXJraPUVr/UqbS
+wIUsZNRC8zMe5mMLqcLedj9mt7ATKo95osIr1IXLdrHQxCAvbxgbGP0gpwqDTe5U
+eOt/6xSXDv7ZJgvEwWxJ7IrxrsycRVTx2+IZaiYT6atfxLyG9FWPMH9QznWOj/o6
+PPMl5pk/RKl9uEvItWrd426aXHZ+PAT4Kjz8iU/R6fOwU7U7Hl9lUbP68T4oE29O
+iHXZKWHj1vrKuHiixSghkJ4GcWBGu52PC2m/U5WM9MlV3TCqDSBNOg5vl70Iw7+X
+WW0K0m3TAf37VJWZ8F/ZjeQmYMjOLxmW1vLh3iXqd2Rvgb2WB0KsqaK7xaU/Hi0=
+=VbsH
+-----END PGP SIGNATURE-----
+
+--qcHopEYAB45HaUaB--
