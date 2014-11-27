@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751144AbaK0QGn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 11:06:43 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:54344 "EHLO
+	id S1751367AbaK0QHJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 11:07:09 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:54385 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784AbaK0QGm (ORCPT
+	with ESMTP id S1750892AbaK0QHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 11:06:42 -0500
+	Thu, 27 Nov 2014 11:07:05 -0500
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 CC: Boris BREZILLON <boris.brezillon@free-electrons.com>,
@@ -14,82 +14,38 @@ CC: Boris BREZILLON <boris.brezillon@free-electrons.com>,
         Ludovic Desroches <ludovic.desroches@atmel.com>,
         Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 00/11] ARM: at91: remove !DT support for at91rm9200
-Date: Thu, 27 Nov 2014 17:06:28 +0100
-Message-ID: <cover.1417103399.git.nicolas.ferre@atmel.com>
+Subject: [PATCH 01/11] ARM: at91: remove at91rm9200 legacy boards files
+Date: Thu, 27 Nov 2014 17:06:29 +0100
+Message-ID: <73c3d8d8a3a5d52fc40391d9bdf7d2d6485c3410.1417103399.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 2.1.3
+In-Reply-To: <cover.1417103399.git.nicolas.ferre@atmel.com>
+References: <cover.1417103399.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the last series of patches that removes the non-Device-Tree board
-support for older Atmel SoCs.
-Again, for the record, it was announced here
-https://lkml.org/lkml/2014/9/10/293 ([ANNOUNCE] ARM: at91: removal of board
-files) two months ago.
-Several files beyond at91rm9200 are touched this time as I tried to remove the
-biggest parts that were related to !DT SoC initializations. More cleanup is
-certainly needed to remove dead code.
+Remove old board files that use at91rm9200 Atmel SoC. The
+device tree is mature on this SoCs. It must be used now.
 
-The diffstat is also pretty big as a lot of at91rm9200 boards were remaining.
-
-Bye,
-
-Nicolas Ferre (11):
-  ARM: at91: remove at91rm9200 legacy boards files
-  ARM: at91: remove at91rm9200 legacy board support
-  ARM: at91: switch configuration option to SOC_AT91RM9200
-  ARM: at91/Kconfig: remove ARCH_AT91RM9200 option for drivers
-  ARM: at91: always USE_OF from now on
-  ARM: at91/trivial: update Kconfig comment to mention SAMA5
-  ARM: at91: remove all !DT related configuration options
-  ARM: at91: remove clock data in at91sam9n12.c and at91sam9x5.c files
-  ARM: at91: remove old at91-specific clock driver
-  ARM: at91: remove legacy IRQ driver and related code
-  ARM: at91: remove unused IRQ function declarations
-
- arch/arm/Kconfig                        |    5 +-
- arch/arm/configs/at91rm9200_defconfig   |  161 ----
- arch/arm/mach-at91/Kconfig              |   34 +-
- arch/arm/mach-at91/Kconfig.non_dt       |  114 ---
- arch/arm/mach-at91/Makefile             |   19 -
- arch/arm/mach-at91/at91_aic.h           |   99 ---
- arch/arm/mach-at91/at91rm9200.c         |  341 ---------
- arch/arm/mach-at91/at91rm9200_devices.c | 1212 -------------------------------
- arch/arm/mach-at91/at91sam9n12.c        |  213 +-----
- arch/arm/mach-at91/at91sam9x5.c         |  311 +-------
- arch/arm/mach-at91/board-1arm.c         |   99 ---
- arch/arm/mach-at91/board-carmeva.c      |  167 -----
- arch/arm/mach-at91/board-cpuat91.c      |  189 -----
- arch/arm/mach-at91/board-csb337.c       |  260 -------
- arch/arm/mach-at91/board-csb637.c       |  142 ----
- arch/arm/mach-at91/board-dt-rm9200.c    |    1 -
- arch/arm/mach-at91/board-dt-sam9.c      |    1 -
- arch/arm/mach-at91/board-dt-sama5.c     |    1 -
- arch/arm/mach-at91/board-eb9200.c       |  126 ----
- arch/arm/mach-at91/board-ecbat91.c      |  191 -----
- arch/arm/mach-at91/board-eco920.c       |  160 ----
- arch/arm/mach-at91/board-kafa.c         |  113 ---
- arch/arm/mach-at91/board-kb9202.c       |  159 ----
- arch/arm/mach-at91/board-picotux200.c   |  129 ----
- arch/arm/mach-at91/board-rm9200ek.c     |  196 -----
- arch/arm/mach-at91/board-yl-9200.c      |  597 ---------------
- arch/arm/mach-at91/clock.c              |  977 -------------------------
- arch/arm/mach-at91/clock.h              |   49 --
- arch/arm/mach-at91/generic.h            |   17 -
- arch/arm/mach-at91/irq.c                |  296 --------
- arch/arm/mach-at91/pm.c                 |   22 -
- arch/arm/mach-at91/setup.c              |   13 -
- drivers/net/ethernet/cadence/Kconfig    |    2 +-
- drivers/rtc/Kconfig                     |    2 +-
- drivers/watchdog/Kconfig                |    4 +-
- 35 files changed, 19 insertions(+), 6403 deletions(-)
- delete mode 100644 arch/arm/configs/at91rm9200_defconfig
- delete mode 100644 arch/arm/mach-at91/Kconfig.non_dt
- delete mode 100644 arch/arm/mach-at91/at91_aic.h
- delete mode 100644 arch/arm/mach-at91/at91rm9200_devices.c
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/mach-at91/Makefile           |  15 -
+ arch/arm/mach-at91/board-1arm.c       |  99 ------
+ arch/arm/mach-at91/board-carmeva.c    | 167 ----------
+ arch/arm/mach-at91/board-cpuat91.c    | 189 -----------
+ arch/arm/mach-at91/board-csb337.c     | 260 ---------------
+ arch/arm/mach-at91/board-csb637.c     | 142 --------
+ arch/arm/mach-at91/board-eb9200.c     | 126 -------
+ arch/arm/mach-at91/board-ecbat91.c    | 191 -----------
+ arch/arm/mach-at91/board-eco920.c     | 160 ---------
+ arch/arm/mach-at91/board-kafa.c       | 113 -------
+ arch/arm/mach-at91/board-kb9202.c     | 159 ---------
+ arch/arm/mach-at91/board-picotux200.c | 129 --------
+ arch/arm/mach-at91/board-rm9200ek.c   | 196 -----------
+ arch/arm/mach-at91/board-yl-9200.c    | 597 ----------------------------------
+ 14 files changed, 2543 deletions(-)
  delete mode 100644 arch/arm/mach-at91/board-1arm.c
  delete mode 100644 arch/arm/mach-at91/board-carmeva.c
  delete mode 100644 arch/arm/mach-at91/board-cpuat91.c
@@ -103,10 +59,2639 @@ Nicolas Ferre (11):
  delete mode 100644 arch/arm/mach-at91/board-picotux200.c
  delete mode 100644 arch/arm/mach-at91/board-rm9200ek.c
  delete mode 100644 arch/arm/mach-at91/board-yl-9200.c
- delete mode 100644 arch/arm/mach-at91/clock.c
- delete mode 100644 arch/arm/mach-at91/clock.h
- delete mode 100644 arch/arm/mach-at91/irq.c
 
+diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
+index b2495d71f7ac..016d9a126eb9 100644
+--- a/arch/arm/mach-at91/Makefile
++++ b/arch/arm/mach-at91/Makefile
+@@ -22,21 +22,6 @@ obj-$(CONFIG_SOC_SAMA5D4)	+= sama5d4.o
+ 
+ obj-$(CONFIG_ARCH_AT91RM9200)	+= at91rm9200_devices.o
+ 
+-# AT91RM9200 board-specific support
+-obj-$(CONFIG_MACH_ONEARM)	+= board-1arm.o
+-obj-$(CONFIG_MACH_AT91RM9200EK)	+= board-rm9200ek.o
+-obj-$(CONFIG_MACH_CSB337)	+= board-csb337.o
+-obj-$(CONFIG_MACH_CSB637)	+= board-csb637.o
+-obj-$(CONFIG_MACH_CARMEVA)	+= board-carmeva.o
+-obj-$(CONFIG_MACH_KB9200)	+= board-kb9202.o
+-obj-$(CONFIG_MACH_ATEB9200)	+= board-eb9200.o
+-obj-$(CONFIG_MACH_KAFA)		+= board-kafa.o
+-obj-$(CONFIG_MACH_PICOTUX2XX)	+= board-picotux200.o
+-obj-$(CONFIG_MACH_ECBAT91)	+= board-ecbat91.o
+-obj-$(CONFIG_MACH_YL9200)	+= board-yl-9200.o
+-obj-$(CONFIG_MACH_CPUAT91)	+= board-cpuat91.o
+-obj-$(CONFIG_MACH_ECO920)	+= board-eco920.o
+-
+ # AT91SAM board with device-tree
+ obj-$(CONFIG_MACH_AT91RM9200_DT) += board-dt-rm9200.o
+ obj-$(CONFIG_MACH_AT91SAM9_DT) += board-dt-sam9.o
+diff --git a/arch/arm/mach-at91/board-1arm.c b/arch/arm/mach-at91/board-1arm.c
+deleted file mode 100644
+index 3f6dbcc34022..000000000000
+--- a/arch/arm/mach-at91/board-1arm.c
++++ /dev/null
+@@ -1,99 +0,0 @@
+-/*
+- * linux/arch/arm/mach-at91/board-1arm.c
+- *
+- *  Copyright (C) 2005 SAN People
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/types.h>
+-#include <linux/gpio.h>
+-#include <linux/init.h>
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/setup.h>
+-#include <asm/mach-types.h>
+-#include <asm/irq.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/irq.h>
+-
+-#include <mach/cpu.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-static void __init onearm_init_early(void)
+-{
+-	/* Set cpu type: PQFP */
+-	at91rm9200_set_type(ARCH_REVISON_9200_PQFP);
+-
+-	/* Initialize processor: 18.432 MHz crystal */
+-	at91_initialize(18432000);
+-}
+-
+-static struct macb_platform_data __initdata onearm_eth_data = {
+-	.phy_irq_pin	= AT91_PIN_PC4,
+-	.is_rmii	= 1,
+-};
+-
+-static struct at91_usbh_data __initdata onearm_usbh_data = {
+-	.ports		= 1,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-static struct at91_udc_data __initdata onearm_udc_data = {
+-	.vbus_pin	= AT91_PIN_PC2,
+-	.pullup_pin	= AT91_PIN_PC3,
+-};
+-
+-static void __init onearm_board_init(void)
+-{
+-	/* Serial */
+-	/* DBGU on ttyS0. (Rx & Tx only) */
+-	at91_register_uart(0, 0, 0);
+-
+-	/* USART0 on ttyS1 (Rx, Tx, CTS, RTS) */
+-	at91_register_uart(AT91RM9200_ID_US0, 1, ATMEL_UART_CTS | ATMEL_UART_RTS);
+-
+-	/* USART1 on ttyS2 (Rx, Tx, CTS, RTS, DTR, DSR, DCD, RI) */
+-	at91_register_uart(AT91RM9200_ID_US1, 2, ATMEL_UART_CTS | ATMEL_UART_RTS
+-			   | ATMEL_UART_DTR | ATMEL_UART_DSR | ATMEL_UART_DCD
+-			   | ATMEL_UART_RI);
+-	at91_add_device_serial();
+-	/* Ethernet */
+-	at91_add_device_eth(&onearm_eth_data);
+-	/* USB Host */
+-	at91_add_device_usbh(&onearm_usbh_data);
+-	/* USB Device */
+-	at91_add_device_udc(&onearm_udc_data);
+-}
+-
+-MACHINE_START(ONEARM, "Ajeco 1ARM single board computer")
+-	/* Maintainer: Lennert Buytenhek <buytenh@wantstofly.org> */
+-	.init_time	= at91rm9200_timer_init,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= onearm_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= onearm_board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/board-carmeva.c b/arch/arm/mach-at91/board-carmeva.c
+deleted file mode 100644
+index 47313d3ee037..000000000000
+--- a/arch/arm/mach-at91/board-carmeva.c
++++ /dev/null
+@@ -1,167 +0,0 @@
+-/*
+- * linux/arch/arm/mach-at91/board-carmeva.c
+- *
+- *  Copyright (c) 2005 Peer Georgi
+- *  		       Conitec Datasystems
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/types.h>
+-#include <linux/gpio.h>
+-#include <linux/init.h>
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-
+-#include <asm/setup.h>
+-#include <asm/mach-types.h>
+-#include <asm/irq.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/irq.h>
+-
+-#include <mach/hardware.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-
+-static void __init carmeva_init_early(void)
+-{
+-	/* Initialize processor: 20.000 MHz crystal */
+-	at91_initialize(20000000);
+-}
+-
+-static struct macb_platform_data __initdata carmeva_eth_data = {
+-	.phy_irq_pin	= AT91_PIN_PC4,
+-	.is_rmii	= 1,
+-};
+-
+-static struct at91_usbh_data __initdata carmeva_usbh_data = {
+-	.ports		= 2,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-static struct at91_udc_data __initdata carmeva_udc_data = {
+-	.vbus_pin	= AT91_PIN_PD12,
+-	.pullup_pin	= AT91_PIN_PD9,
+-};
+-
+-/* FIXME: user dependent */
+-// static struct at91_cf_data __initdata carmeva_cf_data = {
+-//	.det_pin	= AT91_PIN_PB0,
+-//	.rst_pin	= AT91_PIN_PC5,
+-	// .irq_pin	= -EINVAL,
+-	// .vcc_pin	= -EINVAL,
+-// };
+-
+-static struct mci_platform_data __initdata carmeva_mci0_data = {
+-	.slot[0] = {
+-		.bus_width	= 4,
+-		.detect_pin	= AT91_PIN_PB10,
+-		.wp_pin		= AT91_PIN_PC14,
+-	},
+-};
+-
+-static struct spi_board_info carmeva_spi_devices[] = {
+-	{ /* DataFlash chip */
+-		.modalias = "mtd_dataflash",
+-		.chip_select  = 0,
+-		.max_speed_hz = 10 * 1000 * 1000,
+-	},
+-	{ /* User accessible spi - cs1 (250KHz) */
+-		.modalias = "spi-cs1",
+-		.chip_select  = 1,
+-		.max_speed_hz = 250 *  1000,
+-	},
+-	{ /* User accessible spi - cs2 (1MHz) */
+-		.modalias = "spi-cs2",
+-		.chip_select  = 2,
+-		.max_speed_hz = 1 * 1000 *  1000,
+-	},
+-	{ /* User accessible spi - cs3 (10MHz) */
+-		.modalias = "spi-cs3",
+-		.chip_select  = 3,
+-		.max_speed_hz = 10 * 1000 *  1000,
+-	},
+-};
+-
+-static struct gpio_led carmeva_leds[] = {
+-	{ /* "user led 1", LED9 */
+-		.name			= "led9",
+-		.gpio			= AT91_PIN_PA21,
+-		.active_low		= 1,
+-		.default_trigger	= "heartbeat",
+-	},
+-	{ /* "user led 2", LED10 */
+-		.name			= "led10",
+-		.gpio			= AT91_PIN_PA25,
+-		.active_low		= 1,
+-	},
+-	{ /* "user led 3", LED11 */
+-		.name			= "led11",
+-		.gpio			= AT91_PIN_PA26,
+-		.active_low		= 1,
+-	},
+-	{ /* "user led 4", LED12 */
+-		.name			= "led12",
+-		.gpio			= AT91_PIN_PA18,
+-		.active_low		= 1,
+-	}
+-};
+-
+-static void __init carmeva_board_init(void)
+-{
+-	/* Serial */
+-	/* DBGU on ttyS0. (Rx & Tx only) */
+-	at91_register_uart(0, 0, 0);
+-
+-	/* USART1 on ttyS1. (Rx, Tx, CTS, RTS, DTR, DSR, DCD, RI) */
+-	at91_register_uart(AT91RM9200_ID_US1, 1, ATMEL_UART_CTS | ATMEL_UART_RTS
+-			   | ATMEL_UART_DTR | ATMEL_UART_DSR | ATMEL_UART_DCD
+-			   | ATMEL_UART_RI);
+-	at91_add_device_serial();
+-	/* Ethernet */
+-	at91_add_device_eth(&carmeva_eth_data);
+-	/* USB Host */
+-	at91_add_device_usbh(&carmeva_usbh_data);
+-	/* USB Device */
+-	at91_add_device_udc(&carmeva_udc_data);
+-	/* I2C */
+-	at91_add_device_i2c(NULL, 0);
+-	/* SPI */
+-	at91_add_device_spi(carmeva_spi_devices, ARRAY_SIZE(carmeva_spi_devices));
+-	/* Compact Flash */
+-//	at91_add_device_cf(&carmeva_cf_data);
+-	/* MMC */
+-	at91_add_device_mci(0, &carmeva_mci0_data);
+-	/* LEDs */
+-	at91_gpio_leds(carmeva_leds, ARRAY_SIZE(carmeva_leds));
+-}
+-
+-MACHINE_START(CARMEVA, "Carmeva")
+-	/* Maintainer: Conitec Datasystems */
+-	.init_time	= at91rm9200_timer_init,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= carmeva_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= carmeva_board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/board-cpuat91.c b/arch/arm/mach-at91/board-cpuat91.c
+deleted file mode 100644
+index c094350c9314..000000000000
+--- a/arch/arm/mach-at91/board-cpuat91.c
++++ /dev/null
+@@ -1,189 +0,0 @@
+-/*
+- * linux/arch/arm/mach-at91/board-cpuat91.c
+- *
+- *  Copyright (C) 2009 Eric Benard - eric@eukrea.com
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/types.h>
+-#include <linux/gpio.h>
+-#include <linux/init.h>
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-#include <linux/mtd/physmap.h>
+-#include <linux/mtd/plat-ram.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/setup.h>
+-#include <asm/mach-types.h>
+-#include <asm/irq.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/irq.h>
+-
+-#include <mach/at91rm9200_mc.h>
+-#include <mach/at91_ramc.h>
+-#include <mach/cpu.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-
+-static struct gpio_led cpuat91_leds[] = {
+-	{
+-		.name			= "led1",
+-		.default_trigger	= "heartbeat",
+-		.active_low		= 1,
+-		.gpio			= AT91_PIN_PC0,
+-	},
+-};
+-
+-static void __init cpuat91_init_early(void)
+-{
+-	/* Set cpu type: PQFP */
+-	at91rm9200_set_type(ARCH_REVISON_9200_PQFP);
+-
+-	/* Initialize processor: 18.432 MHz crystal */
+-	at91_initialize(18432000);
+-}
+-
+-static struct macb_platform_data __initdata cpuat91_eth_data = {
+-	.phy_irq_pin	= -EINVAL,
+-	.is_rmii	= 1,
+-};
+-
+-static struct at91_usbh_data __initdata cpuat91_usbh_data = {
+-	.ports		= 1,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-static struct at91_udc_data __initdata cpuat91_udc_data = {
+-	.vbus_pin	= AT91_PIN_PC15,
+-	.pullup_pin	= AT91_PIN_PC14,
+-};
+-
+-static struct mci_platform_data __initdata cpuat91_mci0_data = {
+-	.slot[0] = {
+-		.bus_width	= 4,
+-		.detect_pin	= AT91_PIN_PC2,
+-		.wp_pin		= -EINVAL,
+-	},
+-};
+-
+-static struct physmap_flash_data cpuat91_flash_data = {
+-	.width		= 2,
+-};
+-
+-static struct resource cpuat91_flash_resource = {
+-	.start		= AT91_CHIPSELECT_0,
+-	.end		= AT91_CHIPSELECT_0 + SZ_16M - 1,
+-	.flags		= IORESOURCE_MEM,
+-};
+-
+-static struct platform_device cpuat91_norflash = {
+-	.name		= "physmap-flash",
+-	.id		= 0,
+-	.dev	= {
+-		.platform_data	= &cpuat91_flash_data,
+-	},
+-	.resource	= &cpuat91_flash_resource,
+-	.num_resources	= 1,
+-};
+-
+-#ifdef CONFIG_MTD_PLATRAM
+-struct platdata_mtd_ram at91_sram_pdata = {
+-	.mapname	= "SRAM",
+-	.bankwidth	= 2,
+-};
+-
+-static struct resource at91_sram_resource[] = {
+-	[0] = {
+-		.start = AT91RM9200_SRAM_BASE,
+-		.end   = AT91RM9200_SRAM_BASE + AT91RM9200_SRAM_SIZE - 1,
+-		.flags = IORESOURCE_MEM,
+-	},
+-};
+-
+-static struct platform_device at91_sram = {
+-	.name		= "mtd-ram",
+-	.id		= 0,
+-	.resource	= at91_sram_resource,
+-	.num_resources	= ARRAY_SIZE(at91_sram_resource),
+-	.dev	= {
+-		.platform_data = &at91_sram_pdata,
+-	},
+-};
+-#endif /* MTD_PLATRAM */
+-
+-static struct platform_device *platform_devices[] __initdata = {
+-	&cpuat91_norflash,
+-#ifdef CONFIG_MTD_PLATRAM
+-	&at91_sram,
+-#endif /* CONFIG_MTD_PLATRAM */
+-};
+-
+-static void __init cpuat91_board_init(void)
+-{
+-	/* Serial */
+-	/* DBGU on ttyS0. (Rx & Tx only) */
+-	at91_register_uart(0, 0, 0);
+-
+-	/* USART0 on ttyS1. (Rx, Tx, CTS, RTS) */
+-	at91_register_uart(AT91RM9200_ID_US0, 1, ATMEL_UART_CTS |
+-		ATMEL_UART_RTS);
+-
+-	/* USART1 on ttyS2. (Rx, Tx, CTS, RTS, DTR, DSR, DCD, RI) */
+-	at91_register_uart(AT91RM9200_ID_US1, 2, ATMEL_UART_CTS |
+-		ATMEL_UART_RTS | ATMEL_UART_DTR | ATMEL_UART_DSR |
+-		ATMEL_UART_DCD | ATMEL_UART_RI);
+-
+-	/* USART2 on ttyS3 (Rx, Tx) */
+-	at91_register_uart(AT91RM9200_ID_US2, 3, 0);
+-
+-	/* USART3 on ttyS4 (Rx, Tx, CTS, RTS) */
+-	at91_register_uart(AT91RM9200_ID_US3, 4, ATMEL_UART_CTS |
+-		ATMEL_UART_RTS);
+-	at91_add_device_serial();
+-	/* LEDs. */
+-	at91_gpio_leds(cpuat91_leds, ARRAY_SIZE(cpuat91_leds));
+-	/* Ethernet */
+-	at91_add_device_eth(&cpuat91_eth_data);
+-	/* USB Host */
+-	at91_add_device_usbh(&cpuat91_usbh_data);
+-	/* USB Device */
+-	at91_add_device_udc(&cpuat91_udc_data);
+-	/* MMC */
+-	at91_add_device_mci(0, &cpuat91_mci0_data);
+-	/* I2C */
+-	at91_add_device_i2c(NULL, 0);
+-	/* Platform devices */
+-	platform_add_devices(platform_devices, ARRAY_SIZE(platform_devices));
+-}
+-
+-MACHINE_START(CPUAT91, "Eukrea")
+-	/* Maintainer: Eric Benard - EUKREA Electromatique */
+-	.init_time	= at91rm9200_timer_init,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= cpuat91_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= cpuat91_board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/board-csb337.c b/arch/arm/mach-at91/board-csb337.c
+deleted file mode 100644
+index 0e35a45cf8d4..000000000000
+--- a/arch/arm/mach-at91/board-csb337.c
++++ /dev/null
+@@ -1,260 +0,0 @@
+-/*
+- * linux/arch/arm/mach-at91/board-csb337.c
+- *
+- *  Copyright (C) 2005 SAN People
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/types.h>
+-#include <linux/gpio.h>
+-#include <linux/init.h>
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-#include <linux/spi/spi.h>
+-#include <linux/mtd/physmap.h>
+-#include <linux/input.h>
+-#include <linux/gpio_keys.h>
+-
+-#include <asm/setup.h>
+-#include <asm/mach-types.h>
+-#include <asm/irq.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/irq.h>
+-
+-#include <mach/hardware.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-static void __init csb337_init_early(void)
+-{
+-	/* Initialize processor: 3.6864 MHz crystal */
+-	at91_initialize(3686400);
+-}
+-
+-static struct macb_platform_data __initdata csb337_eth_data = {
+-	.phy_irq_pin	= AT91_PIN_PC2,
+-	.is_rmii	= 0,
+-	/* The CSB337 bootloader stores the MAC the wrong-way around */
+-	.rev_eth_addr	= 1,
+-};
+-
+-static struct at91_usbh_data __initdata csb337_usbh_data = {
+-	.ports		= 2,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-static struct at91_udc_data __initdata csb337_udc_data = {
+-	.pullup_pin	= AT91_PIN_PA24,
+-	.vbus_pin	= -EINVAL,
+-};
+-
+-static struct i2c_board_info __initdata csb337_i2c_devices[] = {
+-	{
+-		I2C_BOARD_INFO("ds1307", 0x68),
+-	},
+-};
+-
+-static struct at91_cf_data __initdata csb337_cf_data = {
+-	/*
+-	 * connector P4 on the CSB 337 mates to
+-	 * connector P8 on the CSB 300CF
+-	 */
+-
+-	/* CSB337 specific */
+-	.det_pin	= AT91_PIN_PC3,
+-
+-	/* CSB300CF specific */
+-	.irq_pin	= AT91_PIN_PA19,
+-	.vcc_pin	= AT91_PIN_PD0,
+-	.rst_pin	= AT91_PIN_PD2,
+-};
+-
+-static struct mci_platform_data __initdata csb337_mci0_data = {
+-	.slot[0] = {
+-		.bus_width	= 4,
+-		.detect_pin	= AT91_PIN_PD5,
+-		.wp_pin		= AT91_PIN_PD6,
+-	},
+-};
+-
+-static struct spi_board_info csb337_spi_devices[] = {
+-	{	/* CAN controller */
+-		.modalias	= "sak82c900",
+-		.chip_select	= 0,
+-		.max_speed_hz	= 6 * 1000 * 1000,
+-	},
+-};
+-
+-#define CSB_FLASH_BASE	AT91_CHIPSELECT_0
+-#define CSB_FLASH_SIZE	SZ_8M
+-
+-static struct mtd_partition csb_flash_partitions[] = {
+-	{
+-		.name		= "uMON flash",
+-		.offset		= 0,
+-		.size		= MTDPART_SIZ_FULL,
+-		.mask_flags	= MTD_WRITEABLE,	/* read only */
+-	}
+-};
+-
+-static struct physmap_flash_data csb_flash_data = {
+-	.width		= 2,
+-	.parts		= csb_flash_partitions,
+-	.nr_parts	= ARRAY_SIZE(csb_flash_partitions),
+-};
+-
+-static struct resource csb_flash_resources[] = {
+-	{
+-		.start	= CSB_FLASH_BASE,
+-		.end	= CSB_FLASH_BASE + CSB_FLASH_SIZE - 1,
+-		.flags	= IORESOURCE_MEM,
+-	}
+-};
+-
+-static struct platform_device csb_flash = {
+-	.name		= "physmap-flash",
+-	.id		= 0,
+-	.dev		= {
+-				.platform_data = &csb_flash_data,
+-			},
+-	.resource	= csb_flash_resources,
+-	.num_resources	= ARRAY_SIZE(csb_flash_resources),
+-};
+-
+-/*
+- * GPIO Buttons (on CSB300)
+- */
+-#if defined(CONFIG_KEYBOARD_GPIO) || defined(CONFIG_KEYBOARD_GPIO_MODULE)
+-static struct gpio_keys_button csb300_buttons[] = {
+-	{
+-		.gpio		= AT91_PIN_PB29,
+-		.code		= BTN_0,
+-		.desc		= "sw0",
+-		.active_low	= 1,
+-		.wakeup		= 1,
+-	},
+-	{
+-		.gpio		= AT91_PIN_PB28,
+-		.code		= BTN_1,
+-		.desc		= "sw1",
+-		.active_low	= 1,
+-		.wakeup		= 1,
+-	},
+-	{
+-		.gpio		= AT91_PIN_PA21,
+-		.code		= BTN_2,
+-		.desc		= "sw2",
+-		.active_low	= 1,
+-		.wakeup		= 1,
+-	}
+-};
+-
+-static struct gpio_keys_platform_data csb300_button_data = {
+-	.buttons	= csb300_buttons,
+-	.nbuttons	= ARRAY_SIZE(csb300_buttons),
+-};
+-
+-static struct platform_device csb300_button_device = {
+-	.name		= "gpio-keys",
+-	.id		= -1,
+-	.num_resources	= 0,
+-	.dev		= {
+-		.platform_data	= &csb300_button_data,
+-	}
+-};
+-
+-static void __init csb300_add_device_buttons(void)
+-{
+-	at91_set_gpio_input(AT91_PIN_PB29, 1);	/* sw0 */
+-	at91_set_deglitch(AT91_PIN_PB29, 1);
+-	at91_set_gpio_input(AT91_PIN_PB28, 1);	/* sw1 */
+-	at91_set_deglitch(AT91_PIN_PB28, 1);
+-	at91_set_gpio_input(AT91_PIN_PA21, 1);	/* sw2 */
+-	at91_set_deglitch(AT91_PIN_PA21, 1);
+-
+-	platform_device_register(&csb300_button_device);
+-}
+-#else
+-static void __init csb300_add_device_buttons(void) {}
+-#endif
+-
+-static struct gpio_led csb_leds[] = {
+-	{	/* "led0", yellow */
+-		.name			= "led0",
+-		.gpio			= AT91_PIN_PB2,
+-		.active_low		= 1,
+-		.default_trigger	= "heartbeat",
+-	},
+-	{	/* "led1", green */
+-		.name			= "led1",
+-		.gpio			= AT91_PIN_PB1,
+-		.active_low		= 1,
+-		.default_trigger	= "mmc0",
+-	},
+-	{	/* "led2", yellow */
+-		.name			= "led2",
+-		.gpio			= AT91_PIN_PB0,
+-		.active_low		= 1,
+-		.default_trigger	= "ide-disk",
+-	}
+-};
+-
+-
+-static void __init csb337_board_init(void)
+-{
+-	/* Serial */
+-	/* DBGU on ttyS0 */
+-	at91_register_uart(0, 0, 0);
+-	at91_add_device_serial();
+-	/* Ethernet */
+-	at91_add_device_eth(&csb337_eth_data);
+-	/* USB Host */
+-	at91_add_device_usbh(&csb337_usbh_data);
+-	/* USB Device */
+-	at91_add_device_udc(&csb337_udc_data);
+-	/* I2C */
+-	at91_add_device_i2c(csb337_i2c_devices, ARRAY_SIZE(csb337_i2c_devices));
+-	/* Compact Flash */
+-	at91_set_gpio_input(AT91_PIN_PB22, 1);		/* IOIS16 */
+-	at91_add_device_cf(&csb337_cf_data);
+-	/* SPI */
+-	at91_add_device_spi(csb337_spi_devices, ARRAY_SIZE(csb337_spi_devices));
+-	/* MMC */
+-	at91_add_device_mci(0, &csb337_mci0_data);
+-	/* NOR flash */
+-	platform_device_register(&csb_flash);
+-	/* LEDs */
+-	at91_gpio_leds(csb_leds, ARRAY_SIZE(csb_leds));
+-	/* Switches on CSB300 */
+-	csb300_add_device_buttons();
+-}
+-
+-MACHINE_START(CSB337, "Cogent CSB337")
+-	/* Maintainer: Bill Gatliff */
+-	.init_time	= at91rm9200_timer_init,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= csb337_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= csb337_board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/board-csb637.c b/arch/arm/mach-at91/board-csb637.c
+deleted file mode 100644
+index 18d027f529a8..000000000000
+--- a/arch/arm/mach-at91/board-csb637.c
++++ /dev/null
+@@ -1,142 +0,0 @@
+-/*
+- * linux/arch/arm/mach-at91/board-csb637.c
+- *
+- *  Copyright (C) 2005 SAN People
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/types.h>
+-#include <linux/init.h>
+-#include <linux/gpio.h>
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-#include <linux/mtd/physmap.h>
+-
+-#include <asm/setup.h>
+-#include <asm/mach-types.h>
+-#include <asm/irq.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/irq.h>
+-
+-#include <mach/hardware.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-
+-static void __init csb637_init_early(void)
+-{
+-	/* Initialize processor: 3.6864 MHz crystal */
+-	at91_initialize(3686400);
+-}
+-
+-static struct macb_platform_data __initdata csb637_eth_data = {
+-	.phy_irq_pin	= AT91_PIN_PC0,
+-	.is_rmii	= 0,
+-};
+-
+-static struct at91_usbh_data __initdata csb637_usbh_data = {
+-	.ports		= 2,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-static struct at91_udc_data __initdata csb637_udc_data = {
+-	.vbus_pin     = AT91_PIN_PB28,
+-	.pullup_pin   = AT91_PIN_PB1,
+-};
+-
+-#define CSB_FLASH_BASE	AT91_CHIPSELECT_0
+-#define CSB_FLASH_SIZE	SZ_16M
+-
+-static struct mtd_partition csb_flash_partitions[] = {
+-	{
+-		.name		= "uMON flash",
+-		.offset		= 0,
+-		.size		= MTDPART_SIZ_FULL,
+-		.mask_flags	= MTD_WRITEABLE,	/* read only */
+-	}
+-};
+-
+-static struct physmap_flash_data csb_flash_data = {
+-	.width		= 2,
+-	.parts		= csb_flash_partitions,
+-	.nr_parts	= ARRAY_SIZE(csb_flash_partitions),
+-};
+-
+-static struct resource csb_flash_resources[] = {
+-	{
+-		.start	= CSB_FLASH_BASE,
+-		.end	= CSB_FLASH_BASE + CSB_FLASH_SIZE - 1,
+-		.flags	= IORESOURCE_MEM,
+-	}
+-};
+-
+-static struct platform_device csb_flash = {
+-	.name		= "physmap-flash",
+-	.id		= 0,
+-	.dev		= {
+-				.platform_data = &csb_flash_data,
+-			},
+-	.resource	= csb_flash_resources,
+-	.num_resources	= ARRAY_SIZE(csb_flash_resources),
+-};
+-
+-static struct gpio_led csb_leds[] = {
+-	{	/* "d1", red */
+-		.name			= "d1",
+-		.gpio			= AT91_PIN_PB2,
+-		.active_low		= 1,
+-		.default_trigger	= "heartbeat",
+-	},
+-};
+-
+-static void __init csb637_board_init(void)
+-{
+-	/* LED(s) */
+-	at91_gpio_leds(csb_leds, ARRAY_SIZE(csb_leds));
+-	/* Serial */
+-	/* DBGU on ttyS0. (Rx & Tx only) */
+-	at91_register_uart(0, 0, 0);
+-	at91_add_device_serial();
+-	/* Ethernet */
+-	at91_add_device_eth(&csb637_eth_data);
+-	/* USB Host */
+-	at91_add_device_usbh(&csb637_usbh_data);
+-	/* USB Device */
+-	at91_add_device_udc(&csb637_udc_data);
+-	/* I2C */
+-	at91_add_device_i2c(NULL, 0);
+-	/* SPI */
+-	at91_add_device_spi(NULL, 0);
+-	/* NOR flash */
+-	platform_device_register(&csb_flash);
+-}
+-
+-MACHINE_START(CSB637, "Cogent CSB637")
+-	/* Maintainer: Bill Gatliff */
+-	.init_time	= at91rm9200_timer_init,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= csb637_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= csb637_board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/board-eb9200.c b/arch/arm/mach-at91/board-eb9200.c
+deleted file mode 100644
+index aa457a8b22f5..000000000000
+--- a/arch/arm/mach-at91/board-eb9200.c
++++ /dev/null
+@@ -1,126 +0,0 @@
+-/*
+- * linux/arch/arm/mach-at91/board-eb9200.c
+- *
+- *  Copyright (C) 2005 SAN People, adapted for ATEB9200 from Embest
+- *  by Andrew Patrikalakis
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/types.h>
+-#include <linux/gpio.h>
+-#include <linux/init.h>
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/device.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/setup.h>
+-#include <asm/mach-types.h>
+-#include <asm/irq.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/irq.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-
+-static void __init eb9200_init_early(void)
+-{
+-	/* Initialize processor: 18.432 MHz crystal */
+-	at91_initialize(18432000);
+-}
+-
+-static struct macb_platform_data __initdata eb9200_eth_data = {
+-	.phy_irq_pin	= AT91_PIN_PC4,
+-	.is_rmii	= 1,
+-};
+-
+-static struct at91_usbh_data __initdata eb9200_usbh_data = {
+-	.ports		= 2,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-static struct at91_udc_data __initdata eb9200_udc_data = {
+-	.vbus_pin	= AT91_PIN_PD4,
+-	.pullup_pin	= AT91_PIN_PD5,
+-};
+-
+-static struct at91_cf_data __initdata eb9200_cf_data = {
+-	.irq_pin	= -EINVAL,
+-	.det_pin	= AT91_PIN_PB0,
+-	.vcc_pin	= -EINVAL,
+-	.rst_pin	= AT91_PIN_PC5,
+-};
+-
+-static struct mci_platform_data __initdata eb9200_mci0_data = {
+-	.slot[0] = {
+-		.bus_width	= 4,
+-		.detect_pin	= -EINVAL,
+-		.wp_pin		= -EINVAL,
+-	},
+-};
+-
+-static struct i2c_board_info __initdata eb9200_i2c_devices[] = {
+-	{
+-		I2C_BOARD_INFO("24c512", 0x50),
+-	},
+-};
+-
+-
+-static void __init eb9200_board_init(void)
+-{
+-	/* Serial */
+-	/* DBGU on ttyS0. (Rx & Tx only) */
+-	at91_register_uart(0, 0, 0);
+-
+-	/* USART1 on ttyS1. (Rx, Tx, CTS, RTS, DTR, DSR, DCD, RI) */
+-	at91_register_uart(AT91RM9200_ID_US1, 1, ATMEL_UART_CTS | ATMEL_UART_RTS
+-			| ATMEL_UART_DTR | ATMEL_UART_DSR | ATMEL_UART_DCD
+-			| ATMEL_UART_RI);
+-
+-	/* USART2 on ttyS2. (Rx, Tx) - IRDA */
+-	at91_register_uart(AT91RM9200_ID_US2, 2, 0);
+-	at91_add_device_serial();
+-	/* Ethernet */
+-	at91_add_device_eth(&eb9200_eth_data);
+-	/* USB Host */
+-	at91_add_device_usbh(&eb9200_usbh_data);
+-	/* USB Device */
+-	at91_add_device_udc(&eb9200_udc_data);
+-	/* I2C */
+-	at91_add_device_i2c(eb9200_i2c_devices, ARRAY_SIZE(eb9200_i2c_devices));
+-	/* Compact Flash */
+-	at91_add_device_cf(&eb9200_cf_data);
+-	/* SPI */
+-	at91_add_device_spi(NULL, 0);
+-	/* MMC */
+-	/* only supports 1 or 4 bit interface, not wired through to SPI */
+-	at91_add_device_mci(0, &eb9200_mci0_data);
+-}
+-
+-MACHINE_START(ATEB9200, "Embest ATEB9200")
+-	.init_time	= at91rm9200_timer_init,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= eb9200_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= eb9200_board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/board-ecbat91.c b/arch/arm/mach-at91/board-ecbat91.c
+deleted file mode 100644
+index ede1373ccaba..000000000000
+--- a/arch/arm/mach-at91/board-ecbat91.c
++++ /dev/null
+@@ -1,191 +0,0 @@
+-/*
+- * linux/arch/arm/mach-at91rm9200/board-ecbat91.c
+- * Copyright (C) 2007 emQbit.com.
+- *
+- * We started from board-dk.c, which is Copyright (C) 2005 SAN People.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/types.h>
+-#include <linux/gpio.h>
+-#include <linux/init.h>
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-#include <linux/spi/spi.h>
+-#include <linux/spi/flash.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/setup.h>
+-#include <asm/mach-types.h>
+-#include <asm/irq.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/irq.h>
+-
+-#include <mach/cpu.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-
+-static void __init ecb_at91init_early(void)
+-{
+-	/* Set cpu type: PQFP */
+-	at91rm9200_set_type(ARCH_REVISON_9200_PQFP);
+-
+-	/* Initialize processor: 18.432 MHz crystal */
+-	at91_initialize(18432000);
+-}
+-
+-static struct macb_platform_data __initdata ecb_at91eth_data = {
+-	.phy_irq_pin	= AT91_PIN_PC4,
+-	.is_rmii	= 0,
+-};
+-
+-static struct at91_usbh_data __initdata ecb_at91usbh_data = {
+-	.ports		= 1,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-static struct mci_platform_data __initdata ecbat91_mci0_data = {
+-	.slot[0] = {
+-		.bus_width	= 4,
+-		.detect_pin	= -EINVAL,
+-		.wp_pin		= -EINVAL,
+-	},
+-};
+-
+-
+-#if defined(CONFIG_MTD_DATAFLASH)
+-static struct mtd_partition __initdata my_flash0_partitions[] =
+-{
+-	{	/* 0x8400 */
+-		.name	= "Darrell-loader",
+-		.offset	= 0,
+-		.size	= 12 * 1056,
+-	},
+-	{
+-		.name	= "U-boot",
+-		.offset	= MTDPART_OFS_NXTBLK,
+-		.size	= 110 * 1056,
+-	},
+-	{	/* 1336 (167 blocks) pages * 1056 bytes = 0x158700 bytes */
+-		.name	= "UBoot-env",
+-		.offset	= MTDPART_OFS_NXTBLK,
+-		.size	= 8 * 1056,
+-	},
+-	{	/* 1336 (167 blocks) pages * 1056 bytes = 0x158700 bytes */
+-		.name	= "Kernel",
+-		.offset	= MTDPART_OFS_NXTBLK,
+-		.size	= 1534 * 1056,
+-	},
+-	{	/* 190200 - jffs2 root filesystem */
+-		.name	= "Filesystem",
+-		.offset	= MTDPART_OFS_NXTBLK,
+-		.size	= MTDPART_SIZ_FULL,	/* 26 sectors */
+-	}
+-};
+-
+-static struct flash_platform_data __initdata my_flash0_platform = {
+-	.name		= "Removable flash card",
+-	.parts		= my_flash0_partitions,
+-	.nr_parts	= ARRAY_SIZE(my_flash0_partitions)
+-};
+-
+-#endif
+-
+-static struct spi_board_info __initdata ecb_at91spi_devices[] = {
+-	{	/* DataFlash chip */
+-		.modalias	= "mtd_dataflash",
+-		.chip_select	= 0,
+-		.max_speed_hz	= 10 * 1000 * 1000,
+-		.bus_num	= 0,
+-#if defined(CONFIG_MTD_DATAFLASH)
+-		.platform_data	= &my_flash0_platform,
+-#endif
+-	},
+-	{	/* User accessible spi - cs1 (250KHz) */
+-		.modalias	= "spi-cs1",
+-		.chip_select	= 1,
+-		.max_speed_hz	= 250 * 1000,
+-	},
+-	{	/* User accessible spi - cs2 (1MHz) */
+-		.modalias	= "spi-cs2",
+-		.chip_select	= 2,
+-		.max_speed_hz	= 1 * 1000 * 1000,
+-	},
+-	{	/* User accessible spi - cs3 (10MHz) */
+-		.modalias	= "spi-cs3",
+-		.chip_select	= 3,
+-		.max_speed_hz	= 10 * 1000 * 1000,
+-	},
+-};
+-
+-/*
+- * LEDs
+- */
+-static struct gpio_led ecb_leds[] = {
+-	{	/* D1 */
+-		.name			= "led1",
+-		.gpio			= AT91_PIN_PC7,
+-		.active_low		= 1,
+-		.default_trigger	= "heartbeat",
+-	}
+-};
+-
+-static void __init ecb_at91board_init(void)
+-{
+-	/* Serial */
+-	/* DBGU on ttyS0. (Rx & Tx only) */
+-	at91_register_uart(0, 0, 0);
+-
+-	/* USART0 on ttyS1. (Rx & Tx only) */
+-	at91_register_uart(AT91RM9200_ID_US0, 1, 0);
+-	at91_add_device_serial();
+-
+-	/* Ethernet */
+-	at91_add_device_eth(&ecb_at91eth_data);
+-
+-	/* USB Host */
+-	at91_add_device_usbh(&ecb_at91usbh_data);
+-
+-	/* I2C */
+-	at91_add_device_i2c(NULL, 0);
+-
+-	/* MMC */
+-	at91_add_device_mci(0, &ecbat91_mci0_data);
+-
+-	/* SPI */
+-	at91_add_device_spi(ecb_at91spi_devices, ARRAY_SIZE(ecb_at91spi_devices));
+-
+-	/* LEDs */
+-	at91_gpio_leds(ecb_leds, ARRAY_SIZE(ecb_leds));
+-}
+-
+-MACHINE_START(ECBAT91, "emQbit's ECB_AT91")
+-	/* Maintainer: emQbit.com */
+-	.init_time	= at91rm9200_timer_init,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= ecb_at91init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= ecb_at91board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/board-eco920.c b/arch/arm/mach-at91/board-eco920.c
+deleted file mode 100644
+index 4e75321a8f2a..000000000000
+--- a/arch/arm/mach-at91/board-eco920.c
++++ /dev/null
+@@ -1,160 +0,0 @@
+-/*
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+- */
+-
+-#include <linux/init.h>
+-#include <linux/platform_device.h>
+-#include <linux/mtd/physmap.h>
+-#include <linux/gpio.h>
+-
+-#include <asm/mach-types.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-
+-#include <mach/at91rm9200_mc.h>
+-#include <mach/at91_ramc.h>
+-#include <mach/cpu.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-
+-static void __init eco920_init_early(void)
+-{
+-	/* Set cpu type: PQFP */
+-	at91rm9200_set_type(ARCH_REVISON_9200_PQFP);
+-
+-	at91_initialize(18432000);
+-}
+-
+-static struct macb_platform_data __initdata eco920_eth_data = {
+-	.phy_irq_pin	= AT91_PIN_PC2,
+-	.is_rmii	= 1,
+-};
+-
+-static struct at91_usbh_data __initdata eco920_usbh_data = {
+-	.ports		= 1,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-static struct at91_udc_data __initdata eco920_udc_data = {
+-	.vbus_pin	= AT91_PIN_PB12,
+-	.pullup_pin	= AT91_PIN_PB13,
+-};
+-
+-static struct mci_platform_data __initdata eco920_mci0_data = {
+-	.slot[0] = {
+-		.bus_width	= 1,
+-		.detect_pin	= -EINVAL,
+-		.wp_pin		= -EINVAL,
+-	},
+-};
+-
+-static struct physmap_flash_data eco920_flash_data = {
+-	.width  = 2,
+-};
+-
+-static struct resource eco920_flash_resource = {
+-	.start          = 0x11000000,
+-	.end            = 0x11ffffff,
+-	.flags          = IORESOURCE_MEM,
+-};
+-
+-static struct platform_device eco920_flash = {
+-	.name           = "physmap-flash",
+-	.id             = 0,
+-	.dev            = {
+-		.platform_data  = &eco920_flash_data,
+-	},
+-	.resource       = &eco920_flash_resource,
+-	.num_resources  = 1,
+-};
+-
+-static struct spi_board_info eco920_spi_devices[] = {
+-	{	/* CAN controller */
+-		.modalias	= "tlv5638",
+-		.chip_select	= 3,
+-		.max_speed_hz	= 20 * 1000 * 1000,
+-		.mode		= SPI_CPHA,
+-	},
+-};
+-
+-/*
+- * LEDs
+- */
+-static struct gpio_led eco920_leds[] = {
+-	{       /* D1 */
+-		.name                   = "led1",
+-		.gpio                   = AT91_PIN_PB0,
+-		.active_low             = 1,
+-		.default_trigger        = "heartbeat",
+-	},
+-	{       /* D2 */
+-		.name                   = "led2",
+-		.gpio                   = AT91_PIN_PB1,
+-		.active_low             = 1,
+-		.default_trigger        = "timer",
+-	}
+-};
+-
+-static void __init eco920_board_init(void)
+-{
+-	/* DBGU on ttyS0. (Rx & Tx only */
+-	at91_register_uart(0, 0, 0);
+-	at91_add_device_serial();
+-	at91_add_device_eth(&eco920_eth_data);
+-	at91_add_device_usbh(&eco920_usbh_data);
+-	at91_add_device_udc(&eco920_udc_data);
+-
+-	at91_add_device_mci(0, &eco920_mci0_data);
+-	platform_device_register(&eco920_flash);
+-
+-	at91_ramc_write(0, AT91_SMC_CSR(7),	AT91_SMC_RWHOLD_(1)
+-				| AT91_SMC_RWSETUP_(1)
+-				| AT91_SMC_DBW_8
+-				| AT91_SMC_WSEN
+-				| AT91_SMC_NWS_(15));
+-
+-	at91_set_A_periph(AT91_PIN_PC6, 1);
+-
+-	at91_set_gpio_input(AT91_PIN_PA23, 0);
+-	at91_set_deglitch(AT91_PIN_PA23, 1);
+-
+-/* Initialization of the Static Memory Controller for Chip Select 3 */
+-	at91_ramc_write(0, AT91_SMC_CSR(3),
+-		AT91_SMC_DBW_16  |	/* 16 bit */
+-		AT91_SMC_WSEN    |
+-		AT91_SMC_NWS_(5) |	/* wait states */
+-		AT91_SMC_TDF_(1)	/* float time */
+-	);
+-
+-	at91_add_device_spi(eco920_spi_devices, ARRAY_SIZE(eco920_spi_devices));
+-	/* LEDs */
+-	at91_gpio_leds(eco920_leds, ARRAY_SIZE(eco920_leds));
+-}
+-
+-MACHINE_START(ECO920, "eco920")
+-	/* Maintainer: Sascha Hauer */
+-	.init_time	= at91rm9200_timer_init,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= eco920_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= eco920_board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/board-kafa.c b/arch/arm/mach-at91/board-kafa.c
+deleted file mode 100644
+index 93b1df42f639..000000000000
+--- a/arch/arm/mach-at91/board-kafa.c
++++ /dev/null
+@@ -1,113 +0,0 @@
+-/*
+- * linux/arch/arm/mach-at91/board-kafa.c
+- *
+- *  Copyright (C) 2006 Sperry-Sun
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/types.h>
+-#include <linux/gpio.h>
+-#include <linux/init.h>
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/setup.h>
+-#include <asm/mach-types.h>
+-#include <asm/irq.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/irq.h>
+-
+-#include <mach/cpu.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-
+-static void __init kafa_init_early(void)
+-{
+-	/* Set cpu type: PQFP */
+-	at91rm9200_set_type(ARCH_REVISON_9200_PQFP);
+-
+-	/* Initialize processor: 18.432 MHz crystal */
+-	at91_initialize(18432000);
+-}
+-
+-static struct macb_platform_data __initdata kafa_eth_data = {
+-	.phy_irq_pin	= AT91_PIN_PC4,
+-	.is_rmii	= 0,
+-};
+-
+-static struct at91_usbh_data __initdata kafa_usbh_data = {
+-	.ports		= 1,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-static struct at91_udc_data __initdata kafa_udc_data = {
+-	.vbus_pin	= AT91_PIN_PB6,
+-	.pullup_pin	= AT91_PIN_PB7,
+-};
+-
+-/*
+- * LEDs
+- */
+-static struct gpio_led kafa_leds[] = {
+-	{	/* D1 */
+-		.name			= "led1",
+-		.gpio			= AT91_PIN_PB4,
+-		.active_low		= 1,
+-		.default_trigger	= "heartbeat",
+-	},
+-};
+-
+-static void __init kafa_board_init(void)
+-{
+-	/* Serial */
+-	/* DBGU on ttyS0. (Rx & Tx only) */
+-	at91_register_uart(0, 0, 0);
+-
+-	/* USART0 on ttyS1 (Rx, Tx, CTS, RTS) */
+-	at91_register_uart(AT91RM9200_ID_US0, 1, ATMEL_UART_CTS | ATMEL_UART_RTS);
+-	at91_add_device_serial();
+-	/* Ethernet */
+-	at91_add_device_eth(&kafa_eth_data);
+-	/* USB Host */
+-	at91_add_device_usbh(&kafa_usbh_data);
+-	/* USB Device */
+-	at91_add_device_udc(&kafa_udc_data);
+-	/* I2C */
+-	at91_add_device_i2c(NULL, 0);
+-	/* SPI */
+-	at91_add_device_spi(NULL, 0);
+-	/* LEDs */
+-	at91_gpio_leds(kafa_leds, ARRAY_SIZE(kafa_leds));
+-}
+-
+-MACHINE_START(KAFA, "Sperry-Sun KAFA")
+-	/* Maintainer: Sergei Sharonov */
+-	.init_time	= at91rm9200_timer_init,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= kafa_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= kafa_board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/board-kb9202.c b/arch/arm/mach-at91/board-kb9202.c
+deleted file mode 100644
+index d58d36225e08..000000000000
+--- a/arch/arm/mach-at91/board-kb9202.c
++++ /dev/null
+@@ -1,159 +0,0 @@
+-/*
+- * linux/arch/arm/mach-at91/board-kb9202.c
+- *
+- *  Copyright (c) 2005 kb_admin
+- *  		       KwikByte, Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/types.h>
+-#include <linux/gpio.h>
+-#include <linux/init.h>
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/setup.h>
+-#include <asm/mach-types.h>
+-#include <asm/irq.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/irq.h>
+-
+-#include <mach/cpu.h>
+-#include <mach/at91rm9200_mc.h>
+-#include <mach/at91_ramc.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-
+-static void __init kb9202_init_early(void)
+-{
+-	/* Set cpu type: PQFP */
+-	at91rm9200_set_type(ARCH_REVISON_9200_PQFP);
+-
+-	/* Initialize processor: 10 MHz crystal */
+-	at91_initialize(10000000);
+-}
+-
+-static struct macb_platform_data __initdata kb9202_eth_data = {
+-	.phy_irq_pin	= AT91_PIN_PB29,
+-	.is_rmii	= 0,
+-};
+-
+-static struct at91_usbh_data __initdata kb9202_usbh_data = {
+-	.ports		= 1,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-static struct at91_udc_data __initdata kb9202_udc_data = {
+-	.vbus_pin	= AT91_PIN_PB24,
+-	.pullup_pin	= AT91_PIN_PB22,
+-};
+-
+-static struct mci_platform_data __initdata kb9202_mci0_data = {
+-	.slot[0] = {
+-		.bus_width	= 4,
+-		.detect_pin	= AT91_PIN_PB2,
+-		.wp_pin		= -EINVAL,
+-	},
+-};
+-
+-static struct mtd_partition __initdata kb9202_nand_partition[] = {
+-	{
+-		.name	= "nand_fs",
+-		.offset	= 0,
+-		.size	= MTDPART_SIZ_FULL,
+-	},
+-};
+-
+-static struct atmel_nand_data __initdata kb9202_nand_data = {
+-	.ale		= 22,
+-	.cle		= 21,
+-	.det_pin	= -EINVAL,
+-	.rdy_pin	= AT91_PIN_PC29,
+-	.enable_pin	= AT91_PIN_PC28,
+-	.ecc_mode	= NAND_ECC_SOFT,
+-	.parts		= kb9202_nand_partition,
+-	.num_parts	= ARRAY_SIZE(kb9202_nand_partition),
+-};
+-
+-/*
+- * LEDs
+- */
+-static struct gpio_led kb9202_leds[] = {
+-	{	/* D1 */
+-		.name			= "led1",
+-		.gpio			= AT91_PIN_PC19,
+-		.active_low		= 1,
+-		.default_trigger	= "heartbeat",
+-	},
+-	{	/* D2 */
+-		.name			= "led2",
+-		.gpio			= AT91_PIN_PC18,
+-		.active_low		= 1,
+-		.default_trigger	= "timer",
+-	}
+-};
+-
+-static void __init kb9202_board_init(void)
+-{
+-	/* Serial */
+-	/* DBGU on ttyS0. (Rx & Tx only) */
+-	at91_register_uart(0, 0, 0);
+-
+-	/* USART0 on ttyS1 (Rx & Tx only) */
+-	at91_register_uart(AT91RM9200_ID_US0, 1, 0);
+-
+-	/* USART1 on ttyS2 (Rx & Tx only) - IRDA (optional) */
+-	at91_register_uart(AT91RM9200_ID_US1, 2, 0);
+-
+-	/* USART3 on ttyS3 (Rx, Tx, CTS, RTS) - RS485 (optional) */
+-	at91_register_uart(AT91RM9200_ID_US3, 3, ATMEL_UART_CTS | ATMEL_UART_RTS);
+-	at91_add_device_serial();
+-	/* Ethernet */
+-	at91_add_device_eth(&kb9202_eth_data);
+-	/* USB Host */
+-	at91_add_device_usbh(&kb9202_usbh_data);
+-	/* USB Device */
+-	at91_add_device_udc(&kb9202_udc_data);
+-	/* MMC */
+-	at91_add_device_mci(0, &kb9202_mci0_data);
+-	/* I2C */
+-	at91_add_device_i2c(NULL, 0);
+-	/* SPI */
+-	at91_add_device_spi(NULL, 0);
+-	/* NAND */
+-	at91_add_device_nand(&kb9202_nand_data);
+-	/* LEDs */
+-	at91_gpio_leds(kb9202_leds, ARRAY_SIZE(kb9202_leds));
+-}
+-
+-MACHINE_START(KB9200, "KB920x")
+-	/* Maintainer: KwikByte, Inc. */
+-	.init_time	= at91rm9200_timer_init,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= kb9202_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= kb9202_board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/board-picotux200.c b/arch/arm/mach-at91/board-picotux200.c
+deleted file mode 100644
+index 2c0f2d554d84..000000000000
+--- a/arch/arm/mach-at91/board-picotux200.c
++++ /dev/null
+@@ -1,129 +0,0 @@
+-/*
+- * linux/arch/arm/mach-at91/board-picotux200.c
+- *
+- *  Copyright (C) 2005 SAN People
+- *  Copyright (C) 2007 Kleinhenz Elektronik GmbH
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/types.h>
+-#include <linux/gpio.h>
+-#include <linux/init.h>
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-#include <linux/spi/spi.h>
+-#include <linux/mtd/physmap.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/setup.h>
+-#include <asm/mach-types.h>
+-#include <asm/irq.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/irq.h>
+-
+-#include <mach/at91rm9200_mc.h>
+-#include <mach/at91_ramc.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-
+-static void __init picotux200_init_early(void)
+-{
+-	/* Initialize processor: 18.432 MHz crystal */
+-	at91_initialize(18432000);
+-}
+-
+-static struct macb_platform_data __initdata picotux200_eth_data = {
+-	.phy_irq_pin	= AT91_PIN_PC4,
+-	.is_rmii	= 1,
+-};
+-
+-static struct at91_usbh_data __initdata picotux200_usbh_data = {
+-	.ports		= 1,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-static struct mci_platform_data __initdata picotux200_mci0_data = {
+-	.slot[0] = {
+-		.bus_width	= 4,
+-		.detect_pin	= AT91_PIN_PB27,
+-		.wp_pin		= AT91_PIN_PA17,
+-	},
+-};
+-
+-#define PICOTUX200_FLASH_BASE	AT91_CHIPSELECT_0
+-#define PICOTUX200_FLASH_SIZE	SZ_4M
+-
+-static struct physmap_flash_data picotux200_flash_data = {
+-	.width	= 2,
+-};
+-
+-static struct resource picotux200_flash_resource = {
+-	.start		= PICOTUX200_FLASH_BASE,
+-	.end		= PICOTUX200_FLASH_BASE + PICOTUX200_FLASH_SIZE - 1,
+-	.flags		= IORESOURCE_MEM,
+-};
+-
+-static struct platform_device picotux200_flash = {
+-	.name		= "physmap-flash",
+-	.id		= 0,
+-	.dev		= {
+-				.platform_data	= &picotux200_flash_data,
+-			},
+-	.resource	= &picotux200_flash_resource,
+-	.num_resources	= 1,
+-};
+-
+-static void __init picotux200_board_init(void)
+-{
+-	/* Serial */
+-	/* DBGU on ttyS0. (Rx & Tx only) */
+-	at91_register_uart(0, 0, 0);
+-
+-	/* USART1 on ttyS1. (Rx, Tx, CTS, RTS, DTR, DSR, DCD, RI) */
+-	at91_register_uart(AT91RM9200_ID_US1, 1, ATMEL_UART_CTS | ATMEL_UART_RTS
+-			  | ATMEL_UART_DTR | ATMEL_UART_DSR | ATMEL_UART_DCD
+-			  | ATMEL_UART_RI);
+-	at91_add_device_serial();
+-	/* Ethernet */
+-	at91_add_device_eth(&picotux200_eth_data);
+-	/* USB Host */
+-	at91_add_device_usbh(&picotux200_usbh_data);
+-	/* I2C */
+-	at91_add_device_i2c(NULL, 0);
+-	/* MMC */
+-	at91_set_gpio_output(AT91_PIN_PB22, 1);	/* this MMC card slot can optionally use SPI signaling (CS3). */
+-	at91_add_device_mci(0, &picotux200_mci0_data);
+-	/* NOR Flash */
+-	platform_device_register(&picotux200_flash);
+-}
+-
+-MACHINE_START(PICOTUX2XX, "picotux 200")
+-	/* Maintainer: Kleinhenz Elektronik GmbH */
+-	.init_time	= at91rm9200_timer_init,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= picotux200_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= picotux200_board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/board-rm9200ek.c b/arch/arm/mach-at91/board-rm9200ek.c
+deleted file mode 100644
+index 953cea416754..000000000000
+--- a/arch/arm/mach-at91/board-rm9200ek.c
++++ /dev/null
+@@ -1,196 +0,0 @@
+-/*
+- * linux/arch/arm/mach-at91/board-rm9200ek.c
+- *
+- *  Copyright (C) 2005 SAN People
+- *
+- *  Epson S1D framebuffer glue code is:
+- *     Copyright (C) 2005 Thibaut VARENE <varenet@parisc-linux.org>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/types.h>
+-#include <linux/gpio.h>
+-#include <linux/init.h>
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-#include <linux/spi/spi.h>
+-#include <linux/mtd/physmap.h>
+-
+-#include <asm/setup.h>
+-#include <asm/mach-types.h>
+-#include <asm/irq.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/irq.h>
+-
+-#include <mach/hardware.h>
+-#include <mach/at91rm9200_mc.h>
+-#include <mach/at91_ramc.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-
+-static void __init ek_init_early(void)
+-{
+-	/* Initialize processor: 18.432 MHz crystal */
+-	at91_initialize(18432000);
+-}
+-
+-static struct macb_platform_data __initdata ek_eth_data = {
+-	.phy_irq_pin	= AT91_PIN_PC4,
+-	.is_rmii	= 1,
+-};
+-
+-static struct at91_usbh_data __initdata ek_usbh_data = {
+-	.ports		= 2,
+-	.vbus_pin	= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-static struct at91_udc_data __initdata ek_udc_data = {
+-	.vbus_pin	= AT91_PIN_PD4,
+-	.pullup_pin	= AT91_PIN_PD5,
+-};
+-
+-#ifndef CONFIG_MTD_AT91_DATAFLASH_CARD
+-static struct mci_platform_data __initdata ek_mci0_data = {
+-	.slot[0] = {
+-		.bus_width	= 4,
+-		.detect_pin	= AT91_PIN_PB27,
+-		.wp_pin		= AT91_PIN_PA17,
+-	}
+-};
+-#endif
+-
+-static struct spi_board_info ek_spi_devices[] = {
+-	{	/* DataFlash chip */
+-		.modalias	= "mtd_dataflash",
+-		.chip_select	= 0,
+-		.max_speed_hz	= 15 * 1000 * 1000,
+-	},
+-#ifdef CONFIG_MTD_AT91_DATAFLASH_CARD
+-	{	/* DataFlash card */
+-		.modalias	= "mtd_dataflash",
+-		.chip_select	= 3,
+-		.max_speed_hz	= 15 * 1000 * 1000,
+-	},
+-#endif
+-};
+-
+-static struct i2c_board_info __initdata ek_i2c_devices[] = {
+-	{
+-		I2C_BOARD_INFO("ics1523", 0x26),
+-	},
+-	{
+-		I2C_BOARD_INFO("dac3550", 0x4d),
+-	}
+-};
+-
+-#define EK_FLASH_BASE	AT91_CHIPSELECT_0
+-#define EK_FLASH_SIZE	SZ_8M
+-
+-static struct physmap_flash_data ek_flash_data = {
+-	.width		= 2,
+-};
+-
+-static struct resource ek_flash_resource = {
+-	.start		= EK_FLASH_BASE,
+-	.end		= EK_FLASH_BASE + EK_FLASH_SIZE - 1,
+-	.flags		= IORESOURCE_MEM,
+-};
+-
+-static struct platform_device ek_flash = {
+-	.name		= "physmap-flash",
+-	.id		= 0,
+-	.dev		= {
+-				.platform_data	= &ek_flash_data,
+-			},
+-	.resource	= &ek_flash_resource,
+-	.num_resources	= 1,
+-};
+-
+-static struct gpio_led ek_leds[] = {
+-	{	/* "user led 1", DS2 */
+-		.name			= "green",
+-		.gpio			= AT91_PIN_PB0,
+-		.active_low		= 1,
+-		.default_trigger	= "mmc0",
+-	},
+-	{	/* "user led 2", DS4 */
+-		.name			= "yellow",
+-		.gpio			= AT91_PIN_PB1,
+-		.active_low		= 1,
+-		.default_trigger	= "heartbeat",
+-	},
+-	{	/* "user led 3", DS6 */
+-		.name			= "red",
+-		.gpio			= AT91_PIN_PB2,
+-		.active_low		= 1,
+-	}
+-};
+-
+-static void __init ek_board_init(void)
+-{
+-	/* Serial */
+-	/* DBGU on ttyS0. (Rx & Tx only) */
+-	at91_register_uart(0, 0, 0);
+-
+-	/* USART1 on ttyS1. (Rx, Tx, CTS, RTS, DTR, DSR, DCD, RI) */
+-	at91_register_uart(AT91RM9200_ID_US1, 1, ATMEL_UART_CTS | ATMEL_UART_RTS
+-			   | ATMEL_UART_DTR | ATMEL_UART_DSR | ATMEL_UART_DCD
+-			   | ATMEL_UART_RI);
+-	at91_add_device_serial();
+-	/* Ethernet */
+-	at91_add_device_eth(&ek_eth_data);
+-	/* USB Host */
+-	at91_add_device_usbh(&ek_usbh_data);
+-	/* USB Device */
+-	at91_add_device_udc(&ek_udc_data);
+-	at91_set_multi_drive(ek_udc_data.pullup_pin, 1);	/* pullup_pin is connected to reset */
+-	/* I2C */
+-	at91_add_device_i2c(ek_i2c_devices, ARRAY_SIZE(ek_i2c_devices));
+-	/* SPI */
+-	at91_add_device_spi(ek_spi_devices, ARRAY_SIZE(ek_spi_devices));
+-#ifdef CONFIG_MTD_AT91_DATAFLASH_CARD
+-	/* DataFlash card */
+-	at91_set_gpio_output(AT91_PIN_PB22, 0);
+-#else
+-	/* MMC */
+-	at91_set_gpio_output(AT91_PIN_PB22, 1);	/* this MMC card slot can optionally use SPI signaling (CS3). */
+-	at91_add_device_mci(0, &ek_mci0_data);
+-#endif
+-	/* NOR Flash */
+-	platform_device_register(&ek_flash);
+-	/* LEDs */
+-	at91_gpio_leds(ek_leds, ARRAY_SIZE(ek_leds));
+-	/* VGA */
+-//	ek_add_device_video();
+-}
+-
+-MACHINE_START(AT91RM9200EK, "Atmel AT91RM9200-EK")
+-	/* Maintainer: SAN People/Atmel */
+-	.init_time	= at91rm9200_timer_init,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= ek_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= ek_board_init,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/board-yl-9200.c b/arch/arm/mach-at91/board-yl-9200.c
+deleted file mode 100644
+index 46fdb0c68a68..000000000000
+--- a/arch/arm/mach-at91/board-yl-9200.c
++++ /dev/null
+@@ -1,597 +0,0 @@
+-/*
+- * linux/arch/arm/mach-at91/board-yl-9200.c
+- *
+- * Adapted from various board files in arch/arm/mach-at91
+- *
+- * Modifications for YL-9200 platform:
+- *  Copyright (C) 2007 S. Birtles
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/types.h>
+-#include <linux/gpio.h>
+-#include <linux/init.h>
+-#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/dma-mapping.h>
+-#include <linux/platform_device.h>
+-#include <linux/spi/spi.h>
+-#include <linux/spi/ads7846.h>
+-#include <linux/mtd/physmap.h>
+-#include <linux/gpio_keys.h>
+-#include <linux/input.h>
+-
+-#include <asm/setup.h>
+-#include <asm/mach-types.h>
+-#include <asm/irq.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/irq.h>
+-
+-#include <mach/hardware.h>
+-#include <mach/at91rm9200_mc.h>
+-#include <mach/at91_ramc.h>
+-#include <mach/cpu.h>
+-
+-#include "at91_aic.h"
+-#include "board.h"
+-#include "generic.h"
+-#include "gpio.h"
+-
+-
+-static void __init yl9200_init_early(void)
+-{
+-	/* Set cpu type: PQFP */
+-	at91rm9200_set_type(ARCH_REVISON_9200_PQFP);
+-
+-	/* Initialize processor: 18.432 MHz crystal */
+-	at91_initialize(18432000);
+-}
+-
+-/*
+- * LEDs
+- */
+-static struct gpio_led yl9200_leds[] = {
+-	{	/* D2 */
+-		.name			= "led2",
+-		.gpio			= AT91_PIN_PB17,
+-		.active_low		= 1,
+-		.default_trigger	= "timer",
+-	},
+-	{	/* D3 */
+-		.name			= "led3",
+-		.gpio			= AT91_PIN_PB16,
+-		.active_low		= 1,
+-		.default_trigger	= "heartbeat",
+-	},
+-	{	/* D4 */
+-		.name			= "led4",
+-		.gpio			= AT91_PIN_PB15,
+-		.active_low		= 1,
+-	},
+-	{	/* D5 */
+-		.name			= "led5",
+-		.gpio			= AT91_PIN_PB8,
+-		.active_low		= 1,
+-	}
+-};
+-
+-/*
+- * Ethernet
+- */
+-static struct macb_platform_data __initdata yl9200_eth_data = {
+-	.phy_irq_pin		= AT91_PIN_PB28,
+-	.is_rmii		= 1,
+-};
+-
+-/*
+- * USB Host
+- */
+-static struct at91_usbh_data __initdata yl9200_usbh_data = {
+-	.ports			= 1,	/* PQFP version of AT91RM9200 */
+-	.vbus_pin		= {-EINVAL, -EINVAL},
+-	.overcurrent_pin= {-EINVAL, -EINVAL},
+-};
+-
+-/*
+- * USB Device
+- */
+-static struct at91_udc_data __initdata yl9200_udc_data = {
+-	.pullup_pin		= AT91_PIN_PC4,
+-	.vbus_pin		= AT91_PIN_PC5,
+-	.pullup_active_low	= 1,	/* Active Low due to PNP transistor (pg 7) */
+-
+-};
+-
+-/*
+- * MMC
+- */
+-static struct mci_platform_data __initdata yl9200_mci0_data = {
+-	.slot[0] = {
+-		.bus_width	= 4,
+-		.detect_pin	= AT91_PIN_PB9,
+-		.wp_pin		= -EINVAL,
+-	},
+-};
+-
+-/*
+- * NAND Flash
+- */
+-static struct mtd_partition __initdata yl9200_nand_partition[] = {
+-	{
+-		.name	= "AT91 NAND partition 1, boot",
+-		.offset	= 0,
+-		.size	= SZ_256K
+-	},
+-	{
+-		.name	= "AT91 NAND partition 2, kernel",
+-		.offset	= MTDPART_OFS_NXTBLK,
+-		.size	= (2 * SZ_1M) - SZ_256K
+-	},
+-	{
+-		.name	= "AT91 NAND partition 3, filesystem",
+-		.offset	= MTDPART_OFS_NXTBLK,
+-		.size	= 14 * SZ_1M
+-	},
+-	{
+-		.name	= "AT91 NAND partition 4, storage",
+-		.offset	= MTDPART_OFS_NXTBLK,
+-		.size	= SZ_16M
+-	},
+-	{
+-		.name	= "AT91 NAND partition 5, ext-fs",
+-		.offset	= MTDPART_OFS_NXTBLK,
+-		.size	= SZ_32M
+-	}
+-};
+-
+-static struct atmel_nand_data __initdata yl9200_nand_data = {
+-	.ale		= 6,
+-	.cle		= 7,
+-	.det_pin	= -EINVAL,
+-	.rdy_pin	= AT91_PIN_PC14,	/* R/!B (Sheet10) */
+-	.enable_pin	= AT91_PIN_PC15,	/* !CE  (Sheet10) */
+-	.ecc_mode	= NAND_ECC_SOFT,
+-	.parts		= yl9200_nand_partition,
+-	.num_parts	= ARRAY_SIZE(yl9200_nand_partition),
+-};
+-
+-/*
+- * NOR Flash
+- */
+-#define YL9200_FLASH_BASE	AT91_CHIPSELECT_0
+-#define YL9200_FLASH_SIZE	SZ_16M
+-
+-static struct mtd_partition yl9200_flash_partitions[] = {
+-	{
+-		.name		= "Bootloader",
+-		.offset		= 0,
+-		.size		= SZ_256K,
+-		.mask_flags	= MTD_WRITEABLE,	/* force read-only */
+-	},
+-	{
+-		.name		= "Kernel",
+-		.offset		= MTDPART_OFS_NXTBLK,
+-		.size		= (2 * SZ_1M) - SZ_256K
+-	},
+-	{
+-		.name		= "Filesystem",
+-		.offset		= MTDPART_OFS_NXTBLK,
+-		.size		= MTDPART_SIZ_FULL
+-	}
+-};
+-
+-static struct physmap_flash_data yl9200_flash_data = {
+-	.width		= 2,
+-	.parts		= yl9200_flash_partitions,
+-	.nr_parts	= ARRAY_SIZE(yl9200_flash_partitions),
+-};
+-
+-static struct resource yl9200_flash_resources[] = {
+-	{
+-		.start	= YL9200_FLASH_BASE,
+-		.end	= YL9200_FLASH_BASE + YL9200_FLASH_SIZE - 1,
+-		.flags	= IORESOURCE_MEM,
+-	}
+-};
+-
+-static struct platform_device yl9200_flash = {
+-	.name		= "physmap-flash",
+-	.id		= 0,
+-	.dev		= {
+-				.platform_data	= &yl9200_flash_data,
+-			},
+-	.resource	= yl9200_flash_resources,
+-	.num_resources	= ARRAY_SIZE(yl9200_flash_resources),
+-};
+-
+-/*
+- * I2C (TWI)
+- */
+-static struct i2c_board_info __initdata yl9200_i2c_devices[] = {
+-	{	/* EEPROM */
+-		I2C_BOARD_INFO("24c128", 0x50),
+-	}
+-};
+-
+-/*
+- * GPIO Buttons
+-*/
+-#if defined(CONFIG_KEYBOARD_GPIO) || defined(CONFIG_KEYBOARD_GPIO_MODULE)
+-static struct gpio_keys_button yl9200_buttons[] = {
+-	{
+-		.gpio		= AT91_PIN_PA24,
+-		.code		= BTN_2,
+-		.desc		= "SW2",
+-		.active_low	= 1,
+-		.wakeup		= 1,
+-	},
+-	{
+-		.gpio		= AT91_PIN_PB1,
+-		.code		= BTN_3,
+-		.desc		= "SW3",
+-		.active_low	= 1,
+-		.wakeup		= 1,
+-	},
+-	{
+-		.gpio		= AT91_PIN_PB2,
+-		.code		= BTN_4,
+-		.desc		= "SW4",
+-		.active_low	= 1,
+-		.wakeup		= 1,
+-	},
+-	{
+-		.gpio		= AT91_PIN_PB6,
+-		.code		= BTN_5,
+-		.desc		= "SW5",
+-		.active_low	= 1,
+-		.wakeup		= 1,
+-	}
+-};
+-
+-static struct gpio_keys_platform_data yl9200_button_data = {
+-	.buttons	= yl9200_buttons,
+-	.nbuttons	= ARRAY_SIZE(yl9200_buttons),
+-};
+-
+-static struct platform_device yl9200_button_device = {
+-	.name		= "gpio-keys",
+-	.id		= -1,
+-	.num_resources	= 0,
+-	.dev		= {
+-		.platform_data	= &yl9200_button_data,
+-	}
+-};
+-
+-static void __init yl9200_add_device_buttons(void)
+-{
+-	at91_set_gpio_input(AT91_PIN_PA24, 1);	/* SW2 */
+-	at91_set_deglitch(AT91_PIN_PA24, 1);
+-	at91_set_gpio_input(AT91_PIN_PB1, 1);	/* SW3 */
+-	at91_set_deglitch(AT91_PIN_PB1, 1);
+-	at91_set_gpio_input(AT91_PIN_PB2, 1);	/* SW4 */
+-	at91_set_deglitch(AT91_PIN_PB2, 1);
+-	at91_set_gpio_input(AT91_PIN_PB6, 1);	/* SW5 */
+-	at91_set_deglitch(AT91_PIN_PB6, 1);
+-
+-	/* Enable buttons (Sheet 5) */
+-	at91_set_gpio_output(AT91_PIN_PB7, 1);
+-
+-	platform_device_register(&yl9200_button_device);
+-}
+-#else
+-static void __init yl9200_add_device_buttons(void) {}
+-#endif
+-
+-/*
+- * Touchscreen
+- */
+-#if defined(CONFIG_TOUCHSCREEN_ADS7846) || defined(CONFIG_TOUCHSCREEN_ADS7846_MODULE)
+-static int ads7843_pendown_state(void)
+-{
+-	return !at91_get_gpio_value(AT91_PIN_PB11);	/* Touchscreen PENIRQ */
+-}
+-
+-static struct ads7846_platform_data ads_info = {
+-	.model			= 7843,
+-	.x_min			= 150,
+-	.x_max			= 3830,
+-	.y_min			= 190,
+-	.y_max			= 3830,
+-	.vref_delay_usecs	= 100,
+-
+-	/* For a 8" touch-screen */
+-	// .x_plate_ohms		= 603,
+-	// .y_plate_ohms		= 332,
+-
+-	/* For a 10.4" touch-screen */
+-	// .x_plate_ohms		= 611,
+-	// .y_plate_ohms		= 325,
+-
+-	.x_plate_ohms		= 576,
+-	.y_plate_ohms		= 366,
+-
+-	.pressure_max		= 15000, /* generally nonsense on the 7843 */
+-	.debounce_max		= 1,
+-	.debounce_rep		= 0,
+-	.debounce_tol		= (~0),
+-	.get_pendown_state	= ads7843_pendown_state,
+-};
+-
+-static void __init yl9200_add_device_ts(void)
+-{
+-	at91_set_gpio_input(AT91_PIN_PB11, 1);	/* Touchscreen interrupt pin */
+-	at91_set_gpio_input(AT91_PIN_PB10, 1);	/* Touchscreen BUSY signal - not used! */
+-}
+-#else
+-static void __init yl9200_add_device_ts(void) {}
+-#endif
+-
+-/*
+- * SPI devices
+- */
+-static struct spi_board_info yl9200_spi_devices[] = {
+-#if defined(CONFIG_TOUCHSCREEN_ADS7846) || defined(CONFIG_TOUCHSCREEN_ADS7846_MODULE)
+-	{	/* Touchscreen */
+-		.modalias	= "ads7846",
+-		.chip_select	= 0,
+-		.max_speed_hz	= 5000 * 26,
+-		.platform_data	= &ads_info,
+-		.irq		= AT91_PIN_PB11,
+-	},
+-#endif
+-	{	/* CAN */
+-		.modalias	= "mcp2510",
+-		.chip_select	= 1,
+-		.max_speed_hz	= 25000 * 26,
+-		.irq		= AT91_PIN_PC0,
+-	}
+-};
+-
+-/*
+- * LCD / VGA
+- *
+- * EPSON S1D13806 FB (discontinued chip)
+- * EPSON S1D13506 FB
+- */
+-#if defined(CONFIG_FB_S1D13XXX) || defined(CONFIG_FB_S1D13XXX_MODULE)
+-#include <video/s1d13xxxfb.h>
+-
+-
+-static void yl9200_init_video(void)
+-{
+-	/* NWAIT Signal */
+-	at91_set_A_periph(AT91_PIN_PC6, 0);
+-
+-	/* Initialization of the Static Memory Controller for Chip Select 2 */
+-	at91_ramc_write(0, AT91_SMC_CSR(2), AT91_SMC_DBW_16		/* 16 bit */
+-			| AT91_SMC_WSEN | AT91_SMC_NWS_(0x4)	/* wait states */
+-			| AT91_SMC_TDF_(0x100)			/* float time */
+-	);
+-}
+-
+-static struct s1d13xxxfb_regval yl9200_s1dfb_initregs[] =
+-{
+-	{S1DREG_MISC,			0x00},	/* Miscellaneous Register*/
+-	{S1DREG_COM_DISP_MODE,		0x01},	/* Display Mode Register, LCD only*/
+-	{S1DREG_GPIO_CNF0,		0x00},	/* General IO Pins Configuration Register*/
+-	{S1DREG_GPIO_CTL0,		0x00},	/* General IO Pins Control Register*/
+-	{S1DREG_CLK_CNF,		0x11},	/* Memory Clock Configuration Register*/
+-	{S1DREG_LCD_CLK_CNF,		0x10},	/* LCD Pixel Clock Configuration Register*/
+-	{S1DREG_CRT_CLK_CNF,		0x12},	/* CRT/TV Pixel Clock Configuration Register*/
+-	{S1DREG_MPLUG_CLK_CNF,		0x01},	/* MediaPlug Clock Configuration Register*/
+-	{S1DREG_CPU2MEM_WST_SEL,	0x02},	/* CPU To Memory Wait State Select Register*/
+-	{S1DREG_MEM_CNF,		0x00},	/* Memory Configuration Register*/
+-	{S1DREG_SDRAM_REF_RATE,		0x04},	/* DRAM Refresh Rate Register, MCLK source*/
+-	{S1DREG_SDRAM_TC0,		0x12},	/* DRAM Timings Control Register 0*/
+-	{S1DREG_SDRAM_TC1,		0x02},	/* DRAM Timings Control Register 1*/
+-	{S1DREG_PANEL_TYPE,		0x25},	/* Panel Type Register*/
+-	{S1DREG_MOD_RATE,		0x00},	/* MOD Rate Register*/
+-	{S1DREG_LCD_DISP_HWIDTH,	0x4F},	/* LCD Horizontal Display Width Register*/
+-	{S1DREG_LCD_NDISP_HPER,		0x13},	/* LCD Horizontal Non-Display Period Register*/
+-	{S1DREG_TFT_FPLINE_START,	0x01},	/* TFT FPLINE Start Position Register*/
+-	{S1DREG_TFT_FPLINE_PWIDTH,	0x0c},	/* TFT FPLINE Pulse Width Register*/
+-	{S1DREG_LCD_DISP_VHEIGHT0,	0xDF},	/* LCD Vertical Display Height Register 0*/
+-	{S1DREG_LCD_DISP_VHEIGHT1,	0x01},	/* LCD Vertical Display Height Register 1*/
+-	{S1DREG_LCD_NDISP_VPER,		0x2c},	/* LCD Vertical Non-Display Period Register*/
+-	{S1DREG_TFT_FPFRAME_START,	0x0a},	/* TFT FPFRAME Start Position Register*/
+-	{S1DREG_TFT_FPFRAME_PWIDTH,	0x02},	/* TFT FPFRAME Pulse Width Register*/
+-	{S1DREG_LCD_DISP_MODE,		0x05},	/* LCD Display Mode Register*/
+-	{S1DREG_LCD_MISC,		0x01},	/* LCD Miscellaneous Register*/
+-	{S1DREG_LCD_DISP_START0,	0x00},	/* LCD Display Start Address Register 0*/
+-	{S1DREG_LCD_DISP_START1,	0x00},	/* LCD Display Start Address Register 1*/
+-	{S1DREG_LCD_DISP_START2,	0x00},	/* LCD Display Start Address Register 2*/
+-	{S1DREG_LCD_MEM_OFF0,		0x80},	/* LCD Memory Address Offset Register 0*/
+-	{S1DREG_LCD_MEM_OFF1,		0x02},	/* LCD Memory Address Offset Register 1*/
+-	{S1DREG_LCD_PIX_PAN,		0x03},	/* LCD Pixel Panning Register*/
+-	{S1DREG_LCD_DISP_FIFO_HTC,	0x00},	/* LCD Display FIFO High Threshold Control Register*/
+-	{S1DREG_LCD_DISP_FIFO_LTC,	0x00},	/* LCD Display FIFO Low Threshold Control Register*/
+-	{S1DREG_CRT_DISP_HWIDTH,	0x4F},	/* CRT/TV Horizontal Display Width Register*/
+-	{S1DREG_CRT_NDISP_HPER,		0x13},	/* CRT/TV Horizontal Non-Display Period Register*/
+-	{S1DREG_CRT_HRTC_START,		0x01},	/* CRT/TV HRTC Start Position Register*/
+-	{S1DREG_CRT_HRTC_PWIDTH,	0x0B},	/* CRT/TV HRTC Pulse Width Register*/
+-	{S1DREG_CRT_DISP_VHEIGHT0,	0xDF},	/* CRT/TV Vertical Display Height Register 0*/
+-	{S1DREG_CRT_DISP_VHEIGHT1,	0x01},	/* CRT/TV Vertical Display Height Register 1*/
+-	{S1DREG_CRT_NDISP_VPER,		0x2B},	/* CRT/TV Vertical Non-Display Period Register*/
+-	{S1DREG_CRT_VRTC_START,		0x09},	/* CRT/TV VRTC Start Position Register*/
+-	{S1DREG_CRT_VRTC_PWIDTH,	0x01},	/* CRT/TV VRTC Pulse Width Register*/
+-	{S1DREG_TV_OUT_CTL,		0x18},	/* TV Output Control Register */
+-	{S1DREG_CRT_DISP_MODE,		0x05},	/* CRT/TV Display Mode Register, 16BPP*/
+-	{S1DREG_CRT_DISP_START0,	0x00},	/* CRT/TV Display Start Address Register 0*/
+-	{S1DREG_CRT_DISP_START1,	0x00},	/* CRT/TV Display Start Address Register 1*/
+-	{S1DREG_CRT_DISP_START2,	0x00},	/* CRT/TV Display Start Address Register 2*/
+-	{S1DREG_CRT_MEM_OFF0,		0x80},	/* CRT/TV Memory Address Offset Register 0*/
+-	{S1DREG_CRT_MEM_OFF1,		0x02},	/* CRT/TV Memory Address Offset Register 1*/
+-	{S1DREG_CRT_PIX_PAN,		0x00},	/* CRT/TV Pixel Panning Register*/
+-	{S1DREG_CRT_DISP_FIFO_HTC,	0x00},	/* CRT/TV Display FIFO High Threshold Control Register*/
+-	{S1DREG_CRT_DISP_FIFO_LTC,	0x00},	/* CRT/TV Display FIFO Low Threshold Control Register*/
+-	{S1DREG_LCD_CUR_CTL,		0x00},	/* LCD Ink/Cursor Control Register*/
+-	{S1DREG_LCD_CUR_START,		0x01},	/* LCD Ink/Cursor Start Address Register*/
+-	{S1DREG_LCD_CUR_XPOS0,		0x00},	/* LCD Cursor X Position Register 0*/
+-	{S1DREG_LCD_CUR_XPOS1,		0x00},	/* LCD Cursor X Position Register 1*/
+-	{S1DREG_LCD_CUR_YPOS0,		0x00},	/* LCD Cursor Y Position Register 0*/
+-	{S1DREG_LCD_CUR_YPOS1,		0x00},	/* LCD Cursor Y Position Register 1*/
+-	{S1DREG_LCD_CUR_BCTL0,		0x00},	/* LCD Ink/Cursor Blue Color 0 Register*/
+-	{S1DREG_LCD_CUR_GCTL0,		0x00},	/* LCD Ink/Cursor Green Color 0 Register*/
+-	{S1DREG_LCD_CUR_RCTL0,		0x00},	/* LCD Ink/Cursor Red Color 0 Register*/
+-	{S1DREG_LCD_CUR_BCTL1,		0x1F},	/* LCD Ink/Cursor Blue Color 1 Register*/
+-	{S1DREG_LCD_CUR_GCTL1,		0x3F},	/* LCD Ink/Cursor Green Color 1 Register*/
+-	{S1DREG_LCD_CUR_RCTL1,		0x1F},	/* LCD Ink/Cursor Red Color 1 Register*/
+-	{S1DREG_LCD_CUR_FIFO_HTC,	0x00},	/* LCD Ink/Cursor FIFO Threshold Register*/
+-	{S1DREG_CRT_CUR_CTL,		0x00},	/* CRT/TV Ink/Cursor Control Register*/
+-	{S1DREG_CRT_CUR_START,		0x01},	/* CRT/TV Ink/Cursor Start Address Register*/
+-	{S1DREG_CRT_CUR_XPOS0,		0x00},	/* CRT/TV Cursor X Position Register 0*/
+-	{S1DREG_CRT_CUR_XPOS1,		0x00},	/* CRT/TV Cursor X Position Register 1*/
+-	{S1DREG_CRT_CUR_YPOS0,		0x00},	/* CRT/TV Cursor Y Position Register 0*/
+-	{S1DREG_CRT_CUR_YPOS1,		0x00},	/* CRT/TV Cursor Y Position Register 1*/
+-	{S1DREG_CRT_CUR_BCTL0,		0x00},	/* CRT/TV Ink/Cursor Blue Color 0 Register*/
+-	{S1DREG_CRT_CUR_GCTL0,		0x00},	/* CRT/TV Ink/Cursor Green Color 0 Register*/
+-	{S1DREG_CRT_CUR_RCTL0,		0x00},	/* CRT/TV Ink/Cursor Red Color 0 Register*/
+-	{S1DREG_CRT_CUR_BCTL1,		0x1F},	/* CRT/TV Ink/Cursor Blue Color 1 Register*/
+-	{S1DREG_CRT_CUR_GCTL1,		0x3F},	/* CRT/TV Ink/Cursor Green Color 1 Register*/
+-	{S1DREG_CRT_CUR_RCTL1,		0x1F},	/* CRT/TV Ink/Cursor Red Color 1 Register*/
+-	{S1DREG_CRT_CUR_FIFO_HTC,	0x00},	/* CRT/TV Ink/Cursor FIFO Threshold Register*/
+-	{S1DREG_BBLT_CTL0,		0x00},	/* BitBlt Control Register 0*/
+-	{S1DREG_BBLT_CTL1,		0x01},	/* BitBlt Control Register 1*/
+-	{S1DREG_BBLT_CC_EXP,		0x00},	/* BitBlt ROP Code/Color Expansion Register*/
+-	{S1DREG_BBLT_OP,		0x00},	/* BitBlt Operation Register*/
+-	{S1DREG_BBLT_SRC_START0,	0x00},	/* BitBlt Source Start Address Register 0*/
+-	{S1DREG_BBLT_SRC_START1,	0x00},	/* BitBlt Source Start Address Register 1*/
+-	{S1DREG_BBLT_SRC_START2,	0x00},	/* BitBlt Source Start Address Register 2*/
+-	{S1DREG_BBLT_DST_START0,	0x00},	/* BitBlt Destination Start Address Register 0*/
+-	{S1DREG_BBLT_DST_START1,	0x00},	/* BitBlt Destination Start Address Register 1*/
+-	{S1DREG_BBLT_DST_START2,	0x00},	/* BitBlt Destination Start Address Register 2*/
+-	{S1DREG_BBLT_MEM_OFF0,		0x00},	/* BitBlt Memory Address Offset Register 0*/
+-	{S1DREG_BBLT_MEM_OFF1,		0x00},	/* BitBlt Memory Address Offset Register 1*/
+-	{S1DREG_BBLT_WIDTH0,		0x00},	/* BitBlt Width Register 0*/
+-	{S1DREG_BBLT_WIDTH1,		0x00},	/* BitBlt Width Register 1*/
+-	{S1DREG_BBLT_HEIGHT0,		0x00},	/* BitBlt Height Register 0*/
+-	{S1DREG_BBLT_HEIGHT1,		0x00},	/* BitBlt Height Register 1*/
+-	{S1DREG_BBLT_BGC0,		0x00},	/* BitBlt Background Color Register 0*/
+-	{S1DREG_BBLT_BGC1,		0x00},	/* BitBlt Background Color Register 1*/
+-	{S1DREG_BBLT_FGC0,		0x00},	/* BitBlt Foreground Color Register 0*/
+-	{S1DREG_BBLT_FGC1,		0x00},	/* BitBlt Foreground Color Register 1*/
+-	{S1DREG_LKUP_MODE,		0x00},	/* Look-Up Table Mode Register*/
+-	{S1DREG_LKUP_ADDR,		0x00},	/* Look-Up Table Address Register*/
+-	{S1DREG_PS_CNF,			0x00},	/* Power Save Configuration Register*/
+-	{S1DREG_PS_STATUS,		0x00},	/* Power Save Status Register*/
+-	{S1DREG_CPU2MEM_WDOGT,		0x00},	/* CPU-to-Memory Access Watchdog Timer Register*/
+-	{S1DREG_COM_DISP_MODE,		0x01},	/* Display Mode Register, LCD only*/
+-};
+-
+-static struct s1d13xxxfb_pdata yl9200_s1dfb_pdata = {
+-	.initregs		= yl9200_s1dfb_initregs,
+-	.initregssize		= ARRAY_SIZE(yl9200_s1dfb_initregs),
+-	.platform_init_video	= yl9200_init_video,
+-};
+-
+-#define YL9200_FB_REG_BASE	AT91_CHIPSELECT_7
+-#define YL9200_FB_VMEM_BASE	YL9200_FB_REG_BASE + SZ_2M
+-#define YL9200_FB_VMEM_SIZE	SZ_2M
+-
+-static struct resource yl9200_s1dfb_resource[] = {
+-	[0] = {	/* video mem */
+-		.name	= "s1d13xxxfb memory",
+-		.start	= YL9200_FB_VMEM_BASE,
+-		.end	= YL9200_FB_VMEM_BASE + YL9200_FB_VMEM_SIZE -1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[1] = {	/* video registers */
+-		.name	= "s1d13xxxfb registers",
+-		.start	= YL9200_FB_REG_BASE,
+-		.end	= YL9200_FB_REG_BASE + SZ_512 -1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-};
+-
+-static u64 s1dfb_dmamask = DMA_BIT_MASK(32);
+-
+-static struct platform_device yl9200_s1dfb_device = {
+-	.name		= "s1d13806fb",
+-	.id		= -1,
+-	.dev	= {
+-		.dma_mask		= &s1dfb_dmamask,
+-		.coherent_dma_mask	= DMA_BIT_MASK(32),
+-		.platform_data		= &yl9200_s1dfb_pdata,
+-	},
+-	.resource	= yl9200_s1dfb_resource,
+-	.num_resources	= ARRAY_SIZE(yl9200_s1dfb_resource),
+-};
+-
+-void __init yl9200_add_device_video(void)
+-{
+-	platform_device_register(&yl9200_s1dfb_device);
+-}
+-#else
+-void __init yl9200_add_device_video(void) {}
+-#endif
+-
+-
+-static void __init yl9200_board_init(void)
+-{
+-	/* Serial */
+-	/* DBGU on ttyS0. (Rx & Tx only) */
+-	at91_register_uart(0, 0, 0);
+-
+-	/* USART1 on ttyS1. (Rx, Tx, CTS, RTS, DTR, DSR, DCD, RI) */
+-	at91_register_uart(AT91RM9200_ID_US1, 1, ATMEL_UART_CTS | ATMEL_UART_RTS
+-			| ATMEL_UART_DTR | ATMEL_UART_DSR | ATMEL_UART_DCD
+-			| ATMEL_UART_RI);
+-
+-	/* USART0 on ttyS2. (Rx & Tx only to JP3) */
+-	at91_register_uart(AT91RM9200_ID_US0, 2, 0);
+-
+-	/* USART3 on ttyS3. (Rx, Tx, RTS - RS485 interface) */
+-	at91_register_uart(AT91RM9200_ID_US3, 3, ATMEL_UART_RTS);
+-	at91_add_device_serial();
+-	/* Ethernet */
+-	at91_add_device_eth(&yl9200_eth_data);
+-	/* USB Host */
+-	at91_add_device_usbh(&yl9200_usbh_data);
+-	/* USB Device */
+-	at91_add_device_udc(&yl9200_udc_data);
+-	/* I2C */
+-	at91_add_device_i2c(yl9200_i2c_devices, ARRAY_SIZE(yl9200_i2c_devices));
+-	/* MMC */
+-	at91_add_device_mci(0, &yl9200_mci0_data);
+-	/* NAND */
+-	at91_add_device_nand(&yl9200_nand_data);
+-	/* NOR Flash */
+-	platform_device_register(&yl9200_flash);
+-#if defined(CONFIG_SPI_ATMEL) || defined(CONFIG_SPI_ATMEL_MODULE)
+-	/* SPI */
+-	at91_add_device_spi(yl9200_spi_devices, ARRAY_SIZE(yl9200_spi_devices));
+-	/* Touchscreen */
+-	yl9200_add_device_ts();
+-#endif
+-	/* LEDs. */
+-	at91_gpio_leds(yl9200_leds, ARRAY_SIZE(yl9200_leds));
+-	/* Push Buttons */
+-	yl9200_add_device_buttons();
+-	/* VGA */
+-	yl9200_add_device_video();
+-}
+-
+-MACHINE_START(YL9200, "uCdragon YL-9200")
+-	/* Maintainer: S.Birtles */
+-	.init_time	= at91rm9200_timer_init,
+-	.map_io		= at91_map_io,
+-	.handle_irq	= at91_aic_handle_irq,
+-	.init_early	= yl9200_init_early,
+-	.init_irq	= at91_init_irq_default,
+-	.init_machine	= yl9200_board_init,
+-MACHINE_END
 -- 
 2.1.3
 
