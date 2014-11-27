@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751053AbaK0PyZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 10:54:25 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:44463 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830AbaK0PyX convert rfc822-to-8bit (ORCPT
+	id S1751070AbaK0P4V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 10:56:21 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:20888 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816AbaK0P4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 10:54:23 -0500
+	Thu, 27 Nov 2014 10:56:20 -0500
+Date: Thu, 27 Nov 2014 18:57:52 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch v2] tracing: truncated output is better than nothing
+Message-ID: <20141127155752.GA21914@mwanda>
 MIME-Version: 1.0
-In-Reply-To: <CAJZww4gzTnbyB4jbFQc0N4G6GJ31pVwv-PNZtDMbUxXMoH-orQ@mail.gmail.com>
-References: <1417075250-6502-1-git-send-email-phillip@squashfs.org.uk>
-	<20141127133754.GA12750@wolff.to>
-	<CAJZww4gzTnbyB4jbFQc0N4G6GJ31pVwv-PNZtDMbUxXMoH-orQ@mail.gmail.com>
-Date: Thu, 27 Nov 2014 15:54:22 +0000
-Message-ID: <CAJZww4hiVq2rTaxxZnGdUFsk+auvX6qvVOgCqHH=dnVdGbJSqw@mail.gmail.com>
-Subject: Fwd: [PATCH 0/2] Squashfs: add LZ4 compression
-From: Marcin Szychowski <szycha@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141126102244.4bffa4b2@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----------- Forwarded message ----------
-From: Marcin Szychowski <szycha@gmail.com>
-Date: 2014-11-27 15:50 GMT+00:00
-Subject: Re: [PATCH 0/2] Squashfs: add LZ4 compression
-To: Bruno Wolff III <bruno@wolff.to>
-Cc: Phillip Lougher <phillip@squashfs.org.uk>,
-linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-texstar@gmail.com, martin@mvath.de, guanx.bac@gmail.com,
-dave@vasilevsky.ca, blyons@students.naropa.edu, tokiclover@gmail.com,
-afm404@gmail.com, hugochevrain@gmail.com
+The initial reason for this patch is that I noticed that:
 
+	if (len > TRACE_BUF_SIZE)
 
-2014-11-27 13:37 GMT+00:00 Bruno Wolff III <bruno@wolff.to>:
->
-> On Thu, Nov 27, 2014 at 08:00:47 +0000,
->  Phillip Lougher <phillip@squashfs.org.uk> wrote:
->>
->>
->> My intention is to submit them in the next kernel merge window.
->> If you want LZ4 support in Squashfs now is a good time to publically
->> support the inclusion of these patches.
->
->
-> Fedora has been supporting LZ4 functionallity in mksquashfs and unsquashfs for about 6 months (in F19+), but the Fedora kernel team won't add support in the kernel until LZ4 support is accepted for the upstream kernel.
+is off by one.  In this code, if len == TRACE_BUF_SIZE, then it means we
+have truncated the last character off the output string.  If we truncate
+two or more characters then we exit without printing.
 
-Hello everyone,
+After some discussion, we decided that printing truncated data is better
+than not printing at all so we should just use vscnprintf() and remove
+the test entirely.  Also I have updated memcpy() to copy the NUL char
+instead of setting the NUL in a separate step.
 
-Squashfs is awesome piece of code.  It’s potential usage pattern
-analysis could turn into pretty decent PhD thesis – from simple
-archival purposes through embedded systems, to dynamic nearly-instant
-multi-server software deployment systems, and many others.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-On the other hand, LZ4 is fantastic compression algorithm with
-well-known list of advantages.
-
-As I wrote to Phillip earlier, I have been using squashfs+lz4 / aufs
-to speed up my laptop (and reclaim some space, too).  That would not
-be possible without LZ4: I could have gain some speed with LZO or disk
-space with gzip or xz, but not both.  LZ4 is comparable with LZO in
-terms of decompression speed and with gzip in terms of compression
-ratios.  LZ4 is much faster in both compression and in particular
-decompression speed than gzip (1-9) and xz (1-9).  It is just the best
-choice for many storage-related purposes (see ZFS on Linux
-[https://github.com/zfsonlinux/zfs/commit/9759c60f1a1503e48dc5c45a209c3edd5758319f]
-and [http://wiki.illumos.org/display/illumos/LZ4+Compression])
-
-I don’t quite get why does anyone need to be convinced to merge
-advantages of two fine pieces of code, since both have been already in
-the mainline kernel for some time now.  It’s like being forced to
-choose between big car and safe car, or delicious food and
-good-looking food.
-
-It is not about forcing anyone to use something, it is about ease of choice.
-
-Having squashfs with lz4 in mainline kernel sounds like next natural
-step.  Please do not hesitate to take it.
-
-
--- 
-Regards,
-Marcin Szychowski
-
-+48.791460067
-http://adastor.pl
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 42a822d..ab76b7b 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2160,9 +2160,7 @@ __trace_array_vprintk(struct ring_buffer *buffer,
+ 		goto out;
+ 	}
+ 
+-	len = vsnprintf(tbuffer, TRACE_BUF_SIZE, fmt, args);
+-	if (len > TRACE_BUF_SIZE)
+-		goto out;
++	len = vscnprintf(tbuffer, TRACE_BUF_SIZE, fmt, args);
+ 
+ 	local_save_flags(flags);
+ 	size = sizeof(*entry) + len + 1;
+@@ -2173,8 +2171,7 @@ __trace_array_vprintk(struct ring_buffer *buffer,
+ 	entry = ring_buffer_event_data(event);
+ 	entry->ip = ip;
+ 
+-	memcpy(&entry->buf, tbuffer, len);
+-	entry->buf[len] = '\0';
++	memcpy(&entry->buf, tbuffer, len + 1);
+ 	if (!call_filter_check_discard(call, entry, buffer, event)) {
+ 		__buffer_unlock_commit(buffer, event);
+ 		ftrace_trace_stack(buffer, flags, 6, pc);
