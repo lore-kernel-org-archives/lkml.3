@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755014AbaK0Is0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 03:48:26 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42066 "EHLO mail.kernel.org"
+	id S1755035AbaK0Isb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 03:48:31 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42096 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754979AbaK0IsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:48:22 -0500
+	id S1755009AbaK0IsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:48:25 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Joern Engel <joern@logfs.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: linux-kernel@vger.kernel.org,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 48/91] iscsi-target: avoid NULL pointer in iscsi_copy_param_list failure
-Date: Thu, 27 Nov 2014 16:42:31 +0800
-Message-Id: <1417077794-9299-48-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 49/91] NFSv4: Fix another bug in the close/open_downgrade code
+Date: Thu, 27 Nov 2014 16:42:32 +0800
+Message-Id: <1417077794-9299-49-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
 References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
@@ -21,44 +21,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joern Engel <joern@logfs.org>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 8ae757d09c45102b347a1bc2867f54ffc1ab8fda upstream.
+commit cd9288ffaea4359d5cfe2b8d264911506aed26a4 upstream.
 
-In iscsi_copy_param_list() a failed iscsi_param_list memory allocation
-currently invokes iscsi_release_param_list() to cleanup, and will promptly
-trigger a NULL pointer dereference.
+James Drew reports another bug whereby the NFS client is now sending
+an OPEN_DOWNGRADE in a situation where it should really have sent a
+CLOSE: the client is opening the file for O_RDWR, but then trying to
+do a downgrade to O_RDONLY, which is not allowed by the NFSv4 spec.
 
-Instead, go ahead and return for the first iscsi_copy_param_list()
-failure case.
-
-Found by coverity.
-
-Signed-off-by: Joern Engel <joern@logfs.org>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: James Drews <drews@engr.wisc.edu>
+Link: http://lkml.kernel.org/r/541AD7E5.8020409@engr.wisc.edu
+Fixes: aee7af356e15 (NFSv4: Fix problems with close in the presence...)
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+[lizf: Backported to 3.4: adjust context]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/target/iscsi/iscsi_target_parameters.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/nfs4proc.c | 30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/target/iscsi/iscsi_target_parameters.c b/drivers/target/iscsi/iscsi_target_parameters.c
-index 8a8ff23..ed4abad 100644
---- a/drivers/target/iscsi/iscsi_target_parameters.c
-+++ b/drivers/target/iscsi/iscsi_target_parameters.c
-@@ -552,7 +552,7 @@ int iscsi_copy_param_list(
- 	param_list = kzalloc(sizeof(struct iscsi_param_list), GFP_KERNEL);
- 	if (!param_list) {
- 		pr_err("Unable to allocate memory for struct iscsi_param_list.\n");
--		goto err_out;
-+		return -1;
- 	}
- 	INIT_LIST_HEAD(&param_list->param_list);
- 	INIT_LIST_HEAD(&param_list->extra_response_list);
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 01afcd5..527a4fc 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -2063,23 +2063,23 @@ static void nfs4_close_prepare(struct rpc_task *task, void *data)
+ 	is_rdwr = test_bit(NFS_O_RDWR_STATE, &state->flags);
+ 	is_rdonly = test_bit(NFS_O_RDONLY_STATE, &state->flags);
+ 	is_wronly = test_bit(NFS_O_WRONLY_STATE, &state->flags);
+-	/* Calculate the current open share mode */
+-	calldata->arg.fmode = 0;
+-	if (is_rdonly || is_rdwr)
+-		calldata->arg.fmode |= FMODE_READ;
+-	if (is_wronly || is_rdwr)
+-		calldata->arg.fmode |= FMODE_WRITE;
+ 	/* Calculate the change in open mode */
++	calldata->arg.fmode = 0;
+ 	if (state->n_rdwr == 0) {
+-		if (state->n_rdonly == 0) {
+-			call_close |= is_rdonly || is_rdwr;
+-			calldata->arg.fmode &= ~FMODE_READ;
+-		}
+-		if (state->n_wronly == 0) {
+-			call_close |= is_wronly || is_rdwr;
+-			calldata->arg.fmode &= ~FMODE_WRITE;
+-		}
+-	}
++		if (state->n_rdonly == 0)
++			call_close |= is_rdonly;
++		else if (is_rdonly)
++			calldata->arg.fmode |= FMODE_READ;
++		if (state->n_wronly == 0)
++			call_close |= is_wronly;
++		else if (is_wronly)
++			calldata->arg.fmode |= FMODE_WRITE;
++	} else if (is_rdwr)
++		calldata->arg.fmode |= FMODE_READ|FMODE_WRITE;
++
++	if (calldata->arg.fmode == 0)
++		call_close |= is_rdwr;
++
+ 	spin_unlock(&state->owner->so_lock);
+ 
+ 	if (!call_close) {
 -- 
 1.9.1
 
