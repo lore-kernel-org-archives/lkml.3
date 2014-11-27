@@ -1,369 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063AbaK0IjL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 03:39:11 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40592 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751262AbaK0IjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:39:08 -0500
-From: lizf@kernel.org
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux@roeck-us.net,
-        satoru.takeuchi@gmail.com, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 00/91] 3.4.105-rc1 review
-Date: Thu, 27 Nov 2014 16:36:08 +0800
-Message-Id: <1417077368-9217-1-git-send-email-lizf@kernel.org>
-X-Mailer: git-send-email 1.9.1
+	id S1753135AbaK0Iop (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 03:44:45 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:51338 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752035AbaK0Ion (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:44:43 -0500
 MIME-Version: 1.0
+In-Reply-To: <1415709535-31515-3-git-send-email-hongzhou.yang@mediatek.com>
+References: <1415709535-31515-1-git-send-email-hongzhou.yang@mediatek.com>
+	<1415709535-31515-3-git-send-email-hongzhou.yang@mediatek.com>
+Date: Thu, 27 Nov 2014 09:44:42 +0100
+Message-ID: <CACRpkdYSe_BH_qiHma2BA+c2otEi3wd0TBXy83t8vwrNL+3U2g@mail.gmail.com>
+Subject: Re: [PATCH v3 2/3] dt-bindings: Add pinctrl bindings for mt65xx/mt81xx.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Hongzhou Yang <hongzhou.yang@mediatek.com>
+Cc: Rob Herring <robh+dt@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        huang eddie <eddie.huang@mediatek.com>, dandan.he@mediatek.com,
+        alan.cheng@mediatek.com, toby.liu@mediatek.com
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zefan Li <lizefan@huawei.com>
-
-This is the start of the stable review cycle for the 3.4.105 release.
-There are 91 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
-
-Responses should be made by 2014年 11月 29日 星期六 08:05:38 UTC.
-Anything received after that time might be too late.
-
-A combined patch relative to 3.4.104 will be posted as an additional
-response to this.  A shortlog and diffstat can be found below.
-
-thanks,
-
-Zefan Li
-
---------------------
-
-Al Viro (2):
-  get rid of propagate_umount() mistakenly treating slaves as busy.
-  don't bugger nd->seq on set_root_rcu() from follow_dotdot_rcu()
-
-Alban Crequy (1):
-  cgroup: reject cgroup names with ' '
-
-Alex Deucher (1):
-  drm/radeon: add connector quirk for fujitsu board
-
-Andreas Rohner (1):
-  nilfs2: fix data loss with mmap()
-
-Andrew Hunter (1):
-  jiffies: Fix timeval conversion to jiffies
-
-Anton Altaparmakov (1):
-  Fix nasty 32-bit overflow bug in buffer i/o code.
-
-Aurelien Jarno (1):
-  MIPS: ZBOOT: add missing <linux/string.h> include
-
-Ben Hutchings (1):
-  rtl8192ce: Fix null dereference in watchdog
-
-Benjamin Poirier (1):
-  net: Do not enable tx-nocache-copy by default
-
-Bjørn Mork (2):
-  USB: sierra: avoid CDC class functions on "68A3" devices
-  USB: sierra: add 1199:68AA device ID
-
-Charles Keepax (1):
-  ASoC: samsung-i2s: Check secondary DAI exists before referencing
-
-Christian Borntraeger (1):
-  KVM: s390: Fix user triggerable bug in dead code
-
-Clemens Ladisch (1):
-  ALSA: pcm: fix fifo_size frame calculation
-
-Cong Wang (1):
-  perf: Fix a race condition in perf_remove_from_context()
-
-David Dueck (1):
-  can: at91_can: add missing prepare and unprepare of the clock
-
-David Jander (2):
-  can: flexcan: correctly initialize mailboxes
-  can: flexcan: implement workaround for errata ERR005829
-
-Dmitry Torokhov (1):
-  Input: synaptics - add support for ForcePads
-
-Eliad Peller (1):
-  regulatory: add NUL to alpha2
-
-Eric W. Biederman (1):
-  mnt: Only change user settable mount flags in remount
-
-Felipe Balbi (3):
-  usb: dwc3: core: fix order of PM runtime calls
-  usb: host: xhci: fix compliance mode workaround
-  bluetooth: hci_ldisc: fix deadlock condition
-
-Guillaume Nault (1):
-  l2tp: fix race while getting PMTU on PPP pseudo-wire
-
-Hannes Frederic Sowa (1):
-  ipv6: reuse ip6_frag_id from ip6_ufo_append_data
-
-Hans de Goede (3):
-  Input: elantech - fix detection of touchpad on ASUS s301l
-  Input: i8042 - add Fujitsu U574 to no_timeout dmi table
-  Input: i8042 - add nomux quirk for Avatar AVIU-145A6
-
-Honggang Li (1):
-  percpu: free percpu allocation info for uniprocessor system
-
-Ilya Dryomov (2):
-  libceph: add process_one_ticket() helper
-  libceph: do not hard code max auth ticket len
-
-James Bottomley (1):
-  Fix spurious request sense in error handling
-
-James Ralston (2):
-  ahci: Add Device IDs for Intel 9 Series PCH
-  ata_piix: Add Device IDs for Intel 9 Series PCH
-
-Jens Axboe (1):
-  genhd: fix leftover might_sleep() in blk_free_devt()
-
-Jiri Kosina (1):
-  ACPI / cpuidle: fix deadlock between cpuidle_lock and cpu_hotplug.lock
-
-Joe Lawrence (1):
-  usb: hub: take hub->hdev reference when processing from eventlist
-
-Joern Engel (1):
-  iscsi-target: avoid NULL pointer in iscsi_copy_param_list failure
-
-Johan Hovold (1):
-  USB: ftdi_sio: add support for NOVITUS Bono E thermal printer
-
-Johannes Berg (1):
-  nl80211: clear skb cb before passing to netlink
-
-John David Anglin (1):
-  parisc: Only use -mfast-indirect-calls option for 32-bit kernel builds
-
-John Sung (1):
-  Input: serport - add compat handling for SPIOCSTYPE ioctl
-
-Joseph Qi (1):
-  ocfs2/dlm: do not get resource spinlock if lockres is new
-
-Josh Triplett (1):
-  init/Kconfig: Hide printk log config if CONFIG_PRINTK=n
-
-Keith Busch (1):
-  block: Fix dev_t minor allocation lifetime
-
-Larry Finger (1):
-  rtlwifi: rtl8192cu: Add new ID
-
-Marc Kleine-Budde (2):
-  can: flexcan: mark TX mailbox as TX_INACTIVE
-  can: flexcan: put TX mailbox into TX_INACTIVE mode after tx-complete
-
-Marcelo Ricardo Leitner (3):
-  ipv4: move route garbage collector to work queue
-  ipv4: avoid parallel route cache gc executions
-  ipv4: disable bh while doing route gc
-
-Mark (4):
-  storage: Add single-LUN quirk for Jaz USB Adapter
-  USB: storage: Add quirk for Adaptec USBConnect 2000 USB-to-SCSI
-    Adapter
-  USB: storage: Add quirk for Ariston Technologies iConnect USB to SCSI
-    adapter
-  USB: storage: Add quirks for Entrega/Xircom USB to SCSI converters
-
-Mark Brown (1):
-  regmap: Fix handling of volatile registers for format_write() chips
-
-Markos Chandras (1):
-  MIPS: mcount: Adjust stack pointer for static trace in MIPS32
-
-Mathias Krause (1):
-  drm/i915: Remove bogus __init annotation from DMI callbacks
-
-Mathias Nyman (1):
-  xhci: Fix null pointer dereference if xhci initialization fails
-
-Mel Gorman (1):
-  mm: migrate: Close race between migration completion and mprotect
-
-Mike Christie (1):
-  libiscsi: fix potential buffer overrun in __iscsi_conn_send_pdu
-
-Miklos Szeredi (1):
-  shmem: fix nlink for rename overwrite directory
-
-Mikulas Patocka (1):
-  dm crypt: fix access beyond the end of allocated space
-
-Murali Karicheri (1):
-  ahci: add pcid for Marvel 0x9182 controller
-
-Narendra K (1):
-  ixgbevf: Prevent RX/TX statistics getting reset to zero
-
-Nicholas Bellinger (1):
-  iscsi-target: Fix memory corruption in
-    iscsit_logout_post_handler_diffcid
-
-Pawel Moll (1):
-  perf: Handle compat ioctl
-
-Peter Zijlstra (1):
-  perf: fix perf bug in fork()
-
-Richard Larocque (3):
-  alarmtimer: Return relative times in timer_gettime
-  alarmtimer: Do not signal SIGEV_NONE timers
-  alarmtimer: Lock k_itimer during timer callback
-
-Robin Murphy (1):
-  ARM: 8165/1: alignment: don't break misaligned NEON load/store
-
-Ross Lagerwall (1):
-  xen/manage: Always freeze/thaw processes when suspend/resuming
-
-Sage Weil (1):
-  libceph: gracefully handle large reply messages from the mon
-
-Sergio Gelato (1):
-  NFS: fix stable regression
-
-Takashi Iwai (1):
-  ALSA: hda - Fix COEF setups for ALC1150 codec
-
-Taylor Braun-Jones (1):
-  USB: ftdi_sio: Add support for GE Healthcare Nemo Tracker device
-
-Tejun Heo (2):
-  percpu: fix pcpu_alloc_pages() failure path
-  percpu: perform tlb flush after pcpu_map_pages() failure
-
-Theodore Ts'o (2):
-  ext4: propagate errors up to ext4_find_entry()'s callers
-  ext4: avoid trying to kfree an ERR_PTR pointer
-
-Thomas Gleixner (1):
-  futex: Unlock hb->lock in futex_wait_requeue_pi() error path
-
-Thomas Hellstrom (1):
-  drm/vmwgfx: Fix a potential infinite spin waiting for fifo idle
-
-Thomas Pugliese (1):
-  uwb: init beacon cache entry before registering uwb device
-
-Trond Myklebust (1):
-  NFSv4: Fix another bug in the close/open_downgrade code
-
-Wanpeng Li (1):
-  sched: Fix unreleased llc_shared_mask bit during CPU hotplug
-
-Xiubo Li (1):
-  ASoC: core: fix possible ZERO_SIZE_PTR pointer dereferencing error.
-
-Zefan Li (2):
-  sched: add macros to define bitops for task atomic flags
-  cpuset: PF_SPREAD_PAGE and PF_SPREAD_SLAB should be atomic flags
-
- Documentation/cgroups/cpusets.txt                 |   6 +-
- arch/arm/mm/alignment.c                           |   3 +
- arch/mips/boot/compressed/decompress.c            |   1 +
- arch/mips/kernel/mcount.S                         |  12 +
- arch/parisc/Makefile                              |   7 +-
- arch/s390/kvm/kvm-s390.c                          |  11 -
- arch/x86/kernel/smpboot.c                         |   3 +
- block/genhd.c                                     |  20 +-
- block/partition-generic.c                         |   2 +-
- drivers/acpi/processor_idle.c                     |   4 +-
- drivers/ata/ahci.c                                |  10 +
- drivers/ata/ata_piix.c                            |   8 +
- drivers/base/regmap/regmap.c                      |   2 +-
- drivers/bluetooth/hci_ldisc.c                     |  25 ++-
- drivers/bluetooth/hci_uart.h                      |   2 +
- drivers/gpu/drm/i915/intel_bios.c                 |   2 +-
- drivers/gpu/drm/i915/intel_crt.c                  |   2 +-
- drivers/gpu/drm/i915/intel_lvds.c                 |   2 +-
- drivers/gpu/drm/radeon/radeon_atombios.c          |   7 +
- drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c              |   3 +-
- drivers/input/mouse/elantech.c                    |   7 +
- drivers/input/mouse/synaptics.c                   |  68 ++++--
- drivers/input/mouse/synaptics.h                   |  11 +
- drivers/input/serio/i8042-x86ia64io.h             |  15 ++
- drivers/input/serio/serport.c                     |  45 +++-
- drivers/md/dm-crypt.c                             |  20 +-
- drivers/net/can/at91_can.c                        |   8 +-
- drivers/net/can/flexcan.c                         |  41 +++-
- drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |  12 -
- drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c |   3 +
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c       |   1 +
- drivers/scsi/libiscsi.c                           |  10 +
- drivers/scsi/scsi_error.c                         |   9 +
- drivers/target/iscsi/iscsi_target.c               |   4 +-
- drivers/target/iscsi/iscsi_target_parameters.c    |   2 +-
- drivers/usb/core/hub.c                            |   4 +-
- drivers/usb/dwc3/core.c                           |   6 +-
- drivers/usb/host/xhci-hub.c                       |   8 +-
- drivers/usb/host/xhci-mem.c                       |   2 +-
- drivers/usb/serial/ftdi_sio.c                     |   3 +
- drivers/usb/serial/ftdi_sio_ids.h                 |  12 +
- drivers/usb/serial/sierra.c                       |   9 +-
- drivers/usb/storage/unusual_devs.h                |  38 ++++
- drivers/uwb/lc-dev.c                              |  13 +-
- drivers/xen/manage.c                              |   7 -
- fs/buffer.c                                       |   6 +-
- fs/ext4/ext4.h                                    |   2 +-
- fs/ext4/namei.c                                   |  32 ++-
- fs/ext4/resize.c                                  |   2 +
- fs/namei.c                                        |  30 +--
- fs/namespace.c                                    |   6 +-
- fs/nfs/nfs4proc.c                                 |  30 +--
- fs/nfsd/vfs.c                                     |   3 +
- fs/nilfs2/inode.c                                 |   7 +-
- fs/ocfs2/dlm/dlmmaster.c                          |  18 +-
- fs/pnode.c                                        |   4 +-
- include/linux/cpuset.h                            |   4 +-
- include/linux/jiffies.h                           |  12 -
- include/linux/mount.h                             |   4 +-
- include/linux/sched.h                             |  25 ++-
- include/net/regulatory.h                          |   2 +-
- init/Kconfig                                      |   1 +
- kernel/cgroup.c                                   |   5 +
- kernel/cpuset.c                                   |   9 +-
- kernel/events/core.c                              |  36 ++-
- kernel/fork.c                                     |   5 +-
- kernel/futex.c                                    |   1 +
- kernel/time.c                                     |  54 +++--
- kernel/time/alarmtimer.c                          |  40 +++-
- mm/migrate.c                                      |   5 +-
- mm/percpu-vm.c                                    |  22 +-
- mm/percpu.c                                       |   2 +
- mm/shmem.c                                        |   4 +-
- mm/slab.c                                         |   4 +-
- net/ceph/auth_x.c                                 | 256 ++++++++++++----------
- net/ceph/mon_client.c                             |   8 +
- net/core/dev.c                                    |   5 -
- net/ipv4/route.c                                  |  58 +++--
- net/ipv6/udp.c                                    |   2 +-
- net/l2tp/l2tp_ppp.c                               |   3 +-
- net/wireless/nl80211.c                            |   6 +
- scripts/tags.sh                                   |  10 +-
- sound/core/pcm_lib.c                              |   8 +-
- sound/pci/hda/patch_realtek.c                     |   2 +
- sound/soc/samsung/i2s.c                           |   2 +-
- sound/soc/soc-core.c                              |   2 +-
- 86 files changed, 850 insertions(+), 377 deletions(-)
-
--- 
-1.9.1
-
+On Tue, Nov 11, 2014 at 1:38 PM, Hongzhou Yang
+<hongzhou.yang@mediatek.com> wrote:
+
+> +* Mediatek MT65XX Pin Controller
+> +
+> +The Mediatek's Pin controller is used to control GPIO pins.
+
+It's not GPIO pins, since they are not always general purpose. It's just
+pins. Say "control SoC pins".
+
+> +Required properties:
+> +- compatible: value should be either of the following.
+> +    (a) "mediatek,mt8135-pinctrl", compatible with mt8135 pinctrl.
+> +- mediatek,pctl-regmap: Should be a phandle of the syscfg node.
+> +- gpio-controller : Marks the device node as a gpio controller.
+> +- #gpio-cells: number of cells in GPIO specifier. Since the generic GPIO
+> +  binding is used, the amount of cells must be specified as 2. See the below
+> +  mentioned gpio binding representation for description of particular cells.
+> +
+> +       Eg: <&pio 6 0>
+> +       <[phandle of the gpio controller node]
+> +       [pin number within the gpio controller]
+
+It's not a pin number really, it is a GPIO offset. But incidentally it's
+the same as the pin number. (This is OK...)
+
+> +- mediatek,pins: 2 integers array, represents gpio pinmux number and config
+> +  setting. The format as following
+> +
+> +    node {
+> +     mediatek,pins = <PIN_NUMBER_PINMUX>;
+> +                     GENERIC_PINCONFIG;
+> +    };
+
+As suggested by Sacha, use just "pins" and define the binding as a patch
+to Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+that is generic for multiplexing, so we get some order here.
+
+I want you however to put pin multiplexing and pin configuration into
+different nodes if possible. I don't like combines muxing and config
+nodes. If necessary tag the node with something.
+
+In the end we can also move the parsing functions to the pinctrl core, as
+long as the bindings are correct (possibly as a refactoring later).
+
+> +               i2c0_pins_a: i2c0@0 {
+> +                       pins1 {
+> +                               mediatek,pins = <MT8135_PIN_100_SDA0__FUNC_SDA0>,
+> +                                               <MT8135_PIN_101_SCL0__FUNC_SCL0>;
+> +                               bias-disable;
+> +                       };
+> +               };
+
+I would split it up.
+
+i2c0_pins_a: i2c0@0 {
+        pins1 {
+                pins = <MT8135_PIN_100_SDA0>;
+                function = <MT8135_PIN_100_FUNC_SDA0>;
+        };
+        pins2 {
+               pins = <MT8135_PIN_100_SDA0>;
+               bias-disable;
+        };
+};
+
+One node for the multiplexing, one node for the config. This is the
+pattern used by most drivers, so I want to have this structure.
+
+It is also easy to tell one node from the other: if it contains "function"
+we know it's a multiplexing node, if it doesn't, it's a config node.
+
+Yours,
+Linus Walleij
