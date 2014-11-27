@@ -1,91 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914AbaK0EIm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 23:08:42 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:54347 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222AbaK0EIk (ORCPT
+	id S1753938AbaK0E1g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 23:27:36 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:5747 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753528AbaK0E1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 23:08:40 -0500
+	Wed, 26 Nov 2014 23:27:34 -0500
+Message-ID: <5476A82B.2060903@sonymobile.com>
+Date: Wed, 26 Nov 2014 20:27:23 -0800
+From: Tim Bird <tim.bird@sonymobile.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <1417024212-1775-1-git-send-email-edubezval@gmail.com>
-References: <1417024212-1775-1-git-send-email-edubezval@gmail.com>
-Date: Thu, 27 Nov 2014 09:38:39 +0530
-Message-ID: <CAKohponxUWVT1mjRfJarNtj-+=rXNOa_ONHUjmdu_+6N+=ZjPQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] thermal: cpu_cooling: check for the readiness of
- cpufreq layer
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: Linux PM <linux-pm@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Zhang Rui <rui.zhang@intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Shuah Khan <shuahkh@osg.samsung.com>
+CC: "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [PATCH v4] selftest: size: Add size test for Linux kernel
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Few nits..
 
-On 26 November 2014 at 23:20, Eduardo Valentin <edubezval@gmail.com> wrote:
+This test shows the amount of memory used by the system.
+Note that this is dependent on the user-space that is loaded
+when this program runs.  Optimally, this program would be
+run as the init program itself.
 
-> Signed-off-by: Eduardo Valentin <edubezval@gmail.com>
-> ---
+The program is optimized for size itself, to avoid conflating
+its own execution with that of the system software.
+The code is compiled statically, with no stdlibs. On my x86_64 system,
+this results in a statically linked binary of less than 5K.
 
-The normal practice is to write the non-commitable part here ...
+Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
+---
+Changes from v3:
+  - fix copyright string (again!)
+  - use __builtin_strlen instead of my own strlen
+  - replace main with _start
+  - add more human-readable output
+  - put libgcc reference into a variable in Makefile
 
->  drivers/thermal/cpu_cooling.c                      | 5 +++++
->  drivers/thermal/db8500_cpufreq_cooling.c           | 5 -----
->  drivers/thermal/imx_thermal.c                      | 5 -----
->  drivers/thermal/samsung/exynos_thermal_common.c    | 2 +-
->  drivers/thermal/ti-soc-thermal/ti-thermal-common.c | 6 ------
->  5 files changed, 6 insertions(+), 17 deletions(-)
-> ---
+Changes from v2:
+  - add return values to print routines
+  - add .gitignore file
 
-But this works as well :)
+Changes from v1:
+  - use more correct Copyright string in get_size.c
 
-> This is attempt to organize the cpu cooling vs. cpufreq boot sequencing.
-> The main change in this patch, as in the commit log, is to have the check
-> for the cpufreq layer in the cpu cooling device registration, instead of
-> in thermal drivers. This way, drivers don't need to bother about it, they
-> just need to propagate the error value.
->
-> This change was tested on top of:
-> (0) - Viresh's change in cpufreq layer and cpufreq-dt (up to patch 4):
-> https://patchwork.kernel.org/patch/5384141/
-> https://patchwork.kernel.org/patch/5384151/
-> https://patchwork.kernel.org/patch/5384161/
-> https://patchwork.kernel.org/patch/5384171/
-> (1) - fix of thermal core:
-> https://patchwork.kernel.org/patch/5326991/
->
-> After Viresh's changes, cpufreq-dt is properly sequenced with cpu cooling
-> registration. Non-of based drivers also should take advantage if these
-> changes, as now they do not need to check for cpufreq layer. The check is
-> where it belongs, in cpu cooling device registration.
->
-> BR, Eduardo Valentin
->
->
-> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
-> index 1ab0018..9e6945b 100644
-> --- a/drivers/thermal/cpu_cooling.c
-> +++ b/drivers/thermal/cpu_cooling.c
-> @@ -440,6 +440,11 @@ __cpufreq_cooling_register(struct device_node *np,
->         int ret = 0, i;
->         struct cpufreq_policy policy;
->
-> +       if (!cpufreq_get_current_driver() || !cpufreq_frequency_get_table(0)) {
+ tools/testing/selftests/Makefile        |   1 +
+ tools/testing/selftests/size/.gitignore |   1 +
+ tools/testing/selftests/size/Makefile   |  23 +++++++
+ tools/testing/selftests/size/get_size.c | 111 ++++++++++++++++++++++++++++++++
+ 4 files changed, 136 insertions(+)
+ create mode 100644 tools/testing/selftests/size/.gitignore
+ create mode 100644 tools/testing/selftests/size/Makefile
+ create mode 100644 tools/testing/selftests/size/get_size.c
 
-Only !cpufreq_frequency_get_table(0) is enough here.
+diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
+index 45f145c..fa91aef 100644
+--- a/tools/testing/selftests/Makefile
++++ b/tools/testing/selftests/Makefile
+@@ -15,6 +15,7 @@ TARGETS += user
+ TARGETS += sysctl
+ TARGETS += firmware
+ TARGETS += ftrace
++TARGETS += size
+ 
+ TARGETS_HOTPLUG = cpu-hotplug
+ TARGETS_HOTPLUG += memory-hotplug
+diff --git a/tools/testing/selftests/size/.gitignore b/tools/testing/selftests/size/.gitignore
+new file mode 100644
+index 0000000..189b781
+--- /dev/null
++++ b/tools/testing/selftests/size/.gitignore
+@@ -0,0 +1 @@
++get_size
+diff --git a/tools/testing/selftests/size/Makefile b/tools/testing/selftests/size/Makefile
+new file mode 100644
+index 0000000..1862786
+--- /dev/null
++++ b/tools/testing/selftests/size/Makefile
+@@ -0,0 +1,23 @@
++#ifndef CC
++	CC = $(CROSS_COMPILE)gcc
++#endif
++
++#ifndef STRIP
++	STRIP = $(CROSS_COMPILE)strip
++#endif
++
++all: get_size
++
++LIBGCC=$(shell $(CC) -print-libgcc-file-name)
++
++get_size: get_size.c
++	$(CC) --static -ffreestanding -nostartfiles \
++		-Wl,--entry=_start get_size.c $(LIBGCC) \
++		-o get_size
++	$(STRIP) -s get_size
++
++run_tests: all
++	./get_size
++
++clean:
++	$(RM) get_size
+diff --git a/tools/testing/selftests/size/get_size.c b/tools/testing/selftests/size/get_size.c
+new file mode 100644
+index 0000000..7e9bbb4
+--- /dev/null
++++ b/tools/testing/selftests/size/get_size.c
+@@ -0,0 +1,111 @@
++/*
++ * Copyright 2014 Sony Mobile Communications Inc.
++ *
++ * Licensed under the terms of the GNU GPL License version 2
++ *
++ * Selftest for runtime system size
++ *
++ * Prints the amount of RAM that the currently running system is using.
++ *
++ * This program tries to be as small as possible itself, to
++ * avoid perturbing the system memory utilization with its
++ * own execution.  It also attempts to have as few dependencies
++ * on kernel features as possible.
++ *
++ * It should be statically linked, with startup libs avoided.
++ * It uses no library calls, and only the following 3 syscalls:
++ *   sysinfo(), write(), and _exit()
++ *
++ * For output, it avoids printf (which in some C libraries
++ * has large external dependencies) by  implementing it's own
++ * number output and print routines, and using __builtin_strlen()
++ */
++
++#include <sys/sysinfo.h>
++#include <unistd.h>
++
++#define STDOUT_FILENO 1
++
++int print(const char *s)
++{
++	return write(STDOUT_FILENO, s, __builtin_strlen(s));
++}
++
++
++/*
++ * num_to_str - put digits from num into *s, left to right
++ *   do this by dividing the number by powers of 10
++ *   the tricky part is to omit leading zeros
++ *   don't print zeros until we've started printing any numbers at all
++ */
++void num_to_str(unsigned long num, char *s)
++{
++	unsigned long long temp, div;
++	int started;
++
++	temp = num;
++	div = 1000000000000000000LL;
++	started = 0;
++	while (div) {
++		if (temp/div || started) {
++			*s++ = (unsigned char)(temp/div + '0');
++			started = 1;
++		}
++		temp -= (temp/div)*div;
++		div /= 10;
++	}
++	*s = 0;
++}
++
++int print_num(unsigned long num)
++{
++	char num_buf[30];
++
++	num_to_str(num, num_buf);
++	return print(num_buf);
++}
++
++int print_k_value(const char *s, unsigned long num, unsigned long units)
++{
++	unsigned long long temp;
++	int ccode;
++
++	print(s);
++
++	temp = num;
++	temp = (temp * units)/1024;
++	num = temp;
++	ccode = print_num(num);
++	print("\n");
++	return ccode;
++}
++
++/* this program has no main(), as startup libraries are not used */
++void _start(void)
++{
++	int ccode;
++	struct sysinfo info;
++	unsigned long used;
++
++	print("Testing system size.\n");
++	print("1..1\n");
++
++	ccode = sysinfo(&info);
++	if (ccode < 0) {
++		print("not ok 1 get size runtime size\n");
++		print("# could not get sysinfo\n");
++		_exit(ccode);
++	}
++	/* ignore cache complexities for now */
++	used = info.totalram - info.freeram - info.bufferram;
++	print_k_value("ok 1 get runtime memory use # size = ", used,
++		info.mem_unit);
++
++	print("# System runtime memory report (units in Kilobytes):\n");
++	print_k_value("#   Total:  ", info.totalram, info.mem_unit);
++	print_k_value("#   Free:   ", info.freeram, info.mem_unit);
++	print_k_value("#   Buffer: ", info.bufferram, info.mem_unit);
++	print_k_value("#   In use: ", used, info.mem_unit);
++
++	_exit(0);
++}
+-- 
+1.8.2.2
 
-For rest:
-
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
