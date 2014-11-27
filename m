@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751743AbaK0UI7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 15:08:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39513 "EHLO mx1.redhat.com"
+	id S1751822AbaK0UJN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 15:09:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39561 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751689AbaK0UI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 15:08:56 -0500
-Date: Thu, 27 Nov 2014 22:08:37 +0200
+	id S1751796AbaK0UJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 15:09:11 -0500
+Date: Thu, 27 Nov 2014 22:08:47 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
@@ -14,8 +14,8 @@ Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
         Rusty Russell <rusty@rustcorp.com.au>,
         virtualization@lists.linux-foundation.org
-Subject: [PATCH v6 11/46] virtio: allow transports to get avail/used addresses
-Message-ID: <1417118789-18231-12-git-send-email-mst@redhat.com>
+Subject: [PATCH v6 13/46] virtio: simplify feature bit handling
+Message-ID: <1417118789-18231-14-git-send-email-mst@redhat.com>
 References: <1417118789-18231-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -26,63 +26,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-
-For virtio-1, we can theoretically have a more complex virtqueue
-layout with avail and used buffers not on a contiguous memory area
-with the descriptor table. For now, it's fine for a transport driver
-to stay with the old layout: It needs, however, a way to access
-the locations of the avail/used rings so it can register them with
-the host.
-
-Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
-Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Now that we use u64 for bits, we can simply & them together.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- include/linux/virtio.h       |  3 +++
- drivers/virtio/virtio_ring.c | 16 ++++++++++++++++
- 2 files changed, 19 insertions(+)
+ drivers/virtio/virtio.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-index 149284e..d6359a5 100644
---- a/include/linux/virtio.h
-+++ b/include/linux/virtio.h
-@@ -75,6 +75,9 @@ unsigned int virtqueue_get_vring_size(struct virtqueue *vq);
+diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
+index 9248125..3e78f4b 100644
+--- a/drivers/virtio/virtio.c
++++ b/drivers/virtio/virtio.c
+@@ -160,6 +160,7 @@ static int virtio_dev_probe(struct device *_d)
+ 	struct virtio_device *dev = dev_to_virtio(_d);
+ 	struct virtio_driver *drv = drv_to_virtio(dev->dev.driver);
+ 	u64 device_features;
++	u64 driver_features;
+ 	unsigned status;
  
- bool virtqueue_is_broken(struct virtqueue *vq);
+ 	/* We have a driver! */
+@@ -168,15 +169,16 @@ static int virtio_dev_probe(struct device *_d)
+ 	/* Figure out what features the device supports. */
+ 	device_features = dev->config->get_features(dev);
  
-+void *virtqueue_get_avail(struct virtqueue *vq);
-+void *virtqueue_get_used(struct virtqueue *vq);
-+
- /**
-  * virtio_device - representation of a device using virtio
-  * @index: unique position on the virtio bus
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index 0d3c737..55532a4 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -827,4 +827,20 @@ void virtio_break_device(struct virtio_device *dev)
- }
- EXPORT_SYMBOL_GPL(virtio_break_device);
+-	/* Features supported by both device and driver into dev->features. */
+-	dev->features = 0;
++	/* Figure out what features the driver supports. */
++	driver_features = 0;
+ 	for (i = 0; i < drv->feature_table_size; i++) {
+ 		unsigned int f = drv->feature_table[i];
+ 		BUG_ON(f >= 64);
+-		if (device_features & (1ULL << f))
+-			__virtio_set_bit(dev, f);
++		driver_features |= (1ULL << f);
+ 	}
  
-+void *virtqueue_get_avail(struct virtqueue *_vq)
-+{
-+	struct vring_virtqueue *vq = to_vvq(_vq);
++	dev->features = driver_features & device_features;
 +
-+	return vq->vring.avail;
-+}
-+EXPORT_SYMBOL_GPL(virtqueue_get_avail);
-+
-+void *virtqueue_get_used(struct virtqueue *_vq)
-+{
-+	struct vring_virtqueue *vq = to_vvq(_vq);
-+
-+	return vq->vring.used;
-+}
-+EXPORT_SYMBOL_GPL(virtqueue_get_used);
-+
- MODULE_LICENSE("GPL");
+ 	/* Transport features always preserved to pass to finalize_features. */
+ 	for (i = VIRTIO_TRANSPORT_F_START; i < VIRTIO_TRANSPORT_F_END; i++)
+ 		if (device_features & (1ULL << i))
 -- 
 MST
 
