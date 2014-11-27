@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208AbaK0ItI (ORCPT <rfc822;w@1wt.eu>);
+	id S1755226AbaK0ItN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 03:49:13 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:61462 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755202AbaK0ItI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Nov 2014 03:49:08 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42351 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755146AbaK0Is6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:48:58 -0500
-From: lizf@kernel.org
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Clemens Ladisch <clemens@ladisch.de>,
-        Takashi Iwai <tiwai@suse.de>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 59/91] ALSA: pcm: fix fifo_size frame calculation
-Date: Thu, 27 Nov 2014 16:42:42 +0800
-Message-Id: <1417077794-9299-59-git-send-email-lizf@kernel.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
-References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
+Date: Thu, 27 Nov 2014 08:49:02 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Romain Perier <romain.perier@gmail.com>
+Subject: Re: linux-next: manual merge of the devicetree tree with the pm, mfd
+ and regulator trees
+Message-ID: <20141127084902.GC4628@x1>
+References: <20141126154406.434ab873@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141126154406.434ab873@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Clemens Ladisch <clemens@ladisch.de>
+> Today's linux-next merge of the devicetree tree got a conflict in
+> include/linux/of.h between commits b31384fa5de3 ("Driver core: Unified
+> device properties interface for platform firmware") from the pm tree
+> and a4b4e0461ec5 ("of: Add standard property for poweroff capability")
+> from the mfd and regulator trees and commit 7518b5890d8a ("of/overlay:
+> Introduce DT overlay support") from the devicetree tree.
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+This patch actually originated from the Regulator tree.  I pulled it in
+to avoid conflicts between MFD and Regulator.  I guess OF needs to do
+the same to avoid a conflict when Linus pulls them in.
 
-------------------
+[...]
 
-
-commit a9960e6a293e6fc3ed414643bb4e4106272e4d0a upstream.
-
-The calculated frame size was wrong because snd_pcm_format_physical_width()
-actually returns the number of bits, not bytes.
-
-Use snd_pcm_format_size() instead, which not only returns bytes, but also
-simplifies the calculation.
-
-Fixes: 8bea869c5e56 ("ALSA: PCM midlevel: improve fifo_size handling")
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Zefan Li <lizefan@huawei.com>
----
- sound/core/pcm_lib.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/sound/core/pcm_lib.c b/sound/core/pcm_lib.c
-index 370fc56..6292575 100644
---- a/sound/core/pcm_lib.c
-+++ b/sound/core/pcm_lib.c
-@@ -1693,14 +1693,16 @@ static int snd_pcm_lib_ioctl_fifo_size(struct snd_pcm_substream *substream,
- {
- 	struct snd_pcm_hw_params *params = arg;
- 	snd_pcm_format_t format;
--	int channels, width;
-+	int channels;
-+	ssize_t frame_size;
- 
- 	params->fifo_size = substream->runtime->hw.fifo_size;
- 	if (!(substream->runtime->hw.info & SNDRV_PCM_INFO_FIFO_IN_FRAMES)) {
- 		format = params_format(params);
- 		channels = params_channels(params);
--		width = snd_pcm_format_physical_width(format);
--		params->fifo_size /= width * channels;
-+		frame_size = snd_pcm_format_size(format, channels);
-+		if (frame_size > 0)
-+			params->fifo_size /= (unsigned)frame_size;
- 	}
- 	return 0;
- }
 -- 
-1.9.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
