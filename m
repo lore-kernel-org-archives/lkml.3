@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306AbaK0JPb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 04:15:31 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:61935 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755010AbaK0JPJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 04:15:09 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Lee Jones <lee.jones@linaro.org>, devicetree@vger.kernel.org,
-        jason@lakedaemon.net, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        kernel@stlinux.com
-Subject: Re: [PATCH v2 2/8] irqchip: Supply new driver for STi based devices
-Date: Thu, 27 Nov 2014 10:15 +0100
-Message-ID: <35179358.tOpRGufXmc@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141127090255.GD4628@x1>
-References: <1416932705-16880-1-git-send-email-lee.jones@linaro.org> <2433040.4NqTrOMmEE@wuerfel> <20141127090255.GD4628@x1>
+	id S932110AbaK0JQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 04:16:29 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41497 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754692AbaK0Iq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:46:59 -0500
+From: lizf@kernel.org
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 25/91] Input: elantech - fix detection of touchpad on ASUS s301l
+Date: Thu, 27 Nov 2014 16:42:08 +0800
+Message-Id: <1417077794-9299-25-git-send-email-lizf@kernel.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
+References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:3KnrKtacOCFGNHlggOSDzrxAtVhLDCq4SvmrkpS0hgn
- OBESgfGY+c/3YtMpX9nfV86rbmUWSSe/HuhENxLYqJSKw/etfl
- sRSiRXMKdsMEqZE2+qERVsFte4tt6iiOrFPJeUxdWYEDGt9+5e
- mUgHW/VZY5zqsrQ5JTZRQnt0eOjHTUWsrhyAEzcURxFlHoF+R5
- 4yal7IgPLPNjptu3IlAhAJpmMuW1aAetzSDi7ZsbsU6ajo6p3h
- jWRBmNIrTBqy3WMT+R/hxC/YtdEyYneGzZedtJbYdADA88QOV6
- mHMB+A9YeaaFYK6jKMyw4sfr+Cix+SU8LF/FcPe4Zmx8URvC+F
- f3XYwmKcB44OnU1+5IHA=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 November 2014 09:02:55 Lee Jones wrote:
-> On Tue, 25 Nov 2014, Arnd Bergmann wrote:
-> 
-> > On Tuesday 25 November 2014 16:24:59 Lee Jones wrote:
-> > 
-> > > diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-> > > index b21f12f..e502f15 100644
-> > > --- a/drivers/irqchip/Kconfig
-> > > +++ b/drivers/irqchip/Kconfig
-> > > @@ -93,6 +93,13 @@ config RENESAS_IRQC
-> > >     bool
-> > >     select IRQ_DOMAIN
-> > >  
-> > > +config ST_IRQCHIP
-> > > +   bool
-> > > +   select REGMAP
-> > > +   select MFD_SYSCON
-> > > +   help
-> > > +     Enables SysCfg Controlled IRQs on STi based platforms.
-> > > +
-> > 
-> > I'm confused by the purpose of this code. It's apparently a driver
-> > in drivers/irqchip, the Kconfig symbol contains the string IRQCHIP,
-> > yet it doesn't actually register an irq_chip.
-> > 
-> > Also, the name is a bit too generic, ST has lots of different irqchips,
-> > and this apparently isn't even one of them 
-> 
-> Hmm... now you're going to ask me to remember who I had the
-> conversation with that alluded to this as the best location for this
-> driver.  Unfortunately, I cannot.  Can you think of a better place to
-> put it then?
+From: Hans de Goede <hdegoede@redhat.com>
 
-I suspect it's in the right place but should actually be an irqchip
-driver. I'm having trouble understanding what this code actually does,
-can you you explain the functionality in more detail so we can figure
-out what to do with it?
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
-	Arnd
+------------------
+
+
+commit 271329b3c798b2102120f5df829071c211ef00ed upstream.
+
+Adjust Elantech signature validation to account fo rnewer models of
+touchpads.
+
+Reported-and-tested-by: Màrius Monton <marius.monton@gmail.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Zefan Li <lizefan@huawei.com>
+---
+ drivers/input/mouse/elantech.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+index d93ea64..f2c2ffe 100644
+--- a/drivers/input/mouse/elantech.c
++++ b/drivers/input/mouse/elantech.c
+@@ -1218,6 +1218,13 @@ static bool elantech_is_signature_valid(const unsigned char *param)
+ 	if (param[1] == 0)
+ 		return true;
+ 
++	/*
++	 * Some models have a revision higher then 20. Meaning param[2] may
++	 * be 10 or 20, skip the rates check for these.
++	 */
++	if (param[0] == 0x46 && (param[1] & 0xef) == 0x0f && param[2] < 40)
++		return true;
++
+ 	for (i = 0; i < ARRAY_SIZE(rates); i++)
+ 		if (param[2] == rates[i])
+ 			return false;
+-- 
+1.9.1
+
