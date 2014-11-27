@@ -1,40 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849AbaK0RZr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 12:25:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42923 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750926AbaK0RZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 12:25:45 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <545A51CB.6070107@tycho.nsa.gov>
-References: <545A51CB.6070107@tycho.nsa.gov> <20141105154217.2555.578.stgit@warthog.procyon.org.uk> <20141105154307.2555.9847.stgit@warthog.procyon.org.uk>
-To: Stephen Smalley <sds@tycho.nsa.gov>
-Cc: dhowells@redhat.com, linux-unionfs@vger.kernel.org, selinux@tycho.nsa.gov,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/7] SELinux: Handle opening of a unioned file
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <16215.1417109138.1@warthog.procyon.org.uk>
-Date: Thu, 27 Nov 2014 17:25:38 +0000
-Message-ID: <16216.1417109138@warthog.procyon.org.uk>
+	id S1751876AbaK0R0I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 12:26:08 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:54581 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067AbaK0R0G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 12:26:06 -0500
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+To: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
+        alex.williamson@redhat.com, linux@arm.linux.org.uk
+Cc: will.deacon@arm.com, tech@virtualopensystems.com,
+        christoffer.dall@linaro.org, eric.auger@linaro.org,
+        kim.phillips@freescale.com, marc.zyngier@arm.com,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        linux-api@vger.kernel.org (open list:ABI/API),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [REPORT PATCH] driver core: amba: add device binding path 'driver_override'
+Date: Thu, 27 Nov 2014 18:25:50 +0100
+Message-Id: <1417109154-10331-1-git-send-email-a.motakis@virtualopensystems.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Smalley <sds@tycho.nsa.gov> wrote:
+As already demonstrated with PCI [1] and the platform bus [2], a
+driver_override property in sysfs can be used to bypass the id matching
+of a device to a AMBA driver. This can be used by VFIO to bind to any AMBA
+device requested by the user.
 
-> Also, would be good to create a common helper for use here, by
-> selinux_dentry_init_security(), selinux_inode_init_security(), and
-> may_create().  Already some seeming potential for inconsistencies there.
+[1] http://lists-archives.com/linux-kernel/28030441-pci-introduce-new-device-binding-path-using-pci_dev-driver_override.html
+[2] https://www.redhat.com/archives/libvir-list/2014-April/msg00382.html
 
-selinux_dentry_init_security() and selinux_inode_init_security() do something
-different depending on SECURITY_FS_USE_MNTPOINT.  Is the dentry variant wrong?
-Shouldn't it be using the mountpoint label if that flag _is_ set?
+Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+Reviewed-by: Kim Phillips <kim.phillips@freescale.com>
+---
+ Documentation/ABI/testing/sysfs-bus-amba | 20 ++++++++++++++
+ drivers/amba/bus.c                       | 47 ++++++++++++++++++++++++++++++++
+ include/linux/amba/bus.h                 |  1 +
+ 3 files changed, 68 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-amba
 
-David
+diff --git a/Documentation/ABI/testing/sysfs-bus-amba b/Documentation/ABI/testing/sysfs-bus-amba
+new file mode 100644
+index 0000000..e7b5467
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-bus-amba
+@@ -0,0 +1,20 @@
++What:		/sys/bus/amba/devices/.../driver_override
++Date:		September 2014
++Contact:	Antonios Motakis <a.motakis@virtualopensystems.com>
++Description:
++		This file allows the driver for a device to be specified which
++		will override standard OF, ACPI, ID table, and name matching.
++		When specified, only a driver with a name matching the value
++		written to driver_override will have an opportunity to bind to
++		the device. The override is specified by writing a string to the
++		driver_override file (echo vfio-amba > driver_override)	and may
++		be cleared with an empty string (echo > driver_override).
++		This returns the device to standard matching rules binding.
++		Writing to driver_override does not automatically unbind the
++		device from its current driver or make any attempt to
++		automatically load the specified driver. If no driver with a
++		matching name is currently loaded in the kernel, the device will
++		not bind to any driver. This also allows devices to opt-out of
++		driver binding using a driver_override name such as "none".
++		Only a single driver may be specified in the override, there is
++		no support for parsing delimiters.
+diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
+index 47bbdc1..14bb08b 100644
+--- a/drivers/amba/bus.c
++++ b/drivers/amba/bus.c
+@@ -18,6 +18,7 @@
+ #include <linux/pm_domain.h>
+ #include <linux/amba/bus.h>
+ #include <linux/sizes.h>
++#include <linux/limits.h>
+ 
+ #include <asm/irq.h>
+ 
+@@ -43,6 +44,10 @@ static int amba_match(struct device *dev, struct device_driver *drv)
+ 	struct amba_device *pcdev = to_amba_device(dev);
+ 	struct amba_driver *pcdrv = to_amba_driver(drv);
+ 
++	/* When driver_override is set, only bind to the matching driver */
++	if (pcdev->driver_override)
++		return !strcmp(pcdev->driver_override, drv->name);
++
+ 	return amba_lookup(pcdrv->id_table, pcdev) != NULL;
+ }
+ 
+@@ -59,6 +64,47 @@ static int amba_uevent(struct device *dev, struct kobj_uevent_env *env)
+ 	return retval;
+ }
+ 
++static ssize_t driver_override_show(struct device *_dev,
++				    struct device_attribute *attr, char *buf)
++{
++	struct amba_device *dev = to_amba_device(_dev);
++
++	if (!dev->driver_override)
++		return 0;
++
++	return sprintf(buf, "%s\n", dev->driver_override);
++}
++
++static ssize_t driver_override_store(struct device *_dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	struct amba_device *dev = to_amba_device(_dev);
++	char *driver_override, *old = dev->driver_override, *cp;
++
++	if (count > PATH_MAX)
++		return -EINVAL;
++
++	driver_override = kstrndup(buf, count, GFP_KERNEL);
++	if (!driver_override)
++		return -ENOMEM;
++
++	cp = strchr(driver_override, '\n');
++	if (cp)
++		*cp = '\0';
++
++	if (strlen(driver_override)) {
++		dev->driver_override = driver_override;
++	} else {
++	       kfree(driver_override);
++	       dev->driver_override = NULL;
++	}
++
++	kfree(old);
++
++	return count;
++}
++
+ #define amba_attr_func(name,fmt,arg...)					\
+ static ssize_t name##_show(struct device *_dev,				\
+ 			   struct device_attribute *attr, char *buf)	\
+@@ -81,6 +127,7 @@ amba_attr_func(resource, "\t%016llx\t%016llx\t%016lx\n",
+ static struct device_attribute amba_dev_attrs[] = {
+ 	__ATTR_RO(id),
+ 	__ATTR_RO(resource),
++	__ATTR_RW(driver_override),
+ 	__ATTR_NULL,
+ };
+ 
+diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
+index c324f57..34a7004 100644
+--- a/include/linux/amba/bus.h
++++ b/include/linux/amba/bus.h
+@@ -32,6 +32,7 @@ struct amba_device {
+ 	struct clk		*pclk;
+ 	unsigned int		periphid;
+ 	unsigned int		irq[AMBA_NR_IRQS];
++	char			*driver_override;
+ };
+ 
+ struct amba_driver {
+-- 
+2.1.3
+
