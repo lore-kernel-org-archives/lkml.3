@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751752AbaK0QIX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 11:08:23 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:54552 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252AbaK0QIV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 11:08:21 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-CC: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 04/11] ARM: at91/Kconfig: remove ARCH_AT91RM9200 option for drivers
-Date: Thu, 27 Nov 2014 17:06:32 +0100
-Message-ID: <c7dbeffc8a6a4ec88b64e76da01c770526bf4358.1417103399.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <cover.1417103399.git.nicolas.ferre@atmel.com>
-References: <cover.1417103399.git.nicolas.ferre@atmel.com>
+	id S1751812AbaK0QI1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 11:08:27 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751252AbaK0QIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 11:08:25 -0500
+Message-ID: <54774C71.50807@nod.at>
+Date: Thu, 27 Nov 2014 17:08:17 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] UBI: Fastmap: Ensure that all fastmap work is done
+ upon WL shutdown
+References: <1416835236-25185-1-git-send-email-richard@nod.at>	 <1416835236-25185-4-git-send-email-richard@nod.at> <1417102739.5858.112.camel@sauron.fi.intel.com>
+In-Reply-To: <1417102739.5858.112.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The precise selection is useless, so we simply remove these dependencies.
+Am 27.11.2014 um 16:38 schrieb Artem Bityutskiy:
+> On Mon, 2014-11-24 at 14:20 +0100, Richard Weinberger wrote:
+>> ...otherwise the deferred work might run after datastructures
+>> got freed and corrupt memory.
+>>
+>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>> ---
+>>  drivers/mtd/ubi/wl.c | 3 +++
+>>  1 file changed, 3 insertions(+)
+>>
+>> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+>> index 7f135df..cb2e571 100644
+>> --- a/drivers/mtd/ubi/wl.c
+>> +++ b/drivers/mtd/ubi/wl.c
+>> @@ -2041,6 +2041,9 @@ static void protection_queue_destroy(struct ubi_device *ubi)
+>>  void ubi_wl_close(struct ubi_device *ubi)
+>>  {
+>>  	dbg_wl("close the WL sub-system");
+>> +#ifdef CONFIG_MTD_UBI_FASTMAP
+>> +	flush_work(&ubi->fm_work);
+>> +#endif
+> 
+> If you are using the work infrastructure implemented in wl.c, then
+> fastmap work should be no different to any other work. And we do flush
+> all works in 'shutdown_work()'. The fastmap work should be flushed there
+> too.
+> 
+> I think we discussed this already - there should be one single queue of
+> works, managed by the same set of functions, all flushed in the same
+> place, one-by-one...
+> 
+> Obviously, there is some misunderstanding. This looks like lack of
+> separation and misuse of layering. I am missing explanations why I am
+> wrong...
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/net/ethernet/cadence/Kconfig | 2 +-
- drivers/rtc/Kconfig                  | 2 +-
- drivers/watchdog/Kconfig             | 4 ++--
- 3 files changed, 4 insertions(+), 4 deletions(-)
+So you want me to use the UBI WL background thread for the scheduled fastmap work?
+I didn't do it that way because you said more than once that fastmap is fastmap and
+WL is WL. Therefore I've separated it.
 
-diff --git a/drivers/net/ethernet/cadence/Kconfig b/drivers/net/ethernet/cadence/Kconfig
-index 9e089d24466e..3564fe9d3f69 100644
---- a/drivers/net/ethernet/cadence/Kconfig
-+++ b/drivers/net/ethernet/cadence/Kconfig
-@@ -22,7 +22,7 @@ if NET_CADENCE
- 
- config ARM_AT91_ETHER
- 	tristate "AT91RM9200 Ethernet support"
--	depends on HAS_DMA && (ARCH_AT91RM9200 || COMPILE_TEST)
-+	depends on HAS_DMA && (ARCH_AT91 || COMPILE_TEST)
- 	select MACB
- 	---help---
- 	  If you wish to compile a kernel for the AT91RM9200 and enable
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index aa96e375915d..0b704889bf91 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -1110,7 +1110,7 @@ config RTC_DRV_AT91RM9200
- 
- config RTC_DRV_AT91SAM9
- 	tristate "AT91SAM9x/AT91CAP9 RTT as RTC"
--	depends on ARCH_AT91 && !ARCH_AT91RM9200
-+	depends on ARCH_AT91
- 	help
- 	  RTC driver for the Atmel AT91SAM9x and AT91CAP9 internal RTT
- 	  (Real Time Timer). These timers are powered by the backup power
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index d0107d424ee4..08f41add1461 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -154,14 +154,14 @@ config ARM_SP805_WATCHDOG
- 
- config AT91RM9200_WATCHDOG
- 	tristate "AT91RM9200 watchdog"
--	depends on ARCH_AT91RM9200
-+	depends on SOC_AT91RM9200
- 	help
- 	  Watchdog timer embedded into AT91RM9200 chips. This will reboot your
- 	  system when the timeout is reached.
- 
- config AT91SAM9X_WATCHDOG
- 	tristate "AT91SAM9X / AT91CAP9 watchdog"
--	depends on ARCH_AT91 && !ARCH_AT91RM9200
-+	depends on ARCH_AT91
- 	select WATCHDOG_CORE
- 	help
- 	  Watchdog timer embedded into AT91SAM9X and AT91CAP9 chips. This will
--- 
-2.1.3
-
+Thanks,
+//richard
