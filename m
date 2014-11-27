@@ -1,73 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779AbaK0Ujv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 15:39:51 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:59299 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaK0Ujt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 15:39:49 -0500
-Content-Type: text/plain; charset=utf-8
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: [PATCH 3/4] KVM: x86: allow 256 logical x2APICs again
-From: Nadav Amit <nadav.amit@gmail.com>
-In-Reply-To: <20141127201641.GB383@potion.brq.redhat.com>
-Date: Thu, 27 Nov 2014 22:39:45 +0200
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Nadav Amit <namit@cs.technion.ac.il>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <A459C9D7-B1A8-4507-94FD-272A9FEECFDC@gmail.com>
-References: <1417114994-25235-1-git-send-email-rkrcmar@redhat.com> <1417114994-25235-4-git-send-email-rkrcmar@redhat.com> <22F11C34-E2E4-459B-882B-A944AD0853FD@gmail.com> <20141127201641.GB383@potion.brq.redhat.com>
-To: =?utf-8?Q?Radim_Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
-X-Mailer: Apple Mail (2.1993)
+	id S1751132AbaK0Ult (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 15:41:49 -0500
+Received: from e2big.org ([198.61.226.133]:48739 "EHLO e2big.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750729AbaK0Uls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 15:41:48 -0500
+Date: Thu, 27 Nov 2014 21:41:39 +0100
+From: ulrik.debie-os@e2big.org
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Marcus Overhagen <marcus.overhagen@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-input <linux-input@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [git pull] Input updates for 3.18-rc4
+Message-ID: <20141127204139.GA18953@lantern>
+References: <20141119181247.GE37989@dtor-ws>
+ <CAJBHPohu71BXqyZ4u74tAiP84UcQhXgto34k8NtNHPgw61WvLQ@mail.gmail.com>
+ <20141119183921.GF37989@dtor-ws>
+ <CAJBHPog3qRMQgNnso_csUOgR30A6eFPx4PkTzfCzkB3Gd5oVfQ@mail.gmail.com>
+ <20141119210552.GA5464@lantern>
+ <CAJBHPoiQ0ZuW2TjDu68SQrgOS=+OMTt0hptBmVedMLS55td1Rg@mail.gmail.com>
+ <20141119215417.GC5464@lantern>
+ <CAJBHPojucTj27EVLQRjDHZJe6bwZW3i-brwQ9N8mVY3rTp8koA@mail.gmail.com>
+ <20141125212321.GA12591@lantern>
+ <CAN+gG=FkhofpNmpP6=3uBeywYRVceYViGoAG1Z5W6u1Bofm9tA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN+gG=FkhofpNmpP6=3uBeywYRVceYViGoAG1Z5W6u1Bofm9tA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Radim Krčmář <rkrcmar@redhat.com> wrote:
+Hi Benjamin,
 
-> 2014-11-27 21:53+0200, Nadav Amit:
->> Radim Krčmář <rkrcmar@redhat.com> wrote:
->>> -			new->cid_mask = (1 << KVM_X2APIC_CID_BITS) - 1;
->>> -			new->lid_mask = 0xffff;
->>> +			new->cid_mask = new->lid_mask = 0xffff;
->> You set cid_mask to 0xffff, while there are only 16 clusters. I think it is
->> risky (if you twist my hand would come with a scenario).
+On Wed, Nov 26, 2014 at 09:33:26AM -0500, Benjamin Tissoires wrote:
 > 
-> Let's see :) APIC id is 8 bit, and we compute cluster part of LDR by
-> taking four upper bits, so 16 is enough.
-To clarify my concern - I am worried that some of the CPUs are still in
-xAPIC mode with LDR that does not follow x2APIC LDR scheme.
+> Hi Ulrik,
+> 
+> On Tue, Nov 25, 2014 at 4:23 PM,  <ulrik.debie-os@e2big.org> wrote:
+> > Hi,
+> >
+> > On Wed, Nov 19, 2014 at 11:21:31PM +0100, Marcus Overhagen wrote:
+> >> Hi,
+> >>
+> >> when moving a single finger [3] seems to be one of 0x21, 0x25, 0x31, 0x35
+> >> moving two fingers [3] seems to be mostly 0x22, 0x26, 0x32, 0x36  but
+> >> also sometimes it's 0x42, 0x46, 0x52, 0x56.
+> >> It seems to occationally seems to switch between these two groups
+> >> after touching the pad with three or more fingers, but not every time.
+> >>
+> >> Moving three fingers I see[3] beeing  0x26, 0x36, 0x76, 0x66 (probably more)
+> >>
+> >> regards
+> >> Marcus
+> >
+> >
+> > Ok, after some digging through the packet dump kindly provided by Marcus,
+> > it is clear that Documentation/input/elantech.txt is not correctly
+> > representing anymore the packets of the v4 hardware. There should be some
+> > 0 and 1's replaced by x because they are currently "don't know" and definitely
+> > not always 0 or 1.
+> >
+> > Example:
+> > He has 0x26,0x36,0x46,0x56,0x66,0x76 in packet[3], and the documentation had
+> > the bits as:
+> > id2 id1 id0   1   0   0   1   0
+> >               X       X
+> > The bits marked with X can thus be different. But when those are changed to
+> > X==don't care then it is not trivial to differentiate them from the trackpoint
+> > that has the following signature for that byte:
+> > 0   0   ~sy  ~sx  0   1   1   0
+> >
+> >
+> >
+> > I'm considering the following change:
+> > The test
+> >
+> >         t = get_unaligned_le32(&packet[0]);
+> >
+> >         switch (t & ~7U) {
+> >         case 0x06000030U:
+> >         case 0x16008020U:
+> >         case 0x26800010U:
+> >         case 0x36808000U:
+> >
+> > could be moved to elantech_packet_check_v3/4() instead of the
+> > simpler test on the lowest nibble of packet[3] (and keep the etd->tp_dev check):
+> >        if ((packet[3] & 0x0f) == 0x06 && etd->tp_dev)
+> >                 return PACKET_TRACKPOINT;
+> >
+> > I'll think a little bit more on it. Based on the packet dump I have this
+> > seems to allow a perfect discrimation between trackpoint and touchpad packets.
+> >
+> 
+> Thanks for the progress on these. Do you think you will be able to get
+> something in shape before the final 3.18?
+> 
+> Dmitry, can we either revert the current patches and reschedule them
+> for 3.19 or at least apply one quick fix? I am starting to see a lot
+> of people complaining about it, and I am wondering if adding this
+> functionality in a -rc5 release was not a good idea :-/.
 
-> It isn't the safest programming practice, but we already fail to check
-> physical_map bounds and any boost to maximal APIC ID is going to require
-> a rewrite, thus I didn't bother to do it ...
-> 
-> All uses should be covered with the following hunk, I will add it to v2
-> after all reviews,
-> 
-> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-> index 6c2b8a5..30e4cc1 100644
-> --- a/arch/x86/kvm/lapic.c
-> +++ b/arch/x86/kvm/lapic.c
-> @@ -198,7 +198,7 @@ static void recalculate_apic_map(struct kvm *kvm)
-> 		cid = apic_cluster_id(new, ldr);
-> 		lid = apic_logical_id(new, ldr);
-> 
-> -		if (lid)
-> +		if (lid && cid < ARRAY_SIZE(map->logical_map))
-> 			new->logical_map[cid][ffs(lid) - 1] = apic;
-> 	}
-> out:
-> 
-> 
->>                                                         Yet, why not to set
->> cid_mask to (ARRAY_SIZE(map->logical_map) - 1) ?
-> 
-> We would incorrectly deliver messages intended for high clusters,
-> it has to be 0xffff.
->From the SDM, I am not sure you are correct, but your solution is fine.
+Dmitry has already requested Linus to pull the quick fix 
+b54783f2de0c216115333eca1a8d3d5c3e75b 
 
-Nadav
+I expect this fix from Dmitry to also help the person that you reported,
+could you confirm that ? Basically when the hardware reports no trackpoint
+present, it will then behave like before the trackpoint as enabled on v4.
 
+I expect some responses from people soon in order to find out if there
+is even a better way to fix it.
+
+Thanks,
+Kind regards,
+Ulrik
+
+
+
+> Cheers,
+> Benjamin
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
