@@ -1,98 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584AbaK0UNV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 15:13:21 -0500
-Received: from mout.gmx.net ([212.227.17.20]:58171 "EHLO mout.gmx.net"
+	id S1752597AbaK0UOi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 15:14:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50813 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751046AbaK0UNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 15:13:19 -0500
-Date: Thu, 27 Nov 2014 21:13:09 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Josh Wu <josh.wu@atmel.com>
-cc: linux-media@vger.kernel.org, m.chehab@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] media: v4l2-image-sizes.h: add SVGA, XGA and UXGA
- size definitions
-In-Reply-To: <547698A6.3090703@atmel.com>
-Message-ID: <Pine.LNX.4.64.1411272112320.5267@axis700.grange>
-References: <1416905668-23029-1-git-send-email-josh.wu@atmel.com>
- <Pine.LNX.4.64.1411252318330.17362@axis700.grange> <547698A6.3090703@atmel.com>
+	id S1752096AbaK0ULY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 15:11:24 -0500
+Date: Thu, 27 Nov 2014 22:11:08 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        netdev@vger.kernel.org, linux-api@vger.kernel.org
+Subject: [PATCH v6 39/46] tun: add VNET_LE flag
+Message-ID: <1417118789-18231-40-git-send-email-mst@redhat.com>
+References: <1417118789-18231-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V03:K0:DHeOz4mjUXWSNqjk8IL/dg9+7XxOZ2NpIvQU6uTWN/WkD+XiehR
- 6GToR3Jmlt4v6D5kZxQenZWkAIEEJwFV98pPI32VRqh+Fs5KoAKeiG+dX+Zp65dwBzoSpiy
- NmiVxiRj2W09TYwMZ9qzZVia6GwwYgdJjLEyRwcvzh+MA3xmakdED02oCuM3zmraw1zA46i
- yvaTS3uD2uxor4bXLxBHw==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417118789-18231-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Josh,
+virtio 1.0 modified virtio net header format,
+making all fields little endian.
 
-On Thu, 27 Nov 2014, Josh Wu wrote:
+Users can tweak header format before submitting it to tun,
+but this means more data copies where none were necessary.
+And if the iovec is in RO memory, this means we might
+need to split iovec also means we might in theory overflow
+iovec max size.
 
-> Hi, Guennadi
-> 
-> On 11/26/2014 6:23 AM, Guennadi Liakhovetski wrote:
-> > Hi Josh,
-> > 
-> > On Tue, 25 Nov 2014, Josh Wu wrote:
-> > 
-> > > Add SVGA, UXGA and XGA size definitions to v4l2-image-sizes.h.
-> > > The definitions are sorted by alphabet order.
-> > > 
-> > > Signed-off-by: Josh Wu <josh.wu@atmel.com>
-> > Thanks for your patches. I'm ok with these two, but the second of them
-> > depends on the first one, and the first one wouldn't (normally) be going
-> > via the soc-camera tree. Mauro, how would you prefer to handle this?
-> > Should I pick up and push to you both of them or postpone #2 until the
-> > next merge window?
-> 
-> The first patch is already merged in the media_tree. If the soc-camera tree
-> will be merged to the media_tree, then there should have no dependency issue.
-> Am I understanding correct?
+This patch adds a simpler way for applications to handle this,
+using new "little endian" flag in tun.
+As a result, tun simply byte-swaps header fields as appropriate.
+This is a NOP on LE architectures.
 
-Yes, then it should be ok!
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ include/uapi/linux/if_tun.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-Thanks
-Guennadi
+diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
+index 277a260..18b2403 100644
+--- a/include/uapi/linux/if_tun.h
++++ b/include/uapi/linux/if_tun.h
+@@ -57,6 +57,7 @@
+ #define IFF_ONE_QUEUE	0x2000
+ #define IFF_VNET_HDR	0x4000
+ #define IFF_TUN_EXCL	0x8000
++#define IFF_VNET_LE	0x10000
+ #define IFF_MULTI_QUEUE 0x0100
+ #define IFF_ATTACH_QUEUE 0x0200
+ #define IFF_DETACH_QUEUE 0x0400
+-- 
+MST
 
-> Best Regards,
-> Josh Wu
-> 
-> > 
-> > Thanks
-> > Guennadi
-> > 
-> > > ---
-> > >   include/media/v4l2-image-sizes.h | 9 +++++++++
-> > >   1 file changed, 9 insertions(+)
-> > > 
-> > > diff --git a/include/media/v4l2-image-sizes.h
-> > > b/include/media/v4l2-image-sizes.h
-> > > index 10daf92..c70c917 100644
-> > > --- a/include/media/v4l2-image-sizes.h
-> > > +++ b/include/media/v4l2-image-sizes.h
-> > > @@ -25,10 +25,19 @@
-> > >   #define QVGA_WIDTH	320
-> > >   #define QVGA_HEIGHT	240
-> > >   +#define SVGA_WIDTH	800
-> > > +#define SVGA_HEIGHT	680
-> > > +
-> > >   #define SXGA_WIDTH	1280
-> > >   #define SXGA_HEIGHT	1024
-> > >     #define VGA_WIDTH	640
-> > >   #define VGA_HEIGHT	480
-> > >   +#define UXGA_WIDTH	1600
-> > > +#define UXGA_HEIGHT	1200
-> > > +
-> > > +#define XGA_WIDTH	1024
-> > > +#define XGA_HEIGHT	768
-> > > +
-> > >   #endif /* _IMAGE_SIZES_H */
-> > > -- 
-> > > 1.9.1
-> > > 
-> 
