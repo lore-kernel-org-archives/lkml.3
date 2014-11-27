@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751707AbaK0OQi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 09:16:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57481 "EHLO mx1.redhat.com"
+	id S1751779AbaK0ORr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 09:17:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33374 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751124AbaK0OQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 09:16:37 -0500
-Date: Thu, 27 Nov 2014 12:16:26 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] perf tools: Do not fail on processing out of order event
-Message-ID: <20141127141626.GK3808@redhat.com>
-References: <1417016371-30249-1-git-send-email-jolsa@kernel.org>
- <20141126154459.GD3808@redhat.com>
- <20141127105603.GA1987@gmail.com>
- <20141127135259.GI3808@redhat.com>
- <20141127140707.GB25752@krava.brq.redhat.com>
+	id S1751356AbaK0ORm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 09:17:42 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <545A6464.5070702@tycho.nsa.gov>
+References: <545A6464.5070702@tycho.nsa.gov> <20141105154217.2555.578.stgit@warthog.procyon.org.uk> <20141105154318.2555.7052.stgit@warthog.procyon.org.uk> <545A53A9.4060009@tycho.nsa.gov>
+To: Stephen Smalley <sds@tycho.nsa.gov>
+Cc: dhowells@redhat.com, linux-unionfs@vger.kernel.org, selinux@tycho.nsa.gov,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/7] SELinux: The copy-up operation must have read permission on the lower file
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141127140707.GB25752@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <12075.1417097856.1@warthog.procyon.org.uk>
+Date: Thu, 27 Nov 2014 14:17:36 +0000
+Message-ID: <12076.1417097856@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Nov 27, 2014 at 03:07:07PM +0100, Jiri Olsa escreveu:
-> On Thu, Nov 27, 2014 at 11:53:00AM -0200, Arnaldo Carvalho de Melo wrote:
-> > Em Thu, Nov 27, 2014 at 11:56:03AM +0100, Ingo Molnar escreveu:
-> > > Arnaldo, I suppose the fix will go upstream via your tree, as a 
-> > > pull request for v3.18 fixes?
+Stephen Smalley <sds@tycho.nsa.gov> wrote:
 
-> > Right, I can do that.
+> This means that it expects to trigger those capability checks as part of
+> its subsequent actions.  Raising those capabilities temporarily in its
+> credentials will pass the capability module checks but won't address the
+> corresponding SELinux checks (both capability and file-based), so you'll
+> end up triggering an entire set of checks against the current process'
+> credentials.  This same pattern is repeated elsewhere in overlayfs.
 
-> > And I agree with the "expected" for events that are out of the current
-> > reordering window, i.e. we can't insert something into previous windows,
-> > so those are, humm, what would be a good name:
-> > stats->out_of_reordering_window, while stats->reordered, would be for
-> > events that were found out of order, but were successfully sorted as
-> > part of a flush operation, right?
- 
-> the forced flush is when we find out we crossed the allowed allocation
-> space for the samples queue.. so we take the half of the sorted queue
-> and flush it.. for this case we break the flushing logic and we might
+Hmmm...  Yes.  I need to check whether the lower file can be read *before*
+overriding the creds.
 
-Well, we make it more likely than without a forced flush to find out of
-order events, because the window suddenly became smaller, its like we
-found a FLUSH event right there, no?
-
-> (probably just in theory) get out of order events
- 
-> but IMO both cases of out of order event are equal.. we dont do
-> anything special for forced flushed AFAIK
-
-- Arnaldo
+David
