@@ -1,83 +1,529 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706AbaK0Bkk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 20:40:40 -0500
-Received: from regular1.263xmail.com ([211.150.99.134]:36523 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275AbaK0Bki (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 20:40:38 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: mark.yao@rock-chips.com
-X-FST-TO: airlied@gmail.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: mark.yao@rock-chips.com
-X-UNIQUE-TAG: <076755bccb4edbdf399fdaa7941f17b9>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <54768107.2090402@rock-chips.com>
-Date: Thu, 27 Nov 2014 09:40:23 +0800
-From: Mark yao <mark.yao@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753326AbaK0BrA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 20:47:00 -0500
+Received: from m50-134.163.com ([123.125.50.134]:35614 "EHLO m50-134.163.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752817AbaK0Bq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 20:46:59 -0500
+Message-ID: <54768284.4060201@163.com>
+Date: Thu, 27 Nov 2014 09:46:44 +0800
+From: Huang Bo <huangbobupt@163.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Dave Airlie <airlied@gmail.com>, Joerg Roedel <jroedel@suse.de>
-CC: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>, linux-api@vger.kernel.org,
-        linux-rockchip@lists.infradead.org,
-        Douglas Anderson <dianders@chromium.org>,
-        =?UTF-8?B?U3TDqXBoYW5lIE1hcmNoZXNpbg==?= <marcheu@chromium.org>,
-        dbehr@chromium.org, Olof Johansson <olof@lixom.net>,
-        Daniel Kurtz <djkurtz@chromium.org>, Eddie Cai <cf@rock-chips.com>,
-        simon xue <xxm@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Kever Yang <kever.yang@rock-chips.com>, yxj@rock-chips.com,
-        xw@rock-chips.com
-Subject: Re: [PATCH v14 0/3] Add drm driver for Rockchip Socs
-References: <1416447994-9921-1-git-send-email-mark.yao@rock-chips.com>	<23617908.6oA5uRuO3l@diego>	<CAPM=9tzvvb5U+8KaCO+K6CJi=rwWOkoW+4ZSFW_Oo9gTncvkWA@mail.gmail.com>	<1557742.FTdLsE0bVs@diego>	<20141126073430.GD3156@suse.de> <CAPM=9tzhZLShA5=ShGTKhyZR6ddKycQDUWBZxXpUBb+1tGp-mQ@mail.gmail.com>
-In-Reply-To: <CAPM=9tzhZLShA5=ShGTKhyZR6ddKycQDUWBZxXpUBb+1tGp-mQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Jiri Kosina <jkosina@suse.cz>
+CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCHv3 1/1] HID: add BETOP game controller force feedback support
+Content-Type: multipart/mixed;
+ boundary="------------090403050303040306070806"
+X-CM-TRANSID: DtGowEBZP1SFgnZUgtkAAg--.1213S3
+X-Coremail-Antispam: 1Uf129KBjvJXoW3Ar1xZFW5ZryrZw4Uur43GFg_yoW3Gw17pa
+	y5GrZ0y3yDAry7KrW8tr1DCFZ0vws7J34IgFW7Cw1Y9Fy5Aa95Xrn3t3yjyrn8JFZ5K39r
+	Wr1kW3y5Cayrt3JanT9S1TB71UUUUUUqnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
+	9KBjDUYxBIdaVFxhVjvjDU0xZFpf9x07jzFAdUUUUU=
+X-Originating-IP: [123.126.33.253]
+X-CM-SenderInfo: xkxd0wpere31rw6rljoofrz/1tbiKAtQ-FEAMfm93AACs1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年11月27日 06:53, Dave Airlie wrote:
-> On 26 November 2014 at 17:34, Joerg Roedel <jroedel@suse.de> wrote:
->> On Wed, Nov 26, 2014 at 01:37:51AM +0100, Heiko Stübner wrote:
->>> Joerg, is your arm/rockchip branch [0] considered stable?
->>>
->>> [0] https://git.kernel.org/cgit/linux/kernel/git/joro/iommu.git/log/?h=arm/rockchip
->>>
->> Yes, this branch will not be rebased. It can be pulled into another
->> tree.
-> Great, so if we can get a rockchip drm tree based on drm-next with
-> that tree pulled into it
-> that would be good.
->
-> Dave.
->
->
->
-Hi Dave
-     Do you mean that I need send you a branch, based on drm-next, merge 
-with iommu tree and rockchip drm?
+This is a multi-part message in MIME format.
+--------------090403050303040306070806
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-- Mark
+From: Huang Bo <huangbobupt@163.com>
 
+Adds force feedback support for BETOP USB game controllers.
+These devices are mass produced in China.
+
+Signed-off-by: Huang Bo <huangbobupt@163.com>
+---
+ drivers/hid/Kconfig       |   10 +++
+ drivers/hid/Makefile      |    1 +
+ drivers/hid/hid-betopff.c |  152 +++++++++++++++++++++++++++++++++++++++++++++
+ drivers/hid/hid-core.c    |    4 ++
+ drivers/hid/hid-ids.h     |    5 ++
+ 5 files changed, 172 insertions(+)
+ create mode 100644 drivers/hid/hid-betopff.c
+
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 4938bd3..3b4c47d 100755
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -146,6 +146,16 @@ config HID_BELKIN
+     ---help---
+     Support for Belkin Flip KVM and Wireless keyboard.
+ 
++config HID_BETOP_FF
++    tristate "Betop Production Inc. force feedback support"
++    depends on USB_HID
++    select INPUT_FF_MEMLESS
++    ---help---
++    Say Y here if you want to enable force feedback support for devices by
++    BETOP Production Ltd.
++    Currently the following devices are known to be supported:
++     - BETOP 2185 PC & BFM MODE
++
+ config HID_CHERRY
+     tristate "Cherry Cymotion keyboard" if EXPERT
+     depends on HID
+diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
+index 4113999..edd4825 100755
+--- a/drivers/hid/Makefile
++++ b/drivers/hid/Makefile
+@@ -42,6 +42,7 @@ obj-$(CONFIG_HID_APPLE)        += hid-apple.o
+ obj-$(CONFIG_HID_APPLEIR)    += hid-appleir.o
+ obj-$(CONFIG_HID_AUREAL)        += hid-aureal.o
+ obj-$(CONFIG_HID_BELKIN)    += hid-belkin.o
++obj-$(CONFIG_HID_BETOP_FF)    += hid-betopff.o
+ obj-$(CONFIG_HID_CHERRY)    += hid-cherry.o
+ obj-$(CONFIG_HID_CHICONY)    += hid-chicony.o
+ obj-$(CONFIG_HID_CYPRESS)    += hid-cypress.o
+diff --git a/drivers/hid/hid-betopff.c b/drivers/hid/hid-betopff.c
+new file mode 100644
+index 0000000..94fbde2
+--- /dev/null
++++ b/drivers/hid/hid-betopff.c
+@@ -0,0 +1,152 @@
++/*
++ *  Force feedback support for Betop based devices
++ *
++ *  The devices are distributed under various names and the same USB device ID
++ *  can be used in both adapters and actual game controllers.
++ *
++ *  0x11c2:0x2208 "BTP2185 BFM mode Joystick"
++ *   - tested with BTP2185 BFM Mode.
++ *
++ *  0x11C0:0x5506 "BTP2185 PC mode Joystick"
++ *   - tested with BTP2185 PC Mode.
++ *
++ *  0x8380:0x1850 "BTP2185 V2 PC mode USB Gamepad"
++ *   - tested with BTP2185 PC Mode with another version.
++ *
++ *  0x20bc:0x5500 "BTP2185 V2 BFM mode Joystick"
++ *   - tested with BTP2171s.
++ *  Copyright (c) 2014 Huang Bo <huangbobupt@163.com>
++ */
++
++/*
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ */
++
++
++#include <linux/input.h>
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/hid.h>
++
++#include "hid-ids.h"
++
++struct betopff_device {
++    struct hid_report *report;
++};
++
++static int hid_betopff_play(struct input_dev *dev, void *data,
++             struct ff_effect *effect)
++{
++    struct hid_device *hid = input_get_drvdata(dev);
++    struct betopff_device *betopff = data;
++    __u16 left, right;
++
++    left = effect->u.rumble.strong_magnitude;
++    right = effect->u.rumble.weak_magnitude;
++
++    betopff->report->field[2]->value[0] = left / 256;
++    betopff->report->field[3]->value[0] = right / 256;
++
++    hid_hw_request(hid, betopff->report, HID_REQ_SET_REPORT);
++
++    return 0;
++}
++
++static int betopff_init(struct hid_device *hid)
++{
++    struct betopff_device *betopff;
++    struct hid_report *report;
++    struct hid_input *hidinput =
++            list_first_entry(&hid->inputs, struct hid_input, list);
++    struct list_head *report_list =
++            &hid->report_enum[HID_OUTPUT_REPORT].report_list;
++    struct input_dev *dev = hidinput->input;
++    int field_count = 0;
++    int error;
++    int i, j;
++
++    if (list_empty(report_list)) {
++        hid_err(hid, "no output reports found\n");
++        return -ENODEV;
++    }
++
++    report = list_first_entry(report_list, struct hid_report, list);
++    for (i = 0; i < report->maxfield; i++) {
++        for (j = 0; j < report->field[i]->report_count; j++) {
++            report->field[i]->value[j] = 0x00;
++            field_count++;
++        }
++    }
++
++    if (field_count < 4) {
++        hid_err(hid, "not enough fields in the report: %d\n",
++                field_count);
++        return -ENODEV;
++    }
++
++    betopff = kzalloc(sizeof(*betopff), GFP_KERNEL);
++    if (!betopff)
++        return -ENOMEM;
++
++    set_bit(FF_RUMBLE, dev->ffbit);
++
++    error = input_ff_create_memless(dev, betopff, hid_betopff_play);
++    if (error) {
++        kfree(betopff);
++        return error;
++    }
++
++    betopff->report = report;
++    hid_hw_request(hid, betopff->report, HID_REQ_SET_REPORT);
++
++    hid_info(hid, "Force feedback for betop devices by huangbo <huangbobupt@163.com>\n");
++
++    return 0;
++}
++
++static int betop_probe(struct hid_device *hdev, const struct hid_device_id *id)
++{
++    int ret;
++
++    if (id->driver_data)
++        hdev->quirks |= HID_QUIRK_MULTI_INPUT;
++
++    ret = hid_parse(hdev);
++    if (ret) {
++        hid_err(hdev, "parse failed\n");
++        goto err;
++    }
++
++    ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT & ~HID_CONNECT_FF);
++    if (ret) {
++        hid_err(hdev, "hw start failed\n");
++        goto err;
++    }
++
++    betopff_init(hdev);
++
++    return 0;
++err:
++    return ret;
++}
++
++static const struct hid_device_id betop_devices[] = {
++    { HID_USB_DEVICE(USB_VENDOR_ID_BETOP_2185BFM, 0x2208) },
++    { HID_USB_DEVICE(USB_VENDOR_ID_BETOP_2185PC, 0x5506) },
++    { HID_USB_DEVICE(USB_VENDOR_ID_BETOP_2185V2PC, 0x1850) },
++    { HID_USB_DEVICE(USB_VENDOR_ID_BETOP_2185V2BFM, 0x5500) },
++    { }
++};
++MODULE_DEVICE_TABLE(hid, betop_devices);
++
++static struct hid_driver betop_driver = {
++    .name = "betop",
++    .id_table = betop_devices,
++    .probe = betop_probe,
++};
++module_hid_driver(betop_driver);
++
++MODULE_LICENSE("GPL");
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index a622590..e64ccfc 100755
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1642,6 +1642,10 @@ static const struct hid_device_id hid_have_special_driver[] = {
+     { HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY) },
+     { HID_USB_DEVICE(USB_VENDOR_ID_AUREAL, USB_DEVICE_ID_AUREAL_W01RN) },
+     { HID_USB_DEVICE(USB_VENDOR_ID_BELKIN, USB_DEVICE_ID_FLIP_KVM) },
++    { HID_USB_DEVICE(USB_VENDOR_ID_BETOP_2185BFM, 0x2208) },
++    { HID_USB_DEVICE(USB_VENDOR_ID_BETOP_2185PC, 0x5506) },
++    { HID_USB_DEVICE(USB_VENDOR_ID_BETOP_2185V2PC, 0x1850) },
++    { HID_USB_DEVICE(USB_VENDOR_ID_BETOP_2185V2BFM, 0x5500) },
+     { HID_USB_DEVICE(USB_VENDOR_ID_BTC, USB_DEVICE_ID_BTC_EMPREX_REMOTE) },
+     { HID_USB_DEVICE(USB_VENDOR_ID_BTC, USB_DEVICE_ID_BTC_EMPREX_REMOTE_2) },
+     { HID_USB_DEVICE(USB_VENDOR_ID_CHERRY, USB_DEVICE_ID_CHERRY_CYMOTION) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 161ee89..c432be9 100755
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -185,6 +185,11 @@
+ #define USB_VENDOR_ID_BERKSHIRE        0x0c98
+ #define USB_DEVICE_ID_BERKSHIRE_PCWD    0x1140
+ 
++#define USB_VENDOR_ID_BETOP_2185BFM    0x11c2
++#define USB_VENDOR_ID_BETOP_2185PC    0x11c0
++#define USB_VENDOR_ID_BETOP_2185V2PC    0x8380
++#define USB_VENDOR_ID_BETOP_2185V2BFM    0x20bc
++
+ #define USB_VENDOR_ID_BTC        0x046e
+ #define USB_DEVICE_ID_BTC_EMPREX_REMOTE    0x5578
+ #define USB_DEVICE_ID_BTC_EMPREX_REMOTE_2    0x5577
+-- 
+1.7.9.5
+
+
+--------------090403050303040306070806
+Content-Type: text/x-patch;
+ name="0001-HID-add-BETOP-game-controller-force-feedback-support.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-HID-add-BETOP-game-controller-force-feedback-support.pa";
+ filename*1="tch"
+
+>From 65290060fb6a13808454b8535f3e8cf4ad7d3a01 Mon Sep 17 00:00:00 2001
+From: Huang Bo <huangbobupt@163.com>
+Date: Wed, 26 Nov 2014 18:21:03 +0800
+Subject: [PATCH] HID: add BETOP game controller force feedback support
+
+Adds force feedback support for BETOP USB game controllers.
+These devices are mass produced in China.
+
+Signed-off-by: Huang Bo <huangbobupt@163.com>
+---
+ drivers/hid/Kconfig       |   10 +++
+ drivers/hid/Makefile      |    1 +
+ drivers/hid/hid-betopff.c |  152 +++++++++++++++++++++++++++++++++++++++++++++
+ drivers/hid/hid-core.c    |    4 ++
+ drivers/hid/hid-ids.h     |    5 ++
+ 5 files changed, 172 insertions(+)
+ create mode 100644 drivers/hid/hid-betopff.c
+
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 4938bd3..3b4c47d 100755
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -146,6 +146,16 @@ config HID_BELKIN
+ 	---help---
+ 	Support for Belkin Flip KVM and Wireless keyboard.
+ 
++config HID_BETOP_FF
++	tristate "Betop Production Inc. force feedback support"
++	depends on USB_HID
++	select INPUT_FF_MEMLESS
++	---help---
++	Say Y here if you want to enable force feedback support for devices by
++	BETOP Production Ltd.
++	Currently the following devices are known to be supported:
++	 - BETOP 2185 PC & BFM MODE
++
+ config HID_CHERRY
+ 	tristate "Cherry Cymotion keyboard" if EXPERT
+ 	depends on HID
+diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
+index 4113999..edd4825 100755
+--- a/drivers/hid/Makefile
++++ b/drivers/hid/Makefile
+@@ -42,6 +42,7 @@ obj-$(CONFIG_HID_APPLE)		+= hid-apple.o
+ obj-$(CONFIG_HID_APPLEIR)	+= hid-appleir.o
+ obj-$(CONFIG_HID_AUREAL)        += hid-aureal.o
+ obj-$(CONFIG_HID_BELKIN)	+= hid-belkin.o
++obj-$(CONFIG_HID_BETOP_FF)	+= hid-betopff.o
+ obj-$(CONFIG_HID_CHERRY)	+= hid-cherry.o
+ obj-$(CONFIG_HID_CHICONY)	+= hid-chicony.o
+ obj-$(CONFIG_HID_CYPRESS)	+= hid-cypress.o
+diff --git a/drivers/hid/hid-betopff.c b/drivers/hid/hid-betopff.c
+new file mode 100644
+index 0000000..94fbde2
+--- /dev/null
++++ b/drivers/hid/hid-betopff.c
+@@ -0,0 +1,152 @@
++/*
++ *  Force feedback support for Betop based devices
++ *
++ *  The devices are distributed under various names and the same USB device ID
++ *  can be used in both adapters and actual game controllers.
++ *
++ *  0x11c2:0x2208 "BTP2185 BFM mode Joystick"
++ *   - tested with BTP2185 BFM Mode.
++ *
++ *  0x11C0:0x5506 "BTP2185 PC mode Joystick"
++ *   - tested with BTP2185 PC Mode.
++ *
++ *  0x8380:0x1850 "BTP2185 V2 PC mode USB Gamepad"
++ *   - tested with BTP2185 PC Mode with another version.
++ *
++ *  0x20bc:0x5500 "BTP2185 V2 BFM mode Joystick"
++ *   - tested with BTP2171s.
++ *  Copyright (c) 2014 Huang Bo <huangbobupt@163.com>
++ */
++
++/*
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ */
++
++
++#include <linux/input.h>
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/hid.h>
++
++#include "hid-ids.h"
++
++struct betopff_device {
++	struct hid_report *report;
++};
++
++static int hid_betopff_play(struct input_dev *dev, void *data,
++			 struct ff_effect *effect)
++{
++	struct hid_device *hid = input_get_drvdata(dev);
++	struct betopff_device *betopff = data;
++	__u16 left, right;
++
++	left = effect->u.rumble.strong_magnitude;
++	right = effect->u.rumble.weak_magnitude;
++
++	betopff->report->field[2]->value[0] = left / 256;
++	betopff->report->field[3]->value[0] = right / 256;
++
++	hid_hw_request(hid, betopff->report, HID_REQ_SET_REPORT);
++
++	return 0;
++}
++
++static int betopff_init(struct hid_device *hid)
++{
++	struct betopff_device *betopff;
++	struct hid_report *report;
++	struct hid_input *hidinput =
++			list_first_entry(&hid->inputs, struct hid_input, list);
++	struct list_head *report_list =
++			&hid->report_enum[HID_OUTPUT_REPORT].report_list;
++	struct input_dev *dev = hidinput->input;
++	int field_count = 0;
++	int error;
++	int i, j;
++
++	if (list_empty(report_list)) {
++		hid_err(hid, "no output reports found\n");
++		return -ENODEV;
++	}
++
++	report = list_first_entry(report_list, struct hid_report, list);
++	for (i = 0; i < report->maxfield; i++) {
++		for (j = 0; j < report->field[i]->report_count; j++) {
++			report->field[i]->value[j] = 0x00;
++			field_count++;
++		}
++	}
++
++	if (field_count < 4) {
++		hid_err(hid, "not enough fields in the report: %d\n",
++				field_count);
++		return -ENODEV;
++	}
++
++	betopff = kzalloc(sizeof(*betopff), GFP_KERNEL);
++	if (!betopff)
++		return -ENOMEM;
++
++	set_bit(FF_RUMBLE, dev->ffbit);
++
++	error = input_ff_create_memless(dev, betopff, hid_betopff_play);
++	if (error) {
++		kfree(betopff);
++		return error;
++	}
++
++	betopff->report = report;
++	hid_hw_request(hid, betopff->report, HID_REQ_SET_REPORT);
++
++	hid_info(hid, "Force feedback for betop devices by huangbo <huangbobupt@163.com>\n");
++
++	return 0;
++}
++
++static int betop_probe(struct hid_device *hdev, const struct hid_device_id *id)
++{
++	int ret;
++
++	if (id->driver_data)
++		hdev->quirks |= HID_QUIRK_MULTI_INPUT;
++
++	ret = hid_parse(hdev);
++	if (ret) {
++		hid_err(hdev, "parse failed\n");
++		goto err;
++	}
++
++	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT & ~HID_CONNECT_FF);
++	if (ret) {
++		hid_err(hdev, "hw start failed\n");
++		goto err;
++	}
++
++	betopff_init(hdev);
++
++	return 0;
++err:
++	return ret;
++}
++
++static const struct hid_device_id betop_devices[] = {
++	{ HID_USB_DEVICE(USB_VENDOR_ID_BETOP_2185BFM, 0x2208) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_BETOP_2185PC, 0x5506) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_BETOP_2185V2PC, 0x1850) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_BETOP_2185V2BFM, 0x5500) },
++	{ }
++};
++MODULE_DEVICE_TABLE(hid, betop_devices);
++
++static struct hid_driver betop_driver = {
++	.name = "betop",
++	.id_table = betop_devices,
++	.probe = betop_probe,
++};
++module_hid_driver(betop_driver);
++
++MODULE_LICENSE("GPL");
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index a622590..e64ccfc 100755
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1642,6 +1642,10 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_AUREAL, USB_DEVICE_ID_AUREAL_W01RN) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_BELKIN, USB_DEVICE_ID_FLIP_KVM) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_BETOP_2185BFM, 0x2208) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_BETOP_2185PC, 0x5506) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_BETOP_2185V2PC, 0x1850) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_BETOP_2185V2BFM, 0x5500) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_BTC, USB_DEVICE_ID_BTC_EMPREX_REMOTE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_BTC, USB_DEVICE_ID_BTC_EMPREX_REMOTE_2) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHERRY, USB_DEVICE_ID_CHERRY_CYMOTION) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 161ee89..c432be9 100755
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -185,6 +185,11 @@
+ #define USB_VENDOR_ID_BERKSHIRE		0x0c98
+ #define USB_DEVICE_ID_BERKSHIRE_PCWD	0x1140
+ 
++#define USB_VENDOR_ID_BETOP_2185BFM	0x11c2
++#define USB_VENDOR_ID_BETOP_2185PC	0x11c0
++#define USB_VENDOR_ID_BETOP_2185V2PC	0x8380
++#define USB_VENDOR_ID_BETOP_2185V2BFM	0x20bc
++
+ #define USB_VENDOR_ID_BTC		0x046e
+ #define USB_DEVICE_ID_BTC_EMPREX_REMOTE	0x5578
+ #define USB_DEVICE_ID_BTC_EMPREX_REMOTE_2	0x5577
+-- 
+1.7.9.5
+
+
+--------------090403050303040306070806--
 
