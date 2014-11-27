@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416AbaK0JWS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 04:22:18 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41185 "EHLO mail.kernel.org"
+	id S1755441AbaK0JWx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 04:22:53 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41147 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754388AbaK0Iq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:46:26 -0500
+	id S1754347AbaK0IqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:46:23 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Larry Finger <Larry.Finger@lwfinger.net>,
-        Nico Baggus <nico-linux@noci.xs4all.nl>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 13/91] rtlwifi: rtl8192cu: Add new ID
-Date: Thu, 27 Nov 2014 16:41:56 +0800
-Message-Id: <1417077794-9299-13-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Alban Crequy <alban.crequy@collabora.co.uk>,
+        Tejun Heo <tj@kernel.org>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 12/91] cgroup: reject cgroup names with ' '
+Date: Thu, 27 Nov 2014 16:41:55 +0800
+Message-Id: <1417077794-9299-12-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
 References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
@@ -22,38 +20,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Alban Crequy <alban.crequy@collabora.co.uk>
 
 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit c66517165610b911e4c6d268f28d8c640832dbd1 upstream.
+commit 71b1fb5c4473a5b1e601d41b109bdfe001ec82e0 upstream.
 
-The Sitecom WLA-2102 adapter uses this driver.
+/proc/<pid>/cgroup contains one cgroup path on each line. If cgroup names are
+allowed to contain "\n", applications cannot parse /proc/<pid>/cgroup safely.
 
-Reported-by: Nico Baggus <nico-linux@noci.xs4all.nl>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Nico Baggus <nico-linux@noci.xs4all.nl>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Alban Crequy <alban.crequy@collabora.co.uk>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+[lizf: Backported to 3.4:
+ - adjust context
+ - s/name/dentry->d_name.name/]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/cgroup.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-index 52a9c33..2c4cdce 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-@@ -306,6 +306,7 @@ static struct usb_device_id rtl8192c_usb_ids[] = {
- 	{RTL_USB_DEVICE(0x0bda, 0x5088, rtl92cu_hal_cfg)}, /*Thinkware-CC&C*/
- 	{RTL_USB_DEVICE(0x0df6, 0x0052, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
- 	{RTL_USB_DEVICE(0x0df6, 0x005c, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
-+	{RTL_USB_DEVICE(0x0df6, 0x0070, rtl92cu_hal_cfg)}, /*Sitecom - 150N */
- 	{RTL_USB_DEVICE(0x0df6, 0x0077, rtl92cu_hal_cfg)}, /*Sitecom-WLA2100V2*/
- 	{RTL_USB_DEVICE(0x0eb0, 0x9071, rtl92cu_hal_cfg)}, /*NO Brand - Etop*/
- 	{RTL_USB_DEVICE(0x4856, 0x0091, rtl92cu_hal_cfg)}, /*NetweeN - Feixun*/
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 7c8f4f7..c776f89 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3838,6 +3838,11 @@ static int cgroup_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
+ {
+ 	struct cgroup *c_parent = dentry->d_parent->d_fsdata;
+ 
++	/* Do not accept '\n' to prevent making /proc/<pid>/cgroup unparsable.
++	 */
++	if (strchr(dentry->d_name.name, '\n'))
++		return -EINVAL;
++
+ 	/* the vfs holds inode->i_mutex already */
+ 	return cgroup_create(c_parent, dentry, mode | S_IFDIR);
+ }
 -- 
 1.9.1
 
