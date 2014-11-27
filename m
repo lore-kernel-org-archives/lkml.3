@@ -1,147 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751303AbaK0ODI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 09:03:08 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:58446 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812AbaK0ODG convert rfc822-to-8bit (ORCPT
+	id S1751285AbaK0OG0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 09:06:26 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:55634 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaK0OGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 09:03:06 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: cw00.choi@samsung.com
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "inki.dae@samsung.com" <inki.dae@samsung.com>,
-        "chanho61.park@samsung.com" <chanho61.park@samsung.com>,
-        "geunsik.lim@samsung.com" <geunsik.lim@samsung.com>,
-        "sw0312.kim@samsung.com" <sw0312.kim@samsung.com>,
-        "jh80.chung@samsung.com" <jh80.chung@samsung.com>,
-        "a.kesavan@samsung.com" <a.kesavan@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 11/19] clk: samsung: exynos5433: Add clocks for CMU_BUS{0|1|2} domains
-Date: Thu, 27 Nov 2014 15:02:26 +0100
-Message-ID: <2120788.f3P3CC6nYQ@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAGTfZH3KmwhJNFdmeWnujbbUbtLf5vSi6i2dbV62DeCtV7n4TQ@mail.gmail.com>
-References: <1417073716-22997-1-git-send-email-cw00.choi@samsung.com> <2232281.fbydzq3GMs@wuerfel> <CAGTfZH3KmwhJNFdmeWnujbbUbtLf5vSi6i2dbV62DeCtV7n4TQ@mail.gmail.com>
+	Thu, 27 Nov 2014 09:06:24 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: "John W. Linville" <linville@tuxdriver.com>,
+        Grazvydas Ignotas <notasas@gmail.com>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ming Lei <ming.lei@canonical.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: wl1251: NVS firmware data
+Date: Thu, 27 Nov 2014 15:06:20 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
+        Sebastian Reichel <sre@ring0.de>,
+        David Gnedt <david.gnedt@davizone.at>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
-X-Provags-ID: V02:K0:XaQi88cl6R3l6TRcdmx9hI0r/fpOCCVI+lGtwxfDKmd
- Dg6zTJMajKPai0FEMOxRtzXTprJZmBcvKLa7eFb8wjWOEszXJC
- yDpdPrxhgnP7HUJ62FldvAPu4jmI99LUEMx+lu+ns6JWZAJZIi
- KPy9tYtUTvR3ScWqlWYX610cpdGqzB/OIyDxEmkmSK8S+gHE1c
- UMZ7pBYr6vyoxU87YbiVWCFAcWITxIYTDsRToGfyRov7oMOY3x
- f3dhCZkl05vFM9Njfdj2qmcmTZItqMJ8Z8loU5/p5x6vxCn7gc
- NZPFpqahrntmavcBJ4b92j2G6szu4hhWfYhaFt2F9W6SKzsJZh
- chVz/P8RlvVdiLcJIkas=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: multipart/signed;
+  boundary="nextPart2511393.6NRFU7IPkM";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201411271506.20457@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 November 2014 22:41:49 Chanwoo Choi wrote:
-> 2014년 11월 27일 목요일, Arnd Bergmann<arnd@arndb.de>님이 작성한 메시지:
-> 
-> > On Thursday 27 November 2014 21:58:53 Chanwoo Choi wrote:
-> > > Dear Arnd,
-> > >
-> > > On 11/27/2014 09:35 PM, Arnd Bergmann wrote:
-> > > > On Thursday 27 November 2014 13:12:08 Sylwester Nawrocki wrote:
-> > > >> On 27/11/14 12:56, Chanwoo Choi wrote:
-> > > >>> On 11/27/2014 08:41 PM, Arnd Bergmann wrote:
-> > > >>>>> On Thursday 27 November 2014 16:35:08 Chanwoo Choi wrote:
-> > > >>>>>>> +  - "samsung,exynos5433-cmu-bus0", "samsung,exynos5433-cmu-bus1"
-> > > >>>>>>> +    and "samsung,exynos5433-cmu-bus2" - clock controller
-> > compatible for CMU_BUS
-> > > >>>>>>> +    which generates global data buses clock and global
-> > peripheral buses clock.
-> > > >>>>>>>
-> > > >>>>>>>  - reg: physical base address of the controller and length of
-> > memory mapped
-> > > >>>>>>>    region.
-> > > >>>>>>>
-> > > >>>>>
-> > > >>>>> This looks like you are duplicating the bindings and the code, but
-> > > >>>>> it's really the same hardware multiple times with minor variations
-> > > >>>>> that you should be able to describe properly here. Why not make
-> > > >>>>> three nodes with the same compatible string and have them handled
-> > > >>>>> by the same code?
-> > > >>>
-> > > >>> Each CMU_BUSx domain of Exynos5433 have different base address as
-> > following:
-> > > >>> - CMU_BUS0's base address and range : 0x1360_0000 ~ 0x1360_0b04
-> > > >>> - CMU_BUS1's base address and range : 0x1480_0000 ~ 0x1480_0b04
-> > > >>> - CMU_BUS2's base address and range : 0x1340_0000 ~ 0x1340_0b04
-> > > >>>
-> > > >>> So, I implement CMU_BUSx domain which has each compatible string.
-> > > >
-> > > > But the base address is in the reg property, not in the compatible
-> > > > property. What I mean is to have multiple nodes like
-> > >
-> > > The merged clock driver in mainline have different compatible string
-> > > if base addresss of clock domain is different. So, I implemented each
-> > CMU_BUSx domain
-> > > with different compatible string.
-> >
-> > Why?
-> 
-> 
-> As I explained on below, each clock domain have different clocks.
-> So, clocks have unique clock name.
-> 
->  If clock driver use only one compatible for various clock domain, clock
-> driver have to know the base address of each domain for distinction of
-> clock domain. I think It is stong dependency between device and driver.
+--nextPart2511393.6NRFU7IPkM
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-No, not at all. You can have lots of clock controllers with the same
-compatible string defining different instances of the same IP block,
-e.g. for compatible="fixed-clock".
+Hello,
 
-> >
-> > > >     clock-controller@113600000 {
-> > > >             reg = <0 0x113600000 0 0x1000>;
-> > > >             compatible = "samsung,exynos5433-cmu";
-> > > >             #clock-cells = <1>;
-> > > >     };
-> > > >
-> > > >     clock-controller@114800000 {
-> > > >             reg = <0 0x114800000 0 0x1000>;
-> > > >             compatible = "samsung,exynos5433-cmu";
-> > > >             #clock-cells = <1>;
-> > > >     };
-> > > >
-> > > > The code will just map the local registers for each instance and then
-> > > > provide the clocks of the right instance when asked for it.
-> > >
-> > > Each clock domain has not the same mux/divider/clock. So, just one
-> > compatible
-> > > string could not support all of clock domains.
-> >
-> > What are the specific differences?
-> 
-> 
-> 
-> > I'm not sure that difference among clock domains because I think it is
-> dependent on the opinion of architect of SoC.
-> 
-> cmu_bus0/1/2 are much similar. Just cmu_bus2 has one more mux/gate clock
-> than cmu_bus0/1.
+wifi driver wl1251 needs NVS calibration data for working. These=20
+data are loaded by driver via request_firmware from userspace=20
+file: ti-connectivity/wl1251-nvs.bin. In linux-fimrware git tree=20
+there is generic wl1251-nvs.bin file which is used by default.
 
-Yes, that's what I mean. You can simply model that extra mux/gate
-in the driver, as long as nothing ever tries to access the clock.
+Driver wl1251 is used on Nokia N900 cellphone for its wifi chip.=20
+This cellphone has one special MTD partition (called CAL) where=20
+are stored some configuration data in special binary (key-value)=20
+format. And there is also stored correct calibration data for=20
+specific device (each device has different data). It is preferred=20
+to use those data instead generic one (provided by linux-firmware=20
+git tree).
 
-	Arnd
+Now my question is: How to correctly load calibration data from=20
+special Nokia N900 CAL partition into wl1251 kernel driver?
+
+By default kernel reads ti-connectivity/wl1251-nvs.bin file from=20
+VFS if exists without any userspace support. If it fails then it=20
+fallback to loading via udev.
+
+Reading correct data from CAL partition is not easy (structure is=20
+difficult), but there is open source program which can parse CAL=20
+partition and write NVS data to stdout. So adding this CAL parser=20
+into kernel is not good idea (program is GPLv3+ code --=20
+incompatible with kernel).
+
+So how to solve this problem? How to load correct NVS data from=20
+CAL partition into wl1251 driver?
+
+It is possible to tell kernel to use some helper userspace=20
+program for loading data and if it fails then fallback to direct=20
+loading? E.g first try to use model specific data and if it fails=20
+for some reasons then fallback to reading genetic data.
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart2511393.6NRFU7IPkM
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlR3L9wACgkQi/DJPQPkQ1L/qQCgukIuGXsBlSf52W0+ktfjS83g
+kTMAnj1l7WkgutGJdPl3Y7VFRpRDm74t
+=DV3s
+-----END PGP SIGNATURE-----
+
+--nextPart2511393.6NRFU7IPkM--
