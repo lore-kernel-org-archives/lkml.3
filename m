@@ -1,98 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768AbaK0Xm1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 18:42:27 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:55942 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051AbaK0Xm0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 18:42:26 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH 00/11] ARM: at91: remove !DT support for at91rm9200
-Date: Fri, 28 Nov 2014 00:41:55 +0100
-Message-ID: <2241590.9KpWgUxqh8@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141128003938.7efb4ea0@bbrezillon>
-References: <cover.1417103399.git.nicolas.ferre@atmel.com> <3935244.Dm2HkZj2Bg@wuerfel> <20141128003938.7efb4ea0@bbrezillon>
+	id S1751727AbaK0XoA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 18:44:00 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:60228 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751031AbaK0Xn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 18:43:58 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Alexandru M Stan <amstan@chromium.org>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Doug Anderson <dianders@chromium.org>,
+        addy ke <addy.ke@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
+        Kever Yang <kever.yang@rock-chips.com>,
+        linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        mark.rutland@arm.com, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, linux-kernel@vger.kernel.org,
+        robh+dt@kernel.org, galak@codeaurora.org, mark.yao@rock-chips.com
+Subject: Re: [PATCH v4 0/2] Add support for the rockchip mmc clock phases using the framework
+Date: Fri, 28 Nov 2014 00:47:14 +0100
+Message-ID: <3766029.50NHsEnjv7@diego>
+User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <1417051827-12564-1-git-send-email-amstan@chromium.org>
+References: <1417051827-12564-1-git-send-email-amstan@chromium.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:+hg/2dm9xpuCUYDsB1JZChtBBvPq38wrGIMWFSpsksI
- opcd2w+KjOfsOmb+lfwvZ7IKZj+5f7IQ8gpRapwPKQOG2eoCZp
- i/qki9FCab8/2hBHMXU3TND4wm2PNYyZnvy6U4IVnn0v/c6hem
- P/gOJobHY2fLbOuZ8GwJJ2uofLOUEliF5AeJfwSfeXZ1wWeQRm
- dr5wQ62HFkoUZpM1FAn9taCj8UOrgRe8njy00WCDRZVOtRo6CP
- GDZqfzU7Eaqp6hYW1oTRcbnSqV9OLH7IEXNgCmzpy1u5e08FXf
- 1eMa0pcFykDB2KJp/YyDX4daroAxoO+bf9a6TkYaI3m7iLhtXy
- sL6nAiY5VZqaVwpaSl3Q=
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 28 November 2014 00:39:38 Boris Brezillon wrote:
-> Hi Arnd,
+Am Mittwoch, 26. November 2014, 17:30:25 schrieb Alexandru M Stan:
+> For now all I have is the getter and setter for the phase, nothing that uses
+> it (that is ready). You can test the getter like this:
+> localhost ~ # cat /sys/kernel/debug/clk/clk_summary|grep sample -C 1
+> sclk_sdio1                            0            0    24000000          0
+> 0 sdio1_sample                       0            0    12000000          0
+> 0 sdio1_drv                          0            0    12000000          0
+> 90 --
+> 	sclk_sdmmc                      1            1   297000000          0 0
+> 		sdmmc_sample                 0            0   148500000          0 
+134
+> 		sdmmc_drv                    0            0   148500000          0 
+90
+> --
+> 	sclk_sdio0                      1            1   100000000          0 0
+> 		sdio0_sample                 0            0    50000000          0 0
+> 		sdio0_drv                    0            0    50000000          0 
+90
+> 	sclk_emmc                       1            1   100000000          0 0
+> 		emmc_sample                  0            0    50000000          0 0
+> 		emmc_drv                     0            0    50000000          0 
+180
 > 
-> On Fri, 28 Nov 2014 00:12:25 +0100
-> Arnd Bergmann <arnd@arndb.de> wrote:
-> 
-> > On Thursday 27 November 2014 18:12:43 Alexandre Belloni wrote:
-> > > 
-> > > As discussed some weeks ago, I prepared patches to switch sama5d[3-4] to
-> > > multiplatform. We are still missing the SMC and matrix drivers to switch
-> > > sam9 and rm9200.
-> > 
-> > I just looked at the drivers because I got curious, and to see if
-> > there are still any low-hanging fruit, but I guess you already picked
-> > them all 
-> > 
-> > > The currently affected drivers are:
-> > >  - drivers/ata/pata_at91.c (SMC)
-> > >  - drivers/pcmcia/at91_cf.c (SMC)
-> > 
-> > I guess the SMC should live in drivers/memory with an interface
-> > similar to mvebu-devbus.c?
-> 
-> Actually, there's some work in progress to support the EBI/SMC blocks
-> as a memory controller driver ;-):
-> 
-> http://thread.gmane.org/gmane.linux.kernel/1822096
-> 
-> I'll post a new version soon.
+> Next thing that will come is some dts changes that will make use of these
+> new clocks, and eventually mmc code will be changed to tune with these
+> clocks. You can see some WIP on
+> https://chromium-review.googlesource.com/#/c/227240
 
-Ok, cool.
+I've applied both patches to my clk branch.
 
-> > 
-> > Seems doable but nontrivial.
-> > 
-> > >  - drivers/usb/gadget/udc/at91_udc.c (Matrix, this is the only one
-> > >    for sam9)
-> > 
-> > Is at91_matrix a pin controller? With the board files removed, the udc
-> > driver has the only two remaining calls to at91_matrix_{read,write}
-> > for setting the pullup, so that could be modeled as a trivial pinctrl
-> > driver
-> 
-> The matrix block is containing several system configuration registers.
-> Most of them are related to AHB/APB bus config (master <-> slave
-> priority, burst and some other configs I don't remember).
-> Another register is here to define which HW logic is attached to an
-> external device connected through the EBI (External Bus Interface):
-> NAND, SDRAM, CompactFlash, ...
-> And, as you pointed out, there's a register to configure the pullup of
-> the UDC device.
-> 
-> As you can see, the matrix registers might be accessed by different
-> drivers (include the EBI/SMC driver), hence I proposed to expose them as
-> a syscon device (see the EBI/SMC series).
-> 
 
-Sounds good.
-
-	Arnd
+Heiko
