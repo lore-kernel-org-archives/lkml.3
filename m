@@ -1,40 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728AbaK0Cbc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 21:31:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45858 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752891AbaK0Cbb (ORCPT
+	id S1753803AbaK0CdQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 21:33:16 -0500
+Received: from plms.fastdnsnetwork.com ([173.255.195.172]:47728 "EHLO
+	plms.fastdnsnetwork.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752861AbaK0CdP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 21:31:31 -0500
-Date: Wed, 26 Nov 2014 15:40:55 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Athira Lekshmi C V <andnlnbn18@gmail.com>
-Cc: devel@driverdev.osuosl.org, abbotti@mev.co.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Drivers:staging:comedi:drivers: Fixed checkpatch warning
-Message-ID: <20141126234055.GA19108@kroah.com>
-References: <1417001215-30338-1-git-send-email-andnlnbn18@gmail.com>
+	Wed, 26 Nov 2014 21:33:15 -0500
+X-Greylist: delayed 7865 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Nov 2014 21:33:15 EST
+Date: Thu, 27 Nov 2014 05:35:36 +0530
+Message-ID: <20141127053536.Horde.SHk61gkQsmSd3ii3UxGgig1@webmail.zestsys.com>
+From: Michela Peterson <cottereamonn@eircom.net>
+To: michelapeterson1988@hotmail.com
+Subject: It's me michela.
+Reply-to: michelapeterson1988@hotmail.com
+User-Agent: Internet Messaging Program (IMP) H5 (6.1.6)
+Content-Type: text/plain; charset=UTF-8; format=flowed; DelSp=Yes
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1417001215-30338-1-git-send-email-andnlnbn18@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 04:56:55PM +0530, Athira Lekshmi C V wrote:
-> Fixed the checkpatch warning:
-> WARNING: please, no space before tabs
-> 
-> Signed-off-by: Athira Lekshmi C V <andnlnbn18@gmail.com>
 
-Same question about the name here as before.
 
-Also, be more specific in your subject as to what you are changing.
-"fixed checkpatch warning" is very vague.
+-- 
+Hei Rakas,
 
-thanks,
+Nimeni on Michela, olen 26yrs vanha, olen vapaa mielinen, avoin  
+hyväsydäminen tyttö, tykkään ottaa elämän niin helppoa kuin pystyin,  
+olen yksi niistä harvoista, joka uskoo edelleen ystävyys, rakkaus,  
+luottamus ja merkkejä , olen erittäin paljon yhden ja valmis  
+seurustella. oli selata internetin ja törmäsin yhteystietosi, se on  
+minun vilpitön ilo olla ystäväsi, jos et mielessä, toivon et ei ota  
+pyyntöni itsestäänselvyytenä, rohkeasti sähköpostia minulle, minä  
+arvostan sitä, jos voit lähettää minulle joitakin kuvia minun  
+yksityinen Sähköpostiosoitteisto (michelapeterson1988@hotmail.com)  
+odotan kuulevani sinusta pian.
 
-greg k-h
+
+Michela.
+
+
+Hello Dear,
+
+My name is Michela, i am 26yrs old, i'm a free minded, open hearted  
+girl, i like to take life as easy as i could, i'm one of the few that  
+still believes in friendship,love, trust and signs, am very much  
+single and ready to mingle. was browsing through the internet and came  
+across your contact, it will be my sincere pleasure to be your friend  
+if you don't mind, i hope you will not take my request for granted,  
+feel free to email me, i will appreciate it if you can send me some  
+pics to my private email addres(michelapeterson1988@hotmail.com) i  
+look forward to hear from you soon.
+
+
+Michela.
