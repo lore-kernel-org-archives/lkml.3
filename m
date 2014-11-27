@@ -1,98 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757AbaK0Jxl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 04:53:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60175 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751105AbaK0Jxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 04:53:38 -0500
-Message-ID: <5476F471.80500@redhat.com>
-Date: Thu, 27 Nov 2014 10:52:49 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754787AbaK0Jzz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 04:55:55 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:51889 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752749AbaK0Jzv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 04:55:51 -0500
+Date: Thu, 27 Nov 2014 09:55:44 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        jason@lakedaemon.net, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        kernel@stlinux.com
+Subject: Re: [PATCH v2 2/8] irqchip: Supply new driver for STi based devices
+Message-ID: <20141127095544.GF4628@x1>
+References: <1416932705-16880-1-git-send-email-lee.jones@linaro.org>
+ <35179358.tOpRGufXmc@wuerfel>
+ <20141127092901.GE4628@x1>
+ <2111250.BPZOtBCtcF@wuerfel>
 MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-CC: "David S. Miller" <davem@davemloft.net>, Zi Shen Lim <zlim.lnx@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net] bpf: x86: fix epilogue generation for eBPF programs
-References: <1417064546-4129-1-git-send-email-ast@plumgrid.com>
-In-Reply-To: <1417064546-4129-1-git-send-email-ast@plumgrid.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <2111250.BPZOtBCtcF@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2014 06:02 AM, Alexei Starovoitov wrote:
-> classic BPF has a restriction that last insn is always BPF_RET.
-> eBPF doesn't have BPF_RET instruction and this restriction.
-> It has BPF_EXIT insn which can appear anywhere in the program
-> one or more times and it doesn't have to be last insn.
-> Fix eBPF JIT to emit epilogue when first BPF_EXIT is seen
-> and all other BPF_EXIT instructions will be emitted as jump.
->
-> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-> ---
-> Note, this bug is applicable only to native eBPF programs
-> which first were introduced in 3.18, so no need to send it
-> to stable and therefore no 'Fixes' tag.
+On Thu, 27 Nov 2014, Arnd Bergmann wrote:
 
-Btw, even if it's not sent to -stable, a 'Fixes:' tag is useful
-information for backporting and regression tracking, preferably
-always mentioned where it can clearly be identified.
+> On Thursday 27 November 2014 09:29:01 Lee Jones wrote:
+> > On Thu, 27 Nov 2014, Arnd Bergmann wrote:
+> > > On Thursday 27 November 2014 09:02:55 Lee Jones wrote:
+> > > > On Tue, 25 Nov 2014, Arnd Bergmann wrote:
+> > > > 
+> > > > > On Tuesday 25 November 2014 16:24:59 Lee Jones wrote:
+> > > > > 
+> > > > > > diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+> > > > > > index b21f12f..e502f15 100644
+> > > > > > --- a/drivers/irqchip/Kconfig
+> > > > > > +++ b/drivers/irqchip/Kconfig
+> > > > > > @@ -93,6 +93,13 @@ config RENESAS_IRQC
+> > > > > >     bool
+> > > > > >     select IRQ_DOMAIN
+> > > > > >  
+> > > > > > +config ST_IRQCHIP
+> > > > > > +   bool
+> > > > > > +   select REGMAP
+> > > > > > +   select MFD_SYSCON
+> > > > > > +   help
+> > > > > > +     Enables SysCfg Controlled IRQs on STi based platforms.
+> > > > > > +
+> > > > > 
+> > > > > I'm confused by the purpose of this code. It's apparently a driver
+> > > > > in drivers/irqchip, the Kconfig symbol contains the string IRQCHIP,
+> > > > > yet it doesn't actually register an irq_chip.
+> > > > > 
+> > > > > Also, the name is a bit too generic, ST has lots of different irqchips,
+> > > > > and this apparently isn't even one of them 
+> > > > 
+> > > > Hmm... now you're going to ask me to remember who I had the
+> > > > conversation with that alluded to this as the best location for this
+> > > > driver.  Unfortunately, I cannot.  Can you think of a better place to
+> > > > put it then?
+> > > 
+> > > I suspect it's in the right place but should actually be an irqchip
+> > > driver. I'm having trouble understanding what this code actually does,
+> > > can you you explain the functionality in more detail so we can figure
+> > > out what to do with it?
+> > 
+> > In the simplest terms it's an IRQ unmasker.  A9 Core IRQs are disabled
+> > on boot; PMU, CTI (CoreSight), PL310_L2 and EXT.  In order for you to
+> > make use of them they need to be unmasked in SYSCFG.
+> 
+> So you just apply static configuration once, or are there reasons why you
+> would mask the interrupts again later?
+> 
+> If it's all static, why doesn't the boot loader unmask all interrupts before
+> starting the kernel?
 
-> arm64 JIT has the same problem, but the fix is not as trivial,
-> so will be done as separate patch.
->
-> Since 3.18 can only load eBPF programs and cannot execute them,
-> this patch can even be done in net-next only, but I think it's worth
-> to apply it to 3.18(net), so that JITed output for native eBPF
-> programs is correct when bpf syscall loads it with net.core.bpf_jit_enable=2
+We'd like to configure them at boot-time, via DT.
 
-Yes, sounds good to me, the condition insn_cnt - 1 is still held
-with BPF to eBPF transformations.
-
->   arch/x86/net/bpf_jit_comp.c |    6 ++++--
->   1 file changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
-> index 3f62734..7e90244 100644
-> --- a/arch/x86/net/bpf_jit_comp.c
-> +++ b/arch/x86/net/bpf_jit_comp.c
-> @@ -178,7 +178,7 @@ static void jit_fill_hole(void *area, unsigned int size)
->   }
->
->   struct jit_context {
-> -	unsigned int cleanup_addr; /* epilogue code offset */
-> +	int cleanup_addr; /* epilogue code offset */
-
-Why this type change here? This seems a bit out of context (I would
-have expected a mention of this in the commit message, otherwise).
-
->   	bool seen_ld_abs;
->   };
->
-> @@ -192,6 +192,7 @@ static int do_jit(struct bpf_prog *bpf_prog, int *addrs, u8 *image,
->   	struct bpf_insn *insn = bpf_prog->insnsi;
->   	int insn_cnt = bpf_prog->len;
->   	bool seen_ld_abs = ctx->seen_ld_abs | (oldproglen == 0);
-> +	bool seen_exit = false;
->   	u8 temp[BPF_MAX_INSN_SIZE + BPF_INSN_SAFETY];
->   	int i;
->   	int proglen = 0;
-> @@ -854,10 +855,11 @@ common_load:
->   			goto common_load;
->
->   		case BPF_JMP | BPF_EXIT:
-> -			if (i != insn_cnt - 1) {
-> +			if (seen_exit) {
->   				jmp_offset = ctx->cleanup_addr - addrs[i];
->   				goto emit_jmp;
->   			}
-> +			seen_exit = true;
->   			/* update cleanup_addr */
->   			ctx->cleanup_addr = proglen;
->   			/* mov rbx, qword ptr [rbp-X] */
->
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
