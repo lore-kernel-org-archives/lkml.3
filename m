@@ -1,66 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbaK0UQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 15:16:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40990 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752491AbaK0UQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 15:16:53 -0500
-Date: Thu, 27 Nov 2014 21:16:42 +0100
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Nadav Amit <nadav.amit@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Nadav Amit <namit@cs.technion.ac.il>
-Subject: Re: [PATCH 3/4] KVM: x86: allow 256 logical x2APICs again
-Message-ID: <20141127201641.GB383@potion.brq.redhat.com>
-References: <1417114994-25235-1-git-send-email-rkrcmar@redhat.com>
- <1417114994-25235-4-git-send-email-rkrcmar@redhat.com>
- <22F11C34-E2E4-459B-882B-A944AD0853FD@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <22F11C34-E2E4-459B-882B-A944AD0853FD@gmail.com>
+	id S1752699AbaK0UQu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 15:16:50 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:52762 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326AbaK0ULF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 15:11:05 -0500
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Daniel Drake <drake@endlessm.com>,
+        Dmitry Pervushin <dpervushin@gmail.com>,
+        Tim Sander <tim@krieglstein.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Subject: [PATCH 3.18-rc4 v11 1/6] irqchip: gic: Finer grain locking for gic_raise_softirq
+Date: Thu, 27 Nov 2014 20:10:19 +0000
+Message-Id: <1417119024-22844-2-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1417119024-22844-1-git-send-email-daniel.thompson@linaro.org>
+References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
+ <1417119024-22844-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-11-27 21:53+0200, Nadav Amit:
-> Radim Krčmář <rkrcmar@redhat.com> wrote:
-> > -			new->cid_mask = (1 << KVM_X2APIC_CID_BITS) - 1;
-> > -			new->lid_mask = 0xffff;
-> > +			new->cid_mask = new->lid_mask = 0xffff;
-> You set cid_mask to 0xffff, while there are only 16 clusters. I think it is
-> risky (if you twist my hand would come with a scenario).
+irq_controller_lock is used for multiple purposes within the gic driver.
+Primarily it is used to make register read-modify-write sequences atomic.
+It is also used by gic_raise_softirq() in order that the big.LITTLE
+migration logic can figure out when it is safe to migrate interrupts
+between physical cores.
 
-Let's see :) APIC id is 8 bit, and we compute cluster part of LDR by
-taking four upper bits, so 16 is enough.
+The second usage of irq_controller_lock is difficult to discern when
+reviewing the code because the migration itself takes place outside
+the lock.
 
-It isn't the safest programming practice, but we already fail to check
-physical_map bounds and any boost to maximal APIC ID is going to require
-a rewrite, thus I didn't bother to do it ...
+This patch makes the second usage more explicit by splitting it out into
+a separate lock and providing better comments.
 
-All uses should be covered with the following hunk, I will add it to v2
-after all reviews,
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Marc Zyngier <marc.zyngier@arm.com>
+---
+ drivers/irqchip/irq-gic.c | 21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-index 6c2b8a5..30e4cc1 100644
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -198,7 +198,7 @@ static void recalculate_apic_map(struct kvm *kvm)
- 		cid = apic_cluster_id(new, ldr);
- 		lid = apic_logical_id(new, ldr);
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 38493ff28fa5..94d77118efa8 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -73,6 +73,12 @@ struct gic_chip_data {
+ static DEFINE_RAW_SPINLOCK(irq_controller_lock);
  
--		if (lid)
-+		if (lid && cid < ARRAY_SIZE(map->logical_map))
- 			new->logical_map[cid][ffs(lid) - 1] = apic;
- 	}
- out:
+ /*
++ * This lock is used by the big.LITTLE migration code to ensure no IPIs
++ * can be pended on the old core after the map has been updated.
++ */
++static DEFINE_RAW_SPINLOCK(cpu_map_migration_lock);
++
++/*
+  * The GIC mapping of CPU interfaces does not necessarily match
+  * the logical CPU numbering.  Let's use a mapping as returned
+  * by the GIC itself.
+@@ -624,7 +630,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+ 	int cpu;
+ 	unsigned long flags, map = 0;
+ 
+-	raw_spin_lock_irqsave(&irq_controller_lock, flags);
++	raw_spin_lock_irqsave(&cpu_map_migration_lock, flags);
+ 
+ 	/* Convert our logical CPU mask into a physical one. */
+ 	for_each_cpu(cpu, mask)
+@@ -639,7 +645,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+ 	/* this always happens on GIC0 */
+ 	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
+ 
+-	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
++	raw_spin_unlock_irqrestore(&cpu_map_migration_lock, flags);
+ }
+ #endif
+ 
+@@ -710,8 +716,17 @@ void gic_migrate_target(unsigned int new_cpu_id)
+ 
+ 	raw_spin_lock(&irq_controller_lock);
+ 
+-	/* Update the target interface for this logical CPU */
++	/*
++	 * Update the target interface for this logical CPU
++	 *
++	 * From the point we release the cpu_map_migration_lock any new
++	 * SGIs will be pended on the new cpu which makes the set of SGIs
++	 * pending on the old cpu static. That means we can defer the
++	 * migration until after we have released the irq_controller_lock.
++	 */
++	raw_spin_lock(&cpu_map_migration_lock);
+ 	gic_cpu_map[cpu] = 1 << new_cpu_id;
++	raw_spin_unlock(&cpu_map_migration_lock);
+ 
+ 	/*
+ 	 * Find all the peripheral interrupts targetting the current
+-- 
+1.9.3
 
-
->                                                          Yet, why not to set
-> cid_mask to (ARRAY_SIZE(map->logical_map) - 1) ?
-
-We would incorrectly deliver messages intended for high clusters,
-it has to be 0xffff.
