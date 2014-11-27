@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751465AbaK0QeZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 11:34:25 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:46661 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990AbaK0QeY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 11:34:24 -0500
-Date: Thu, 27 Nov 2014 17:34:14 +0100
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        cornelia.huck@de.ibm.com, rusty@au1.ibm.com, nab@linux-iscsi.org,
-        pbonzini@redhat.com, thuth@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Brian Swetland <swetland@google.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Amit Shah <amit.shah@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Sudeep Dutt <sudeep.dutt@intel.com>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>,
-        Joel Stanley <joel@jms.id.au>,
-        virtualization@lists.linux-foundation.org, lguest@lists.ozlabs.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [PATCH v5 01/45] virtio: use u32, not bitmap for struct
- virtio_device's features
-Message-ID: <20141127173414.20424b62@thinkpad-w530>
-In-Reply-To: <20141127162804.GB27124@redhat.com>
-References: <1417091078-24611-1-git-send-email-mst@redhat.com>
-	<1417091078-24611-2-git-send-email-mst@redhat.com>
-	<20141127171542.3dbb2bc2@thinkpad-w530>
-	<20141127162804.GB27124@redhat.com>
-Organization: IBM Deutschland GmbH
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1751278AbaK0Qfk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 11:35:40 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750902AbaK0Qfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 11:35:39 -0500
+Message-ID: <547752D1.6040000@nod.at>
+Date: Thu, 27 Nov 2014 17:35:29 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] UBI: Fastmap: Ensure that all fastmap work is done
+ upon WL shutdown
+References: <1416835236-25185-1-git-send-email-richard@nod.at>		 <1416835236-25185-4-git-send-email-richard@nod.at>	 <1417102739.5858.112.camel@sauron.fi.intel.com> <54774C71.50807@nod.at> <1417105793.5858.117.camel@sauron.fi.intel.com>
+In-Reply-To: <1417105793.5858.117.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112716-0041-0000-0000-00000247BB32
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> That's the whole reason for the patch.
+Am 27.11.2014 um 17:29 schrieb Artem Bityutskiy:
+> On Thu, 2014-11-27 at 17:08 +0100, Richard Weinberger wrote:
+>>> Obviously, there is some misunderstanding. This looks like lack of
+>>> separation and misuse of layering. I am missing explanations why I am
+>>> wrong...
+>>
+>> So you want me to use the UBI WL background thread for the scheduled fastmap work?
 > 
-> I guess you disagree with it, but it's much easier
-> to deal with simple integers.
+> No. It is more like either use it or do not use it.
+
+Sorry, I don't understand.
+What do you want to do to?
+
+>> I didn't do it that way because you said more than once that fastmap is fastmap and
+>> WL is WL. Therefore I've separated it.
+> 
+> And "separated" meaning adding this code to wl.c?
+> 
+> +#ifdef CONFIG_MTD_UBI_FASTMAP
+> +       flush_work(&ubi->fm_work);
+> +#endif
+> 
+> Could it be separated some more then?
 > 
 
-Well, I can live with it :)
+Of course, commit "UBI: Move fastmap specific functions out of wl.c" does.
+But this commit is *bugfix* commit.
 
-clear_bit() and friends are just easier to understand when scanning the code
-(at least for me).
-
+Thanks,
+//richard
