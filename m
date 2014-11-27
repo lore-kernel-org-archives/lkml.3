@@ -1,426 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858AbaK0Qvw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 11:51:52 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:60111 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784AbaK0Qvt (ORCPT
+	id S1751113AbaK0RAZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 12:00:25 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:36905 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830AbaK0RAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 11:51:49 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-3a-547756a281d9
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Colin Cross <ccross@google.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        b.zolnierkie@samsung.com
-Subject: [PATCH v2 2/2] cpuidle: exynos: add coupled cpuidle support for
- Exynos4210
-Date: Thu, 27 Nov 2014 17:51:25 +0100
-Message-id: <1417107085-26159-3-git-send-email-b.zolnierkie@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1417107085-26159-1-git-send-email-b.zolnierkie@samsung.com>
-References: <1417107085-26159-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJLMWRmVeSWpSXmKPExsVy+t9jAd1FYeUhBhMbzS02zljParFgRjuz
-	xbzPshavXxha9C64ymZxtukNu8X7Q8+YLS7vmsNm8bn3CKPFjPP7mCxW7frD6MDtsXPWXXaP
-	BZtKPe5c28PmcfvfY2aPvi2rGD0+b5ILYIvisklJzcksSy3St0vgyui/spi9oCeq4vWppWwN
-	jFM9uxg5OSQETCSuTd7PDmGLSVy4t54NxBYSWMQo0fNJsouRC8juYpJ43fSGESTBJmAlMbF9
-	FZgtIqAm0bN4KyNIEbPAWyaJ7a8eMXUxcnAIC4RK3DtpAlLDIqAqsezEO2YQm1fAQ+LmkX5G
-	iGWKEt3PJoAt4xTwlNi1YzkLxGIPic0bJrFNYORdwMiwilE0tSC5oDgpPddQrzgxt7g0L10v
-	OT93EyM4AJ9J7WBc2WBxiFGAg1GJh9fiQFmIEGtiWXFl7iFGCQ5mJRHeJtvyECHelMTKqtSi
-	/Pii0pzU4kOM0hwsSuK8N27mhggJpCeWpGanphakFsFkmTg4pRoYT111OtsSafmp//R0lf7Q
-	f0tfxNtoLA/OktsR+n+6hs6FC9Oe2Tx+JHD96p2jJ4qdQidfX8gp91LW0W67cnGHkO3C8Ax3
-	1617jV1iX6blJBd0rmR43LTD5PdWsV/s/2c4Pp/0smDG78RFHe+SFtse4z8XbhMmXZTwyuHj
-	sZ9SN+Ud6gwNHpdoKrEUZyQaajEXFScCAGdkdW48AgAA
+	Thu, 27 Nov 2014 12:00:20 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Linux Containers <containers@lists.linux-foundation.org>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Richard Weinberger <richard@nod.at>
+References: <3ccec8a13019b5e8ce7b1d7889677b778b070dc8.1416041823.git.josh@joshtriplett.org>
+	<0895c1f268bc0b01cc6c8ed4607d7c3953f49728.1416041823.git.josh@joshtriplett.org>
+	<546A3942.5040906@schaufler-ca.com>
+	<CALCETrWy-3C1on3+2wE9aqcChBUCUY0i_4AL_Om8CSZ5QB18sQ@mail.gmail.com>
+	<CALCETrVn4gVXp7F=5h-bkN5VWuRMG9BoxgeQfKhX4+ZXxGE=wQ@mail.gmail.com>
+	<546A43CE.2030706@schaufler-ca.com>
+Date: Thu, 27 Nov 2014 10:59:01 -0600
+In-Reply-To: <546A43CE.2030706@schaufler-ca.com> (Casey Schaufler's message of
+	"Mon, 17 Nov 2014 10:51:58 -0800")
+Message-ID: <87lhmwwpey.fsf_-_@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19wY4s8f5RtuPi32iX7fm9SVTugOqig+vw=
+X-SA-Exim-Connect-IP: 97.121.92.161
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 TVD_RCVD_IP Message was received from an IP address
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.5000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Linux Containers <containers@lists.linux-foundation.org>
+X-Spam-Relay-Country: 
+X-Spam-Timing: total 410 ms - load_scoreonly_sql: 0.04 (0.0%),
+	signal_user_changed: 2.8 (0.7%), b_tie_ro: 2.0 (0.5%), parse: 0.68 (0.2%),
+	extract_message_metadata: 11 (2.7%), get_uri_detail_list: 1.98 (0.5%),
+	tests_pri_-1000: 5 (1.3%), tests_pri_-950: 1.26 (0.3%), tests_pri_-900: 1.25
+	(0.3%), tests_pri_-400: 22 (5.4%), check_bayes: 21 (5.1%), b_tokenize: 7
+	(1.7%), b_tok_get_all: 8 (1.9%), b_comp_prob: 1.83 (0.4%), b_tok_touch_all:
+	2.3 (0.6%), b_finish: 0.55 (0.1%), tests_pri_0: 360 (87.7%), tests_pri_500:
+	3.7 (0.9%), rewrite_mail: 0.00 (0.0%)
+Subject: [CFT][PATCH] userns: Avoid problems with negative groups
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patch adds coupled cpuidle support for Exynos4210 to
-an existing cpuidle-exynos driver.  As a result it enables AFTR mode
-to be used by default on Exynos4210 without the need to hot unplug
-CPU1 first.
 
-The patch is heavily based on earlier cpuidle-exynos4210 driver from
-Daniel Lezcano:
+Classic unix permission checks have an interesting feature.  The group
+permissions for a file can be set to less than the other permissions
+on a file.  Occassionally this is used deliberately to give a certain
+group of users fewer permissions than the default.
 
-http://www.spinics.net/lists/linux-samsung-soc/msg28134.html
+Overlooking negative groups has resulted in the permission checks for
+setting up a group mapping in a user namespace to be too lax.  Tighten
+the permission checks in new_idmap_permitted to ensure that mapping
+uids and gids into user namespaces without privilege will not result
+in new combinations of credentials being available to the users.
 
-Changes from Daniel's code include:
-- porting code to current kernels
-- fixing it to work on my setup (by using S5P_INFORM register
-  instead of S5P_VA_SYSRAM one on Revison 1.1 and retrying poking
-  CPU1 out of the BOOT ROM if necessary)
-- fixing rare lockup caused by waiting for CPU1 to get stuck in
-  the BOOT ROM (CPU hotplug code in arch/arm/mach-exynos/platsmp.c
-  doesn't require this and works fine)
-- moving Exynos specific code to arch/arm/mach-exynos/pm.c
-- using cpu_boot_reg_base() helper instead of BOOT_VECTOR macro
-- using exynos_cpu_*() helpers instead of accessing registers
-  directly
-- using arch_send_wakeup_ipi_mask() instead of dsb_sev()
-  (this matches CPU hotplug code in arch/arm/mach-exynos/platsmp.c)
-- integrating separate exynos4210-cpuidle driver into existing
-  exynos-cpuidle one
+When setting mappings without privilege only the creator of the user
+namespace is interesting as all other users that have CAP_SETUID over
+the user namespace will also have CAP_SETUID over the user namespaces
+parent.  So the scope of the unprivileged check is reduced to just
+the case where cred->euid is the namespace creator.
 
-Cc: Colin Cross <ccross@google.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+For setting a uid mapping without privilege only euid is considered as
+setresuid can set uid, suid and fsuid from euid without privielege
+making any combination of uids possible with user namespaces already
+possible without them.
+
+For setting a gid mapping without privilege only egid on a credential
+without supplementary groups is condsidered, as setresgid can set gid,
+sgid and fsgid from egid without privilege.  The requirement for no
+supplementary groups is because CAP_SETUID in a user namespace allows
+supplementary groups to be cleared, which unfortunately means allowing
+a credential with supplementary groups would allow new combinations
+of credentials to exist, and thus would allow defeating negative
+groups without permission.
+ 
+This change should break userspace by the minimal amount needed
+to fix this issue.
+
+This should fix CVE-2014-8989.
+
+Cc: stable@vger.kernel.org
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
-v2:
-- added Signed-off-by from Daniel Lezcano
-- added separate struct cpuidle_driver exynos_coupled_idle_driver
 
- arch/arm/mach-exynos/common.h                |   4 +
- arch/arm/mach-exynos/exynos.c                |   4 +
- arch/arm/mach-exynos/platsmp.c               |   2 +-
- arch/arm/mach-exynos/pm.c                    | 122 +++++++++++++++++++++++++++
- drivers/cpuidle/Kconfig.arm                  |   1 +
- drivers/cpuidle/cpuidle-exynos.c             |  77 +++++++++++++++--
- include/linux/platform_data/cpuidle-exynos.h |  20 +++++
- 7 files changed, 224 insertions(+), 6 deletions(-)
- create mode 100644 include/linux/platform_data/cpuidle-exynos.h
+If people can test and review this change and verify  this and verify it
+doesn't break anything I can't help breaking I will appreciate it.
 
-diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
-index 865f878..f70eca7 100644
---- a/arch/arm/mach-exynos/common.h
-+++ b/arch/arm/mach-exynos/common.h
-@@ -13,6 +13,7 @@
- #define __ARCH_ARM_MACH_EXYNOS_COMMON_H
- 
- #include <linux/of.h>
-+#include <linux/platform_data/cpuidle-exynos.h>
- 
- #define EXYNOS3250_SOC_ID	0xE3472000
- #define EXYNOS3_SOC_MASK	0xFFFFF000
-@@ -150,8 +151,11 @@ extern void exynos_pm_central_suspend(void);
- extern int exynos_pm_central_resume(void);
- extern void exynos_enter_aftr(void);
- 
-+extern struct cpuidle_exynos_data cpuidle_coupled_exynos_data;
-+
- extern void s5p_init_cpu(void __iomem *cpuid_addr);
- extern unsigned int samsung_rev(void);
-+extern void __iomem *cpu_boot_reg_base(void);
- 
- static inline void pmu_raw_writel(u32 val, u32 offset)
+ kernel/user_namespace.c | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index aa312b0dc3ec..b338c42d04fd 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -812,16 +812,24 @@ static bool new_idmap_permitted(const struct file *file,
+ 				struct user_namespace *ns, int cap_setid,
+ 				struct uid_gid_map *new_map)
  {
-diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
-index c13d083..509f2e5 100644
---- a/arch/arm/mach-exynos/exynos.c
-+++ b/arch/arm/mach-exynos/exynos.c
-@@ -246,6 +246,10 @@ static void __init exynos_dt_machine_init(void)
- 	if (!IS_ENABLED(CONFIG_SMP))
- 		exynos_sysram_init();
- 
-+#ifdef CONFIG_ARM_EXYNOS_CPUIDLE
-+	if (of_machine_is_compatible("samsung,exynos4210"))
-+		exynos_cpuidle.dev.platform_data = &cpuidle_coupled_exynos_data;
-+#endif
- 	if (of_machine_is_compatible("samsung,exynos4210") ||
- 	    of_machine_is_compatible("samsung,exynos4212") ||
- 	    (of_machine_is_compatible("samsung,exynos4412") &&
-diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
-index 7a1ebfe..3f32c47 100644
---- a/arch/arm/mach-exynos/platsmp.c
-+++ b/arch/arm/mach-exynos/platsmp.c
-@@ -194,7 +194,7 @@ int exynos_cluster_power_state(int cluster)
- 		S5P_CORE_LOCAL_PWR_EN);
- }
- 
--static inline void __iomem *cpu_boot_reg_base(void)
-+void __iomem *cpu_boot_reg_base(void)
- {
- 	if (soc_is_exynos4210() && samsung_rev() == EXYNOS4210_REV_1_1)
- 		return pmu_base_addr + S5P_INFORM5;
-diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
-index 159eb4c..1f9cbd4 100644
---- a/arch/arm/mach-exynos/pm.c
-+++ b/arch/arm/mach-exynos/pm.c
-@@ -179,3 +179,125 @@ void exynos_enter_aftr(void)
- 
- 	cpu_pm_exit();
- }
+-	/* Allow mapping to your own filesystem ids */
+-	if ((new_map->nr_extents == 1) && (new_map->extent[0].count == 1)) {
++	const struct cred *cred = file->f_cred;
 +
-+static atomic_t cpu1_wakeup = ATOMIC_INIT(0);
-+
-+static int exynos_cpu0_enter_aftr(void)
-+{
-+	int ret = -1;
-+
-+	/*
-+	 * If the other cpu is powered on, we have to power it off, because
-+	 * the AFTR state won't work otherwise
++	/* Allow mapping an id without CAP_SETUID and CAP_SETGID when
++	 * allowing the root of the user namespace CAP_SETUID or
++	 * CAP_SETGID restricted to just that id will not change the
++	 * set of credentials available that user.
 +	 */
-+	if (cpu_online(1)) {
-+		/*
-+		 * We reach a sync point with the coupled idle state, we know
-+		 * the other cpu will power down itself or will abort the
-+		 * sequence, let's wait for one of these to happen
-+		 */
-+		while (exynos_cpu_power_state(1)) {
-+			/*
-+			 * The other cpu may skip idle and boot back
-+			 * up again
-+			 */
-+			if (atomic_read(&cpu1_wakeup))
-+				goto abort;
-+
-+			/*
-+			 * The other cpu may bounce through idle and
-+			 * boot back up again, getting stuck in the
-+			 * boot rom code
-+			 */
-+			if (__raw_readl(cpu_boot_reg_base()) == 0)
-+				goto abort;
-+
-+			cpu_relax();
-+		}
-+	}
-+
-+	exynos_enter_aftr();
-+	ret = 0;
-+
-+abort:
-+	if (cpu_online(1)) {
-+		/*
-+		 * Set the boot vector to something non-zero
-+		 */
-+		__raw_writel(virt_to_phys(exynos_cpu_resume),
-+			     cpu_boot_reg_base());
-+		dsb();
-+
-+		/*
-+		 * Turn on cpu1 and wait for it to be on
-+		 */
-+		exynos_cpu_power_up(1);
-+		while (exynos_cpu_power_state(1) != S5P_CORE_LOCAL_PWR_EN)
-+			cpu_relax();
-+
-+		while (!atomic_read(&cpu1_wakeup)) {
-+			/*
-+			 * Poke cpu1 out of the boot rom
-+			 */
-+			__raw_writel(virt_to_phys(exynos_cpu_resume),
-+				     cpu_boot_reg_base());
-+
-+			arch_send_wakeup_ipi_mask(cpumask_of(1));
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+static int exynos_wfi_finisher(unsigned long flags)
-+{
-+	cpu_do_idle();
-+
-+	return -1;
-+}
-+
-+static int exynos_cpu1_powerdown(void)
-+{
-+	int ret = -1;
-+
-+	/*
-+	 * Idle sequence for cpu1
-+	 */
-+	if (cpu_pm_enter())
-+		goto cpu1_aborted;
-+
-+	/*
-+	 * Turn off cpu 1
-+	 */
-+	exynos_cpu_power_down(1);
-+
-+	ret = cpu_suspend(0, exynos_wfi_finisher);
-+
-+	cpu_pm_exit();
-+
-+cpu1_aborted:
-+	dsb();
-+	/*
-+	 * Notify cpu 0 that cpu 1 is awake
-+	 */
-+	atomic_set(&cpu1_wakeup, 1);
-+
-+	return ret;
-+}
-+
-+static void exynos_pre_enter_aftr(void)
-+{
-+	__raw_writel(virt_to_phys(exynos_cpu_resume), cpu_boot_reg_base());
-+}
-+
-+static void exynos_post_enter_aftr(void)
-+{
-+	atomic_set(&cpu1_wakeup, 0);
-+}
-+
-+struct cpuidle_exynos_data cpuidle_coupled_exynos_data = {
-+	.cpu0_enter_aftr		= exynos_cpu0_enter_aftr,
-+	.cpu1_powerdown		= exynos_cpu1_powerdown,
-+	.pre_enter_aftr		= exynos_pre_enter_aftr,
-+	.post_enter_aftr		= exynos_post_enter_aftr,
-+};
-diff --git a/drivers/cpuidle/Kconfig.arm b/drivers/cpuidle/Kconfig.arm
-index 8c16ab2..8e07c94 100644
---- a/drivers/cpuidle/Kconfig.arm
-+++ b/drivers/cpuidle/Kconfig.arm
-@@ -55,6 +55,7 @@ config ARM_AT91_CPUIDLE
- config ARM_EXYNOS_CPUIDLE
- 	bool "Cpu Idle Driver for the Exynos processors"
- 	depends on ARCH_EXYNOS
-+	select ARCH_NEEDS_CPU_IDLE_COUPLED if SMP
- 	help
- 	  Select this to enable cpuidle for Exynos processors
- 
-diff --git a/drivers/cpuidle/cpuidle-exynos.c b/drivers/cpuidle/cpuidle-exynos.c
-index ba9b34b..4efae0e 100644
---- a/drivers/cpuidle/cpuidle-exynos.c
-+++ b/drivers/cpuidle/cpuidle-exynos.c
-@@ -1,8 +1,11 @@
--/* linux/arch/arm/mach-exynos/cpuidle.c
-- *
-- * Copyright (c) 2011 Samsung Electronics Co., Ltd.
-+/*
-+ * Copyright (c) 2011-2014 Samsung Electronics Co., Ltd.
-  *		http://www.samsung.com
-  *
-+ * Coupled cpuidle support based on the work of:
-+ *	Colin Cross <ccross@android.com>
-+ *	Daniel Lezcano <daniel.lezcano@linaro.org>
-+ *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-@@ -13,13 +16,49 @@
- #include <linux/export.h>
- #include <linux/module.h>
- #include <linux/platform_device.h>
-+#include <linux/of.h>
-+#include <linux/platform_data/cpuidle-exynos.h>
- 
- #include <asm/proc-fns.h>
- #include <asm/suspend.h>
- #include <asm/cpuidle.h>
- 
-+static atomic_t exynos_idle_barrier;
-+
-+static struct cpuidle_exynos_data *exynos_cpuidle_pdata;
- static void (*exynos_enter_aftr)(void);
- 
-+static int exynos_enter_coupled_lowpower(struct cpuidle_device *dev,
-+					 struct cpuidle_driver *drv,
-+					 int index)
-+{
-+	int ret;
-+
-+	exynos_cpuidle_pdata->pre_enter_aftr();
-+
-+	/*
-+	 * Waiting all cpus to reach this point at the same moment
-+	 */
-+	cpuidle_coupled_parallel_barrier(dev, &exynos_idle_barrier);
-+
-+	/*
-+	 * Both cpus will reach this point at the same time
-+	 */
-+	ret = dev->cpu ? exynos_cpuidle_pdata->cpu1_powerdown()
-+		       : exynos_cpuidle_pdata->cpu0_enter_aftr();
-+	if (ret)
-+		index = ret;
-+
-+	/*
-+	 * Waiting all cpus to finish the power sequence before going further
-+	 */
-+	cpuidle_coupled_parallel_barrier(dev, &exynos_idle_barrier);
-+
-+	exynos_cpuidle_pdata->post_enter_aftr();
-+
-+	return index;
-+}
-+
- static int exynos_enter_lowpower(struct cpuidle_device *dev,
- 				struct cpuidle_driver *drv,
- 				int index)
-@@ -56,13 +95,41 @@ static struct cpuidle_driver exynos_idle_driver = {
- 	.safe_state_index = 0,
- };
- 
-+static struct cpuidle_driver exynos_coupled_idle_driver = {
-+	.name			= "exynos_coupled_idle",
-+	.owner			= THIS_MODULE,
-+	.states = {
-+		[0] = ARM_CPUIDLE_WFI_STATE,
-+		[1] = {
-+			.enter			= exynos_enter_coupled_lowpower,
-+			.exit_latency		= 5000,
-+			.target_residency	= 10000,
-+			.flags			= CPUIDLE_FLAG_TIME_VALID |
-+						  CPUIDLE_FLAG_COUPLED |
-+						  CPUIDLE_FLAG_TIMER_STOP,
-+			.name			= "C1",
-+			.desc			= "ARM power down",
-+		},
-+	},
-+	.state_count = 2,
-+	.safe_state_index = 0,
-+};
-+
- static int exynos_cpuidle_probe(struct platform_device *pdev)
- {
- 	int ret;
- 
--	exynos_enter_aftr = (void *)(pdev->dev.platform_data);
-+	if (of_machine_is_compatible("samsung,exynos4210")) {
-+		exynos_cpuidle_pdata = pdev->dev.platform_data;
-+
-+		ret = cpuidle_register(&exynos_coupled_idle_driver,
-+				       cpu_possible_mask);
-+	} else {
-+		exynos_enter_aftr = (void *)(pdev->dev.platform_data);
-+
-+		ret = cpuidle_register(&exynos_idle_driver, NULL);
-+	}
- 
--	ret = cpuidle_register(&exynos_idle_driver, NULL);
- 	if (ret) {
- 		dev_err(&pdev->dev, "failed to register cpuidle driver\n");
- 		return ret;
-diff --git a/include/linux/platform_data/cpuidle-exynos.h b/include/linux/platform_data/cpuidle-exynos.h
-new file mode 100644
-index 0000000..bfa40e4
---- /dev/null
-+++ b/include/linux/platform_data/cpuidle-exynos.h
-@@ -0,0 +1,20 @@
-+/*
-+ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-+ *              http://www.samsung.com
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+*/
-+
-+#ifndef __CPUIDLE_EXYNOS_H
-+#define __CPUIDLE_EXYNOS_H
-+
-+struct cpuidle_exynos_data {
-+	int (*cpu0_enter_aftr)(void);
-+	int (*cpu1_powerdown)(void);
-+	void (*pre_enter_aftr)(void);
-+	void (*post_enter_aftr)(void);
-+};
-+
-+#endif
++	if ((new_map->nr_extents == 1) && (new_map->extent[0].count == 1) &&
++	    uid_eq(ns->owner, cred->euid)) {
+ 		u32 id = new_map->extent[0].lower_first;
+ 		if (cap_setid == CAP_SETUID) {
+ 			kuid_t uid = make_kuid(ns->parent, id);
+-			if (uid_eq(uid, file->f_cred->fsuid))
++			if (uid_eq(uid, cred->euid))
+ 				return true;
+ 		} else if (cap_setid == CAP_SETGID) {
+ 			kgid_t gid = make_kgid(ns->parent, id);
+-			if (gid_eq(gid, file->f_cred->fsgid))
++			if (gid_eq(gid, cred->egid) &&
++			    (cred->group_info->ngroups == 0))
+ 				return true;
+ 		}
+ 	}
 -- 
-1.8.2.3
+1.9.1
 
