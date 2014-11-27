@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819AbaK0Fmo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 00:42:44 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:51587 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142AbaK0Fml (ORCPT
+	id S1754134AbaK0FoH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 00:44:07 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:58628 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753855AbaK0Fmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 00:42:41 -0500
+	Thu, 27 Nov 2014 00:42:45 -0500
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>, Andy Lutomirski <luto@amacapital.net>,
@@ -14,88 +14,231 @@ Cc: Ingo Molnar <mingo@kernel.org>, Andy Lutomirski <luto@amacapital.net>,
         Hannes Frederic Sowa <hannes@stressinduktion.org>,
         Eric Dumazet <edumazet@google.com>, linux-api@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH net-next 0/6] allow eBPF programs to be attached to sockets
-Date: Wed, 26 Nov 2014 21:42:25 -0800
-Message-Id: <1417066951-1999-1-git-send-email-ast@plumgrid.com>
+Subject: [PATCH net-next 3/6] samples: bpf: example of stateful socket filtering
+Date: Wed, 26 Nov 2014 21:42:28 -0800
+Message-Id: <1417066951-1999-4-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1417066951-1999-1-git-send-email-ast@plumgrid.com>
+References: <1417066951-1999-1-git-send-email-ast@plumgrid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce BPF_PROG_TYPE_SOCKET_FILTER type of eBPF programs that can be
-attached to sockets with setsockopt().
-Allow such programs to access maps via lookup/update/delete helpers.
+this socket filter example does:
+- creates arraymap in kernel with key 4 bytes and value 8 bytes
 
-This feature was previewed by bpf manpage in commit b4fc1a460f30("Merge branch 'bpf-next'")
-Now it can actually run.
+- loads eBPF program:
+  r0 = skb[14 + 9]; // load one byte of ip->proto
+  *(u32*)(fp - 4) = r0;
+  value = bpf_map_lookup_elem(map_fd, fp - 4);
+  if (value)
+       (*(u64*)value) += 1;
 
-1st patch adds LD_ABS/LD_IND instruction verification and
-2nd patch adds new setsockopt() flag.
-Patches 3-6 are examples in assembler and in C.
+- attaches this program to raw socket
 
-Though native eBPF programs are way more powerful than classic filters
-(attachable through similar setsockopt() call), they don't have skb field
-accessors yet. Like skb->pkt_type, skb->dev->ifindex are not accessible.
-There are sevaral ways to achieve that. That will be in the next set of patches.
-So in this set native eBPF programs can only read data from packet and
-access maps.
+- every second user space reads map[tcp], map[udp], map[icmp] to see
+  how many packets of given protocol were seen on loopback interface
 
-The most powerful example is sockex2_kern.c from patch 6 where ~200 lines of C
-are compiled into ~300 of eBPF instructions.
-It shows how quite complex packet parsing can be done.
-
-LLVM used to build examples is at https://github.com/iovisor/llvm
-which is fork of llvm trunk that I'm cleaning up for upstreaming.
-
-Alexei Starovoitov (6):
-  bpf: verifier: add checks for BPF_ABS | BPF_IND instructions
-  net: sock: allow eBPF programs to be attached to sockets
-  samples: bpf: example of stateful socket filtering
-  samples: bpf: elf_bpf file loader
-  samples: bpf: trivial eBPF program in C
-  samples: bpf: large eBPF program in C
-
- arch/alpha/include/uapi/asm/socket.h   |    3 +
- arch/avr32/include/uapi/asm/socket.h   |    3 +
- arch/cris/include/uapi/asm/socket.h    |    3 +
- arch/frv/include/uapi/asm/socket.h     |    3 +
- arch/ia64/include/uapi/asm/socket.h    |    3 +
- arch/m32r/include/uapi/asm/socket.h    |    3 +
- arch/mips/include/uapi/asm/socket.h    |    3 +
- arch/mn10300/include/uapi/asm/socket.h |    3 +
- arch/parisc/include/uapi/asm/socket.h  |    3 +
- arch/powerpc/include/uapi/asm/socket.h |    3 +
- arch/s390/include/uapi/asm/socket.h    |    3 +
- arch/sparc/include/uapi/asm/socket.h   |    3 +
- arch/xtensa/include/uapi/asm/socket.h  |    3 +
- include/linux/bpf.h                    |    4 +
- include/linux/filter.h                 |    1 +
- include/uapi/asm-generic/socket.h      |    3 +
- include/uapi/linux/bpf.h               |    1 +
- kernel/bpf/verifier.c                  |   70 ++++++++++-
- net/core/filter.c                      |   97 +++++++++++++-
- net/core/sock.c                        |   13 ++
- samples/bpf/Makefile                   |   20 +++
- samples/bpf/bpf_helpers.h              |   40 ++++++
- samples/bpf/bpf_load.c                 |  203 ++++++++++++++++++++++++++++++
- samples/bpf/bpf_load.h                 |   24 ++++
- samples/bpf/libbpf.c                   |   28 +++++
- samples/bpf/libbpf.h                   |   15 ++-
- samples/bpf/sock_example.c             |   97 ++++++++++++++
- samples/bpf/sockex1_kern.c             |   23 ++++
- samples/bpf/sockex1_user.c             |   49 ++++++++
- samples/bpf/sockex2_kern.c             |  215 ++++++++++++++++++++++++++++++++
- samples/bpf/sockex2_user.c             |   44 +++++++
- 31 files changed, 981 insertions(+), 5 deletions(-)
- create mode 100644 samples/bpf/bpf_helpers.h
- create mode 100644 samples/bpf/bpf_load.c
- create mode 100644 samples/bpf/bpf_load.h
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+---
+ samples/bpf/Makefile       |    2 +
+ samples/bpf/libbpf.c       |   28 +++++++++++++
+ samples/bpf/libbpf.h       |   13 ++++++
+ samples/bpf/sock_example.c |   97 ++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 140 insertions(+)
  create mode 100644 samples/bpf/sock_example.c
- create mode 100644 samples/bpf/sockex1_kern.c
- create mode 100644 samples/bpf/sockex1_user.c
- create mode 100644 samples/bpf/sockex2_kern.c
- create mode 100644 samples/bpf/sockex2_user.c
 
+diff --git a/samples/bpf/Makefile b/samples/bpf/Makefile
+index 0718d9ce4619..f46d3492d032 100644
+--- a/samples/bpf/Makefile
++++ b/samples/bpf/Makefile
+@@ -3,9 +3,11 @@ obj- := dummy.o
+ 
+ # List of programs to build
+ hostprogs-y := test_verifier test_maps
++hostprogs-y += sock_example
+ 
+ test_verifier-objs := test_verifier.o libbpf.o
+ test_maps-objs := test_maps.o libbpf.o
++sock_example-objs := sock_example.o libbpf.o
+ 
+ # Tell kbuild to always build the programs
+ always := $(hostprogs-y)
+diff --git a/samples/bpf/libbpf.c b/samples/bpf/libbpf.c
+index 17bb520eb57f..46d50b7ddf79 100644
+--- a/samples/bpf/libbpf.c
++++ b/samples/bpf/libbpf.c
+@@ -7,6 +7,10 @@
+ #include <linux/netlink.h>
+ #include <linux/bpf.h>
+ #include <errno.h>
++#include <net/ethernet.h>
++#include <net/if.h>
++#include <linux/if_packet.h>
++#include <arpa/inet.h>
+ #include "libbpf.h"
+ 
+ static __u64 ptr_to_u64(void *ptr)
+@@ -93,3 +97,27 @@ int bpf_prog_load(enum bpf_prog_type prog_type,
+ 
+ 	return syscall(__NR_bpf, BPF_PROG_LOAD, &attr, sizeof(attr));
+ }
++
++int open_raw_sock(const char *name)
++{
++	struct sockaddr_ll sll;
++	int sock;
++
++	sock = socket(PF_PACKET, SOCK_RAW | SOCK_NONBLOCK | SOCK_CLOEXEC, htons(ETH_P_ALL));
++	if (sock < 0) {
++		printf("cannot create raw socket\n");
++		return -1;
++	}
++
++	memset(&sll, 0, sizeof(sll));
++	sll.sll_family = AF_PACKET;
++	sll.sll_ifindex = if_nametoindex(name);
++	sll.sll_protocol = htons(ETH_P_ALL);
++	if (bind(sock, (struct sockaddr *)&sll, sizeof(sll)) < 0) {
++		printf("bind to %s: %s\n", name, strerror(errno));
++		close(sock);
++		return -1;
++	}
++
++	return sock;
++}
+diff --git a/samples/bpf/libbpf.h b/samples/bpf/libbpf.h
+index f8678e5f48bf..cc62ad4d95de 100644
+--- a/samples/bpf/libbpf.h
++++ b/samples/bpf/libbpf.h
+@@ -99,6 +99,16 @@ extern char bpf_log_buf[LOG_BUF_SIZE];
+ 	BPF_LD_IMM64_RAW(DST, BPF_PSEUDO_MAP_FD, MAP_FD)
+ 
+ 
++/* Direct packet access, R0 = *(uint *) (skb->data + imm32) */
++
++#define BPF_LD_ABS(SIZE, IMM)					\
++	((struct bpf_insn) {					\
++		.code  = BPF_LD | BPF_SIZE(SIZE) | BPF_ABS,	\
++		.dst_reg = 0,					\
++		.src_reg = 0,					\
++		.off   = 0,					\
++		.imm   = IMM })
++
+ /* Memory load, dst_reg = *(uint *) (src_reg + off16) */
+ 
+ #define BPF_LDX_MEM(SIZE, DST, SRC, OFF)			\
+@@ -169,4 +179,7 @@ extern char bpf_log_buf[LOG_BUF_SIZE];
+ 		.off   = 0,					\
+ 		.imm   = 0 })
+ 
++/* create RAW socket and bind to interface 'name' */
++int open_raw_sock(const char *name);
++
+ #endif
+diff --git a/samples/bpf/sock_example.c b/samples/bpf/sock_example.c
+new file mode 100644
+index 000000000000..d74b58523458
+--- /dev/null
++++ b/samples/bpf/sock_example.c
+@@ -0,0 +1,97 @@
++/* eBPF example program:
++ * - creates arraymap in kernel with key 4 bytes and value 8 bytes
++ *
++ * - loads eBPF program:
++ *   r0 = skb[14 + 9]; // load one byte of ip->proto
++ *   *(u32*)(fp - 4) = r0;
++ *   value = bpf_map_lookup_elem(map_fd, fp - 4);
++ *   if (value)
++ *        (*(u64*)value) += 1;
++ *
++ * - attaches this program to eth0 raw socket
++ *
++ * - every second user space reads map[tcp], map[udp], map[icmp] to see
++ *   how many packets of given protocol were seen on eth0
++ */
++#include <stdio.h>
++#include <unistd.h>
++#include <assert.h>
++#include <linux/bpf.h>
++#include <string.h>
++#include <stdlib.h>
++#include <errno.h>
++#include <sys/socket.h>
++#include <arpa/inet.h>
++#include "libbpf.h"
++
++static int test_sock(void)
++{
++	int sock = -1, map_fd, prog_fd, i, key;
++	long long value = 0, tcp_cnt, udp_cnt, icmp_cnt;
++
++	map_fd = bpf_create_map(BPF_MAP_TYPE_ARRAY, sizeof(key), sizeof(value),
++				256);
++	if (map_fd < 0) {
++		printf("failed to create map '%s'\n", strerror(errno));
++		goto cleanup;
++	}
++
++	struct bpf_insn prog[] = {
++		BPF_MOV64_REG(BPF_REG_6, BPF_REG_1),
++		BPF_LD_ABS(BPF_B, 14 + 9 /* R0 = ip->proto */),
++		BPF_STX_MEM(BPF_W, BPF_REG_10, BPF_REG_0, -4), /* *(u32 *)(fp - 4) = r0 */
++		BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
++		BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -4), /* r2 = fp - 4 */
++		BPF_LD_MAP_FD(BPF_REG_1, map_fd),
++		BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
++		BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 2),
++		BPF_MOV64_IMM(BPF_REG_1, 1), /* r1 = 1 */
++		BPF_RAW_INSN(BPF_STX | BPF_XADD | BPF_DW, BPF_REG_0, BPF_REG_1, 0, 0), /* xadd r0 += r1 */
++		BPF_MOV64_IMM(BPF_REG_0, 0), /* r0 = 0 */
++		BPF_EXIT_INSN(),
++	};
++
++	prog_fd = bpf_prog_load(BPF_PROG_TYPE_SOCKET_FILTER, prog, sizeof(prog),
++				"GPL");
++	if (prog_fd < 0) {
++		printf("failed to load prog '%s'\n", strerror(errno));
++		goto cleanup;
++	}
++
++	sock = open_raw_sock("lo");
++
++	if (setsockopt(sock, SOL_SOCKET, SO_ATTACH_BPF, &prog_fd,
++		       sizeof(prog_fd)) < 0) {
++		printf("setsockopt %s\n", strerror(errno));
++		goto cleanup;
++	}
++
++	for (i = 0; i < 10; i++) {
++		key = IPPROTO_TCP;
++		assert(bpf_lookup_elem(map_fd, &key, &tcp_cnt) == 0);
++
++		key = IPPROTO_UDP;
++		assert(bpf_lookup_elem(map_fd, &key, &udp_cnt) == 0);
++
++		key = IPPROTO_ICMP;
++		assert(bpf_lookup_elem(map_fd, &key, &icmp_cnt) == 0);
++
++		printf("TCP %lld UDP %lld ICMP %lld packets\n",
++		       tcp_cnt, udp_cnt, icmp_cnt);
++		sleep(1);
++	}
++
++cleanup:
++	/* maps, programs, raw sockets will auto cleanup on process exit */
++	return 0;
++}
++
++int main(void)
++{
++	FILE *f;
++
++	f = popen("ping -c5 localhost", "r");
++	(void)f;
++
++	return test_sock();
++}
 -- 
 1.7.9.5
 
