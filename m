@@ -1,95 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748AbaK0Pnl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 10:43:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49857 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751031AbaK0Pnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 10:43:40 -0500
-Date: Thu, 27 Nov 2014 16:43:02 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Alexandre Montplaisir <alexmonthy@voxpopuli.im>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org,
-        Dominique Toupin <dominique.toupin@ericsson.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Jeremie Galarneau <jgalar@efficios.com>,
-        David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Trace Compass Developer Discussions 
-	<tracecompass-dev@eclipse.org>
-Subject: Re: Support for Perf CTF traces now in master (was Re: FW: [RFC 0/5]
- perf tools: Add perf data CTF conversion)
-Message-ID: <20141127154302.GA4924@krava.brq.redhat.com>
-References: <53F38C74.4030300@voxpopuli.im>
- <20140820092858.GA1203@krava.brq.redhat.com>
- <53F4F38C.4080407@voxpopuli.im>
- <5457C259.8030605@linutronix.de>
- <545829CA.7040900@voxpopuli.im>
- <20141105125028.GA30087@linutronix.de>
- <545AEA37.601@voxpopuli.im>
- <5460156E.3050601@voxpopuli.im>
- <5463DBD5.9080303@voxpopuli.im>
+	id S1751862AbaK0PoD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 10:44:03 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:50715 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093AbaK0PoA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 10:44:00 -0500
+Date: Thu, 27 Nov 2014 18:43:32 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: micky_ching@realsil.com.cn
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, chris@printf.net,
+        ulf.hansson@linaro.org, gregkh@linuxfoundation.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        wei_wang@realsil.com.cn, rogerable@realtek.com,
+        devel@linuxdriverproject.org
+Subject: Re: [PATCH 2/2] mmc: rtsx: add support for sdio card
+Message-ID: <20141127154332.GB4860@mwanda>
+References: <cover.1417056337.git.micky_ching@realsil.com.cn>
+ <671243677462065a8eb515d654c8a269ce73409c.1417056337.git.micky_ching@realsil.com.cn>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5463DBD5.9080303@voxpopuli.im>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <671243677462065a8eb515d654c8a269ce73409c.1417056337.git.micky_ching@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 05:14:45PM -0500, Alexandre Montplaisir wrote:
-> 
-> On 11/09/2014 08:31 PM, Alexandre Montplaisir wrote:
-> >On 2014-11-05 10:25 PM, Alexandre Montplaisir wrote:
-> >>
-> >>>
-> >>>>But if you could for example tell me the perf equivalents of all the
-> >>>>strings in that file, I could hack together such wrapper. With that,
-> >>>>in theory, perf traces should behave exactly the same as LTTng traces
-> >>>>in the viewer!
-> >>>Oooh, that would be awesome. So I installed maven but didn't get much
-> >>>further. Let me gather this for you.
-> >>
-> >>Awesome, thanks!
-> >>
-> >>I am travelling this week, so I'm a bit busy, but I will try to
-> >>prototype a "wrapper" for the kernel analysis, and adding support for
-> >>the perf events, whenever I have a chance. I'll keep you posted.
-> >
-> >Ok, some good news!
-> >
-> >I managed to get the CTF traces from perf working in Trace Compass! See
-> >attached screenshots. This is showing the "ctf-out2" trace from your
-> >previous email. The other trace seems to have less events enabled, so it
-> >would only show some WAIT_FOR_CPU states in the view.
-> >
-> >If anybody wishes to try it, you can grab the whole branch ending at
-> >https://git.eclipse.org/r/#/c/36200/ . Or run:
-> >$ git fetch
-> >git://git.eclipse.org/gitroot/tracecompass/org.eclipse.tracecompass
-> >refs/changes/00/36200/3 && git checkout FETCH_HEAD
-> 
-> Just a quick note, this branch is now merged to master. So anyone who pulls
-> the code from the master branch at
-> git://git.eclipse.org/gitroot/tracecompass/org.eclipse.tracecompass.git
-> should be able to load perf-CTF traces in the viewer. The trace type is now
-> called "Common Trace Format -> Linux Kernel Trace" and should support both
-> LTTng kernel and perf traces in CTF format (although auto-detection should
-> work in most cases).
-> 
-> This was based on the most recent file format I was aware of, we will update
-> it accordingly if required.
-> 
-> Testing welcome!
+>  #ifdef DEBUG
+> -static void sd_print_debug_regs(struct realtek_pci_sdmmc *host)
+> +static void dump_reg_range(struct realtek_pci_sdmmc *host, u16 start, u16 end)
+>  {
+> -	struct rtsx_pcr *pcr = host->pcr;
+> -	u16 i;
+> -	u8 *ptr;
+> +	u16 len = end - start + 1;
+> +	int i;
+> +	u8 *data = kzalloc(8, GFP_KERNEL);
 
-hi,
-any other way besides compiling eclipse to test this? For pure mortals
-with Fedora eclipse rpm.. ;-)
+The zeroing should be done inside the loop so that the last partial
+read doesn't have old data.  Just use an array on the stack here.
 
-or any instructions for the compilation.. I actually haven't checked yet
+	u8 data[8];
 
-thanks,
-jirka
+>  
+> -	/* Print SD host internal registers */
+> -	rtsx_pci_init_cmd(pcr);
+> -	for (i = 0xFDA0; i <= 0xFDAE; i++)
+> -		rtsx_pci_add_cmd(pcr, READ_REG_CMD, i, 0, 0);
+> -	for (i = 0xFD52; i <= 0xFD69; i++)
+> -		rtsx_pci_add_cmd(pcr, READ_REG_CMD, i, 0, 0);
+> -	rtsx_pci_send_cmd(pcr, 100);
+> -
+> -	ptr = rtsx_pci_get_cmd_data(pcr);
+> -	for (i = 0xFDA0; i <= 0xFDAE; i++)
+> -		dev_dbg(sdmmc_dev(host), "0x%04X: 0x%02x\n", i, *(ptr++));
+> -	for (i = 0xFD52; i <= 0xFD69; i++)
+> -		dev_dbg(sdmmc_dev(host), "0x%04X: 0x%02x\n", i, *(ptr++));
+> +	if (!data)
+> +		return;
+> +
+> +	for (i = 0; i < len; i += 8, start += 8) {
+
+I don't like this loop.  Just leave start as is and write:
+
+			rtsx_pci_read_register(host->pcr, start + i + j,
+					       data + j);
+
+
+> +		int j, n = min(8, len - i);
+
+Put these declarations on separate lines.
+
+The memset I mentioned earlier goes here.
+
+		memset(&data, 0, sizeof(data));
+
+
+> +
+> +		for (j = 0; j < n; j++)
+> +			rtsx_pci_read_register(host->pcr, start + j, data + j);
+> +		dev_dbg(sdmmc_dev(host), "0x%04X(%d): %8ph\n", start, n, data);
+> +	}
+> +
+> +	kfree(data);
+> +}
+> +
+> +static void sd_print_debug_regs(struct realtek_pci_sdmmc *host)
+> +{
+> +	dump_reg_range(host, 0xFDA0, 0xFDB3);
+> +	dump_reg_range(host, 0xFD52, 0xFD69);
+>  }
+>  #else
+>  #define sd_print_debug_regs(host)
+>  #endif /* DEBUG */
+>  
+> +static int sdmmc_get_cd(struct mmc_host *mmc);
+
+This forward declaration is not needed.
+
+> +static void sd_send_cmd_get_rsp(struct realtek_pci_sdmmc *host,
+> +	struct mmc_command *cmd);
+
+It's better to move the function forward, instead of having forward
+declarations.
+
+> +
+> +static void sd_cmd_set_sd_cmd(struct rtsx_pcr *pcr, struct mmc_command *cmd)
+> +{
+> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD_CMD0, 0xFF, 0x40 | cmd->opcode);
+
+0x40 is a magic number.
+
+> +	rtsx_pci_write_be32(pcr, SD_CMD1, cmd->arg);
+> +}
+> +
+
+[ snip ]
+
+> @@ -293,47 +329,15 @@ static void sd_send_cmd_get_rsp(struct realtek_pci_sdmmc *host,
+>  	int timeout = 100;
+>  	int i;
+>  	u8 *ptr;
+> -	int stat_idx = 0;
+> -	u8 rsp_type;
+> -	int rsp_len = 5;
+> +	int rsp_type = sd_response_type(cmd);
+
+Don't do this assignment in the initializer.  Put it next to the error
+handling code.  First we assign it.  Then we use it.  Then blank line.
+Then we check it for errors.  Spagghetttii.
+
+> +	int stat_idx = sd_status_index(rsp_type);
+
+I have always hated this terrible pointer math.  5 is relative to
+pcr->host_cmds_ptr + 1.  It's a mess...  :(
+
+>  	bool clock_toggled = false;
+
+
+[ snip ]
+
+> -static int sd_rw_multi(struct realtek_pci_sdmmc *host, struct mmc_request *mrq)
+> +static int sd_read_long_data(struct realtek_pci_sdmmc *host,
+> +	struct mmc_request *mrq)
+>  {
+>  	struct rtsx_pcr *pcr = host->pcr;
+>  	struct mmc_host *mmc = host->mmc;
+>  	struct mmc_card *card = mmc->card;
+> +	struct mmc_command *cmd = mrq->cmd;
+>  	struct mmc_data *data = mrq->data;
+>  	int uhs = mmc_card_uhs(card);
+> -	int read = (data->flags & MMC_DATA_READ) ? 1 : 0;
+> -	u8 cfg2, trans_mode;
+> +	u8 cfg2 = 0;
+>  	int err;
+> +	int resp_type = sd_response_type(cmd);
+
+Same thing.  Move this next to the error handling code.
+
+
+[ snip ]
+
+> @@ -653,14 +697,14 @@ static int sd_tuning_rx_cmd(struct realtek_pci_sdmmc *host,
+>  		u8 opcode, u8 sample_point)
+>  {
+>  	int err;
+> -	u8 cmd[5] = {0};
+> +	struct mmc_command cmd = {0};
+
+I like the struct mmc_command changes but these seem like cleanups and
+not needed for the new hardware.  Send them as a separate patch instead
+of mixed in with everything else.
+
+regards,
+dan carpenter
+
