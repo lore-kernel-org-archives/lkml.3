@@ -1,168 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932272AbaK0Ivo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 03:51:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43006 "EHLO mail.kernel.org"
+	id S932286AbaK0IwI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 03:52:08 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42983 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932226AbaK0Iu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:50:29 -0500
+	id S1754640AbaK0IuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:50:23 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Benjamin Poirier <bpoirier@suse.de>,
-        Tom Herbert <therbert@google.com>,
-        "David S. Miller" <davem@davemloft.net>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 89/91] net: Do not enable tx-nocache-copy by default
-Date: Thu, 27 Nov 2014 16:43:12 +0800
-Message-Id: <1417077794-9299-89-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        Satoshi IWAMOTO <satoshi.iwamoto@nifty.ne.jp>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 87/91] rtl8192ce: Fix null dereference in watchdog
+Date: Thu, 27 Nov 2014 16:43:10 +0800
+Message-Id: <1417077794-9299-87-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
 References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Poirier <bpoirier@suse.de>
+From: Ben Hutchings <ben@decadent.org.uk>
 
 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit cdb3f4a31b64c3a1c6eef40bc01ebc9594c58a8c upstream.
+Dmitry Semyonov reported that after upgrading from 3.2.54 to
+3.2.57 the rtl8192ce driver will crash when its interface is brought
+up.  The oops message shows:
 
-There are many cases where this feature does not improve performance or even
-reduces it.
+[ 1833.611397] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
+[ 1833.611455] IP: [<ffffffffa0410c6a>] rtl92ce_update_hal_rate_tbl+0x29/0x4db [rtl8192ce]
+...
+[ 1833.613326] Call Trace:
+[ 1833.613346]  [<ffffffffa02ad9c6>] ? rtl92c_dm_watchdog+0xd0b/0xec9 [rtl8192c_common]
+[ 1833.613391]  [<ffffffff8105b5cf>] ? process_one_work+0x161/0x269
+[ 1833.613425]  [<ffffffff8105c598>] ? worker_thread+0xc2/0x145
+[ 1833.613458]  [<ffffffff8105c4d6>] ? manage_workers.isra.25+0x15b/0x15b
+[ 1833.613496]  [<ffffffff8105f6d9>] ? kthread+0x76/0x7e
+[ 1833.613527]  [<ffffffff81356b74>] ? kernel_thread_helper+0x4/0x10
+[ 1833.613563]  [<ffffffff8105f663>] ? kthread_worker_fn+0x139/0x139
+[ 1833.613598]  [<ffffffff81356b70>] ? gs_change+0x13/0x13
 
-For example, here are the results from tests that I've run using 3.12.6 on one
-Intel Xeon W3565 and one i7 920 connected by ixgbe adapters. The results are
-from the Xeon, but they're similar on the i7. All numbers report the
-mean±stddev over 10 runs of 10s.
+Disassembly of rtl92ce_update_hal_rate_tbl() shows that the 'sta'
+parameter was null.  None of the changes to the rtlwifi family between
+3.2.54 and 3.2.57 seem to directly cause this, and reverting commit
+f78bccd79ba3 ('rtlwifi: rtl8192ce: Fix too long disable of IRQs')
+doesn't fix it.
 
-1) latency tests similar to what is described in "c6e1a0d net: Allow no-cache
-copy from user on transmit"
-There is no statistically significant difference between tx-nocache-copy
-on/off.
-nic irqs spread out (one queue per cpu)
+rtl92c_dm_watchdog() calls rtl92ce_update_hal_rate_tbl() via
+rtl92c_dm_refresh_rate_adaptive_mask(), which does not appear in the
+call trace as it was inlined.  That function has been completely
+removed upstream which may explain why this crash wasn't seen there.
 
-200x netperf -r 1400,1
-tx-nocache-copy off
-        692000±1000 tps
-        50/90/95/99% latency (us): 275±2/643.8±0.4/799±1/2474.4±0.3
-tx-nocache-copy on
-        693000±1000 tps
-        50/90/95/99% latency (us): 274±1/644.1±0.7/800±2/2474.5±0.7
+I'm not sure that it is sensible to completely remove
+rtl92c_dm_refresh_rate_adaptive_mask() without making other
+compensating changes elsewhere, so try to work around this for 3.2 by
+checking for a null pointer in rtl92c_dm_refresh_rate_adaptive_mask()
+and then skipping the call to rtl92ce_update_hal_rate_tbl().
 
-200x netperf -r 14000,14000
-tx-nocache-copy off
-        86450±80 tps
-        50/90/95/99% latency (us): 334.37±0.02/838±1/2100±20/3990±40
-tx-nocache-copy on
-        86110±60 tps
-        50/90/95/99% latency (us): 334.28±0.01/837±2/2110±20/3990±20
-
-2) single stream throughput tests
-tx-nocache-copy leads to higher service demand
-
-                        throughput  cpu0        cpu1        demand
-                        (Gb/s)      (Gcycle)    (Gcycle)    (cycle/B)
-
-nic irqs and netperf on cpu0 (1x netperf -T0,0 -t omni -- -d send)
-
-tx-nocache-copy off     9402±5      9.4±0.2                 0.80±0.01
-tx-nocache-copy on      9403±3      9.85±0.04               0.838±0.004
-
-nic irqs on cpu0, netperf on cpu1 (1x netperf -T1,1 -t omni -- -d send)
-
-tx-nocache-copy off     9401±5      5.83±0.03   5.0±0.1     0.923±0.007
-tx-nocache-copy on      9404±2      5.74±0.03   5.523±0.009 0.958±0.002
-
-As a second example, here are some results from Eric Dumazet with latest
-net-next.
-tx-nocache-copy also leads to higher service demand
-
-(cpu is Intel(R) Xeon(R) CPU X5660  @ 2.80GHz)
-
-lpq83:~# ./ethtool -K eth0 tx-nocache-copy on
-lpq83:~# perf stat ./netperf -H lpq84 -c
-MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to lpq84.prod.google.com () port 0 AF_INET
-Recv   Send    Send                          Utilization       Service Demand
-Socket Socket  Message  Elapsed              Send     Recv     Send    Recv
-Size   Size    Size     Time     Throughput  local    remote   local   remote
-bytes  bytes   bytes    secs.    10^6bits/s  % S      % U      us/KB   us/KB
-
- 87380  16384  16384    10.00      9407.44   2.50     -1.00    0.522   -1.000
-
- Performance counter stats for './netperf -H lpq84 -c':
-
-       4282.648396 task-clock                #    0.423 CPUs utilized
-             9,348 context-switches          #    0.002 M/sec
-                88 CPU-migrations            #    0.021 K/sec
-               355 page-faults               #    0.083 K/sec
-    11,812,797,651 cycles                    #    2.758 GHz                     [82.79%]
-     9,020,522,817 stalled-cycles-frontend   #   76.36% frontend cycles idle    [82.54%]
-     4,579,889,681 stalled-cycles-backend    #   38.77% backend  cycles idle    [67.33%]
-     6,053,172,792 instructions              #    0.51  insns per cycle
-                                             #    1.49  stalled cycles per insn [83.64%]
-       597,275,583 branches                  #  139.464 M/sec                   [83.70%]
-         8,960,541 branch-misses             #    1.50% of all branches         [83.65%]
-
-      10.128990264 seconds time elapsed
-
-lpq83:~# ./ethtool -K eth0 tx-nocache-copy off
-lpq83:~# perf stat ./netperf -H lpq84 -c
-MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to lpq84.prod.google.com () port 0 AF_INET
-Recv   Send    Send                          Utilization       Service Demand
-Socket Socket  Message  Elapsed              Send     Recv     Send    Recv
-Size   Size    Size     Time     Throughput  local    remote   local   remote
-bytes  bytes   bytes    secs.    10^6bits/s  % S      % U      us/KB   us/KB
-
- 87380  16384  16384    10.00      9412.45   2.15     -1.00    0.449   -1.000
-
- Performance counter stats for './netperf -H lpq84 -c':
-
-       2847.375441 task-clock                #    0.281 CPUs utilized
-            11,632 context-switches          #    0.004 M/sec
-                49 CPU-migrations            #    0.017 K/sec
-               354 page-faults               #    0.124 K/sec
-     7,646,889,749 cycles                    #    2.686 GHz                     [83.34%]
-     6,115,050,032 stalled-cycles-frontend   #   79.97% frontend cycles idle    [83.31%]
-     1,726,460,071 stalled-cycles-backend    #   22.58% backend  cycles idle    [66.55%]
-     2,079,702,453 instructions              #    0.27  insns per cycle
-                                             #    2.94  stalled cycles per insn [83.22%]
-       363,773,213 branches                  #  127.757 M/sec                   [83.29%]
-         4,242,732 branch-misses             #    1.17% of all branches         [83.51%]
-
-      10.128449949 seconds time elapsed
-
-CC: Tom Herbert <therbert@google.com>
-Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+References: https://bugs.debian.org/745137
+References: https://bugs.debian.org/745462
+Reported-by: Dmitry Semyonov <linulin@gmail.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Chaoming Li <chaoming_li@realsil.com.cn>
+Cc: Satoshi IWAMOTO <satoshi.iwamoto@nifty.ne.jp>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- net/core/dev.c | 5 -----
- 1 file changed, 5 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index b47375d..0770364 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -5546,13 +5546,8 @@ int register_netdevice(struct net_device *dev)
- 	dev->features |= NETIF_F_SOFT_FEATURES;
- 	dev->wanted_features = dev->features & dev->hw_features;
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c b/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
+index 1208b75..513baa0 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
+@@ -1210,11 +1210,14 @@ static void rtl92c_dm_refresh_rate_adaptive_mask(struct ieee80211_hw *hw)
+ 			if (rtlhal->interface == INTF_PCI) {
+ 				rcu_read_lock();
+ 				sta = ieee80211_find_sta(mac->vif, mac->bssid);
++				if (!sta)
++					goto out_unlock;
+ 			}
+ 			rtlpriv->cfg->ops->update_rate_tbl(hw, sta,
+ 					p_ra->ratr_state);
  
--	/* Turn on no cache copy if HW is doing checksum */
- 	if (!(dev->flags & IFF_LOOPBACK)) {
- 		dev->hw_features |= NETIF_F_NOCACHE_COPY;
--		if (dev->features & NETIF_F_ALL_CSUM) {
--			dev->wanted_features |= NETIF_F_NOCACHE_COPY;
--			dev->features |= NETIF_F_NOCACHE_COPY;
--		}
- 	}
- 
- 	/* Make NETIF_F_HIGHDMA inheritable to VLAN devices.
+ 			p_ra->pre_ratr_state = p_ra->ratr_state;
++		out_unlock:
+ 			if (rtlhal->interface == INTF_PCI)
+ 				rcu_read_unlock();
+ 		}
 -- 
 1.9.1
 
