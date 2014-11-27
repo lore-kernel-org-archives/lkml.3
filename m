@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932103AbaK0NHl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 08:07:41 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:53266 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaK0NHj (ORCPT
+	id S1754574AbaK0NIu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 08:08:50 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:13267 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752096AbaK0NIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 08:07:39 -0500
-Date: Thu, 27 Nov 2014 18:37:25 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Hisashi T Fujinaka <htodd@twofifty.com>
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Matthew Vick <matthew.vick@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Mitch Williams <mitch.a.williams@intel.com>,
-        Linux NICS <linux.nics@intel.com>, e1000-devel@lists.sourceforge.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] e1000: remove unused variables
-Message-ID: <20141127130725.GA12406@sudip-PC>
-References: <1417065728-5592-1-git-send-email-sudipm.mukherjee@gmail.com>
- <alpine.NEB.2.11.1411262157110.1481@chris.i8u.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.NEB.2.11.1411262157110.1481@chris.i8u.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 27 Nov 2014 08:08:48 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-76-5477225c3615
+Message-id: <1417093723.32141.1.camel@AMDC1943>
+Subject: Re: [PATCH v4 1/7] mfd: max77686/802: Remove support for board files
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene@kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Date: Thu, 27 Nov 2014 14:08:43 +0100
+In-reply-to: <20141127130301.GX7712@sirena.org.uk>
+References: <1417087253-12306-1-git-send-email-k.kozlowski@samsung.com>
+ <1417087253-12306-2-git-send-email-k.kozlowski@samsung.com>
+ <20141127130301.GX7712@sirena.org.uk>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.10.4-0ubuntu2
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t/xK7qxSuUhBnf8LDbOWM9qMfXhEzaL
+	+UfOsVr0P37NbHG26Q27xf2vRxktvl3pYLLY9Pgaq8XlXXPYLGac38dksfbIXXYHbo+ds+6y
+	e2xa1cnmcefaHjaPzUvqPfq2rGL0+LxJLoAtissmJTUnsyy1SN8ugSvj+pO9jAVfWCq2/FzM
+	2sD4ibmLkZNDQsBE4sqxt1C2mMSFe+vZuhi5OIQEljJKfO/ZzA7hfGaUaDy8lw2kildAX+JL
+	3w9GEFtYwFfi+7/HTCA2m4CxxOblS8BqRASUJa5+38sC0sws0Mws8e/BP1aQBIuAqsT+SxDN
+	nAJGEhcOdTJBbFjLKPHp2yewBLOAusSkeYuAbuIAuklZorHfDWKxoMSPyfdYIErkJTavecs8
+	gVFgFpKOWUjKZiEpW8DIvIpRNLU0uaA4KT3XSK84Mbe4NC9dLzk/dxMjJC6+7mBceszqEKMA
+	B6MSDy/DrbIQIdbEsuLK3EOMEhzMSiK8XIzlIUK8KYmVValF+fFFpTmpxYcYmTg4pRoYz/16
+	XGn3/3qrl7LvQZ3VDclVu3LT1186miMmptjqca3mXWdf+rR9GstWT1C8FeO4y/LO7m2VXd3b
+	Eie/z1Zq2BDyavH/J19lXxr+flYueChkwhOpU7sLNmVzr/myVWf6IbkMqdTJmxfJt3jZT+ss
+	+jGBv0TNs4x963URlaP9PclLmjJTyh+pK7EUZyQaajEXFScCABlNmPBpAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 09:59:28PM -0800, Hisashi T Fujinaka wrote:
-> I'm pretty sure those double reads are there for a reason, so most of
-> this I'm going to have to check on Monday. We have a long holiday
-> weekend here in the US.
-
-if the double reads are there for some reason, can you please let me know what that reason might be..
-
+On czw, 2014-11-27 at 13:03 +0000, Mark Brown wrote:
+> On Thu, Nov 27, 2014 at 12:20:47PM +0100, Krzysztof Kozlowski wrote:
+> > The driver is used only on Exynos based boards with DTS support.
+> > After removal of board file support from max77686 and max77802 regulator
+> > drivers, the MFD driver can be converted to DTS-only version. This
+> > simplifies a little the code:
 > 
-> I'm not sure why you're bothering with an old driver like this, but if
-> you haven't actually tried this on all the hardware it pertains to, I'm
-> going want to NAK this.
+> Why is this a dependency for new features in the regulator core?
+My mistake, I based this patchset on regulator cleanup but this MFD
+change is not needed for it. It can be skipped here. Sorry for the
+noise.
 
-no it has not been tested on hardware.  :(
+Best regards,
+Krzysztof
 
-i am still in the learning process, NAK is also part of learning.
-
-infact there is another part of the code, which, theoretically, will never get executed. but i didnot dare to send that removal patch without testing on the hardware.
-
-thanks
-sudip
-
-> 
-> I should do this from my todd.fujinaka@intel.com account but it's 10PM
-> on the first day of a long holiday weekend.
-> 
-> On Thu, 27 Nov 2014, Sudip Mukherjee wrote:
-> 
-> >these variables were only being assigned some values, but were never
-> >used.
-> >
-> >Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> >---
-> >drivers/net/ethernet/intel/e1000/e1000_hw.c   | 142 ++++++++++++--------------
-<snip>
-> >			case SPEED_100:
-> >-				txb2b = false;
-> >				/* maybe add some timeout factor ? */
-> >				break;
-> >			}
-> >
-> 
-> -- 
-> Hisashi T Fujinaka - htodd@twofifty.com
-> BSEE + BSChem + BAEnglish + MSCS + $2.50 = coffee
