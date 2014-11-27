@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751382AbaK0QXG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 11:23:06 -0500
-Received: from mga02.intel.com ([134.134.136.20]:53108 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750781AbaK0QXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 11:23:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="490977254"
-Message-ID: <54774FE2.6010807@linux.intel.com>
-Date: Fri, 28 Nov 2014 00:22:58 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1750983AbaK0Q1J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 11:27:09 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41052 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaK0Q1H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 11:27:07 -0500
+Date: Thu, 27 Nov 2014 16:24:59 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, linux-spi@vger.kernel.org,
+        devicetree@vger.kernel.org
+Message-ID: <20141127162459.GY7712@sirena.org.uk>
+References: <1417088636-11994-1-git-send-email-lee.jones@linaro.org>
+ <1417088636-11994-2-git-send-email-lee.jones@linaro.org>
+ <20141127125904.GV7712@sirena.org.uk>
+ <20141127150508.GI4628@x1>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, x86@kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Daniel J Blueman <daniel@numascale.com>
-Subject: Re: [Patch Part3 v4 37/38] x86, irq: Introduce mechanism to support
- different vector allocation policies
-References: <1416901802-24211-1-git-send-email-jiang.liu@linux.intel.com> <1416901802-24211-38-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.11.1411271142340.3961@nanos>
-In-Reply-To: <alpine.DEB.2.11.1411271142340.3961@nanos>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zBkzUKoNN9/BHFeb"
+Content-Disposition: inline
+In-Reply-To: <20141127150508.GI4628@x1>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/4] spi: Add new driver for STMicroelectronics' SPI
+ Controller
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/27 18:44, Thomas Gleixner wrote:
-> On Tue, 25 Nov 2014, Jiang Liu wrote:
->> Introduce mechanism to support different vector allocation policies,
->> so platform or user may choose the best suitable CPU vector allocation
-> 
-> I've postponed this and the next patch for 3.20.
-Hi Thomas,
-	That's fine, thanks for merging all other patches for 3.19:)
 
-> 
->> policy. Currently two policies are supported:
->> 1) allocate CPU vector from cpumask_of_node(dev_to_node(dev))
->> 2) allocate from apic->target_cpus(), this is the default policy
->>
->> Platform driver may call set_vector_alloc_policy() to choose the
->> preferred policies.
->>
->> This mechanism may be used to support NumaConnect systems to allocate
->> CPU vectors from device local node.
-> 
-> So these policies are system wide and need to be selected at boot time?
-Yes, the polices are system wide.
-It may be change at runtime, but seems no strong requirement yet so
-haven't implemented the interface to change it at runtime.
+--zBkzUKoNN9/BHFeb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Basically this idea is inspired by a patch set to allocate  CPU vector
-from device local node for NumaConnect systems. I found it may also help
-2-socket or 4-socket systems, so reimplemented in this way.
-Thanks!
-Gerry
+On Thu, Nov 27, 2014 at 03:05:08PM +0000, Lee Jones wrote:
 
-> 
-> Thanks,
-> 
-> 	tglx
-> 
+> > > +		/* Set SSC_CTL to 16 bits-per-word */
+> > > +		ctl = readl_relaxed(spi_st->base + SSC_CTL);
+> > > +		writel_relaxed((ctl | 0xf), spi_st->base + SSC_CTL);
+
+> > > +		readl_relaxed(spi_st->base + SSC_RBUF);
+
+> > No byte swapping issues here?
+
+> I think this implementation has been pretty heavily tested.  What
+> should I be looking out for?
+
+The bytes on the bus should be in exactly the same order as in memory if
+the word size is 8, SPI words should be big endian normally.
+
+--zBkzUKoNN9/BHFeb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUd1BaAAoJECTWi3JdVIfQST0H/2HZDGXTX2tMsJEAuWKCam/d
++dHlbwpd10cbDyLHMxX1FRToqMzTjTPRV41fVVqbOmIF7qXh+GeogAgeaZvdhAvw
+v0GFS30LGtHbCJkLVwxOHAMZMJ8QhGh5aSUkKQVu9IT33FVnEECers5saWpnPMuS
+cwvX9lnV6PjqTdsWsmrOaAPhWHJs7grKKtLn3dXStBUo/vXvfxqded9fWwL8t1Cd
+4y+AYu/PAeME2wfakOwZ12j0Fn5S0fdvNX55UXbScn93eNyHU3mJqe/CnUmbXTfy
+PyIC021qIxT+z5AKZgqDLxV8wHhDyTA6jqJ8PDyKU3PvLSIiYOCBorBUtl2Hxgo=
+=3gML
+-----END PGP SIGNATURE-----
+
+--zBkzUKoNN9/BHFeb--
