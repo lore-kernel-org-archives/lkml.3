@@ -1,105 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910AbaK0Cwv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 21:52:51 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:48024 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753868AbaK0Cwt (ORCPT
+	id S1753940AbaK0CxD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 21:53:03 -0500
+Received: from regular1.263xmail.com ([211.150.99.140]:43730 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753868AbaK0CxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 21:52:49 -0500
-Date: Wed, 26 Nov 2014 18:52:38 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for Nov 26
-Message-ID: <20141127025238.GA18150@roeck-us.net>
-References: <20141126233827.3353c3f4@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141126233827.3353c3f4@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020208.54769201.006E,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 3
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Wed, 26 Nov 2014 21:53:00 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: roger.chen@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: roger.chen@rock-chips.com
+X-UNIQUE-TAG: <08d058d67a971892837c7eed0707ca9f>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Roger Chen <roger.chen@rock-chips.com>
+To: heiko@sntech.de
+Cc: peppe.cavallaro@st.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        kever.yang@rock-chips.com, eddie.cai@rock-chips.com,
+        roger.chen@rock-chips.com
+Subject: [PATCH v2 3/6] GMAC: modify CRU config for Rockchip RK3288 SoCs integrated GMAC
+Date: Thu, 27 Nov 2014 10:52:58 +0800
+Message-Id: <1417056778-3714-1-git-send-email-roger.chen@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1417056591-3570-1-git-send-email-roger.chen@rock-chips.com>
+References: <1417056591-3570-1-git-send-email-roger.chen@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 11:38:27PM +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Changes since 20141125:
-> 
-> The i2c tree lost its build failure.
-> 
-> The block tree gained a conflict against the ext4 tree.
-> 
-> The omap_dss2 tree still had its build failure for which I applied a patch.
-> 
-> The devicetree tree gained conflicts against the i2c, pm, mfd and
-> regulator trees.
-> 
-> The kvm-arm tree gained a conflict against the kvm tree.
-> 
-> The tty tree gained a conflict against the tty.current tree.
-> 
-> Non-merge commits (relative to Linus' tree): 8617
->  8299 files changed, 317805 insertions(+), 228360 deletions(-)
-> 
-Builds results:
-	total: 133 pass: 126 fail: 7
-Failed builds:
-	alpha:allmodconfig
-	arm:orion5x_defconfig
-	arm:cm_x2xx_defconfig
-	hexagon:defconfig
-	sparc64:allmodconfig
-	x86_64:allyesconfig
-	xtensa:allmodconfig
+modify CRU config for GMAC driver
 
-Qemu tests:
-	total: 30 pass: 22 fail: 8
-Failed tests:
-	arm:arm_versatile_defconfig
-	mips:mips_malta_defconfig
-	mips:mipsel_malta_defconfig
-	mips:mipsel_malta_smp_defconfig
-	powerpc:ppc_book3s_defconfig
-	powerpc:ppc_book3s_smp_defconfig
-	powerpc:ppc64_book3s_defconfig
-	powerpc:ppc64_book3s_smp_defconfig
+Signed-off-by: Roger Chen <roger.chen@rock-chips.com>
+---
+ drivers/clk/rockchip/clk-rk3288.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-As far as I can see, qemu failures are all due to build failures
-due to
+diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
+index 2327829..60237dc 100644
+--- a/drivers/clk/rockchip/clk-rk3288.c
++++ b/drivers/clk/rockchip/clk-rk3288.c
+@@ -187,7 +187,7 @@ PNAME(mux_uart2_p)	= { "uart2_src", "uart2_frac", "xin24m" };
+ PNAME(mux_uart3_p)	= { "uart3_src", "uart3_frac", "xin24m" };
+ PNAME(mux_uart4_p)	= { "uart4_src", "uart4_frac", "xin24m" };
+ PNAME(mux_cif_out_p)	= { "cif_src", "xin24m" };
+-PNAME(mux_macref_p)	= { "mac_src", "ext_gmac" };
++PNAME(mux_mac_p)	= { "mac_pll_src", "ext_gmac" };
+ PNAME(mux_hsadcout_p)	= { "hsadc_src", "ext_hsadc" };
+ PNAME(mux_edp_24m_p)	= { "ext_edp_24m", "xin24m" };
+ PNAME(mux_tspout_p)	= { "cpll", "gpll", "npll", "xin27m" };
+@@ -560,18 +560,18 @@ static struct rockchip_clk_branch rk3288_clk_branches[] __initdata = {
+ 	MUX(SCLK_UART4, "sclk_uart4", mux_uart4_p, 0,
+ 			RK3288_CLKSEL_CON(3), 8, 2, MFLAGS),
+ 
+-	COMPOSITE(0, "mac_src", mux_pll_src_npll_cpll_gpll_p, 0,
++	COMPOSITE(SCLK_MAC_PLL, "mac_pll_src", mux_pll_src_npll_cpll_gpll_p, 0,
+ 			RK3288_CLKSEL_CON(21), 0, 2, MFLAGS, 8, 5, DFLAGS,
+ 			RK3288_CLKGATE_CON(2), 5, GFLAGS),
+-	MUX(0, "macref", mux_macref_p, 0,
++	MUX(SCLK_MAC, "mac_clk", mux_mac_p, 0,
+ 			RK3288_CLKSEL_CON(21), 4, 1, MFLAGS),
+-	GATE(0, "sclk_macref_out", "macref", 0,
++	GATE(SCLK_MACREF_OUT, "sclk_macref_out", "mac_clk", 0,
+ 			RK3288_CLKGATE_CON(5), 3, GFLAGS),
+-	GATE(SCLK_MACREF, "sclk_macref", "macref", 0,
++	GATE(SCLK_MACREF, "sclk_macref", "mac_clk", 0,
+ 			RK3288_CLKGATE_CON(5), 2, GFLAGS),
+-	GATE(SCLK_MAC_RX, "sclk_mac_rx", "macref", 0,
++	GATE(SCLK_MAC_RX, "sclk_mac_rx", "mac_clk", 0,
+ 			RK3288_CLKGATE_CON(5), 0, GFLAGS),
+-	GATE(SCLK_MAC_TX, "sclk_mac_tx", "macref", 0,
++	GATE(SCLK_MAC_TX, "sclk_mac_tx", "mac_clk", 0,
+ 			RK3288_CLKGATE_CON(5), 1, GFLAGS),
+ 
+ 	COMPOSITE(0, "hsadc_src", mux_pll_src_cpll_gpll_p, 0,
+-- 
+1.7.9.5
 
-ERROR: "nf_nat_redirect_ipv6" [net/netfilter/xt_REDIRECT.ko] undefined!
 
-Details at http://server.roeck-us.net:8010/builders.
-
-Guenter
