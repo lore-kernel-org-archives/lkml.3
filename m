@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049AbaK0Fmu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 00:42:50 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:38623 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947AbaK0Fmr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754009AbaK0Fmr (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 27 Nov 2014 00:42:47 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:42076 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168AbaK0Fmm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 00:42:42 -0500
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>, Andy Lutomirski <luto@amacapital.net>,
@@ -14,9 +14,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Andy Lutomirski <luto@amacapital.net>,
         Hannes Frederic Sowa <hannes@stressinduktion.org>,
         Eric Dumazet <edumazet@google.com>, linux-api@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH net-next 5/6] samples: bpf: trivial eBPF program in C
-Date: Wed, 26 Nov 2014 21:42:30 -0800
-Message-Id: <1417066951-1999-6-git-send-email-ast@plumgrid.com>
+Subject: [PATCH net-next 1/6] bpf: verifier: add checks for BPF_ABS | BPF_IND instructions
+Date: Wed, 26 Nov 2014 21:42:26 -0800
+Message-Id: <1417066951-1999-2-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1417066951-1999-1-git-send-email-ast@plumgrid.com>
 References: <1417066951-1999-1-git-send-email-ast@plumgrid.com>
@@ -24,158 +24,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this example does the same task as previous socket example
-in assembler, but this one does it in C.
+introduce program type BPF_PROG_TYPE_SOCKET_FILTER that is used
+for attaching programs to sockets where ctx == skb.
 
-eBPF program in kernel does:
-    int index = load_byte(skb, 14 + 9); /* ip_proto */
-    long *value;
-
-    value = bpf_map_lookup_elem(&my_map, &index);
-    if (value)
-        __sync_fetch_and_add(value, 1);
-
-Corresponding user space reads map[tcp], map[udp], map[icmp]
-and prints protocol stats every second
+add verifier checks for ABS/IND instructions which can only be seen
+in socket filters, therefore the check:
+  if (env->prog->aux->prog_type != BPF_PROG_TYPE_SOCKET_FILTER)
+    verbose("BPF_LD_ABS|IND instructions are only allowed in socket filters\n");
 
 Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- samples/bpf/Makefile       |   14 +++++++++++++
- samples/bpf/libbpf.h       |    2 +-
- samples/bpf/sockex1_kern.c |   23 +++++++++++++++++++++
- samples/bpf/sockex1_user.c |   49 ++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 87 insertions(+), 1 deletion(-)
- create mode 100644 samples/bpf/sockex1_kern.c
- create mode 100644 samples/bpf/sockex1_user.c
+ include/uapi/linux/bpf.h |    1 +
+ kernel/bpf/verifier.c    |   70 ++++++++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 69 insertions(+), 2 deletions(-)
 
-diff --git a/samples/bpf/Makefile b/samples/bpf/Makefile
-index f46d3492d032..770d145186c3 100644
---- a/samples/bpf/Makefile
-+++ b/samples/bpf/Makefile
-@@ -4,12 +4,26 @@ obj- := dummy.o
- # List of programs to build
- hostprogs-y := test_verifier test_maps
- hostprogs-y += sock_example
-+hostprogs-y += sockex1
+diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
+index 4a3d0f84f178..45da7ec7d274 100644
+--- a/include/uapi/linux/bpf.h
++++ b/include/uapi/linux/bpf.h
+@@ -117,6 +117,7 @@ enum bpf_map_type {
  
- test_verifier-objs := test_verifier.o libbpf.o
- test_maps-objs := test_maps.o libbpf.o
- sock_example-objs := sock_example.o libbpf.o
-+sockex1-objs := bpf_load.o libbpf.o sockex1_user.o
+ enum bpf_prog_type {
+ 	BPF_PROG_TYPE_UNSPEC,
++	BPF_PROG_TYPE_SOCKET_FILTER,
+ };
  
- # Tell kbuild to always build the programs
- always := $(hostprogs-y)
-+always += sockex1_kern.o
+ /* flags for BPF_MAP_UPDATE_ELEM command */
+diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
+index b6a1f7c14a67..a28e09c7825d 100644
+--- a/kernel/bpf/verifier.c
++++ b/kernel/bpf/verifier.c
+@@ -1172,6 +1172,70 @@ static int check_ld_imm(struct verifier_env *env, struct bpf_insn *insn)
+ 	return 0;
+ }
  
- HOSTCFLAGS += -I$(objtree)/usr/include
-+
-+HOSTCFLAGS_bpf_load.o += -I$(objtree)/usr/include -Wno-unused-variable
-+HOSTLOADLIBES_sockex1 += -lelf
-+
-+# point this to your LLVM backend with bpf support
-+LLC=$(srctree)/tools/bpf/llvm/bld/Debug+Asserts/bin/llc
-+
-+%.o: %.c
-+	clang $(NOSTDINC_FLAGS) $(LINUXINCLUDE) $(EXTRA_CFLAGS) \
-+		-D__KERNEL__ -Wno-unused-value -Wno-pointer-sign \
-+		-O2 -emit-llvm -c $< -o -| $(LLC) -march=bpf -filetype=obj -o $@
-diff --git a/samples/bpf/libbpf.h b/samples/bpf/libbpf.h
-index cc62ad4d95de..58c5fe1bdba1 100644
---- a/samples/bpf/libbpf.h
-+++ b/samples/bpf/libbpf.h
-@@ -15,7 +15,7 @@ int bpf_prog_load(enum bpf_prog_type prog_type,
- 		  const struct bpf_insn *insns, int insn_len,
- 		  const char *license);
- 
--#define LOG_BUF_SIZE 8192
-+#define LOG_BUF_SIZE 65536
- extern char bpf_log_buf[LOG_BUF_SIZE];
- 
- /* ALU ops on registers, bpf_add|sub|...: dst_reg += src_reg */
-diff --git a/samples/bpf/sockex1_kern.c b/samples/bpf/sockex1_kern.c
-new file mode 100644
-index 000000000000..e662779467de
---- /dev/null
-+++ b/samples/bpf/sockex1_kern.c
-@@ -0,0 +1,23 @@
-+#include <uapi/linux/bpf.h>
-+#include "bpf_helpers.h"
-+
-+struct bpf_map_def SEC("maps") my_map = {
-+	.type = BPF_MAP_TYPE_ARRAY,
-+	.key_size = sizeof(u32),
-+	.value_size = sizeof(long),
-+	.max_entries = 256,
-+};
-+
-+SEC("socket1")
-+int bpf_prog1(struct sk_buff *skb)
++/* verify safety of LD_ABS|LD_IND instructions:
++ * - they can only appear in the programs where ctx == skb
++ * - since they are wrappers of function calls, they scratch R1-R5 registers,
++ *   preserve R6-R9, and store return value into R0
++ *
++ * Implicit input:
++ *   ctx == skb == R6 == CTX
++ *
++ * Explicit input:
++ *   SRC == any register
++ *   IMM == 32-bit immediate
++ *
++ * Output:
++ *   R0 - 8/16/32-bit skb data converted to cpu endianness
++ */
++static int check_ld_abs(struct verifier_env *env, struct bpf_insn *insn)
 +{
-+	int index = load_byte(skb, 14 + 9);
-+	long *value;
++	struct reg_state *regs = env->cur_state.regs;
++	u8 mode = BPF_MODE(insn->code);
++	struct reg_state *reg;
++	int i, err;
 +
-+	value = bpf_map_lookup_elem(&my_map, &index);
-+	if (value)
-+		__sync_fetch_and_add(value, 1);
-+
-+	return 0;
-+}
-+char _license[] SEC("license") = "GPL";
-diff --git a/samples/bpf/sockex1_user.c b/samples/bpf/sockex1_user.c
-new file mode 100644
-index 000000000000..34a443ff3831
---- /dev/null
-+++ b/samples/bpf/sockex1_user.c
-@@ -0,0 +1,49 @@
-+#include <stdio.h>
-+#include <assert.h>
-+#include <linux/bpf.h>
-+#include "libbpf.h"
-+#include "bpf_load.h"
-+#include <unistd.h>
-+#include <arpa/inet.h>
-+
-+int main(int ac, char **argv)
-+{
-+	char filename[256];
-+	FILE *f;
-+	int i, sock;
-+
-+	snprintf(filename, sizeof(filename), "%s_kern.o", argv[0]);
-+
-+	if (load_bpf_file(filename)) {
-+		printf("%s", bpf_log_buf);
-+		return 1;
++	if (env->prog->aux->prog_type != BPF_PROG_TYPE_SOCKET_FILTER) {
++		verbose("BPF_LD_ABS|IND instructions are only allowed in socket filters\n");
++		return -EINVAL;
 +	}
 +
-+	sock = open_raw_sock("lo");
-+
-+	assert(setsockopt(sock, SOL_SOCKET, SO_ATTACH_BPF, prog_fd,
-+			  sizeof(prog_fd[0])) == 0);
-+
-+	f = popen("ping -c5 localhost", "r");
-+	(void) f;
-+
-+	for (i = 0; i < 5; i++) {
-+		long long tcp_cnt, udp_cnt, icmp_cnt;
-+		int key;
-+
-+		key = IPPROTO_TCP;
-+		assert(bpf_lookup_elem(map_fd[0], &key, &tcp_cnt) == 0);
-+
-+		key = IPPROTO_UDP;
-+		assert(bpf_lookup_elem(map_fd[0], &key, &udp_cnt) == 0);
-+
-+		key = IPPROTO_ICMP;
-+		assert(bpf_lookup_elem(map_fd[0], &key, &icmp_cnt) == 0);
-+
-+		printf("TCP %lld UDP %lld ICMP %lld packets\n",
-+		       tcp_cnt, udp_cnt, icmp_cnt);
-+		sleep(1);
++	if (insn->dst_reg != BPF_REG_0 || insn->off != 0 ||
++	    (mode == BPF_ABS && insn->src_reg != BPF_REG_0)) {
++		verbose("BPF_LD_ABS uses reserved fields\n");
++		return -EINVAL;
 +	}
 +
++	/* check whether implicit source operand (register R6) is readable */
++	err = check_reg_arg(regs, BPF_REG_6, SRC_OP);
++	if (err)
++		return err;
++
++	if (regs[BPF_REG_6].type != PTR_TO_CTX) {
++		verbose("at the time of BPF_LD_ABS|IND R6 != pointer to skb\n");
++		return -EINVAL;
++	}
++
++	if (mode == BPF_IND) {
++		/* check explicit source operand */
++		err = check_reg_arg(regs, insn->src_reg, SRC_OP);
++		if (err)
++			return err;
++	}
++
++	/* reset caller saved regs to unreadable */
++	for (i = 0; i < CALLER_SAVED_REGS; i++) {
++		reg = regs + caller_saved[i];
++		reg->type = NOT_INIT;
++		reg->imm = 0;
++	}
++
++	/* mark destination R0 register as readable, since it contains
++	 * the value fetched from the packet
++	 */
++	regs[BPF_REG_0].type = UNKNOWN_VALUE;
 +	return 0;
 +}
++
+ /* non-recursive DFS pseudo code
+  * 1  procedure DFS-iterative(G,v):
+  * 2      label v as discovered
+@@ -1677,8 +1741,10 @@ process_bpf_exit:
+ 			u8 mode = BPF_MODE(insn->code);
+ 
+ 			if (mode == BPF_ABS || mode == BPF_IND) {
+-				verbose("LD_ABS is not supported yet\n");
+-				return -EINVAL;
++				err = check_ld_abs(env, insn);
++				if (err)
++					return err;
++
+ 			} else if (mode == BPF_IMM) {
+ 				err = check_ld_imm(env, insn);
+ 				if (err)
 -- 
 1.7.9.5
 
