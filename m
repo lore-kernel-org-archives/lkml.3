@@ -1,87 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751644AbaK0NoD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 08:44:03 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43636 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750886AbaK0NoA (ORCPT
+	id S1751709AbaK0NpA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 08:45:00 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:63539 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751304AbaK0No6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 08:44:00 -0500
-Date: Thu, 27 Nov 2014 13:43:09 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "m-karicheri2@ti.com" <m-karicheri2@ti.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "artagnon@gmail.com" <artagnon@gmail.com>,
-        "rrichter@cavium.com" <rrichter@cavium.com>,
-        Will Deacon <Will.Deacon@arm.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "heiko@sntech.de" <heiko@sntech.de>,
-        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
-        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
-        "andrew@lunn.ch" <andrew@lunn.ch>,
-        "hytszk@gmail.com" <hytszk@gmail.com>,
-        "orsonzhai@gmail.com" <orsonzhai@gmail.com>,
-        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
-        "zhizhou.zhang@spreadtrum.com" <zhizhou.zhang@spreadtrum.com>,
-        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
-        "zhang.lyra@gmail.com" <zhang.lyra@gmail.com>,
-        "wei.qiao@spreadtrum.com" <wei.qiao@spreadtrum.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Thu, 27 Nov 2014 08:44:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <1416168856-12747-2-git-send-email-b.galvani@gmail.com>
+References: <1416168856-12747-1-git-send-email-b.galvani@gmail.com>
+	<1416168856-12747-2-git-send-email-b.galvani@gmail.com>
+Date: Thu, 27 Nov 2014 14:44:58 +0100
+Message-ID: <CACRpkdajw44K0jj2F=Fsf6CY4FDyuuj8Y3b3uiUeK6_1FwJcSw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] pinctrl: meson: add device tree bindings documentation
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Beniamino Galvani <b.galvani@gmail.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "sprdlinux@freelists.org" <sprdlinux@freelists.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>
-Subject: Re: [PATCH v3 3/5] arm64: dts: Add support for Spreadtrum SC9836 SoC
- in dts and Makefile
-Message-ID: <20141127134309.GJ857@leverpostej>
-References: <Sharkl64-v3>
- <1416917818-10506-1-git-send-email-chunyan.zhang@spreadtrum.com>
- <1416917818-10506-4-git-send-email-chunyan.zhang@spreadtrum.com>
- <20141127115042.GE857@leverpostej>
- <20141127121214.GF11511@e104818-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141127121214.GF11511@e104818-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Carlo Caione <carlo@caione.org>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
+        Victor Wan <victor.wan@amlogic.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 12:12:15PM +0000, Catalin Marinas wrote:
-> On Thu, Nov 27, 2014 at 11:50:43AM +0000, Mark Rutland wrote:
-> > On Tue, Nov 25, 2014 at 12:16:56PM +0000, Chunyan Zhang wrote:
-> > > +
-> > > +       timer {
-> > > +               compatible = "arm,armv8-timer";
-> > > +               interrupts = <1 13 0xff01>,
-> > > +                            <1 14 0xff01>,
-> > > +                            <1 11 0xff01>,
-> > > +                            <1 10 0xff01>;
-> > > +               clock-frequency = <26000000>;
-> > 
-> > Please remove the clock-frequency property. Your FW should initialise
-> > CNTFRQ_EL0 on all CPUs (certainly PSCI 0.2 requires that you do this).
-> 
-> Since this comes up regularly, I think we need a dev_warn() in the arch
-> timer driver when CONFIG_ARM64.
+On Sun, Nov 16, 2014 at 9:14 PM, Beniamino Galvani <b.galvani@gmail.com> wrote:
 
-I'll ack such a patch ;)
+> Add device tree bindings documentation for Amlogic Meson pin and GPIO
+> controller.
+>
+> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
 
-Mark.
+This is exactly how I want modern pin controller bindings to look
+when combining groups and functions, so patch applied.
+
+Now let me look at the driver!
+
+Yours,
+Linus Walleij
