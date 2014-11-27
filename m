@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751556AbaK0PYI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 10:24:08 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:36286 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996AbaK0PYG (ORCPT
+	id S1751596AbaK0PY2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 10:24:28 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:49280 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751198AbaK0PY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 10:24:06 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-Subject: Re: wl1251: NVS firmware data
-Date: Thu, 27 Nov 2014 16:24:03 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
-Cc: Ming Lei <ming.lei@canonical.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pavel Machek <pavel@ucw.cz>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
-        Sebastian Reichel <sre@ring0.de>,
-        David Gnedt <david.gnedt@davizone.at>
-References: <201411271506.20457@pali> <201411271543.23527@pali> <20141127151448.GA23064@kroah.com>
-In-Reply-To: <20141127151448.GA23064@kroah.com>
+	Thu, 27 Nov 2014 10:24:26 -0500
+Date: Thu, 27 Nov 2014 18:23:42 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: micky_ching@realsil.com.cn
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, chris@printf.net,
+        ulf.hansson@linaro.org, gregkh@linuxfoundation.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        wei_wang@realsil.com.cn, rogerable@realtek.com,
+        devel@linuxdriverproject.org
+Subject: Re: [PATCH 1/2] mfd: rtsx: add func to split u32 into register
+Message-ID: <20141127152342.GA4860@mwanda>
+References: <cover.1417056337.git.micky_ching@realsil.com.cn>
+ <51dde5250305623c420e78fa555800ef8fef0a09.1417056337.git.micky_ching@realsil.com.cn>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart4431700.b8ZnNuNqdA";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201411271624.03066@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51dde5250305623c420e78fa555800ef8fef0a09.1417056337.git.micky_ching@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart4431700.b8ZnNuNqdA
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Thu, Nov 27, 2014 at 10:53:58AM +0800, micky_ching@realsil.com.cn wrote:
+> +static inline void rtsx_pci_write_be32(struct rtsx_pcr *pcr, u16 reg, u32 val)
+> +{
+> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg,     0xFF, val >> 24);
+> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 1, 0xFF, val >> 16);
+> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 2, 0xFF, val >> 8);
+> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 3, 0xFF, val);
 
-On Thursday 27 November 2014 16:14:48 Greg Kroah-Hartman wrote:
-> On Thu, Nov 27, 2014 at 03:43:23PM +0100, Pali Roh=C3=A1r wrote:
-> > Which userspace helper programs for (automatic) firmware
-> > loading are used? Can be udev configured to use own program
-> > for loading firmware instead that udev integrated which
-> > looking for firmware only in /lib/firmware files?
->=20
-> The code to load firmware from userspace has been removed from
-> udev, so that's not going to work at all, sorry.
->=20
-> greg k-h
+This assumes the cpu is little endian.  First convert to big endian
+using cpu_to_be32() and then write it out.
 
-Ok and how to load (dynamic) firmware files into kernel? What is=20
-preferred way if not udev (because it removed that support)?
+	__be32 be_val = cpu_to_be32()
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg,     0xFF, be_val);
+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 1, 0xFF, be_val >> 8);
+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 2, 0xFF, be_val >> 16);
+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 3, 0xFF, be_val >> 24);
 
---nextPart4431700.b8ZnNuNqdA
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+(Written hurredly in my mail client.  May be wrong).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> +}
+> +
+> +static inline void rtsx_pci_write_le32(struct rtsx_pcr *pcr, u16 reg, u32 val)
+> +{
+> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg,     0xFF, val);
+> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 1, 0xFF, val >> 8);
+> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 2, 0xFF, val >> 16);
+> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 3, 0xFF, val >> 24);
+> +}
 
-iEYEABECAAYFAlR3QhMACgkQi/DJPQPkQ1JPnACfYp6uZ0qB3aSoncyURWxxRCMj
-WQUAnRzu75eK2uZQA/O19naSrEv1ESQp
-=dAlO
------END PGP SIGNATURE-----
+We don't have a user for rtsx_pci_write_le32() so don't add it.
 
---nextPart4431700.b8ZnNuNqdA--
+regards,
+dan carpenter
