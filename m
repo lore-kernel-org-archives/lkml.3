@@ -1,85 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365AbaK0IvG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 03:51:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43018 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932233AbaK0Iub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 03:50:31 -0500
-From: lizf@kernel.org
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Narendra K <narendra_k@dell.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Weng Meiling <wengmeiling.weng@huawei.com>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 90/91] ixgbevf: Prevent RX/TX statistics getting reset to zero
-Date: Thu, 27 Nov 2014 16:43:13 +0800
-Message-Id: <1417077794-9299-90-git-send-email-lizf@kernel.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417077368-9217-1-git-send-email-lizf@kernel.org>
-References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
+	id S1755372AbaK0Iv1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 03:51:27 -0500
+Received: from mail-bl2on0102.outbound.protection.outlook.com ([65.55.169.102]:19136
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754291AbaK0IvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 03:51:04 -0500
+From: Dexuan Cui <decui@microsoft.com>
+To: Jason Wang <jasowang@redhat.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        "vkuznets@redhat.com" <vkuznets@redhat.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH v2] hv: hv_fcopy: drop the obsolete message on transfer
+ failure
+Thread-Topic: [PATCH v2] hv: hv_fcopy: drop the obsolete message on transfer
+ failure
+Thread-Index: AdAKHzSfFBUCGSyvReGOHhAi+beE2g==
+Date: Thu, 27 Nov 2014 08:50:35 +0000
+Message-ID: <F792CF86EFE20D4AB8064279AFBA51C613E641D8@HKNPRD3002MB017.064d.mgd.msft.net>
+References: <1417073491-19388-1-git-send-email-decui@microsoft.com>
+ <1245181972.17067189.1417072471636.JavaMail.zimbra@redhat.com>
+In-Reply-To: <1245181972.17067189.1417072471636.JavaMail.zimbra@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [141.251.55.133]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(189002)(13464003)(199003)(51704005)(377454003)(52604005)(164054003)(86612001)(81156004)(106466001)(97736003)(107046002)(86362001)(92566001)(92726001)(26826002)(46102003)(77156002)(99396003)(62966003)(77096003)(95666004)(120916001)(76176999)(33656002)(84676001)(31966008)(2656002)(87936001)(64706001)(20776003)(47776003)(66066001)(16796002)(217423001)(551934003)(55846006)(50466002)(4396001)(21056001)(110136001)(54356999)(68736004)(86146001)(44976005)(6806004)(23676002)(50986999)(19580395003)(69596002)(19580405001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN3PR0301MB1204;H:mail.microsoft.com;FPR:;SPF:Pass;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1204;
+X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1204;
+X-Forefront-PRVS: 040866B734
+Authentication-Results: spf=pass (sender IP is 131.107.125.37)
+ smtp.mailfrom=decui@microsoft.com; 
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1204;
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAR8pW6k022383
 
-From: Narendra K <narendra_k@dell.com>
+> -----Original Message-----
+> From: Jason Wang [mailto:jasowang@redhat.com]
+> Sent: Thursday, November 27, 2014 15:15 PM
+> To: Dexuan Cui
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; driverdev-
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com; KY
+> Srinivasan; vkuznets@redhat.com; Haiyang Zhang
+> Subject: Re: [PATCH v2] hv: hv_fcopy: drop the obsolete message on transfer
+> failure
+> ----- Original Message -----
+> > In the case the user-space daemon crashes, hangs or is killed, we
+> > need to down the semaphore, otherwise, after the daemon starts next
+> > time, the obsolete data in fcopy_transaction.message or
+> > fcopy_transaction.fcopy_msg will be used immediately.
+> >
+> > Reviewed-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+> > Cc: K. Y. Srinivasan <kys@microsoft.com>
+> > Signed-off-by: Dexuan Cui <decui@microsoft.com>
+> > ---
+> >
+> > v2: I removed the "FCP" prefix as Greg asked.
+> >
+> >     I also updated the output message a little:
+> >     "FCP: failed to acquire the semaphore" -->
+> >     "can not acquire the semaphore: it is benign"
+> >
+> >  drivers/hv/hv_fcopy.c | 9 +++++++++
+> >  1 file changed, 9 insertions(+)
+> >
+> > diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c
+> > index 23b2ce2..c518ad9 100644
+> > --- a/drivers/hv/hv_fcopy.c
+> > +++ b/drivers/hv/hv_fcopy.c
+> > @@ -86,6 +86,15 @@ static void fcopy_work_func(struct work_struct
+> *dummy)
+> >  	 * process the pending transaction.
+> >  	 */
+> >  	fcopy_respond_to_host(HV_E_FAIL);
+> > +
+> > +	/* In the case the user-space daemon crashes, hangs or is killed, we
+> > +	 * need to down the semaphore, otherwise, after the daemon starts
+> next
+> > +	 * time, the obsolete data in fcopy_transaction.message or
+> > +	 * fcopy_transaction.fcopy_msg will be used immediately.
+> > +	 */
+> 
+> Looks still racy, what happens if the daemon start before down_trylock()
+> but after fcopy_respont_to_host() here?
+Jason,
+Thanks for pointing this out!
+IMO we can resolve this by adding down_trylock() in fcopy_release().
+What's your opinion?
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+> 
+> > +	if (down_trylock(&fcopy_transaction.read_sema))
+> > +		pr_debug("can not acquire the semaphore: it is benign\n");
+> 
+> typo
+> > +
+> >  }
+Sorry -- what typo do you mean?
 
-------------------
-
-
-commit 936597631dd310e220544dc5c6075d924efd39b2 upstream.
-
-The commit 4197aa7bb81877ebb06e4f2cc1b5fea2da23a7bd implements 64 bit
-per ring statistics. But the driver resets the 'total_bytes' and
-'total_packets' from RX and TX rings in the RX and TX interrupt
-handlers to zero. This results in statistics being lost and user space
-reporting RX and TX statistics as zero. This patch addresses the
-issue by preventing the resetting of RX and TX ring statistics to
-zero.
-
-Signed-off-by: Narendra K <narendra_k@dell.com>
-Tested-by: Sibai Li <sibai.li@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>
-Signed-off-by: Zefan Li <lizefan@huawei.com>
----
- drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c | 12 ------------
- 1 file changed, 12 deletions(-)
-
-diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-index 307611a..d8e4562 100644
---- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-+++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-@@ -969,8 +969,6 @@ static irqreturn_t ixgbevf_msix_clean_tx(int irq, void *data)
- 	r_idx = find_first_bit(q_vector->txr_idx, adapter->num_tx_queues);
- 	for (i = 0; i < q_vector->txr_count; i++) {
- 		tx_ring = &(adapter->tx_ring[r_idx]);
--		tx_ring->total_bytes = 0;
--		tx_ring->total_packets = 0;
- 		ixgbevf_clean_tx_irq(adapter, tx_ring);
- 		r_idx = find_next_bit(q_vector->txr_idx, adapter->num_tx_queues,
- 				      r_idx + 1);
-@@ -994,16 +992,6 @@ static irqreturn_t ixgbevf_msix_clean_rx(int irq, void *data)
- 	struct ixgbe_hw *hw = &adapter->hw;
- 	struct ixgbevf_ring  *rx_ring;
- 	int r_idx;
--	int i;
--
--	r_idx = find_first_bit(q_vector->rxr_idx, adapter->num_rx_queues);
--	for (i = 0; i < q_vector->rxr_count; i++) {
--		rx_ring = &(adapter->rx_ring[r_idx]);
--		rx_ring->total_bytes = 0;
--		rx_ring->total_packets = 0;
--		r_idx = find_next_bit(q_vector->rxr_idx, adapter->num_rx_queues,
--				      r_idx + 1);
--	}
- 
- 	if (!q_vector->rxr_count)
- 		return IRQ_HANDLED;
--- 
-1.9.1
-
+Thanks,
+-- Dexuan
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
