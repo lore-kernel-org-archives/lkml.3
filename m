@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819AbaK0OVu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 09:21:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44437 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552AbaK0OVr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 09:21:47 -0500
+	id S1751572AbaK0OXz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 09:23:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35425 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750893AbaK0OXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 09:23:54 -0500
+Date: Thu, 27 Nov 2014 15:23:21 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf tools: Do not fail on processing out of order event
+Message-ID: <20141127142321.GC25752@krava.brq.redhat.com>
+References: <1417016371-30249-1-git-send-email-jolsa@kernel.org>
+ <20141126154459.GD3808@redhat.com>
+ <20141127105603.GA1987@gmail.com>
+ <20141127135259.GI3808@redhat.com>
+ <20141127140707.GB25752@krava.brq.redhat.com>
+ <20141127141626.GK3808@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <201411271506.20457@pali>
-References: <201411271506.20457@pali>
-Date: Thu, 27 Nov 2014 22:21:44 +0800
-Message-ID: <CACVXFVMr8jH1ZzyPNG91VDK8DuVjQsHn9ks62sSNjOfUnNsURQ@mail.gmail.com>
-Subject: Re: wl1251: NVS firmware data
-From: Ming Lei <ming.lei@canonical.com>
-To: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pavel Machek <pavel@ucw.cz>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
-        Sebastian Reichel <sre@ring0.de>,
-        David Gnedt <david.gnedt@davizone.at>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141127141626.GK3808@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 10:06 PM, Pali Rohár <pali.rohar@gmail.com> wrote:
-> Hello,
->
-> wifi driver wl1251 needs NVS calibration data for working. These
-> data are loaded by driver via request_firmware from userspace
-> file: ti-connectivity/wl1251-nvs.bin. In linux-fimrware git tree
-> there is generic wl1251-nvs.bin file which is used by default.
->
-> Driver wl1251 is used on Nokia N900 cellphone for its wifi chip.
-> This cellphone has one special MTD partition (called CAL) where
-> are stored some configuration data in special binary (key-value)
-> format. And there is also stored correct calibration data for
-> specific device (each device has different data). It is preferred
-> to use those data instead generic one (provided by linux-firmware
-> git tree).
->
-> Now my question is: How to correctly load calibration data from
-> special Nokia N900 CAL partition into wl1251 kernel driver?
+On Thu, Nov 27, 2014 at 12:16:26PM -0200, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Nov 27, 2014 at 03:07:07PM +0100, Jiri Olsa escreveu:
+> > On Thu, Nov 27, 2014 at 11:53:00AM -0200, Arnaldo Carvalho de Melo wrote:
+> > > Em Thu, Nov 27, 2014 at 11:56:03AM +0100, Ingo Molnar escreveu:
+> > > > Arnaldo, I suppose the fix will go upstream via your tree, as a 
+> > > > pull request for v3.18 fixes?
+> 
+> > > Right, I can do that.
+> 
+> > > And I agree with the "expected" for events that are out of the current
+> > > reordering window, i.e. we can't insert something into previous windows,
+> > > so those are, humm, what would be a good name:
+> > > stats->out_of_reordering_window, while stats->reordered, would be for
+> > > events that were found out of order, but were successfully sorted as
+> > > part of a flush operation, right?
+>  
+> > the forced flush is when we find out we crossed the allowed allocation
+> > space for the samples queue.. so we take the half of the sorted queue
+> > and flush it.. for this case we break the flushing logic and we might
+> 
+> Well, we make it more likely than without a forced flush to find out of
+> order events, because the window suddenly became smaller, its like we
+> found a FLUSH event right there, no?
 
-It is better to let user space script handle the request.
+yep, still I dont see the need to count those 2 cases separately,
+both these types (of out of order event) have same implications
+for the report
 
->
-> By default kernel reads ti-connectivity/wl1251-nvs.bin file from
-> VFS if exists without any userspace support. If it fails then it
-> fallback to loading via udev.
+jirka
 
-You can remove or rename this file so that loading from user space
-can be triggered.
-
->
-> Reading correct data from CAL partition is not easy (structure is
-> difficult), but there is open source program which can parse CAL
-> partition and write NVS data to stdout. So adding this CAL parser
-> into kernel is not good idea (program is GPLv3+ code --
-> incompatible with kernel).
->
-> So how to solve this problem? How to load correct NVS data from
-> CAL partition into wl1251 driver?
->
-> It is possible to tell kernel to use some helper userspace
-> program for loading data and if it fails then fallback to direct
-> loading? E.g first try to use model specific data and if it fails
-> for some reasons then fallback to reading genetic data.
-
-One solution is to introduce request_firmware_user() and let
-this API handle your case, but CONFIG_FW_LOADER_USER_HELPER
-has to be enabled.
-
-If request_firmware_user() fails, request_firmware_direct() can be
-tried further.
-
-Thanks,
-Ming Lei
+> 
+> > (probably just in theory) get out of order events
+>  
+> > but IMO both cases of out of order event are equal.. we dont do
+> > anything special for forced flushed AFAIK
+> 
+> - Arnaldo
