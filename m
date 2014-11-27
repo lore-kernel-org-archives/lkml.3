@@ -1,96 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832AbaK0Pm6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 10:42:58 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41606 "EHLO mail.kernel.org"
+	id S1751748AbaK0Pnl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 10:43:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49857 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750961AbaK0Pm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 10:42:56 -0500
-Date: Thu, 27 Nov 2014 12:42:49 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+	id S1751031AbaK0Pnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 10:43:40 -0500
+Date: Thu, 27 Nov 2014 16:43:02 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Alexandre Montplaisir <alexmonthy@voxpopuli.im>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org,
+        Dominique Toupin <dominique.toupin@ericsson.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Jeremie Galarneau <jgalar@efficios.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>
-Subject: perf report --branch-history segfaul hists browser: Print overhead
- percent value for first-level callchain
-Message-ID: <20141127154249.GI30226@kernel.org>
-References: <20141124145227.GE18625@kernel.org>
- <20141124152312.GA13167@kernel.org>
- <20141124152541.GB13167@kernel.org>
- <20141124153204.GC13167@kernel.org>
- <20141124154841.GD13167@kernel.org>
- <20141124212308.GE13167@kernel.org>
- <20141124225244.GS12538@two.firstfloor.org>
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Trace Compass Developer Discussions 
+	<tracecompass-dev@eclipse.org>
+Subject: Re: Support for Perf CTF traces now in master (was Re: FW: [RFC 0/5]
+ perf tools: Add perf data CTF conversion)
+Message-ID: <20141127154302.GA4924@krava.brq.redhat.com>
+References: <53F38C74.4030300@voxpopuli.im>
+ <20140820092858.GA1203@krava.brq.redhat.com>
+ <53F4F38C.4080407@voxpopuli.im>
+ <5457C259.8030605@linutronix.de>
+ <545829CA.7040900@voxpopuli.im>
+ <20141105125028.GA30087@linutronix.de>
+ <545AEA37.601@voxpopuli.im>
+ <5460156E.3050601@voxpopuli.im>
+ <5463DBD5.9080303@voxpopuli.im>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141124225244.GS12538@two.firstfloor.org>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <5463DBD5.9080303@voxpopuli.im>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Nov 24, 2014 at 11:52:44PM +0100, Andi Kleen escreveu:
-> > [root@zoo acme]# perf record -a -g -b sleep 2s
-> > [ perf record: Woken up 7 times to write data ]
-> > [ perf record: Captured and wrote 3.033 MB perf.data (~132504 samples) ]
-> > [root@zoo acme]# perf report --stdio --branch-history
-> > # To display the perf.data header info, please use --header/--header-only options.
-> > #
-> > BFD: Dwarf Error: Offset (2585882475) greater than or equal to .debug_str size (44321517).
-> > BFD: Dwarf Error: Could not find abbrev number 11800.
-> > <BIG SNIP>
-> > BFD: Dwarf Error: Offset (83496016) greater than or equal to .debug_str size (44321517).
-> > BFD: Dwarf Error: Offset (48628447) greater than or equal to .debug_str size (44321517).
-> > (END)Segmentation fault (core dumped)
-> > [root@zoo acme]# 
-> > 
-> > Will investigate this later today/tomorrow, if nobody finds a fix in the meantime.
+On Wed, Nov 12, 2014 at 05:14:45PM -0500, Alexandre Montplaisir wrote:
 > 
-> I cannot reproduce this.
+> On 11/09/2014 08:31 PM, Alexandre Montplaisir wrote:
+> >On 2014-11-05 10:25 PM, Alexandre Montplaisir wrote:
+> >>
+> >>>
+> >>>>But if you could for example tell me the perf equivalents of all the
+> >>>>strings in that file, I could hack together such wrapper. With that,
+> >>>>in theory, perf traces should behave exactly the same as LTTng traces
+> >>>>in the viewer!
+> >>>Oooh, that would be awesome. So I installed maven but didn't get much
+> >>>further. Let me gather this for you.
+> >>
+> >>Awesome, thanks!
+> >>
+> >>I am travelling this week, so I'm a bit busy, but I will try to
+> >>prototype a "wrapper" for the kernel analysis, and adding support for
+> >>the perf events, whenever I have a chance. I'll keep you posted.
+> >
+> >Ok, some good news!
+> >
+> >I managed to get the CTF traces from perf working in Trace Compass! See
+> >attached screenshots. This is showing the "ctf-out2" trace from your
+> >previous email. The other trace seems to have less events enabled, so it
+> >would only show some WAIT_FOR_CPU states in the view.
+> >
+> >If anybody wishes to try it, you can grab the whole branch ending at
+> >https://git.eclipse.org/r/#/c/36200/ . Or run:
+> >$ git fetch
+> >git://git.eclipse.org/gitroot/tracecompass/org.eclipse.tracecompass
+> >refs/changes/00/36200/3 && git checkout FETCH_HEAD
 > 
-> For me it looks like you have some binary or debuginfo that your libbfd
-> doesn't like. --branch-history resolves all addresses as srcline, 
-> so it will actually walk all the line numbers.
+> Just a quick note, this branch is now merged to master. So anyone who pulls
+> the code from the master branch at
+> git://git.eclipse.org/gitroot/tracecompass/org.eclipse.tracecompass.git
+> should be able to load perf-CTF traces in the viewer. The trace type is now
+> called "Common Trace Format -> Linux Kernel Trace" and should support both
+> LTTng kernel and perf traces in CTF format (although auto-detection should
+> work in most cases).
 > 
-> Can you please find out which one it is? Probably can be seen
-> by just going up a few levels in gdb and dumping the event.
+> This was based on the most recent file format I was aware of, we will update
+> it accordingly if required.
 > 
-> If you can find the address that explodes you can also try it directly with
-> addr2line. If that works it's some problem in the perf implementation.
-> 
-> It is likely that it would need to be fixed in libbfd.
-> 
-> To work around it we could turn off force resolving the srcline,
-> but that would make the output much less useful too unfortuantely...
+> Testing welcome!
 
-Yeah, you are right:
+hi,
+any other way besides compiling eclipse to test this? For pure mortals
+with Fedora eclipse rpm.. ;-)
 
-[acme@zoo linux]$ addr2line -e /usr/lib/debug/usr/lib64/firefox/libxul.so.debug 22fefe8
-BFD: Dwarf Error: Offset (2585882475) greater than or equal to
-.debug_str size (44321517).
-BFD: Dwarf Error: Could not find abbrev number 11800.
-BFD: Dwarf Error: Offset (493511937) greater than or equal to .debug_str
-size (44321517).
+or any instructions for the compilation.. I actually haven't checked yet
 
-[acme@zoo linux]$ file /usr/lib/debug/usr/lib64/firefox/libxul.so.debug
-/usr/lib/debug/usr/lib64/firefox/libxul.so.debug: ELF 64-bit LSB shared
-object, x86-64, version 1 (GNU/Linux), dynamically linked,
-BuildID[sha1]=ab6f19f13352ca2fbf218d1ff9200ef8e29764b8, not stripped
-[acme@zoo linux]$ 
-
-[acme@zoo linux]$ rpm -qf /usr/lib/debug/usr/lib64/firefox/libxul.so.debug
-firefox-debuginfo-33.1-2.fc20.x86_64
-
-If I ignore just this one file, all works, I'll process your patch while
-leaving a note in the changelog that this may trigger binutils bugs, and
-will check if a later version of binutils has the same problem, etc.
-
-- Arnaldo
+thanks,
+jirka
