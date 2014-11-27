@@ -1,136 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751139AbaK0F43 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 00:56:29 -0500
-Received: from mailout.micron.com ([137.201.242.129]:61614 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974AbaK0F42 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 00:56:28 -0500
-From: bpqw <bpqw@micron.com>
-To: Brian Norris <computersforpeace@gmail.com>
-CC: Marek Vasut <marex@denx.de>, "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "shijie8@gmail.com" <shijie8@gmail.com>,
-        "geert+renesas@glider.be" <geert+renesas@glider.be>,
-        "grmoore@altera.com" <grmoore@altera.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bpqw <bpqw@micron.com>
-Subject: RE: [V5 PATCH 1/1] driver:mtd:spi-nor: Add quad I/O support for
- Micron spi nor
-Thread-Topic: [V5 PATCH 1/1] driver:mtd:spi-nor: Add quad I/O support for
- Micron spi nor
-Thread-Index: AQHP+W8IEF9rxWxnKkG/zeWVIWCG6Zxz/eYA///KamA=
-Date: Thu, 27 Nov 2014 05:55:43 +0000
-Message-ID: <A765B125120D1346A63912DDE6D8B6315EE059@NTXXIAMBX02.xacn.micron.com>
-References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
- <201409251211.57183.marex@denx.de>
- <A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com>
- <201409261046.07132.marex@denx.de>
- <A765B125120D1346A63912DDE6D8B6315EA24E@NTXXIAMBX02.xacn.micron.com>
- <20141126211240.GD21347@ld-irv-0074>
-In-Reply-To: <20141126211240.GD21347@ld-irv-0074>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-21132.004
-X-TM-AS-Result: No--10.391500-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	id S1751256AbaK0F5a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 00:57:30 -0500
+Received: from ozlabs.org ([103.22.144.67]:54944 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750783AbaK0F53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 00:57:29 -0500
+Date: Thu, 27 Nov 2014 16:57:19 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jason Cooper <jason@lakedaemon.net>, Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>
+Subject: linux-next: manual merge of the irqchip tree with the mips tree
+Message-ID: <20141127165719.2e5cb4e4@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/ou5qZlUcXra13.aOn7wLLDe"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->First of all, can you fix your mail so that you have a proper 'From'?
->That should be your real name (not bpqw), so that it gives a proper patch author. 
->If you can't get your mail header to have the right 'From:' line, then it also works to begin your mail with:
+--Sig_/ou5qZlUcXra13.aOn7wLLDe
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Sorry for this confusion. This bpqw email is our software public mailbox dedicated to submit linux patch.
-Because our personal email title include Chinese name, this will result to messy code in from item.
-I have ever submit one patch many times by my personal mail, but I always didn't accept maintainer's response.
-So I think, maybe my patch with Chinese name has been moved into maintainer's junk folder.
+Hi Jason,
 
-I don't know my mail from-field with Chinese name can or not be accepted, if can, 
-I will submit next version patch by my personal mail.
- 
->> This patch adds code which enables Quad I/O mode on Micron SPI NOR flashes.
->> 
->> For Micron SPI NOR flash,enabling or disabling quad I/O protocol is 
->> controlled by EVCR (Enhanced Volatile Configuration Register), Quad I/O protocol bit 7.
->> When EVCR bit 7 is reset to 0,the SPI NOR flash will operate in quad I/O mode.
+Today's linux-next merge of the irqchip tree got a conflict in
+drivers/irqchip/Makefile between commit 8a19b8f19429 ("MIPS: Move GIC
+to drivers/irqchip/") from the mips tree and commit 5fe3bba3088c
+("irqchip: mtk-sysirq: Add sysirq interrupt polarity support") from the
+irqchip tree.
 
->What's the difference between using EVCR and the ENTER QUAD I/O MODE
->(35h) command I see in some of your datasheets? Are both supported on all Micron quad I/O SPI NOR flash?
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-There is no difference between using EVCR and the ENTER QUAD I/O MODE command.
-But, for some Micron spi nor, there no ENTER Quad I/O command(35h),such as n25q064.
-for all current Micron spi nor, if it support quad I/O mode, Using EVCR definitely be supported.
-So, we recommend that enable QUAD I/O mode by writing ECVR.
-  
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
->Also, which SPI NOR is this enabled for? I don't see any Micron entries in spi_nor_ids[] which contain the SPI_NOR_QUAD_READ flag.
+diff --cc drivers/irqchip/Makefile
+index 021833079c91,5761696368f9..000000000000
+--- a/drivers/irqchip/Makefile
++++ b/drivers/irqchip/Makefile
+@@@ -35,7 -37,7 +37,8 @@@ obj-$(CONFIG_TB10X_IRQC)		+=3D irq-tb10x.
+  obj-$(CONFIG_XTENSA)			+=3D irq-xtensa-pic.o
+  obj-$(CONFIG_XTENSA_MX)			+=3D irq-xtensa-mx.o
+  obj-$(CONFIG_IRQ_CROSSBAR)		+=3D irq-crossbar.o
+- obj-$(CONFIG_BRCMSTB_L2_IRQ)		+=3D irq-brcmstb-l2.o \
+- 					   irq-bcm7120-l2.o
++ obj-$(CONFIG_BCM7120_L2_IRQ)		+=3D irq-bcm7120-l2.o
++ obj-$(CONFIG_BRCMSTB_L2_IRQ)		+=3D irq-brcmstb-l2.o
+  obj-$(CONFIG_KEYSTONE_IRQ)		+=3D irq-keystone.o
+ +obj-$(CONFIG_MIPS_GIC)			+=3D irq-mips-gic.o
++ obj-$(CONFIG_ARCH_MEDIATEK)		+=3D irq-mtk-sysirq.o
 
-Yes, we now don't see any Micron entries in spi_nor_ids[] which contain the SPI_NOR_QUAD_READ flag.
-But Micron spi nor in spi_nor_ids[] all support Quad I/O mode. maybe customer want to use default mode(extended I/O mode),
-When submitted relevant patch, they didn't SPI_NOR_QUAD_READ flag in the spi_nor_ids[].
-This patch is just for wanting to enable Micron Quad I/O mode.
+--Sig_/ou5qZlUcXra13.aOn7wLLDe
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
->> Signed-off-by: bean huo <beanhuo@micron.com>
->> Acked-by: Marek Vasut <marex@denx.de>
->> ---
->>  v1-v2:
->> 	Modified to that capture wait_till_ready()
->> 	return value,if error,directly return its
->> 	the value.
->>  v2-v3:
->> 	Directly use the reurning error value of
->> 	read_reg and write_reg,instead of -EINVAL.
->>  v3-v4:
->> 	Modify commit logs that wraped into 80 columns
->>  v4-v5:
->> 	Rebuild new patch based on latest linux-mtd
+iQIcBAEBCAAGBQJUdr1FAAoJEMDTa8Ir7ZwVCekP/22HEyt2s1yJ0hCTa+RD81lM
+cuuvflHlzpcW+QdslQWs1uepbo8U8o3VHK7NI0U2OvWbeIefpgwLln7x9xtveyRR
+nlTt6ruNjtUIgY9Fy5bB5+1nkN5WbUtpdEvR9UEjBF5zvDYOUmKuAR/0o+85GCFh
+gEdm1diyTAx3sfU7gyhpjpzEwd5zetlm43mpCeKGWT+gExCDdeRP4ZmEDVAt5muh
+FvOR/av0gq83ghZHkpPn9f7Sa9RoDDfJGO3YMldfV3+orizFQTA11X5a/uaxt69T
+GcNxnBlxirJWuQ418Z6nWUiGJwffHZfTvB5ATETXkFRz/CgxchtA0Q2O1W+u6omm
+tOfPjfcIcfIrBob7qH6s6MlVFq5pj9sUGinhVNa8dn1WQsY+XcFgGsZH7UKKX2tQ
+cTIsjWPT+I6zVXtRgDvMEWufyfVeCKBoPjAVzlw8P/NTinrtMe/9p8EK4dSkQbHd
+kZI0ufH+g5kEv1JJIzRtZm5C+ez8PwJUAdHsJsCe5+XQEg1laLsBrqlnKSBMMKZG
+4QeNidgh29pzTKTK+ePZxubNdQt26IBKvi564qec9OLaY3CD+OCDMrdP3t5yBFQj
+ylsEvrx0LsnrPJODqWegbGGQdKpRKb3rBTjGHgvm7UgXmcJv/jnl71RXz6Fzwng4
+pWjvyTFlUgrdgeW27gO3
+=au2s
+-----END PGP SIGNATURE-----
 
->Please rebase on l2-mtd.git. Sorry if that wasn't clear earlier.
-
-OK,I will rebase it and sumbit a new version. Thanks for your suggestion.
-
->> +		dev_err(nor->dev,
->> +			"error while writing EVCR register\n");
-
->Join the above two lines?
-
-Will be fixed it in the next version.
-
->> +		return ret;
->> +	}
->> +
->> +	ret = wait_till_ready(nor);
-
->It's spi_nor_wait_till_ready(), now.
-
-OK, will be fixed it.
-
->>  
->>  #define SR_QUAD_EN_MX		0x40	/* Macronix Quad I/O */
->>  
->> +#define EVCR_QUAD_EN_MICRON    0x80    /* Micron Quad I/O */
-
->Like with other register bitfields (SR, FSR), please place a comment above to describe the register, like:
-
-
-OK, will be fixed it.
-
->Brian
-
-All in all ,thanks for your response and valuable suggestions.
-I will rebuild a new version, and submit it .
-
----Bean Huo---
-
+--Sig_/ou5qZlUcXra13.aOn7wLLDe--
