@@ -1,22 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942AbaK0UJg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 15:09:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37819 "EHLO mx1.redhat.com"
+	id S1752334AbaK0UX6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 15:23:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50319 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796AbaK0UJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 15:09:33 -0500
-Date: Thu, 27 Nov 2014 22:09:14 +0200
+	id S1751668AbaK0UIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 15:08:52 -0500
+Date: Thu, 27 Nov 2014 22:08:20 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
         thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
-Subject: [PATCH v6 17/46] KVM: s390: Set virtio-ccw transport revision
-Message-ID: <1417118789-18231-18-git-send-email-mst@redhat.com>
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        =?us-ascii?B?PT9VVEYtOD9xP1Bpb3RyPTIwS3I9QzM9QjNsPz0=?= 
+	<piotr.krol@3mdeb.com>,
+        stephen hemminger <stephen@networkplumber.org>,
+        David Drysdale <drysdale@google.com>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        Andy Grover <agrover@redhat.com>,
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: [PATCH v6 08/46] virtio: memory access APIs
+Message-ID: <1417118789-18231-9-git-send-email-mst@redhat.com>
 References: <1417118789-18231-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,138 +34,317 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Huth <thuth@linux.vnet.ibm.com>
+virtio 1.0 makes all memory structures LE, so
+we need APIs to conditionally do a byteswap on BE
+architectures.
 
-With the new SET-VIRTIO-REVISION command of the virtio 1.0 standard, we
-can now negotiate the virtio-ccw revision after setting a channel online.
+To make it easier to check code statically,
+add virtio specific types for multi-byte integers
+in memory.
 
-Note that we don't negotiate version 1 yet.
+Add low level wrappers that do a byteswap conditionally, these will be
+useful e.g. for vhost.  Add high level wrappers that
+query device endian-ness and act accordingly.
 
-[Cornelia Huck: reworked revision loop a bit]
-Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
-Signed-off-by: Thomas Huth <thuth@linux.vnet.ibm.com>
-Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/s390/kvm/virtio_ccw.c | 63 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 63 insertions(+)
+ include/linux/virtio_byteorder.h  | 59 +++++++++++++++++++++++++++++++++++++++
+ include/linux/virtio_config.h     | 32 +++++++++++++++++++++
+ include/uapi/linux/virtio_ring.h  | 45 ++++++++++++++---------------
+ include/uapi/linux/virtio_types.h | 46 ++++++++++++++++++++++++++++++
+ include/uapi/linux/Kbuild         |  1 +
+ 5 files changed, 161 insertions(+), 22 deletions(-)
+ create mode 100644 include/linux/virtio_byteorder.h
+ create mode 100644 include/uapi/linux/virtio_types.h
 
-diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
-index abba04d..193e8f1 100644
---- a/drivers/s390/kvm/virtio_ccw.c
-+++ b/drivers/s390/kvm/virtio_ccw.c
-@@ -55,6 +55,7 @@ struct virtio_ccw_device {
- 	struct ccw_device *cdev;
- 	__u32 curr_io;
- 	int err;
-+	unsigned int revision; /* Transport revision */
- 	wait_queue_head_t wait_q;
- 	spinlock_t lock;
- 	struct list_head virtqueues;
-@@ -86,6 +87,15 @@ struct virtio_thinint_area {
- 	u8 isc;
- } __packed;
- 
-+struct virtio_rev_info {
-+	__u16 revision;
-+	__u16 length;
-+	__u8 data[];
-+};
+diff --git a/include/linux/virtio_byteorder.h b/include/linux/virtio_byteorder.h
+new file mode 100644
+index 0000000..51865d0
+--- /dev/null
++++ b/include/linux/virtio_byteorder.h
+@@ -0,0 +1,59 @@
++#ifndef _LINUX_VIRTIO_BYTEORDER_H
++#define _LINUX_VIRTIO_BYTEORDER_H
++#include <linux/types.h>
++#include <uapi/linux/virtio_types.h>
 +
-+/* the highest virtio-ccw revision we support */
-+#define VIRTIO_CCW_REV_MAX 0
++/*
++ * Low-level memory accessors for handling virtio in modern little endian and in
++ * compatibility native endian format.
++ */
 +
- struct virtio_ccw_vq_info {
- 	struct virtqueue *vq;
- 	int num;
-@@ -122,6 +132,7 @@ static struct airq_info *airq_areas[MAX_AIRQ_AREAS];
- #define CCW_CMD_WRITE_STATUS 0x31
- #define CCW_CMD_READ_VQ_CONF 0x32
- #define CCW_CMD_SET_IND_ADAPTER 0x73
-+#define CCW_CMD_SET_VIRTIO_REV 0x83
++static inline u16 __virtio16_to_cpu(bool little_endian, __virtio16 val)
++{
++	if (little_endian)
++		return le16_to_cpu((__force __le16)val);
++	else
++		return (__force u16)val;
++}
++
++static inline __virtio16 __cpu_to_virtio16(bool little_endian, u16 val)
++{
++	if (little_endian)
++		return (__force __virtio16)cpu_to_le16(val);
++	else
++		return (__force __virtio16)val;
++}
++
++static inline u32 __virtio32_to_cpu(bool little_endian, __virtio32 val)
++{
++	if (little_endian)
++		return le32_to_cpu((__force __le32)val);
++	else
++		return (__force u32)val;
++}
++
++static inline __virtio32 __cpu_to_virtio32(bool little_endian, u32 val)
++{
++	if (little_endian)
++		return (__force __virtio32)cpu_to_le32(val);
++	else
++		return (__force __virtio32)val;
++}
++
++static inline u64 __virtio64_to_cpu(bool little_endian, __virtio64 val)
++{
++	if (little_endian)
++		return le64_to_cpu((__force __le64)val);
++	else
++		return (__force u64)val;
++}
++
++static inline __virtio64 __cpu_to_virtio64(bool little_endian, u64 val)
++{
++	if (little_endian)
++		return (__force __virtio64)cpu_to_le64(val);
++	else
++		return (__force __virtio64)val;
++}
++
++#endif /* _LINUX_VIRTIO_BYTEORDER */
+diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
+index b465c3f..e1c5d2b 100644
+--- a/include/linux/virtio_config.h
++++ b/include/linux/virtio_config.h
+@@ -4,6 +4,7 @@
+ #include <linux/err.h>
+ #include <linux/bug.h>
+ #include <linux/virtio.h>
++#include <linux/virtio_byteorder.h>
+ #include <uapi/linux/virtio_config.h>
  
- #define VIRTIO_CCW_DOING_SET_VQ 0x00010000
- #define VIRTIO_CCW_DOING_RESET 0x00040000
-@@ -134,6 +145,7 @@ static struct airq_info *airq_areas[MAX_AIRQ_AREAS];
- #define VIRTIO_CCW_DOING_READ_VQ_CONF 0x02000000
- #define VIRTIO_CCW_DOING_SET_CONF_IND 0x04000000
- #define VIRTIO_CCW_DOING_SET_IND_ADAPTER 0x08000000
-+#define VIRTIO_CCW_DOING_SET_VIRTIO_REV 0x10000000
- #define VIRTIO_CCW_INTPARM_MASK 0xffff0000
- 
- static struct virtio_ccw_device *to_vc_device(struct virtio_device *vdev)
-@@ -933,6 +945,7 @@ static void virtio_ccw_int_handler(struct ccw_device *cdev,
- 		case VIRTIO_CCW_DOING_RESET:
- 		case VIRTIO_CCW_DOING_READ_VQ_CONF:
- 		case VIRTIO_CCW_DOING_SET_IND_ADAPTER:
-+		case VIRTIO_CCW_DOING_SET_VIRTIO_REV:
- 			vcdev->curr_io &= ~activity;
- 			wake_up(&vcdev->wait_q);
- 			break;
-@@ -1048,6 +1061,51 @@ static int virtio_ccw_offline(struct ccw_device *cdev)
+ /**
+@@ -199,6 +200,37 @@ int virtqueue_set_affinity(struct virtqueue *vq, int cpu)
  	return 0;
  }
  
-+static int virtio_ccw_set_transport_rev(struct virtio_ccw_device *vcdev)
++/* Memory accessors */
++static inline u16 virtio16_to_cpu(struct virtio_device *vdev, __virtio16 val)
 +{
-+	struct virtio_rev_info *rev;
-+	struct ccw1 *ccw;
-+	int ret;
-+
-+	ccw = kzalloc(sizeof(*ccw), GFP_DMA | GFP_KERNEL);
-+	if (!ccw)
-+		return -ENOMEM;
-+	rev = kzalloc(sizeof(*rev), GFP_DMA | GFP_KERNEL);
-+	if (!rev) {
-+		kfree(ccw);
-+		return -ENOMEM;
-+	}
-+
-+	/* Set transport revision */
-+	ccw->cmd_code = CCW_CMD_SET_VIRTIO_REV;
-+	ccw->flags = 0;
-+	ccw->count = sizeof(*rev);
-+	ccw->cda = (__u32)(unsigned long)rev;
-+
-+	vcdev->revision = VIRTIO_CCW_REV_MAX;
-+	do {
-+		rev->revision = vcdev->revision;
-+		/* none of our supported revisions carry payload */
-+		rev->length = 0;
-+		ret = ccw_io_helper(vcdev, ccw,
-+				    VIRTIO_CCW_DOING_SET_VIRTIO_REV);
-+		if (ret == -EOPNOTSUPP) {
-+			if (vcdev->revision == 0)
-+				/*
-+				 * The host device does not support setting
-+				 * the revision: let's operate it in legacy
-+				 * mode.
-+				 */
-+				ret = 0;
-+			else
-+				vcdev->revision--;
-+		}
-+	} while (ret == -EOPNOTSUPP);
-+
-+	kfree(ccw);
-+	kfree(rev);
-+	return ret;
++	return __virtio16_to_cpu(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val);
 +}
++
++static inline __virtio16 cpu_to_virtio16(struct virtio_device *vdev, u16 val)
++{
++	return __cpu_to_virtio16(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val);
++}
++
++static inline u32 virtio32_to_cpu(struct virtio_device *vdev, __virtio32 val)
++{
++	return __virtio32_to_cpu(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val);
++}
++
++static inline __virtio32 cpu_to_virtio32(struct virtio_device *vdev, u32 val)
++{
++	return __cpu_to_virtio32(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val);
++}
++
++static inline u64 virtio64_to_cpu(struct virtio_device *vdev, __virtio64 val)
++{
++	return __virtio64_to_cpu(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val);
++}
++
++static inline __virtio64 cpu_to_virtio64(struct virtio_device *vdev, u64 val)
++{
++	return __cpu_to_virtio64(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val);
++}
++
+ /* Config space accessors. */
+ #define virtio_cread(vdev, structname, member, ptr)			\
+ 	do {								\
+diff --git a/include/uapi/linux/virtio_ring.h b/include/uapi/linux/virtio_ring.h
+index a99f9b7..61c818a 100644
+--- a/include/uapi/linux/virtio_ring.h
++++ b/include/uapi/linux/virtio_ring.h
+@@ -32,6 +32,7 @@
+  *
+  * Copyright Rusty Russell IBM Corporation 2007. */
+ #include <linux/types.h>
++#include <linux/virtio_types.h>
  
- static int virtio_ccw_online(struct ccw_device *cdev)
+ /* This marks a buffer as continuing via the next field. */
+ #define VRING_DESC_F_NEXT	1
+@@ -61,32 +62,32 @@
+ /* Virtio ring descriptors: 16 bytes.  These can chain together via "next". */
+ struct vring_desc {
+ 	/* Address (guest-physical). */
+-	__u64 addr;
++	__virtio64 addr;
+ 	/* Length. */
+-	__u32 len;
++	__virtio32 len;
+ 	/* The flags as indicated above. */
+-	__u16 flags;
++	__virtio16 flags;
+ 	/* We chain unused descriptors via this, too */
+-	__u16 next;
++	__virtio16 next;
+ };
+ 
+ struct vring_avail {
+-	__u16 flags;
+-	__u16 idx;
+-	__u16 ring[];
++	__virtio16 flags;
++	__virtio16 idx;
++	__virtio16 ring[];
+ };
+ 
+ /* u32 is used here for ids for padding reasons. */
+ struct vring_used_elem {
+ 	/* Index of start of used descriptor chain. */
+-	__u32 id;
++	__virtio32 id;
+ 	/* Total length of the descriptor chain which was used (written to) */
+-	__u32 len;
++	__virtio32 len;
+ };
+ 
+ struct vring_used {
+-	__u16 flags;
+-	__u16 idx;
++	__virtio16 flags;
++	__virtio16 idx;
+ 	struct vring_used_elem ring[];
+ };
+ 
+@@ -109,25 +110,25 @@ struct vring {
+  *	struct vring_desc desc[num];
+  *
+  *	// A ring of available descriptor heads with free-running index.
+- *	__u16 avail_flags;
+- *	__u16 avail_idx;
+- *	__u16 available[num];
+- *	__u16 used_event_idx;
++ *	__virtio16 avail_flags;
++ *	__virtio16 avail_idx;
++ *	__virtio16 available[num];
++ *	__virtio16 used_event_idx;
+  *
+  *	// Padding to the next align boundary.
+  *	char pad[];
+  *
+  *	// A ring of used descriptor heads with free-running index.
+- *	__u16 used_flags;
+- *	__u16 used_idx;
++ *	__virtio16 used_flags;
++ *	__virtio16 used_idx;
+  *	struct vring_used_elem used[num];
+- *	__u16 avail_event_idx;
++ *	__virtio16 avail_event_idx;
+  * };
+  */
+ /* We publish the used event index at the end of the available ring, and vice
+  * versa. They are at the end for backwards compatibility. */
+ #define vring_used_event(vr) ((vr)->avail->ring[(vr)->num])
+-#define vring_avail_event(vr) (*(__u16 *)&(vr)->used->ring[(vr)->num])
++#define vring_avail_event(vr) (*(__virtio16 *)&(vr)->used->ring[(vr)->num])
+ 
+ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
+ 			      unsigned long align)
+@@ -135,15 +136,15 @@ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
+ 	vr->num = num;
+ 	vr->desc = p;
+ 	vr->avail = p + num*sizeof(struct vring_desc);
+-	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + sizeof(__u16)
++	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + sizeof(__virtio16)
+ 		+ align-1) & ~(align - 1));
+ }
+ 
+ static inline unsigned vring_size(unsigned int num, unsigned long align)
  {
-@@ -1088,6 +1146,11 @@ static int virtio_ccw_online(struct ccw_device *cdev)
- 	spin_unlock_irqrestore(get_ccwdev_lock(cdev), flags);
- 	vcdev->vdev.id.vendor = cdev->id.cu_type;
- 	vcdev->vdev.id.device = cdev->id.cu_model;
+-	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (3 + num)
++	return ((sizeof(struct vring_desc) * num + sizeof(__virtio16) * (3 + num)
+ 		 + align - 1) & ~(align - 1))
+-		+ sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
++		+ sizeof(__virtio16) * 3 + sizeof(struct vring_used_elem) * num;
+ }
+ 
+ /* The following is used with USED_EVENT_IDX and AVAIL_EVENT_IDX */
+diff --git a/include/uapi/linux/virtio_types.h b/include/uapi/linux/virtio_types.h
+new file mode 100644
+index 0000000..e845e8c
+--- /dev/null
++++ b/include/uapi/linux/virtio_types.h
+@@ -0,0 +1,46 @@
++#ifndef _UAPI_LINUX_VIRTIO_TYPES_H
++#define _UAPI_LINUX_VIRTIO_TYPES_H
++/* Type definitions for virtio implementations.
++ *
++ * This header is BSD licensed so anyone can use the definitions to implement
++ * compatible drivers/servers.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in the
++ *    documentation and/or other materials provided with the distribution.
++ * 3. Neither the name of IBM nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS'' AND
++ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED.  IN NO EVENT SHALL IBM OR CONTRIBUTORS BE LIABLE
++ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
++ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
++ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
++ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
++ * SUCH DAMAGE.
++ *
++ * Copyright (C) 2014 Red Hat, Inc.
++ * Author: Michael S. Tsirkin <mst@redhat.com>
++ */
++#include <linux/types.h>
 +
-+	ret = virtio_ccw_set_transport_rev(vcdev);
-+	if (ret)
-+		goto out_free;
++/*
++ * __virtio{16,32,64} have the following meaning:
++ * - __u{16,32,64} for virtio devices in legacy mode, accessed in native endian
++ * - __le{16,32,64} for standard-compliant virtio devices
++ */
 +
- 	ret = register_virtio_device(&vcdev->vdev);
- 	if (ret) {
- 		dev_warn(&cdev->dev, "Failed to register virtio device: %d\n",
++typedef __u16 __bitwise__ __virtio16;
++typedef __u32 __bitwise__ __virtio32;
++typedef __u64 __bitwise__ __virtio64;
++
++#endif /* _UAPI_LINUX_VIRTIO_TYPES_H */
+diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
+index 4c94f31..44a5581 100644
+--- a/include/uapi/linux/Kbuild
++++ b/include/uapi/linux/Kbuild
+@@ -423,6 +423,7 @@ header-y += virtio_blk.h
+ header-y += virtio_config.h
+ header-y += virtio_console.h
+ header-y += virtio_ids.h
++header-y += virtio_types.h
+ header-y += virtio_net.h
+ header-y += virtio_pci.h
+ header-y += virtio_ring.h
 -- 
 MST
 
