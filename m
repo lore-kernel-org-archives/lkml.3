@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506AbaK0XeF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 18:34:05 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:54871 "EHLO
+	id S1751537AbaK0Xfw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 18:35:52 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:54878 "EHLO
 	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaK0XeE (ORCPT
+	with ESMTP id S1751082AbaK0Xfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 18:34:04 -0500
+	Thu, 27 Nov 2014 18:35:51 -0500
 From: Stefan Agner <stefan@agner.ch>
-To: shawn.guo@linaro.org, arnd@arndb.de
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        stefan@agner.ch
-Subject: [PATCH] MAINTAINERS: add Freescale Vybrid SoC
-Date: Fri, 28 Nov 2014 00:33:55 +0100
-Message-Id: <1417131235-3077-1-git-send-email-stefan@agner.ch>
+To: shawn.guo@linaro.org, kernel@pengutronix.de
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, stefan@agner.ch
+Subject: [PATCH] ARM: dts: vf610: enable watchdog for Cortex-A5 dt's
+Date: Fri, 28 Nov 2014 00:35:36 +0100
+Message-Id: <1417131336-3136-1-git-send-email-stefan@agner.ch>
 X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Freescale Vybrid family as a own entry, along with an entry for
-the so far orphan Vybrid device tree files. Also add myself as
-a designated reviewer.
+During restructuring of the device tree files the watchdog was
+changed to be disabled by default. However, since the watchdog
+instance is dedicated to the Cortex-A5, enable the peripheral
+by default in the base device tree vf500.dtsi.
 
 Signed-off-by: Stefan Agner <stefan@agner.ch>
 ---
-Not sure if this is acceptable, but it would be nice when I get Vybrid
-related stuff automatically...
+ arch/arm/boot/dts/vf500.dtsi | 5 +++++
+ arch/arm/boot/dts/vfxxx.dtsi | 2 +-
+ 2 files changed, 6 insertions(+), 1 deletion(-)
 
- MAINTAINERS | 10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 3c64271..6837f23 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -990,6 +990,16 @@ F:	arch/arm/mach-mxs/
- F:	arch/arm/boot/dts/imx*
- F:	arch/arm/configs/imx*_defconfig
- 
-+ARM/FREESCALE VYBRID ARM ARCHITECTURE
-+M:	Shawn Guo <shawn.guo@linaro.org>
-+M:	Sascha Hauer <kernel@pengutronix.de>
-+R:	Stefan Agner <stefan@agner.ch>
-+L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-+S:	Maintained
-+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/shawnguo/linux.git
-+F:	arch/arm/mach-imx/*vf610*
-+F:	arch/arm/boot/dts/vf*
+diff --git a/arch/arm/boot/dts/vf500.dtsi b/arch/arm/boot/dts/vf500.dtsi
+index de67005..ea0f74f 100644
+--- a/arch/arm/boot/dts/vf500.dtsi
++++ b/arch/arm/boot/dts/vf500.dtsi
+@@ -169,3 +169,8 @@
+ &usbphy1 {
+ 	interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_HIGH>;
+ };
 +
- ARM/GLOMATION GESBC9312SX MACHINE SUPPORT
- M:	Lennert Buytenhek <kernel@wantstofly.org>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
++&wdoga5 {
++	interrupts = <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
++	status = "okay";
++};
+diff --git a/arch/arm/boot/dts/vfxxx.dtsi b/arch/arm/boot/dts/vfxxx.dtsi
+index 505969a..7126468 100644
+--- a/arch/arm/boot/dts/vfxxx.dtsi
++++ b/arch/arm/boot/dts/vfxxx.dtsi
+@@ -184,7 +184,7 @@
+ 				status = "disabled";
+ 			};
+ 
+-			wdog@4003e000 {
++			wdoga5: wdog@4003e000 {
+ 				compatible = "fsl,vf610-wdt", "fsl,imx21-wdt";
+ 				reg = <0x4003e000 0x1000>;
+ 				clocks = <&clks VF610_CLK_WDT>;
 -- 
 2.1.3
 
