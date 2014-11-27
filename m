@@ -1,146 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961AbaK0J30 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 04:29:26 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:42246 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752666AbaK0J3S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 04:29:18 -0500
-X-IronPort-AV: E=Sophos;i="5.07,468,1413270000"; 
-   d="scan'208";a="51761153"
-Message-ID: <5476EEEA.7040001@broadcom.com>
-Date: Thu, 27 Nov 2014 10:29:14 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	id S1754860AbaK0JbM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 04:31:12 -0500
+Received: from ozlabs.org ([103.22.144.67]:38560 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754256AbaK0JbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 04:31:08 -0500
+Date: Thu, 27 Nov 2014 20:31:01 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>, Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>
+Subject: Re: linux-next: manual merge of the staging tree with the vfs tree
+Message-ID: <20141127203101.346ea550@canb.auug.org.au>
+In-Reply-To: <20141127201156.62487051@canb.auug.org.au>
+References: <20141127201156.62487051@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: =?UTF-8?B?TWloYWkgRG9uyJt1?= <mihai.dontu@gmail.com>,
-        <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        <pgynther@google.com>, <marcel@holtmann.org>,
-        <linux-bluetooth@vger.kernel.org>
-Subject: Re: bluetooth related firmware loader spew on resume.
-References: <20141111181228.GA27815@redhat.com>	<20141126165609.41ee0c24@mdontu-l.dsd.ro>	<s5hoaruvvje.wl-tiwai@suse.de>	<20141126172615.7b6e2cdb@mdontu-l.dsd.ro>	<s5hk32ivv6k.wl-tiwai@suse.de>	<54761116.5090700@broadcom.com>	<s5hwq6hj0dd.wl-tiwai@suse.de>	<5476E7E0.8050406@broadcom.com> <s5hvbm1uhnm.wl-tiwai@suse.de>
-In-Reply-To: <s5hvbm1uhnm.wl-tiwai@suse.de>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/82qs52q0uDyLnyyClUMX6ux"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/14 10:17, Takashi Iwai wrote:
-> At Thu, 27 Nov 2014 09:59:12 +0100,
-> Arend van Spriel wrote:
->>
->> On 11/26/14 19:13, Takashi Iwai wrote:
->>> At Wed, 26 Nov 2014 18:42:46 +0100,
->>> Arend van Spriel wrote:
->>>>
->>>> On 11/26/14 16:27, Takashi Iwai wrote:
->>>>> At Wed, 26 Nov 2014 17:26:15 +0200,
->>>>> Mihai Donțu wrote:
->>>>>>
->>>>>> On Wed, 26 Nov 2014 16:19:49 +0100
->>>>>> Takashi Iwai<tiwai@suse.de>    wrote:
->>>>>>
->>>>>>> At Wed, 26 Nov 2014 16:56:09 +0200,
->>>>>>> Mihai Donțu wrote:
->>>>>>>>
->>>>>>>> On Tue, 11 Nov 2014 13:12:28 -0500 Dave Jones wrote:
->>>>>>>>> Since the addition of 10d4c6736ea "Bluetooth: btusb: Add Broadcom patch
->>>>>>>>> RAM support", I (and a number of other people[*]) have been seeing
->>>>>>>>> this trace on resume from suspend.
->>>>>>>>>
->>>>>>>>> WARNING: CPU: 1 PID: 8565 at drivers/base/firmware_class.c:1127 _request_firmware+0x4c1/0x7c0()
->>>>>>>>> CPU: 1 PID: 8565 Comm: kworker/u17:0 Not tainted 3.17.2-200.fc20.x86_64 #1
->>>>>>>>> Hardware name: LENOVO 2356JK8/2356JK8, BIOS G7ET94WW (2.54 ) 04/30/2013
->>>>>>>>> Workqueue: hci0 hci_power_on [bluetooth]
->>>>>>>>> 0000000000000000 00000000f52a564b ffff8800a8c63be8 ffffffff817271cc
->>>>>>>>> 0000000000000000 ffff8800a8c63c20 ffffffff81094ced ffff8800a8c63d10
->>>>>>>>> ffff8801365ddf00 ffff8801387b4b00 ffff8800a8c63d08 00000000fffffff5
->>>>>>>>> Call Trace:
->>>>>>>>> [<ffffffff817271cc>] dump_stack+0x45/0x56
->>>>>>>>> [<ffffffff81094ced>] warn_slowpath_common+0x7d/0xa0
->>>>>>>>> [<ffffffff81094e1a>] warn_slowpath_null+0x1a/0x20
->>>>>>>>> [<ffffffff814965c1>] _request_firmware+0x4c1/0x7c0
->>>>>>>>> [<ffffffff8137b9b9>] ? snprintf+0x49/0x70
->>>>>>>>> [<ffffffff814968f1>] request_firmware+0x31/0x50
->>>>>>>>> [<ffffffffa0943bf3>] btusb_setup_bcm_patchram+0x83/0x550 [btusb]
->>>>>>>>> [<ffffffff8148ecf6>] ? rpm_idle+0xd6/0x2b0
->>>>>>>>> [<ffffffffa0649051>] hci_dev_do_open+0xe1/0xa60 [bluetooth]
->>>>>>>>> ACPI: \_SB_.PCI0.LPC_.EC__.BAT1: docking
->>>>>>>>> Restarting tasks ...
->>>>>>>>> [<ffffffff810bcb3d>] ? ttwu_do_activate.constprop.90+0x5d/0x70
->>>>>>>>> [<ffffffffa064a1c0>] hci_power_on+0x40/0x1e0 [bluetooth]
->>>>>>>>> [<ffffffff810f53fb>] ? lock_timer_base.isra.34+0x2b/0x50
->>>>>>>>> [<ffffffff810acc39>] process_one_work+0x149/0x3d0
->>>>>>>>> [<ffffffff810ad2bb>] worker_thread+0x11b/0x490
->>>>>>>>> [<ffffffff810ad1a0>] ? rescuer_thread+0x2e0/0x2e0
->>>>>>>>> [<ffffffff810b2318>] kthread+0xd8/0xf0
->>>>>>>>> [<ffffffff810b2240>] ? kthread_create_on_node+0x190/0x190
->>>>>>>>> [<ffffffff8172e7bc>] ret_from_fork+0x7c/0xb0
->>>>>>>>> [<ffffffff810b2240>] ? kthread_create_on_node+0x190/0x190
->>>>>>>>> ---[ end trace 75a0e9c7f33ebb4c ]---
->>>>>>>>> bluetooth hci0: firmware: brcm/BCM20702A0-0a5c-21e6.hcd will not be loaded
->>>>>>>>> Bluetooth: hci0: BCM: patch brcm/BCM20702A0-0a5c-21e6.hcd not found
->>>>>>>>>
->>>>>>>>>
->>>>>>>>> At first I thought it was just over-reaction to the file being missing, but
->>>>>>>>> looking at the WARN_ON, it appears that we're trying to invoke the firmware
->>>>>>>>> loader before userspace is back up ?
->>>>>>>>>
->>>>>>>>> In this (and probably other related) kernel, CONFIG_FW_LOADER_USER_HELPER is unset,
->>>>>>>>> in case that matters at all.
->>>>>>>>>
->>>>>>>>> 	Dave
->>>>>>>>>
->>>>>>>>> [*] https://bugzilla.kernel.org/show_bug.cgi?id=81821
->>>>>>>>>        https://bugzilla.redhat.com/show_bug.cgi?id=1133378
->>>>>>>>
->>>>>>>> I have the following during normal boot:
->>>>>>>>
->>>>>>>> [    5.620796] Bluetooth: hci0: read Intel version: 370710018002030d00
->>>>>>>> [    5.620822] bluetooth hci0: Direct firmware load for intel/ibt-hw-37.7.10-fw-1.80.2.3.d.bseq failed with error -2
->>>>>>>> [    5.620827] Bluetooth: hci0 failed to open Intel firmware file: intel/ibt-hw-37.7.10-fw-1.80.2.3.d.bseq(-2)
->>>>>>>> [    5.620920] bluetooth hci0: Direct firmware load for intel/ibt-hw-37.7.bseq failed with error -2
->>>>>>>> [    5.620922] Bluetooth: hci0 failed to open default Intel fw file: intel/ibt-hw-37.7.bseq
->>>>>>>> [    5.629910] EXT4-fs (sda2): mounted filesystem with ordered data mode. Opts: (null)
->>>>>>>> [    5.629916] VFS: Mounted root (ext4 filesystem) readonly on device 8:2.
->>>>>>>>
->>>>>>>> The driver is trying to load the firmware before root is mounted. Do I
->>>>>>>> really need an initramfs?
->>>>>>>
->>>>>>> If btusb driver is loaded in initrd, you'd need the corresponding
->>>>>>> firmware in initrd, too.
->>>>>>
->>>>>> The driver is built into the kernel and I don't use an initrd. I could
->>>>>> probably create one, but it's a bit tricky with UEFI and a tad harder
->>>>>> to maintain.
->>>>>
->>>>> Then you can build the firmware file into kernel, too.
->>>>
->>>> huh? The whole idea of the firmware API was to keep (often proprietary)
->>>> firmware out of the kernel. Has that strategy been abandoned recently?
->>>
->>> See CONFIG_EXTRA_FIRMARE.  It doesn't mean to include the binary blob
->>> into the kernel source tree.  It just allows to *build* into your
->>> kernel.
->>
->> I see. Thanks for the info. I still do not understand the resume
->> scenario. I though firmware api did some sort of caching of the firmware
->> images.
+--Sig_/82qs52q0uDyLnyyClUMX6ux
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
+
+Hi all,
+
+On Thu, 27 Nov 2014 20:11:56 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
 >
-> My theory is that this is triggered when the firmware file doesn't
-> exist.  Then it's neither remembered nor cached, so it's retried in
-> the resume path.  But the information is missing, so I cannot say
-> surely about it.
+> diff --cc drivers/staging/lustre/lustre/llite/llite_lib.c
+> index 7b6b9e2e0102,3b0336029da3..000000000000
+> --- a/drivers/staging/lustre/lustre/llite/llite_lib.c
+> +++ b/drivers/staging/lustre/lustre/llite/llite_lib.c
+> @@@ -698,8 -690,10 +690,8 @@@ void lustre_dump_dentry(struct dentry *
+>   	list_for_each(tmp, &dentry->d_subdirs)
+>   		subdirs++;
+>  =20
+> - 	CERROR("dentry %p dump: name=3D%pd parent=3D%p, inode=3D%p, count=3D%u=
+,"
+> - 	       " flags=3D0x%x, fsdata=3D%p, %d subdirs\n", dentry, dentry,
+>  -	CERROR("dentry %p dump: name=3D%.*s parent=3D%.*s (%p), inode=3D%p, co=
+unt=3D%u, flags=3D0x%x, fsdata=3D%p, %d subdirs\n",
+>  -	       dentry,
+>  -	       dentry->d_name.len, dentry->d_name.name,
+>  -	       dentry->d_parent->d_name.len, dentry->d_parent->d_name.name,
+> ++	CERROR("dentry %p dump: name=3D%pd parent=3D%p, inode=3D%p, count=3D%u=
+, flags=3D0x%x, fsdata=3D%p, %d subdirs\n",
+> ++	       dentry, dentry,
+>   	       dentry->d_parent, dentry->d_inode, d_count(dentry),
+>   	       dentry->d_flags, dentry->d_fsdata, subdirs);
+>   	if (dentry->d_inode !=3D NULL)
 
-Agree. So the same warning should have occurred upon system boot. Maybe 
-Mihai can confirm that.
+The actual resolution for this file ended up being this:
 
-Regards,
-Arend
+diff --cc drivers/staging/lustre/lustre/llite/llite_lib.c
+index 7b6b9e2e0102,3b0336029da3..52f0a7e40063
+--- a/drivers/staging/lustre/lustre/llite/llite_lib.c
++++ b/drivers/staging/lustre/lustre/llite/llite_lib.c
+@@@ -698,8 -690,10 +690,8 @@@ void lustre_dump_dentry(struct dentry *
+  	list_for_each(tmp, &dentry->d_subdirs)
+  		subdirs++;
+ =20
+- 	CERROR("dentry %p dump: name=3D%pd parent=3D%p, inode=3D%p, count=3D%u,"
+- 	       " flags=3D0x%x, fsdata=3D%p, %d subdirs\n", dentry, dentry,
+ -	CERROR("dentry %p dump: name=3D%.*s parent=3D%.*s (%p), inode=3D%p, coun=
+t=3D%u, flags=3D0x%x, fsdata=3D%p, %d subdirs\n",
+ -	       dentry,
+ -	       dentry->d_name.len, dentry->d_name.name,
+ -	       dentry->d_parent->d_name.len, dentry->d_parent->d_name.name,
+++	CERROR("dentry %p dump: name=3D%pd parent=3D%p, inode=3D%p, count=3D%u, =
+flags=3D0x%x, fsdata=3D%p, %d subdirs\n",
+++	       dentry, dentry,
+  	       dentry->d_parent, dentry->d_inode, d_count(dentry),
+  	       dentry->d_flags, dentry->d_fsdata, subdirs);
+  	if (dentry->d_inode !=3D NULL)
+@@@ -709,7 -703,8 +701,8 @@@
+  		return;
+ =20
+  	list_for_each(tmp, &dentry->d_subdirs) {
+ -		struct dentry *d =3D list_entry(tmp, struct dentry, d_u.d_child);
+ +		struct dentry *d =3D list_entry(tmp, struct dentry, d_child);
++=20
+  		lustre_dump_dentry(d, recur - 1);
+  	}
+  }
 
->
-> Takashi
+--=20
+Cheers,
+Stephen Rothwell                   <sfr@canb.auug.org.au>
 
+--Sig_/82qs52q0uDyLnyyClUMX6ux
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUdu9aAAoJEMDTa8Ir7ZwVXkIP/1FAi/e+D8ektWNuW2rAXjgb
+5kWH6jqbhzlobEJRVWFcMcLMmXRkCkimFDurwaSdxWSJ4hEvQzNh5+PhZnB6FUCg
+DvpMy31N3vkTWyJv6Npm8fFiExThauwNLgakbNabEpap62rHv3pl9tLX7xPM5OPx
+q4S7MqMBb6ycYNq9Nc60CMwBkMqzP/1YPFsqkYX/XQ1iLs3ZzdRn9ZWBkuUCdnpM
+ua+Pkelx82+jwJkufEAbDyOHAdkNucjy1P7JI6QjqxXQInn4Qbvshd5jrEsWhmdK
+8qmu4/KPn1YRfy7a135xYOvcFDe6E3HklJCQdzKirIem8ny83h6k0V2Wc8fUqvo1
+CsdHPuPIRb/lasJ0tZFlFl0295PqpOHmy0o5gJuDUwtumzcARa+b235x7+w1SSvK
+uGfSnMHTvUZcVEQVAa4W856gutrLXwoJM34HRSzS64n1bhf4I730f4NYEwcWwrU+
+Mhwboy+YlEc4AN8wF5AlgRUVHKwzh4R8PxQz+U8DWwUIfZYhcoiwjiYv5f1tFzZo
+KuNvgXAMqCSpVYbWQ2BnvLYKRYB997W00wkl2Qna5na4tDL4VqD5cHdZ+Qcf3ZF+
+EA9baIdV/eZliWe6cd020oBAKGVaI1uaEtPrFw93fJmb7NsA5OIr225i5wY4cRuG
+GA3DyS8l9sgUKw0CBD/k
+=zkZu
+-----END PGP SIGNATURE-----
+
+--Sig_/82qs52q0uDyLnyyClUMX6ux--
