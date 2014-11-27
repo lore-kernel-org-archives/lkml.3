@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751388AbaK0QdI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 11:33:08 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41057 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848AbaK0QdF (ORCPT
+	id S1751408AbaK0QeH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 11:34:07 -0500
+Received: from smtprelay0182.hostedemail.com ([216.40.44.182]:49911 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750852AbaK0QeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 11:33:05 -0500
-Date: Thu, 27 Nov 2014 16:30:59 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, linux-spi@vger.kernel.org,
-        devicetree@vger.kernel.org
-Message-ID: <20141127163059.GZ7712@sirena.org.uk>
-References: <1417088636-11994-1-git-send-email-lee.jones@linaro.org>
- <1417088636-11994-3-git-send-email-lee.jones@linaro.org>
- <20141127130053.GW7712@sirena.org.uk>
- <20141127145542.GH4628@x1>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dfAulW8sdm/Y0CsS"
-Content-Disposition: inline
-In-Reply-To: <20141127145542.GH4628@x1>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/4] spi: st: Provide Device Tree binding documentation
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Thu, 27 Nov 2014 11:34:05 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:960:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3867:3870:3871:3872:3873:4225:4321:5007:6117:6119:6261:7875:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12740:13069:13071:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: farm73_62509aac9c42
+X-Filterd-Recvd-Size: 2632
+Message-ID: <1417106040.1135.1.camel@perches.com>
+Subject: Re: [PATCH v2] staging: octeon: Fix checkpatch warnings
+From: Joe Perches <joe@perches.com>
+To: Luis de Bethencourt <luis@debethencourt.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        paul.gortmaker@windriver.com, eunb.song@samsung.com,
+        aaro.koskinen@iki.fi, devel@driverdev.osuosl.org
+Date: Thu, 27 Nov 2014 08:34:00 -0800
+In-Reply-To: <20141127161432.GA32577@ks395439.kimsufi.com>
+References: <20141127161432.GA32577@ks395439.kimsufi.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2014-11-27 at 17:18 +0100, Luis de Bethencourt wrote:
+> Fixing 80 character limit warnings in octeon/ethernet-rx.c
 
---dfAulW8sdm/Y0CsS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hello again Luis.
 
-On Thu, Nov 27, 2014 at 02:55:42PM +0000, Lee Jones wrote:
-> On Thu, 27 Nov 2014, Mark Brown wrote:
+Another thing you might consider is to  align
+multiple line statements to the appropriate
+open parenthesis.
 
-> > What do the two different compatible strings mean (for example, should
-> > ssc4 be used for version 4 and higher or is it just a quirk for that
-> > version)?
+> diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
+[]
+> @@ -126,13 +127,15 @@ static inline int cvm_oct_check_rcv_error(cvmx_wqe_t *work)
+>  
+>  			if (*ptr == 0xd5) {
+>  				/*
+> -				  printk_ratelimited("Port %d received 0xd5 preamble\n", work->ipprt);
+> +				  printk_ratelimited("Port %d received 0xd5 preamble\n",
+> +					  work->ipprt);
+>  				 */
 
-> This appears to be historical.  There aren't any functional
-> differences i.e. we don't match on them.  I believe the former is a
-> more informal, generic name and the latter is the official name of the
-> IP block.  The I2C component already upstreamed has the same naming
-> conventions by the looks of it.
+This is in a commented out block, but this
+would look better like:
 
-Probably best to say something or retire one then.
+		printk_ratelimited("format",
+				   args...);
 
---dfAulW8sdm/Y0CsS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> @@ -212,17 +215,20 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+>  		did_work_request = 0;
+>  		if (work == NULL) {
+>  			union cvmx_pow_wq_int wq_int;
+> +
+>  			wq_int.u64 = 0;
+>  			wq_int.s.iq_dis = 1 << pow_receive_group;
+>  			wq_int.s.wq_int = 1 << pow_receive_group;
+>  			cvmx_write_csr(CVMX_POW_WQ_INT, wq_int.u64);
+>  			break;
+>  		}
+> -		pskb = (struct sk_buff **)(cvm_oct_get_buffer_ptr(work->packet_ptr) - sizeof(void *));
+> +		pskb = (struct sk_buff **)(cvm_oct_get_buffer_ptr(work->packet_ptr) -
+> +			sizeof(void *));
 
-iQEcBAEBAgAGBQJUd1HCAAoJECTWi3JdVIfQOWoH/1hYO3qV5JbFVeE0xphBa4Td
-1xry2lXjk5lelhXBiNcpkEq2hLJVXQntjaLu5L2syKi9TvD9JNT6HycJvVv33vU3
-jlkcY7A6hM+ol8ExKBH0rcUQS/mWFPqj19+WtKKR01NlP08qaN5KHJmxcAseGxNV
-J2Y9t4usSRw2XTtxOXN/R4KcwZqZSFdLA+NPFJv92B9UVnzEnlKCLDxdB8ETSfCS
-C7MBYmmYyDvbF1waozT0bLBV2qMLj8L+pA3CGWBW8zZQANL1FNHsC1ciNx3Qa2y7
-Di1Mgs1UexxS+zl7OgWGyPc3MQorck6DOPhJkBwct7HliP9egEUCvw1yVsY7dk0=
-=mAJ2
------END PGP SIGNATURE-----
+cvm_oct_get_buffer_ptr returns a void pointer
+so it doesn't need a cast.
 
---dfAulW8sdm/Y0CsS--
+a possible fix is just to remove the cast
+
+		pskb = cvm_oct_get_buffer_ptr(work->packet_ptr) - sizeof(void *);
+
+>  		prefetch(pskb);
+
+If the cast type above to a ** is to be believed,
+maybe this should be prefetch(*pskb)
+
+If you do these, they should be separate patches.
+
