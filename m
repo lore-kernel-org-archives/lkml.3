@@ -1,92 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341AbaK0G2c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 01:28:32 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41720 "EHLO arroyo.ext.ti.com"
+	id S1754363AbaK0G2q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 01:28:46 -0500
+Received: from ozlabs.org ([103.22.144.67]:40937 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754116AbaK0G0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 01:26:55 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <gregkh@linuxfoundation.org>
-CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 23/25] Phy: DT binding documentation for Marvell MVEBU SATA phy.
-Date: Thu, 27 Nov 2014 11:56:15 +0530
-Message-ID: <1417069577-1169-24-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1417069577-1169-1-git-send-email-kishon@ti.com>
-References: <1417069577-1169-1-git-send-email-kishon@ti.com>
+	id S1751095AbaK0G2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 01:28:31 -0500
+Date: Thu, 27 Nov 2014 17:28:22 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Subject: linux-next: build warning after merge of the irqchip tree
+Message-ID: <20141127172822.593adbd2@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/v3OSX=lX_Lxx6my=lT=UUBP"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Lunn <andrew@lunn.ch>
+--Sig_/v3OSX=lX_Lxx6my=lT=UUBP
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Describe the binding for the Marvell MVEBU SATA phy. This driver
-can be used at least with Kirkwood, Dove and maybe others.
-Additionally, update the SATA binding with the properties to link
-to the phy nodes.
+Hi Jason,
 
-Signed-off-by: Andrew Lunn <andrew@lunn.ch>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- Documentation/devicetree/bindings/ata/marvell.txt  |    6 ++++++
- .../devicetree/bindings/phy/phy-mvebu.txt          |   22 ++++++++++++++++++++
- 2 files changed, 28 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/phy/phy-mvebu.txt
+After merging the irqchip tree, today's linux-next build (arm
+multi_v7_defconfig) produced this warning:
 
-diff --git a/Documentation/devicetree/bindings/ata/marvell.txt b/Documentation/devicetree/bindings/ata/marvell.txt
-index 1c83516..b460edd 100644
---- a/Documentation/devicetree/bindings/ata/marvell.txt
-+++ b/Documentation/devicetree/bindings/ata/marvell.txt
-@@ -6,11 +6,17 @@ Required Properties:
- - interrupts    : Interrupt controller is using
- - nr-ports      : Number of SATA ports in use.
- 
-+Optional Properties:
-+- phys		: List of phandles to sata phys
-+- phy-names	: Should be "0", "1", etc, one number per phandle
-+
- Example:
- 
- 	sata@80000 {
- 		compatible = "marvell,orion-sata";
- 		reg = <0x80000 0x5000>;
- 		interrupts = <21>;
-+		phys = <&sata_phy0>, <&sata_phy1>;
-+		phy-names = "0", "1";
- 		nr-ports = <2>;
- 	}
-diff --git a/Documentation/devicetree/bindings/phy/phy-mvebu.txt b/Documentation/devicetree/bindings/phy/phy-mvebu.txt
-new file mode 100644
-index 0000000..6cb3364
---- /dev/null
-+++ b/Documentation/devicetree/bindings/phy/phy-mvebu.txt
-@@ -0,0 +1,22 @@
-+* Marvell MVEBU SATA PHY
-+
-+Power control for the SATA phy found on Marvell MVEBU SoCs.
-+
-+This document extends the binding described in phy-bindings.txt
-+
-+Required properties :
-+
-+ - reg		   : Offset and length of the register set for the SATA device
-+ - compatible	   : Should be "marvell,mvebu-sata-phy"
-+ - clocks	   : phandle of clock and specifier that supplies the device
-+ - clock-names	   : Should be "sata"
-+
-+Example:
-+		sata-phy@84000 {
-+			compatible = "marvell,mvebu-sata-phy";
-+			reg = <0x84000 0x0334>;
-+			clocks = <&gate_clk 15>;
-+			clock-names = "sata";
-+			#phy-cells = <0>;
-+			status = "ok";
-+		};
--- 
-1.7.9.5
+include/linux/irqchip/arm-gic.h:109:53: warning: its scope is only this def=
+inition or declaration, which is probably not what you want
+In file included from arch/arm/mach-ux500/pm.c:13:0:
+include/linux/irqchip/arm-gic.h:109:53: warning: 'struct irq_domain' declar=
+ed inside parameter list
+ int gicv2m_of_init(struct device_node *node, struct irq_domain *parent);
+                                                     ^
 
+and many more similar.
+
+Introduced by commit 853a33ce6932 ("irqchip: gic-v2m: Add support for
+ARM GICv2m MSI(-X) doorbell").
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/v3OSX=lX_Lxx6my=lT=UUBP
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUdsSMAAoJEMDTa8Ir7ZwVAk0P/0m1ThqDqrzqvRDQ1mu8aay1
+8GM1n65I4QYfhJlTBacg4WyDofjRWokxCB/pcfDe7gATNTvHEKWnh++gZ3Q9Iexu
+RkXXLJu/U3snjsob7ZqSfViNURBNTD9CjeGsr/M5TguUL2dRAQFeOg2tV4HmvOJ1
+QwWCmHSpiIo/MX1FoVGlYIc6Tx2+CMKB1PWGJ+COjmJI8stAXI6/5Va+dY/aT4Ue
+YUjfPS1OZcSKCb8bY4C27eoi7f+1iQg5LFjrdD8Ai6Ag6cKFX2n7an+TQg7jaTaz
+wLCtukfEyB8V/JiXgH6jj4VFBC2T+QaEKOh/Te0kBrrE9LjKY6VkjghoMue1Awcy
+Wam7SDbrE55aQg8LuIIKTRWze91UcOu/eQ/SzsK38ncGP7Jwq9OMtyH2p0s1iYt1
+6PS9XtUYnsMzphc3wOoKKJbBXSrn8A2V1yfV3OUcPeaM9KX2NDpNlbdeJ+KqBc+y
+iFS0JSONN8ZVjZ2z7wcLkBAmNAhM7KWVn2HhBOYn30w6l1VXsCyqCmqSkeAtjnrk
+OIq4p9GCoAj88LqTe4k3clPzCM86ZhgCWdEIWLv+86ALJloLk7w3PpU2Hl7Lx8U+
+BsGgBC1NJvqfFtZESczTdAdNrczzJzUH9Y0Fv8VjG0V+DhNcnRSYQxl+jdYTkPNq
+PTeOZm5b4MlfK5f4zjJH
+=1Xan
+-----END PGP SIGNATURE-----
+
+--Sig_/v3OSX=lX_Lxx6my=lT=UUBP--
