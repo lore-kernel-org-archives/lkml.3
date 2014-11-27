@@ -1,79 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849AbaK0Xrk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 18:47:40 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:53941 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802AbaK0Xrj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 18:47:39 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Xunlei Pang <pang.xunlei@linaro.org>, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
-        Sven Schnelle <svens@stackframe.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: Re: [RFC PATCH 1/4] rtc/mxc: Convert get_alarm_or_time()/set_alarm_or_time() to use time64_t
-Date: Fri, 28 Nov 2014 00:47:14 +0100
-Message-ID: <4653852.SPZ1tnKaLF@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.11.1411272350190.3961@nanos>
-References: <1417089760-26848-1-git-send-email-pang.xunlei@linaro.org> <1417089760-26848-2-git-send-email-pang.xunlei@linaro.org> <alpine.DEB.2.11.1411272350190.3961@nanos>
+	id S1751199AbaK0Xur (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 18:50:47 -0500
+Received: from ozlabs.org ([103.22.144.67]:54632 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750729AbaK0Xuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 18:50:44 -0500
+Date: Fri, 28 Nov 2014 10:50:36 +1100
+From: Paul Mackerras <paulus@samba.org>
+To: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2 3/4] powernv: cpuidle: Redesign idle states management
+Message-ID: <20141127235035.GC12871@iris.ozlabs.ibm.com>
+References: <1416914279-30384-1-git-send-email-shreyas@linux.vnet.ibm.com>
+ <1416914279-30384-4-git-send-email-shreyas@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:T6vvpSyC+ZC1B8GkaDcXgOit49Wc+jPBbQsHRdxuxLv
- 1tFL1SI34pSGfm1PyWTTUw3WrbDMNGUgAg/UuC598DibAR9/zm
- xnN9nPGjK9g+gXKIPSqDaAP8rG1BnlzC2+mu9bN+3iuVNemHKO
- SPMe78ZdBURVvv4GZs68/BQdGDwCge6iiFKwSoJXCfbaCgGxhn
- lYNbJ8wDTpYYAe6FZAr0FQ/P5ZP6tn6o1sjDBqNFtWtA+hkBRF
- 3Ad2xDD9t+PjTGaSlVBgzEPI4O1wtB58LmO/Uh1ZLXKVyozlmk
- U48Wa0DuVNrbwwQqiilzJlMM43CnY7ZM5ynRNmzvOWULVWJ/mm
- d5U9f27rhW4AihK/8C5k=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416914279-30384-4-git-send-email-shreyas@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 28 November 2014 00:02:47 Thomas Gleixner wrote:
-> 
-> >  static int rtc_update_alarm(struct device *dev, struct rtc_time *alrm)
-> >  {
-> >       struct rtc_time alarm_tm, now_tm;
-> > -     unsigned long now, time;
-> > +     time64_t now, time;
-> >       struct platform_device *pdev = to_platform_device(dev);
-> >       struct rtc_plat_data *pdata = platform_get_drvdata(pdev);
-> >       void __iomem *ioaddr = pdata->ioaddr;
-> >  
-> >       now = get_alarm_or_time(dev, MXC_RTC_TIME);
-> > -     rtc_time_to_tm(now, &now_tm);
-> > +     rtc_time64_to_tm(now, &now_tm);
-> 
-> So here you convert that to struct rtc_time.
-> 
-> >       alarm_tm.tm_year = now_tm.tm_year;
-> >       alarm_tm.tm_mon = now_tm.tm_mon;
-> >       alarm_tm.tm_mday = now_tm.tm_mday;
-> >       alarm_tm.tm_hour = alrm->tm_hour;
-> >       alarm_tm.tm_min = alrm->tm_min;
-> >       alarm_tm.tm_sec = alrm->tm_sec;
-> > -     rtc_tm_to_time(&alarm_tm, &time);
-> > +     time = rtc_tm_to_time64(&alarm_tm);
-> 
-> Just to convert it back and then do the reverse operation in
-> set_alarm_or_time()
+On Tue, Nov 25, 2014 at 04:47:58PM +0530, Shreyas B. Prabhu wrote:
+[snip]
+> +2:
+> +	/* Sleep or winkle */
+> +	li	r7,1
+> +	mfspr	r8,SPRN_PIR
+> +	/*
+> +	 * The last 3 bits of PIR represents the thread id of a cpu
+> +	 * in power8. This will need adjusting for power7.
+> +	 */
+> +	andi.	r8,r8,0x07			/* Get thread id into r8 */
+> +	rotld	r7,r7,r8
 
-Apparently the code originally tried to make the alarm fire within 
-the next 24 hours. What you and the author of c92182ee0b5a3
-("drivers/rtc/rtc-mxc.c: make alarm work") apparently missed is that
-it is taking the year/mon/mday value of today and the hour/min/sec
-value from the function argument.
+I would suggest adding another u8 field to the paca to store our
+thread bit, and initialize it to 1 << (cpu_id % threads_per_core)
+early on.  That will handle the POWER7 case correctly and reduce these
+four instructions to one.
 
-I think the idea was to make it work with user space that sets only
-the last three fields (which would work on the typical x86 rtc),
-but after that other patch, the function no longer makes any sense,
-since it will set the alarm in the past half of the time.
+> +
+> +	ld	r14,PACA_CORE_IDLE_STATE_PTR(r13)
+> +lwarx_loop1:
+> +	lwarx	r15,0,r14
+> +	andc	r15,r15,r7			/* Clear thread bit */
+> +
+> +	andi.	r15,r15,PNV_CORE_IDLE_THREAD_BITS
+> +	beq	last_thread
+> +
+> +	/* Not the last thread to goto sleep */
+> +	stwcx.	r15,0,r14
+> +	bne-	lwarx_loop1
+> +	b	common_enter
+> +
+> +last_thread:
+> +	LOAD_REG_ADDR(r3, pnv_need_fastsleep_workaround)
+> +	lbz	r3,0(r3)
+> +	cmpwi	r3,1
+> +	bne	common_enter
+> +	/*
+> +	 * Last thread of the core entering sleep. Last thread needs to execute
+> +	 * the hardware bug workaround code. Before that, set the lock bit to
+> +	 * avoid the race of other threads waking up and undoing workaround
+> +	 * before workaround is applied.
+> +	 */
+> +	ori	r15,r15,PNV_CORE_IDLE_LOCK_BIT
+> +	stwcx.	r15,0,r14
+> +	bne-	lwarx_loop1
+> +
+> +	/* Fast sleep workaround */
+> +	li	r3,1
+> +	li	r4,1
+> +	li	r0,OPAL_CONFIG_CPU_IDLE_STATE
+> +	bl	opal_call_realmode
+> +
+> +	/* Clear Lock bit */
+> +	andi.	r15,r15,PNV_CORE_IDLE_THREAD_BITS
+> +	stw	r15,0(r14)
 
-	Arnd
+In this case we know the result of the andi. will be 0, so this could
+be just li r0,0; stw r0,0(r14).
+
+> +
+> +common_enter: /* common code for all the threads entering sleep */
+> +	IDLE_STATE_ENTER_SEQ(PPC_SLEEP)
+>  
+>  _GLOBAL(power7_idle)
+>  	/* Now check if user or arch enabled NAP mode */
+> @@ -141,49 +191,16 @@ _GLOBAL(power7_idle)
+>  
+>  _GLOBAL(power7_nap)
+>  	mr	r4,r3
+> -	li	r3,0
+> +	li	r3,PNV_THREAD_NAP
+>  	b	power7_powersave_common
+>  	/* No return */
+>  
+>  _GLOBAL(power7_sleep)
+> -	li	r3,1
+> +	li	r3,PNV_THREAD_SLEEP
+>  	li	r4,1
+>  	b	power7_powersave_common
+>  	/* No return */
+>  
+> -/*
+> - * Make opal call in realmode. This is a generic function to be called
+> - * from realmode from reset vector. It handles endianess.
+> - *
+> - * r13 - paca pointer
+> - * r1  - stack pointer
+> - * r3  - opal token
+> - */
+> -opal_call_realmode:
+> -	mflr	r12
+> -	std	r12,_LINK(r1)
+> -	ld	r2,PACATOC(r13)
+> -	/* Set opal return address */
+> -	LOAD_REG_ADDR(r0,return_from_opal_call)
+> -	mtlr	r0
+> -	/* Handle endian-ness */
+> -	li	r0,MSR_LE
+> -	mfmsr	r12
+> -	andc	r12,r12,r0
+> -	mtspr	SPRN_HSRR1,r12
+> -	mr	r0,r3			/* Move opal token to r0 */
+> -	LOAD_REG_ADDR(r11,opal)
+> -	ld	r12,8(r11)
+> -	ld	r2,0(r11)
+> -	mtspr	SPRN_HSRR0,r12
+> -	hrfid
+> -
+> -return_from_opal_call:
+> -	FIXUP_ENDIAN
+> -	ld	r0,_LINK(r1)
+> -	mtlr	r0
+> -	blr
+> -
+>  #define CHECK_HMI_INTERRUPT						\
+>  	mfspr	r0,SPRN_SRR1;						\
+>  BEGIN_FTR_SECTION_NESTED(66);						\
+> @@ -196,10 +213,8 @@ ALT_FTR_SECTION_END_NESTED_IFSET(CPU_FTR_ARCH_207S, 66);		\
+>  	/* Invoke opal call to handle hmi */				\
+>  	ld	r2,PACATOC(r13);					\
+>  	ld	r1,PACAR1(r13);						\
+> -	std	r3,ORIG_GPR3(r1);	/* Save original r3 */		\
+> -	li	r3,OPAL_HANDLE_HMI;	/* Pass opal token argument*/	\
+> +	li	r0,OPAL_HANDLE_HMI;	/* Pass opal token argument*/	\
+>  	bl	opal_call_realmode;					\
+> -	ld	r3,ORIG_GPR3(r1);	/* Restore original r3 */	\
+>  20:	nop;
+>  
+>  
+> @@ -210,12 +225,91 @@ _GLOBAL(power7_wakeup_tb_loss)
+>  BEGIN_FTR_SECTION
+>  	CHECK_HMI_INTERRUPT
+>  END_FTR_SECTION_IFSET(CPU_FTR_HVMODE)
+> +
+> +	li	r7,1
+> +	mfspr	r8,SPRN_PIR
+> +	/*
+> +	 * The last 3 bits of PIR represents the thread id of a cpu
+> +	 * in power8. This will need adjusting for power7.
+> +	 */
+> +	andi.	r8,r8,0x07		/* Get thread id into r8 */
+> +	rotld	r7,r7,r8
+> +	/* r7 now has 'thread_id'th bit set */
+> +
+> +	ld	r14,PACA_CORE_IDLE_STATE_PTR(r13)
+> +lwarx_loop2:
+> +	lwarx	r15,0,r14
+> +	andi.	r9,r15,PNV_CORE_IDLE_LOCK_BIT
+> +	/*
+> +	 * Lock bit is set in one of the 2 cases-
+> +	 * a. In the sleep/winkle enter path, the last thread is executing
+> +	 * fastsleep workaround code.
+> +	 * b. In the wake up path, another thread is executing fastsleep
+> +	 * workaround undo code or resyncing timebase or restoring context
+> +	 * In either case loop until the lock bit is cleared.
+> +	 */
+> +	bne	lwarx_loop2
+> +
+> +	cmpwi	cr2,r15,0
+> +	or	r15,r15,r7		/* Set thread bit */
+> +
+> +	beq	cr2,first_thread
+> +
+> +	/* Not first thread in core to wake up */
+> +	stwcx.	r15,0,r14
+> +	bne-	lwarx_loop2
+> +	b	common_exit
+> +
+> +first_thread:
+> +	/* First thread in core to wakeup */
+> +	ori	r15,r15,PNV_CORE_IDLE_LOCK_BIT
+> +	stwcx.	r15,0,r14
+> +	bne-	lwarx_loop2
+> +
+> +	LOAD_REG_ADDR(r3, pnv_need_fastsleep_workaround)
+> +	lbz	r3,0(r3)
+> +	cmpwi	r3,1
+> +	/*  skip fastsleep workaround if its not needed */
+> +	bne	timebase_resync
+> +
+> +	/* Undo fast sleep workaround */
+> +	mfcr	r16	/* Backup CR into a non-volatile register */
+> +	li	r3,1
+> +	li	r4,0
+> +	li	r0,OPAL_CONFIG_CPU_IDLE_STATE
+> +	bl	opal_call_realmode
+> +	mtcr	r16	/* Restore CR */
+> +
+> +	/* Do timebase resync if we are waking up from sleep. Use cr1 value
+> +	 * set in exceptions-64s.S */
+> +	ble	cr1,clear_lock
+> +
+> +timebase_resync:
+>  	/* Time base re-sync */
+> -	li	r3,OPAL_RESYNC_TIMEBASE
+> +	li	r0,OPAL_RESYNC_TIMEBASE
+>  	bl	opal_call_realmode;
+
+So if pnv_need_fastsleep_workaround is zero, we always do the timebase
+resync, but if pnv_need_fastsleep_workaround is one, we only do the
+timebase resync if we had a loss of state.  Is that really what you
+meant?
+
+> -
+>  	/* TODO: Check r3 for failure */
+>  
+> +clear_lock:
+> +	andi.	r15,r15,PNV_CORE_IDLE_THREAD_BITS
+> +	stw	r15,0(r14)
+> +
+> +common_exit:
+> +	li	r5,PNV_THREAD_RUNNING
+> +	stb     r5,PACA_THREAD_IDLE_STATE(r13)
+> +
+> +#ifdef CONFIG_KVM_BOOK3S_HV_POSSIBLE
+> +	li      r0,KVM_HWTHREAD_IN_KERNEL
+> +	stb     r0,HSTATE_HWTHREAD_STATE(r13)
+> +	/* Order setting hwthread_state vs. testing hwthread_req */
+> +	sync
+> +	lbz     r0,HSTATE_HWTHREAD_REQ(r13)
+> +	cmpwi   r0,0
+> +	beq     6f
+> +	b       kvm_start_guest
+> +6:
+> +#endif
+
+I'd prefer not to duplicate this code.  Could you instead branch back
+to the code in exceptions-64s.S?  Or call this code via a bl and get
+back to exceptions-64s.S via a blr.
+
+> +
+>  	REST_NVGPRS(r1)
+>  	REST_GPR(2, r1)
+>  	ld	r3,_CCR(r1)
+> diff --git a/arch/powerpc/platforms/powernv/opal-wrappers.S b/arch/powerpc/platforms/powernv/opal-wrappers.S
+> index feb549a..b2aa93b 100644
+> --- a/arch/powerpc/platforms/powernv/opal-wrappers.S
+> +++ b/arch/powerpc/platforms/powernv/opal-wrappers.S
+> @@ -158,6 +158,43 @@ opal_tracepoint_return:
+>  	blr
+>  #endif
+>  
+> +/*
+> + * Make opal call in realmode. This is a generic function to be called
+> + * from realmode. It handles endianness.
+> + *
+> + * r13 - paca pointer
+> + * r1  - stack pointer
+> + * r0  - opal token
+> + */
+> +_GLOBAL(opal_call_realmode)
+> +	mflr	r12
+> +	std	r12,_LINK(r1)
+
+This is a bug waiting to happen.  Using _LINK(r1) was OK in this
+code's previous location, since there we know there is a
+INT_FRAME_SIZE-sized stack frame and the _LINK field is basically
+unused.  Now that you're making this available to call from anywhere,
+you can't trash the caller's stack frame like this.  You need to use
+PPC_LR_STKOFF(r1) instead.
+
+> +	ld	r2,PACATOC(r13)
+> +	/* Set opal return address */
+> +	LOAD_REG_ADDR(r12,return_from_opal_call)
+> +	mtlr	r12
+> +
+> +	mfmsr	r12
+> +#ifdef __LITTLE_ENDIAN__
+> +	/* Handle endian-ness */
+> +	li	r11,MSR_LE
+> +	andc	r12,r12,r11
+> +#endif
+> +	mtspr	SPRN_HSRR1,r12
+> +	LOAD_REG_ADDR(r11,opal)
+> +	ld	r12,8(r11)
+> +	ld	r2,0(r11)
+> +	mtspr	SPRN_HSRR0,r12
+> +	hrfid
+> +
+> +return_from_opal_call:
+> +#ifdef __LITTLE_ENDIAN__
+> +	FIXUP_ENDIAN
+> +#endif
+> +	ld	r12,_LINK(r1)
+> +	mtlr	r12
+> +	blr
+
+Paul.
