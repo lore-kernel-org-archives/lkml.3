@@ -1,74 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751198AbaK0WvQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 17:51:16 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:38175 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729AbaK0WvO (ORCPT
+	id S1751187AbaK0W4D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 17:56:03 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50396 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750950AbaK0W4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 17:51:14 -0500
-Date: Thu, 27 Nov 2014 22:51:00 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Kukjin Kim <kgene.kim@samsung.com>,
-        lauraa@codeaurora.org, linux-omap@vger.kernel.org,
-        linus.walleij@linaro.org, tony@atomide.com, drake@endlessm.com,
-        loeliger@gmail.com, Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH v9 0/7] Enable L2 cache support on Exynos4210/4x12 SoCs
-Message-ID: <20141127225100.GA3840@n2100.arm.linux.org.uk>
-References: <1416224909-4290-1-git-send-email-m.szyprowski@samsung.com>
+	Thu, 27 Nov 2014 17:56:01 -0500
+Message-ID: <5477ABF3.1020605@pengutronix.de>
+Date: Thu, 27 Nov 2014 23:55:47 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416224909-4290-1-git-send-email-m.szyprowski@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: Kedareswara rao Appana <appana.durga.rao@xilinx.com>, wg@grandegger.com,
+        michal.simek@xilinx.com, grant.likely@linaro.org, robh+dt@kernel.org,
+        linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Kedareswara rao Appana <appanad@xilinx.com>
+Subject: Re: [PATCH v3] can: Convert to runtime_pm
+References: <6b6db31d46074512a322eae6e4ef64d4@BN1BFFO11FD038.protection.gbl> <54779501.8060009@pengutronix.de> <820358d5369f465188dfa9306eae5658@BL2FFO11FD009.protection.gbl>
+In-Reply-To: <820358d5369f465188dfa9306eae5658@BL2FFO11FD009.protection.gbl>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="51knajKoOKTW4w1i0LO6F0CUOfHOJqo0v"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 12:48:22PM +0100, Marek Szyprowski wrote:
-> This is an updated patchset, which intends to add support for L2 cache
-> on Exynos4 SoCs on boards running under secure firmware, which requires
-> certain initialization steps to be done with help of firmware, as
-> selected registers are writable only from secure mode.
-> 
-> First four patches extend existing support for secure write in L2C driver
-> to account for design of secure firmware running on Exynos. Namely:
->  1) direct read access to certain registers is needed on Exynos, because
->     secure firmware calls set several registers at once,
->  2) not all boards are running secure firmware, so .write_sec callback
->     needs to be installed in Exynos firmware ops initialization code,
->  3) write access to {DATA,TAG}_LATENCY_CTRL registers fron non-secure world
->     is not allowed and so must use l2c_write_sec as well,
->  4) on certain boards, default value of prefetch register is incorrect
->     and must be overridden at L2C initialization.
-> For boards running with firmware that provides access to individual
-> L2C registers this series should introduce no functional changes. However
-> since the driver is widely used on other platforms I'd like to kindly ask
-> any interested people for testing.
-> 
-> Further three patches add implementation of .write_sec and .configure
-> callbacks for Exynos secure firmware and necessary DT nodes to enable
-> L2 cache.
-> 
-> Changes in this version tested on Exynos4412-based TRATS2 and OdroidU3+
-> boards (both with secure firmware). There should be no functional change
-> for Exynos boards running without secure firmware. I do not have access
-> to affected non-Exynos boards, so I could not test on them.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--51knajKoOKTW4w1i0LO6F0CUOfHOJqo0v
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-So, I applied this series, and now I get a conflicts between my tree and
-arm-soc for:
+On 11/27/2014 11:47 PM, S=C3=B6ren Brinkmann wrote:
+> On Thu, 2014-11-27 at 10:17PM +0100, Marc Kleine-Budde wrote:
+>> On 11/27/2014 02:08 PM, Kedareswara rao Appana wrote:
+>>> Instead of enabling/disabling clocks at several locations in the driv=
+er,
+>>> use the runtime_pm framework. This consolidates the actions for
+>>> runtime PM in the appropriate callbacks and makes the driver more
+>>> readable and mantainable.
+>>>
+>>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>>> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
+>>> ---
+>>> Changes for v3:
+>>>   - Converted the driver to use runtime_pm.
+>>> Changes for v2:
+>>>   - Removed the struct platform_device* from suspend/resume
+>>>     as suggest by Lothar.
+>>>
+>>>  drivers/net/can/xilinx_can.c |  119 +++++++++++++++++++++++++-------=
+---------
+>>>  1 files changed, 72 insertions(+), 47 deletions(-)
+>>>
+>>> diff --git a/drivers/net/can/xilinx_can.c b/drivers/net/can/xilinx_ca=
+n.c
+>>> index 8a998e3..1be28ed 100644
+>>> --- a/drivers/net/can/xilinx_can.c
+>>> +++ b/drivers/net/can/xilinx_can.c
+> [...]
+>>> @@ -1030,7 +1046,10 @@ static int __maybe_unused xcan_resume(struct d=
+evice *dev)
+>>>  	return 0;
+>>>  }
+>>> =20
+>>> -static SIMPLE_DEV_PM_OPS(xcan_dev_pm_ops, xcan_suspend, xcan_resume)=
+;
+>>> +static const struct dev_pm_ops xcan_dev_pm_ops =3D {
+>>> +	SET_SYSTEM_SLEEP_PM_OPS(xcan_suspend, xcan_resume)
+>>> +	SET_PM_RUNTIME_PM_OPS(xcan_runtime_suspend, xcan_runtime_resume, NU=
+LL)
+>>> +};
+>>> =20
+>>>  /**
+>>>   * xcan_probe - Platform registration call
+>>> @@ -1071,7 +1090,7 @@ static int xcan_probe(struct platform_device *p=
+dev)
+>>>  		return -ENOMEM;
+>>> =20
+>>>  	priv =3D netdev_priv(ndev);
+>>> -	priv->dev =3D ndev;
+>>> +	priv->dev =3D &pdev->dev;
+>>>  	priv->can.bittiming_const =3D &xcan_bittiming_const;
+>>>  	priv->can.do_set_mode =3D xcan_do_set_mode;
+>>>  	priv->can.do_get_berr_counter =3D xcan_get_berr_counter;
+>>> @@ -1137,6 +1156,11 @@ static int xcan_probe(struct platform_device *=
+pdev)
+>>> =20
+>>>  	netif_napi_add(ndev, &priv->napi, xcan_rx_poll, rx_max);
+>>> =20
+>>> +	pm_runtime_set_active(&pdev->dev);
+>>> +	pm_runtime_irq_safe(&pdev->dev);
+>>
+>> You use just clock_enable()/disable() in the runtime functions, thus y=
+ou
+>> can say they are irq_safe. On the other the the zync grpio driver uses=
 
-arch/arm/mach-exynos/firmware.c
-arch/arm/mach-exynos/sleep.S
+>> "full" prepare_enable/disable_unprepare calls. What's best practice he=
+re?
+>=20
+> IIRC, the prepare/unprepare functions can sleep. xcan_get_berr_counter
+> is called from atomic context. So, I think we have to use the
+> disable/enable functions without the prepare/unprepare.
+> In the GPIO driver the that problem does not exist.
 
-So, I'm going to un-stage the exynos bits, and we'll have to work out
-some way to handle those.
+IC, yes, correct.
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+This is why we introducted in other drivers a __get_berr_counter()
+function, that doesn't touch the clocks, which is used from within the
+driver (from the atomic contects), while get_berr_counter() will fiddle
+with the clocks. This function is used for the
+priv->can.do_get_berr_counter callback.
+
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--51knajKoOKTW4w1i0LO6F0CUOfHOJqo0v
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUd6vzAAoJECte4hHFiupUCtwP/2b/iHS4WK7Qh9I+lHgv6SEI
+XXtKjGJ/ePMtu/23HIONi5Rj5EQSnY0q8umaYJh+iveuOfRPUUMVn+fRRTwluBnC
+PVNlRtOyysa7X5dj8FaGGzOn31fs3iSo/A+ZYt/btIv/FdAsYtgCdrqUbMzjc7yX
+uA9aG+hbYCFk5DD5hV71gKJGOe00BYYRvnXhGQlwR9rOM4RnCiFQmyOahKjA8c7F
+BVGnLZ3NRRK3dwvEwhCJ8zsEDKquPIwz48K2aqVcw3jKV/THoXnd5bMgvGM9BFXq
+nZ18nUlyuL4atIYMwyL8AZTDQ2YgGgBWV6bSmjWDbYx5t5XfUz7TIrCQOHNBwhcR
+Gg/px8mpZ5J7IAaNulJaAErmhsgJfm+6+yYphxyLXd0D/6wGFSjs3RSjwqfKi4oi
+jTeVJ/5N5QQHicKLYmkK/7eD+G8H8OG9RsmEVUW08VmlLFxaB2G4Js32va1J3Thv
+xpObEZJPf1C+VfHmNkgvdr/XdICD+yLshSRw/CEwpffLEtl/z/UJj8m+nKX3UXFW
+SDmio4LPcLkiT0TpvAyxv0l4iRbxhC4v2ICUn5ntbzyEQ7IUVY9qfCb90gFmpiQm
+IU/bFIC1xc2Mbr6F/r5UEAqkmPjAQmluOvo5GtW9IhDY9CC4h6QpOZDPsmZT1y7l
+3kPYDUPIsbVmrj99+S+8
+=+Uzd
+-----END PGP SIGNATURE-----
+
+--51knajKoOKTW4w1i0LO6F0CUOfHOJqo0v--
