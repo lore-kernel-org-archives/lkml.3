@@ -1,88 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925AbaK0Dkq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 22:40:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46413 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822AbaK0Dko (ORCPT
+	id S1753832AbaK0Drc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 22:47:32 -0500
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:37207 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753367AbaK0Drb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 22:40:44 -0500
-Date: Wed, 26 Nov 2014 19:39:23 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rob Herring <robherring2@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Jeremy Kerr <jeremy.kerr@au1.ibm.com>
-Subject: Re: [PATCH] drivers/core/of: Add symlink to device-tree from devices
- with an OF node
-Message-ID: <20141127033923.GA28286@kroah.com>
-References: <1415342031.4925.27.camel@kernel.crashing.org>
- <1415342117.4925.29.camel@kernel.crashing.org>
- <1415596626.5769.14.camel@kernel.crashing.org>
- <CAL_JsqKG=vpeGKj3v-2VW9oGQsnmuYMHRfy6LuXDXE=ROjHT4w@mail.gmail.com>
- <1415841047.5124.62.camel@kernel.crashing.org>
+	Wed, 26 Nov 2014 22:47:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415841047.5124.62.camel@kernel.crashing.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <3863623.tcGxuFQcZa@diego>
+References: <1416381319-31117-1-git-send-email-sonnyrao@chromium.org> <3863623.tcGxuFQcZa@diego>
+From: Sonny Rao <sonnyrao@chromium.org>
+Date: Wed, 26 Nov 2014 19:47:10 -0800
+X-Google-Sender-Auth: 8amZTZscjbX--mTC36efqDiZDZ0
+Message-ID: <CAPz6YkXOS08hv7x+DM3roTuZYMbh9n4=kpTrH8NGYUffczQwLA@mail.gmail.com>
+Subject: Re: [PATCH] clk: rockchip: rk3288 export i2s0_clkout for use in DT
+To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-rockchip@lists.infradead.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Douglas Anderson <dianders@chromium.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Mark yao <mark.yao@rock-chips.com>,
+        Kever Yang <kever.yang@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 13, 2014 at 12:10:47PM +1100, Benjamin Herrenschmidt wrote:
-> So I've been annoyed lately with having a bunch of devices such as i2c
-> eeproms (for use by VPDs, server world !) and other bits and pieces that
-> I want to be able to identify from userspace, and possibly provide
-> additional data about from FW.
-> 
-> Basically, it boils down to correlating the sysfs device with the OF
-> tree device node, so that user space can use device-tree info such as
-> additional "location" or "label" (or whatever else we can come up with)
-> propreties to identify a given device, or get some attributes of use
-> about it, etc...
-> 
-> Now, so far, we've done that in some subsystem in a fairly ad-hoc basis
-> using "devspec" properties. For example, PCI creates them if it can
-> correlate the probed device with a DT node. Some powerpc specific busses
-> do that too.
-> 
-> However, i2c doesn't and it would be nice to have something more generic
-> since technically any device can have a corresponding device tree node.
-> 
-> This patch adds an "of_node" symlink to devices that have a non-NULL
-> dev->of_node pointer, the patch is pretty trivial and seems to work just
-> fine for me.
-> 
-> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> ---
-> diff --git a/drivers/base/core.c b/drivers/base/core.c
-> index 20da3ad..8c7b607 100644
-> --- a/drivers/base/core.c
-> +++ b/drivers/base/core.c
-> @@ -493,6 +493,15 @@ static int device_add_attrs(struct device *dev)
->  			goto err_remove_dev_groups;
->  	}
->  
-> +#ifdef CONFIG_OF
-> +	if (dev->of_node) {
-> +		error = sysfs_create_link(&dev->kobj, &dev->of_node->kobj,
-> +					  "of_node");
-> +		if (error)
-> +			dev_warn(dev, "Error %d creating of_node link\n", error);
-> +	}
-> +#endif /* CONFIG_OF */
-> +
->  	return 0;
->  
->   err_remove_dev_groups:
-> 
+On Wed, Nov 26, 2014 at 3:32 PM, Heiko Stübner <heiko@sntech.de> wrote:
+> Am Dienstag, 18. November 2014, 23:15:19 schrieb Sonny Rao:
+>> This exposes the clock that comes out of the i2s block which generally
+>> goes to the audio codec.
+>>
+>> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+>
+> applied to my clk branch after removing the CLK_SET_RATE_PARENT
 
-Are you going to resend a changed version of this?
+Hi, sorry for the delay, and thanks for fixing it.  I think when I
+applied the patch to next-20141118 that had a CLK_SET_RATE_PARENT in
+it from this patch:
 
-thanks,
+commit fc69ed70c16a31d6a77ec47a30a9fe941f763f1e
+Author: Jianqun <jay.xu@rock-chips.com>
+Date:   Tue Sep 30 11:12:04 2014 +0800
 
-greg k-h
+    clk: rockchip: rk3288: i2s_frac adds flag to set parent's rate
+
+
+I agree that is is not necessary and maybe not desirable.  Thanks again!
+
+
+> Heiko
