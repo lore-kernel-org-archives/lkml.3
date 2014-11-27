@@ -1,73 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728AbaK0RY2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 12:24:28 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:37787 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407AbaK0RX2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 12:23:28 -0500
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-To: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        alex.williamson@redhat.com
-Cc: will.deacon@arm.com, tech@virtualopensystems.com,
-        christoffer.dall@linaro.org, eric.auger@linaro.org,
-        kim.phillips@freescale.com, marc.zyngier@arm.com,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        kvm@vger.kernel.org (open list:VFIO DRIVER),
-        linux-api@vger.kernel.org (open list:ABI/API),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v3 3/6] vfio: introduce the VFIO_DMA_MAP_FLAG_NOEXEC flag
-Date: Thu, 27 Nov 2014 18:22:53 +0100
-Message-Id: <1417108976-10113-4-git-send-email-a.motakis@virtualopensystems.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1417108976-10113-1-git-send-email-a.motakis@virtualopensystems.com>
-References: <1417108976-10113-1-git-send-email-a.motakis@virtualopensystems.com>
+	id S1751805AbaK0RZV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 12:25:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41593 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751111AbaK0RZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 12:25:18 -0500
+Date: Thu, 27 Nov 2014 19:24:49 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
+        paulus@samba.org, akpm@linux-foundation.org, heiko.carstens@de.ibm.com,
+        schwidefsky@de.ibm.com, borntraeger@de.ibm.com, tglx@linutronix.de,
+        David.Laight@ACULAB.COM
+Subject: Re: [PATCH RFC 2/2] mm, sched: trigger might_sleep() in
+ might_fault() when pagefaults are disabled
+Message-ID: <20141127172449.GA30380@redhat.com>
+References: <1416915806-24757-1-git-send-email-dahi@linux.vnet.ibm.com>
+ <1417108217-42687-1-git-send-email-dahi@linux.vnet.ibm.com>
+ <1417108217-42687-3-git-send-email-dahi@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417108217-42687-3-git-send-email-dahi@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We introduce the VFIO_DMA_MAP_FLAG_NOEXEC flag to the VFIO dma map call,
-and expose its availability via the capability VFIO_DMA_NOEXEC_IOMMU.
-This way the user can control whether the XN flag will be set on the
-requested mappings. The IOMMU_NOEXEC flag needs to be available for all
-the IOMMUs of the container used.
+On Thu, Nov 27, 2014 at 06:10:17PM +0100, David Hildenbrand wrote:
+> Commit 662bbcb2747c2422cf98d3d97619509379eee466 removed might_sleep() checks
+> for all user access code (that uses might_fault()).
+> 
+> The reason was to disable wrong "sleep in atomic" warnings in the following
+> scenario:
+> 	pagefault_disable();
+> 	rc = copy_to_user(...);
+> 	pagefault_enable();
+> 
+> Which is valid, as pagefault_disable() increments the preempt counter and
+> therefore disables the pagefault handler. copy_to_user() will not sleep and return
+> an invalid return code if a page is not available.
+> 
+> However, as all might_sleep() checks are removed, CONFIG_DEBUG_ATOMIC_SLEEP
+> would no longer detect the following scenario:
+> 	spin_lock(&lock);
+> 	rc = copy_to_user(...);
+> 	spin_unlock(&lock);
+> 
+> If the kernel is compiled with preemption turned on, the preempt counter would
+> be incremented and copy_to_user() would never sleep. However, with preemption
+> turned off, the preempt counter will not be touched, we will therefore sleep in
+> atomic context. We really want to enable CONFIG_DEBUG_ATOMIC_SLEEP checks for
+> user access functions again, otherwise horrible deadlocks might be hard to debug.
+> 
+> Root of all evil is that pagefault_disable() acted almost as preempt_disable(),
+> depending on preemption being turned on/off.
+> 
+> As we now have a fixed pagefault_disable() implementation in place, that uses
+> own bits in the preempt counter, we can reenable might_sleep() checks.
+> 
+> This patch reverts commit 662bbcb2747c2422cf98d3d97619509379eee466 taking care
+> of the !MMU optimization and the new pagefault_disabled() check.
+> 
+> Signed-off-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
+> ---
+>  include/linux/kernel.h |  9 +++++++--
+>  mm/memory.c            | 15 ++++-----------
+>  2 files changed, 11 insertions(+), 13 deletions(-)
+> 
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 3d770f55..64b5f93 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -225,9 +225,14 @@ static inline u32 reciprocal_scale(u32 val, u32 ep_ro)
+>  	return (u32)(((u64) val * ep_ro) >> 32);
+>  }
+>  
+> -#if defined(CONFIG_MMU) && \
+> -	(defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP))
+> +#if defined(CONFIG_MMU) && defined(CONFIG_PROVE_LOCKING)
+>  void might_fault(void);
+> +#elif defined(CONFIG_MMU) && defined(CONFIG_DEBUG_ATOMIC_SLEEP)
+> +static inline void might_fault(void)
+> +{
+> +	if (unlikely(!pagefault_disabled()))
+> +		__might_sleep(__FILE__, __LINE__, 0);
 
-Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
----
- include/uapi/linux/vfio.h | 6 ++++++
- 1 file changed, 6 insertions(+)
+This __FILE__/__FILE__ will always point at kernel.h
 
-diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
-index 59d516f..9ade02b 100644
---- a/include/uapi/linux/vfio.h
-+++ b/include/uapi/linux/vfio.h
-@@ -31,6 +31,7 @@ enum vfio_iommu_cap {
- 					   (ex. PCIe NoSnoop stripping) */
- 	VFIO_EEH = 5,			/* Check if EEH is supported */
- 	VFIO_TYPE1_NESTING_IOMMU = 6,	/* Two-stage IOMMU, implies v2  */
-+	VFIO_DMA_NOEXEC_IOMMU = 7,
- };
- 
- 
-@@ -396,12 +397,17 @@ struct vfio_iommu_type1_info {
-  *
-  * Map process virtual addresses to IO virtual addresses using the
-  * provided struct vfio_dma_map. Caller sets argsz. READ &/ WRITE required.
-+ *
-+ * To use the VFIO_DMA_MAP_FLAG_NOEXEC flag, the container must support the
-+ * VFIO_DMA_NOEXEC_IOMMU capability. If mappings are created using this flag,
-+ * any groups subsequently added to the container must support this capability.
-  */
- struct vfio_iommu_type1_dma_map {
- 	__u32	argsz;
- 	__u32	flags;
- #define VFIO_DMA_MAP_FLAG_READ (1 << 0)		/* readable from device */
- #define VFIO_DMA_MAP_FLAG_WRITE (1 << 1)	/* writable from device */
-+#define VFIO_DMA_MAP_FLAG_NOEXEC (1 << 2)	/* not executable from device */
- 	__u64	vaddr;				/* Process virtual address */
- 	__u64	iova;				/* IO virtual address */
- 	__u64	size;				/* Size of mapping (bytes) */
--- 
-2.1.3
+You want a macro to wrap this up.
 
+> +}
+>  #else
+>  static inline void might_fault(void) { }
+>  #endif
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 3e50383..0e59db9 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -3699,7 +3699,7 @@ void print_vma_addr(char *prefix, unsigned long ip)
+>  	up_read(&mm->mmap_sem);
+>  }
+>  
+> -#if defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP)
+> +#ifdef CONFIG_PROVE_LOCKING
+>  void might_fault(void)
+>  {
+>  	/*
+> @@ -3711,17 +3711,10 @@ void might_fault(void)
+>  	if (segment_eq(get_fs(), KERNEL_DS))
+>  		return;
+>  
+> -	/*
+> -	 * it would be nicer only to annotate paths which are not under
+> -	 * pagefault_disable, however that requires a larger audit and
+> -	 * providing helpers like get_user_atomic.
+> -	 */
+> -	if (in_atomic())
+> -		return;
+> -
+> -	__might_sleep(__FILE__, __LINE__, 0);
+> +	if (unlikely(!pagefault_disabled()))
+> +		__might_sleep(__FILE__, __LINE__, 0);
+>  
+> -	if (current->mm)
+> +	if (!in_atomic() && current->mm)
+>  		might_lock_read(&current->mm->mmap_sem);
+>  }
+>  EXPORT_SYMBOL(might_fault);
+> -- 
+> 1.8.5.5
