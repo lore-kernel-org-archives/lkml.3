@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552AbaK0Mci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 07:32:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43091 "EHLO mx1.redhat.com"
+	id S1755822AbaK0MlP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 07:41:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57169 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755385AbaK0Mcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 07:32:33 -0500
-Date: Thu, 27 Nov 2014 14:32:14 +0200
+	id S1754574AbaK0Mcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 07:32:36 -0500
+Date: Thu, 27 Nov 2014 14:32:20 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com, kvm@vger.kernel.org,
         virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: [PATCH v5 26/45] virtio_net: enable v1.0 support
-Message-ID: <1417091078-24611-27-git-send-email-mst@redhat.com>
+Subject: [PATCH v5 27/45] vhost: make features 64 bit
+Message-ID: <1417091078-24611-28-git-send-email-mst@redhat.com>
 References: <1417091078-24611-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -26,25 +25,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have completed 1.0 support, enable it in our driver.
+We need to use bit 32 for virtio 1.0
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/net/virtio_net.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/vhost/vhost.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index a0e64cf..c6a72d3 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -2003,6 +2003,7 @@ static unsigned int features[] = {
- 	VIRTIO_NET_F_GUEST_ANNOUNCE, VIRTIO_NET_F_MQ,
- 	VIRTIO_NET_F_CTRL_MAC_ADDR,
- 	VIRTIO_F_ANY_LAYOUT,
-+	VIRTIO_F_VERSION_1,
- };
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index 3eda654..c624b09 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -106,7 +106,7 @@ struct vhost_virtqueue {
+ 	/* Protected by virtqueue mutex. */
+ 	struct vhost_memory *memory;
+ 	void *private_data;
+-	unsigned acked_features;
++	u64 acked_features;
+ 	/* Log write descriptors */
+ 	void __user *log_base;
+ 	struct vhost_log *log;
+@@ -174,6 +174,6 @@ enum {
  
- static struct virtio_driver virtio_net_driver = {
+ static inline int vhost_has_feature(struct vhost_virtqueue *vq, int bit)
+ {
+-	return vq->acked_features & (1 << bit);
++	return vq->acked_features & (1ULL << bit);
+ }
+ #endif
 -- 
 MST
 
