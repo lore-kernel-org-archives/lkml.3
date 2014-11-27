@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018AbaK0LXk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 06:23:40 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:44171 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754622AbaK0LVP (ORCPT
+	id S1755061AbaK0LX5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 06:23:57 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:10326 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754449AbaK0LVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 06:21:15 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-16-54770928152b
+	Thu, 27 Nov 2014 06:21:14 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-12-54770927d87c
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
         Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
@@ -18,222 +18,114 @@ Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v4 4/7] regulator: Use ena_gpio supplied with generic regulator
- bindings
-Date: Thu, 27 Nov 2014 12:20:50 +0100
-Message-id: <1417087253-12306-5-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v4 3/7] regulator: of: Parse ena-gpios property from DTS
+Date: Thu, 27 Nov 2014 12:20:49 +0100
+Message-id: <1417087253-12306-4-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1417087253-12306-1-git-send-email-k.kozlowski@samsung.com>
 References: <1417087253-12306-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprILMWRmVeSWpSXmKPExsVy+t/xK7oanOUhBhP65S02zljPajH14RM2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t/xK7rqnOUhBl3vLS02zljPajH14RM2
 	i/lHzrFavH5haNH/+DWzxdmmN+wW978eZbT4dqWDyWLT42usFpd3zWGzmHF+H5PF2iN32R14
-	PHbOusvusWlVJ5vHnWt72Dw2L6n36NuyitHj8ya5ALYoLpuU1JzMstQifbsErow7C1awFyzQ
-	r5i0ZCZzA2OjWhcjJ4eEgInErSld7BC2mMSFe+vZuhi5OIQEljJK9DQeY4dw+pgk1n17wwhS
-	xSZgLLF5+RI2EFtEYAWjxPEbiiA2s8B6JokH25xAbGGBKInDJ+8ANXNwsAioSjx6nA4S5hVw
-	l1jfMxVqmZzEyWOTWUFsTgEPib23brOA2EJANXte3WGZwMi7gJFhFaNoamlyQXFSeq6hXnFi
-	bnFpXrpecn7uJkZIMH7Zwbj4mNUhRgEORiUe3oTHZSFCrIllxZW5hxglOJiVRHi5GMtDhHhT
-	EiurUovy44tKc1KLDzEycXBKNTD6Ji7WfnmsZ3PgB3O/buOpPIeeV527UPB4/0aXoLvGNuFW
-	Xh39ovrhMYefZhlEB+re375LqbbaJO2fOd9h/61cKlWBacX6T8q4/2qrBBm+XX547i6xxo+n
-	nrnNzmK8fPDQs8f3DW6cOlLxO1px/o7ji83+fRbbOmfpGbMnD6Zbf7y7sLja8vxDJZbijERD
-	Leai4kQA6gh57SQCAAA=
+	PHbOusvusWlVJ5vHnWt72Dw2L6n36NuyitHj8ya5ALYoLpuU1JzMstQifbsErozjj3ewFmyX
+	qmi6c46tgfGGaBcjJ4eEgInEviM9LBC2mMSFe+vZuhi5OIQEljJKLH01nR3C6WOS6Ly+jBGk
+	ik3AWGLz8iVsILaIwApGieM3FEFsZoH1TBIPtjmB2MICHhJT1/Yxg9gsAqoSUxZdANvAK+Au
+	sf1VLxvENjmJk8cms4LYnED1e2/dBqsRAqrZ8+oOywRG3gWMDKsYRVNLkwuKk9JzDfWKE3OL
+	S/PS9ZLzczcxQsLxyw7GxcesDjEKcDAq8fAmPC4LEWJNLCuuzD3EKMHBrCTCy8VYHiLEm5JY
+	WZValB9fVJqTWnyIkYmDU6qBUUrzwmr1HwpP0j81MjasUnu30C1iy/QcN1mrX/0NHZds1Hru
+	+m3PXvh/LSvT2U0rF+18tmffn5vzlfSiOnJu7G8V6l3z6WhQXajJuV0/jdVMGuYa3bgj3tt/
+	1eSg7aGvJZNerY6YuOxOCuuBN3H7/4fdL28vrVr5tOX+Hcuexcy74s/MP/2j8bMSS3FGoqEW
+	c1FxIgCeBEwfJQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use ena_gpio from regulator constraints (filled by parsing generic
-bindings) to initialize the GPIO enable control. Support also the old
-way: ena_gpio supplied in regulator_config structure.
+Drivers often add custom DTS properties for parsing the GPIO for
+regulator enable control. Some of them don't have to do this in a
+special custom way and would work with a generic approach (e.g. S5M8767,
+S2MPS1x, MAX77686). As such drivers have to do this on their own,
+multiple different bindings are added and each driver duplicates similar
+code.
 
-This also adds a new set_ena_gpio() callback in regulator_ops structure
-which driver may provide to actually enable the GPIO control in
-hardware.
+Add a generic binding so the regulator core will do this work for
+drivers. This should offload some work from drivers and also limit
+creation of new custom properties for GPIO control.
+
+The patch only fills regulator constraints with data from DTS. Data will
+be used by regulator core in consecutive patch.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/regulator/core.c         | 96 ++++++++++++++++++++++++++++++----------
- include/linux/regulator/driver.h |  5 +++
- 2 files changed, 78 insertions(+), 23 deletions(-)
+ drivers/regulator/of_regulator.c  | 11 +++++++++++
+ include/linux/regulator/machine.h | 13 +++++++++++++
+ 2 files changed, 24 insertions(+)
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index bbf93c9caca3..1760184cd8dc 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -26,6 +26,7 @@
- #include <linux/gpio.h>
- #include <linux/gpio/consumer.h>
+diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
+index 03edb175f3ae..f64739a97296 100644
+--- a/drivers/regulator/of_regulator.c
++++ b/drivers/regulator/of_regulator.c
+@@ -13,6 +13,7 @@
+ #include <linux/module.h>
+ #include <linux/slab.h>
  #include <linux/of.h>
 +#include <linux/of_gpio.h>
- #include <linux/regmap.h>
+ #include <linux/regulator/machine.h>
+ #include <linux/regulator/driver.h>
  #include <linux/regulator/of_regulator.h>
- #include <linux/regulator/consumer.h>
-@@ -1044,6 +1045,14 @@ static int set_machine_constraints(struct regulator_dev *rdev,
- 		}
- 	}
+@@ -31,6 +32,7 @@ static void of_get_regulation_constraints(struct device_node *np,
+ 	struct regulation_constraints *constraints = &(*init_data)->constraints;
+ 	struct regulator_state *suspend_state;
+ 	struct device_node *suspend_np;
++	enum of_gpio_flags gpio_flags;
+ 	int ret, i;
+ 	u32 pval;
  
-+	if (rdev->constraints->use_ena_gpio && ops->set_ena_gpio) {
-+		ret = ops->set_ena_gpio(rdev);
-+		if (ret < 0) {
-+			rdev_err(rdev, "failed to set enable GPIO control\n");
-+			goto out;
-+		}
+@@ -81,6 +83,15 @@ static void of_get_regulation_constraints(struct device_node *np,
+ 	if (!ret)
+ 		constraints->enable_time = pval;
+ 
++	constraints->ena_gpio = of_get_named_gpio_flags(np, "ena-gpios", 0,
++							&gpio_flags);
++	if (gpio_is_valid(constraints->ena_gpio)) {
++		constraints->use_ena_gpio = true;
++		constraints->ena_gpio_open_drain = of_property_read_bool(np,
++							   "ena-gpio-open-drain");
++		constraints->ena_gpio_flags = gpio_flags;
 +	}
 +
- 	print_constraints(rdev);
- 	return 0;
- out:
-@@ -1660,36 +1669,36 @@ EXPORT_SYMBOL_GPL(regulator_bulk_unregister_supply_alias);
+ 	for (i = 0; i < ARRAY_SIZE(regulator_states); i++) {
+ 		switch (i) {
+ 		case PM_SUSPEND_MEM:
+diff --git a/include/linux/regulator/machine.h b/include/linux/regulator/machine.h
+index 0b08d05d470b..2faf2b3b71e7 100644
+--- a/include/linux/regulator/machine.h
++++ b/include/linux/regulator/machine.h
+@@ -95,6 +95,13 @@ struct regulator_state {
+  *                 mode.
+  * @initial_state: Suspend state to set by default.
+  * @initial_mode: Mode to set at startup.
++ *
++ * @use_ena_gpio: True if ena_gpio is a valid GPIO to use for enable control.
++ *                If false, all other ena_gpio* fields are ignored.
++ * @ena_gpio: GPIO to use for enable control
++ * @ena_gpio_open_drain: Is GPIO open drain
++ * @ena_gpio_flags: Flags for GPIO request, see enum of_gpio_flags
++ *
+  * @ramp_delay: Time to settle down after voltage change (unit: uV/us)
+  * @enable_time: Turn-on time of the rails (unit: microseconds)
+  */
+@@ -130,6 +137,12 @@ struct regulation_constraints {
+ 	/* mode to set on startup */
+ 	unsigned int initial_mode;
  
- /* Manage enable GPIO list. Same GPIO pin can be shared among regulators */
- static int regulator_ena_gpio_request(struct regulator_dev *rdev,
--				const struct regulator_config *config)
-+					unsigned int gpio,
-+					bool gpio_invert,
-+					unsigned int gpio_flags)
- {
- 	struct regulator_enable_gpio *pin;
- 	struct gpio_desc *gpiod;
- 	int ret;
- 
--	gpiod = gpio_to_desc(config->ena_gpio);
-+	gpiod = gpio_to_desc(gpio);
- 
- 	list_for_each_entry(pin, &regulator_ena_gpio_list, list) {
- 		if (pin->gpiod == gpiod) {
--			rdev_dbg(rdev, "GPIO %d is already used\n",
--				config->ena_gpio);
-+			rdev_dbg(rdev, "GPIO %d is already used\n", gpio);
- 			goto update_ena_gpio_to_rdev;
- 		}
- 	}
- 
--	ret = gpio_request_one(config->ena_gpio,
--				GPIOF_DIR_OUT | config->ena_gpio_flags,
-+	ret = gpio_request_one(gpio, GPIOF_DIR_OUT | gpio_flags,
- 				rdev_get_name(rdev));
- 	if (ret)
- 		return ret;
- 
- 	pin = kzalloc(sizeof(struct regulator_enable_gpio), GFP_KERNEL);
- 	if (pin == NULL) {
--		gpio_free(config->ena_gpio);
-+		gpio_free(gpio);
- 		return -ENOMEM;
- 	}
- 
- 	pin->gpiod = gpiod;
--	pin->ena_gpio_invert = config->ena_gpio_invert;
-+	pin->ena_gpio_invert = gpio_invert;
- 	list_add(&pin->list, &regulator_ena_gpio_list);
- 
- update_ena_gpio_to_rdev:
-@@ -1698,6 +1707,59 @@ update_ena_gpio_to_rdev:
- 	return 0;
- }
- 
-+/*
-+ * Request GPIO for enable control from regulator_config
-+ * or init_data->constraints.
-+ */
-+static int regulator_ena_gpio_setup(struct regulator_dev *rdev,
-+			const struct regulator_config *config,
-+			const struct regulator_init_data *init_data)
-+{
-+	unsigned int gpio_flags;
-+	bool gpio_invert;
-+	int gpio, ret;
++	/* enable control over GPIO */
++	bool use_ena_gpio;
++	int ena_gpio;
++	bool ena_gpio_open_drain;
++	unsigned int ena_gpio_flags;
 +
-+	if (config->ena_gpio || config->ena_gpio_initialized) {
-+		gpio = config->ena_gpio;
-+		gpio_invert = config->ena_gpio_invert;
-+		gpio_flags = config->ena_gpio_flags;
-+	} else if (init_data && init_data->constraints.use_ena_gpio) {
-+		const struct regulation_constraints *c = &init_data->constraints;
-+
-+		gpio = c->ena_gpio;
-+		gpio_invert = false;
-+		gpio_flags = GPIOF_OUT_INIT_HIGH;
-+
-+		if (c->ena_gpio_flags & OF_GPIO_ACTIVE_LOW) {
-+			gpio_invert = true;
-+			gpio_flags = GPIOF_OUT_INIT_LOW;
-+		}
-+
-+		if (c->ena_gpio_open_drain)
-+			gpio_flags |= GPIOF_OPEN_DRAIN;
-+	} else {
-+		return 0;
-+	}
-+
-+	if (!gpio_is_valid(gpio))
-+		return 0;
-+
-+	ret = regulator_ena_gpio_request(rdev, gpio, gpio_invert, gpio_flags);
-+	if (ret != 0) {
-+		rdev_err(rdev, "Failed to request enable GPIO%d: %d\n",
-+				 gpio, ret);
-+		return ret;
-+	}
-+
-+	if (gpio_flags & GPIOF_OUT_INIT_HIGH)
-+		rdev->ena_gpio_state = 1;
-+
-+	if (gpio_invert)
-+		rdev->ena_gpio_state = !rdev->ena_gpio_state;
-+
-+	return 0;
-+}
-+
- static void regulator_ena_gpio_free(struct regulator_dev *rdev)
- {
- 	struct regulator_enable_gpio *pin, *n;
-@@ -3650,21 +3712,9 @@ regulator_register(const struct regulator_desc *regulator_desc,
+ 	unsigned int ramp_delay;
+ 	unsigned int enable_time;
  
- 	dev_set_drvdata(&rdev->dev, rdev);
- 
--	if ((config->ena_gpio || config->ena_gpio_initialized) &&
--	    gpio_is_valid(config->ena_gpio)) {
--		ret = regulator_ena_gpio_request(rdev, config);
--		if (ret != 0) {
--			rdev_err(rdev, "Failed to request enable GPIO%d: %d\n",
--				 config->ena_gpio, ret);
--			goto wash;
--		}
--
--		if (config->ena_gpio_flags & GPIOF_OUT_INIT_HIGH)
--			rdev->ena_gpio_state = 1;
--
--		if (config->ena_gpio_invert)
--			rdev->ena_gpio_state = !rdev->ena_gpio_state;
--	}
-+	ret = regulator_ena_gpio_setup(rdev, config, init_data);
-+	if (ret != 0)
-+		goto wash;
- 
- 	/* set regulator constraints */
- 	if (init_data)
-diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
-index 28da08e4671f..fe967a0c6ce7 100644
---- a/include/linux/regulator/driver.h
-+++ b/include/linux/regulator/driver.h
-@@ -118,6 +118,9 @@ struct regulator_linear_range {
-  *                       suspended.
-  * @set_suspend_mode: Set the operating mode for the regulator when the
-  *                    system is suspended.
-+ * @set_ena_gpio: Turn on GPIO enable control for given regulator. Called
-+ *                by core during registration of regulator when regulator
-+ *                was configured for this mode by standard binding.
-  *
-  * This struct describes regulator operations which can be implemented by
-  * regulator chip drivers.
-@@ -183,6 +186,8 @@ struct regulator_ops {
- 
- 	/* set regulator suspend operating mode (defined in consumer.h) */
- 	int (*set_suspend_mode) (struct regulator_dev *, unsigned int mode);
-+
-+	int (*set_ena_gpio)(struct regulator_dev *);
- };
- 
- /*
 -- 
 1.9.1
 
