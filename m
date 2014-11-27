@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768AbaK0PjG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 10:39:06 -0500
-Received: from mga03.intel.com ([134.134.136.65]:64886 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751695AbaK0PjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 10:39:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,470,1413270000"; 
-   d="scan'208";a="644601318"
-Message-ID: <1417102739.5858.112.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 3/6] UBI: Fastmap: Ensure that all fastmap work is done
- upon WL shutdown
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 27 Nov 2014 17:38:59 +0200
-In-Reply-To: <1416835236-25185-4-git-send-email-richard@nod.at>
-References: <1416835236-25185-1-git-send-email-richard@nod.at>
-	 <1416835236-25185-4-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1751812AbaK0PjR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 10:39:17 -0500
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:49147 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223AbaK0PjM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 10:39:12 -0500
+Date: Thu, 27 Nov 2014 15:34:15 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Lyra Zhang <zhang.lyra@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Murali Karicheri <m-karicheri2@ti.com>,
+        Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "jslaby@suse.cz" <jslaby@suse.cz>, Kumar Gala <galak@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        "rrichter@cavium.com" <rrichter@cavium.com>,
+        Will Deacon <will.deacon@arm.com>, Jonathan Corbet <corbet@lwn.net>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        Mark Brown <broonie@kernel.org>,
+        Heiko =?UTF-8?B?U3TDvGJuZXI=?= <heiko@sntech.de>,
+        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
+        "andrew@lunn.ch" <andrew@lunn.ch>, Hayato Suzuki <hytszk@gmail.com>,
+        Orson Zhai <orsonzhai@gmail.com>,
+        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
+        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
+        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
+        "Wei Qiao ( =?UTF-8?B?5LmU5Lyf?=)" <wei.qiao@spreadtrum.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sprdlinux@freelists.org" <sprdlinux@freelists.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+Subject: Re: [PATCH v3 5/5] tty/serial: Add Spreadtrum sc9836-uart driver
+ support
+Message-ID: <20141127153415.3c2817b5@lxorguk.ukuu.org.uk>
+In-Reply-To: <CAAfSe-uWvn4MX-+GKuvvd=G2MTfLDCFeLRoUGWp7vvc81wfu0w@mail.gmail.com>
+References: <1416917818-10506-1-git-send-email-chunyan.zhang@spreadtrum.com>
+	<54761BFC.4020705@ti.com>
+	<CAAfSe-uMqy7zwiEK+nDoMPw_oni8L_vq7oW2Me5AY8z8KGpjwQ@mail.gmail.com>
+	<3400511.2SONqVcoEr@wuerfel>
+	<CAAfSe-uWvn4MX-+GKuvvd=G2MTfLDCFeLRoUGWp7vvc81wfu0w@mail.gmail.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-11-24 at 14:20 +0100, Richard Weinberger wrote:
-> ...otherwise the deferred work might run after datastructures
-> got freed and corrupt memory.
-> 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  drivers/mtd/ubi/wl.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
-> index 7f135df..cb2e571 100644
-> --- a/drivers/mtd/ubi/wl.c
-> +++ b/drivers/mtd/ubi/wl.c
-> @@ -2041,6 +2041,9 @@ static void protection_queue_destroy(struct ubi_device *ubi)
->  void ubi_wl_close(struct ubi_device *ubi)
->  {
->  	dbg_wl("close the WL sub-system");
-> +#ifdef CONFIG_MTD_UBI_FASTMAP
-> +	flush_work(&ubi->fm_work);
-> +#endif
+> Yes, I saw this way in other serial drivers.
+> But, if then, there are two questions for me:
+> 1. Why did some serial drivers need an UN_SHARED irq?
+> 2. How can we choose a right way?
 
-If you are using the work infrastructure implemented in wl.c, then
-fastmap work should be no different to any other work. And we do flush
-all works in 'shutdown_work()'. The fastmap work should be flushed there
-too.
+If your hardware can support sharing an IRQ then shared is the right way
+- along with the test Arnd suggested. Some hardware lacks the needed
+facilities to handle shared interrupt.
 
-I think we discussed this already - there should be one single queue of
-works, managed by the same set of functions, all flushed in the same
-place, one-by-one...
 
-Obviously, there is some misunderstanding. This looks like lack of
-separation and misuse of layering. I am missing explanations why I am
-wrong...
-
+Alan
