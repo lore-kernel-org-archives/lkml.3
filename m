@@ -1,128 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391AbaK0M3N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 07:29:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35588 "EHLO mx2.suse.de"
+	id S1754600AbaK0MaJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 07:30:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42319 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751468AbaK0M3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 07:29:11 -0500
-Date: Thu, 27 Nov 2014 13:29:08 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: oom && coredump
-Message-ID: <20141127122908.GB18833@dhcp22.suse.cz>
-References: <20141017171904.GA12263@redhat.com>
- <20141020184657.GA505@dhcp22.suse.cz>
- <20141020190620.GA21882@redhat.com>
- <20141020195618.GA606@redhat.com>
+	id S1751371AbaK0MaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 07:30:08 -0500
+Date: Thu, 27 Nov 2014 14:29:52 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com
+Subject: [PATCH v5 00/45] linux: towards virtio-1 guest support
+Message-ID: <1417091078-24611-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141020195618.GA606@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Sorry this one has somehow completely fallen off my radar]
+Another day, another revision of the patchset.
+The changes are mostly cosmetic now so - hopefully the last
+revision.
 
-On Mon 20-10-14 21:56:18, Oleg Nesterov wrote:
-> On 10/20, Oleg Nesterov wrote:
-> >
-> > And I agree that it
-> > is hardly possible to close this race, and this patch makes the things
-> > better.
-> 
-> speaking of "partial" fixes for oom problems...
-> 
-> Perhaps the patch below makes sense? Sure, it is racy, but probably
-> better than nothing. And in any case (imo) this SIGNAL_GROUP_COREDUMP
-> check doesn't look bad, the coredumping task can consume more memory,
-> and we can't assume it is going to actually exit soon.
+Based on patches by Cornelia and others, but
+with an API that should allow better static checking of code,
+slightly more concervative changes in vring and drivers,
+and compatibility for existing drivers so that
+this series can be applied before all drivers are converted.
 
-I am not familiar with this area much (it is too scary...).
-I guess the issue is that OOM killer might try to kill a task which is
-currently in the middle of cordumping which is not killable, right? And
-if it is blocked on memory allocation then we are effectively dead
-locked. Right?
+virtio net,blk and scsi drivers have been converted.
+They now pass sparse without warnings.
 
-Wouldn't it be better to make coredumping killable? Is this even
-possible?
+net and blk patches have been tested on s390.
+scsi patches pass sparse so they are most likely
+ok too, but haven't been through testing yet -
+they can be dropped from patchset if necessary.
 
-> And at least we can kill that ugly and wrong ptrace check.
+Please review, and consider for 3.19
 
-Why is the ptrace check wrong? PF_EXITING should be set after
-ptrace_event(PTRACE_EVENT_EXIT, code). But then I can see
-unlikely(tsk->flags & PF_EXITING) check right after PTRACE_EVENT_EXIT
-notification. Is this the thing?
+Changes since v4:
+	I have dropped 64 bit feature negotiation from
+	most transports (except ccw).
+	For symmetry, I split out ccw bits:
+		  virtio: add support for 64 bit features.
+			adds core and device support for 64 bit features
+		  virtio_ccw: add support for 64 bit features.
+			actually enables 64 bit features in ccw.
+	detail below.
 
-But I do not get why we do not have to care about PTRACE_EVENT_EXIT once
-SIGNAL_GROUP_COREDUMP is checked anymore or how they are related? What
-prevents the original issue when the OOM victim is blocked by ptrace for
-ever?
+	this is still really a cosmetic change: just reordering/splitting
+	patches, and dropping code changes that aren't needed.
 
-> What do you think?
-> 
-> Oleg.
-> 
-> --- x/mm/oom_kill.c
-> +++ x/mm/oom_kill.c
-> @@ -254,6 +254,12 @@ static enum oom_constraint constrained_alloc(struct zonelist *zonelist,
->  }
->  #endif
->  
-> +static inline bool task_will_free_mem(struct task_struct *task)
-> +{
-> +	return (task->flags & PF_EXITING) &&
-> +		!(task->signal->flags & SIGNAL_GROUP_COREDUMP);
-> +}
-> +
->  enum oom_scan_t oom_scan_process_thread(struct task_struct *task,
->  		unsigned long totalpages, const nodemask_t *nodemask,
->  		bool force_kill)
-> @@ -281,14 +287,9 @@ enum oom_scan_t oom_scan_process_thread(struct task_struct *task,
->  	if (oom_task_origin(task))
->  		return OOM_SCAN_SELECT;
->  
-> -	if (task->flags & PF_EXITING && !force_kill) {
-> -		/*
-> -		 * If this task is not being ptraced on exit, then wait for it
-> -		 * to finish before killing some other task unnecessarily.
-> -		 */
-> -		if (!(task->group_leader->ptrace & PT_TRACE_EXIT))
-> -			return OOM_SCAN_ABORT;
-> -	}
-> +	if (task_will_free_mem(task) && !force_kill)
-> +		return OOM_SCAN_ABORT;
-> +
->  	return OOM_SCAN_OK;
->  }
->  
-> @@ -426,7 +427,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
->  	 * If the task is already exiting, don't alarm the sysadmin or kill
->  	 * its children or threads, just set TIF_MEMDIE so it can die quickly
->  	 */
-> -	if (p->flags & PF_EXITING) {
-> +	if (task_will_free_mem(p)) {
->  		set_tsk_thread_flag(p, TIF_MEMDIE);
->  		put_task_struct(p);
->  		return;
-> @@ -632,7 +633,7 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
->  	 * select it.  The goal is to allow it to allocate so that it may
->  	 * quickly exit and free its memory.
->  	 */
-> -	if (fatal_signal_pending(current) || current->flags & PF_EXITING) {
-> +	if (fatal_signal_pending(current) || task_will_free_mem(current)) {
->  		set_thread_flag(TIF_MEMDIE);
->  		return;
->  	}
-> 
+	new patches:
+	  mic_virtio: robust feature array size calculation
+	  virtio: assert 32 bit features in transports
+
+	addressed comments by Cornelia:
+		      virtio: disable virtio 1.0 in transports:
+			patch dropped
+		      virtio: memory access APIs
+			tweaked comments as suggested by Cornelia
+		      virtio_config: endian conversion for v1.0
+			dropped reviewed-by tags -
+				they applied to a very old version of patch
+		      virtio: set FEATURES_OK
+			replaced printk by dev_err
+		      virtio: add legacy feature table support
+			comment changes suggested by Cornelia
+		      virtio_blk: v1.0 support
+			dropped reviewed-by tags -
+				they applied to a very old version of patch
+		      virtio_net: enable v1.0 support
+			only write mac for legacy devices
+		      vhost: add memory access wrappers
+			move chunk to vhost: make features 64 bit
+			better patch description
+		      vhost: make features 64 bit
+			moved this patch earlier in series
+		      vhost/net: force len for TX to host endian
+			better patch description
+		      virtio_scsi: v1.0 support
+			fix bug: use high level, not low level wrappers
+			
+
+	included reviewed-by tags for patches:
+		KVM: s390 allow virtio_ccw status writes to fail
+				added reviewed-by tag by Cornelia
+		virtio_scsi: v1.0 support
+		virtio_scsi: move to uapi
+		virtio_scsi: export to userspace
+		vhost/scsi: partial virtio 1.0 support
+				added reviewed-by tag by Paolo
+
+Changes since v3:
+	- move virtio 1.0 feature bit out of transport bits:
+	  for now it's managed by drivers
+	- disable virtio 1.0 feature bit explicitly - for transports
+	  that don't support it
+
+David, assuming patches are acceptable, I'd like them all to be merged through
+virtio or vhost trees to avoid dependency headaches.  Could you please ack
+doing that for net related patches, especially these:
+	  tun: move internal flag defines out of uapi
+	  tun: drop most type defines
+	  tun: add VNET_LE flag
+	  tun: TUN_VNET_LE support, fix sparse warnings for virtio headers
+	  macvtap: TUN_VNET_HDR support
+	  vhost/scsi: partial virtio 1.0 support
+	  af_packet: virtio 1.0 stubs
+
+Alternatively, I can prepare a tree with virtio changes and merge
+that into your net-next - if Rusty approves, or keeps
+silence :)
+
+Could you comment on this please?
+
+Cornelia Huck (3):
+  virtio: allow transports to get avail/used addresses
+  KVM: s390: virtio-ccw revision 1 SET_VQ
+  KVM: s390: enable virtio-ccw revision 1
+
+Michael S. Tsirkin (38):
+  mic_virtio: robust feature array size calculation
+  virtio: assert 32 bit features in transports
+  virtio_ccw: add support for 64 bit features.
+  virtio: add virtio 1.0 feature bit
+  virtio: memory access APIs
+  virtio_ring: switch to new memory access APIs
+  virtio_config: endian conversion for v1.0
+  virtio: set FEATURES_OK
+  virtio: simplify feature bit handling
+  virtio: add legacy feature table support
+  virtio_net: v1.0 endianness
+  virtio_blk: v1.0 support
+  KVM: s390 allow virtio_ccw status writes to fail
+  virtio_blk: make serial attribute static
+  virtio_blk: fix race at module removal
+  virtio_net: pass vi around
+  virtio_net: get rid of virtio_net_hdr/skb_vnet_hdr
+  virtio_net: stricter short buffer length checks
+  virtio_net: bigger header when VERSION_1 is set
+  virtio_net: enable v1.0 support
+  vhost: make features 64 bit
+  vhost: add memory access wrappers
+  vhost/net: force len for TX to host endian
+  vhost: virtio 1.0 endian-ness support
+  vhost/net: virtio 1.0 byte swap
+  vhost/net: larger header for virtio 1.0
+  virtio_net: disable mac write for virtio 1.0
+  vhost/net: enable virtio 1.0
+  vhost/net: suppress compiler warning
+  tun: move internal flag defines out of uapi
+  tun: drop most type defines
+  tun: add VNET_LE flag
+  tun: TUN_VNET_LE support, fix sparse warnings for virtio headers
+  macvtap: TUN_VNET_HDR support
+  virtio_scsi: v1.0 support
+  virtio_scsi: move to uapi
+  virtio_scsi: export to userspace
+  vhost/scsi: partial virtio 1.0 support
+  af_packet: virtio 1.0 stubs
+
+Rusty Russell (3):
+  virtio: use u32, not bitmap for struct virtio_device's features
+  virtio: add support for 64 bit features.
+
+Thomas Huth (1):
+  KVM: s390: Set virtio-ccw transport revision
+
+ drivers/vhost/vhost.h                  |  35 ++++++-
+ include/linux/virtio.h                 |  10 +-
+ include/linux/virtio_byteorder.h       |  59 +++++++++++
+ include/linux/virtio_config.h          |  49 ++++++++--
+ include/uapi/linux/if_tun.h            |  17 +---
+ include/uapi/linux/virtio_blk.h        |  15 +--
+ include/uapi/linux/virtio_config.h     |   5 +
+ include/uapi/linux/virtio_net.h        |  15 +--
+ include/uapi/linux/virtio_ring.h       |  45 ++++-----
+ include/{ => uapi}/linux/virtio_scsi.h | 106 ++++++++++----------
+ include/uapi/linux/virtio_types.h      |  46 +++++++++
+ tools/virtio/linux/virtio.h            |  22 +----
+ tools/virtio/linux/virtio_config.h     |   2 +-
+ drivers/block/virtio_blk.c             |  75 ++++++++------
+ drivers/char/virtio_console.c          |   2 +-
+ drivers/lguest/lguest_device.c         |  13 ++-
+ drivers/misc/mic/card/mic_virtio.c     |  10 +-
+ drivers/net/macvtap.c                  |  68 ++++++++-----
+ drivers/net/tun.c                      | 170 ++++++++++++++------------------
+ drivers/net/virtio_net.c               | 162 ++++++++++++++++---------------
+ drivers/remoteproc/remoteproc_virtio.c |   7 +-
+ drivers/s390/kvm/kvm_virtio.c          |   7 +-
+ drivers/s390/kvm/virtio_ccw.c          | 172 +++++++++++++++++++++++++++------
+ drivers/scsi/virtio_scsi.c             |  51 ++++++----
+ drivers/vhost/net.c                    |  28 +++---
+ drivers/vhost/scsi.c                   |  22 +++--
+ drivers/vhost/vhost.c                  |  93 +++++++++++-------
+ drivers/virtio/virtio.c                |  74 ++++++++++----
+ drivers/virtio/virtio_mmio.c           |  13 ++-
+ drivers/virtio/virtio_pci.c            |   8 +-
+ drivers/virtio/virtio_ring.c           | 107 +++++++++++---------
+ net/packet/af_packet.c                 |  35 ++++---
+ tools/virtio/virtio_test.c             |   5 +-
+ tools/virtio/vringh_test.c             |  16 +--
+ include/uapi/linux/Kbuild              |   2 +
+ 35 files changed, 982 insertions(+), 584 deletions(-)
+ create mode 100644 include/linux/virtio_byteorder.h
+ rename include/{ => uapi}/linux/virtio_scsi.h (73%)
+ create mode 100644 include/uapi/linux/virtio_types.h
 
 -- 
-Michal Hocko
-SUSE Labs
+MST
+
