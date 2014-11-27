@@ -1,172 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090AbaK0MIu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 07:08:50 -0500
-Received: from mga01.intel.com ([192.55.52.88]:5536 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754760AbaK0MIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 07:08:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,469,1413270000"; 
-   d="scan'208";a="629151492"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 2/3 V2] mei: bus: use ssize_t as the return type for send and receive
-Date: Thu, 27 Nov 2014 14:07:28 +0200
-Message-Id: <1417090049-23219-2-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1417090049-23219-1-git-send-email-tomas.winkler@intel.com>
-References: <1417090049-23219-1-git-send-email-tomas.winkler@intel.com>
+	id S932091AbaK0MJB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 07:09:01 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:44592 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755096AbaK0MIx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 07:08:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141127113819.GD857@leverpostej>
+References: <1416917818-10506-1-git-send-email-chunyan.zhang@spreadtrum.com>
+	<1416917818-10506-2-git-send-email-chunyan.zhang@spreadtrum.com>
+	<20141127113819.GD857@leverpostej>
+Date: Thu, 27 Nov 2014 20:08:51 +0800
+Message-ID: <CAAfSe-uGF2DbE894ij9ezH7dZuU_iMWX4G-Lb77CoZ1ApS_vgg@mail.gmail.com>
+Subject: Re: [PATCH v3 1/5] Documentation: DT: Renamed of-serial.txt to 8250.txt
+From: Lyra Zhang <zhang.lyra@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "m-karicheri2@ti.com" <m-karicheri2@ti.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "artagnon@gmail.com" <artagnon@gmail.com>,
+        "rrichter@cavium.com" <rrichter@cavium.com>,
+        Will Deacon <Will.Deacon@arm.com>, "arnd@arndb.de" <arnd@arndb.de>,
+        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "heiko@sntech.de" <heiko@sntech.de>,
+        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
+        "andrew@lunn.ch" <andrew@lunn.ch>,
+        "hytszk@gmail.com" <hytszk@gmail.com>,
+        "orsonzhai@gmail.com" <orsonzhai@gmail.com>,
+        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
+        "zhizhou.zhang@spreadtrum.com" <zhizhou.zhang@spreadtrum.com>,
+        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
+        "wei.qiao@spreadtrum.com" <wei.qiao@spreadtrum.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sprdlinux@freelists.org" <sprdlinux@freelists.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mei bus receive and send function may return either number
-of transmitted bytes or errno.  It is better to use ssize_t
-type for that purpose that mixing size_t with int.
+2014-11-27 19:38 GMT+08:00 Mark Rutland <mark.rutland@arm.com>:
+> On Tue, Nov 25, 2014 at 12:16:54PM +0000, Chunyan Zhang wrote:
+>> The file of-serial.txt was only for 8250 compatible UART implementations,
+>> so renamed it to 8250.txt to avoid confusing other persons.
+>> This is recommended by Arnd, see:
+>> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-September/291455.html
+>>
+>> Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+>
+> My prior Ack [1] still applies (given you've just changed the way the
+> patch was generated, as Arnd and I suggested).
+>
+OK, I'll add in v4.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
-V2: rebase
- drivers/misc/mei/bus.c     | 30 ++++++++++++++----------------
- drivers/misc/mei/mei_dev.h |  6 +++---
- include/linux/mei_cl_bus.h |  4 ++--
- 3 files changed, 19 insertions(+), 21 deletions(-)
-
-diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
-index b3a72bca5242..31164dd14bd0 100644
---- a/drivers/misc/mei/bus.c
-+++ b/drivers/misc/mei/bus.c
-@@ -224,13 +224,13 @@ void mei_cl_driver_unregister(struct mei_cl_driver *driver)
- }
- EXPORT_SYMBOL_GPL(mei_cl_driver_unregister);
- 
--static int ___mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length,
-+static ssize_t ___mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length,
- 			bool blocking)
- {
- 	struct mei_device *dev;
- 	struct mei_me_client *me_cl;
- 	struct mei_cl_cb *cb;
--	int rets;
-+	ssize_t rets;
- 
- 	if (WARN_ON(!cl || !cl->dev))
- 		return -ENODEV;
-@@ -271,12 +271,12 @@ static int ___mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length,
- 	return rets;
- }
- 
--int __mei_cl_recv(struct mei_cl *cl, u8 *buf, size_t length)
-+ssize_t __mei_cl_recv(struct mei_cl *cl, u8 *buf, size_t length)
- {
- 	struct mei_device *dev;
- 	struct mei_cl_cb *cb;
- 	size_t r_length;
--	int err;
-+	ssize_t rets;
- 
- 	if (WARN_ON(!cl || !cl->dev))
- 		return -ENODEV;
-@@ -286,11 +286,9 @@ int __mei_cl_recv(struct mei_cl *cl, u8 *buf, size_t length)
- 	mutex_lock(&dev->device_lock);
- 
- 	if (!cl->read_cb) {
--		err = mei_cl_read_start(cl, length);
--		if (err < 0) {
--			mutex_unlock(&dev->device_lock);
--			return err;
--		}
-+		rets = mei_cl_read_start(cl, length);
-+		if (rets < 0)
-+			goto out;
- 	}
- 
- 	if (cl->reading_state != MEI_READ_COMPLETE &&
-@@ -313,13 +311,13 @@ int __mei_cl_recv(struct mei_cl *cl, u8 *buf, size_t length)
- 	cb = cl->read_cb;
- 
- 	if (cl->reading_state != MEI_READ_COMPLETE) {
--		r_length = 0;
-+		rets = 0;
- 		goto out;
- 	}
- 
- 	r_length = min_t(size_t, length, cb->buf_idx);
--
- 	memcpy(buf, cb->response_buffer.data, r_length);
-+	rets = r_length;
- 
- 	mei_io_cb_free(cb);
- 	cl->reading_state = MEI_IDLE;
-@@ -328,20 +326,20 @@ int __mei_cl_recv(struct mei_cl *cl, u8 *buf, size_t length)
- out:
- 	mutex_unlock(&dev->device_lock);
- 
--	return r_length;
-+	return rets;
- }
- 
--inline int __mei_cl_async_send(struct mei_cl *cl, u8 *buf, size_t length)
-+inline ssize_t __mei_cl_async_send(struct mei_cl *cl, u8 *buf, size_t length)
- {
- 	return ___mei_cl_send(cl, buf, length, 0);
- }
- 
--inline int __mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length)
-+inline ssize_t __mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length)
- {
- 	return ___mei_cl_send(cl, buf, length, 1);
- }
- 
--int mei_cl_send(struct mei_cl_device *device, u8 *buf, size_t length)
-+ssize_t mei_cl_send(struct mei_cl_device *device, u8 *buf, size_t length)
- {
- 	struct mei_cl *cl = device->cl;
- 
-@@ -355,7 +353,7 @@ int mei_cl_send(struct mei_cl_device *device, u8 *buf, size_t length)
- }
- EXPORT_SYMBOL_GPL(mei_cl_send);
- 
--int mei_cl_recv(struct mei_cl_device *device, u8 *buf, size_t length)
-+ssize_t mei_cl_recv(struct mei_cl_device *device, u8 *buf, size_t length)
- {
- 	struct mei_cl *cl =  device->cl;
- 
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index c90c16b29c08..1ead5c3cda6c 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -345,9 +345,9 @@ struct mei_cl_device *mei_cl_add_device(struct mei_device *dev,
- 					struct mei_cl_ops *ops);
- void mei_cl_remove_device(struct mei_cl_device *device);
- 
--int __mei_cl_async_send(struct mei_cl *cl, u8 *buf, size_t length);
--int __mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length);
--int __mei_cl_recv(struct mei_cl *cl, u8 *buf, size_t length);
-+ssize_t __mei_cl_async_send(struct mei_cl *cl, u8 *buf, size_t length);
-+ssize_t __mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length);
-+ssize_t __mei_cl_recv(struct mei_cl *cl, u8 *buf, size_t length);
- void mei_cl_bus_rx_event(struct mei_cl *cl);
- void mei_cl_bus_remove_devices(struct mei_device *dev);
- int mei_cl_bus_init(void);
-diff --git a/include/linux/mei_cl_bus.h b/include/linux/mei_cl_bus.h
-index 164aad1f9f12..0819d36a3a74 100644
---- a/include/linux/mei_cl_bus.h
-+++ b/include/linux/mei_cl_bus.h
-@@ -25,8 +25,8 @@ int __mei_cl_driver_register(struct mei_cl_driver *driver,
- 
- void mei_cl_driver_unregister(struct mei_cl_driver *driver);
- 
--int mei_cl_send(struct mei_cl_device *device, u8 *buf, size_t length);
--int mei_cl_recv(struct mei_cl_device *device, u8 *buf, size_t length);
-+ssize_t mei_cl_send(struct mei_cl_device *device, u8 *buf, size_t length);
-+ssize_t  mei_cl_recv(struct mei_cl_device *device, u8 *buf, size_t length);
- 
- typedef void (*mei_cl_event_cb_t)(struct mei_cl_device *device,
- 			       u32 events, void *context);
--- 
-1.9.3
-
+> Mark.
+>
+> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/295152.html
+>
+>> ---
+>>  .../bindings/serial/{of-serial.txt => 8250.txt}    |    0
+>>  1 file changed, 0 insertions(+), 0 deletions(-)
+>>  rename Documentation/devicetree/bindings/serial/{of-serial.txt => 8250.txt} (100%)
+>>
+>> diff --git a/Documentation/devicetree/bindings/serial/of-serial.txt b/Documentation/devicetree/bindings/serial/8250.txt
+>> similarity index 100%
+>> rename from Documentation/devicetree/bindings/serial/of-serial.txt
+>> rename to Documentation/devicetree/bindings/serial/8250.txt
+>> --
+>> 1.7.9.5
+>>
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
