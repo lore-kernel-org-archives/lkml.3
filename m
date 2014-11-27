@@ -1,158 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751401AbaK0QPw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 11:15:52 -0500
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:40624 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984AbaK0QPu (ORCPT
+	id S1750896AbaK0QSP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 11:18:15 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:60313 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783AbaK0QSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 11:15:50 -0500
-Date: Thu, 27 Nov 2014 17:15:42 +0100
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        cornelia.huck@de.ibm.com, rusty@au1.ibm.com, nab@linux-iscsi.org,
-        pbonzini@redhat.com, thuth@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Brian Swetland <swetland@google.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Amit Shah <amit.shah@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Sudeep Dutt <sudeep.dutt@intel.com>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>,
-        Joel Stanley <joel@jms.id.au>,
-        virtualization@lists.linux-foundation.org, lguest@lists.ozlabs.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [PATCH v5 01/45] virtio: use u32, not bitmap for struct
- virtio_device's features
-Message-ID: <20141127171542.3dbb2bc2@thinkpad-w530>
-In-Reply-To: <1417091078-24611-2-git-send-email-mst@redhat.com>
-References: <1417091078-24611-1-git-send-email-mst@redhat.com>
-	<1417091078-24611-2-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland GmbH
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	Thu, 27 Nov 2014 11:18:13 -0500
+Date: Thu, 27 Nov 2014 17:18:10 +0100
+From: Luis de Bethencourt <luis@debethencourt.com>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, paul.gortmaker@windriver.com,
+        eunb.song@samsung.com, aaro.koskinen@iki.fi,
+        devel@driverdev.osuosl.org
+Subject: [PATCH v2] staging: octeon: Fix checkpatch warnings
+Message-ID: <20141127161432.GA32577@ks395439.kimsufi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112716-0017-0000-0000-0000020145D3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Rusty Russell <rusty@rustcorp.com.au>
-> 
-> It seemed like a good idea, but it's actually a pain when we get more
-> than 32 feature bits.  Just change it to a u32 for now.
-> 
-> Cc: Brian Swetland <swetland@google.com>
-> Cc: Christian Borntraeger <borntraeger@de.ibm.com>
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-> Acked-by: Pawel Moll <pawel.moll@arm.com>
-> Acked-by: Ohad Ben-Cohen <ohad@wizery.com>
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
+Fixing 80 character limit warnings in octeon/ethernet-rx.c
 
-Wouldn't it be easier to turn
-  test_bit(i, dev->features)
+Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
+---
+ drivers/staging/octeon/ethernet-rx.c | 51 +++++++++++++++++++++++++-----------
+ 1 file changed, 35 insertions(+), 16 deletions(-)
 
-into a simple makro like
-  #define test_bit(i, features) (features & (1 << i))
-
-Similar one for clear_bit and set_bit.
-
-if names collide with existing functions, we could simply rename them to:
-
-set_feature_bit() ...
-clear_feature_bit() ...
-
-> diff --git a/drivers/misc/mic/card/mic_virtio.c b/drivers/misc/mic/card/mic_virtio.c
-> index e647947..0acd564 100644
-> --- a/drivers/misc/mic/card/mic_virtio.c
-> +++ b/drivers/misc/mic/card/mic_virtio.c
-> @@ -101,7 +101,7 @@ static void mic_finalize_features(struct virtio_device *vdev)
->  	bits = min_t(unsigned, feature_len,
->  		sizeof(vdev->features)) * 8;
->  	for (i = 0; i < bits; i++) {
-> -		if (test_bit(i, vdev->features))
-> +		if (vdev->features & BIT(bits))
-
-Hm, shouldn't that also be "if (vdev->features & (1 << i))"?
-
->  			iowrite8(ioread8(&out_features[i / 8]) | (1 << (i % 8)),
->  				 &out_features[i / 8]);
->  	}
-
->  out_free:
->  	kfree(features);
->  	kfree(ccw);
-> diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
-> index df598dd..7814b1f 100644
-> --- a/drivers/virtio/virtio.c
-> +++ b/drivers/virtio/virtio.c
-> @@ -49,9 +49,9 @@ static ssize_t features_show(struct device *_d,
-> 
->  	/* We actually represent this as a bitstring, as it could be
->  	 * arbitrary length in future. */
-> -	for (i = 0; i < ARRAY_SIZE(dev->features)*BITS_PER_LONG; i++)
-> +	for (i = 0; i < sizeof(dev->features)*8; i++)
-
-... sizeof(dev->features) * 8; ...
-
-Do we have a define for 8 ?
-
->  		len += sprintf(buf+len, "%c",
-> -			       test_bit(i, dev->features) ? '1' : '0');
-> +			       dev->features & (1ULL << i) ? '1' : '0');
->  	len += sprintf(buf+len, "\n");
->  	return len;
->  }
-> @@ -168,18 +168,18 @@ static int virtio_dev_probe(struct device *_d)
->  	device_features = dev->config->get_features(dev);
-> 
-
-[...]
-
-> @@ -483,7 +483,7 @@ int main(int argc, char *argv[])
-> 
->  	/* Set up host side. */
->  	vring_init(&vrh.vring, RINGSIZE, __user_addr_min, ALIGN);
-> -	vringh_init_user(&vrh, vdev.features[0], RINGSIZE, true,
-> +	vringh_init_user(&vrh, vdev.features, RINGSIZE, true,
->  			 vrh.vring.desc, vrh.vring.avail, vrh.vring.used);
-> 
->  	/* No descriptor to get yet... */
-> @@ -652,13 +652,13 @@ int main(int argc, char *argv[])
->  	}
-> 
->  	/* Test weird (but legal!) indirect. */
-> -	if (vdev.features[0] & (1 << VIRTIO_RING_F_INDIRECT_DESC)) {
-> +	if (vdev.features & (1 << VIRTIO_RING_F_INDIRECT_DESC)) {
->  		char *data = __user_addr_max - USER_MEM/4;
->  		struct vring_desc *d = __user_addr_max - USER_MEM/2;
->  		struct vring vring;
-> 
->  		/* Force creation of direct, which we modify. */
-> -		vdev.features[0] &= ~(1 << VIRTIO_RING_F_INDIRECT_DESC);
-> +		vdev.features &= ~(1 << VIRTIO_RING_F_INDIRECT_DESC);
-
-That could then be something like 
-
-clear_feature_bit(VIRTIO_RING_F_INDIRECT_DESC, vdev.features);
-
-(I would prefer such makros over repeating bit actions)
-
->  		vq = vring_new_virtqueue(0, RINGSIZE, ALIGN, &vdev, true,
->  					 __user_addr_min,
->  					 never_notify_host,
-
-
-But on the whole this looks good to me.
+diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
+index 1789a12..e387eb1 100644
+--- a/drivers/staging/octeon/ethernet-rx.c
++++ b/drivers/staging/octeon/ethernet-rx.c
+@@ -109,6 +109,7 @@ static inline int cvm_oct_check_rcv_error(cvmx_wqe_t *work)
+ 		int interface = cvmx_helper_get_interface_num(work->ipprt);
+ 		int index = cvmx_helper_get_interface_index_num(work->ipprt);
+ 		union cvmx_gmxx_rxx_frm_ctl gmxx_rxx_frm_ctl;
++
+ 		gmxx_rxx_frm_ctl.u64 =
+ 		    cvmx_read_csr(CVMX_GMXX_RXX_FRM_CTL(index, interface));
+ 		if (gmxx_rxx_frm_ctl.s.pre_chk == 0) {
+@@ -126,13 +127,15 @@ static inline int cvm_oct_check_rcv_error(cvmx_wqe_t *work)
+ 
+ 			if (*ptr == 0xd5) {
+ 				/*
+-				  printk_ratelimited("Port %d received 0xd5 preamble\n", work->ipprt);
++				  printk_ratelimited("Port %d received 0xd5 preamble\n",
++					  work->ipprt);
+ 				 */
+ 				work->packet_ptr.s.addr += i + 1;
+ 				work->len -= i + 5;
+ 			} else if ((*ptr & 0xf) == 0xd) {
+ 				/*
+-				  printk_ratelimited("Port %d received 0x?d preamble\n", work->ipprt);
++				  printk_ratelimited("Port %d received 0x?d preamble\n",
++					  work->ipprt);
+ 				 */
+ 				work->packet_ptr.s.addr += i;
+ 				work->len -= i + 4;
+@@ -212,17 +215,20 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+ 		did_work_request = 0;
+ 		if (work == NULL) {
+ 			union cvmx_pow_wq_int wq_int;
++
+ 			wq_int.u64 = 0;
+ 			wq_int.s.iq_dis = 1 << pow_receive_group;
+ 			wq_int.s.wq_int = 1 << pow_receive_group;
+ 			cvmx_write_csr(CVMX_POW_WQ_INT, wq_int.u64);
+ 			break;
+ 		}
+-		pskb = (struct sk_buff **)(cvm_oct_get_buffer_ptr(work->packet_ptr) - sizeof(void *));
++		pskb = (struct sk_buff **)(cvm_oct_get_buffer_ptr(work->packet_ptr) -
++			sizeof(void *));
+ 		prefetch(pskb);
+ 
+ 		if (USE_ASYNC_IOBDMA && rx_count < (budget - 1)) {
+-			cvmx_pow_work_request_async_nocheck(CVMX_SCR_SCRATCH, CVMX_POW_NO_WAIT);
++			cvmx_pow_work_request_async_nocheck(CVMX_SCR_SCRATCH,
++					CVMX_POW_NO_WAIT);
+ 			did_work_request = 1;
+ 		}
+ 		rx_count++;
+@@ -247,7 +253,8 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+ 		 * buffer.
+ 		 */
+ 		if (likely(skb_in_hw)) {
+-			skb->data = skb->head + work->packet_ptr.s.addr - cvmx_ptr_to_phys(skb->head);
++			skb->data = skb->head + work->packet_ptr.s.addr -
++				cvmx_ptr_to_phys(skb->head);
+ 			prefetch(skb->data);
+ 			skb->len = work->len;
+ 			skb_set_tail_pointer(skb, skb->len);
+@@ -284,7 +291,8 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+ 				/* No packet buffers to free */
+ 			} else {
+ 				int segments = work->word2.s.bufs;
+-				union cvmx_buf_ptr segment_ptr = work->packet_ptr;
++				union cvmx_buf_ptr segment_ptr =
++				    work->packet_ptr;
+ 				int len = work->len;
+ 
+ 				while (segments--) {
+@@ -300,8 +308,11 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+ 			 * one: int segment_size =
+ 			 * segment_ptr.s.size;
+ 			 */
+-					int segment_size = CVMX_FPA_PACKET_POOL_SIZE -
+-						(segment_ptr.s.addr - (((segment_ptr.s.addr >> 7) - segment_ptr.s.back) << 7));
++					int segment_size =
++					    CVMX_FPA_PACKET_POOL_SIZE -
++					    (segment_ptr.s.addr -
++					    (((segment_ptr.s.addr >> 7) -
++					    segment_ptr.s.back) << 7));
+ 					/*
+ 					 * Don't copy more than what
+ 					 * is left in the packet.
+@@ -332,8 +343,10 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+ 				skb->protocol = eth_type_trans(skb, dev);
+ 				skb->dev = dev;
+ 
+-				if (unlikely(work->word2.s.not_IP || work->word2.s.IP_exc ||
+-					work->word2.s.L4_error || !work->word2.s.tcp_or_udp))
++				if (unlikely(work->word2.s.not_IP ||
++					work->word2.s.IP_exc ||
++					work->word2.s.L4_error ||
++					!work->word2.s.tcp_or_udp))
+ 					skb->ip_summed = CHECKSUM_NONE;
+ 				else
+ 					skb->ip_summed = CHECKSUM_UNNECESSARY;
+@@ -341,11 +354,15 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+ 				/* Increment RX stats for virtual ports */
+ 				if (work->ipprt >= CVMX_PIP_NUM_INPUT_PORTS) {
+ #ifdef CONFIG_64BIT
+-					atomic64_add(1, (atomic64_t *)&priv->stats.rx_packets);
+-					atomic64_add(skb->len, (atomic64_t *)&priv->stats.rx_bytes);
++					atomic64_add(1,
++						(atomic64_t *)&priv->stats.rx_packets);
++					atomic64_add(skb->len,
++						(atomic64_t *)&priv->stats.rx_bytes);
+ #else
+-					atomic_add(1, (atomic_t *)&priv->stats.rx_packets);
+-					atomic_add(skb->len, (atomic_t *)&priv->stats.rx_bytes);
++					atomic_add(1,
++						(atomic_t *)&priv->stats.rx_packets);
++					atomic_add(skb->len,
++						(atomic_t *)&priv->stats.rx_bytes);
+ #endif
+ 				}
+ 				netif_receive_skb(skb);
+@@ -356,9 +373,11 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+ 					   dev->name);
+ 				*/
+ #ifdef CONFIG_64BIT
+-				atomic64_add(1, (atomic64_t *)&priv->stats.rx_dropped);
++				atomic64_add(1,
++				    (atomic64_t *)&priv->stats.rx_dropped);
+ #else
+-				atomic_add(1, (atomic_t *)&priv->stats.rx_dropped);
++				atomic_add(1,
++				    (atomic_t *)&priv->stats.rx_dropped);
+ #endif
+ 				dev_kfree_skb_irq(skb);
+ 			}
+-- 
+2.1.3
 
