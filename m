@@ -1,70 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315AbaK0Bhi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 20:37:38 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:28418 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204AbaK0Bhh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 20:37:37 -0500
-Message-ID: <54768059.1080406@oracle.com>
-Date: Wed, 26 Nov 2014 20:37:29 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
+	id S1753573AbaK0Biq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 20:38:46 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:48135 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753155AbaK0Bip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Nov 2014 20:38:45 -0500
+Message-ID: <5476809F.3090503@linux.vnet.ibm.com>
+Date: Wed, 26 Nov 2014 20:38:39 -0500
+From: Stefan Berger <stefanb@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC v2 1/2] compiler: use compiler to detect integer overflows
-References: <1417046282-31825-1-git-send-email-sasha.levin@oracle.com> <CA+55aFwjTTcGFbbEPWckxZHya5PFWo+MFbK9zMzoqZorXV21nQ@mail.gmail.com>
-In-Reply-To: <CA+55aFwjTTcGFbbEPWckxZHya5PFWo+MFbK9zMzoqZorXV21nQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
+        Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>
+CC: christophe.ricard@gmail.com, josh.triplett@intel.com,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Will Arthur <will.c.arthur@intel.com>,
+        tpmdd-devel@lists.sourceforge.net,
+        jason.gunthorpe@obsidianresearch.com,
+        trousers-tech@lists.sourceforge.net
+Subject: Re: [tpmdd-devel] [PATCH v7 09/10] tpm: TPM 2.0 FIFO Interface
+References: <1415713513-16524-1-git-send-email-jarkko.sakkinen@linux.intel.com> <1415713513-16524-10-git-send-email-jarkko.sakkinen@linux.intel.com>
+In-Reply-To: <1415713513-16524-10-git-send-email-jarkko.sakkinen@linux.intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112701-0033-0000-0000-00000128C4CF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2014 07:33 PM, Linus Torvalds wrote:
-> On Wed, Nov 26, 2014 at 3:58 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->> > We've used to detect integer overflows by causing an overflow and testing the
->> > result. For example, to test for addition overflow we would:
-> So I don't like this, for a very simple reason: it doesn't work for
-> older gcc versions.
-> 
-> Your "check_add_overflow()" doesn't actually do it. It just
-> perpetuates any bugs you find. For unsigned additions, it's pointless,
-> and for signed additions it remains as buggy as it was before.
-
-I understand your point. It doesn't fix bugs but rather hides them on
-newer compilers.
-
-Since the way to fix this is by properly checking for overflow rather than
-the old broken (a + b > a) conditional, how about something like the following
-for the non-gcc5 case:
-
-#define IS_UNSIGNED(A) (((typeof(A))-1) >= 0)
-#define TYPE_MAX(A) ((typeof(A))(~0U>>1))
-#define TYPE_MIN(A) (-TYPE_MAX(A) - 1)
-#define check_add_overflow(A, B)                                        \
-({                                                                      \
-        typeof(A) __a = (A);                                            \
-        typeof(B) __b = (B);                                            \
-        typeof(sizeof(__a) > sizeof(__b) ? __a : __b) __min, __max;     \
-        if (IS_UNSIGNED(__a) || IS_UNSIGNED(__b))                       \
-                0;                                                      \
-        __min = TYPE_MIN(__min);                                        \
-        __max = TYPE_MAX(__max);                                        \
-        (((__a > 0) && (typeof(__max))__b > (__max - ((typeof(__max))__a)))  ||\
-                ((__a < 0) && (typeof(__max))__b < (__min - ((typeof(__max))__a))));\
-})
-
-> Also, your commit message is still *very*wrong*. You can't claim that
-> integer addition overflow is undefined. It's undefined onyl for
-> _signed_ integer types, and that's a big big difference.
-
-Understood. I'll be specific it's only for signed integer overflows.
+On 11/11/2014 08:45 AM, Jarkko Sakkinen wrote:
+> From: Will Arthur <will.c.arthur@intel.com>
+>
+> Detect TPM 2.0 by using the extended STS (STS3) register. For TPM 2.0,
+> instead of calling tpm_get_timeouts(), assign duration and timeout
+> values defined in the TPM 2.0 PTP specification.
 
 
-Thanks,
-Sasha
+>
+> Signed-off-by: Will Arthur <will.c.arthur@intel.com>
+> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> ---
+>   drivers/char/tpm/tpm_tis.c | 71 ++++++++++++++++++++++++++++++++++++----------
+>   1 file changed, 56 insertions(+), 15 deletions(-)
+>
+> diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+> index 7a2c59b..0b3c089 100644
+> --- a/drivers/char/tpm/tpm_tis.c
+> +++ b/drivers/char/tpm/tpm_tis.c
+> @@ -1,5 +1,6 @@
+>   /*
+>    * Copyright (C) 2005, 2006 IBM Corporation
+> + * Copyright (C) 2014 Intel Corporation
+>    *
+>    * Authors:
+>    * Leendert van Doorn <leendert@watson.ibm.com>
+> @@ -44,6 +45,10 @@ enum tis_status {
+>   	TPM_STS_DATA_EXPECT = 0x08,
+>   };
+>
+> +enum tis_status3 {
+> +	TPM_STS3_TPM2_FAM = 0x04,
+> +};
+> +
+
+I just looked at the specs: You have to define a mask for bits 2 and 3 
+-> 0xc0.
+
+
+> @@ -554,11 +567,28 @@ static int tpm_tis_init(struct device *dev, acpi_handle acpi_dev_handle,
+>   	if (!chip->vendor.iobase)
+>   		return -EIO;
+>
+> +	sts3 = ioread8(chip->vendor.iobase + TPM_STS3(1));
+> +	if (sts3 & TPM_STS3_TPM2_FAM)
+> +		chip->flags = TPM_CHIP_FLAG_TPM2;
+
+And use the mask here.
+
+((sts3 & XYZ_MASK) == TPM_STS3_TPM2_FAM)
+     chip->flags = TPM_CHIP_FLAG_TPM2;
+
+Since the bits 00 indicate TPM 1.2, 01 TPM2 and 10 and 11 are reserved!
+
+
+    Stefan
+
