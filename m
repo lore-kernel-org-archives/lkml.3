@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712AbaK0LVQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 06:21:16 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:21821 "EHLO
+	id S1754905AbaK0LWY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 06:22:24 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:21828 "EHLO
 	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753388AbaK0LVN (ORCPT
+	with ESMTP id S1754646AbaK0LVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 06:21:13 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-0a-54770926a7a5
+	Thu, 27 Nov 2014 06:21:16 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-35-5477092af201
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
         Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
@@ -18,109 +18,125 @@ Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v4 0/7] regulator: Parse ena_gpio in core, add GPIO to max77686
-Date: Thu, 27 Nov 2014 12:20:46 +0100
-Message-id: <1417087253-12306-1-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v4 7/7] ARM: dts: exynos4412-trats: Switch max77686 regulators
+ to GPIO control
+Date: Thu, 27 Nov 2014 12:20:53 +0100
+Message-id: <1417087253-12306-8-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJJMWRmVeSWpSXmKPExsVy+t/xK7pqnOUhBseviFhsnLGe1WLqwyds
+In-reply-to: <1417087253-12306-1-git-send-email-k.kozlowski@samsung.com>
+References: <1417087253-12306-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprILMWRmVeSWpSXmKPExsVy+t/xK7panOUhBhufKVhsnLGe1WLqwyds
 	FvOPnGO1eP3C0KL/8Wtmi7NNb9gt7n89ymjx7UoHk8Wmx9dYLS7vmsNmMeP8PiaLtUfusjvw
-	eOycdZfdY9OqTjaPO9f2sHlsXlLv0bdlFaPH501yAWxRXDYpqTmZZalF+nYJXBmX+uawFOyW
-	rbh88DtLA+MbsS5GTg4JAROJk8c3MUPYYhIX7q1n62Lk4hASWMoocattAZTTxyTxa89ZRpAq
-	NgFjic3Ll7CB2CICKxgljt9QBLGZBdYzSTzY5tTFyMEhLOAv8eCzKEiYRUBVYsf1SWCtvALu
-	Eps+HWCHWCYncfLYZNYJjNwLGBlWMYqmliYXFCel5xrqFSfmFpfmpesl5+duYoQE15cdjIuP
-	WR1iFOBgVOLhTXhcFiLEmlhWXJl7iFGCg1lJhJeLsTxEiDclsbIqtSg/vqg0J7X4ECMTB6dU
-	A+O6YOn9FSUFsQ9XzLLbmhXseDn/l7sVh+t+9vBnF38sNk19pL77Js9Pj2ARyWO6b9WUGc+x
-	3daxZ77CIBHMuyhNfIPO3q+qu8JmJplpm+9xe1uRn1M8c+HBP22vmG6ovX+/szRx5YPNZ2xt
-	Ig+I7425oG+02ER1v9etfJekuS9PLg5r92NxlVdiKc5INNRiLipOBABLPSUeDAIAAA==
+	eOycdZfdY9OqTjaPO9f2sHlsXlLv0bdlFaPH501yAWxRXDYpqTmZZalF+nYJXBknz95jK/gi
+	UfF173bGBsbzwl2MHBwSAiYSq6+adzFyApliEhfurWfrYuTiEBJYyiix4Ox5Vginj0lie38D
+	C0gVm4CxxOblS9hAbBGBFYwSx28ogtjMAuuZJB5scwKxhQUSJC5/O80KYrMIqEos6Z0P1ssr
+	4C4x8/8cZohtchInj00Gq+EU8JDYe+s2WI0QUM2eV3dYJjDyLmBkWMUomlqaXFCclJ5rpFec
+	mFtcmpeul5yfu4kREoxfdzAuPWZ1iFGAg1GJh5fhVlmIEGtiWXFl7iFGCQ5mJRFeLsbyECHe
+	lMTKqtSi/Pii0pzU4kOMTBycUg2M1prPZ61XTPY/139v026GuZrnopyk/ph7JvLsynt003Gt
+	3I/7sy+23Ppz6miBt69FQsn/dx36PTW54rIHu3xmuGbHFORoPQjfMfny/jeMKvM2SW5MvsAu
+	n8bRuvZgw6XXfBNnMc5i2NNgNu9+rcfbopW3Ta2nsG7WlAtr/5zQNNvzV8Cy4KVKSizFGYmG
+	WsxFxYkAf7fBBSQCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Remove fixed regulators (duplicating what max77686 provides) and
+add GPIO control to max77686 regulators. Add of_compatible to
+voltage-regulators node.
 
+This gives the system full control over those regulators. Previously
+the state of such regulators was a mixture of what max77686 driver set
+over I2C and what regulator-fixed set through GPIO.
 
-The patchset generalizes the ena_gpio bindings and finally adds GPIO
-support to the max77686 driver. Adding GPIO to max77686 allows removal of
-fixed regulators from DTS which duplicate the description of hardware.
+Removal of 'regulator-always-on' from CAM_ISP_CORE_1.2V (buck9) allows
+disabling it when it is not used. Previously this regulator was always
+enabled because its enable state is a OR of:
+ - ENB9 GPIO (turned always on by regulator-fixed),
+ - BUCK9EN field in BUCK9CTRL register (off by max77686 through I2C).
 
-Rationale behind adding ena-gpios to regulator core
-===================================================
-Drivers often add custom DTS properties for parsing the GPIO for
-regulator enable control. Some of them don't have to do this in a
-special custom way and would work with a generic approach (e.g. S5M8767,
-S2MPS1x, MAX77686). As such drivers have to do this on their own,
-multiple different bindings are added and each driver duplicates similar
-code.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ arch/arm/boot/dts/exynos4412-trats2.dts | 25 +++++--------------------
+ 1 file changed, 5 insertions(+), 20 deletions(-)
 
-Add a generic binding so the regulator core will do this work for
-drivers. This should offload some work from drivers and also limit
-creation of new custom properties for GPIO control.
-
-Changes since v3
-================
-1. Regulator cleanup patches were applied by Mark, drop them.
-2. Re-work idea by adding generic ena-gpios binding.
-
-Changes since v2
-================
-Re-work the board file support removal after Javier's comments: use
-new DT style parsing. This imposes a lot of changes.
-1. Add "of_compatible" for regulator drivers.
-2. Provide backward compatibility if such "of_compatible" is not present.
-   The driver will search for regulators node and use it as dev->of_node.
-   Everything should be bisect-friendly.
-3. New patches: 1, 2, 3, 5, 13 and 14.
-4. Because of new style DT parsing it is much easier to put "gpio"
-   properties in regulators top node (not in each regulator).
-   This will be also new-gpio-lib friendly.
-
-Changes since v1
-================
-1. Add patch: 1/8 "regulator: max77686: Consistently index opmode
-   array by rdev id".
-2. Remove patch "regulator: max77686: Make regulator_desc array
-   const" (applied).
-3. Re-work patches removing from regulators board file support (2/8
-   and 3/8). Parse regulators with of_regulator_match() at once, remove
-   num_regulators.
-4. Patch 4/8: Add depends on OF to mfd/Kconfig. Add Javier's
-   reviewed-by.
-5. Patch 5/8: Add Javier's reviewed-by.
-6. Patch 6/8: Add depends on GPIOLIB to regulator/Kconfig. Rename
-   "external control" to "GPIO control" and "ext_control_gpios" to
-   simpler "gpios".
-   I tried to use new GPIO API but it ended with more problems
-   https://lkml.org/lkml/2014/10/29/239
-
-
-Patchset is rebased on next-20141114.
-
-Best regards,
-Krzysztof
-
-Krzysztof Kozlowski (7):
-  mfd: max77686/802: Remove support for board files
-  regulator: dt-bindings: Document the ena-gpios property
-  regulator: of: Parse ena-gpios property from DTS
-  regulator: Use ena_gpio supplied with generic regulator bindings
-  regulator: max77686: Add GPIO control
-  mfd/regulator: dt-bindings: max77686: Document gpio properties
-  ARM: dts: exynos4412-trats: Switch max77686 regulators to GPIO control
-
- Documentation/devicetree/bindings/mfd/max77686.txt | 14 +++-
- .../devicetree/bindings/regulator/regulator.txt    |  4 +
- arch/arm/boot/dts/exynos4412-trats2.dts            | 25 ++----
- drivers/mfd/Kconfig                                |  1 +
- drivers/mfd/max77686.c                             | 23 ------
- drivers/regulator/core.c                           | 96 ++++++++++++++++------
- drivers/regulator/max77686.c                       | 58 +++++++++++--
- drivers/regulator/of_regulator.c                   | 11 +++
- include/linux/mfd/max77686-private.h               |  1 -
- include/linux/mfd/max77686.h                       | 28 -------
- include/linux/regulator/driver.h                   |  5 ++
- include/linux/regulator/machine.h                  | 13 +++
- 12 files changed, 178 insertions(+), 101 deletions(-)
-
+diff --git a/arch/arm/boot/dts/exynos4412-trats2.dts b/arch/arm/boot/dts/exynos4412-trats2.dts
+index 7a68e0832cd6..4ba981eae32e 100644
+--- a/arch/arm/boot/dts/exynos4412-trats2.dts
++++ b/arch/arm/boot/dts/exynos4412-trats2.dts
+@@ -58,15 +58,6 @@
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 
+-		vemmc_reg: regulator-0 {
+-			compatible = "regulator-fixed";
+-			regulator-name = "VMEM_VDD_2.8V";
+-			regulator-min-microvolt = <2800000>;
+-			regulator-max-microvolt = <2800000>;
+-			gpio = <&gpk0 2 0>;
+-			enable-active-high;
+-		};
+-
+ 		cam_io_reg: voltage-regulator-1 {
+ 			compatible = "regulator-fixed";
+ 			regulator-name = "CAM_SENSOR_A";
+@@ -94,16 +85,6 @@
+ 			enable-active-high;
+ 		};
+ 
+-		cam_isp_core_reg: voltage-regulator-4 {
+-			compatible = "regulator-fixed";
+-			regulator-name = "CAM_ISP_CORE_1.2V_EN";
+-			regulator-min-microvolt = <1200000>;
+-			regulator-max-microvolt = <1200000>;
+-			gpio = <&gpm0 3 0>;
+-			enable-active-high;
+-			regulator-always-on;
+-		};
+-
+ 		ps_als_reg: voltage-regulator-5 {
+ 			compatible = "regulator-fixed";
+ 			regulator-name = "LED_A_3.0V";
+@@ -405,6 +386,7 @@
+ 					regulator-name = "VTF_2.8V";
+ 					regulator-min-microvolt = <2800000>;
+ 					regulator-max-microvolt = <2800000>;
++					ena-gpios = <&gpy2 0 GPIO_ACTIVE_HIGH>;
+ 				};
+ 
+ 				ldo22_reg: ldo22 {
+@@ -412,6 +394,7 @@
+ 					regulator-name = "VMEM_VDD_2.8V";
+ 					regulator-min-microvolt = <2800000>;
+ 					regulator-max-microvolt = <2800000>;
++					ena-gpios = <&gpk0 2 GPIO_ACTIVE_HIGH>;
+ 				};
+ 
+ 				ldo23_reg: ldo23 {
+@@ -518,6 +501,7 @@
+ 					regulator-name = "VMEM_VDDF_3.0V";
+ 					regulator-min-microvolt = <2850000>;
+ 					regulator-max-microvolt = <2850000>;
++					ena-gpios = <&gpk0 2 GPIO_ACTIVE_HIGH>;
+ 				};
+ 
+ 				buck9_reg: buck9 {
+@@ -525,6 +509,7 @@
+ 					regulator-name = "CAM_ISP_CORE_1.2V";
+ 					regulator-min-microvolt = <1000000>;
+ 					regulator-max-microvolt = <1200000>;
++					ena-gpios = <&gpm0 3 GPIO_ACTIVE_HIGH>;
+ 				};
+ 			};
+ 		};
+@@ -591,7 +576,7 @@
+ 		broken-cd;
+ 		non-removable;
+ 		card-detect-delay = <200>;
+-		vmmc-supply = <&vemmc_reg>;
++		vmmc-supply = <&ldo22_reg>;
+ 		clock-frequency = <400000000>;
+ 		samsung,dw-mshc-ciu-div = <0>;
+ 		samsung,dw-mshc-sdr-timing = <2 3>;
 -- 
 1.9.1
 
