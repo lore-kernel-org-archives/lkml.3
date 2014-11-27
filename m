@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751209AbaK0Qbb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 11:31:31 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:61038 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750821AbaK0Qba (ORCPT
+	id S1751388AbaK0QdI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 11:33:08 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41057 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848AbaK0QdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 11:31:30 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Bjorn Helgaas <bhelgaas@google.com>, Kevin Hilman <khilman@kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH 0/4] PM: Use CONFIG_PM instead of CONFIG_PM_RUNTIME in core code
-Date: Thu, 27 Nov 2014 17:52:46 +0100
-Message-ID: <2907778.ZNoNjGGGYl@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAPDyKFox8bXyFT0861Tc8YY5HLyq5uPVGkfN0G4fXDKqQynkYQ@mail.gmail.com>
-References: <37310416.jZXoh5nfSC@vostro.rjw.lan> <CAPDyKFox8bXyFT0861Tc8YY5HLyq5uPVGkfN0G4fXDKqQynkYQ@mail.gmail.com>
+	Thu, 27 Nov 2014 11:33:05 -0500
+Date: Thu, 27 Nov 2014 16:30:59 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, linux-spi@vger.kernel.org,
+        devicetree@vger.kernel.org
+Message-ID: <20141127163059.GZ7712@sirena.org.uk>
+References: <1417088636-11994-1-git-send-email-lee.jones@linaro.org>
+ <1417088636-11994-3-git-send-email-lee.jones@linaro.org>
+ <20141127130053.GW7712@sirena.org.uk>
+ <20141127145542.GH4628@x1>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dfAulW8sdm/Y0CsS"
+Content-Disposition: inline
+In-Reply-To: <20141127145542.GH4628@x1>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/4] spi: st: Provide Device Tree binding documentation
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 27, 2014 09:57:33 AM Ulf Hansson wrote:
-> On 27 November 2014 at 01:37, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > Hi,
-> >
-> > After commit b2b49ccbdd54 "PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-> > selected" (currently in Linux next) CONFIG_PM_RUNTIME is set whenever
-> > CONFIG_PM is set, so CONFIG_PM can be used in #ifdefs instead of
-> > CONFIG_PM_RUNTIME which simplifies things in quite a few cases.
-> >
-> > For this reason, the following patches modify some core code to use
-> > CONFIG_PM instead of CONFIG_PM_RUNTIME.
-> >
-> > [1/4] Drop a macro which is redundant after the above commit.
-> > [2/4] Use PM instead of PM_RUNTIME in the core device PM code.
-> > [3/4] Use PM instead of PM_RUNTIME in the ACPI core.
-> > [4/4] Use PM instead of PM_RUNTIME in the PCI core.
-> >
-> > They build for me for all of the relevant combinations of options (on x86),
-> > but more testing (on the other architectures) would be welcome.
-> 
-> I really like the looks of this patchset!
-> 
-> Noticed that you have applied it for your bleeding edge branch, I
-> suppose that means you will get some "free" testing in linux-next?
-> 
-> Anyway, I have tested it for ux500 (including the genpd support for
-> it, available in linux-next). It works nicely!
-> 
-> I have also tested the two Kconfig options; CONFIG_PM_SLEEP (which
-> selects CONFIG_PM_RUNTIME) and for CONFIG_PM_RUNTIME (with
-> CONFIG_PM_SLEEP unset).
-> 
-> That brings me to a raise a question; why do we need to keep these two
-> configurations options? Couldn't we also have CONFIG_PM_RUNTIME to
-> select CONFIG_PM_SLEEP, that will further simplify things?
 
-My plan is different.  I'm going to eliminate PM_RUNTIME from the code
-and then replace it with PM as a selectable option.  Then, PM_SLEEP will
-select PM (directly) and PM_RUNTIME can be entirely dropped.
+--dfAulW8sdm/Y0CsS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-So in the end we'll have one Kconfig option less, which is a win IMO.
+On Thu, Nov 27, 2014 at 02:55:42PM +0000, Lee Jones wrote:
+> On Thu, 27 Nov 2014, Mark Brown wrote:
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> > What do the two different compatible strings mean (for example, should
+> > ssc4 be used for version 4 and higher or is it just a quirk for that
+> > version)?
+
+> This appears to be historical.  There aren't any functional
+> differences i.e. we don't match on them.  I believe the former is a
+> more informal, generic name and the latter is the official name of the
+> IP block.  The I2C component already upstreamed has the same naming
+> conventions by the looks of it.
+
+Probably best to say something or retire one then.
+
+--dfAulW8sdm/Y0CsS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUd1HCAAoJECTWi3JdVIfQOWoH/1hYO3qV5JbFVeE0xphBa4Td
+1xry2lXjk5lelhXBiNcpkEq2hLJVXQntjaLu5L2syKi9TvD9JNT6HycJvVv33vU3
+jlkcY7A6hM+ol8ExKBH0rcUQS/mWFPqj19+WtKKR01NlP08qaN5KHJmxcAseGxNV
+J2Y9t4usSRw2XTtxOXN/R4KcwZqZSFdLA+NPFJv92B9UVnzEnlKCLDxdB8ETSfCS
+C7MBYmmYyDvbF1waozT0bLBV2qMLj8L+pA3CGWBW8zZQANL1FNHsC1ciNx3Qa2y7
+Di1Mgs1UexxS+zl7OgWGyPc3MQorck6DOPhJkBwct7HliP9egEUCvw1yVsY7dk0=
+=mAJ2
+-----END PGP SIGNATURE-----
+
+--dfAulW8sdm/Y0CsS--
