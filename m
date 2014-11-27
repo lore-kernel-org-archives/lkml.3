@@ -1,97 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847AbaK0OoZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 09:44:25 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:19322 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800AbaK0OoU (ORCPT
+	id S1751858AbaK0Opl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 09:45:41 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40757 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaK0Opk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 09:44:20 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-86-547738c1b676
-Message-id: <1417099455.1805.17.camel@samsung.com>
-Subject: Re: [RFC] lsm: namespace hooks
-From: Lukasz Pawelczyk <l.pawelczyk@samsung.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: Richard Weinberger <richard.weinberger@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        James Morris <james.l.morris@oracle.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Paul Moore <pmoore@redhat.com>,
-        Kees Cook <keescook@chromium.org>, Miklos Szeredi <mszeredi@suse.cz>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
-        Mark Rustad <mark.d.rustad@intel.com>,
-        David Howells <dhowells@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Juri Lelli <juri.lelli@gmail.com>,
-        Daeseok Youn <daeseok.youn@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Dario Faggioli <raistlin@linux.it>, Alex Thorlton <athorlton@sgi.com>,
-        Matthew Dempsky <mdempsky@chromium.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "open list:ABI/API" <linux-api@vger.kernel.org>,
-        linux-security-module@vger.kernel.org,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Lukasz Pawelczyk <havner@gmail.com>
-Date: Thu, 27 Nov 2014 15:44:15 +0100
-In-reply-to: <54773757.8090905@nod.at>
-References: <1417096866-25563-1-git-send-email-l.pawelczyk@samsung.com>
- <1417096866-25563-2-git-send-email-l.pawelczyk@samsung.com>
- <CAFLxGvzw4N4QFv5Vg1dDf9pdRe+Szbevmqn5QNwjLHN4xrokCg@mail.gmail.com>
- <1417098928.1805.15.camel@samsung.com> <54773757.8090905@nod.at>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.12.5 (3.12.5-1.fc20)
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBIsWRmVeSWpSXmKPExsVy+t/xK7oHLcpDDBZNl7GYs34Nm8Wb69OZ
-	Le5t+8VmsWbZSzaLgx/us1i8a/rNYvF/Wwu7xf/XOhZ9j4MsTmy+z2jxc+UuRosz3bkWm793
-	sFlc3jWHzeJDzyM2izlv37JZXJ2+nt3i0oEFTBaXft9ltlj5+TaLxdb9rYwWx3sPMFl8vvaL
-	3eL63S3MFh8mbmCzmLzzDaNF25KNTBbnGp+zWJy/cI7d4vLWmcwW5/8eZ3WQ95jV0MvmMbvh
-	IovHzll32T0WbCr1uLY70mPzCi2PxXteMnmcmPGbxaNt+T4Wj8k3ljN63JxX6PHx6S0Wj5Pz
-	frJ5vN93lc3j6P5FbB53r79kChCJ4rJJSc3JLEst0rdL4Mp4fvQea8EX9oqZryMaGPvZuhg5
-	OSQETCQm9b9ngrDFJC7cWw8U5+IQEljKKNH86jAThPOfUeLe3JUsIFW8AkYSF9/0gdnCAuoS
-	h+f/Zgex2QQMJL5f2MsMYosAxd+9nAo2iVngEqfEt/6FYA0sAqoSc7pOsoLYnAJqEusmPmKG
-	2NDPJLHr1lSwBDNQ96R5i5ghbtKSeN/1E2qzoMSPyfdYIGrkJTavecs8gVFgFpKWWUjKZiEp
-	W8DIvIpRNLU0uaA4KT3XSK84Mbe4NC9dLzk/dxMjJHV83cG49JjVIUYBDkYlHl6GW2UhQqyJ
-	ZcWVuYcYJTiYlUR4OQzLQ4R4UxIrq1KL8uOLSnNSiw8xMnFwSjUwphvmrtKq3/HyvEFa1Q8O
-	/piTV30vHL16rv/S69lCp9fJXL71/UvV5+hbcrMLGH0MxP0Xv9fuEDLa92XS5o+mV+0ka8v5
-	r04Oqfyn9ulOndHyLev0WvdXfc5+a1QYefj09Dv3PWo3/uoTlDu14i2Hx2Tv1hrZA17Xyj17
-	DXKe3/s9aW7c3tneq5VYijMSDbWYi4oTAWi7yNb7AgAA
+	Thu, 27 Nov 2014 09:45:40 -0500
+Message-ID: <54773906.5030504@arm.com>
+Date: Thu, 27 Nov 2014 14:45:26 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+MIME-Version: 1.0
+To: Liviu Dudau <Liviu.Dudau@arm.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>
+CC: "arnd@arndb.de" <arnd@arndb.de>, Mark Rutland <Mark.Rutland@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "Lendacky, Thomas" <Thomas.Lendacky@amd.com>,
+        "Schopp, Joel" <Joel.Schopp@amd.com>
+Subject: Re: [PATCH V4] arm64: amd-seattle: Adding device tree for AMD Seattle
+ platform
+References: <547458B9.2000805@arm.com> <D09A7217.A4E1%suravee.suthikulpanit@amd.com> <20141127142811.GN828@e106497-lin.cambridge.arm.com>
+In-Reply-To: <20141127142811.GN828@e106497-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On czw, 2014-11-27 at 15:38 +0100, Richard Weinberger wrote:
-> Am 27.11.2014 um 15:35 schrieb Lukasz Pawelczyk:
-> > On czw, 2014-11-27 at 15:18 +0100, Richard Weinberger wrote:
-> >> On Thu, Nov 27, 2014 at 3:01 PM, Lukasz Pawelczyk
-> >> <l.pawelczyk@samsung.com> wrote:
-> >>> -/* 0x02000000 was previously the unused CLONE_STOPPED (Start in stopped state)
-> >>> -   and is now available for re-use. */
-> >>> +#define CLONE_NEWLSM           0x02000000      /* New LSM namespace */
-> >>
-> >> FYI, CLONE_NEWCGROUP also claims last flag [1].
-> > 
-> > Yes, I'm perfectly aware of that. I've seen those patches.
-> > This is RFC for now and CGROUP NS is not merged yet. I'll rebase when
-> > time comes.
+On 27/11/14 14:28, Liviu Dudau wrote:
+> On Tue, Nov 25, 2014 at 11:46:50AM +0000, Suthikulpanit, Suravee wrote:
+>> Hi Marc,
+>>
+>> On 11/25/14, 17:23, "Marc Zyngier" <marc.zyngier@arm.com> wrote:
+>>
+>>> Hi Suravee,
+>>>
+>>> Just spotted a small issue below (looks like a recurring mistake in a
+>>> number of DTs I've seem lately):
+>>>
+>>> On 24/11/14 21:51, suravee.suthikulpanit@amd.com wrote:
+>>>> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+>>>>
+>>>> Initial revision of device tree for AMD Seattle platform.
+>>>>
+>>>> Cc: Arnd Bergmann <arnd@arndb.de>
+>>>> Cc: Marc Zyngier <marc.zyngier@arm.com>
+>>>> Cc: Mark Rutland <mark.rutland@arm.com>
+>>>> Cc: Will Deacon <will.deacon@arm.com>
+>>>> Cc: Catalin Marinas <catalin.marinas@arm.com>
+>>>> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+>>>> Signed-off-by: Thomas Lendacky <Thomas.Lendacky@amd.com>
+>>>> Signed-off-by: Joel Schopp <Joel.Schopp@amd.com>
+>>>> ---
+>>>> V4 Changes:
+>>>>     * Remove unnecessary smb layer and move motherbord to top level
+>>>>     * Move include dtsi to top level
+>>>>     * Remove apb_pclk from sata0 and i2c
+>>>>     * Fix GIC Virtual Maintanance Interrupt from PPI24 (8) to PPI25 (9)
+>>>>     * Add 40-bit dma-ranges for motherboard (simple-bus)
+>>>>     * Remove dma0 (pl330) entry for now since it only supports 32-bit
+>>>> DMA.
+>>>>       It is basically not used at the moment. It would also need SMMU
+>>>>       to allow dma remapping to 40-bit DMA range.
+>>>>     * Add phandle spi0 and spi1
+>>>>     * Hook up gpio0 pin 7 with MMC Card Detection (CD) support.
+>>>>     * Changes in pcie0 entry:
+>>>>         - Add 40-bit dma-ranges
+>>>>         - Remove interrupts property
+>>>>         - Add interrupt-map/mask property
+>>>>         - Fix PCI I/O range
+>>>>         - Merge PCI 32-bit ranges
+>>>>         - Merge PCI 64-bit ranges
+>>>>
+>>>> NOTE: I am not add a new compatible ID for the sata0 as Rob Herring
+>>>>       suggested since there is no need at the momement, and I am trying
+>>>>       to avoid introducing ID unnecessarily.
+>>>>
+>>>>  arch/arm64/Kconfig                          |   5 +
+>>>>  arch/arm64/boot/dts/Makefile                |   1 +
+>>>>  arch/arm64/boot/dts/amd-seattle-periph.dtsi | 156
+>>>> ++++++++++++++++++++++++++++
+>>>>  arch/arm64/boot/dts/amd-seattle.dts         |  89 ++++++++++++++++
+>>>>  4 files changed, 251 insertions(+)
+>>>>  create mode 100644 arch/arm64/boot/dts/amd-seattle-periph.dtsi
+>>>>  create mode 100644 arch/arm64/boot/dts/amd-seattle.dts
+>>>>
+>>>
+>>> [...]
+>>>
+>>>> diff --git a/arch/arm64/boot/dts/amd-seattle.dts
+>>>> b/arch/arm64/boot/dts/amd-seattle.dts
+>>>> new file mode 100644
+>>>> index 0000000..d5fc482
+>>>> --- /dev/null
+>>>> +++ b/arch/arm64/boot/dts/amd-seattle.dts
+>>>> @@ -0,0 +1,89 @@
+>>>> +/*
+>>>> + * DTS file for AMD Seattle
+>>>> + *
+>>>> + * Copyright (C) 2014 Advanced Micro Devices, Inc.
+>>>> + */
+>>>> +
+>>>> +/dts-v1/;
+>>>> +
+>>
+>> [...] 
+>>
+>>>> +
+>>>> +	timer {
+>>>> +		compatible = "arm,armv8-timer";
+>>>> +		interrupts = <1 13 0xff01>,
+>>>> +			     <1 14 0xff01>,
+>>>> +			     <1 11 0xff01>,
+>>>> +			     <1 10 0xff01>;
+>>>> +	};
+>>>
+>>> The Cortex-A57 TRM clearly states that these interrupts are level
+>>> triggered.
+>>
+>> Thanks for pointing this out. I¹ll fix this to <1 1X 0xff04> (4 for the
+>> Active-High) then.
 > 
-> Just wanted to indicate that we run out of constants. :)
+> Hi Suravee,
+> 
+> Don't know what Seattle does, but the TRM says that the outputs are active-LOW.
 
-True, the last one is 0x80000000. I did not notice that. Thanks for
-pointing out.
+As I said in another thread, 0xff04 *is* the right value. This is an
+interrupt descriptor for the GIC, not a qualifier for the signal that
+comes out of the core.
 
-Any suggestion on what can be done here? New syscal with flags2?
+Thanks.
 
-
+	M.
 -- 
-Lukasz Pawelczyk
-Samsung R&D Institute Poland
-Samsung Electronics
-
-
-
+Jazz is not dead. It just smells funny...
