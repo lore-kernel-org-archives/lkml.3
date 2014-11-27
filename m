@@ -1,99 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751631AbaK0PSN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 10:18:13 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:61354 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139AbaK0PSK (ORCPT
+	id S1751693AbaK0PSZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 10:18:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57944 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636AbaK0PSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 10:18:10 -0500
-Date: Thu, 27 Nov 2014 16:18:06 +0100
-From: Luis de Bethencourt <luis@debethencourt.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, eunb.song@samsung.com, gulsah.1004@gmail.com,
-        paul.gortmaker@windriver.com, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] staging: octeon: Fix checkpatch warning
-Message-ID: <20141127151806.GA17849@ks395439.kimsufi.com>
-References: <20141125132614.GA23857@biggie>
- <20141126214523.GA10037@kroah.com>
- <20141127003523.GA3249@biggie>
- <20141127023410.GA7283@kroah.com>
+	Thu, 27 Nov 2014 10:18:22 -0500
+Date: Thu, 27 Nov 2014 07:16:55 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Ming Lei <ming.lei@canonical.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Grazvydas Ignotas <notasas@gmail.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Kalle Valo <kvalo@adurom.com>,
+        Sebastian Reichel <sre@ring0.de>,
+        David Gnedt <david.gnedt@davizone.at>
+Subject: Re: wl1251: NVS firmware data
+Message-ID: <20141127151655.GB23064@kroah.com>
+References: <201411271506.20457@pali>
+ <CACVXFVMr8jH1ZzyPNG91VDK8DuVjQsHn9ks62sSNjOfUnNsURQ@mail.gmail.com>
+ <201411271543.23527@pali>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20141127023410.GA7283@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201411271543.23527@pali>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 06:34:10PM -0800, Greg KH wrote:
-> On Thu, Nov 27, 2014 at 12:35:23AM +0000, Luis de Bethencourt wrote:
-> > On Wed, Nov 26, 2014 at 01:45:23PM -0800, Greg KH wrote:
-> > > On Tue, Nov 25, 2014 at 01:26:14PM +0000, Luis de Bethencourt wrote:
-> > > > This patch fixes the checkpatch.pl warnings:
-> > > > 
-> > > > WARNING: line over 80 characters
-> > > > +                       int cores_in_use = core_state.baseline_cores - atomic_read(&core_state.available_cores);
-> > > > 
-> > > > WARNING: line over 80 characters
-> > > > +                       skb->data = skb->head + work->packet_ptr.s.addr - cvmx_ptr_to_phys(skb->head);
-> > > > 
-> > > > Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
-> > > > ---
-> > > >  drivers/staging/octeon/ethernet-rx.c | 6 ++++--
-> > > >  1 file changed, 4 insertions(+), 2 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
-> > > > index 44e372f..bd83f55 100644
-> > > > --- a/drivers/staging/octeon/ethernet-rx.c
-> > > > +++ b/drivers/staging/octeon/ethernet-rx.c
-> > > > @@ -295,7 +295,8 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
-> > > >  			 */
-> > > >  			union cvmx_pow_wq_int_cntx counts;
-> > > >  			int backlog;
-> > > > -			int cores_in_use = core_state.baseline_cores - atomic_read(&core_state.available_cores);
-> > > > +			int cores_in_use = core_state.baseline_cores -
-> > > > +				atomic_read(&core_state.available_cores);
-> > > >  			counts.u64 = cvmx_read_csr(CVMX_POW_WQ_INT_CNTX(pow_receive_group));
-> > > >  			backlog = counts.s.iq_cnt + counts.s.ds_cnt;
-> > > >  			if (backlog > budget * cores_in_use && napi != NULL)
-> > > > @@ -324,7 +325,8 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
-> > > >  		 * buffer.
-> > > >  		 */
-> > > >  		if (likely(skb_in_hw)) {
-> > > > -			skb->data = skb->head + work->packet_ptr.s.addr - cvmx_ptr_to_phys(skb->head);
-> > > > +			skb->data = skb->head + work->packet_ptr.s.addr -
-> > > > +				cvmx_ptr_to_phys(skb->head);
-> > > >  			prefetch(skb->data);
-> > > >  			skb->len = work->len;
-> > > >  			skb_set_tail_pointer(skb, skb->len);
-> > > > -- 
-> > > > 2.1.3
+On Thu, Nov 27, 2014 at 03:43:23PM +0100, Pali Rohár wrote:
+> On Thursday 27 November 2014 15:21:44 Ming Lei wrote:
+> > On Thu, Nov 27, 2014 at 10:06 PM, Pali Rohár 
+> <pali.rohar@gmail.com> wrote:
+> > > Hello,
 > > > 
-> > > No longer applies to my tree :(
+> > > wifi driver wl1251 needs NVS calibration data for working.
+> > > These data are loaded by driver via request_firmware from
+> > > userspace file: ti-connectivity/wl1251-nvs.bin. In
+> > > linux-fimrware git tree there is generic wl1251-nvs.bin
+> > > file which is used by default.
+> > > 
+> > > Driver wl1251 is used on Nokia N900 cellphone for its wifi
+> > > chip. This cellphone has one special MTD partition (called
+> > > CAL) where are stored some configuration data in special
+> > > binary (key-value) format. And there is also stored correct
+> > > calibration data for specific device (each device has
+> > > different data). It is preferred to use those data instead
+> > > generic one (provided by linux-firmware git tree).
+> > > 
+> > > Now my question is: How to correctly load calibration data
+> > > from special Nokia N900 CAL partition into wl1251 kernel
+> > > driver?
 > > 
-> > I'm confused.
+> > It is better to let user space script handle the request.
 > > 
-> > I just tried applying it to what I think is your tree is and it worked.
-> > https://git.kernel.org/cgit/linux/kernel/git/gregkh/staging.git/log/?h=staging-next
+> 
+> Yes, this makes sense. Implementing CAL parser in kernel wl1251 
+> driver would be hard...
+> 
+> > > By default kernel reads ti-connectivity/wl1251-nvs.bin file
+> > > from VFS if exists without any userspace support. If it
+> > > fails then it fallback to loading via udev.
 > > 
-> > Do I have this wrong?
+> > You can remove or rename this file so that loading from user
+> > space can be triggered.
+> > 
 > 
-> I'm applying patches first to staging-testing to get some 0-day buildbot
-> testing before merging them to staging-next these days, as I've been
-> burned with common problems too many times.  I took some other octeon
-> patches that were sent before yours were that caused the conflict.  If
-> you look at staging-testing right now you can see that.
-> 
-> Hope this helps,
-> 
-> greg k-h
+> It is no so easy... In case when CAL does not contains NVS data 
+> then we want to use this generic NVS file. And telling everybody 
+> to rename this is file is not good solution...
 
-This is very helpful!
+But that's up to your system configuration, not the kernel.  Make a
+userspace package for the firmware that creates it in the format you
+need it to be in, for the hardware you have, and then there would not be
+any need for a kernel change, right?
 
-I am about to send a new version of the patch, this time against staging-test.
-Thanks for the time to explain this, and sorry about the previos patch not
-applying.
-
-Luis
+greg k-h
