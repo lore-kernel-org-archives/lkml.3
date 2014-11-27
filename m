@@ -1,65 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579AbaK0CMg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Nov 2014 21:12:36 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:35384 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817AbaK0CMc (ORCPT
+	id S1753420AbaK0C1K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Nov 2014 21:27:10 -0500
+Received: from mailgw01.mediatek.com ([210.61.82.183]:46248 "EHLO
+	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751882AbaK0C1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Nov 2014 21:12:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <54768107.2090402@rock-chips.com>
-References: <1416447994-9921-1-git-send-email-mark.yao@rock-chips.com>
-	<23617908.6oA5uRuO3l@diego>
-	<CAPM=9tzvvb5U+8KaCO+K6CJi=rwWOkoW+4ZSFW_Oo9gTncvkWA@mail.gmail.com>
-	<1557742.FTdLsE0bVs@diego>
-	<20141126073430.GD3156@suse.de>
-	<CAPM=9tzhZLShA5=ShGTKhyZR6ddKycQDUWBZxXpUBb+1tGp-mQ@mail.gmail.com>
-	<54768107.2090402@rock-chips.com>
-Date: Thu, 27 Nov 2014 12:12:30 +1000
-Message-ID: <CAPM=9tyZpDEPcipYDq2_qdQ9zK2bnPFYTUL2qDvAd7QoUOm-QQ@mail.gmail.com>
-Subject: Re: [PATCH v14 0/3] Add drm driver for Rockchip Socs
-From: Dave Airlie <airlied@gmail.com>
-To: Mark yao <mark.yao@rock-chips.com>
-Cc: Joerg Roedel <jroedel@suse.de>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>,
+	Wed, 26 Nov 2014 21:27:08 -0500
+X-Listener-Flag: 11101
+Subject: Re: [PATCH v4] clocksource: arch_timer: Allow the device tree to
+ specify uninitialized timer registers
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+To: Doug Anderson <dianders@chromium.org>
+CC: Sonny Rao <sonnyrao@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>, linux-api@vger.kernel.org,
-        linux-rockchip@lists.infradead.org,
-        Douglas Anderson <dianders@chromium.org>,
-        =?UTF-8?Q?St=C3=A9phane_Marchesin?= <marcheu@chromium.org>,
-        dbehr@chromium.org, Olof Johansson <olof@lixom.net>,
-        Daniel Kurtz <djkurtz@chromium.org>, Eddie Cai <cf@rock-chips.com>,
-        simon xue <xxm@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Kever Yang <kever.yang@rock-chips.com>, yxj@rock-chips.com,
-        xw@rock-chips.com
-Content-Type: text/plain; charset=UTF-8
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Boyd <sboyd@codeaurora.org>
+In-Reply-To: <CAD=FV=XFcWEp=nZ3=8QEausKzpBbPCzFUSHY-g0K5y+VPpU3Vw@mail.gmail.com>
+References: <1412753627-28287-1-git-send-email-sonnyrao@chromium.org>
+	 <1417012893.12707.12.camel@mtksdaap41>
+	 <CAD=FV=XFcWEp=nZ3=8QEausKzpBbPCzFUSHY-g0K5y+VPpU3Vw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 27 Nov 2014 10:27:04 +0800
+Message-ID: <1417055224.12707.24.camel@mtksdaap41>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>
->>
-> Hi Dave
->     Do you mean that I need send you a branch, based on drm-next, merge with
-> iommu tree and rockchip drm?
 
-Yes, grab drm-next, git pull the arm/rockchip branch from Joerg's
-tree, put rockchip drm
-patches on top, send me pull request.
+Hi,
 
-I'll validate it then.
+On Wed, 2014-11-26 at 08:14 -0800, Doug Anderson wrote:
+> Yingjoe,
+> 
+> On Wed, Nov 26, 2014 at 6:41 AM, Yingjoe Chen <yingjoe.chen@mediatek.com> wrote:
+> > Sorry for the (very) late reply.
+> > I just realize today MT8135 need this and the other patch [1] to boot
+> > SMP correctly. I've applied both patches and they works fine. Thanks :)
+> 
+> Excellent.  It's helpful to include a Tested-by: tag in your email.
+> You'd have a line with just "Tested-by: Yingjoe Chen
+> <yingjoe.chen@mediatek.com>"
 
-Dave.
+sure, here's my tested-by for the 2 patches
+
+Tested-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
+
+I'll remember to add it next time :)
+
+
+> > However, I'm not sure if we really need to add new property.
+> > arm_arch_timer driver will only use virtual timer when virtual PPI
+> > interrupt is provided, so the following patch to timer dtsi will also
+> > works. I think if the firmware doesn't support virtual timer, it make
+> > sense to not supply virtual interrupt.
+> >
+> >         timer {
+> >                 compatible = "arm,armv7-timer";
+> >                 interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_LOW>,
+> > -                            <GIC_PPI 14 IRQ_TYPE_LEVEL_LOW>,
+> > -                            <GIC_PPI 11 IRQ_TYPE_LEVEL_LOW>,
+> > -                            <GIC_PPI 10 IRQ_TYPE_LEVEL_LOW>;
+> > +                            <GIC_PPI 14 IRQ_TYPE_LEVEL_LOW>;
+> >                 clock-frequency = <13000000>;
+> >         };
+> 
+> Once you have Sonny's patch then I believe that the above would work.
+> However we rejected something like this because device tree is
+> supposed to describe the hardware.  The hardware really does provide
+> the virtual timer interrupts and they really are at PPI 11 and PPI 10.
+> It's just that firmware doesn't handle things properly so they can't
+> be used.
+> 
+> NOTE: If we add the "arm,cpu-registers-not-fw-configured" to the
+> device tree and firmware actually works out how to configure things
+> (like if somehow has firmware that has a hypervisor) then it can
+> easily remove this device tree property before calling through to the
+> kernel.  It would be much harder for the firmware to add back in the
+> "PPI 11" and "PPI 10" entries to the timer.
+> 
+> -Doug
+
+I see your point, that's good for me then.
+Thanks.
+
+Joe.C
+
+
