@@ -1,234 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350AbaK1IYq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 03:24:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49488 "EHLO mx1.redhat.com"
+	id S1751108AbaK1I2U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 03:28:20 -0500
+Received: from mout.web.de ([212.227.17.12]:49880 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751160AbaK1IYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 03:24:45 -0500
-Date: Fri, 28 Nov 2014 08:32:11 +0008
-From: Jason Wang <jasowang@redhat.com>
-Subject: Re: [PATCH v6 41/46] macvtap: TUN_VNET_HDR support
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        cornelia.huck@de.ibm.com, rusty@au1.ibm.com, nab@linux-iscsi.org,
-        pbonzini@redhat.com, thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        Tom Herbert <therbert@google.com>, Ben Hutchings <ben@decadent.org.uk>,
-        netdev@vger.kernel.org
-Message-Id: <1417163051.5822.3@smtp.corp.redhat.com>
-In-Reply-To: <1417118789-18231-42-git-send-email-mst@redhat.com>
-References: <1417118789-18231-1-git-send-email-mst@redhat.com>
-	<1417118789-18231-42-git-send-email-mst@redhat.com>
+	id S1750866AbaK1I2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 03:28:19 -0500
+From: Alexander Stein <alexanders83@web.de>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: Re: Re: [PATCH 00/11] ARM: at91: remove !DT support for at91rm9200
+Date: Fri, 28 Nov 2014 09:27:38 +0100
+Message-ID: <1422574.pPO36BQRH8@kongar>
+User-Agent: KMail/4.14.3 (Linux/3.14.14-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <20141128002822.GM4508@piout.net>
+References: <cover.1417103399.git.nicolas.ferre@atmel.com> <3935244.Dm2HkZj2Bg@wuerfel> <20141128002822.GM4508@piout.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:J14VESfhWPm8HqIvD5fZ/FTV8kiGKwIDm96efnRTWRnRgsa3Pji
+ D6N4qyOw9I0qBSuV/higHSrjuqYGcvPdSlvCMdzLelkuQX6Wq/WQ2ENtCHYBVBtwALsUiyU
+ MDT/ql5svPxgz0htA17R2falUVPWV+oa34CqTl9otIIs+Tr70egO1DxDlPPPe0c85+y2Yad
+ 47wnqBTlbUnc9XtkpvNPg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Alexandre,
 
-
-On Fri, Nov 28, 2014 at 4:11 AM, Michael S. Tsirkin <mst@redhat.com> 
-wrote:
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  drivers/net/macvtap.c | 68 
-> ++++++++++++++++++++++++++++++++-------------------
->  1 file changed, 43 insertions(+), 25 deletions(-)
+On Friday 28 November 2014, 01:28:22 wrote Alexandre Belloni:
+> > >  - sound/atmel/ac97c.c (that one is still not converted to DT anyway...)
+> > 
+> > This one seems fairly straightforward to do, including a DT binding,
+> > but the result is still ugly as it supports the at32 chips that
+> > do things very differently.
+> > 
+> > The patch below gets it to compile and should be enough as a replacement
+> > once a compatible string gets added.
+> > 
 > 
-> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> index 880cc09..af90ab5 100644
-> --- a/drivers/net/macvtap.c
-> +++ b/drivers/net/macvtap.c
-> @@ -45,6 +45,18 @@ struct macvtap_queue {
->  	struct list_head next;
->  };
->  
-> +#define MACVTAP_FEATURES (IFF_VNET_HDR | IFF_VNET_LE | 
-> IFF_MULTI_QUEUE)
-> +
-> +static inline u16 macvtap16_to_cpu(struct macvtap_queue *q, 
-> __virtio16 val)
-> +{
-> +	return __virtio16_to_cpu(q->flags & IFF_VNET_LE, val);
-> +}
-> +
-> +static inline __virtio16 cpu_to_macvtap16(struct macvtap_queue *q, 
-> u16 val)
-> +{
-> +	return __cpu_to_virtio16(q->flags & IFF_VNET_LE, val);
-> +}
-> +
->  static struct proto macvtap_proto = {
->  	.name = "macvtap",
->  	.owner = THIS_MODULE,
-> @@ -557,7 +569,8 @@ static inline struct sk_buff 
-> *macvtap_alloc_skb(struct sock *sk, size_t prepad,
->   * macvtap_skb_from_vnet_hdr and macvtap_skb_to_vnet_hdr should
->   * be shared with the tun/tap driver.
->   */
-> -static int macvtap_skb_from_vnet_hdr(struct sk_buff *skb,
-> +static int macvtap_skb_from_vnet_hdr(struct macvtap_queue *q,
-> +				     struct sk_buff *skb,
->  				     struct virtio_net_hdr *vnet_hdr)
->  {
->  	unsigned short gso_type = 0;
-> @@ -588,13 +601,13 @@ static int macvtap_skb_from_vnet_hdr(struct 
-> sk_buff *skb,
->  	}
->  
->  	if (vnet_hdr->flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) {
-> -		if (!skb_partial_csum_set(skb, vnet_hdr->csum_start,
-> -					  vnet_hdr->csum_offset))
-> +		if (!skb_partial_csum_set(skb, macvtap16_to_cpu(q, 
-> vnet_hdr->csum_start),
-> +					  macvtap16_to_cpu(q, vnet_hdr->csum_offset)))
->  			return -EINVAL;
->  	}
->  
->  	if (vnet_hdr->gso_type != VIRTIO_NET_HDR_GSO_NONE) {
-> -		skb_shinfo(skb)->gso_size = vnet_hdr->gso_size;
-> +		skb_shinfo(skb)->gso_size = macvtap16_to_cpu(q, 
-> vnet_hdr->gso_size);
->  		skb_shinfo(skb)->gso_type = gso_type;
->  
->  		/* Header must be checked, and gso_segs computed. */
-> @@ -604,8 +617,9 @@ static int macvtap_skb_from_vnet_hdr(struct 
-> sk_buff *skb,
->  	return 0;
->  }
->  
-> -static void macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
-> -				   struct virtio_net_hdr *vnet_hdr)
-> +static void macvtap_skb_to_vnet_hdr(struct macvtap_queue *q,
-> +				    const struct sk_buff *skb,
-> +				    struct virtio_net_hdr *vnet_hdr)
->  {
->  	memset(vnet_hdr, 0, sizeof(*vnet_hdr));
->  
-> @@ -613,8 +627,8 @@ static void macvtap_skb_to_vnet_hdr(const struct 
-> sk_buff *skb,
->  		struct skb_shared_info *sinfo = skb_shinfo(skb);
->  
->  		/* This is a hint as to how much should be linear. */
-> -		vnet_hdr->hdr_len = skb_headlen(skb);
-> -		vnet_hdr->gso_size = sinfo->gso_size;
-> +		vnet_hdr->hdr_len = cpu_to_macvtap16(q, skb_headlen(skb));
-> +		vnet_hdr->gso_size = cpu_to_macvtap16(q, sinfo->gso_size);
->  		if (sinfo->gso_type & SKB_GSO_TCPV4)
->  			vnet_hdr->gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
->  		else if (sinfo->gso_type & SKB_GSO_TCPV6)
-> @@ -628,10 +642,13 @@ static void macvtap_skb_to_vnet_hdr(const 
-> struct sk_buff *skb,
->  
->  	if (skb->ip_summed == CHECKSUM_PARTIAL) {
->  		vnet_hdr->flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
-> -		vnet_hdr->csum_start = skb_checksum_start_offset(skb);
->  		if (vlan_tx_tag_present(skb))
-> -			vnet_hdr->csum_start += VLAN_HLEN;
-> -		vnet_hdr->csum_offset = skb->csum_offset;
-> +			vnet_hdr->csum_start = cpu_to_macvtap16(q,
-> +				skb_checksum_start_offset(skb) + VLAN_HLEN);
-> +		else
-> +			vnet_hdr->csum_start = cpu_to_macvtap16(q,
-> +				skb_checksum_start_offset(skb));
-> +		vnet_hdr->csum_offset = cpu_to_macvtap16(q, skb->csum_offset);
->  	} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
->  		vnet_hdr->flags = VIRTIO_NET_HDR_F_DATA_VALID;
->  	} /* else everything is zero */
-> @@ -666,12 +683,14 @@ static ssize_t macvtap_get_user(struct 
-> macvtap_queue *q, struct msghdr *m,
->  		if (err < 0)
->  			goto err;
->  		if ((vnet_hdr.flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) &&
-> -		     vnet_hdr.csum_start + vnet_hdr.csum_offset + 2 >
-> -							vnet_hdr.hdr_len)
-> -			vnet_hdr.hdr_len = vnet_hdr.csum_start +
-> -						vnet_hdr.csum_offset + 2;
-> +		     macvtap16_to_cpu(q, vnet_hdr.csum_start) +
-> +		     macvtap16_to_cpu(q, vnet_hdr.csum_offset) + 2 >
-> +			     macvtap16_to_cpu(q, vnet_hdr.hdr_len))
-> +			vnet_hdr.hdr_len = cpu_to_macvtap16(q,
-> +				 macvtap16_to_cpu(q, vnet_hdr.csum_start) +
-> +				 macvtap16_to_cpu(q, vnet_hdr.csum_offset) + 2);
->  		err = -EINVAL;
-> -		if (vnet_hdr.hdr_len > len)
-> +		if (macvtap16_to_cpu(q, vnet_hdr.hdr_len) > len)
->  			goto err;
->  	}
->  
-> @@ -684,7 +703,8 @@ static ssize_t macvtap_get_user(struct 
-> macvtap_queue *q, struct msghdr *m,
->  		goto err;
->  
->  	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
-> -		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
-> +		copylen = vnet_hdr.hdr_len ?
-> +			macvtap16_to_cpu(q, vnet_hdr.hdr_len) : GOODCOPY_LEN;
->  		if (copylen > good_linear)
->  			copylen = good_linear;
->  		linear = copylen;
-> @@ -695,10 +715,10 @@ static ssize_t macvtap_get_user(struct 
-> macvtap_queue *q, struct msghdr *m,
->  
->  	if (!zerocopy) {
->  		copylen = len;
-> -		if (vnet_hdr.hdr_len > good_linear)
-> +		if (macvtap16_to_cpu(q, vnet_hdr.hdr_len) > good_linear)
->  			linear = good_linear;
->  		else
-> -			linear = vnet_hdr.hdr_len;
-> +			linear = macvtap16_to_cpu(q, vnet_hdr.hdr_len);
->  	}
->  
->  	skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, copylen,
-> @@ -725,7 +745,7 @@ static ssize_t macvtap_get_user(struct 
-> macvtap_queue *q, struct msghdr *m,
->  	skb->protocol = eth_hdr(skb)->h_proto;
->  
->  	if (vnet_hdr_len) {
-> -		err = macvtap_skb_from_vnet_hdr(skb, &vnet_hdr);
-> +		err = macvtap_skb_from_vnet_hdr(q, skb, &vnet_hdr);
->  		if (err)
->  			goto err_kfree;
->  	}
-> @@ -791,7 +811,7 @@ static ssize_t macvtap_put_user(struct 
-> macvtap_queue *q,
->  		if ((len -= vnet_hdr_len) < 0)
->  			return -EINVAL;
->  
-> -		macvtap_skb_to_vnet_hdr(skb, &vnet_hdr);
-> +		macvtap_skb_to_vnet_hdr(q, skb, &vnet_hdr);
->  
->  		if (memcpy_toiovecend(iv, (void *)&vnet_hdr, 0, sizeof(vnet_hdr)))
->  			return -EFAULT;
-> @@ -1003,8 +1023,7 @@ static long macvtap_ioctl(struct file *file, 
-> unsigned int cmd,
->  			return -EFAULT;
->  
->  		ret = 0;
-> -		if ((u & ~(IFF_VNET_HDR | IFF_MULTI_QUEUE)) !=
-> -		    (IFF_NO_PI | IFF_TAP))
-> +		if ((u & ~MACVTAP_FEATURES) != (IFF_NO_PI | IFF_TAP))
->  			ret = -EINVAL;
->  		else
->  			q->flags = u;
-> @@ -1036,8 +1055,7 @@ static long macvtap_ioctl(struct file *file, 
-> unsigned int cmd,
->  		return ret;
->  
->  	case TUNGETFEATURES:
-> -		if (put_user(IFF_TAP | IFF_NO_PI | IFF_VNET_HDR |
-> -			     IFF_MULTI_QUEUE, up))
-> +		if (put_user(IFF_TAP | IFF_NO_PI | MACVTAP_FEATURES, up))
->  			return -EFAULT;
->  		return 0;
->  
-> -- 
-> MST
+> Actually, some work was done but we never saw an other version of the
+> series. Alexander, are you still interested? Else we can take the patch
+> below.
+> 
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/246679.html
 
-Reviewed-by: Jason Wang <jasowang@redhat.com>
+Well, I tried to get a ac97c driver based on alsa soc framework as suggested 
+by Takashi. But I failed so far, I could not get my head around those 
+architecture.
+When keeping my DT support on the current driver, the only thing which is open 
+that the bindings should be modifed that they are like soc-ac97link bindings.
+I could work on that, but I currently don't know when I can get access again 
+to that hardware for testing.
 
-btw, title should be macvtap: IFF_VNET_LE support
+Best regards,
+Alexander
 
