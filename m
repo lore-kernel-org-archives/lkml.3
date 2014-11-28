@@ -1,78 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293AbaK1SNb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 13:13:31 -0500
-Received: from mga11.intel.com ([192.55.52.93]:30049 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751033AbaK1SNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 13:13:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,478,1413270000"; 
-   d="scan'208";a="639658760"
-Date: Fri, 28 Nov 2014 20:13:26 +0200
-From: Laurentiu Palcu <laurentiu.palcu@intel.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Johan Havold <johan@kernel.org>,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 1/2] spi: add support for DLN-2 USB-SPI adapter
-Message-ID: <20141128181326.GA23784@lpalcu-laptop>
-References: <1416312599-5176-2-git-send-email-laurentiu.palcu@intel.com>
- <1417180198-9393-1-git-send-email-laurentiu.palcu@intel.com>
- <20141128141053.GL7712@sirena.org.uk>
- <20141128145703.GA16201@lpalcu-linux>
- <20141128151435.GQ7712@sirena.org.uk>
- <20141128153125.GB16201@lpalcu-linux>
- <20141128160156.GX7712@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141128160156.GX7712@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751172AbaK1SYK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 13:24:10 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:59417 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984AbaK1SYI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 13:24:08 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tony Luck <tony.luck@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [RFC PATCH 00/30] cputime: Convert task/cpu cputime accounting to nsecs
+Date: Fri, 28 Nov 2014 19:23:30 +0100
+Message-Id: <1417199040-21044-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 28, 2014 at 04:01:56PM +0000, Mark Brown wrote:
-> On Fri, Nov 28, 2014 at 05:31:25PM +0200, Laurentiu Palcu wrote:
-> > On Fri, Nov 28, 2014 at 03:14:35PM +0000, Mark Brown wrote:
-> > > On Fri, Nov 28, 2014 at 04:57:04PM +0200, Laurentiu Palcu wrote:
-> 
-> > > > The other patch in this series was already applied by Lee on
-> > > > for-mfd-next branch:
-> 
-> > > What this means is that the series you're sending actually contains one
-> > > patch, not two.  The point of numbering patches within a series is so
-> > > people can tell what order to apply them in, nothing else.  Things can
-> > > be lumped together and split during the upstreaming process, the only
-> > > thing that matterrs is what you're sending at a given time.
-> 
-> > The order of the patches in this series can be interchanged. However, if
-> > you wish, I can resend the entire series again.
-> 
-> No, please don't - you're missing the point.  The point is that now Lee
-> has applied the other patch you're not sending two patches any more,
-> you're sending a single patch.  This isn't patch 1/2, it's just a single
-> patch by itself now.
-I have to admit Linux kernel mailing list workflow is a little new to
-me...
+Hi,
 
-All I did was send new revisions of the 1/2 patch using the
---in-reply-to option of git-send-email, with the message-id of the
-original version. I used to do this for other projects I contributed to,
-so I didn't have to re-send the entire series for just one patch that
-needs to be changed. Mail clients, at least the ones I use (mutt,
-evolution), order the mails nicely and you have all the history in one
-thread. So, one can see the cover letter of the series and the other
-original patches in the series, together with the new revisions of the
-changed patch. Of course, if more patches needed change, I would re-send a new
-series.
+Thomas suggested to store the cpu and task stats in nanoseconds in order
+to avoid back and forth conversion between cputime_t to nsecs.
 
-So, Mark, can you please instruct me (a link to a page explaining the
-workflow would be fine too) what is the exact workflow you are/were
-expecting?
+This patchset does that (plus many fixes and cleanups).
 
-thanks in advance,
-laurentiu
+There should be a performance impact for CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+configurations which account cputime from arch's kernel entrypoint. As
+this config always use cputime_t as a time source, the conversion to nsecs
+is required on each accounting update. This concern only powerpc and s390
+(ia64 also support this mode but its cputime_t wraps nsecs so the conversion
+is a noop there). I'm not sure how much this config is used in powerpc,
+it doesn't appear in its defconfigs and that mode is expected to be a
+bit slower than tick based accounting anyway. But s390 only supports
+this mode (no support for tick based accounting).
 
+But on the other side of the balance, it simplifies the core code a bit.
+
+The patchset isn't complete, I have yet to convert the posix cpu timers
+code as well. I just need to post the current state before moving forward
+to details.
+
+I need to get your opinion on that patchset before going deeper. Is this
+conversion a right direction to take?
+
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	cpustat/nsecs
+
+HEAD: 3539960cb3be04512d5f601c8e83c8bab658e0c1
+
+Thanks,
+	Frederic
+---
+
+Frederic Weisbecker (30):
+      jiffies: Remove HZ > USEC_PER_SEC special case
+      time: Introduce jiffies64_to_nsecs()
+      cputime: Introduce nsecs_to_cputime64()
+      s390: Convert open coded idle time seqcount
+      s390: Translate cputime magic constants to macros
+      s390: Introduce cputime64_to_nsecs()
+      cputime: Convert kcpustat to nsecs
+      apm32: Fix cputime == jiffies assumption
+      alpha: Fix jiffies based cputime assumption
+      cputime: Convert guest time accounting to nsecs
+      cputime: Special API to return old-typed cputime
+      cputime: Convert task/group cputime to nsecs
+      alpha: Convert obsolete cputime_t to nsecs
+      x86: Convert obsolete cputime type to nsecs
+      isdn: Convert obsolete cputime type to nsecs
+      binfmt: Convert obsolete cputime type to nsecs
+      acct: Convert obsolete cputime type to nsecs
+      delaycct: Convert obsolete cputime type to nsecs
+      tsacct: Convert obsolete cputime type to nsecs
+      signal: Convert obsolete cputime type to nsecs
+      cputime: Remove task_cputime_t_scaled
+      u64_stats_sync: Introduce preempt-unsafe readers
+      cputime: Convert irq_time_accounting to use u64_stats_sync
+      cputime: Increment kcpustat directly on irqtime account
+      cputime: Remove temporary irqtime states
+      cputime: Push time to account_user_time() in nanosecs
+      cputime: Push time to account_steal_time() in nanosecs
+      cputime: Push time to account_idle_time() in nanosecs
+      cputime: Push time to account_guest_time() in nanosecs
+      cputime: Push time to account_system_time() in nanosecs
+
+
+ arch/alpha/kernel/osf_sys.c        |  15 ++-
+ arch/ia64/kernel/time.c            |   9 +-
+ arch/powerpc/kernel/time.c         |  10 +-
+ arch/s390/appldata/appldata_os.c   |  16 +--
+ arch/s390/include/asm/cputime.h    |  52 +++++----
+ arch/s390/include/asm/idle.h       |   3 +-
+ arch/s390/kernel/idle.c            |  30 ++---
+ arch/s390/kernel/vtime.c           |  15 ++-
+ arch/x86/kernel/apm_32.c           |   6 +-
+ drivers/cpufreq/cpufreq.c          |   6 +-
+ drivers/cpufreq/cpufreq_governor.c |  14 +--
+ drivers/isdn/mISDN/stack.c         |   4 +-
+ drivers/macintosh/rack-meter.c     |   2 +-
+ fs/binfmt_elf.c                    |  15 +--
+ fs/binfmt_elf_fdpic.c              |  14 +--
+ fs/compat_binfmt_elf.c             |  20 ++--
+ fs/proc/array.c                    |  15 ++-
+ fs/proc/stat.c                     |  68 +++++------
+ fs/proc/uptime.c                   |   6 +-
+ include/linux/cputime.h            |  22 ++++
+ include/linux/init_task.h          |   2 +-
+ include/linux/jiffies.h            |   2 +
+ include/linux/kernel_stat.h        |  10 +-
+ include/linux/sched.h              |  83 ++++++++++----
+ include/linux/u64_stats_sync.h     |  29 +++--
+ kernel/acct.c                      |   7 +-
+ kernel/delayacct.c                 |   6 +-
+ kernel/exit.c                      |   4 +-
+ kernel/sched/cputime.c             | 224 ++++++++++++++++++-------------------
+ kernel/sched/sched.h               |  44 ++------
+ kernel/sched/stats.h               |   8 +-
+ kernel/signal.c                    |  12 +-
+ kernel/sys.c                       |  16 +--
+ kernel/time/itimer.c               |   2 +-
+ kernel/time/posix-cpu-timers.c     |  44 ++++----
+ kernel/time/time.c                 |  21 +++-
+ kernel/time/timeconst.bc           |   6 +
+ kernel/tsacct.c                    |  18 +--
+ 38 files changed, 475 insertions(+), 405 deletions(-)
