@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751394AbaK1Dja (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 22:39:30 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:35411 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234AbaK1Dj3 (ORCPT
+	id S1751218AbaK1Dk1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 22:40:27 -0500
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:45888 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792AbaK1DkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 22:39:29 -0500
+	Thu, 27 Nov 2014 22:40:25 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAFp+6iFcMGTBQDcdK0cbcu0s9a3022nogaUvbPA2ZsCN80hRSA@mail.gmail.com>
-References: <CAFp+6iF-N63YSsdv2a6=MYp_mD=eQY_Oi8=9JVNU5dG0BA7YGQ@mail.gmail.com>
-	<1416834177-11170-1-git-send-email-gautam.vivek@samsung.com>
-	<CAGOxZ51P30BY2sOhUeMRK64CGF1fNcc-63RCXiAqZ6Rgpv3K7Q@mail.gmail.com>
-	<CAFp+6iFcMGTBQDcdK0cbcu0s9a3022nogaUvbPA2ZsCN80hRSA@mail.gmail.com>
-Date: Fri, 28 Nov 2014 09:09:28 +0530
-Message-ID: <CAFp+6iFaf_RMprLCLXK=o=KGSTQuVL3geKx5yfevTuvFdjYLNg@mail.gmail.com>
-Subject: Re: [PATCH V2 1/2] pinctrl: exynos: Add BUS1 pin controller for exynos7
+In-Reply-To: <CAGOxZ52XtT-Aq-HJFq7GAzfAq6GEdrzKeez_=fwJR-Z2rkUF+g@mail.gmail.com>
+References: <CAGOxZ53TUvZhSDLfeCuyvBwVcrkQhFnftQzk1DbkU_krdoFbZA@mail.gmail.com>
+	<1416834381-11314-1-git-send-email-gautam.vivek@samsung.com>
+	<CAGOxZ52XtT-Aq-HJFq7GAzfAq6GEdrzKeez_=fwJR-Z2rkUF+g@mail.gmail.com>
+Date: Fri, 28 Nov 2014 09:10:24 +0530
+Message-ID: <CAFp+6iHG42h3oCkO8mWG4DnpP-X-kh4VanoQOv3By831Ly5DdA@mail.gmail.com>
+Subject: Re: [PATCH V2 2/2] arm64: exynos: Add bus1 pinctrl node on exynos7
 From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
+To: Kukjin Kim <kgene@kernel.org>
 Cc: Alim Akhtar <alim.akhtar@gmail.com>,
         Vivek Gautam <gautam.vivek@samsung.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -27,104 +26,167 @@ Cc: Alim Akhtar <alim.akhtar@gmail.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         Tomasz Figa <tomasz.figa@gmail.com>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        "robh+dt" <robh+dt@kernel.org>, kgene <kgene@kernel.org>,
+        "robh+dt" <robh+dt@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Alim Akhtar <alim.akhtar@samsung.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Kukjin,
 
 
-On Fri, Nov 28, 2014 at 9:05 AM, Vivek Gautam <gautamvivek1987@gmail.com> wrote:
-> Hi Alim,
+On Wed, Nov 26, 2014 at 6:59 PM, Alim Akhtar <alim.akhtar@gmail.com> wrote:
+> Hi Vivek,
 >
->
-> On Wed, Nov 26, 2014 at 7:03 PM, Alim Akhtar <alim.akhtar@gmail.com> wrote:
->> Hi Vivek,
+> On Mon, Nov 24, 2014 at 6:36 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+>> BUS1 pinctrl provides gpios for usb and power regulator
+>> available on exynos7-espresso board. So add relevant device
+>> node for pinctrl-bus1.
 >>
->> On Mon, Nov 24, 2014 at 6:32 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
->>> USB and Power regulator on Exynos7 require gpios available
->>> in BUS1 pin controller block.
->>> So adding the BUS1 pinctrl support.
->>>
->>> Signed-off-by: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
->>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->>> Cc: Linus Walleij <linus.walleij@linaro.org>
+>> Signed-off-by: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> ---
 
-If the change looks good, will it be possible to pick it fo 3.19-rc1 ?
-That will really help enabling USB IP on exynos7.
+We can pick this up for 3.19 rc1 ?
 
->>> ---
->> Looks good to me.
->> Thanks!
 >>
->> Reviewed-by: Alim Akhtar <alim.akhtar@samsung.com>
+> Looks good to me.
+> Reviewed-by: Alim Akhtar <alim.akhtar@samsung.com>
 >
-> Thanks for the review.
->
+>> This patch was part of series:
+>> "[PATCH 00/11] Exynos7: Adding USB 3.0 support"
+>>  https://lkml.org/lkml/2014/11/21/247
 >>
->>>
->>> This patch was part of series:
->>> "[PATCH 00/11] Exynos7: Adding USB 3.0 support"
->>>  https://lkml.org/lkml/2014/11/21/247
->>>
->>> Changes since V1:
->>>  - Added support for all pin banks which are part of BUS1 pin controller.
->>>
->>>  drivers/pinctrl/samsung/pinctrl-exynos.c |   19 +++++++++++++++++++
->>>  1 file changed, 19 insertions(+)
->>>
->>> diff --git a/drivers/pinctrl/samsung/pinctrl-exynos.c b/drivers/pinctrl/samsung/pinctrl-exynos.c
->>> index d5d4cfc..44e60dc 100644
->>> --- a/drivers/pinctrl/samsung/pinctrl-exynos.c
->>> +++ b/drivers/pinctrl/samsung/pinctrl-exynos.c
->>> @@ -1300,6 +1300,20 @@ static const struct samsung_pin_bank_data exynos7_pin_banks7[] __initconst = {
->>>         EXYNOS_PIN_BANK_EINTG(8, 0x060, "gpr3", 0x0c),
->>>  };
->>>
->>> +/* pin banks of exynos7 pin-controller - BUS1 */
->>> +static const struct samsung_pin_bank_data exynos7_pin_banks8[] __initconst = {
->>> +       EXYNOS_PIN_BANK_EINTG(8, 0x020, "gpf0", 0x00),
->>> +       EXYNOS_PIN_BANK_EINTG(8, 0x040, "gpf1", 0x04),
->>> +       EXYNOS_PIN_BANK_EINTG(4, 0x060, "gpf2", 0x08),
->>> +       EXYNOS_PIN_BANK_EINTG(5, 0x080, "gpf3", 0x0c),
->>> +       EXYNOS_PIN_BANK_EINTG(8, 0x0a0, "gpf4", 0x10),
->>> +       EXYNOS_PIN_BANK_EINTG(8, 0x0c0, "gpf5", 0x14),
->>> +       EXYNOS_PIN_BANK_EINTG(5, 0x0e0, "gpg1", 0x18),
->>> +       EXYNOS_PIN_BANK_EINTG(5, 0x100, "gpg2", 0x1c),
->>> +       EXYNOS_PIN_BANK_EINTG(6, 0x120, "gph1", 0x20),
->>> +       EXYNOS_PIN_BANK_EINTG(3, 0x140, "gpv6", 0x24),
->>> +};
->>> +
->>>  const struct samsung_pin_ctrl exynos7_pin_ctrl[] __initconst = {
->>>         {
->>>                 /* pin-controller instance 0 Alive data */
->>> @@ -1342,5 +1356,10 @@ const struct samsung_pin_ctrl exynos7_pin_ctrl[] __initconst = {
->>>                 .pin_banks      = exynos7_pin_banks7,
->>>                 .nr_banks       = ARRAY_SIZE(exynos7_pin_banks7),
->>>                 .eint_gpio_init = exynos_eint_gpio_init,
->>> +       }, {
->>> +               /* pin-controller instance 8 BUS1 data */
->>> +               .pin_banks      = exynos7_pin_banks8,
->>> +               .nr_banks       = ARRAY_SIZE(exynos7_pin_banks8),
->>> +               .eint_gpio_init = exynos_eint_gpio_init,
->>>         },
->>>  };
->>> --
->>> 1.7.10.4
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Changes since V1:
+>>  - Added support for all pin banks which are part of BUS1 pin controller.
 >>
+>>  arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi |   82 +++++++++++++++++++++++
+>>  arch/arm64/boot/dts/exynos/exynos7.dtsi         |    7 ++
+>>  2 files changed, 89 insertions(+)
 >>
+>> diff --git a/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi b/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi
+>> index 2eef4a2..c367f0a 100644
+>> --- a/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi
+>> +++ b/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi
+>> @@ -335,6 +335,88 @@
+>>         };
+>>  };
 >>
+>> +&pinctrl_bus1 {
+>> +       gpf0: gpf0 {
+>> +               gpio-controller;
+>> +               #gpio-cells = <2>;
+>> +
+>> +               interrupt-controller;
+>> +               #interrupt-cells = <2>;
+>> +       };
+>> +
+>> +       gpf1: gpf1 {
+>> +               gpio-controller;
+>> +               #gpio-cells = <2>;
+>> +
+>> +               interrupt-controller;
+>> +               #interrupt-cells = <2>;
+>> +       };
+>> +
+>> +       gpf2: gpf2 {
+>> +               gpio-controller;
+>> +               #gpio-cells = <2>;
+>> +
+>> +               interrupt-controller;
+>> +               #interrupt-cells = <2>;
+>> +       };
+>> +
+>> +       gpf3: gpf3 {
+>> +               gpio-controller;
+>> +               #gpio-cells = <2>;
+>> +
+>> +               interrupt-controller;
+>> +               #interrupt-cells = <2>;
+>> +       };
+>> +
+>> +       gpf4: gpf4 {
+>> +               gpio-controller;
+>> +               #gpio-cells = <2>;
+>> +
+>> +               interrupt-controller;
+>> +               #interrupt-cells = <2>;
+>> +       };
+>> +
+>> +       gpf5: gpf5 {
+>> +               gpio-controller;
+>> +               #gpio-cells = <2>;
+>> +
+>> +               interrupt-controller;
+>> +               #interrupt-cells = <2>;
+>> +       };
+>> +
+>> +       gpg1: gpg1 {
+>> +               gpio-controller;
+>> +               #gpio-cells = <2>;
+>> +
+>> +               interrupt-controller;
+>> +               #interrupt-cells = <2>;
+>> +       };
+>> +
+>> +       gpg2: gpg2 {
+>> +               gpio-controller;
+>> +               #gpio-cells = <2>;
+>> +
+>> +               interrupt-controller;
+>> +               #interrupt-cells = <2>;
+>> +       };
+>> +
+>> +       gph1: gph1 {
+>> +               gpio-controller;
+>> +               #gpio-cells = <2>;
+>> +
+>> +               interrupt-controller;
+>> +               #interrupt-cells = <2>;
+>> +       };
+>> +
+>> +       gpv6: gpv6 {
+>> +               gpio-controller;
+>> +               #gpio-cells = <2>;
+>> +
+>> +               interrupt-controller;
+>> +               #interrupt-cells = <2>;
+>> +       };
+>> +};
+>> +
+>>  &pinctrl_nfc {
+>>         gpj0: gpj0 {
+>>                 gpio-controller;
+>> diff --git a/arch/arm64/boot/dts/exynos/exynos7.dtsi b/arch/arm64/boot/dts/exynos/exynos7.dtsi
+>> index 1d9e4c9..e633b02 100644
+>> --- a/arch/arm64/boot/dts/exynos/exynos7.dtsi
+>> +++ b/arch/arm64/boot/dts/exynos/exynos7.dtsi
+>> @@ -26,6 +26,7 @@
+>>                 pinctrl5 = &pinctrl_ese;
+>>                 pinctrl6 = &pinctrl_fsys0;
+>>                 pinctrl7 = &pinctrl_fsys1;
+>> +               pinctrl8 = &pinctrl_bus1;
+>>         };
+>>
+>>         cpus {
+>> @@ -242,6 +243,12 @@
+>>                         interrupts = <0 383 0>;
+>>                 };
+>>
+>> +               pinctrl_bus1: pinctrl@14870000 {
+>> +                       compatible = "samsung,exynos7-pinctrl";
+>> +                       reg = <0x14870000 0x1000>;
+>> +                       interrupts = <0 384 0>;
+>> +               };
+>> +
+>>                 pinctrl_nfc: pinctrl@14cd0000 {
+>>                         compatible = "samsung,exynos7-pinctrl";
+>>                         reg = <0x14cd0000 0x1000>;
 >> --
->> Regards,
->> Alim
+>> 1.7.10.4
+>>
 >> --
 >> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
 >> the body of a message to majordomo@vger.kernel.org
@@ -133,10 +195,12 @@ That will really help enabling USB IP on exynos7.
 >
 >
 > --
-> Best Regards
-> Vivek Gautam
-> Samsung R&D Institute, Bangalore
-> India
+> Regards,
+> Alim
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
 
