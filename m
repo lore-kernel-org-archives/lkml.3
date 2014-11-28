@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751610AbaK1RKf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 12:10:35 -0500
-Received: from mail.emea.novell.com ([130.57.118.101]:59530 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbaK1RKe convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
-	Fri, 28 Nov 2014 12:10:34 -0500
-Message-Id: <5478BA97020000780004B83E@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Fri, 28 Nov 2014 17:10:31 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Ingo Molnar" <mingo@kernel.org>
-Cc: "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
-        "Steven Rostedt" <rostedt@goodmis.org>, <akpm@linux-foundation.org>,
-        <mingo@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] irqflags: fix (at least latent) code generation
- issue
-References: <54589AFA0200007800044A77@mail.emea.novell.com>
- <20141110121349.GA21120@gmail.com>
-In-Reply-To: <20141110121349.GA21120@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1751871AbaK1RKq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 12:10:46 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:39307 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707AbaK1RKm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 12:10:42 -0500
+Date: Fri, 28 Nov 2014 17:10:24 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Linux PM <linux-pm@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Lukasz Majewski <l.majewski@samsung.com>, devicetree@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        linux-samsung-soc@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv3 1/1] thermal: cpu_cooling: check for the readiness of
+ cpufreq layer
+Message-ID: <20141128171024.GW3836@n2100.arm.linux.org.uk>
+References: <1417186410-24551-1-git-send-email-edubezval@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1417186410-24551-1-git-send-email-edubezval@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 10.11.14 at 13:13, <mingo@kernel.org> wrote:
-> * Jan Beulich <JBeulich@suse.com> wrote:
->> @@ -131,7 +131,7 @@
->>  	} while (0)
->>  
->>  
->> -#else /* !CONFIG_TRACE_IRQFLAGS_SUPPORT */
->> +#else /* !CONFIG_TRACE_IRQFLAGS */
->>  
->>  #define local_irq_enable()	do { raw_local_irq_enable(); } while (0)
->>  #define local_irq_disable()	do { raw_local_irq_disable(); } while (0)
->> @@ -145,6 +145,6 @@
->>  #define irqs_disabled_flags(flags) (raw_irqs_disabled_flags(flags))
->>  #define safe_halt()		do { raw_safe_halt(); } while (0)
->>  
->> -#endif /* CONFIG_TRACE_IRQFLAGS_SUPPORT */
->> +#endif /* CONFIG_TRACE_IRQFLAGS */
-> 
-> So this breaks a couple of non-x86 architectures, such as MIPS:
-> 
-> /home/mingo/tip/include/acpi/platform/aclinuxex.h: In function 
-> 'acpi_os_allocate':
-> /home/mingo/tip/include/acpi/platform/aclinuxex.h:86: error: implicit 
-> declaration of function 'arch_irqs_disabled'
+On Fri, Nov 28, 2014 at 10:53:30AM -0400, Eduardo Valentin wrote:
+> diff --git a/drivers/thermal/samsung/exynos_thermal_common.c b/drivers/thermal/samsung/exynos_thermal_common.c
+> index 3f5ad25..d4eaa1b 100644
+> --- a/drivers/thermal/samsung/exynos_thermal_common.c
+> +++ b/drivers/thermal/samsung/exynos_thermal_common.c
+> @@ -371,9 +371,10 @@ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
+>  		th_zone->cool_dev[th_zone->cool_dev_size] =
+>  					cpufreq_cooling_register(&mask_val);
+>  		if (IS_ERR(th_zone->cool_dev[th_zone->cool_dev_size])) {
+> -			dev_err(sensor_conf->dev,
+> -				"Failed to register cpufreq cooling device\n");
+> -			ret = -EINVAL;
+> +			ret = PTR_ERR(th_zone->cool_dev[th_zone->cool_dev_size]);
+> +			if (ret != -EPROBE_DEFER)
+> +				dev_err(sensor_conf->dev,
+> +					"Failed to register cpufreq cooling device\n");
 
-Now that I finally found time to look into this a little, I wonder what
-you expect: Code in linux/irqflags.h ahead of the above conditional
-uses arch_irqs_disable():
+Something which bugs me quite a lot is when there is an error code (which
+tells you why something didn't work) and you have an error message, and
+the error message doesn't bother printing the error code.
 
-#define raw_irqs_disabled()		(arch_irqs_disabled())
+You might as well just print "Failed\n" and leave it at that, or md5sum
+the error message and print the sum instead. :)
 
-so it would seem to me that architectures are required to have the
-latter available. And in fact it would seem very logical to me if pieces
-like the definition of irqs_disabled() would be pulled out of that
-conditional, as their behavior shouldn't (for this one) or already
-doesn't (for e.g. irqs_disabled_flags() and local_save_flags()) differ
-between the two cases. Would, short of adding arch_irqs_disabled()
-for all architectures currently lacking it, uniformly using the definition
-from the #if portion of the conditional be an acceptable thing? If not,
-do you have any other suggestion on how to resolve this?
+Knowing why something failed allows you to read the source, and find
+possible reasons for the failure (which could come down to one reason)
+and allows faster resolution of the problem.
 
-Jan
-
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
