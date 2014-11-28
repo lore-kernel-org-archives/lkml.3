@@ -1,278 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751561AbaK1O1f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 09:27:35 -0500
-Received: from smtprelay03.ispgateway.de ([80.67.29.28]:43797 "EHLO
-	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142AbaK1O1e (ORCPT
+	id S1751678AbaK1O2R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 09:28:17 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:52023 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402AbaK1O2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 09:27:34 -0500
-X-Greylist: delayed 379 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Nov 2014 09:27:33 EST
-From: Peter Feuerer <peter@piie.net>
-To: LKML <linux-kernel@vger.kernel.org>, Darren Hart <dvhart@infradead.org>,
-        platform-driver-x86@vger.kernel.org
-Cc: Peter Feuerer <peter@piie.net>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Mohr <andi@lisas.de>
-Subject: [RESEND PATCH v5 1/5] acerhdf: Adding support for "manual mode"
-Date: Fri, 28 Nov 2014 15:20:48 +0100
-Message-Id: <1417184452-11884-2-git-send-email-peter@piie.net>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1417184452-11884-1-git-send-email-peter@piie.net>
-References: <1398561815-22033-1-git-send-email-peter@piie.net>
- <1417184452-11884-1-git-send-email-peter@piie.net>
-X-Df-Sender: cGV0ZXJAcGlpZS5uZXQ=
+	Fri, 28 Nov 2014 09:28:15 -0500
+From: Imre Palik <imrep.amz@gmail.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, "Palik, Imre" <imrep@amazon.de>,
+        Matt Wilson <msw@amazon.com>, Al Viro <viro@ZenIV.linux.org.uk>
+Subject: [PATCH RFC] audit: move the tree pruning to a dedicated thread
+Date: Fri, 28 Nov 2014 15:26:20 +0100
+Message-Id: <1417184780-30925-1-git-send-email-imrep.amz@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some Acer models require an additional command to turn off the fan after
-bios mode has been enabled.  Adding new section in bios table to allow
-support for those models, by writing an extra "manual mode" register.
+From: "Palik, Imre" <imrep@amazon.de>
 
-Cc: platform-driver-x86@vger.kernel.org
-Cc: Darren Hart <dvhart@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andreas Mohr <andi@lisas.de>
-Acked-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: Peter Feuerer <peter@piie.net>
+When file auditing is enabled, during a low memory situation, a memory
+allocation with __GFP_FS can lead to pruning the inode cache.  Which can,
+in turn lead to audit_tree_freeing_mark() being called.  This can call
+audit_schedule_prune(), that tries to fork a pruning thread, and
+waits until the thread is created.  But forking needs memory, and the
+memory allocations there are done with __GFP_FS.
+
+So we are waiting merrily for some __GFP_FS memory allocations to complete,
+while holding some filesystem locks.  This can take a while ...
+
+This patch creates a single thread for pruning the tree from
+audit_tree_init(), and thus avoids the deadlock that the on-demand thread
+creation can cause.
+
+An alternative approach would be to move the thread creation outside of the
+lock.  This would assume that other layers of the filesystem code don't
+hold any locks, and it would need some rewrite of the code to limit the
+amount of threads possibly spawned.
+
+Reported-by: Matt Wilson <msw@amazon.com>
+Cc: Matt Wilson <msw@amazon.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Imre Palik <imrep@amazon.de>
 ---
- drivers/platform/x86/acerhdf.c | 186 ++++++++++++++++++++++-------------------
- 1 file changed, 102 insertions(+), 84 deletions(-)
+ kernel/audit_tree.c |   53 ++++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 35 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
-index f94467c..2c58f10 100644
---- a/drivers/platform/x86/acerhdf.c
-+++ b/drivers/platform/x86/acerhdf.c
-@@ -50,7 +50,7 @@
-  */
- #undef START_IN_KERNEL_MODE
+diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
+index 0caf1f8..cf6db88 100644
+--- a/kernel/audit_tree.c
++++ b/kernel/audit_tree.c
+@@ -37,6 +37,7 @@ struct audit_chunk {
  
--#define DRV_VER "0.5.26"
-+#define DRV_VER "0.5.29"
+ static LIST_HEAD(tree_list);
+ static LIST_HEAD(prune_list);
++static struct task_struct *prune_thread;
  
  /*
-  * According to the Atom N270 datasheet,
-@@ -119,6 +119,17 @@ struct fancmd {
- 	u8 cmd_auto;
- };
+  * One struct chunk is attached to each inode of interest.
+@@ -806,30 +807,39 @@ int audit_tag_tree(char *old, char *new)
+  */
+ static int prune_tree_thread(void *unused)
+ {
+-	mutex_lock(&audit_cmd_mutex);
+-	mutex_lock(&audit_filter_mutex);
++	for (;;) {
++		set_current_state(TASK_INTERRUPTIBLE);
++		if (list_empty(&prune_list))
++			schedule();
++		__set_current_state(TASK_RUNNING);
  
-+struct manualcmd {
-+	u8 mreg;
-+	u8 moff;
-+};
+-	while (!list_empty(&prune_list)) {
+-		struct audit_tree *victim;
++		mutex_lock(&audit_cmd_mutex);
++		mutex_lock(&audit_filter_mutex);
+ 
+-		victim = list_entry(prune_list.next, struct audit_tree, list);
+-		list_del_init(&victim->list);
++		while (!list_empty(&prune_list)) {
++			struct audit_tree *victim;
+ 
+-		mutex_unlock(&audit_filter_mutex);
++			victim = list_entry(prune_list.next,
++					struct audit_tree, list);
++			list_del_init(&victim->list);
+ 
+-		prune_one(victim);
++			mutex_unlock(&audit_filter_mutex);
+ 
+-		mutex_lock(&audit_filter_mutex);
+-	}
++			prune_one(victim);
+ 
+-	mutex_unlock(&audit_filter_mutex);
+-	mutex_unlock(&audit_cmd_mutex);
++			mutex_lock(&audit_filter_mutex);
++		}
 +
-+/* default register and command to disable fan in manual mode */
-+static const struct manualcmd mcmd = {
-+	.mreg = 0x94,
-+	.moff = 0xff,
-+};
-+
- /* BIOS settings */
- struct bios_settings_t {
- 	const char *vendor;
-@@ -127,105 +138,106 @@ struct bios_settings_t {
- 	unsigned char fanreg;
- 	unsigned char tempreg;
- 	struct fancmd cmd;
-+	int mcmd_enable;
- };
- 
- /* Register addresses and values for different BIOS versions */
- static const struct bios_settings_t bios_tbl[] = {
- 	/* AOA110 */
--	{"Acer", "AOA110", "v0.3109", 0x55, 0x58, {0x1f, 0x00} },
--	{"Acer", "AOA110", "v0.3114", 0x55, 0x58, {0x1f, 0x00} },
--	{"Acer", "AOA110", "v0.3301", 0x55, 0x58, {0xaf, 0x00} },
--	{"Acer", "AOA110", "v0.3304", 0x55, 0x58, {0xaf, 0x00} },
--	{"Acer", "AOA110", "v0.3305", 0x55, 0x58, {0xaf, 0x00} },
--	{"Acer", "AOA110", "v0.3307", 0x55, 0x58, {0xaf, 0x00} },
--	{"Acer", "AOA110", "v0.3308", 0x55, 0x58, {0x21, 0x00} },
--	{"Acer", "AOA110", "v0.3309", 0x55, 0x58, {0x21, 0x00} },
--	{"Acer", "AOA110", "v0.3310", 0x55, 0x58, {0x21, 0x00} },
-+	{"Acer", "AOA110", "v0.3109", 0x55, 0x58, {0x1f, 0x00}, 0},
-+	{"Acer", "AOA110", "v0.3114", 0x55, 0x58, {0x1f, 0x00}, 0},
-+	{"Acer", "AOA110", "v0.3301", 0x55, 0x58, {0xaf, 0x00}, 0},
-+	{"Acer", "AOA110", "v0.3304", 0x55, 0x58, {0xaf, 0x00}, 0},
-+	{"Acer", "AOA110", "v0.3305", 0x55, 0x58, {0xaf, 0x00}, 0},
-+	{"Acer", "AOA110", "v0.3307", 0x55, 0x58, {0xaf, 0x00}, 0},
-+	{"Acer", "AOA110", "v0.3308", 0x55, 0x58, {0x21, 0x00}, 0},
-+	{"Acer", "AOA110", "v0.3309", 0x55, 0x58, {0x21, 0x00}, 0},
-+	{"Acer", "AOA110", "v0.3310", 0x55, 0x58, {0x21, 0x00}, 0},
- 	/* AOA150 */
--	{"Acer", "AOA150", "v0.3114", 0x55, 0x58, {0x1f, 0x00} },
--	{"Acer", "AOA150", "v0.3301", 0x55, 0x58, {0x20, 0x00} },
--	{"Acer", "AOA150", "v0.3304", 0x55, 0x58, {0x20, 0x00} },
--	{"Acer", "AOA150", "v0.3305", 0x55, 0x58, {0x20, 0x00} },
--	{"Acer", "AOA150", "v0.3307", 0x55, 0x58, {0x20, 0x00} },
--	{"Acer", "AOA150", "v0.3308", 0x55, 0x58, {0x20, 0x00} },
--	{"Acer", "AOA150", "v0.3309", 0x55, 0x58, {0x20, 0x00} },
--	{"Acer", "AOA150", "v0.3310", 0x55, 0x58, {0x20, 0x00} },
-+	{"Acer", "AOA150", "v0.3114", 0x55, 0x58, {0x1f, 0x00}, 0},
-+	{"Acer", "AOA150", "v0.3301", 0x55, 0x58, {0x20, 0x00}, 0},
-+	{"Acer", "AOA150", "v0.3304", 0x55, 0x58, {0x20, 0x00}, 0},
-+	{"Acer", "AOA150", "v0.3305", 0x55, 0x58, {0x20, 0x00}, 0},
-+	{"Acer", "AOA150", "v0.3307", 0x55, 0x58, {0x20, 0x00}, 0},
-+	{"Acer", "AOA150", "v0.3308", 0x55, 0x58, {0x20, 0x00}, 0},
-+	{"Acer", "AOA150", "v0.3309", 0x55, 0x58, {0x20, 0x00}, 0},
-+	{"Acer", "AOA150", "v0.3310", 0x55, 0x58, {0x20, 0x00}, 0},
- 	/* LT1005u */
--	{"Acer", "LT-10Q", "v0.3310", 0x55, 0x58, {0x20, 0x00} },
-+	{"Acer", "LT-10Q", "v0.3310", 0x55, 0x58, {0x20, 0x00}, 0},
- 	/* Acer 1410 */
--	{"Acer", "Aspire 1410", "v0.3108", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1410", "v0.3113", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1410", "v0.3115", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1410", "v0.3117", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1410", "v0.3119", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1410", "v0.3120", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1410", "v1.3204", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1410", "v1.3303", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1410", "v1.3308", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1410", "v1.3310", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1410", "v1.3314", 0x55, 0x58, {0x9e, 0x00} },
-+	{"Acer", "Aspire 1410", "v0.3108", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1410", "v0.3113", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1410", "v0.3115", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1410", "v0.3117", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1410", "v0.3119", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1410", "v0.3120", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1410", "v1.3204", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1410", "v1.3303", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1410", "v1.3308", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1410", "v1.3310", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1410", "v1.3314", 0x55, 0x58, {0x9e, 0x00}, 0},
- 	/* Acer 1810xx */
--	{"Acer", "Aspire 1810TZ", "v0.3108", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810T",  "v0.3108", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810TZ", "v0.3113", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810T",  "v0.3113", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810TZ", "v0.3115", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810T",  "v0.3115", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810TZ", "v0.3117", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810T",  "v0.3117", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810TZ", "v0.3119", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810T",  "v0.3119", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810TZ", "v0.3120", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810T",  "v0.3120", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810TZ", "v1.3204", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810T",  "v1.3204", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810TZ", "v1.3303", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810T",  "v1.3303", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810TZ", "v1.3308", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810T",  "v1.3308", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810TZ", "v1.3310", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810T",  "v1.3310", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810TZ", "v1.3314", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1810T",  "v1.3314", 0x55, 0x58, {0x9e, 0x00} },
-+	{"Acer", "Aspire 1810TZ", "v0.3108", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810T",  "v0.3108", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810TZ", "v0.3113", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810T",  "v0.3113", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810TZ", "v0.3115", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810T",  "v0.3115", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810TZ", "v0.3117", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810T",  "v0.3117", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810TZ", "v0.3119", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810T",  "v0.3119", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810TZ", "v0.3120", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810T",  "v0.3120", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810TZ", "v1.3204", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810T",  "v1.3204", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810TZ", "v1.3303", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810T",  "v1.3303", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810TZ", "v1.3308", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810T",  "v1.3308", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810TZ", "v1.3310", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810T",  "v1.3310", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810TZ", "v1.3314", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1810T",  "v1.3314", 0x55, 0x58, {0x9e, 0x00}, 0},
- 	/* Acer 531 */
--	{"Acer", "AO531h", "v0.3104", 0x55, 0x58, {0x20, 0x00} },
--	{"Acer", "AO531h", "v0.3201", 0x55, 0x58, {0x20, 0x00} },
--	{"Acer", "AO531h", "v0.3304", 0x55, 0x58, {0x20, 0x00} },
-+	{"Acer", "AO531h", "v0.3104", 0x55, 0x58, {0x20, 0x00}, 0},
-+	{"Acer", "AO531h", "v0.3201", 0x55, 0x58, {0x20, 0x00}, 0},
-+	{"Acer", "AO531h", "v0.3304", 0x55, 0x58, {0x20, 0x00}, 0},
- 	/* Acer 751 */
--	{"Acer", "AO751h", "V0.3212", 0x55, 0x58, {0x21, 0x00} },
-+	{"Acer", "AO751h", "V0.3212", 0x55, 0x58, {0x21, 0x00}, 0},
- 	/* Acer 1825 */
--	{"Acer", "Aspire 1825PTZ", "V1.3118", 0x55, 0x58, {0x9e, 0x00} },
--	{"Acer", "Aspire 1825PTZ", "V1.3127", 0x55, 0x58, {0x9e, 0x00} },
-+	{"Acer", "Aspire 1825PTZ", "V1.3118", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Acer", "Aspire 1825PTZ", "V1.3127", 0x55, 0x58, {0x9e, 0x00}, 0},
- 	/* Acer TravelMate 7730 */
--	{"Acer", "TravelMate 7730G", "v0.3509", 0x55, 0x58, {0xaf, 0x00} },
-+	{"Acer", "TravelMate 7730G", "v0.3509", 0x55, 0x58, {0xaf, 0x00}, 0},
- 	/* Gateway */
--	{"Gateway", "AOA110", "v0.3103",  0x55, 0x58, {0x21, 0x00} },
--	{"Gateway", "AOA150", "v0.3103",  0x55, 0x58, {0x20, 0x00} },
--	{"Gateway", "LT31",   "v1.3103",  0x55, 0x58, {0x9e, 0x00} },
--	{"Gateway", "LT31",   "v1.3201",  0x55, 0x58, {0x9e, 0x00} },
--	{"Gateway", "LT31",   "v1.3302",  0x55, 0x58, {0x9e, 0x00} },
--	{"Gateway", "LT31",   "v1.3303t", 0x55, 0x58, {0x9e, 0x00} },
-+	{"Gateway", "AOA110", "v0.3103",  0x55, 0x58, {0x21, 0x00}, 0},
-+	{"Gateway", "AOA150", "v0.3103",  0x55, 0x58, {0x20, 0x00}, 0},
-+	{"Gateway", "LT31",   "v1.3103",  0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Gateway", "LT31",   "v1.3201",  0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Gateway", "LT31",   "v1.3302",  0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Gateway", "LT31",   "v1.3303t", 0x55, 0x58, {0x9e, 0x00}, 0},
- 	/* Packard Bell */
--	{"Packard Bell", "DOA150",  "v0.3104",  0x55, 0x58, {0x21, 0x00} },
--	{"Packard Bell", "DOA150",  "v0.3105",  0x55, 0x58, {0x20, 0x00} },
--	{"Packard Bell", "AOA110",  "v0.3105",  0x55, 0x58, {0x21, 0x00} },
--	{"Packard Bell", "AOA150",  "v0.3105",  0x55, 0x58, {0x20, 0x00} },
--	{"Packard Bell", "ENBFT",   "V1.3118",  0x55, 0x58, {0x9e, 0x00} },
--	{"Packard Bell", "ENBFT",   "V1.3127",  0x55, 0x58, {0x9e, 0x00} },
--	{"Packard Bell", "DOTMU",   "v1.3303",  0x55, 0x58, {0x9e, 0x00} },
--	{"Packard Bell", "DOTMU",   "v0.3120",  0x55, 0x58, {0x9e, 0x00} },
--	{"Packard Bell", "DOTMU",   "v0.3108",  0x55, 0x58, {0x9e, 0x00} },
--	{"Packard Bell", "DOTMU",   "v0.3113",  0x55, 0x58, {0x9e, 0x00} },
--	{"Packard Bell", "DOTMU",   "v0.3115",  0x55, 0x58, {0x9e, 0x00} },
--	{"Packard Bell", "DOTMU",   "v0.3117",  0x55, 0x58, {0x9e, 0x00} },
--	{"Packard Bell", "DOTMU",   "v0.3119",  0x55, 0x58, {0x9e, 0x00} },
--	{"Packard Bell", "DOTMU",   "v1.3204",  0x55, 0x58, {0x9e, 0x00} },
--	{"Packard Bell", "DOTMA",   "v1.3201",  0x55, 0x58, {0x9e, 0x00} },
--	{"Packard Bell", "DOTMA",   "v1.3302",  0x55, 0x58, {0x9e, 0x00} },
--	{"Packard Bell", "DOTMA",   "v1.3303t", 0x55, 0x58, {0x9e, 0x00} },
--	{"Packard Bell", "DOTVR46", "v1.3308",  0x55, 0x58, {0x9e, 0x00} },
-+	{"Packard Bell", "DOA150",  "v0.3104",  0x55, 0x58, {0x21, 0x00}, 0},
-+	{"Packard Bell", "DOA150",  "v0.3105",  0x55, 0x58, {0x20, 0x00}, 0},
-+	{"Packard Bell", "AOA110",  "v0.3105",  0x55, 0x58, {0x21, 0x00}, 0},
-+	{"Packard Bell", "AOA150",  "v0.3105",  0x55, 0x58, {0x20, 0x00}, 0},
-+	{"Packard Bell", "ENBFT",   "V1.3118",  0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Packard Bell", "ENBFT",   "V1.3127",  0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Packard Bell", "DOTMU",   "v1.3303",  0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Packard Bell", "DOTMU",   "v0.3120",  0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Packard Bell", "DOTMU",   "v0.3108",  0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Packard Bell", "DOTMU",   "v0.3113",  0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Packard Bell", "DOTMU",   "v0.3115",  0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Packard Bell", "DOTMU",   "v0.3117",  0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Packard Bell", "DOTMU",   "v0.3119",  0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Packard Bell", "DOTMU",   "v1.3204",  0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Packard Bell", "DOTMA",   "v1.3201",  0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Packard Bell", "DOTMA",   "v1.3302",  0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Packard Bell", "DOTMA",   "v1.3303t", 0x55, 0x58, {0x9e, 0x00}, 0},
-+	{"Packard Bell", "DOTVR46", "v1.3308",  0x55, 0x58, {0x9e, 0x00}, 0},
- 	/* pewpew-terminator */
--	{"", "", "", 0, 0, {0, 0} }
-+	{"", "", "", 0, 0, {0, 0}, 0}
- };
- 
- static const struct bios_settings_t *bios_cfg __read_mostly;
-@@ -275,6 +287,12 @@ static void acerhdf_change_fanstate(int state)
- 	fanstate = state;
- 
- 	ec_write(bios_cfg->fanreg, cmd);
-+
-+	if (bios_cfg->mcmd_enable && state == ACERHDF_FAN_OFF) {
-+		if (verbose)
-+			pr_notice("turning off fan manually\n");
-+		ec_write(mcmd.mreg, mcmd.moff);
++		mutex_unlock(&audit_filter_mutex);
++		mutex_unlock(&audit_cmd_mutex);
 +	}
+ 	return 0;
  }
  
- static void acerhdf_check_param(struct thermal_zone_device *thermal)
+ static void audit_schedule_prune(void)
+ {
+-	kthread_run(prune_tree_thread, NULL, "audit_prune_tree");
++	BUG_ON(!prune_thread);
++	wake_up_process(prune_thread);
+ }
+ 
+ /*
+@@ -896,9 +906,10 @@ static void evict_chunk(struct audit_chunk *chunk)
+ 	for (n = 0; n < chunk->count; n++)
+ 		list_del_init(&chunk->owners[n].list);
+ 	spin_unlock(&hash_lock);
++	mutex_unlock(&audit_filter_mutex);
+ 	if (need_prune)
+ 		audit_schedule_prune();
+-	mutex_unlock(&audit_filter_mutex);
++
+ }
+ 
+ static int audit_tree_handle_event(struct fsnotify_group *group,
+@@ -938,10 +949,16 @@ static int __init audit_tree_init(void)
+ {
+ 	int i;
+ 
+-	audit_tree_group = fsnotify_alloc_group(&audit_tree_ops);
+-	if (IS_ERR(audit_tree_group))
+-		audit_panic("cannot initialize fsnotify group for rectree watches");
+-
++	prune_thread = kthread_create(prune_tree_thread, NULL,
++				"audit_prune_tree");
++	if (IS_ERR(prune_thread)) {
++		audit_panic("cannot start thread audit_prune_tree");
++	} else {
++		wake_up_process(prune_thread);
++		audit_tree_group = fsnotify_alloc_group(&audit_tree_ops);
++		if (IS_ERR(audit_tree_group))
++			audit_panic("cannot initialize fsnotify group for rectree watches");
++	}
+ 	for (i = 0; i < HASH_SIZE; i++)
+ 		INIT_LIST_HEAD(&chunk_hash_heads[i]);
+ 
 -- 
-2.1.3
+1.7.9.5
 
