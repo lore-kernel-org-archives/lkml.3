@@ -1,106 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751196AbaK1CSt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 21:18:49 -0500
-Received: from ozlabs.org ([103.22.144.67]:48185 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750926AbaK1CSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 21:18:47 -0500
-Message-ID: <1417141122.6694.5.camel@concordia>
-Subject: Re: [PATCH 1/3] kcmp: Move kcmp.h into uapi
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: linux-kernel@vger.kernel.org
-Cc: shuahkh@osg.samsung.com, linux-api@vger.kernel.org,
-        Andrew Morton <akpm@osdl.org>, gorcunov@openvz.org
-Date: Fri, 28 Nov 2014 13:18:42 +1100
-In-Reply-To: <1414040834-30209-1-git-send-email-mpe@ellerman.id.au>
-References: <1414040834-30209-1-git-send-email-mpe@ellerman.id.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751447AbaK1CVs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 21:21:48 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:48714 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051AbaK1CVp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 21:21:45 -0500
+From: Wang Long <long.wanglong@huawei.com>
+To: <xuwei5@hisilicon.com>, <arnd@arndb.de>, <yanhaifeng@gmail.com>,
+        <zhangfei.gao@linaro.org>, <haojian.zhuang@linaro.org>,
+        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
+        <jason@lakedaemon.net>, <jh80.chung@samsung.com>, <khilman@linaro.org>,
+        <lee.jones@linaro.org>, <linux@arm.linux.org.uk>,
+        <long.wanglong@huawei.com>, <mark.rutland@arm.com>,
+        <maxime.ripard@free-electrons.com>, <obh+dt@kernel.org>,
+        <olof@lixom.net>, <pawel.moll@arm.com>, <swarren@nvidia.com>,
+        <thomas.petazzoni@free-electrons.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <peifeiyue@huawei.com>,
+        <huxinwei@huawei.com>
+Subject: [PATCH 1/7] ARM: debug: add HiP01 debug uart
+Date: Fri, 28 Nov 2014 02:15:44 +0000
+Message-ID: <1417140950-67103-2-git-send-email-long.wanglong@huawei.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1417140950-67103-1-git-send-email-long.wanglong@huawei.com>
+References: <1417140950-67103-1-git-send-email-long.wanglong@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.200]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-23 at 16:07 +1100, Michael Ellerman wrote:
-> kcmp.h appears to be part of the API, it's documented in kcmp(2), and
-> the selftests/kcmp code uses it. So move it to uapi so it's actually
-> exported.
+Add the support of Hisilicon HiP01 debug uart.
+The uart of hip01 is 8250 compatible.
 
-Looks like this series fell through the cracks?
+Signed-off-by: Wang Long <long.wanglong@huawei.com>
+---
+ arch/arm/Kconfig.debug | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-It still applies on rc6. Should I resend?
-
-cheers
-
-> Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
-> ---
->  include/linux/kcmp.h      | 13 +------------
->  include/uapi/linux/Kbuild |  1 +
->  include/uapi/linux/kcmp.h | 17 +++++++++++++++++
->  3 files changed, 19 insertions(+), 12 deletions(-)
->  create mode 100644 include/uapi/linux/kcmp.h
-> 
-> diff --git a/include/linux/kcmp.h b/include/linux/kcmp.h
-> index 2dcd1b3aafc8..9dfb23e1771b 100644
-> --- a/include/linux/kcmp.h
-> +++ b/include/linux/kcmp.h
-> @@ -1,17 +1,6 @@
->  #ifndef _LINUX_KCMP_H
->  #define _LINUX_KCMP_H
->  
-> -/* Comparison type */
-> -enum kcmp_type {
-> -	KCMP_FILE,
-> -	KCMP_VM,
-> -	KCMP_FILES,
-> -	KCMP_FS,
-> -	KCMP_SIGHAND,
-> -	KCMP_IO,
-> -	KCMP_SYSVSEM,
-> -
-> -	KCMP_TYPES,
-> -};
-> +#include <uapi/linux/kcmp.h>
->  
->  #endif /* _LINUX_KCMP_H */
-> diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
-> index b70237e8bc37..1cf50d682dbf 100644
-> --- a/include/uapi/linux/Kbuild
-> +++ b/include/uapi/linux/Kbuild
-> @@ -209,6 +209,7 @@ header-y += ivtvfb.h
->  header-y += ixjuser.h
->  header-y += jffs2.h
->  header-y += joystick.h
-> +header-y += kcmp.h
->  header-y += kd.h
->  header-y += kdev_t.h
->  header-y += kernel-page-flags.h
-> diff --git a/include/uapi/linux/kcmp.h b/include/uapi/linux/kcmp.h
-> new file mode 100644
-> index 000000000000..84df14b37360
-> --- /dev/null
-> +++ b/include/uapi/linux/kcmp.h
-> @@ -0,0 +1,17 @@
-> +#ifndef _UAPI_LINUX_KCMP_H
-> +#define _UAPI_LINUX_KCMP_H
-> +
-> +/* Comparison type */
-> +enum kcmp_type {
-> +	KCMP_FILE,
-> +	KCMP_VM,
-> +	KCMP_FILES,
-> +	KCMP_FS,
-> +	KCMP_SIGHAND,
-> +	KCMP_IO,
-> +	KCMP_SYSVSEM,
-> +
-> +	KCMP_TYPES,
-> +};
-> +
-> +#endif /* _UAPI_LINUX_KCMP_H */
-
-
-
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index d8f6a2e..ab65e58 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -240,6 +240,14 @@ choice
+ 		  Say Y here if you want the debug print routines to direct
+ 		  their output to the UART on Highbank based devices.
+ 
++	config DEBUG_HIP01_UART
++		bool "Hisilicon Hip01 Debug UART"
++		depends on ARCH_HIP01
++		select DEBUG_UART_8250
++		help
++		  Say Y here if you want kernel low-level debugging support
++		  on HIP01 UART.
++
+ 	config DEBUG_HIP04_UART
+ 		bool "Hisilicon HiP04 Debug UART"
+ 		depends on ARCH_HIP04
+@@ -1117,6 +1125,7 @@ config DEBUG_UART_PHYS
+ 	default 0x16000000 if ARCH_INTEGRATOR
+ 	default 0x18000300 if DEBUG_BCM_5301X
+ 	default 0x1c090000 if DEBUG_VEXPRESS_UART0_RS1
++	default 0x20001000 if DEBUG_HIP01_UART
+ 	default 0x20060000 if DEBUG_RK29_UART0
+ 	default 0x20064000 if DEBUG_RK29_UART1 || DEBUG_RK3X_UART2
+ 	default 0x20068000 if DEBUG_RK29_UART2 || DEBUG_RK3X_UART3
+@@ -1240,6 +1249,7 @@ config DEBUG_UART_VIRT
+ 	default 0xfef36000 if DEBUG_HIGHBANK_UART
+ 	default 0xfefff700 if ARCH_IOP33X
+ 	default 0xff003000 if DEBUG_U300_UART
++	default 0xffd01000 if DEBUG_HIP01_UART
+ 	default DEBUG_UART_PHYS if !MMU
+ 	depends on DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
+ 		DEBUG_UART_8250 || DEBUG_UART_PL01X || DEBUG_MESON_UARTAO || \
+-- 
+1.8.3.4
 
