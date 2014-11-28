@@ -1,71 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751291AbaK1CLP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 21:11:15 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:38502 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035AbaK1CLN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 21:11:13 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sAS2Ab05024480, This message is accepted by code: ctloc85258
-From: =?gb2312?B?vrTI8Q==?= <micky_ching@realsil.com.cn>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "chris@printf.net" <chris@printf.net>,
-        "ulf.hansson@linaro.org" <ulf.hansson@linaro.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?gb2312?B?zfXsvw==?= <wei_wang@realsil.com.cn>,
-        "rogerable@realtek.com" <rogerable@realtek.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: Re: [PATCH 1/2] mfd: rtsx: add func to split u32 into register
-Thread-Topic: [PATCH 1/2] mfd: rtsx: add func to split u32 into register
-Thread-Index: AQHQCe14eJjs+qSYFEq1JMJqIBseQJx0EkkAgAC0vgA=
-Date: Fri, 28 Nov 2014 02:10:36 +0000
-Message-ID: <5477D99C.3050903@realsil.com.cn>
-References: <cover.1417056337.git.micky_ching@realsil.com.cn>
- <51dde5250305623c420e78fa555800ef8fef0a09.1417056337.git.micky_ching@realsil.com.cn>
- <20141127152342.GA4860@mwanda>
-In-Reply-To: <20141127152342.GA4860@mwanda>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.29.41.103]
-Content-Type: text/plain; charset="gb2312"
-Content-ID: <63CA8A83D9765F4584626F69C3CFC288@realsil.com.cn>
-MIME-Version: 1.0
+	id S1751348AbaK1CMN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 21:12:13 -0500
+Received: from mga01.intel.com ([192.55.52.88]:15207 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751141AbaK1CMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 21:12:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="422490425"
+From: Maurice Petallo <mauricex.r.petallo@intel.com>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>,
+        Kweh Hock Leong <hock.leong.kweh@intel.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Maurice Petallo <mauricex.r.petallo@intel.com>
+Subject: [PATCH v2] thermal: Intel SoC DTS: Don't do thermal zone update inside spin_lock
+Date: Fri, 28 Nov 2014 10:11:41 +0800
+Message-Id: <1417140701-884-1-git-send-email-mauricex.r.petallo@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAS2BNcb028591
 
+The driver calls spin_lock_irqsave during DTS interrupt. The interrupt
+handle then calls thermal_zone_device_update which implicitly calls
+a sleep function and produce the following bug:
 
-On 11/27/2014 11:23 PM, Dan Carpenter wrote:
->> +static inline void rtsx_pci_write_be32(struct rtsx_pcr *pcr, u16 reg, u32 val)
->> >+{
->> >+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg,     0xFF, val >> 24);
->> >+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 1, 0xFF, val >> 16);
->> >+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 2, 0xFF, val >> 8);
->> >+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 3, 0xFF, val);
-> This assumes the cpu is little endian.  First convert to big endian
-> using cpu_to_be32() and then write it out.
->
-> 	__be32 be_val = cpu_to_be32()
->
-> 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg,     0xFF, be_val);
-> 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 1, 0xFF, be_val >> 8);
-> 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 2, 0xFF, be_val >> 16);
-> 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 3, 0xFF, be_val >> 24);
->
-> (Written hurredly in my mail client.  May be wrong).
->
-I think we better not use cpu_to_be32() here, leave the work to caller
-may be better.
+BUG: sleeping function called from invalid context at kernel/locking/mutex.c:97
+in_atomic(): 1, irqs_disabled(): 1, pid: 920, name: irq/86-soc_dts
+CPU: 0 PID: 920 Comm: irq/86-soc_dts Tainted: G            E  3.17.0-rc2+ #1
+Hardware name: Intel Corp. VALLEYVIEW B3 PLATFORM/NOTEBOOK, BIOS BYTICRB1.86C.0092.R31.1408290850 08/29/2014
+ 00000000 00000000 c25dbe74 c1818cfd f3cc488c c25dbe9c c1059305 c1b4063b
+ 00000001 00000001 00000398 f3cc488c f6817644 f6817644 f3ecc6c0 c25dbea8
+ c18208f2 f6817400 c25dbebc c159b0bb c25dbedc f6817400 f32a2300 c25dbee8
+Call Trace:
+ [<c1818cfd>] dump_stack+0x48/0x60
+ [<c1059305>] __might_sleep+0xec/0xf4
+ [<c18208f2>] mutex_lock+0x1c/0x34
+ [<c159b0bb>] thermal_zone_get_temp+0x34/0x59
+ [<c159bde5>] thermal_zone_device_update+0x2d/0xcb
+ [<f85da16a>] ? iosf_mbi_write+0x6c/0x74 [iosf_mbi]
+ [<f7c7445d>] soc_irq_thread_fn+0x10c/0x163 [intel_soc_dts_thermal]
+ [<c107b72b>] irq_thread_fn+0x18/0x2a
+ [<c107bedb>] irq_thread+0x81/0x11f
+ [<c107b713>] ? irq_finalize_oneshot+0x7c/0x7c
+ [<c107bf79>] ? irq_thread+0x11f/0x11f
+ [<c107be5a>] ? wake_threads_waitq+0x31/0x31
+ [<c1054217>] kthread+0x87/0x8c
+ [<c1821e41>] ret_from_kernel_thread+0x21/0x30
+ [<c1054190>] ? __kthread_parkme+0x55/0x55
 
-eg, in sd_ops.c the cmd.arg is constructed bit by bit, we can put the right
-byte to the right register by shift, so the endian check is not need.ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Signed-off-by: Maurice Petallo <mauricex.r.petallo@intel.com>
+Acked-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Acked-by: Eduardo Valentin <edubezval@gmail.com>
+CC: Kweh, Hock Leong <hock.leong.kweh@intel.com>
+---
+Changelog v2:
+* Change subject to emphasize that this patch affects only Intel SoC DTS
+  (intel_soc_dts_thermal.c)
+
+ drivers/thermal/intel_soc_dts_thermal.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/thermal/intel_soc_dts_thermal.c b/drivers/thermal/intel_soc_dts_thermal.c
+index a6a0a18..5580f5b 100644
+--- a/drivers/thermal/intel_soc_dts_thermal.c
++++ b/drivers/thermal/intel_soc_dts_thermal.c
+@@ -360,6 +360,9 @@ static void proc_thermal_interrupt(void)
+ 	u32 sticky_out;
+ 	int status;
+ 	u32 ptmc_out;
++	unsigned long flags;
++
++	spin_lock_irqsave(&intr_notify_lock, flags);
+ 
+ 	/* Clear APIC interrupt */
+ 	status = iosf_mbi_read(BT_MBI_UNIT_PMC, BT_MBI_BUNIT_READ,
+@@ -378,21 +381,20 @@ static void proc_thermal_interrupt(void)
+ 		/* reset sticky bit */
+ 		status = iosf_mbi_write(BT_MBI_UNIT_PMC, BT_MBI_BUNIT_WRITE,
+ 					SOC_DTS_OFFSET_PTTSS, sticky_out);
++		spin_unlock_irqrestore(&intr_notify_lock, flags);
++
+ 		for (i = 0; i < SOC_MAX_DTS_SENSORS; ++i) {
+ 			pr_debug("TZD update for zone %d\n", i);
+ 			thermal_zone_device_update(soc_dts[i]->tzone);
+ 		}
+-	}
++	} else
++		spin_unlock_irqrestore(&intr_notify_lock, flags);
+ 
+ }
+ 
+ static irqreturn_t soc_irq_thread_fn(int irq, void *dev_data)
+ {
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&intr_notify_lock, flags);
+ 	proc_thermal_interrupt();
+-	spin_unlock_irqrestore(&intr_notify_lock, flags);
+ 	pr_debug("proc_thermal_interrupt\n");
+ 
+ 	return IRQ_HANDLED;
+-- 
+1.7.9.5
+
