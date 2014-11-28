@@ -1,211 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751218AbaK1Dk1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 22:40:27 -0500
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:45888 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792AbaK1DkZ (ORCPT
+	id S1751107AbaK1Dpr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 22:45:47 -0500
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:63884 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801AbaK1Dpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 22:40:25 -0500
+	Thu, 27 Nov 2014 22:45:45 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAGOxZ52XtT-Aq-HJFq7GAzfAq6GEdrzKeez_=fwJR-Z2rkUF+g@mail.gmail.com>
-References: <CAGOxZ53TUvZhSDLfeCuyvBwVcrkQhFnftQzk1DbkU_krdoFbZA@mail.gmail.com>
-	<1416834381-11314-1-git-send-email-gautam.vivek@samsung.com>
-	<CAGOxZ52XtT-Aq-HJFq7GAzfAq6GEdrzKeez_=fwJR-Z2rkUF+g@mail.gmail.com>
-Date: Fri, 28 Nov 2014 09:10:24 +0530
-Message-ID: <CAFp+6iHG42h3oCkO8mWG4DnpP-X-kh4VanoQOv3By831Ly5DdA@mail.gmail.com>
-Subject: Re: [PATCH V2 2/2] arm64: exynos: Add bus1 pinctrl node on exynos7
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Kukjin Kim <kgene@kernel.org>
-Cc: Alim Akhtar <alim.akhtar@gmail.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
+In-Reply-To: <20141024052849.GF15243@js1304-P5Q-DELUXE>
+References: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
+ <1413430551-22392-5-git-send-email-zhuhui@xiaomi.com> <20141024052849.GF15243@js1304-P5Q-DELUXE>
+From: Hui Zhu <teawater@gmail.com>
+Date: Fri, 28 Nov 2014 11:45:04 +0800
+Message-ID: <CANFwon0CP6jA4oq0U2xC340MbFsws5NmhEMGEUDm983N=mT-Pg@mail.gmail.com>
+Subject: Re: [PATCH 4/4] (CMA_AGGRESSIVE) Update page alloc function
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Hui Zhu <zhuhui@xiaomi.com>, rjw@rjwysocki.net, len.brown@intel.com,
+        pavel@ucw.cz, m.szyprowski@samsung.com,
+        Andrew Morton <akpm@linux-foundation.org>, mina86@mina86.com,
+        aneesh.kumar@linux.vnet.ibm.com, hannes@cmpxchg.org,
+        Rik van Riel <riel@redhat.com>, mgorman@suse.de, minchan@kernel.org,
+        nasa4836@gmail.com, ddstreet@ieee.org, Hugh Dickins <hughd@google.com>,
+        mingo@kernel.org, rientjes@google.com,
+        Peter Zijlstra <peterz@infradead.org>, keescook@chromium.org,
+        atomlin@redhat.com, raistlin@linux.it, axboe@fb.com,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        kirill.shutemov@linux.intel.com, n-horiguchi@ah.jp.nec.com,
+        k.khlebnikov@samsung.com, msalter@redhat.com, deller@gmx.de,
+        tangchen@cn.fujitsu.com, ben@decadent.org.uk, akinobu.mita@gmail.com,
+        lauraa@codeaurora.org, vbabka@suse.cz, sasha.levin@oracle.com,
+        vdavydov@parallels.com, suleiman@google.com,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        "robh+dt" <robh+dt@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+        linux-pm@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kukjin,
-
-
-On Wed, Nov 26, 2014 at 6:59 PM, Alim Akhtar <alim.akhtar@gmail.com> wrote:
-> Hi Vivek,
->
-> On Mon, Nov 24, 2014 at 6:36 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
->> BUS1 pinctrl provides gpios for usb and power regulator
->> available on exynos7-espresso board. So add relevant device
->> node for pinctrl-bus1.
+On Fri, Oct 24, 2014 at 1:28 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> On Thu, Oct 16, 2014 at 11:35:51AM +0800, Hui Zhu wrote:
+>> If page alloc function __rmqueue try to get pages from MIGRATE_MOVABLE and
+>> conditions (cma_alloc_counter, cma_aggressive_free_min, cma_alloc_counter)
+>> allow, MIGRATE_CMA will be allocated as MIGRATE_MOVABLE first.
 >>
->> Signed-off-by: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
->> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> Signed-off-by: Hui Zhu <zhuhui@xiaomi.com>
 >> ---
+>>  mm/page_alloc.c | 42 +++++++++++++++++++++++++++++++-----------
+>>  1 file changed, 31 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>> index 736d8e1..87bc326 100644
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -65,6 +65,10 @@
+>>  #include <asm/div64.h>
+>>  #include "internal.h"
+>>
+>> +#ifdef CONFIG_CMA_AGGRESSIVE
+>> +#include <linux/cma.h>
+>> +#endif
+>> +
+>>  /* prevent >1 _updater_ of zone percpu pageset ->high and ->batch fields */
+>>  static DEFINE_MUTEX(pcp_batch_high_lock);
+>>  #define MIN_PERCPU_PAGELIST_FRACTION (8)
+>> @@ -1189,20 +1193,36 @@ static struct page *__rmqueue(struct zone *zone, unsigned int order,
+>>  {
+>>       struct page *page;
+>>
+>> -retry_reserve:
+>> +#ifdef CONFIG_CMA_AGGRESSIVE
+>> +     if (cma_aggressive_switch
+>> +         && migratetype == MIGRATE_MOVABLE
+>> +         && atomic_read(&cma_alloc_counter) == 0
+>> +         && global_page_state(NR_FREE_CMA_PAGES) > cma_aggressive_free_min
+>> +                                                     + (1 << order))
+>> +             migratetype = MIGRATE_CMA;
+>> +#endif
+>> +retry:
+>
+> I don't get it why cma_alloc_counter should be tested.
+> When cma alloc is progress, pageblock is isolated so that pages on that
+> pageblock cannot be allocated. Why should we prevent aggressive
+> allocation in this case?
+>
 
-We can pick this up for 3.19 rc1 ?
+Hi Joonsoo,
 
->>
-> Looks good to me.
-> Reviewed-by: Alim Akhtar <alim.akhtar@samsung.com>
->
->> This patch was part of series:
->> "[PATCH 00/11] Exynos7: Adding USB 3.0 support"
->>  https://lkml.org/lkml/2014/11/21/247
->>
->> Changes since V1:
->>  - Added support for all pin banks which are part of BUS1 pin controller.
->>
->>  arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi |   82 +++++++++++++++++++++++
->>  arch/arm64/boot/dts/exynos/exynos7.dtsi         |    7 ++
->>  2 files changed, 89 insertions(+)
->>
->> diff --git a/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi b/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi
->> index 2eef4a2..c367f0a 100644
->> --- a/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi
->> +++ b/arch/arm64/boot/dts/exynos/exynos7-pinctrl.dtsi
->> @@ -335,6 +335,88 @@
->>         };
->>  };
->>
->> +&pinctrl_bus1 {
->> +       gpf0: gpf0 {
->> +               gpio-controller;
->> +               #gpio-cells = <2>;
->> +
->> +               interrupt-controller;
->> +               #interrupt-cells = <2>;
->> +       };
->> +
->> +       gpf1: gpf1 {
->> +               gpio-controller;
->> +               #gpio-cells = <2>;
->> +
->> +               interrupt-controller;
->> +               #interrupt-cells = <2>;
->> +       };
->> +
->> +       gpf2: gpf2 {
->> +               gpio-controller;
->> +               #gpio-cells = <2>;
->> +
->> +               interrupt-controller;
->> +               #interrupt-cells = <2>;
->> +       };
->> +
->> +       gpf3: gpf3 {
->> +               gpio-controller;
->> +               #gpio-cells = <2>;
->> +
->> +               interrupt-controller;
->> +               #interrupt-cells = <2>;
->> +       };
->> +
->> +       gpf4: gpf4 {
->> +               gpio-controller;
->> +               #gpio-cells = <2>;
->> +
->> +               interrupt-controller;
->> +               #interrupt-cells = <2>;
->> +       };
->> +
->> +       gpf5: gpf5 {
->> +               gpio-controller;
->> +               #gpio-cells = <2>;
->> +
->> +               interrupt-controller;
->> +               #interrupt-cells = <2>;
->> +       };
->> +
->> +       gpg1: gpg1 {
->> +               gpio-controller;
->> +               #gpio-cells = <2>;
->> +
->> +               interrupt-controller;
->> +               #interrupt-cells = <2>;
->> +       };
->> +
->> +       gpg2: gpg2 {
->> +               gpio-controller;
->> +               #gpio-cells = <2>;
->> +
->> +               interrupt-controller;
->> +               #interrupt-cells = <2>;
->> +       };
->> +
->> +       gph1: gph1 {
->> +               gpio-controller;
->> +               #gpio-cells = <2>;
->> +
->> +               interrupt-controller;
->> +               #interrupt-cells = <2>;
->> +       };
->> +
->> +       gpv6: gpv6 {
->> +               gpio-controller;
->> +               #gpio-cells = <2>;
->> +
->> +               interrupt-controller;
->> +               #interrupt-cells = <2>;
->> +       };
->> +};
->> +
->>  &pinctrl_nfc {
->>         gpj0: gpj0 {
->>                 gpio-controller;
->> diff --git a/arch/arm64/boot/dts/exynos/exynos7.dtsi b/arch/arm64/boot/dts/exynos/exynos7.dtsi
->> index 1d9e4c9..e633b02 100644
->> --- a/arch/arm64/boot/dts/exynos/exynos7.dtsi
->> +++ b/arch/arm64/boot/dts/exynos/exynos7.dtsi
->> @@ -26,6 +26,7 @@
->>                 pinctrl5 = &pinctrl_ese;
->>                 pinctrl6 = &pinctrl_fsys0;
->>                 pinctrl7 = &pinctrl_fsys1;
->> +               pinctrl8 = &pinctrl_bus1;
->>         };
->>
->>         cpus {
->> @@ -242,6 +243,12 @@
->>                         interrupts = <0 383 0>;
->>                 };
->>
->> +               pinctrl_bus1: pinctrl@14870000 {
->> +                       compatible = "samsung,exynos7-pinctrl";
->> +                       reg = <0x14870000 0x1000>;
->> +                       interrupts = <0 384 0>;
->> +               };
->> +
->>                 pinctrl_nfc: pinctrl@14cd0000 {
->>                         compatible = "samsung,exynos7-pinctrl";
->>                         reg = <0x14cd0000 0x1000>;
->> --
->> 1.7.10.4
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
+Even if the pageblock is isolated in the begin of function
+alloc_contig_range, it will unisolate if alloc_contig_range get some
+error for example "PFNs busy".  And the cma_alloc will keep call
+alloc_contig_range with another address if need.
+
+So it will decrease the contradiction between CMA allocation in
+cma_alloc and __rmqueue with  cma_alloc_counter.
+
+Thanks,
+Hui
+
+> Thanks.
 >
 > --
-> Regards,
-> Alim
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
