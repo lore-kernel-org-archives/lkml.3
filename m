@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751706AbaK1L5S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 06:57:18 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:37137 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454AbaK1L5R (ORCPT
+	id S1751775AbaK1L6A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 06:58:00 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:44031 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751234AbaK1L56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 06:57:17 -0500
+	Fri, 28 Nov 2014 06:57:58 -0500
 MIME-Version: 1.0
-In-Reply-To: <1416644843-18304-1-git-send-email-kishon@ti.com>
-References: <1416644843-18304-1-git-send-email-kishon@ti.com>
-Date: Fri, 28 Nov 2014 12:57:16 +0100
-Message-ID: <CACRpkdbX2KxrvBniTd3yjWasHg8C5cuJ2o_eV6ymWtfaFk76SA@mail.gmail.com>
-Subject: Re: [PATCH] phy: remove the old lookup method
+In-Reply-To: <1416667159-9808-7-git-send-email-Julia.Lawall@lip6.fr>
+References: <1416667159-9808-1-git-send-email-Julia.Lawall@lip6.fr>
+	<1416667159-9808-7-git-send-email-Julia.Lawall@lip6.fr>
+Date: Fri, 28 Nov 2014 12:57:57 +0100
+Message-ID: <CACRpkdaobn4Zp8KYM-wA1L_uL8CHZW6K6yNb3dE=hSuHcxj6+w@mail.gmail.com>
+Subject: Re: [PATCH 6/6] dmaengine: ste_dma40: fix error return code
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        gautam.vivek@samsung.com, andrew.kim@intel.com,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        dmaengine@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 22, 2014 at 9:27 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+On Sat, Nov 22, 2014 at 3:39 PM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
 
-> From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 >
-> The users of the old method are now converted to the new one.
+> Return a negative error code on failure.
 >
-> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> [ kishon@ti.com : made phy-berlin-usb.c and phy-miphy28lp.c to use the updated
->                   devm_phy_create API.]
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
-> Two new PHY drivers phy-berlin-usb.c and phy-miphy28lp.c were added which was using the old
-> devm_phy_create signature. Made it to use the new devm_phy_create signatiure.
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> @@
+> identifier ret; expression e1,e2;
+> @@
+> (
+> if (\(ret < 0\|ret != 0\))
+>  { ... return ret; }
+> |
+> ret = 0
+> )
+> ... when != ret = e1
+>     when != &ret
+> *if(...)
+> {
+>   ... when != ret = e2
+>       when forall
+>  return ret;
+> }
+> // </smpl>
+>
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-I guess this will be applied to the PHY tree.
 
 Yours,
 Linus Walleij
