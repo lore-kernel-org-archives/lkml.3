@@ -1,96 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751156AbaK1Ksu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 05:48:50 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:49478 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890AbaK1Kst (ORCPT
+	id S1751279AbaK1KwV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 05:52:21 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:53989 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053AbaK1KwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 05:48:49 -0500
-Message-ID: <5478530B.3090102@atmel.com>
-Date: Fri, 28 Nov 2014 11:48:43 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 28 Nov 2014 05:52:19 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org, linux@arm.linux.org.uk,
+        vinod.koul@intel.com, linux-mmc@vger.kernel.org, nsekhar@ti.com,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        khilman@deeprootsystems.com, Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@kernel.org>, chris@printf.net,
+        dmaengine@vger.kernel.org, ulf.hansson@linaro.org,
+        linux-spi@vger.kernel.org
+Subject: Re: [PATCH 2/3] ARM: edma: Rename header file for dmaengine filter function definition
+Date: Fri, 28 Nov 2014 11:51:37 +0100
+Message-ID: <6448422.mtUnef24Xp@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54782148.6040108@ti.com>
+References: <1417084891-17990-1-git-send-email-peter.ujfalusi@ti.com> <4859328.eEV7jzKEaA@wuerfel> <54782148.6040108@ti.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        <linux-kernel@vger.kernel.org>,
-        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH 00/11] ARM: at91: remove !DT support for at91rm9200
-References: <cover.1417103399.git.nicolas.ferre@atmel.com> <27354361.uIQEXGDqXb@wuerfel> <54784209.6070003@atmel.com> <2351041.YbSYt1FKtz@wuerfel>
-In-Reply-To: <2351041.YbSYt1FKtz@wuerfel>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:sU20kC6hDV5kMtRuA5DwZsydLWC2qVbBF3UnsfY19um
+ 9ux1voaRwISRhTOzCUvDBep2SkiTC1pabcltZhpTEqSyGlXGSm
+ VS+HkeGfLNRLmyKJuwU8FWQSoxpjMsXDU12pisSbm3UHPYbIOr
+ 1MpcRPz4GGfWkq7QndYb3dICD1i3kbmshugKyeSaSB9jCCsOUw
+ E/2/6GXjw8bmzGp4qpQvrkiPbUlRQ6UShAyqqXPDFYtCO3z1yT
+ un3QSys3mY1E232OBqlJr6ibIHCo2CpkElPe4epJyW6HrnNkpk
+ RvCedQsvMkAF1kkPHV7ZfGxi23lopC0Q0s4ya5ExtfsacMgxdj
+ x0HPetjlN+OGTXV+zXX4=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/11/2014 11:25, Arnd Bergmann wrote:
-> On Friday 28 November 2014 10:36:09 Nicolas Ferre wrote:
->> On 27/11/2014 18:38, Arnd Bergmann wrote:
->>> On Thursday 27 November 2014 18:12:43 Alexandre Belloni wrote:
->>>> On 27/11/2014 at 17:49:50 +0100, Arnd Bergmann wrote :
->>>>> On Thursday 27 November 2014 17:06:28 Nicolas Ferre wrote:
->>>>>> This is the last series of patches that removes the non-Device-Tree board
->>>>>> support for older Atmel SoCs.
->>>>>> Again, for the record, it was announced here
->>>>>> https://lkml.org/lkml/2014/9/10/293 ([ANNOUNCE] ARM: at91: removal of board
->>>>>> files) two months ago.
->>>>>> Several files beyond at91rm9200 are touched this time as I tried to remove the
->>>>>> biggest parts that were related to !DT SoC initializations. More cleanup is
->>>>>> certainly needed to remove dead code.
->>>>>>
->>>>>> The diffstat is also pretty big as a lot of at91rm9200 boards were remaining.
->>>>>>
->>>>>
->>>>> Awesome stuff!
->>>>>
->>>>> Two questions:
->>>>>
->>>>> - is anything holding this up from getting merged in 3.19?
->>>>>
->>>>
->>>> If you think this is not too late in the cycle, I would say go ahead 
->>>
->>> I'd say we should do it, unless there are last-minute regressions.
->>
->> Arnd,
->>
->> I am totally in favor for a merge into 3.19.
->> I wanted to wait one day or two but given that the official announce had
->> been made several months ago, I don't think it makes a big difference.
->>
->> So, what do you prefer:
->>
->> 1/ I wait today and send you the pull-request this evening (our time)
->> 2/ I send you the pull-request at the beginning of next week but still
->> can make it for 3.19?
+On Friday 28 November 2014 09:16:24 Peter Ujfalusi wrote:
+> On 11/27/2014 11:52 PM, Arnd Bergmann wrote:
+> > On Thursday 27 November 2014 20:46:12 Peter Ujfalusi wrote:
+> >>
+> >> I see. With this series I did not planed to fix all edma related issues, just
+> >> as a start clean up the related header files. I would rather not add fixes to
+> >> mmc, spi, etc drivers since while you have valid point it is not in the scope
+> >> of this series.
+> >> Can we do the changes you are suggesting in an incremental manner?
+> > 
+> > Sure, but I'd leave the existing filter function declaration alone then
+> > and not move it, since we wouldn't want to keep it in the long run.
 > 
-> Just send the pull request whenever you have it ready. If some bug shows
-> up, reply to that mail with an updated pull request.
+> but if you want to reference the filter function (which is in
+> drivers/dma/edma.c) in arch/arm/mach-davinci/ directory, we will need it.
+> Don't we?
 
-Okay, I do it right now then.
+Yes, unless you move the definition of the filter function into
+arch/arm/common/edma.c or arch/arm/mach-davinci/devices.c, but that
+would require other changes.
 
-Thanks Arnd.
+> If I leave the header as it is, then how would we clean up the edma headers? I
+> would not put the API definitions for the arch code into the same file as we
+> have the filter definition.
 
+Ok, just go ahead with your current patch then, we can always follow up.
+The most important cleanup for edma is elsewhere anyway, so once the asoc
+drivers can use the dmaengine interface, this should be easier.
 
->> (BTW, in the meantime, there is a pending pull-request (at91-cleanup3)
->> but it is true that you needn't pulling it in if you plan to take this
->> one which will be named at91-cleanup4 and that will obviously contain
->> the 3rd one).
-> 
-> Yes, I have a backlog of pull requests to look at, should get to that soon
-> today.
-> 
-> 	Arnd
-> 
-> 
-
-
--- 
-Nicolas Ferre
+	Arnd
