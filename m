@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751646AbaK1SYh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 13:24:37 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:35163 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534AbaK1SYe (ORCPT
+	id S1751792AbaK1SYq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 13:24:46 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:45428 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758AbaK1SYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 13:24:34 -0500
+	Fri, 28 Nov 2014 13:24:43 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tony Luck <tony.luck@intel.com>,
@@ -18,9 +18,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tony Luck <tony.luck@intel.com>,
         Wu Fengguang <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
         Rik van Riel <riel@redhat.com>,
         Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [RFC PATCH 13/30] alpha: Convert obsolete cputime_t to nsecs
-Date: Fri, 28 Nov 2014 19:23:43 +0100
-Message-Id: <1417199040-21044-14-git-send-email-fweisbec@gmail.com>
+Subject: [RFC PATCH 18/30] delaycct: Convert obsolete cputime type to nsecs
+Date: Fri, 28 Nov 2014 19:23:48 +0100
+Message-Id: <1417199040-21044-19-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1417199040-21044-1-git-send-email-fweisbec@gmail.com>
 References: <1417199040-21044-1-git-send-email-fweisbec@gmail.com>
@@ -41,35 +41,38 @@ Cc: Tony Luck <tony.luck@intel.com>
 Cc: Wu Fengguang <fengguang.wu@intel.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- arch/alpha/kernel/osf_sys.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel/delayacct.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/alpha/kernel/osf_sys.c b/arch/alpha/kernel/osf_sys.c
-index a6e4491..03ebb5f 100644
---- a/arch/alpha/kernel/osf_sys.c
-+++ b/arch/alpha/kernel/osf_sys.c
-@@ -1137,7 +1137,7 @@ struct rusage32 {
- SYSCALL_DEFINE2(osf_getrusage, int, who, struct rusage32 __user *, ru)
- {
- 	struct rusage32 r;
--	cputime_t utime, stime;
-+	u64 utime, stime;
- 	unsigned int utime_jiffies, stime_jiffies;
+diff --git a/kernel/delayacct.c b/kernel/delayacct.c
+index 8cf2179..7719063 100644
+--- a/kernel/delayacct.c
++++ b/kernel/delayacct.c
+@@ -82,19 +82,19 @@ void __delayacct_blkio_end(void)
  
- 	if (who != RUSAGE_SELF && who != RUSAGE_CHILDREN)
-@@ -1146,9 +1146,9 @@ SYSCALL_DEFINE2(osf_getrusage, int, who, struct rusage32 __user *, ru)
- 	memset(&r, 0, sizeof(r));
- 	switch (who) {
- 	case RUSAGE_SELF:
--		task_cputime_t(current, &utime, &stime);
--		utime_jiffies = cputime_to_jiffies(utime);
--		stime_jiffies = cputime_to_jiffies(stime);
-+		task_cputime(current, &utime, &stime);
-+		utime_jiffies = nsecs_to_jiffies(utime);
-+		stime_jiffies = nsecs_to_jiffies(stime);
- 		jiffies_to_timeval32(utime_jiffies, &r.ru_utime);
- 		jiffies_to_timeval32(stime_jiffies, &r.ru_stime);
- 		r.ru_minflt = current->min_flt;
+ int __delayacct_add_tsk(struct taskstats *d, struct task_struct *tsk)
+ {
+-	cputime_t utime, stime, stimescaled, utimescaled;
++	u64 utime, stime, stimescaled, utimescaled;
+ 	unsigned long long t2, t3;
+ 	unsigned long flags, t1;
+ 	s64 tmp;
+ 
+-	task_cputime_t(tsk, &utime, &stime);
++	task_cputime(tsk, &utime, &stime);
+ 	tmp = (s64)d->cpu_run_real_total;
+-	tmp += cputime_to_nsecs(utime + stime);
++	tmp += utime + stime;
+ 	d->cpu_run_real_total = (tmp < (s64)d->cpu_run_real_total) ? 0 : tmp;
+ 
+-	task_cputime_t_scaled(tsk, &utimescaled, &stimescaled);
++	task_cputime_scaled(tsk, &utimescaled, &stimescaled);
+ 	tmp = (s64)d->cpu_scaled_run_real_total;
+-	tmp += cputime_to_nsecs(utimescaled + stimescaled);
++	tmp += utimescaled + stimescaled;
+ 	d->cpu_scaled_run_real_total =
+ 		(tmp < (s64)d->cpu_scaled_run_real_total) ? 0 : tmp;
+ 
 -- 
 2.1.3
 
