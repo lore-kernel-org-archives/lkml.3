@@ -1,85 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180AbaK1Sb6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 13:31:58 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:45082 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046AbaK1SYJ (ORCPT
+	id S1751540AbaK1Sfe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 13:35:34 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:42397 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976AbaK1Sfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 13:24:09 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tony Luck <tony.luck@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [RFC PATCH 01/30] jiffies: Remove HZ > USEC_PER_SEC special case
-Date: Fri, 28 Nov 2014 19:23:31 +0100
-Message-Id: <1417199040-21044-2-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1417199040-21044-1-git-send-email-fweisbec@gmail.com>
-References: <1417199040-21044-1-git-send-email-fweisbec@gmail.com>
+	Fri, 28 Nov 2014 13:35:32 -0500
+Date: Fri, 28 Nov 2014 18:35:07 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Laurentiu Palcu <laurentiu.palcu@intel.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Johan Havold <johan@kernel.org>,
+        Octavian Purdila <octavian.purdila@intel.com>,
+        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20141128183507.GZ7712@sirena.org.uk>
+References: <1416312599-5176-2-git-send-email-laurentiu.palcu@intel.com>
+ <1417180198-9393-1-git-send-email-laurentiu.palcu@intel.com>
+ <20141128141053.GL7712@sirena.org.uk>
+ <20141128145703.GA16201@lpalcu-linux>
+ <20141128151435.GQ7712@sirena.org.uk>
+ <20141128153125.GB16201@lpalcu-linux>
+ <20141128160156.GX7712@sirena.org.uk>
+ <20141128181326.GA23784@lpalcu-laptop>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LrkNhSf9vGvdvMkt"
+Content-Disposition: inline
+In-Reply-To: <20141128181326.GA23784@lpalcu-laptop>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v7 1/2] spi: add support for DLN-2 USB-SPI adapter
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HZ never goes much further 1000 and a bit. And if we ever reach one tick
-per microsecond, we might be having a problem.
 
-Lets stop maintaining this special case.
+--LrkNhSf9vGvdvMkt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- kernel/time/time.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+On Fri, Nov 28, 2014 at 08:13:26PM +0200, Laurentiu Palcu wrote:
+> On Fri, Nov 28, 2014 at 04:01:56PM +0000, Mark Brown wrote:
 
-diff --git a/kernel/time/time.c b/kernel/time/time.c
-index a9ae20f..e44f6f1 100644
---- a/kernel/time/time.c
-+++ b/kernel/time/time.c
-@@ -260,10 +260,11 @@ EXPORT_SYMBOL(jiffies_to_msecs);
- 
- unsigned int jiffies_to_usecs(const unsigned long j)
- {
--#if HZ <= USEC_PER_SEC && !(USEC_PER_SEC % HZ)
-+	/* Hz usually doesn't go much further MSEC_PER_SEC */
-+	BUILD_BUG_ON(HZ >= USEC_PER_SEC);
-+
-+#if !(USEC_PER_SEC % HZ)
- 	return (USEC_PER_SEC / HZ) * j;
--#elif HZ > USEC_PER_SEC && !(HZ % USEC_PER_SEC)
--	return (j + (HZ / USEC_PER_SEC) - 1)/(HZ / USEC_PER_SEC);
- #else
- # if BITS_PER_LONG == 32
- 	return (HZ_TO_USEC_MUL32 * j) >> HZ_TO_USEC_SHR32;
-@@ -543,10 +544,8 @@ unsigned long usecs_to_jiffies(const unsigned int u)
- {
- 	if (u > jiffies_to_usecs(MAX_JIFFY_OFFSET))
- 		return MAX_JIFFY_OFFSET;
--#if HZ <= USEC_PER_SEC && !(USEC_PER_SEC % HZ)
-+#if !(USEC_PER_SEC % HZ)
- 	return (u + (USEC_PER_SEC / HZ) - 1) / (USEC_PER_SEC / HZ);
--#elif HZ > USEC_PER_SEC && !(HZ % USEC_PER_SEC)
--	return u * (HZ / USEC_PER_SEC);
- #else
- 	return (USEC_TO_HZ_MUL32 * u + USEC_TO_HZ_ADJ32)
- 		>> USEC_TO_HZ_SHR32;
--- 
-2.1.3
+> > No, please don't - you're missing the point.  The point is that now Lee
+> > has applied the other patch you're not sending two patches any more,
+> > you're sending a single patch.  This isn't patch 1/2, it's just a single
+> > patch by itself now.
 
+> All I did was send new revisions of the 1/2 patch using the
+> --in-reply-to option of git-send-email, with the message-id of the
+> original version. I used to do this for other projects I contributed to,
+> so I didn't have to re-send the entire series for just one patch that
+
+The whole point is that you're not sending a series, you're just sending
+one patch.
+
+> needs to be changed. Mail clients, at least the ones I use (mutt,
+> evolution), order the mails nicely and you have all the history in one
+> thread. So, one can see the cover letter of the series and the other
+> original patches in the series, together with the new revisions of the
+> changed patch. Of course, if more patches needed change, I would re-send a new
+> series.
+
+Definitely do *not* do this, it makes the thread very hard to follow if
+there are multiple versions - you end up with multiple versions of
+various patches scattered through the thread and it can be very unclear
+which versions are current.  If there's a lot of traffic things get
+hidden way back when the original submission happened.
+
+Fortunately I've deleted old parts of the thread so I didn't notice you
+were doing this.
+
+> So, Mark, can you please instruct me (a link to a page explaining the
+> workflow would be fine too) what is the exact workflow you are/were
+> expecting?
+
+The patch submission workflow is covered in SubmittingPatches.
+
+--LrkNhSf9vGvdvMkt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUeMBaAAoJECTWi3JdVIfQCi4H/RFkaB+XX76p9HjJFf1I3lDW
+SJHawoFqCxGIxTxJgVTPXGtdH7idGxdSYEEePB0xzvph6uQ4ZeSn1YpT/6ZO/UxI
+CtxUaXEtbSbdBDGp+GQjdVbm0F8Csn0PyhCp+MHqEca/ADfKR0Y1EHk9/vcqPRbZ
+1aknwVq/WSXjYEcX60DcYkKYhgPACi7g4C+9n3TAChF4OfBOIk7yLlfY/X4RpTNt
++JuGUk3Qtn9n4eCSIRHrCAveuCjbW0HIyCZTfQ9uO0tr2JexpCdlD4boGs0H3gUN
+5uTSLs1TNzRX0f6x3UH2J2VQAOhyTjqNVKgnk91hgBoAav6FpSGsiS1uB0J8rlA=
+=rWuY
+-----END PGP SIGNATURE-----
+
+--LrkNhSf9vGvdvMkt--
