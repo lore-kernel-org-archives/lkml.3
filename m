@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751106AbaK1KyJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 05:54:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54307 "EHLO mx2.suse.de"
+	id S1751580AbaK1Kzz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 05:55:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54350 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750870AbaK1KyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 05:54:05 -0500
+	id S1750961AbaK1KyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 05:54:08 -0500
 From: Juergen Gross <jgross@suse.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
         konrad.wilk@oracle.com, david.vrabel@citrix.com,
         boris.ostrovsky@oracle.com, x86@kernel.org, tglx@linutronix.de,
         mingo@redhat.com, hpa@zytor.com, andrew.cooper3@citrix.com
 Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH V4 1/9] xen: fix some style issues in p2m.c
-Date: Fri, 28 Nov 2014 11:53:50 +0100
-Message-Id: <1417172039-8627-2-git-send-email-jgross@suse.com>
+Subject: [PATCH V4 05/10] xen: Delay m2p_override initialization
+Date: Fri, 28 Nov 2014 11:53:54 +0100
+Message-Id: <1417172039-8627-6-git-send-email-jgross@suse.com>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1417172039-8627-1-git-send-email-jgross@suse.com>
 References: <1417172039-8627-1-git-send-email-jgross@suse.com>
@@ -22,73 +22,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The source arch/x86/xen/p2m.c has some coding style issues. Fix them.
+The m2p overrides are used to be able to find the local pfn for a
+foreign mfn mapped into the domain. They are used by driver backends
+having to access frontend data.
+
+As this functionality isn't used in early boot it makes no sense to
+initialize the m2p override functions very early. It can be done
+later without doing any harm, removing the need for allocating memory
+via extend_brk().
+
+While at it make some m2p override functions static as they are only
+used internally.
 
 Signed-off-by: Juergen Gross <jgross@suse.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/p2m.c | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ arch/x86/xen/p2m.c | 19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
 diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 9201a38..73d354a 100644
+index 24cd9d1..8676f35 100644
 --- a/arch/x86/xen/p2m.c
 +++ b/arch/x86/xen/p2m.c
-@@ -922,7 +922,7 @@ int set_foreign_p2m_mapping(struct gnttab_map_grant_ref *map_ops,
- 			continue;
- 
- 		if (map_ops[i].flags & GNTMAP_contains_pte) {
--			pte = (pte_t *) (mfn_to_virt(PFN_DOWN(map_ops[i].host_addr)) +
-+			pte = (pte_t *)(mfn_to_virt(PFN_DOWN(map_ops[i].host_addr)) +
- 				(map_ops[i].host_addr & ~PAGE_MASK));
- 			mfn = pte_mfn(*pte);
- 		} else {
-@@ -970,7 +970,7 @@ int m2p_add_override(unsigned long mfn, struct page *page,
- 		address = (unsigned long)__va(pfn << PAGE_SHIFT);
- 		ptep = lookup_address(address, &level);
- 		if (WARN(ptep == NULL || level != PG_LEVEL_4K,
--					"m2p_add_override: pfn %lx not mapped", pfn))
-+			 "m2p_add_override: pfn %lx not mapped", pfn))
- 			return -EINVAL;
+@@ -428,8 +428,6 @@ void __init xen_build_dynamic_phys_to_machine(void)
+ 		}
+ 		p2m_top[topidx][mididx] = &mfn_list[pfn];
  	}
- 
-@@ -1072,7 +1072,7 @@ int m2p_remove_override(struct page *page,
- 		ptep = lookup_address(address, &level);
- 
- 		if (WARN(ptep == NULL || level != PG_LEVEL_4K,
--					"m2p_remove_override: pfn %lx not mapped", pfn))
-+			 "m2p_remove_override: pfn %lx not mapped", pfn))
- 			return -EINVAL;
+-
+-	m2p_override_init();
+ }
+ #ifdef CONFIG_X86_64
+ unsigned long __init xen_revector_p2m_tree(void)
+@@ -500,13 +498,15 @@ unsigned long __init xen_revector_p2m_tree(void)
+ 		}
+ 		/* This should be the leafs allocated for identity from _brk. */
  	}
+-	return (unsigned long)mfn_list;
  
-@@ -1102,9 +1102,8 @@ int m2p_remove_override(struct page *page,
- 			 * hypercall actually returned an error.
- 			 */
- 			if (kmap_op->handle == GNTST_general_error) {
--				printk(KERN_WARNING "m2p_remove_override: "
--						"pfn %lx mfn %lx, failed to modify kernel mappings",
--						pfn, mfn);
-+				pr_warn("m2p_remove_override: pfn %lx mfn %lx, failed to modify kernel mappings",
-+					pfn, mfn);
- 				put_balloon_scratch_page();
- 				return -1;
- 			}
-@@ -1112,14 +1111,14 @@ int m2p_remove_override(struct page *page,
- 			xen_mc_batch();
++	m2p_override_init();
++	return (unsigned long)mfn_list;
+ }
+ #else
+ unsigned long __init xen_revector_p2m_tree(void)
+ {
+ 	use_brk = 0;
++	m2p_override_init();
+ 	return 0;
+ }
+ #endif
+@@ -796,15 +796,16 @@ bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+ #define M2P_OVERRIDE_HASH_SHIFT	10
+ #define M2P_OVERRIDE_HASH	(1 << M2P_OVERRIDE_HASH_SHIFT)
  
- 			mcs = __xen_mc_entry(
--					sizeof(struct gnttab_unmap_and_replace));
-+				sizeof(struct gnttab_unmap_and_replace));
- 			unmap_op = mcs.args;
- 			unmap_op->host_addr = kmap_op->host_addr;
- 			unmap_op->new_addr = scratch_page_address;
- 			unmap_op->handle = kmap_op->handle;
+-static RESERVE_BRK_ARRAY(struct list_head, m2p_overrides, M2P_OVERRIDE_HASH);
++static struct list_head *m2p_overrides;
+ static DEFINE_SPINLOCK(m2p_override_lock);
  
- 			MULTI_grant_table_op(mcs.mc,
--					GNTTABOP_unmap_and_replace, unmap_op, 1);
-+				GNTTABOP_unmap_and_replace, unmap_op, 1);
+ static void __init m2p_override_init(void)
+ {
+ 	unsigned i;
  
- 			mcs = __xen_mc_entry(0);
- 			MULTI_update_va_mapping(mcs.mc, scratch_page_address,
+-	m2p_overrides = extend_brk(sizeof(*m2p_overrides) * M2P_OVERRIDE_HASH,
+-				   sizeof(unsigned long));
++	m2p_overrides = alloc_bootmem_align(
++				sizeof(*m2p_overrides) * M2P_OVERRIDE_HASH,
++				sizeof(unsigned long));
+ 
+ 	for (i = 0; i < M2P_OVERRIDE_HASH; i++)
+ 		INIT_LIST_HEAD(&m2p_overrides[i]);
+@@ -932,10 +933,14 @@ EXPORT_SYMBOL_GPL(set_foreign_p2m_mapping);
+ static struct page *m2p_find_override(unsigned long mfn)
+ {
+ 	unsigned long flags;
+-	struct list_head *bucket = &m2p_overrides[mfn_hash(mfn)];
++	struct list_head *bucket;
+ 	struct page *p, *ret;
+ 
++	if (unlikely(!m2p_overrides))
++		return NULL;
++
+ 	ret = NULL;
++	bucket = &m2p_overrides[mfn_hash(mfn)];
+ 
+ 	spin_lock_irqsave(&m2p_override_lock, flags);
+ 
 -- 
 2.1.2
 
