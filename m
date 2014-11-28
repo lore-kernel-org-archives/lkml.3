@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621AbaK1B1X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 20:27:23 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:64335 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580AbaK1B1S (ORCPT
+	id S1751684AbaK1B1m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 20:27:42 -0500
+Received: from mail-oi0-f53.google.com ([209.85.218.53]:36104 "EHLO
+	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751587AbaK1B1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 20:27:18 -0500
+	Thu, 27 Nov 2014 20:27:20 -0500
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Linus Walleij <linus.walleij@linaro.org>
 Cc: =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
@@ -18,467 +18,192 @@ Cc: =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
         "Ivan T. Ivanov" <iivanov@mm-sol.com>,
         Bjorn Andersson <bjorn.andersson@sonymobile.com>,
         Beniamino Galvani <b.galvani@gmail.com>
-Subject: [PATCH v2 6/7] ARM: zynq: DT: Add pinctrl information
-Date: Thu, 27 Nov 2014 17:26:32 -0800
-Message-Id: <1417137993-8337-7-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH v2 7/7] pinctrl: qcom-spmi-gpio: Migrate to pinconf-generic
+Date: Thu, 27 Nov 2014 17:26:33 -0800
+Message-Id: <1417137993-8337-8-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 2.1.3.1.ge241007
 In-Reply-To: <1417137993-8337-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1417137993-8337-1-git-send-email-soren.brinkmann@xilinx.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add pinctrl descriptions to the zc702 and zc706 device trees.
+Instead of the driver caring about implementation details like device
+tree, just provide information about driver specific pinconf parameters
+to pinconf-generic which takes care of parsing the DT.
 
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Tested-by: Andreas Färber <afaerber@suse.de>
 ---
-Changes since v1:
- - remove 'pinctrl-' prefix for pinctrl sub-nodes
- - separate config and mux nodes
-
-Changes since RFC v2:
- - add pinconf properties to zc702 mdio node
- - remove arguments from bias-related props
-
-Changes since RFC v1:
- - separate DT changes into their own patch
+This is compile tested only. So, it's likely that it needs more tweaking
+to make it actually work on HW. But it illustrates the potential
+benefits of the pinconf-generic changes in this series.
 ---
- arch/arm/boot/dts/zynq-7000.dtsi |   8 +-
- arch/arm/boot/dts/zynq-zc702.dts | 181 +++++++++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/zynq-zc706.dts | 152 ++++++++++++++++++++++++++++++++
- 3 files changed, 340 insertions(+), 1 deletion(-)
+ drivers/pinctrl/qcom/pinctrl-spmi-gpio.c | 125 +++----------------------------
+ 1 file changed, 11 insertions(+), 114 deletions(-)
 
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index 24036c440440..37d7fe36a129 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -238,7 +238,7 @@
- 		slcr: slcr@f8000000 {
- 			#address-cells = <1>;
- 			#size-cells = <1>;
--			compatible = "xlnx,zynq-slcr", "syscon";
-+			compatible = "xlnx,zynq-slcr", "syscon", "simple-bus";
- 			reg = <0xF8000000 0x1000>;
- 			ranges;
- 			clkc: clkc@100 {
-@@ -259,6 +259,12 @@
- 						"dbg_trc", "dbg_apb";
- 				reg = <0x100 0x100>;
- 			};
-+
-+			pinctrl0: pinctrl@700 {
-+				compatible = "xlnx,pinctrl-zynq";
-+				reg = <0x700 0x200>;
-+				syscon = <&slcr>;
-+			};
- 		};
- 
- 		dmac_s: dmac@f8003000 {
-diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
-index 94e2cda6f9b6..1e3d800e5b2e 100644
---- a/arch/arm/boot/dts/zynq-zc702.dts
-+++ b/arch/arm/boot/dts/zynq-zc702.dts
-@@ -40,21 +40,32 @@
- 
- &can0 {
- 	status = "okay";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_can0_default>;
+diff --git a/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c b/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
+index b863b5080890..2db85e53ef73 100644
+--- a/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
++++ b/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
+@@ -131,14 +131,14 @@ struct pmic_gpio_state {
+ 	struct gpio_chip chip;
  };
  
- &gem0 {
- 	status = "okay";
- 	phy-mode = "rgmii-id";
- 	phy-handle = <&ethernet_phy>;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_gem0_default>;
- 
- 	ethernet_phy: ethernet-phy@7 {
- 		reg = <7>;
- 	};
+-struct pmic_gpio_bindings {
+-	const char	*property;
+-	unsigned	param;
++static const struct pinconf_generic_dt_params pmic_gpio_bindings[] = {
++	{"qcom,pull-up-strength",	PMIC_GPIO_CONF_PULL_UP,		0},
++	{"qcom,drive-strength",		PMIC_GPIO_CONF_STRENGTH,	0},
  };
  
-+&gpio0 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_gpio0_default>;
-+};
-+
- &i2c0 {
- 	status = "okay";
- 	clock-frequency = <400000>;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_i2c0_default>;
- 
- 	i2cswitch@74 {
- 		compatible = "nxp,pca9548";
-@@ -128,10 +139,180 @@
- 	};
+-static struct pmic_gpio_bindings pmic_gpio_bindings[] = {
+-	{"qcom,pull-up-strength",	PMIC_GPIO_CONF_PULL_UP},
+-	{"qcom,drive-strength",		PMIC_GPIO_CONF_STRENGTH},
++static const struct pin_config_item pmic_conf_items[] = {
++	PCONFDUMP(PMIC_GPIO_CONF_PULL_UP,  "pull-up-strength", NULL, true),
++	PCONFDUMP(PMIC_GPIO_CONF_STRENGTH, "drive-strength", NULL, true),
  };
  
-+&pinctrl0 {
-+	pinctrl_can0_default: can0-default {
-+		mux {
-+			function = "can0";
-+			groups = "can0_9_grp";
-+		};
-+
-+		conf {
-+			groups = "can0_9_grp";
-+			slew-rate = <0>;
-+			io-standard = <1>;
-+		};
-+
-+		conf-rx {
-+			pins = "MIO46";
-+			bias-high-impedance;
-+		};
-+
-+		conf-tx {
-+			pins = "MIO47";
-+			bias-disable;
-+		};
-+	};
-+
-+	pinctrl_gem0_default: gem0-default {
-+		mux {
-+			function = "ethernet0";
-+			groups = "ethernet0_0_grp";
-+		};
-+
-+		conf {
-+			groups = "ethernet0_0_grp";
-+			slew-rate = <0>;
-+			io-standard = <4>;
-+		};
-+
-+		conf-rx {
-+			pins = "MIO22", "MIO23", "MIO24", "MIO25", "MIO26", "MIO27";
-+			bias-high-impedance;
-+			low-power-disable;
-+		};
-+
-+		conf-tx {
-+			pins = "MIO16", "MIO17", "MIO18", "MIO19", "MIO20", "MIO21";
-+			bias-disable;
-+			low-power-enable;
-+		};
-+
-+		mux-mdio {
-+			function = "mdio0";
-+			groups = "mdio0_0_grp";
-+		};
-+
-+		conf-mdio {
-+			groups = "mdio0_0_grp";
-+			slew-rate = <0>;
-+			io-standard = <1>;
-+			bias-disable;
-+		};
-+	};
-+
-+	pinctrl_gpio0_default: gpio0-default {
-+		mux {
-+			function = "gpio0";
-+			groups = "gpio0_7_grp", "gpio0_8_grp", "gpio0_9_grp",
-+				 "gpio0_10_grp", "gpio0_11_grp", "gpio0_12_grp",
-+				 "gpio0_13_grp", "gpio0_14_grp";
-+		};
-+
-+		conf {
-+			groups = "gpio0_7_grp", "gpio0_8_grp", "gpio0_9_grp",
-+				 "gpio0_10_grp", "gpio0_11_grp", "gpio0_12_grp",
-+				 "gpio0_13_grp", "gpio0_14_grp";
-+			slew-rate = <0>;
-+			io-standard = <1>;
-+		};
-+
-+		conf-pull-up {
-+			pins = "MIO9", "MIO10", "MIO11", "MIO12", "MIO13", "MIO14";
-+			bias-pull-up;
-+		};
-+
-+		conf-pull-none {
-+			pins = "MIO7", "MIO8";
-+			bias-disable;
-+		};
-+	};
-+
-+	pinctrl_i2c0_default: i2c0-default {
-+		mux {
-+			groups = "i2c0_10_grp";
-+			function = "i2c0";
-+		};
-+
-+		conf {
-+			groups = "i2c0_10_grp";
-+			bias-pull-up;
-+			slew-rate = <0>;
-+			io-standard = <1>;
-+		};
-+	};
-+
-+	pinctrl_sdhci0_default: sdhci0-default {
-+		mux {
-+			groups = "sdio0_2_grp";
-+			function = "sdio0";
-+		};
-+
-+		conf {
-+			groups = "sdio0_2_grp";
-+			slew-rate = <0>;
-+			io-standard = <1>;
-+			bias-disable;
-+		};
-+
-+		mux-cd {
-+			groups = "gpio0_0_grp";
-+			function = "sdio0_cd";
-+		};
-+
-+		conf-cd {
-+			groups = "gpio0_0_grp";
-+			bias-high-impedance;
-+			bias-pull-up;
-+			slew-rate = <0>;
-+			io-standard = <1>;
-+		};
-+
-+		mux-wp {
-+			groups = "gpio0_15_grp";
-+			function = "sdio0_wp";
-+		};
-+
-+		conf-wp {
-+			groups = "gpio0_15_grp";
-+			bias-high-impedance;
-+			bias-pull-up;
-+			slew-rate = <0>;
-+			io-standard = <1>;
-+		};
-+	};
-+
-+	pinctrl_uart1_default: uart1-default {
-+		mux {
-+			groups = "uart1_10_grp";
-+			function = "uart1";
-+		};
-+
-+		conf {
-+			groups = "uart1_10_grp";
-+			slew-rate = <0>;
-+			io-standard = <1>;
-+		};
-+
-+		conf-rx {
-+			pins = "MIO49";
-+			bias-high-impedance;
-+		};
-+
-+		conf-tx {
-+			pins = "MIO48";
-+			bias-disable = <0>;
-+		};
-+	};
-+};
-+
- &sdhci0 {
- 	status = "okay";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_sdhci0_default>;
+ static const char *const pmic_gpio_groups[] = {
+@@ -209,118 +209,11 @@ static int pmic_gpio_get_group_pins(struct pinctrl_dev *pctldev, unsigned pin,
+ 	return 0;
+ }
+ 
+-static int pmic_gpio_parse_dt_config(struct device_node *np,
+-				     struct pinctrl_dev *pctldev,
+-				     unsigned long **configs,
+-				     unsigned int *nconfs)
+-{
+-	struct pmic_gpio_bindings *par;
+-	unsigned long cfg;
+-	int ret, i;
+-	u32 val;
+-
+-	for (i = 0; i < ARRAY_SIZE(pmic_gpio_bindings); i++) {
+-		par = &pmic_gpio_bindings[i];
+-		ret = of_property_read_u32(np, par->property, &val);
+-
+-		/* property not found */
+-		if (ret == -EINVAL)
+-			continue;
+-
+-		/* use zero as default value */
+-		if (ret)
+-			val = 0;
+-
+-		dev_dbg(pctldev->dev, "found %s with value %u\n",
+-			par->property, val);
+-
+-		cfg = pinconf_to_config_packed(par->param, val);
+-
+-		ret = pinctrl_utils_add_config(pctldev, configs, nconfs, cfg);
+-		if (ret)
+-			return ret;
+-	}
+-
+-	return 0;
+-}
+-
+-static int pmic_gpio_dt_subnode_to_map(struct pinctrl_dev *pctldev,
+-				       struct device_node *np,
+-				       struct pinctrl_map **map,
+-				       unsigned *reserv, unsigned *nmaps,
+-				       enum pinctrl_map_type type)
+-{
+-	unsigned long *configs = NULL;
+-	unsigned nconfs = 0;
+-	struct property *prop;
+-	const char *group;
+-	int ret;
+-
+-	ret = pmic_gpio_parse_dt_config(np, pctldev, &configs, &nconfs);
+-	if (ret < 0)
+-		return ret;
+-
+-	if (!nconfs)
+-		return 0;
+-
+-	ret = of_property_count_strings(np, "pins");
+-	if (ret < 0)
+-		goto exit;
+-
+-	ret = pinctrl_utils_reserve_map(pctldev, map, reserv, nmaps, ret);
+-	if (ret < 0)
+-		goto exit;
+-
+-	of_property_for_each_string(np, "pins", prop, group) {
+-		ret = pinctrl_utils_add_map_configs(pctldev, map,
+-						    reserv, nmaps, group,
+-						    configs, nconfs, type);
+-		if (ret < 0)
+-			break;
+-	}
+-exit:
+-	kfree(configs);
+-	return ret;
+-}
+-
+-static int pmic_gpio_dt_node_to_map(struct pinctrl_dev *pctldev,
+-				    struct device_node *np_config,
+-				    struct pinctrl_map **map, unsigned *nmaps)
+-{
+-	enum pinctrl_map_type type;
+-	struct device_node *np;
+-	unsigned reserv;
+-	int ret;
+-
+-	ret = 0;
+-	*map = NULL;
+-	*nmaps = 0;
+-	reserv = 0;
+-	type = PIN_MAP_TYPE_CONFIGS_GROUP;
+-
+-	for_each_child_of_node(np_config, np) {
+-		ret = pinconf_generic_dt_subnode_to_map(pctldev, np, map,
+-							&reserv, nmaps, type);
+-		if (ret)
+-			break;
+-
+-		ret = pmic_gpio_dt_subnode_to_map(pctldev, np, map, &reserv,
+-						  nmaps, type);
+-		if (ret)
+-			break;
+-	}
+-
+-	if (ret < 0)
+-		pinctrl_utils_dt_free_map(pctldev, *map, *nmaps);
+-
+-	return ret;
+-}
+-
+ static const struct pinctrl_ops pmic_gpio_pinctrl_ops = {
+ 	.get_groups_count	= pmic_gpio_get_groups_count,
+ 	.get_group_name		= pmic_gpio_get_group_name,
+ 	.get_group_pins		= pmic_gpio_get_group_pins,
+-	.dt_node_to_map		= pmic_gpio_dt_node_to_map,
++	.dt_node_to_map		= pinconf_generic_dt_node_to_map_group,
+ 	.dt_free_map		= pinctrl_utils_dt_free_map,
  };
  
- &uart1 {
- 	status = "okay";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_uart1_default>;
- };
-diff --git a/arch/arm/boot/dts/zynq-zc706.dts b/arch/arm/boot/dts/zynq-zc706.dts
-index a8bbdfbc7093..1ae78766d926 100644
---- a/arch/arm/boot/dts/zynq-zc706.dts
-+++ b/arch/arm/boot/dts/zynq-zc706.dts
-@@ -33,15 +33,24 @@
- 	status = "okay";
- 	phy-mode = "rgmii-id";
- 	phy-handle = <&ethernet_phy>;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_gem0_default>;
+@@ -590,6 +483,7 @@ static void pmic_gpio_config_dbg_show(struct pinctrl_dev *pctldev,
+ }
  
- 	ethernet_phy: ethernet-phy@7 {
- 		reg = <7>;
- 	};
- };
+ static const struct pinconf_ops pmic_gpio_pinconf_ops = {
++	.is_generic			= true,
+ 	.pin_config_group_get		= pmic_gpio_config_get,
+ 	.pin_config_group_set		= pmic_gpio_config_set,
+ 	.pin_config_group_dbg_show	= pmic_gpio_config_dbg_show,
+@@ -848,6 +742,9 @@ static int pmic_gpio_probe(struct platform_device *pdev)
+ 	pctrldesc->name = dev_name(dev);
+ 	pctrldesc->pins = pindesc;
+ 	pctrldesc->npins = npins;
++	pctrldesc->num_dt_params = ARRAY_SIZE(pmic_gpio_bindings);
++	pctrldesc->params = pmic_gpio_bindings;
++	pctrldesc->conf_items = pmic_conf_items;
  
-+&gpio0 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_gpio0_default>;
-+};
-+
- &i2c0 {
- 	status = "okay";
- 	clock-frequency = <400000>;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_i2c0_default>;
- 
- 	i2cswitch@74 {
- 		compatible = "nxp,pca9548";
-@@ -107,10 +116,153 @@
- 	};
- };
- 
-+&pinctrl0 {
-+	pinctrl_gem0_default: gem0-default {
-+		mux {
-+			function = "ethernet0";
-+			groups = "ethernet0_0_grp";
-+		};
-+
-+		conf {
-+			groups = "ethernet0_0_grp";
-+			slew-rate = <0>;
-+			io-standard = <4>;
-+		};
-+
-+		conf-rx {
-+			pins = "MIO22", "MIO23", "MIO24", "MIO25", "MIO26", "MIO27";
-+			bias-high-impedance;
-+			low-power-disable;
-+		};
-+
-+		conf-tx {
-+			pins = "MIO16", "MIO17", "MIO18", "MIO19", "MIO20", "MIO21";
-+			low-power-enable;
-+			bias-disable;
-+		};
-+
-+		mux-mdio {
-+			function = "mdio0";
-+			groups = "mdio0_0_grp";
-+		};
-+
-+		conf-mdio {
-+			groups = "mdio0_0_grp";
-+			slew-rate = <0>;
-+			io-standard = <1>;
-+			bias-disable;
-+		};
-+	};
-+
-+	pinctrl_gpio0_default: gpio0-default {
-+		mux {
-+			function = "gpio0";
-+			groups = "gpio0_7_grp", "gpio0_46_grp", "gpio0_47_grp";
-+		};
-+
-+		conf {
-+			groups = "gpio0_7_grp", "gpio0_46_grp", "gpio0_47_grp";
-+			slew-rate = <0>;
-+			io-standard = <1>;
-+		};
-+
-+		conf-pull-up {
-+			pins = "MIO46", "MIO47";
-+			bias-pull-up;
-+		};
-+
-+		conf-pull-none {
-+			pins = "MIO7";
-+			bias-disable;
-+		};
-+	};
-+
-+	pinctrl_i2c0_default: i2c0-default {
-+		mux {
-+			groups = "i2c0_10_grp";
-+			function = "i2c0";
-+		};
-+
-+		conf {
-+			groups = "i2c0_10_grp";
-+			bias-pull-up;
-+			slew-rate = <0>;
-+			io-standard = <1>;
-+		};
-+	};
-+
-+	pinctrl_sdhci0_default: sdhci0-default {
-+		mux {
-+			groups = "sdio0_2_grp";
-+			function = "sdio0";
-+		};
-+
-+		conf {
-+			groups = "sdio0_2_grp";
-+			slew-rate = <0>;
-+			io-standard = <1>;
-+			bias-disable;
-+		};
-+
-+		mux-cd {
-+			groups = "gpio0_14_grp";
-+			function = "sdio0_cd";
-+		};
-+
-+		conf-cd {
-+			groups = "gpio0_14_grp";
-+			bias-high-impedance;
-+			bias-pull-up;
-+			slew-rate = <0>;
-+			io-standard = <1>;
-+		};
-+
-+		mux-wp {
-+			groups = "gpio0_15_grp";
-+			function = "sdio0_wp";
-+		};
-+
-+		conf-wp {
-+			groups = "gpio0_15_grp";
-+			bias-high-impedance;
-+			bias-pull-up;
-+			slew-rate = <0>;
-+			io-standard = <1>;
-+		};
-+	};
-+
-+	pinctrl_uart1_default: uart1-default {
-+		mux {
-+			groups = "uart1_10_grp";
-+			function = "uart1";
-+		};
-+
-+		conf {
-+			groups = "uart1_10_grp";
-+			slew-rate = <0>;
-+			io-standard = <1>;
-+		};
-+
-+		conf-rx {
-+			pins = "MIO49";
-+			bias-high-impedance;
-+		};
-+
-+		conf-tx {
-+			pins = "MIO48";
-+			bias-disable;
-+		};
-+	};
-+};
-+
- &sdhci0 {
- 	status = "okay";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_sdhci0_default>;
- };
- 
- &uart1 {
- 	status = "okay";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_uart1_default>;
- };
+ 	for (i = 0; i < npins; i++, pindesc++) {
+ 		pad = &pads[i];
 -- 
 2.1.3.1.ge241007
 
