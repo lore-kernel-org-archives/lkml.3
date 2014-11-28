@@ -1,92 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaK1Wlw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 17:41:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55168 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354AbaK1Wlv (ORCPT
+	id S1751564AbaK1Wl4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 17:41:56 -0500
+Received: from sender1.zohomail.com ([74.201.84.155]:30580 "EHLO
+	sender1.zohomail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522AbaK1Wly convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 17:41:51 -0500
-Date: Fri, 28 Nov 2014 14:40:28 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PULL] USB driver fixes for 3.18-rc7
-Message-ID: <20141128224028.GA29538@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 28 Nov 2014 17:41:54 -0500
+Content-Type: text/plain; charset=iso-8859-1
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [RFC PATCH 1/3] Add generic TrustZone driver
+From: =?iso-8859-1?Q?Javier_Gonz=E1lez?= <javier@javigon.com>
+In-Reply-To: <20141128221650.GB27558@kroah.com>
+Date: Fri, 28 Nov 2014 23:41:34 +0100
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        joshc@codeaurora.org, johannes.thumshirn@men.de,
+        kheitke@codeaurora.org, laurent.pinchart+renesas@ideasonboard.com,
+        geert+renesas@glider.be, horms+renesas@verge.net.au,
+        damm@opensource.se, tomi.valkeinen@ti.com, mbohan@codeaurora.org,
+        michal.simek@xilinx.com, pawel.moll@arm.com, Andrew.Thoelke@arm.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <691C0972-DFA7-4044-A025-5843C73A546B@javigon.com>
+References: <1417187016-7731-1-git-send-email-javier@javigon.com> <1417187016-7731-2-git-send-email-javier@javigon.com> <20141128191507.GA7804@kroah.com> <C14B741B-C303-419E-81FB-250D1FDC2D45@javigon.com> <20141128221650.GB27558@kroah.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+X-Mailer: Apple Mail (2.1878.6)
+X-ZohoMailClient: External
+X-Zoho-Virus-Status: 2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 206c5f60a3d902bc4b56dab2de3e88de5eb06108:
+Hi,
 
-  Linux 3.18-rc4 (2014-11-09 14:55:29 -0800)
+On 28 Nov 2014, at 23:16, Greg KH <gregkh@linuxfoundation.org> wrote:
 
-are available in the git repository at:
+> On Fri, Nov 28, 2014 at 10:09:55PM +0100, Javier González wrote:
+>> Thanks for your comments. I hope that you find the time to look deeper
+>> in the code.
+> 
+> With my workload, I don't have time to look at anything that people are
+> not actually submitting to be applied to the kernel tree at that point
+> in time, sorry.
+> 
+I respect that. Thanks for your time :)
+I hope I can come back with an upstreameable driver soon.
+Best,
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.18-rc7
+Javier.
 
-for you to fetch changes up to 263e80b43559a6103e178a9176938ce171b23872:
+> greg k-h
 
-  usb-quirks: Add reset-resume quirk for MS Wireless Laser Mouse 6000 (2014-11-24 17:01:55 -0800)
 
-----------------------------------------------------------------
-USB fixes for 3.18-rc7
-
-Here are some USB driver fixes and new device ids for 3.18-rc7.
-
-Full details are in the shortlog, and all of these have been in the
-linux-next tree for a while.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-----------------------------------------------------------------
-Felipe Balbi (1):
-      usb: dwc3: ep0: fix for dead code
-
-Greg Kroah-Hartman (2):
-      Merge tag 'fixes-for-v3.18-rc5' of git://git.kernel.org/.../balbi/usb into usb-linus
-      Merge tag 'usb-serial-3.18-rc6' of git://git.kernel.org/.../johan/usb-serial into usb-linus
-
-Hans de Goede (2):
-      USB: uas: Add no-uas quirk for Hitachi usb-3 enclosures 4971:1012
-      usb-quirks: Add reset-resume quirk for MS Wireless Laser Mouse 6000
-
-Johan Hovold (3):
-      USB: keyspan: fix tty line-status reporting
-      USB: keyspan: fix overrun-error reporting
-      USB: ssu100: fix overrun-error reporting
-
-Lu Baolu (2):
-      Revert "xhci: clear root port wake on bits if controller isn't wake-up capable"
-      usb: xhci: rework root port wake bits if controller isn't allowed to wakeup
-
-Mathias Nyman (2):
-      USB: xhci: don't start a halted endpoint before its new dequeue is set
-      USB: xhci: Reset a halted endpoint immediately when we encounter a stall.
-
-Preston Fick (1):
-      USB: serial: cp210x: add IDs for CEL MeshConnect USB Stick
-
-Troy Clark (1):
-      usb: serial: ftdi_sio: add PIDs for Matrix Orbital products
-
- drivers/usb/core/quirks.c         |   3 ++
- drivers/usb/dwc3/ep0.c            |   8 +--
- drivers/usb/host/xhci-hub.c       |   5 +-
- drivers/usb/host/xhci-pci.c       |   2 +-
- drivers/usb/host/xhci-plat.c      |  10 +++-
- drivers/usb/host/xhci-ring.c      |  43 ++++-----------
- drivers/usb/host/xhci.c           | 107 ++++++++++++++++++++------------------
- drivers/usb/host/xhci.h           |   2 +-
- drivers/usb/serial/cp210x.c       |   1 +
- drivers/usb/serial/ftdi_sio.c     |  33 ++++++++++++
- drivers/usb/serial/ftdi_sio_ids.h |  39 ++++++++++++--
- drivers/usb/serial/keyspan.c      |  97 ++++++++++++++++++++--------------
- drivers/usb/serial/ssu100.c       |  11 ++--
- drivers/usb/storage/unusual_uas.h |   7 +++
- 14 files changed, 224 insertions(+), 144 deletions(-)
