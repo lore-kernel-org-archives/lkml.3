@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751593AbaK1PHz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 10:07:55 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:42154 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198AbaK1PHx (ORCPT
+	id S1751348AbaK1PIt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 10:08:49 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:57499 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919AbaK1PIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 10:07:53 -0500
-Date: Fri, 28 Nov 2014 15:07:29 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene@kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Message-ID: <20141128150729.GP7712@sirena.org.uk>
-References: <1417087253-12306-1-git-send-email-k.kozlowski@samsung.com>
- <1417087253-12306-5-git-send-email-k.kozlowski@samsung.com>
- <20141127184342.GC7712@sirena.org.uk>
- <1417170655.18249.24.camel@AMDC1943>
- <20141128113859.GH7712@sirena.org.uk>
- <1417184044.18249.39.camel@AMDC1943>
+	Fri, 28 Nov 2014 10:08:48 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 RESEND 1/2] ARM: vexpress: Remove non-DT code
+Date: Fri, 28 Nov 2014 16:08:34 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: Pawel Moll <pawel.moll@arm.com>, arm@kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Liviu Dudau <liviu.dudau@arm.com>, linux-kernel@vger.kernel.org,
+        Sudeep Holla <sudeep.holla@arm.com>
+References: <1416939455-1814-1-git-send-email-pawel.moll@arm.com>
+In-Reply-To: <1416939455-1814-1-git-send-email-pawel.moll@arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5YTekl7Q9pOfbcU3"
-Content-Disposition: inline
-In-Reply-To: <1417184044.18249.39.camel@AMDC1943>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4 4/7] regulator: Use ena_gpio supplied with generic
- regulator bindings
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201411281608.34978.arnd@arndb.de>
+X-Provags-ID: V02:K0:iZ2ifApYmTjJHqfR20qSR9f2aS0KufFd5d9J4nSGFQf
+ C9obr6OsjE3zknT9bvOO7pR8n7ckwQ67OTd6QxRJ9fGDCg4y0w
+ c/MS/uF4vcrcZOTz5CksN+WIW6n32hOtPfjczRZ74RtFZQEz0o
+ FdXUk1/SYChyWMlISrxgJESJxXj8dClllvTpkzyU+A+Tv/Xorc
+ zmBndR+q1mU4puIu61acoU2E7MNIDcTj5HDZLjRe1jYEGlyuQV
+ dIdHjQ/qfeJT7IsoN6SLUxK+zmYqA5YIvw7gnSybgndXxXznAg
+ hwJ3sBIZjCpiUpt2HJ/kwZnlCjg3VeaT+TFspvDyZD73f+95da
+ /21F82V/yNEbxYtPechj3dh3cphCkzvjgXCo91jxi
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 25 November 2014, Pawel Moll wrote:
+> Now, with the CLCD DT support available, there is no
+> more reason to keep the non-DT support for V2P-CA9.
+> 
+> Removed, together with "some" supporting code. It was
+> necessary to make PLAT_VERSATILE_SCHED_CLOCK optional
+> and selected by the machines still interested in it.
+> 
+> Acked-by: Mike Turquette <mturquette@linaro.org>
+> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> ---
+> Changes since v1:
+> 
+> - Removed MFD and power/reset changes from the patch;
+>   will be posted separately after this is merged.
 
---5YTekl7Q9pOfbcU3
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Applied to next/cleanup, thanks!
 
-On Fri, Nov 28, 2014 at 03:14:04PM +0100, Krzysztof Kozlowski wrote:
-> On pi=C4=85, 2014-11-28 at 11:38 +0000, Mark Brown wrote:
-
-> > This sort of thing is a sign that we're not saving much by moving the
-> > parsing to the core and perhaps there's more flexiblity here...=20
-
-> The driver receive callbacks (or exposes other kind of interface) for
-> other core-generalized code. Recent example is parsing regulator mode
-> (added by Javier) and .of_map_mode() callback.
-
-Right, but that's actually doing some device specific translation and
-successfully factoring out the bulk of the code - the fact that it's
-taking parameters and returning data is a good sign.  This is a callback
-placed randomly away from any other related code (adding to the
-confusion - it's not integrated into the rest of the flow around this at
-all) without a clear purpose.
-
-> I thought how to do this without this additional set_ena_gpio() call.
-> One way would be to extend the regulator modes (FAST/IDLE/STANDBY/ and
-> GPIO) but this would look somehow unnatural.
-
-Yes, that's absolutely hideous.
-
---5YTekl7Q9pOfbcU3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUeI+xAAoJECTWi3JdVIfQwhwH/1CrTJZXExrRsl5sFVkCURuQ
-pyRP5xBkiVsZ1fTL4Y/em9spw7tfbx2/iA43qcLyo8YyWN309vVQWcUaVcts2ulg
-TCPAVgVb8EUfrrqPJddIVxCKqURz0qGwdGJFmJvsswG4S6rN9fvN2j8VHTTKstEb
-i0QPy91wNNNl8l12+SGJinE8heOgnXiiplUzDhxtunq+MRZCQdTNoPoeEWRr9pic
-4vYdwTrnwRg/GDd2E+Qdl4lSHaO2BDsmRX4sUlBlD95BIi8MfDOOCAoxmumoUQiU
-FOJqdSvQhkvbXGK/hhTkrTi1DXXYxMNQaCWnDpV+oHvs9D7dDyR2t8b8pkgPxYY=
-=1wcJ
------END PGP SIGNATURE-----
-
---5YTekl7Q9pOfbcU3--
+	Arnd
