@@ -1,58 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540AbaK1Jw7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 04:52:59 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:36080 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750994AbaK1Jw4 (ORCPT
+	id S1751770AbaK1JxW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 04:53:22 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:35352 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751559AbaK1JxS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 04:52:56 -0500
-X-Greylist: delayed 2974 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Nov 2014 04:52:55 EST
-Message-ID: <54783A2F.5010405@arm.com>
-Date: Fri, 28 Nov 2014 09:02:39 +0000
-From: Andrew Jackson <Andrew.Jackson@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 28 Nov 2014 04:53:18 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Caesar Wang <caesar.wang@rock-chips.com>, khilman@kernel.org,
+        tfiga@chromium.org
+Cc: linus.walleij@linaro.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        linux-doc@vger.kernel.org, dianders@chromium.org,
+        linux-rockchip@lists.infradead.org,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>, fzf@rock-chips.com,
+        cf@rock-chips.com, chris.zhong@rock-chips.com, xxm@rock-chips.com,
+        chm@rock-chips.com, djkurtz@chromium.org,
+        "jinkun.hong" <jinkun.hong@rock-chips.com>,
+        Jack Dai <jack.dai@rock-chips.com>
+Subject: Re: [PATCH v12 0/3] ARM: rk3288: Add PM Domain support
+Date: Fri, 28 Nov 2014 10:57 +0100
+Message-ID: <1454366.cVgT9MeyeC@diego>
+User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <1416217842-4716-1-git-send-email-caesar.wang@rock-chips.com>
+References: <1416217842-4716-1-git-send-email-caesar.wang@rock-chips.com>
 MIME-Version: 1.0
-To: Jean-Francois Moine <moinejf@free.fr>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Dave Airlie <airlied@gmail.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] drm: i2c: tda998x: Retry fetching the EDID if it fails
- first time.
-References: <546B84C6.3090809@arm.com> <20141128091905.3e491c39@armhf>
-In-Reply-To: <20141128091905.3e491c39@armhf>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/14 08:19, Jean-Francois Moine wrote:
-> On Tue, 18 Nov 2014 17:41:26 +0000
-> Andrew Jackson <Andrew.Jackson@arm.com> wrote:
+Am Montag, 17. November 2014, 17:50:38 schrieb Caesar Wang:
+>     Add power domain drivers based on generic power domain for
+>     Rockchip platform, and support RK3288.
 > 
->> Fetching the EDID from a connected monitor is an automated thing
->> with NXP TDA19988. But on some boards the fetching fails for the
->> first time silently without any indication that an error has occured.
->> More than that, subsequent fetches of the EDID succeed until the
->> monitor(s) are unplugged.
->>
->> Add a function to validate the read EDID and retry if the block
->> retrieved is not valid.
->>
->> Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
->> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> 
-> It seems that your patch is deprecated by Laurent Pinchart's
-> 	[PATCH] drm: tda998x: Use drm_do_get_edid()
-> http://lists.freedesktop.org/archives/dri-devel/2014-November/072906.html
-> 
+>     https://chromium-review.googlesource.com/#/c/220253/9
+>     This is the GPU driver, add the following information in DT,
+>     and it can support the PMDOMAIN
 
-Thank you for the heads-up, I'd not seen that.  I'll consider how my patch might be modified to suit the new infrastructure.
+I'm not sure what to do with this series. Kevin had concerns about the clocks 
+being part of the power-domains and I don't see them actually addressed and/or 
+Kevin being satisfied - actually he isn't even on the recipients list of this 
+version of the series.
 
-    Andrew
+
+@Ceasar: you should include people being part of important previous 
+conversations in new versions of patchsets - especially when they have voiced 
+concerns.
+
+
+I've added Tomasz whom I remember having previous experience on the Exynos 
+Powerdomains, so maybe he can add some other perspective - new ideas.
+
+
+@Tomasz: this is the part of Kevin's concerns from v10 of the powerdomain 
+series:
+
+Am Donnerstag, 13. November 2014, 12:24:47 schrieben Kevin Hilman:
+> Heiko Stübner <heiko@sntech.de> writes:
+> > Am Dienstag, 11. November 2014, 08:53:13 schrieb Kevin Hilman:
+> >> I still don't like having lists of clocks in the power-domain DT.
+> >> 
+> >> DT is supposed to describe the hardware, and clocks are properties of
+> >> devices, not power-domains, so the DT description should follow from
+> >> that.
+> > 
+> > on the policy side one could argue that if the clock needs to be enabled
+> > to
+> > achieve sucessful domain state-changes, that it is also a property of the
+> > domain itself in addition to the device.
+> 
+> You could, but from a hardware perspective, the clock is a property of
+> the device.
+> 
+> > And on the pratical side we don't have drivers nor bindings for a big part
+> > of the domain users - and this will probably be true for quite some time.
+> > This of course makes it very impractical (or impossible) to collect the
+> > clocks for parts like the gpu (mali), hevc, vcodec (video
+> > encoder/decoder), rga (2d stuff), iep, isp.
+> 
+> This doesn't sound impossible at all.
+> 
+> You have to collect the clocks anyways.  The only debate is whether to
+> list them in the device node or the power-domain node.
+> 
+> Even for devices without drivers, you just need a minimal node in the DT if
+> which lists the clocks and has a phandle to the parent power domain.
+> 
+> Sounds rather simple to me, and since the DT is supposed to describe the
+> hardware, doing it this way makes looking at the DT actually help
+> understand the hardware.
 
