@@ -1,293 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590AbaK1Lef (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 06:34:35 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:54373 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222AbaK1Led (ORCPT
+	id S1751183AbaK1LjW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 06:39:22 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41859 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902AbaK1LjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 06:34:33 -0500
-Date: Fri, 28 Nov 2014 11:34:28 +0000
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, mark.rutland@arm.com, robh+dt@kernel.org,
-        plagnioj@jcrosoft.com, ijc@debian.org, andrew@lunn.ch,
-        s.hauer@pengutronix.de
-Subject: Re: [PATCH v3 2/3] of: add optional options parameter to
- of_find_node_by_path()
-Message-ID: <20141128113428.GM2361@bivouac.eciton.net>
-References: <1417110967-16284-1-git-send-email-leif.lindholm@linaro.org>
- <1417110967-16284-3-git-send-email-leif.lindholm@linaro.org>
- <20141128004403.08D90C40A7F@trevor.secretlab.ca>
+	Fri, 28 Nov 2014 06:39:20 -0500
+Date: Fri, 28 Nov 2014 11:38:59 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene@kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Message-ID: <20141128113859.GH7712@sirena.org.uk>
+References: <1417087253-12306-1-git-send-email-k.kozlowski@samsung.com>
+ <1417087253-12306-5-git-send-email-k.kozlowski@samsung.com>
+ <20141127184342.GC7712@sirena.org.uk>
+ <1417170655.18249.24.camel@AMDC1943>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ScuMXZMgs/D5yjJ+"
 Content-Disposition: inline
-In-Reply-To: <20141128004403.08D90C40A7F@trevor.secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1417170655.18249.24.camel@AMDC1943>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4 4/7] regulator: Use ena_gpio supplied with generic
+ regulator bindings
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 28, 2014 at 12:44:03AM +0000, Grant Likely wrote:
-> On Thu, 27 Nov 2014 17:56:06 +0000
-> , Leif Lindholm <leif.lindholm@linaro.org>
->  wrote:
-> > Update of_find_node_by_path():
-> > 1) Rename function to of_find_node_opts_by_path(), adding an optional
-> >    pointer argument. Provide a static inline wrapper version of
-> >    of_find_node_by_path() which calls the new function with NULL as
-> >    the optional argument.
-> > 2) Ignore any part of the path beyond and including the ':' separator.
-> > 3) Set the new provided pointer argument to the beginning of the string
-> >    following the ':' separator.
-> > 4: Add tests.
-> > 
-> > Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-> > ---
-> >  drivers/of/base.c     |   21 +++++++++++++++++----
-> >  drivers/of/selftest.c |   12 ++++++++++++
-> >  include/linux/of.h    |   14 +++++++++++++-
-> >  3 files changed, 42 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/drivers/of/base.c b/drivers/of/base.c
-> > index 3823edf..7f0e5f7 100644
-> > --- a/drivers/of/base.c
-> > +++ b/drivers/of/base.c
-> > @@ -699,10 +699,15 @@ static struct device_node *__of_find_node_by_path(struct device_node *parent,
-> >  {
-> >  	struct device_node *child;
-> >  	int len = strchrnul(path, '/') - path;
-> > +	int term;
-> >  
-> >  	if (!len)
-> >  		return NULL;
-> >  
-> > +	term = strchrnul(path, ':') - path;
-> > +	if (term < len)
-> > +		len = term;
-> > +
-> >  	__for_each_child_of_node(parent, child) {
-> >  		const char *name = strrchr(child->full_name, '/');
-> >  		if (WARN(!name, "malformed device_node %s\n", child->full_name))
-> > @@ -715,11 +720,14 @@ static struct device_node *__of_find_node_by_path(struct device_node *parent,
-> >  }
-> >  
-> >  /**
-> > - *	of_find_node_by_path - Find a node matching a full OF path
-> > + *	of_find_node_opts_by_path - Find a node matching a full OF path
-> >   *	@path: Either the full path to match, or if the path does not
-> >   *	       start with '/', the name of a property of the /aliases
-> >   *	       node (an alias).  In the case of an alias, the node
-> >   *	       matching the alias' value will be returned.
-> > + *	@opts: Address of a pointer into which to store the start of
-> > + *	       an options string appended to the end of the path with
-> > + *	       a ':' separator.
-> >   *
-> >   *	Valid paths:
-> >   *		/foo/bar	Full path
-> > @@ -729,19 +737,24 @@ static struct device_node *__of_find_node_by_path(struct device_node *parent,
-> >   *	Returns a node pointer with refcount incremented, use
-> >   *	of_node_put() on it when done.
-> >   */
-> > -struct device_node *of_find_node_by_path(const char *path)
-> > +struct device_node *of_find_node_opts_by_path(const char *path, const char **opts)
-> >  {
-> >  	struct device_node *np = NULL;
-> >  	struct property *pp;
-> >  	unsigned long flags;
-> > +	char *separator;
-> >  
-> >  	if (strcmp(path, "/") == 0)
-> >  		return of_node_get(of_allnodes);
-> >  
-> > +	separator = strchr(path, ':');
-> > +	if (separator && opts)
-> > +		*opts = separator + 1;
-> > +
-> 
-> What about when there are no opts? Do we require the caller to make sure
-> opts is NULL before calling the function (which sounds like a good
-> source of bugs) or do we clear it on successful return?
-> 
-> I think if opts is passed in, but there are no options, then it should
-> set *opts = NULL.
 
-Yeah, oops.
+--ScuMXZMgs/D5yjJ+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> There should be test cases for this also. Must set opts to NULL on
-> successful return, and (I think) should leave opts alone on an
-> unsuccessful search.
+On Fri, Nov 28, 2014 at 11:30:55AM +0100, Krzysztof Kozlowski wrote:
+> On czw, 2014-11-27 at 18:43 +0000, Mark Brown wrote:
 
-I would actually argue for always nuking the opts - since that could
-(theoretically) prevent something working by accident in spite of
-error conditions.
+> > Why do we need some special magic operation for GPIO based enables
+> > that's separate to any other enable operation?  This seems really
+> > confusing, if the constraint setting doesn't work somehow for GPIO based
+> > enables we should fix that.  Though since this operation takes no
+> > parameters it's hard to see how it's supposed to apply constraints
+> > unless it reparses them which doesn't seem like a good idea...
 
-How about the below?
+> The regulator driver no longer parses GPIO control from DTS. So somehow
+> it should be notified that regulator core parsed this and GPIO should be
+> enabled.
 
-/
-    Leif
+> That is the purpose of ops->set_ena_gpio() call.
 
->From 2e1a44e539967d96366d074ae158092900e0c822 Mon Sep 17 00:00:00 2001
-From: Leif Lindholm <leif.lindholm@linaro.org>
-Date: Thu, 27 Nov 2014 09:24:31 +0000
-Subject: [PATCH] of: add optional options parameter to of_find_node_by_path()
+This sort of thing is a sign that we're not saving much by moving the
+parsing to the core and perhaps there's more flexiblity here...  It's
+also not something that should be in the constraints handling, it's not
+something that constrains the regulator.
 
-Update of_find_node_by_path():
-1) Rename function to of_find_node_opts_by_path(), adding an optional
-   pointer argument. Provide a static inline wrapper version of
-   of_find_node_by_path() which calls the new function with NULL as
-   the optional argument.
-2) Ignore any part of the path beyond and including the ':' separator.
-3) Set the new provided pointer argument to the beginning of the string
-   following the ':' separator.
-4: Add tests.
+> > > +static int regulator_ena_gpio_setup(struct regulator_dev *rdev,
+> > > +			const struct regulator_config *config,
+> > > +			const struct regulator_init_data *init_data)
 
-Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
----
- drivers/of/base.c     |   21 +++++++++++++++++----
- drivers/of/selftest.c |   17 +++++++++++++++++
- include/linux/of.h    |   14 +++++++++++++-
- 3 files changed, 47 insertions(+), 5 deletions(-)
+> > Why is setting up the GPIO different to requesting it, especially given
+> > that we have an existing function called _request() which still exists?
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 3823edf..99f0fd9 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -699,10 +699,15 @@ static struct device_node *__of_find_node_by_path(struct device_node *parent,
- {
- 	struct device_node *child;
- 	int len = strchrnul(path, '/') - path;
-+	int term;
- 
- 	if (!len)
- 		return NULL;
- 
-+	term = strchrnul(path, ':') - path;
-+	if (term < len)
-+		len = term;
-+
- 	__for_each_child_of_node(parent, child) {
- 		const char *name = strrchr(child->full_name, '/');
- 		if (WARN(!name, "malformed device_node %s\n", child->full_name))
-@@ -715,11 +720,14 @@ static struct device_node *__of_find_node_by_path(struct device_node *parent,
- }
- 
- /**
-- *	of_find_node_by_path - Find a node matching a full OF path
-+ *	of_find_node_opts_by_path - Find a node matching a full OF path
-  *	@path: Either the full path to match, or if the path does not
-  *	       start with '/', the name of a property of the /aliases
-  *	       node (an alias).  In the case of an alias, the node
-  *	       matching the alias' value will be returned.
-+ *	@opts: Address of a pointer into which to store the start of
-+ *	       an options string appended to the end of the path with
-+ *	       a ':' separator.
-  *
-  *	Valid paths:
-  *		/foo/bar	Full path
-@@ -729,19 +737,24 @@ static struct device_node *__of_find_node_by_path(struct device_node *parent,
-  *	Returns a node pointer with refcount incremented, use
-  *	of_node_put() on it when done.
-  */
--struct device_node *of_find_node_by_path(const char *path)
-+struct device_node *of_find_node_opts_by_path(const char *path, const char **opts)
- {
- 	struct device_node *np = NULL;
- 	struct property *pp;
- 	unsigned long flags;
-+	char *separator;
- 
- 	if (strcmp(path, "/") == 0)
- 		return of_node_get(of_allnodes);
- 
-+	separator = strchr(path, ':');
-+	if (opts)
-+		*opts = separator ? separator + 1 : NULL;
-+
- 	/* The path could begin with an alias */
- 	if (*path != '/') {
- 		char *p = strchrnul(path, '/');
--		int len = p - path;
-+		int len = separator ? separator - path : p - path;
- 
- 		/* of_aliases must not be NULL */
- 		if (!of_aliases)
-@@ -770,7 +783,7 @@ struct device_node *of_find_node_by_path(const char *path)
- 	raw_spin_unlock_irqrestore(&devtree_lock, flags);
- 	return np;
- }
--EXPORT_SYMBOL(of_find_node_by_path);
-+EXPORT_SYMBOL(of_find_node_opts_by_path);
- 
- /**
-  *	of_find_node_by_name - Find a node by its "name" property
-diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
-index e2d79af..721b2a4 100644
---- a/drivers/of/selftest.c
-+++ b/drivers/of/selftest.c
-@@ -43,6 +43,7 @@ static bool selftest_live_tree;
- static void __init of_selftest_find_node_by_name(void)
- {
- 	struct device_node *np;
-+	const char *options;
- 
- 	np = of_find_node_by_path("/testcase-data");
- 	selftest(np && !strcmp("/testcase-data", np->full_name),
-@@ -83,6 +84,22 @@ static void __init of_selftest_find_node_by_name(void)
- 	np = of_find_node_by_path("testcase-alias/missing-path");
- 	selftest(!np, "non-existent alias with relative path returned node %s\n", np->full_name);
- 	of_node_put(np);
-+
-+	np = of_find_node_opts_by_path("/testcase-data:testoption", &options);
-+	selftest(np && !strcmp("testoption", options),
-+		 "option path test failed\n");
-+	of_node_put(np);
-+
-+	np = of_find_node_opts_by_path("testcase-alias:testaliasoption",
-+				       &options);
-+	selftest(np && !strcmp("testaliasoption", options),
-+		 "option alias path test failed\n");
-+	of_node_put(np);
-+
-+	options = "testoption";
-+	np = of_find_node_opts_by_path("testcase-alias", &options);
-+	selftest(np && !options, "option clearing test failed\n");
-+	of_node_put(np);
- }
- 
- static void __init of_selftest_dynamic(void)
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 29f0adc..a36be70 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -228,7 +228,13 @@ extern struct device_node *of_find_matching_node_and_match(
- 	const struct of_device_id *matches,
- 	const struct of_device_id **match);
- 
--extern struct device_node *of_find_node_by_path(const char *path);
-+extern struct device_node *of_find_node_opts_by_path(const char *path,
-+	const char **opts);
-+static inline struct device_node *of_find_node_by_path(const char *path)
-+{
-+	return of_find_node_opts_by_path(path, NULL);
-+}
-+
- extern struct device_node *of_find_node_by_phandle(phandle handle);
- extern struct device_node *of_get_parent(const struct device_node *node);
- extern struct device_node *of_get_next_parent(struct device_node *node);
-@@ -385,6 +391,12 @@ static inline struct device_node *of_find_node_by_path(const char *path)
- 	return NULL;
- }
- 
-+static inline struct device_node *of_find_node_opts_by_path(const char *path,
-+	const char **opts)
-+{
-+	return NULL;
-+}
-+
- static inline struct device_node *of_get_parent(const struct device_node *node)
- {
- 	return NULL;
--- 
-1.7.10.4
+> Maybe the name was not a best choice. The setup calls request.
+
+> My patchset here tried to retain the compatibility with
+> "config.ena_gpio" way so the core would accept GPIOs passed in one of
+> two ways:
+> 1. old: config.ena_gpio,
+> 2. new: parsed by core from DTS.
+
+> The request function previously worked only on "config.ena_gpio" and I
+> changed it here to accept any GPIO. The setup uses one of GPIO methods
+> (old or new) and calls request with appropriate GPIO.
+
+We need to support both methods since not all the world is DT.  What I
+can't tell is how this code achieves these objectives - it seems to be
+an awfully big patch if that's all it's supposed to be doing, I'd expect
+just a conditional where we try the two methods in turn.  It may be that
+there's a good reason for all this but that needs to be made clear.
+
+--ScuMXZMgs/D5yjJ+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUeF7TAAoJECTWi3JdVIfQyvwH/RFpPZTq1t0dYc2BooTWqlJn
+GcSLw7QM3Mt99G3Rfq4Jyaf2oL+XPvwwtEVTUkVhoA6cJ03tbGYiouy/42y7iRJV
+RYGyDrBq4ydPm1aGJzPZ05j8KSG09cFnpWYVwZl1iLQBcHzySyI5j2YbNE6dQGii
+nUHIEQzls4HFs+MhNkQaApCr0odo9Bs43/mESWnFCUYF+1xFKXnGWaI9KL5cNFGn
+F6gKNcPhasquVNXVruSdqWA9mTo4YjBVYqs7Z9sXjlcIzr/vO1cVXKZxfpWgpJc9
+ZbYSydEUKK9VrXiDSjC2M3n7T4aJsWMHRUTiNhhxWNTsR4O1TGXbl9eDVSWjVMI=
+=kzoo
+-----END PGP SIGNATURE-----
+
+--ScuMXZMgs/D5yjJ+--
