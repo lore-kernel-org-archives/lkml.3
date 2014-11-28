@@ -1,89 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345AbaK1W6S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 17:58:18 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:56382 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751187AbaK1W6R (ORCPT
+	id S1751407AbaK1XCt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 18:02:49 -0500
+Received: from smtp1-out.insa-rennes.fr ([193.52.94.24]:3072 "EHLO
+	smtp1-out.insa-rennes.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187AbaK1XCs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 17:58:17 -0500
+	Fri, 28 Nov 2014 18:02:48 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqwEALn+eFQKBQEl/2dsb2JhbABbg1dYxw6GTgKBIAEBAQEBfYQDAQEEJ1EBEAsYCRYPCQMCAQIBDzYGDQEFAgEBBYgiAx/MBg2GAgEBAQEBAQEDAQEBAQEBARuOQ4FXCiQzB4RIBZpGgy+GJDeEJoJGgkyHfiVJAYEEgUIBAQE
+Message-ID: <5478FF09.6090508@supelec.fr>
+Date: Sat, 29 Nov 2014 00:02:33 +0100
+From: Laurent Georget <laurent.georget@supelec.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-Date: Sat, 29 Nov 2014 00:00:14 +0100
-From: Stefan Agner <stefan@agner.ch>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, shawn.guo@linaro.org,
-        kernel@pengutronix.de, linux@roeck-us.net,
-        linux-kernel@vger.kernel.org, fkan@apm.com
-Subject: Re: [PATCH 2/2] ARM: imx: src: support vf610 system reset controller
-In-Reply-To: <18555848.LVhqYu0kXL@wuerfel>
-References: <1417193015-6033-1-git-send-email-stefan@agner.ch>
- <2716009.DOfHfaSPkY@wuerfel> <6341b31998ff843d236bc2a3e34537b0@agner.ch>
- <18555848.LVhqYu0kXL@wuerfel>
-Message-ID: <d3026e3c95825c31a80cf32b3600ad42@agner.ch>
-User-Agent: Roundcube Webmail/1.0.3
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Fri Nov 28 23:57:48 2014
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5478fdec12811513689902
+To: Richard Cochran <richardcochran@gmail.com>
+CC: mtk.manpages@gmail.com, linux-man@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v2] adjtimex.2: add explanation about ADJ_TAI action
+References: <54787B5C.1080802@supelec.fr> <20141128210043.GB14432@localhost.localdomain>
+In-Reply-To: <20141128210043.GB14432@localhost.localdomain>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-11-28 23:22, Arnd Bergmann wrote:
-> On Friday 28 November 2014 23:09:09 Stefan Agner wrote:
->> On 2014-11-28 22:24, Arnd Bergmann wrote:
->> > On Friday 28 November 2014 22:02:01 Stefan Agner wrote:
->> >
->> >> > If the SRC is also capable of resetting individual blocks instead of just
->> >> > the entire machine, it would be a reset driver in drivers/reset instead.
->> >>
->> >> Beside the system reset, there is only a mask functionality for the
->> >> watchdogs (there are two watchdogs, one for Cortex-A5 and one for the
->> >> M4). This makes the SRC module in the Vybrid a bit different then what
->> >> is available on other i.MX SoC's...
->> >
->> > If you already have the watchdog registers in there and want to have
->> > a watchdog driver too, the easiest way would be to register the reboot
->> > handler from the watchdog driver.
->>
->> Hm, not sure we speak about the same here. The SRC module has two
->> (multi-)bit fields to mask the watchdog reset event for each watchdog.
->> Beside that, there are two full watchdog register maps, which are in
->> different areas. There is already a driver for this watchdogs. I'm not
->> sure what the idea behind this is exactly, I guess it would easily allow
->> to (temporary) mask the other CPU's watchdog. However, I don't think we
->> need that functionality, so I don't care about that right now.
+Le 28/11/2014 22:00, Richard Cochran a écrit :
+> On Fri, Nov 28, 2014 at 02:40:44PM +0100, Laurent Georget wrote:
+>> @@ -101,7 +99,19 @@ combination of zero or more of the following bits:
+>>  Ordinary users are restricted to a zero value for
+>>  .IR modes .
+>>  Only the superuser may set any parameters.
+>> +.PP
+>> +Support for TAI (Atomic International Time, for a complete explanation
+>> about
+>> +what it is and what is the difference between TAI and UTC, see
+>> +.UR http://www.bipm.org/en/bipm/tai/tai.html
+>> +.I BIPM
+>> +.UE )
+>> +has been added in version 2.6.29. For any clock, the TAI offset may
 > 
-> Ok, I see, thanks for the clarification!
-> 
->> There is also a restart handler in the watchdog driver, but I prefer to
->> use the reset capabilities of the SRC since it has immediate effect.
->>
->> Lets get to the big picture again: I could register the whole SRC
->> register map as a syscon device and then access the registers from my
->> suspend/resume implementation later on. And similar in the restart
->> driver, I would use syscon_regmap_lookup_by_compatible to check if it
->> contains the vf610-src compatible string and register the restart
->> driver/handler if available.
-> 
-> Correct, and also in the watchdog driver, I guess.
-> 
-> Instead of syscon_regmap_lookup_by_compatible, please use
-> syscon_regmap_lookup_by_phandle and put the link to the syscon
-> device into the device accessing it.
-> 
-> Also, see if you can use or extend drivers/power/reset/syscon-reboot.c
-> for your use case.
+> Not for "any clock", just for CLOCK_REALTIME.
 
-Nice, this allows to do the reset with almost no code. The only thing
-which might be a problem is the priority: I used 192 since 128 is
-already used by the watchdog driver. Maybe we can change that
-syscon-reboot is a bit above watchdogs by default, or maybe even a dt
-property? I will try to use that driver for v2. Thx! 
+Considering that this is the only one representing the "human" time and
+supporting an adjtime action, indeed, it's not relevant for anything
+else than the realtime clock.
 
---
-Stefan
+> 
+>> +be calculated by adding a value to the UTC offset which is updated when a
+>> +leap second is added or deleted.
+>>  .br
+>> +All the offsets in the timex structure are expressed between the value
+>> of the
+>> +clock and the corresponding value (e.g. TAI offset is the difference
+>> between
+>> +the clock and the TAI, not between TAI and another value such as UTC).
+> 
+> The TAI offset is just (TAI - UTC). That's all.
+> 
 
+Yes, my mistake, I misunderstood the part about timekeeping
+(__timekeeping_set_tai_offset() in kernel/time/timekeeping.c, line 815)
+which does store the offset in several formats (monotonic -> TAI and UTC
+-> TAI). But this is not directly related to the timex value. Aniway
+this is not very relevant in the man page.
+
+Thank you for your comments. Below is a new version of the patch. Less
+unrelevant chit-chat, more useful information (hopefully).
+
+
+diff --git a/man2/adjtimex.2 b/man2/adjtimex.2
+index 20a2f0b..871e607 100644
+--- a/man2/adjtimex.2
++++ b/man2/adjtimex.2
+@@ -26,9 +26,6 @@
+ .\" Modified 2004-05-27 by Michael Kerrisk <mtk.manpages@gmail.com>
+ .\" Modified 2014-11-28 by Laurent Georget <laurent.georget@supelec.fr>
+ .\"
+-.\" FIXME Document ADJ_TAI (added in Linux 2.6.26)
+-.\"		commit 153b5d054ac2d98ea0d86504884326b6777f683d
+-.\"
+ .\" FIXME Document ADJ_MICRO and ADJ_NANO (added in Linux 2.6.26)
+ .\"		commit eea83d896e318bda54be2d2770d2c5d6668d11db
+ .\"		Author: Roman Zippel <zippel@linux-m68k.org>
+@@ -74,6 +71,17 @@ struct timex {
+                             (read-only) */
+     struct timeval time; /* current time (read-only) */
+     long tick;           /* usecs between clock ticks */
++
++    long ppsfreq;        /* pps frequency (scaled ppm) (read-only) */
++    long jitter;         /* pps jitter (usec) (read-only) */
++    int shift;           /* interval duration (sec) (read-only) */
++    long stabil;         /* pps stability (scaled ppm) (read-only) */
++    long jitcnt;         /* jitter limit exceeded (read-only) */
++    long calcnt;         /* calibration intervals (read-only) */
++    long errcnt;         /* calibration errors (read-only) */
++    long stbcnt;         /* stability limit exceeded (read-only) */
++
++    int tai;             /* TAI offset (s) (read-only) */
+ };
+ .fi
+ .in
+@@ -93,6 +101,7 @@ combination of zero or more of the following bits:
+ #define ADJ_ESTERROR          0x0008 /* estimated time error */
+ #define ADJ_STATUS            0x0010 /* clock status */
+ #define ADJ_TIMECONST         0x0020 /* pll time constant */
++#define ADJ_TAI               0x0080 /* TAI offset */
+ #define ADJ_TICK              0x4000 /* tick value */
+ #define ADJ_OFFSET_SINGLESHOT 0x8001 /* old-fashioned adjtime() */
+ .fi
+@@ -102,6 +111,20 @@ Ordinary users are restricted to a zero value for
+ .IR modes .
+ Only the superuser may set any parameters.
+ .br
++In the case of
++.BR ADJ_TAI ,
++as
++.I buf->tai
++is read-only, the new value is passed through
++.IR buf->constant .
++.PP
++Support for TAI (Atomic International Time, for a complete explanation
+about
++what it is and what is the difference between TAI and UTC, see
++.UR http://www.bipm.org/en/bipm/tai/tai.html
++.I BIPM
++.UE )
++has been added in version 2.6.29.
++.br
+ .ne 12v
+ .SH RETURN VALUE
+ On success,
