@@ -1,116 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826AbaK1QKv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 11:10:51 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:53359 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041AbaK1QKt (ORCPT
+	id S1751906AbaK1QMr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 11:12:47 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:57540 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751572AbaK1QMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 11:10:49 -0500
+	Fri, 28 Nov 2014 11:12:45 -0500
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.11.1411280005500.3961@nanos>
-References: <1417089760-26848-1-git-send-email-pang.xunlei@linaro.org>
-	<1417089760-26848-4-git-send-email-pang.xunlei@linaro.org>
-	<alpine.DEB.2.11.1411280005500.3961@nanos>
-Date: Sat, 29 Nov 2014 00:10:48 +0800
-Message-ID: <CADcy93Vk96E0djD3rFYtKr_kBcwCJOEesg_UW_ZdGv=B_uM8Ug@mail.gmail.com>
-Subject: Re: [RFC PATCH 3/4] rtc/lib: Provide interfaces to map between 32bit
- hardware and 64bit time
-From: "pang.xunlei" <pang.xunlei@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Sven Schnelle <svens@stackframe.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>
+In-Reply-To: <20141127101830.GP30369@pengutronix.de>
+References: <1415709535-31515-1-git-send-email-hongzhou.yang@mediatek.com>
+	<1415709535-31515-3-git-send-email-hongzhou.yang@mediatek.com>
+	<CACRpkdYSe_BH_qiHma2BA+c2otEi3wd0TBXy83t8vwrNL+3U2g@mail.gmail.com>
+	<20141127101830.GP30369@pengutronix.de>
+Date: Fri, 28 Nov 2014 17:12:44 +0100
+Message-ID: <CACRpkdbMdJT6y-NL36RgQe0-CAFAVGqKiwY9+yFcwA7JDLmA+Q@mail.gmail.com>
+Subject: Re: [PATCH v3 2/3] dt-bindings: Add pinctrl bindings for mt65xx/mt81xx.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sascha Hauer <s.hauer@pengutronix.de>, Rob Herring <robh+dt@kernel.org>
+Cc: Hongzhou Yang <hongzhou.yang@mediatek.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        huang eddie <eddie.huang@mediatek.com>, dandan.he@mediatek.com,
+        alan.cheng@mediatek.com, toby.liu@mediatek.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 November 2014 at 07:16, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Thu, 27 Nov 2014, Xunlei Pang wrote:
->> +/* Rtc epoch year, can be overrided by command line */
->> +static unsigned int rtc_epoch = 1970;
->> +time64_t rtc_epoch_secs_since_1970;
->> +
->> +static int __init
->> +set_rtc_epoch(char *str)
->
-> One line please
->
->> +{
->> +     unsigned int epoch;
->> +
->> +     if (kstrtou32(str, 0, &epoch) != 0) {
->> +             printk(KERN_WARNING "Invalid setup epoch %u!\n", epoch);
->
-> Sure that makes a lot of sense to print epoch if the string conversion
-> failed. epoch is going to be either uninitialized stack value or 0
-> depending on the kstrtou32 implementation.
->
->> +     if (rtc_epoch < 1970)
->> +             printk(KERN_WARNING "Epoch %u is smaller than 1970!\n", epoch);
->
->   pr_warn() ....
->
-> +__setup("rtc_epoch=", set_rtc_epoch);
->
-> Not documented in Documentation/kernel-parameters.txt ...
->
->>  /*
->> + * Convert seconds since rtc epoch to seconds since Unix epoch.
->> + */
->> +time64_t rtc_hw32_to_time64(u32 hwtime)
->> +{
->> +     return (rtc_epoch_secs_since_1970 + hwtime);
->> +}
->> +EXPORT_SYMBOL_GPL(rtc_hw32_to_time64);
->
-> So we need a exported function to add a global variable and a function
-> argument? inline ?
->
->> +/*
->> + * Convert seconds since Unix epoch to seconds since rtc epoch.
->> + */
->> +int rtc_time64_to_hw32(time64_t time, u32 *hwtime)
->> +{
->> +     /* time must be after rtc epoch */
->> +     if (time < rtc_epoch_secs_since_1970)
->> +             return -EINVAL;
->> +
->> +     /* rtc epoch may be too small? */
->> +     if (time - rtc_epoch_secs_since_1970 > UINT_MAX)
->> +             return -EOVERFLOW;
->
-> And what's the caller supposed to do with that information?
+On Thu, Nov 27, 2014 at 11:18 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> On Thu, Nov 27, 2014 at 09:44:42AM +0100, Linus Walleij wrote:
+>> On Tue, Nov 11, 2014 at 1:38 PM, Hongzhou Yang
+>> <hongzhou.yang@mediatek.com> wrote:
 
-This probably means the current rtc hardware has pushed its envelope now,
-the users should rely on the rtc_epoch command line to continue use it.
+>> > +- mediatek,pins: 2 integers array, represents gpio pinmux number and config
+>> > +  setting. The format as following
+>> > +
+>> > +    node {
+>> > +     mediatek,pins = <PIN_NUMBER_PINMUX>;
+>> > +                     GENERIC_PINCONFIG;
+>> > +    };
+>>
+>> As suggested by Sacha, use just "pins" and define the binding as a patch
+>> to Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+>> that is generic for multiplexing, so we get some order here.
+>>
+>> I want you however to put pin multiplexing and pin configuration into
+>> different nodes if possible. I don't like combines muxing and config
+>> nodes. If necessary tag the node with something.
+>
+> Why? I think the properties can live happily together, even when the
+> parsing functions go to the pinctrl core.
 
->
->> +     *hwtime = time - rtc_epoch_secs_since_1970;
->> +
->> +     return 0;
->> +}
->> +EXPORT_SYMBOL_GPL(rtc_time64_to_hw32);
->
-> How is that going to be useful w/o a mechanism to adjust the epoch
-> offset at runtime by any means?
+I'm worried about the semantic ambiguity between the pins = <...>;
+property on different pin controllers, whether they are based on
+function+group or per-pin. It's not even up to me to decide,
+this is for the DT binding people.
 
-If the rtc epoch changes at runtime, we'll not get the right time once
-the system is rebooting.
-So, it can only be altered throught command line, and must stay
-invariable ever since unless
-it uses NTP or something.
+In this case:
 
-Thanks,
-Xunlei
+pins = <MT8135_PIN_100_SDA0__FUNC_SDA0>,
+          <MT8135_PIN_101_SCL0__FUNC_SCL0>;
 
+Each element is a 32bit unsigned where the lower and higher
+16 bits have different meanings.
+
+In some other pin controller (using generic bindings and
+already merged! arch/arm/boot/dts/ste-href-ab8500.dtsi):
+
+gpio39 {
+      gpio39_default_mode: gpio39_default {
+             default_mux {
+                      function = "gpio";
+                      groups = "gpio39_a_1";
+             };
+             default_cfg {
+                      pins = "GPIO39_E16";
+                      input-enable;
+                      bias-pull-down;
+             };
+     };
+};
+
+Can we get away with using the same core parser with this
+as well, here the nodes are split and using strings to identify
+pins, not 32bit numbers.
+
+I am worried about semantic coexistance...
+
+>> > +               i2c0_pins_a: i2c0@0 {
+>> > +                       pins1 {
+>> > +                               mediatek,pins = <MT8135_PIN_100_SDA0__FUNC_SDA0>,
+>> > +                                               <MT8135_PIN_101_SCL0__FUNC_SCL0>;
+>> > +                               bias-disable;
+>> > +                       };
+>> > +               };
+>>
+>> I would split it up.
+>>
+>> i2c0_pins_a: i2c0@0 {
+>>         pins1 {
+>>                 pins = <MT8135_PIN_100_SDA0>;
+>>                 function = <MT8135_PIN_100_FUNC_SDA0>;
+>>         };
 >
-> Thanks,
+> The reason to put this in a single define was to make writing the device
+> trees less error prone. When you have two arrays you must correlate the
+> entries.
+
+I see the upside. I'm just worried about ambiguity when comparing
+different device trees to each other, because they should be about
+readability and understanding, not confusing...
+
+>> One node for the multiplexing, one node for the config. This is the
+>> pattern used by most drivers, so I want to have this structure.
+>>
+>> It is also easy to tell one node from the other: if it contains "function"
+>> we know it's a multiplexing node, if it doesn't, it's a config node.
 >
->         tglx
->
->
+> So when merging these together a node is always multiplexing and
+> configuration. But do we really win anything if both are separated? When
+> both are separated you still need an array of pins in the nodes to
+> tell which pins this node is for. If this array also contains the
+> mux information then this won't hurt. You can still ignore it.
+
+Well we definately have to support the case with split config and
+muxing nodes at least. I am very worried that we would get into
+ambguities where that is not possible.
+
+Yours,
+Linus Walleij
