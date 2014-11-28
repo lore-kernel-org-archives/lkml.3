@@ -1,76 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751482AbaK1KaH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 05:30:07 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:51959 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbaK1KaB (ORCPT
+	id S1751438AbaK1KaF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 05:30:05 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:42247 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaK1K37 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 05:30:01 -0500
-Date: Fri, 28 Nov 2014 13:29:28 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Luis de Bethencourt <luis@debethencourt.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        gregkh@linuxfoundation.org, eunb.song@samsung.com,
-        aaro.koskinen@iki.fi, paul.gortmaker@windriver.com
-Subject: Re: [PATCH v2] staging: octeon: Fix checkpatch warnings
-Message-ID: <20141128102928.GD4860@mwanda>
-References: <20141127161432.GA32577@ks395439.kimsufi.com>
+	Fri, 28 Nov 2014 05:29:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141127161432.GA32577@ks395439.kimsufi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Originating-IP: [60.248.88.209]
+In-Reply-To: <54784B1D.6030308@suse.de>
+References: <1417169252.25477.11.camel@Centos6.3-64>
+	<54784B1D.6030308@suse.de>
+Date: Fri, 28 Nov 2014 18:29:58 +0800
+Message-ID: <CAKiknE80Ee+7Kco=uwZUbSm-CyGKnrhtXCUPPPNxRw_48jXVng@mail.gmail.com>
+Subject: Re: [PATCH 1.1 1/1] arcmsr: Notify has sense data report
+From: =?UTF-8?B?6buD5riF6ZqG?= <ching2048@areca.com.tw>
+To: Hannes Reinecke <hare@suse.de>
+Cc: "hch@infradead.org" <hch@infradead.org>, Tomas Henzl <thenzl@redhat.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 05:18:10PM +0100, Luis de Bethencourt wrote:
-> Fixing 80 character limit warnings in octeon/ethernet-rx.c
-> 
-> Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
-> ---
->  drivers/staging/octeon/ethernet-rx.c | 51 +++++++++++++++++++++++++-----------
->  1 file changed, 35 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
-> index 1789a12..e387eb1 100644
-> --- a/drivers/staging/octeon/ethernet-rx.c
-> +++ b/drivers/staging/octeon/ethernet-rx.c
-> @@ -109,6 +109,7 @@ static inline int cvm_oct_check_rcv_error(cvmx_wqe_t *work)
->  		int interface = cvmx_helper_get_interface_num(work->ipprt);
->  		int index = cvmx_helper_get_interface_index_num(work->ipprt);
->  		union cvmx_gmxx_rxx_frm_ctl gmxx_rxx_frm_ctl;
-> +
+There is no this case.
+We always have auto request sense to device in case of CHECK_CONDITION status.
 
-Do this in a separate patch.
-
-> @@ -332,8 +343,10 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
->  				skb->protocol = eth_type_trans(skb, dev);
->  				skb->dev = dev;
->  
-> -				if (unlikely(work->word2.s.not_IP || work->word2.s.IP_exc ||
-> -					work->word2.s.L4_error || !work->word2.s.tcp_or_udp))
-> +				if (unlikely(work->word2.s.not_IP ||
-> +					work->word2.s.IP_exc ||
-> +					work->word2.s.L4_error ||
-> +					!work->word2.s.tcp_or_udp))
->  					skb->ip_summed = CHECKSUM_NONE;
-
-Your patch aligns everything with tabs but it should be slightly
-different.  Run your patch through checkpatch.pl --strict to see what I
-mean and then redo it all.  This one should look like:
-
-				if (unlikely(work->word2.s.not_IP ||
-					     work->word2.s.IP_exc ||
-					     work->word2.s.L4_error ||
-					     !work->word2.s.tcp_or_udp))
-					skb->ip_summed = CHECKSUM_NONE;
-
-[tab][tab][tab][tab][tab][space][space][space][space][space]work->...
-
-regards,
-dan carpenter
-
-
+2014-11-28 18:14 GMT+08:00 Hannes Reinecke <hare@suse.de>:
+> On 11/28/2014 11:07 AM, Ching Huang wrote:
+>> From: Ching Huang <ching2048@areca.com.tw>
+>>
+>> Setting command status with 'DRIVER_SENSE' except 'CHECK_CONDITION' if we have sense data.
+>>
+>> Signed-off-by: Ching Huang <ching2048@areca.com.tw>
+>> ---
+>>
+>> This patch is relative to http://git.infradead.org/users/hch/scsi-queue.git/tree/refs/heads/drivers-for-3.18:/drivers/scsi/arcmsr
+>>
+>>
+>> diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
+>> --- a/drivers/scsi/arcmsr/arcmsr.h    2014-09-19 11:04:41.845100000 +0800
+>> +++ b/drivers/scsi/arcmsr/arcmsr.h    2014-11-28 10:54:30.000000000 +0800
+>> @@ -52,7 +52,7 @@ struct device_attribute;
+>>       #define ARCMSR_MAX_FREECCB_NUM  320
+>>  #define ARCMSR_MAX_OUTSTANDING_CMD   255
+>>  #endif
+>> -#define ARCMSR_DRIVER_VERSION                "v1.30.00.04-20140919"
+>> +#define ARCMSR_DRIVER_VERSION                "v1.30.00.05-20141128"
+>>  #define ARCMSR_SCSI_INITIATOR_ID                                             255
+>>  #define ARCMSR_MAX_XFER_SECTORS                                                      512
+>>  #define ARCMSR_MAX_XFER_SECTORS_B                                            4096
+>> diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+>> --- a/drivers/scsi/arcmsr/arcmsr_hba.c        2014-09-19 11:01:26.990090000 +0800
+>> +++ b/drivers/scsi/arcmsr/arcmsr_hba.c        2014-11-28 17:51:04.000000000 +0800
+>> @@ -989,16 +989,15 @@ static void arcmsr_report_sense_info(str
+>>
+>>       struct scsi_cmnd *pcmd = ccb->pcmd;
+>>       struct SENSE_DATA *sensebuffer = (struct SENSE_DATA *)pcmd->sense_buffer;
+>> -     pcmd->result = DID_OK << 16;
+>> -     if (sensebuffer) {
+>> -             int sense_data_length =
+>> +
+>> +     pcmd->result = (DRIVER_SENSE << 24) | (DID_OK << 16) | (CHECK_CONDITION << 1);
+>> +     int sense_data_length =
+>>                       sizeof(struct SENSE_DATA) < SCSI_SENSE_BUFFERSIZE
+>>                       ? sizeof(struct SENSE_DATA) : SCSI_SENSE_BUFFERSIZE;
+>> -             memset(sensebuffer, 0, SCSI_SENSE_BUFFERSIZE);
+>> -             memcpy(sensebuffer, ccb->arcmsr_cdb.SenseData, sense_data_length);
+>> -             sensebuffer->ErrorCode = SCSI_SENSE_CURRENT_ERRORS;
+>> -             sensebuffer->Valid = 1;
+>> -     }
+>> +     memset(sensebuffer, 0, SCSI_SENSE_BUFFERSIZE);
+>> +     memcpy(sensebuffer, ccb->arcmsr_cdb.SenseData, sense_data_length);
+>> +     sensebuffer->ErrorCode = SCSI_SENSE_CURRENT_ERRORS;
+>> +     sensebuffer->Valid = 1;
+>>  }
+>>
+>>  static u32 arcmsr_disable_outbound_ints(struct AdapterControlBlock *acb)
+>>
+>>
+> Hmm. Sorry to be picky, but:
+>
+> Is there a chance the _no_ sense data will be provided?
+> If so we'd end up starting the error handler, calling REQUEST SENSE
+> (which will fail, too), and finally offlining the device.
+> I'd rather provide a default sense code for these cases.
+>
+> Plus please use SAM_STAT_CHECK_CONDITION instead of
+> CHECK_CONDITION << 1.
+>
+> Cheers,
+>
+> Hannes
+> --
+> Dr. Hannes Reinecke                   zSeries & Storage
+> hare@suse.de                          +49 911 74053 688
+> SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg
+> GF: J. Hawn, J. Guild, F. Imendörffer, HRB 21284 (AG Nürnberg)
