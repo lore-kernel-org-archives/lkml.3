@@ -1,229 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751338AbaK1VEE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 16:04:04 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:55151 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041AbaK1VEB (ORCPT
+	id S1751293AbaK1VKR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 16:10:17 -0500
+Received: from sender1.zohomail.com ([74.201.84.155]:29041 "EHLO
+	sender1.zohomail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117AbaK1VKO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 16:04:01 -0500
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] x86: Replace seq_printf with seq_puts
-Date: Fri, 28 Nov 2014 22:03:41 +0100
-Message-Id: <1417208622-12264-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 2.0.4
+	Fri, 28 Nov 2014 16:10:14 -0500
+X-Greylist: delayed 21984 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Nov 2014 16:10:14 EST
+Content-Type: text/plain; charset=iso-8859-1
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [RFC PATCH 1/3] Add generic TrustZone driver
+From: =?iso-8859-1?Q?Javier_Gonz=E1lez?= <javier@javigon.com>
+In-Reply-To: <20141128191507.GA7804@kroah.com>
+Date: Fri, 28 Nov 2014 22:09:55 +0100
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        joshc@codeaurora.org, johannes.thumshirn@men.de,
+        kheitke@codeaurora.org, laurent.pinchart+renesas@ideasonboard.com,
+        geert+renesas@glider.be, horms+renesas@verge.net.au,
+        damm@opensource.se, tomi.valkeinen@ti.com, mbohan@codeaurora.org,
+        michal.simek@xilinx.com, pawel.moll@arm.com, Andrew.Thoelke@arm.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C14B741B-C303-419E-81FB-250D1FDC2D45@javigon.com>
+References: <1417187016-7731-1-git-send-email-javier@javigon.com> <1417187016-7731-2-git-send-email-javier@javigon.com> <20141128191507.GA7804@kroah.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+X-Mailer: Apple Mail (2.1878.6)
+X-ZohoMailClient: External
+X-Zoho-Virus-Status: 2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-seq_puts is a lot cheaper than seq_printf, so use that to print
-literal strings.
+Hi,
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
- arch/x86/kernel/cpu/proc.c    | 10 +++++-----
- arch/x86/kernel/irq.c         | 30 +++++++++++++++---------------
- arch/x86/mm/pat.c             |  2 +-
- arch/x86/platform/uv/tlb_uv.c | 26 ++++++++++++--------------
- 4 files changed, 33 insertions(+), 35 deletions(-)
+On 28 Nov 2014, at 20:15, Greg KH <gregkh@linuxfoundation.org> wrote:
 
-diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
-index 5433658..e7d8c76 100644
---- a/arch/x86/kernel/cpu/proc.c
-+++ b/arch/x86/kernel/cpu/proc.c
-@@ -72,7 +72,7 @@ static int show_cpuinfo(struct seq_file *m, void *v)
- 	if (c->x86_mask || c->cpuid_level >= 0)
- 		seq_printf(m, "stepping\t: %d\n", c->x86_mask);
- 	else
--		seq_printf(m, "stepping\t: unknown\n");
-+		seq_puts(m, "stepping\t: unknown\n");
- 	if (c->microcode)
- 		seq_printf(m, "microcode\t: 0x%x\n", c->microcode);
- 
-@@ -92,12 +92,12 @@ static int show_cpuinfo(struct seq_file *m, void *v)
- 	show_cpuinfo_core(m, c, cpu);
- 	show_cpuinfo_misc(m, c);
- 
--	seq_printf(m, "flags\t\t:");
-+	seq_puts(m, "flags\t\t:");
- 	for (i = 0; i < 32*NCAPINTS; i++)
- 		if (cpu_has(c, i) && x86_cap_flags[i] != NULL)
- 			seq_printf(m, " %s", x86_cap_flags[i]);
- 
--	seq_printf(m, "\nbugs\t\t:");
-+	seq_puts(m, "\nbugs\t\t:");
- 	for (i = 0; i < 32*NBUGINTS; i++) {
- 		unsigned int bug_bit = 32*NCAPINTS + i;
- 
-@@ -118,7 +118,7 @@ static int show_cpuinfo(struct seq_file *m, void *v)
- 	seq_printf(m, "address sizes\t: %u bits physical, %u bits virtual\n",
- 		   c->x86_phys_bits, c->x86_virt_bits);
- 
--	seq_printf(m, "power management:");
-+	seq_puts(m, "power management:");
- 	for (i = 0; i < 32; i++) {
- 		if (c->x86_power & (1 << i)) {
- 			if (i < ARRAY_SIZE(x86_power_flags) &&
-@@ -131,7 +131,7 @@ static int show_cpuinfo(struct seq_file *m, void *v)
- 		}
- 	}
- 
--	seq_printf(m, "\n\n");
-+	seq_puts(m, "\n\n");
- 
- 	return 0;
- }
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 922d285..6307a0f 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -59,78 +59,78 @@ int arch_show_interrupts(struct seq_file *p, int prec)
- 	seq_printf(p, "%*s: ", prec, "NMI");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->__nmi_count);
--	seq_printf(p, "  Non-maskable interrupts\n");
-+	seq_puts(p, "  Non-maskable interrupts\n");
- #ifdef CONFIG_X86_LOCAL_APIC
- 	seq_printf(p, "%*s: ", prec, "LOC");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->apic_timer_irqs);
--	seq_printf(p, "  Local timer interrupts\n");
-+	seq_puts(p, "  Local timer interrupts\n");
- 
- 	seq_printf(p, "%*s: ", prec, "SPU");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_spurious_count);
--	seq_printf(p, "  Spurious interrupts\n");
-+	seq_puts(p, "  Spurious interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "PMI");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->apic_perf_irqs);
--	seq_printf(p, "  Performance monitoring interrupts\n");
-+	seq_puts(p, "  Performance monitoring interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "IWI");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->apic_irq_work_irqs);
--	seq_printf(p, "  IRQ work interrupts\n");
-+	seq_puts(p, "  IRQ work interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "RTR");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->icr_read_retry_count);
--	seq_printf(p, "  APIC ICR read retries\n");
-+	seq_puts(p, "  APIC ICR read retries\n");
- #endif
- 	if (x86_platform_ipi_callback) {
- 		seq_printf(p, "%*s: ", prec, "PLT");
- 		for_each_online_cpu(j)
- 			seq_printf(p, "%10u ", irq_stats(j)->x86_platform_ipis);
--		seq_printf(p, "  Platform interrupts\n");
-+		seq_puts(p, "  Platform interrupts\n");
- 	}
- #ifdef CONFIG_SMP
- 	seq_printf(p, "%*s: ", prec, "RES");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_resched_count);
--	seq_printf(p, "  Rescheduling interrupts\n");
-+	seq_puts(p, "  Rescheduling interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "CAL");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_call_count -
- 					irq_stats(j)->irq_tlb_count);
--	seq_printf(p, "  Function call interrupts\n");
-+	seq_puts(p, "  Function call interrupts\n");
- 	seq_printf(p, "%*s: ", prec, "TLB");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_tlb_count);
--	seq_printf(p, "  TLB shootdowns\n");
-+	seq_puts(p, "  TLB shootdowns\n");
- #endif
- #ifdef CONFIG_X86_THERMAL_VECTOR
- 	seq_printf(p, "%*s: ", prec, "TRM");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_thermal_count);
--	seq_printf(p, "  Thermal event interrupts\n");
-+	seq_puts(p, "  Thermal event interrupts\n");
- #endif
- #ifdef CONFIG_X86_MCE_THRESHOLD
- 	seq_printf(p, "%*s: ", prec, "THR");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_threshold_count);
--	seq_printf(p, "  Threshold APIC interrupts\n");
-+	seq_puts(p, "  Threshold APIC interrupts\n");
- #endif
- #ifdef CONFIG_X86_MCE
- 	seq_printf(p, "%*s: ", prec, "MCE");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", per_cpu(mce_exception_count, j));
--	seq_printf(p, "  Machine check exceptions\n");
-+	seq_puts(p, "  Machine check exceptions\n");
- 	seq_printf(p, "%*s: ", prec, "MCP");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", per_cpu(mce_poll_count, j));
--	seq_printf(p, "  Machine check polls\n");
-+	seq_puts(p, "  Machine check polls\n");
- #endif
- #if IS_ENABLED(CONFIG_HYPERV) || defined(CONFIG_XEN)
- 	seq_printf(p, "%*s: ", prec, "THR");
- 	for_each_online_cpu(j)
- 		seq_printf(p, "%10u ", irq_stats(j)->irq_hv_callback_count);
--	seq_printf(p, "  Hypervisor callback interrupts\n");
-+	seq_puts(p, "  Hypervisor callback interrupts\n");
- #endif
- 	seq_printf(p, "%*s: %10u\n", prec, "ERR", atomic_read(&irq_err_count));
- #if defined(CONFIG_X86_IO_APIC)
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index 6574388..c7eddbe 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -824,7 +824,7 @@ static void *memtype_seq_start(struct seq_file *seq, loff_t *pos)
- {
- 	if (*pos == 0) {
- 		++*pos;
--		seq_printf(seq, "PAT memtype list:\n");
-+		seq_puts(seq, "PAT memtype list:\n");
- 	}
- 
- 	return memtype_get_idx(*pos);
-diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
-index 3968d67..ab4062c 100644
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -1367,20 +1367,18 @@ static int ptc_seq_show(struct seq_file *file, void *data)
- 
- 	cpu = *(loff_t *)data;
- 	if (!cpu) {
--		seq_printf(file,
--		 "# cpu bauoff sent stime self locals remotes ncpus localhub ");
--		seq_printf(file,
--			"remotehub numuvhubs numuvhubs16 numuvhubs8 ");
--		seq_printf(file,
--			"numuvhubs4 numuvhubs2 numuvhubs1 dto snacks retries ");
--		seq_printf(file,
--			"rok resetp resett giveup sto bz throt disable ");
--		seq_printf(file,
--			"enable wars warshw warwaits enters ipidis plugged ");
--		seq_printf(file,
--			"ipiover glim cong swack recv rtime all one mult ");
--		seq_printf(file,
--			"none retry canc nocan reset rcan\n");
-+		seq_puts(file,
-+			 "# cpu bauoff sent stime self locals remotes ncpus localhub ");
-+		seq_puts(file, "remotehub numuvhubs numuvhubs16 numuvhubs8 ");
-+		seq_puts(file,
-+			 "numuvhubs4 numuvhubs2 numuvhubs1 dto snacks retries ");
-+		seq_puts(file,
-+			 "rok resetp resett giveup sto bz throt disable ");
-+		seq_puts(file,
-+			 "enable wars warshw warwaits enters ipidis plugged ");
-+		seq_puts(file,
-+			 "ipiover glim cong swack recv rtime all one mult ");
-+		seq_puts(file, "none retry canc nocan reset rcan\n");
- 	}
- 	if (cpu < num_possible_cpus() && cpu_online(cpu)) {
- 		bcp = &per_cpu(bau_control, cpu);
--- 
-2.0.4
+> On Fri, Nov 28, 2014 at 04:03:34PM +0100, Javier González wrote:
+>> From: Javier Gonzalez <javier@javigon.com>
+> 
+> Any reason you sent this twice?
+My mistake, sorry.
+
+> 
+> And your code is full of FIXMEs, which implies that you aren't even
+> happy with the code, so why would we want to review it as-is now?
+> 
+The driver is still in development, but I think it is mature enough as to
+involve more people interested in TrustZone. I have dealt the development
+repository with parties that I know are want to contribute in this effort; still
+I think that this is the right place to find both interested people, and
+good feedback - therefore the RFC.
+
+> Please come up with a design, and implementation, that you feel
+> comfortable with before asking others to do work to review your broken
+> implementation.
+
+My interest lays more in the interface part. I have worked with different
+TrustZone frameworks and one of the main issues with them is that
+there is no standard interface from within the kernel. I strongly believe
+that having a supported driver in the kernel with a defined interface can
+help getting more people involved in porting more TrustZone drivers, and
+in general facilitating TrustZone's use. This is of special relevance for 
+mobile devices today, but with ARMv8 down the corner servers and set-top
+boxes would also profit.
+
+Regarding the interface in itself, I am mostly comfortable with the design and
+implementation, but I am sure it is still improbable.
+
+Most of the FIXMEs are in a specific driver I ported. It is aTrustZone open
+source implementation called Open Virtualization. I still need to work in 
+improving the code, but it performs pretty good at the moment. My intention 
+is to continue working on it, but in the meantime I think it is worth getting 
+feedback from more experience kernel hackers.
+
+> 
+>> +static void trustzone_dev_release(struct device *dev)
+>> +{
+>> +	/* FIXME: You need to fix all this crap... */
+> 
+> Yes you do, why you are asking others to do your work is beyond my
+> comprehension...
+> 
+
+Not the most appropriate comment, I agree. But as I mentioned, it is work in 
+progress, and my intention is to get more people involved and obtain early
+feedback in a working prototype.
+
+Thanks for your comments. I hope that you find the time to look deeper
+in the code.
+
+> greg k-h
+
+Best,
+
+Javier.
+
 
