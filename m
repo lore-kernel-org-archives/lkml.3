@@ -1,140 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822AbaK1PMQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 10:12:16 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:52336 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335AbaK1PMN (ORCPT
+	id S1751857AbaK1PNV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 10:13:21 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:60350 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350AbaK1PNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 10:12:13 -0500
+	Fri, 28 Nov 2014 10:13:20 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: suravee.suthikulpanit@amd.com
+Subject: Re: [PATCH V5] arm64: amd-seattle: Adding device tree for AMD Seattle platform
+Date: Fri, 28 Nov 2014 16:13:11 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: olof@lixom.net, mark.rutland@arm.com, will.deacon@arm.com,
+        marc.zyngier@arm.com, catalin.marinas@arm.com, robherring2@gmail.com,
+        liviu.dudau@arm.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org,
+        Thomas Lendacky <Thomas.Lendacky@amd.com>,
+        Joel Schopp <Joel.Schopp@amd.com>
+References: <1416977469-20232-1-git-send-email-suravee.suthikulpanit@amd.com>
+In-Reply-To: <1416977469-20232-1-git-send-email-suravee.suthikulpanit@amd.com>
 MIME-Version: 1.0
-In-Reply-To: <87wq6frjcw.fsf@x220.int.ebiederm.org>
-References: <3ccec8a13019b5e8ce7b1d7889677b778b070dc8.1416041823.git.josh@joshtriplett.org>
- <0895c1f268bc0b01cc6c8ed4607d7c3953f49728.1416041823.git.josh@joshtriplett.org>
- <546A3942.5040906@schaufler-ca.com> <CALCETrWy-3C1on3+2wE9aqcChBUCUY0i_4AL_Om8CSZ5QB18sQ@mail.gmail.com>
- <CALCETrVn4gVXp7F=5h-bkN5VWuRMG9BoxgeQfKhX4+ZXxGE=wQ@mail.gmail.com>
- <546A43CE.2030706@schaufler-ca.com> <87lhmwwpey.fsf_-_@x220.int.ebiederm.org>
- <CALCETrUuWDq2akKfb50AiPHeDDWzPW7ijz1QwnuNiskyZbBEfA@mail.gmail.com> <87wq6frjcw.fsf@x220.int.ebiederm.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 28 Nov 2014 07:11:51 -0800
-Message-ID: <CALCETrX2s-7iaLMEKLQsExTEp3JyoAPQG44p0v5wkeED3-6dQA@mail.gmail.com>
-Subject: Re: [CFT][PATCH] userns: Avoid problems with negative groups
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-man <linux-man@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Richard Weinberger <richard@nod.at>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201411281613.11626.arnd@arndb.de>
+X-Provags-ID: V02:K0:QZYqtIUh5wU/um6T3aMjX+eJESDQtvL2ZCSNkLPaqtU
+ 3Wx106bEVsJu2UXNhbFI8ZAQXI2lfEIekT2aDDxo7QCXhrxHqJ
+ BDHiqta6obIrAXa7NZLPcn0ApT9526yHJKC1yqUuBq6p2kdEck
+ Z/fgGqQTqOkrq1gqdtXPa/eYHZs7i2BSl/IqVQJbt5Z/n+MWZq
+ QKZ0xFXNQbsAsvVf4SSQaCX1tkw+hlIbLBCkk7jfgzMM1ZqEbE
+ 0buoccYdfU2I3xGnT0DOL+cZQ7q1Xv0nUvR5euyq6d0GwkOBeM
+ aKp58kjCS6hs+0oaHThbBBn/r0YbJhByPs5+4MM2xCK4T5iKnO
+ wpwRYtJP+kY1w+ug/Vu3oKmig0qs/isyOU6jNCYlw
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 9:21 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Andy Lutomirski <luto@amacapital.net> writes:
->
->>> This change should break userspace by the minimal amount needed
->>> to fix this issue.
->>>
->>> This should fix CVE-2014-8989.
->>
->> I think this is both unnecessarily restrictive and that it doesn't fix
->> the bug.
->
-> You are going to have to work very hard to convince me this is
-> unnecessarily restrictive.
->
->>For example, I can exploit CVE-2014-8989 without ever
->> writing a uid map or a gid map.
->
-> Yes.  I realized just after I sent the patch that setgroups(0, NULL)
-> would still work without a mapping set.  That is a first glass grade a
-> oversight that resulted in a bug.  None of the other uid or gid changing
-> syscalls without a mapping set, and setgroups was just overlooked
-> because it was different.  Oops.
->
-> I will send an updated patch that stops setgroups from working without
-> a mapping set shortly.
->
->> IIUC, the only real issue is that user namespaces allow groups to be
->> dropped using setgroups that wouldn't otherwise be dropped.  Can we
->> get away with adding a per-user-ns flag that determines whether
->> setgroups can be used?
->
-> Being able to call setgroups is fundamental to login programs, and login
-> programs are one of the things user namespaces need to support.  So
-> adding an extra flag and an extra place where privilege is required
-> is just noise, and will wind up breaking every user of user namespaces.
->
-> Further being able to setup uid and gid mappings without privilege is
-> primarily a nice to have.  The original design did not have unprivileged
-> setting of uid and gid maps and if it proves insecure I goofed and the
-> feature isn't safe so it needs to be removed.
+On Wednesday 26 November 2014, suravee.suthikulpanit@amd.com wrote:
+> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> 
+> Initial revision of device tree for AMD Seattle Development platform.
+> 
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Marc Zyngier <marc.zyngier@arm.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> Signed-off-by: Thomas Lendacky <Thomas.Lendacky@amd.com>
+> Signed-off-by: Joel Schopp <Joel.Schopp@amd.com>
+> ---
+> V5 Changes:
+>   * Rebase to arm-soc for-next (per Olof)
+>   * Restructure the DTS/DTSI into board and SoC configurations (per Olof)
+>   * Add model property at the top level (per Olof)
+>   * Move pcie0 under smb and change smb's ranges property to empty since pcie
+>     is not in the same range. (per Olof)
+>   * Change v2m0's ranges property (per Arnd)
+>   * Change timer interrupt type to level-trigger (per Marc)
 
-Being able to set a single-user uid map and gid map is very useful for
-sandboxing.  This lets unprivileged users drop filesystem and network
-access and still run most normal programs.  A surprising number of
-normal unprivileged programs fail if run without a mapping.
+Applied to next/arm64, thanks!
 
->
-> This does mean that running a system with negative groups and users
-> delegated subordinate gids in /etc/subuid is a bad idea and system
-> administrators shouldn't do that as those negative groups won't prove
-> effective in stopping their users.  But this is all under system
-> administrator control so shrug.  There isn't a way to avoid that
-> fundamental conflict.
->
->> setgroups would be unusable until the gid_map has been written and
->> then it would become usable if and only if the parent userns could use
->> setgroups and the opener of gid_map was privileged.
->
-> That proposal sounds a lot more restrictive and a lot more of a pain
-> to use than what I have implemented in my patch.
->
->> If we wanted to allow finer-grained control, we could allow writing
->> control lines like:
->>
->> options +setgroups
->>
->> or
->>
->> options -setgroups
->>
->> in gid_map, or we could add user_ns_flags that can only be written
->> once and only before either uid_map or gid_map is written.
->
-> Definitely more complicated and I can't imagine a case where I need
-> a gid map without needing to call setgroups.
+Looking at this one more time, I had another question:
 
-I do it all the time.  Unshare, set mappings (with no inner uid 0 at
-all), set no_new_privs, drop caps, and go.
+> +	smb0: smb {
+> +		compatible = "simple-bus";
+> +		#address-cells = <2>;
+> +		#size-cells = <2>;
+> +		ranges;
+> +
+> +		/* DDR range is 40-bit addressing */
+> +		dma-ranges = <0x80 0x0 0x80 0x0 0x7f 0xffffffff>;
+> +
 
-Can we try the intermediate approach?  If you set gid_map without
-privilege and you have supplementary groups, then let the write to
-gid_map succeed but prevent setgroups from ever working?  That should
-only be a couple of lines of code longer than your patch, and it will
-avoid breaking sandbox use cases.
+What is a DDR range?
 
-If we want to get really fancy in the future, we could have a concept
-of pinned groups.  That is, if you're in a userns and you're a member
-of an unmapped group, then you can't drop that group.  (Actually, that
-all by itself might be enough to fix this issue.)
+Also, what is special about the last byte? Did you intentionally
+leave it out? I think when we calculate the dma mask, we will
+use 0x3fffffffff so we don't step on the last byte, which I assume
+is not what you intended.
 
---Andy
-
->
-> Eric
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+	Arnd
