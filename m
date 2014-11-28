@@ -1,49 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751205AbaK1UeB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 15:34:01 -0500
-Received: from smtp08.smtpout.orange.fr ([80.12.242.130]:57918 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057AbaK1UeA (ORCPT
+	id S1751281AbaK1UeN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 15:34:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54614 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216AbaK1UeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 15:34:00 -0500
-X-ME-Helo: beldin.home
-X-ME-Date: Fri, 28 Nov 2014 21:33:58 +0100
-X-ME-IP: 90.11.113.15
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Daniel Mack <daniel@zonque.org>, Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Robert Jarzmik <robert.jarzmik@free.fr>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>
-Subject: [PATCH] arm: pxa: fix pxa27x device-tree support kconfig
-Date: Fri, 28 Nov 2014 21:32:48 +0100
-Message-Id: <1417206768-5840-1-git-send-email-robert.jarzmik@free.fr>
-X-Mailer: git-send-email 2.1.0
+	Fri, 28 Nov 2014 15:34:09 -0500
+Date: Fri, 28 Nov 2014 12:32:48 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Mariusz Gorski <marius.gorski@gmail.com>
+Cc: devel@driverdev.osuosl.org, Willy Tarreau <w@1wt.eu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/9] staging: panel: Use defined value or checking
+ module params state
+Message-ID: <20141128203248.GA26878@kroah.com>
+References: <1416429531-11088-1-git-send-email-marius.gorski@gmail.com>
+ <1416429531-11088-5-git-send-email-marius.gorski@gmail.com>
+ <20141126215801.GA32756@kroah.com>
+ <20141127132657.GA12298@firebird>
+ <20141127152417.GB23247@kroah.com>
+ <20141127155706.GB24149@kroah.com>
+ <20141127195054.GA14536@firebird>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141127195054.GA14536@firebird>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the useless CPU_PXA27x non existing kconfig option.
-The true options is PXA27x, which is already selected.
+On Thu, Nov 27, 2014 at 08:50:55PM +0100, Mariusz Gorski wrote:
+> On Thu, Nov 27, 2014 at 07:57:06AM -0800, Greg Kroah-Hartman wrote:
+> > On Thu, Nov 27, 2014 at 07:24:17AM -0800, Greg Kroah-Hartman wrote:
+> > > On Thu, Nov 27, 2014 at 02:26:59PM +0100, Mariusz Gorski wrote:
+> > > > On Wed, Nov 26, 2014 at 01:58:01PM -0800, Greg Kroah-Hartman wrote:
+> > > > > On Wed, Nov 19, 2014 at 09:38:46PM +0100, Mariusz Gorski wrote:
+> > > > > > Avoid magic number and use a comparison with a defined value instead
+> > > > > > that checks whether module param has been set by the user to some
+> > > > > > value at loading time.
+> > > > > > 
+> > > > > > Signed-off-by: Mariusz Gorski <marius.gorski@gmail.com>
+> > > > > > Acked-by: Willy Tarreau <w@1wt.eu>
+> > > > > > ---
+> > > > > > v2: Don't introduce new macros for param value check
+> > > > > > 
+> > > > > >  drivers/staging/panel/panel.c | 86 +++++++++++++++++++++----------------------
+> > > > > >  1 file changed, 43 insertions(+), 43 deletions(-)
+> > > > > 
+> > > > > Ugh, I messed up here, and applied the first series, which was acked.
+> > > > > 
+> > > > > Mariusz, can you resend the patches that I didn't apply, I can't seem to
+> > > > > get the rest of these to work properly.
+> > > > 
+> > > > Greg, if I get you here correctly, you've applied all 9 patches from v1
+> > > > and none from v2, so what you need now is a v1->v2 patch, right?
+> > > 
+> > > No, I think I applied the patches sent _before_ the 9 series, it was 4
+> > > or 5 or so, you should have gotten an email about them.  Pull my
+> > > staging-testing branch and redo your remaining patches please.
+> > 
+> > And the reason I got confused was because you didn't label your second
+> > set of patches "v2", which it was, I saw two separate series, one with a
+> > few patches, and then 2 sets of 9, the second set labeled "v2" so I
+> > thought they were independant.  Please think of the poor maintainer who
+> > has to decipher things like this when you send them out...
+> 
+> I'm confused right now. As you say, first I've sent a patchset of 4:
+> https://lkml.org/lkml/2014/11/11/963
 
-Reported-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
----
- arch/arm/mach-pxa/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
+Which I applied.
 
-diff --git a/arch/arm/mach-pxa/Kconfig b/arch/arm/mach-pxa/Kconfig
-index 83efe91..5f71c06 100644
---- a/arch/arm/mach-pxa/Kconfig
-+++ b/arch/arm/mach-pxa/Kconfig
-@@ -6,7 +6,6 @@ comment "Intel/Marvell Dev Platforms (sorted by hardware release time)"
- 
- config MACH_PXA27X_DT
- 	bool "Support PXA27x platforms from device tree"
--	select CPU_PXA27x
- 	select POWER_SUPPLY
- 	select PXA27x
- 	select USE_OF
--- 
-2.1.0
+> Then, a couple of days later, I've sent the initial patchset of 9:
+> https://lkml.org/lkml/2014/11/18/922
+> 
+> And a day I've sent a fixed version of the above patchset, labeled with v2:
+> https://lkml.org/lkml/2014/11/19/653
 
+So I thought your series of 9 was separate from the series of 4, you can
+see my confusion (remember, I receive on _average_ about 1000 emails a day).
+
+> Isn't this the right way to do? I still don't get my mistake. Because
+> what I was just about to do is to resend the v2 patchset, but now I'm
+> not sure anymore if this is what I'm supposed to do.
+> 
+> BTW: Out of these 3 patchsets, 1st and 3rd should be applied.
+
+I tried to apply the 3rd, but it didn't apply due to patches I applied
+in your first set of 4 patches.
+
+Does that help?
+
+greg k-h
