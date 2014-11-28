@@ -1,89 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751668AbaK1Nmy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 08:42:54 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:50988 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976AbaK1Nmw (ORCPT
+	id S1751796AbaK1NnH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 08:43:07 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:55230 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685AbaK1NnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 08:42:52 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: ARM: SoC fixes for 3.18-rc7
-Date: Fri, 28 Nov 2014 14:42:34 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: olof@lixom.net, arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
+	Fri, 28 Nov 2014 08:43:03 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201411281442.35201.arnd@arndb.de>
-X-Provags-ID: V02:K0:fzsoWwXbnK4OW3elMUbcw7iofhayZ8bjddnk3R8AQBb
- JMWmFBoEtiSQCUGwK62PRBlQnPLlFfPoCQD4o5YYODB9QL/0E0
- UTNNDHNMVeANxNAPTNJqT36rLQtjy5v7AC3ltxr9C4oMOlDYxx
- P5wTc0KUsQ5ABgELG65urcGhgFFUjJcqCWpAJ/V+R0vWUgMxma
- wXc6WZbhfhwG5cUndJ/3+qcXhvly2FMU4Kmm2epGJBuEk2DfB7
- T1hmUXJhB7Xeq2YYPy+zZChTsyn9wfMqsGDUtiXkqofZg4bFKY
- RgHp/1HmA9nMqzqtLpbTQDIBE4MCCcsGpjhebRWlyxPicXjl2p
- 9UKdOnhzDXWK6mPray6wjDJbeE23oN7Zvw2wJm1gk
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <20141128131425.GA23622@developer>
+References: <1417097577-3548-1-git-send-email-edubezval@gmail.com>
+	<CAKohponu_PRrqsuMdCJDznhiO_-=iCaYPhCCad8F4WS3rNxo5A@mail.gmail.com>
+	<20141128111824.533c4641@jawa>
+	<20141128131425.GA23622@developer>
+Date: Fri, 28 Nov 2014 19:13:02 +0530
+Message-ID: <CAKohpokh9oGTOrGB3L=qD2o+nSLJCyBLrpGu4DHiFPU-ByRLpg@mail.gmail.com>
+Subject: Re: [PATCHv2 1/1] thermal: cpu_cooling: check for the readiness of
+ cpufreq layer
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Lukasz Majewski <l.majewski@majess.pl>,
+        Linux PM <linux-pm@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Rob Herring <robh+dt@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 28 November 2014 at 18:44, Eduardo Valentin <edubezval@gmail.com> wrote:
+> Well, I wouldn't say unfortunately, but fortunately! :-)
 
-Not much interesting going on fixes-wise for us this week, as it should be
-for an -rc7. I'm not expecting Olof to work much over Thanksgiving weekend,
-so I decided to take over again and push these out to you.
++1 :)
 
-	Arnd
+> However, I would prefer, at least to what comes to deferring, to update
+> the drivers altogether with the inclusion of the check in cpu cooling.
+> This way the change in behavior is atomic, in terms of commit changes.
+>
+> Viresh, if you don't mind, I will merge your patch 04/26 into this one.
 
-The following changes since commit 5d01410fe4d92081f349b013a2e7a95429e4f2c9:
-
-  Linux 3.18-rc6 (2014-11-23 15:25:20 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc tags/armsoc-for-rc7
-
-for you to fetch changes up to 96ba18ffd09cc063b8d1ddc8c6cafea6177c8259:
-
-  Merge tag 'mvebu-fixes-3.18-2' of git://git.infradead.org/linux-mvebu into fixes (2014-11-27 14:29:23 +0100)
-
-----------------------------------------------------------------
-ARM: SoC fixes for 3.18-rc7
-
-Just four simple fixes this week:
-
-- one missing of_node_put() on armv7 based mvebu
-- forcing the USB host into the right mode on Chromebook (exynos5-snow)
-- enabling two important drivers for exynos_defconfig
-- fixing a noncritical bug for tegra that would cause a
-  regression with common code patches queued for 3.19
-
-----------------------------------------------------------------
-Arnd Bergmann (3):
-      Merge tag 'samsung-fixes-v3.18' of git://git.kernel.org/.../kgene/linux-samsung into fixes
-      Merge tag 'samsung-defconfig-v3.18' of git://git.kernel.org/.../kgene/linux-samsung into fixes
-      Merge tag 'mvebu-fixes-3.18-2' of git://git.infradead.org/linux-mvebu into fixes
-
-Javier Martinez Canillas (1):
-      ARM: exynos_defconfig: Enable max77802 rtc and clock drivers
-
-Marc Zyngier (1):
-      ARM: tegra: irq: fix buggy usage of irq_data irq field
-
-Sjoerd Simons (1):
-      ARM: dts: Explicitly set dr_mode on exynos5250-snow
-
-Thomas Petazzoni (1):
-      ARM: mvebu: add missing of_node_put() call in coherency.c
-
- arch/arm/boot/dts/exynos5250-snow.dts |  4 ++++
- arch/arm/boot/dts/exynos5250.dtsi     |  2 +-
- arch/arm/configs/exynos_defconfig     |  2 ++
- arch/arm/mach-mvebu/coherency.c       |  2 ++
- arch/arm/mach-tegra/irq.c             | 22 +++++++++++-----------
- 5 files changed, 20 insertions(+), 12 deletions(-)
+Sure, go ahead.
