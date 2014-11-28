@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751813AbaK1Jjf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 04:39:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49278 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751781AbaK1Jjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 04:39:32 -0500
-Message-ID: <547842C2.4010306@redhat.com>
-Date: Fri, 28 Nov 2014 10:39:14 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751884AbaK1JkH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 04:40:07 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:39998 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751463AbaK1JkB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 04:40:01 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="44143281"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: [RFC PATCH 0/2] tiny_rcu: simplify tiny_rcu
+Date: Fri, 28 Nov 2014 17:43:31 +0800
+Message-ID: <1417167813-11963-1-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
 MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-CC: "David S. Miller" <davem@davemloft.net>, Zi Shen Lim <zlim.lnx@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH net] bpf: x86: fix epilogue generation for eBPF programs
-References: <1417064546-4129-1-git-send-email-ast@plumgrid.com> <5476F471.80500@redhat.com> <CAMEtUuyzDs2Nz8WHdEZXmY9JOZx=w2UwUF06Kq5qcgkaaRKs3A@mail.gmail.com>
-In-Reply-To: <CAMEtUuyzDs2Nz8WHdEZXmY9JOZx=w2UwUF06Kq5qcgkaaRKs3A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2014 06:55 AM, Alexei Starovoitov wrote:
-> On Thu, Nov 27, 2014 at 1:52 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
->> On 11/27/2014 06:02 AM, Alexei Starovoitov wrote:
->>>
->>> classic BPF has a restriction that last insn is always BPF_RET.
->>> eBPF doesn't have BPF_RET instruction and this restriction.
->>> It has BPF_EXIT insn which can appear anywhere in the program
->>> one or more times and it doesn't have to be last insn.
->>> Fix eBPF JIT to emit epilogue when first BPF_EXIT is seen
->>> and all other BPF_EXIT instructions will be emitted as jump.
->>>
->>> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
->>> ---
->>> Note, this bug is applicable only to native eBPF programs
->>> which first were introduced in 3.18, so no need to send it
->>> to stable and therefore no 'Fixes' tag.
->>
->> Btw, even if it's not sent to -stable, a 'Fixes:' tag is useful
->> information for backporting and regression tracking, preferably
->> always mentioned where it can clearly be identified.
->
-> Well I didn't mention it, as I said, because I don't think it
-> needs backporting. Otherwise with the tag the tools might
-> pick it up automatically? Just a guess.
+Hi, Paul
 
-No, Dave selects -stable material on a case-by-case basis and bundles
-it up eventually; after -net was merged, it's then pushed to -stable
-by himself (see Documentation/networking/netdev-FAQ.txt +114). So the
-comment below "---" is absolutely okay.
+These two patches use the special feture of the UP system:
+	In UP, quiescent state == grace period.
 
-It can well be, that some people/companies cannot switch for various
-reasons immediately to the next kernels, but nevertheless would like
-to have a certain features included, so generally regression tracking
-via 'Fixes:' tag is extremely useful/valuable. ;)
+For rcu_bh, rcu_process_callbacks() == a bh == QS == GP
+so we can pass rcu_bh-QS and advance GP(and callbacks) in
+rcu_process_callbacks(). After doing so, rcu_bh_qs() is useless
+since its work is handled by rcu_process_callbacks().
 
-> Fixes: 622582786c9e ("net: filter: x86: internal BPF JIT")
+For rcu_sched, context-switch = QS = GP, thus we can force a
+context-switch when call_rcu_sched() is happened on idle_task.
+After doing so, rcu_idle/irq_enter/exit() are useless.
 
-...
->> Why this type change here? This seems a bit out of context (I would
->> have expected a mention of this in the commit message, otherwise).
->
-> The reason for signed is the following:
-> jmp offset to epilogue is computed as:
-> jmp_offset = ctx->cleanup_addr - addrs[i]
-> when cleanup_addr was always last insn it wasn't a problem,
-> since result of subtraction was positive.
-> Now, since epilogue will be in the middle of JITed
-> code the jmps to epilogue may be negative
+These patches remove the useless code to simplify the tiny_rcu.
 
-Ok, thanks for the clarification, Alexei.
+We can change rcu_bh_qs() rcu_idle/irq_enter/exit() to static-inline-functions
+to reduce the binary size after these two patches accepted.
+
+Thanks,
+Lai
+
+Cc: Josh Triplett <josh@joshtriplett.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+
+Lai Jiangshan (2):
+  record rcu_bh quiescent state in RCU_SOFTIRQ
+  tiny_rcu: resched when call_rcu() on idle_task
+
+ kernel/rcu/rcu.h         |    6 ++
+ kernel/rcu/tiny.c        |  134 ++++++++--------------------------------------
+ kernel/rcu/tiny_plugin.h |    2 +-
+ kernel/rcu/tree.c        |    6 --
+ 4 files changed, 29 insertions(+), 119 deletions(-)
+
+-- 
+1.7.4.4
+
