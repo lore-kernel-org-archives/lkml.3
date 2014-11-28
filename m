@@ -1,85 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751244AbaK1M4K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 07:56:10 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:32786 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaK1M4I (ORCPT
+	id S1751351AbaK1M4R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 07:56:17 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:34843 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027AbaK1M4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 07:56:08 -0500
-Date: Fri, 28 Nov 2014 13:56:00 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
-Subject: Re: [PATCH v6 06/46] virtio_ccw: add support for 64 bit features.
-Message-ID: <20141128135600.594dd74e.cornelia.huck@de.ibm.com>
-In-Reply-To: <1417118789-18231-7-git-send-email-mst@redhat.com>
-References: <1417118789-18231-1-git-send-email-mst@redhat.com>
-	<1417118789-18231-7-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112812-0025-0000-0000-000002A30D99
+	Fri, 28 Nov 2014 07:56:15 -0500
+From: Athira Lekshmi <andnlnbn18@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: mdcasey@chabloom.com, mahati.chamarthy@gmail.com,
+        andreas.frembs@studium.uni-erlangen.de, peter.senna@gmail.com,
+        emilgoode@gmail.com, tapaswenipathak@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Athira Lekshmi <andnlnbn18@gmail.com>
+Subject: [PATCH] Drivers:staging:rtl8192e: Fixed checkpatch warning
+Date: Fri, 28 Nov 2014 18:26:13 +0530
+Message-Id: <1417179373-19458-1-git-send-email-andnlnbn18@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Nov 2014 22:08:09 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+Fixed checkpatch warning:
+WARNING: space prohibited before semicolon
 
-> Negotiate full 64 bit features.
-> Change u32 to u64, make sure to use 1ULL everywhere.
-> 
-> Note: devices guarantee that VERSION_1 is clear unless
-> revision 1 is negotiated.
-> 
-> Based on patches by Rusty, Thomas Huth and Cornelia.
-> 
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  drivers/s390/kvm/virtio_ccw.c | 30 +++++++++++++++++++++++-------
->  1 file changed, 23 insertions(+), 7 deletions(-)
-> 
+Signed-off-by: Athira Lekshmi <andnlnbn18@gmail.com>
+---
+ drivers/staging/rtl8192e/rtllib_rx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> @@ -691,6 +691,16 @@ static u64 virtio_ccw_get_features(struct virtio_device *vdev)
-> 
->  	rc = le32_to_cpu(features->features);
-> 
-> +	/* Read second half feature bits from the host. */
-
-s/half feature bits/half of the feature bits/
-
-> +	features->index = 1;
-> +	ccw->cmd_code = CCW_CMD_READ_FEAT;
-> +	ccw->flags = 0;
-> +	ccw->count = sizeof(*features);
-> +	ccw->cda = (__u32)(unsigned long)features;
-
-We don't need to re-setup the ccw, but it probably doesn't hurt for
-clarity.
-
-> +	ret = ccw_io_helper(vcdev, ccw, VIRTIO_CCW_DOING_READ_FEAT);
-> +	if (ret == 0)
-> +		rc |= (u64)le32_to_cpu(features->features) << 32;
-> +
->  out_free:
->  	kfree(features);
->  	kfree(ccw);
-
-Looks good.
+diff --git a/drivers/staging/rtl8192e/rtllib_rx.c b/drivers/staging/rtl8192e/rtllib_rx.c
+index ca76ad0..cf11b04 100644
+--- a/drivers/staging/rtl8192e/rtllib_rx.c
++++ b/drivers/staging/rtl8192e/rtllib_rx.c
+@@ -2687,7 +2687,7 @@ void rtllib_rx_mgt(struct rtllib_device *ieee,
+ 		      struct sk_buff *skb,
+ 		      struct rtllib_rx_stats *stats)
+ {
+-	struct rtllib_hdr_4addr *header = (struct rtllib_hdr_4addr *)skb->data ;
++	struct rtllib_hdr_4addr *header = (struct rtllib_hdr_4addr *)skb->data;
+ 
+ 	if ((WLAN_FC_GET_STYPE(le16_to_cpu(header->frame_ctl)) !=
+ 	    RTLLIB_STYPE_PROBE_RESP) &&
+-- 
+1.7.9.5
 
