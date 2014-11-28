@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159AbaK1Qnr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 11:43:47 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:56034 "EHLO
+	id S1751665AbaK1QoX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 11:44:23 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:56038 "EHLO
 	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457AbaK1Qnp (ORCPT
+	with ESMTP id S1751434AbaK1Qnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 11:43:45 -0500
+	Fri, 28 Nov 2014 11:43:46 -0500
 From: Stefan Agner <stefan@agner.ch>
 To: shawn.guo@linaro.org, kernel@pengutronix.de, linux@roeck-us.net
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         stefan@agner.ch
-Subject: [PATCH 0/2] ARM: imx: src: vf610 system reset controller
-Date: Fri, 28 Nov 2014 17:43:33 +0100
-Message-Id: <1417193015-6033-1-git-send-email-stefan@agner.ch>
+Subject: [PATCH 1/2] ARM: dts: vf610: add system reset controller (SRC)
+Date: Fri, 28 Nov 2014 17:43:34 +0100
+Message-Id: <1417193015-6033-2-git-send-email-stefan@agner.ch>
 X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1417193015-6033-1-git-send-email-stefan@agner.ch>
+References: <1417193015-6033-1-git-send-email-stefan@agner.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a system reset controller handler for Vybrid SoC family.
-There is already a driver for the SRC (system reset controller)
-module for i.MX6, but since the module in Vybrid is a bit different
-I descided to create a new file (there are several MISC registers
-with various functionality in the Vybrid case).
+Add device tree property for system reset controller.
 
-I'm not sure if it is acceptable to have that code still in the
-machine folder. However, since the current i.MX6 implementation
-is located there too, and the module has various functionality
-we need for instance from suspend/resume code (future pm-vf610.c),
-I descided to put it into the machine folder. If it needs to go
-under driver/, my question is how can I properly export the
-functionality (e.g. DDR Reset control on standby in MISC_2 or
-SRC_GPR), from the PM code located in the machine folder.
+Signed-off-by: Stefan Agner <stefan@agner.ch>
+---
+ arch/arm/boot/dts/vf500.dtsi | 4 ++++
+ arch/arm/boot/dts/vfxxx.dtsi | 5 +++++
+ 2 files changed, 9 insertions(+)
 
-Stefan Agner (2):
-  ARM: dts: vf610: add system reset controller (SRC)
-  ARM: imx: src: support vf610 system reset controller
-
- arch/arm/boot/dts/vf500.dtsi   |  4 ++++
- arch/arm/boot/dts/vfxxx.dtsi   |  5 ++++
- arch/arm/mach-imx/Makefile     |  2 +-
- arch/arm/mach-imx/common.h     |  1 +
- arch/arm/mach-imx/mach-vf610.c |  8 +++++++
- arch/arm/mach-imx/src-vf610.c  | 53 ++++++++++++++++++++++++++++++++++++++++++
- 6 files changed, 72 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/mach-imx/src-vf610.c
-
+diff --git a/arch/arm/boot/dts/vf500.dtsi b/arch/arm/boot/dts/vf500.dtsi
+index de67005..3f38f49 100644
+--- a/arch/arm/boot/dts/vf500.dtsi
++++ b/arch/arm/boot/dts/vf500.dtsi
+@@ -130,6 +130,10 @@
+ 	interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_HIGH>;
+ };
+ 
++&src {
++	interrupts = <GIC_SPI 96 IRQ_TYPE_LEVEL_HIGH>;
++};
++
+ &uart0 {
+ 	interrupts = <GIC_SPI 61 IRQ_TYPE_LEVEL_HIGH>;
+ };
+diff --git a/arch/arm/boot/dts/vfxxx.dtsi b/arch/arm/boot/dts/vfxxx.dtsi
+index 505969a..5ff9cc5 100644
+--- a/arch/arm/boot/dts/vfxxx.dtsi
++++ b/arch/arm/boot/dts/vfxxx.dtsi
+@@ -318,6 +318,11 @@
+ 				clocks = <&clks VF610_CLK_USBC0>;
+ 				status = "disabled";
+ 			};
++
++			src: src@4006e000 {
++				compatible = "fsl,vf610-src";
++				reg = <0x4006e000 0x1000>;
++			};
+ 		};
+ 
+ 		aips1: aips-bus@40080000 {
 -- 
 2.1.3
 
