@@ -1,63 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751108AbaK1I2U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 03:28:20 -0500
-Received: from mout.web.de ([212.227.17.12]:49880 "EHLO mout.web.de"
+	id S1751241AbaK1Iaz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 03:30:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50143 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750866AbaK1I2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 03:28:19 -0500
-From: Alexander Stein <alexanders83@web.de>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: Re: [PATCH 00/11] ARM: at91: remove !DT support for at91rm9200
-Date: Fri, 28 Nov 2014 09:27:38 +0100
-Message-ID: <1422574.pPO36BQRH8@kongar>
-User-Agent: KMail/4.14.3 (Linux/3.14.14-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20141128002822.GM4508@piout.net>
-References: <cover.1417103399.git.nicolas.ferre@atmel.com> <3935244.Dm2HkZj2Bg@wuerfel> <20141128002822.GM4508@piout.net>
+	id S1750981AbaK1Iax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 03:30:53 -0500
+Date: Fri, 28 Nov 2014 08:38:25 +0008
+From: Jason Wang <jasowang@redhat.com>
+Subject: Re: [PATCH v6 24/46] virtio_net: get rid of
+ virtio_net_hdr/skb_vnet_hdr
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        cornelia.huck@de.ibm.com, rusty@au1.ibm.com, nab@linux-iscsi.org,
+        pbonzini@redhat.com, thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Message-Id: <1417163425.5822.4@smtp.corp.redhat.com>
+In-Reply-To: <1417118789-18231-25-git-send-email-mst@redhat.com>
+References: <1417118789-18231-1-git-send-email-mst@redhat.com>
+	<1417118789-18231-25-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:J14VESfhWPm8HqIvD5fZ/FTV8kiGKwIDm96efnRTWRnRgsa3Pji
- D6N4qyOw9I0qBSuV/higHSrjuqYGcvPdSlvCMdzLelkuQX6Wq/WQ2ENtCHYBVBtwALsUiyU
- MDT/ql5svPxgz0htA17R2falUVPWV+oa34CqTl9otIIs+Tr70egO1DxDlPPPe0c85+y2Yad
- 47wnqBTlbUnc9XtkpvNPg==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=utf-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
 
-On Friday 28 November 2014, 01:28:22 wrote Alexandre Belloni:
-> > >  - sound/atmel/ac97c.c (that one is still not converted to DT anyway...)
-> > 
-> > This one seems fairly straightforward to do, including a DT binding,
-> > but the result is still ugly as it supports the at32 chips that
-> > do things very differently.
-> > 
-> > The patch below gets it to compile and should be enough as a replacement
-> > once a compatible string gets added.
-> > 
+
+On Fri, Nov 28, 2014 at 4:09 AM, Michael S. Tsirkin <mst@redhat.com> 
+wrote:
+> virtio 1.0 doesn't use virtio_net_hdr anymore, and in fact, it's not
+> really useful since virtio_net_hdr_mrg_rxbuf includes that as the 
+> first
+> field anyway.
 > 
-> Actually, some work was done but we never saw an other version of the
-> series. Alexander, are you still interested? Else we can take the patch
-> below.
+> Let's drop it, precalculate header len and store within vi instead.
 > 
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/246679.html
+> This way we can also remove struct skb_vnet_hdr.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+> ---
+>  drivers/net/virtio_net.c | 90 
+> ++++++++++++++++++++++--------------------------
+>  1 file changed, 41 insertions(+), 49 deletions(-)
+> 
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index 1630c21..516f2cb 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -123,6 +123,9 @@ struct virtnet_info {
+>  	/* Host can handle any s/g split between our header and packet data 
+> */
+>  	bool any_header_sg;
+>  
+> +	/* Packet virtio header size */
+> +	u8 hdr_len;
+> +
+>  	/* Active statistics */
+>  	struct virtnet_stats __percpu *stats;
+>  
+> @@ -139,21 +142,14 @@ struct virtnet_info {
+>  	struct notifier_block nb;
+>  };
+>  
+> -struct skb_vnet_hdr {
+> -	union {
+> -		struct virtio_net_hdr hdr;
+> -		struct virtio_net_hdr_mrg_rxbuf mhdr;
+> -	};
+> -};
+> -
+>  struct padded_vnet_hdr {
+> -	struct virtio_net_hdr hdr;
+> +	struct virtio_net_hdr_mrg_rxbuf hdr;
+>  	/*
+> -	 * virtio_net_hdr should be in a separated sg buffer because of a
+> -	 * QEMU bug, and data sg buffer shares same page with this header 
+> sg.
+> -	 * This padding makes next sg 16 byte aligned after virtio_net_hdr.
+> +	 * hdr is in a separate sg buffer, and data sg buffer shares same 
+> page
+> +	 * with this header sg. This padding makes next sg 16 byte aligned
+> +	 * after the header.
+>  	 */
+> -	char padding[6];
+> +	char padding[4];
+>  };
+>  
+>  /* Converting between virtqueue no. and kernel tx/rx queue no.
+> @@ -179,9 +175,9 @@ static int rxq2vq(int rxq)
+>  	return rxq * 2;
+>  }
+>  
+> -static inline struct skb_vnet_hdr *skb_vnet_hdr(struct sk_buff *skb)
+> +static inline struct virtio_net_hdr_mrg_rxbuf *skb_vnet_hdr(struct 
+> sk_buff *skb)
+>  {
+> -	return (struct skb_vnet_hdr *)skb->cb;
+> +	return (struct virtio_net_hdr_mrg_rxbuf *)skb->cb;
+>  }
+>  
+>  /*
+> @@ -247,7 +243,7 @@ static struct sk_buff *page_to_skb(struct 
+> virtnet_info *vi,
+>  				   unsigned int len, unsigned int truesize)
+>  {
+>  	struct sk_buff *skb;
+> -	struct skb_vnet_hdr *hdr;
+> +	struct virtio_net_hdr_mrg_rxbuf *hdr;
+>  	unsigned int copy, hdr_len, hdr_padded_len;
+>  	char *p;
+>  
+> @@ -260,13 +256,11 @@ static struct sk_buff *page_to_skb(struct 
+> virtnet_info *vi,
+>  
+>  	hdr = skb_vnet_hdr(skb);
+>  
+> -	if (vi->mergeable_rx_bufs) {
+> -		hdr_len = sizeof hdr->mhdr;
+> -		hdr_padded_len = sizeof hdr->mhdr;
+> -	} else {
+> -		hdr_len = sizeof hdr->hdr;
+> +	hdr_len = vi->hdr_len;
+> +	if (vi->mergeable_rx_bufs)
+> +		hdr_padded_len = sizeof *hdr;
+> +	else
+>  		hdr_padded_len = sizeof(struct padded_vnet_hdr);
+> -	}
+>  
+>  	memcpy(hdr, p, hdr_len);
+>  
+> @@ -317,11 +311,11 @@ static struct sk_buff *page_to_skb(struct 
+> virtnet_info *vi,
+>  	return skb;
+>  }
+>  
+> -static struct sk_buff *receive_small(void *buf, unsigned int len)
+> +static struct sk_buff *receive_small(struct virtnet_info *vi, void 
+> *buf, unsigned int len)
+>  {
+>  	struct sk_buff * skb = buf;
+>  
+> -	len -= sizeof(struct virtio_net_hdr);
+> +	len -= vi->hdr_len;
+>  	skb_trim(skb, len);
+>  
+>  	return skb;
+> @@ -354,8 +348,8 @@ static struct sk_buff *receive_mergeable(struct 
+> net_device *dev,
+>  					 unsigned int len)
+>  {
+>  	void *buf = mergeable_ctx_to_buf_address(ctx);
+> -	struct skb_vnet_hdr *hdr = buf;
+> -	u16 num_buf = virtio16_to_cpu(rq->vq->vdev, hdr->mhdr.num_buffers);
+> +	struct virtio_net_hdr_mrg_rxbuf *hdr = buf;
+> +	u16 num_buf = virtio16_to_cpu(vi->vdev, hdr->num_buffers);
+>  	struct page *page = virt_to_head_page(buf);
+>  	int offset = buf - page_address(page);
+>  	unsigned int truesize = max(len, 
+> mergeable_ctx_to_buf_truesize(ctx));
+> @@ -373,8 +367,8 @@ static struct sk_buff *receive_mergeable(struct 
+> net_device *dev,
+>  		if (unlikely(!ctx)) {
+>  			pr_debug("%s: rx error: %d buffers out of %d missing\n",
+>  				 dev->name, num_buf,
+> -				 virtio16_to_cpu(rq->vq->vdev,
+> -						 hdr->mhdr.num_buffers));
+> +				 virtio16_to_cpu(vi->vdev,
+> +						 hdr->num_buffers));
+>  			dev->stats.rx_length_errors++;
+>  			goto err_buf;
+>  		}
+> @@ -441,7 +435,7 @@ static void receive_buf(struct virtnet_info *vi, 
+> struct receive_queue *rq,
+>  	struct net_device *dev = vi->dev;
+>  	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+>  	struct sk_buff *skb;
+> -	struct skb_vnet_hdr *hdr;
+> +	struct virtio_net_hdr_mrg_rxbuf *hdr;
+>  
+>  	if (unlikely(len < sizeof(struct virtio_net_hdr) + ETH_HLEN)) {
+>  		pr_debug("%s: short packet %i\n", dev->name, len);
+> @@ -463,7 +457,7 @@ static void receive_buf(struct virtnet_info *vi, 
+> struct receive_queue *rq,
+>  	else if (vi->big_packets)
+>  		skb = receive_big(dev, vi, rq, buf, len);
+>  	else
+> -		skb = receive_small(buf, len);
+> +		skb = receive_small(vi, buf, len);
+>  
+>  	if (unlikely(!skb))
+>  		return;
+> @@ -545,7 +539,7 @@ static int add_recvbuf_small(struct virtnet_info 
+> *vi, struct receive_queue *rq,
+>  			     gfp_t gfp)
+>  {
+>  	struct sk_buff *skb;
+> -	struct skb_vnet_hdr *hdr;
+> +	struct virtio_net_hdr_mrg_rxbuf *hdr;
+>  	int err;
+>  
+>  	skb = __netdev_alloc_skb_ip_align(vi->dev, GOOD_PACKET_LEN, gfp);
+> @@ -556,7 +550,7 @@ static int add_recvbuf_small(struct virtnet_info 
+> *vi, struct receive_queue *rq,
+>  
+>  	hdr = skb_vnet_hdr(skb);
+>  	sg_init_table(rq->sg, MAX_SKB_FRAGS + 2);
+> -	sg_set_buf(rq->sg, &hdr->hdr, sizeof hdr->hdr);
+> +	sg_set_buf(rq->sg, hdr, vi->hdr_len);
+>  	skb_to_sgvec(skb, rq->sg + 1, 0, skb->len);
+>  
+>  	err = virtqueue_add_inbuf(rq->vq, rq->sg, 2, skb, gfp);
+> @@ -566,7 +560,8 @@ static int add_recvbuf_small(struct virtnet_info 
+> *vi, struct receive_queue *rq,
+>  	return err;
+>  }
+>  
+> -static int add_recvbuf_big(struct receive_queue *rq, gfp_t gfp)
+> +static int add_recvbuf_big(struct virtnet_info *vi, struct 
+> receive_queue *rq,
+> +			   gfp_t gfp)
+>  {
+>  	struct page *first, *list = NULL;
+>  	char *p;
+> @@ -597,8 +592,8 @@ static int add_recvbuf_big(struct receive_queue 
+> *rq, gfp_t gfp)
+>  	p = page_address(first);
+>  
+>  	/* rq->sg[0], rq->sg[1] share the same page */
+> -	/* a separated rq->sg[0] for virtio_net_hdr only due to QEMU bug */
+> -	sg_set_buf(&rq->sg[0], p, sizeof(struct virtio_net_hdr));
+> +	/* a separated rq->sg[0] for header - required in case 
+> !any_header_sg */
+> +	sg_set_buf(&rq->sg[0], p, vi->hdr_len);
+>  
+>  	/* rq->sg[1] for data packet, from offset */
+>  	offset = sizeof(struct padded_vnet_hdr);
+> @@ -677,7 +672,7 @@ static bool try_fill_recv(struct virtnet_info 
+> *vi, struct receive_queue *rq,
+>  		if (vi->mergeable_rx_bufs)
+>  			err = add_recvbuf_mergeable(rq, gfp);
+>  		else if (vi->big_packets)
+> -			err = add_recvbuf_big(rq, gfp);
+> +			err = add_recvbuf_big(vi, rq, gfp);
+>  		else
+>  			err = add_recvbuf_small(vi, rq, gfp);
+>  
+> @@ -857,18 +852,14 @@ static void free_old_xmit_skbs(struct 
+> send_queue *sq)
+>  
+>  static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
+>  {
+> -	struct skb_vnet_hdr *hdr;
+> +	struct virtio_net_hdr_mrg_rxbuf *hdr;
+>  	const unsigned char *dest = ((struct ethhdr *)skb->data)->h_dest;
+>  	struct virtnet_info *vi = sq->vq->vdev->priv;
+>  	unsigned num_sg;
+> -	unsigned hdr_len;
+> +	unsigned hdr_len = vi->hdr_len;
+>  	bool can_push;
+>  
+>  	pr_debug("%s: xmit %p %pM\n", vi->dev->name, skb, dest);
+> -	if (vi->mergeable_rx_bufs)
+> -		hdr_len = sizeof hdr->mhdr;
+> -	else
+> -		hdr_len = sizeof hdr->hdr;
+>  
+>  	can_push = vi->any_header_sg &&
+>  		!((unsigned long)skb->data & (__alignof__(*hdr) - 1)) &&
+> @@ -876,7 +867,7 @@ static int xmit_skb(struct send_queue *sq, struct 
+> sk_buff *skb)
+>  	/* Even if we can, don't push here yet as this would skew
+>  	 * csum_start offset below. */
+>  	if (can_push)
+> -		hdr = (struct skb_vnet_hdr *)(skb->data - hdr_len);
+> +		hdr = (struct virtio_net_hdr_mrg_rxbuf *)(skb->data - hdr_len);
+>  	else
+>  		hdr = skb_vnet_hdr(skb);
+>  
+> @@ -909,7 +900,7 @@ static int xmit_skb(struct send_queue *sq, struct 
+> sk_buff *skb)
+>  	}
+>  
+>  	if (vi->mergeable_rx_bufs)
+> -		hdr->mhdr.num_buffers = 0;
+> +		hdr->num_buffers = 0;
+>  
+>  	sg_init_table(sq->sg, MAX_SKB_FRAGS + 2);
+>  	if (can_push) {
+> @@ -1814,18 +1805,19 @@ static int virtnet_probe(struct virtio_device 
+> *vdev)
+>  	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
+>  		vi->mergeable_rx_bufs = true;
+>  
+> +	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
+> +		vi->hdr_len = sizeof(struct virtio_net_hdr_mrg_rxbuf);
+> +	else
+> +		vi->hdr_len = sizeof(struct virtio_net_hdr);
+> +
+>  	if (virtio_has_feature(vdev, VIRTIO_F_ANY_LAYOUT))
+>  		vi->any_header_sg = true;
+>  
+>  	if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
+>  		vi->has_cvq = true;
+>  
+> -	if (vi->any_header_sg) {
+> -		if (vi->mergeable_rx_bufs)
+> -			dev->needed_headroom = sizeof(struct virtio_net_hdr_mrg_rxbuf);
+> -		else
+> -			dev->needed_headroom = sizeof(struct virtio_net_hdr);
+> -	}
+> +	if (vi->any_header_sg)
+> +		dev->needed_headroom = vi->hdr_len;
+>  
+>  	/* Use single tx/rx queue pair as default */
+>  	vi->curr_queue_pairs = 1;
+> -- 
+> MST
 
-Well, I tried to get a ac97c driver based on alsa soc framework as suggested 
-by Takashi. But I failed so far, I could not get my head around those 
-architecture.
-When keeping my DT support on the current driver, the only thing which is open 
-that the bindings should be modifed that they are like soc-ac97link bindings.
-I could work on that, but I currently don't know when I can get access again 
-to that hardware for testing.
-
-Best regards,
-Alexander
+Reviewed-by: Jason Wang <jasowang@redhat.com>
 
