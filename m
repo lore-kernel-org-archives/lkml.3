@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502AbaK1Jnu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 04:43:50 -0500
-Received: from va-smtp01.263.net ([54.88.144.211]:36575 "EHLO
-	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041AbaK1Jns (ORCPT
+	id S1751586AbaK1JrS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 04:47:18 -0500
+Received: from lucky1.263xmail.com ([211.157.147.132]:56904 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053AbaK1JrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 04:43:48 -0500
+	Fri, 28 Nov 2014 04:47:16 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
 X-RL-SENDER: andy.yan@rock-chips.com
 X-FST-TO: galak@codeaurora.org
 X-SENDER-IP: 121.15.173.1
 X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <78039072c1c0e2c457b22e0bcfc51de2>
+X-UNIQUE-TAG: <2c53092dee6373ad6b64b5c5bf7167ae>
 X-ATTACHMENT-NUM: 0
 X-DNS-TYPE: 0
-Message-ID: <547843B9.6000806@rock-chips.com>
-Date: Fri, 28 Nov 2014 17:43:21 +0800
+Message-ID: <5478449A.40307@rock-chips.com>
+Date: Fri, 28 Nov 2014 17:47:06 +0800
 From: Andy Yan <andy.yan@rock-chips.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
@@ -36,25 +41,26 @@ CC: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v13 07/12] drm: bridge/dw_hdmi: add support for multi-byte
- register width access
-References: <1417008157-31861-1-git-send-email-andy.yan@rock-chips.com>	 <1417008759-32257-1-git-send-email-andy.yan@rock-chips.com> <1417019657.3177.10.camel@pengutronix.de>
-In-Reply-To: <1417019657.3177.10.camel@pengutronix.de>
+Subject: Re: [PATCH v13 08/12] drm: bridge/dw_hdmi: add mode_valid support
+References: <1417008157-31861-1-git-send-email-andy.yan@rock-chips.com>	 <1417008811-32308-1-git-send-email-andy.yan@rock-chips.com> <1417018985.3177.8.camel@pengutronix.de>
+In-Reply-To: <1417018985.3177.8.camel@pengutronix.de>
 Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Zabel:
-On 2014年11月27日 00:34, Philipp Zabel wrote:
-> Am Mittwoch, den 26.11.2014, 21:32 +0800 schrieb Andy Yan:
->> On rockchip rk3288, only word(32-bit) accesses are
->> permitted for hdmi registers.  Byte width accesses (writeb,
->> readb) generate an imprecise external abort.
+Hi Philipp:
+
+On 2014年11月27日 00:23, Philipp Zabel wrote:
+> Am Mittwoch, den 26.11.2014, 21:33 +0800 schrieb Andy Yan:
+>> some platform may not support all the display mode,
+>> add mode_valid interface check it
+>>
+>> also add drm_connector_register which add a debugfs
+>> interface for dump display modes and edid information
 >>
 >> Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
->>
 >> ---
 >>
 >> Changes in v13: None
@@ -64,139 +70,64 @@ On 2014年11月27日 00:34, Philipp Zabel wrote:
 >> Changes in v9: None
 >> Changes in v8: None
 >> Changes in v7: None
->> Changes in v6:
->> - refactor register access without reg_shift
->>
->> Changes in v5:
->> - refactor reg-io-width
->>
+>> Changes in v6: None
+>> Changes in v5: None
 >> Changes in v4: None
->> Changes in v3:
->> - split multi-register access to one indepent patch
+>> Changes in v3: None
 >>
->>   drivers/gpu/drm/bridge/dw_hdmi.c | 57 +++++++++++++++++++++++++++++++++++-----
->>   1 file changed, 51 insertions(+), 6 deletions(-)
+>>   drivers/gpu/drm/bridge/dw_hdmi.c | 17 +++++++++++++++++
+>>   include/drm/bridge/dw_hdmi.h     |  2 ++
+>>   2 files changed, 19 insertions(+)
 >>
 >> diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
->> index a53bf63..5e88c8d 100644
+>> index 5e88c8d..b13e782 100644
 >> --- a/drivers/gpu/drm/bridge/dw_hdmi.c
 >> +++ b/drivers/gpu/drm/bridge/dw_hdmi.c
->> @@ -100,6 +100,11 @@ struct hdmi_data_info {
->>   	struct hdmi_vmode video_mode;
->>   };
->>   
->> +union dw_reg_ptr {
->> +	u32 __iomem *p32;
->> +	u8 __iomem *p8;
->> +};
-> I see no need to introduce this. Just explicitly multiply the offset in
-> dw_hdmi_writel.
->
-     Is there any disadvantage to do like this?
-     The compiler can help us do the explicitly multiply by this way.
->>   struct dw_hdmi {
->>   	struct drm_connector connector;
->>   	struct drm_encoder *encoder;
->> @@ -121,20 +126,43 @@ struct dw_hdmi {
->>   
->>   	struct regmap *regmap;
->>   	struct i2c_adapter *ddc;
->> -	void __iomem *regs;
->> +	union dw_reg_ptr regs;
-> Keep this as void __iomem *
->
->>   	unsigned int sample_rate;
->>   	int ratio;
->> +
->> +	void (*write)(struct dw_hdmi *hdmi, u8 val, int offset);
->> +	u8 (*read)(struct dw_hdmi *hdmi, int offset);
->>   };
->>   
->> +static void dw_hdmi_writel(struct dw_hdmi *hdmi, u8 val, int offset)
->> +{
->> +	writel(val, hdmi->regs.p32 + offset);
-> hdmi->regs + 4 * offset
->
->> +}
->> +
->> +static u8 dw_hdmi_readl(struct dw_hdmi *hdmi, int offset)
->> +{
->> +	return readl(hdmi->regs.p32 + offset);
-> same here
->
->> +}
->> +
->> +static void dw_hdmi_writeb(struct dw_hdmi *hdmi, u8 val, int offset)
->> +{
->> +	writeb(val, hdmi->regs.p8 + offset);
->> +}
->> +
->> +static u8 dw_hdmi_readb(struct dw_hdmi *hdmi, int offset)
->> +{
->> +	return readb(hdmi->regs.p8 + offset);
->> +}
->> +
->>   static inline void hdmi_writeb(struct dw_hdmi *hdmi, u8 val, int offset)
->>   {
->> -	writeb(val, hdmi->regs + offset);
->> +	hdmi->write(hdmi, val, offset);
+>> @@ -1406,6 +1406,20 @@ static int dw_hdmi_connector_get_modes(struct drm_connector *connector)
+>>   	return 0;
 >>   }
 >>   
->>   static inline u8 hdmi_readb(struct dw_hdmi *hdmi, int offset)
+>> +static enum drm_mode_status
+>> +dw_hdmi_connector_mode_valid(struct drm_connector *connector,
+>> +			     struct drm_display_mode *mode)
+>> +{
+>> +	struct dw_hdmi *hdmi = container_of(connector,
+>> +					   struct dw_hdmi, connector);
+>> +	enum drm_mode_status mode_status = MODE_OK;
+>> +
+>> +	if (hdmi->plat_data->mode_valid)
+>> +		mode_status = hdmi->plat_data->mode_valid(connector, mode);
+>> +
+>> +	return mode_status;
+>> +}
+>> +
+>>   static struct drm_encoder *dw_hdmi_connector_best_encoder(struct drm_connector
+>>   							   *connector)
 >>   {
->> -	return readb(hdmi->regs + offset);
->> +	return hdmi->read(hdmi, offset);
->>   }
->>
->>   static void hdmi_modb(struct dw_hdmi *hdmi, u8 data, u8 mask, unsigned reg)
->> @@ -1508,6 +1536,7 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
->>   	struct dw_hdmi *hdmi;
->>   	struct resource *iores;
->>   	int ret, irq;
->> +	u32 val = 1;
+>> @@ -1430,6 +1444,7 @@ static struct drm_connector_funcs dw_hdmi_connector_funcs = {
 >>   
->>   	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
->>   	if (!hdmi)
->> @@ -1520,6 +1549,22 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
->>   	hdmi->ratio = 100;
->>   	hdmi->encoder = encoder;
+>>   static struct drm_connector_helper_funcs dw_hdmi_connector_helper_funcs = {
+>>   	.get_modes = dw_hdmi_connector_get_modes,
+>> +	.mode_valid = dw_hdmi_connector_mode_valid,
+>>   	.best_encoder = dw_hdmi_connector_best_encoder,
+>>   };
 >>   
->> +	of_property_read_u32(np, "reg-io-width", &val);
+>> @@ -1631,6 +1646,8 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
+>>   
+>>   	dev_set_drvdata(dev, hdmi);
+>>   
+>> +	drm_connector_register(&hdmi->connector);
 >> +
->> +	switch (val) {
->> +	case 4:
->> +		hdmi->write = dw_hdmi_writel;
->> +		hdmi->read = dw_hdmi_readl;
->> +		break;
->> +	case 1:
->> +		hdmi->write = dw_hdmi_writeb;
->> +		hdmi->read = dw_hdmi_readb;
->> +		break;
->> +	default:
->> +		dev_err(dev, "reg-io-width must be 1 or 4\n");
->> +		return -EINVAL;
->> +	}
->> +
->>   	ddc_node = of_parse_phandle(np, "ddc-i2c-bus", 0);
->>   	if (ddc_node) {
->>   		hdmi->ddc = of_find_i2c_adapter_by_node(ddc_node);
->> @@ -1544,9 +1589,9 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
->>   		return ret;
->>   
->>   	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> -	hdmi->regs = devm_ioremap_resource(dev, iores);
->> -	if (IS_ERR(hdmi->regs))
->> -		return PTR_ERR(hdmi->regs);
->> +	hdmi->regs.p32 = devm_ioremap_resource(dev, iores);
->> +	if (IS_ERR(hdmi->regs.p32))
->> +		return PTR_ERR(hdmi->regs.p32);
->>   
->>   	/* Product and revision IDs */
->>   	dev_info(dev,
+> This is not right, the connector is registered by the imx-drm core in
+> the drm_driver .load callback.
+     Sorry, I didn't found imx-drm core has did that before.And I found many
+connector drivers register it by itself.
+    This will be removed in next patch.
 > regards
 > Philipp
 >
 >
 >
 >
+
 
