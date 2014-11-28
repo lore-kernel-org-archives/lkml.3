@@ -1,216 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751312AbaK1Buo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 20:50:44 -0500
-Received: from mail-bn1on0091.outbound.protection.outlook.com ([157.56.110.91]:61051
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750981AbaK1Bul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 20:50:41 -0500
-From: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
-To: Soren Brinkmann <sorenb@xilinx.com>
-CC: "wg@grandegger.com" <wg@grandegger.com>,
-        "mkl@pengutronix.de" <mkl@pengutronix.de>,
-        Michal Simek <michals@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH v3] can: Convert to runtime_pm
-Thread-Topic: [PATCH v3] can: Convert to runtime_pm
-Thread-Index: AQHQCm9CvELYd1JskEqth0DIY+yQN5x1RccA
-Date: Fri, 28 Nov 2014 01:49:12 +0000
-References: <6b6db31d46074512a322eae6e4ef64d4@BN1BFFO11FD038.protection.gbl>
- <20141127182337.GF17884@xsjandreislx>
-In-Reply-To: <20141127182337.GF17884@xsjandreislx>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.228.144]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21136.001
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <d306383c84b9479d933b15c4b38da532@BN1AFFO11FD025.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(377424004)(13464003)(377454003)(189002)(24454002)(51704005)(106466001)(74316001)(46102003)(54356999)(106116001)(47776003)(19580395003)(87936001)(95666004)(33646002)(76176999)(20776003)(77096003)(6806004)(2656002)(62966003)(99396003)(21056001)(120916001)(50466002)(4396001)(110136001)(107046002)(64706001)(108616004)(104016003)(23676002)(31966008)(77156002)(92566001)(53416004)(50986999)(86362001)(19580405001)(44976005)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB065;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB065;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB065;
-X-Forefront-PRVS: 04097B7F7F
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=appana.durga.rao@xilinx.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB065;
-X-OriginatorOrg: xilinx.com
+	id S1751194AbaK1B6B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 20:58:01 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:36476 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926AbaK1B56 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 20:57:58 -0500
+X-AuditID: cbfee68d-f79296d000004278-8f-5477d67e0a39
+Message-id: <5477D67D.2080407@samsung.com>
+Date: Fri, 28 Nov 2014 10:57:17 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Pankaj Dubey <pankaj.dubey@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kgene.kim@samsung.com, mark.rutland@arm.com, arnd@arndb.de,
+        olof@lixom.net, catalin.marinas@arm.com, will.deacon@arm.com,
+        s.nawrocki@samsung.com, tomasz.figa@gmail.com,
+        thomas.abraham@linaro.org, linus.walleij@linaro.org,
+        kyungmin.park@samsung.com, inki.dae@samsung.com,
+        chanho61.park@samsung.com, geunsik.lim@samsung.com,
+        sw0312.kim@samsung.com, jh80.chung@samsung.com, a.kesavan@samsung.com,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [03/19] clk: samsung: exynos5433: Add clocks using common clock
+ framework
+References: <1417073716-22997-4-git-send-email-cw00.choi@samsung.com>
+ <54770FA2.9090804@samsung.com>
+In-reply-to: <54770FA2.9090804@samsung.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsWyRsSkWLfuWnmIwe4JQhaP1yxmsvg76Ri7
+	xftlPYwWl/drW8w/co7V4s+EVjaLSfcnsFjc+NXGatG74CqbxdmmN+wWU/4sZ7LY9Pgaq8Xl
+	XXPYLGac38dksfT6RSaLU9c/s1ks2vqF3eLwm3ZWixmTX7JZHJuxhNFi1a4/jBYvP55gcRDz
+	WDNvDaPH71+TGD12zrrL7nHn2h42j81L6j2unGhi9ejbsorR4/MmuQCOKC6blNSczLLUIn27
+	BK6Mdxd2sxRM46t43bCCqYFxD3cXIyeHhICJxN1F11khbDGJC/fWs3UxcnEICSxllLjxfAcT
+	TNGqbxsZIRLTGSXun7wH5bxmlPh37g5QFQcHr4CWxMc2B5AGFgFViT0NN5hBbDag8P4XN9hA
+	bFGBMImV06+wgNi8AoISPybfA7NFBLQlOi/fYwWZySwwl0ViwZq/jCAJYYEIiR9tV8GahQTS
+	JF6uPsMIsosTqOHjQlYQk1lAT+L+RS2QCmYBeYnNa94yQ9x8g0PiUXcdxDkCEt8mH2IBKZcQ
+	kJXYdACqRFLi4IobLBMYxWYhOWgWwtBZSIYuYGRexSiaWpBcUJyUXmSoV5yYW1yal66XnJ+7
+	iRGYIE7/e9a7g/H2AetDjAIcjEo8vBYHykKEWBPLiitzDzGaAh0xkVlKNDkfmIbySuINjc2M
+	LExNTI2NzC3NlMR5FaV+BgsJpCeWpGanphakFsUXleakFh9iZOLglGpgXL32slOy0fINuqLn
+	UmwmfZ29w+TlcrfWc53p/JKsz57dC20V/Jix7XTi3i2lEwV2Xcmckhez9dgDheaF/0sKT3F1
+	/Z6arCpw6pf/TiOxGXm57W+Sv3FoVP99rWt0ZY2X1dRCxV1fzoqplX1VsRe7/eW66K6dgUtS
+	A59vO+NyVmCp5MPbTL9uBiixFGckGmoxFxUnAgBzIRV/CwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMKsWRmVeSWpSXmKPExsVy+t9jQd26a+UhBo8XcVg8XrOYyeLvpGPs
+	Fu+X9TBaXN6vbTH/yDlWiz8TWtksJt2fwGJx41cbq0XvgqtsFmeb3rBbTPmznMli0+NrrBaX
+	d81hs5hxfh+TxdLrF5ksTl3/zGaxaOsXdovDb9pZLWZMfslmcWzGEkaLVbv+MFq8/HiCxUHM
+	Y828NYwev39NYvTYOesuu8eda3vYPDYvqfe4cqKJ1aNvyypGj8+b5AI4ohoYbTJSE1NSixRS
+	85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOA/lNSKEvMKQUKBSQWFyvp
+	22GaEBripmsB0xih6xsSBNdjZIAGEtYwZry7sJulYBpfxeuGFUwNjHu4uxg5OSQETCRWfdvI
+	CGGLSVy4t56ti5GLQ0hgOqPE/ZP3GCGc14wS/87dYepi5ODgFdCS+NjmANLAIqAqsafhBjOI
+	zQYU3v/iBhuILSoQJrFy+hUWEJtXQFDix+R7YLaIgLZE5+V7rCAzmQXmskgsWPMXbLOwQITE
+	j7arYM1CAmkSL1efYQTZxQnU8HEhK4jJLKAncf+iFkgFs4C8xOY1b5knMArMQrJhFkLVLCRV
+	CxiZVzGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEJ6BnUjsYVzZYHGIU4GBU4uG1OFAWIsSa
+	WFZcmXuIUYKDWUmEd8H58hAh3pTEyqrUovz4otKc1OJDjKZA/09klhJNzgcmx7ySeENjEzMj
+	SyNzQwsjY3Mlcd4bN3NDhATSE0tSs1NTC1KLYPqYODilGhj5GEI0Ipykmx6fvK0jmh57/BDH
+	7LTidcIPZfglrFp+vreMjauJWrHUYM2u0owFKZ+26O86va+VcZ3M4wSx5/vffm9ecPXYvTPh
+	Mjr1QkpHX9sL5u5oYayLdJrb98w54/iSBK7Win8Fn44IFwR/zbJke79N9lTcsdns6Qs/bC9s
+	EQyRcX58wViJpTgj0VCLuag4EQCUeQTVVgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sAS1ooMI028533
 
-Hi Soren,
+Hi Pankaj,
 
------Original Message-----
-From: S√∂ren Brinkmann [mailto:soren.brinkmann@xilinx.com]
-Sent: Thursday, November 27, 2014 11:54 PM
-To: Appana Durga Kedareswara Rao
-Cc: wg@grandegger.com; mkl@pengutronix.de; Michal Simek; grant.likely@linaro.org; robh+dt@kernel.org; devicetree@vger.kernel.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org; linux-can@vger.kernel.org; Appana Durga Kedareswara Rao; linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3] can: Convert to runtime_pm
+On 11/27/2014 08:48 PM, Pankaj Dubey wrote:
+> Hi Chanwoo,
+> 
+> On Thursday 27 November 2014 01:05 PM, Chanwoo Choi wrote:
+>> This patch adds the support for CMU (Clock Management Units) of Exynos5433
+>> which is 64bit SoC and has Octa-cores. This patch supports necessary clocks
+>> for kernel boot as following:
+>> - PLL/MMC/UART/MCT/I2C/SPI
+>>
+>> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+>> Cc: Tomasz Figa <tomasz.figa@gmail.com>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Acked-by: Inki Dae <inki.dae@samsung.com>
+>> Acked-by: Geunsik Lim <geunsik.lim@samsung.com>
+>>
+>> ---
+>> drivers/clk/samsung/Makefile           |   1 +
+>>   drivers/clk/samsung/clk-exynos5433.c   | 971 +++++++++++++++++++++++++++++++++
+>>   include/dt-bindings/clock/exynos5433.h | 200 +++++++
+>>   3 files changed, 1172 insertions(+)
+>>   create mode 100644 drivers/clk/samsung/clk-exynos5433.c
+>>   create mode 100644 include/dt-bindings/clock/exynos5433.h
+>>
 
-Hi Kedar,
+(snip)
 
-On Thu, 2014-11-27 at 06:38PM +0530, Kedareswara rao Appana wrote:
-> Instead of enabling/disabling clocks at several locations in the
-> driver, use the runtime_pm framework. This consolidates the actions
-> for runtime PM in the appropriate callbacks and makes the driver more
-> readable and mantainable.
->
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
-> ---
-> Changes for v3:
->   - Converted the driver to use runtime_pm.
-> Changes for v2:
->   - Removed the struct platform_device* from suspend/resume
->     as suggest by Lothar.
->
->  drivers/net/can/xilinx_can.c |  119
-> +++++++++++++++++++++++++----------------
->  1 files changed, 72 insertions(+), 47 deletions(-)
->
-> diff --git a/drivers/net/can/xilinx_can.c
-> b/drivers/net/can/xilinx_can.c index 8a998e3..1be28ed 100644
-> --- a/drivers/net/can/xilinx_can.c
-> +++ b/drivers/net/can/xilinx_can.c
-> @@ -32,6 +32,7 @@
->  #include <linux/can/dev.h>
->  #include <linux/can/error.h>
->  #include <linux/can/led.h>
-> +#include <linux/pm_runtime.h>
->
->  #define DRIVER_NAME  "xilinx_can"
->
-> @@ -138,7 +139,7 @@ struct xcan_priv {
->       u32 (*read_reg)(const struct xcan_priv *priv, enum xcan_reg reg);
->       void (*write_reg)(const struct xcan_priv *priv, enum xcan_reg reg,
->                       u32 val);
-> -     struct net_device *dev;
-> +     struct device *dev;
->       void __iomem *reg_base;
->       unsigned long irq_flags;
->       struct clk *bus_clk;
-> @@ -842,6 +843,13 @@ static int xcan_open(struct net_device *ndev)
->       struct xcan_priv *priv = netdev_priv(ndev);
->       int ret;
->
-> +     ret = pm_runtime_get_sync(priv->dev);
-> +     if (ret < 0) {
-> +             netdev_err(ndev, "%s: runtime CAN resume failed(%d)\n\r",
+>> +
+>> +static struct samsung_div_clock top_div_clks[] __initdata = {
+>> +    /* DIV_TOP2 */
+>> +    DIV(CLK_DIV_ACLK_FSYS_200, "div_aclk_fsys_200", "mout_bus_pll_user",
+>> +            DIV_TOP2, 0, 3),
+>> +
+>> +    /* DIV_TOP3 */
+>> +    DIV(CLK_DIV_ACLK_IMEM_SSSX, "div_aclk_imem_sssx",
+>> +            "mout_bus_pll_user", DIV_TOP3, 24, 3),
+> 
+> Isn't this clock name should be div_aclk_imem_sssx_266 as per UM?
 
-There might be other issues than the resume that make this fail. It should probably just say 'pm_runtime_get failed'.
-The CAN in the string should not be needed, the netdev_err macro makes sure the device name is printed.
-Can we have a space between 'failed' and the error code?
-There should not be a '\r'
+You're right. So, I fxied clock name on patch11[1] for CMU_BUSx domains.
+- [1] [PATCH 11/19] clk: samsung: exynos5433: Add clocks for CMU_BUS{0|1|2} domains
 
-K sure will modify the error message as you explained above.
+ 	/* DIV_TOP3 */
+-	DIV(CLK_DIV_ACLK_IMEM_SSSX, "div_aclk_imem_sssx",
++	DIV(CLK_DIV_ACLK_IMEM_SSSX_266, "div_aclk_imem_sssx_266",
+ 			"mout_bus_pll_user", DIV_TOP3, 24, 3),
 
-> +                             __func__, ret);
-> +             return ret;
-> +     }
-> +
->       ret = request_irq(ndev->irq, xcan_interrupt, priv->irq_flags,
->                       ndev->name, ndev);
->       if (ret < 0) {
-> @@ -849,29 +857,17 @@ static int xcan_open(struct net_device *ndev)
->               goto err;
->       }
->
-> -     ret = clk_prepare_enable(priv->can_clk);
-> -     if (ret) {
-> -             netdev_err(ndev, "unable to enable device clock\n");
-> -             goto err_irq;
-> -     }
-> -
-> -     ret = clk_prepare_enable(priv->bus_clk);
-> -     if (ret) {
-> -             netdev_err(ndev, "unable to enable bus clock\n");
-> -             goto err_can_clk;
-> -     }
-> -
->       /* Set chip into reset mode */
->       ret = set_reset_mode(ndev);
->       if (ret < 0) {
->               netdev_err(ndev, "mode resetting failed!\n");
-> -             goto err_bus_clk;
-> +             goto err_irq;
->       }
->
->       /* Common open */
->       ret = open_candev(ndev);
->       if (ret)
-> -             goto err_bus_clk;
-> +             goto err_irq;
->
->       ret = xcan_chip_start(ndev);
->       if (ret < 0) {
-> @@ -887,13 +883,11 @@ static int xcan_open(struct net_device *ndev)
->
->  err_candev:
->       close_candev(ndev);
-> -err_bus_clk:
-> -     clk_disable_unprepare(priv->bus_clk);
-> -err_can_clk:
-> -     clk_disable_unprepare(priv->can_clk);
->  err_irq:
->       free_irq(ndev->irq, ndev);
->  err:
-> +     pm_runtime_put(priv->dev);
-> +
->       return ret;
->  }
->
-> @@ -910,12 +904,11 @@ static int xcan_close(struct net_device *ndev)
->       netif_stop_queue(ndev);
->       napi_disable(&priv->napi);
->       xcan_chip_stop(ndev);
-> -     clk_disable_unprepare(priv->bus_clk);
-> -     clk_disable_unprepare(priv->can_clk);
->       free_irq(ndev->irq, ndev);
->       close_candev(ndev);
->
->       can_led_event(ndev, CAN_LED_EVENT_STOP);
-> +     pm_runtime_put(priv->dev);
->
->       return 0;
->  }
-> @@ -934,27 +927,21 @@ static int xcan_get_berr_counter(const struct net_device *ndev,
->       struct xcan_priv *priv = netdev_priv(ndev);
->       int ret;
->
-> -     ret = clk_prepare_enable(priv->can_clk);
-> -     if (ret)
-> -             goto err;
-> +     ret = pm_runtime_get_sync(priv->dev);
-> +     if (ret < 0) {
-> +             netdev_err(ndev, "%s: runtime resume failed(%d)\n\r",
-> +                             __func__, ret);
-
-As above.
-
-K will modify this too.
-
-Regards,
-Kedar.
-        S√∂ren
+Best Regards,
+Chanwoo Choi
 
 
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+
