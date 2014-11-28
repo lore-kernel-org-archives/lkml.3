@@ -1,225 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534AbaK1KNT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 05:13:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56212 "EHLO mx1.redhat.com"
+	id S1751608AbaK1KO6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 05:14:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53333 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751113AbaK1KNQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 05:13:16 -0500
-Date: Fri, 28 Nov 2014 10:20:53 +0008
-From: Jason Wang <jasowang@redhat.com>
-Subject: RE: [PATCH v3] hv: hv_fcopy: drop the obsolete message on transfer
- failure
-To: Dexuan Cui <decui@microsoft.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        KY Srinivasan <kys@microsoft.com>,
-        "vkuznets@redhat.com" <vkuznets@redhat.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Message-Id: <1417169573.5822.12@smtp.corp.redhat.com>
-In-Reply-To: <F792CF86EFE20D4AB8064279AFBA51C613E66566@HKNPRD3002MB017.064d.mgd.msft.net
-	>
-References: <1417093747-21073-1-git-send-email-decui@microsoft.com>
-	<1417157243.3268.1@smtp.corp.redhat.com>
-	<F792CF86EFE20D4AB8064279AFBA51C613E66566@HKNPRD3002MB017.064d.mgd.msft.net>
+	id S1751321AbaK1KO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 05:14:56 -0500
+Message-ID: <54784B1D.6030308@suse.de>
+Date: Fri, 28 Nov 2014 11:14:53 +0100
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+To: Ching Huang <ching2048@areca.com.tw>, hch@infradead.org, thenzl@redhat.com,
+        jbottomley@parallels.com, dan.carpenter@oracle.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1.1 1/1]  arcmsr: Notify has sense data report
+References: <1417169252.25477.11.camel@Centos6.3-64>
+In-Reply-To: <1417169252.25477.11.camel@Centos6.3-64>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Fri, Nov 28, 2014 at 4:36 PM, Dexuan Cui <decui@microsoft.com> wrote:
->>  -----Original Message-----
->>  From: Jason Wang [mailto:jasowang@redhat.com]
->>  Sent: Friday, November 28, 2014 14:47 PM
->>  To: Dexuan Cui
->>  Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; 
->> driverdev-
->>  devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com; KY
->>  Srinivasan; vkuznets@redhat.com; Haiyang Zhang
->>  Subject: Re: [PATCH v3] hv: hv_fcopy: drop the obsolete message on 
->> transfer
->>  failure
->>  On Thu, Nov 27, 2014 at 9:09 PM, Dexuan Cui <decui@microsoft.com> 
->> wrote:
->>  > In the case the user-space daemon crashes, hangs or is killed, we
->>  > need to down the semaphore, otherwise, after the daemon starts 
->> next
->>  > time, the obsolete data in fcopy_transaction.message or
->>  > fcopy_transaction.fcopy_msg will be used immediately.
->>  >
->>  > Cc: Jason Wang <jasowang@redhat.com>
->>  > Cc: Vitaly Kuznetsov <vkuznets@redhat.com>
->>  > Cc: K. Y. Srinivasan <kys@microsoft.com>
->>  > Signed-off-by: Dexuan Cui <decui@microsoft.com>
->>  > ---
->>  >
->>  > v2: I removed the "FCP" prefix as Greg asked.
->>  >
->>  >     I also updated the output message a little:
->>  >     "FCP: failed to acquire the semaphore" -->
->>  >     "can not acquire the semaphore: it is benign"
->>  >
->>  > v3: I added the code in fcopy_release() as Jason Wang suggested.
->>  >     I removed the pr_debug (it isn't so meaningful)and added a
->>  > comment instead.
->>  >
->>  >  drivers/hv/hv_fcopy.c | 19 +++++++++++++++++++
->>  >  1 file changed, 19 insertions(+)
->>  >
->>  > diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c
->>  > index 23b2ce2..faa6ba6 100644
->>  > --- a/drivers/hv/hv_fcopy.c
->>  > +++ b/drivers/hv/hv_fcopy.c
->>  > @@ -86,6 +86,18 @@ static void fcopy_work_func(struct work_struct
->>  > *dummy)
->>  >  	 * process the pending transaction.
->>  >  	 */
->>  >  	fcopy_respond_to_host(HV_E_FAIL);
->>  > +
->>  > +	/* In the case the user-space daemon crashes, hangs or is 
->> killed, we
->>  > +	 * need to down the semaphore, otherwise, after the daemon 
->> starts
->>  > next
->>  > +	 * time, the obsolete data in fcopy_transaction.message or
->>  > +	 * fcopy_transaction.fcopy_msg will be used immediately.
->>  > +	 *
->>  > +	 * NOTE: fcopy_read() happens to get the semaphore (very rare)?
->>  > We're
->>  > +	 * still OK, because we've reported the failure to the host.
->>  > +	 */
->>  > +	if (down_trylock(&fcopy_transaction.read_sema))
->>  > +		;
->>  
->>  Sorry, I'm not quite understand how if () ; can help here.
->>  
->>  Btw, a question not relate to this patch.
->>  
->>  What happens if a daemon is resume from SIGSTOP and expires the 
->> check
->>  here?
-> Hi Jason,
-> My idea is: here we need down_trylock(), but in case we can't get the
-> semaphore, it's OK anyway:
+On 11/28/2014 11:07 AM, Ching Huang wrote:
+> From: Ching Huang <ching2048@areca.com.tw>
 > 
-> Scenario 1):
-> 1.1: when the daemon is blocked on the pread(), the daemon receives 
-> SIGSTOP;
-> 1.2: the host user runs the PowerShell Copy-VMFile command;
-> 1.3.1: the driver reports the failure to the host user in 5s and
-> 1.3.2: the driver down()-es the semaphore;
-> 1.4: the daemon receives SIGCONT and it will be still blocked on the 
-> pread().
-> Without the down_trylock(), in 1.4, the daemon can receive an 
-> obsolete message.
-> NOTE: in this scenario, the daemon is not killed.
+> Setting command status with 'DRIVER_SENSE' except 'CHECK_CONDITION' if we have sense data.
 > 
-> Scenario 2):
-> In senario 1), if the daemon receives SIGCONT between 1.3.1 and 1.3.2 
-> and
-> do down() in fcopy_read(), it will receive the message but: the 
-> driver has
-> reported the failure to the host user and the driver's 1.3.2 can't 
-> get the
-> semaphore -- IMO this is acceptably OK, though in the VM, an 
-> incomplete
-> file will be left there.
-> BTW, I think in the daemon's hv_start_fcopy() we should add a
-> close(target_fd) before open()-ing a new one.
-
-Right, but how about the case when resuming from SIGSTOP but no timeout?
-
-Looks like in this case userspace() may wait in down_interruptible() 
-until timeout. We probably need something like this:
-
-        if (down_interruptible(&fcopy_transaction.read_sema)) {
-                up(&fcopy_transaction.read_sema);
-                return -EINTR;
-        }
-
-This should synchronize with the timeout work for sure.
-But how about only schedule it after this?
-It does not may sense to start the timer during interrupt
-since the file may not even opened and it may take time
-to handle signals?
-
+> Signed-off-by: Ching Huang <ching2048@areca.com.tw>
+> ---
 > 
->>  >
->>  > +
->>  >  }
->>  >
->>  >  static int fcopy_handle_handshake(u32 version)
->>  > @@ -351,6 +363,13 @@ static int fcopy_release(struct inode *inode,
->>  > struct file *f)
->>  >  	 */
->>  >  	in_hand_shake = true;
->>  >  	opened = false;
->>  > +
->>  > +	if (cancel_delayed_work_sync(&fcopy_work)) {
->>  > +		/* We haven't up()-ed the semaphore(very rare)? */
->>  > +		if (down_trylock(&fcopy_transaction.read_sema))
->>  > +			;
->>  
->>  And this.
-> 
-> Scenario 3):
-> When the daemon exits(e.g., SIGKILL received), if there is a 
-> fcopy_work
-> pending (scheduled but not start to run yet), we should cancel the
-> work (as you suggested) and down() the semaphore, otherwise, the
-> obsolete message will be received by the next instance of the daemon.
-
-Yes
+> This patch is relative to http://git.infradead.org/users/hch/scsi-queue.git/tree/refs/heads/drivers-for-3.18:/drivers/scsi/arcmsr
 > 
 > 
-> Scenario 4):  in the driver's hv_fcopy_onchannelcallback():
->         schedule_delayed_work(&fcopy_work, 5*HZ);
->         ----> if fcopy_release() is running on another vcpu, just 
-> before the next line?
->         fcopy_send_data();
+> diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
+> --- a/drivers/scsi/arcmsr/arcmsr.h	2014-09-19 11:04:41.845100000 +0800
+> +++ b/drivers/scsi/arcmsr/arcmsr.h	2014-11-28 10:54:30.000000000 +0800
+> @@ -52,7 +52,7 @@ struct device_attribute;
+>  	#define ARCMSR_MAX_FREECCB_NUM	320
+>  #define ARCMSR_MAX_OUTSTANDING_CMD	255
+>  #endif
+> -#define ARCMSR_DRIVER_VERSION		"v1.30.00.04-20140919"
+> +#define ARCMSR_DRIVER_VERSION		"v1.30.00.05-20141128"
+>  #define ARCMSR_SCSI_INITIATOR_ID						255
+>  #define ARCMSR_MAX_XFER_SECTORS							512
+>  #define ARCMSR_MAX_XFER_SECTORS_B						4096
+> diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+> --- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-09-19 11:01:26.990090000 +0800
+> +++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-11-28 17:51:04.000000000 +0800
+> @@ -989,16 +989,15 @@ static void arcmsr_report_sense_info(str
+>  
+>  	struct scsi_cmnd *pcmd = ccb->pcmd;
+>  	struct SENSE_DATA *sensebuffer = (struct SENSE_DATA *)pcmd->sense_buffer;
+> -	pcmd->result = DID_OK << 16;
+> -	if (sensebuffer) {
+> -		int sense_data_length =
+> +
+> +	pcmd->result = (DRIVER_SENSE << 24) | (DID_OK << 16) | (CHECK_CONDITION << 1);
+> +	int sense_data_length =
+>  			sizeof(struct SENSE_DATA) < SCSI_SENSE_BUFFERSIZE
+>  			? sizeof(struct SENSE_DATA) : SCSI_SENSE_BUFFERSIZE;
+> -		memset(sensebuffer, 0, SCSI_SENSE_BUFFERSIZE);
+> -		memcpy(sensebuffer, ccb->arcmsr_cdb.SenseData, sense_data_length);
+> -		sensebuffer->ErrorCode = SCSI_SENSE_CURRENT_ERRORS;
+> -		sensebuffer->Valid = 1;
+> -	}
+> +	memset(sensebuffer, 0, SCSI_SENSE_BUFFERSIZE);
+> +	memcpy(sensebuffer, ccb->arcmsr_cdb.SenseData, sense_data_length);
+> +	sensebuffer->ErrorCode = SCSI_SENSE_CURRENT_ERRORS;
+> +	sensebuffer->Valid = 1;
+>  }
+>  
+>  static u32 arcmsr_disable_outbound_ints(struct AdapterControlBlock *acb)
 > 
-> In this case, fcopy_release() can cancel fcopy_work, but
-> can't get the semaphore since it hasn't been up()-ed.
-> Hmm, in this case,   fcopy_send_data() will do up()  later, and we'll
-> buffer an obsolete message in the driver, and the message will be
-> fetched by the next instance of the daemon... 
 > 
-> Looks we need a spinlock here?
+Hmm. Sorry to be picky, but:
 
-Unless fcopy_release() can wait for all data for current transation
-to be received. Spinlock won't help.
+Is there a chance the _no_ sense data will be provided?
+If so we'd end up starting the error handler, calling REQUEST SENSE
+(which will fail, too), and finally offlining the device.
+I'd rather provide a default sense code for these cases.
 
-But an idea is let the daemon the handle such cases. E.g make sure the
-processing begins with START_COPY and end with COMPLETE/CANCEL_COPY.
-Drop all requests that does not start with START_COPY.
+Plus please use SAM_STAT_CHECK_CONDITION instead of
+CHECK_CONDITION << 1.
 
-Thought?
+Cheers,
 
-Thanks
-> 
-> 
-> Please share your idea.
-> 
->>  >
->>  > +		fcopy_respond_to_host(HV_E_FAIL);
->>  > +	}
->>  >  	return 0;
->>  >  }
->>  >
->>  > --
->>  > 1.9.1
->>  >
-> 
-> -- Dexuan
-> 
-> ��NrybXǧv^)޺{.n+{zXܨ}Ơz&j:+vzZ++zfh~izw?&)ߢf^jǫym@Aa0hi
-
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 21284 (AG Nürnberg)
