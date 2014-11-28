@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751665AbaK1J7j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 04:59:39 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:41675 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209AbaK1J7h (ORCPT
+	id S1751796AbaK1KBP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 05:01:15 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:38929 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262AbaK1KBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 04:59:37 -0500
-Date: Fri, 28 Nov 2014 01:59:28 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, ntrrgc@gmail.com,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / video: check _DOD list when creating backlight
- device
-Message-ID: <20141128095928.GA5106@norris-Latitude-E6410>
-References: <542A4949.2020208@intel.com>
- <1648939.GaN1bonAuX@vostro.rjw.lan>
- <5436470B.3030306@intel.com>
+	Fri, 28 Nov 2014 05:01:14 -0500
+Date: Fri, 28 Nov 2014 13:00:45 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: =?iso-8859-1?Q?Lo=EFc?= Pefferkorn <loic@loicp.eu>
+Cc: Greg KH <gregkh@linuxfoundation.org>, keith.mannthey@intel.com,
+        devel@driverdev.osuosl.org, andreas.dilger@intel.com,
+        linux-kernel@vger.kernel.org, oleg.drokin@intel.com, gdonald@gmail.com,
+        HPDD-discuss@ml01.01.org, john.hammond@intel.com
+Subject: Re: [PATCH] staging: lustre: fix sparse warnings related to lock
+ context imbalance
+Message-ID: <20141128100045.GC4860@mwanda>
+References: <02a457cec587341d0f1665491f6360323694b008.1417017302.git.loic@loicp.eu>
+ <20141126205443.GB10615@kroah.com>
+ <20141127183410.GA4582@iron>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <5436470B.3030306@intel.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141127183410.GA4582@iron>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 04:27:55PM +0800, Aaron Lu wrote:
-> On 10/01/2014 04:18 AM, Rafael J. Wysocki wrote:
-> > On Tuesday, September 30, 2014 02:10:17 PM Aaron Lu wrote:
-> >> The _DOD method lists which video output device is currently attached so
-> >> we should only care about them and ignore others. An user recently
-> >> reported that there are two acpi_video interfaces appeared on his system
-> >> and one of them doesn't work. From the acpidump, it is found that there
-> >> are more than one video output devices that have _BCM control method but
-> >> the _DOD lists only one of them. So this patch checks if the video output
-> >> device is in the _DOD list and will not create backlight device if it is
-> >> not in the list. Also, we consider the broken _DOD case(reflected by the
-> >> video->attached_count is 0) and do not change behaviour for those broken
-> >> _DOD systems.
-> >>
-> >> Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=84111
-> >> Reported-and-tested-by: ntrrgc@gmail.com
-> >> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-> > 
-> > This looks reasonable to me, but I'm a little afraid that it may break
-> > systems which forget to list valid interfaces in the _DOD.
+On Thu, Nov 27, 2014 at 07:34:10PM +0100, Loïc Pefferkorn wrote:
+> 1827         if (valid != 0) {
+> 1828             cl_object_attr_lock(obj);
+> 1829             cl_object_attr_set(env, obj, attr, valid);
+> 1830             cl_object_attr_unlock(obj);
 > 
-> Indeed, this is possible.
+> after:
+> 
+> 1827         if (valid != 0) {
+> 1828             spin_lock(cl_object_attr_guard(obj));
+> 1829             cl_object_attr_set(env, obj, attr, valid);
+> 1830             spin_unlock(cl_object_attr_guard(obj));
 
-And indeed, there is a regression! My Dell Latituded E6410's backlight
-control no longer works after this commit, and I get messages like this
-instead:
+The word "_object" doesn't add any new information to the name.  If you
+remove it then the code is improved.
 
-[   57.214610] ACPI: Failed to switch the brightness
+		spin_lock(cl_attr_guard(obj));
+		cl_attr_set(env, obj, attr, valid);
+		spin_unlock(cl_attr_guard(obj));
 
-If I revert this commit, my backlight controls work again. Also, I
-regain a cooling device (?) that was being ignored:
 
-[    1.332682] acpi device:02: registered as cooling_device0
+regards,
+dan carpenter
 
-Do you need any additional info to handle the regression, or should we
-just revert the patch?
-
-Brian
