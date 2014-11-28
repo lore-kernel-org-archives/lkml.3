@@ -1,102 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522AbaK1Jth (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 04:49:37 -0500
-Received: from mga01.intel.com ([192.55.52.88]:29330 "EHLO mga01.intel.com"
+	id S1751707AbaK1Jtm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 04:49:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38468 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751183AbaK1Jte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 04:49:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,475,1413270000"; 
-   d="scan'208";a="629573504"
-Message-ID: <1417168170.17201.4.camel@linux.intel.com>
-Subject: Re: [PATCH v4 2/3] x86: pmc_atom: don't check for NULL twice
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "H . Peter Anvin" <hpa@linux.intel.com>, x86@kernel.org,
-        Aubrey Li <aubrey.li@linux.intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        "Kumar P, Mahesh" <mahesh.kumar.p@intel.com>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 28 Nov 2014 11:49:30 +0200
-In-Reply-To: <alpine.DEB.2.11.1411191224220.3909@nanos>
-References: <1415812689-17326-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1415812689-17326-3-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <alpine.DEB.2.11.1411191224220.3909@nanos>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751564AbaK1Jtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 04:49:39 -0500
+Date: Fri, 28 Nov 2014 10:49:26 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: "Liang, Kan" <kan.liang@intel.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, "acme@kernel.org" <acme@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: Re: [PATCH V5 3/3] perf tool: check buildid for symoff
+Message-ID: <20141128094926.GB27703@krava.brq.redhat.com>
+References: <1416844829-26945-1-git-send-email-kan.liang@intel.com>
+ <1416844829-26945-3-git-send-email-kan.liang@intel.com>
+ <87d289o0sz.fsf@sejong.aot.lge.com>
+ <37D7C6CF3E00A74B8858931C1DB2F07701676CB2@SHSMSX103.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F07701676CB2@SHSMSX103.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-19 at 12:36 +0100, Thomas Gleixner wrote:
-> On Wed, 12 Nov 2014, Andy Shevchenko wrote:
+On Thu, Nov 27, 2014 at 02:09:51PM +0000, Liang, Kan wrote:
 > 
-> > debugfs_remove_recursive() is NULL-aware, thus, we may safely remove the check
-> > here. There is no need to assing NULL to variable since it will be not used
-> > anywhere.
-
-Thanks for review, my comments below.
-
+> 
+> > Hi Kan,
 > > 
-> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > Acked-by: Aubrey Li <aubrey.li@linux.intel.com>
-> > ---
-> >  arch/x86/kernel/pmc_atom.c | 4 ----
-> >  1 file changed, 4 deletions(-)
+> > On Mon, 24 Nov 2014 11:00:29 -0500, Kan Liang wrote:
+> > > From: Kan Liang <kan.liang@intel.com>
+> > >
+> > > symoff can support both same binaries and different binaries. However,
+> > > the offset may be changed for different binaries. This patch checks
+> > > the buildid of perf.data. If they are from different binaries, print a
+> > > warning to notify the user.
 > > 
-> > diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
-> > index 19b8efa..bcc91ea 100644
-> > --- a/arch/x86/kernel/pmc_atom.c
-> > +++ b/arch/x86/kernel/pmc_atom.c
-> > @@ -202,11 +202,7 @@ static const struct file_operations pmc_sleep_tmr_ops = {
-> >  
-> >  static void pmc_dbgfs_unregister(struct pmc_dev *pmc)
-> >  {
-> > -	if (!pmc->dbgfs_dir)
-> > -		return;
-> > -
-> >  	debugfs_remove_recursive(pmc->dbgfs_dir);
-> > -	pmc->dbgfs_dir = NULL;
-> >  }
+> > Hmm.. I think that perf diff is supposed to compare performance between
+> > different (i.e. modified) binaries.  So there's a little point to print the
+> > warning IMHO - but I'm not insist it strongly..
+> > 
+> > Anyway, I think what we really need for the warning is different version of
+> > same binary.  For example, if data file 1 has DSO A and B, and data file 2 has
+> > DSO B and C, we should not consider they're different (unless build-ids of B
+> > in data file 1 and 2 are different) since A and C won't affect symoff
+> > comparision.
+
+that sounds good to me
+
+> >
 > 
-> So while the patch is correct per se, the whole function is useless.
+> It looks good.
+> But I still slightly prefer to warn/inform the user if there are any different dsos,
+> not just from common part. But it's not a strong option.
+> I'd like to hear from others.
 > 
-> pmc_dbgfs_register()
+> Arnaldo? Jirka?
+
+sorry for late reply.. anyway like I said in the other email
+
+---
+IMO one (WARN_ONCE style) warning by default if we see
+buildids discrepancy and detailed comparison for --verbose
+---
+
+I think the breakage of the check (that Namhyung described) could
+be mentioned/labeled somehow as serious issue in the warning and
+we could also 'inform' about "any different dsos" as you mentioned
+
+jirka
+
 > 
-> 	dir = debugfs_create_dir("pmc_atom", NULL);
-> 
-> 	....
-> 	if (!f)
-> 		goto err;
-> 
-> 	pmc->dbgfs_dir = dir;
-> 	return 0;
-> err:
-> 	pmc_dbgfs_unregister(pmc);
-> 
-> So pmc->dbgfs_dir is always NULL when this is called....
-
-Good catch, I add a new patch to address this.
-
-
-> Aside of that, if DEBUGFS=n the code keeps pmc->regmap ioremapped for
-> no reason.
-
-pmc_hw_reg_setup() uses it. Aubrey, is it intended behaviour?
-
-> Looking deeper:
-> 
-> The pmc_power_off function is installed _BEFORE_ pmc_hw_reg_setup() is
-> called, which might not be called if the ioremap fails ....
-
-I don't see any problem here (pmc_power_off uses acpi_base_addr which is
-independent to IO mapped space), though Aubrey may shed a light on this.
-
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
-
+> Thanks,
+> Kan
+>  
+> > Thanks,
+> > Namhyung
