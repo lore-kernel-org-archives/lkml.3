@@ -1,77 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751199AbaK1Ltl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 06:49:41 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43911 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750895AbaK1Ltj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 06:49:39 -0500
-Message-ID: <5478611A.5060404@ti.com>
-Date: Fri, 28 Nov 2014 13:48:42 +0200
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751439AbaK1LuJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 06:50:09 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:57304 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261AbaK1LuH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 06:50:07 -0500
+Date: Fri, 28 Nov 2014 11:50:02 +0000
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        Olof Johansson <olof@lixom.net>
+Cc: Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm64: ARM: Fix the Generic Timers interrupt active
+ level description
+Message-ID: <20141128115002.GZ828@e106497-lin.cambridge.arm.com>
+References: <1417099005-18638-1-git-send-email-Liviu.Dudau@arm.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <alsa-devel@alsa-project.org>,
-        <linux-omap@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        <vinod.koul@intel.com>, <linux-mmc@vger.kernel.org>, <nsekhar@ti.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <khilman@deeprootsystems.com>, Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@kernel.org>, <chris@printf.net>,
-        <dmaengine@vger.kernel.org>, <ulf.hansson@linaro.org>,
-        <linux-spi@vger.kernel.org>
-Subject: Re: [PATCH 2/3] ARM: edma: Rename header file for dmaengine filter
- function definition
-References: <1417084891-17990-1-git-send-email-peter.ujfalusi@ti.com> <4859328.eEV7jzKEaA@wuerfel> <54782148.6040108@ti.com> <6448422.mtUnef24Xp@wuerfel>
-In-Reply-To: <6448422.mtUnef24Xp@wuerfel>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1417099005-18638-1-git-send-email-Liviu.Dudau@arm.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 28 Nov 2014 11:50:03.0771 (UTC) FILETIME=[72818CB0:01D00B01]
+X-MC-Unique: 114112811500506401
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2014 12:51 PM, Arnd Bergmann wrote:
-> On Friday 28 November 2014 09:16:24 Peter Ujfalusi wrote:
->> On 11/27/2014 11:52 PM, Arnd Bergmann wrote:
->>> On Thursday 27 November 2014 20:46:12 Peter Ujfalusi wrote:
->>>>
->>>> I see. With this series I did not planed to fix all edma related issues, just
->>>> as a start clean up the related header files. I would rather not add fixes to
->>>> mmc, spi, etc drivers since while you have valid point it is not in the scope
->>>> of this series.
->>>> Can we do the changes you are suggesting in an incremental manner?
->>>
->>> Sure, but I'd leave the existing filter function declaration alone then
->>> and not move it, since we wouldn't want to keep it in the long run.
->>
->> but if you want to reference the filter function (which is in
->> drivers/dma/edma.c) in arch/arm/mach-davinci/ directory, we will need it.
->> Don't we?
+On Thu, Nov 27, 2014 at 02:36:45PM +0000, Liviu Dudau wrote:
+> The Cortex-A5x TRM states in paragraph "9.2 Generic Timer functional
+> description" that generic timers provide an active-LOW interrupt
+> output. Fix the device trees to correctly describe this.
 > 
-> Yes, unless you move the definition of the filter function into
-> arch/arm/common/edma.c or arch/arm/mach-davinci/devices.c, but that
-> would require other changes.
+> While doing this update the CPU mask to match the number of described
+> CPUs as well.
+> 
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 
-At the end the aim is to get rid of the edma code form arch/arm and have only
-dmaengine API towards eDMA. The ASoC davinci-pcm is the only user of the
-legacy API AFAIK. It has a mode called ping-pong which is not possible with
-the dmaeingine at all. This is to overcome underflow situations on parts where
-the audio IP does not have FIFO.
-My edma-pcm (which is using dmaengine) should be able to handle this
-situation, but I need to verify it before I can remove the davinci-pcm and
-then we can get rid of the direct eDMA API and code.
+arm-soc maintainers: Please discard my v2 patch as it proved to be the wrong fix.
+This patch should still be considered for inclusion for v3.19 as it fixes the
+arm64 DT files.
 
->> If I leave the header as it is, then how would we clean up the edma headers? I
->> would not put the API definitions for the arch code into the same file as we
->> have the filter definition.
-> 
-> Ok, just go ahead with your current patch then, we can always follow up.
-> The most important cleanup for edma is elsewhere anyway, so once the asoc
-> drivers can use the dmaengine interface, this should be easier.
-> 
-> 	Arnd
-> 
+Marc, care to Ack this patch?
 
+Best regards,
+Liviu
+
+> ---
+> 
+> Arnd, Olof: This is on top of linux-next/master as it patches the Juno
+> as well as all the other ARM DTs.
+> 
+>  arch/arm64/boot/dts/arm/foundation-v8.dts  | 8 ++++----
+>  arch/arm64/boot/dts/arm/juno.dts           | 8 ++++----
+>  arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts | 8 ++++----
+>  3 files changed, 12 insertions(+), 12 deletions(-)
+> 
+> diff --git a/arch/arm64/boot/dts/arm/foundation-v8.dts b/arch/arm64/boot/dts/arm/foundation-v8.dts
+> index 4a06090..27f3296 100644
+> --- a/arch/arm64/boot/dts/arm/foundation-v8.dts
+> +++ b/arch/arm64/boot/dts/arm/foundation-v8.dts
+> @@ -78,10 +78,10 @@
+>  
+>  	timer {
+>  		compatible = "arm,armv8-timer";
+> -		interrupts = <1 13 0xff01>,
+> -			     <1 14 0xff01>,
+> -			     <1 11 0xff01>,
+> -			     <1 10 0xff01>;
+> +		interrupts = <1 13 0xf08>,
+> +			     <1 14 0xf08>,
+> +			     <1 11 0xf08>,
+> +			     <1 10 0xf08>;
+>  		clock-frequency = <100000000>;
+>  	};
+>  
+> diff --git a/arch/arm64/boot/dts/arm/juno.dts b/arch/arm64/boot/dts/arm/juno.dts
+> index 097ecc4..cb3073e 100644
+> --- a/arch/arm64/boot/dts/arm/juno.dts
+> +++ b/arch/arm64/boot/dts/arm/juno.dts
+> @@ -98,10 +98,10 @@
+>  
+>  	timer {
+>  		compatible = "arm,armv8-timer";
+> -		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
+> -			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
+> -			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>,
+> -			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_EDGE_RISING)>;
+> +		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_LOW)>,
+> +			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_LOW)>,
+> +			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_LOW)>,
+> +			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_LOW)>;
+>  	};
+>  
+>  	pmu {
+> diff --git a/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts b/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts
+> index 572005e..efc59b3 100644
+> --- a/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts
+> +++ b/arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts
+> @@ -81,10 +81,10 @@
+>  
+>  	timer {
+>  		compatible = "arm,armv8-timer";
+> -		interrupts = <1 13 0xff01>,
+> -			     <1 14 0xff01>,
+> -			     <1 11 0xff01>,
+> -			     <1 10 0xff01>;
+> +		interrupts = <1 13 0xf08>,
+> +			     <1 14 0xf08>,
+> +			     <1 11 0xf08>,
+> +			     <1 10 0xf08>;
+>  		clock-frequency = <100000000>;
+>  	};
+>  
+> -- 
+> 2.1.3
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
 
 -- 
-P�ter
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
+
