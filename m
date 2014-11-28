@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208AbaK1Nz7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 08:55:59 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:37138 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648AbaK1NvK (ORCPT
+	id S1752234AbaK1N41 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 08:56:27 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:49922 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614AbaK1NvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 08:51:10 -0500
+	Fri, 28 Nov 2014 08:51:09 -0500
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 To: Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -14,9 +14,9 @@ To: Felipe Balbi <balbi@ti.com>,
         Peter Chen <peter.chen@freescale.com>,
         Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
         linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 03/17] net2280: Remove module parameter use_msi
-Date: Fri, 28 Nov 2014 14:50:48 +0100
-Message-Id: <1417182662-7405-4-git-send-email-ricardo.ribalda@gmail.com>
+Subject: [PATCH 02/17] net2280: remove full_speed module parameter
+Date: Fri, 28 Nov 2014 14:50:47 +0100
+Message-Id: <1417182662-7405-3-git-send-email-ricardo.ribalda@gmail.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1417182662-7405-1-git-send-email-ricardo.ribalda@gmail.com>
 References: <1417182662-7405-1-git-send-email-ricardo.ribalda@gmail.com>
@@ -24,52 +24,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parameter use_msi was used to enable msi irq on usb338x chips, it was
-enabled by default.
+This patch removes the full_speed parameter used force full-speed
+operation.
 
-There is no reason to prefer non-msi irq on usb338x, and it falls back
-to non msi on error.
+It was designed exclusively for testing purposes, and there is no
+reason to maintain this in a production kernel.
 
-Therefore remove this option.
-
+Reverts: 2f0760774711c957c395b31131b848043af98edf
+Suggested-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 ---
- drivers/usb/gadget/udc/net2280.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/usb/gadget/udc/net2280.c | 18 +-----------------
+ 1 file changed, 1 insertion(+), 17 deletions(-)
 
 diff --git a/drivers/usb/gadget/udc/net2280.c b/drivers/usb/gadget/udc/net2280.c
-index 27b94c6..fc5c0a2 100644
+index 08c16ee..27b94c6 100644
 --- a/drivers/usb/gadget/udc/net2280.c
 +++ b/drivers/usb/gadget/udc/net2280.c
-@@ -88,11 +88,9 @@ static const char *const ep_name[] = {
-  * These two parameters let you use PIO or more aggressive DMA.
-  */
- static bool use_dma = true;
--static bool use_msi = true;
+@@ -113,11 +113,6 @@ static bool enable_suspend;
+ /* "modprobe net2280 enable_suspend=1" etc */
+ module_param(enable_suspend, bool, 0444);
  
- /* "modprobe net2280 use_dma=n" etc */
- module_param(use_dma, bool, 0444);
--module_param(use_msi, bool, 0444);
+-/* force full-speed operation */
+-static bool full_speed;
+-module_param(full_speed, bool, 0444);
+-MODULE_PARM_DESC(full_speed, "force full-speed mode -- for testing only!");
+-
+ #define	DIR_STRING(bAddress) (((bAddress) & USB_DIR_IN) ? "in" : "out")
  
- /* mode 0 == ep-{a,b,c,d} 1K fifo each
-  * mode 1 == ep-{a,b} 2K fifo each, ep-{c,d} unavailable
-@@ -3426,7 +3424,7 @@ static void net2280_remove(struct pci_dev *pdev)
- 	}
- 	if (dev->got_irq)
- 		free_irq(pdev->irq, dev);
--	if (use_msi && dev->quirks & PLX_SUPERSPEED)
-+	if (dev->quirks & PLX_SUPERSPEED)
- 		pci_disable_msi(pdev);
- 	if (dev->regs)
- 		iounmap(dev->regs);
-@@ -3549,7 +3547,7 @@ static int net2280_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 		goto done;
- 	}
+ static char *type_string(u8 bmAttributes)
+@@ -2291,11 +2286,7 @@ static int net2280_start(struct usb_gadget *_gadget,
+ 	if (retval)
+ 		goto err_func;
  
--	if (use_msi && (dev->quirks & PLX_SUPERSPEED))
-+	if (dev->quirks & PLX_SUPERSPEED)
- 		if (pci_enable_msi(pdev))
- 			ep_err(dev, "Failed to enable MSI mode\n");
+-	/* Enable force-full-speed testing mode, if desired */
+-	if (full_speed && (dev->quirks & PLX_LEGACY))
+-		writel(BIT(FORCE_FULL_SPEED_MODE), &dev->usb->xcvrdiag);
+-
+-	/* ... then enable host detection and ep0; and we're ready
++	/* enable host detection and ep0; and we're ready
+ 	 * for set_configuration as well as eventual disconnect.
+ 	 */
+ 	net2280_led_active(dev, 1);
+@@ -2353,10 +2344,6 @@ static int net2280_stop(struct usb_gadget *_gadget)
+ 
+ 	net2280_led_active(dev, 0);
+ 
+-	/* Disable full-speed test mode */
+-	if (dev->quirks & PLX_LEGACY)
+-		writel(0, &dev->usb->xcvrdiag);
+-
+ 	device_remove_file(&dev->pdev->dev, &dev_attr_function);
+ 	device_remove_file(&dev->pdev->dev, &dev_attr_queues);
+ 
+@@ -3655,9 +3642,6 @@ static void net2280_shutdown(struct pci_dev *pdev)
+ 	/* disable the pullup so the host will think we're gone */
+ 	writel(0, &dev->usb->usbctl);
+ 
+-	/* Disable full-speed test mode */
+-	if (dev->quirks & PLX_LEGACY)
+-		writel(0, &dev->usb->xcvrdiag);
+ }
+ 
  
 -- 
 2.1.3
