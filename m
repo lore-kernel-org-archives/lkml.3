@@ -1,96 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500AbaK1X3C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 18:29:02 -0500
-Received: from mail-oi0-f47.google.com ([209.85.218.47]:41427 "EHLO
-	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256AbaK1X3A (ORCPT
+	id S1751516AbaK1Xan (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 18:30:43 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:54421 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751256AbaK1Xam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 18:29:00 -0500
-Message-ID: <54790537.809@gmail.com>
-Date: Fri, 28 Nov 2014 15:28:55 -0800
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 28 Nov 2014 18:30:42 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mark Brown <broonie@kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Ben Zhang <benzh@chromium.org>,
+        alsa-devel <alsa-devel@alsa-project.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Bard Liao <bardliao@realtek.com>,
+        Oder Chiou <oder_chiou@realtek.com>,
+        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
+        flove@realtek.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ASoC: rt5677: Add ACPI device probing
+Date: Sat, 29 Nov 2014 00:51:59 +0100
+Message-ID: <2127240.rWRTDu6LHQ@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141128160036.GW7712@sirena.org.uk>
+References: <1416034608-24238-1-git-send-email-benzh@chromium.org> <7202604.4LK4s7RH1S@vostro.rjw.lan> <20141128160036.GW7712@sirena.org.uk>
 MIME-Version: 1.0
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
-        Hisashi T Fujinaka <htodd@twofifty.com>
-CC: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Matthew Vick <matthew.vick@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Mitch Williams <mitch.a.williams@intel.com>,
-        Linux NICS <linux.nics@intel.com>, e1000-devel@lists.sourceforge.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] e1000: remove unused variables
-References: <1417065728-5592-1-git-send-email-sudipm.mukherjee@gmail.com> <alpine.NEB.2.11.1411262157110.1481@chris.i8u.org> <20141127130725.GA12406@sudip-PC>
-In-Reply-To: <20141127130725.GA12406@sudip-PC>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 27/11/2014 05:07, Sudip Mukherjee a écrit :
-> On Wed, Nov 26, 2014 at 09:59:28PM -0800, Hisashi T Fujinaka wrote:
->> I'm pretty sure those double reads are there for a reason, so most of
->> this I'm going to have to check on Monday. We have a long holiday
->> weekend here in the US.
+On Friday, November 28, 2014 04:00:36 PM Mark Brown wrote:
 > 
-> if the double reads are there for some reason, can you please let me know what that reason might be..
+> --k9ssVBY1NpawPNl1
+> Content-Type: text/plain; charset=us-ascii
+> Content-Disposition: inline
+> 
+> On Thu, Nov 27, 2014 at 12:09:55AM +0100, Rafael J. Wysocki wrote:
+> > On Wednesday, November 26, 2014 11:17:16 AM Mark Brown wrote:
+> 
+> > > > As to registering ACPI IDs, I believe this is the right link:
+> > > > http://www.uefi.org/PNP_ACPI_Registry
+> 
+> > > No, those are vendors as far as I can tell.  I mean identifiers for
+> > > specific devices - it appears to be common for for example Intel to
+> > > allocate identifiers for devices they don't produce, I'd expect there to
+> > > be some effort to keep track of that especially given that _DSD
+> > > properties may well end up being specific to the identifier used to
+> > > register in cases of parallel evolution.
+> 
+> > The vendor (or more precisely the owner of the initial 3 or 4 letter code)
+> > is supposed to do that.  I'm not aware of any common registry of those IDs
+> > for all vendors.
+> 
+> OK, we probably should have one to aid discoverability since as far as I
+> can tell what's happening is that people (hi Intel!) are allocating
+> their own identifiers for devices produced by other vendors that turn up
+> on their boards.  If people can find the set of IDs in use there's more
+> chance they'll use the same ones as other people.
 
-Could be latching, especially in the context of reading from Ethernet
-PHYs, some registers are latched, so you may have to do a double read to
-ensure the value you get is consistent.
+There's the PRP0001 ID that can be use to in combination with the
+"compatible" property which then works the same way as for DT.
 
-Also, if you do a read that is not stored in any return value, the
-compiler is now free to remove that actual read, and that may have other
-side effects for registers which are e.g: read to clear, or any of the like.
+That should be sufficient if the properties are going to be the
+same for ACPI (_DSD) and DT.
 
+> > > > Or did you mean a HID/CID<->DSD mapping?
 > 
->>
->> I'm not sure why you're bothering with an old driver like this, but if
->> you haven't actually tried this on all the hardware it pertains to, I'm
->> going want to NAK this.
+> > > I don't really know what that is, sorry.
 > 
-> no it has not been tested on hardware.  :(
+> > The device ID is supposed to determine the way all of the ACPI objects for that
+> > device will work, including what is returned by _DSD.  Pretty much in analogy
+> > with PCI device IDs.
 > 
-> i am still in the learning process, NAK is also part of learning.
-> 
-> infact there is another part of the code, which, theoretically, will never get executed. but i didnot dare to send that removal patch without testing on the hardware.
-> 
-> thanks
-> sudip
-> 
->>
->> I should do this from my todd.fujinaka@intel.com account but it's 10PM
->> on the first day of a long holiday weekend.
->>
->> On Thu, 27 Nov 2014, Sudip Mukherjee wrote:
->>
->>> these variables were only being assigned some values, but were never
->>> used.
->>>
->>> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
->>> ---
->>> drivers/net/ethernet/intel/e1000/e1000_hw.c   | 142 ++++++++++++--------------
-> <snip>
->>> 			case SPEED_100:
->>> -				txb2b = false;
->>> 				/* maybe add some timeout factor ? */
->>> 				break;
->>> 			}
->>>
->>
->> -- 
->> Hisashi T Fujinaka - htodd@twofifty.com
->> BSEE + BSChem + BAEnglish + MSCS + $2.50 = coffee
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> So the HID and CID are device IDs then?  Please bear in mind that we're
+> not all familiar with the acronym soup that tends to go along with ACPI!
 
+Yes, they are supposed to be treated this way.
+
+> If those are device IDs then what you're saying is what I'd expect to
+> happen and it's part of the reason I'd expect us to be registering IDs
+> along with registering properties - if people are defining device
+> specific properties they really ought to be tied to the IDs that are in
+> use especially if (as seems likely to be the case with the current state
+> of the world) people are doing things without attempting to coordinate
+> and we're ending up trying to document the deployed reality.
+
+The rule of thumb (in my view) should be that if the device object's _DSD is
+going to return the same set of properties as for DT and no other special
+handling determined by the ID is required (ie. nothing along the lines of
+"if the device ID is X, the _ABC method works like that" which has to be known
+by the driver), "PRP0001" should be returned by _HID and then the value of the
+"compatible" property should be the same as for DT.
+
+In other words, "PRP0001" means "a generic device with properties as returned
+by _DSD".
+
+Otherwise, a new device ID needs to be allocated for the device and _HID
+should return that ID.  Also, if the device is compatible with another
+device with an already allocated ID (for _HID), _CID may return the device ID
+of the compatible device.  [Of course, it's better if _HID is the same for
+identical devices.]
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
