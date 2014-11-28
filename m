@@ -1,87 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350AbaK1NaM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 08:30:12 -0500
-Received: from smtp09.smtpout.orange.fr ([80.12.242.131]:56651 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162AbaK1NaK (ORCPT
+	id S1751444AbaK1Nak (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 08:30:40 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:57812 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107AbaK1Naj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 08:30:10 -0500
-X-ME-Helo: beldin
-X-ME-Date: Fri, 28 Nov 2014 14:30:08 +0100
-X-ME-IP: 90.11.113.15
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Daniel Mack <daniel@zonque.org>, Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: pxa: fix lubbock interrupts handling
-References: <1417113721-9062-1-git-send-email-robert.jarzmik@free.fr>
-	<alpine.DEB.2.11.1411272258010.3961@nanos>
-X-URL: http://belgarath.falguerolles.org/
-Date: Fri, 28 Nov 2014 14:30:05 +0100
-In-Reply-To: <alpine.DEB.2.11.1411272258010.3961@nanos> (Thomas Gleixner's
-	message of "Thu, 27 Nov 2014 23:03:10 +0100 (CET)")
-Message-ID: <87r3wn1mhu.fsf@free.fr>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.92 (gnu/linux)
+	Fri, 28 Nov 2014 08:30:39 -0500
+Date: Fri, 28 Nov 2014 14:30:34 +0100
+From: Luis de Bethencourt <luis@debethencourt.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, eunb.song@samsung.com,
+        aaro.koskinen@iki.fi, paul.gortmaker@windriver.com
+Subject: Re: [PATCH v2] staging: octeon: Fix checkpatch warnings
+Message-ID: <20141128133034.GA4635@ks395439.kimsufi.com>
+References: <20141127161432.GA32577@ks395439.kimsufi.com>
+ <20141128102928.GD4860@mwanda>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141128102928.GD4860@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Gleixner <tglx@linutronix.de> writes:
+On Fri, Nov 28, 2014 at 01:29:28PM +0300, Dan Carpenter wrote:
+> On Thu, Nov 27, 2014 at 05:18:10PM +0100, Luis de Bethencourt wrote:
+> > Fixing 80 character limit warnings in octeon/ethernet-rx.c
+> > 
+> > Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
+> > ---
+> >  drivers/staging/octeon/ethernet-rx.c | 51 +++++++++++++++++++++++++-----------
+> >  1 file changed, 35 insertions(+), 16 deletions(-)
+> > 
+> > diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
+> > index 1789a12..e387eb1 100644
+> > --- a/drivers/staging/octeon/ethernet-rx.c
+> > +++ b/drivers/staging/octeon/ethernet-rx.c
+> > @@ -109,6 +109,7 @@ static inline int cvm_oct_check_rcv_error(cvmx_wqe_t *work)
+> >  		int interface = cvmx_helper_get_interface_num(work->ipprt);
+> >  		int index = cvmx_helper_get_interface_index_num(work->ipprt);
+> >  		union cvmx_gmxx_rxx_frm_ctl gmxx_rxx_frm_ctl;
+> > +
+> 
+> Do this in a separate patch.
 
-> So what is the relationship between installing that chained handler
-> and that gpio-pxa probe stuff?
-The relation is in gpio-pxa probe, look at the extract of pxa_gpio_probe() :
-pxa_gpio_probe()
-		irq = gpio_to_irq(0);
-		irq_set_chip_and_handler(irq, &pxa_muxed_gpio_chip,
-					 handle_edge_irq);
-		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
-		irq_set_chained_handler(IRQ_GPIO0, pxa_gpio_demux_handler);
+Will do within the hour.
 
-Now look at the extract from the former lubbock_init_irq() :
-lubbock_init_irq()
-		irq = PXA_GPIO_TO_IRQ(0);
-		irq_set_chained_handler(irq, lubbock_irq_handler);
-		irq_set_irq_type(irq, IRQ_TYPE_EDGE_FALLING);
+> 
+> > @@ -332,8 +343,10 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+> >  				skb->protocol = eth_type_trans(skb, dev);
+> >  				skb->dev = dev;
+> >  
+> > -				if (unlikely(work->word2.s.not_IP || work->word2.s.IP_exc ||
+> > -					work->word2.s.L4_error || !work->word2.s.tcp_or_udp))
+> > +				if (unlikely(work->word2.s.not_IP ||
+> > +					work->word2.s.IP_exc ||
+> > +					work->word2.s.L4_error ||
+> > +					!work->word2.s.tcp_or_udp))
+> >  					skb->ip_summed = CHECKSUM_NONE;
+> 
+> Your patch aligns everything with tabs but it should be slightly
+> different.  Run your patch through checkpatch.pl --strict to see what I
+> mean and then redo it all.  This one should look like:
+> 
+> 				if (unlikely(work->word2.s.not_IP ||
+> 					     work->word2.s.IP_exc ||
+> 					     work->word2.s.L4_error ||
+> 					     !work->word2.s.tcp_or_udp))
+> 					skb->ip_summed = CHECKSUM_NONE;
+> 
+> [tab][tab][tab][tab][tab][space][space][space][space][space]work->...
+> 
+> regards,
+> dan carpenter
+> 
+> 
 
-Given that gpio_to_irq(0) = PXA_GPIO_TO_IRQ(0), see how these 2 are fighting to
-install the handler, and how the resulting installed handler depends on the
-order of execution of pxa_gpio_to_irq() wrt lubbock_init_irq().
+Fixed the aligns and resubmitting the patch as v3.
 
-> And why is the GPIO0 interrupt handled from arch code rather than from
-> a regular driver setup, which depends on the availablity of the GPIO
-> driver?
-Ah that's a good question. Maybe the answer is that there is no driver in this
-case.
-When I say "no driver", it's because this interrupt is a consequence of the
-IO-Board (or motherboard) wiring topology.
-
-I think I need to add a bit of context, so pardon my crude ascii-art style, and
-see in the lubbock case, we have this wiring (list of IPs not exhaustive, and
-gates to mask each XXX irq not added) :
-
-IPs on Motherboard          Gates on motherboard                       SoC
-
-+-------------+              +-------+
-|  SMC Lan    | --lan irq--- | Latch | -
-+-------------+              |       |  \                      +------PXA-----+
-                             |       |   \                     |              |
-+-------------+              |       |                         |+----------+  |
-|   UDC Vbus  | --vbus irq-- | Latch | -- NOR gate -- GPIO0 -- ||GPIO block|  |
-+-------------+              |       |                line     |+----------+  |
-                             |       |   /                     |              |
-+-------------+              |       |  /                      +--------------+
-|   SA1111    | --sa11x irq--| Latch | -
-+-------------+              +-------+
-
-The "gates on motherboard" is what lubbock.c is describing, ie. the
-interconnection on the motherboard. I don't see the device/driver model fitting
-to describe these gates, do you ?
-
-Cheers.
-
--- 
-Robert
+Thanks for the review!
+Luis
