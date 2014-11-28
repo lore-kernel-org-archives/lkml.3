@@ -1,103 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751017AbaK1Fzn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 00:55:43 -0500
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:58668 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827AbaK1Fzl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 00:55:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <5476F471.80500@redhat.com>
-References: <1417064546-4129-1-git-send-email-ast@plumgrid.com>
-	<5476F471.80500@redhat.com>
-Date: Thu, 27 Nov 2014 21:55:40 -0800
-Message-ID: <CAMEtUuyzDs2Nz8WHdEZXmY9JOZx=w2UwUF06Kq5qcgkaaRKs3A@mail.gmail.com>
-Subject: Re: [PATCH net] bpf: x86: fix epilogue generation for eBPF programs
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Zi Shen Lim <zlim.lnx@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1750960AbaK1GLw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 01:11:52 -0500
+Received: from smtp.mei.co.jp ([133.183.100.20]:60692 "EHLO smtp.mei.co.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750870AbaK1GLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 01:11:51 -0500
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Masahiro Yamada <yamada.m@jp.panasonic.com>,
+        Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
+        Sekhar Nori <nsekhar@ti.com>, Rob Herring <robh@kernel.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        Christopher Covington <cov@codeaurora.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: replace magic number with PAGE_SHIFT macro in fixup_pv code
+Date: Fri, 28 Nov 2014 15:10:41 +0900
+Message-Id: <1417155041-29735-1-git-send-email-yamada.m@jp.panasonic.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 1:52 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
-> On 11/27/2014 06:02 AM, Alexei Starovoitov wrote:
->>
->> classic BPF has a restriction that last insn is always BPF_RET.
->> eBPF doesn't have BPF_RET instruction and this restriction.
->> It has BPF_EXIT insn which can appear anywhere in the program
->> one or more times and it doesn't have to be last insn.
->> Fix eBPF JIT to emit epilogue when first BPF_EXIT is seen
->> and all other BPF_EXIT instructions will be emitted as jump.
->>
->> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
->> ---
->> Note, this bug is applicable only to native eBPF programs
->> which first were introduced in 3.18, so no need to send it
->> to stable and therefore no 'Fixes' tag.
->
->
-> Btw, even if it's not sent to -stable, a 'Fixes:' tag is useful
-> information for backporting and regression tracking, preferably
-> always mentioned where it can clearly be identified.
+This line converts PHYS_OFFSET into PHYS_PFN_OFFSET.
+It is better to use PAGE_SHIFT rather than the magic number 12.
 
-Well I didn't mention it, as I said, because I don't think it
-needs backporting. Otherwise with the tag the tools might
-pick it up automatically? Just a guess.
-Anyway:
-Fixes: 622582786c9e ("net: filter: x86: internal BPF JIT")
+Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+---
 
->> arm64 JIT has the same problem, but the fix is not as trivial,
->> so will be done as separate patch.
->>
->> Since 3.18 can only load eBPF programs and cannot execute them,
->> this patch can even be done in net-next only, but I think it's worth
->> to apply it to 3.18(net), so that JITed output for native eBPF
->> programs is correct when bpf syscall loads it with
->> net.core.bpf_jit_enable=2
->
->
-> Yes, sounds good to me, the condition insn_cnt - 1 is still held
-> with BPF to eBPF transformations.
+ arch/arm/kernel/head.S | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Correct. That's what I meant that prior to 3.18 it's not needed.
-and 'insn_cnt - 1' condition will still hold for classic in the future.
+diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
+index 664eee8..ecb7be8 100644
+--- a/arch/arm/kernel/head.S
++++ b/arch/arm/kernel/head.S
+@@ -586,7 +586,7 @@ __fixup_pv_table:
+ 	add	r5, r5, r3	@ adjust table end address
+ 	add	r6, r6, r3	@ adjust __pv_phys_pfn_offset address
+ 	add	r7, r7, r3	@ adjust __pv_offset address
+-	mov	r0, r8, lsr #12	@ convert to PFN
++	mov	r0, r8, lsr #PAGE_SHIFT	@ convert to PFN
+ 	str	r0, [r6]	@ save computed PHYS_OFFSET to __pv_phys_pfn_offset
+ 	strcc	ip, [r7, #HIGH_OFFSET]	@ save to __pv_offset high bits
+ 	mov	r6, r3, lsr #24	@ constant for add/sub instructions
+-- 
+1.9.1
 
->>   arch/x86/net/bpf_jit_comp.c |    6 ++++--
->>   1 file changed, 4 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
->> index 3f62734..7e90244 100644
->> --- a/arch/x86/net/bpf_jit_comp.c
->> +++ b/arch/x86/net/bpf_jit_comp.c
->> @@ -178,7 +178,7 @@ static void jit_fill_hole(void *area, unsigned int
->> size)
->>   }
->>
->>   struct jit_context {
->> -       unsigned int cleanup_addr; /* epilogue code offset */
->> +       int cleanup_addr; /* epilogue code offset */
->
->
-> Why this type change here? This seems a bit out of context (I would
-> have expected a mention of this in the commit message, otherwise).
-
-Ok. Will respin with updated commit msg.
-The reason for signed is the following:
-jmp offset to epilogue is computed as:
-jmp_offset = ctx->cleanup_addr - addrs[i]
-when cleanup_addr was always last insn it wasn't a problem,
-since result of subtraction was positive.
-Now, since epilogue will be in the middle of JITed
-code the jmps to epilogue may be negative, so
-signed int is need to do the math correctly.
-In other words, it should be:
-(long long) ((int)20 - (int)30)
-instead of:
-(long long) ((unsigned int)20 - (int)30)
