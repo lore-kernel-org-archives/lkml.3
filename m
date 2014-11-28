@@ -1,93 +1,297 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751482AbaK1B1H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 20:27:07 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:54902 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067AbaK1B1E (ORCPT
+	id S1751173AbaK1Brv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 20:47:51 -0500
+Received: from mail-bn1on0093.outbound.protection.outlook.com ([157.56.110.93]:54976
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750974AbaK1Brs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 20:27:04 -0500
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-rockchip@lists.infradead.org, linux-sh@vger.kernel.org,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Beniamino Galvani <b.galvani@gmail.com>
-Subject: [PATCH v2 0/7] Pinctrl support for Zynq
-Date: Thu, 27 Nov 2014 17:26:26 -0800
-Message-Id: <1417137993-8337-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 2.1.3.1.ge241007
+	Thu, 27 Nov 2014 20:47:48 -0500
+X-Greylist: delayed 45521 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Nov 2014 20:47:48 EST
+From: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
+To: Michal Simek <michals@xilinx.com>, "wg@grandegger.com" <wg@grandegger.com>,
+        "mkl@pengutronix.de" <mkl@pengutronix.de>,
+        Michal Simek <michals@xilinx.com>, Soren Brinkmann <sorenb@xilinx.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>
+CC: "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: RE: [PATCH v3] can: Convert to runtime_pm
+Thread-Topic: [PATCH v3] can: Convert to runtime_pm
+Thread-Index: AQHQCkNSvELYd1JskEqth0DIY+yQN5x0BzsAgAE+gpA=
+Date: Fri, 28 Nov 2014 01:47:42 +0000
+References: <1417093733-29576-1-git-send-email-appanad@xilinx.com>
+ <54773948.2070605@xilinx.com>
+In-Reply-To: <54773948.2070605@xilinx.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.23.228.144]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21136.001
+X-TM-AS-User-Approved-Sender: Yes;Yes
+Message-ID: <9b39dc479fae4456a9868770bea3d95c@BN1AFFO11FD035.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(51704005)(377454003)(13464003)(189002)(479174003)(24454002)(199003)(164054003)(19580395003)(77096003)(95666004)(64706001)(54356999)(6806004)(44976005)(106116001)(87936001)(20776003)(47776003)(50466002)(46406003)(86362001)(92566001)(50986999)(74316001)(31966008)(23726002)(4396001)(99396003)(106466001)(77156002)(120916001)(2201001)(46102003)(108616004)(53416004)(33646002)(2501002)(76176999)(2656002)(97756001)(107046002)(21056001)(19580405001)(62966003)(104016003)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB062;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB062;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB062;
+X-Forefront-PRVS: 04097B7F7F
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=appana.durga.rao@xilinx.com; 
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB062;
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Hi Michal,
 
-here is v2 of this series. On the functional side, adding the support
-for USB mux groups is probably the biggest change. Most other changes
-are mostly cosmetic (typos, function names, documentation, ...).
-More detailed changelogs are included with the respective patches.
+-----Original Message-----
+From: Michal Simek [mailto:michal.simek@xilinx.com]
+Sent: Thursday, November 27, 2014 8:17 PM
+To: Appana Durga Kedareswara Rao; wg@grandegger.com; mkl@pengutronix.de; Michal Simek; Soren Brinkmann; grant.likely@linaro.org; robh+dt@kernel.org
+Cc: linux-can@vger.kernel.org; netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; devicetree@vger.kernel.org; Appana Durga Kedareswara Rao
+Subject: Re: [PATCH v3] can: Convert to runtime_pm
 
-Regarding DT, I separated pinconf from pinmux nodes and updated
-documentation accordingly to enforce that separation.
-The parser, though, still handles everything in order to not break
-backwards compatibility.
+On 11/27/2014 02:08 PM, Kedareswara rao Appana wrote:
+> Instead of enabling/disabling clocks at several locations in the
+> driver, use the runtime_pm framework. This consolidates the actions
+> for runtime PM in the appropriate callbacks and makes the driver more
+> readable and mantainable.
+>
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
+> ---
+> Changes for v3:
+>   - Converted the driver to use runtime_pm.
+> Changes for v2:
+>   - Removed the struct platform_device* from suspend/resume
+>     as suggest by Lothar.
+>
+>  drivers/net/can/xilinx_can.c |  119
+> +++++++++++++++++++++++++----------------
+>  1 files changed, 72 insertions(+), 47 deletions(-)
+>
+> diff --git a/drivers/net/can/xilinx_can.c
+> b/drivers/net/can/xilinx_can.c index 8a998e3..1be28ed 100644
+> --- a/drivers/net/can/xilinx_can.c
+> +++ b/drivers/net/can/xilinx_can.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/can/dev.h>
+>  #include <linux/can/error.h>
+>  #include <linux/can/led.h>
+> +#include <linux/pm_runtime.h>
+>
+>  #define DRIVER_NAME  "xilinx_can"
+>
+> @@ -138,7 +139,7 @@ struct xcan_priv {
+>       u32 (*read_reg)(const struct xcan_priv *priv, enum xcan_reg reg);
+>       void (*write_reg)(const struct xcan_priv *priv, enum xcan_reg reg,
+>                       u32 val);
+> -     struct net_device *dev;
+> +     struct device *dev;
+>       void __iomem *reg_base;
+>       unsigned long irq_flags;
+>       struct clk *bus_clk;
+> @@ -842,6 +843,13 @@ static int xcan_open(struct net_device *ndev)
+>       struct xcan_priv *priv = netdev_priv(ndev);
+>       int ret;
+>
+> +     ret = pm_runtime_get_sync(priv->dev);
+> +     if (ret < 0) {
+> +             netdev_err(ndev, "%s: runtime CAN resume failed(%d)\n\r",
+> +                             __func__, ret);
+> +             return ret;
+> +     }
+> +
+>       ret = request_irq(ndev->irq, xcan_interrupt, priv->irq_flags,
+>                       ndev->name, ndev);
+>       if (ret < 0) {
+> @@ -849,29 +857,17 @@ static int xcan_open(struct net_device *ndev)
+>               goto err;
+>       }
+>
+> -     ret = clk_prepare_enable(priv->can_clk);
+> -     if (ret) {
+> -             netdev_err(ndev, "unable to enable device clock\n");
+> -             goto err_irq;
+> -     }
+> -
+> -     ret = clk_prepare_enable(priv->bus_clk);
+> -     if (ret) {
+> -             netdev_err(ndev, "unable to enable bus clock\n");
+> -             goto err_can_clk;
+> -     }
+> -
+>       /* Set chip into reset mode */
+>       ret = set_reset_mode(ndev);
+>       if (ret < 0) {
+>               netdev_err(ndev, "mode resetting failed!\n");
+> -             goto err_bus_clk;
+> +             goto err_irq;
+>       }
+>
+>       /* Common open */
+>       ret = open_candev(ndev);
+>       if (ret)
+> -             goto err_bus_clk;
+> +             goto err_irq;
+>
+>       ret = xcan_chip_start(ndev);
+>       if (ret < 0) {
+> @@ -887,13 +883,11 @@ static int xcan_open(struct net_device *ndev)
+>
+>  err_candev:
+>       close_candev(ndev);
+> -err_bus_clk:
+> -     clk_disable_unprepare(priv->bus_clk);
+> -err_can_clk:
+> -     clk_disable_unprepare(priv->can_clk);
+>  err_irq:
+>       free_irq(ndev->irq, ndev);
+>  err:
+> +     pm_runtime_put(priv->dev);
+> +
+>       return ret;
+>  }
+>
+> @@ -910,12 +904,11 @@ static int xcan_close(struct net_device *ndev)
+>       netif_stop_queue(ndev);
+>       napi_disable(&priv->napi);
+>       xcan_chip_stop(ndev);
+> -     clk_disable_unprepare(priv->bus_clk);
+> -     clk_disable_unprepare(priv->can_clk);
+>       free_irq(ndev->irq, ndev);
+>       close_candev(ndev);
+>
+>       can_led_event(ndev, CAN_LED_EVENT_STOP);
+> +     pm_runtime_put(priv->dev);
+>
+>       return 0;
+>  }
+> @@ -934,27 +927,21 @@ static int xcan_get_berr_counter(const struct net_device *ndev,
+>       struct xcan_priv *priv = netdev_priv(ndev);
+>       int ret;
+>
+> -     ret = clk_prepare_enable(priv->can_clk);
+> -     if (ret)
+> -             goto err;
+> +     ret = pm_runtime_get_sync(priv->dev);
+> +     if (ret < 0) {
+> +             netdev_err(ndev, "%s: runtime resume failed(%d)\n\r",
+> +                             __func__, ret);
+> +             return ret;
+> +     }
+>
+> -     ret = clk_prepare_enable(priv->bus_clk);
+> -     if (ret)
+> -             goto err_clk;
+>
+>       bec->txerr = priv->read_reg(priv, XCAN_ECR_OFFSET) & XCAN_ECR_TEC_MASK;
+>       bec->rxerr = ((priv->read_reg(priv, XCAN_ECR_OFFSET) &
+>                       XCAN_ECR_REC_MASK) >> XCAN_ESR_REC_SHIFT);
+>
+> -     clk_disable_unprepare(priv->bus_clk);
+> -     clk_disable_unprepare(priv->can_clk);
+> +     pm_runtime_put(priv->dev);
+>
+>       return 0;
+> -
+> -err_clk:
+> -     clk_disable_unprepare(priv->can_clk);
+> -err:
+> -     return ret;
+>  }
+>
+>
+> @@ -967,15 +954,45 @@ static const struct net_device_ops
+> xcan_netdev_ops = {
+>
+>  /**
+>   * xcan_suspend - Suspend method for the driver
+> - * @dev:     Address of the platform_device structure
+> + * @dev:     Address of the net_device structure
 
-And finally, as Linus requested, I patched one of the Qualcomm drivers
-to use the features added in 'pinctrl: pinconf-generic: Allow driver to
-specify DT params'. I don't have that HW so, that is compile tested only
-and may take some more work to work on HW.
+This is just the device structure.
 
-So much for the changes. What didn't change? I left the parts that have
-been described as "kludgy" as they were, in order to maintain backwards
-compatibility and not break current users of pinconf-generic
-functionality.
+K will modify in the next version of the patch .
 
-The audience is again limited to pinctrl stakeholders.
+>   *
+>   * Put the driver into low power mode.
+> - * Return: 0 always
+> + * Return: 0 on success and failure value on error
+>   */
+>  static int __maybe_unused xcan_suspend(struct device *dev)  {
+> -     struct platform_device *pdev = dev_get_drvdata(dev);
+> -     struct net_device *ndev = platform_get_drvdata(pdev);
+> +     if (!device_may_wakeup(dev))
+> +             return pm_runtime_force_suspend(dev);
+> +
+> +     return 0;
+> +}
+> +
+> +/**
+> + * xcan_resume - Resume from suspend
+> + * @dev:     Address of the net_device structure
 
-	Thanks,
-	Sören
+ditto
 
-Soren Brinkmann (7):
-  pinctrl: pinconf-generic: Infer map type from DT property
-  pinctrl: pinconf-generic: Allow driver to specify DT params
-  pinctrl: zynq: Document DT binding
-  pinctrl: Add driver for Zynq
-  ARM: zynq: Enable pinctrl
-  ARM: zynq: DT: Add pinctrl information
-  pinctrl: qcom-spmi-gpio: Migrate to pinconf-generic
+K will modify in the next version of the patch .
 
- .../bindings/pinctrl/xlnx,zynq-pinctrl.txt         |  104 ++
- arch/arm/boot/dts/zynq-7000.dtsi                   |    8 +-
- arch/arm/boot/dts/zynq-zc702.dts                   |  181 +++
- arch/arm/boot/dts/zynq-zc706.dts                   |  152 +++
- arch/arm/mach-zynq/Kconfig                         |    2 +
- drivers/pinctrl/Kconfig                            |    8 +
- drivers/pinctrl/Makefile                           |    1 +
- drivers/pinctrl/nomadik/pinctrl-abx500.c           |    2 +-
- drivers/pinctrl/pinconf-generic.c                  |  199 ++--
- drivers/pinctrl/pinconf.c                          |    4 +-
- drivers/pinctrl/pinconf.h                          |   22 +-
- drivers/pinctrl/pinctrl-rockchip.c                 |    2 +-
- drivers/pinctrl/pinctrl-tz1090-pdc.c               |    2 +-
- drivers/pinctrl/pinctrl-tz1090.c                   |    2 +-
- drivers/pinctrl/pinctrl-zynq.c                     | 1176 ++++++++++++++++++++
- drivers/pinctrl/qcom/pinctrl-spmi-gpio.c           |  125 +--
- drivers/pinctrl/sh-pfc/pinctrl.c                   |    2 +-
- include/linux/pinctrl/pinconf-generic.h            |   25 +
- include/linux/pinctrl/pinctrl.h                    |    9 +
- 19 files changed, 1804 insertions(+), 222 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pinctrl/xlnx,zynq-pinctrl.txt
- create mode 100644 drivers/pinctrl/pinctrl-zynq.c
+> + *
+> + * Resume operation after suspend.
+> + * Return: 0 on success and failure value on error  */ static int
+> +__maybe_unused xcan_resume(struct device *dev) {
+> +     if (!device_may_wakeup(dev))
+> +             return pm_runtime_force_resume(dev);
+> +
+> +     return 0;
+> +
+> +}
+> +
+> +/**
+> + * xcan_runtime_suspend - Runtime suspend method for the driver
+> + * @dev:     Address of the net_device structure
 
--- 
-2.1.3.1.ge241007
+ditto.
+K will modify in the next version of the patch .
+> + *
+> + * Put the driver into low power mode.
+> + * Return: 0 always
+> + */
+> +static int __maybe_unused xcan_runtime_suspend(struct device *dev) {
+> +     struct net_device *ndev = dev_get_drvdata(dev);
+>       struct xcan_priv *priv = netdev_priv(ndev);
+>
+>       if (netif_running(ndev)) {
+> @@ -993,16 +1010,15 @@ static int __maybe_unused xcan_suspend(struct
+> device *dev)  }
+>
+>  /**
+> - * xcan_resume - Resume from suspend
+> - * @dev:     Address of the platformdevice structure
+> + * xcan_runtime_resume - Runtime resume from suspend
+> + * @dev:     Address of the net_device structure
+
+ditto.
+K will modify in the next version of the patch .
+
+Regards,
+Kedar.
+Thanks,
+Michal
+
+
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
 
