@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751035AbaK1GdM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 01:33:12 -0500
-Received: from ozlabs.org ([103.22.144.67]:57229 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750902AbaK1GdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 01:33:10 -0500
-Date: Fri, 28 Nov 2014 17:32:46 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Chen <peter.chen@freescale.com>
-Subject: linux-next: manual merge of the usb tree with the driver-core tree
-Message-ID: <20141128173246.241262c4@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751205AbaK1Gf3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 01:35:29 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:49359 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896AbaK1Gf1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 01:35:27 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sAS6YdCs023208, This message is accepted by code: ctloc85258
+From: <micky_ching@realsil.com.cn>
+To: <sameo@linux.intel.com>, <lee.jones@linaro.org>, <chris@printf.net>,
+        <ulf.hansson@linaro.org>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <dan.carpenter@oracle.com>, <rogerable@realtek.com>,
+        <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
+Subject: [PATCH v2 1/2] mfd: rtsx: add func to split u32 into register
+Date: Fri, 28 Nov 2014 14:31:55 +0800
+Message-ID: <6a6de978f479758fb9e767d8a6e013e8a006a39a.1417141102.git.micky_ching@realsil.com.cn>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <cover.1417141102.git.micky_ching@realsil.com.cn>
+References: <cover.1417141102.git.micky_ching@realsil.com.cn>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/iJdwW6chG2znZh/To8wO5bW"; protocol="application/pgp-signature"
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/iJdwW6chG2znZh/To8wO5bW
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-Hi Greg,
+Add helper function to write u32 to registers, if we want to put u32
+value to 4 continuous register, this can help us reduce tedious work.
 
-Today's linux-next merge of the usb tree got a conflict in
-drivers/usb/chipidea/core.c between commit 5bc879a6a271 ("usb:
-chipidea: drop owner assignment from platform_drivers") from the
-driver-core tree and commit 8076932ff2fc ("usb: chipidea: add system
-power management support") from the usb tree.
+Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+---
+ include/linux/mfd/rtsx_pci.h | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+index 74346d5..9234449 100644
+--- a/include/linux/mfd/rtsx_pci.h
++++ b/include/linux/mfd/rtsx_pci.h
+@@ -558,6 +558,7 @@
+ #define SD_SAMPLE_POINT_CTL		0xFDA7
+ #define SD_PUSH_POINT_CTL		0xFDA8
+ #define SD_CMD0				0xFDA9
++#define   SD_CMD_START			0x40
+ #define SD_CMD1				0xFDAA
+ #define SD_CMD2				0xFDAB
+ #define SD_CMD3				0xFDAC
+@@ -967,4 +968,12 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
+ 	return (u8 *)(pcr->host_cmds_ptr);
+ }
+ 
++static inline void rtsx_pci_write_be32(struct rtsx_pcr *pcr, u16 reg, u32 val)
++{
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg,     0xFF, val >> 24);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 1, 0xFF, val >> 16);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 2, 0xFF, val >> 8);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 3, 0xFF, val);
++}
++
+ #endif
+-- 
+1.9.1
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/usb/chipidea/core.c
-index 947ed6e78be2,e14eafb2a05e..000000000000
---- a/drivers/usb/chipidea/core.c
-+++ b/drivers/usb/chipidea/core.c
-@@@ -751,6 -867,8 +867,7 @@@ static struct platform_driver ci_hdrc_d
-  	.remove	=3D ci_hdrc_remove,
-  	.driver	=3D {
-  		.name	=3D "ci_hdrc",
-+ 		.pm	=3D &ci_pm_ops,
- -		.owner	=3D THIS_MODULE,
-  	},
-  };
- =20
-
---Sig_/iJdwW6chG2znZh/To8wO5bW
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUeBcfAAoJEMDTa8Ir7ZwV50wP/2/FlHkfBt0O5QBPDEOXfp8U
-YtTYIjTzXexats4FddJPKBhhvkHwrAfoaeYKzglGVXd9Htw8bTmXpixYaBQKnsVw
-uCIJ8QI7B5u8sIEVmWH3NANQwtxlSuOo8UNKgzX4ZYR9Od/+Ch47YpDUXw9TLOAu
-fG9wbBwq5iPCm61tzGTsdtuubBjfla3Uj0C3rqFTRbOuvITEEHM0eeyFzv81K8uu
-XscGErM5h62NyFwpzMIcbqsNy+S2yeHi6ibA5jkaJiXHoPuakjZ0kJa+7BOFKe7V
-yLkjo2GsXcHvjDtB1Ka3bkVJydr6nBeQOqlUQc5XdYmrXey5cZQvnL4TqC1/pUgP
-zBd5WYSrM0AXGUEbpq0bYcDhh9jfBJCoeJgpmE+5mLib8S5E2jvQT0Z0zARvuGpe
-dIQiBDNlKRwG/QrJHtcN+FiBEBncNFQY1cVZmVZ3kHeu4TwyVRdgu616/MGZ+xd1
-5eXIcuqlFciowC90M856wqDSVuZb2iUufbegGmgFa/qckIZ7A64gYd7LymhySdyB
-PGd2lUUGT2F4h7JddyaeIn4zkmR1+63PwlQhHrD0YiGmhDgl3M29gU2XRBxk0scv
-KOL6WstyYpu0SNt2iMMA/sOUkcT8Nbh6C286GruwxDW6g/inQb0YHOuYZ1KL0xr+
-Yg471YcpSTJuQQaBNTpH
-=lSJk
------END PGP SIGNATURE-----
-
---Sig_/iJdwW6chG2znZh/To8wO5bW--
