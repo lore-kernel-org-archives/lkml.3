@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751770AbaK1Q3O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 11:29:14 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:26720 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276AbaK1Q3N (ORCPT
+	id S1751860AbaK1QcV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 11:32:21 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:57966 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117AbaK1QcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 11:29:13 -0500
-Date: Fri, 28 Nov 2014 19:28:50 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Patrick Farrell <paf@cray.com>
-Cc: =?iso-8859-1?Q?Lo=EFc?= Pefferkorn <loic@loicp.eu>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
+	Fri, 28 Nov 2014 11:32:20 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gdonald@gmail.com" <gdonald@gmail.com>,
-        "HPDD-discuss@ml01.01.org" <HPDD-discuss@ml01.01.org>
-Subject: Re: [HPDD-discuss] [PATCH] staging: lustre: fix sparse warnings
- related to lock context imbalance
-Message-ID: <20141128162850.GJ4911@mwanda>
-References: <02a457cec587341d0f1665491f6360323694b008.1417017302.git.loic@loicp.eu>
- <20141126205443.GB10615@kroah.com>
- <20141127183410.GA4582@iron>
- <20141128100045.GC4860@mwanda>
- <DB0C8A206669AC40B1C4E52A8584A6F61496CCB5@CFWEX01.americas.cray.com>
+        Sudeep Holla <Sudeep.Holla@arm.com>
+Subject: Re: [PATCH v2 RESEND 1/2] ARM: vexpress: Remove non-DT code
+Date: Fri, 28 Nov 2014 17:31:45 +0100
+Message-ID: <3935390.Q4yT7WfqCv@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1417189984.4371.12.camel@arm.com>
+References: <1416939455-1814-1-git-send-email-pawel.moll@arm.com> <20141128153026.GU3836@n2100.arm.linux.org.uk> <1417189984.4371.12.camel@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <DB0C8A206669AC40B1C4E52A8584A6F61496CCB5@CFWEX01.americas.cray.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:wVXSuSAHaiC/V0lQl05T1Uqsjs2nDYUFHyYCq5B9dRY
+ 6v/TV6Osem8nVKT54COBdSrg9jC/CVljLszfpGyp1W/mc8D3Ju
+ 0fr5XxllajIGQzYmuxYvt4ZGO5jSGUepeVz/uyt/UWKVxTUBTC
+ 1/m3I6UlpAOtmPFNymUs1VWWwmcAAcjdQY8b+ZIK70v2K34fRi
+ 29gPnDaZgFSECShlaGPjn7sbE069m0Kb8EL3qhDhN8BI4AHoBU
+ yoZ9dShfNz32qN4j+kgMiI5wQfTSZOoNSWI/C4EGAktO2b1+zR
+ VR1xdhYczsf9Q9whdcMPDNw1/G+U7sorx/6yccSrXxfqgUXYUi
+ YPU4+E7MNnRALMzKy+xI=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 28, 2014 at 03:45:24PM +0000, Patrick Farrell wrote:
-> Dan,
+On Friday 28 November 2014 15:53:04 Pawel Moll wrote:
+> vmmc-supply is a defined as:
 > 
-> I disagree about the change suggested here.  In this particular code,
-> 'object_attr' is distinct from 'attr', as in a 'setattr' call on an
-> inode.  'cl_object' is a distinct thing from an inode/file on disk,
-> and specifying it is the objects attr is helpful in understanding
-> there is not a direct relationship to 'attr' in the general filesystem
-> sense.  (cl_object attrs are used in determining actual on disk
-> attributes, but there is not a one-to-one correspondence.)
+>                                 vmmc-supply = <&v2m_fixed_3v3>;
 > 
-> I am willing to be corrected, but that is my first feeling here.
+> which is:
+> 
+>                 v2m_fixed_3v3: fixedregulator@0 {
+>                         compatible = "regulator-fixed";
+> 
+> and arch/arm/mach-vexpress/Kconfig says:
+> 
+> menuconfig ARCH_VEXPRESS
+> [...]
+>         select REGULATOR_FIXED_VOLTAGE if REGULATOR
+> 
+> but it doesn't select REGULATOR in result of this discussion:
+> 
+> http://thread.gmane.org/gmane.linux.ports.arm.kernel/223426/focus=223427
+> 
+> To summarize, I believe that setting CONFIG_REGULATOR=y (as in
+> vexpress_defconfig) should solve your issue.
 
-I haven't looked at it deeply.  Loïc was suggesting that we need new
-locking functions to deal with lustre's unwieldy naming schemes and I
-think we should just fix the names...
+Well, there is clearly a bug somewhere. As you say, the mmc driver
+now uses the regulator API to check the voltage instead of using
+platform_data. But there is no dependency on having the regulator
+support around, so it can't.
 
-We already have a cl_attr struct.  Is that different from what
-we're locking here?  I don't think anyone will think this takes an inode
-argument.
+I would suggest applying your patch from
+http://thread.gmane.org/gmane.linux.ports.arm.kernel/223426/focus=224128
+after all, or just hardcoding regulator support like a lot of other
+platforms do.
 
-regards,
-dan carpenter
-
+	Arnd
