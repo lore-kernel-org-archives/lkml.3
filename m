@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751194AbaK1MLI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 07:11:08 -0500
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:53811 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890AbaK1MLG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 07:11:06 -0500
-Date: Fri, 28 Nov 2014 13:10:57 +0100
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        cornelia.huck@de.ibm.com, rusty@au1.ibm.com, nab@linux-iscsi.org,
-        pbonzini@redhat.com, thuth@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH v6 01/46] virtio: add low-level APIs for feature bits
-Message-ID: <20141128131057.6046a382@thinkpad-w530>
-In-Reply-To: <1417118789-18231-2-git-send-email-mst@redhat.com>
-References: <1417118789-18231-1-git-send-email-mst@redhat.com>
-	<1417118789-18231-2-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland GmbH
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1751335AbaK1MPF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 07:15:05 -0500
+Received: from kazi.fit.vutbr.cz ([147.229.8.12]:52367 "EHLO kazi.fit.vutbr.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750895AbaK1MPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 07:15:03 -0500
+Date: Fri, 28 Nov 2014 13:14:45 +0100
+From: Tomas Novotny <tomas@novotny.cz>
+To: akpm@linux-foundation.org
+Cc: rtc-linux@googlegroups.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
+        grant.likely@linaro.org, robh+dt@kernel.org
+Subject: Re: [PATCH 0/4] rtc: ds1307: add support for device tree and
+ mcp7940x
+Message-ID: <20141128131445.181a6e27@tomas.local.tbs-biometrics.cz>
+In-Reply-To: <20141127161741.52e8d300@tomas>
+References: <1416844164-16782-1-git-send-email-tomas@novotny.cz>
+	<20141127161741.52e8d300@tomas>
+X-Mailer: Claws Mail 3.11.0 (GTK+ 2.24.25; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112812-0017-0000-0000-00000203DB6D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Add low level APIs to test/set/clear feature bits.
-> For use by transports, to make it easier to
-> write code independent of feature bit array format.
+Hi Andrew,
+
+On Thu, 27 Nov 2014 16:17:41 +0100, Tomas Novotny <tomas@novotny.cz> wrote:
+> On Mon, 24 Nov 2014 16:49:20 +0100
+> Tomas Novotny <tomas@novotny.cz> wrote:
 > 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  include/linux/virtio_config.h | 53 ++++++++++++++++++++++++++++++++++++++++---
->  1 file changed, 50 insertions(+), 3 deletions(-)
+> > This series is tested with MCP79401 and it is based on 3.18-rc6.
+> > 
+> > Tomas Novotny (4):
+> >   rtc: ds1307: add support for mcp7940x chips
+> >   of: add vendor prefix for Pericom Technology
+> >   rtc: ds1307: add device tree bindings documentation
+> >   rtc: ds1307: add device tree support
+> >
+> >  .../devicetree/bindings/rtc/maxim,ds1307.txt       |  23 ++++
+> >  .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+> >  drivers/rtc/rtc-ds1307.c                           | 149 ++++++++++++---------
+> >  3 files changed, 110 insertions(+), 63 deletions(-)
+> >  create mode 100644 Documentation/devicetree/bindings/rtc/maxim,ds1307.txt
 > 
+> It is now in the -mm and linux-next.
+> Thanks to Andrew for pick up,
+> 
+> Tomas
 
-As these functions really set feature bits, I would rather name them:
+could you please remove my last two patches:
+rtc-ds1307-add-device-tree-bindings-documentation.patch
+rtc-ds1307-add-device-tree-support.patch
+from the -mm?
+	I missed that some compatible RTC's are already listed in
+i2c/trivial-devices.txt. These two patches shouldn't break anything, but
+document and handle already working thing.
+	Better would be to follow the trivial-devices.txt and add the missing
+compatibles there.
+	The first two patches are ok.
+	Sorry for the noise and thanks,
 
-virtio_has_feature ...
-virtio_set_feature ...
-virtio_clear_feature ...
-
-But in general, this looks good to me!
-
+	Tomas
