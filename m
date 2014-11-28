@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908AbaK1OO6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 09:14:58 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:37729 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919AbaK1OO5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 09:14:57 -0500
-Date: Fri, 28 Nov 2014 17:14:32 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Luis de Bethencourt <luis@debethencourt.com>
-Cc: devel@driverdev.osuosl.org, aaro.koskinen@iki.fi,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        paul.gortmaker@windriver.com, eunb.song@samsung.com
-Subject: Re: [PATCH v2] staging: octeon: Fix checkpatch warnings
-Message-ID: <20141128141432.GG4860@mwanda>
-References: <20141127161432.GA32577@ks395439.kimsufi.com>
- <20141128102928.GD4860@mwanda>
- <20141128133034.GA4635@ks395439.kimsufi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141128133034.GA4635@ks395439.kimsufi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1751923AbaK1OQS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 09:16:18 -0500
+Received: from [85.220.129.38] ([85.220.129.38]:49482 "EHLO smtp3-1.goneo.de"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751366AbaK1OQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 09:16:17 -0500
+X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Nov 2014 09:16:17 EST
+X-Spam-Flag: NO
+X-Spam-Score: -2.799
+From: poeschel@lemonage.de
+To: gregkh@linuxfoundation.org, santosh.shilimkar@ti.com, sandeep_n@ti.com,
+        kheitke@codeaurora.org, bp@suse.de, johannes.thumshirn@men.de,
+        andreas.noever@gmail.com, linux-kernel@vger.kernel.org
+Cc: Lars Poeschel <poeschel@lemonage.de>
+Subject: [PATCH] drivers/Kconfig: remove duplicate entry for soc
+Date: Fri, 28 Nov 2014 15:08:40 +0100
+Message-Id: <1417183720-16767-1-git-send-email-poeschel@lemonage.de>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 28, 2014 at 02:30:34PM +0100, Luis de Bethencourt wrote:
-> On Fri, Nov 28, 2014 at 01:29:28PM +0300, Dan Carpenter wrote:
-> > On Thu, Nov 27, 2014 at 05:18:10PM +0100, Luis de Bethencourt wrote:
-> > > Fixing 80 character limit warnings in octeon/ethernet-rx.c
-> > > 
-> > > Signed-off-by: Luis de Bethencourt <luis@debethencourt.com>
-> > > ---
-> > >  drivers/staging/octeon/ethernet-rx.c | 51 +++++++++++++++++++++++++-----------
-> > >  1 file changed, 35 insertions(+), 16 deletions(-)
-> > > 
-> > > diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
-> > > index 1789a12..e387eb1 100644
-> > > --- a/drivers/staging/octeon/ethernet-rx.c
-> > > +++ b/drivers/staging/octeon/ethernet-rx.c
-> > > @@ -109,6 +109,7 @@ static inline int cvm_oct_check_rcv_error(cvmx_wqe_t *work)
-> > >  		int interface = cvmx_helper_get_interface_num(work->ipprt);
-> > >  		int index = cvmx_helper_get_interface_index_num(work->ipprt);
-> > >  		union cvmx_gmxx_rxx_frm_ctl gmxx_rxx_frm_ctl;
-> > > +
-> > 
-> > Do this in a separate patch.
-> 
-> Will do within the hour.
-> 
+From: Lars Poeschel <poeschel@lemonage.de>
 
-:(  You should always wait overnight or a few hours before sending a
-patch.  It's not a race.  Go slowly.
+For some reason there was the same menu entry in menuconfig twice. This
+trivial patch leaves the one that is older as is and removes the other
+entry.
 
-regards,
-dan carpenter
+Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+---
+ drivers/Kconfig | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index 1a693d3..5add358 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -132,8 +132,6 @@ source "drivers/staging/Kconfig"
+ 
+ source "drivers/platform/Kconfig"
+ 
+-source "drivers/soc/Kconfig"
+-
+ source "drivers/clk/Kconfig"
+ 
+ source "drivers/hwspinlock/Kconfig"
+-- 
+2.1.3
 
