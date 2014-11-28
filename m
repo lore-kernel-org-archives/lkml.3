@@ -1,194 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751842AbaK1RMW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 12:12:22 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:52173 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438AbaK1RMS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 12:12:18 -0500
+	id S1751046AbaK1ROl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 12:14:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:32893 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750890AbaK1ROk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 12:14:40 -0500
+Date: Fri, 28 Nov 2014 18:14:35 +0100
+From: Petr Mladek <pmladek@suse.cz>
+To: Seth Jennings <sjenning@redhat.com>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Miroslav Benes <mbenes@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] livepatch: clean up klp_find_object_module() usage: was: Re:
+ [PATCHv4 2/3] kernel: add support for live patching
+Message-ID: <20141128171435.GE32376@dhcp128.suse.cz>
+References: <1416935709-404-1-git-send-email-sjenning@redhat.com>
+ <1416935709-404-3-git-send-email-sjenning@redhat.com>
+ <20141128170735.GD32376@dhcp128.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <874mtjp9m1.fsf@x220.int.ebiederm.org>
-References: <3ccec8a13019b5e8ce7b1d7889677b778b070dc8.1416041823.git.josh@joshtriplett.org>
- <0895c1f268bc0b01cc6c8ed4607d7c3953f49728.1416041823.git.josh@joshtriplett.org>
- <546A3942.5040906@schaufler-ca.com> <CALCETrWy-3C1on3+2wE9aqcChBUCUY0i_4AL_Om8CSZ5QB18sQ@mail.gmail.com>
- <CALCETrVn4gVXp7F=5h-bkN5VWuRMG9BoxgeQfKhX4+ZXxGE=wQ@mail.gmail.com>
- <546A43CE.2030706@schaufler-ca.com> <87lhmwwpey.fsf_-_@x220.int.ebiederm.org>
- <CALCETrUuWDq2akKfb50AiPHeDDWzPW7ijz1QwnuNiskyZbBEfA@mail.gmail.com>
- <87wq6frjcw.fsf@x220.int.ebiederm.org> <CALCETrX2s-7iaLMEKLQsExTEp3JyoAPQG44p0v5wkeED3-6dQA@mail.gmail.com>
- <874mtjp9m1.fsf@x220.int.ebiederm.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 28 Nov 2014 09:11:56 -0800
-Message-ID: <CALCETrWsr9zV+9T9ba7Wy3q5q2SOpDyhSf4VUJ+C9rVf6R4Yfw@mail.gmail.com>
-Subject: Re: [CFT][PATCH] userns: Avoid problems with negative groups
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-man <linux-man@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Richard Weinberger <richard@nod.at>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Stephane Graber <stgraber@ubuntu.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141128170735.GD32376@dhcp128.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cc: Serge and Stephane, since this may end up affecting LXC.
+On Fri 2014-11-28 18:07:37, Petr Mladek wrote:
+> On Tue 2014-11-25 11:15:08, Seth Jennings wrote:
+> > This commit introduces code for the live patching core.  It implements
+> > an ftrace-based mechanism and kernel interface for doing live patching
+> > of kernel and kernel module functions.
 
-On Fri, Nov 28, 2014 at 8:34 AM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Andy Lutomirski <luto@amacapital.net> writes:
->
->> On Thu, Nov 27, 2014 at 9:21 PM, Eric W. Biederman
->> <ebiederm@xmission.com> wrote:
->>> Andy Lutomirski <luto@amacapital.net> writes:
->>>
->>>>> This change should break userspace by the minimal amount needed
->>>>> to fix this issue.
->>>>>
->>>>> This should fix CVE-2014-8989.
->>>>
->>>> I think this is both unnecessarily restrictive and that it doesn't fix
->>>> the bug.
->>>
->>> You are going to have to work very hard to convince me this is
->>> unnecessarily restrictive.
->>>
->>>>For example, I can exploit CVE-2014-8989 without ever
->>>> writing a uid map or a gid map.
->>>
->>> Yes.  I realized just after I sent the patch that setgroups(0, NULL)
->>> would still work without a mapping set.  That is a first glass grade a
->>> oversight that resulted in a bug.  None of the other uid or gid changing
->>> syscalls without a mapping set, and setgroups was just overlooked
->>> because it was different.  Oops.
->>>
->>> I will send an updated patch that stops setgroups from working without
->>> a mapping set shortly.
->>>
->>>> IIUC, the only real issue is that user namespaces allow groups to be
->>>> dropped using setgroups that wouldn't otherwise be dropped.  Can we
->>>> get away with adding a per-user-ns flag that determines whether
->>>> setgroups can be used?
->>>
->>> Being able to call setgroups is fundamental to login programs, and login
->>> programs are one of the things user namespaces need to support.  So
->>> adding an extra flag and an extra place where privilege is required
->>> is just noise, and will wind up breaking every user of user namespaces.
->>>
->>> Further being able to setup uid and gid mappings without privilege is
->>> primarily a nice to have.  The original design did not have unprivileged
->>> setting of uid and gid maps and if it proves insecure I goofed and the
->>> feature isn't safe so it needs to be removed.
->>
->> Being able to set a single-user uid map and gid map is very useful for
->> sandboxing.  This lets unprivileged users drop filesystem and network
->> access and still run most normal programs.  A surprising number of
->> normal unprivileged programs fail if run without a mapping.
->
-> You can still set a single uid map unprivileged.  That should be enough
-> to keep your capabilities inside the namespace as long as you need them.
->
-> I am sad that in practice you can't set a single gid map, as everyone
-> calls setgroups.
->
+[...]
 
-That's not the problem.  The problem is that a surprising number of
-libraries expect getegid(), etc to return sensible values.
+> > +/* sets obj->mod if object is not vmlinux and module is found */
+> > +static bool klp_find_object_module(struct klp_object *obj)
+> > +{
+> > +	if (!obj->name)
+> > +		return 1;
+> > +
+> > +	mutex_lock(&module_mutex);
+> > +	/*
+> > +	 * We don't need to take a reference on the module here because we have
+> > +	 * the klp_mutex, which is also taken by the module notifier.  This
+> > +	 * prevents any module from unloading until we release the klp_mutex.
+> > +	 */
+> > +	obj->mod = find_module(obj->name);
+> > +	mutex_unlock(&module_mutex);
+> > +
+> > +	return !!obj->mod;
+> 
+> I know that this is effective to return boolean here because
+> it handles also patch against the kernel core (vmlinux). But
+> the logic looks tricky. I would prefer a cleaner design and
+> use this function only to set obj->mod.
+> 
+> I wanted to see how it would look like, so I will send a patch for
+> this in a separate mail.
 
-> Although I sort of think it might be worth scouring userspace for
-> something that will call setgroups and drop all of your groups.  If we
-> can find something preexisting that will solve this entire mess in a
-> much more elegant way.
->
->>> This does mean that running a system with negative groups and users
->>> delegated subordinate gids in /etc/subuid is a bad idea and system
->>> administrators shouldn't do that as those negative groups won't prove
->>> effective in stopping their users.  But this is all under system
->>> administrator control so shrug.  There isn't a way to avoid that
->>> fundamental conflict.
->>>
->>>> setgroups would be unusable until the gid_map has been written and
->>>> then it would become usable if and only if the parent userns could use
->>>> setgroups and the opener of gid_map was privileged.
->>>
->>> That proposal sounds a lot more restrictive and a lot more of a pain
->>> to use than what I have implemented in my patch.
->>>
->>>> If we wanted to allow finer-grained control, we could allow writing
->>>> control lines like:
->>>>
->>>> options +setgroups
->>>>
->>>> or
->>>>
->>>> options -setgroups
->>>>
->>>> in gid_map, or we could add user_ns_flags that can only be written
->>>> once and only before either uid_map or gid_map is written.
->>>
->>> Definitely more complicated and I can't imagine a case where I need
->>> a gid map without needing to call setgroups.
->>
->> I do it all the time.  Unshare, set mappings (with no inner uid 0 at
->> all), set no_new_privs, drop caps, and go.
->>
->> Can we try the intermediate approach?  If you set gid_map without
->> privilege and you have supplementary groups, then let the write to
->> gid_map succeed but prevent setgroups from ever working?  That should
->> only be a couple of lines of code longer than your patch, and it will
->> avoid breaking sandbox use cases.
->
-> I am torn.  Send me an incremental patch and I will be happy to evaluate
-> it and if all is good fold the change in.  I hate breaking userspace but
-> if I break it I would rather it be a clean break that is easy to spot
-> and work around rather than something that almost works, and causes
-> people a lot of difficulty debugging.
+The patch is below. Of course, merge it into the original
+patch if you agree with the idea, please.
 
-I'll play with it this afternoon or over the weekend.  I'm currently
-on vacation, so I'll be a little slow.
 
->
-> My expectation is that systems that are serious will have /etc/subuid
-> and /etc/subgid and newuidmap and newgidmap setup.  Which is the other
-> way to allow you to map your own gid.
->
->> If we want to get really fancy in the future, we could have a concept
->> of pinned groups.  That is, if you're in a userns and you're a member
->> of an unmapped group, then you can't drop that group.  (Actually, that
->> all by itself might be enough to fix this issue.)
->
-> Not allowing you to drop groups really isn't enough.  One of the first
-> things applications like ssh do is call setgroups(0, NULL) to drop the
-> privileges granted by supplementary groups.  Further login program
-> somewhere call setgroups(N, ....) and give you every group mapped
-> by /etc/group.
->
-> I don't think I want to run containers with every supplementary group I
-> might want to drop mapped, and more than that, it would require changing
-> a lot more userspace than just the userspace that just does unpriv
-> containers with a single uid, and a single gid mapped.
->
-> But please test and see if you really need to map your group, and send
-> me an incremental patch if you see a way to do better.  Breaking
-> userspace sucks.
+>From 93eb9f9a25ad8aa0301e246f7685d3e787037566 Mon Sep 17 00:00:00 2001
+From: Petr Mladek <pmladek@suse.cz>
+Date: Fri, 28 Nov 2014 15:32:27 +0100
+Subject: [PATCH 1/2] livepatch: clean up klp_find_object_module() usage
 
-I *know* I need the uid mapped, and I'm pretty sure I need the gid as
-well.  FWIW, the code I care about won't object too strongly to a
-one-time break, but it will object to needing to use subuids, since it
-will have all kinds of problems if it starts to need to rely on setuid
-helpers.
+The function klp_find_object_module() looks quite tricky. It has two effects:
+sets obj->mod and decides whether the module is available or not. The second
+effect is the tricky part because it handles also the code kernel code "vmlinux"
+and is not module related. It causes returning bool, and doing the crazy double
+negation.
 
-There's a third option: use your patch but require explicit userspace
-opt-in for code that wants the setgroups-not-allowed mode.  I'll try
-implementing that.
+This patch tries to make a bit cleaner design:
 
---Andy
+1. klp_find_object_module() handles only obj->mod. It returns
+   the pointer or NULL.
+
+2. It modifies klp_enable_object() to do nothing when the related
+   module has not been loaded yet.
+
+3. The result is that the return value klp_find_object_module() is
+   not used in the end.
+
+We lose a check for potential klp_enable_object() misuse but it makes the code
+easier. In fact, the check for unloaded module is rather long. We might want
+to make it easier using some extra flag or another state of the object.
+Such flag might be used for the check of misuse.
+
+Signed-off-by: Petr Mladek <pmladek@suse.cz>
+
+---
+ kernel/livepatch/core.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/kernel/livepatch/core.c b/kernel/livepatch/core.c
+index 8e2e8cd242f5..9b1601729014 100644
+--- a/kernel/livepatch/core.c
++++ b/kernel/livepatch/core.c
+@@ -40,10 +40,10 @@ static LIST_HEAD(klp_patches);
+ static struct kobject *klp_root_kobj;
+ 
+ /* sets obj->mod if object is not vmlinux and module is found */
+-static bool klp_find_object_module(struct klp_object *obj)
++static struct module *klp_find_object_module(struct klp_object *obj)
+ {
+ 	if (!obj->name)
+-		return 1;
++		return NULL;
+ 
+ 	mutex_lock(&module_mutex);
+ 	/*
+@@ -54,7 +54,7 @@ static bool klp_find_object_module(struct klp_object *obj)
+ 	obj->mod = find_module(obj->name);
+ 	mutex_unlock(&module_mutex);
+ 
+-	return !!obj->mod;
++	return obj->mod;
+ }
+ 
+ struct klp_find_arg {
+@@ -318,8 +318,9 @@ static int klp_enable_object(struct module *pmod, struct klp_object *obj)
+ 	struct klp_func *func;
+ 	int ret;
+ 
+-	if (WARN_ON(!obj->mod && obj->name))
+-		return -EINVAL;
++	/* nope when the patched module has not been loaded yet */
++	if (obj->name && !obj->mod)
++		return 0;
+ 
+ 	if (obj->relocs) {
+ 		ret = klp_write_object_relocations(pmod, obj);
+@@ -401,8 +402,7 @@ static int __klp_enable_patch(struct klp_patch *patch)
+ 	pr_notice("enabling patch '%s'\n", patch->mod->name);
+ 
+ 	for (obj = patch->objs; obj->funcs; obj++) {
+-		if (!klp_find_object_module(obj))
+-			continue;
++		klp_find_object_module(obj);
+ 		ret = klp_enable_object(patch->mod, obj);
+ 		if (ret)
+ 			goto unregister;
+-- 
+1.8.5.2
+
