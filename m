@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751456AbaK1Ieh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 03:34:37 -0500
-Received: from mail-bl2on0061.outbound.protection.outlook.com ([65.55.169.61]:42560
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750902AbaK1Ief (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 03:34:35 -0500
-X-Greylist: delayed 63130 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Nov 2014 03:34:35 EST
-Date: Fri, 28 Nov 2014 09:34:24 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751490AbaK1IfX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 03:35:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36208 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750901AbaK1IfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 03:35:21 -0500
+Date: Fri, 28 Nov 2014 08:43:01 +0008
+From: Jason Wang <jasowang@redhat.com>
+Subject: Re: [PATCH v6 29/46] vhost: add memory access wrappers
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, thuth@linux.vnet.ibm.com,
+        kvm@vger.kernel.org, rusty@au1.ibm.com, netdev@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, dahi@linux.vnet.ibm.com,
+        pbonzini@redhat.com, David Miller <davem@davemloft.net>
+Message-Id: <1417163701.5822.8@smtp.corp.redhat.com>
+In-Reply-To: <1417118789-18231-30-git-send-email-mst@redhat.com>
+References: <1417118789-18231-1-git-send-email-mst@redhat.com>
+	<1417118789-18231-30-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-To: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>,
-        <dougthompson@xmission.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-edac@vger.kernel.org>,
-        <michal.simek@xilinx.com>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>, <rob@landley.net>, <bp@alien8.de>
-CC: <kpc528@gmail.com>, <kalluripunnaiahchoudary@gmail.com>,
-        <punnaia@xilinx.com>
-Subject: Re: [PATCH v5 1/2] Documentation: devicetree: Add ECC information
- to synopsys ddr controller
-References: <1417101454-26361-1-git-send-email-punnaia@xilinx.com>
-In-Reply-To: <1417101454-26361-1-git-send-email-punnaia@xilinx.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21136.004
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <5d58678ae1b84f40b6c8247a17cf1ee5@BN1AFFO11FD052.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(51704005)(189002)(377454003)(479174003)(24454002)(164054003)(199003)(86362001)(74316001)(19580395003)(104016003)(23746002)(50466002)(21056001)(76176999)(54356999)(106466001)(107046002)(102836001)(120916001)(44976005)(62966003)(20776003)(99396003)(108616004)(33646002)(19580405001)(46102003)(95666004)(92566001)(4396001)(64706001)(83506001)(87936001)(65956001)(77156002)(6806004)(50986999)(31966008)(47776003)(65806001)(2201001)(65826006)(921003)(1121002)(107986001)(24736002)(2101003)(83996005);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB028;H:xir-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB028;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB028;
-X-Forefront-PRVS: 04097B7F7F
-Authentication-Results: spf=pass (sender IP is 62.221.5.235)
- smtp.mailfrom=michal.simek@xilinx.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB028;
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain; charset=utf-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2014 04:17 PM, Punnaiah Choudary Kalluri wrote:
-> Add ECC information to synopsys ddr memory controller.
+
+
+On Fri, Nov 28, 2014 at 4:10 AM, Michael S. Tsirkin <mst@redhat.com> 
+wrote:
+> Add guest memory access wrappers to handle virtio endianness
+> conversions.
 > 
-> Signed-off-by: Punnaiah Choudary Kalluri <punnaia@xilinx.com>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 > ---
->  .../bindings/memory-controllers/synopsys.txt       |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
+>  drivers/vhost/vhost.h | 31 +++++++++++++++++++++++++++++++
+>  1 file changed, 31 insertions(+)
 > 
-> diff --git a/Documentation/devicetree/bindings/memory-controllers/synopsys.txt b/Documentation/devicetree/bindings/memory-controllers/synopsys.txt
-> index f9c6454..a43d26d 100644
-> --- a/Documentation/devicetree/bindings/memory-controllers/synopsys.txt
-> +++ b/Documentation/devicetree/bindings/memory-controllers/synopsys.txt
-> @@ -1,5 +1,9 @@
->  Binding for Synopsys IntelliDDR Multi Protocol Memory Controller
->  
-> +This controller has an optional ECC support in half-bus width (16-bit)
-> +configuration. The ECC controller corrects one bit error and detects
-> +two bit errors.
+> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+> index c624b09..1f321fd 100644
+> --- a/drivers/vhost/vhost.h
+> +++ b/drivers/vhost/vhost.h
+> @@ -176,4 +176,35 @@ static inline int vhost_has_feature(struct 
+> vhost_virtqueue *vq, int bit)
+>  {
+>  	return vq->acked_features & (1ULL << bit);
+>  }
 > +
->  Required properties:
->   - compatible: Should be 'xlnx,zynq-ddrc-a05'
->   - reg: Base address and size of the controllers memory area
-> 
+> +/* Memory accessors */
+> +static inline u16 vhost16_to_cpu(struct vhost_virtqueue *vq, 
+> __virtio16 val)
+> +{
+> +	return __virtio16_to_cpu(vhost_has_feature(vq, VIRTIO_F_VERSION_1), 
+> val);
+> +}
+> +
+> +static inline __virtio16 cpu_to_vhost16(struct vhost_virtqueue *vq, 
+> u16 val)
+> +{
+> +	return __cpu_to_virtio16(vhost_has_feature(vq, VIRTIO_F_VERSION_1), 
+> val);
+> +}
+> +
+> +static inline u32 vhost32_to_cpu(struct vhost_virtqueue *vq, 
+> __virtio32 val)
+> +{
+> +	return __virtio32_to_cpu(vhost_has_feature(vq, VIRTIO_F_VERSION_1), 
+> val);
+> +}
+> +
+> +static inline __virtio32 cpu_to_vhost32(struct vhost_virtqueue *vq, 
+> u32 val)
+> +{
+> +	return __cpu_to_virtio32(vhost_has_feature(vq, VIRTIO_F_VERSION_1), 
+> val);
+> +}
+> +
+> +static inline u64 vhost64_to_cpu(struct vhost_virtqueue *vq, 
+> __virtio64 val)
+> +{
+> +	return __virtio64_to_cpu(vhost_has_feature(vq, VIRTIO_F_VERSION_1), 
+> val);
+> +}
+> +
+> +static inline __virtio64 cpu_to_vhost64(struct vhost_virtqueue *vq, 
+> u64 val)
+> +{
+> +	return __cpu_to_virtio64(vhost_has_feature(vq, VIRTIO_F_VERSION_1), 
+> val);
+> +}
+>  #endif
+> -- 
+> MST
 
-Acked-by: Michal Simek <michal.simek@xilinx.com>
+Reviewed-by: Jason Wang <jasowang@redhat.com>
 
-Thanks,
-Michal
