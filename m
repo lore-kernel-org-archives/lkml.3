@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751335AbaK1MPF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 07:15:05 -0500
-Received: from kazi.fit.vutbr.cz ([147.229.8.12]:52367 "EHLO kazi.fit.vutbr.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750895AbaK1MPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 07:15:03 -0500
-Date: Fri, 28 Nov 2014 13:14:45 +0100
-From: Tomas Novotny <tomas@novotny.cz>
-To: akpm@linux-foundation.org
-Cc: rtc-linux@googlegroups.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
-        grant.likely@linaro.org, robh+dt@kernel.org
-Subject: Re: [PATCH 0/4] rtc: ds1307: add support for device tree and
- mcp7940x
-Message-ID: <20141128131445.181a6e27@tomas.local.tbs-biometrics.cz>
-In-Reply-To: <20141127161741.52e8d300@tomas>
-References: <1416844164-16782-1-git-send-email-tomas@novotny.cz>
-	<20141127161741.52e8d300@tomas>
-X-Mailer: Claws Mail 3.11.0 (GTK+ 2.24.25; x86_64-suse-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751433AbaK1MQR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 07:16:17 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:47896 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027AbaK1MQQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 07:16:16 -0500
+From: Athira Lekshmi <andnlnbn18@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: Larry.Finger@lwfinger.net, Jes.Sorensen@redhat.com,
+        ruchandani.tina@gmail.com, linux-wireless@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Athira Lekshmi <andnlnbn18@gmail.com>
+Subject: [PATCH] Drivers:staging:rtl8723au:core: Fixed checkpatch error
+Date: Fri, 28 Nov 2014 17:46:14 +0530
+Message-Id: <1417176974-18604-1-git-send-email-andnlnbn18@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+Fixed the checkpatch error:
+ERROR: spaces required around that '>'
 
-On Thu, 27 Nov 2014 16:17:41 +0100, Tomas Novotny <tomas@novotny.cz> wrote:
-> On Mon, 24 Nov 2014 16:49:20 +0100
-> Tomas Novotny <tomas@novotny.cz> wrote:
-> 
-> > This series is tested with MCP79401 and it is based on 3.18-rc6.
-> > 
-> > Tomas Novotny (4):
-> >   rtc: ds1307: add support for mcp7940x chips
-> >   of: add vendor prefix for Pericom Technology
-> >   rtc: ds1307: add device tree bindings documentation
-> >   rtc: ds1307: add device tree support
-> >
-> >  .../devicetree/bindings/rtc/maxim,ds1307.txt       |  23 ++++
-> >  .../devicetree/bindings/vendor-prefixes.txt        |   1 +
-> >  drivers/rtc/rtc-ds1307.c                           | 149 ++++++++++++---------
-> >  3 files changed, 110 insertions(+), 63 deletions(-)
-> >  create mode 100644 Documentation/devicetree/bindings/rtc/maxim,ds1307.txt
-> 
-> It is now in the -mm and linux-next.
-> Thanks to Andrew for pick up,
-> 
-> Tomas
+Signed-off-by: Athira Lekshmi <andnlnbn18@gmail.com>
+---
+ drivers/staging/rtl8723au/core/rtw_cmd.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-could you please remove my last two patches:
-rtc-ds1307-add-device-tree-bindings-documentation.patch
-rtc-ds1307-add-device-tree-support.patch
-from the -mm?
-	I missed that some compatible RTC's are already listed in
-i2c/trivial-devices.txt. These two patches shouldn't break anything, but
-document and handle already working thing.
-	Better would be to follow the trivial-devices.txt and add the missing
-compatibles there.
-	The first two patches are ok.
-	Sorry for the noise and thanks,
+diff --git a/drivers/staging/rtl8723au/core/rtw_cmd.c b/drivers/staging/rtl8723au/core/rtw_cmd.c
+index 44eae8e..9f1cdd4 100644
+--- a/drivers/staging/rtl8723au/core/rtw_cmd.c
++++ b/drivers/staging/rtl8723au/core/rtw_cmd.c
+@@ -960,7 +960,7 @@ static void traffic_status_watchdog(struct rtw_adapter *padapter)
+ 		/*  check traffic for  powersaving. */
+ 			if (((pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod +
+ 			      pmlmepriv->LinkDetectInfo.NumTxOkInPeriod) > 8) ||
+-			    pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod >2)
++			    pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod > 2)
+ 				bEnterPS = false;
+ 			else
+ 				bEnterPS = true;
+@@ -1154,7 +1154,7 @@ static void rtw_chk_hi_queue_hdl(struct rtw_adapter *padapter)
+ 
+ 			cnt++;
+ 
+-			if (cnt>10)
++			if (cnt > 10)
+ 				break;
+ 
+ 			val = rtl8723a_chk_hi_queue_empty(padapter);
+-- 
+1.7.9.5
 
-	Tomas
