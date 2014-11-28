@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751645AbaK1Q1Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 11:27:24 -0500
-Received: from mail.us.es ([193.147.175.20]:50900 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751111AbaK1Q1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 11:27:22 -0500
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus5 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.98.4/19692. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-103.2/7.5):. 
- Processed in 1.973105 secs); 28 Nov 2014 16:27:19 -0000
-X-Spam-ASN: AS12715 87.216.0.0/16
-X-Envelope-From: pneira@us.es
-Date: Fri, 28 Nov 2014 17:29:25 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Steven Noonan <steven@uplinklabs.net>
-Cc: linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH] nf_log_ipv6: correct typo in module description
-Message-ID: <20141128162925.GA3729@salvia>
-References: <1417155739-5263-1-git-send-email-steven@uplinklabs.net>
+	id S1751770AbaK1Q3O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 11:29:14 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:26720 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276AbaK1Q3N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 11:29:13 -0500
+Date: Fri, 28 Nov 2014 19:28:50 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Patrick Farrell <paf@cray.com>
+Cc: =?iso-8859-1?Q?Lo=EFc?= Pefferkorn <loic@loicp.eu>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gdonald@gmail.com" <gdonald@gmail.com>,
+        "HPDD-discuss@ml01.01.org" <HPDD-discuss@ml01.01.org>
+Subject: Re: [HPDD-discuss] [PATCH] staging: lustre: fix sparse warnings
+ related to lock context imbalance
+Message-ID: <20141128162850.GJ4911@mwanda>
+References: <02a457cec587341d0f1665491f6360323694b008.1417017302.git.loic@loicp.eu>
+ <20141126205443.GB10615@kroah.com>
+ <20141127183410.GA4582@iron>
+ <20141128100045.GC4860@mwanda>
+ <DB0C8A206669AC40B1C4E52A8584A6F61496CCB5@CFWEX01.americas.cray.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1417155739-5263-1-git-send-email-steven@uplinklabs.net>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <DB0C8A206669AC40B1C4E52A8584A6F61496CCB5@CFWEX01.americas.cray.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 10:22:19PM -0800, Steven Noonan wrote:
-> It incorrectly identifies itself as "IPv4" packet logging.
-
-Applied.
-
-Please, Cc netfilter-devel@vger.kernel.org in your future patches.
-
-Thanks.
-
-> Signed-off-by: Steven Noonan <steven@uplinklabs.net>
-> ---
->  net/ipv6/netfilter/nf_log_ipv6.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+On Fri, Nov 28, 2014 at 03:45:24PM +0000, Patrick Farrell wrote:
+> Dan,
 > 
-> diff --git a/net/ipv6/netfilter/nf_log_ipv6.c b/net/ipv6/netfilter/nf_log_ipv6.c
-> index 7b17a0b..41b9ade 100644
-> --- a/net/ipv6/netfilter/nf_log_ipv6.c
-> +++ b/net/ipv6/netfilter/nf_log_ipv6.c
-> @@ -412,6 +412,6 @@ module_init(nf_log_ipv6_init);
->  module_exit(nf_log_ipv6_exit);
->  
->  MODULE_AUTHOR("Netfilter Core Team <coreteam@netfilter.org>");
-> -MODULE_DESCRIPTION("Netfilter IPv4 packet logging");
-> +MODULE_DESCRIPTION("Netfilter IPv6 packet logging");
->  MODULE_LICENSE("GPL");
->  MODULE_ALIAS_NF_LOGGER(AF_INET6, 0);
-> -- 
-> 2.1.3
+> I disagree about the change suggested here.  In this particular code,
+> 'object_attr' is distinct from 'attr', as in a 'setattr' call on an
+> inode.  'cl_object' is a distinct thing from an inode/file on disk,
+> and specifying it is the objects attr is helpful in understanding
+> there is not a direct relationship to 'attr' in the general filesystem
+> sense.  (cl_object attrs are used in determining actual on disk
+> attributes, but there is not a one-to-one correspondence.)
 > 
+> I am willing to be corrected, but that is my first feeling here.
+
+I haven't looked at it deeply.  Loïc was suggesting that we need new
+locking functions to deal with lustre's unwieldy naming schemes and I
+think we should just fix the names...
+
+We already have a cl_attr struct.  Is that different from what
+we're locking here?  I don't think anyone will think this takes an inode
+argument.
+
+regards,
+dan carpenter
+
