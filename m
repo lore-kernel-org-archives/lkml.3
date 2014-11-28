@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768AbaK1JjG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 04:39:06 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:5197 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425AbaK1JjD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 04:39:03 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 28 Nov 2014 01:37:26 -0800
-From: Vince Hsu <vinceh@nvidia.com>
-To: <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>, <gnurou@gmail.com>,
-        <pdeschrijver@nvidia.com>
-CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Vince Hsu <vinceh@nvidia.com>
-Subject: [V2 PATCH] soc/tegra: fuse: export tegra_sku_info for module use
-Date: Fri, 28 Nov 2014 17:41:02 +0800
-Message-ID: <1417167662-20618-1-git-send-email-vinceh@nvidia.com>
-X-Mailer: git-send-email 1.9.1
-X-NVConfidentiality: public
+	id S1751813AbaK1Jjf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 04:39:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49278 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751781AbaK1Jjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 04:39:32 -0500
+Message-ID: <547842C2.4010306@redhat.com>
+Date: Fri, 28 Nov 2014 10:39:14 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Alexei Starovoitov <ast@plumgrid.com>
+CC: "David S. Miller" <davem@davemloft.net>, Zi Shen Lim <zlim.lnx@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net] bpf: x86: fix epilogue generation for eBPF programs
+References: <1417064546-4129-1-git-send-email-ast@plumgrid.com> <5476F471.80500@redhat.com> <CAMEtUuyzDs2Nz8WHdEZXmY9JOZx=w2UwUF06Kq5qcgkaaRKs3A@mail.gmail.com>
+In-Reply-To: <CAMEtUuyzDs2Nz8WHdEZXmY9JOZx=w2UwUF06Kq5qcgkaaRKs3A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some Tegra drivers might be complied as kernel modules, and
-they need the fuse information for initialization. One
-example is the GK20A Nouveau driver. It needs the GPU speedo
-value to calculate frequency-voltage table. So export
-the tegra_sku_info.
+On 11/28/2014 06:55 AM, Alexei Starovoitov wrote:
+> On Thu, Nov 27, 2014 at 1:52 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
+>> On 11/27/2014 06:02 AM, Alexei Starovoitov wrote:
+>>>
+>>> classic BPF has a restriction that last insn is always BPF_RET.
+>>> eBPF doesn't have BPF_RET instruction and this restriction.
+>>> It has BPF_EXIT insn which can appear anywhere in the program
+>>> one or more times and it doesn't have to be last insn.
+>>> Fix eBPF JIT to emit epilogue when first BPF_EXIT is seen
+>>> and all other BPF_EXIT instructions will be emitted as jump.
+>>>
+>>> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+>>> ---
+>>> Note, this bug is applicable only to native eBPF programs
+>>> which first were introduced in 3.18, so no need to send it
+>>> to stable and therefore no 'Fixes' tag.
+>>
+>> Btw, even if it's not sent to -stable, a 'Fixes:' tag is useful
+>> information for backporting and regression tracking, preferably
+>> always mentioned where it can clearly be identified.
+>
+> Well I didn't mention it, as I said, because I don't think it
+> needs backporting. Otherwise with the tag the tools might
+> pick it up automatically? Just a guess.
 
-Signed-off-by: Vince Hsu <vinceh@nvidia.com>
----
+No, Dave selects -stable material on a case-by-case basis and bundles
+it up eventually; after -net was merged, it's then pushed to -stable
+by himself (see Documentation/networking/netdev-FAQ.txt +114). So the
+comment below "---" is absolutely okay.
 
-v2: add more description why we need this patch
+It can well be, that some people/companies cannot switch for various
+reasons immediately to the next kernels, but nevertheless would like
+to have a certain features included, so generally regression tracking
+via 'Fixes:' tag is extremely useful/valuable. ;)
 
- drivers/soc/tegra/fuse/fuse-tegra.c | 1 +
- 1 file changed, 1 insertion(+)
+> Fixes: 622582786c9e ("net: filter: x86: internal BPF JIT")
 
-diff --git a/drivers/soc/tegra/fuse/fuse-tegra.c b/drivers/soc/tegra/fuse/fuse-tegra.c
-index 11a5043959dc..011a3363c265 100644
---- a/drivers/soc/tegra/fuse/fuse-tegra.c
-+++ b/drivers/soc/tegra/fuse/fuse-tegra.c
-@@ -31,6 +31,7 @@
- static u32 (*fuse_readl)(const unsigned int offset);
- static int fuse_size;
- struct tegra_sku_info tegra_sku_info;
-+EXPORT_SYMBOL(tegra_sku_info);
- 
- static const char *tegra_revision_name[TEGRA_REVISION_MAX] = {
- 	[TEGRA_REVISION_UNKNOWN] = "unknown",
--- 
-1.9.1
+...
+>> Why this type change here? This seems a bit out of context (I would
+>> have expected a mention of this in the commit message, otherwise).
+>
+> The reason for signed is the following:
+> jmp offset to epilogue is computed as:
+> jmp_offset = ctx->cleanup_addr - addrs[i]
+> when cleanup_addr was always last insn it wasn't a problem,
+> since result of subtraction was positive.
+> Now, since epilogue will be in the middle of JITed
+> code the jmps to epilogue may be negative
 
+Ok, thanks for the clarification, Alexei.
