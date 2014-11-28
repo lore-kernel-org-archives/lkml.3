@@ -1,74 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293AbaK1Mrb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 07:47:31 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:49914 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985AbaK1Mr3 (ORCPT
+	id S1751312AbaK1Msj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 07:48:39 -0500
+Received: from 6.mo6.mail-out.ovh.net ([87.98.177.69]:36448 "EHLO
+	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750901AbaK1Msi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 07:47:29 -0500
-Date: Fri, 28 Nov 2014 13:47:21 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>,
-        Joel Stanley <joel@jms.id.au>, lguest@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH v6 04/46] virtio: add support for 64 bit features.
-Message-ID: <20141128134721.5473ebbd.cornelia.huck@de.ibm.com>
-In-Reply-To: <1417118789-18231-5-git-send-email-mst@redhat.com>
-References: <1417118789-18231-1-git-send-email-mst@redhat.com>
-	<1417118789-18231-5-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+	Fri, 28 Nov 2014 07:48:38 -0500
+X-Greylist: delayed 8404 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Nov 2014 07:48:37 EST
+Date: Fri, 28 Nov 2014 11:18:24 +0100
+From: Lukasz Majewski <l.majewski@majess.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        Eduardo Valentin <edubezval@gmail.com>
+Cc: Linux PM <linux-pm@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCHv2 1/1] thermal: cpu_cooling: check for the readiness of
+ cpufreq layer
+Message-ID: <20141128111824.533c4641@jawa>
+In-Reply-To: <CAKohponu_PRrqsuMdCJDznhiO_-=iCaYPhCCad8F4WS3rNxo5A@mail.gmail.com>
+References: <1417097577-3548-1-git-send-email-edubezval@gmail.com>
+	<CAKohponu_PRrqsuMdCJDznhiO_-=iCaYPhCCad8F4WS3rNxo5A@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112812-0005-0000-0000-000002442582
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/2y2TlDVtawGQDt5HAADLGWz"; protocol="application/pgp-signature"
+X-Ovh-Tracer-Id: 5474125348358832667
+X-Ovh-Remote: 109.241.105.88 (109241105088.warszawa.vectranet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -200
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejiedrtdelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdengfhvvghrhghhihhtvgdqqdetucdlqddutddtmd
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -200
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejiedrtdelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdengfhvvghrhghhihhtvgdqqdetucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Nov 2014 22:07:55 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+--Sig_/2y2TlDVtawGQDt5HAADLGWz
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-> Change u32 to u64, and use BIT_ULL and 1ULL everywhere.
-> 
-> Note: transports are unchanged, and only set low 32 bit.
-> This guarantees that no transport sets e.g. VERSION_1
-> by mistake without proper support.
-> 
-> Based on patch by Rusty.
-> 
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  include/linux/virtio.h                 |  2 +-
->  include/linux/virtio_config.h          | 20 ++++++++++----------
->  tools/virtio/linux/virtio.h            |  2 +-
->  drivers/lguest/lguest_device.c         |  2 +-
->  drivers/misc/mic/card/mic_virtio.c     |  2 +-
->  drivers/remoteproc/remoteproc_virtio.c |  2 +-
->  drivers/s390/kvm/kvm_virtio.c          |  2 +-
->  drivers/s390/kvm/virtio_ccw.c          |  2 +-
->  drivers/virtio/virtio.c                |  8 ++++----
->  drivers/virtio/virtio_mmio.c           |  2 +-
->  drivers/virtio/virtio_pci.c            |  2 +-
->  11 files changed, 23 insertions(+), 23 deletions(-)
+On Fri, 28 Nov 2014 13:35:49 +0530
+Viresh Kumar <viresh.kumar@linaro.org> wrote:
 
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+> On 27 November 2014 at 19:42, Eduardo Valentin <edubezval@gmail.com>
+> wrote:
+> > (I'm sorry VireshK, I am still using my normal practice) :-)
+>=20
+> That's fine :)
+>=20
+> > diff --git a/drivers/thermal/cpu_cooling.c
+> > b/drivers/thermal/cpu_cooling.c index 1ab0018..bed3fa2 100644
+> > --- a/drivers/thermal/cpu_cooling.c
+> > +++ b/drivers/thermal/cpu_cooling.c
+> > @@ -440,6 +440,11 @@ __cpufreq_cooling_register(struct device_node
+> > *np, int ret =3D 0, i;
+> >         struct cpufreq_policy policy;
+> >
+> > +       if (!cpufreq_frequency_get_table(0)) {
+> > +               pr_err("cpu_cooling: cpufreq layer not ready!
+> > Deferring.\n");
+>=20
+> Throwing an error here doesn't look to be the right thing. Ultimately
+> we will register the cooling dev when probed again after some time.
+>=20
+> So, a pr_debug() suits more here.
+>=20
+> Also, this breaks existing exynos thermal drivers as they don't handle
+> -EPROBE_DEFER well right now.
 
+Unfortunately Viresh is correct here. Current (before rework) Exynos
+TMU driver expects that cpu_cooling device will succeed.
+
+>=20
+> I reached here, because one of my patches had something similar to
+> what you wrote. Just for this file though, haven't updated any other
+> drivers though.
+>=20
+> Will be sending you my small patchset by end of day today, please see
+> if they make any sense at all..
+
+Best regards,
+=C5=81ukasz Majewski
+
+--Sig_/2y2TlDVtawGQDt5HAADLGWz
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlR4S/EACgkQf9/hG2YwgjEx1gCfRbftm8wzjq7xJwyC/PFISSNC
+dloAoMnOf3s6RAA95fkGjSsfp1md5fns
+=hgj5
+-----END PGP SIGNATURE-----
+
+--Sig_/2y2TlDVtawGQDt5HAADLGWz--
