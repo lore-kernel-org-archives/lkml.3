@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055AbaK1QB6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 11:01:58 -0500
-Received: from exprod6og127.obsmtp.com ([64.18.1.78]:41037 "EHLO
-	exprod6og127.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971AbaK1QBw convert rfc822-to-8bit (ORCPT
+	id S1752130AbaK1QCU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 11:02:20 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:48680 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114AbaK1QCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 11:01:52 -0500
-X-Greylist: delayed 573 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Nov 2014 11:01:51 EST
-From: Patrick Farrell <paf@cray.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>,
-        =?iso-8859-1?Q?Lo=EFc_Pefferkorn?= <loic@loicp.eu>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gdonald@gmail.com" <gdonald@gmail.com>,
-        "HPDD-discuss@ml01.01.org" <HPDD-discuss@ml01.01.org>
-Subject: RE: [HPDD-discuss] [PATCH] staging: lustre: fix sparse warnings
- related to lock context imbalance
-Thread-Topic: [HPDD-discuss] [PATCH] staging: lustre: fix sparse warnings
- related to lock context imbalance
-Thread-Index: AQHQCagWB71wZzuU5USMaoAdEy50BJxzx62AgAFrDwCAAQLjgP//9nRc
-Date: Fri, 28 Nov 2014 15:45:24 +0000
-Message-ID: <DB0C8A206669AC40B1C4E52A8584A6F61496CCB5@CFWEX01.americas.cray.com>
-References: <02a457cec587341d0f1665491f6360323694b008.1417017302.git.loic@loicp.eu>
- <20141126205443.GB10615@kroah.com>
- <20141127183410.GA4582@iron>,<20141128100045.GC4860@mwanda>
-In-Reply-To: <20141128100045.GC4860@mwanda>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.234.40]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Fri, 28 Nov 2014 11:02:17 -0500
 MIME-Version: 1.0
+In-Reply-To: <87r3wn1mhu.fsf@free.fr>
+References: <1417113721-9062-1-git-send-email-robert.jarzmik@free.fr>
+	<alpine.DEB.2.11.1411272258010.3961@nanos>
+	<87r3wn1mhu.fsf@free.fr>
+Date: Sat, 29 Nov 2014 00:02:15 +0800
+Message-ID: <CAN1soZzZ7nuvvHguaHVHZc8hXvv8SzvWY9Ejf-fYhA5yfbcM-w@mail.gmail.com>
+Subject: Re: [PATCH] ARM: pxa: fix lubbock interrupts handling
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Daniel Mack <daniel@zonque.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan,
-
-I disagree about the change suggested here.  In this particular code, 'object_attr' is distinct from 'attr', as in a 'setattr' call on an inode.  'cl_object' is a distinct thing from an inode/file on disk, and specifying it is the objects attr is helpful in understanding there is not a direct relationship to 'attr' in the general filesystem sense.  (cl_object attrs are used in determining actual on disk attributes, but there is not a one-to-one correspondence.)
-
-I am willing to be corrected, but that is my first feeling here.
-
-- Patrick
-________________________________________
-From: HPDD-discuss [hpdd-discuss-bounces@lists.01.org] on behalf of Dan Carpenter [dan.carpenter@oracle.com]
-Sent: Friday, November 28, 2014 4:00 AM
-To: Loïc Pefferkorn
-Cc: devel@driverdev.osuosl.org; Greg KH; linux-kernel@vger.kernel.org; gdonald@gmail.com; HPDD-discuss@ml01.01.org
-Subject: Re: [HPDD-discuss] [PATCH] staging: lustre: fix sparse warnings related to lock context imbalance
-
-On Thu, Nov 27, 2014 at 07:34:10PM +0100, Loïc Pefferkorn wrote:
-> 1827         if (valid != 0) {
-> 1828             cl_object_attr_lock(obj);
-> 1829             cl_object_attr_set(env, obj, attr, valid);
-> 1830             cl_object_attr_unlock(obj);
+On Fri, Nov 28, 2014 at 9:30 PM, Robert Jarzmik <robert.jarzmik@free.fr> wrote:
+> Thomas Gleixner <tglx@linutronix.de> writes:
 >
-> after:
+>> So what is the relationship between installing that chained handler
+>> and that gpio-pxa probe stuff?
+> The relation is in gpio-pxa probe, look at the extract of pxa_gpio_probe() :
+> pxa_gpio_probe()
+>                 irq = gpio_to_irq(0);
+>                 irq_set_chip_and_handler(irq, &pxa_muxed_gpio_chip,
+>                                          handle_edge_irq);
+>                 set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
+>                 irq_set_chained_handler(IRQ_GPIO0, pxa_gpio_demux_handler);
 >
-> 1827         if (valid != 0) {
-> 1828             spin_lock(cl_object_attr_guard(obj));
-> 1829             cl_object_attr_set(env, obj, attr, valid);
-> 1830             spin_unlock(cl_object_attr_guard(obj));
+> Now look at the extract from the former lubbock_init_irq() :
+> lubbock_init_irq()
+>                 irq = PXA_GPIO_TO_IRQ(0);
+>                 irq_set_chained_handler(irq, lubbock_irq_handler);
+>                 irq_set_irq_type(irq, IRQ_TYPE_EDGE_FALLING);
+>
+> Given that gpio_to_irq(0) = PXA_GPIO_TO_IRQ(0), see how these 2 are fighting to
+> install the handler, and how the resulting installed handler depends on the
+> order of execution of pxa_gpio_to_irq() wrt lubbock_init_irq().
+>
+>> And why is the GPIO0 interrupt handled from arch code rather than from
+>> a regular driver setup, which depends on the availablity of the GPIO
+>> driver?
+> Ah that's a good question. Maybe the answer is that there is no driver in this
+> case.
+> When I say "no driver", it's because this interrupt is a consequence of the
+> IO-Board (or motherboard) wiring topology.
+>
+> I think I need to add a bit of context, so pardon my crude ascii-art style, and
+> see in the lubbock case, we have this wiring (list of IPs not exhaustive, and
+> gates to mask each XXX irq not added) :
+>
+> IPs on Motherboard          Gates on motherboard                       SoC
+>
+> +-------------+              +-------+
+> |  SMC Lan    | --lan irq--- | Latch | -
+> +-------------+              |       |  \                      +------PXA-----+
+>                              |       |   \                     |              |
+> +-------------+              |       |                         |+----------+  |
+> |   UDC Vbus  | --vbus irq-- | Latch | -- NOR gate -- GPIO0 -- ||GPIO block|  |
+> +-------------+              |       |                line     |+----------+  |
+>                              |       |   /                     |              |
+> +-------------+              |       |  /                      +--------------+
+> |   SA1111    | --sa11x irq--| Latch | -
+> +-------------+              +-------+
+>
+> The "gates on motherboard" is what lubbock.c is describing, ie. the
+> interconnection on the motherboard. I don't see the device/driver model fitting
+> to describe these gates, do you ?
+>
 
-The word "_object" doesn't add any new information to the name.  If you
-remove it then the code is improved.
+I think that it's a kind of irq muxing, just like lots of PMIC (power
+management IC).
+We should move the lubbock board irqs to a mfd driver, and register them as
+threaded irqs.
 
-                spin_lock(cl_attr_guard(obj));
-                cl_attr_set(env, obj, attr, valid);
-                spin_unlock(cl_attr_guard(obj));
-
-
-regards,
-dan carpenter
-
-_______________________________________________
-HPDD-discuss mailing list
-HPDD-discuss@lists.01.org
-https://lists.01.org/mailman/listinfo/hpdd-discuss
+Best Regards
+Haojian
