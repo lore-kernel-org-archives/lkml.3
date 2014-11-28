@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616AbaK1I5U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 03:57:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51483 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751075AbaK1I5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 03:57:19 -0500
-Message-ID: <547838EB.1000506@suse.de>
-Date: Fri, 28 Nov 2014 09:57:15 +0100
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Ching Huang <ching2048@areca.com.tw>, hch@infradead.org, thenzl@redhat.com,
-        jbottomley@parallels.com, dan.carpenter@oracle.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] arcmsr: Notify has sense data report
-References: <1417148444.16588.56.camel@Centos6.3-64>
-In-Reply-To: <1417148444.16588.56.camel@Centos6.3-64>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	id S1751668AbaK1I5f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 03:57:35 -0500
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:61567 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751642AbaK1I5d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 03:57:33 -0500
+Message-ID: <1417165049.16953.1.camel@x220>
+Subject: Re: [PATCH 5/8] of/overlay: Introduce DT overlay support
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Rob Herring <robh+dt@kernel.org>
+Date: Fri, 28 Nov 2014 09:57:29 +0100
+In-Reply-To: <20141128000713.1A9B8C40A7F@trevor.secretlab.ca>
+References: <1416533715-9758-1-git-send-email-grant.likely@linaro.org>
+	 <1416533715-9758-6-git-send-email-grant.likely@linaro.org>
+	 <1417007515.29407.54.camel@x220>
+	 <CACxGe6tw1FJsSvf-7u2Lx143_-GOWr3b-fLu1kCzK4JCCEwGSA@mail.gmail.com>
+	 <1417021025.29407.66.camel@x220>
+	 <20141128000713.1A9B8C40A7F@trevor.secretlab.ca>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 Nov 2014 08:57:29.0756 (UTC) FILETIME=[57083DC0:01D00AE9]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2014 05:20 AM, Ching Huang wrote:
-> From: Ching Huang <ching2048@areca.com.tw>
-> 
-> This patch is relative to http://git.infradead.org/users/hch/scsi-queue.git/tree/refs/heads/drivers-for-3.18:/drivers/scsi/arcmsr
-> 
-> Setting command status with 'DRIVER_SENSE' except 'CHECK_CONDITION' if we have sense data.
-> 
-> Signed-off-by: Ching Huang <ching2048@areca.com.tw>
-> ---
-> 
-> diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
-> --- a/drivers/scsi/arcmsr/arcmsr.h	2014-09-19 11:04:41.845100000 +0800
-> +++ b/drivers/scsi/arcmsr/arcmsr.h	2014-11-28 10:54:30.000000000 +0800
-> @@ -52,7 +52,7 @@ struct device_attribute;
->  	#define ARCMSR_MAX_FREECCB_NUM	320
->  #define ARCMSR_MAX_OUTSTANDING_CMD	255
->  #endif
-> -#define ARCMSR_DRIVER_VERSION		"v1.30.00.04-20140919"
-> +#define ARCMSR_DRIVER_VERSION		"v1.30.00.05-20141128"
->  #define ARCMSR_SCSI_INITIATOR_ID						255
->  #define ARCMSR_MAX_XFER_SECTORS							512
->  #define ARCMSR_MAX_XFER_SECTORS_B						4096
-> diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
-> --- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-09-19 11:01:26.990090000 +0800
-> +++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-11-28 10:55:54.000000000 +0800
-> @@ -989,7 +989,8 @@ static void arcmsr_report_sense_info(str
->  
->  	struct scsi_cmnd *pcmd = ccb->pcmd;
->  	struct SENSE_DATA *sensebuffer = (struct SENSE_DATA *)pcmd->sense_buffer;
-> -	pcmd->result = DID_OK << 16;
-> +
-> +	pcmd->result = (DID_OK << 16) | (CHECK_CONDITION << 1);
->  	if (sensebuffer) {
->  		int sense_data_length =
->  			sizeof(struct SENSE_DATA) < SCSI_SENSE_BUFFERSIZE
-> @@ -998,6 +999,7 @@ static void arcmsr_report_sense_info(str
->  		memcpy(sensebuffer, ccb->arcmsr_cdb.SenseData, sense_data_length);
->  		sensebuffer->ErrorCode = SCSI_SENSE_CURRENT_ERRORS;
->  		sensebuffer->Valid = 1;
-> +		pcmd->result |= (DRIVER_SENSE << 24);
->  	}
->  }
-> 
-Hmm; we actually _always_ attach a sense buffer to the command.
-So the check for 'if (sensebuffer)' will always return true.
+On Fri, 2014-11-28 at 00:07 +0000, Grant Likely wrote:
+> I was confused because the statement above wasn't in reference to
+> anything in particular. It was just a statement. If you had said
+> something like "Today's linux-next has the following problem caused by
+> commit 7518b5890 ('...')", then I think it would have been clearer.
 
-I'd rather use a 'WARN_ON' here and get rid of the 'if' clause.
+I see. I'll try to use a clearer stock phrase in the future.
 
-Cheers,
+Thanks,
 
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 21284 (AG Nürnberg)
+
+Paul Bolle
+
