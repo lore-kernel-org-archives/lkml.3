@@ -1,167 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751846AbaK1Jxb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 04:53:31 -0500
-Received: from [202.131.75.66] ([202.131.75.66]:40127 "EHLO mail.sangfor.cn"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751611AbaK1JxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 04:53:23 -0500
-X-Greylist: delayed 492 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Nov 2014 04:53:21 EST
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Fri Nov 28 17:44:58 2014
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 1,5478441a21891293528911
-X-Spam-Flag: NO
-X-Spam-Score: -0.106
-Date: Fri, 28 Nov 2014 17:44:51 +0800
-From: "Zhang Haoyu" <zhanghy@sangfor.com>
-To: "Wanpeng Li" <wanpeng.li@linux.intel.com>
-Cc: "Zhang, Yang Z" <yang.z.zhang@intel.com>,
-        "Paolo Bonzini" <pbonzini@redhat.com>, "kvm" <kvm@vger.kernel.org>,
-        "Alex Williamson" <alex.williamson@redhat.com>,
-        "Michael S.Tsirkin" <mst@redhat.com>,
-        "Gleb Natapov" <gleb@cloudius-systems.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <201411201020560455720@sangfor.com>,
- <201411242017440822890@sangfor.com>,
- <547323A7.8050104@redhat.com>,
- <201411250953587250205@sangfor.com>,
- <54742995.7010209@redhat.com>,
- <201411251920494491538@sangfor.com>,
- <547489AA.3080509@redhat.com>,
- <201411261511537876936@sangfor.com>,
- <A9667DDFB95DB7438FA9D7D576C3D87E0ABF2A95@SHSMSX104.ccr.corp.intel.com>,
- <201411271520408455055@sangfor.com>,
- <20141128082706.GA4090@kernel>
-Subject: Re: [question] lots of interrupts injected to vm when pressing some key w/o releasing
-Message-ID: <201411281744512071221@sangfor.com>
-X-mailer: Foxmail 6, 15, 201, 20 [cn]
-Mime-Version: 1.0
-Content-Type: text/plain;
-	charset="gb2312"
+	id S1751810AbaK1Jx3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 04:53:29 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751561AbaK1JxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 04:53:24 -0500
+Message-ID: <5478460C.10000@nod.at>
+Date: Fri, 28 Nov 2014 10:53:16 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] UBI: Fastmap: Ensure that all fastmap work is done
+ upon WL shutdown
+References: <1416835236-25185-1-git-send-email-richard@nod.at>			 <1416835236-25185-4-git-send-email-richard@nod.at>		 <1417102739.5858.112.camel@sauron.fi.intel.com> <54774C71.50807@nod.at>	 <1417105793.5858.117.camel@sauron.fi.intel.com> <547752D1.6040000@nod.at> <1417106877.5858.133.camel@sauron.fi.intel.com>
+In-Reply-To: <1417106877.5858.133.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->Hi all,
->On Thu, Nov 27, 2014 at 03:20:43PM +0800, Zhang Haoyu wrote:
->>>>>>>> I tested win-server-2008 with "-cpu 
->>>>>>>> core2duo,hv_spinlocks=0xffff,hv_relaxed,hv_time",
->>>>>>>> this problem still happened, about 200,000 vmexits per-second, 
->>>>>>>> bringing very bad experience, just like being stuck.
->>>>>>> 
->>>>>>> Please upload a full trace somewhere, or at least the "perf report" output.
->>>>>>> 
->>>>>> 
->>>>>> And, if I remove the commit of 0bc830b0, the problem disappeared.
->>>>> 
->>>>> Please send the full trace file.  If you compress it, it should be small.
->>>>> 
->>>> See the attach 1, please.
->>>> 
->>>>> Paolo
+Am 27.11.2014 um 17:47 schrieb Artem Bityutskiy:
+> On Thu, 2014-11-27 at 17:35 +0100, Richard Weinberger wrote:
+>> Am 27.11.2014 um 17:29 schrieb Artem Bityutskiy:
+>>> On Thu, 2014-11-27 at 17:08 +0100, Richard Weinberger wrote:
+>>>>> Obviously, there is some misunderstanding. This looks like lack of
+>>>>> separation and misuse of layering. I am missing explanations why I am
+>>>>> wrong...
+>>>>
+>>>> So you want me to use the UBI WL background thread for the scheduled fastmap work?
 >>>
->>>Can you try the follow draft patch to see whether it solve your problem? This patch is based on commit 0bc830b0.
+>>> No. It is more like either use it or do not use it.
+>>
+>> Sorry, I don't understand.
+>> What do you want to do to?
+> 
+> Just keep the code structured. I am just asking questions and trying to
+> to analyze your patches. If at some point I would like you to do
+> something specific, I clearly state this. In this case I was complaining
+> about fastmap specifics in an unrelated file, so basically the wish is
+> to have it go away. How exactly - not specified, up to you :-) Or, this
+> means just telling me why it is this way, justify.
+> 
+> When I was working with this code, I did give people specific
+> suggestions, line-by-line. Now I am more doing more of a sanity check,
+> looking after the bigger picture.
+> 
+> I understand that this is not a picture of an ideal maintainer, and I am
+> not anymore an ideal maintainer for this stuff (I think I used to,
+> though), simply because of lack of time. Doing the best effort job now.
+
+This is perfectly fine. I'm trying hard to keep your job as easy as possible.
+
+>>>> I didn't do it that way because you said more than once that fastmap is fastmap and
+>>>> WL is WL. Therefore I've separated it.
 >>>
->>After applying this patch, VM got stuck with black-screen at boot stage,
->># trace-cmd report:
->>version = 6
->>CPU 0 is empty
->>CPU 1 is empty
->>CPU 2 is empty
->>CPU 3 is empty
->>CPU 5 is empty
->>CPU 7 is empty
->>cpus=8
->>             kvm-1266  [004] 14399.834397: kvm_set_irq:          gsi 9 level 1 source 0
->>             kvm-1266  [004] 14399.834403: kvm_pic_set_irq:      chip 1 pin 1 (edge|masked)
->>             kvm-1266  [004] 14399.834411: kvm_apic_accept_irq:  apicid 0 vec 177 (LowPrio|level)
->>             kvm-1266  [004] 14399.834412: kvm_ioapic_set_irq:   pin 9 dst 3 vec=177 (LowPrio|logical|level)
->>             kvm-1266  [004] 14402.180013: kvm_set_irq:          gsi 9 level 1 source 0
->>             kvm-1266  [004] 14402.180019: kvm_pic_set_irq:      chip 1 pin 1 (edge|masked)
->>             kvm-1266  [004] 14402.180028: kvm_apic_accept_irq:  apicid 1 vec 177 (LowPrio|level)
->>             kvm-1266  [004] 14402.180029: kvm_ioapic_set_irq:   pin 9 dst 3 vec=177 (LowPrio|logical|level)
->>             kvm-1266  [004] 14404.525627: kvm_set_irq:          gsi 9 level 1 source 0
->>             kvm-1266  [004] 14404.525634: kvm_pic_set_irq:      chip 1 pin 1 (edge|masked)
->>             kvm-1266  [004] 14404.525641: kvm_apic_accept_irq:  apicid 0 vec 177 (LowPrio|level)
->>             kvm-1266  [004] 14404.525642: kvm_ioapic_set_irq:   pin 9 dst 3 vec=177 (LowPrio|logical|level)
->>             kvm-1266  [004] 14406.871238: kvm_set_irq:          gsi 9 level 1 source 0
->>             kvm-1266  [004] 14406.871245: kvm_pic_set_irq:      chip 1 pin 1 (edge|masked)
->>             kvm-1266  [004] 14406.871254: kvm_apic_accept_irq:  apicid 1 vec 177 (LowPrio|level)
->>             kvm-1266  [004] 14406.871256: kvm_ioapic_set_irq:   pin 9 dst 3 vec=177 (LowPrio|logical|level)
->>             kvm-1266  [006] 14409.216849: kvm_set_irq:          gsi 9 level 1 source 0
->>             kvm-1266  [006] 14409.216855: kvm_pic_set_irq:      chip 1 pin 1 (edge|masked)
->>             kvm-1266  [006] 14409.216862: kvm_apic_accept_irq:  apicid 0 vec 177 (LowPrio|level)
->>             kvm-1266  [006] 14409.216863: kvm_ioapic_set_irq:   pin 9 dst 3 vec=177 (LowPrio|logical|level)
->>             kvm-1266  [006] 14411.562475: kvm_set_irq:          gsi 9 level 1 source 0
->>             kvm-1266  [006] 14411.562481: kvm_pic_set_irq:      chip 1 pin 1 (edge|masked)
->>             kvm-1266  [006] 14411.562489: kvm_apic_accept_irq:  apicid 1 vec 177 (LowPrio|level)
->>             kvm-1266  [006] 14411.562491: kvm_ioapic_set_irq:   pin 9 dst 3 vec=177 (LowPrio|logical|level)
->>             kvm-1266  [004] 14413.908074: kvm_set_irq:          gsi 9 level 1 source 0
->>             kvm-1266  [004] 14413.908080: kvm_pic_set_irq:      chip 1 pin 1 (edge|masked)
->>             kvm-1266  [004] 14413.908088: kvm_apic_accept_irq:  apicid 0 vec 177 (LowPrio|level)
->>             kvm-1266  [004] 14413.908089: kvm_ioapic_set_irq:   pin 9 dst 3 vec=177 (LowPrio|logical|level)
+>>> And "separated" meaning adding this code to wl.c?
+>>>
+>>> +#ifdef CONFIG_MTD_UBI_FASTMAP
+>>> +       flush_work(&ubi->fm_work);
+>>> +#endif
+>>>
+>>> Could it be separated some more then?
+>>>
 >>
->>Thanks,
->>Zhang Haoyu
->>
->>>diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
->>>index 25e16a6..8f4e211 100644
->>>--- a/virt/kvm/ioapic.c
->>>+++ b/virt/kvm/ioapic.c
->>>@@ -305,6 +305,7 @@ static int ioapic_service(struct kvm_ioapic *ioapic, int irq, bool line_status)
->>>        return ret;
->>> }
->>> 
->>>+static int irq_status[256];
->>> int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
->>>                       int level, bool line_status)
->>> {
->>>@@ -312,10 +313,13 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
->>>        u32 mask = 1 << irq;
->>>        union kvm_ioapic_redirect_entry entry;
->>>        int ret, irq_level;
->>>+       int old_irq;
->>> 
->
->I'm not sure which version of kvm the patch is against, anyway, all the 
->modification should be moved to ioapic_set_irq() against the upstream 
->kvm, I test the patch w/ win2k8 guest and w/o the Haoyu's comand line 
->and it can fix the bug mentioned by Haoyu, in addition, press any key 
->can reproduce the bug on my side instead of the small set which Haoyu 
->mentioned.
->
-Yang's patch indeed can fix the problem.
-Our rtc optimization together with Yang' patch causes the stuck happened at boot stage.
+>> Of course, commit "UBI: Move fastmap specific functions out of wl.c" does.
+> 
+> I did not see it in this series. So you could tell this earlier, not
+> after 2 e-mail exchanges. Do not assume I remember the details of our
+> previous discussion. Assume I forgot everything :-)
+
+You did not see it in that series because you asked me to split it.
+The massive clean stuff comes after the fixes.
+
+This is the branch where I keep the whole series.
+https://git.kernel.org/cgit/linux/kernel/git/rw/misc.git/log/?h=fastmap_upgrade2
+
+Right now you've seen 6 out of 40 patches.
+
+Maybe I'll change a few commits before submitting them.
+I have some new ideas for more cleanups. :)
+
+>> But this commit is *bugfix* commit.
+> 
+> I thought adding an close function to fastmap.c is a simple task.
+
+As I said, later in the series I clean up a lot.
 
 Thanks,
-Zhang Haoyu
-
->Regards,
->Wanpeng Li 
->
->>>        BUG_ON(irq < 0 || irq >= IOAPIC_NUM_PINS);
->>> 
->>>        spin_lock(&ioapic->lock);
->>>+       old_irq = irq_status[irq];
->>>+       irq_status[irq] = level;
->>>        old_irr = ioapic->irr;
->>>        irq_level = __kvm_irq_line_state(&ioapic->irq_states[irq],
->>>                                         irq_source_id, level);
->>>@@ -332,6 +336,10 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
->>>                        goto out;
->>>                }
->>>                ioapic->irr |= mask;
->>>+               if (edge && old_irq == irq_status[irq] && old_irq) {
->>>+                       ret = 0;
->>>+                       goto out;
->>>+               }
->>>                if ((edge && old_irr != ioapic->irr) ||
->>>                    (!edge && !entry.fields.remote_irr))
->>>                        ret = ioapic_service(ioapic, irq, line_status);
->>>
->>>Best regards,
->>>Yang
+//richard
 
