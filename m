@@ -1,38 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751107AbaK1BUh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 20:20:37 -0500
-Received: from m50-132.163.com ([123.125.50.132]:36834 "EHLO m50-132.163.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750974AbaK1BUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 20:20:35 -0500
-Message-ID: <5477CDD4.8000908@163.com>
-Date: Fri, 28 Nov 2014 09:20:20 +0800
-From: Huang Bo <huangbobupt@163.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1751187AbaK1BZx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 20:25:53 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:9012 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756AbaK1BZw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 20:25:52 -0500
+X-IronPort-AV: E=Sophos;i="5.07,473,1413270000"; 
+   d="scan'208";a="51798920"
+From: Ray Jui <rjui@broadcom.com>
+To: <linux-arm-kernel@lists.infradead.org>,
+        Scott Branden <sbranden@broadcom.com>
+CC: <linux-kernel@vger.kernel.org>, <bcm-kernel-feedback-list@broadcom.com>,
+        Ray Jui <rjui@broadcom.com>
+Subject: [PATCH 0/4] Add common clock support for Broadcom iProc architecture
+Date: Thu, 27 Nov 2014 17:27:42 -0800
+Message-ID: <1417138066-17906-1-git-send-email-rjui@broadcom.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <Ray Jui <rjui@broadcom.com>
+References: <Ray Jui <rjui@broadcom.com>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 1/1] HID: add BETOP game controller force feedback support
-References: <54768284.4060201@163.com> <alpine.LNX.2.00.1411271004260.23174@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1411271004260.23174@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-CM-TRANSID: DNGowED5X1bVzXdU3eUZAA--.889S3
-X-Coremail-Antispam: 1Uf129KBjDUn29KB7ZKAUJUUUUU529EdanIXcx71UUUUU7v73
-	VFW2AGmfu7bjvjm3AaLaJ3UbIYCTnIWIevJa73UjIFyTuYvjxUYeHqDUUUU
-X-Originating-IP: [123.126.33.253]
-X-CM-SenderInfo: xkxd0wpere31rw6rljoofrz/xtbBogpS-FD+lUFnQgAAsZ
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2014 05:05 PM, Jiri Kosina wrote:
-> except ...
-thanks firstly.
-1. tested the BETOP2185 gamecontroller, it really not need it.
-2. check with engineers of Betop, they design only one report descriptor.
+This patchset contains the initial common clock support for Broadcom's iProc
+family of SoCs. The iProc clock architecture comprises of various PLLs, e.g.,
+ARMPLL, GENPLL, LCPLL0, MIPIPLL, and etc. An onboard crystal serves as the
+basic reference clock for these PLLs. Each PLL may have several leaf clocks.
+One special group of clocks is the ASIU clocks, which are dervied directly
+from the crystal reference clock.
 
-so I modify it.
+This patchset also contains the basic clock support for the Broadcom Cygnus
+SoC, which implements the iProc clock architecture
 
+Ray Jui (4):
+  clk: iproc: define Broadcom iProc clock binding
+  clk: iproc: add initial common clock support
+  clk: cygnus: add clock support for Broadcom Cygnus
+  ARM: dts: enable clock support for Broadcom Cygnus
+
+ arch/arm/boot/dts/bcm-cygnus-clock.dtsi |  110 +++++--
+ arch/arm/boot/dts/bcm-cygnus.dtsi       |    2 +-
+ brcm,iproc-clocks.txt                   |  178 ++++++++++++
+ drivers/clk/Makefile                    |    2 +-
+ drivers/clk/bcm/Kconfig                 |    9 +
+ drivers/clk/bcm/Makefile                |    2 +
+ drivers/clk/bcm/clk-cygnus.c            |  277 ++++++++++++++++++
+ drivers/clk/bcm/clk-iproc-armpll.c      |  286 ++++++++++++++++++
+ drivers/clk/bcm/clk-iproc-asiu.c        |  275 ++++++++++++++++++
+ drivers/clk/bcm/clk-iproc-clk.c         |  238 +++++++++++++++
+ drivers/clk/bcm/clk-iproc-pll.c         |  483 +++++++++++++++++++++++++++++++
+ drivers/clk/bcm/clk-iproc.h             |  155 ++++++++++
+ include/dt-bindings/clock/bcm-cygnus.h  |   77 +++++
+ 13 files changed, 2067 insertions(+), 27 deletions(-)
+ create mode 100644 brcm,iproc-clocks.txt
+ create mode 100644 drivers/clk/bcm/clk-cygnus.c
+ create mode 100644 drivers/clk/bcm/clk-iproc-armpll.c
+ create mode 100644 drivers/clk/bcm/clk-iproc-asiu.c
+ create mode 100644 drivers/clk/bcm/clk-iproc-clk.c
+ create mode 100644 drivers/clk/bcm/clk-iproc-pll.c
+ create mode 100644 drivers/clk/bcm/clk-iproc.h
+ create mode 100644 include/dt-bindings/clock/bcm-cygnus.h
+
+-- 
+1.7.9.5
 
