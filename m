@@ -1,84 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751278AbaK1LWF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 06:22:05 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41841 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107AbaK1LWD (ORCPT
+	id S1751281AbaK1L0R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 06:26:17 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:37296 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051AbaK1L0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 06:22:03 -0500
-Date: Fri, 28 Nov 2014 11:21:16 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene@kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Message-ID: <20141128112116.GG7712@sirena.org.uk>
-References: <1417087253-12306-1-git-send-email-k.kozlowski@samsung.com>
- <1417087253-12306-3-git-send-email-k.kozlowski@samsung.com>
- <20141127183058.GB7712@sirena.org.uk>
- <1417165784.18249.15.camel@AMDC1943>
+	Fri, 28 Nov 2014 06:26:16 -0500
+Date: Fri, 28 Nov 2014 14:26:05 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Athira Lekshmi C V <andnlnbn18@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
+        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
+        =?utf-8?B?R8O8bMWfYWggS8O2c2U=?= <gulsah.1004@gmail.com>
+Subject: Re: [PATCH] Drivers:staging:octeon: Fixed checkpatch warning
+Message-ID: <20141128112604.GE4860@mwanda>
+References: <1417004917-1398-1-git-send-email-andnlnbn18@gmail.com>
+ <20141126214454.GB9396@kroah.com>
+ <CAFnntG1GED_BtXU0QWVwZNCsomN6NJ29n1dw_cTHh0WheoMBLw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cfmcEfPTVFMtqln3"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1417165784.18249.15.camel@AMDC1943>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4 2/7] regulator: dt-bindings: Document the ena-gpios
- property
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <CAFnntG1GED_BtXU0QWVwZNCsomN6NJ29n1dw_cTHh0WheoMBLw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 27, 2014 at 05:42:06PM +0530, Athira Lekshmi C V wrote:
+> C V is my initals . Can I just go with the name Athira Lekshmi ?
+> 
 
---cfmcEfPTVFMtqln3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Sign it like you would sign a legal document.
 
-On Fri, Nov 28, 2014 at 10:09:44AM +0100, Krzysztof Kozlowski wrote:
+In American, that's normally Firstname Lastname but if you normally sign a legal
+document with C V on the end in India then probably "C V" is ok, it's just not
+normal in America so we have to ask.
 
-> I understand your concerns here however I didn't want to overengineer
-> this. Is the same GPIO (on more complex PMICs) used in different
-> contexts? Like enable control and something more in the same time?
+regards,
+dan carpenter
 
-Yes, and it's often reprogrammable at runtime.
-
-> Something like:
->  struct regulator_desc desc {
->  	.name		= "LDO1
->  	.of_match	= of_match_ptr("LDO1"),
->  	.regulators_node = of_match_ptr("voltage-regulators"),
->  	.ops		= &max77686_ldo_ops,
-> +	.of_ena_gpio	= of_match_ptr("ena-gpios"),
->  ...
->  }
-
-Yes, and note that this also means existing bindings can use the core
-code.
-
---cfmcEfPTVFMtqln3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUeFqrAAoJECTWi3JdVIfQXvwH/1hdN2Ax6zZjvpwVFcg8WIZ4
-5opnuR6iWEq9oAY10SN+bD/lRQesXWe+yw2kikLsC3EGmzPrTq32i2NS/RtDHjaj
-RZuUGnqsbPK5IhphhEFRg8JoX1BWmi0FbVxNdnDWu4AdMUI1fj74uaLsQYFFy0Oq
-aNfjff2mXfcP/Ru+56FD3hXq491ZE/lCYh+mvUI4YL6x5aUIBwnss7uF845Kehjn
-u2LVg2XJE7uuAUrkfrne/VaWaZC6t6ylUTEpqL+JZLxwPY/MG2Cvyq02C5IIGZa+
-QeyXbENrZgh1Q9I2YioSdK7U14KIhkhz5mut51qs+vfr10x/TUQwXlf8huf4Yuk=
-=bNjk
------END PGP SIGNATURE-----
-
---cfmcEfPTVFMtqln3--
