@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751279AbaK1KwV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 05:52:21 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:53989 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053AbaK1KwT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 05:52:19 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org, linux@arm.linux.org.uk,
-        vinod.koul@intel.com, linux-mmc@vger.kernel.org, nsekhar@ti.com,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        khilman@deeprootsystems.com, Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@kernel.org>, chris@printf.net,
-        dmaengine@vger.kernel.org, ulf.hansson@linaro.org,
-        linux-spi@vger.kernel.org
-Subject: Re: [PATCH 2/3] ARM: edma: Rename header file for dmaengine filter function definition
-Date: Fri, 28 Nov 2014 11:51:37 +0100
-Message-ID: <6448422.mtUnef24Xp@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54782148.6040108@ti.com>
-References: <1417084891-17990-1-git-send-email-peter.ujfalusi@ti.com> <4859328.eEV7jzKEaA@wuerfel> <54782148.6040108@ti.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:sU20kC6hDV5kMtRuA5DwZsydLWC2qVbBF3UnsfY19um
- 9ux1voaRwISRhTOzCUvDBep2SkiTC1pabcltZhpTEqSyGlXGSm
- VS+HkeGfLNRLmyKJuwU8FWQSoxpjMsXDU12pisSbm3UHPYbIOr
- 1MpcRPz4GGfWkq7QndYb3dICD1i3kbmshugKyeSaSB9jCCsOUw
- E/2/6GXjw8bmzGp4qpQvrkiPbUlRQ6UShAyqqXPDFYtCO3z1yT
- un3QSys3mY1E232OBqlJr6ibIHCo2CpkElPe4epJyW6HrnNkpk
- RvCedQsvMkAF1kkPHV7ZfGxi23lopC0Q0s4ya5ExtfsacMgxdj
- x0HPetjlN+OGTXV+zXX4=
-X-UI-Out-Filterresults: notjunk:1;
+	id S1751291AbaK1KyL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 05:54:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54304 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750896AbaK1KyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 05:54:05 -0500
+From: Juergen Gross <jgross@suse.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        konrad.wilk@oracle.com, david.vrabel@citrix.com,
+        boris.ostrovsky@oracle.com, x86@kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, andrew.cooper3@citrix.com
+Cc: Juergen Gross <jgross@suse.com>
+Subject: [PATCH V4 00/10] xen: Switch to virtual mapped linear p2m list
+Date: Fri, 28 Nov 2014 11:53:49 +0100
+Message-Id: <1417172039-8627-1-git-send-email-jgross@suse.com>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 28 November 2014 09:16:24 Peter Ujfalusi wrote:
-> On 11/27/2014 11:52 PM, Arnd Bergmann wrote:
-> > On Thursday 27 November 2014 20:46:12 Peter Ujfalusi wrote:
-> >>
-> >> I see. With this series I did not planed to fix all edma related issues, just
-> >> as a start clean up the related header files. I would rather not add fixes to
-> >> mmc, spi, etc drivers since while you have valid point it is not in the scope
-> >> of this series.
-> >> Can we do the changes you are suggesting in an incremental manner?
-> > 
-> > Sure, but I'd leave the existing filter function declaration alone then
-> > and not move it, since we wouldn't want to keep it in the long run.
-> 
-> but if you want to reference the filter function (which is in
-> drivers/dma/edma.c) in arch/arm/mach-davinci/ directory, we will need it.
-> Don't we?
+Paravirtualized kernels running on Xen use a three level tree for
+translation of guest specific physical addresses to machine global
+addresses. This p2m tree is used for construction of page table
+entries, so the p2m tree walk is performance critical.
 
-Yes, unless you move the definition of the filter function into
-arch/arm/common/edma.c or arch/arm/mach-davinci/devices.c, but that
-would require other changes.
+By using a linear virtual mapped p2m list accesses to p2m elements
+can be sped up while even simplifying code. To achieve this goal
+some p2m related initializations have to be performed later in the
+boot process, as the final p2m list can be set up only after basic
+memory management functions are available.
 
-> If I leave the header as it is, then how would we clean up the edma headers? I
-> would not put the API definitions for the arch code into the same file as we
-> have the filter definition.
+Changes in V4:
+- carved out style corrections into new patch 1 as requested by David Vrabel
+- minor modification in patch 5 (former patch 3) as suggested by David Vrabel
+- carved out change of page allocation scheme from p2m.c into own patch as
+  requested by Konrad Wilk, corrected for 32 bit as requested by Andrew Cooper
+- added several comments
+- simplified error handling in patch 4 (former patch 2)
 
-Ok, just go ahead with your current patch then, we can always follow up.
-The most important cleanup for edma is elsewhere anyway, so once the asoc
-drivers can use the dmaengine interface, this should be easier.
+Changes in V3:
+- Carved out (new) patch 1 to make pure code movement more obvious
+  as requested by David Vrabel
+- New patch 6 introducing __pfn_to_mfn() (taken from patch 7) as
+  requested by David Vrabel
+- New patch 8 to speed up set_phys_to_machine() as suggested by
+  David Vrabel
 
-	Arnd
+Changes in V2:
+- splitted patch 2 in 4 smaller ones as requested by David Vrabel
+- added highmem check when remapping kernel memory as requested by
+  David Vrabel
+
+
+Juergen Gross (10):
+  xen: fix some style issues in p2m.c
+  xen: Make functions static
+  xen: use common page allocation function in p2m.c
+  xen: Delay remapping memory of pv-domain
+  xen: Delay m2p_override initialization
+  xen: Delay invalidating extra memory
+  x86: Introduce function to get pmd entry pointer
+  xen: Hide get_phys_to_machine() to be able to tune common path
+  xen: switch to linear virtual mapped sparse p2m list
+  xen: Speed up set_phys_to_machine() by using read-only mappings
+
+ arch/x86/include/asm/pgtable_types.h |    1 +
+ arch/x86/include/asm/xen/page.h      |   48 +-
+ arch/x86/mm/pageattr.c               |   20 +
+ arch/x86/xen/mmu.c                   |   38 +-
+ arch/x86/xen/p2m.c                   | 1320 ++++++++++++++--------------------
+ arch/x86/xen/setup.c                 |  443 ++++++------
+ arch/x86/xen/xen-ops.h               |    6 +-
+ 7 files changed, 838 insertions(+), 1038 deletions(-)
+
+-- 
+2.1.2
+
