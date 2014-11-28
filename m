@@ -1,56 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751433AbaK1MQR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 07:16:17 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:47896 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaK1MQQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 07:16:16 -0500
-From: Athira Lekshmi <andnlnbn18@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: Larry.Finger@lwfinger.net, Jes.Sorensen@redhat.com,
-        ruchandani.tina@gmail.com, linux-wireless@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Athira Lekshmi <andnlnbn18@gmail.com>
-Subject: [PATCH] Drivers:staging:rtl8723au:core: Fixed checkpatch error
-Date: Fri, 28 Nov 2014 17:46:14 +0530
-Message-Id: <1417176974-18604-1-git-send-email-andnlnbn18@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751144AbaK1MXo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 07:23:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56278 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750923AbaK1MXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 07:23:43 -0500
+Date: Fri, 28 Nov 2014 13:23:40 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] Makefile: sort list of defconfig targets in make help
+ output
+Message-ID: <20141128122340.GA21552@sepie.suse.cz>
+References: <20141028141820.14137.64256.stgit@buzz>
+ <546B3599.7080806@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <546B3599.7080806@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed the checkpatch error:
-ERROR: spaces required around that '>'
+On Tue, Nov 18, 2014 at 03:03:37PM +0300, Konstantin Khlebnikov wrote:
+> On 2014-10-28 16:18, Konstantin Khlebnikov wrote:
+> >Without sorting this list is completely unreadable for ARCH=arm.
+> 
+> Bump.
 
-Signed-off-by: Athira Lekshmi <andnlnbn18@gmail.com>
----
- drivers/staging/rtl8723au/core/rtw_cmd.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Applied to kbuild.git#kbuild now, sorry for the delay.
 
-diff --git a/drivers/staging/rtl8723au/core/rtw_cmd.c b/drivers/staging/rtl8723au/core/rtw_cmd.c
-index 44eae8e..9f1cdd4 100644
---- a/drivers/staging/rtl8723au/core/rtw_cmd.c
-+++ b/drivers/staging/rtl8723au/core/rtw_cmd.c
-@@ -960,7 +960,7 @@ static void traffic_status_watchdog(struct rtw_adapter *padapter)
- 		/*  check traffic for  powersaving. */
- 			if (((pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod +
- 			      pmlmepriv->LinkDetectInfo.NumTxOkInPeriod) > 8) ||
--			    pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod >2)
-+			    pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod > 2)
- 				bEnterPS = false;
- 			else
- 				bEnterPS = true;
-@@ -1154,7 +1154,7 @@ static void rtw_chk_hi_queue_hdl(struct rtw_adapter *padapter)
- 
- 			cnt++;
- 
--			if (cnt>10)
-+			if (cnt > 10)
- 				break;
- 
- 			val = rtl8723a_chk_hi_queue_empty(padapter);
--- 
-1.7.9.5
-
+Michal
