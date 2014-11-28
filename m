@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728AbaK1CXi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 21:23:38 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:48728 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300AbaK1CVs (ORCPT
+	id S1751261AbaK1C2z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 21:28:55 -0500
+Received: from mail-oi0-f43.google.com ([209.85.218.43]:60421 "EHLO
+	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751046AbaK1C2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 21:21:48 -0500
-From: Wang Long <long.wanglong@huawei.com>
-To: <xuwei5@hisilicon.com>, <arnd@arndb.de>, <yanhaifeng@gmail.com>,
-        <zhangfei.gao@linaro.org>, <haojian.zhuang@linaro.org>,
-        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
-        <jason@lakedaemon.net>, <jh80.chung@samsung.com>, <khilman@linaro.org>,
-        <lee.jones@linaro.org>, <linux@arm.linux.org.uk>,
-        <long.wanglong@huawei.com>, <mark.rutland@arm.com>,
-        <maxime.ripard@free-electrons.com>, <obh+dt@kernel.org>,
-        <olof@lixom.net>, <pawel.moll@arm.com>, <swarren@nvidia.com>,
-        <thomas.petazzoni@free-electrons.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <peifeiyue@huawei.com>,
-        <huxinwei@huawei.com>
-Subject: [PATCH 5/7] ARM: hisi: add a common smp_prepares_cpus function
-Date: Fri, 28 Nov 2014 02:15:48 +0000
-Message-ID: <1417140950-67103-6-git-send-email-long.wanglong@huawei.com>
-X-Mailer: git-send-email 1.8.3.4
-In-Reply-To: <1417140950-67103-1-git-send-email-long.wanglong@huawei.com>
-References: <1417140950-67103-1-git-send-email-long.wanglong@huawei.com>
+	Thu, 27 Nov 2014 21:28:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.200]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20141127140803.GA3342@developer>
+References: <1417024212-1775-1-git-send-email-edubezval@gmail.com>
+	<CAKohponxUWVT1mjRfJarNtj-+=rXNOa_ONHUjmdu_+6N+=ZjPQ@mail.gmail.com>
+	<20141127140803.GA3342@developer>
+Date: Fri, 28 Nov 2014 07:58:52 +0530
+Message-ID: <CAKohpok90KG7ZcY8qq7g-VmhPSCsn83Ut_K_QJqC2b+efWiXkg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] thermal: cpu_cooling: check for the readiness of
+ cpufreq layer
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Linux PM <linux-pm@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Zhang Rui <rui.zhang@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As hix5hd2 and hip01 has the same .smp_prepare_cpus
-in struct smp_operations, so rename hix5hd2_smp_prepare_cpus
-to hisi_common_smp_prepare_cpus.
+On 27 November 2014 at 19:38, Eduardo Valentin <edubezval@gmail.com> wrote:
+>> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+>
+> Ok.
+>
+> though.. "normal practice" says  ack's are oftern used by the maintainer
+> of the affected code (quoting Documentation/SubmittingPatches) :-)
 
-the hip01 will use hisi_common_smp_prepare_cpus in its
-struct smp_operations.
+Hehe :)
 
-Signed-off-by: Wang Long <long.wanglong@huawei.com>
----
- arch/arm/mach-hisi/platsmp.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Another paragraph from the same file:
 
-diff --git a/arch/arm/mach-hisi/platsmp.c b/arch/arm/mach-hisi/platsmp.c
-index 575dd82..b3c3a58 100644
---- a/arch/arm/mach-hisi/platsmp.c
-+++ b/arch/arm/mach-hisi/platsmp.c
-@@ -96,7 +96,7 @@ struct smp_operations hi3xxx_smp_ops __initdata = {
- #endif
- };
- 
--static void __init hix5hd2_smp_prepare_cpus(unsigned int max_cpus)
-+static void __init hisi_common_smp_prepare_cpus(unsigned int max_cpus)
- {
- 	hisi_enable_scu_a9();
- }
-@@ -125,7 +125,7 @@ static int hix5hd2_boot_secondary(unsigned int cpu, struct task_struct *idle)
- 
- 
- struct smp_operations hix5hd2_smp_ops __initdata = {
--	.smp_prepare_cpus	= hix5hd2_smp_prepare_cpus,
-+	.smp_prepare_cpus	= hisi_common_smp_prepare_cpus,
- 	.smp_boot_secondary	= hix5hd2_boot_secondary,
- #ifdef CONFIG_HOTPLUG_CPU
- 	.cpu_die		= hix5hd2_cpu_die,
--- 
-1.8.3.4
+Acked-by: does not necessarily indicate acknowledgement of the entire patch.
+For example, if a patch affects multiple subsystems and has an Acked-by: from
+one subsystem maintainer then this usually indicates acknowledgement of just
+the part which affects that maintainer's code.  Judgement should be used here.
+When in doubt people should refer to the original discussion in the mailing
+list archives.
 
+So my Acked-by was as cpufreq subsystem Maintainer :)
