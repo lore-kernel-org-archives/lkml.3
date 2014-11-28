@@ -1,122 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751302AbaK1DeA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 22:34:00 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:30825 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751174AbaK1Ddz (ORCPT
+	id S1751483AbaK1Dfj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 22:35:39 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:40214 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751045AbaK1Dfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 22:33:55 -0500
-From: Ethan Zhao <ethan.zhao@oracle.com>
-To: dirk.j.brandewie@intel.com, viresh.kumar@linaro.org, rjw@rjwysocki.net,
-        corbet@lwn.net
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, ethan.kernel@gmail.com, joe.jin@oracle.com,
-        brian.maly@oracle.com, Ethan Zhao <ethan.zhao@oracle.com>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: [PATCH 1/2 V4] intel_pstate: skip this driver if Sun server has _PPC method
-Date: Fri, 28 Nov 2014 12:33:10 +0900
-Message-Id: <1417145592-21829-2-git-send-email-ethan.zhao@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1417145592-21829-1-git-send-email-ethan.zhao@oracle.com>
-References: <1417145592-21829-1-git-send-email-ethan.zhao@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Thu, 27 Nov 2014 22:35:37 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAGOxZ51P30BY2sOhUeMRK64CGF1fNcc-63RCXiAqZ6Rgpv3K7Q@mail.gmail.com>
+References: <CAFp+6iF-N63YSsdv2a6=MYp_mD=eQY_Oi8=9JVNU5dG0BA7YGQ@mail.gmail.com>
+	<1416834177-11170-1-git-send-email-gautam.vivek@samsung.com>
+	<CAGOxZ51P30BY2sOhUeMRK64CGF1fNcc-63RCXiAqZ6Rgpv3K7Q@mail.gmail.com>
+Date: Fri, 28 Nov 2014 09:05:36 +0530
+Message-ID: <CAFp+6iFcMGTBQDcdK0cbcu0s9a3022nogaUvbPA2ZsCN80hRSA@mail.gmail.com>
+Subject: Re: [PATCH V2 1/2] pinctrl: exynos: Add BUS1 pin controller for exynos7
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Alim Akhtar <alim.akhtar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Vivek Gautam <gautam.vivek@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        "robh+dt" <robh+dt@kernel.org>, kgene <kgene@kernel.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oracle Sun X86 servers have dynamic power capping capability that works via
-ACPI _PPC method etc, so skip loading this driver if Sun server has ACPI _PPC
-enabled.
+Hi Alim,
 
-Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
-Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-Tested-by: Linda Knippers <linda.knippers@hp.com>
----
-  v2: fix break HP Proliant issue.
-  v3: expand the hardware vendor list.
-  v4: refine code.
 
- drivers/cpufreq/intel_pstate.c | 45 ++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 41 insertions(+), 4 deletions(-)
+On Wed, Nov 26, 2014 at 7:03 PM, Alim Akhtar <alim.akhtar@gmail.com> wrote:
+> Hi Vivek,
+>
+> On Mon, Nov 24, 2014 at 6:32 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+>> USB and Power regulator on Exynos7 require gpios available
+>> in BUS1 pin controller block.
+>> So adding the BUS1 pinctrl support.
+>>
+>> Signed-off-by: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> Cc: Linus Walleij <linus.walleij@linaro.org>
+>> ---
+> Looks good to me.
+> Thanks!
+>
+> Reviewed-by: Alim Akhtar <alim.akhtar@samsung.com>
 
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 27bb6d3..1bb62ca 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -943,15 +943,46 @@ static bool intel_pstate_no_acpi_pss(void)
- 	return true;
- }
- 
-+static bool intel_pstate_has_acpi_ppc(void)
-+{
-+	int i;
-+
-+	for_each_possible_cpu(i) {
-+		struct acpi_processor *pr = per_cpu(processors, i);
-+
-+		if (!pr)
-+			continue;
-+		if (acpi_has_method(pr->handle, "_PPC"))
-+			return true;
-+	}
-+	return false;
-+}
-+
-+enum {
-+	PSS,
-+	PCC,
-+};
-+
- struct hw_vendor_info {
- 	u16  valid;
- 	char oem_id[ACPI_OEM_ID_SIZE];
- 	char oem_table_id[ACPI_OEM_TABLE_ID_SIZE];
-+	int  oem_pwr_table;
- };
- 
- /* Hardware vendor-specific info that has its own power management modes */
- static struct hw_vendor_info vendor_info[] = {
--	{1, "HP    ", "ProLiant"},
-+	{1, "HP    ", "ProLiant", PSS},
-+	{1, "ORACLE", "X4-2    ", PCC},
-+	{1, "ORACLE", "X4-2L   ", PCC},
-+	{1, "ORACLE", "X4-2B   ", PCC},
-+	{1, "ORACLE", "X3-2    ", PCC},
-+	{1, "ORACLE", "X3-2L   ", PCC},
-+	{1, "ORACLE", "X3-2B   ", PCC},
-+	{1, "ORACLE", "X4470M2 ", PCC},
-+	{1, "ORACLE", "X4270M3 ", PCC},
-+	{1, "ORACLE", "X4270M2 ", PCC},
-+	{1, "ORACLE", "X4170M2 ", PCC},
- 	{0, "", ""},
- };
- 
-@@ -966,15 +997,21 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
- 
- 	for (v_info = vendor_info; v_info->valid; v_info++) {
- 		if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
--		    !strncmp(hdr.oem_table_id, v_info->oem_table_id, ACPI_OEM_TABLE_ID_SIZE) &&
--		    intel_pstate_no_acpi_pss())
--			return true;
-+			!strncmp(hdr.oem_table_id, v_info->oem_table_id,
-+						ACPI_OEM_TABLE_ID_SIZE))
-+			switch (v_info->oem_pwr_table) {
-+			case PSS:
-+				return intel_pstate_no_acpi_pss();
-+			case PCC:
-+				return intel_pstate_has_acpi_ppc();
-+			}
- 	}
- 
- 	return false;
- }
- #else /* CONFIG_ACPI not enabled */
- static inline bool intel_pstate_platform_pwr_mgmt_exists(void) { return false; }
-+static inline bool intel_pstate_has_acpi_ppc(void) { return false; }
- #endif /* CONFIG_ACPI */
- 
- static int __init intel_pstate_init(void)
+Thanks for the review.
+
+>
+>>
+>> This patch was part of series:
+>> "[PATCH 00/11] Exynos7: Adding USB 3.0 support"
+>>  https://lkml.org/lkml/2014/11/21/247
+>>
+>> Changes since V1:
+>>  - Added support for all pin banks which are part of BUS1 pin controller.
+>>
+>>  drivers/pinctrl/samsung/pinctrl-exynos.c |   19 +++++++++++++++++++
+>>  1 file changed, 19 insertions(+)
+>>
+>> diff --git a/drivers/pinctrl/samsung/pinctrl-exynos.c b/drivers/pinctrl/samsung/pinctrl-exynos.c
+>> index d5d4cfc..44e60dc 100644
+>> --- a/drivers/pinctrl/samsung/pinctrl-exynos.c
+>> +++ b/drivers/pinctrl/samsung/pinctrl-exynos.c
+>> @@ -1300,6 +1300,20 @@ static const struct samsung_pin_bank_data exynos7_pin_banks7[] __initconst = {
+>>         EXYNOS_PIN_BANK_EINTG(8, 0x060, "gpr3", 0x0c),
+>>  };
+>>
+>> +/* pin banks of exynos7 pin-controller - BUS1 */
+>> +static const struct samsung_pin_bank_data exynos7_pin_banks8[] __initconst = {
+>> +       EXYNOS_PIN_BANK_EINTG(8, 0x020, "gpf0", 0x00),
+>> +       EXYNOS_PIN_BANK_EINTG(8, 0x040, "gpf1", 0x04),
+>> +       EXYNOS_PIN_BANK_EINTG(4, 0x060, "gpf2", 0x08),
+>> +       EXYNOS_PIN_BANK_EINTG(5, 0x080, "gpf3", 0x0c),
+>> +       EXYNOS_PIN_BANK_EINTG(8, 0x0a0, "gpf4", 0x10),
+>> +       EXYNOS_PIN_BANK_EINTG(8, 0x0c0, "gpf5", 0x14),
+>> +       EXYNOS_PIN_BANK_EINTG(5, 0x0e0, "gpg1", 0x18),
+>> +       EXYNOS_PIN_BANK_EINTG(5, 0x100, "gpg2", 0x1c),
+>> +       EXYNOS_PIN_BANK_EINTG(6, 0x120, "gph1", 0x20),
+>> +       EXYNOS_PIN_BANK_EINTG(3, 0x140, "gpv6", 0x24),
+>> +};
+>> +
+>>  const struct samsung_pin_ctrl exynos7_pin_ctrl[] __initconst = {
+>>         {
+>>                 /* pin-controller instance 0 Alive data */
+>> @@ -1342,5 +1356,10 @@ const struct samsung_pin_ctrl exynos7_pin_ctrl[] __initconst = {
+>>                 .pin_banks      = exynos7_pin_banks7,
+>>                 .nr_banks       = ARRAY_SIZE(exynos7_pin_banks7),
+>>                 .eint_gpio_init = exynos_eint_gpio_init,
+>> +       }, {
+>> +               /* pin-controller instance 8 BUS1 data */
+>> +               .pin_banks      = exynos7_pin_banks8,
+>> +               .nr_banks       = ARRAY_SIZE(exynos7_pin_banks8),
+>> +               .eint_gpio_init = exynos_eint_gpio_init,
+>>         },
+>>  };
+>> --
+>> 1.7.10.4
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+>
+> --
+> Regards,
+> Alim
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
 -- 
-1.8.3.1
-
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
