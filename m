@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897AbaK1O5f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 09:57:35 -0500
-Received: from mga01.intel.com ([192.55.52.88]:57211 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751444AbaK1O5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 09:57:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,477,1413270000"; 
-   d="scan'208";a="639590609"
-Date: Fri, 28 Nov 2014 16:57:04 +0200
-From: Laurentiu Palcu <laurentiu.palcu@intel.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Johan Havold <johan@kernel.org>,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 1/2] spi: add support for DLN-2 USB-SPI adapter
-Message-ID: <20141128145703.GA16201@lpalcu-linux>
-References: <1416312599-5176-2-git-send-email-laurentiu.palcu@intel.com>
- <1417180198-9393-1-git-send-email-laurentiu.palcu@intel.com>
- <20141128141053.GL7712@sirena.org.uk>
+	id S1751960AbaK1O6N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 09:58:13 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:24927 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751911AbaK1O6M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 09:58:12 -0500
+Date: Fri, 28 Nov 2014 17:57:39 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: =?utf-8?B?5pWs6ZSQ?= <micky_ching@realsil.com.cn>
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "chris@printf.net" <chris@printf.net>,
+        "ulf.hansson@linaro.org" <ulf.hansson@linaro.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?utf-8?B?546L54Kc?= <wei_wang@realsil.com.cn>,
+        "rogerable@realtek.com" <rogerable@realtek.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [PATCH 1/2] mfd: rtsx: add func to split u32 into register
+Message-ID: <20141128145739.GI4911@mwanda>
+References: <cover.1417056337.git.micky_ching@realsil.com.cn>
+ <51dde5250305623c420e78fa555800ef8fef0a09.1417056337.git.micky_ching@realsil.com.cn>
+ <20141127152342.GA4860@mwanda>
+ <5478463F.9030101@realsil.com.cn>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141128141053.GL7712@sirena.org.uk>
+In-Reply-To: <5478463F.9030101@realsil.com.cn>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+Oh.  You're right.  I'm sorry for the noise.
 
-On Fri, Nov 28, 2014 at 02:10:53PM +0000, Mark Brown wrote:
-> On Fri, Nov 28, 2014 at 03:09:58PM +0200, Laurentiu Palcu wrote:
-> > This adds support for Diolan DLN2 USB-SPI adapter.
-> 
-> I'm missing patch 2 of this series and the cover letter, are there any
-> dependencies.
+regards,
+dan carpenter
 
-The other patch in this series was already applied by Lee on
-for-mfd-next branch:
-http://git.kernel.org/cgit/linux/kernel/git/lee/mfd.git/commit/?h=for-mfd-next&id=21cf3318d675b6ceeb5a3ed82ffe467a2b6eaee4
-
-The original dependency, 3 patches that implement the DLN2 mfd driver
-and the I2C/GPIO module drivers, is also in for-mfd-next:
-http://git.kernel.org/cgit/linux/kernel/git/lee/mfd.git/commit/?h=for-mfd-next&id=338a128142975439a19ab3c91480bc9d5a71f033
-
-laurentiu
