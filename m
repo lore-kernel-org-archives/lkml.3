@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751278AbaK1IOe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 03:14:34 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:1443 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960AbaK1IOc (ORCPT
+	id S1751265AbaK1ITP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 03:19:15 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:60553 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751155AbaK1ITN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 03:14:32 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 28 Nov 2014 00:12:56 -0800
-From: Vince Hsu <vinceh@nvidia.com>
-To: <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>, <gnurou@gmail.com>,
-        <pdeschrijver@nvidia.com>
-CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Vince Hsu <vinceh@nvidia.com>
-Subject: [PATCH] soc/tegra: fuse: export tegra_sku_info for module use
-Date: Fri, 28 Nov 2014 16:16:13 +0800
-Message-ID: <1417162573-19155-1-git-send-email-vinceh@nvidia.com>
-X-Mailer: git-send-email 1.9.1
-X-NVConfidentiality: public
+	Fri, 28 Nov 2014 03:19:13 -0500
+Date: Fri, 28 Nov 2014 09:19:05 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Andrew Jackson <Andrew.Jackson@arm.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Dave Airlie <airlied@gmail.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] drm: i2c: tda998x: Retry fetching the EDID if it fails
+ first time.
+Message-ID: <20141128091905.3e491c39@armhf>
+In-Reply-To: <546B84C6.3090809@arm.com>
+References: <546B84C6.3090809@arm.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Vince Hsu <vinceh@nvidia.com>
----
- drivers/soc/tegra/fuse/fuse-tegra.c | 1 +
- 1 file changed, 1 insertion(+)
+On Tue, 18 Nov 2014 17:41:26 +0000
+Andrew Jackson <Andrew.Jackson@arm.com> wrote:
 
-diff --git a/drivers/soc/tegra/fuse/fuse-tegra.c b/drivers/soc/tegra/fuse/fuse-tegra.c
-index 11a5043959dc..011a3363c265 100644
---- a/drivers/soc/tegra/fuse/fuse-tegra.c
-+++ b/drivers/soc/tegra/fuse/fuse-tegra.c
-@@ -31,6 +31,7 @@
- static u32 (*fuse_readl)(const unsigned int offset);
- static int fuse_size;
- struct tegra_sku_info tegra_sku_info;
-+EXPORT_SYMBOL(tegra_sku_info);
- 
- static const char *tegra_revision_name[TEGRA_REVISION_MAX] = {
- 	[TEGRA_REVISION_UNKNOWN] = "unknown",
+> Fetching the EDID from a connected monitor is an automated thing
+> with NXP TDA19988. But on some boards the fetching fails for the
+> first time silently without any indication that an error has occured.
+> More than that, subsequent fetches of the EDID succeed until the
+> monitor(s) are unplugged.
+> 
+> Add a function to validate the read EDID and retry if the block
+> retrieved is not valid.
+> 
+> Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+
+It seems that your patch is deprecated by Laurent Pinchart's
+	[PATCH] drm: tda998x: Use drm_do_get_edid()
+http://lists.freedesktop.org/archives/dri-devel/2014-November/072906.html
+
 -- 
-1.9.1
-
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
