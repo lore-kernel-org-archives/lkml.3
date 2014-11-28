@@ -1,66 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871AbaK1RKq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 12:10:46 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:39307 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707AbaK1RKm (ORCPT
+	id S1751842AbaK1RMW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 12:12:22 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:52173 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438AbaK1RMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 12:10:42 -0500
-Date: Fri, 28 Nov 2014 17:10:24 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: Linux PM <linux-pm@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Lukasz Majewski <l.majewski@samsung.com>, devicetree@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        linux-samsung-soc@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv3 1/1] thermal: cpu_cooling: check for the readiness of
- cpufreq layer
-Message-ID: <20141128171024.GW3836@n2100.arm.linux.org.uk>
-References: <1417186410-24551-1-git-send-email-edubezval@gmail.com>
+	Fri, 28 Nov 2014 12:12:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417186410-24551-1-git-send-email-edubezval@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <874mtjp9m1.fsf@x220.int.ebiederm.org>
+References: <3ccec8a13019b5e8ce7b1d7889677b778b070dc8.1416041823.git.josh@joshtriplett.org>
+ <0895c1f268bc0b01cc6c8ed4607d7c3953f49728.1416041823.git.josh@joshtriplett.org>
+ <546A3942.5040906@schaufler-ca.com> <CALCETrWy-3C1on3+2wE9aqcChBUCUY0i_4AL_Om8CSZ5QB18sQ@mail.gmail.com>
+ <CALCETrVn4gVXp7F=5h-bkN5VWuRMG9BoxgeQfKhX4+ZXxGE=wQ@mail.gmail.com>
+ <546A43CE.2030706@schaufler-ca.com> <87lhmwwpey.fsf_-_@x220.int.ebiederm.org>
+ <CALCETrUuWDq2akKfb50AiPHeDDWzPW7ijz1QwnuNiskyZbBEfA@mail.gmail.com>
+ <87wq6frjcw.fsf@x220.int.ebiederm.org> <CALCETrX2s-7iaLMEKLQsExTEp3JyoAPQG44p0v5wkeED3-6dQA@mail.gmail.com>
+ <874mtjp9m1.fsf@x220.int.ebiederm.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 28 Nov 2014 09:11:56 -0800
+Message-ID: <CALCETrWsr9zV+9T9ba7Wy3q5q2SOpDyhSf4VUJ+C9rVf6R4Yfw@mail.gmail.com>
+Subject: Re: [CFT][PATCH] userns: Avoid problems with negative groups
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Richard Weinberger <richard@nod.at>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Stephane Graber <stgraber@ubuntu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 28, 2014 at 10:53:30AM -0400, Eduardo Valentin wrote:
-> diff --git a/drivers/thermal/samsung/exynos_thermal_common.c b/drivers/thermal/samsung/exynos_thermal_common.c
-> index 3f5ad25..d4eaa1b 100644
-> --- a/drivers/thermal/samsung/exynos_thermal_common.c
-> +++ b/drivers/thermal/samsung/exynos_thermal_common.c
-> @@ -371,9 +371,10 @@ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
->  		th_zone->cool_dev[th_zone->cool_dev_size] =
->  					cpufreq_cooling_register(&mask_val);
->  		if (IS_ERR(th_zone->cool_dev[th_zone->cool_dev_size])) {
-> -			dev_err(sensor_conf->dev,
-> -				"Failed to register cpufreq cooling device\n");
-> -			ret = -EINVAL;
-> +			ret = PTR_ERR(th_zone->cool_dev[th_zone->cool_dev_size]);
-> +			if (ret != -EPROBE_DEFER)
-> +				dev_err(sensor_conf->dev,
-> +					"Failed to register cpufreq cooling device\n");
+cc: Serge and Stephane, since this may end up affecting LXC.
 
-Something which bugs me quite a lot is when there is an error code (which
-tells you why something didn't work) and you have an error message, and
-the error message doesn't bother printing the error code.
+On Fri, Nov 28, 2014 at 8:34 AM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
+>
+>> On Thu, Nov 27, 2014 at 9:21 PM, Eric W. Biederman
+>> <ebiederm@xmission.com> wrote:
+>>> Andy Lutomirski <luto@amacapital.net> writes:
+>>>
+>>>>> This change should break userspace by the minimal amount needed
+>>>>> to fix this issue.
+>>>>>
+>>>>> This should fix CVE-2014-8989.
+>>>>
+>>>> I think this is both unnecessarily restrictive and that it doesn't fix
+>>>> the bug.
+>>>
+>>> You are going to have to work very hard to convince me this is
+>>> unnecessarily restrictive.
+>>>
+>>>>For example, I can exploit CVE-2014-8989 without ever
+>>>> writing a uid map or a gid map.
+>>>
+>>> Yes.  I realized just after I sent the patch that setgroups(0, NULL)
+>>> would still work without a mapping set.  That is a first glass grade a
+>>> oversight that resulted in a bug.  None of the other uid or gid changing
+>>> syscalls without a mapping set, and setgroups was just overlooked
+>>> because it was different.  Oops.
+>>>
+>>> I will send an updated patch that stops setgroups from working without
+>>> a mapping set shortly.
+>>>
+>>>> IIUC, the only real issue is that user namespaces allow groups to be
+>>>> dropped using setgroups that wouldn't otherwise be dropped.  Can we
+>>>> get away with adding a per-user-ns flag that determines whether
+>>>> setgroups can be used?
+>>>
+>>> Being able to call setgroups is fundamental to login programs, and login
+>>> programs are one of the things user namespaces need to support.  So
+>>> adding an extra flag and an extra place where privilege is required
+>>> is just noise, and will wind up breaking every user of user namespaces.
+>>>
+>>> Further being able to setup uid and gid mappings without privilege is
+>>> primarily a nice to have.  The original design did not have unprivileged
+>>> setting of uid and gid maps and if it proves insecure I goofed and the
+>>> feature isn't safe so it needs to be removed.
+>>
+>> Being able to set a single-user uid map and gid map is very useful for
+>> sandboxing.  This lets unprivileged users drop filesystem and network
+>> access and still run most normal programs.  A surprising number of
+>> normal unprivileged programs fail if run without a mapping.
+>
+> You can still set a single uid map unprivileged.  That should be enough
+> to keep your capabilities inside the namespace as long as you need them.
+>
+> I am sad that in practice you can't set a single gid map, as everyone
+> calls setgroups.
+>
 
-You might as well just print "Failed\n" and leave it at that, or md5sum
-the error message and print the sum instead. :)
+That's not the problem.  The problem is that a surprising number of
+libraries expect getegid(), etc to return sensible values.
 
-Knowing why something failed allows you to read the source, and find
-possible reasons for the failure (which could come down to one reason)
-and allows faster resolution of the problem.
+> Although I sort of think it might be worth scouring userspace for
+> something that will call setgroups and drop all of your groups.  If we
+> can find something preexisting that will solve this entire mess in a
+> much more elegant way.
+>
+>>> This does mean that running a system with negative groups and users
+>>> delegated subordinate gids in /etc/subuid is a bad idea and system
+>>> administrators shouldn't do that as those negative groups won't prove
+>>> effective in stopping their users.  But this is all under system
+>>> administrator control so shrug.  There isn't a way to avoid that
+>>> fundamental conflict.
+>>>
+>>>> setgroups would be unusable until the gid_map has been written and
+>>>> then it would become usable if and only if the parent userns could use
+>>>> setgroups and the opener of gid_map was privileged.
+>>>
+>>> That proposal sounds a lot more restrictive and a lot more of a pain
+>>> to use than what I have implemented in my patch.
+>>>
+>>>> If we wanted to allow finer-grained control, we could allow writing
+>>>> control lines like:
+>>>>
+>>>> options +setgroups
+>>>>
+>>>> or
+>>>>
+>>>> options -setgroups
+>>>>
+>>>> in gid_map, or we could add user_ns_flags that can only be written
+>>>> once and only before either uid_map or gid_map is written.
+>>>
+>>> Definitely more complicated and I can't imagine a case where I need
+>>> a gid map without needing to call setgroups.
+>>
+>> I do it all the time.  Unshare, set mappings (with no inner uid 0 at
+>> all), set no_new_privs, drop caps, and go.
+>>
+>> Can we try the intermediate approach?  If you set gid_map without
+>> privilege and you have supplementary groups, then let the write to
+>> gid_map succeed but prevent setgroups from ever working?  That should
+>> only be a couple of lines of code longer than your patch, and it will
+>> avoid breaking sandbox use cases.
+>
+> I am torn.  Send me an incremental patch and I will be happy to evaluate
+> it and if all is good fold the change in.  I hate breaking userspace but
+> if I break it I would rather it be a clean break that is easy to spot
+> and work around rather than something that almost works, and causes
+> people a lot of difficulty debugging.
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+I'll play with it this afternoon or over the weekend.  I'm currently
+on vacation, so I'll be a little slow.
+
+>
+> My expectation is that systems that are serious will have /etc/subuid
+> and /etc/subgid and newuidmap and newgidmap setup.  Which is the other
+> way to allow you to map your own gid.
+>
+>> If we want to get really fancy in the future, we could have a concept
+>> of pinned groups.  That is, if you're in a userns and you're a member
+>> of an unmapped group, then you can't drop that group.  (Actually, that
+>> all by itself might be enough to fix this issue.)
+>
+> Not allowing you to drop groups really isn't enough.  One of the first
+> things applications like ssh do is call setgroups(0, NULL) to drop the
+> privileges granted by supplementary groups.  Further login program
+> somewhere call setgroups(N, ....) and give you every group mapped
+> by /etc/group.
+>
+> I don't think I want to run containers with every supplementary group I
+> might want to drop mapped, and more than that, it would require changing
+> a lot more userspace than just the userspace that just does unpriv
+> containers with a single uid, and a single gid mapped.
+>
+> But please test and see if you really need to map your group, and send
+> me an incremental patch if you see a way to do better.  Breaking
+> userspace sucks.
+
+I *know* I need the uid mapped, and I'm pretty sure I need the gid as
+well.  FWIW, the code I care about won't object too strongly to a
+one-time break, but it will object to needing to use subuids, since it
+will have all kinds of problems if it starts to need to rely on setuid
+helpers.
+
+There's a third option: use your patch but require explicit userspace
+opt-in for code that wants the setgroups-not-allowed mode.  I'll try
+implementing that.
+
+--Andy
