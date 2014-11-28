@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751317AbaK1L3Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 06:29:24 -0500
-Received: from 8bytes.org ([81.169.241.247]:40162 "EHLO theia.8bytes.org"
+	id S1751500AbaK1L3w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 06:29:52 -0500
+Received: from 8bytes.org ([81.169.241.247]:40160 "EHLO theia.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750890AbaK1L3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750984AbaK1L3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Nov 2014 06:29:22 -0500
 From: Joerg Roedel <joro@8bytes.org>
 To: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
@@ -12,48 +12,52 @@ To: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
         Joerg Roedel <jroedel@suse.de>, Joerg Roedel <joro@8bytes.org>
-Subject: [PATCH 3/3] x86, crash: Allocate enough low-mem when crashkernel=high
-Date: Fri, 28 Nov 2014 12:29:09 +0100
-Message-Id: <1417174149-31210-4-git-send-email-joro@8bytes.org>
+Subject: [PATCH 0/3] Fix kdump failures with crashkernel=high
+Date: Fri, 28 Nov 2014 12:29:06 +0100
+Message-Id: <1417174149-31210-1-git-send-email-joro@8bytes.org>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417174149-31210-1-git-send-email-joro@8bytes.org>
-References: <1417174149-31210-1-git-send-email-joro@8bytes.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joerg Roedel <jroedel@suse.de>
+Hi,
 
-When the crashkernel is loaded above 4GiB in memory the
-first kernel only allocates 72MiB of low-memory for the DMA
-requirements of the second kernel. On systems with many
-devices this is not enough and causes device driver
-initialization errors and failed crash dumps. Set this
-default value to 256MiB to make sure there is enough memory
-available for DMA.
+here is a patch-set to fix failed kdump kernel boots when
+the systems was booted with crashkernel=X,high. On those
+systems the kernel allocates only 72MiB of low-memory for
+DMA buffers, which showed to be too low on some systems.
 
-Signed-off-by: Joerg Roedel <jroedel@suse.de>
----
- arch/x86/kernel/setup.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+The problem is that 64MiB of the low-memory is allocated by
+swiotlb, leaving 8MB for the page-allocator. But swiotlb
+tries to allocate DMA memory from the page-allocator first,
+which fails pretty fast in the boot sequence, causing
+warnings. This patch-set removes these warnings.
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index ab08aa2..1227e30 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -536,8 +536,11 @@ static void __init reserve_crashkernel_low(void)
- 		 *	swiotlb overflow buffer: now is hardcoded to 32k.
- 		 *		We round it to 8M for other buffers that
- 		 *		may need to stay low too.
-+		 *		Also make sure we allocate enough extra memory
-+		 *		low memory so that we don't run out of DMA
-+		 *		buffers for 32bit devices.
- 		 */
--		low_size = swiotlb_size_or_default() + (8UL<<20);
-+		low_size = max(swiotlb_size_or_default() + (8UL<<20), 256UL<<20);
- 		auto_set = true;
- 	} else {
- 		/* passed with crashkernel=0,low ? */
+But even the 64MiB for swiotlb are eaten up on some systems,
+so that the default of low-memory allocated for the
+crash-kernel is increase from 72MB to 256MB (only changing
+the defaults, can still be overwritten by crashkernel=X,low).
+
+This number comes from experiments on the affected systems,
+128MiB low-memory was still not enough there, thus I set the
+value to 256MiB to fix the issues.
+
+Any feedback appreciated.
+
+Thanks,
+
+	Joerg
+
+Joerg Roedel (3):
+  swiotlb: Warn on allocation failure in swiotlb_alloc_coherent
+  x86, swiotlb: Try coherent allocations with __GFP_NOWARN
+  x86, crash: Allocate enough low-mem when crashkernel=high
+
+ arch/x86/kernel/pci-swiotlb.c |  8 ++++++++
+ arch/x86/kernel/setup.c       |  5 ++++-
+ lib/swiotlb.c                 | 11 +++++++++--
+ 3 files changed, 21 insertions(+), 3 deletions(-)
+
 -- 
 1.9.1
 
