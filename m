@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751176AbaK1LRt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 06:17:49 -0500
-Received: from smarthost01b.mail.zen.net.uk ([212.23.1.3]:52260 "EHLO
-	smarthost01b.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750961AbaK1LRs (ORCPT
+	id S1751278AbaK1LWF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 06:22:05 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41841 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107AbaK1LWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 06:17:48 -0500
-Message-ID: <1417173456.1845.3.camel@linaro.org>
-Subject: Re: Re: [PATCH v10 2/2] ARM: kprobes: enable OPTPROBES for ARM 32
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Wang Nan <wangnan0@huawei.com>, will.deacon@arm.com,
-        taras.kondratiuk@linaro.org, ben.dooks@codethink.co.uk, cl@linux.com,
-        rabin@rab.in, davem@davemloft.net, lizefan@huawei.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Date: Fri, 28 Nov 2014 11:17:36 +0000
-In-Reply-To: <20141128111327.GR3836@n2100.arm.linux.org.uk>
-References: <1416551751-50846-1-git-send-email-wangnan0@huawei.com>
-	 <1416551751-50846-3-git-send-email-wangnan0@huawei.com>
-	 <1417099007.2041.6.camel@linaro.org> <5477E82A.3020208@hitachi.com>
-	 <1417169308.1845.1.camel@linaro.org>
-	 <20141128111327.GR3836@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01b-IP: [82.69.122.217]
+	Fri, 28 Nov 2014 06:22:03 -0500
+Date: Fri, 28 Nov 2014 11:21:16 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene@kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Message-ID: <20141128112116.GG7712@sirena.org.uk>
+References: <1417087253-12306-1-git-send-email-k.kozlowski@samsung.com>
+ <1417087253-12306-3-git-send-email-k.kozlowski@samsung.com>
+ <20141127183058.GB7712@sirena.org.uk>
+ <1417165784.18249.15.camel@AMDC1943>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cfmcEfPTVFMtqln3"
+Content-Disposition: inline
+In-Reply-To: <1417165784.18249.15.camel@AMDC1943>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4 2/7] regulator: dt-bindings: Document the ena-gpios
+ property
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-28 at 11:13 +0000, Russell King - ARM Linux wrote:
-> On Fri, Nov 28, 2014 at 10:08:28AM +0000, Jon Medhurst (Tixy) wrote:
-> > On Fri, 2014-11-28 at 12:12 +0900, Masami Hiramatsu wrote:
-> > > (2014/11/27 23:36), Jon Medhurst (Tixy) wrote:
-> > [...]
-> > > > I thought it good to see what sort of benefits this code achieves,
-> > > > especially as it could grow quite complex over time, and the cost of
-> > > > that versus the benefit should be considered.
-> > > 
-> > > I don't think it's so complex. It's actually cleanly separated.
-> > > However, ARM tree should have arch/arm/kernel/kprobe/ dir,
-> > > since there are too many kprobe related files under arch/arm/kernel/ ...
-> > 
-> > Yes, that does seem like a good idea. Or rather a 'probes' directory to
-> > also include uprobes as that shares a lot of code with kprobes.
-> 
-> If you want to do this, then please make it arch/arm/probes rather than
-> making the directory tree deeper than it needs to be.
 
-Yes, good point.
+--cfmcEfPTVFMtqln3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-Tixy
+On Fri, Nov 28, 2014 at 10:09:44AM +0100, Krzysztof Kozlowski wrote:
 
+> I understand your concerns here however I didn't want to overengineer
+> this. Is the same GPIO (on more complex PMICs) used in different
+> contexts? Like enable control and something more in the same time?
 
+Yes, and it's often reprogrammable at runtime.
+
+> Something like:
+>  struct regulator_desc desc {
+>  	.name		= "LDO1
+>  	.of_match	= of_match_ptr("LDO1"),
+>  	.regulators_node = of_match_ptr("voltage-regulators"),
+>  	.ops		= &max77686_ldo_ops,
+> +	.of_ena_gpio	= of_match_ptr("ena-gpios"),
+>  ...
+>  }
+
+Yes, and note that this also means existing bindings can use the core
+code.
+
+--cfmcEfPTVFMtqln3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUeFqrAAoJECTWi3JdVIfQXvwH/1hdN2Ax6zZjvpwVFcg8WIZ4
+5opnuR6iWEq9oAY10SN+bD/lRQesXWe+yw2kikLsC3EGmzPrTq32i2NS/RtDHjaj
+RZuUGnqsbPK5IhphhEFRg8JoX1BWmi0FbVxNdnDWu4AdMUI1fj74uaLsQYFFy0Oq
+aNfjff2mXfcP/Ru+56FD3hXq491ZE/lCYh+mvUI4YL6x5aUIBwnss7uF845Kehjn
+u2LVg2XJE7uuAUrkfrne/VaWaZC6t6ylUTEpqL+JZLxwPY/MG2Cvyq02C5IIGZa+
+QeyXbENrZgh1Q9I2YioSdK7U14KIhkhz5mut51qs+vfr10x/TUQwXlf8huf4Yuk=
+=bNjk
+-----END PGP SIGNATURE-----
+
+--cfmcEfPTVFMtqln3--
