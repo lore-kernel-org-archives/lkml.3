@@ -1,156 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427AbaK1Kyk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 05:54:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54355 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751017AbaK1KyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 05:54:09 -0500
-From: Juergen Gross <jgross@suse.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        konrad.wilk@oracle.com, david.vrabel@citrix.com,
-        boris.ostrovsky@oracle.com, x86@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, andrew.cooper3@citrix.com
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH V4 08/10] xen: Hide get_phys_to_machine() to be able to tune common path
-Date: Fri, 28 Nov 2014 11:53:57 +0100
-Message-Id: <1417172039-8627-9-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1417172039-8627-1-git-send-email-jgross@suse.com>
-References: <1417172039-8627-1-git-send-email-jgross@suse.com>
+	id S1751464AbaK1Kyx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 05:54:53 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:29003 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751017AbaK1Kyv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 05:54:51 -0500
+Date: Fri, 28 Nov 2014 18:51:43 +0800
+From: Jisheng Zhang <jszhang@marvell.com>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+CC: Marc Zyngier <Marc.Zyngier@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        "Olof Johansson" <olof@lixom.net>, Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] arm64: ARM: Fix the Generic Timers interrupt active
+ level description
+Message-ID: <20141128185143.00ee05b5@xhacker>
+In-Reply-To: <20141128103843.GW828@e106497-lin.cambridge.arm.com>
+References: <1417105283-19575-1-git-send-email-Liviu.Dudau@arm.com>
+	<54776FE0.8030600@arm.com>
+	<20141128111252.4a6e8892@xhacker>
+	<20141128103843.GW828@e106497-lin.cambridge.arm.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-11-28_05:2014-11-27,2014-11-28,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1411280110
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today get_phys_to_machine() is always called when the mfn for a pfn
-is to be obtained. Add a wrapper __pfn_to_mfn() as inline function
-to be able to avoid calling get_phys_to_machine() when possible as
-soon as the switch to a linear mapped p2m list has been done.
+On Fri, 28 Nov 2014 02:38:43 -0800
+Liviu Dudau <Liviu.Dudau@arm.com> wrote:
 
-Signed-off-by: Juergen Gross <jgross@suse.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
----
- arch/x86/include/asm/xen/page.h | 26 ++++++++++++++++++++------
- arch/x86/xen/mmu.c              |  2 +-
- arch/x86/xen/p2m.c              |  6 +++---
- 3 files changed, 24 insertions(+), 10 deletions(-)
+> On Fri, Nov 28, 2014 at 03:12:52AM +0000, Jisheng Zhang wrote:
+> > Dear Marc and Liviu,
+> > 
+> > On Thu, 27 Nov 2014 10:39:28 -0800
+> > Marc Zyngier <marc.zyngier@arm.com> wrote:
+> > 
+> > > On 27/11/14 16:21, Liviu Dudau wrote:
+> > > > The Cortex-A5x TRM states in paragraph "9.2 Generic Timer functional
+> > > > description" that generic timers provide a level not edge interrupt
+> > > > output. Fix the device trees to correctly describe this.
+> > > > 
+> > > > While doing this update the CPU mask to match the number of described
+> > > > CPUs as well as the DT bindings documentation for Generic Timers.
+> > > > 
+> > > > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> > > 
+> > > Acked-by: Marc Zyngier <marc.zyngier@arm.com>
+> > > 
+> > > 	M.
+> > > 
+> > > > ---
+> > > > 
+> > > > Arnd, Olof: This is on top of linux-next/master as it patches Juno's
+> > > > as well as all the other ARM DTs.
+> > > > 
+> > > > --
+> > > > 
+> > > >  Documentation/devicetree/bindings/arm/arch_timer.txt | 8 ++++----
+> > > >  arch/arm64/boot/dts/arm/foundation-v8.dts            | 8 ++++----
+> > > >  arch/arm64/boot/dts/arm/juno.dts                     | 8 ++++----
+> > > >  arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts           | 8 ++++----
+> > > >  4 files changed, 16 insertions(+), 16 deletions(-)
+> > > > 
+> > > > diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt
+> > > > b/Documentation/devicetree/bindings/arm/arch_timer.txt index
+> > > > 37b2caf..6d2aa87 100644 ---
+> > > > a/Documentation/devicetree/bindings/arm/arch_timer.txt +++
+> > > > b/Documentation/devicetree/bindings/arm/arch_timer.txt @@ -27,10
+> > > > +27,10 @@ Example: timer {
+> > > >  		compatible = "arm,cortex-a15-timer",
+> > > >  			     "arm,armv7-timer";
+> > > > -		interrupts = <1 13 0xf08>,
+> > > > -			     <1 14 0xf08>,
+> > > > -			     <1 11 0xf08>,
+> > > > -			     <1 10 0xf08>;
+> > > > +		interrupts = <1 13 0xf04>,
+> > > > +			     <1 14 0xf04>,
+> > > > +			     <1 11 0xf04>,
+> > > > +			     <1 10 0xf04>;
+> > > >  		clock-frequency = <100000000>;
+> > > >  	};
+> > > >  
+> > 
+> > Does it mean we also need to fix the interrupt level description under
+> > arch/arm/boot/dts? I found they are also wrong or I misunderstand
+> > something?
+> 
+> Hi Jisheng,
+> 
+> It looks like Marc and I managed to confuse ourselves. The TRM for GIC-500
+> and GIC-400 (basically covering most of GICv1 and > GICv2) clearly says
+> that for *PPIs* the level triggered interrupts are active-LOW.
+> 
+> So, this patch is invalid and my v1 version is correct, but Marc tells that
+> in that case the GIC driver needs patching (which I'm going to look into).
+> 
 
-diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-index 28fa795..410a6ec 100644
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -59,6 +59,21 @@ extern int clear_foreign_p2m_mapping(struct gnttab_unmap_grant_ref *unmap_ops,
- 				     struct page **pages, unsigned int count);
- extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
- 
-+/*
-+ * When to use pfn_to_mfn(), __pfn_to_mfn() or get_phys_to_machine():
-+ * - pfn_to_mfn() returns either INVALID_P2M_ENTRY or the mfn. No indicator
-+ *   bits (identity or foreign) are set.
-+ * - __pfn_to_mfn() returns the found entry of the p2m table. A possibly set
-+ *   identity or foreign indicator will be still set. __pfn_to_mfn() is
-+ *   encapsulating get_phys_to_machine().
-+ * - get_phys_to_machine() is to be called by __pfn_to_mfn() only to allow
-+ *   for future optimizations.
-+ */
-+static inline unsigned long __pfn_to_mfn(unsigned long pfn)
-+{
-+	return get_phys_to_machine(pfn);
-+}
-+
- static inline unsigned long pfn_to_mfn(unsigned long pfn)
- {
- 	unsigned long mfn;
-@@ -66,7 +81,7 @@ static inline unsigned long pfn_to_mfn(unsigned long pfn)
- 	if (xen_feature(XENFEAT_auto_translated_physmap))
- 		return pfn;
- 
--	mfn = get_phys_to_machine(pfn);
-+	mfn = __pfn_to_mfn(pfn);
- 
- 	if (mfn != INVALID_P2M_ENTRY)
- 		mfn &= ~(FOREIGN_FRAME_BIT | IDENTITY_FRAME_BIT);
-@@ -79,7 +94,7 @@ static inline int phys_to_machine_mapping_valid(unsigned long pfn)
- 	if (xen_feature(XENFEAT_auto_translated_physmap))
- 		return 1;
- 
--	return get_phys_to_machine(pfn) != INVALID_P2M_ENTRY;
-+	return __pfn_to_mfn(pfn) != INVALID_P2M_ENTRY;
- }
- 
- static inline unsigned long mfn_to_pfn_no_overrides(unsigned long mfn)
-@@ -113,7 +128,7 @@ static inline unsigned long mfn_to_pfn(unsigned long mfn)
- 		return mfn;
- 
- 	pfn = mfn_to_pfn_no_overrides(mfn);
--	if (get_phys_to_machine(pfn) != mfn) {
-+	if (__pfn_to_mfn(pfn) != mfn) {
- 		/*
- 		 * If this appears to be a foreign mfn (because the pfn
- 		 * doesn't map back to the mfn), then check the local override
-@@ -129,8 +144,7 @@ static inline unsigned long mfn_to_pfn(unsigned long mfn)
- 	 * entry doesn't map back to the mfn and m2p_override doesn't have a
- 	 * valid entry for it.
- 	 */
--	if (pfn == ~0 &&
--			get_phys_to_machine(mfn) == IDENTITY_FRAME(mfn))
-+	if (pfn == ~0 && __pfn_to_mfn(mfn) == IDENTITY_FRAME(mfn))
- 		pfn = mfn;
- 
- 	return pfn;
-@@ -176,7 +190,7 @@ static inline unsigned long mfn_to_local_pfn(unsigned long mfn)
- 		return mfn;
- 
- 	pfn = mfn_to_pfn(mfn);
--	if (get_phys_to_machine(pfn) != mfn)
-+	if (__pfn_to_mfn(pfn) != mfn)
- 		return -1; /* force !pfn_valid() */
- 	return pfn;
- }
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 601914d..3e3f8f8 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -387,7 +387,7 @@ static pteval_t pte_pfn_to_mfn(pteval_t val)
- 		unsigned long mfn;
- 
- 		if (!xen_feature(XENFEAT_auto_translated_physmap))
--			mfn = get_phys_to_machine(pfn);
-+			mfn = __pfn_to_mfn(pfn);
- 		else
- 			mfn = pfn;
- 		/*
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index eddec40..8c3d8fb 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -787,7 +787,7 @@ static int m2p_add_override(unsigned long mfn, struct page *page,
- 	 * because mfn_to_pfn (that ends up being called by GUPF) will
- 	 * return the backend pfn rather than the frontend pfn. */
- 	pfn = mfn_to_pfn_no_overrides(mfn);
--	if (get_phys_to_machine(pfn) == mfn)
-+	if (__pfn_to_mfn(pfn) == mfn)
- 		set_phys_to_machine(pfn, FOREIGN_FRAME(mfn));
- 
- 	return 0;
-@@ -967,7 +967,7 @@ static int m2p_remove_override(struct page *page,
- 	 * pfn again. */
- 	mfn &= ~FOREIGN_FRAME_BIT;
- 	pfn = mfn_to_pfn_no_overrides(mfn);
--	if (get_phys_to_machine(pfn) == FOREIGN_FRAME(mfn) &&
-+	if (__pfn_to_mfn(pfn) == FOREIGN_FRAME(mfn) &&
- 			m2p_find_override(mfn) == NULL)
- 		set_phys_to_machine(pfn, mfn);
- 
-@@ -992,7 +992,7 @@ int clear_foreign_p2m_mapping(struct gnttab_unmap_grant_ref *unmap_ops,
- 	}
- 
- 	for (i = 0; i < count; i++) {
--		unsigned long mfn = get_phys_to_machine(page_to_pfn(pages[i]));
-+		unsigned long mfn = __pfn_to_mfn(page_to_pfn(pages[i]));
- 		unsigned long pfn = page_to_pfn(pages[i]);
- 
- 		if (mfn == INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT)) {
--- 
-2.1.2
-
+Got it. Thanks for clarification.
