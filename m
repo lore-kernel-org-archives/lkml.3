@@ -1,136 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751615AbaK1CWE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 21:22:04 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:41443 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572AbaK1CWC (ORCPT
+	id S1751495AbaK1CVx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 21:21:53 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:48732 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423AbaK1CVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 21:22:02 -0500
-Message-ID: <5477DC41.8090509@hitachi.com>
-Date: Fri, 28 Nov 2014 11:21:53 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 27 Nov 2014 21:21:49 -0500
+From: Wang Long <long.wanglong@huawei.com>
+To: <xuwei5@hisilicon.com>, <arnd@arndb.de>, <yanhaifeng@gmail.com>,
+        <zhangfei.gao@linaro.org>, <haojian.zhuang@linaro.org>,
+        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
+        <jason@lakedaemon.net>, <jh80.chung@samsung.com>, <khilman@linaro.org>,
+        <lee.jones@linaro.org>, <linux@arm.linux.org.uk>,
+        <long.wanglong@huawei.com>, <mark.rutland@arm.com>,
+        <maxime.ripard@free-electrons.com>, <obh+dt@kernel.org>,
+        <olof@lixom.net>, <pawel.moll@arm.com>, <swarren@nvidia.com>,
+        <thomas.petazzoni@free-electrons.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <peifeiyue@huawei.com>,
+        <huxinwei@huawei.com>
+Subject: [PATCH 3/7] ARM: dts: Add hip01-ca9x2 dts file
+Date: Fri, 28 Nov 2014 02:15:46 +0000
+Message-ID: <1417140950-67103-4-git-send-email-long.wanglong@huawei.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1417140950-67103-1-git-send-email-long.wanglong@huawei.com>
+References: <1417140950-67103-1-git-send-email-long.wanglong@huawei.com>
 MIME-Version: 1.0
-To: Petr Mladek <pmladek@suse.cz>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Seth Jennings <sjenning@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>, Miroslav Benes <mbenes@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
-        x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: Re: [PATCHv4 0/3] Kernel Live Patching
-References: <1416935709-404-1-git-send-email-sjenning@redhat.com> <547596C6.2050303@hitachi.com> <alpine.LNX.2.00.1411261014510.23174@pobox.suse.cz> <20141126152759.GA29079@treble.hsd1.ky.comcast.net> <5476F7AD.3020601@hitachi.com> <20141127105233.GA5998@pathway.suse.cz>
-In-Reply-To: <20141127105233.GA5998@pathway.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.200]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/11/27 19:52), Petr Mladek wrote:
-> On Thu 2014-11-27 19:06:37, Masami Hiramatsu wrote:
->> (2014/11/27 0:27), Josh Poimboeuf wrote:
->>> On Wed, Nov 26, 2014 at 10:18:24AM +0100, Jiri Kosina wrote:
->>>> On Wed, 26 Nov 2014, Masami Hiramatsu wrote:
->>>>
->>>>>> Note to Steve:
->>>>>> Masami's IPMODIFY patch is heading for -next via your tree.  Once it arrives,
->>>>>> I'll rebase and make the change to set IPMODIFY.  Do not pull this for -next
->>>>>> yet.  This version (v4) is for review and gathering acks.
->>>>>
->>>>> BTW, as we discussed IPMODIFY is an exclusive flag. So if we allocate 
->>>>> ftrace_ops for each function in each patch, it could be conflict each 
->>>>> other.
->>>>
->>>> Yup, this corresponds to what Petr brought up yesterday. There are cases 
->>>> where all solutions (kpatch, kgraft, klp) would allocate multiple 
->>>> ftrace_ops for a single function entry (think of patching one function 
->>>> multiple times in a row).
->>>>
->>>> So it's not as easy as just setting the flag.
->>>>
->>>>> Maybe we need to have another ops hashtable to find such conflict and 
->>>>> new handler to handle it.
->>>>
->>>> If I understand your proposal correctly, that would sound like a hackish 
->>>> workaround, trying to basically trick the IPMODIFY flag semantics you just 
->>>> implemented :)
->>>
->>> I think Masami may be proposing something similar to what we do in
->>> kpatch today.  We have a single ftrace_ops and handler which is used for
->>> all functions.  The handler accesses a global hash of kpatch_func
->>> structs which is indexed by the original function's IP address.
->>
->> Hmm, I think both is OK. kpatch method is less memory consuming and
->> will have a bigger overhead. However, as Steven talked at Plumbers Conf.,
->> he will introduce a direct code modifying interface for ftrace. After
->> that is introduced, we don't need to care about performance degradation
->> by patching :)
-> 
-> Yup, I would prefer to have ftrace_ops per (original) function entry. I mean
-> that new patches will reuse the existing ftrace_ops for already
-> patched functions. They will just create new ftrace_ops from the
-> not-yet-patched symbols.
+Add dts file for Hisilicon hip01 ca9x2 board
 
-However, too many ftrace_ops will get bigger overhead if conflicts
-happened on any entry, since on such entry ftrace walks through
-all registered ftrace_ops and checks its filter. It's a downside.
-Perhaps, ftrace needs to have 2 different ftrace_ops lists, one
-is for managing, and one is for walk through. And the latter list
-drops the ftrace_ops which has trampoline and whose all filtered ip
-is exclusively used (iow, such ftrace_ops never be hit in the walk
-through).
+Signed-off-by: Wang Long <long.wanglong@huawei.com>
+---
+ .../bindings/arm/hisilicon/hisilicon.txt           |  25 +++++
+ arch/arm/boot/dts/Makefile                         |   1 +
+ arch/arm/boot/dts/hip01-ca9x2.dts                  |  51 ++++++++++
+ arch/arm/boot/dts/hip01.dtsi                       | 110 +++++++++++++++++++++
+ 4 files changed, 187 insertions(+)
+ create mode 100644 arch/arm/boot/dts/hip01-ca9x2.dts
+ create mode 100644 arch/arm/boot/dts/hip01.dtsi
 
-> Using a single ftrace_ops everywhere would kill the win from
-> Steven's direct ftrace optimization.
-
-It depends on the implementation and interface. E.g. an explicit
-path-change optimization interface for each address with ftrace_ops,
-like as
-  ftrace_change_path_ip(ftrace_ops *ops, unsigned long old_addr,
-			unsigned long new_addr);
-
-This checks ftrace_ops is already registered and has given old_addr
-in filter, ensures no other ftrace_ops are registered on given address,
-and then optimizes the fentry call to jump to the new_addr.
-
-Anyway, at this point it is not a major discussion point, it's a
-kind of minor implementation issue for performance and memory consuming.
-We can switch it without changing API.
-
-Thank you,
-
->>> It actually works out pretty well because it nicely encapsulates the
->>> knowledge about which functions are patched in a single place.  And it
->>> makes it easy to track function versions (for incremental patching and
->>> rollback).
->>>
->>>> What I'd propose instead is to make sure that we always have 
->>>> just a ftrace_ops per function entry, and only update the pointers there 
->>>> as necessary. Fortunately we can do the switch atomically, by making use 
->>>> of ->private.
->>>
->>> But how would you update multiple functions atomically, to enforce
->>> per-thread consistency?
->>
->> At this point, both can do it atomically. We just need an atomic flag
->> for applying patches.
-> 
-> By other words, we would need something like the "kgr_immutable" flag from
-> kGraft. It will make sure that everybody stays with the current code until
-> all function entries are updated.
-> 
-> Best Regards,
-> Petr
-
-
+diff --git a/Documentation/devicetree/bindings/arm/hisilicon/hisilicon.txt b/Documentation/devicetree/bindings/arm/hisilicon/hisilicon.txt
+index f717c7b..35b1bd4 100644
+--- a/Documentation/devicetree/bindings/arm/hisilicon/hisilicon.txt
++++ b/Documentation/devicetree/bindings/arm/hisilicon/hisilicon.txt
+@@ -9,6 +9,10 @@ HiP04 D01 Board
+ Required root node properties:
+ 	- compatible = "hisilicon,hip04-d01";
+ 
++HiP01 ca9x2 Board
++Required root node properties:
++	- compatible = "hisilicon,hip01-ca9x2";
++
+ 
+ Hisilicon system controller
+ 
+@@ -37,6 +41,27 @@ Example:
+ 	};
+ 
+ -----------------------------------------------------------------------
++Hisilicon HiP01 system controller
++
++Required properties:
++- compatible : "hisilicon,hip01-sysctrl"
++- reg : Register address and size
++
++The HiP01 system controller is mostly compatible with hisilicon
++system controller,but it has some specific control registers for
++HIP01 SoC family, such as slave core boot, and also some same
++registers located at different offset.
++
++Example:
++
++	/* for hip01-ca9x2 */
++	sysctrl: system-controller@10000000 {
++		compatible = "hisilicon,hip01-sysctrl", "hisilicon,sysctrl";
++		reg = <0x10000000 0x1000>;
++		reboot-offset = <0x4>;
++	};
++
++-----------------------------------------------------------------------
+ Hisilicon CPU controller
+ 
+ Required properties:
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 38c89ca..0e472e32 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -93,6 +93,7 @@ dtb-$(CONFIG_ARCH_HI3xxx) += hi3620-hi4511.dtb
+ dtb-$(CONFIG_ARCH_HIX5HD2) += hisi-x5hd2-dkb.dtb
+ dtb-$(CONFIG_ARCH_HIGHBANK) += highbank.dtb \
+ 	ecx-2000.dtb
++dtb-$(CONFIG_ARCH_HIP01) += hip01-ca9x2.dtb
+ dtb-$(CONFIG_ARCH_HIP04) += hip04-d01.dtb
+ dtb-$(CONFIG_ARCH_INTEGRATOR) += integratorap.dtb \
+ 	integratorcp.dtb
+diff --git a/arch/arm/boot/dts/hip01-ca9x2.dts b/arch/arm/boot/dts/hip01-ca9x2.dts
+new file mode 100644
+index 0000000..619d024
+--- /dev/null
++++ b/arch/arm/boot/dts/hip01-ca9x2.dts
+@@ -0,0 +1,51 @@
++/*
++ * Hisilicon Ltd. HiP01 SoC
++ *
++ * Copyright (C) 2014 Hisilicon Ltd.
++ * Copyright (C) 2014 Huawei Ltd.
++ *
++ * Author: Wang Long <long.wanglong@huawei.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++/dts-v1/;
++
++/* First 8KB reserved for secondary core boot */
++/memreserve/ 0x80000000 0x00002000;
++
++#include "hip01.dtsi"
++
++/ {
++	model = "Hisilicon HIP01 Development Board";
++	compatible = "hisilicon,hip01-ca9x2", "hisilicon,hip01";
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@0 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a9";
++			reg = <0>;
++		};
++
++		cpu@1 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a9";
++			reg = <1>;
++		};
++	};
++
++	memory {
++		device_type = "memory";
++		reg = <0x80000000 0x80000000>;
++	};
++};
++
++&uart0 {
++	status = "okay";
++};
++
+diff --git a/arch/arm/boot/dts/hip01.dtsi b/arch/arm/boot/dts/hip01.dtsi
+new file mode 100644
+index 0000000..33130f8
+--- /dev/null
++++ b/arch/arm/boot/dts/hip01.dtsi
+@@ -0,0 +1,110 @@
++/*
++ * Hisilicon Ltd. HiP01 SoC
++ *
++ * Copyright (c) 2014 Hisilicon Ltd.
++ * Copyright (c) 2014 Huawei Ltd.
++ *
++ * Author: Wang Long <long.wanglong@huawei.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include "skeleton.dtsi"
++
++/ {
++	interrupt-parent = <&gic>;
++	#address-cells = <1>;
++	#size-cells = <1>;
++
++	gic: interrupt-controller@1e001000 {
++		compatible = "arm,cortex-a9-gic";
++		#interrupt-cells = <3>;
++		#address-cells = <0>;
++		interrupt-controller;
++		reg = <0x1a001000 0x1000>, <0x1a000100 0x1000>;
++	};
++
++	hisi_refclk144mhz: refclk144mkhz {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <144000000>;
++		clock-output-names = "hisi:refclk144khz";
++	};
++
++	soc {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "simple-bus";
++		interrupt-parent = <&gic>;
++		ranges = <0 0x10000000 0x20000000>;
++
++		amba {
++			#address-cells = <1>;
++			#size-cells = <1>;
++			compatible = "arm,amba-bus";
++			ranges;
++
++			uart0: uart@10001000 {
++				compatible = "snps,dw-apb-uart";
++				reg = <0x10001000 0x1000>;
++				clocks = <&hisi_refclk144mhz>;
++				clock-names = "apb_pclk";
++				reg-shift = <2>;
++				interrupts = <0 32 4>;
++				status = "disabled";
++			};
++
++			uart1: uart@10002000 {
++				compatible = "snps,dw-apb-uart";
++				reg = <0x10002000 0x1000>;
++				clocks = <&hisi_refclk144mhz>;
++				clock-names = "apb_pclk";
++				reg-shift = <2>;
++				interrupts = <0 33 4>;
++				status = "disabled";
++			};
++
++			uart2: uart@10003000 {
++				compatible = "snps,dw-apb-uart";
++				reg = <0x10003000 0x1000>;
++				clocks = <&hisi_refclk144mhz>;
++				clock-names = "apb_pclk";
++				reg-shift = <2>;
++				interrupts = <0 34 4>;
++				status = "disabled";
++			};
++
++			uart3: uart@10006000 {
++				compatible = "snps,dw-apb-uart";
++				reg = <0x10006000 0x1000>;
++				clocks = <&hisi_refclk144mhz>;
++				clock-names = "apb_pclk";
++				reg-shift = <2>;
++				interrupts = <0 4 4>;
++				status = "disabled";
++			};
++		};
++
++		system-controller@10000000 {
++			compatible = "hisilicon,hip01-sysctrl", "hisilicon,sysctrl";
++			reg = <0x10000000 0x1000>;
++			reboot-offset = <0x4>;
++		};
++
++		global_timer@0a000200 {
++			compatible = "arm,cortex-a9-global-timer";
++			reg = <0x0a000200 0x100>;
++			interrupts = <1 11 0xf04>;
++			clocks = <&hisi_refclk144mhz>;
++		};
++
++		local_timer@0a000600 {
++			compatible = "arm,cortex-a9-twd-timer";
++			reg = <0x0a000600 0x100>;
++			interrupts = <1 13 0xf04>;
++			clocks = <&hisi_refclk144mhz>;
++		};
++	};
++};
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.8.3.4
 
