@@ -1,82 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751413AbaK1WXF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 17:23:05 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:55603 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176AbaK1WXD (ORCPT
+	id S1751485AbaK1WXa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 17:23:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55073 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176AbaK1WX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 17:23:03 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stefan Agner <stefan@agner.ch>
-Cc: linux-arm-kernel@lists.infradead.org, shawn.guo@linaro.org,
-        kernel@pengutronix.de, linux@roeck-us.net,
+	Fri, 28 Nov 2014 17:23:29 -0500
+Date: Fri, 28 Nov 2014 14:22:07 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: =?iso-8859-1?Q?Lo=EFc?= Pefferkorn <loic@loicp.eu>
+Cc: oleg.drokin@intel.com, andreas.dilger@intel.com, gdonald@gmail.com,
+        keith.mannthey@intel.com, john.hammond@intel.com,
+        devel@driverdev.osuosl.org, HPDD-discuss@ml01.01.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: imx: src: support vf610 system reset controller
-Date: Fri, 28 Nov 2014 23:22:57 +0100
-Message-ID: <18555848.LVhqYu0kXL@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <6341b31998ff843d236bc2a3e34537b0@agner.ch>
-References: <1417193015-6033-1-git-send-email-stefan@agner.ch> <2716009.DOfHfaSPkY@wuerfel> <6341b31998ff843d236bc2a3e34537b0@agner.ch>
+Subject: Re: [PATCH] staging: lustre: fix sparse warnings related to lock
+ context imbalance
+Message-ID: <20141128222207.GC27558@kroah.com>
+References: <02a457cec587341d0f1665491f6360323694b008.1417017302.git.loic@loicp.eu>
+ <20141126205443.GB10615@kroah.com>
+ <20141127183410.GA4582@iron>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:OfWiSOJRuRiYt2grqFtM2ODglCA1DL2PEtDCv7pSbEM
- UyM+pzIMgRnTUX3RJJyPLD8EHckNP0QgWqHFRCSjVlTMRUKUs3
- tIl+I56YJWDtnnpV9g6B/83B9TpwDn4CCxIAXEH1MFaxLvBKA8
- RT2sSaMDiqgTTyPL15I8/g0o+2LONHKN/jWChbGz2xqLhbkhUy
- 17YrjT1j21iAG8HpFs+/BOVds3Qqld4Z8hkTMpbVtpxO2Cip2I
- BHPIccZBaqMNlRKjBTT54JbXOb2kJlpbNPVqR8rmVu0BYeYCQ3
- /VH2xOc6OcHyP1av1tjYNwokVh8jrK/G5vWG2qUwW10Hg/dnVN
- 3w3+KQJ7xaWJjyN1096k=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141127183410.GA4582@iron>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 28 November 2014 23:09:09 Stefan Agner wrote:
-> On 2014-11-28 22:24, Arnd Bergmann wrote:
-> > On Friday 28 November 2014 22:02:01 Stefan Agner wrote:
-> > 
-> >> > If the SRC is also capable of resetting individual blocks instead of just
-> >> > the entire machine, it would be a reset driver in drivers/reset instead.
-> >>
-> >> Beside the system reset, there is only a mask functionality for the
-> >> watchdogs (there are two watchdogs, one for Cortex-A5 and one for the
-> >> M4). This makes the SRC module in the Vybrid a bit different then what
-> >> is available on other i.MX SoC's...
-> > 
-> > If you already have the watchdog registers in there and want to have
-> > a watchdog driver too, the easiest way would be to register the reboot
-> > handler from the watchdog driver.
+On Thu, Nov 27, 2014 at 07:34:10PM +0100, Loïc Pefferkorn wrote:
+> Hello Greg,
 > 
-> Hm, not sure we speak about the same here. The SRC module has two
-> (multi-)bit fields to mask the watchdog reset event for each watchdog.
-> Beside that, there are two full watchdog register maps, which are in
-> different areas. There is already a driver for this watchdogs. I'm not
-> sure what the idea behind this is exactly, I guess it would easily allow
-> to (temporary) mask the other CPU's watchdog. However, I don't think we
-> need that functionality, so I don't care about that right now.
-
-Ok, I see, thanks for the clarification!
-
-> There is also a restart handler in the watchdog driver, but I prefer to
-> use the reset capabilities of the SRC since it has immediate effect. 
+> After some investigation, I think that removing these wrappers is not going to improve the code readability:
 > 
-> Lets get to the big picture again: I could register the whole SRC
-> register map as a syscon device and then access the registers from my
-> suspend/resume implementation later on. And similar in the restart
-> driver, I would use syscon_regmap_lookup_by_compatible to check if it
-> contains the vf610-src compatible string and register the restart
-> driver/handler if available.
+> On Wed, Nov 26, 2014 at 12:54:43PM -0800, Greg KH wrote:
+> > On Wed, Nov 26, 2014 at 05:15:48PM +0100, Loic Pefferkorn wrote:
+> > > Add __acquires() and __releases() function annotations, to fix sparse warnings related to lock context imbalance.
+> > > 
+> > > This fixes the following warnings:
+> > > 
+> > > drivers/staging/lustre/lustre/libcfs/linux/linux-tracefile.c:153:5: warning: context imbalance in 'cfs_trace_lock_tcd' - wrong count at exit
+> > > drivers/staging/lustre/lustre/libcfs/hash.c:128:1: warning: context imbalance in 'cfs_hash_spin_lock' - wrong count at exit
+> > > drivers/staging/lustre/lustre/libcfs/hash.c:142:9: warning: context imbalance in 'cfs_hash_rw_lock' - wrong count at exit
+> > > drivers/staging/lustre/lustre/ptlrpc/../../lustre/ldlm/l_lock.c:57:17: warning: context imbalance in 'lock_res_and_lock' - wrong count at exit
+> > > drivers/staging/lustre/lustre/libcfs/libcfs_lock.c:93:1: warning: context imbalance in 'cfs_percpt_lock' - wrong count at exit
+> > > 
+> > > Signed-off-by: Loic Pefferkorn <loic@loicp.eu>
+> > > ---
+> > >  drivers/staging/lustre/lustre/libcfs/hash.c                  | 4 ++++
+> > >  drivers/staging/lustre/lustre/libcfs/libcfs_lock.c           | 2 ++
+> > >  drivers/staging/lustre/lustre/libcfs/linux/linux-tracefile.c | 2 ++
+> > >  drivers/staging/lustre/lustre/obdclass/cl_object.c           | 2 ++
+> > >  4 files changed, 10 insertions(+)
+> > > 
+> > > diff --git a/drivers/staging/lustre/lustre/libcfs/hash.c b/drivers/staging/lustre/lustre/libcfs/hash.c
+> > > index 32da783..7c6e2a3 100644
+> > > --- a/drivers/staging/lustre/lustre/libcfs/hash.c
+> > > +++ b/drivers/staging/lustre/lustre/libcfs/hash.c
+> > > @@ -126,18 +126,21 @@ cfs_hash_nl_unlock(union cfs_hash_lock *lock, int exclusive) {}
+> > >  
+> > >  static inline void
+> > >  cfs_hash_spin_lock(union cfs_hash_lock *lock, int exclusive)
+> > > +	__acquires(&lock->spin)
+> > >  {
+> > >  	spin_lock(&lock->spin);
+> > >  }
+> > >  
+> > >  static inline void
+> > >  cfs_hash_spin_unlock(union cfs_hash_lock *lock, int exclusive)
+> > > +	__releases(&lock->spin)
+> > >  {
+> > >  	spin_unlock(&lock->spin);
+> > >  }
+> > 
+> > Ugh, how horrid, please just delete these functions and push down the
+> > spin_lock/unlock calls down into the places these are called.
+> 
+> cfs_hash_spin_lock() and cfs_hash_spin_unlock() are referenced by function pointers later in the same file:
+> 
+> 165 /** no bucket lock, one spinlock to protect everything */
+> 166 static cfs_hash_lock_ops_t cfs_hash_nbl_lops = {
+> 167     .hs_lock        = cfs_hash_spin_lock,
+> 168     .hs_unlock      = cfs_hash_spin_unlock,
+> 169     .hs_bkt_lock    = cfs_hash_nl_lock,
+> 170     .hs_bkt_unlock  = cfs_hash_nl_unlock,
+> 171 };
+> 172 
+> 173 /** spin bucket lock, rehash is enabled */
+> 174 static cfs_hash_lock_ops_t cfs_hash_bkt_spin_lops = {
+> 175     .hs_lock        = cfs_hash_rw_lock,
+> 176     .hs_unlock      = cfs_hash_rw_unlock,
+> 177     .hs_bkt_lock    = cfs_hash_spin_lock,
+> 178     .hs_bkt_unlock  = cfs_hash_spin_unlock,
+> 179 };
 
-Correct, and also in the watchdog driver, I guess.
+That's even worse than I imagined.  Putting sparse markings on these
+function calls is just papering over nonsense.  Please work on unwinding
+the mess so that you don't need callbacks for locks, that is an
+abstraction that isn't needed.
 
-Instead of syscon_regmap_lookup_by_compatible, please use
-syscon_regmap_lookup_by_phandle and put the link to the syscon
-device into the device accessing it.
+> > >  static inline void
+> > >  cfs_hash_rw_lock(union cfs_hash_lock *lock, int exclusive)
+> > > +	__acquires(&lock->rw)
+> > >  {
+> > >  	if (!exclusive)
+> > >  		read_lock(&lock->rw);
+> > > @@ -147,6 +150,7 @@ cfs_hash_rw_lock(union cfs_hash_lock *lock, int exclusive)
+> > >  
+> > >  static inline void
+> > >  cfs_hash_rw_unlock(union cfs_hash_lock *lock, int exclusive)
+> > > +	__releases(&lock->rw)
+> > >  {
+> > >  	if (!exclusive)
+> > >  		read_unlock(&lock->rw);
+> > 
+> > 
+> > Same for these.
+> 
+> Likewise for cfs_hash_rw_lock() and cfs_hash_rw_unlock():
+> 
+> 173 /** spin bucket lock, rehash is enabled */
+> 174 static cfs_hash_lock_ops_t cfs_hash_bkt_spin_lops = {
+> 175         .hs_lock        = cfs_hash_rw_lock,
+> 176         .hs_unlock      = cfs_hash_rw_unlock,
+> 177         .hs_bkt_lock    = cfs_hash_spin_lock,
+> 178         .hs_bkt_unlock  = cfs_hash_spin_unlock,
+> 179 };
+> 180 
+> 181 /** rw bucket lock, rehash is enabled */
+> 182 static cfs_hash_lock_ops_t cfs_hash_bkt_rw_lops = {
+> 183         .hs_lock        = cfs_hash_rw_lock,
+> 184         .hs_unlock      = cfs_hash_rw_unlock,
+> 185         .hs_bkt_lock    = cfs_hash_rw_lock,
+> 186         .hs_bkt_unlock  = cfs_hash_rw_unlock,
+> 187 };
 
-Also, see if you can use or extend drivers/power/reset/syscon-reboot.c
-for your use case.
+Same here, ick ick ick.
 
-	Arnd
+> > > diff --git a/drivers/staging/lustre/lustre/libcfs/libcfs_lock.c b/drivers/staging/lustre/lustre/libcfs/libcfs_lock.c
+> > > index 2c199c7..1e529fc 100644
+> > > --- a/drivers/staging/lustre/lustre/libcfs/libcfs_lock.c
+> > > +++ b/drivers/staging/lustre/lustre/libcfs/libcfs_lock.c
+> > > @@ -91,6 +91,7 @@ EXPORT_SYMBOL(cfs_percpt_lock_alloc);
+> > >   */
+> > >  void
+> > >  cfs_percpt_lock(struct cfs_percpt_lock *pcl, int index)
+> > > +	__acquires(pcl->pcl_locks[index])
+> > >  {
+> > >  	int	ncpt = cfs_cpt_number(pcl->pcl_cptab);
+> > >  	int	i;
+> > > @@ -125,6 +126,7 @@ EXPORT_SYMBOL(cfs_percpt_lock);
+> > >  /** unlock a CPU partition */
+> > >  void
+> > >  cfs_percpt_unlock(struct cfs_percpt_lock *pcl, int index)
+> > > +	__releases(pcl->pcl_locks[index])
+> > >  {
+> > >  	int	ncpt = cfs_cpt_number(pcl->pcl_cptab);
+> > >  	int	i;
+> > > diff --git a/drivers/staging/lustre/lustre/libcfs/linux/linux-tracefile.c b/drivers/staging/lustre/lustre/libcfs/linux/linux-tracefile.c
+> > > index 976c61e..257669b 100644
+> > > --- a/drivers/staging/lustre/lustre/libcfs/linux/linux-tracefile.c
+> > > +++ b/drivers/staging/lustre/lustre/libcfs/linux/linux-tracefile.c
+> > > @@ -151,6 +151,7 @@ cfs_trace_buf_type_t cfs_trace_buf_idx_get(void)
+> > >   * for details.
+> > >   */
+> > >  int cfs_trace_lock_tcd(struct cfs_trace_cpu_data *tcd, int walking)
+> > > +	__acquires(&tcd->tc_lock)
+> > >  {
+> > >  	__LASSERT(tcd->tcd_type < CFS_TCD_TYPE_MAX);
+> > >  	if (tcd->tcd_type == CFS_TCD_TYPE_IRQ)
+> > > @@ -165,6 +166,7 @@ int cfs_trace_lock_tcd(struct cfs_trace_cpu_data *tcd, int walking)
+> > >  }
+> > >  
+> > >  void cfs_trace_unlock_tcd(struct cfs_trace_cpu_data *tcd, int walking)
+> > > +	__releases(&tcd->tcd_lock)
+> > >  {
+> > >  	__LASSERT(tcd->tcd_type < CFS_TCD_TYPE_MAX);
+> > >  	if (tcd->tcd_type == CFS_TCD_TYPE_IRQ)
+> > > diff --git a/drivers/staging/lustre/lustre/obdclass/cl_object.c b/drivers/staging/lustre/lustre/obdclass/cl_object.c
+> > > index ce96bd2..8577f97 100644
+> > > --- a/drivers/staging/lustre/lustre/obdclass/cl_object.c
+> > > +++ b/drivers/staging/lustre/lustre/obdclass/cl_object.c
+> > > @@ -193,6 +193,7 @@ static spinlock_t *cl_object_attr_guard(struct cl_object *o)
+> > >   * cl_object_attr_get(), cl_object_attr_set().
+> > >   */
+> > >  void cl_object_attr_lock(struct cl_object *o)
+> > > +	__acquires(cl_object_attr_guard(o))
+> > >  {
+> > >  	spin_lock(cl_object_attr_guard(o));
+> > >  }
+> > > @@ -202,6 +203,7 @@ EXPORT_SYMBOL(cl_object_attr_lock);
+> > >   * Releases data-attributes lock, acquired by cl_object_attr_lock().
+> > >   */
+> > >  void cl_object_attr_unlock(struct cl_object *o)
+> > > +	__releases(cl_object_attr_guard(o))
+> > >  {
+> > >  	spin_unlock(cl_object_attr_guard(o));
+> > >  }
+> > 
+> > Same thing here.
+> 
+> These ones are easy to replace, but the naming scheme of all functions in cl_object.c is consistent,
+> from my point of view it ease code reading where they are called, for example in lustre/lustre/osc/osc_request.c:
+> 
+> before:
+> 
+> 1827         if (valid != 0) {
+> 1828             cl_object_attr_lock(obj);
+> 1829             cl_object_attr_set(env, obj, attr, valid);
+> 1830             cl_object_attr_unlock(obj);
+> 
+> after:
+> 
+> 1827         if (valid != 0) {
+> 1828             spin_lock(cl_object_attr_guard(obj));
+> 1829             cl_object_attr_set(env, obj, attr, valid);
+> 1830             spin_unlock(cl_object_attr_guard(obj));
+> 
+> 
+> But I'm here for learning, and I would be grateful to have your opinion.
+
+Don't hide "implementation of locks" in functions like this, it only
+causes problems.  This code has layers of layers of layers of
+abstractions due to it wanting to be originally ported to other
+operating systems and lots of different kernel versions of Linux itself.
+Unwinding and removing those layers is a good thing to do, don't paper
+over the nonsense by putting sparse markings on pointless functions.
+
+thanks,
+
+greg k-h
