@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751445AbaK1Iyf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 03:54:35 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:46887 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaK1Iyd (ORCPT
+	id S1751491AbaK1Iyv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 03:54:51 -0500
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:41934 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447AbaK1Iyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 03:54:33 -0500
-From: Fred <fred.chou.nd@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: fred.chou.nd@gmail.com
-Subject: [PATCH] staging: rt8192u: fix sparse warnings in r8192U_core.c
-Date: Fri, 28 Nov 2014 16:56:42 +0800
-Message-Id: <1417165002-20030-1-git-send-email-fred.chou.nd@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 28 Nov 2014 03:54:50 -0500
+Date: Fri, 28 Nov 2014 09:54:36 +0100
+From: David Hildenbrand <dahi@linux.vnet.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        cornelia.huck@de.ibm.com, rusty@au1.ibm.com, nab@linux-iscsi.org,
+        pbonzini@redhat.com, thuth@linux.vnet.ibm.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>,
+        Siva Yerramreddy <yshivakrishna@gmail.com>, lguest@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH v6 05/46] virtio: assert 32 bit features in transports
+Message-ID: <20141128095436.20c59e84@thinkpad-w530>
+In-Reply-To: <1417118789-18231-6-git-send-email-mst@redhat.com>
+References: <1417118789-18231-1-git-send-email-mst@redhat.com>
+	<1417118789-18231-6-git-send-email-mst@redhat.com>
+Organization: IBM Deutschland GmbH
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112808-0025-0000-0000-000002A1BEAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed the following warnings in sparse:
-drivers/staging/rtl8192u/r8192U_core.c:670:6: warning:
- 	symbol 'dump_eprom' was not declared.
-	Should it be static?
-drivers/staging/rtl8192u/r8192U_core.c:1489:5: warning:
- 	symbol 'ComputeTxTime' was not declared.
-	Should it be static?
-drivers/staging/rtl8192u/r8192U_core.c:1556:14: warning:
-	symbol 'txqueue2outpipe' was not declared.
-	Should it be static?
-drivers/staging/rtl8192u/r8192U_core.c:4876:5: warning:
-	symbol 'GetRxPacketShiftBytes819xUsb' was not declared.
-	Should it be static?
+> At this point, no transports set any of the high 32 feature bits.
+> Since transports generally can't (yet) cope with such bits, add BUG_ON
+> checks to make sure they are not set by mistake.
+> 
+> Based on rproc patch by Rusty.
+> 
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  drivers/lguest/lguest_device.c         | 3 +++
+>  drivers/misc/mic/card/mic_virtio.c     | 3 +++
+>  drivers/remoteproc/remoteproc_virtio.c | 3 +++
+>  drivers/s390/kvm/kvm_virtio.c          | 3 +++
+>  drivers/s390/kvm/virtio_ccw.c          | 3 +++
+>  drivers/virtio/virtio_mmio.c           | 3 +++
+>  drivers/virtio/virtio_pci.c            | 3 +++
+>  7 files changed, 21 insertions(+)
+> 
 
-Signed-off-by: Fred Chou <fred.chou.nd@gmail.com>
----
- drivers/staging/rtl8192u/r8192U_core.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+Looks sane to me.
 
-diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
-index 7640386..6b647ad 100644
---- a/drivers/staging/rtl8192u/r8192U_core.c
-+++ b/drivers/staging/rtl8192u/r8192U_core.c
-@@ -667,7 +667,7 @@ static void tx_timeout(struct net_device *dev)
- 
- 
- /* this is only for debug */
--void dump_eprom(struct net_device *dev)
-+static void dump_eprom(struct net_device *dev)
- {
- 	int i;
- 	for (i = 0; i < 63; i++)
-@@ -1486,7 +1486,7 @@ inline u8 rtl8192_IsWirelessBMode(u16 rate)
- 
- u16 N_DBPSOfRate(u16 DataRate);
- 
--u16 ComputeTxTime(u16 FrameLength, u16 DataRate, u8 bManagementFrame,
-+static u16 ComputeTxTime(u16 FrameLength, u16 DataRate, u8 bManagementFrame,
- 		  u8 bShortPreamble)
- {
- 	u16	FrameTime;
-@@ -1553,7 +1553,8 @@ u16 N_DBPSOfRate(u16 DataRate)
- 	return N_DBPS;
- }
- 
--unsigned int txqueue2outpipe(struct r8192_priv *priv, unsigned int tx_queue)
-+static unsigned int txqueue2outpipe(struct r8192_priv *priv,
-+						unsigned int tx_queue)
- {
- 	if (tx_queue >= 9) {
- 		RT_TRACE(COMP_ERR, "%s():Unknown queue ID!!!\n", __func__);
-@@ -4873,7 +4874,8 @@ static void query_rxdesc_status(struct sk_buff *skb,
- 
- }
- 
--u32 GetRxPacketShiftBytes819xUsb(struct ieee80211_rx_stats  *Status, bool bIsRxAggrSubframe)
-+static u32 GetRxPacketShiftBytes819xUsb(struct ieee80211_rx_stats  *Status,
-+						bool bIsRxAggrSubframe)
- {
- #ifdef USB_RX_AGGREGATION_SUPPORT
- 	if (bIsRxAggrSubframe)
--- 
-1.9.1
+Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
 
