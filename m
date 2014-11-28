@@ -1,126 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751668AbaK1K4f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 05:56:35 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:41218 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638AbaK1K4b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 05:56:31 -0500
-Message-ID: <547854D0.1020506@arm.com>
-Date: Fri, 28 Nov 2014 10:56:16 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Liviu Dudau <Liviu.Dudau@arm.com>, Jisheng Zhang <jszhang@marvell.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2] arm64: ARM: Fix the Generic Timers interrupt active
- level description
-References: <1417105283-19575-1-git-send-email-Liviu.Dudau@arm.com> <54776FE0.8030600@arm.com> <20141128111252.4a6e8892@xhacker> <20141128103843.GW828@e106497-lin.cambridge.arm.com>
-In-Reply-To: <20141128103843.GW828@e106497-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1751779AbaK1K5B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 05:57:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54317 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750901AbaK1KyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 05:54:05 -0500
+From: Juergen Gross <jgross@suse.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        konrad.wilk@oracle.com, david.vrabel@citrix.com,
+        boris.ostrovsky@oracle.com, x86@kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, andrew.cooper3@citrix.com
+Cc: Juergen Gross <jgross@suse.com>
+Subject: [PATCH V4 03/10] xen: use common page allocation function in p2m.c
+Date: Fri, 28 Nov 2014 11:53:52 +0100
+Message-Id: <1417172039-8627-4-git-send-email-jgross@suse.com>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1417172039-8627-1-git-send-email-jgross@suse.com>
+References: <1417172039-8627-1-git-send-email-jgross@suse.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/11/14 10:38, Liviu Dudau wrote:
-> On Fri, Nov 28, 2014 at 03:12:52AM +0000, Jisheng Zhang wrote:
->> Dear Marc and Liviu,
->>
->> On Thu, 27 Nov 2014 10:39:28 -0800
->> Marc Zyngier <marc.zyngier@arm.com> wrote:
->>
->>> On 27/11/14 16:21, Liviu Dudau wrote:
->>>> The Cortex-A5x TRM states in paragraph "9.2 Generic Timer functional
->>>> description" that generic timers provide a level not edge interrupt
->>>> output. Fix the device trees to correctly describe this.
->>>>
->>>> While doing this update the CPU mask to match the number of described
->>>> CPUs as well as the DT bindings documentation for Generic Timers.
->>>>
->>>> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
->>>
->>> Acked-by: Marc Zyngier <marc.zyngier@arm.com>
->>>
->>> 	M.
->>>
->>>> ---
->>>>
->>>> Arnd, Olof: This is on top of linux-next/master as it patches Juno's
->>>> as well as all the other ARM DTs.
->>>>
->>>> --
->>>>
->>>>  Documentation/devicetree/bindings/arm/arch_timer.txt | 8 ++++----
->>>>  arch/arm64/boot/dts/arm/foundation-v8.dts            | 8 ++++----
->>>>  arch/arm64/boot/dts/arm/juno.dts                     | 8 ++++----
->>>>  arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts           | 8 ++++----
->>>>  4 files changed, 16 insertions(+), 16 deletions(-)
->>>>
->>>> diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt
->>>> b/Documentation/devicetree/bindings/arm/arch_timer.txt index
->>>> 37b2caf..6d2aa87 100644 ---
->>>> a/Documentation/devicetree/bindings/arm/arch_timer.txt +++
->>>> b/Documentation/devicetree/bindings/arm/arch_timer.txt @@ -27,10 +27,10
->>>> @@ Example: timer {
->>>>  		compatible = "arm,cortex-a15-timer",
->>>>  			     "arm,armv7-timer";
->>>> -		interrupts = <1 13 0xf08>,
->>>> -			     <1 14 0xf08>,
->>>> -			     <1 11 0xf08>,
->>>> -			     <1 10 0xf08>;
->>>> +		interrupts = <1 13 0xf04>,
->>>> +			     <1 14 0xf04>,
->>>> +			     <1 11 0xf04>,
->>>> +			     <1 10 0xf04>;
->>>>  		clock-frequency = <100000000>;
->>>>  	};
->>>>  
->>
->> Does it mean we also need to fix the interrupt level description under
->> arch/arm/boot/dts? I found they are also wrong or I misunderstand something?
-> 
-> Hi Jisheng,
-> 
-> It looks like Marc and I managed to confuse ourselves. The TRM for GIC-500 and
-> GIC-400 (basically covering most of GICv1 and > GICv2) clearly says that for *PPIs*
-> the level triggered interrupts are active-LOW.
-> 
-> So, this patch is invalid and my v1 version is correct, but Marc tells that in
-> that case the GIC driver needs patching (which I'm going to look into).
+In arch/x86/xen/p2m.c three different allocation functions for
+obtaining a memory page are used: extend_brk(), alloc_bootmem_align()
+or __get_free_page().  Which of those functions is used depends on the
+progress of the boot process of the system.
 
-Yeah, we have a pathological case of confusion of config information
-between PPIs and SPIs:
-- SPIs are always rising-edge or active-high
-- PPIs are implementation defined, and even their configurability is
-implementation defined
+Introduce a common allocation routine selecting the to be called
+allocation routine dynamically based on the boot progress. This allows
+moving initialization steps without having to care about changing
+allocation calls.
 
-The fact that on all ARM implementations, the PPI are not configurable
-is the saving grace. No matter how wrong the DTs are, we'll do the right
-thing, and all the existing code actually relies on the defaults values
-anyway.
+Signed-off-by: Juergen Gross <jgross@suse.com>
+---
+ arch/x86/xen/mmu.c |  2 ++
+ arch/x86/xen/p2m.c | 57 +++++++++++++++++++++++++++++++++---------------------
+ 2 files changed, 37 insertions(+), 22 deletions(-)
 
-Well, until someone tries and configure a PPI (at least Qualcomm's
-implementations are actually programmable), and asks for an active-low
-value, which will get rejected.
-
-Basically, all can we do at the GIC level is to accept all combinations
-of edge/level for PPIs, reduce that to the single bit of config we have,
-and check that it sticks. The result may not be what the driver asked
-for, but we have no way to know.
-
-GIC bindings will have to be updated too.
-
-Thanks,
-
-	M.
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index a8a1a3d..b995b871 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1219,6 +1219,8 @@ static void __init xen_pagetable_init(void)
+ 	paging_init();
+ #ifdef CONFIG_X86_64
+ 	xen_pagetable_p2m_copy();
++#else
++	xen_revector_p2m_tree();
+ #endif
+ 	/* Allocate and initialize top and mid mfn levels for p2m structure */
+ 	xen_build_mfn_list_list();
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index 2d8b908..fa53dc2 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -164,6 +164,7 @@
+ #include <linux/sched.h>
+ #include <linux/seq_file.h>
+ #include <linux/bootmem.h>
++#include <linux/slab.h>
+ 
+ #include <asm/cache.h>
+ #include <asm/setup.h>
+@@ -204,6 +205,8 @@ RESERVE_BRK(p2m_mid, PAGE_SIZE * (MAX_DOMAIN_PAGES / (P2M_PER_PAGE * P2M_MID_PER
+  */
+ RESERVE_BRK(p2m_identity_remap, PAGE_SIZE * 2 * 3 * MAX_REMAP_RANGES);
+ 
++static int use_brk = 1;
++
+ static inline unsigned p2m_top_index(unsigned long pfn)
+ {
+ 	BUG_ON(pfn >= MAX_P2M_PFN);
+@@ -268,6 +271,24 @@ static void p2m_init(unsigned long *p2m)
+ 		p2m[i] = INVALID_P2M_ENTRY;
+ }
+ 
++static void * __ref alloc_p2m_page(void)
++{
++	if (unlikely(use_brk))
++		return extend_brk(PAGE_SIZE, PAGE_SIZE);
++
++	if (unlikely(!slab_is_available()))
++		return alloc_bootmem_align(PAGE_SIZE, PAGE_SIZE);
++
++	return (void *)__get_free_page(GFP_KERNEL | __GFP_REPEAT);
++}
++
++/* Only to be called in case of a race for a page just allocated! */
++static void free_p2m_page(void *p)
++{
++	BUG_ON(!slab_is_available());
++	free_page((unsigned long)p);
++}
++
+ /*
+  * Build the parallel p2m_top_mfn and p2m_mid_mfn structures
+  *
+@@ -287,13 +308,13 @@ void __ref xen_build_mfn_list_list(void)
+ 
+ 	/* Pre-initialize p2m_top_mfn to be completely missing */
+ 	if (p2m_top_mfn == NULL) {
+-		p2m_mid_missing_mfn = alloc_bootmem_align(PAGE_SIZE, PAGE_SIZE);
++		p2m_mid_missing_mfn = alloc_p2m_page();
+ 		p2m_mid_mfn_init(p2m_mid_missing_mfn, p2m_missing);
+ 
+-		p2m_top_mfn_p = alloc_bootmem_align(PAGE_SIZE, PAGE_SIZE);
++		p2m_top_mfn_p = alloc_p2m_page();
+ 		p2m_top_mfn_p_init(p2m_top_mfn_p);
+ 
+-		p2m_top_mfn = alloc_bootmem_align(PAGE_SIZE, PAGE_SIZE);
++		p2m_top_mfn = alloc_p2m_page();
+ 		p2m_top_mfn_init(p2m_top_mfn);
+ 	} else {
+ 		/* Reinitialise, mfn's all change after migration */
+@@ -327,7 +348,7 @@ void __ref xen_build_mfn_list_list(void)
+ 			 * missing parts of the mfn tree after
+ 			 * runtime.
+ 			 */
+-			mid_mfn_p = alloc_bootmem_align(PAGE_SIZE, PAGE_SIZE);
++			mid_mfn_p = alloc_p2m_page();
+ 			p2m_mid_mfn_init(mid_mfn_p, p2m_missing);
+ 
+ 			p2m_top_mfn_p[topidx] = mid_mfn_p;
+@@ -364,17 +385,17 @@ void __init xen_build_dynamic_phys_to_machine(void)
+ 	max_pfn = min(MAX_DOMAIN_PAGES, xen_start_info->nr_pages);
+ 	xen_max_p2m_pfn = max_pfn;
+ 
+-	p2m_missing = extend_brk(PAGE_SIZE, PAGE_SIZE);
++	p2m_missing = alloc_p2m_page();
+ 	p2m_init(p2m_missing);
+-	p2m_identity = extend_brk(PAGE_SIZE, PAGE_SIZE);
++	p2m_identity = alloc_p2m_page();
+ 	p2m_init(p2m_identity);
+ 
+-	p2m_mid_missing = extend_brk(PAGE_SIZE, PAGE_SIZE);
++	p2m_mid_missing = alloc_p2m_page();
+ 	p2m_mid_init(p2m_mid_missing, p2m_missing);
+-	p2m_mid_identity = extend_brk(PAGE_SIZE, PAGE_SIZE);
++	p2m_mid_identity = alloc_p2m_page();
+ 	p2m_mid_init(p2m_mid_identity, p2m_identity);
+ 
+-	p2m_top = extend_brk(PAGE_SIZE, PAGE_SIZE);
++	p2m_top = alloc_p2m_page();
+ 	p2m_top_init(p2m_top);
+ 
+ 	/*
+@@ -387,7 +408,7 @@ void __init xen_build_dynamic_phys_to_machine(void)
+ 		unsigned mididx = p2m_mid_index(pfn);
+ 
+ 		if (p2m_top[topidx] == p2m_mid_missing) {
+-			unsigned long **mid = extend_brk(PAGE_SIZE, PAGE_SIZE);
++			unsigned long **mid = alloc_p2m_page();
+ 			p2m_mid_init(mid, p2m_missing);
+ 
+ 			p2m_top[topidx] = mid;
+@@ -420,6 +441,7 @@ unsigned long __init xen_revector_p2m_tree(void)
+ 	unsigned long *mfn_list = NULL;
+ 	unsigned long size;
+ 
++	use_brk = 0;
+ 	va_start = xen_start_info->mfn_list;
+ 	/*We copy in increments of P2M_PER_PAGE * sizeof(unsigned long),
+ 	 * so make sure it is rounded up to that */
+@@ -484,6 +506,7 @@ unsigned long __init xen_revector_p2m_tree(void)
+ #else
+ unsigned long __init xen_revector_p2m_tree(void)
+ {
++	use_brk = 0;
+ 	return 0;
+ }
+ #endif
+@@ -510,16 +533,6 @@ unsigned long get_phys_to_machine(unsigned long pfn)
+ }
+ EXPORT_SYMBOL_GPL(get_phys_to_machine);
+ 
+-static void *alloc_p2m_page(void)
+-{
+-	return (void *)__get_free_page(GFP_KERNEL | __GFP_REPEAT);
+-}
+-
+-static void free_p2m_page(void *p)
+-{
+-	free_page((unsigned long)p);
+-}
+-
+ /*
+  * Fully allocate the p2m structure for a given pfn.  We need to check
+  * that both the top and mid levels are allocated, and make sure the
+@@ -624,7 +637,7 @@ static bool __init early_alloc_p2m(unsigned long pfn, bool check_boundary)
+ 		return false;
+ 
+ 	/* Boundary cross-over for the edges: */
+-	p2m = extend_brk(PAGE_SIZE, PAGE_SIZE);
++	p2m = alloc_p2m_page();
+ 
+ 	p2m_init(p2m);
+ 
+@@ -640,7 +653,7 @@ static bool __init early_alloc_p2m_middle(unsigned long pfn)
+ 
+ 	mid = p2m_top[topidx];
+ 	if (mid == p2m_mid_missing) {
+-		mid = extend_brk(PAGE_SIZE, PAGE_SIZE);
++		mid = alloc_p2m_page();
+ 
+ 		p2m_mid_init(mid, p2m_missing);
+ 
 -- 
-Jazz is not dead. It just smells funny...
+2.1.2
+
