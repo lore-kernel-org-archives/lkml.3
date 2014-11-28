@@ -1,97 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345AbaK1IwN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 03:52:13 -0500
-Received: from mail-yk0-f179.google.com ([209.85.160.179]:65528 "EHLO
-	mail-yk0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134AbaK1IwL (ORCPT
+	id S1751407AbaK1Iwi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 03:52:38 -0500
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:33835 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107AbaK1Iwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 03:52:11 -0500
+	Fri, 28 Nov 2014 03:52:36 -0500
+Date: Fri, 28 Nov 2014 09:52:26 +0100
+From: David Hildenbrand <dahi@linux.vnet.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        cornelia.huck@de.ibm.com, rusty@au1.ibm.com, nab@linux-iscsi.org,
+        pbonzini@redhat.com, thuth@linux.vnet.ibm.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Siva Yerramreddy <yshivakrishna@gmail.com>,
+        Joel Stanley <joel@jms.id.au>, lguest@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH v6 04/46] virtio: add support for 64 bit features.
+Message-ID: <20141128095226.44781a98@thinkpad-w530>
+In-Reply-To: <1417118789-18231-5-git-send-email-mst@redhat.com>
+References: <1417118789-18231-1-git-send-email-mst@redhat.com>
+	<1417118789-18231-5-git-send-email-mst@redhat.com>
+Organization: IBM Deutschland GmbH
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFo0epKqKuwHS_CKMG2hF+J=Fdve9kPK2EVeeR7FvdoJmg@mail.gmail.com>
-References: <1416833572-6880-1-git-send-email-amit.daniel@samsung.com>
-	<1416834256-11225-1-git-send-email-amit.daniel@samsung.com>
-	<1416834256-11225-7-git-send-email-amit.daniel@samsung.com>
-	<CAPDyKFqE_qhrRs3X9s9juyPH_Zcq8vdE_amqKM3VUnMjHtL2Rg@mail.gmail.com>
-	<CADGdYn6fAScrpz4Va=THtC1ZgT+rYN_gQuE6NnRaCiN4NErg5g@mail.gmail.com>
-	<CAPDyKFo0epKqKuwHS_CKMG2hF+J=Fdve9kPK2EVeeR7FvdoJmg@mail.gmail.com>
-Date: Fri, 28 Nov 2014 14:22:09 +0530
-X-Google-Sender-Auth: XYjXrUpkVvCTduPTojmH72PMNIQ
-Message-ID: <CADGdYn70xe=JcXwMiQ4FXpq4pwHVhv+1Kp7YM_t=R_qk-_hk8A@mail.gmail.com>
-Subject: Re: [PATCH RFC v2 07/12] PM / Domains: export pm_genpd_lookup_name
-From: amit daniel kachhap <amit.daniel@samsung.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Kevin Hilman <khilman@kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14112808-0009-0000-0000-0000022CCAC9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 7:50 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> On 25 November 2014 at 09:48, amit daniel kachhap
-> <amit.daniel@samsung.com> wrote:
->> On Tue, Nov 25, 2014 at 1:05 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->>> On 24 November 2014 at 14:04, Amit Daniel Kachhap
->>> <amit.daniel@samsung.com> wrote:
->>>> This API may be needed to set the power domain parent/child relationship
->>>> in the power domain platform driver. The parent relationship is
->>>> generally set after the child power domain is registered with the power
->>>> domain subsystem. In this case, pm_genpd_lookup_name API might be
->>>> useful.
->>>
->>> I think this is a step in the wrong direction. Instead we should be
->>> working on removing the "name" based APIs from genpd.
->>>
->>> The proper way should be to pass the PM domain as a parameter to the
->>> APIs instead.
->> Yes i understand but i had a special requirement for using this API
->> during pd probe.
->>  I cannot use hierarchy to represent parent/child pd nodes as it will
->> break the existing SoC's. In my case all the PD nodes are linear. The
->> parent/child relationship are established in the second pass after all
->> the PD entries are registered with the help of this API.
->> Although there a way that i can always keep parent PD's before the
->> child PD's in DT in linear order. Will check this approach.
->
-> I had some thinking around this, could the below approach work?
->
-> I just posted a patch[1] adding a new pm_genpd_lookup() API, which is
-> using a "DT device node" to fetch the genpd. The idea is to use that
-> API to get the genpd handle which is needed to configure a subdomain
-> through pm_genpd_add_subdomain() API.
-I looked at your patch. I seems fine. i will test them and post the
-new version of my series.
+> Change u32 to u64, and use BIT_ULL and 1ULL everywhere.
+> 
+> Note: transports are unchanged, and only set low 32 bit.
+> This guarantees that no transport sets e.g. VERSION_1
+> by mistake without proper support.
+> 
+> Based on patch by Rusty.
+> 
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
 
-Regards,
-Amit D
->
-> In principle you will have to walk through the DT a couple of times,
-> initialize those domains (and subdomains) which either don't have a
-> parent domain or which parent domain already has been initialized. I
-> guess you need a somewhat clever loop to do that, but I think it's
-> doable.
->
-> Obviously we also need to have a generic binding for a "parent
-> domain". I like Geert's proposal from the other patch, which means
-> using "power-domains = <&pd_xyz>".
->
-> Kind regards
-> Uffe
->
-> [1]
-> http://marc.info/?l=linux-pm&m=141709766008458&w=2
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
+
