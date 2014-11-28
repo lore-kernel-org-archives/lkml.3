@@ -1,107 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751488AbaK1JTV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 04:19:21 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:26907 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132AbaK1JTP (ORCPT
+	id S1751542AbaK1JTg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 04:19:36 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:53104 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132AbaK1JTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 04:19:15 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-fe-54783e112826
+	Fri, 28 Nov 2014 04:19:32 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-33-54783e1c3250
 From: Jacek Anaszewski <j.anaszewski@samsung.com>
 To: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: kyungmin.park@samsung.com, b.zolnierkie@samsung.com, pavel@ucw.cz,
         cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
-        s.nawrocki@samsung.com, Jacek Anaszewski <j.anaszewski@samsung.com>
-Subject: [PATCH/RFC v8 02/14] Documentation: leds: Add description of LED Flash
- class extension
-Date: Fri, 28 Nov 2014 10:17:54 +0100
-Message-id: <1417166286-27685-3-git-send-email-j.anaszewski@samsung.com>
+        s.nawrocki@samsung.com, Jacek Anaszewski <j.anaszewski@samsung.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: [PATCH/RFC v8 04/14] v4l2-async: change custom.match callback argument
+ type
+Date: Fri, 28 Nov 2014 10:17:56 +0100
+Message-id: <1417166286-27685-5-git-send-email-j.anaszewski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1417166286-27685-1-git-send-email-j.anaszewski@samsung.com>
 References: <1417166286-27685-1-git-send-email-j.anaszewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNLMWRmVeSWpSXmKPExsVy+t9jQV1Bu4oQg6vbpCw2zljPanF050Qm
-	i96rzxktzja9Ybe4vGsOm8XWN+sYLXo2bGW1uHvqKJvF7l1PWS0Ov2lntTizfyWbA7fHzll3
-	2T0Of13I4rFn/g9Wj74tqxg9Vqz+zu7xeZNcAFsUl01Kak5mWWqRvl0CV8b1aZPZCv6IV+xd
-	sZm9gXGOcBcjJ4eEgInE8kuPWSFsMYkL99azdTFycQgJTGeUmPJsFiOE084k8XfiRxaQKjYB
-	Q4mfL14zdTFycIgIREtcOlYPUsMscIpRYt3M1YwgNcICiRJ7pmxkB7FZBFQlbs2bBtbLK+Ah
-	0dL+gBmkV0JAQWLOJBuQMKeAp8Tcz2tZQMJCQCWLXqVMYORdwMiwilE0tSC5oDgpPddIrzgx
-	t7g0L10vOT93EyM4CJ9J72Bc1WBxiFGAg1GJh/fnv/IQIdbEsuLK3EOMEhzMSiK8p74ChXhT
-	EiurUovy44tKc1KLDzFKc7AoifPeuJkbIiSQnliSmp2aWpBaBJNl4uCUamCM04t+nP00juO/
-	zj/RvFunPvTdN9aY4Bcl9N+tu/n/zuUfZb4mci9dvE/8rFrWq/cXGxcf3PE98H7rjKLYpZL1
-	m/56zUt83N0WfVbjQHXahmv6+zc/+2pwnJe5oD1ghvGKy5LpTQnaT0PVXXj2fsmu/vriXXXl
-	7BM2wW/uvuCPq58TJ/evaZW4EktxRqKhFnNRcSIAEZMwBT4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOLMWRmVeSWpSXmKPExsVy+t9jQV0Zu4oQgw8TTCw2zljPanF050Qm
+	i/cb5zFZLPm5i8mi9+pzRouzTW/YLTonLmG3uLxrDpvF1jfrGC16Nmxltbh76iibxe5dT1kt
+	Dr9pZ7U4s38lmwOfx5TfG1k9ds66y+7x4WOcx+yOmaweh78uZPHYM/8Hq0ffllWMHitWf2f3
+	+LxJLoAzissmJTUnsyy1SN8ugStj5a497AVfJCq23ittYHwg0sXIySEhYCKxdO0hdghbTOLC
+	vfVsXYxcHEIC0xklPr6fxArhtDNJLL0+hQWkik3AUOLni9dMXYwcHCIC0RKXjtWD1DAL3GGS
+	+HjtIRtIjbBAmMSObxBTWQRUJY7/uMUEYvMKeEjMnfGTHaRXQkBBYs4kG5Awp4CnxNzPa1lA
+	wkJAJYtepUxg5F3AyLCKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzh4n0nvYFzVYHGIUYCD
+	UYmH9+e/8hAh1sSy4srcQ4wSHMxKIrynvgKFeFMSK6tSi/Lji0pzUosPMUpzsCiJ8964mRsi
+	JJCeWJKanZpakFoEk2Xi4JRqYBRU+a01NTnstqX2H8XUcP2EI40uYbfn8Rw6cphhw9TaF47T
+	BOOy9BX2Va5JZb2R0R7cuPZ4nCAPu9qKJ6KPM2ec0D/a9FXK9dvZ70+AIe2+UfChrLK8n+6h
+	GdzrOadJ7Eq5yNRsO7tdrUaX1+Emv3U57/EdjGwlp2ZsqWGVvGtYfmzVeYNsJZbijERDLeai
+	4kQAzLpjDFoCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The documentation being added contains overall description of the
-LED Flash Class and the related sysfs attributes.
+It is useful to have an access to the async sub-device
+being matched, not only to the related struct device.
+Change match callback argument from struct device
+to struct v4l2_subdev. It will allow e.g. for matching
+a sub-device by its "name" property.
 
 Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Bryan Wu <cooloney@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
 ---
- Documentation/leds/leds-class-flash.txt |   48 +++++++++++++++++++++++++++++++
- 1 file changed, 48 insertions(+)
- create mode 100644 Documentation/leds/leds-class-flash.txt
+ drivers/media/v4l2-core/v4l2-async.c |   16 ++++++++--------
+ include/media/v4l2-async.h           |    2 +-
+ 2 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/Documentation/leds/leds-class-flash.txt b/Documentation/leds/leds-class-flash.txt
-new file mode 100644
-index 0000000..d68565c
---- /dev/null
-+++ b/Documentation/leds/leds-class-flash.txt
-@@ -0,0 +1,48 @@
-+
-+Flash LED handling under Linux
-+==============================
-+
-+Some LED devices support two modes - torch and flash. The modes are
-+supported by the LED class (see Documentation/leds/leds-class.txt)
-+and LED Flash class respectively.
-+
-+In order to enable support for flash LEDs CONFIG_LEDS_CLASS_FLASH symbol
-+must be defined in the kernel config. A flash LED driver must register
-+in the LED subsystem with led_classdev_flash_register to gain flash
-+capabilities.
-+
-+Following sysfs attributes are exposed for controlling flash led devices:
-+
-+	- flash_brightness - flash LED brightness in microamperes (RW)
-+	- max_flash_brightness - maximum available flash LED brightness (RO)
-+	- indicator_brightness - privacy LED brightness in microamperes (RW)
-+	- max_indicator_brightness - maximum privacy LED brightness in
-+				     microamperes (RO)
-+	- flash_timeout - flash strobe duration in microseconds (RW)
-+	- max_flash_timeout - maximum available flash strobe duration (RO)
-+	- flash_strobe - flash strobe state (RW)
-+	- flash_sync_strobe - one flash device can control more than one
-+			      sub-led; when this atrribute is set to 1
-+			      the flash led will be strobed synchronously
-+			      with the other ones controlled by the same
-+			      device (RW)
-+	- flash_fault - bitmask of flash faults that may have occurred,
-+			possible flags are:
-+		* 0x01 - flash controller voltage to the flash LED has exceeded
-+			 the limit specific to the flash controller
-+		* 0x02 - the flash strobe was still on when the timeout set by
-+			 the user has expired; not all flash controllers may
-+			 set this in all such conditions
-+		* 0x04 - the flash controller has overheated
-+		* 0x08 - the short circuit protection of the flash controller
-+			 has been triggered
-+		* 0x10 - current in the LED power supply has exceeded the limit
-+			 specific to the flash controller
-+		* 0x40 - flash controller voltage to the flash LED has been
-+			 below the minimum limit specific to the flash
-+		* 0x80 - the input voltage of the flash controller is below
-+			 the limit under which strobing the flash at full
-+			 current will not be possible. The condition persists
-+			 until this flag is no longer set
-+		* 0x100 - the temperature of the LED has exceeded its allowed
-+			  upper limit
+diff --git a/drivers/media/v4l2-core/v4l2-async.c b/drivers/media/v4l2-core/v4l2-async.c
+index 85a6a34..8140992 100644
+--- a/drivers/media/v4l2-core/v4l2-async.c
++++ b/drivers/media/v4l2-core/v4l2-async.c
+@@ -22,10 +22,10 @@
+ #include <media/v4l2-device.h>
+ #include <media/v4l2-subdev.h>
+ 
+-static bool match_i2c(struct device *dev, struct v4l2_async_subdev *asd)
++static bool match_i2c(struct v4l2_subdev *sd, struct v4l2_async_subdev *asd)
+ {
+ #if IS_ENABLED(CONFIG_I2C)
+-	struct i2c_client *client = i2c_verify_client(dev);
++	struct i2c_client *client = i2c_verify_client(sd->dev);
+ 	return client &&
+ 		asd->match.i2c.adapter_id == client->adapter->nr &&
+ 		asd->match.i2c.address == client->addr;
+@@ -34,14 +34,14 @@ static bool match_i2c(struct device *dev, struct v4l2_async_subdev *asd)
+ #endif
+ }
+ 
+-static bool match_devname(struct device *dev, struct v4l2_async_subdev *asd)
++static bool match_devname(struct v4l2_subdev *sd, struct v4l2_async_subdev *asd)
+ {
+-	return !strcmp(asd->match.device_name.name, dev_name(dev));
++	return !strcmp(asd->match.device_name.name, dev_name(sd->dev));
+ }
+ 
+-static bool match_of(struct device *dev, struct v4l2_async_subdev *asd)
++static bool match_of(struct v4l2_subdev *sd, struct v4l2_async_subdev *asd)
+ {
+-	return dev->of_node == asd->match.of.node;
++	return sd->dev->of_node == asd->match.of.node;
+ }
+ 
+ static LIST_HEAD(subdev_list);
+@@ -52,7 +52,7 @@ static struct v4l2_async_subdev *v4l2_async_belongs(struct v4l2_async_notifier *
+ 						    struct v4l2_subdev *sd)
+ {
+ 	struct v4l2_async_subdev *asd;
+-	bool (*match)(struct device *, struct v4l2_async_subdev *);
++	bool (*match)(struct v4l2_subdev *, struct v4l2_async_subdev *);
+ 
+ 	list_for_each_entry(asd, &notifier->waiting, list) {
+ 		/* bus_type has been verified valid before */
+@@ -79,7 +79,7 @@ static struct v4l2_async_subdev *v4l2_async_belongs(struct v4l2_async_notifier *
+ 		}
+ 
+ 		/* match cannot be NULL here */
+-		if (match(sd->dev, asd))
++		if (match(sd, asd))
+ 			return asd;
+ 	}
+ 
+diff --git a/include/media/v4l2-async.h b/include/media/v4l2-async.h
+index 7683569..1c0b586 100644
+--- a/include/media/v4l2-async.h
++++ b/include/media/v4l2-async.h
+@@ -51,7 +51,7 @@ struct v4l2_async_subdev {
+ 			unsigned short address;
+ 		} i2c;
+ 		struct {
+-			bool (*match)(struct device *,
++			bool (*match)(struct v4l2_subdev *,
+ 				      struct v4l2_async_subdev *);
+ 			void *priv;
+ 		} custom;
 -- 
 1.7.9.5
 
