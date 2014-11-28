@@ -1,159 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751222AbaK1EtY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 23:49:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49137 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750994AbaK1EtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 23:49:22 -0500
-Message-ID: <5477FECF.2060404@suse.com>
-Date: Fri, 28 Nov 2014 05:49:19 +0100
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1750976AbaK1FOa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 00:14:30 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54303 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827AbaK1FO3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 00:14:29 -0500
+Date: Fri, 28 Nov 2014 05:14:18 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jon Maloy <jon.maloy@ericsson.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+        David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bcrl@kvack.org" <bcrl@kvack.org>,
+        Masahide Nakamura <nakam@linux-ipv6.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Subject: Re: ipv4: Use standard iovec primitive in raw_probe_proto_opt
+Message-ID: <20141128051417.GA9306@ZenIV.linux.org.uk>
+References: <20141105.155054.2198151263164321219.davem@davemloft.net>
+ <20141105210745.GT7996@ZenIV.linux.org.uk>
+ <20141105.165719.835728206041332333.davem@davemloft.net>
+ <20141106032533.GU7996@ZenIV.linux.org.uk>
+ <20141106055023.GA28865@gondor.apana.org.au>
+ <20141106064318.GW7996@ZenIV.linux.org.uk>
+ <20141106064629.GA29321@gondor.apana.org.au>
+ <20141106071109.GX7996@ZenIV.linux.org.uk>
+ <A2BAEFC30C8FD34388F02C9B3121859D1C3087CA@eusaamb103.ericsson.se>
+ <20141106221608.GA7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Andrew Cooper <andrew.cooper3@citrix.com>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
-CC: x86@kernel.org, kvm@vger.kernel.org,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        linux-kernel@vger.kernel.org, Davidlohr Bueso <dbueso@suse.de>,
-        Joerg Roedel <jroedel@suse.de>, david.vrabel@citrix.com,
-        Jan Beulich <JBeulich@suse.com>, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com, Borislav Petkov <bp@suse.de>,
-        Olaf Hering <ohering@suse.de>
-Subject: Re: [Xen-devel] [PATCH] xen: privcmd: schedule() after private hypercall
- when	non CONFIG_PREEMPT
-References: <1417040805-15857-1-git-send-email-mcgrof@do-not-panic.com>	<5476C66F.5040308@suse.com> <20141127183616.GV25677@wotan.suse.de> <54777277.5040401@citrix.com>
-In-Reply-To: <54777277.5040401@citrix.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141106221608.GA7996@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2014 07:50 PM, Andrew Cooper wrote:
-> On 27/11/14 18:36, Luis R. Rodriguez wrote:
->> On Thu, Nov 27, 2014 at 07:36:31AM +0100, Juergen Gross wrote:
->>> On 11/26/2014 11:26 PM, Luis R. Rodriguez wrote:
->>>> From: "Luis R. Rodriguez" <mcgrof@suse.com>
->>>>
->>>> Some folks had reported that some xen hypercalls take a long time
->>>> to complete when issued from the userspace private ioctl mechanism,
->>>> this can happen for instance with some hypercalls that have many
->>>> sub-operations, this can happen for instance on hypercalls that use
->>>> multi-call feature whereby Xen lets one hypercall batch out a series
->>>> of other hypercalls on the hypervisor. At times such hypercalls can
->>>> even end up triggering the TASK_UNINTERRUPTIBLE hanger check (default
->>>> 120 seconds), this a non-issue issue on preemptible kernels though as
->>>> the kernel may deschedule such long running tasks. Xen for instance
->>>> supports multicalls to be preempted as well, this is what Xen calls
->>>> continuation (see xen commit 42217cbc5b which introduced this [0]).
->>>> On systems without CONFIG_PREEMPT though -- a kernel with voluntary
->>>> or no preemption -- a long running hypercall will not be descheduled
->>>> until the hypercall is complete and the ioctl returns to user space.
->>>>
->>>> To help with this David had originally implemented support for use
->>>> of preempt_schedule_irq() [1] for non CONFIG_PREEMPT kernels. This
->>>> solution never went upstream though and upon review to help refactor
->>>> this I've concluded that usage of preempt_schedule_irq() would be
->>>> a bit abussive of existing APIs -- for a few reasons:
->>>>
->>>> 0) we want to avoid spreading its use on non CONFIG_PREEMPT kernels
->>>>
->>>> 1) we want try to consider solutions that might work for other
->>>>      hypervisors for this same problem, and identify it its an issue
->>>>      even present on other hypervisors or if this is a self
->>>>      inflicted architectural issue caused by use of multicalls
->>>>
->>>> 2) there is no documentation or profiling of the exact hypercalls
->>>>      that were causing these issues, nor do we have any context
->>>>      to help evaluate this any further
->>>>
->>>> I at least checked with kvm folks and it seems hypercall preemption
->>>> is not needed there. We can survey other hypervisors...
->>>>
->>>> If 'something like preemption' is needed then CONFIG_PREEMPT
->>>> should just be enabled and encouraged, it seems we want to
->>>> encourage CONFIG_PREEMPT on xen, specially when multicalls are
->>>> used. In the meantime this tries to address a solution to help
->>>> xen on non CONFIG_PREEMPT kernels.
->>>>
->>>> One option tested and evaluated was to put private hypercalls in
->>>> process context, however this would introduce complexities such
->>>> originating hypercalls from different contexts. Current xen
->>>> hypercall callback handlers would need to be changed per architecture,
->>>> for instance, we'd also incur the cost of switching states from
->>>> user / kernel (this cost is also present if preempt_schedule_irq()
->>>> is used). There may be other issues which could be introduced with
->>>> this strategy as well. The simplest *shared* alternative is instead
->>>> to just explicitly schedule() at the end of a private hypercall on non
->>>> preempt kernels. This forces our private hypercall call mechanism
->>>> to try to be fair only on non CONFIG_PREEMPT kernels at the cost of
->>>> more context switch but keeps the private hypercall context intact.
->>>>
->>>> [0] http://xenbits.xen.org/gitweb/?p=xen.git;a=commitdiff;h=42217cbc5b3e84b8c145d8cfb62dd5de0134b9e8;hp=3a0b9c57d5c9e82c55dd967c84dd06cb43c49ee9
->>>> [1] http://ftp.suse.com/pub/people/mcgrof/xen-preempt-hypercalls/0001-x86-xen-allow-privcmd-hypercalls-to-be-preempted.patch
->>>>
->>>> Cc: Davidlohr Bueso <dbueso@suse.de>
->>>> Cc: Joerg Roedel <jroedel@suse.de>
->>>> Cc: Borislav Petkov <bp@suse.de>
->>>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->>>> Cc: Jan Beulich <JBeulich@suse.com>
->>>> Cc: Juergen Gross <JGross@suse.com>
->>>> Cc: Olaf Hering <ohering@suse.de>
->>>> Cc: David Vrabel <david.vrabel@citrix.com>
->>>> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
->>>> ---
->>>>    drivers/xen/privcmd.c | 3 +++
->>>>    1 file changed, 3 insertions(+)
->>>>
->>>> diff --git a/drivers/xen/privcmd.c b/drivers/xen/privcmd.c
->>>> index 569a13b..e29edba 100644
->>>> --- a/drivers/xen/privcmd.c
->>>> +++ b/drivers/xen/privcmd.c
->>>> @@ -60,6 +60,9 @@ static long privcmd_ioctl_hypercall(void __user *udata)
->>>>    			   hypercall.arg[0], hypercall.arg[1],
->>>>    			   hypercall.arg[2], hypercall.arg[3],
->>>>    			   hypercall.arg[4]);
->>>> +#ifndef CONFIG_PREEMPT
->>>> +	schedule();
->>>> +#endif
->>>>
->>>>    	return ret;
->>>>    }
->>>>
->>> Sorry, I don't think this will solve anything. You're calling schedule()
->>> right after the long running hypercall just nanoseconds before returning
->>> to the user.
->> Yeah, well that is what [1] tried as well only it tried using
->> preempt_schedule_irq() on the hypercall callback...
->>
->>> I suppose you were mislead by the "int 0x82" in [0]. This is the
->>> hypercall from the kernel into the hypervisor, e.g. inside of
->>> privcmd_call().
->> Nope, you have to consider what was done in [1], I was trying to
->> do something similar but less complex that didn't involve mucking
->> with the callbacks but also not abusing APIs.
->>
->> I'm afraid we don't have much leg room.
->
-> XenServer uses
->
-> https://github.com/xenserver/linux-3.x.pg/blob/master/master/0001-x86-xen-allow-privcmd-hypercalls-to-be-preempted.patch
->
-> to deal with these issues.  That patch is based on 3.10.
+On Thu, Nov 06, 2014 at 10:16:08PM +0000, Al Viro wrote:
+> On Thu, Nov 06, 2014 at 09:55:31AM +0000, Jon Maloy wrote:
+> > > Point, but that might very well be a pattern to watch for - there's at least one
+> > > more instance in TIPC (also not exploitable, according to TIPC folks) and such
+> > 
+> > I don't recall this, and I can't see where it would be either. Can you please
+> > point to where it is?
+> 
+> The same dest_name_check() thing.  This
+>         if (copy_from_user(&hdr, m->msg_iov[0].iov_base, sizeof(hdr)))
+>                 return -EFAULT;
+>         if ((ntohs(hdr.tcm_type) & 0xC000) && (!capable(CAP_NET_ADMIN)))
+>                 return -EACCES;
+> is easily bypassed.  Suppose you want to send a packet with these two
+> bits in ->tcm_type not being 00, and you don't have CAP_NET_ADMIN.
+> Not a problem - spawn two threads sharing memory, have one trying to
+> call sendmsg() while another keeps flipping these two bits.  Sooner
+> of later you'll get the timing right and have these bits observed as 00
+> in dest_name_check() and 11 when it comes to memcpy_fromiovecend() actually
+> copying the whole thing.  And considering that the interval between those
+> two is much longer than the loop in the second thread would take on
+> each iteration, I'd expect the odds around 25% per attempted sendmsg().
+> 
+> IOW, this test is either pointless and can be removed completely, or there's
+> an exploitable race.  As far as I understand from your replies both back then
+> and in another branch of this thread, it's the former and the proper fix is
+> to remove at least that part of dest_name_check().  So this case is also
+> not something exploitable, but it certainly matches the same pattern.
+> 
+> My point was simply that this pattern is worth watching for - recurrent bug
+> classes like that have a good chance to spawn an instance that will be
+> exploitable.
 
-Clever. :-)
+Ping?  Can we simply remove dest_name_check() completely?  That's one of the
+few remaining obstacles to making ->sendmsg() iov_iter-clean.  For now I'm
+simply commenting its call out in tipc_sendmsg(); if it _is_ needed for
+anything, we'll need to get rid of that double copying from userland.  I can
+do that, but my impression from your comments back in April is that you
+planned to removed the damn check anyway.
 
->
-> I can remember whether this has been submitted upstream before (and
-> there were outstanding issues), or whether it fell at an inconvenient
-> time with our development cycles.
+Another question: in tipc_send_stream() we have
+        mtu = tsk->max_pkt;
+        send = min_t(uint, dsz - sent, TIPC_MAX_USER_MSG_SIZE);
+        __skb_queue_head_init(&head);
+        rc = tipc_msg_build(mhdr, m, sent, send, mtu, &head);
+        if (unlikely(rc < 0))
+                goto exit;
+        do {   
+                if (likely(!tsk_conn_cong(tsk))) {
+                        rc = tipc_link_xmit(&head, dnode, ref);
+                        if (likely(!rc)) {
+                                tsk->sent_unacked++;
+                                sent += send;
+                                if (sent == dsz)
+                                        break;
+                                goto next;
+                        }
+                        if (rc == -EMSGSIZE) {
+                                tsk->max_pkt = tipc_node_get_mtu(dnode, ref);
+                                goto next;
+                        }
 
-I found
+How can it hit that EMSGSIZE?  AFAICS, it can come only from
+int __tipc_link_xmit(struct tipc_link *link, struct sk_buff_head *list)
+{
+        struct tipc_msg *msg = buf_msg(skb_peek(list));
+        uint psz = msg_size(msg);
+...
+        uint mtu = link->max_pkt;
+...
+        /* Has valid packet limit been used ? */   
+        if (unlikely(psz > mtu)) {
+                __skb_queue_purge(list);
+                return -EMSGSIZE;
+        }
 
-http://lists.xen.org/archives/html/xen-devel/2014-02/msg02540.html
+and msg_size() is basically the bits copied into skb by tipc_msg_build() and
+set by msg_set_size() in there.  And unless I'm seriously misreading that
+function, it can't be more than pktmax argument, i.e. mtu.  So unless something
+manages to crap into our skb or change mtu right under us, it shouldn't be
+possible.  And mtu (i.e. ->max_pkt) ought to be protected by lock_sock() there.
 
-and nothing else.
-
-
-Juergen
+What's going on there?
