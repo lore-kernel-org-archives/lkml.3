@@ -1,82 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530AbaK1Kzw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 05:55:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54354 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751027AbaK1KyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 05:54:08 -0500
-From: Juergen Gross <jgross@suse.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        konrad.wilk@oracle.com, david.vrabel@citrix.com,
-        boris.ostrovsky@oracle.com, x86@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, andrew.cooper3@citrix.com
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH V4 07/10] x86: Introduce function to get pmd entry pointer
-Date: Fri, 28 Nov 2014 11:53:56 +0100
-Message-Id: <1417172039-8627-8-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1417172039-8627-1-git-send-email-jgross@suse.com>
-References: <1417172039-8627-1-git-send-email-jgross@suse.com>
+	id S1751668AbaK1K4f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 05:56:35 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:41218 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638AbaK1K4b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 05:56:31 -0500
+Message-ID: <547854D0.1020506@arm.com>
+Date: Fri, 28 Nov 2014 10:56:16 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+MIME-Version: 1.0
+To: Liviu Dudau <Liviu.Dudau@arm.com>, Jisheng Zhang <jszhang@marvell.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] arm64: ARM: Fix the Generic Timers interrupt active
+ level description
+References: <1417105283-19575-1-git-send-email-Liviu.Dudau@arm.com> <54776FE0.8030600@arm.com> <20141128111252.4a6e8892@xhacker> <20141128103843.GW828@e106497-lin.cambridge.arm.com>
+In-Reply-To: <20141128103843.GW828@e106497-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduces lookup_pmd_address() to get the address of the pmd entry
-related to a virtual address in the current address space. This
-function is needed for support of a virtual mapped sparse p2m list
-in xen pv domains, as we need the address of the pmd entry, not the
-one of the pte in that case.
+On 28/11/14 10:38, Liviu Dudau wrote:
+> On Fri, Nov 28, 2014 at 03:12:52AM +0000, Jisheng Zhang wrote:
+>> Dear Marc and Liviu,
+>>
+>> On Thu, 27 Nov 2014 10:39:28 -0800
+>> Marc Zyngier <marc.zyngier@arm.com> wrote:
+>>
+>>> On 27/11/14 16:21, Liviu Dudau wrote:
+>>>> The Cortex-A5x TRM states in paragraph "9.2 Generic Timer functional
+>>>> description" that generic timers provide a level not edge interrupt
+>>>> output. Fix the device trees to correctly describe this.
+>>>>
+>>>> While doing this update the CPU mask to match the number of described
+>>>> CPUs as well as the DT bindings documentation for Generic Timers.
+>>>>
+>>>> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+>>>
+>>> Acked-by: Marc Zyngier <marc.zyngier@arm.com>
+>>>
+>>> 	M.
+>>>
+>>>> ---
+>>>>
+>>>> Arnd, Olof: This is on top of linux-next/master as it patches Juno's
+>>>> as well as all the other ARM DTs.
+>>>>
+>>>> --
+>>>>
+>>>>  Documentation/devicetree/bindings/arm/arch_timer.txt | 8 ++++----
+>>>>  arch/arm64/boot/dts/arm/foundation-v8.dts            | 8 ++++----
+>>>>  arch/arm64/boot/dts/arm/juno.dts                     | 8 ++++----
+>>>>  arch/arm64/boot/dts/arm/rtsm_ve-aemv8a.dts           | 8 ++++----
+>>>>  4 files changed, 16 insertions(+), 16 deletions(-)
+>>>>
+>>>> diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt
+>>>> b/Documentation/devicetree/bindings/arm/arch_timer.txt index
+>>>> 37b2caf..6d2aa87 100644 ---
+>>>> a/Documentation/devicetree/bindings/arm/arch_timer.txt +++
+>>>> b/Documentation/devicetree/bindings/arm/arch_timer.txt @@ -27,10 +27,10
+>>>> @@ Example: timer {
+>>>>  		compatible = "arm,cortex-a15-timer",
+>>>>  			     "arm,armv7-timer";
+>>>> -		interrupts = <1 13 0xf08>,
+>>>> -			     <1 14 0xf08>,
+>>>> -			     <1 11 0xf08>,
+>>>> -			     <1 10 0xf08>;
+>>>> +		interrupts = <1 13 0xf04>,
+>>>> +			     <1 14 0xf04>,
+>>>> +			     <1 11 0xf04>,
+>>>> +			     <1 10 0xf04>;
+>>>>  		clock-frequency = <100000000>;
+>>>>  	};
+>>>>  
+>>
+>> Does it mean we also need to fix the interrupt level description under
+>> arch/arm/boot/dts? I found they are also wrong or I misunderstand something?
+> 
+> Hi Jisheng,
+> 
+> It looks like Marc and I managed to confuse ourselves. The TRM for GIC-500 and
+> GIC-400 (basically covering most of GICv1 and > GICv2) clearly says that for *PPIs*
+> the level triggered interrupts are active-LOW.
+> 
+> So, this patch is invalid and my v1 version is correct, but Marc tells that in
+> that case the GIC driver needs patching (which I'm going to look into).
 
-Signed-off-by: Juergen Gross <jgross@suse.com>
----
- arch/x86/include/asm/pgtable_types.h |  1 +
- arch/x86/mm/pageattr.c               | 20 ++++++++++++++++++++
- 2 files changed, 21 insertions(+)
+Yeah, we have a pathological case of confusion of config information
+between PPIs and SPIs:
+- SPIs are always rising-edge or active-high
+- PPIs are implementation defined, and even their configurability is
+implementation defined
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index 0778964..d83f5e7 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -396,6 +396,7 @@ static inline void update_page_count(int level, unsigned long pages) { }
- extern pte_t *lookup_address(unsigned long address, unsigned int *level);
- extern pte_t *lookup_address_in_pgd(pgd_t *pgd, unsigned long address,
- 				    unsigned int *level);
-+extern pmd_t *lookup_pmd_address(unsigned long address);
- extern phys_addr_t slow_virt_to_phys(void *__address);
- extern int kernel_map_pages_in_pgd(pgd_t *pgd, u64 pfn, unsigned long address,
- 				   unsigned numpages, unsigned long page_flags);
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index 36de293..1298108 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -384,6 +384,26 @@ static pte_t *_lookup_address_cpa(struct cpa_data *cpa, unsigned long address,
- }
- 
- /*
-+ * Lookup the PMD entry for a virtual address. Return a pointer to the entry
-+ * or NULL if not present.
-+ */
-+pmd_t *lookup_pmd_address(unsigned long address)
-+{
-+	pgd_t *pgd;
-+	pud_t *pud;
-+
-+	pgd = pgd_offset_k(address);
-+	if (pgd_none(*pgd))
-+		return NULL;
-+
-+	pud = pud_offset(pgd, address);
-+	if (pud_none(*pud) || pud_large(*pud) || !pud_present(*pud))
-+		return NULL;
-+
-+	return pmd_offset(pud, address);
-+}
-+
-+/*
-  * This is necessary because __pa() does not work on some
-  * kinds of memory, like vmalloc() or the alloc_remap()
-  * areas on 32-bit NUMA systems.  The percpu areas can
+The fact that on all ARM implementations, the PPI are not configurable
+is the saving grace. No matter how wrong the DTs are, we'll do the right
+thing, and all the existing code actually relies on the defaults values
+anyway.
+
+Well, until someone tries and configure a PPI (at least Qualcomm's
+implementations are actually programmable), and asks for an active-low
+value, which will get rejected.
+
+Basically, all can we do at the GIC level is to accept all combinations
+of edge/level for PPIs, reduce that to the single bit of config we have,
+and check that it sticks. The result may not be what the driver asked
+for, but we have no way to know.
+
+GIC bindings will have to be updated too.
+
+Thanks,
+
+	M.
 -- 
-2.1.2
-
+Jazz is not dead. It just smells funny...
