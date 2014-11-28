@@ -1,103 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839AbaK1O3o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 09:29:44 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:41414 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142AbaK1O3l (ORCPT
+	id S1751902AbaK1OaG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 09:30:06 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:42094 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552AbaK1OaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 09:29:41 -0500
-Date: Fri, 28 Nov 2014 14:29:13 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
-        "heiko@sntech.de" <heiko@sntech.de>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>, "andrew@lunn.ch" <andrew@lunn.ch>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
-        "artagnon@gmail.com" <artagnon@gmail.com>,
-        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "zhang.lyra@gmail.com" <zhang.lyra@gmail.com>,
-        "corbet@lwn.net" <corbet@lwn.net>, "jslaby@suse.cz" <jslaby@suse.cz>,
-        "zhizhou.zhang@spreadtrum.com" <zhizhou.zhang@spreadtrum.com>,
-        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
-        "m-karicheri2@ti.com" <m-karicheri2@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "orsonzhai@gmail.com" <orsonzhai@gmail.com>,
-        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "hytszk@gmail.com" <hytszk@gmail.com>,
-        "rrichter@cavium.com" <rrichter@cavium.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "wei.qiao@spreadtrum.com" <wei.qiao@spreadtrum.com>,
-        "sprdlinux@freelists.org" <sprdlinux@freelists.org>,
-        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "galak@codeaurora.org" <galak@codeaurora.org>
-Subject: Re: [PATCH v3 3/5] arm64: dts: Add support for Spreadtrum SC9836 SoC
- in dts and Makefile
-Message-ID: <20141128142913.GB5393@localhost>
-References: <Sharkl64-v3>
- <1416917818-10506-1-git-send-email-chunyan.zhang@spreadtrum.com>
- <1416917818-10506-4-git-send-email-chunyan.zhang@spreadtrum.com>
- <20141127115042.GE857@leverpostej>
- <20141127121214.GF11511@e104818-lin.cambridge.arm.com>
- <20141127134309.GJ857@leverpostej>
+	Fri, 28 Nov 2014 09:30:03 -0500
+Date: Fri, 28 Nov 2014 14:29:38 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene@kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Message-ID: <20141128142938.GM7712@sirena.org.uk>
+References: <1417087253-12306-1-git-send-email-k.kozlowski@samsung.com>
+ <1417087253-12306-3-git-send-email-k.kozlowski@samsung.com>
+ <20141127183058.GB7712@sirena.org.uk>
+ <1417165784.18249.15.camel@AMDC1943>
+ <20141128112116.GG7712@sirena.org.uk>
+ <1417175667.18249.26.camel@AMDC1943>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QrUjNlhiyonfhBQa"
 Content-Disposition: inline
-In-Reply-To: <20141127134309.GJ857@leverpostej>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1417175667.18249.26.camel@AMDC1943>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4 2/7] regulator: dt-bindings: Document the ena-gpios
+ property
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 01:43:09PM +0000, Mark Rutland wrote:
-> On Thu, Nov 27, 2014 at 12:12:15PM +0000, Catalin Marinas wrote:
-> > On Thu, Nov 27, 2014 at 11:50:43AM +0000, Mark Rutland wrote:
-> > > On Tue, Nov 25, 2014 at 12:16:56PM +0000, Chunyan Zhang wrote:
-> > > > +
-> > > > +       timer {
-> > > > +               compatible = "arm,armv8-timer";
-> > > > +               interrupts = <1 13 0xff01>,
-> > > > +                            <1 14 0xff01>,
-> > > > +                            <1 11 0xff01>,
-> > > > +                            <1 10 0xff01>;
-> > > > +               clock-frequency = <26000000>;
-> > > 
-> > > Please remove the clock-frequency property. Your FW should initialise
-> > > CNTFRQ_EL0 on all CPUs (certainly PSCI 0.2 requires that you do this).
-> > 
-> > Since this comes up regularly, I think we need a dev_warn() in the arch
-> > timer driver when CONFIG_ARM64.
-> 
-> I'll ack such a patch ;)
 
-How rude would this be?
+--QrUjNlhiyonfhBQa
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index 2133f9d59d06..aaaf3433ccb9 100644
---- a/drivers/clocksource/arm_arch_timer.c
-+++ b/drivers/clocksource/arm_arch_timer.c
-@@ -371,7 +371,8 @@ arch_timer_detect_rate(void __iomem *cntbase, struct device_node *np)
-		return;
- 
-	/* Try to determine the frequency from the device tree or CNTFRQ */
--	if (of_property_read_u32(np, "clock-frequency", &arch_timer_rate)) {
-+	if (IS_ENABLED(CONFIG_ARM64) ||
-+	    of_property_read_u32(np, "clock-frequency", &arch_timer_rate)) {
-		if (cntbase)
-			arch_timer_rate = readl_relaxed(cntbase + CNTFRQ);
-		else
+On Fri, Nov 28, 2014 at 12:54:27PM +0100, Krzysztof Kozlowski wrote:
+> On pi=C4=85, 2014-11-28 at 11:21 +0000, Mark Brown wrote:
+> > On Fri, Nov 28, 2014 at 10:09:44AM +0100, Krzysztof Kozlowski wrote:
+
+> > > I understand your concerns here however I didn't want to overengineer
+> > > this. Is the same GPIO (on more complex PMICs) used in different
+> > > contexts? Like enable control and something more in the same time?
+
+> > Yes, and it's often reprogrammable at runtime.
+
+> I have doubts if generalized code could support such configuration...
+
+That's pretty much my point.
+
+--QrUjNlhiyonfhBQa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUeIbRAAoJECTWi3JdVIfQ6+IH/RhNfucFIPUqbqaU0jpQM4GT
+oyosDk2AJTo6JEYI9+NFH9CvZc/9RLb3d2eN0NaOKnY53jpVHN9xWMIDjEAWvM1Z
+PK8oJzM2RxLC8GV4wfJWLRotczV9Sr7AwgLf/A23ItLzoVrffSHMLKN2NbTWUMEe
+8BcZWKt2wjazzbX8N06szyQpWLDN84OcCWztOJ0fVaaDAWBI/nfioJXw3DWQacAy
+bFvK922J6+Ix1YxTVbpFYomVx46mZtZWoJ0g89OnE3tERsUtzAdytMgi1Hi2ACD3
+o0SDKuD/Uho8jFJIIVeUkmrWhIlpM+lXjbNLGK07ulzmOwrZnKH4bJKqyi/95Ho=
+=eEFr
+-----END PGP SIGNATURE-----
+
+--QrUjNlhiyonfhBQa--
