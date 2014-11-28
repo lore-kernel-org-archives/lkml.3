@@ -1,702 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635AbaK1Q4l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 11:56:41 -0500
-Received: from mail-bn1bon0140.outbound.protection.outlook.com ([157.56.111.140]:28374
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751244AbaK1Q4k convert rfc822-to-8bit (ORCPT
+	id S1751738AbaK1Q72 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 11:59:28 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:35841 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166AbaK1Q70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 11:56:40 -0500
-From: Muthu Mani <muth@cypress.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, <johan@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
-        <linux-gpio@vger.kernel.org>, Muthu Mani <muth@cypress.com>,
-        Rajaram Regupathy <rera@cypress.com>
-Subject: [PATCH v4 2/3] i2c: add support for Cypress CYUSBS234 USB-I2C adapter
-Date: Fri, 28 Nov 2014 22:11:28 +0530
-Message-ID: <1417192888-16679-1-git-send-email-muth@cypress.com>
-X-Mailer: git-send-email 1.8.3.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-X-Originating-IP: [121.243.89.10]
-X-ClientProxiedBy: BY2PR03CA063.namprd03.prod.outlook.com (10.141.249.36) To
- BN1PR06MB071.namprd06.prod.outlook.com (10.242.211.15)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR06MB071;
-Content-Transfer-Encoding: 7BIT
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR06MB071;
-X-Forefront-PRVS: 04097B7F7F
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(51164003)(4396001)(64706001)(50226001)(229853001)(87286001)(50466002)(92566001)(47776003)(20776003)(92726001)(93916002)(86362001)(87976001)(40100003)(102836001)(62966003)(19580405001)(36756003)(77156002)(88136002)(77096003)(89996001)(19580395003)(31966008)(97736003)(120916001)(99396003)(33646002)(66066001)(15202345003)(101416001)(15975445006)(42186005)(95666004)(105586002)(46102003)(122386002)(50986999)(21056001)(106356001)(48376002)(107046002)(104166001)(2004002)(21314002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR06MB071;H:prji-Latitude-E6420.india.cypress.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR06MB071;
-X-OriginatorOrg: cypress.com
+	Fri, 28 Nov 2014 11:59:26 -0500
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Linux PM <linux-pm@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Lukasz Majewski <l.majewski@samsung.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Eduardo Valentin <edubezval@gmail.com>, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Zhang Rui <rui.zhang@intel.com>
+Subject: [PATCHv3 1/1] thermal: cpu_cooling: check for the readiness of cpufreq layer
+Date: Fri, 28 Nov 2014 10:53:30 -0400
+Message-Id: <1417186410-24551-1-git-send-email-edubezval@gmail.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds support for USB-I2C interface of Cypress Semiconductor
-CYUSBS234 USB-Serial Bridge controller.
+In this patch, the cpu_cooling code checks for the usability of cpufreq
+layer before proceeding with the CPU cooling device registration. The
+main reason is: CPU cooling device is not usable if cpufreq cannot
+switch frequencies.
 
-The read/write operation is setup using vendor command through control endpoint
-and actual data transfer happens through bulk in/out endpoints.
+Similar checks are spread in thermal drivers. Thus, the advantage now
+is to have the check in a single place: cpu cooling device registration.
+For this reason, this patch also updates the existing drivers that
+depend on CPU cooling to simply propagate the error code of the cpu
+cooling registration call. Therefore, in case cpufreq is not ready, the
+thermal drivers will still return -EPROBE_DEFER, in an attempt to try
+again when cpufreq layer gets ready.
 
-Details about the device can be found at:
-http://www.cypress.com/?rID=84126
-
-Signed-off-by: Muthu Mani <muth@cypress.com>
-Signed-off-by: Rajaram Regupathy <rera@cypress.com>
+Cc: devicetree@vger.kernel.org
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-pm@vger.kernel.org
+Cc: linux-samsung-soc@vger.kernel.org
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Zhang Rui <rui.zhang@intel.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Eduardo Valentin <edubezval@gmail.com>
 ---
-Changes since v3:
-* corrected typo
+ drivers/thermal/cpu_cooling.c                      | 3 +++
+ drivers/thermal/db8500_cpufreq_cooling.c           | 5 -----
+ drivers/thermal/imx_thermal.c                      | 5 -----
+ drivers/thermal/samsung/exynos_thermal_common.c    | 7 ++++---
+ drivers/thermal/samsung/exynos_tmu.c               | 4 +++-
+ drivers/thermal/ti-soc-thermal/ti-thermal-common.c | 6 ------
+ 6 files changed, 10 insertions(+), 20 deletions(-)
+---
+Changes from V2:
+- Removed logging message when returning EPROBE_DEFER. Majority
+of the existing code simply do not log. Following the pattern
+- Merges Viresh's patch in Exynos driver. Reasoning, the change
+in the API behavior goes together with the needed changes in the API
+users.
 
-Changes since v2:
-* Retrieved the i2c transfer status using interrupt in endpoint
-* Used kstrtol instead of manually parsing and scnprintf instead of sprintf
-* Given i2c adapter device for dev_xxx
-* cleaned up the code
+Changes from V1:
+ - As per Viresh K. suggestion's, the check for cpufreq layer readiness is now
+    only a simple fetch for cpufreq table.
 
-Changes since v1:
-* allocated memory on heap for usb transfer data
-* Used DEVICE_ATTR_xx and friends and attribute groups
-* Added the device files under i2c-adapter rather than platform device
-
- drivers/i2c/busses/Kconfig         |  12 +
- drivers/i2c/busses/Makefile        |   1 +
- drivers/i2c/busses/i2c-cyusbs23x.c | 584 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 597 insertions(+)
- create mode 100644 drivers/i2c/busses/i2c-cyusbs23x.c
-
-diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index 917c358..533bdda 100644
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -871,6 +871,18 @@ config I2C_RCAR
-
- comment "External I2C/SMBus adapter drivers"
-
-+config I2C_CYUSBS23X
-+       tristate "CYUSBS23x I2C adapter"
-+       depends on MFD_CYUSBS23X && USB
-+       help
-+         Say yes if you would like to access Cypress CYUSBS23x I2C device.
-+
-+         This driver enables the I2C interface of CYUSBS23x USB Serial Bridge
-+         controller.
-+
-+         This driver can also be built as a module. If so, the module will be
-+         called i2c-cyusbs23x.
-+
- config I2C_DIOLAN_U2C
-        tristate "Diolan U2C-12 USB adapter"
-        depends on USB
-diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
-index 78d56c5..3199908 100644
---- a/drivers/i2c/busses/Makefile
-+++ b/drivers/i2c/busses/Makefile
-@@ -86,6 +86,7 @@ obj-$(CONFIG_I2C_XLR)         += i2c-xlr.o
- obj-$(CONFIG_I2C_RCAR)         += i2c-rcar.o
-
- # External I2C/SMBus adapter drivers
-+obj-$(CONFIG_I2C_CYUSBS23X)    += i2c-cyusbs23x.o
- obj-$(CONFIG_I2C_DIOLAN_U2C)   += i2c-diolan-u2c.o
- obj-$(CONFIG_I2C_PARPORT)      += i2c-parport.o
- obj-$(CONFIG_I2C_PARPORT_LIGHT)        += i2c-parport-light.o
-diff --git a/drivers/i2c/busses/i2c-cyusbs23x.c b/drivers/i2c/busses/i2c-cyusbs23x.c
-new file mode 100644
-index 0000000..4bae6d0
---- /dev/null
-+++ b/drivers/i2c/busses/i2c-cyusbs23x.c
-@@ -0,0 +1,584 @@
-+/*
-+ * I2C subdriver for Cypress CYUSBS234 USB-Serial Bridge controller.
-+ * Details about the device can be found at:
-+ *    http://www.cypress.com/?rID=84126
-+ *
-+ * Copyright (c) 2014 Cypress Semiconductor Corporation.
-+ *
-+ * Author:
-+ *   Rajaram Regupathy <rera@cypress.com>
-+ *
-+ * Additional contributors include:
-+ *   Muthu Mani <muth@cypress.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published by
-+ * the Free Software Foundation.
-+ */
-+
-+/*
-+ * It exposes sysfs entries under the i2c adapter for getting the i2c transfer
-+ * status, reset i2c read/write module, get/set nak and stop bits.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/types.h>
-+#include <linux/mutex.h>
-+#include <linux/platform_device.h>
-+
-+#include <linux/usb.h>
-+#include <linux/i2c.h>
-+
-+#include <linux/mfd/cyusbs23x.h>
-+
-+enum cy_i2c_io_mode {
-+       CY_I2C_MODE_READ         = 0,
-+       CY_I2C_MODE_WRITE        = 1
-+};
-+
-+#define CY_I2C_XFER_STATUS_LEN     3
-+
-+struct cyusbs_i2c_config {
-+       /* Frequency of operation. Only valid values are 100KHz and 400KHz */
-+       u32 frequency;
-+       u8 slave_addr;        /* Slave address to be used when in slave mode */
-+       u8 is_msb_first;      /* Whether to transmit MSB first */
-+       /*
-+        * Whether block is configured as a master:
-+        * 1 - The block functions as I2C master;
-+        * 0 - The block functions as I2C slave
-+        */
-+       u8 is_master;
-+       u8 s_ignore;          /* Ignore general call in slave mode */
-+       /* Whether to stretch clock in case of no FIFO availability */
-+       u8 clock_stretch;
-+       /* Whether to loop back TX data to RX. Valid only for debug purposes */
-+       u8 is_loopback;
-+       u8 reserved[6];       /* Reserved for future use */
-+} __packed;
-+
-+struct cyusbs_i2c {
-+       struct i2c_adapter i2c_adapter;
-+       struct cyusbs_i2c_config *i2c_config;
-+       struct mutex lock;
-+
-+       bool is_stop_bit;     /* set the stop bit for i2c transfer */
-+       bool is_nak_bit;      /* set the nak bit for i2c transfer */
-+};
-+
-+#define to_cyusbs_i2c(a) container_of(a, struct cyusbs_i2c, i2c_adapter)
-+
-+static int cy_i2c_get_status(struct i2c_adapter *adapter, u8 *buf, u16 mode);
-+static int cy_i2c_reset(struct i2c_adapter *adapter, u16 mode);
-+
-+static ssize_t i2c_read_status_show(struct device *d,
-+                                   struct device_attribute *attr, char *buf)
-+{
-+       struct i2c_adapter *adapter = to_i2c_adapter(d);
-+
-+       /* Updates buffer with 3 bytes status (hex data) */
-+       return cy_i2c_get_status(adapter, buf, CY_I2C_MODE_READ);
-+}
-+
-+static ssize_t i2c_write_status_show(struct device *d,
-+                                    struct device_attribute *attr, char *buf)
-+{
-+       struct i2c_adapter *adapter = to_i2c_adapter(d);
-+
-+       /* Updates buffer with 3 bytes status (hex data) */
-+       return cy_i2c_get_status(adapter, buf, CY_I2C_MODE_WRITE);
-+}
-+
-+static ssize_t i2c_read_reset_store(struct device *d,
-+                                struct device_attribute *attr,
-+                                const char *buf, size_t count)
-+{
-+       int ret;
-+       long value;
-+       struct i2c_adapter *adapter = to_i2c_adapter(d);
-+
-+       ret = kstrtol(buf, 0, &value);
-+       if (ret)
-+               return ret;
-+
-+       if (value != 1)
-+               return -EINVAL;
-+
-+       ret = cy_i2c_reset(adapter, CY_I2C_MODE_READ);
-+       if (!ret)
-+               ret = count;
-+
-+       return ret;
-+}
-+
-+static ssize_t i2c_write_reset_store(struct device *d,
-+                                 struct device_attribute *attr,
-+                                 const char *buf, size_t count)
-+{
-+       int ret;
-+       long value;
-+       struct i2c_adapter *adapter = to_i2c_adapter(d);
-+
-+       ret = kstrtol(buf, 0, &value);
-+       if (ret)
-+               return ret;
-+
-+       if (value != 1)
-+               return -EINVAL;
-+
-+       ret = cy_i2c_reset(adapter, CY_I2C_MODE_WRITE);
-+       if (!ret)
-+               ret = count;
-+
-+       return ret;
-+}
-+
-+static ssize_t is_stop_bit_show(struct device *d,
-+                               struct device_attribute *attr, char *buf)
-+{
-+       struct i2c_adapter *adapter = to_i2c_adapter(d);
-+       struct cyusbs_i2c *cy_i2c = to_cyusbs_i2c(adapter);
-+
-+       return scnprintf(buf, 3, "%d\n", cy_i2c->is_stop_bit);
-+}
-+
-+static ssize_t is_stop_bit_store(struct device *d,
-+                                struct device_attribute *attr,
-+                                const char *buf, size_t count)
-+{
-+       struct i2c_adapter *adapter = to_i2c_adapter(d);
-+       struct cyusbs_i2c *cy_i2c = to_cyusbs_i2c(adapter);
-+       long value;
-+       int ret;
-+
-+       ret = kstrtol(buf, 0, &value);
-+       if (ret)
-+               return ret;
-+
-+       if (value != 0 && value != 1)
-+               return -EINVAL;
-+
-+       cy_i2c->is_stop_bit = (bool)value;
-+
-+       return count;
-+}
-+
-+static ssize_t is_nak_bit_show(struct device *d,
-+                              struct device_attribute *attr, char *buf)
-+{
-+       struct i2c_adapter *adapter = to_i2c_adapter(d);
-+       struct cyusbs_i2c *cy_i2c = to_cyusbs_i2c(adapter);
-+
-+       return scnprintf(buf, 3, "%d\n", cy_i2c->is_nak_bit);
-+}
-+
-+static ssize_t is_nak_bit_store(struct device *d,
-+                               struct device_attribute *attr,
-+                               const char *buf, size_t count)
-+{
-+       struct i2c_adapter *adapter = to_i2c_adapter(d);
-+       struct cyusbs_i2c *cy_i2c = to_cyusbs_i2c(adapter);
-+       long value;
-+       int ret;
-+
-+       ret = kstrtol(buf, 0, &value);
-+       if (ret)
-+               return ret;
-+
-+       if (value != 0 && value != 1)
-+               return -EINVAL;
-+
-+       cy_i2c->is_nak_bit = (bool)value;
-+
-+       return count;
-+}
-+
-+static DEVICE_ATTR_RO(i2c_read_status);
-+static DEVICE_ATTR_RO(i2c_write_status);
-+static DEVICE_ATTR_WO(i2c_read_reset);
-+static DEVICE_ATTR_WO(i2c_write_reset);
-+static DEVICE_ATTR_RW(is_stop_bit);
-+static DEVICE_ATTR_RW(is_nak_bit);
-+
-+static struct attribute *cyusbs_i2c_device_attrs[] = {
-+       &dev_attr_i2c_read_status.attr,
-+       &dev_attr_i2c_write_status.attr,
-+       &dev_attr_i2c_read_reset.attr,
-+       &dev_attr_i2c_write_reset.attr,
-+       &dev_attr_is_stop_bit.attr,
-+       &dev_attr_is_nak_bit.attr,
-+       NULL
-+};
-+
-+ATTRIBUTE_GROUPS(cyusbs_i2c_device);
-+
-+static int cy_i2c_get_status(struct i2c_adapter *adapter, u8 *buf, u16 mode)
-+{
-+       int ret;
-+       u16 wIndex, wValue, scb_index;
-+       u8 *data;
-+       struct cyusbs23x *cyusbs = (struct cyusbs23x *)adapter->algo_data;
-+       struct cyusbs_i2c *cy_i2c = to_cyusbs_i2c(adapter);
-+
-+       scb_index = cyusbs->intf_num & 0x01;
-+       wValue = ((scb_index << CY_SCB_INDEX_SHIFT) | mode);
-+       wIndex = 0;
-+       data = kmalloc(CY_I2C_XFER_STATUS_LEN, GFP_KERNEL);
-+       if (data == NULL)
-+               return -ENOMEM;
-+
-+       mutex_lock(&cy_i2c->lock);
-+       /* read the i2c transfer status */
-+       ret = usb_control_msg(cyusbs->usb_dev,
-+                       usb_rcvctrlpipe(cyusbs->usb_dev, 0),
-+                       CY_I2C_GET_STATUS_CMD,
-+                       USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
-+                       wValue, wIndex, data, CY_I2C_XFER_STATUS_LEN,
-+                       CY_USBS_CTRL_XFER_TIMEOUT);
-+       mutex_unlock(&cy_i2c->lock);
-+       if (ret != CY_I2C_XFER_STATUS_LEN) {
-+               dev_err(&adapter->dev, "%s: failed to get status: %d",
-+                       __func__, ret);
-+               ret = usb_translate_errors(ret);
-+               goto status_error;
-+       }
-+
-+       memcpy(buf, data, CY_I2C_XFER_STATUS_LEN);
-+       buf[CY_I2C_XFER_STATUS_LEN] = 0;
-+
-+       dev_dbg(&adapter->dev, "%s: %02x %02x %02x\n", __func__,
-+               buf[0], buf[1], buf[2]);
-+
-+status_error:
-+       kfree(data);
-+       return ret;
-+}
-+
-+static int cy_i2c_reset(struct i2c_adapter *adapter, u16 mode)
-+{
-+       int ret;
-+       u16 wIndex, wValue, scb_index;
-+       struct cyusbs23x *cyusbs = (struct cyusbs23x *)adapter->algo_data;
-+       struct cyusbs_i2c *cy_i2c = to_cyusbs_i2c(adapter);
-+
-+       scb_index = cyusbs->intf_num & 0x01;
-+       wValue = ((scb_index << CY_SCB_INDEX_SHIFT) | mode);
-+       wIndex = 0;
-+
-+       mutex_lock(&cy_i2c->lock);
-+       ret = usb_control_msg(cyusbs->usb_dev,
-+                       usb_sndctrlpipe(cyusbs->usb_dev, 0),
-+                       CY_I2C_RESET_CMD,
-+                       USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
-+                       wValue, wIndex, NULL, 0, CY_USBS_CTRL_XFER_TIMEOUT);
-+       mutex_unlock(&cy_i2c->lock);
-+       if (ret) {
-+               dev_err(&adapter->dev, "%s: failed to reset: %d",
-+                       __func__, ret);
-+               ret = usb_translate_errors(ret);
-+       }
-+
-+       return ret;
-+}
-+
-+static int cy_i2c_recv_status(struct i2c_adapter *adapter)
-+{
-+       int ret, actual_len;
-+       u8 *data;
-+       struct cyusbs23x *cyusbs = (struct cyusbs23x *)adapter->algo_data;
-+
-+       data = kmalloc(CY_I2C_XFER_STATUS_LEN, GFP_KERNEL);
-+       if (data == NULL)
-+               return -ENOMEM;
-+
-+       /* read the i2c transfer status */
-+       ret = usb_interrupt_msg(cyusbs->usb_dev,
-+                       usb_rcvintpipe(cyusbs->usb_dev, cyusbs->intr_in_ep_num),
-+                       data, CY_I2C_XFER_STATUS_LEN, &actual_len,
-+                       CY_USBS_INTR_XFER_TIMEOUT);
-+       if (ret < 0) {
-+               dev_err(&adapter->dev,
-+                       "Failed to read from interrupt ep: %d\n", ret);
-+               ret = usb_translate_errors(ret);
-+               goto intr_ep_error;
-+       }
-+
-+       dev_dbg(&adapter->dev, "%s: %02x %02x %02x\n", __func__,
-+               data[0], data[1], data[2]);
-+
-+       if (data[0] & 0x1)
-+               ret = -ETIMEDOUT;
-+
-+intr_ep_error:
-+       kfree(data);
-+       return ret;
-+}
-+
-+static int cy_get_i2c_config(struct cyusbs23x *cyusbs,
-+                               struct cyusbs_i2c *cy_i2c)
-+{
-+       int ret;
-+       u16 scb_index;
-+
-+       scb_index = (cyusbs->intf_num & 0x01) << CY_SCB_INDEX_SHIFT;
-+
-+       ret = usb_control_msg(cyusbs->usb_dev,
-+                       usb_rcvctrlpipe(cyusbs->usb_dev, 0),
-+                       CY_I2C_GET_CONFIG_CMD,
-+                       USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
-+                       scb_index, 0, cy_i2c->i2c_config,
-+                       sizeof(*cy_i2c->i2c_config), CY_USBS_CTRL_XFER_TIMEOUT);
-+       if (ret != sizeof(*cy_i2c->i2c_config)) {
-+               dev_err(&cyusbs->usb_intf->dev, "%s: %d\n",
-+                       __func__, ret);
-+               ret = usb_translate_errors(ret);
-+               goto config_error;
-+       }
-+
-+       dev_dbg(&cyusbs->usb_intf->dev,
-+               "%s: freq=%d, slave_addr=0x%02x, msb_first=%d, master=%d, ignore=%d, clock_stretch=%d, loopback=%d\n",
-+               __func__, cy_i2c->i2c_config->frequency,
-+               cy_i2c->i2c_config->slave_addr,
-+               cy_i2c->i2c_config->is_msb_first,
-+               cy_i2c->i2c_config->is_master,
-+               cy_i2c->i2c_config->s_ignore,
-+               cy_i2c->i2c_config->clock_stretch,
-+               cy_i2c->i2c_config->is_loopback);
-+
-+config_error:
-+       return ret;
-+}
-+
-+static int cy_i2c_set_data_config(struct cyusbs23x *cyusbs,
-+                                 struct cyusbs_i2c *cy_i2c, u16 slave_addr,
-+                                 u16 length, u8 command)
-+{
-+       int ret;
-+       u16 wIndex, wValue, scb_index;
-+
-+       scb_index = (cyusbs->intf_num & 0x01) << CY_SCB_INDEX_SHIFT;
-+       slave_addr = (slave_addr & 0x7F);
-+       wValue = scb_index | cy_i2c->is_stop_bit | cy_i2c->is_nak_bit << 1;
-+       wValue |= (slave_addr << 8);
-+       wIndex = length;
-+
-+       dev_dbg(&cy_i2c->i2c_adapter.dev,
-+               "%s, cmd=0x%x, val=0x%x, idx=0x%x\n",
-+               __func__, command, wValue, wIndex);
-+
-+       ret = usb_control_msg(cyusbs->usb_dev,
-+               usb_sndctrlpipe(cyusbs->usb_dev, 0),
-+               command, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
-+               wValue, wIndex, NULL, 0, CY_USBS_CTRL_XFER_TIMEOUT);
-+
-+       return ret;
-+}
-+
-+static int cy_i2c_read(struct i2c_adapter *adapter, struct i2c_msg *msgs)
-+{
-+       int ret;
-+       int actual_read_len = 0;
-+       struct cyusbs23x *cyusbs = (struct cyusbs23x *)adapter->algo_data;
-+
-+       dev_dbg(&adapter->dev, "%s\n", __func__);
-+
-+       ret = usb_bulk_msg(cyusbs->usb_dev,
-+               usb_rcvbulkpipe(cyusbs->usb_dev, cyusbs->bulk_in_ep_num),
-+               msgs[0].buf,
-+               msgs[0].len,
-+               &actual_read_len, CY_USBS_BULK_XFER_TIMEOUT);
-+       if (ret)
-+               dev_err(&adapter->dev,
-+                       "read %d/%d returned %d\n",
-+                       actual_read_len, msgs[0].len, ret);
-+
-+       ret = cy_i2c_recv_status(adapter);
-+
-+       return ret;
-+}
-+
-+static int cy_i2c_write(struct i2c_adapter *adapter, struct i2c_msg *msgs)
-+{
-+       int ret;
-+       int actual_write_len = 0;
-+       struct cyusbs23x *cyusbs = (struct cyusbs23x *)adapter->algo_data;
-+
-+       dev_dbg(&adapter->dev, "%s\n", __func__);
-+
-+       ret = usb_bulk_msg(cyusbs->usb_dev,
-+               usb_sndbulkpipe(cyusbs->usb_dev, cyusbs->bulk_out_ep_num),
-+               msgs[0].buf,
-+               msgs[0].len,
-+               &actual_write_len, CY_USBS_BULK_XFER_TIMEOUT);
-+       if (ret)
-+               dev_err(&adapter->dev,
-+                       "write %d/%d returned %d\n",
-+                       actual_write_len, msgs[0].len, ret);
-+
-+       ret = cy_i2c_recv_status(adapter);
-+
-+       return ret;
-+}
-+
-+static int cy_i2c_xfer(struct i2c_adapter *adapter,
-+                      struct i2c_msg *msgs, int num)
-+{
-+       int ret = 0;
-+       struct cyusbs_i2c *cy_i2c;
-+       struct cyusbs23x *cyusbs = (struct cyusbs23x *)adapter->algo_data;
-+
-+       dev_dbg(&adapter->dev, "%s\n", __func__);
-+
-+       if (num > 1) {
-+               dev_err(&adapter->dev, "i2c_msg number is > 1\n");
-+               return -EIO;
-+       }
-+
-+       cy_i2c = to_cyusbs_i2c(adapter);
-+
-+       mutex_lock(&cy_i2c->lock);
-+       if (msgs[0].flags & I2C_M_RD) {
-+               dev_dbg(&adapter->dev,
-+                       "I2C read requested for addr 0x%02x, data length %d\n",
-+                       msgs[0].addr, msgs[0].len);
-+
-+               ret = cy_i2c_set_data_config(cyusbs, cy_i2c, msgs[0].addr,
-+                               msgs[0].len, CY_I2C_READ_CMD);
-+               if (ret < 0) {
-+                       dev_err(&adapter->dev,
-+                               "Set Config (read) failed with %d\n", ret);
-+                       goto io_error;
-+               }
-+
-+               ret = cy_i2c_read(adapter, msgs);
-+               if (ret) {
-+                       dev_err(&adapter->dev,
-+                               "Read failed with error code %d\n", ret);
-+                       goto io_error;
-+               }
-+       } else {
-+               dev_dbg(&adapter->dev,
-+                       "I2C write requested for addr 0x%02x, data length %d\n",
-+                       msgs[0].addr, msgs[0].len);
-+
-+               ret = cy_i2c_set_data_config(cyusbs, cy_i2c, msgs[0].addr,
-+                               msgs[0].len, CY_I2C_WRITE_CMD);
-+               if (ret < 0) {
-+                       dev_err(&adapter->dev,
-+                       "Set Config (write) failed with %d\n", ret);
-+                       goto io_error;
-+               }
-+
-+               ret = cy_i2c_write(adapter, msgs);
-+               if (ret) {
-+                       dev_err(&adapter->dev,
-+                               "Write failed with error code %d\n", ret);
-+                       goto io_error;
-+               }
-+       }
-+       mutex_unlock(&cy_i2c->lock);
-+       return ret;
-+
-+io_error:
-+       mutex_unlock(&cy_i2c->lock);
-+       return ret;
-+}
-+
-+static u32 cy_i2c_func(struct i2c_adapter *adapter)
-+{
-+       return I2C_FUNC_I2C;
-+}
-+
-+static const struct i2c_algorithm i2c_cyusbs23x_algorithm = {
-+       .master_xfer    = cy_i2c_xfer,
-+       .functionality  = cy_i2c_func,
-+};
-+
-+static int cyusbs23x_i2c_probe(struct platform_device *pdev)
-+{
-+       struct cyusbs23x *cyusbs;
-+       struct cyusbs_i2c *cy_i2c;
-+       int ret = 0;
-+
-+       dev_dbg(&pdev->dev, "%s\n", __func__);
-+
-+       cyusbs = dev_get_drvdata(pdev->dev.parent);
-+
-+       cy_i2c = devm_kzalloc(&pdev->dev, sizeof(*cy_i2c), GFP_KERNEL);
-+       if (cy_i2c == NULL)
-+               return -ENOMEM;
-+
-+       cy_i2c->i2c_config = devm_kzalloc(&pdev->dev,
-+                                       sizeof(struct cyusbs_i2c_config),
-+                                       GFP_KERNEL);
-+       if (cy_i2c->i2c_config == NULL)
-+               return -ENOMEM;
-+
-+       mutex_init(&cy_i2c->lock);
-+       cy_i2c->is_stop_bit = 1;
-+       cy_i2c->is_nak_bit = 1;
-+
-+       cy_i2c->i2c_adapter.owner = THIS_MODULE;
-+       cy_i2c->i2c_adapter.class = I2C_CLASS_HWMON;
-+       cy_i2c->i2c_adapter.algo = &i2c_cyusbs23x_algorithm;
-+       cy_i2c->i2c_adapter.algo_data = cyusbs;
-+       snprintf(cy_i2c->i2c_adapter.name, sizeof(cy_i2c->i2c_adapter.name),
-+                       "cyusbs23x_i2c at bus %03d dev %03d intf %03d",
-+                       cyusbs->usb_dev->bus->busnum, cyusbs->usb_dev->devnum,
-+                       cyusbs->intf_num);
-+       cy_i2c->i2c_adapter.dev.parent = &pdev->dev;
-+       cy_i2c->i2c_adapter.dev.groups = cyusbs_i2c_device_groups;
-+
-+       ret = cy_get_i2c_config(cyusbs, cy_i2c);
-+       if (ret < 0) {
-+               dev_err(&pdev->dev, "error to get i2c config\n");
-+               goto error;
-+       }
-+
-+       if (!cy_i2c->i2c_config->is_master) {
-+               ret = -ENODEV;
-+               dev_err(&pdev->dev, "not an I2C master\n");
-+               goto error;
-+       }
-+
-+       ret = i2c_add_adapter(&cy_i2c->i2c_adapter);
-+       if (ret != 0) {
-+               dev_err(&pdev->dev, "failed to add i2c adapter\n");
-+               goto error;
-+       }
-+
-+       platform_set_drvdata(pdev, cy_i2c);
-+
-+       dev_dbg(&pdev->dev, "added I2C adapter\n");
-+       return 0;
-+
-+error:
-+       dev_err(&pdev->dev, "error occurred %d\n", ret);
-+       return ret;
-+}
-+
-+static int cyusbs23x_i2c_remove(struct platform_device *pdev)
-+{
-+       struct cyusbs_i2c *cy_i2c = platform_get_drvdata(pdev);
-+
-+       dev_dbg(&pdev->dev, "%s\n", __func__);
-+       i2c_del_adapter(&cy_i2c->i2c_adapter);
-+       return 0;
-+}
-+
-+static struct platform_driver cyusbs23x_i2c_driver = {
-+       .driver.name    = "cyusbs23x-i2c",
-+       .probe          = cyusbs23x_i2c_probe,
-+       .remove         = cyusbs23x_i2c_remove,
-+};
-+
-+module_platform_driver(cyusbs23x_i2c_driver);
-+
-+MODULE_AUTHOR("Rajaram Regupathy <rera@cypress.com>");
-+MODULE_AUTHOR("Muthu Mani <muth@cypress.com>");
-+MODULE_DESCRIPTION("I2C adapter driver for CYUSBS23x");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:cyusbs23x-i2c");
---
-1.8.3.2
+This patch depends on:
+(0) - Viresh's change in cpufreq layer and cpufreq-dt (up to patch 4):
+https://patchwork.kernel.org/patch/5390731/
+https://patchwork.kernel.org/patch/5390741/
+https://patchwork.kernel.org/patch/5390751/
+https://patchwork.kernel.org/patch/5390761/
+(1) - fix of thermal core:
+https://patchwork.kernel.org/patch/5326991/
 
 
-This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
+BR,
+
+Eduardo Valentin
+
+diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+index 1ab0018..88d2775 100644
+--- a/drivers/thermal/cpu_cooling.c
++++ b/drivers/thermal/cpu_cooling.c
+@@ -440,6 +440,9 @@ __cpufreq_cooling_register(struct device_node *np,
+ 	int ret = 0, i;
+ 	struct cpufreq_policy policy;
+ 
++	if (!cpufreq_frequency_get_table(0))
++		return ERR_PTR(-EPROBE_DEFER);
++
+ 	/* Verify that all the clip cpus have same freq_min, freq_max limit */
+ 	for_each_cpu(i, clip_cpus) {
+ 		/* continue if cpufreq policy not found and not return error */
+diff --git a/drivers/thermal/db8500_cpufreq_cooling.c b/drivers/thermal/db8500_cpufreq_cooling.c
+index 786d192..1ac7ec6 100644
+--- a/drivers/thermal/db8500_cpufreq_cooling.c
++++ b/drivers/thermal/db8500_cpufreq_cooling.c
+@@ -18,7 +18,6 @@
+  */
+ 
+ #include <linux/cpu_cooling.h>
+-#include <linux/cpufreq.h>
+ #include <linux/err.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+@@ -30,10 +29,6 @@ static int db8500_cpufreq_cooling_probe(struct platform_device *pdev)
+ 	struct thermal_cooling_device *cdev;
+ 	struct cpumask mask_val;
+ 
+-	/* make sure cpufreq driver has been initialized */
+-	if (!cpufreq_frequency_get_table(0))
+-		return -EPROBE_DEFER;
+-
+ 	cpumask_set_cpu(0, &mask_val);
+ 	cdev = cpufreq_cooling_register(&mask_val);
+ 
+diff --git a/drivers/thermal/imx_thermal.c b/drivers/thermal/imx_thermal.c
+index 5a1f107..16405b4 100644
+--- a/drivers/thermal/imx_thermal.c
++++ b/drivers/thermal/imx_thermal.c
+@@ -9,7 +9,6 @@
+ 
+ #include <linux/clk.h>
+ #include <linux/cpu_cooling.h>
+-#include <linux/cpufreq.h>
+ #include <linux/delay.h>
+ #include <linux/device.h>
+ #include <linux/init.h>
+@@ -459,10 +458,6 @@ static int imx_thermal_probe(struct platform_device *pdev)
+ 	int measure_freq;
+ 	int ret;
+ 
+-	if (!cpufreq_get_current_driver()) {
+-		dev_dbg(&pdev->dev, "no cpufreq driver!");
+-		return -EPROBE_DEFER;
+-	}
+ 	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
+ 	if (!data)
+ 		return -ENOMEM;
+diff --git a/drivers/thermal/samsung/exynos_thermal_common.c b/drivers/thermal/samsung/exynos_thermal_common.c
+index 3f5ad25..d4eaa1b 100644
+--- a/drivers/thermal/samsung/exynos_thermal_common.c
++++ b/drivers/thermal/samsung/exynos_thermal_common.c
+@@ -371,9 +371,10 @@ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
+ 		th_zone->cool_dev[th_zone->cool_dev_size] =
+ 					cpufreq_cooling_register(&mask_val);
+ 		if (IS_ERR(th_zone->cool_dev[th_zone->cool_dev_size])) {
+-			dev_err(sensor_conf->dev,
+-				"Failed to register cpufreq cooling device\n");
+-			ret = -EINVAL;
++			ret = PTR_ERR(th_zone->cool_dev[th_zone->cool_dev_size]);
++			if (ret != -EPROBE_DEFER)
++				dev_err(sensor_conf->dev,
++					"Failed to register cpufreq cooling device\n");
+ 			goto err_unregister;
+ 		}
+ 		th_zone->cool_dev_size++;
+diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+index 2a1c4c7..d4429a5 100644
+--- a/drivers/thermal/samsung/exynos_tmu.c
++++ b/drivers/thermal/samsung/exynos_tmu.c
+@@ -927,7 +927,9 @@ static int exynos_tmu_probe(struct platform_device *pdev)
+ 	/* Register the sensor with thermal management interface */
+ 	ret = exynos_register_thermal(sensor_conf);
+ 	if (ret) {
+-		dev_err(&pdev->dev, "Failed to register thermal interface\n");
++		if (ret != -EPROBE_DEFER)
++			dev_err(&pdev->dev,
++				"Failed to register thermal interface\n");
+ 		goto err_clk;
+ 	}
+ 	data->reg_conf = sensor_conf;
+diff --git a/drivers/thermal/ti-soc-thermal/ti-thermal-common.c b/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
+index 5fd0386..cf88585 100644
+--- a/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
++++ b/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
+@@ -28,7 +28,6 @@
+ #include <linux/kernel.h>
+ #include <linux/workqueue.h>
+ #include <linux/thermal.h>
+-#include <linux/cpufreq.h>
+ #include <linux/cpumask.h>
+ #include <linux/cpu_cooling.h>
+ #include <linux/of.h>
+@@ -407,11 +406,6 @@ int ti_thermal_register_cpu_cooling(struct ti_bandgap *bgp, int id)
+ 	if (!data)
+ 		return -EINVAL;
+ 
+-	if (!cpufreq_get_current_driver()) {
+-		dev_dbg(bgp->dev, "no cpufreq driver yet\n");
+-		return -EPROBE_DEFER;
+-	}
+-
+ 	/* Register cooling device */
+ 	data->cool_dev = cpufreq_cooling_register(cpu_present_mask);
+ 	if (IS_ERR(data->cool_dev)) {
+-- 
+2.1.3
+
