@@ -1,62 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738AbaK1QO7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 11:14:59 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37194 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111AbaK1QO6 (ORCPT
+	id S1751658AbaK1QQw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 11:16:52 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:32854 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041AbaK1QQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 11:14:58 -0500
-Message-ID: <1417191262.3721.6.camel@pengutronix.de>
-Subject: Re: [PATCH v13 0/12] dw-hdmi: convert imx hdmi to bridge/dw_hdmi
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Andy Yan <andy.yan@rock-chips.com>
-Cc: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Date: Fri, 28 Nov 2014 17:14:22 +0100
-In-Reply-To: <547846F7.3080708@rock-chips.com>
-References: <1417008157-31861-1-git-send-email-andy.yan@rock-chips.com>
-	 <1417018856.3177.6.camel@pengutronix.de> <547846F7.3080708@rock-chips.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 28 Nov 2014 11:16:50 -0500
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Daniel Drake <drake@endlessm.com>,
+        Dmitry Pervushin <dpervushin@gmail.com>,
+        Tim Sander <tim@krieglstein.org>, Stephen Boyd <sboyd@codeaurora.org>
+Subject: [PATCH 3.18-rc4 v12 0/5] arm: Implement arch_trigger_all_cpu_backtrace
+Date: Fri, 28 Nov 2014 16:16:09 +0000
+Message-Id: <1417191374-26719-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
+References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 28.11.2014, 17:57 +0800 schrieb Andy Yan:
-> Hi Philipp:
-[...]
->    Very sorry about this trouble. Because I have no imx board, we do all 
-> the test on
-> RK3288 board.
->     I had sent a mail with a debug patch to you directly yesterday, hope 
-> it will helpful.
-> If you have received the mail, would you please give me a reply?
+Hi Thomas, Hi Jason: Patches 1 to 3 are for you.
 
-Yes, that was helpful, thank you.
-I needed to apply Russell's "imx-drm: convert imx-drm to use the generic
-DRM OF helper" patch for drm_of_find_possible_crtcs to work on imx-drm.
+This patchset modifies the GIC driver to allow it, on supported
+platforms, to route IPI interrupts to FIQ and uses this feature to
+implement arch_trigger_all_cpu_backtrace for arm.
 
-regards
-Philipp
+On platforms not capable of supporting FIQ the signal to generate a
+backtrace we fall back to using IRQ for propagation instead (relying on
+a timeout to avoid wedging the CPU requesting the backtrace if other
+CPUs are not responsive).
+
+It has been tested on two systems capable of supporting grouping
+(Freescale i.MX6 and STiH416) and two that do not (vexpress-a9 and
+Qualcomm Snapdragon 600).
+
+v12:
+
+* Squash first two patches into a single one and re-describe
+  (Thomas Gleixner).
+
+* Improve description of "irqchip: gic: Make gic_raise_softirq FIQ-safe"
+  (Thomas Gleixner).
+
+v11:
+
+* Optimized gic_raise_softirq() by replacing a register read with
+  a memory read (Jason Cooper).
+
+v10:
+
+* Add a further patch to optimize away some of the locking on systems
+  where CONFIG_BL_SWITCHER is not set (Marc Zyngier). Compiles OK with
+  exynos_defconfig (which is the only defconfig to set this option).
+
+* Whitespace fixes in patch 4. That patch previously used spaces for
+  alignment of new constants but the rest of the file used tabs.
+
+v9:
+
+* Improved documentation and structure of initial patch (now initial
+  two patches) to make gic_raise_softirq() safe to call from FIQ
+  (Thomas Gleixner).
+
+* Avoid masking interrupts during gic_raise_softirq(). The use of the
+  read lock makes this redundant (because we can safely re-enter the
+  function).
+
+v8:
+
+* Fixed build on arm64 causes by a spurious include file in irq-gic.c.
+
+v7-2 (accidentally released twice with same number):
+
+* Fixed boot regression on vexpress-a9 (reported by Russell King).
+
+* Rebased on v3.18-rc3; removed one patch from set that is already
+  included in mainline.
+
+* Dropped arm64/fiq.h patch from the set (still useful but not related
+  to issuing backtraces).
+
+v7:
+
+* Re-arranged code within the patch series to fix a regression
+  introduced midway through the series and corrected by a later patch
+  (testing by Olof's autobuilder). Tested offending patch in isolation
+  using defconfig identified by the autobuilder.
+
+v6:
+
+* Renamed svc_entry's call_trace argument to just trace (example code
+  from Russell King).
+
+* Fixed mismatched ENDPROC() in __fiq_abt (example code from Russell
+  King).
+
+* Modified usr_entry to optional avoid calling into the trace code and
+  used this in FIQ entry from usr path. Modified corresponding exit code
+  to avoid calling into trace code and the scheduler (example code from
+  Russell King).
+
+* Ensured the default FIQ register state is restored when the default
+  FIQ handler is reinstalled (example code from Russell King).
+
+* Renamed no_fiq_insn to dfl_fiq_insn to reflect the effect of adopting
+  a default FIQ handler.
+
+* Re-instated fiq_safe_migration_lock and associated logic in
+  gic_raise_softirq(). gic_raise_softirq() is called by wake_up_klogd()
+  in the console unlock logic.
+
+v5:
+
+* Rebased on 3.17-rc4.
+
+* Removed a spurious line from the final "glue it together" patch
+  that broke the build.
+
+v4:
+
+* Replaced push/pop with stmfd/ldmfd respectively (review of Nicolas
+  Pitre).
+
+* Really fix bad pt_regs pointer generation in __fiq_abt.
+
+* Remove fiq_safe_migration_lock and associated logic in
+  gic_raise_softirq() (review of Russell King)
+
+* Restructured to introduce the default FIQ handler first, before the
+  new features (review of Russell King).
+
+v3:
+
+* Removed redundant header guards from arch/arm64/include/asm/fiq.h
+  (review of Catalin Marinas).
+
+* Moved svc_exit_via_fiq macro to entry-header.S (review of Nicolas
+  Pitre).
+
+v2:
+
+* Restructured to sit nicely on a similar FYI patchset from Russell
+  King. It now effectively replaces the work in progress final patch
+  with something much more complete.
+
+* Implemented (and tested) a Thumb-2 implementation of svc_exit_via_fiq
+  (review of Nicolas Pitre)
+
+* Dropped the GIC group 0 workaround patch. The issue of FIQ interrupts
+  being acknowledged by the IRQ handler does still exist but should be
+  harmless because the IRQ handler will still wind up calling
+  ipi_cpu_backtrace().
+
+* Removed any dependency on CONFIG_FIQ; all cpu backtrace effectively
+  becomes a platform feature (although the use of non-maskable
+  interrupts to implement it is best effort rather than guaranteed).
+
+* Better comments highlighting usage of RAZ/WI registers (and parts of
+  registers) in the GIC code.
+
+Changes *before* v1:
+
+* This patchset is a hugely cut-down successor to "[PATCH v11 00/19]
+  arm: KGDB NMI/FIQ support". Thanks to Thomas Gleixner for suggesting
+  the new structure. For historic details see:
+        https://lkml.org/lkml/2014/9/2/227
+
+* Fix bug in __fiq_abt (no longer passes a bad struct pt_regs value).
+  In fixing this we also remove the useless indirection previously
+  found in the fiq_handler macro.
+
+* Make default fiq handler "always on" by migrating from fiq.c to
+  traps.c and replace do_unexp_fiq with the new handler (review
+  of Russell King).
+
+* Add arm64 version of fiq.h (review of Russell King)
+
+* Removed conditional branching and code from irq-gic.c, this is
+  replaced by much simpler code that relies on the GIC specification's
+  heavy use of read-as-zero/write-ignored (review of Russell King)
+
+
+Daniel Thompson (5):
+  irqchip: gic: Optimize locking in gic_raise_softirq
+  irqchip: gic: Make gic_raise_softirq FIQ-safe
+  irqchip: gic: Introduce plumbing for IPI FIQ
+  ARM: add basic support for on-demand backtrace of other CPUs
+  arm: smp: Handle ipi_cpu_backtrace() using FIQ (if available)
+
+ arch/arm/include/asm/irq.h      |   5 +
+ arch/arm/include/asm/smp.h      |   3 +
+ arch/arm/kernel/smp.c           |  64 +++++++++++++
+ arch/arm/kernel/traps.c         |   8 +-
+ drivers/irqchip/irq-gic.c       | 203 +++++++++++++++++++++++++++++++++++++---
+ include/linux/irqchip/arm-gic.h |   8 ++
+ 6 files changed, 275 insertions(+), 16 deletions(-)
+
+--
+1.9.3
 
