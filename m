@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751447AbaK1CVs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 21:21:48 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:48714 "EHLO
+	id S1751536AbaK1CVy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 21:21:54 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:48731 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051AbaK1CVp (ORCPT
+	with ESMTP id S1751017AbaK1CVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 21:21:45 -0500
+	Thu, 27 Nov 2014 21:21:49 -0500
 From: Wang Long <long.wanglong@huawei.com>
 To: <xuwei5@hisilicon.com>, <arnd@arndb.de>, <yanhaifeng@gmail.com>,
         <zhangfei.gao@linaro.org>, <haojian.zhuang@linaro.org>,
@@ -20,9 +20,9 @@ To: <xuwei5@hisilicon.com>, <arnd@arndb.de>, <yanhaifeng@gmail.com>,
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <devicetree@vger.kernel.org>, <peifeiyue@huawei.com>,
         <huxinwei@huawei.com>
-Subject: [PATCH 1/7] ARM: debug: add HiP01 debug uart
-Date: Fri, 28 Nov 2014 02:15:44 +0000
-Message-ID: <1417140950-67103-2-git-send-email-long.wanglong@huawei.com>
+Subject: [PATCH 7/7] ARM: hisi: enable smp for HiP01
+Date: Fri, 28 Nov 2014 02:15:50 +0000
+Message-ID: <1417140950-67103-8-git-send-email-long.wanglong@huawei.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1417140950-67103-1-git-send-email-long.wanglong@huawei.com>
 References: <1417140950-67103-1-git-send-email-long.wanglong@huawei.com>
@@ -34,49 +34,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the support of Hisilicon HiP01 debug uart.
-The uart of hip01 is 8250 compatible.
+enable smp for HiP01 board.
 
 Signed-off-by: Wang Long <long.wanglong@huawei.com>
 ---
- arch/arm/Kconfig.debug | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/arm/boot/dts/hip01-ca9x2.dts |  1 +
+ arch/arm/mach-hisi/core.h         |  3 +++
+ arch/arm/mach-hisi/hotplug.c      | 31 ++++++++++++++++++++++++
+ arch/arm/mach-hisi/platsmp.c      | 50 +++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 85 insertions(+)
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index d8f6a2e..ab65e58 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -240,6 +240,14 @@ choice
- 		  Say Y here if you want the debug print routines to direct
- 		  their output to the UART on Highbank based devices.
+diff --git a/arch/arm/boot/dts/hip01-ca9x2.dts b/arch/arm/boot/dts/hip01-ca9x2.dts
+index 619d024..605d6b3 100644
+--- a/arch/arm/boot/dts/hip01-ca9x2.dts
++++ b/arch/arm/boot/dts/hip01-ca9x2.dts
+@@ -25,6 +25,7 @@
+ 	cpus {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
++		enable-method = "hisilicon,hip01-smp";
  
-+	config DEBUG_HIP01_UART
-+		bool "Hisilicon Hip01 Debug UART"
-+		depends on ARCH_HIP01
-+		select DEBUG_UART_8250
-+		help
-+		  Say Y here if you want kernel low-level debugging support
-+		  on HIP01 UART.
+ 		cpu@0 {
+ 			device_type = "cpu";
+diff --git a/arch/arm/mach-hisi/core.h b/arch/arm/mach-hisi/core.h
+index 75520b0..92a682d 100644
+--- a/arch/arm/mach-hisi/core.h
++++ b/arch/arm/mach-hisi/core.h
+@@ -17,4 +17,7 @@ extern struct smp_operations hix5hd2_smp_ops;
+ extern void hix5hd2_set_cpu(int cpu, bool enable);
+ extern void hix5hd2_cpu_die(unsigned int cpu);
+ 
++extern struct smp_operations hip01_smp_ops;
++extern void hip01_set_cpu(int cpu, bool enable);
++extern void hip01_cpu_die(unsigned int cpu);
+ #endif
+diff --git a/arch/arm/mach-hisi/hotplug.c b/arch/arm/mach-hisi/hotplug.c
+index 84e6919..a129aae 100644
+--- a/arch/arm/mach-hisi/hotplug.c
++++ b/arch/arm/mach-hisi/hotplug.c
+@@ -65,6 +65,9 @@
+ #define PMC0_CPU1_PMC_ENABLE		(1 << 7)
+ #define PMC0_CPU1_POWERDOWN		(1 << 3)
+ 
++#define HIP01_PERI9                    0x50
++#define PERI9_CPU1_RESET               (1 << 1)
 +
- 	config DEBUG_HIP04_UART
- 		bool "Hisilicon HiP04 Debug UART"
- 		depends on ARCH_HIP04
-@@ -1117,6 +1125,7 @@ config DEBUG_UART_PHYS
- 	default 0x16000000 if ARCH_INTEGRATOR
- 	default 0x18000300 if DEBUG_BCM_5301X
- 	default 0x1c090000 if DEBUG_VEXPRESS_UART0_RS1
-+	default 0x20001000 if DEBUG_HIP01_UART
- 	default 0x20060000 if DEBUG_RK29_UART0
- 	default 0x20064000 if DEBUG_RK29_UART1 || DEBUG_RK3X_UART2
- 	default 0x20068000 if DEBUG_RK29_UART2 || DEBUG_RK3X_UART3
-@@ -1240,6 +1249,7 @@ config DEBUG_UART_VIRT
- 	default 0xfef36000 if DEBUG_HIGHBANK_UART
- 	default 0xfefff700 if ARCH_IOP33X
- 	default 0xff003000 if DEBUG_U300_UART
-+	default 0xffd01000 if DEBUG_HIP01_UART
- 	default DEBUG_UART_PHYS if !MMU
- 	depends on DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
- 		DEBUG_UART_8250 || DEBUG_UART_PL01X || DEBUG_MESON_UARTAO || \
+ enum {
+ 	HI3620_CTRL,
+ 	ERROR_CTRL,
+@@ -209,6 +212,34 @@ void hix5hd2_set_cpu(int cpu, bool enable)
+ 	}
+ }
+ 
++void hip01_set_cpu(int cpu, bool enable)
++{
++	unsigned int temp;
++	struct device_node *np;
++
++	if (!ctrl_base) {
++		np = of_find_compatible_node(NULL, NULL, "hisilicon,hip01-sysctrl");
++		if (np)
++			ctrl_base = of_iomap(np, 0);
++		else
++			BUG();
++	}
++
++	if (enable) {
++		/* reset on CPU1  */
++		temp = readl_relaxed(ctrl_base + HIP01_PERI9);
++		temp |= PERI9_CPU1_RESET;
++		writel_relaxed(temp, ctrl_base + HIP01_PERI9);
++
++		udelay(50);
++
++		/* unreset on CPU1 */
++		temp = readl_relaxed(ctrl_base + HIP01_PERI9);
++		temp &= ~PERI9_CPU1_RESET;
++		writel_relaxed(temp, ctrl_base + HIP01_PERI9);
++	}
++}
++
+ static inline void cpu_enter_lowpower(void)
+ {
+ 	unsigned int v;
+diff --git a/arch/arm/mach-hisi/platsmp.c b/arch/arm/mach-hisi/platsmp.c
+index 4a70f56..8880c8e 100644
+--- a/arch/arm/mach-hisi/platsmp.c
++++ b/arch/arm/mach-hisi/platsmp.c
+@@ -10,10 +10,12 @@
+ #include <linux/smp.h>
+ #include <linux/io.h>
+ #include <linux/of_address.h>
++#include <linux/delay.h>
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/smp_plat.h>
+ #include <asm/smp_scu.h>
++#include <asm/mach/map.h>
+ 
+ #include "core.h"
+ 
+@@ -132,5 +134,53 @@ struct smp_operations hix5hd2_smp_ops __initdata = {
+ #endif
+ };
+ 
++
++#define SC_SCTL_REMAP_CLR      0x00000100
++#define HIP01_BOOT_ADDRESS     0x80000000
++#define REG_SC_CTRL            0x000
++
++void hip01_set_boot_addr(phys_addr_t start_addr, phys_addr_t jump_addr)
++{
++	void __iomem *virt;
++
++	virt = phys_to_virt(start_addr);
++
++	writel_relaxed(0xe51ff004, virt);
++	writel_relaxed(jump_addr, virt + 4);
++}
++
++static int hip01_boot_secondary(unsigned int cpu, struct task_struct *idle)
++{
++	phys_addr_t jumpaddr;
++	unsigned int remap_reg_value = 0;
++	struct device_node *node;
++
++
++	jumpaddr = virt_to_phys(hisi_secondary_startup);
++	hip01_set_boot_addr(HIP01_BOOT_ADDRESS, jumpaddr);
++
++	node = of_find_compatible_node(NULL, NULL, "hisilicon,hip01-sysctrl");
++	if (WARN_ON(!node))
++		return -1;
++	ctrl_base = of_iomap(node, 0);
++
++	/* set the secondary core boot from DDR */
++	remap_reg_value = readl_relaxed(ctrl_base + REG_SC_CTRL);
++	barrier();
++	remap_reg_value |= SC_SCTL_REMAP_CLR;
++	barrier();
++	writel_relaxed(remap_reg_value, ctrl_base + REG_SC_CTRL);
++
++	hip01_set_cpu(cpu, true);
++
++	return 0;
++}
++
++struct smp_operations hip01_smp_ops __initdata = {
++	.smp_prepare_cpus       = hisi_common_smp_prepare_cpus,
++	.smp_boot_secondary     = hip01_boot_secondary,
++};
++
+ CPU_METHOD_OF_DECLARE(hi3xxx_smp, "hisilicon,hi3620-smp", &hi3xxx_smp_ops);
+ CPU_METHOD_OF_DECLARE(hix5hd2_smp, "hisilicon,hix5hd2-smp", &hix5hd2_smp_ops);
++CPU_METHOD_OF_DECLARE(hip01_smp, "hisilicon,hip01-smp", &hip01_smp_ops);
 -- 
 1.8.3.4
 
