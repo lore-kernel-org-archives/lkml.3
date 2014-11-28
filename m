@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751172AbaK1SYK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 13:24:10 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:59417 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984AbaK1SYI (ORCPT
+	id S1751270AbaK1SYO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 13:24:14 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:36117 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174AbaK1SYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 13:24:08 -0500
+	Fri, 28 Nov 2014 13:24:11 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tony Luck <tony.luck@intel.com>,
@@ -18,118 +18,87 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tony Luck <tony.luck@intel.com>,
         Wu Fengguang <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
         Rik van Riel <riel@redhat.com>,
         Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [RFC PATCH 00/30] cputime: Convert task/cpu cputime accounting to nsecs
-Date: Fri, 28 Nov 2014 19:23:30 +0100
-Message-Id: <1417199040-21044-1-git-send-email-fweisbec@gmail.com>
+Subject: [RFC PATCH 02/30] time: Introduce jiffies64_to_nsecs()
+Date: Fri, 28 Nov 2014 19:23:32 +0100
+Message-Id: <1417199040-21044-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1417199040-21044-1-git-send-email-fweisbec@gmail.com>
+References: <1417199040-21044-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This will be needed for the cputime_t to nsec conversion.
 
-Thomas suggested to store the cpu and task stats in nanoseconds in order
-to avoid back and forth conversion between cputime_t to nsecs.
-
-This patchset does that (plus many fixes and cleanups).
-
-There should be a performance impact for CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
-configurations which account cputime from arch's kernel entrypoint. As
-this config always use cputime_t as a time source, the conversion to nsecs
-is required on each accounting update. This concern only powerpc and s390
-(ia64 also support this mode but its cputime_t wraps nsecs so the conversion
-is a noop there). I'm not sure how much this config is used in powerpc,
-it doesn't appear in its defconfigs and that mode is expected to be a
-bit slower than tick based accounting anyway. But s390 only supports
-this mode (no support for tick based accounting).
-
-But on the other side of the balance, it simplifies the core code a bit.
-
-The patchset isn't complete, I have yet to convert the posix cpu timers
-code as well. I just need to post the current state before moving forward
-to details.
-
-I need to get your opinion on that patchset before going deeper. Is this
-conversion a right direction to take?
-
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-	cpustat/nsecs
-
-HEAD: 3539960cb3be04512d5f601c8e83c8bab658e0c1
-
-Thanks,
-	Frederic
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
+ include/linux/jiffies.h  |  2 ++
+ kernel/time/time.c       | 10 ++++++++++
+ kernel/time/timeconst.bc |  6 ++++++
+ 3 files changed, 18 insertions(+)
 
-Frederic Weisbecker (30):
-      jiffies: Remove HZ > USEC_PER_SEC special case
-      time: Introduce jiffies64_to_nsecs()
-      cputime: Introduce nsecs_to_cputime64()
-      s390: Convert open coded idle time seqcount
-      s390: Translate cputime magic constants to macros
-      s390: Introduce cputime64_to_nsecs()
-      cputime: Convert kcpustat to nsecs
-      apm32: Fix cputime == jiffies assumption
-      alpha: Fix jiffies based cputime assumption
-      cputime: Convert guest time accounting to nsecs
-      cputime: Special API to return old-typed cputime
-      cputime: Convert task/group cputime to nsecs
-      alpha: Convert obsolete cputime_t to nsecs
-      x86: Convert obsolete cputime type to nsecs
-      isdn: Convert obsolete cputime type to nsecs
-      binfmt: Convert obsolete cputime type to nsecs
-      acct: Convert obsolete cputime type to nsecs
-      delaycct: Convert obsolete cputime type to nsecs
-      tsacct: Convert obsolete cputime type to nsecs
-      signal: Convert obsolete cputime type to nsecs
-      cputime: Remove task_cputime_t_scaled
-      u64_stats_sync: Introduce preempt-unsafe readers
-      cputime: Convert irq_time_accounting to use u64_stats_sync
-      cputime: Increment kcpustat directly on irqtime account
-      cputime: Remove temporary irqtime states
-      cputime: Push time to account_user_time() in nanosecs
-      cputime: Push time to account_steal_time() in nanosecs
-      cputime: Push time to account_idle_time() in nanosecs
-      cputime: Push time to account_guest_time() in nanosecs
-      cputime: Push time to account_system_time() in nanosecs
+diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+index c367cbd..1161e5c 100644
+--- a/include/linux/jiffies.h
++++ b/include/linux/jiffies.h
+@@ -288,6 +288,8 @@ static inline u64 jiffies_to_nsecs(const unsigned long j)
+ 	return (u64)jiffies_to_usecs(j) * NSEC_PER_USEC;
+ }
+ 
++extern u64 jiffies64_to_nsecs(u64 j);
++
+ extern unsigned long msecs_to_jiffies(const unsigned int m);
+ extern unsigned long usecs_to_jiffies(const unsigned int u);
+ extern unsigned long timespec_to_jiffies(const struct timespec *value);
+diff --git a/kernel/time/time.c b/kernel/time/time.c
+index e44f6f1..0fe3490 100644
+--- a/kernel/time/time.c
++++ b/kernel/time/time.c
+@@ -715,6 +715,16 @@ u64 nsec_to_clock_t(u64 x)
+ #endif
+ }
+ 
++u64 jiffies64_to_nsecs(u64 j)
++{
++#if !(NSEC_PER_SEC % HZ)
++	return (NSEC_PER_SEC / HZ) * j;
++# else
++	return div_u64(j * HZ_TO_NSEC_NUM, HZ_TO_NSEC_DEN);
++#endif
++}
++EXPORT_SYMBOL(jiffies64_to_nsecs);
++
+ /**
+  * nsecs_to_jiffies64 - Convert nsecs in u64 to jiffies64
+  *
+diff --git a/kernel/time/timeconst.bc b/kernel/time/timeconst.bc
+index 511bdf2..a0ab148 100644
+--- a/kernel/time/timeconst.bc
++++ b/kernel/time/timeconst.bc
+@@ -98,6 +98,12 @@ define timeconst(hz) {
+ 		print "#define HZ_TO_USEC_DEN\t\t", hz/cd, "\n"
+ 		print "#define USEC_TO_HZ_NUM\t\t", hz/cd, "\n"
+ 		print "#define USEC_TO_HZ_DEN\t\t", 1000000/cd, "\n"
++
++		cd=gcd(hz,1000000000)
++		print "#define HZ_TO_NSEC_NUM\t\t", 1000000000/cd, "\n"
++		print "#define HZ_TO_NSEC_DEN\t\t", hz/cd, "\n"
++		print "#define NSEC_TO_HZ_NUM\t\t", hz/cd, "\n"
++		print "#define NSEC_TO_HZ_DEN\t\t", 1000000000/cd, "\n"
+ 		print "\n"
+ 
+ 		print "#endif /* KERNEL_TIMECONST_H */\n"
+-- 
+2.1.3
 
-
- arch/alpha/kernel/osf_sys.c        |  15 ++-
- arch/ia64/kernel/time.c            |   9 +-
- arch/powerpc/kernel/time.c         |  10 +-
- arch/s390/appldata/appldata_os.c   |  16 +--
- arch/s390/include/asm/cputime.h    |  52 +++++----
- arch/s390/include/asm/idle.h       |   3 +-
- arch/s390/kernel/idle.c            |  30 ++---
- arch/s390/kernel/vtime.c           |  15 ++-
- arch/x86/kernel/apm_32.c           |   6 +-
- drivers/cpufreq/cpufreq.c          |   6 +-
- drivers/cpufreq/cpufreq_governor.c |  14 +--
- drivers/isdn/mISDN/stack.c         |   4 +-
- drivers/macintosh/rack-meter.c     |   2 +-
- fs/binfmt_elf.c                    |  15 +--
- fs/binfmt_elf_fdpic.c              |  14 +--
- fs/compat_binfmt_elf.c             |  20 ++--
- fs/proc/array.c                    |  15 ++-
- fs/proc/stat.c                     |  68 +++++------
- fs/proc/uptime.c                   |   6 +-
- include/linux/cputime.h            |  22 ++++
- include/linux/init_task.h          |   2 +-
- include/linux/jiffies.h            |   2 +
- include/linux/kernel_stat.h        |  10 +-
- include/linux/sched.h              |  83 ++++++++++----
- include/linux/u64_stats_sync.h     |  29 +++--
- kernel/acct.c                      |   7 +-
- kernel/delayacct.c                 |   6 +-
- kernel/exit.c                      |   4 +-
- kernel/sched/cputime.c             | 224 ++++++++++++++++++-------------------
- kernel/sched/sched.h               |  44 ++------
- kernel/sched/stats.h               |   8 +-
- kernel/signal.c                    |  12 +-
- kernel/sys.c                       |  16 +--
- kernel/time/itimer.c               |   2 +-
- kernel/time/posix-cpu-timers.c     |  44 ++++----
- kernel/time/time.c                 |  21 +++-
- kernel/time/timeconst.bc           |   6 +
- kernel/tsacct.c                    |  18 +--
- 38 files changed, 475 insertions(+), 405 deletions(-)
