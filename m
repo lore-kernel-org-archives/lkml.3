@@ -1,103 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751366AbaK1JKU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 04:10:20 -0500
-Received: from lvps176-28-13-145.dedicated.hosteurope.de ([176.28.13.145]:38232
-	"EHLO lvps176-28-13-145.dedicated.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750938AbaK1JKJ (ORCPT
+	id S1751270AbaK1JSq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 04:18:46 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:39921 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088AbaK1JSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 04:10:09 -0500
-From: Tim Sander <tim@krieglstein.org>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>
-Subject: Re: [PATCH 3.18-rc3 v9 5/5] arm: smp: Handle ipi_cpu_backtrace() using FIQ (if available)
-Date: Fri, 28 Nov 2014 10:10:04 +0100
-Message-ID: <13373554.4deCsZOMXS@dabox>
-Organization: Sander and Lightning
-User-Agent: KMail/4.14.2 (Linux/3.16.3; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <5475FD02.3030501@linaro.org>
-References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org> <20141126131210.GI3836@n2100.arm.linux.org.uk> <5475FD02.3030501@linaro.org>
+	Fri, 28 Nov 2014 04:18:43 -0500
+Date: Fri, 28 Nov 2014 10:18:40 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Vince Hsu <vinceh@nvidia.com>
+Cc: swarren@wwwdotorg.org, gnurou@gmail.com, pdeschrijver@nvidia.com,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] soc/tegra: fuse: export tegra_sku_info for module use
+Message-ID: <20141128091838.GD5978@ulmo>
+References: <1417162573-19155-1-git-send-email-vinceh@nvidia.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6Nae48J/T25AfBN4"
+Content-Disposition: inline
+In-Reply-To: <1417162573-19155-1-git-send-email-vinceh@nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel, Russell
 
-Am Mittwoch, 26. November 2014, 16:17:06 schrieb Daniel Thompson:
-> On 26/11/14 13:12, Russell King - ARM Linux wrote:
-> > On Wed, Nov 26, 2014 at 01:46:52PM +0100, Tim Sander wrote:
-> >> Hi Daniel
-> >> 
-> >> Am Dienstag, 25. November 2014, 17:26:41 schrieb Daniel Thompson:
-> >>> Previous changes have introduced both a replacement default FIQ handler
-> >>> and an implementation of arch_trigger_all_cpu_backtrace for ARM but
-> >>> these are currently independent of each other.
-> >>> 
-> >>> This patch plumbs together these features making it possible, on
-> >>> platforms
-> >>> that support it, to trigger backtrace using FIQ.
-> >> 
-> >> Does this ipi handler interfere in any way with set_fiq_handler?
-> >> 
-> >> As far as i know there is only one FIQ handler vector so i guess there is
-> >> a
-> >> potential conflict. But i have not worked with IPI's so i might be
-> >> completley wrong.
-> > 
-> > First, the code in arch/arm/kernel/fiq.c should work with this new FIQ
-> > code in that the new FIQ code is used as the "default" handler (as
-> > opposed to the original handler which was a total no-op.)
-> > 
-> > Secondly, use of arch/arm/kernel/fiq.c in a SMP system is really not a
-> > good idea: the FIQ registers are private to each CPU in the system, and
-> > there is no infrastructure to allow fiq.c to ensure that it loads the
-> > right CPU with the register information for the provided handler.
-Well given the races in the GIC v1. i have seen in the chips on my desk 
-initializing with for_each_possible_cpu(cpu) work_on_cpu(cpu,..) is rather 
-easy. 
-> > So, use of arch/arm/kernel/fiq.c and the IPI's use of FIQ /should/ be
-> > mutually exclusive.
-Yes but i digress on the assessment that this a decision between SMP and non-
-SMP usage or the availbility of the GIC.
+--6Nae48J/T25AfBN4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Agree with the above. Just to add...
-> 
-> I am currently working to get NMI features from x86 land running on top
-> of the new default FIQ handler: arch_trigger_all_cpu_backtrace (with
-> Russell's patch), perf, hard lockup detector, kgdb.
-> 
-> However I don't think anything I'm doing makes it very much harder than
-> it already is to use arch/arm/kernel/fiq.c . That said, other then
-> setting the GIC up nicely, I am not doing anything to make it easier either.
-> 
-> I'd like to end up somewhere where if you want the NMI features (and
-> have a suitable device) you just use the default handler and it all just
-> works. If you need *Fast* Interrupt reQuests, proper old school "I want
-> to write an overclocked I2C slave in software" craziness and you can
-> pass on the improved debug features then set_fiq_handler() is still
-> there and still need extremely careful handling.
-Well i am not against these features as they assumably improve the backtrace,
-but it would be nice to have a config option which switches between 
-set_fiq_handler usage and the other conflicting usages of the fiq.
+On Fri, Nov 28, 2014 at 04:16:13PM +0800, Vince Hsu wrote:
+> Signed-off-by: Vince Hsu <vinceh@nvidia.com>
+> ---
+>  drivers/soc/tegra/fuse/fuse-tegra.c | 1 +
+>  1 file changed, 1 insertion(+)
 
-> The only thing I might have done to make your life worse is not provide
-> the code to dynamically shunt all the debug and performance monitoring
-> features back to group 1. All except the hard lockup detector will have
-> logic to fall back statically. This means making it dynamic shouldn't be
-> that hard. However since there is no code in the upstream kernel that
-> would use the code I don't plan to go there myself.
-I don't think this needs to by dynamic, but from a user perspective a config 
-option would be really nice.
+This needs a proper description. You need to explain why modules want to
+use this structure.
 
-Tim
+Ideally this would be part of a series of patches that add modules/code
+that make use of the symbol.
+
+Thierry
+
+--6Nae48J/T25AfBN4
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUeD3uAAoJEN0jrNd/PrOhHDoP/i5ccHqBOXFGJfIJRFTulL1+
+Yf4OlnMp2CrzKykuHj1N4uWw8WX7Nuczs8IxixWMAsVUlwW/4nDYdR+OOWlvZUEd
+z4HhrsQjgCKwE10Gj4n6PUlGUyk5ZG1/IjyTr+Lgdzmx60S9eBmVfF7U/4CQsZVV
+cFJoxd7en7sxJJq6cr8A52HtEypzd7iKHvoVtcHDJqO9019jHJ2ZJYq5OATumV6E
+hA1S/eHg9ZhAgIhTP04oJTZAEufmKpeXgdeZwv06Co/P79rSbMHdVEdUs/UZ/19H
+4Q/98cvpCBwpc6se8sNt9uqnsqvDi8yVDiywUKGDTuD8+qdTCyxc+lBqe+6Yvx9e
+PgpBTDOT4IM4eblkBVuQeqnhAijY3w7Jc48Z2Qt87vKsvMS5F+O+0yIAx5D2qNPg
+WVZn3a7/2H54RdVrb3SP64+HwyWGIQePqECZnV2LxBN51/kkX4I+SMNzSRdzh70z
+Mr7xbgeP1Fr5dd4f8hnzk6q+YOZdc8RqDrhQ3CHnwTX2ZJA+ySp4xHAnstCeZitS
+OMbhT7QCyNvpK5luKIqUEVBW7zwORNSQUU0zgQ6YJvjPe4zjpbGGWJGIJDBxvqs8
+lm8uKKr5p/fSyuAxZ7DqPaWzOyEqNdpNlTdDcl3RMMzvj8QZqBw7hmVqB20sIiWT
+PtWLOzU+BniyGtsW1Ood
+=alb/
+-----END PGP SIGNATURE-----
+
+--6Nae48J/T25AfBN4--
