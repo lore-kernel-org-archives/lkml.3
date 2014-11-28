@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750983AbaK1EUv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 23:20:51 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:48285 "EHLO
+	id S1750996AbaK1E1h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 23:27:37 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:53661 "EHLO
 	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754AbaK1EUu (ORCPT
+	with ESMTP id S1750866AbaK1E1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 23:20:50 -0500
-Subject: [PATCH 1/1] arcmsr: Notify has sense data report
-From: Ching Huang <ching2048@areca.com.tw>
-To: hch@infradead.org, thenzl@redhat.com, jbottomley@parallels.com,
-        dan.carpenter@oracle.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 28 Nov 2014 12:20:44 +0800
-Message-ID: <1417148444.16588.56.camel@Centos6.3-64>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+	Thu, 27 Nov 2014 23:27:35 -0500
+Message-ID: <5477F9B1.2060704@gmail.com>
+Date: Fri, 28 Nov 2014 09:57:29 +0530
+From: Sanchayan Maity <maitysanchayan@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: a.zummo@towertech.it
+CC: Shawn Guo <shawn.guo@linaro.org>, Stefan Agner <stefan@agner.ch>,
+        rtc-linux@googlegroups.com, linux@arm.linux.org.uk,
+        kernel@pengutronix.de, b35083@freescale.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [[PATCHv2] 3/3] drivers/rtc/rtc-snvs: Add clock support
+References: <cover.1415364391.git.maitysanchayan@gmail.com> <30e496ce2d6521e608df3b68b73b3e05caa1daef.1415364391.git.maitysanchayan@gmail.com> <7807253ec0fd349b5bb1489e0d3b1347@agner.ch> <546320D3.2030501@gmail.com> <20141112104735.GK2704@dragon> <54644295.2050003@gmail.com> <20141119011721.GA24042@dragon> <546C2164.3040708@gmail.com>
+In-Reply-To: <546C2164.3040708@gmail.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching Huang <ching2048@areca.com.tw>
+On Wednesday 19 November 2014 10:19 AM, Sanchayan Maity wrote:
+> On Wednesday 19 November 2014 06:47 AM, Shawn Guo wrote:
+>> On Thu, Nov 13, 2014 at 11:03:09AM +0530, Sanchayan Maity wrote:
+>>> On Wednesday 12 November 2014 04:17 PM, Shawn Guo wrote:
+>>>> On Wed, Nov 12, 2014 at 02:26:51PM +0530, Sanchayan Maity wrote:
+>>>>> On Wednesday 12 November 2014 02:57 AM, Stefan Agner wrote:
+>>>>>> On 2014-11-07 14:04, Sanchayan Maity wrote:
+>>>>>>> This patch adds clock enable and disable support for
+>>>>>>> the SNVS peripheral, which is required for using the
+>>>>>>> RTC within the SNVS block.
+>>>>>>
+>>>>>> What happens if the device tree node is there while this patch is not
+>>>>>> applied? I guess the driver would load, but since the clocks of the
+>>>>>> peripheral are not enabled the first register access would lead to bus
+>>>>>> error or similar. If this is the case, this would break bisectability.
+>>>>>> You should move the device tree patch to the end.
+>>>>>>
+>>>>>
+>>>>> If the DT node was present with this patch not applied, the driver would 
+>>>>> still crash with a bus error, since the clocks for SNVS are not explicitly 
+>>>>> enabled anywhere else. I had not thought about any problems which might 
+>>>>> occur later with git bisect. Will move this to the end with v3.
+>>>>
+>>>> Since changes on rtc-snvs.c will need to go through RTC subsystem tree,
+>>>> that means I cannot apply DTS changes until the driver patch gets
+>>>> mainlined and appears on my tree.
+>>>>
+>>>> Shawn
+>>>
+>>> Shawn
+>>>
+>>> So the approach in this patch is OK and acceptable? 
+>>
+>> Yes, I'm fine with it.
+>>
+>> Shawn
+> 
+> 
+> Hello Alessandro, 
+> 
+> Sorry I missed adding you while sending this patch set.
+> 
+> Can you take this third patch, in this series through your RTC subsytem
+> tree? Or should I resend this third patch separately?
 
-This patch is relative to http://git.infradead.org/users/hch/scsi-queue.git/tree/refs/heads/drivers-for-3.18:/drivers/scsi/arcmsr
-
-Setting command status with 'DRIVER_SENSE' except 'CHECK_CONDITION' if we have sense data.
-
-Signed-off-by: Ching Huang <ching2048@areca.com.tw>
----
-
-diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
---- a/drivers/scsi/arcmsr/arcmsr.h	2014-09-19 11:04:41.845100000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr.h	2014-11-28 10:54:30.000000000 +0800
-@@ -52,7 +52,7 @@ struct device_attribute;
- 	#define ARCMSR_MAX_FREECCB_NUM	320
- #define ARCMSR_MAX_OUTSTANDING_CMD	255
- #endif
--#define ARCMSR_DRIVER_VERSION		"v1.30.00.04-20140919"
-+#define ARCMSR_DRIVER_VERSION		"v1.30.00.05-20141128"
- #define ARCMSR_SCSI_INITIATOR_ID						255
- #define ARCMSR_MAX_XFER_SECTORS							512
- #define ARCMSR_MAX_XFER_SECTORS_B						4096
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-09-19 11:01:26.990090000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-11-28 10:55:54.000000000 +0800
-@@ -989,7 +989,8 @@ static void arcmsr_report_sense_info(str
- 
- 	struct scsi_cmnd *pcmd = ccb->pcmd;
- 	struct SENSE_DATA *sensebuffer = (struct SENSE_DATA *)pcmd->sense_buffer;
--	pcmd->result = DID_OK << 16;
-+
-+	pcmd->result = (DID_OK << 16) | (CHECK_CONDITION << 1);
- 	if (sensebuffer) {
- 		int sense_data_length =
- 			sizeof(struct SENSE_DATA) < SCSI_SENSE_BUFFERSIZE
-@@ -998,6 +999,7 @@ static void arcmsr_report_sense_info(str
- 		memcpy(sensebuffer, ccb->arcmsr_cdb.SenseData, sense_data_length);
- 		sensebuffer->ErrorCode = SCSI_SENSE_CURRENT_ERRORS;
- 		sensebuffer->Valid = 1;
-+		pcmd->result |= (DRIVER_SENSE << 24);
- 	}
- }
- 
-
-
+Ping? Any inputs? Should I resend or is this Ok?
+> 
+> Regards,
+> Sanchayan.
+> 
+>>
+>>>
+>>> Since the DT changes cannot be applied by you, till this goes through the 
+>>> RTC subsystem tree, gets mainlined and appears on your tree, I will send out 
+>>> this patch by itself then and send the DT changes later once this gets
+>>> mainlined?
+>>>
+>>> I did not CC Alessandro Zummo, the maintainer of RTC subsystem by mistake.
+>>> Once you ACK/OK this i will send out this patch in isolation then or just 
+>>> CC Alessandro Zummo.
