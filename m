@@ -1,155 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751046AbaK1ROl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 12:14:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32893 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750890AbaK1ROk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 12:14:40 -0500
-Date: Fri, 28 Nov 2014 18:14:35 +0100
-From: Petr Mladek <pmladek@suse.cz>
-To: Seth Jennings <sjenning@redhat.com>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Miroslav Benes <mbenes@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] livepatch: clean up klp_find_object_module() usage: was: Re:
- [PATCHv4 2/3] kernel: add support for live patching
-Message-ID: <20141128171435.GE32376@dhcp128.suse.cz>
-References: <1416935709-404-1-git-send-email-sjenning@redhat.com>
- <1416935709-404-3-git-send-email-sjenning@redhat.com>
- <20141128170735.GD32376@dhcp128.suse.cz>
+	id S1751198AbaK1RPq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 12:15:46 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:49712 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898AbaK1RPo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 12:15:44 -0500
+Date: Fri, 28 Nov 2014 11:09:35 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Linux PM <linux-pm@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Lukasz Majewski <l.majewski@samsung.com>, devicetree@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        linux-samsung-soc@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv3 1/1] thermal: cpu_cooling: check for the readiness of
+ cpufreq layer
+Message-ID: <20141128150932.GA24720@developer>
+References: <1417186410-24551-1-git-send-email-edubezval@gmail.com>
+ <20141128171024.GW3836@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="a8Wt8u1KmwUX3Y2C"
 Content-Disposition: inline
-In-Reply-To: <20141128170735.GD32376@dhcp128.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141128171024.GW3836@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2014-11-28 18:07:37, Petr Mladek wrote:
-> On Tue 2014-11-25 11:15:08, Seth Jennings wrote:
-> > This commit introduces code for the live patching core.  It implements
-> > an ftrace-based mechanism and kernel interface for doing live patching
-> > of kernel and kernel module functions.
 
-[...]
+--a8Wt8u1KmwUX3Y2C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > +/* sets obj->mod if object is not vmlinux and module is found */
-> > +static bool klp_find_object_module(struct klp_object *obj)
-> > +{
-> > +	if (!obj->name)
-> > +		return 1;
-> > +
-> > +	mutex_lock(&module_mutex);
-> > +	/*
-> > +	 * We don't need to take a reference on the module here because we have
-> > +	 * the klp_mutex, which is also taken by the module notifier.  This
-> > +	 * prevents any module from unloading until we release the klp_mutex.
-> > +	 */
-> > +	obj->mod = find_module(obj->name);
-> > +	mutex_unlock(&module_mutex);
-> > +
-> > +	return !!obj->mod;
-> 
-> I know that this is effective to return boolean here because
-> it handles also patch against the kernel core (vmlinux). But
-> the logic looks tricky. I would prefer a cleaner design and
-> use this function only to set obj->mod.
-> 
-> I wanted to see how it would look like, so I will send a patch for
-> this in a separate mail.
+Russel,
 
-The patch is below. Of course, merge it into the original
-patch if you agree with the idea, please.
+On Fri, Nov 28, 2014 at 05:10:24PM +0000, Russell King - ARM Linux wrote:
+> On Fri, Nov 28, 2014 at 10:53:30AM -0400, Eduardo Valentin wrote:
+> > diff --git a/drivers/thermal/samsung/exynos_thermal_common.c b/drivers/=
+thermal/samsung/exynos_thermal_common.c
+> > index 3f5ad25..d4eaa1b 100644
+> > --- a/drivers/thermal/samsung/exynos_thermal_common.c
+> > +++ b/drivers/thermal/samsung/exynos_thermal_common.c
+> > @@ -371,9 +371,10 @@ int exynos_register_thermal(struct thermal_sensor_=
+conf *sensor_conf)
+> >  		th_zone->cool_dev[th_zone->cool_dev_size] =3D
+> >  					cpufreq_cooling_register(&mask_val);
+> >  		if (IS_ERR(th_zone->cool_dev[th_zone->cool_dev_size])) {
+> > -			dev_err(sensor_conf->dev,
+> > -				"Failed to register cpufreq cooling device\n");
+> > -			ret =3D -EINVAL;
+> > +			ret =3D PTR_ERR(th_zone->cool_dev[th_zone->cool_dev_size]);
+> > +			if (ret !=3D -EPROBE_DEFER)
+> > +				dev_err(sensor_conf->dev,
+> > +					"Failed to register cpufreq cooling device\n");
+>=20
+> Something which bugs me quite a lot is when there is an error code (which
+> tells you why something didn't work) and you have an error message, and
+> the error message doesn't bother printing the error code.
+>=20
+> You might as well just print "Failed\n" and leave it at that, or md5sum
+> the error message and print the sum instead. :)
+>=20
+
+I like the md5sum better! :-)
 
 
->From 93eb9f9a25ad8aa0301e246f7685d3e787037566 Mon Sep 17 00:00:00 2001
-From: Petr Mladek <pmladek@suse.cz>
-Date: Fri, 28 Nov 2014 15:32:27 +0100
-Subject: [PATCH 1/2] livepatch: clean up klp_find_object_module() usage
+> Knowing why something failed allows you to read the source, and find
+> possible reasons for the failure (which could come down to one reason)
+> and allows faster resolution of the problem.
+>=20
 
-The function klp_find_object_module() looks quite tricky. It has two effects:
-sets obj->mod and decides whether the module is available or not. The second
-effect is the tricky part because it handles also the code kernel code "vmlinux"
-and is not module related. It causes returning bool, and doing the crazy double
-negation.
+Sure. I will resend with the error codes in the error messages. Makes
+completely sense.
 
-This patch tries to make a bit cleaner design:
+Thanks for taking the time and reviewing.
 
-1. klp_find_object_module() handles only obj->mod. It returns
-   the pointer or NULL.
 
-2. It modifies klp_enable_object() to do nothing when the related
-   module has not been loaded yet.
+Eduardo Valentin
 
-3. The result is that the return value klp_find_object_module() is
-   not used in the end.
+> --=20
+> FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+> according to speedtest.net.
 
-We lose a check for potential klp_enable_object() misuse but it makes the code
-easier. In fact, the check for unloaded module is rather long. We might want
-to make it easier using some extra flag or another state of the object.
-Such flag might be used for the check of misuse.
+--a8Wt8u1KmwUX3Y2C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Signed-off-by: Petr Mladek <pmladek@suse.cz>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
----
- kernel/livepatch/core.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+iQEcBAEBAgAGBQJUeJAhAAoJEMLUO4d9pOJWNtgIAIVUhNPVtwVWHQGEfglfo9P9
+8lluSQs00PNqhA6zkn7nz9emKkhkiUKebxCRa3ni9Rf/SwWAGf4a70jO5/7xoHIB
+yq0DHIjVDf2s7H+EpaAisuDCU5i2SRxTPg+r9CMM2hZWMczQ5SEkuMJ3LvoifhJ6
+bXpTXw14vv/2Ko2LaOp1fM3zUnbCleVILpn+MWPgwIBz8TQSQQrJQ+KELzxvLZtB
+vLrnFa9K9wPZMWZcwCXRY+2aklaayMgcRWCcEBNzxcZ6hi8m6068Kow0d8LvHcQo
+hmWvxaaHlyFuMvSaaYik374PlMrB0OY1NqqIJgExoqYsWMkd7f0XaIjspOq6NP8=
+=0+hj
+-----END PGP SIGNATURE-----
 
-diff --git a/kernel/livepatch/core.c b/kernel/livepatch/core.c
-index 8e2e8cd242f5..9b1601729014 100644
---- a/kernel/livepatch/core.c
-+++ b/kernel/livepatch/core.c
-@@ -40,10 +40,10 @@ static LIST_HEAD(klp_patches);
- static struct kobject *klp_root_kobj;
- 
- /* sets obj->mod if object is not vmlinux and module is found */
--static bool klp_find_object_module(struct klp_object *obj)
-+static struct module *klp_find_object_module(struct klp_object *obj)
- {
- 	if (!obj->name)
--		return 1;
-+		return NULL;
- 
- 	mutex_lock(&module_mutex);
- 	/*
-@@ -54,7 +54,7 @@ static bool klp_find_object_module(struct klp_object *obj)
- 	obj->mod = find_module(obj->name);
- 	mutex_unlock(&module_mutex);
- 
--	return !!obj->mod;
-+	return obj->mod;
- }
- 
- struct klp_find_arg {
-@@ -318,8 +318,9 @@ static int klp_enable_object(struct module *pmod, struct klp_object *obj)
- 	struct klp_func *func;
- 	int ret;
- 
--	if (WARN_ON(!obj->mod && obj->name))
--		return -EINVAL;
-+	/* nope when the patched module has not been loaded yet */
-+	if (obj->name && !obj->mod)
-+		return 0;
- 
- 	if (obj->relocs) {
- 		ret = klp_write_object_relocations(pmod, obj);
-@@ -401,8 +402,7 @@ static int __klp_enable_patch(struct klp_patch *patch)
- 	pr_notice("enabling patch '%s'\n", patch->mod->name);
- 
- 	for (obj = patch->objs; obj->funcs; obj++) {
--		if (!klp_find_object_module(obj))
--			continue;
-+		klp_find_object_module(obj);
- 		ret = klp_enable_object(patch->mod, obj);
- 		if (ret)
- 			goto unregister;
--- 
-1.8.5.2
-
+--a8Wt8u1KmwUX3Y2C--
