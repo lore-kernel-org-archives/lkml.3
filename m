@@ -1,94 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583AbaK1Dhc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 22:37:32 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:31577 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503AbaK1DhE (ORCPT
+	id S1751394AbaK1Dja (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 22:39:30 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:35411 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751234AbaK1Dj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 22:37:04 -0500
-From: Ethan Zhao <ethan.zhao@oracle.com>
-To: dirk.j.brandewie@intel.com, viresh.kumar@linaro.org, rjw@rjwysocki.net,
-        corbet@lwn.net
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, ethan.kernel@gmail.com, joe.jin@oracle.com,
-        brian.maly@oracle.com, Ethan Zhao <ethan.zhao@oracle.com>
-Subject: [PATCH 2/2 V6] intel_pstate: add kernel parameter to force loading on Sun X86 servers.
-Date: Fri, 28 Nov 2014 12:36:17 +0900
-Message-Id: <1417145777-21897-4-git-send-email-ethan.zhao@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1417145777-21897-1-git-send-email-ethan.zhao@oracle.com>
-References: <1417145777-21897-1-git-send-email-ethan.zhao@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Thu, 27 Nov 2014 22:39:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAFp+6iFcMGTBQDcdK0cbcu0s9a3022nogaUvbPA2ZsCN80hRSA@mail.gmail.com>
+References: <CAFp+6iF-N63YSsdv2a6=MYp_mD=eQY_Oi8=9JVNU5dG0BA7YGQ@mail.gmail.com>
+	<1416834177-11170-1-git-send-email-gautam.vivek@samsung.com>
+	<CAGOxZ51P30BY2sOhUeMRK64CGF1fNcc-63RCXiAqZ6Rgpv3K7Q@mail.gmail.com>
+	<CAFp+6iFcMGTBQDcdK0cbcu0s9a3022nogaUvbPA2ZsCN80hRSA@mail.gmail.com>
+Date: Fri, 28 Nov 2014 09:09:28 +0530
+Message-ID: <CAFp+6iFaf_RMprLCLXK=o=KGSTQuVL3geKx5yfevTuvFdjYLNg@mail.gmail.com>
+Subject: Re: [PATCH V2 1/2] pinctrl: exynos: Add BUS1 pin controller for exynos7
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alim Akhtar <alim.akhtar@gmail.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        "robh+dt" <robh+dt@kernel.org>, kgene <kgene@kernel.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To force loading on Oracle Sun X86 servers, provide one kernel command line
-parameter
+Hi Linus,
 
-  intel_pstate = ora_force
 
-For those who be aware of the risk of no power capping capabily working and
-try to get better performance with this driver.
+On Fri, Nov 28, 2014 at 9:05 AM, Vivek Gautam <gautamvivek1987@gmail.com> wrote:
+> Hi Alim,
+>
+>
+> On Wed, Nov 26, 2014 at 7:03 PM, Alim Akhtar <alim.akhtar@gmail.com> wrote:
+>> Hi Vivek,
+>>
+>> On Mon, Nov 24, 2014 at 6:32 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+>>> USB and Power regulator on Exynos7 require gpios available
+>>> in BUS1 pin controller block.
+>>> So adding the BUS1 pinctrl support.
+>>>
+>>> Signed-off-by: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+>>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>>> Cc: Linus Walleij <linus.walleij@linaro.org>
 
-Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
----
- v2: change to hardware vendor specific naming parameter.
- v4: refine code and doc.
- v5&v6: fix a typo in doc.
+If the change looks good, will it be possible to pick it fo 3.19-rc1 ?
+That will really help enabling USB IP on exynos7.
 
- Documentation/kernel-parameters.txt | 5 +++++
- drivers/cpufreq/intel_pstate.c      | 6 +++++-
- 2 files changed, 10 insertions(+), 1 deletion(-)
+>>> ---
+>> Looks good to me.
+>> Thanks!
+>>
+>> Reviewed-by: Alim Akhtar <alim.akhtar@samsung.com>
+>
+> Thanks for the review.
+>
+>>
+>>>
+>>> This patch was part of series:
+>>> "[PATCH 00/11] Exynos7: Adding USB 3.0 support"
+>>>  https://lkml.org/lkml/2014/11/21/247
+>>>
+>>> Changes since V1:
+>>>  - Added support for all pin banks which are part of BUS1 pin controller.
+>>>
+>>>  drivers/pinctrl/samsung/pinctrl-exynos.c |   19 +++++++++++++++++++
+>>>  1 file changed, 19 insertions(+)
+>>>
+>>> diff --git a/drivers/pinctrl/samsung/pinctrl-exynos.c b/drivers/pinctrl/samsung/pinctrl-exynos.c
+>>> index d5d4cfc..44e60dc 100644
+>>> --- a/drivers/pinctrl/samsung/pinctrl-exynos.c
+>>> +++ b/drivers/pinctrl/samsung/pinctrl-exynos.c
+>>> @@ -1300,6 +1300,20 @@ static const struct samsung_pin_bank_data exynos7_pin_banks7[] __initconst = {
+>>>         EXYNOS_PIN_BANK_EINTG(8, 0x060, "gpr3", 0x0c),
+>>>  };
+>>>
+>>> +/* pin banks of exynos7 pin-controller - BUS1 */
+>>> +static const struct samsung_pin_bank_data exynos7_pin_banks8[] __initconst = {
+>>> +       EXYNOS_PIN_BANK_EINTG(8, 0x020, "gpf0", 0x00),
+>>> +       EXYNOS_PIN_BANK_EINTG(8, 0x040, "gpf1", 0x04),
+>>> +       EXYNOS_PIN_BANK_EINTG(4, 0x060, "gpf2", 0x08),
+>>> +       EXYNOS_PIN_BANK_EINTG(5, 0x080, "gpf3", 0x0c),
+>>> +       EXYNOS_PIN_BANK_EINTG(8, 0x0a0, "gpf4", 0x10),
+>>> +       EXYNOS_PIN_BANK_EINTG(8, 0x0c0, "gpf5", 0x14),
+>>> +       EXYNOS_PIN_BANK_EINTG(5, 0x0e0, "gpg1", 0x18),
+>>> +       EXYNOS_PIN_BANK_EINTG(5, 0x100, "gpg2", 0x1c),
+>>> +       EXYNOS_PIN_BANK_EINTG(6, 0x120, "gph1", 0x20),
+>>> +       EXYNOS_PIN_BANK_EINTG(3, 0x140, "gpv6", 0x24),
+>>> +};
+>>> +
+>>>  const struct samsung_pin_ctrl exynos7_pin_ctrl[] __initconst = {
+>>>         {
+>>>                 /* pin-controller instance 0 Alive data */
+>>> @@ -1342,5 +1356,10 @@ const struct samsung_pin_ctrl exynos7_pin_ctrl[] __initconst = {
+>>>                 .pin_banks      = exynos7_pin_banks7,
+>>>                 .nr_banks       = ARRAY_SIZE(exynos7_pin_banks7),
+>>>                 .eint_gpio_init = exynos_eint_gpio_init,
+>>> +       }, {
+>>> +               /* pin-controller instance 8 BUS1 data */
+>>> +               .pin_banks      = exynos7_pin_banks8,
+>>> +               .nr_banks       = ARRAY_SIZE(exynos7_pin_banks8),
+>>> +               .eint_gpio_init = exynos_eint_gpio_init,
+>>>         },
+>>>  };
+>>> --
+>>> 1.7.10.4
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>>
+>>
+>> --
+>> Regards,
+>> Alim
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+>
+> --
+> Best Regards
+> Vivek Gautam
+> Samsung R&D Institute, Bangalore
+> India
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 479f332..7d0983e 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1446,6 +1446,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 		       disable
- 		         Do not enable intel_pstate as the default
- 		         scaling driver for the supported processors
-+		       ora_force
-+			 Force loading intel_pstate on Oracle Sun Servers(X86).
-+			 only for those who be aware of the risk of no power capping
-+			 capability working and try to get better performance with this
-+			 driver.
- 
- 	intremap=	[X86-64, Intel-IOMMU]
- 			on	enable Interrupt Remapping (default)
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 1bb62ca..2654e13 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -866,6 +866,7 @@ static struct cpufreq_driver intel_pstate_driver = {
- };
- 
- static int __initdata no_load;
-+static unsigned int  ora_force;
- 
- static int intel_pstate_msrs_not_valid(void)
- {
-@@ -1003,7 +1004,8 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
- 			case PSS:
- 				return intel_pstate_no_acpi_pss();
- 			case PCC:
--				return intel_pstate_has_acpi_ppc();
-+				return intel_pstate_has_acpi_ppc() &&
-+					(!ora_force);
- 			}
- 	}
- 
-@@ -1078,6 +1080,8 @@ static int __init intel_pstate_setup(char *str)
- 
- 	if (!strcmp(str, "disable"))
- 		no_load = 1;
-+	if (!strcmp(str, "ora_force"))
-+		ora_force = 1;
- 	return 0;
- }
- early_param("intel_pstate", intel_pstate_setup);
+
+
 -- 
-1.8.3.1
-
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
