@@ -1,137 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519AbaK1X6M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 18:58:12 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:58540 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312AbaK1X6K (ORCPT
+	id S1751590AbaK1X6R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 18:58:17 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:41911 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530AbaK1X6O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 18:58:10 -0500
+	Fri, 28 Nov 2014 18:58:14 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141128163807.GN2361@bivouac.eciton.net>
-References: <1417110967-16284-1-git-send-email-leif.lindholm@linaro.org>
- <1417110967-16284-3-git-send-email-leif.lindholm@linaro.org>
- <20141128004403.08D90C40A7F@trevor.secretlab.ca> <20141128113428.GM2361@bivouac.eciton.net>
- <20141128152512.2152EC40884@trevor.secretlab.ca> <20141128163807.GN2361@bivouac.eciton.net>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Fri, 28 Nov 2014 23:57:49 +0000
-X-Google-Sender-Auth: FMVsR6apZFb4aJMvpCHiSBmwmNo
-Message-ID: <CACxGe6vsFOLSL+YXQNJcBZ_nEn9TxdWEe2JEjKw2-zBsEB4Rzw@mail.gmail.com>
-Subject: Re: [PATCH v3 2/3] of: add optional options parameter to? of_find_node_by_path()
-To: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ian Campbell <ijc@debian.org>, Andrew Lunn <andrew@lunn.ch>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <OFCF68BFE0.14A043A7-ON86257D8D.000BF746-86257D8D.000BF749@ni.com>
+References: <1415504283-31321-1-git-send-email-crosthwaite.peter@gmail.com>
+	<1415504283-31321-2-git-send-email-crosthwaite.peter@gmail.com>
+	<548fd9c6edf94ca2b20299895f78b139@BN1AFFO11FD036.protection.gbl>
+	<CAPokK=ovsR--ARj-2rNV6udbPEPqy4bChqC5FJw-u6O=cnHZQA@mail.gmail.com>
+	<a7677222807f4dd3a7d74df647e48598@BL2FFO11FD053.protection.gbl>
+	<CAPokK=ohd6L=ExZ7xQCGpEDj=BbN6RUec2F+=Trz3BCn1Nw-sQ@mail.gmail.com>
+	<OFCF68BFE0.14A043A7-ON86257D8D.000BF746-86257D8D.000BF749@ni.com>
+Date: Sat, 29 Nov 2014 09:58:13 +1000
+Message-ID: <CAPokK=r6qVrpdHrM=NeDabkijQWB3R-r7LKuTcXcYdxLBBqDTQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] arm: dts: zynq: Add Digilent ZYBO board
+From: Peter Crosthwaite <crosthwaitepeter@gmail.com>
+To: Steve Wang <steven.wang@digilentinc.com>
+Cc: linux-kernel@vger.kernel.org, michals@xilinx.com,
+        =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
+        sorenb@xilinx.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 28, 2014 at 4:38 PM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
-> On Fri, Nov 28, 2014 at 03:25:12PM +0000, Grant Likely wrote:
->> On Fri, 28 Nov 2014 11:34:28 +0000
->> , Leif Lindholm <leif.lindholm@linaro.org>
->>  wrote:
->> > On Fri, Nov 28, 2014 at 12:44:03AM +0000, Grant Likely wrote:
->> > > > +       separator = strchr(path, ':');
->> > > > +       if (separator && opts)
->> > > > +               *opts = separator + 1;
->> > > > +
->> > >
->> > > What about when there are no opts? Do we require the caller to make sure
->> > > opts is NULL before calling the function (which sounds like a good
->> > > source of bugs) or do we clear it on successful return?
->> > >
->> > > I think if opts is passed in, but there are no options, then it should
->> > > set *opts = NULL.
->> >
->> > Yeah, oops.
->> >
->> > > There should be test cases for this also. Must set opts to NULL on
->> > > successful return, and (I think) should leave opts alone on an
->> > > unsuccessful search.
->> >
->> > I would actually argue for always nuking the opts - since that could
->> > (theoretically) prevent something working by accident in spite of
->> > error conditions.
->> >
->> > How about the below?
+Hi Steve,
+
+On Tue, Nov 11, 2014 at 12:10 PM, Steve Wang
+<steven.wang@digilentinc.com> wrote:
+> Hi, Peter,
+>
+> According to naming convention, I think "dglnt" is good enough ^.^
+>
+> By the way, I think there is a need to address another issue that needs to
+> be addressed for ZYBO as well (maybe in a separate thread):
+> MAC address pre-load from on-board EEPROM.
+
+So i'm not doing any networking work so I don't have visibility of
+this feature. My understanding though is its an extra feature and
+default networking behaviour provided by the SoC should still be
+functional making this follow up work?
+
+The alternative would be to disable gem in the dts on first commit.
+
+> I think ZYBO might still be the only Zynq-based board that has an on-board
+> EEPROM for MAC address as well.
+>
+
+Is that just software policy though? Should there be DTS level
+awareness of MAC address via EEPROM contents or should the dts just
+describe the EEPROM?
+
+Regards,
+Peter
+
+> Regards,
+> Steve
+>
+> -----Peter Crosthwaite <crosthwaitepeter@gmail.com> wrote: -----
+> To: Sören Brinkmann <soren.brinkmann@xilinx.com>, Steve Wang
+> <steven.wang@digilentinc.com>
+> From: Peter Crosthwaite <crosthwaitepeter@gmail.com>
+> Date: 11/10/2014 02:56PM
+> Cc: linux-kernel@vger.kernel.org, michals@xilinx.com, sorenb@xilinx.com
+> Subject: Re: [PATCH 2/2] arm: dts: zynq: Add Digilent ZYBO board
+>
+>
+> On Tue, Nov 11, 2014 at 8:42 AM, Sören Brinkmann
+> <soren.brinkmann@xilinx.com> wrote:
+>> On Tue, 2014-11-11 at 08:39AM +1000, Peter Crosthwaite wrote:
+>>> On Mon, Nov 10, 2014 at 7:47 AM, Sören Brinkmann
+>>> <soren.brinkmann@xilinx.com> wrote:
+>>> > Hi Peter,
+>>> >
+>>> > On Sun, 2014-11-09 at 01:38PM +1000, Peter Crosthwaite wrote:
+>>> >> Add a DTS describing the Digilent ZYBO board. Similar to ZED but with
+>>> >
+>>> > "Digilent ZYBO" here...
+>>> >
+>>> > [...]
+>>> >> +/ {
+>>> >> +     model = "Zynq ZYBO Development Board";
+>>> >> +     compatible = "xlnx,zynq-zybo", "xlnx,zynq-7000";
+>>> >
+>>> > ... "xlnx,zynq-zybo" here. Seems inconsistent. IMHO, there should
+>>> > rather be
+>>> > a digilent vendor prefix.
+>>> >
+>>>
+>>> Was going for consistency with ZED which also makes this mistake:
+>>>
+>>>     model = "Zynq Zed Development Board";
+>>>     compatible = "xlnx,zynq-zed", "xlnx,zynq-7000";
+>>>
+>>> We have to choose between consistency and correctness. If we do fix it
+>>> though, what is Diglent's four-letter vendor prefix?
 >>
->> Perfect, applied with one fixup below...
+>> Since Digilent is the board vendor, I'm for using the appropriate
+>> prefix. Vendor prefixes are found in
+>> Documentation/devicetree/bindings/vendor-prefixes.txt.
+>>
 >
-> Thanks!
-
-Fixups merged. Thanks.
-
-g.
-
+> It's not there,
 >
-> And since it's Friday... *cough*
+> Steven, does Digilent have a preferred dts vendor prefix?
 >
-> From 5c469dad81961164c444da7d6c4e1c5b1c097aab Mon Sep 17 00:00:00 2001
-> From: Leif Lindholm <leif.lindholm@linaro.org>
-> Date: Fri, 28 Nov 2014 16:27:25 +0000
-> Subject: [PATCH] of: fix options clearing when path is "/"
+> Regards,
+> Peter
 >
-> The addition of the optional options extraction on
-> of_find_node_opts_by_path failed to clear incoming options pointer
-> if the specified path was "/".
->
-> Resolve this case, and add a test to detect it.
->
-> Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-> ---
->  drivers/of/base.c     |   11 ++++++-----
->  drivers/of/selftest.c |    5 +++++
->  2 files changed, 11 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index 5e16c6b..32664d1 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -743,15 +743,16 @@ struct device_node *of_find_node_opts_by_path(const char *path, const char **opt
->         struct device_node *np = NULL;
->         struct property *pp;
->         unsigned long flags;
-> -       char *separator;
-> +       char *separator = NULL;
-> +
-> +       if (opts) {
-> +               separator = strchr(path, ':');
-> +               *opts = separator ? separator + 1 : NULL;
-> +       }
->
->         if (strcmp(path, "/") == 0)
->                 return of_node_get(of_allnodes);
->
-> -       separator = strchr(path, ':');
-> -       if (opts)
-> -               *opts = separator ? separator + 1 : NULL;
-> -
->         /* The path could begin with an alias */
->         if (*path != '/') {
->                 char *p = strchrnul(path, '/');
-> diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
-> index 721b2a4..914f0ae 100644
-> --- a/drivers/of/selftest.c
-> +++ b/drivers/of/selftest.c
-> @@ -100,6 +100,11 @@ static void __init of_selftest_find_node_by_name(void)
->         np = of_find_node_opts_by_path("testcase-alias", &options);
->         selftest(np && !options, "option clearing test failed\n");
->         of_node_put(np);
-> +
-> +       options = "testoption";
-> +       np = of_find_node_opts_by_path("/", &options);
-> +       selftest(np && !options, "option clearing root node test failed\n");
-> +       of_node_put(np);
->  }
->
->  static void __init of_selftest_dynamic(void)
-> --
-> 1.7.10.4
->
+>>         Soren
