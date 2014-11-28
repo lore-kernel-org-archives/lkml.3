@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751335AbaK1VAu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 16:00:50 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:43490 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041AbaK1VAt (ORCPT
+	id S1751389AbaK1VEF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 16:04:05 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:52239 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751071AbaK1VEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 16:00:49 -0500
-Date: Fri, 28 Nov 2014 22:00:43 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Laurent Georget <laurent.georget@supelec.fr>
-Cc: mtk.manpages@gmail.com, linux-man@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] adjtimex.2: add explanation about ADJ_TAI action
-Message-ID: <20141128210043.GB14432@localhost.localdomain>
-References: <54787B5C.1080802@supelec.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54787B5C.1080802@supelec.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 28 Nov 2014 16:04:01 -0500
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] x86: Merge consecutive seq_puts calls
+Date: Fri, 28 Nov 2014 22:03:42 +0100
+Message-Id: <1417208622-12264-2-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1417208622-12264-1-git-send-email-linux@rasmusvillemoes.dk>
+References: <1417208622-12264-1-git-send-email-linux@rasmusvillemoes.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 28, 2014 at 02:40:44PM +0100, Laurent Georget wrote:
-> @@ -101,7 +99,19 @@ combination of zero or more of the following bits:
->  Ordinary users are restricted to a zero value for
->  .IR modes .
->  Only the superuser may set any parameters.
-> +.PP
-> +Support for TAI (Atomic International Time, for a complete explanation
-> about
-> +what it is and what is the difference between TAI and UTC, see
-> +.UR http://www.bipm.org/en/bipm/tai/tai.html
-> +.I BIPM
-> +.UE )
-> +has been added in version 2.6.29. For any clock, the TAI offset may
+These can be done as a single seq_puts call, reducing the code size slightly.
 
-Not for "any clock", just for CLOCK_REALTIME.
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+ arch/x86/platform/uv/tlb_uv.c | 18 +++++++-----------
+ 1 file changed, 7 insertions(+), 11 deletions(-)
 
-> +be calculated by adding a value to the UTC offset which is updated when a
-> +leap second is added or deleted.
->  .br
-> +All the offsets in the timex structure are expressed between the value
-> of the
-> +clock and the corresponding value (e.g. TAI offset is the difference
-> between
-> +the clock and the TAI, not between TAI and another value such as UTC).
+diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
+index ab4062c..fe5126b 100644
+--- a/arch/x86/platform/uv/tlb_uv.c
++++ b/arch/x86/platform/uv/tlb_uv.c
+@@ -1368,17 +1368,13 @@ static int ptc_seq_show(struct seq_file *file, void *data)
+ 	cpu = *(loff_t *)data;
+ 	if (!cpu) {
+ 		seq_puts(file,
+-			 "# cpu bauoff sent stime self locals remotes ncpus localhub ");
+-		seq_puts(file, "remotehub numuvhubs numuvhubs16 numuvhubs8 ");
+-		seq_puts(file,
+-			 "numuvhubs4 numuvhubs2 numuvhubs1 dto snacks retries ");
+-		seq_puts(file,
+-			 "rok resetp resett giveup sto bz throt disable ");
+-		seq_puts(file,
+-			 "enable wars warshw warwaits enters ipidis plugged ");
+-		seq_puts(file,
+-			 "ipiover glim cong swack recv rtime all one mult ");
+-		seq_puts(file, "none retry canc nocan reset rcan\n");
++			 "# cpu bauoff sent stime self locals remotes ncpus localhub "
++			 "remotehub numuvhubs numuvhubs16 numuvhubs8 "
++			 "numuvhubs4 numuvhubs2 numuvhubs1 dto snacks retries "
++			 "rok resetp resett giveup sto bz throt disable "
++			 "enable wars warshw warwaits enters ipidis plugged "
++			 "ipiover glim cong swack recv rtime all one mult "
++			 "none retry canc nocan reset rcan\n");
+ 	}
+ 	if (cpu < num_possible_cpus() && cpu_online(cpu)) {
+ 		bcp = &per_cpu(bau_control, cpu);
+-- 
+2.0.4
 
-The TAI offset is just (TAI - UTC). That's all.
-
-Thanks,
-Richard
