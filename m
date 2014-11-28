@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427AbaK1XQB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 18:16:01 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:52912 "EHLO mail.skyhub.de"
+	id S1751431AbaK1XWU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 18:22:20 -0500
+Received: from bues.ch ([80.190.117.144]:47214 "EHLO bues.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751259AbaK1XP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 18:15:59 -0500
-Date: Sat, 29 Nov 2014 00:15:55 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Giedrius Statkevicius <giedriuswork@gmail.com>
-Cc: dvhart@infradead.org, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] platform: x86: hp_wireless: Inform the user if
- hp_wireless_input_setup()/add() fails
-Message-ID: <20141128231555.GA31468@pd.tnic>
-References: <1417212867-25187-1-git-send-email-giedriuswork@gmail.com>
+	id S1751259AbaK1XWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 18:22:19 -0500
+Date: Sat, 29 Nov 2014 00:21:48 +0100
+From: Michael =?UTF-8?B?QsO8c2No?= <m@bues.ch>
+To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+Cc: Nicholas Krause <xerofoify@gmail.com>,
+        Stefano Brivio <stefano.brivio@polimi.it>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        b43-dev <b43-dev@lists.infradead.org>
+Subject: Re: [PATCH] drivers:net:wireless: Add mutex locking for function,
+ b43_op_beacon_set_time in main.c
+Message-ID: <20141129002148.1beb21d9@wiggum>
+In-Reply-To: <CACna6rxmOC0h9hOpa=5iWFM1THQ8Q4hCi8MnmqkZJbB_U0PJ0A@mail.gmail.com>
+References: <1417213013-19758-1-git-send-email-xerofoify@gmail.com>
+	<CACna6rxmOC0h9hOpa=5iWFM1THQ8Q4hCi8MnmqkZJbB_U0PJ0A@mail.gmail.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1417212867-25187-1-git-send-email-giedriuswork@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/a9VZzheb11hdlXkyH8hfJby"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 29, 2014 at 12:14:27AM +0200, Giedrius Statkevicius wrote:
-> In hpwl_add() there is a unused variable err to which we assign the
-> result of hp_wireless_input_setup() but we don't do anything depending
-> on the result so print out a message that informs the user if add()
-> (hp_wireless_input_setup()) fails since acpi_device_probe() doesn't
-> print anything in this case.
-> 
-> Signed-off-by: Giedrius Statkevicius <giedriuswork@gmail.com>
-> ---
->  drivers/platform/x86/hp-wireless.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/platform/x86/hp-wireless.c b/drivers/platform/x86/hp-wireless.c
-> index 415348f..4e4cc8b 100644
-> --- a/drivers/platform/x86/hp-wireless.c
-> +++ b/drivers/platform/x86/hp-wireless.c
-> @@ -85,6 +85,9 @@ static int hpwl_add(struct acpi_device *device)
->  	int err;
->  
->  	err = hp_wireless_input_setup();
-> +	if (err)
-> +		pr_err("Failed to setup hp wireless hotkeys\n");
-> +
+--Sig_/a9VZzheb11hdlXkyH8hfJby
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-I don't think there's need for that. Just do:
+On Fri, 28 Nov 2014 23:40:46 +0100
+Rafa=C5=82 Mi=C5=82ecki <zajec5@gmail.com> wrote:
 
-	return hp_wireless_input_setup();
+> > @@ -5094,8 +5094,9 @@ static int b43_op_beacon_set_tim(struct ieee80211=
+_hw *hw,
+> >  {
+> >         struct b43_wl *wl =3D hw_to_b43_wl(hw);
+> >
+> > -       /* FIXME: add locking */
+> > +       mutex_lock(&wl->mutex);
+> >         b43_update_templates(wl);
+> > +       mutex_unlock(&wl->mutex);
+> >
+> >         return 0;
+> >  }
+>=20
+> Does anyone remember why this simple solution wasn't implemented
+> earlier? Michael?
 
-and drop err completely.
+I think the callback used to be (is?) in atomic context.
 
-The upper layer which calls the ->add() method should propagate the
-error properly.
+> Nicholas: did you test it anyhow?
 
--- 
-Regards/Gruss,
-    Boris.
+--=20
+Michael
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+--Sig_/a9VZzheb11hdlXkyH8hfJby
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUeQOPAAoJEPUyvh2QjYsOko8P/j/erXMBLKii9IzxSByO5DCs
+jxsXn8p4OBE+e5K8uVEr7CSorMlzZCU+D7Vi9h6OiUS5TnXikKx1O2fE9SRLnm4A
+N7pc/3b1HuIUCtnOdQYIRJjFglU4Ng8TV4UHJwKtCEehlgIBp3DgaR9yECv+BCd1
+cYZxWy5+Acdh/OLMEdy73vNcSYAKxiJ8ViU1fSJCVuCxRN0Z5LP/DG0Hy2dnO7c/
+/TLBkbQ8JBkzyi0k6nczEVdR5/5K8X9EN3BzE0ZsJny0BRzsQKTcQvOdMx9CaFJn
+X2zP9X2PtYLCgyl33Vr0YLXX03VXNLzgzR68g6xOa2h0tKlylMB2gYuCr0S2NR2i
+F63MhHNRYgSMnbHxCH9IAJQstVZe3p0pArnriAElNCMJbMBnI5nWy+sHsqjdOp/L
+3sL5fWwWgMvtkVeTnrTZFZ+fA2cwK2+MSRPvc11N5v3dDnZBdkfUkgW7fEdWQP0J
+/XJCNWecIW0PtpNT1xsm2WEtaq75boGgfcGW8+HXAdVTy97a4H5+5Zwn2ZpRYWst
+ClN1W34bvm9akcPxUpDp/GZMd0ij7jeo112nXVKBEwQNO/HMgq2w6FyvnJoBQrk/
+CBybaHhL4bj5+DclI8YeDATI6DPOrPBZD2ospmAqxm8w+vUpd7/2Q0Upn5QfIAey
+uRCU1p7D7b28DFDvN8zB
+=ef5U
+-----END PGP SIGNATURE-----
+
+--Sig_/a9VZzheb11hdlXkyH8hfJby--
