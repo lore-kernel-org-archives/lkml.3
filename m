@@ -1,92 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480AbaK1ORJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 09:17:09 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:41363 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199AbaK1ORG (ORCPT
+	id S1751615AbaK1OVR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 09:21:17 -0500
+Received: from smtprelay06.ispgateway.de ([80.67.31.103]:35736 "EHLO
+	smtprelay06.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158AbaK1OVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 09:17:06 -0500
-Date: Fri, 28 Nov 2014 14:16:48 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Sonny Rao <sonnyrao@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Will Deacon <Will.Deacon@arm.com>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>
-Subject: Re: [PATCH v4] clocksource: arch_timer: Allow the device tree to
- specify uninitialized timer registers
-Message-ID: <20141128141648.GB4249@localhost>
-References: <1412753627-28287-1-git-send-email-sonnyrao@chromium.org>
- <5475CC66.6080600@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5475CC66.6080600@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 28 Nov 2014 09:21:14 -0500
+From: Peter Feuerer <peter@piie.net>
+To: LKML <linux-kernel@vger.kernel.org>, Darren Hart <dvhart@infradead.org>,
+        platform-driver-x86@vger.kernel.org
+Cc: Peter Feuerer <peter@piie.net>, Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Mohr <andi@lisas.de>
+Subject: [RESEND PATCH v5 5/5] acerhdf: minor clean up
+Date: Fri, 28 Nov 2014 15:20:52 +0100
+Message-Id: <1417184452-11884-6-git-send-email-peter@piie.net>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1417184452-11884-1-git-send-email-peter@piie.net>
+References: <1398561815-22033-1-git-send-email-peter@piie.net>
+ <1417184452-11884-1-git-send-email-peter@piie.net>
+X-Df-Sender: cGV0ZXJAcGlpZS5uZXQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 12:49:42PM +0000, Daniel Lezcano wrote:
-> On 10/08/2014 09:33 AM, Sonny Rao wrote:
-> > From: Doug Anderson <dianders@chromium.org>
-> >
-> > Some 32-bit (ARMv7) systems are architected like this:
-> >
-> > * The firmware doesn't know and doesn't care about hypervisor mode and
-> >    we don't want to add the complexity of hypervisor there.
-> >
-> > * The firmware isn't involved in SMP bringup or resume.
-> >
-> > * The ARCH timer come up with an uninitialized offset (CNTVOFF)
-> >    between the virtual and physical counters.  Each core gets a
-> >    different random offset.
-> >
-> > * The device boots in "Secure SVC" mode.
-> >
-> > * Nothing has touched the reset value of CNTHCTL.PL1PCEN or
-> >    CNTHCTL.PL1PCTEN (both default to 1 at reset)
-> >
-> > On systems like the above, it doesn't make sense to use the virtual
-> > counter.  There's nobody managing the offset and each time a core goes
-> > down and comes back up it will get reinitialized to some other random
-> > value.
-> >
-> > This adds an optional property which can inform the kernel of this
-> > situation, and firmware is free to remove the property if it is going
-> > to initialize the CNTVOFF registers when each CPU comes out of reset.
-> >
-> > Currently, the best course of action in this case is to use the
-> > physical timer, which is why it is important that CNTHCTL hasn't been
-> > changed from its reset value and it's a reasonable assumption given
-> > that the firmware has never entered HYP mode.
-> >
-> > Note that it's been said that on ARMv8 systems the firmware and
-> > kernel really can't be architected as described above.  That means
-> > using the physical timer like this really only makes sense for ARMv7
-> > systems.
-> >
-> > Signed-off-by: Doug Anderson <dianders@chromium.org>
-> > Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
-> > Reviewed-by: Mark Rutland <mark.rutland@arm.com>
-> 
-> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> 
-> I would be nice to have Catalin's ack.
+  * renamed bios_settings_t to bios_settings, as it is no typedef
+  * replaced "unsigned char" by u8 in bios_settings struct for better
+    readability.
 
-FWIW:
+Cc: platform-driver-x86@vger.kernel.org
+Cc: Darren Hart <dvhart@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andreas Mohr <andi@lisas.de>
+Acked-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Peter Feuerer <peter@piie.net>
+---
+ drivers/platform/x86/acerhdf.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
+index 91b16c8..c07623c 100644
+--- a/drivers/platform/x86/acerhdf.c
++++ b/drivers/platform/x86/acerhdf.c
+@@ -131,18 +131,18 @@ static const struct manualcmd mcmd = {
+ };
+ 
+ /* BIOS settings */
+-struct bios_settings_t {
++struct bios_settings {
+ 	const char *vendor;
+ 	const char *product;
+ 	const char *version;
+-	unsigned char fanreg;
+-	unsigned char tempreg;
++	u8 fanreg;
++	u8 tempreg;
+ 	struct fancmd cmd;
+ 	int mcmd_enable;
+ };
+ 
+ /* Register addresses and values for different BIOS versions */
+-static const struct bios_settings_t bios_tbl[] = {
++static const struct bios_settings bios_tbl[] = {
+ 	/* AOA110 */
+ 	{"Acer", "AOA110", "v0.3109", 0x55, 0x58, {0x1f, 0x00}, 0},
+ 	{"Acer", "AOA110", "v0.3114", 0x55, 0x58, {0x1f, 0x00}, 0},
+@@ -256,7 +256,7 @@ static const struct bios_settings_t bios_tbl[] = {
+ 	{"", "", "", 0, 0, {0, 0}, 0}
+ };
+ 
+-static const struct bios_settings_t *bios_cfg __read_mostly;
++static const struct bios_settings *bios_cfg __read_mostly;
+ 
+ /*
+  * this struct is used to instruct thermal layer to use bang_bang instead of
+@@ -619,7 +619,7 @@ static int str_starts_with(const char *str, const char *start)
+ static int acerhdf_check_hardware(void)
+ {
+ 	char const *vendor, *version, *product;
+-	const struct bios_settings_t *bt = NULL;
++	const struct bios_settings *bt = NULL;
+ 
+ 	/* get BIOS data */
+ 	vendor  = dmi_get_system_info(DMI_SYS_VENDOR);
+-- 
+2.1.3
+
