@@ -1,114 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751234AbaK1MaJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 07:30:09 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34310 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750984AbaK1MaH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 07:30:07 -0500
-Date: Fri, 28 Nov 2014 12:30:03 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "b.zolnierkie@samsung.com" <b.zolnierkie@samsung.com>,
-        "pavel@ucw.cz" <pavel@ucw.cz>,
-        "cooloney@gmail.com" <cooloney@gmail.com>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "sakari.ailus@iki.fi" <sakari.ailus@iki.fi>,
-        "s.nawrocki@samsung.com" <s.nawrocki@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH/RFC v8 08/14] DT: Add documentation for exynos4-is
- 'flashes' property
-Message-ID: <20141128123003.GE25883@leverpostej>
-References: <1417166286-27685-1-git-send-email-j.anaszewski@samsung.com>
- <1417166286-27685-9-git-send-email-j.anaszewski@samsung.com>
- <20141128111404.GB25883@leverpostej>
- <547865EA.5010700@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <547865EA.5010700@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751353AbaK1Mal (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 07:30:41 -0500
+Received: from mga11.intel.com ([192.55.52.93]:2500 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751041AbaK1Mah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 07:30:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,476,1413270000"; 
+   d="scan'208";a="629640000"
+Message-ID: <1417177832.17201.12.camel@linux.intel.com>
+Subject: Re: [PATCH] serial: 8250_dw: Handle no_console_suspend when uart
+ loses state
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Heiko Stuebner <heiko@sntech.de>, Jiri Slaby <jslaby@suse.cz>,
+        Chris Zhong <zyw@rock-chips.com>, linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org,
+        Andrew Bresticker <abrestic@chromium.org>,
+        mika.westerberg@linux.intel.com, heikki.krogerus@linux.intel.com,
+        wens@csie.org, alan@linux.intel.com, loic.poulain@intel.com,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 28 Nov 2014 14:30:32 +0200
+In-Reply-To: <1416011556-23422-1-git-send-email-dianders@chromium.org>
+References: <1416011556-23422-1-git-send-email-dianders@chromium.org>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 28, 2014 at 12:09:14PM +0000, Jacek Anaszewski wrote:
-> On 11/28/2014 12:14 PM, Mark Rutland wrote:
-> > On Fri, Nov 28, 2014 at 09:18:00AM +0000, Jacek Anaszewski wrote:
-> >> This patch adds a description of 'flashes' property
-> >> to the samsung-fimc.txt.
-> >>
-> >> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-> >> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> >> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> >> Cc: Rob Herring <robh+dt@kernel.org>
-> >> Cc: Pawel Moll <pawel.moll@arm.com>
-> >> Cc: Mark Rutland <mark.rutland@arm.com>
-> >> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> >> Cc: Kumar Gala <galak@codeaurora.org>
-> >> Cc: <devicetree@vger.kernel.org>
-> >> ---
-> >>   .../devicetree/bindings/media/samsung-fimc.txt     |    7 +++++++
-> >>   1 file changed, 7 insertions(+)
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/media/samsung-fimc.txt b/Documentation/devicetree/bindings/media/samsung-fimc.txt
-> >> index 922d6f8..4b7ed03 100644
-> >> --- a/Documentation/devicetree/bindings/media/samsung-fimc.txt
-> >> +++ b/Documentation/devicetree/bindings/media/samsung-fimc.txt
-> >> @@ -40,6 +40,12 @@ should be inactive. For the "active-a" state the camera port A must be activated
-> >>   and the port B deactivated and for the state "active-b" it should be the other
-> >>   way around.
-> >>
-> >> +Optional properties:
-> >> +
-> >> +- flashes - array of strings with flash led names; the name has to
-> >> +	    be same with the related led label
-> >> +	    (see Documentation/devicetree/bindings/leds/common.txt)
-> >> +
-> >
-> > Why is this not an array of phandles to the LED nodes? That's much
-> > better than strings.
+On Fri, 2014-11-14 at 16:32 -0800, Doug Anderson wrote:
+> In certain suspend modes on certain boards the 8250 UART may lose
+> state when the device goes to suspend.  If we're using
+> no_console_suspend this can cause lots of problems during resume.
 > 
-> This is because a single flash led device can control many sub-leds,
-> which are represented by child nodes in the Device Tree.
-> Every sub-led is registered as a separate LED Flash class device
-> in the LED subsystem, but in fact they share the same struct device
-> and thus have access only to the parent's phandle.
-
-But that's a Linux infrastrcture issue, no? You don't have to use the
-node from the struct device to find the relevant phandle.
-
-> The LED Flash
-> class devices are wrapped by V4L2 sub-devices and register
-> asynchronously within a media device. Since the v4l2_subdev structure
-> has a 'name' field, it is convenient to initialize it with
-> parsed 'label' property of a child led node and match the
-> sub-devices in the media device basing on it.
-
-While that might be convenient, I don't think it's fantastic to use that
-to describe the relationship, as this leaks Linux internals (e.g. I can
-refer to a name that doesn't exist in the DT but happens to be what
-Linux used, and it would work). Also, are the labels guaranteed to be
-globally unique?
-
-Using phandles is much better for the binding. I appreciate that this
-may require more code, but IMO it's worth that for the safety and
-uniformity given by the use of phandles for referring to nodes.
-
-> > Also, I only seem to have recevied the documentation patches and none of
-> > the code -- in future when posting RFC DT patches, please Cc for the
-> > code too as it's useful context.
+> Let's cache the basic UART config registers at suspend time and if we
+> notice that the UART loses state (by looking at a canary stored in the
+> scratch register) we'll restore it.
 > 
-> Of course, I'll keep it in mind.
 
-Thanks!
+Few comments below.
 
-Mark.
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+> Note that I don't have a board that properly suspends and resumes from
+> the deepest sleep state that runs atop mainline, so this is tested on
+> a local tree that is based on 3.14 with backports (specifically on
+> rk3288-pinky).  It is compile tested atop mainline.
+> 
+>  drivers/tty/serial/8250/8250_dw.c | 67 +++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 67 insertions(+)
+> 
+> diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
+> index 0bfdccc..444ff540 100644
+> --- a/drivers/tty/serial/8250/8250_dw.c
+> +++ b/drivers/tty/serial/8250/8250_dw.c
+> @@ -38,6 +38,9 @@
+>  #define DW_UART_CPR	0xf4 /* Component Parameter Register */
+>  #define DW_UART_UCV	0xf8 /* UART Component Version */
+>  
+> +/* We'll place this canary in SCR while suspending; if gone we've lost state */
+> +#define DW_UART_SCR_STATE		0x22
+> +
+>  /* Component Parameter Register bits */
+>  #define DW_UART_CPR_ABP_DATA_WIDTH	(3 << 0)
+>  #define DW_UART_CPR_AFCE_MODE		(1 << 4)
+> @@ -63,6 +66,13 @@ struct dw8250_data {
+>  	struct clk		*pclk;
+>  	struct reset_control	*rst;
+>  	struct uart_8250_dma	dma;
+> +
+> +	int			suspending;
+
+> +	int			saved_lcr;
+
+Why not u32?
+
+> +	int			saved_dll;
+> +	int			saved_dlm;
+> +	int			saved_ier;
+> +	int			saved_fcr;
+
+Could it be separate structure (struct reg_context, for example)?
+
+>  };
+>  
+>  #define BYT_PRV_CLK			0x800
+> @@ -92,10 +102,35 @@ static void dw8250_force_idle(struct uart_port *p)
+>  	(void)p->serial_in(p, UART_RX);
+>  }
+>  
+> +static void dw8250_serial_restore(struct uart_port *p)
+> +{
+> +	struct dw8250_data *data = p->private_data;
+> +	struct uart_8250_port *port8250 = serial8250_get_port(data->line);
+> +
+> +	data->suspending = 0;
+> +
+> +	serial_out(port8250, UART_LCR, data->saved_lcr | UART_LCR_DLAB);
+> +	serial_out(port8250, UART_DLL, data->saved_dll);
+> +	serial_out(port8250, UART_DLM, data->saved_dlm);
+> +	serial_out(port8250, UART_LCR, data->saved_lcr);
+> +
+> +	serial_out(port8250, UART_IER, data->saved_ier);
+> +	serial_out(port8250, UART_FCR, data->saved_fcr);
+> +	serial_out(port8250, UART_MCR, data->last_mcr);
+> +}
+> +
+>  static void dw8250_serial_out(struct uart_port *p, int offset, int value)
+>  {
+>  	struct dw8250_data *d = p->private_data;
+>  
+> +	/*
+> +	 * If we started suspending and we see SCR went back to 0, assume we've
+> +	 * suspended and resumed and lost state.  Restore it now.
+> +	 */
+> +	if (d->suspending &&
+> +	    readb(p->membase + (UART_SCR << p->regshift)) != DW_UART_SCR_STATE)
+> +		dw8250_serial_restore(p);
+> +
+>  	if (offset == UART_MCR)
+>  		d->last_mcr = value;
+>  
+> @@ -133,6 +168,14 @@ static void dw8250_serial_out32(struct uart_port *p, int offset, int value)
+>  {
+>  	struct dw8250_data *d = p->private_data;
+>  
+> +	/*
+> +	 * If we started suspending and we see SCR went back to 0, assume we've
+> +	 * suspended and resumed and lost state.  Restore it now.
+> +	 */
+> +	if (d->suspending &&
+> +	    readb(p->membase + (UART_SCR << p->regshift)) != DW_UART_SCR_STATE)
+> +		dw8250_serial_restore(p);
+> +
+>  	if (offset == UART_MCR)
+>  		d->last_mcr = value;
+>  
+> @@ -487,9 +530,29 @@ static int dw8250_remove(struct platform_device *pdev)
+>  static int dw8250_suspend(struct device *dev)
+>  {
+>  	struct dw8250_data *data = dev_get_drvdata(dev);
+> +	struct uart_8250_port *port8250 = serial8250_get_port(data->line);
+> +	struct uart_port *port = &port8250->port;
+>  
+>  	serial8250_suspend_port(data->line);
+>  
+> +	/* We only deal with ports that were left on (no_console_suspend) */
+> +	if (port->suspended)
+> +		return 0;
+> +
+> +	/* We'll save our registers in case we lose state in suspend */
+> +	data->saved_fcr = serial_in(port8250, UART_FCR);
+> +	data->saved_ier = serial_in(port8250, UART_IER);
+> +	data->saved_lcr = serial_in(port8250, UART_LCR);
+> +
+> +	serial_out(port8250, UART_LCR, data->saved_lcr | UART_LCR_DLAB);
+> +	data->saved_dlm = serial_in(port8250, UART_DLM);
+> +	data->saved_dll = serial_in(port8250, UART_DLL);
+> +	serial_out(port8250, UART_LCR, data->saved_lcr);
+> +
+> +	/* Put a special canary in the scratch so we tell when state is lost */
+> +	serial_out(port8250, UART_SCR, DW_UART_SCR_STATE);
+> +	data->suspending = 1;
+> +
+
+Could it be dw8250_serial_save() in analogue with _restore()?
+
+>  	return 0;
+>  }
+>  
+> @@ -497,6 +560,10 @@ static int dw8250_resume(struct device *dev)
+>  {
+>  	struct dw8250_data *data = dev_get_drvdata(dev);
+>  
+> +	/* We never lost state; stop checking for canary */
+> +	if (data->suspending)
+> +		data->suspending = 0;
+> +
+>  	serial8250_resume_port(data->line);
+>  
+>  	return 0;
+
+
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+
