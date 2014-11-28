@@ -1,75 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751056AbaK1EqP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 23:46:15 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:25355 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750754AbaK1EqN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 23:46:13 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/N+aWLlRPaHvGFJJs6SXi9B+jgDB8d0tw=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 12AC4625DCE
-Date: Thu, 27 Nov 2014 23:46:04 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] irqchip: gic: Remove warning by including linux/irqdomain.h
-Message-ID: <20141128044604.GO22670@titan.lakedaemon.net>
-References: <20141127172822.593adbd2@canb.auug.org.au>
+	id S1751222AbaK1EtY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 23:49:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49137 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750994AbaK1EtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 23:49:22 -0500
+Message-ID: <5477FECF.2060404@suse.com>
+Date: Fri, 28 Nov 2014 05:49:19 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141127172822.593adbd2@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrew Cooper <andrew.cooper3@citrix.com>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>
+CC: x86@kernel.org, kvm@vger.kernel.org,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        linux-kernel@vger.kernel.org, Davidlohr Bueso <dbueso@suse.de>,
+        Joerg Roedel <jroedel@suse.de>, david.vrabel@citrix.com,
+        Jan Beulich <JBeulich@suse.com>, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, Borislav Petkov <bp@suse.de>,
+        Olaf Hering <ohering@suse.de>
+Subject: Re: [Xen-devel] [PATCH] xen: privcmd: schedule() after private hypercall
+ when	non CONFIG_PREEMPT
+References: <1417040805-15857-1-git-send-email-mcgrof@do-not-panic.com>	<5476C66F.5040308@suse.com> <20141127183616.GV25677@wotan.suse.de> <54777277.5040401@citrix.com>
+In-Reply-To: <54777277.5040401@citrix.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit
+On 11/27/2014 07:50 PM, Andrew Cooper wrote:
+> On 27/11/14 18:36, Luis R. Rodriguez wrote:
+>> On Thu, Nov 27, 2014 at 07:36:31AM +0100, Juergen Gross wrote:
+>>> On 11/26/2014 11:26 PM, Luis R. Rodriguez wrote:
+>>>> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>>>>
+>>>> Some folks had reported that some xen hypercalls take a long time
+>>>> to complete when issued from the userspace private ioctl mechanism,
+>>>> this can happen for instance with some hypercalls that have many
+>>>> sub-operations, this can happen for instance on hypercalls that use
+>>>> multi-call feature whereby Xen lets one hypercall batch out a series
+>>>> of other hypercalls on the hypervisor. At times such hypercalls can
+>>>> even end up triggering the TASK_UNINTERRUPTIBLE hanger check (default
+>>>> 120 seconds), this a non-issue issue on preemptible kernels though as
+>>>> the kernel may deschedule such long running tasks. Xen for instance
+>>>> supports multicalls to be preempted as well, this is what Xen calls
+>>>> continuation (see xen commit 42217cbc5b which introduced this [0]).
+>>>> On systems without CONFIG_PREEMPT though -- a kernel with voluntary
+>>>> or no preemption -- a long running hypercall will not be descheduled
+>>>> until the hypercall is complete and the ioctl returns to user space.
+>>>>
+>>>> To help with this David had originally implemented support for use
+>>>> of preempt_schedule_irq() [1] for non CONFIG_PREEMPT kernels. This
+>>>> solution never went upstream though and upon review to help refactor
+>>>> this I've concluded that usage of preempt_schedule_irq() would be
+>>>> a bit abussive of existing APIs -- for a few reasons:
+>>>>
+>>>> 0) we want to avoid spreading its use on non CONFIG_PREEMPT kernels
+>>>>
+>>>> 1) we want try to consider solutions that might work for other
+>>>>      hypervisors for this same problem, and identify it its an issue
+>>>>      even present on other hypervisors or if this is a self
+>>>>      inflicted architectural issue caused by use of multicalls
+>>>>
+>>>> 2) there is no documentation or profiling of the exact hypercalls
+>>>>      that were causing these issues, nor do we have any context
+>>>>      to help evaluate this any further
+>>>>
+>>>> I at least checked with kvm folks and it seems hypercall preemption
+>>>> is not needed there. We can survey other hypervisors...
+>>>>
+>>>> If 'something like preemption' is needed then CONFIG_PREEMPT
+>>>> should just be enabled and encouraged, it seems we want to
+>>>> encourage CONFIG_PREEMPT on xen, specially when multicalls are
+>>>> used. In the meantime this tries to address a solution to help
+>>>> xen on non CONFIG_PREEMPT kernels.
+>>>>
+>>>> One option tested and evaluated was to put private hypercalls in
+>>>> process context, however this would introduce complexities such
+>>>> originating hypercalls from different contexts. Current xen
+>>>> hypercall callback handlers would need to be changed per architecture,
+>>>> for instance, we'd also incur the cost of switching states from
+>>>> user / kernel (this cost is also present if preempt_schedule_irq()
+>>>> is used). There may be other issues which could be introduced with
+>>>> this strategy as well. The simplest *shared* alternative is instead
+>>>> to just explicitly schedule() at the end of a private hypercall on non
+>>>> preempt kernels. This forces our private hypercall call mechanism
+>>>> to try to be fair only on non CONFIG_PREEMPT kernels at the cost of
+>>>> more context switch but keeps the private hypercall context intact.
+>>>>
+>>>> [0] http://xenbits.xen.org/gitweb/?p=xen.git;a=commitdiff;h=42217cbc5b3e84b8c145d8cfb62dd5de0134b9e8;hp=3a0b9c57d5c9e82c55dd967c84dd06cb43c49ee9
+>>>> [1] http://ftp.suse.com/pub/people/mcgrof/xen-preempt-hypercalls/0001-x86-xen-allow-privcmd-hypercalls-to-be-preempted.patch
+>>>>
+>>>> Cc: Davidlohr Bueso <dbueso@suse.de>
+>>>> Cc: Joerg Roedel <jroedel@suse.de>
+>>>> Cc: Borislav Petkov <bp@suse.de>
+>>>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>>> Cc: Jan Beulich <JBeulich@suse.com>
+>>>> Cc: Juergen Gross <JGross@suse.com>
+>>>> Cc: Olaf Hering <ohering@suse.de>
+>>>> Cc: David Vrabel <david.vrabel@citrix.com>
+>>>> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+>>>> ---
+>>>>    drivers/xen/privcmd.c | 3 +++
+>>>>    1 file changed, 3 insertions(+)
+>>>>
+>>>> diff --git a/drivers/xen/privcmd.c b/drivers/xen/privcmd.c
+>>>> index 569a13b..e29edba 100644
+>>>> --- a/drivers/xen/privcmd.c
+>>>> +++ b/drivers/xen/privcmd.c
+>>>> @@ -60,6 +60,9 @@ static long privcmd_ioctl_hypercall(void __user *udata)
+>>>>    			   hypercall.arg[0], hypercall.arg[1],
+>>>>    			   hypercall.arg[2], hypercall.arg[3],
+>>>>    			   hypercall.arg[4]);
+>>>> +#ifndef CONFIG_PREEMPT
+>>>> +	schedule();
+>>>> +#endif
+>>>>
+>>>>    	return ret;
+>>>>    }
+>>>>
+>>> Sorry, I don't think this will solve anything. You're calling schedule()
+>>> right after the long running hypercall just nanoseconds before returning
+>>> to the user.
+>> Yeah, well that is what [1] tried as well only it tried using
+>> preempt_schedule_irq() on the hypercall callback...
+>>
+>>> I suppose you were mislead by the "int 0x82" in [0]. This is the
+>>> hypercall from the kernel into the hypervisor, e.g. inside of
+>>> privcmd_call().
+>> Nope, you have to consider what was done in [1], I was trying to
+>> do something similar but less complex that didn't involve mucking
+>> with the callbacks but also not abusing APIs.
+>>
+>> I'm afraid we don't have much leg room.
+>
+> XenServer uses
+>
+> https://github.com/xenserver/linux-3.x.pg/blob/master/master/0001-x86-xen-allow-privcmd-hypercalls-to-be-preempted.patch
+>
+> to deal with these issues.  That patch is based on 3.10.
 
-  853a33ce6932 irqchip: gic-v2m: Add support for ARM GICv2m MSI(-X) doorbell
+Clever. :-)
 
-Introduced a series of warnings when building ARM multi_v7_defconfig:
+>
+> I can remember whether this has been submitted upstream before (and
+> there were outstanding issues), or whether it fell at an inconvenient
+> time with our development cycles.
 
-  include/linux/irqchip/arm-gic.h:109:53: warning: its scope is only this definition or declaration, which is probably not what you want
-  In file included from arch/arm/mach-ux500/pm.c:13:0:
-  include/linux/irqchip/arm-gic.h:109:53: warning: 'struct irq_domain' declared inside parameter list
-   int gicv2m_of_init(struct device_node *node, struct irq_domain *parent);
-                                                       ^
+I found
 
-Fix this by adding the proper include.
+http://lists.xen.org/archives/html/xen-devel/2014-02/msg02540.html
 
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
----
-I've added this to irqchip/irqdomain-arm locally and pushed it to next.  If
-there are no objections, I'll push it to irqchip/irqdomain-arm.
+and nothing else.
 
-thx,
 
-Jason.
-
- include/linux/irqchip/arm-gic.h | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/include/linux/irqchip/arm-gic.h b/include/linux/irqchip/arm-gic.h
-index 60b09ed58cae..d1b2263a4db3 100644
---- a/include/linux/irqchip/arm-gic.h
-+++ b/include/linux/irqchip/arm-gic.h
-@@ -10,6 +10,8 @@
- #ifndef __LINUX_IRQCHIP_ARM_GIC_H
- #define __LINUX_IRQCHIP_ARM_GIC_H
- 
-+#include <linux/irqdomain.h>
-+
- #define GIC_CPU_CTRL			0x00
- #define GIC_CPU_PRIMASK			0x04
- #define GIC_CPU_BINPOINT		0x08
--- 
-2.1.3
-
+Juergen
