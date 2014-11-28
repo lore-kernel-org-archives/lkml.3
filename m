@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434AbaK1MHO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 07:07:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55950 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751252AbaK1MHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 07:07:11 -0500
-Message-ID: <54786567.4050305@suse.de>
-Date: Fri, 28 Nov 2014 13:07:03 +0100
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751483AbaK1MHh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 07:07:37 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:64775 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270AbaK1MHN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 07:07:13 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Alexander Stein <alexanders83@web.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: Re: [PATCH 00/11] ARM: at91: remove !DT support for at91rm9200
+Date: Fri, 28 Nov 2014 13:06:40 +0100
+Message-ID: <25050514.vKmbVUQfkQ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141128113111.GO4508@piout.net>
+References: <cover.1417103399.git.nicolas.ferre@atmel.com> <2770184.6f6RpLLlMS@wuerfel> <20141128113111.GO4508@piout.net>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Tomasz Figa <tomasz.figa@gmail.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene@kernel.org>,
-        =?UTF-8?B?6rmA7ZWZ7KO8?= <ruppi.kim@hardkernel.com>,
-        Humberto Naves <hsnaves@gmail.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Johann Pfefferl <johann.pfefferl@siemens.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        "PIN CONTROL SUBSY..." <linux-gpio@vger.kernel.org>
-Subject: Re: [PATCH v3 3/5] pinctrl: exynos: add exynos5410 SoC specific data
-References: <547104D5.4030803@suse.de>	<1416695185-5198-1-git-send-email-afaerber@suse.de> <CACRpkdZie8JJGxSPkc8PPvC3qZkWhe5WqmpSKSoDFwqRd6tR_Q@mail.gmail.com>
-In-Reply-To: <CACRpkdZie8JJGxSPkc8PPvC3qZkWhe5WqmpSKSoDFwqRd6tR_Q@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:p5g4HG5yKFoPJTfyRHKvwgKsjAIeyjNW6XGdcWHuhHU
+ qtUji7kH/Uy+iJmPDb27nxku3FMjqG0dvgWKeh7g+yOY/Kwbpy
+ i0FCGQQCrdjAgWvbU+aZyNAlL3SHW9IcJamDeZikPkaOXEaRMa
+ HSdBMCVQZ+55gBjcJI37Tnt8l/g5ZEd/h0EayvOlJndSVzPj0O
+ d9/K/beKRYdeUdtc5MmX40CBQ12twXcuVCacW+FXPJQo697OOZ
+ xa/ihm3wzpiwMuoLLFV3sOj2gmAhD7HCG/4HTOgtNSHMNdR0qu
+ HZQl4/VZrzrJJZAIx/As7G4Evh2QNU1iq6YRa51yVq7OqEhzJO
+ mFRQX7WQLGlMz014SEu0=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 28.11.2014 um 12:59 schrieb Linus Walleij:
-> On Sat, Nov 22, 2014 at 11:26 PM, Andreas Färber <afaerber@suse.de> wrote:
+On Friday 28 November 2014 12:31:12 Alexandre Belloni wrote:
+> On 28/11/2014 at 09:49:10 +0100, Arnd Bergmann wrote :
+> > > > Actually, some work was done but we never saw an other version of the
+> > > > series. Alexander, are you still interested? Else we can take the patch
+> > > > below.
+> > > > 
+> > > > http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/246679.html
+> > 
+> > I see. Yes, the approach is similar, and there are actually multiple
+> > independent problems:
+> > 
+> > - getting the current driver to build with multiplatform (trivial, 5 lines)
+> > - changing the gpio handling to work with DT (simple, both of us did that)
+> > - writing the binding (simple)
 > 
->> From: Hakjoo Kim <ruppi.kim@hardkernel.com>
->>
->> Add Samsung EXYNOS5410 SoC specific data to enable pinctrl
->> support for all platforms based on EXYNOS5410.
->>
->> Signed-off-by: Hakjoo Kim <ruppi.kim@hardkernel.com>
->> [AF: Rebased onto Exynos5260 and irq_chip consolidation]
->> Signed-off-by: Andreas Färber <afaerber@suse.de>
->> ---
->>  v2 -> v3:
->>  * Rebased (.svc, .{g,w}eint_{con,mask,pend} fields dropped)
->>
->>  v1 -> v2:
->>  * Filled in Sob from Hakjoo Kim
+> Yeah, let's focus on those first steps. Takashi was willing to take
+> patches, even if we were not converting the driver to ASoC.
 > 
-> Is this based on the pinctrl devel branch so I can apply it?
+> > - changing the driver to ASoC (not that simple)
+> > 
+> > > Well, I tried to get a ac97c driver based on alsa soc framework as suggested 
+> > > by Takashi. But I failed so far, I could not get my head around those 
+> > > architecture.
+> > 
+> > Let's just start with the trivial first patch, that can probably just be merged
+> > into 3.19, and then we can build on top of that later if anybody wants to
+> > get ac97 working again on at91.
+> > 
+> 
+> Do you want one of us to send that patch to Takashi and the Alsa ML or
+> will you do it?
+> You can add my ack.
 
-It was based on the Samsung for-next tree. I can rebase if needed.
+Please send it after you have checked that it actually works, I only
+took a snippet from my earlier patch assuming it would be sufficient,
+but I didn't try.
 
-> I'd like Tomasz ACK on it first though.
-
-Thanks,
-Andreas
-
--- 
-SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 21284 AG Nürnberg
+	Arnd
