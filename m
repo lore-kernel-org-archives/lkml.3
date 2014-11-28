@@ -1,96 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512AbaK1Xr6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 18:47:58 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:3029 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312AbaK1Xr4 (ORCPT
+	id S1751556AbaK1Xti (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 18:49:38 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:37927 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751312AbaK1Xtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 18:47:56 -0500
-X-IronPort-AV: E=Sophos;i="5.07,480,1413270000"; 
-   d="scan'208";a="52034674"
-Message-ID: <547909B0.2090408@broadcom.com>
-Date: Fri, 28 Nov 2014 15:48:00 -0800
-From: Arun Ramamurthy <arun.ramamurthy@broadcom.com>
+	Fri, 28 Nov 2014 18:49:36 -0500
+Message-ID: <547909CF.8060907@gmail.com>
+Date: Sat, 29 Nov 2014 01:48:31 +0200
+From: Giedrius Statkevicius <giedriuswork@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Tim Kryger <tim.kryger@gmail.com>, Scott Branden <sbranden@broadcom.com>
-CC: Thierry Reding <thierry.reding@gmail.com>, Ray Jui <rjui@broadcom.com>,
-        Arun Ramamurthy <arunrama@broadcom.com>,
-        <bcm-kernel-feedback-list@broadcom.com>, <linux-pwm@vger.kernel.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/4] pwm: kona: Fix incorrect enable after channel
- polarity change
-References: <sbranden@broadcom.com>	<1416944441-12066-1-git-send-email-sbranden@broadcom.com>	<1416944441-12066-3-git-send-email-sbranden@broadcom.com> <CAD7vxxKgcu9QLY8qH8WR0b_5WBu+MNxcemmZ8syYa__JaC6tsQ@mail.gmail.com>
-In-Reply-To: <CAD7vxxKgcu9QLY8qH8WR0b_5WBu+MNxcemmZ8syYa__JaC6tsQ@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Borislav Petkov <bp@alien8.de>
+CC: dvhart@infradead.org, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] platform: x86: hp_wireless: Inform the user if hp_wireless_input_setup()/add()
+ fails
+References: <1417212867-25187-1-git-send-email-giedriuswork@gmail.com> <20141128231555.GA31468@pd.tnic>
+In-Reply-To: <20141128231555.GA31468@pd.tnic>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 14-11-25 10:22 PM, Tim Kryger wrote:
-> On Tue, Nov 25, 2014 at 11:40 AM, Scott Branden <sbranden@broadcom.com> wrote:
->> From: Arun Ramamurthy <arunrama@broadcom.com>
+On 2014.11.29 01:15, Borislav Petkov wrote:
+> On Sat, Nov 29, 2014 at 12:14:27AM +0200, Giedrius Statkevicius wrote:
+>> In hpwl_add() there is a unused variable err to which we assign the
+>> result of hp_wireless_input_setup() but we don't do anything depending
+>> on the result so print out a message that informs the user if add()
+>> (hp_wireless_input_setup()) fails since acpi_device_probe() doesn't
+>> print anything in this case.
 >>
->> The pwm core code requires a separate call for enabling the channel
->> and hence the driver does not need to set pwm_trigger after a
->> polarity change
->
-> The framework does restrict when polarity changes can occur but it
-> isn't clear to me that there is any reason to delay applying the
-> polarity change.
-I examined several other drivers such as pwm-atmel-tcb.c, pwm-ep93xx.c, 
-pwm-renesas-tpu.c, pwm-samsung.c in the 3.17 kernel tree and none of 
-them enable the channel after changing polarity. We would be the first 
-driver to do so.
-
-> Keep in mind that polarity matters even when a PWM
-> is disabled.  While disabled, the output should be equivalent to an
-> enabled configuration with zero duty.  Thus for normal polarity the
-> output is constant low and for inversed polarity the output is
-> constant high.
-The driver does set the duty cycle to zero when disabling the pwm 
-channel.However since the frame work prevents polarity change when the 
-pwm is enabled, I don’t see how one could expect the polarity change to 
-be reflected immediately without a separate call to pwm enable.
-
-
-I believe there is an expectation that the output is
-> updated to reflect the requested polarity change prior to returning to
-> the caller.
-
-Once again I disagree with this based on other pwm drivers which only 
-change the polarity and do not enable the channel when their set 
-polarity functions are called.
-
->
->>
->> Signed-off-by: Arun Ramamurthy <arunrama@broadcom.com>
->> Reviewed-by: Ray Jui <rjui@broadcom.com>
->> Signed-off-by: Scott Branden <sbranden@broadcom.com>
+>> Signed-off-by: Giedrius Statkevicius <giedriuswork@gmail.com>
 >> ---
->>   drivers/pwm/pwm-bcm-kona.c | 5 -----
->>   1 file changed, 5 deletions(-)
+>>  drivers/platform/x86/hp-wireless.c | 3 +++
+>>  1 file changed, 3 insertions(+)
 >>
->> diff --git a/drivers/pwm/pwm-bcm-kona.c b/drivers/pwm/pwm-bcm-kona.c
->> index 29eef9e..fa0b5bf 100644
->> --- a/drivers/pwm/pwm-bcm-kona.c
->> +++ b/drivers/pwm/pwm-bcm-kona.c
->> @@ -173,11 +173,6 @@ static int kona_pwmc_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
->>
->>          writel(value, kp->base + PWM_CONTROL_OFFSET);
->>
->> -       kona_pwmc_apply_settings(kp, chan);
->> -
->> -       /* Wait for waveform to settle before gating off the clock */
->> -       ndelay(400);
->> -
->>          clk_disable_unprepare(kp->clk);
->>
->>          return 0;
->> --
->> 2.1.3
->>
+>> diff --git a/drivers/platform/x86/hp-wireless.c b/drivers/platform/x86/hp-wireless.c
+>> index 415348f..4e4cc8b 100644
+>> --- a/drivers/platform/x86/hp-wireless.c
+>> +++ b/drivers/platform/x86/hp-wireless.c
+>> @@ -85,6 +85,9 @@ static int hpwl_add(struct acpi_device *device)
+>>  	int err;
+>>  
+>>  	err = hp_wireless_input_setup();
+>> +	if (err)
+>> +		pr_err("Failed to setup hp wireless hotkeys\n");
+>> +
+> 
+> I don't think there's need for that. Just do:
+> 
+> 	return hp_wireless_input_setup();
+> 
+> and drop err completely.
+> 
+> The upper layer which calls the ->add() method should propagate the
+> error properly.
+Looking at other platform drivers code some add() methods do give
+information to the user via pr_{err,warn,info} macros, some don't. My
+first patch to deal with this just removed the err variable like you
+have wrote but Darren Hart and Rafael J. Wysocki commented that maybe it
+should be better to inform the user about this error. That is why
+probably there was a variable for this in the first place but probably
+the original author just forgot to add a pr_err().
