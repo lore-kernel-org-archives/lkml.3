@@ -1,107 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087AbaK1QCD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 11:02:03 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:39342 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971AbaK1QB7 (ORCPT
+	id S1752055AbaK1QB6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 11:01:58 -0500
+Received: from exprod6og127.obsmtp.com ([64.18.1.78]:41037 "EHLO
+	exprod6og127.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971AbaK1QBw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 11:01:59 -0500
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 5/7] lib: bitmap: Change bitmap_shift_left to take unsigned parameters
-Date: Fri, 28 Nov 2014 17:01:08 +0100
-Message-Id: <1417190476-18066-6-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1417190476-18066-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1417190476-18066-1-git-send-email-linux@rasmusvillemoes.dk>
+	Fri, 28 Nov 2014 11:01:52 -0500
+X-Greylist: delayed 573 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Nov 2014 11:01:51 EST
+From: Patrick Farrell <paf@cray.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        =?iso-8859-1?Q?Lo=EFc_Pefferkorn?= <loic@loicp.eu>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gdonald@gmail.com" <gdonald@gmail.com>,
+        "HPDD-discuss@ml01.01.org" <HPDD-discuss@ml01.01.org>
+Subject: RE: [HPDD-discuss] [PATCH] staging: lustre: fix sparse warnings
+ related to lock context imbalance
+Thread-Topic: [HPDD-discuss] [PATCH] staging: lustre: fix sparse warnings
+ related to lock context imbalance
+Thread-Index: AQHQCagWB71wZzuU5USMaoAdEy50BJxzx62AgAFrDwCAAQLjgP//9nRc
+Date: Fri, 28 Nov 2014 15:45:24 +0000
+Message-ID: <DB0C8A206669AC40B1C4E52A8584A6F61496CCB5@CFWEX01.americas.cray.com>
+References: <02a457cec587341d0f1665491f6360323694b008.1417017302.git.loic@loicp.eu>
+ <20141126205443.GB10615@kroah.com>
+ <20141127183410.GA4582@iron>,<20141128100045.GC4860@mwanda>
+In-Reply-To: <20141128100045.GC4860@mwanda>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.234.40]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gcc can generate slightly better code for stuff like "nbits %
-BITS_PER_LONG" when it knows nbits is not negative. Since negative
-size bitmaps or shift amounts don't make sense, change these
-parameters of bitmap_shift_right to unsigned.
+Dan,
 
-If off >= lim (which requires shift >= nbits), k is initialized with a
-large positive value, but since I've let k continue to be signed, the
-loop will never run and dst will be zeroed as expected. Inside the
-loop, k is guaranteed to be non-negative, so the fact that it is
-promoted to unsigned in the various expressions it appears in is
-harmless.
+I disagree about the change suggested here.  In this particular code, 'object_attr' is distinct from 'attr', as in a 'setattr' call on an inode.  'cl_object' is a distinct thing from an inode/file on disk, and specifying it is the objects attr is helpful in understanding there is not a direct relationship to 'attr' in the general filesystem sense.  (cl_object attrs are used in determining actual on disk attributes, but there is not a one-to-one correspondence.)
 
-Also use "shift" and "nbits" consistently for the parameter names.
+I am willing to be corrected, but that is my first feeling here.
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
- include/linux/bitmap.h | 12 ++++++------
- lib/bitmap.c           | 11 ++++++-----
- 2 files changed, 12 insertions(+), 11 deletions(-)
+- Patrick
+________________________________________
+From: HPDD-discuss [hpdd-discuss-bounces@lists.01.org] on behalf of Dan Carpenter [dan.carpenter@oracle.com]
+Sent: Friday, November 28, 2014 4:00 AM
+To: Loïc Pefferkorn
+Cc: devel@driverdev.osuosl.org; Greg KH; linux-kernel@vger.kernel.org; gdonald@gmail.com; HPDD-discuss@ml01.01.org
+Subject: Re: [HPDD-discuss] [PATCH] staging: lustre: fix sparse warnings related to lock context imbalance
 
-diff --git a/include/linux/bitmap.h b/include/linux/bitmap.h
-index 5494adb..fc8abc7 100644
---- a/include/linux/bitmap.h
-+++ b/include/linux/bitmap.h
-@@ -96,8 +96,8 @@ extern void __bitmap_complement(unsigned long *dst, const unsigned long *src,
- 			unsigned int nbits);
- extern void __bitmap_shift_right(unsigned long *dst, const unsigned long *src,
- 				unsigned int shift, unsigned int nbits);
--extern void __bitmap_shift_left(unsigned long *dst,
--                        const unsigned long *src, int shift, int bits);
-+extern void __bitmap_shift_left(unsigned long *dst, const unsigned long *src,
-+				unsigned int shift, unsigned int nbits);
- extern int __bitmap_and(unsigned long *dst, const unsigned long *bitmap1,
- 			const unsigned long *bitmap2, unsigned int nbits);
- extern void __bitmap_or(unsigned long *dst, const unsigned long *bitmap1,
-@@ -289,13 +289,13 @@ static inline void bitmap_shift_right(unsigned long *dst, const unsigned long *s
- 		__bitmap_shift_right(dst, src, shift, nbits);
- }
- 
--static inline void bitmap_shift_left(unsigned long *dst,
--			const unsigned long *src, int n, int nbits)
-+static inline void bitmap_shift_left(unsigned long *dst, const unsigned long *src,
-+				unsigned int shift, unsigned int nbits)
- {
- 	if (small_const_nbits(nbits))
--		*dst = (*src << n) & BITMAP_LAST_WORD_MASK(nbits);
-+		*dst = (*src << shift) & BITMAP_LAST_WORD_MASK(nbits);
- 	else
--		__bitmap_shift_left(dst, src, n, nbits);
-+		__bitmap_shift_left(dst, src, shift, nbits);
- }
- 
- static inline int bitmap_parse(const char *buf, unsigned int buflen,
-diff --git a/lib/bitmap.c b/lib/bitmap.c
-index 0d78c96..5edd71b 100644
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -146,18 +146,19 @@ EXPORT_SYMBOL(__bitmap_shift_right);
-  *   @dst : destination bitmap
-  *   @src : source bitmap
-  *   @shift : shift by this many bits
-- *   @bits : bitmap size, in bits
-+ *   @nbits : bitmap size, in bits
-  *
-  * Shifting left (multiplying) means moving bits in the LS -> MS
-  * direction.  Zeros are fed into the vacated LS bit positions
-  * and those MS bits shifted off the top are lost.
-  */
- 
--void __bitmap_shift_left(unsigned long *dst,
--			const unsigned long *src, int shift, int bits)
-+void __bitmap_shift_left(unsigned long *dst, const unsigned long *src,
-+			unsigned int shift, unsigned int nbits)
- {
--	int k, lim = BITS_TO_LONGS(bits), left = bits % BITS_PER_LONG;
--	int off = shift/BITS_PER_LONG, rem = shift % BITS_PER_LONG;
-+	int k;
-+	unsigned int lim = BITS_TO_LONGS(nbits), left = nbits % BITS_PER_LONG;
-+	unsigned int off = shift/BITS_PER_LONG, rem = shift % BITS_PER_LONG;
- 	for (k = lim - off - 1; k >= 0; --k) {
- 		unsigned long upper, lower;
- 
--- 
-2.0.4
+On Thu, Nov 27, 2014 at 07:34:10PM +0100, Loïc Pefferkorn wrote:
+> 1827         if (valid != 0) {
+> 1828             cl_object_attr_lock(obj);
+> 1829             cl_object_attr_set(env, obj, attr, valid);
+> 1830             cl_object_attr_unlock(obj);
+>
+> after:
+>
+> 1827         if (valid != 0) {
+> 1828             spin_lock(cl_object_attr_guard(obj));
+> 1829             cl_object_attr_set(env, obj, attr, valid);
+> 1830             spin_unlock(cl_object_attr_guard(obj));
 
+The word "_object" doesn't add any new information to the name.  If you
+remove it then the code is improved.
+
+                spin_lock(cl_attr_guard(obj));
+                cl_attr_set(env, obj, attr, valid);
+                spin_unlock(cl_attr_guard(obj));
+
+
+regards,
+dan carpenter
+
+_______________________________________________
+HPDD-discuss mailing list
+HPDD-discuss@lists.01.org
+https://lists.01.org/mailman/listinfo/hpdd-discuss
