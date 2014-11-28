@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751256AbaK1Rxp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 12:53:45 -0500
-Received: from mail.us.es ([193.147.175.20]:35393 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750904AbaK1Rxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 12:53:43 -0500
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus5 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.98.4/19692. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-103.2/7.5):. 
- Processed in 2.808835 secs); 28 Nov 2014 17:53:40 -0000
-X-Spam-ASN: AS12715 87.216.0.0/16
-X-Envelope-From: pneira@us.es
-Date: Fri, 28 Nov 2014 18:55:53 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Bernhard Thaler <bernhard.thaler@wvnet.at>
-Cc: David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-        stephen@networkplumber.org, netdev@vger.kernel.org,
-        bridge@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, sven@open-mesh.com
-Subject: Re: [PATCH 1/1] bridge: Fix NAT66ed IPv6 packets not being bridged
- correctly
-Message-ID: <20141128175553.GA7807@salvia>
-References: <1410816448-4401-1-git-send-email-bernhard.thaler@wvnet.at>
- <20140915.174009.1151039353244879675.davem@davemloft.net>
- <20141003112119.GA5420@salvia>
- <54777AE6.7050102@wvnet.at>
+	id S1751327AbaK1R4Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 12:56:16 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:51083 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033AbaK1R4P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 12:56:15 -0500
+Date: Fri, 28 Nov 2014 18:56:13 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>, Milian Wolff <mail@milianw.de>
+Subject: Re: [PATCH v2 2/2] perf record: Show precise number of samples
+Message-ID: <20141128175613.GY12538@two.firstfloor.org>
+References: <1417158708-31401-2-git-send-email-namhyung@kernel.org>
+ <1417158859-31538-1-git-send-email-namhyung@kernel.org>
+ <20141128124426.GE27703@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54777AE6.7050102@wvnet.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141128124426.GE27703@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 08:26:30PM +0100, Bernhard Thaler wrote:
-> Hi,
+> > Reported-by: Milian Wolff <mail@milianw.de>
+> > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 > 
-> I tested Sven's patch in my setup and I think it should be safe to use
-> it. It is shorter and cleaner written and he submitted it earlier.
+> eeeey great, I mean.. finally ;-) 
 
-Thanks for testing.
+Yes I like it too.
 
-> I will be happy to assist you or Sven if any further work is needed.
+BTW it would be nice if we could show down a break down on how many
+bytes the different options passed to perf record added, by accounting
+the different header fields. That would guide people who suffer
+from too large perf.data files.
 
-Please, resubmit this patch to netfilter-devel@vger.kernel.org.
-Thanks.
+-Andi
