@@ -1,97 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434AbaK1B6p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 20:58:45 -0500
-Received: from ozlabs.org ([103.22.144.67]:59840 "EHLO ozlabs.org"
+	id S1751222AbaK1CI0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 21:08:26 -0500
+Received: from mga09.intel.com ([134.134.136.24]:56838 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751051AbaK1B6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 20:58:43 -0500
-Date: Fri, 28 Nov 2014 12:58:36 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Michal Marek <mmarek@suse.cz>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Robert Richter <rrichter@cavium.com>,
-        Masahiro Yamada <yamada.m@jp.panasonic.com>
-Subject: linux-next: manual merge of the kbuild tree with the arm-soc tree
-Message-ID: <20141128125836.2736fe99@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1750926AbaK1CIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Nov 2014 21:08:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,473,1413270000"; 
+   d="scan'208";a="644790852"
+From: "Petallo, MauriceX R" <mauricex.r.petallo@intel.com>
+To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        "Eduardo Valentin" <edubezval@gmail.com>
+CC: "Zhang, Rui" <rui.zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] thermal: Don't call thermal_zone_device_update inside
+ spinlock
+Thread-Topic: [PATCH] thermal: Don't call thermal_zone_device_update inside
+ spinlock
+Thread-Index: AQHQCNTaAE3oAKRFckilj5iR4AxSQZxxGoyAgAQy4RA=
+Date: Fri, 28 Nov 2014 02:08:20 +0000
+Message-ID: <B48739867A236B498580AFF76C49038631FDE02A@PGSMSX107.gar.corp.intel.com>
+References: <1415875624-587-1-git-send-email-mauricex.r.petallo@intel.com>
+	 <20141125052258.GB29240@developer>
+ <1416938199.2043.234.camel@spandruv-desktop.jf.intel.com>
+In-Reply-To: <1416938199.2043.234.camel@spandruv-desktop.jf.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.205]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/.yJhN57SwRfdhrx1C=2ko38"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sAS28YnJ028582
 
---Sig_/.yJhN57SwRfdhrx1C=2ko38
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi,
+Ok. I will update the title.
+Thanks for the feedbacks and Ack.
 
-Hi Michal,
+Regards,
+-Maurice
 
-Today's linux-next merge of the kbuild tree got a conflict in
-scripts/Kbuild.include between commit 9fb5e5372208 ("dts, kbuild:
-Factor out dtbs install rules to Makefile.dtbinst") from the arm-soc
-tree and commit 371fdc77af44 ("kbuild: collect shorthands into
-scripts/Kbuild.include") from the kbuild tree.
+-----Original Message-----
+From: Srinivas Pandruvada [mailto:srinivas.pandruvada@linux.intel.com] 
+Sent: Wednesday, November 26, 2014 1:57 AM
+To: Eduardo Valentin
+Cc: Petallo, MauriceX R; Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] thermal: Don't call thermal_zone_device_update inside spinlock
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+On Tue, 2014-11-25 at 01:23 -0400, Eduardo Valentin wrote:
+Hi, 
+> Hi,
+> 
+> A minor thing. Your patch title makes us think this fix affects the 
+> thermal subsystem completely, whereas it affects a specific driver.
+> 
+Good point. I overlooked this.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Maurice,
+Change the title to something like
+"thermal: Intel SoC DTS: Don't call thermal_zone_device_update inside spinlock"
 
-diff --cc scripts/Kbuild.include
-index 5374b1bdf02f,0f909814edfc..000000000000
---- a/scripts/Kbuild.include
-+++ b/scripts/Kbuild.include
-@@@ -180,11 -180,17 +180,23 @@@ build :=3D -f $(srctree)/scripts/Makefile
-  modbuiltin :=3D -f $(srctree)/scripts/Makefile.modbuiltin obj
- =20
-  ###
- +# Shorthand for $(Q)$(MAKE) -f scripts/Makefile.dtbinst obj=3D
- +# Usage:
- +# $(Q)$(MAKE) $(dtbinst)=3Ddir
- +dtbinst :=3D -f $(if $(KBUILD_SRC),$(srctree)/)scripts/Makefile.dtbinst o=
-bj
- +
-++###
-+ # Shorthand for $(Q)$(MAKE) -f scripts/Makefile.clean obj=3D
-+ # Usage:
-+ # $(Q)$(MAKE) $(clean)=3Ddir
-+ clean :=3D -f $(srctree)/scripts/Makefile.clean obj
-+=20
-+ ###
-+ # Shorthand for $(Q)$(MAKE) -rR -f scripts/Makefile.headersinst obj=3D
-+ # Usage:
-+ # $(Q)$(MAKE) $(hdr-inst)=3Ddir
-+ hdr-inst :=3D -rR -f $(srctree)/scripts/Makefile.headersinst obj
-+=20
-  # Prefix -I with $(srctree) if it is not an absolute path.
-  # skip if -I has no parameter
-  addtree =3D $(if $(patsubst -I%,%,$(1)), \
+Thanks,
+Srinivas 
+> 
+> On Thu, Nov 13, 2014 at 06:47:04PM +0800, Maurice Petallo wrote:
+> > The driver calls spin_lock_irqsave during DTS interrupt. The 
+> > interrupt handle then calls thermal_zone_device_update which 
+> > implicitly calls a sleep function and produce the following bug:
+> >
+>  
+> > BUG: sleeping function called from invalid context at 
+> > kernel/locking/mutex.c:97
+> > in_atomic(): 1, irqs_disabled(): 1, pid: 920, name: irq/86-soc_dts
+> > CPU: 0 PID: 920 Comm: irq/86-soc_dts Tainted: G            E  3.17.0-rc2+ #1
+> > Hardware name: Intel Corp. VALLEYVIEW B3 PLATFORM/NOTEBOOK, BIOS 
+> > BYTICRB1.86C.0092.R31.1408290850 08/29/2014
+> >  00000000 00000000 c25dbe74 c1818cfd f3cc488c c25dbe9c c1059305 
+> > c1b4063b
+> >  00000001 00000001 00000398 f3cc488c f6817644 f6817644 f3ecc6c0 
+> > c25dbea8
+> >  c18208f2 f6817400 c25dbebc c159b0bb c25dbedc f6817400 f32a2300 
+> > c25dbee8 Call Trace:
+> >  [<c1818cfd>] dump_stack+0x48/0x60
+> >  [<c1059305>] __might_sleep+0xec/0xf4  [<c18208f2>] 
+> > mutex_lock+0x1c/0x34  [<c159b0bb>] thermal_zone_get_temp+0x34/0x59  
+> > [<c159bde5>] thermal_zone_device_update+0x2d/0xcb
+> >  [<f85da16a>] ? iosf_mbi_write+0x6c/0x74 [iosf_mbi]  [<f7c7445d>] 
+> > soc_irq_thread_fn+0x10c/0x163 [intel_soc_dts_thermal]  [<c107b72b>] 
+> > irq_thread_fn+0x18/0x2a  [<c107bedb>] irq_thread+0x81/0x11f  
+> > [<c107b713>] ? irq_finalize_oneshot+0x7c/0x7c  [<c107bf79>] ? 
+> > irq_thread+0x11f/0x11f  [<c107be5a>] ? wake_threads_waitq+0x31/0x31  
+> > [<c1054217>] kthread+0x87/0x8c  [<c1821e41>] 
+> > ret_from_kernel_thread+0x21/0x30  [<c1054190>] ? 
+> > __kthread_parkme+0x55/0x55
+> > 
+> > Signed-off-by: Maurice Petallo <mauricex.r.petallo@intel.com>
+> > Acked-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+> > ---
+> >  drivers/thermal/intel_soc_dts_thermal.c |   12 +++++++-----
+> >  1 file changed, 7 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/drivers/thermal/intel_soc_dts_thermal.c 
+> > b/drivers/thermal/intel_soc_dts_thermal.c
+> > index a6a0a18..5580f5b 100644
+> > --- a/drivers/thermal/intel_soc_dts_thermal.c
+> > +++ b/drivers/thermal/intel_soc_dts_thermal.c
+> > @@ -360,6 +360,9 @@ static void proc_thermal_interrupt(void)
+> >  	u32 sticky_out;
+> >  	int status;
+> >  	u32 ptmc_out;
+> > +	unsigned long flags;
+> > +
+> > +	spin_lock_irqsave(&intr_notify_lock, flags);
+> >  
+> >  	/* Clear APIC interrupt */
+> >  	status = iosf_mbi_read(BT_MBI_UNIT_PMC, BT_MBI_BUNIT_READ, @@ 
+> > -378,21 +381,20 @@ static void proc_thermal_interrupt(void)
+> >  		/* reset sticky bit */
+> >  		status = iosf_mbi_write(BT_MBI_UNIT_PMC, BT_MBI_BUNIT_WRITE,
+> >  					SOC_DTS_OFFSET_PTTSS, sticky_out);
+> > +		spin_unlock_irqrestore(&intr_notify_lock, flags);
+> > +
+> >  		for (i = 0; i < SOC_MAX_DTS_SENSORS; ++i) {
+> >  			pr_debug("TZD update for zone %d\n", i);
+> >  			thermal_zone_device_update(soc_dts[i]->tzone);
+> >  		}
+> > -	}
+> > +	} else
+> > +		spin_unlock_irqrestore(&intr_notify_lock, flags);
+> >  
+> >  }
+> >  
+> >  static irqreturn_t soc_irq_thread_fn(int irq, void *dev_data)  {
+> > -	unsigned long flags;
+> > -
+> > -	spin_lock_irqsave(&intr_notify_lock, flags);
+> >  	proc_thermal_interrupt();
+> > -	spin_unlock_irqrestore(&intr_notify_lock, flags);
+> >  	pr_debug("proc_thermal_interrupt\n");
+> >  
+> >  	return IRQ_HANDLED;
+> 
+> A part from the minor thing I mentioned before, you can add my:
+> 
+> Acked-by: Eduardo Valentin <edubezval@gmail.com>
+> 
+> > --
+> > 1.7.9.5
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-pm" 
+> > in the body of a message to majordomo@vger.kernel.org More majordomo 
+> > info at  http://vger.kernel.org/majordomo-info.html
 
---Sig_/.yJhN57SwRfdhrx1C=2ko38
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUd9bRAAoJEMDTa8Ir7ZwVoecP/An6nKRpg8VpWjRgTtvMSUXT
-qDrWF3nbszSR6l5yeWHgYJocel+3SN+4QSb7zHujlKZcGc6T72eDFaN7cNjOywuV
-l6RXmnYNLkDsWkz63dtRo46ounUG1DwBxKv8IS52QFlbfUYeNifROYd2k2Gr3LCQ
-adLP4o3UF3iHqUSS/2ftpw3GChyuZQzg1lukeyLBne3FbPf3dXGdccv3QpvjmUa3
-D7L5102vAaPy44WJfrBOqaDKz3R9Eoz26puA9zUrTA1pCqz1bCRb4WVb9e2dACjw
-++1+XjODPY9DoJ+v7ZCK0AvjXuEMPghY+SwZE4WA2J/OwUCgwcp0rX6KEbZIp+G/
-r2/pgLBd/ODmTgiBnfgzx+Usx238dYinooJyBTViARppP1wdFq9fVBo8sxJsrjy2
-/8Xto4Zon7Rmcs84iTywml0nBV/kbMqHRqzSMbrTdA9j883kNVuFUI/xmAKMK8QH
-8WazQBTSrtzAdNt11n6P3pFagz/cvahQYS116jbWDJzML+mY/EdwN3HjqHvJ1fv2
-A+BXNFVZDHYkSXtwJuu2Q6yptc6Av15AViE4vglJsQG7b13NdY5PYH5GGEIgAY2x
-mIHqi6R6UWe7LuKtFnSRlw7tO0ZYYyJjHfrGvcfnXR3Q1af/mgyabDXYm4LR73qx
-yL0x3BsENqdZnHYIgSj6
-=xASJ
------END PGP SIGNATURE-----
-
---Sig_/.yJhN57SwRfdhrx1C=2ko38--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
