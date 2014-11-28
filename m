@@ -1,36 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751562AbaK1Jhr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 04:37:47 -0500
-Received: from mail.tozsdeiskola.hu ([87.229.103.13]:39099 "EHLO
-	web.tozsdeiskola.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465AbaK1Jhm (ORCPT
+	id S1751768AbaK1JjG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 04:39:06 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:5197 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425AbaK1JjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 04:37:42 -0500
-X-Greylist: delayed 2652 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Nov 2014 04:37:41 EST
-To: undisclosed-recipients:;
-Subject: LAST WARNING!!
-X-PHP-Originating-Script: 33:rcube.php
+	Fri, 28 Nov 2014 04:39:03 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 28 Nov 2014 01:37:26 -0800
+From: Vince Hsu <vinceh@nvidia.com>
+To: <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>, <gnurou@gmail.com>,
+        <pdeschrijver@nvidia.com>
+CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Vince Hsu <vinceh@nvidia.com>
+Subject: [V2 PATCH] soc/tegra: fuse: export tegra_sku_info for module use
+Date: Fri, 28 Nov 2014 17:41:02 +0800
+Message-ID: <1417167662-20618-1-git-send-email-vinceh@nvidia.com>
+X-Mailer: git-send-email 1.9.1
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8bit
-Date: Fri, 28 Nov 2014 09:52:05 +0100
-From: WEBMASTER <info@tozsdeiskola.hu>
-Message-ID: <11a15f7273d8c93991ef54bdf4cefd8e@tozsdeiskola.hu>
-User-Agent: Roundcube Webmail/1.0.2
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Some Tegra drivers might be complied as kernel modules, and
+they need the fuse information for initialization. One
+example is the GK20A Nouveau driver. It needs the GPU speedo
+value to calculate frequency-voltage table. So export
+the tegra_sku_info.
 
+Signed-off-by: Vince Hsu <vinceh@nvidia.com>
+---
 
+v2: add more description why we need this patch
+
+ drivers/soc/tegra/fuse/fuse-tegra.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/soc/tegra/fuse/fuse-tegra.c b/drivers/soc/tegra/fuse/fuse-tegra.c
+index 11a5043959dc..011a3363c265 100644
+--- a/drivers/soc/tegra/fuse/fuse-tegra.c
++++ b/drivers/soc/tegra/fuse/fuse-tegra.c
+@@ -31,6 +31,7 @@
+ static u32 (*fuse_readl)(const unsigned int offset);
+ static int fuse_size;
+ struct tegra_sku_info tegra_sku_info;
++EXPORT_SYMBOL(tegra_sku_info);
+ 
+ static const char *tegra_revision_name[TEGRA_REVISION_MAX] = {
+ 	[TEGRA_REVISION_UNKNOWN] = "unknown",
 -- 
-Your mailbox has exceeded one or more size limits set by your 
-administrator webmail, you are required to update your account with in 
-72 hours or else your account will be closed. click the link below and 
-fill in the details to update your account.
-==> http://www.keryen.kz/help/upgrade.php
-Thank you,
-WEBMASTER
-WEB ADMINISTRATOR Copyright © 2014
+1.9.1
+
