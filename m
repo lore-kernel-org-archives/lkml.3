@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884AbaK1JkH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 04:40:07 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:39998 "EHLO
+	id S1751902AbaK1Jkf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 04:40:35 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:38238 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751463AbaK1JkB (ORCPT
+	with ESMTP id S1751822AbaK1JkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 04:40:01 -0500
+	Fri, 28 Nov 2014 04:40:06 -0500
 X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="44143281"
+   d="scan'208";a="44143285"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: <linux-kernel@vger.kernel.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -16,10 +16,12 @@ CC: Lai Jiangshan <laijs@cn.fujitsu.com>,
         Josh Triplett <josh@joshtriplett.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [RFC PATCH 0/2] tiny_rcu: simplify tiny_rcu
-Date: Fri, 28 Nov 2014 17:43:31 +0800
-Message-ID: <1417167813-11963-1-git-send-email-laijs@cn.fujitsu.com>
+Subject: [RFC PATCH 2/2] tiny_rcu: resched when call_rcu_sched() on idle_task
+Date: Fri, 28 Nov 2014 17:43:33 +0800
+Message-ID: <1417167813-11963-3-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1417167813-11963-1-git-send-email-laijs@cn.fujitsu.com>
+References: <1417167813-11963-1-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.167.226.103]
@@ -27,42 +29,236 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Paul
-
-These two patches use the special feture of the UP system:
-	In UP, quiescent state == grace period.
-
-For rcu_bh, rcu_process_callbacks() == a bh == QS == GP
-so we can pass rcu_bh-QS and advance GP(and callbacks) in
-rcu_process_callbacks(). After doing so, rcu_bh_qs() is useless
-since its work is handled by rcu_process_callbacks().
-
-For rcu_sched, context-switch = QS = GP, thus we can force a
+For rcu_sched in UP, context-switch = QS = GP, thus we can force a
 context-switch when call_rcu_sched() is happened on idle_task.
-After doing so, rcu_idle/irq_enter/exit() are useless.
+After doing so, rcu_idle/irq_enter/exit() are useless, so we can simply
+make these functions empty.
 
-These patches remove the useless code to simplify the tiny_rcu.
+More important, this change does not change the functionality logically.
+Note: raise_softirq(RCU_SOFTIRQ)/rcu_sched_qs() in rcu_idle_enter() and
+outmost rcu_irq_exit() will have to wake up the ksoftirqd
+(due to in_interrupt() == 0).
 
-We can change rcu_bh_qs() rcu_idle/irq_enter/exit() to static-inline-functions
-to reduce the binary size after these two patches accepted.
+Before this patch		After this patch:
+call_rcu_sched() in idle;	call_rcu_sched() in idle
+				  set resched
+do other stuffs;		do other stuffs
+outmost rcu_irq_exit()		outmost rcu_irq_exit() (empty function)
+  (or rcu_idle_enter())		  (or rcu_idle_enter(), also empty function)
+				start to resched. (see above)
+  rcu_sched_qs()		rcu_sched_qs()
+    QS,and GP and advance cb	  QS,and GP and advance cb
+    wake up the ksoftirqd	    wake up the ksoftirqd
+      set resched
+resched to ksoftirqd (or other)	resched to ksoftirqd (or other)
 
-Thanks,
-Lai
+These two code patches are almost the same.
 
-Cc: Josh Triplett <josh@joshtriplett.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-
-Lai Jiangshan (2):
-  record rcu_bh quiescent state in RCU_SOFTIRQ
-  tiny_rcu: resched when call_rcu() on idle_task
-
- kernel/rcu/rcu.h         |    6 ++
- kernel/rcu/tiny.c        |  134 ++++++++--------------------------------------
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ kernel/rcu/rcu.h         |    6 +++
+ kernel/rcu/tiny.c        |   98 +++-------------------------------------------
  kernel/rcu/tiny_plugin.h |    2 +-
- kernel/rcu/tree.c        |    6 --
- 4 files changed, 29 insertions(+), 119 deletions(-)
+ kernel/rcu/tree.c        |    6 ---
+ 4 files changed, 13 insertions(+), 99 deletions(-)
 
+diff --git a/kernel/rcu/rcu.h b/kernel/rcu/rcu.h
+index 07bb02e..80adef7 100644
+--- a/kernel/rcu/rcu.h
++++ b/kernel/rcu/rcu.h
+@@ -137,4 +137,10 @@ int rcu_jiffies_till_stall_check(void);
+ 
+ void rcu_early_boot_tests(void);
+ 
++/*
++ * This function really isn't for public consumption, but RCU is special in
++ * that context switches can allow the state machine to make progress.
++ */
++extern void resched_cpu(int cpu);
++
+ #endif /* __LINUX_RCU_H */
+diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
+index f8e19ac..004cfe1 100644
+--- a/kernel/rcu/tiny.c
++++ b/kernel/rcu/tiny.c
+@@ -47,54 +47,14 @@ static void __call_rcu(struct rcu_head *head,
+ 		       void (*func)(struct rcu_head *rcu),
+ 		       struct rcu_ctrlblk *rcp);
+ 
+-static long long rcu_dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
+-
+ #include "tiny_plugin.h"
+ 
+-/* Common code for rcu_idle_enter() and rcu_irq_exit(), see kernel/rcu/tree.c. */
+-static void rcu_idle_enter_common(long long newval)
+-{
+-	if (newval) {
+-		RCU_TRACE(trace_rcu_dyntick(TPS("--="),
+-					    rcu_dynticks_nesting, newval));
+-		rcu_dynticks_nesting = newval;
+-		return;
+-	}
+-	RCU_TRACE(trace_rcu_dyntick(TPS("Start"),
+-				    rcu_dynticks_nesting, newval));
+-	if (IS_ENABLED(CONFIG_RCU_TRACE) && !is_idle_task(current)) {
+-		struct task_struct *idle __maybe_unused = idle_task(smp_processor_id());
+-
+-		RCU_TRACE(trace_rcu_dyntick(TPS("Entry error: not idle task"),
+-					    rcu_dynticks_nesting, newval));
+-		ftrace_dump(DUMP_ALL);
+-		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
+-			  current->pid, current->comm,
+-			  idle->pid, idle->comm); /* must be idle task! */
+-	}
+-	rcu_sched_qs();
+-	barrier();
+-	rcu_dynticks_nesting = newval;
+-}
+-
+ /*
+  * Enter idle, which is an extended quiescent state if we have fully
+- * entered that mode (i.e., if the new value of dynticks_nesting is zero).
++ * entered that mode.
+  */
+ void rcu_idle_enter(void)
+ {
+-	unsigned long flags;
+-	long long newval;
+-
+-	local_irq_save(flags);
+-	WARN_ON_ONCE((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) == 0);
+-	if ((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) ==
+-	    DYNTICK_TASK_NEST_VALUE)
+-		newval = 0;
+-	else
+-		newval = rcu_dynticks_nesting - DYNTICK_TASK_NEST_VALUE;
+-	rcu_idle_enter_common(newval);
+-	local_irq_restore(flags);
+ }
+ EXPORT_SYMBOL_GPL(rcu_idle_enter);
+ 
+@@ -103,55 +63,14 @@ EXPORT_SYMBOL_GPL(rcu_idle_enter);
+  */
+ void rcu_irq_exit(void)
+ {
+-	unsigned long flags;
+-	long long newval;
+-
+-	local_irq_save(flags);
+-	newval = rcu_dynticks_nesting - 1;
+-	WARN_ON_ONCE(newval < 0);
+-	rcu_idle_enter_common(newval);
+-	local_irq_restore(flags);
+ }
+ EXPORT_SYMBOL_GPL(rcu_irq_exit);
+ 
+-/* Common code for rcu_idle_exit() and rcu_irq_enter(), see kernel/rcu/tree.c. */
+-static void rcu_idle_exit_common(long long oldval)
+-{
+-	if (oldval) {
+-		RCU_TRACE(trace_rcu_dyntick(TPS("++="),
+-					    oldval, rcu_dynticks_nesting));
+-		return;
+-	}
+-	RCU_TRACE(trace_rcu_dyntick(TPS("End"), oldval, rcu_dynticks_nesting));
+-	if (IS_ENABLED(CONFIG_RCU_TRACE) && !is_idle_task(current)) {
+-		struct task_struct *idle __maybe_unused = idle_task(smp_processor_id());
+-
+-		RCU_TRACE(trace_rcu_dyntick(TPS("Exit error: not idle task"),
+-			  oldval, rcu_dynticks_nesting));
+-		ftrace_dump(DUMP_ALL);
+-		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
+-			  current->pid, current->comm,
+-			  idle->pid, idle->comm); /* must be idle task! */
+-	}
+-}
+-
+ /*
+  * Exit idle, so that we are no longer in an extended quiescent state.
+  */
+ void rcu_idle_exit(void)
+ {
+-	unsigned long flags;
+-	long long oldval;
+-
+-	local_irq_save(flags);
+-	oldval = rcu_dynticks_nesting;
+-	WARN_ON_ONCE(rcu_dynticks_nesting < 0);
+-	if (rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK)
+-		rcu_dynticks_nesting += DYNTICK_TASK_NEST_VALUE;
+-	else
+-		rcu_dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
+-	rcu_idle_exit_common(oldval);
+-	local_irq_restore(flags);
+ }
+ EXPORT_SYMBOL_GPL(rcu_idle_exit);
+ 
+@@ -160,15 +79,6 @@ EXPORT_SYMBOL_GPL(rcu_idle_exit);
+  */
+ void rcu_irq_enter(void)
+ {
+-	unsigned long flags;
+-	long long oldval;
+-
+-	local_irq_save(flags);
+-	oldval = rcu_dynticks_nesting;
+-	rcu_dynticks_nesting++;
+-	WARN_ON_ONCE(rcu_dynticks_nesting == 0);
+-	rcu_idle_exit_common(oldval);
+-	local_irq_restore(flags);
+ }
+ EXPORT_SYMBOL_GPL(rcu_irq_enter);
+ 
+@@ -179,7 +89,7 @@ EXPORT_SYMBOL_GPL(rcu_irq_enter);
+  */
+ bool notrace __rcu_is_watching(void)
+ {
+-	return rcu_dynticks_nesting;
++	return true;
+ }
+ EXPORT_SYMBOL(__rcu_is_watching);
+ 
+@@ -352,6 +262,10 @@ static void __call_rcu(struct rcu_head *head,
+ void call_rcu_sched(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
+ {
+ 	__call_rcu(head, func, &rcu_sched_ctrlblk);
++	if (unlikely(is_idle_task(current))) {
++		/* force scheduling for rcu_sched_qs() */
++		resched_cpu(0);
++	}
+ }
+ EXPORT_SYMBOL_GPL(call_rcu_sched);
+ 
+diff --git a/kernel/rcu/tiny_plugin.h b/kernel/rcu/tiny_plugin.h
+index 858c565..b5fc5e5 100644
+--- a/kernel/rcu/tiny_plugin.h
++++ b/kernel/rcu/tiny_plugin.h
+@@ -147,7 +147,7 @@ static void check_cpu_stall(struct rcu_ctrlblk *rcp)
+ 	js = ACCESS_ONCE(rcp->jiffies_stall);
+ 	if (*rcp->curtail && ULONG_CMP_GE(j, js)) {
+ 		pr_err("INFO: %s stall on CPU (%lu ticks this GP) idle=%llx (t=%lu jiffies q=%ld)\n",
+-		       rcp->name, rcp->ticks_this_gp, rcu_dynticks_nesting,
++		       rcp->name, rcp->ticks_this_gp, DYNTICK_TASK_EXIT_IDLE,
+ 		       jiffies - rcp->gp_start, rcp->qlen);
+ 		dump_stack();
+ 	}
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index 3f5dd16..b5ef579 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -940,12 +940,6 @@ static int dyntick_save_progress_counter(struct rcu_data *rdp,
+ }
+ 
+ /*
+- * This function really isn't for public consumption, but RCU is special in
+- * that context switches can allow the state machine to make progress.
+- */
+-extern void resched_cpu(int cpu);
+-
+-/*
+  * Return true if the specified CPU has passed through a quiescent
+  * state by virtue of being in or having passed through an dynticks
+  * idle state since the last call to dyntick_save_progress_counter()
 -- 
 1.7.4.4
 
