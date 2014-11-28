@@ -1,134 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751335AbaK1KCf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 05:02:35 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:35714 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113AbaK1KCc (ORCPT
+	id S1751427AbaK1KHk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 05:07:40 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:34140 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113AbaK1KHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 05:02:32 -0500
-Date: Fri, 28 Nov 2014 11:02:20 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH v6 01/46] virtio: add low-level APIs for feature bits
-Message-ID: <20141128110220.741c11af.cornelia.huck@de.ibm.com>
-In-Reply-To: <1417118789-18231-2-git-send-email-mst@redhat.com>
-References: <1417118789-18231-1-git-send-email-mst@redhat.com>
-	<1417118789-18231-2-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+	Fri, 28 Nov 2014 05:07:38 -0500
+Subject: [PATCH 1.1 1/1]  arcmsr: Notify has sense data report
+From: Ching Huang <ching2048@areca.com.tw>
+To: hch@infradead.org, thenzl@redhat.com, jbottomley@parallels.com,
+        dan.carpenter@oracle.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: hare@suse.de
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 28 Nov 2014 18:07:32 +0800
+Message-ID: <1417169252.25477.11.camel@Centos6.3-64>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112810-0021-0000-0000-000001F26BA6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Nov 2014 22:07:36 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+From: Ching Huang <ching2048@areca.com.tw>
 
-> Add low level APIs to test/set/clear feature bits.
-> For use by transports, to make it easier to
-> write code independent of feature bit array format.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  include/linux/virtio_config.h | 53 ++++++++++++++++++++++++++++++++++++++++---
->  1 file changed, 50 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
-> index 7f4ef66..249fcd6 100644
-> --- a/include/linux/virtio_config.h
-> +++ b/include/linux/virtio_config.h
-> @@ -77,11 +77,47 @@ void virtio_check_driver_offered_feature(const struct virtio_device *vdev,
->  					 unsigned int fbit);
-> 
->  /**
-> - * virtio_has_feature - helper to determine if this device has this feature.
-> + * __virtio_test_bit - helper to test feature bits. For use by transports.
-> + *                     Devices should normally use virtio_has_feature,
-> + *                     which includes more checks.
->   * @vdev: the device
->   * @fbit: the feature bit
->   */
-> -static inline bool virtio_has_feature(const struct virtio_device *vdev,
-> +static inline bool __virtio_test_bit(const struct virtio_device *vdev,
-> +				     unsigned int fbit)
-> +{
-> +	/* Did you forget to fix assumptions on max features? */
-> +	if (__builtin_constant_p(fbit))
-> +		BUILD_BUG_ON(fbit >= 32);
-> +	else
-> +		BUG_ON(fbit >= 32);
+Setting command status with 'DRIVER_SENSE' except 'CHECK_CONDITION' if we have sense data.
 
-Does this want to be a helper? Might be overkill, but I'm always wary
-of changes that need to be applied manually in many different places :)
+Signed-off-by: Ching Huang <ching2048@areca.com.tw>
+---
 
-> +
-> +	return test_bit(fbit, vdev->features);
-> +}
-> +
-> +/**
-> + * __virtio_set_bit - helper to set feature bits. For use by transports.
-> + * @vdev: the device
-> + * @fbit: the feature bit
-> + */
-> +static inline void __virtio_set_bit(struct virtio_device *vdev,
-> +				    unsigned int fbit)
-> +{
-> +	/* Did you forget to fix assumptions on max features? */
-> +	if (__builtin_constant_p(fbit))
-> +		BUILD_BUG_ON(fbit >= 32);
-> +	else
-> +		BUG_ON(fbit >= 32);
-> +
-> +	set_bit(fbit, vdev->features);
-> +}
-> +
-> +/**
-> + * __virtio_clear_bit - helper to set feature bits. For use by transports.
+This patch is relative to http://git.infradead.org/users/hch/scsi-queue.git/tree/refs/heads/drivers-for-3.18:/drivers/scsi/arcmsr
 
-s/set/clear/
 
-> + * @vdev: the device
-> + * @fbit: the feature bit
-> + */
-> +static inline void __virtio_clear_bit(struct virtio_device *vdev,
->  				      unsigned int fbit)
->  {
->  	/* Did you forget to fix assumptions on max features? */
-> @@ -90,10 +126,21 @@ static inline bool virtio_has_feature(const struct virtio_device *vdev,
->  	else
->  		BUG_ON(fbit >= 32);
-> 
-> +	clear_bit(fbit, vdev->features);
-> +}
-> +
-> +/**
-> + * virtio_has_feature - helper to determine if this device has this feature.
-> + * @vdev: the device
-> + * @fbit: the feature bit
-> + */
-> +static inline bool virtio_has_feature(const struct virtio_device *vdev,
-> +				      unsigned int fbit)
-> +{
->  	if (fbit < VIRTIO_TRANSPORT_F_START)
->  		virtio_check_driver_offered_feature(vdev, fbit);
-> 
-> -	return test_bit(fbit, vdev->features);
-> +	return __virtio_test_bit(vdev, fbit);
->  }
-> 
->  static inline
+diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
+--- a/drivers/scsi/arcmsr/arcmsr.h	2014-09-19 11:04:41.845100000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr.h	2014-11-28 10:54:30.000000000 +0800
+@@ -52,7 +52,7 @@ struct device_attribute;
+ 	#define ARCMSR_MAX_FREECCB_NUM	320
+ #define ARCMSR_MAX_OUTSTANDING_CMD	255
+ #endif
+-#define ARCMSR_DRIVER_VERSION		"v1.30.00.04-20140919"
++#define ARCMSR_DRIVER_VERSION		"v1.30.00.05-20141128"
+ #define ARCMSR_SCSI_INITIATOR_ID						255
+ #define ARCMSR_MAX_XFER_SECTORS							512
+ #define ARCMSR_MAX_XFER_SECTORS_B						4096
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-09-19 11:01:26.990090000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-11-28 17:51:04.000000000 +0800
+@@ -989,16 +989,15 @@ static void arcmsr_report_sense_info(str
+ 
+ 	struct scsi_cmnd *pcmd = ccb->pcmd;
+ 	struct SENSE_DATA *sensebuffer = (struct SENSE_DATA *)pcmd->sense_buffer;
+-	pcmd->result = DID_OK << 16;
+-	if (sensebuffer) {
+-		int sense_data_length =
++
++	pcmd->result = (DRIVER_SENSE << 24) | (DID_OK << 16) | (CHECK_CONDITION << 1);
++	int sense_data_length =
+ 			sizeof(struct SENSE_DATA) < SCSI_SENSE_BUFFERSIZE
+ 			? sizeof(struct SENSE_DATA) : SCSI_SENSE_BUFFERSIZE;
+-		memset(sensebuffer, 0, SCSI_SENSE_BUFFERSIZE);
+-		memcpy(sensebuffer, ccb->arcmsr_cdb.SenseData, sense_data_length);
+-		sensebuffer->ErrorCode = SCSI_SENSE_CURRENT_ERRORS;
+-		sensebuffer->Valid = 1;
+-	}
++	memset(sensebuffer, 0, SCSI_SENSE_BUFFERSIZE);
++	memcpy(sensebuffer, ccb->arcmsr_cdb.SenseData, sense_data_length);
++	sensebuffer->ErrorCode = SCSI_SENSE_CURRENT_ERRORS;
++	sensebuffer->Valid = 1;
+ }
+ 
+ static u32 arcmsr_disable_outbound_ints(struct AdapterControlBlock *acb)
+
 
