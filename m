@@ -1,60 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751465AbaK1W2o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 17:28:44 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:56600 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176AbaK1W2n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 17:28:43 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: Dave Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Thierry Reding <thierry.reding@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>, linux-media@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH v3 0/3] drm: describe display bus format
-Date: Sat, 29 Nov 2014 00:29:10 +0200
-Message-ID: <7292023.aOo0xYF6kL@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <20141127143750.3984ddd0@bbrezillon>
-References: <1416318380-20122-1-git-send-email-boris.brezillon@free-electrons.com> <20141127143750.3984ddd0@bbrezillon>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1751515AbaK1W32 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 17:29:28 -0500
+Received: from mail.ispras.ru ([83.149.199.45]:58035 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751176AbaK1W31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 17:29:27 -0500
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Valentina Manea <valentina.manea.m@gmail.com>,
+        Shuah Khan <shuah.kh@samsung.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Subject: [PATCH] usbip: fix error handling in stub_probe()
+Date: Sat, 29 Nov 2014 01:29:10 +0300
+Message-Id: <1417213750-8856-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+If usb_hub_claim_port() fails, no resources are deallocated and
+if stub_add_files() fails, port is not released.
 
-On Thursday 27 November 2014 14:37:50 Boris Brezillon wrote:
-> On Tue, 18 Nov 2014 14:46:17 +0100 Boris Brezillon wrote:
-> > Hello,
-> > 
-> > This series makes use of the MEDIA_BUS_FMT definition to describe how
-> > the data are transmitted to the display.
-> > 
-> > This will allow drivers to configure their output display bus according
-> > to the display capabilities.
-> > For example some display controllers support DPI (or raw RGB) connectors
-> > and need to specify which format will be transmitted on the DPI bus
-> > (RGB444, RGB565, RGB888, ...).
-> > 
-> > This series also adds a field to the panel_desc struct so that one
-> > can specify which format is natevely supported by a panel.
-> 
-> Thierry, Laurent, Dave, can you take a look at this patch series: this
-> is the last missing dependency to get the atmel-hlcdc DRM driver
-> mainlined, and I was expecting to get this driver in 3.19...
+The patch fixes these issues and rearranges error handling code.
 
-I've reviewed the series, it looks globally fine to me. I just had two small 
-comments on patch 1/3.
+Found by Linux Driver Verification project (linuxtesting.org).
 
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/usb/usbip/stub_dev.c | 26 +++++++++++++++-----------
+ 1 file changed, 15 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/usb/usbip/stub_dev.c b/drivers/usb/usbip/stub_dev.c
+index fac20e0434c0..a3ec49bdc1e6 100644
+--- a/drivers/usb/usbip/stub_dev.c
++++ b/drivers/usb/usbip/stub_dev.c
+@@ -311,7 +311,6 @@ static int stub_probe(struct usb_device *udev)
+ {
+ 	struct stub_device *sdev = NULL;
+ 	const char *udev_busid = dev_name(&udev->dev);
+-	int err = 0;
+ 	struct bus_id_priv *busid_priv;
+ 	int rc;
+ 
+@@ -372,23 +371,28 @@ static int stub_probe(struct usb_device *udev)
+ 			(struct usb_dev_state *) udev);
+ 	if (rc) {
+ 		dev_dbg(&udev->dev, "unable to claim port\n");
+-		return rc;
++		goto err_port;
+ 	}
+ 
+-	err = stub_add_files(&udev->dev);
+-	if (err) {
++	rc = stub_add_files(&udev->dev);
++	if (rc) {
+ 		dev_err(&udev->dev, "stub_add_files for %s\n", udev_busid);
+-		dev_set_drvdata(&udev->dev, NULL);
+-		usb_put_dev(udev);
+-		kthread_stop_put(sdev->ud.eh);
+-
+-		busid_priv->sdev = NULL;
+-		stub_device_free(sdev);
+-		return err;
++		goto err_files;
+ 	}
+ 	busid_priv->status = STUB_BUSID_ALLOC;
+ 
+ 	return 0;
++err_files:
++	usb_hub_release_port(udev->parent, udev->portnum,
++			     (struct usb_dev_state *) udev);
++err_port:
++	dev_set_drvdata(&udev->dev, NULL);
++	usb_put_dev(udev);
++	kthread_stop_put(sdev->ud.eh);
++
++	busid_priv->sdev = NULL;
++	stub_device_free(sdev);
++	return rc;
+ }
+ 
+ static void shutdown_busid(struct bus_id_priv *busid_priv)
 -- 
-Regards,
-
-Laurent Pinchart
+1.9.1
 
