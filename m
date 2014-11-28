@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425AbaK1DeF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 22:34:05 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:30826 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194AbaK1Ddz (ORCPT
+	id S1751353AbaK1DeD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 22:34:03 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:38793 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035AbaK1Ddz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Nov 2014 22:33:55 -0500
 From: Ethan Zhao <ethan.zhao@oracle.com>
@@ -14,12 +14,12 @@ Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-pm@vger.kernel.org, ethan.kernel@gmail.com, joe.jin@oracle.com,
         brian.maly@oracle.com, Ethan Zhao <ethan.zhao@oracle.com>
 Subject: [PATCH 2/2 V5] intel_pstate: add kernel parameter to force loading on Sun X86 servers.
-Date: Fri, 28 Nov 2014 12:33:11 +0900
-Message-Id: <1417145592-21829-3-git-send-email-ethan.zhao@oracle.com>
+Date: Fri, 28 Nov 2014 12:33:12 +0900
+Message-Id: <1417145592-21829-4-git-send-email-ethan.zhao@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1417145592-21829-1-git-send-email-ethan.zhao@oracle.com>
 References: <1417145592-21829-1-git-send-email-ethan.zhao@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
