@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539AbaK1DhH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Nov 2014 22:37:07 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:31560 "EHLO
+	id S1751583AbaK1Dhc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Nov 2014 22:37:32 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:31577 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502AbaK1DhC (ORCPT
+	with ESMTP id S1751503AbaK1DhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Nov 2014 22:37:02 -0500
+	Thu, 27 Nov 2014 22:37:04 -0500
 From: Ethan Zhao <ethan.zhao@oracle.com>
 To: dirk.j.brandewie@intel.com, viresh.kumar@linaro.org, rjw@rjwysocki.net,
         corbet@lwn.net
@@ -14,12 +14,12 @@ Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-pm@vger.kernel.org, ethan.kernel@gmail.com, joe.jin@oracle.com,
         brian.maly@oracle.com, Ethan Zhao <ethan.zhao@oracle.com>
 Subject: [PATCH 2/2 V6] intel_pstate: add kernel parameter to force loading on Sun X86 servers.
-Date: Fri, 28 Nov 2014 12:36:16 +0900
-Message-Id: <1417145777-21897-3-git-send-email-ethan.zhao@oracle.com>
+Date: Fri, 28 Nov 2014 12:36:17 +0900
+Message-Id: <1417145777-21897-4-git-send-email-ethan.zhao@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1417145777-21897-1-git-send-email-ethan.zhao@oracle.com>
 References: <1417145777-21897-1-git-send-email-ethan.zhao@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
