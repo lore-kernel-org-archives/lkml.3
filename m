@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751163AbaK1MpJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 07:45:09 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:49656 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902AbaK1MpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 07:45:06 -0500
-Date: Fri, 28 Nov 2014 13:44:57 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Amit Shah <amit.shah@redhat.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Nikhil Rao <nikhil.rao@intel.com>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>,
-        Joel Stanley <joel@jms.id.au>,
-        virtualization@lists.linux-foundation.org, lguest@lists.ozlabs.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [PATCH v6 02/46] virtio: use u32, not bitmap for features
-Message-ID: <20141128134457.37e427ce.cornelia.huck@de.ibm.com>
-In-Reply-To: <1417118789-18231-3-git-send-email-mst@redhat.com>
-References: <1417118789-18231-1-git-send-email-mst@redhat.com>
-	<1417118789-18231-3-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14112812-0029-0000-0000-000001EB6957
+	id S1751216AbaK1MpY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 07:45:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36217 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751172AbaK1MpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 07:45:19 -0500
+Date: Fri, 28 Nov 2014 13:44:26 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>, Milian Wolff <mail@milianw.de>
+Subject: Re: [PATCH v2 2/2] perf record: Show precise number of samples
+Message-ID: <20141128124426.GE27703@krava.brq.redhat.com>
+References: <1417158708-31401-2-git-send-email-namhyung@kernel.org>
+ <1417158859-31538-1-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417158859-31538-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Nov 2014 22:07:41 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
-
-> It seemed like a good idea to use bitmap for features
-> in struct virtio_device, but it's actually a pain,
-> and seems to become even more painful when we get more
-> than 32 feature bits.  Just change it to a u32 for now.
+On Fri, Nov 28, 2014 at 04:14:19PM +0900, Namhyung Kim wrote:
+> After perf record finishes, it prints file size and number of samples
+> in the file but this info is wrong since it assumes typical sample
+> size of 24 bytes and divides file size by the value.
 > 
-> Based on patch by Rusty.
+> However as we post-process recorded samples for build-id, it can show
+> correct number like below.  If build-id post-processing is not requested
+> just omit the wrong number of samples.
 > 
-> Suggested-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
-> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-> index d34ebfa..ab95a4c 100644
-> --- a/drivers/virtio/virtio_pci.c
-> +++ b/drivers/virtio/virtio_pci.c
-> @@ -120,8 +120,7 @@ static void vp_finalize_features(struct virtio_device *vdev)
->  	vring_transport_features(vdev);
+>   $ perf record noploop 1
+>   [ perf record: Woken up 1 times to write data ]
+>   [ perf record: Captured and wrote 0.159 MB perf.data (3989 samples) ]
 > 
->  	/* We only support 32 feature bits. */
-
-I think you can kill this comment...
-
-> -	BUILD_BUG_ON(ARRAY_SIZE(vdev->features) != 1);
-> -	iowrite32(vdev->features[0], vp_dev->ioaddr+VIRTIO_PCI_GUEST_FEATURES);
-> +	iowrite32(vdev->features, vp_dev->ioaddr+VIRTIO_PCI_GUEST_FEATURES);
-
-...and add blanks around '+', as you're touching this line anyway.
-
->  }
+>   $ perf report --stdio -n
+>   # To display the perf.data header info, please use --header/--header-only options.
+>   #
+>   # Samples: 3K of event 'cycles'
+>   # Event count (approx.): 3771330663
+>   #
+>   # Overhead       Samples  Command  Shared Object     Symbol
+>   # ........  ............  .......  ................  ..........................
+>   #
+>       99.90%          3982  noploop  noploop           [.] main
+>        0.09%             1  noploop  ld-2.17.so        [.] _dl_check_map_versions
+>        0.01%             1  noploop  [kernel.vmlinux]  [k] setup_arg_pages
+>        0.00%             5  noploop  [kernel.vmlinux]  [k] intel_pmu_enable_all
 > 
->  /* virtio config->get() implementation */
+> Reported-by: Milian Wolff <mail@milianw.de>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+eeeey great, I mean.. finally ;-) 
 
+Reviewed-by: Jiri Olsa <jolsa@kernel.org>
+
+thanks,
+jirka
