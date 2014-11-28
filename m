@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751321AbaK1HR1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 02:17:27 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60613 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750922AbaK1HRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 02:17:25 -0500
-Message-ID: <54782148.6040108@ti.com>
-Date: Fri, 28 Nov 2014 09:16:24 +0200
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751354AbaK1HSA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 02:18:00 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:45714 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174AbaK1HR7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 02:17:59 -0500
+Date: Fri, 28 Nov 2014 02:17:55 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Masahiro Yamada <yamada.m@jp.panasonic.com>
+cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, Sekhar Nori <nsekhar@ti.com>,
+        Rob Herring <robh@kernel.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        Christopher Covington <cov@codeaurora.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: replace magic number with PAGE_SHIFT macro in
+ fixup_pv code
+In-Reply-To: <1417155041-29735-1-git-send-email-yamada.m@jp.panasonic.com>
+Message-ID: <alpine.LFD.2.11.1411280216440.11690@knanqh.ubzr>
+References: <1417155041-29735-1-git-send-email-yamada.m@jp.panasonic.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <alsa-devel@alsa-project.org>,
-        <linux-omap@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        <vinod.koul@intel.com>, <linux-mmc@vger.kernel.org>, <nsekhar@ti.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <khilman@deeprootsystems.com>, Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@kernel.org>, <chris@printf.net>,
-        <dmaengine@vger.kernel.org>, <ulf.hansson@linaro.org>,
-        <linux-spi@vger.kernel.org>
-Subject: Re: [PATCH 2/3] ARM: edma: Rename header file for dmaengine filter
- function definition
-References: <1417084891-17990-1-git-send-email-peter.ujfalusi@ti.com> <3300340.ou8f7H2hIc@wuerfel> <54777174.4070203@ti.com> <4859328.eEV7jzKEaA@wuerfel>
-In-Reply-To: <4859328.eEV7jzKEaA@wuerfel>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2014 11:52 PM, Arnd Bergmann wrote:
-> On Thursday 27 November 2014 20:46:12 Peter Ujfalusi wrote:
->>
->> I see. With this series I did not planed to fix all edma related issues, just
->> as a start clean up the related header files. I would rather not add fixes to
->> mmc, spi, etc drivers since while you have valid point it is not in the scope
->> of this series.
->> Can we do the changes you are suggesting in an incremental manner?
+On Fri, 28 Nov 2014, Masahiro Yamada wrote:
+
+> This line converts PHYS_OFFSET into PHYS_PFN_OFFSET.
+> It is better to use PAGE_SHIFT rather than the magic number 12.
 > 
-> Sure, but I'd leave the existing filter function declaration alone then
-> and not move it, since we wouldn't want to keep it in the long run.
+> Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
 
-but if you want to reference the filter function (which is in
-drivers/dma/edma.c) in arch/arm/mach-davinci/ directory, we will need it.
-Don't we?
-
-If I leave the header as it is, then how would we clean up the edma headers? I
-would not put the API definitions for the arch code into the same file as we
-have the filter definition.
+Acked-by: Nicolas Pitre <nico@linaro.org>
 
 
+> ---
 > 
-> 	Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>  arch/arm/kernel/head.S | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-
-
--- 
-Péter
+> diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
+> index 664eee8..ecb7be8 100644
+> --- a/arch/arm/kernel/head.S
+> +++ b/arch/arm/kernel/head.S
+> @@ -586,7 +586,7 @@ __fixup_pv_table:
+>  	add	r5, r5, r3	@ adjust table end address
+>  	add	r6, r6, r3	@ adjust __pv_phys_pfn_offset address
+>  	add	r7, r7, r3	@ adjust __pv_offset address
+> -	mov	r0, r8, lsr #12	@ convert to PFN
+> +	mov	r0, r8, lsr #PAGE_SHIFT	@ convert to PFN
+>  	str	r0, [r6]	@ save computed PHYS_OFFSET to __pv_phys_pfn_offset
+>  	strcc	ip, [r7, #HIGH_OFFSET]	@ save to __pv_offset high bits
+>  	mov	r6, r3, lsr #24	@ constant for add/sub instructions
+> -- 
+> 1.9.1
+> 
+> 
