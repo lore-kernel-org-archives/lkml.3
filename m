@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751431AbaK1XWU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 18:22:20 -0500
-Received: from bues.ch ([80.190.117.144]:47214 "EHLO bues.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751259AbaK1XWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 18:22:19 -0500
-Date: Sat, 29 Nov 2014 00:21:48 +0100
-From: Michael =?UTF-8?B?QsO8c2No?= <m@bues.ch>
-To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-Cc: Nicholas Krause <xerofoify@gmail.com>,
-        Stefano Brivio <stefano.brivio@polimi.it>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        b43-dev <b43-dev@lists.infradead.org>
-Subject: Re: [PATCH] drivers:net:wireless: Add mutex locking for function,
- b43_op_beacon_set_time in main.c
-Message-ID: <20141129002148.1beb21d9@wiggum>
-In-Reply-To: <CACna6rxmOC0h9hOpa=5iWFM1THQ8Q4hCi8MnmqkZJbB_U0PJ0A@mail.gmail.com>
-References: <1417213013-19758-1-git-send-email-xerofoify@gmail.com>
-	<CACna6rxmOC0h9hOpa=5iWFM1THQ8Q4hCi8MnmqkZJbB_U0PJ0A@mail.gmail.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/a9VZzheb11hdlXkyH8hfJby"; protocol="application/pgp-signature"
+	id S1751479AbaK1XZh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 18:25:37 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:46306 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256AbaK1XZf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 18:25:35 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [RFC] i2c: omap: TEST: do IP reset during probe.
+From: Alexander Kochetkov <al.kochet@gmail.com>
+In-Reply-To: <20141128221350.GW2817@atomide.com>
+Date: Sat, 29 Nov 2014 02:25:29 +0300
+Cc: Kevin Hilman <khilman@kernel.org>, linux-omap@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Wolfram Sang <wsa@the-dreams.de>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E4A4FA05-0752-41CB-B86B-84035C6EAF05@gmail.com>
+References: <1416685634-5864-3-git-send-email-al.kochet@gmail.com> <1417028722-29306-1-git-send-email-al.kochet@gmail.com> <7hzjbdd57j.fsf@deeprootsystems.com> <20141128221350.GW2817@atomide.com>
+To: Tony Lindgren <tony@atomide.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/a9VZzheb11hdlXkyH8hfJby
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hello, Tony!
 
-On Fri, 28 Nov 2014 23:40:46 +0100
-Rafa=C5=82 Mi=C5=82ecki <zajec5@gmail.com> wrote:
+I just want to know, is multimaster i2c feature is interesting for TI SOC,
+so I could send another patches?
 
-> > @@ -5094,8 +5094,9 @@ static int b43_op_beacon_set_tim(struct ieee80211=
-_hw *hw,
-> >  {
-> >         struct b43_wl *wl =3D hw_to_b43_wl(hw);
-> >
-> > -       /* FIXME: add locking */
-> > +       mutex_lock(&wl->mutex);
-> >         b43_update_templates(wl);
-> > +       mutex_unlock(&wl->mutex);
-> >
-> >         return 0;
-> >  }
->=20
-> Does anyone remember why this simple solution wasn't implemented
-> earlier? Michael?
+Or it's better to leave the thing without changes, as current single master version
+well tested and work?
 
-I think the callback used to be (is?) in atomic context.
+Also I have a draft version of mixed multimaster/slave version. But it could introduce new bugs.
+Are we ready for that? Thats because IP behavior, sometimes, doesn't correspond to TRMs[4][5].
+It's the one of strange IP I ever seen on TI SOC. And TRM not as detailed as DSP TRMs.
 
-> Nicholas: did you test it anyhow?
+Yes, I test the patch. But  IP handling is really tricky.
+So, I doubt.
 
---=20
-Michael
+Looks, like you haven't seen my response in another thread[1].
+So, duplicate it here.
 
---Sig_/a9VZzheb11hdlXkyH8hfJby
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+24.11.2014 22:47, Tony Lindgren <tony@atomide.com> *:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> If you post a patch, I can test boot with it. Looks like the failing
+> ones have i2c rev3.3 on 34xx vs rev4.4 on 36xx.
 
-iQIcBAEBAgAGBQJUeQOPAAoJEPUyvh2QjYsOko8P/j/erXMBLKii9IzxSByO5DCs
-jxsXn8p4OBE+e5K8uVEr7CSorMlzZCU+D7Vi9h6OiUS5TnXikKx1O2fE9SRLnm4A
-N7pc/3b1HuIUCtnOdQYIRJjFglU4Ng8TV4UHJwKtCEehlgIBp3DgaR9yECv+BCd1
-cYZxWy5+Acdh/OLMEdy73vNcSYAKxiJ8ViU1fSJCVuCxRN0Z5LP/DG0Hy2dnO7c/
-/TLBkbQ8JBkzyi0k6nczEVdR5/5K8X9EN3BzE0ZsJny0BRzsQKTcQvOdMx9CaFJn
-X2zP9X2PtYLCgyl33Vr0YLXX03VXNLzgzR68g6xOa2h0tKlylMB2gYuCr0S2NR2i
-F63MhHNRYgSMnbHxCH9IAJQstVZe3p0pArnriAElNCMJbMBnI5nWy+sHsqjdOp/L
-3sL5fWwWgMvtkVeTnrTZFZ+fA2cwK2+MSRPvc11N5v3dDnZBdkfUkgW7fEdWQP0J
-/XJCNWecIW0PtpNT1xsm2WEtaq75boGgfcGW8+HXAdVTy97a4H5+5Zwn2ZpRYWst
-ClN1W34bvm9akcPxUpDp/GZMd0ij7jeo112nXVKBEwQNO/HMgq2w6FyvnJoBQrk/
-CBybaHhL4bj5+DclI8YeDATI6DPOrPBZD2ospmAqxm8w+vUpd7/2Q0Upn5QfIAey
-uRCU1p7D7b28DFDvN8zB
-=ef5U
------END PGP SIGNATURE-----
+> So I doubt we just want to change the test for for a higher rev number
+> for  OMAP_I2C_REV_ON_3430_3530.
 
---Sig_/a9VZzheb11hdlXkyH8hfJby--
+You 100% right here.
+My fault.
+Thank you for giving right directions.
+Thanks Kevin for running test, so I could debug the reason.
+
+Functional mode bits are unimplemented in the SYSTEST register on omap3530.
+"10:5 Reserved Write 0s for future compatibility. Read returns 0."
+That was the reason. SYSTEST always 0.
+
+It is possible (and I could do it) to implement the bus check using SYSTEST SDA/SCL loopback mode.
+
+One more problem, I found that BB-check from the patch[2] sometimes (very rarely) doesn't work
+as expected. Sometimes the master start transfer while bus is in use by another master. 
+It happens if another master continuously read from eeprom array of 0xff.
+
+So, one of problems on the way of running IP in a multimaster mode, is BB-bit behavior.
+I reported the problem to ti forum[3] and expect some response.
+
+Regards,
+Alexander.
+
+[1] http://www.spinics.net/lists/linux-i2c/msg17797.html
+[2] http://www.spinics.net/lists/linux-i2c/msg17678.html
+[3] http://e2e.ti.com/support/dsp/davinci_digital_media_processors/f/537/t/383876.aspx
+[4] omap3530 - TRM - spruf98y
+[5] AM-DM37x Multimedia Device Silicon Revision 1.x  - sprugn4r
+
