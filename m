@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826AbaK1OqS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 09:46:18 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:42108 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751386AbaK1OqQ (ORCPT
+	id S1751917AbaK1Oqe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 09:46:34 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:38372 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876AbaK1Oqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 09:46:16 -0500
-Date: Fri, 28 Nov 2014 14:45:58 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: NeilBrown <neilb@suse.de>, Chris Ball <chris@printf.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        GTA04 owners <gta04-owner@goldelico.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>
-Message-ID: <20141128144558.GN7712@sirena.org.uk>
-References: <20141108000919.5629.55381.stgit@notabene.brown>
- <20141108001411.5629.25179.stgit@notabene.brown>
- <CAPDyKFrx98NspRU1nV3uJ6XwTuA4tZQkrYTfDoeXGR+f5htODQ@mail.gmail.com>
+	Fri, 28 Nov 2014 09:46:32 -0500
+Message-ID: <54788AC3.9090808@cogentembedded.com>
+Date: Fri, 28 Nov 2014 17:46:27 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="h73OigHGubxJv9Jx"
-Content-Disposition: inline
-In-Reply-To: <CAPDyKFrx98NspRU1nV3uJ6XwTuA4tZQkrYTfDoeXGR+f5htODQ@mail.gmail.com>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] mmc: core: allow a reset gpio to be configured.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peter Chen <peter.chen@freescale.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/17] net2280: Remove restart_dma inline function definition
+References: <1417182662-7405-1-git-send-email-ricardo.ribalda@gmail.com> <1417182662-7405-7-git-send-email-ricardo.ribalda@gmail.com>
+In-Reply-To: <1417182662-7405-7-git-send-email-ricardo.ribalda@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
---h73OigHGubxJv9Jx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 11/28/2014 04:50 PM, Ricardo Ribalda Delgado wrote:
 
-On Fri, Nov 28, 2014 at 12:56:33PM +0100, Ulf Hansson wrote:
-> On 8 November 2014 at 01:14, NeilBrown <neilb@suse.de> wrote:
+> restart_dma is not used before it is declaration. Therefore we can
 
-> > If the regulator supplying an SDIO device is shared
-> > with another device, the turning the regulator 'on' and 'off'
-> > will not actually cycle power and so will not reset
-> > the device.
+    s/it is/its/.
 
-> > This is particularly a problem for some wi2si wireless modules which
-> > have a BT module on chip and can share power lines.
-> > Without the power-cycle, subsequent reset commands fail.
+> remove this definition.
 
-> > So allow a 'reset' gpio to be specified.  If provided, the
-> > line is asserted during power-up.
+    You're removing the declaration, not definition.
 
-> There have been several attempts to fix similar issues as this patch
-> does. The latest one I posted a few month ago, which wasn't accepted.
-> http://comments.gmane.org/gmane.linux.power-management.general/46635
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+> ---
+>   drivers/usb/gadget/udc/net2280.c | 2 --
+>   1 file changed, 2 deletions(-)
 
-Note also that if the issue is about needing to take different actions
-depending on if the power actually got pulled you can request
-notification from the regulator API when things actually happen.
+> diff --git a/drivers/usb/gadget/udc/net2280.c b/drivers/usb/gadget/udc/net2280.c
+> index 0340462..e8c36db 100644
+> --- a/drivers/usb/gadget/udc/net2280.c
+> +++ b/drivers/usb/gadget/udc/net2280.c
+> @@ -1043,8 +1043,6 @@ dma_done(struct net2280_ep *ep,	struct net2280_request *req, u32 dmacount,
+>   	done(ep, req, status);
+>   }
+>
+> -static void restart_dma(struct net2280_ep *ep);
+> -
+>   static void scan_dma_completions(struct net2280_ep *ep)
+>   {
+>   	/* only look at descriptors that were "naturally" retired,
 
---h73OigHGubxJv9Jx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+WBR, Sergei
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUeIqlAAoJECTWi3JdVIfQPKcH/1dJqUWpSHTA5HKz0w05Y7GY
-WAlWW21PWs6zAQUY1NC3Aoa/z5R5KA1QB/FS0LKAxmnWOncn5N0+9Pp7tpllhNSt
-Nl8/kgFvx37OrWzfHoQy5J+zY87man/mwc8FKZAjLo7+yuQwMibZIO8JYpA/w5Aa
-iEE+JakEuU8Q1EQjji/jspzkxNuBXbPgE+mleh225zIaWDS/jjeVRoYyXtMizgwU
-U4qZ6gd2e2SOEeQVPaipDM1r3+4tnZtC2OX7oRqxphNUxDrbBa1tkKP1xdpA+urV
-YhL6DaNsm9S0dTDSGZZTld0dP8V3T4UWtpMnNo6sdVmrtfe4PrIJ0hGmt4jJFwY=
-=2Zhc
------END PGP SIGNATURE-----
-
---h73OigHGubxJv9Jx--
