@@ -1,135 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751407AbaK1XCt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 18:02:49 -0500
-Received: from smtp1-out.insa-rennes.fr ([193.52.94.24]:3072 "EHLO
-	smtp1-out.insa-rennes.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751187AbaK1XCs convert rfc822-to-8bit (ORCPT
+	id S1751446AbaK1XFO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 18:05:14 -0500
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:45673 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751278AbaK1XFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 18:02:48 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqwEALn+eFQKBQEl/2dsb2JhbABbg1dYxw6GTgKBIAEBAQEBfYQDAQEEJ1EBEAsYCRYPCQMCAQIBDzYGDQEFAgEBBYgiAx/MBg2GAgEBAQEBAQEDAQEBAQEBARuOQ4FXCiQzB4RIBZpGgy+GJDeEJoJGgkyHfiVJAYEEgUIBAQE
-Message-ID: <5478FF09.6090508@supelec.fr>
-Date: Sat, 29 Nov 2014 00:02:33 +0100
-From: Laurent Georget <laurent.georget@supelec.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
-MIME-Version: 1.0
-To: Richard Cochran <richardcochran@gmail.com>
-CC: mtk.manpages@gmail.com, linux-man@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch v2] adjtimex.2: add explanation about ADJ_TAI action
-References: <54787B5C.1080802@supelec.fr> <20141128210043.GB14432@localhost.localdomain>
-In-Reply-To: <20141128210043.GB14432@localhost.localdomain>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 28 Nov 2014 18:05:11 -0500
+From: Andy Lutomirski <luto@amacapital.net>
+To: David Herrmann <dh.herrmann@gmail.com>, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        systemd Mailing List <systemd-devel@lists.freedesktop.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [RFC PATCH] proc, pidns: Add highpid
+Date: Fri, 28 Nov 2014 15:05:01 -0800
+Message-Id: <b0f6c4df0e8ef8afcc7b786edecb4be8c752941e.1417215468.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 28/11/2014 22:00, Richard Cochran a écrit :
-> On Fri, Nov 28, 2014 at 02:40:44PM +0100, Laurent Georget wrote:
->> @@ -101,7 +99,19 @@ combination of zero or more of the following bits:
->>  Ordinary users are restricted to a zero value for
->>  .IR modes .
->>  Only the superuser may set any parameters.
->> +.PP
->> +Support for TAI (Atomic International Time, for a complete explanation
->> about
->> +what it is and what is the difference between TAI and UTC, see
->> +.UR http://www.bipm.org/en/bipm/tai/tai.html
->> +.I BIPM
->> +.UE )
->> +has been added in version 2.6.29. For any clock, the TAI offset may
-> 
-> Not for "any clock", just for CLOCK_REALTIME.
+Pid reuse is common, which means that it's difficult or impossible
+to read information about a pid from /proc without races.
 
-Considering that this is the only one representing the "human" time and
-supporting an adjtime action, indeed, it's not relevant for anything
-else than the realtime clock.
+This introduces a second number associated with each (task, pidns)
+pair called highpid.  Highpid is a 64-bit number, and, barring
+extremely unlikely circumstances or outright error, a (highpid, pid)
+will never be reused.
 
-> 
->> +be calculated by adding a value to the UTC offset which is updated when a
->> +leap second is added or deleted.
->>  .br
->> +All the offsets in the timex structure are expressed between the value
->> of the
->> +clock and the corresponding value (e.g. TAI offset is the difference
->> between
->> +the clock and the TAI, not between TAI and another value such as UTC).
-> 
-> The TAI offset is just (TAI - UTC). That's all.
-> 
+With just this change, a program can open /proc/PID/status, read the
+"Highpid" field, and confirm that it has the expected value.  If the
+pid has been reused, then highpid will be different.
 
-Yes, my mistake, I misunderstood the part about timekeeping
-(__timekeeping_set_tai_offset() in kernel/time/timekeeping.c, line 815)
-which does store the offset in several formats (monotonic -> TAI and UTC
--> TAI). But this is not directly related to the timex value. Aniway
-this is not very relevant in the man page.
+The initial implementation is straightforward: highpid is simply a
+64-bit counter. If a high-end system can fork every 3 ns (which
+would be amazing, given that just allocating a pid requires at
+atomic operation), it would take well over 1000 years for highpid to
+wrap.
 
-Thank you for your comments. Below is a new version of the patch. Less
-unrelevant chit-chat, more useful information (hopefully).
+For CRIU's benefit, the next highpid can be set by a privileged
+user.
 
+NB: The sysctl stuff only works on 64-bit systems.  If the approach
+looks good, I'll fix that somehow.
 
-diff --git a/man2/adjtimex.2 b/man2/adjtimex.2
-index 20a2f0b..871e607 100644
---- a/man2/adjtimex.2
-+++ b/man2/adjtimex.2
-@@ -26,9 +26,6 @@
- .\" Modified 2004-05-27 by Michael Kerrisk <mtk.manpages@gmail.com>
- .\" Modified 2014-11-28 by Laurent Georget <laurent.georget@supelec.fr>
- .\"
--.\" FIXME Document ADJ_TAI (added in Linux 2.6.26)
--.\"		commit 153b5d054ac2d98ea0d86504884326b6777f683d
--.\"
- .\" FIXME Document ADJ_MICRO and ADJ_NANO (added in Linux 2.6.26)
- .\"		commit eea83d896e318bda54be2d2770d2c5d6668d11db
- .\"		Author: Roman Zippel <zippel@linux-m68k.org>
-@@ -74,6 +71,17 @@ struct timex {
-                             (read-only) */
-     struct timeval time; /* current time (read-only) */
-     long tick;           /* usecs between clock ticks */
-+
-+    long ppsfreq;        /* pps frequency (scaled ppm) (read-only) */
-+    long jitter;         /* pps jitter (usec) (read-only) */
-+    int shift;           /* interval duration (sec) (read-only) */
-+    long stabil;         /* pps stability (scaled ppm) (read-only) */
-+    long jitcnt;         /* jitter limit exceeded (read-only) */
-+    long calcnt;         /* calibration intervals (read-only) */
-+    long errcnt;         /* calibration errors (read-only) */
-+    long stbcnt;         /* stability limit exceeded (read-only) */
-+
-+    int tai;             /* TAI offset (s) (read-only) */
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+
+If this goes in, there's plenty of room to add new interfaces to
+make this more useful.  For example, we could add a fancier tgkill
+that adds and validates hightgid and highpid, and we might want to
+add a syscall to read one's own hightgid and highpid.  These would
+be quite useful for pidfiles.
+
+David, would this be useful for kdbus?
+
+CRIU people: will this be unduly difficult to support in CRIU?
+
+If you all think this is a good idea, I'll fix the sysctl stuff and
+document it.  It might also be worth adding "Hightgid" to status.
+
+ fs/proc/array.c               |  5 ++++-
+ include/linux/pid.h           |  2 ++
+ include/linux/pid_namespace.h |  1 +
+ kernel/pid.c                  | 19 +++++++++++++++----
+ kernel/pid_namespace.c        | 22 ++++++++++++++++++++++
+ 5 files changed, 44 insertions(+), 5 deletions(-)
+
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index cd3653e4f35c..f1e0e69d19f9 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -159,6 +159,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+ 	int g;
+ 	struct fdtable *fdt = NULL;
+ 	const struct cred *cred;
++	const struct upid *upid;
+ 	pid_t ppid, tpid;
+ 
+ 	rcu_read_lock();
+@@ -170,12 +171,14 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+ 		if (tracer)
+ 			tpid = task_pid_nr_ns(tracer, ns);
+ 	}
++	upid = pid_upid_ns(pid, ns);
+ 	cred = get_task_cred(p);
+ 	seq_printf(m,
+ 		"State:\t%s\n"
+ 		"Tgid:\t%d\n"
+ 		"Ngid:\t%d\n"
+ 		"Pid:\t%d\n"
++		"Highpid:\t%llu\n"
+ 		"PPid:\t%d\n"
+ 		"TracerPid:\t%d\n"
+ 		"Uid:\t%d\t%d\t%d\t%d\n"
+@@ -183,7 +186,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+ 		get_task_state(p),
+ 		task_tgid_nr_ns(p, ns),
+ 		task_numa_group_id(p),
+-		pid_nr_ns(pid, ns),
++		upid ? upid->nr : 0, upid ? upid->highnr : 0,
+ 		ppid, tpid,
+ 		from_kuid_munged(user_ns, cred->uid),
+ 		from_kuid_munged(user_ns, cred->euid),
+diff --git a/include/linux/pid.h b/include/linux/pid.h
+index 23705a53abba..ece70b64d04c 100644
+--- a/include/linux/pid.h
++++ b/include/linux/pid.h
+@@ -51,6 +51,7 @@ struct upid {
+ 	/* Try to keep pid_chain in the same cacheline as nr for find_vpid */
+ 	int nr;
+ 	struct pid_namespace *ns;
++	u64 highnr;
+ 	struct hlist_node pid_chain;
  };
- .fi
- .in
-@@ -93,6 +101,7 @@ combination of zero or more of the following bits:
- #define ADJ_ESTERROR          0x0008 /* estimated time error */
- #define ADJ_STATUS            0x0010 /* clock status */
- #define ADJ_TIMECONST         0x0020 /* pll time constant */
-+#define ADJ_TAI               0x0080 /* TAI offset */
- #define ADJ_TICK              0x4000 /* tick value */
- #define ADJ_OFFSET_SINGLESHOT 0x8001 /* old-fashioned adjtime() */
- .fi
-@@ -102,6 +111,20 @@ Ordinary users are restricted to a zero value for
- .IR modes .
- Only the superuser may set any parameters.
- .br
-+In the case of
-+.BR ADJ_TAI ,
-+as
-+.I buf->tai
-+is read-only, the new value is passed through
-+.IR buf->constant .
-+.PP
-+Support for TAI (Atomic International Time, for a complete explanation
-about
-+what it is and what is the difference between TAI and UTC, see
-+.UR http://www.bipm.org/en/bipm/tai/tai.html
-+.I BIPM
-+.UE )
-+has been added in version 2.6.29.
-+.br
- .ne 12v
- .SH RETURN VALUE
- On success,
+ 
+@@ -170,6 +171,7 @@ static inline pid_t pid_nr(struct pid *pid)
+ }
+ 
+ pid_t pid_nr_ns(struct pid *pid, struct pid_namespace *ns);
++const struct upid *pid_upid_ns(struct pid *pid, struct pid_namespace *ns);
+ pid_t pid_vnr(struct pid *pid);
+ 
+ #define do_each_pid_task(pid, type, task)				\
+diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
+index 1997ffc295a7..1f9f0455d7ef 100644
+--- a/include/linux/pid_namespace.h
++++ b/include/linux/pid_namespace.h
+@@ -26,6 +26,7 @@ struct pid_namespace {
+ 	struct rcu_head rcu;
+ 	int last_pid;
+ 	unsigned int nr_hashed;
++	atomic64_t next_highpid;
+ 	struct task_struct *child_reaper;
+ 	struct kmem_cache *pid_cachep;
+ 	unsigned int level;
+diff --git a/kernel/pid.c b/kernel/pid.c
+index 9b9a26698144..863d11a9bfbf 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -312,6 +312,8 @@ struct pid *alloc_pid(struct pid_namespace *ns)
+ 
+ 		pid->numbers[i].nr = nr;
+ 		pid->numbers[i].ns = tmp;
++		pid->numbers[i].highnr =
++			atomic64_inc_return(&tmp->next_highpid) - 1;
+ 		tmp = tmp->parent;
+ 	}
+ 
+@@ -492,17 +494,26 @@ struct pid *find_get_pid(pid_t nr)
+ }
+ EXPORT_SYMBOL_GPL(find_get_pid);
+ 
+-pid_t pid_nr_ns(struct pid *pid, struct pid_namespace *ns)
++const struct upid *pid_upid_ns(struct pid *pid, struct pid_namespace *ns)
+ {
+ 	struct upid *upid;
+-	pid_t nr = 0;
+ 
+ 	if (pid && ns->level <= pid->level) {
+ 		upid = &pid->numbers[ns->level];
+ 		if (upid->ns == ns)
+-			nr = upid->nr;
++			return upid;
+ 	}
+-	return nr;
++	return NULL;
++}
++EXPORT_SYMBOL_GPL(pid_upid_ns);
++
++pid_t pid_nr_ns(struct pid *pid, struct pid_namespace *ns)
++{
++	const struct upid *upid = pid_upid_ns(pid, ns);
++
++	if (!upid)
++		return 0;
++	return upid->nr;
+ }
+ EXPORT_SYMBOL_GPL(pid_nr_ns);
+ 
+diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+index db95d8eb761b..e246802b4361 100644
+--- a/kernel/pid_namespace.c
++++ b/kernel/pid_namespace.c
+@@ -268,6 +268,22 @@ static int pid_ns_ctl_handler(struct ctl_table *table, int write,
+ 	return proc_dointvec_minmax(&tmp, write, buffer, lenp, ppos);
+ }
+ 
++static int pid_ns_next_highpid_handler(struct ctl_table *table, int write,
++		void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++	struct pid_namespace *pid_ns = task_active_pid_ns(current);
++	struct ctl_table tmp = *table;
++
++	if (write && !ns_capable(pid_ns->user_ns, CAP_SYS_ADMIN))
++		return -EPERM;
++
++	/* This needs to be fixed. */
++	BUILD_BUG_ON(sizeof(u64) != sizeof(unsigned long));
++
++	tmp.data = &pid_ns->next_highpid;
++	return proc_dointvec(&tmp, write, buffer, lenp, ppos);
++}
++
+ extern int pid_max;
+ static int zero = 0;
+ static struct ctl_table pid_ns_ctl_table[] = {
+@@ -279,6 +295,12 @@ static struct ctl_table pid_ns_ctl_table[] = {
+ 		.extra1 = &zero,
+ 		.extra2 = &pid_max,
+ 	},
++	{
++		.procname = "ns_next_highpid",
++		.maxlen = sizeof(u64),
++		.mode = 0666, /* permissions are checked in the handler */
++		.proc_handler = pid_ns_next_highpid_handler,
++	},
+ 	{ }
+ };
+ static struct ctl_path kern_path[] = { { .procname = "kernel", }, { } };
+-- 
+1.9.3
+
