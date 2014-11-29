@@ -1,267 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506AbaK2QYP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 11:24:15 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:54287 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106AbaK2QYN (ORCPT
+	id S1751636AbaK2QYw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 11:24:52 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:54029 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502AbaK2QYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 11:24:13 -0500
-Message-ID: <5479F328.7080304@roeck-us.net>
-Date: Sat, 29 Nov 2014 08:24:08 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Sat, 29 Nov 2014 11:24:50 -0500
 MIME-Version: 1.0
-To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Steven Honeyman <stevenhoneyman@gmail.com>, linux-kernel@vger.kernel.org,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
-References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com>
-In-Reply-To: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.5479F32C.01C8,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 2
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <87vblym17s.fsf@x220.int.ebiederm.org>
+References: <81ba656ffbdc62a7f7e94ad17f0238ee063fe6b3.1417214430.git.luto@amacapital.net>
+ <87vblym17s.fsf@x220.int.ebiederm.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sat, 29 Nov 2014 08:24:28 -0800
+Message-ID: <CALCETrW6FiQP0KKYVSRV=zBY9PcU3xx_qnFW9ead2kYscB4Hvg@mail.gmail.com>
+Subject: Re: [RFC PATCH] userns: Disallow setgroups unless the gid_map writer
+ is privileged
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Richard Weinberger <richard@nod.at>,
+        Kenton Varda <kenton@sandstorm.io>, stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2014 08:04 AM, Pali Rohár wrote:
-> This patch adds labels for temperature sensors if SMM function with EAX register
-> 0x11a3 reports it. These informations was taken from DOS binary NBSVC.MDM.
+On Sat, Nov 29, 2014 at 8:16 AM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
 >
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> ---
->   drivers/char/i8k.c |  110 +++++++++++++++++++++++++++++++++++++++++-----------
->   1 file changed, 88 insertions(+), 22 deletions(-)
+> The patch is buggy.
 >
-> diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
-> index e34a019..77af46b 100644
-> --- a/drivers/char/i8k.c
-> +++ b/drivers/char/i8k.c
-> @@ -42,6 +42,7 @@
->   #define I8K_SMM_GET_FAN		0x00a3
->   #define I8K_SMM_GET_SPEED	0x02a3
->   #define I8K_SMM_GET_TEMP	0x10a3
-> +#define I8K_SMM_GET_TEMP_TYPE	0x11a3
->   #define I8K_SMM_GET_DELL_SIG1	0xfea3
->   #define I8K_SMM_GET_DELL_SIG2	0xffa3
+> Nacked-by: "Eric W. Biederman" <ebiederm@xmission.com>
 >
-> @@ -288,6 +289,14 @@ static int i8k_set_fan(int fan, int speed)
->   	return i8k_smm(&regs) ? : i8k_get_fan_status(fan);
->   }
+>> ---
+>>
+>> Eric, this is an alternative to your patch.  I think it will cause
+>> less breakage, and it will keep unprivileged user namespaces
+>> more or less fully functional.
+>>
+>> Kenton, I think that neither run-bundle nor supervisor-main will be
+>> broken by this patch.
+>>
+>>  include/linux/user_namespace.h |  3 +++
+>>  kernel/groups.c                |  3 +++
+>>  kernel/user.c                  |  1 +
+>>  kernel/user_namespace.c        | 36 ++++++++++++++++++++++++++++++++++++
+>>  4 files changed, 43 insertions(+)
+>>
+>> diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+>> index e95372654f09..a74c1f3d44fe 100644
+>> --- a/include/linux/user_namespace.h
+>> +++ b/include/linux/user_namespace.h
+>> @@ -17,6 +17,8 @@ struct uid_gid_map {        /* 64 bytes -- 1 cache line */
+>>       } extent[UID_GID_MAP_MAX_EXTENTS];
+>>  };
+>>
+>> +#define USERNS_SETGROUPS_ALLOWED 1
+>> +
+>>  struct user_namespace {
+>>       struct uid_gid_map      uid_map;
+>>       struct uid_gid_map      gid_map;
+>> @@ -27,6 +29,7 @@ struct user_namespace {
+>>       kuid_t                  owner;
+>>       kgid_t                  group;
+>>       unsigned int            proc_inum;
+>> +     unsigned int            flags;
 >
-> +static int i8k_get_temp_type(int sensor)
-> +{
-> +	struct smm_regs regs = { .eax = I8K_SMM_GET_TEMP_TYPE, };
-> +
-> +	regs.ebx = sensor & 0xff;
-> +	return i8k_smm(&regs) ? : regs.eax & 0xff;
-> +}
-> +
->   /*
->    * Read the cpu temperature.
->    */
-> @@ -493,6 +502,29 @@ static int i8k_open_fs(struct inode *inode, struct file *file)
->    * Hwmon interface
->    */
->
-> +static ssize_t i8k_hwmon_show_temp_label(struct device *dev,
-> +				   struct device_attribute *devattr,
-> +				   char *buf)
-> +{
-> +	static const char * const labels[] = {
-> +		"CPU",
-> +		"GPU",
-> +		"SODIMM",
-> +		"Other",
-> +		"Ambient",
-> +		"Other",
-> +	};
-> +	int index = to_sensor_dev_attr(devattr)->index;
-> +	int type;
-> +
-> +	type = i8k_get_temp_type(index);
-> +	if (type < 0)
-> +		return type;
-> +	if (type >= ARRAY_SIZE(labels))
-> +		type = ARRAY_SIZE(labels) - 1;
-> +	return sprintf(buf, "%s\n", labels[type]);
-> +}
-> +
->   static ssize_t i8k_hwmon_show_temp(struct device *dev,
->   				   struct device_attribute *devattr,
->   				   char *buf)
-> @@ -555,9 +587,13 @@ static ssize_t i8k_hwmon_set_pwm(struct device *dev,
->   }
->
->   static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, i8k_hwmon_show_temp, NULL, 0);
-> +static SENSOR_DEVICE_ATTR(temp1_label, S_IRUGO, i8k_hwmon_show_temp_label, NULL, 0);
->   static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, i8k_hwmon_show_temp, NULL, 1);
-> +static SENSOR_DEVICE_ATTR(temp2_label, S_IRUGO, i8k_hwmon_show_temp_label, NULL, 1);
->   static SENSOR_DEVICE_ATTR(temp3_input, S_IRUGO, i8k_hwmon_show_temp, NULL, 2);
-> +static SENSOR_DEVICE_ATTR(temp3_label, S_IRUGO, i8k_hwmon_show_temp_label, NULL, 2);
->   static SENSOR_DEVICE_ATTR(temp4_input, S_IRUGO, i8k_hwmon_show_temp, NULL, 3);
-> +static SENSOR_DEVICE_ATTR(temp4_label, S_IRUGO, i8k_hwmon_show_temp_label, NULL, 3);
->   static SENSOR_DEVICE_ATTR(fan1_input, S_IRUGO, i8k_hwmon_show_fan, NULL,
->   			  I8K_FAN_LEFT);
->   static SENSOR_DEVICE_ATTR(pwm1, S_IRUGO | S_IWUSR, i8k_hwmon_show_pwm,
-> @@ -569,31 +605,35 @@ static SENSOR_DEVICE_ATTR(pwm2, S_IRUGO | S_IWUSR, i8k_hwmon_show_pwm,
->
->   static struct attribute *i8k_attrs[] = {
->   	&sensor_dev_attr_temp1_input.dev_attr.attr,	/* 0 */
-> -	&sensor_dev_attr_temp2_input.dev_attr.attr,	/* 1 */
-> -	&sensor_dev_attr_temp3_input.dev_attr.attr,	/* 2 */
-> -	&sensor_dev_attr_temp4_input.dev_attr.attr,	/* 3 */
-> -	&sensor_dev_attr_fan1_input.dev_attr.attr,	/* 4 */
-> -	&sensor_dev_attr_pwm1.dev_attr.attr,		/* 5 */
-> -	&sensor_dev_attr_fan2_input.dev_attr.attr,	/* 6 */
-> -	&sensor_dev_attr_pwm2.dev_attr.attr,		/* 7 */
-> +	&sensor_dev_attr_temp1_label.dev_attr.attr,	/* 1 */
-> +	&sensor_dev_attr_temp2_input.dev_attr.attr,	/* 2 */
-> +	&sensor_dev_attr_temp2_label.dev_attr.attr,	/* 3 */
-> +	&sensor_dev_attr_temp3_input.dev_attr.attr,	/* 4 */
-> +	&sensor_dev_attr_temp3_label.dev_attr.attr,	/* 5 */
-> +	&sensor_dev_attr_temp4_input.dev_attr.attr,	/* 6 */
-> +	&sensor_dev_attr_temp4_label.dev_attr.attr,	/* 7 */
-> +	&sensor_dev_attr_fan1_input.dev_attr.attr,	/* 8 */
-> +	&sensor_dev_attr_pwm1.dev_attr.attr,		/* 9 */
-> +	&sensor_dev_attr_fan2_input.dev_attr.attr,	/* 10 */
-> +	&sensor_dev_attr_pwm2.dev_attr.attr,		/* 11 */
->   	NULL
->   };
->
->   static umode_t i8k_is_visible(struct kobject *kobj, struct attribute *attr,
->   			      int index)
->   {
-> -	if (index == 0 && !(i8k_hwmon_flags & I8K_HWMON_HAVE_TEMP1))
-> +	if (index >= 0 && index <= 1 && !(i8k_hwmon_flags & I8K_HWMON_HAVE_TEMP1))
->   		return 0;
-> -	if (index == 1 && !(i8k_hwmon_flags & I8K_HWMON_HAVE_TEMP2))
-> +	if (index >= 2 && index <= 3 && !(i8k_hwmon_flags & I8K_HWMON_HAVE_TEMP2))
->   		return 0;
-> -	if (index == 2 && !(i8k_hwmon_flags & I8K_HWMON_HAVE_TEMP3))
-> +	if (index >= 4 && index <= 5 && !(i8k_hwmon_flags & I8K_HWMON_HAVE_TEMP3))
->   		return 0;
-> -	if (index == 3 && !(i8k_hwmon_flags & I8K_HWMON_HAVE_TEMP4))
-> +	if (index >= 6 && index <= 7 && !(i8k_hwmon_flags & I8K_HWMON_HAVE_TEMP4))
->   		return 0;
-> -	if (index >= 4 && index <= 5 &&
-> +	if (index >= 8 && index <= 9 &&
->   	    !(i8k_hwmon_flags & I8K_HWMON_HAVE_FAN1))
->   		return 0;
-> -	if (index >= 6 && index <= 7 &&
-> +	if (index >= 10 && index <= 11 &&
->   	    !(i8k_hwmon_flags & I8K_HWMON_HAVE_FAN2))
->   		return 0;
->
-> @@ -606,6 +646,37 @@ static const struct attribute_group i8k_group = {
->   };
->   __ATTRIBUTE_GROUPS(i8k);
->
-> +static bool __init i8k_check_temp(int sensor)
-> +{
-> +	int err;
-> +
-> +	/*
-> +	 * Check if temperature sensor type is valid.
-> +	 *
-> +	 * If it is valid then sensor should work. But some sensors are not
-> +	 * available at any time. E.g GPU sensor on Optimus/PowerExpress/Enduro
-> +	 * card does not work (or return bogus value) when card is turned off.
-> +	 * So this function should not fail in this case.
-> +	 */
-> +	err = i8k_get_temp_type(sensor);
-> +	if (err >= 0)
-> +		return true;
-> +
-Are you sure this function is provided for all systems ?
-I am a bit concerned that we may wrongly disable sensors this way,
-especially on older systems.
+> If you are going to add a flags field it needs to be atomic as otherwise
+> changing or reading individual flags won't be safe without a lock.
 
-It might be safer to create another set of flags and enable the labels
-only if the sensor is known to exist and if reading its type (label) works.
+Will fix.
 
-> +	/*
-> +	 * Check if temperatrue reading does not fail.
-> +	 *
-temperature
-
-> +	 * Sometimes detection of temperature sensor type does not work but
-> +	 * reading temperature working fine. Sometimes temperature value is too
-> +	 * high and i8k_get_temp() returns -ERANGE. But there is no reason to
-> +	 * ignore these temperature sensors.
-> +	 */
-> +	err = i8k_get_temp(sensor);
-> +	if (err >= 0 || err == -ERANGE)
-> +		return true;
-> +
-
-Please simplify to
-	return err >= 0 || err == -ERANGE;
-
-> +	return false;
-> +}
-> +
->   static int __init i8k_init_hwmon(void)
->   {
->   	int err;
-> @@ -613,18 +684,13 @@ static int __init i8k_init_hwmon(void)
->   	i8k_hwmon_flags = 0;
 >
->   	/* CPU temperature attributes, if temperature reading is OK */
-> -	err = i8k_get_temp(0);
-> -	if (err >= 0 || err == -ERANGE)
-> +	if (i8k_check_temp(0))
-
-The introduction of i8k_check_temp() should be a separate patch.
-
-Thanks,
-Guenter
-
->   		i8k_hwmon_flags |= I8K_HWMON_HAVE_TEMP1;
-> -	/* check for additional temperature sensors */
-> -	err = i8k_get_temp(1);
-> -	if (err >= 0 || err == -ERANGE)
-> +	if (i8k_check_temp(1))
->   		i8k_hwmon_flags |= I8K_HWMON_HAVE_TEMP2;
-> -	err = i8k_get_temp(2);
-> -	if (err >= 0 || err == -ERANGE)
-> +	if (i8k_check_temp(2))
->   		i8k_hwmon_flags |= I8K_HWMON_HAVE_TEMP3;
-> -	err = i8k_get_temp(3);
-> -	if (err >= 0 || err == -ERANGE)
-> +	if (i8k_check_temp(3))
->   		i8k_hwmon_flags |= I8K_HWMON_HAVE_TEMP4;
+>>       /* Register of per-UID persistent keyrings for this namespace */
+>>  #ifdef CONFIG_PERSISTENT_KEYRINGS
+>> diff --git a/kernel/groups.c b/kernel/groups.c
+>> index 451698f86cfa..e27433809978 100644
+>> --- a/kernel/groups.c
+>> +++ b/kernel/groups.c
+>> @@ -6,6 +6,7 @@
+>>  #include <linux/slab.h>
+>>  #include <linux/security.h>
+>>  #include <linux/syscalls.h>
+>> +#include <linux/user_namespace.h>
+>>  #include <asm/uaccess.h>
+>>
+>>  /* init to 2 - one for init_task, one to ensure it is never freed */
+>> @@ -223,6 +224,8 @@ SYSCALL_DEFINE2(setgroups, int, gidsetsize, gid_t __user *, grouplist)
+>>       struct group_info *group_info;
+>>       int retval;
+>>
+>> +     if (!(current_user_ns()->flags & USERNS_SETGROUPS_ALLOWED))
+>> +             return -EPERM;
+>>       if (!ns_capable(current_user_ns(), CAP_SETGID))
+>>               return -EPERM;
+>>       if ((unsigned)gidsetsize > NGROUPS_MAX)
+>> diff --git a/kernel/user.c b/kernel/user.c
+>> index 4efa39350e44..f8cdb1ec6049 100644
+>> --- a/kernel/user.c
+>> +++ b/kernel/user.c
+>> @@ -51,6 +51,7 @@ struct user_namespace init_user_ns = {
+>>       .owner = GLOBAL_ROOT_UID,
+>>       .group = GLOBAL_ROOT_GID,
+>>       .proc_inum = PROC_USER_INIT_INO,
+>> +     .flags = USERNS_SETGROUPS_ALLOWED,
+>>  #ifdef CONFIG_PERSISTENT_KEYRINGS
+>>       .persistent_keyring_register_sem =
+>>       __RWSEM_INITIALIZER(init_user_ns.persistent_keyring_register_sem),
+>> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+>> index aa312b0dc3ec..6e7b9ee5bddc 100644
+>> --- a/kernel/user_namespace.c
+>> +++ b/kernel/user_namespace.c
+>> @@ -600,6 +600,8 @@ static ssize_t map_write(struct file *file, const char __user *buf,
+>>       unsigned long page = 0;
+>>       char *kbuf, *pos, *next_line;
+>>       ssize_t ret = -EINVAL;
+>> +     unsigned int gid_flags = 0;
+>> +     bool seen_explicit_gid_flag = false;
+>>
+>>       /*
+>>        * The id_map_mutex serializes all writes to any given map.
+>> @@ -633,6 +635,19 @@ static ssize_t map_write(struct file *file, const char __user *buf,
+>>       if (cap_valid(cap_setid) && !file_ns_capable(file, ns, CAP_SYS_ADMIN))
+>>               goto out;
+>>
+>> +     /* Deal with supplementary groups. */
+>> +     if (map == &ns->gid_map) {
+>> +             /*
+>> +              * By default, setgroups is allowed inside the userns
+>> +              * if the writer has no supplementary groups (making
+>> +              * it useless) or if the writer is privileged.
+>> +              */
+>> +             if ((ns->parent->flags & USERNS_SETGROUPS_ALLOWED) &&
+>> +                 file_ns_capable(file, ns->parent, CAP_SETGID) &&
+>> +                 ns_capable(ns->parent, CAP_SETGID))
+>> +                     gid_flags = USERNS_SETGROUPS_ALLOWED;
 >
->   	/* Left fan attributes, if left fan is present */
+> We can't do this.
 >
+> It is wrong to mix permissions and flags to request functionality.
+>
+> That way lies madness, and impossible maintenance, and it will silently
+> break every application that expects setgroups to work if they have
+> CAP_SETGID after a mapping has been established.
 
+We can make writing gid_map fail unless you either have permissions or
+add the "setgroups disallow" option.  Would that be better?  It avoids
+silent creation of a strangely behaving userns.  This would be an easy
+adjustment to this patch.
+
+I don't like the "allow setgroups if there are no supplementary
+groups" because it's weird and unexpected (and will therefore break
+things, I expect) and because it may interact insecurely with setns
+and other such things.
+
+--Andy
+
+>
+>> +     }
+>> +
+>>       /* Get a buffer */
+>>       ret = -ENOMEM;
+>>       page = __get_free_page(GFP_TEMPORARY);
+>> @@ -667,6 +682,25 @@ static ssize_t map_write(struct file *file, const char __user *buf,
+>>                               next_line = NULL;
+>>               }
+>>
+>> +             /* Is this line a gid_map option? */
+>> +             if (map == &ns->gid_map) {
+>> +                     if (!strcmp(pos, "setgroups deny")) {
+>> +                             if (seen_explicit_gid_flag)
+>> +                                     goto out;
+>> +                             seen_explicit_gid_flag = 1;
+>> +                             gid_flags = 0;
+>> +                             continue;
+>> +                     } else if (!strcmp(pos, "setgroups allow")) {
+>> +                             if (seen_explicit_gid_flag)
+>> +                                     goto out;
+>> +                             if (!(gid_flags & USERNS_SETGROUPS_ALLOWED)) {
+>> +                                     ret = -EPERM;
+>> +                                     goto out;
+>> +                             }
+>> +                             continue;
+>> +                     }
+>> +             }
+>> +
+>>               pos = skip_spaces(pos);
+>>               extent->first = simple_strtoul(pos, &pos, 10);
+>>               if (!isspace(*pos))
+>> @@ -746,6 +780,8 @@ static ssize_t map_write(struct file *file, const char __user *buf,
+>>               new_map.nr_extents*sizeof(new_map.extent[0]));
+>>       smp_wmb();
+>>       map->nr_extents = new_map.nr_extents;
+>> +     if (map == &ns->gid_map)
+>> +             ns->flags |= gid_flags;
+>>
+>>       *ppos = count;
+>>       ret = count;
+>
+> Eric
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
