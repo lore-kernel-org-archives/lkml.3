@@ -1,62 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583AbaK2KoU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 05:44:20 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:55318 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528AbaK2KoS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 05:44:18 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: Julia Lawall <julia.lawall@lip6.fr>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, trivial@kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH v2] fs-fat: Less function calls in fat_fill_super() after error detection
-References: <5307CAA2.8060406@users.sourceforge.net>
-	<alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
-	<530A086E.8010901@users.sourceforge.net>
-	<alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
-	<530A72AA.3000601@users.sourceforge.net>
-	<alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
-	<530B5FB6.6010207@users.sourceforge.net>
-	<alpine.DEB.2.10.1402241710370.2074@hadrien>
-	<530C5E18.1020800@users.sourceforge.net>
-	<alpine.DEB.2.10.1402251014170.2080@hadrien>
-	<530CD2C4.4050903@users.sourceforge.net>
-	<alpine.DEB.2.10.1402251840450.7035@hadrien>
-	<530CF8FF.8080600@users.sourceforge.net>
-	<alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
-	<530DD06F.4090703@users.sourceforge.net>
-	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
-	<5317A59D.4@users.sourceforge.net>
-	<5467B12C.4010602@users.sourceforge.net>
-	<alpine.DEB.2.02.1411152117540.2225@localhost6.localdomain6>
-	<54796B5E.5040707@users.sourceforge.net>
-Date: Sat, 29 Nov 2014 19:44:11 +0900
-In-Reply-To: <54796B5E.5040707@users.sourceforge.net> (SF Markus Elfring's
-	message of "Sat, 29 Nov 2014 07:44:46 +0100")
-Message-ID: <87sih22sn8.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/25.0.50 (gnu/linux)
+	id S1751680AbaK2Ko6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 05:44:58 -0500
+Received: from ozlabs.org ([103.22.144.67]:34467 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751642AbaK2Ko4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Nov 2014 05:44:56 -0500
+Date: Sat, 29 Nov 2014 21:44:48 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jeremiah Mahler <jmmahler@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        "Theodore Ts'o" <tytso@mit.edu>, Christoph Hellwig <hch@infradead.org>,
+        linux-fsdevel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: Re: [BUG] linux-next: 20141127 boot hang
+Message-ID: <20141129214448.625baea8@canb.auug.org.au>
+In-Reply-To: <20141129091510.GA1366@newt.localdomain>
+References: <20141127231619.GA1713@hudson.localdomain>
+	<20141128233250.GA4921@hudson.localdomain>
+	<20141129091510.GA1366@newt.localdomain>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/RgMqtBe/neEyodVfE1XPoXW"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SF Markus Elfring <elfring@users.sourceforge.net> writes:
+--Sig_/RgMqtBe/neEyodVfE1XPoXW
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Sat, 29 Nov 2014 07:37:34 +0100
+Hi Jeremiah,
+
+On Sat, 29 Nov 2014 01:15:10 -0800 Jeremiah Mahler <jmmahler@gmail.com> wro=
+te:
 >
-> The iput() function was called in an inefficient way by the implementation
-> of the fat_fill_super() function in case of an allocation failure.
-> The corresponding source code was improved by deletion of two unnecessary
-> null pointer checks and a few adjustments for jump labels.
+> all,
+>=20
+> On Fri, Nov 28, 2014 at 03:32:50PM -0800, Jeremiah Mahler wrote:
+> > On Thu, Nov 27, 2014 at 03:16:19PM -0800, Jeremiah Mahler wrote:
+> > >=20
+> > > I just tried the latest linux-next 20141127 (commit 3bcf494d225fd19) =
+and
+> > > it hangs very early in the boot sequence, after decompressing the ker=
+nel
+> > > and after fsck (see attached screen shot).  I have tried it with two
+> > > different machines and they both have the same problem.  It worked wi=
+th
+> > > version 20141126.
+> > >=20
+> > []
+> >=20
+> > My bisect results so far indicate that the bug was introduced by this
+> > merge commit.
+> >=20
+> >   commit 0305904a7416ced1358c5ff575e58135453bfc1d
+> >   Merge: 38a4751 2ef5864
+> >   Author: Stephen Rothwell <sfr@canb.auug.org.au>
+> >   Date:   Thu Nov 27 14:53:44 2014 +1100
+> >  =20
+> >       Merge remote-tracking branch 'block/for-next'
+> >      =20
+> >       Conflicts:
+> >           fs/fs-writeback.c
+> >=20
+> []
+>=20
+> Something is definitely broken at this merge commit.  I haven't
+> quite figured out how to bisect the patches inside the merge commit.
+> Any suggestions are welcome.
 
-iput() checks NULL of inode. What is wrong just remove NULL check,
-instead of adding new jump labels?
+It could easily actually be the merge itself. There was a conflict in
+that merge that I fixed up as best I could and asked others to check
+the resolution.
 
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+I know that Cristoph thinks that the lazytime stuff is not ready for
+-next yet, but are there any other comments?
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/RgMqtBe/neEyodVfE1XPoXW
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUeaOlAAoJEMDTa8Ir7ZwVUbQP/RyMgRSEE2Ts2FKOQosOUtNp
+FoMMVI1vregKHTZgWvVrKm60vFEs01UG04+MLbSAEAItWAxZ3Q4xiJESjBd1VKvA
+3MavJ52KSupF8v3cRZd/AdyTRDQKD10aKhdmvxoinyjRJm/fxoqyuujwexItsqwf
+lt34yItOmEU0GtF2GU8u0IVMbeYvJgHQxc73JuoYeubzuJW+YYHnhl3xiQm00lLX
+87USycQpprd3x2XQFZu5FemIU0RmpQv/JSXqxBI17FGjQeCiX74hhzPK3a5bHK19
+YB3D9UHPRqPwWNP4auhBOxp1LgM1sk4vBPllWHYQz9FRwobRKzUAaZ+BnpHTaCrh
+rcWQeaA0E7zAvEX++vJEyWTaqc3P4vAH/xfCmYmMM6XYU+mGHeWpIr9OS0R6/R6e
+BU/uicIUKCpTO5peqtjW98VEGeBvB/tts7DVVvC4s2tHylGGu/i2mm8Xv7w+WtmY
+Qq4kvJm0fAsA5A7+yIMft1ZMz3siygKRkPKMDoQaO9TNo98c/EOnV83yn3MdLm4v
+1Wyj4M/XVu0voxPQnczSSP3/4W7x5HgqpOJDszzbPQUKC5fxj2jlDlKpC/MZHHfX
+D0m12vqhd+38UXkB7mYSQ4sUguYR339VxFREuytw527Q6FG1pFvM1ylhsXsx5NNZ
+EOQRuPPnvwsdCQjIfPqE
+=oegq
+-----END PGP SIGNATURE-----
+
+--Sig_/RgMqtBe/neEyodVfE1XPoXW--
