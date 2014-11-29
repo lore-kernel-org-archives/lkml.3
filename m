@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566AbaK2RAb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 12:00:31 -0500
-Received: from mout.web.de ([212.227.17.11]:50355 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751075AbaK2RA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 12:00:29 -0500
-Message-ID: <5479FBA2.5020405@users.sourceforge.net>
-Date: Sat, 29 Nov 2014 18:00:18 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751452AbaK2RHY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 12:07:24 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:38823 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232AbaK2RHW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Nov 2014 12:07:22 -0500
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
+Date: Sat, 29 Nov 2014 18:07:19 +0100
+Message-ID: <1419444.Nxv4HBGmNA@xps13>
+User-Agent: KMail/4.14.2 (Linux/3.18.0-rc5+; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <201411291709.35406@pali>
+References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com> <201411291709.35406@pali>
 MIME-Version: 1.0
-To: Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>, cluster-devel@redhat.com
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] fs-DLM: Deletion of unnecessary checks before the function
- call "kfree"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:LwcXk7KJW3uyUO4Cc7IDU4NHLGyy2LTFxaNp/VM+shv0hPlIbEn
- NLHcuqWFNx/48xPH8n8uvSSuGoUdYv5u3Pt9+MdaqbZiUp3M51/QoI6KxeQCQAD6jWjhROk
- /aH0m5wh62Rf8Cvh28v9bwinaIeL7wyOg3WDXHmnhWti5pGXs3dryRfG1P3U5d7egN3Pkw4
- /sTnKf/+hgJ/cRsxyo9zQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sat, 29 Nov 2014 17:55:39 +0100
+On Saturday 29 November 2014 17:09:35 Pali Rohár wrote:
+> On Saturday 29 November 2014 17:04:07 Pali Rohár wrote:
+> > This patch adds labels for temperature sensors if SMM function
+> > with EAX register 0x11a3 reports it. These informations was
+> > taken from DOS binary NBSVC.MDM.
+> > 
+> > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+> > ---
+> > 
+> >  drivers/char/i8k.c |  110
+> > 
+> > +++++++++++++++++++++++++++++++++++++++++----------- 1 file
+> > changed, 88 insertions(+), 22 deletions(-)
+> 
+> I tested patch on Latitude E6440 and i8k CPU & GPU temps match
+> intel coretemp & amd radeion temps.
+> 
+> But I would like if somebody with other Dell laptop can test if
+> temperature labels are correct...
 
-The kfree() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+I tested it on my XPS13 9333, here what sensors outputs:
 
-This issue was detected by using the Coccinelle software.
+acpitz-virtual-0
+Adapter: Virtual device
+temp1:        +27.8°C  (crit = +105.0°C)
+temp2:        +29.8°C  (crit = +105.0°C)
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- fs/dlm/lockspace.c | 3 +--
- fs/dlm/memory.c    | 3 +--
- 2 files changed, 2 insertions(+), 4 deletions(-)
+coretemp-isa-0000
+Adapter: ISA adapter
+Physical id 0:  +62.0°C  (high = +100.0°C, crit = +100.0°C)
+Core 0:         +62.0°C  (high = +100.0°C, crit = +100.0°C)
+Core 1:         +61.0°C  (high = +100.0°C, crit = +100.0°C)
 
-diff --git a/fs/dlm/lockspace.c b/fs/dlm/lockspace.c
-index f3e7278..b660b93 100644
---- a/fs/dlm/lockspace.c
-+++ b/fs/dlm/lockspace.c
-@@ -674,8 +674,7 @@ static int new_lockspace(const char *name, const char *cluster,
-  out_lkbidr:
- 	idr_destroy(&ls->ls_lkbidr);
- 	for (i = 0; i < DLM_REMOVE_NAMES_MAX; i++) {
--		if (ls->ls_remove_names[i])
--			kfree(ls->ls_remove_names[i]);
-+		kfree(ls->ls_remove_names[i]);
- 	}
-  out_rsbtbl:
- 	vfree(ls->ls_rsbtbl);
-diff --git a/fs/dlm/memory.c b/fs/dlm/memory.c
-index 7cd24bc..2d2eaa0 100644
---- a/fs/dlm/memory.c
-+++ b/fs/dlm/memory.c
-@@ -86,8 +86,7 @@ void dlm_free_lkb(struct dlm_lkb *lkb)
- 		struct dlm_user_args *ua;
- 		ua = lkb->lkb_ua;
- 		if (ua) {
--			if (ua->lksb.sb_lvbptr)
--				kfree(ua->lksb.sb_lvbptr);
-+			kfree(ua->lksb.sb_lvbptr);
- 			kfree(ua);
- 		}
- 	}
--- 
-2.1.3
+i8k-virtual-0
+Adapter: Virtual device
+fan2:           0 RPM
+CPU:          +62.0°C  
+Ambient:      +49.0°C  
+SODIMM:       +46.0°C  
+temp4:            N/A
 
+CPU seems to be correct, but I can't say anything on Ambient and SODIMM.
+temp4 is constantly equal to SODIMM without this patch, so I'd say N/A
+is correct.
+
+
+Gabriele
