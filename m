@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717AbaK2Uij (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 15:38:39 -0500
-Received: from plane.gmane.org ([80.91.229.3]:51021 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751434AbaK2Uii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 15:38:38 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: =?UTF-8?B?RMOibmllbA==?= Fraga <fragabr@gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-Date: Sat, 29 Nov 2014 18:38:18 -0200
-Organization: http://www.youtube.com/DanielFragaBR
-Message-ID: <m5dart$co$1@ger.gmane.org>
-References: <20141114213124.GB3344@redhat.com>
-	<CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
-	<20141115213405.GA31971@redhat.com>
-	<20141116014006.GA5016@redhat.com>
-	<CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
-	<20141126002501.GA11752@redhat.com>
-	<CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>
-	<20141126024032.GA13246@redhat.com>
-	<20141126225745.GA30346@redhat.com>
-	<CA+55aFz-JUX6CU-aO+cwLHYtH7BA+dgyUnEGoy8T4S62gEDFpA@mail.gmail.com>
-	<20141127225637.GA24019@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: 177.102.84.214
-X-Newsreader: Claws Mail 3.11.1-9-g1f531c (GTK+ 2.24.25; x86_64-unknown-linux-gnu)
+	id S1751669AbaK2Umw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 15:42:52 -0500
+Received: from www.linutronix.de ([62.245.132.108]:37528 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444AbaK2Umv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Nov 2014 15:42:51 -0500
+Date: Sat, 29 Nov 2014 21:42:30 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Borislav Petkov <bp@alien8.de>
+cc: Jiang Liu <jiang.liu@linux.intel.com>, linux-tip-commits@vger.kernel.org,
+        matthias.bgg@gmail.com, tony.luck@intel.com, benh@kernel.crashing.org,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, grant.likely@linaro.org,
+        wangyijing@huawei.com, marc.zyngier@arm.com, bhelgaas@google.com,
+        yingjoe.chen@mediatek.com, mingo@kernel.org
+Subject: Re: [tip:irq/irqdomain] irqdomain: Introduce helper function
+ irq_domain_add_hierarchy()
+In-Reply-To: <20141129125319.GA6491@pd.tnic>
+Message-ID: <alpine.DEB.2.11.1411292112390.3961@nanos>
+References: <1416061447-9472-5-git-send-email-jiang.liu@linux.intel.com> <tip-afb7da83b9f476728623130703acb553d7c7c4d9@git.kernel.org> <20141129125319.GA6491@pd.tnic>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Nov 2014 17:56:37 -0500
-Dave Jones <davej@redhat.com> wrote:
-
-> Agreed.
+On Sat, 29 Nov 2014, Borislav Petkov wrote:
+> So I'm seeing the lockdep splat below really early on an IVB laptop.
 > 
-> Currently leaving 3.16 running. 21hrs so far.
+> Basically we're not supposed to do __GFP_FS allocations with IRQs off:
+> 
+>   2737		/* We're only interested __GFP_FS allocations for now */
+>   2738		if (!(gfp_mask & __GFP_FS))
+>   2739			return;
+>   2740	
+>   2741		/*
+>   2742		 * Oi! Can't be having __GFP_FS allocations with IRQs disabled.
+>   2743		 */
+>   2744		if (DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags))) 			<--- HERE!
+>   2745			return;
+>   2746	
+>   2747		mark_held_locks(curr, RECLAIM_FS);
+>   2748	}
+> 
+> Now, AFAICT, enable_IR_x2apic() disables interrupts and the whole init
+> is done with IRQs off but down that path intel_setup_irq_remapping()
+> calls irq_domain_add_hierarchy() and it does by default GFP_KERNEL
+> allocations.
+> 
+> The obvious fix is this and the machine boots fine with it. I'm not sure
+> it is kosher though so I rather run it by people first:
+> 
+> ---
+> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> index 7fac311057b8..c21a003b996a 100644
+> --- a/kernel/irq/irqdomain.c
+> +++ b/kernel/irq/irqdomain.c
+> @@ -46,14 +46,18 @@ struct irq_domain *__irq_domain_add(struct device_node *of_node, int size,
+>  				    void *host_data)
+>  {
+>  	struct irq_domain *domain;
+> +	gfp_t gfp_flags = GFP_KERNEL;
+> +
+> +	if (irqs_disabled())
+> +		gfp_flags = GFP_NOFS;
 
-	Dave, I think I reported this bug in this bug report:
+We want to use GFP_ATOMIC for that, but I really hate to do so. There
+is no reason except for the early boot stage to call into this code
+with interrupts disabled. And there we are covered by gfp_allowed_mask,
+so that a GFP_KERNEL allocation can succeed.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=85941
+I have no idea, why enable_IR_x2apic() has been bolted into
+smp_prepare_cpus(). Probably just because.
 
-	Just posting in case the call trace helps...
+There is no reason WHY this cannot be done in the early irq setup path
+(at least nowadays with the allocators being available early), but
+that is another area which needs some care and cleanup, but definitely
+too late before the 3.19 merge window opens.
 
-	In my case it happens when I watch a video on Youtube or play a
-audio file...
+So we have to bite the bullet and apply something like this along with
+a big fat comment WHY we are doing so and I'm tempted to wrap this
+into a #ifdef CONFIG_X86 so that noone else thinks that calling this
+code with interrupts disabled - except for the early boot stage - is a
+brilliant idea.
 
--- 
-Linux 3.16.0-00115-g19583ca: Shuffling Zombie Juror
-http://www.youtube.com/DanielFragaBR
-http://exchangewar.info
-Bitcoin: 12H6661yoLDUZaYPdah6urZS5WiXwTAUgL
+Thanks,
 
-
+	tglx
