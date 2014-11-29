@@ -1,152 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695AbaK2SFg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 13:05:36 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:34650 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439AbaK2SFe (ORCPT
+	id S1751847AbaK2SG2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 13:06:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33338 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402AbaK2SG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 13:05:34 -0500
-Message-ID: <547A0AEB.2020002@roeck-us.net>
-Date: Sat, 29 Nov 2014 10:05:31 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Sat, 29 Nov 2014 13:06:27 -0500
+Date: Sat, 29 Nov 2014 10:05:05 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Dmitry Vyukov <dvyukov@google.com>,
+        Alex Williamson <alex.williamson@redhat.com>
+Cc: kasan-dev@googlegroups.com, LKML <linux-kernel@vger.kernel.org>,
+        Kostya Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <andreyknvl@google.com>,
+        Greg Thelen <gthelen@google.com>, Kees Cook <keescook@google.com>,
+        Robert Swiecki <swiecki@google.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Yury Gribov <y.gribov@samsung.com>
+Subject: Re: Out-of-bounds write in driver_override_show
+Message-ID: <20141129180505.GC32510@kroah.com>
+References: <CACT4Y+aWankm-bfSKbnQYA4OLM5z7ffqL0F_3V8hNH3mxsmQ=w@mail.gmail.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        =?windows-1252?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Steven Honeyman <stevenhoneyman@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
-References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com> <20141129174315.GA32132@kroah.com> <201411291849.44032@pali> <20141129175152.GA32510@kroah.com>
-In-Reply-To: <20141129175152.GA32510@kroah.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Suspect
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 512
-X-CTCH-RefID: str=0001.0A020209.547A0AEE.0119,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=512,sb=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 8
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 2
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACT4Y+aWankm-bfSKbnQYA4OLM5z7ffqL0F_3V8hNH3mxsmQ=w@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2014 09:51 AM, Greg Kroah-Hartman wrote:
-> On Sat, Nov 29, 2014 at 06:49:43PM +0100, Pali Rohár wrote:
->> On Saturday 29 November 2014 18:43:15 Greg Kroah-Hartman wrote:
->>> On Sat, Nov 29, 2014 at 05:04:07PM +0100, Pali Rohár wrote:
->>>> This patch adds labels for temperature sensors if SMM
->>>> function with EAX register 0x11a3 reports it. These
->>>> informations was taken from DOS binary NBSVC.MDM.
->>>>
->>>> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
->>>> ---
->>>>
->>>>   drivers/char/i8k.c |  110
->>>>   +++++++++++++++++++++++++++++++++++++++++----------- 1
->>>>   file changed, 88 insertions(+), 22 deletions(-)
->>>>
->>>> diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
->>>> index e34a019..77af46b 100644
->>>> --- a/drivers/char/i8k.c
->>>> +++ b/drivers/char/i8k.c
->>>> @@ -42,6 +42,7 @@
->>>>
->>>>   #define I8K_SMM_GET_FAN		0x00a3
->>>>   #define I8K_SMM_GET_SPEED	0x02a3
->>>>   #define I8K_SMM_GET_TEMP	0x10a3
->>>>
->>>> +#define I8K_SMM_GET_TEMP_TYPE	0x11a3
->>>>
->>>>   #define I8K_SMM_GET_DELL_SIG1	0xfea3
->>>>   #define I8K_SMM_GET_DELL_SIG2	0xffa3
->>>>
->>>> @@ -288,6 +289,14 @@ static int i8k_set_fan(int fan, int
->>>> speed)
->>>>
->>>>   	return i8k_smm(&regs) ? : i8k_get_fan_status(fan);
->>>>
->>>>   }
->>>>
->>>> +static int i8k_get_temp_type(int sensor)
->>>> +{
->>>> +	struct smm_regs regs = { .eax = I8K_SMM_GET_TEMP_TYPE, };
->>>> +
->>>> +	regs.ebx = sensor & 0xff;
->>>> +	return i8k_smm(&regs) ? : regs.eax & 0xff;
->>>> +}
->>>> +
->>>>
->>>>   /*
->>>>
->>>>    * Read the cpu temperature.
->>>>    */
->>>>
->>>> @@ -493,6 +502,29 @@ static int i8k_open_fs(struct inode
->>>> *inode, struct file *file)
->>>>
->>>>    * Hwmon interface
->>>>    */
->>>>
->>>> +static ssize_t i8k_hwmon_show_temp_label(struct device
->>>> *dev, +				   struct device_attribute *devattr,
->>>> +				   char *buf)
->>>> +{
->>>> +	static const char * const labels[] = {
->>>> +		"CPU",
->>>> +		"GPU",
->>>> +		"SODIMM",
->>>> +		"Other",
->>>> +		"Ambient",
->>>> +		"Other",
->>>> +	};
->>>> +	int index = to_sensor_dev_attr(devattr)->index;
->>>> +	int type;
->>>> +
->>>> +	type = i8k_get_temp_type(index);
->>>> +	if (type < 0)
->>>> +		return type;
->>>> +	if (type >= ARRAY_SIZE(labels))
->>>> +		type = ARRAY_SIZE(labels) - 1;
->>>> +	return sprintf(buf, "%s\n", labels[type]);
->>>> +}
->>>
->>> No Documentation/ABI/ entry for your new sysfs file?
->>
->> It is standard hwmon sysfs entry which is used by other hwmon
->> drivers... It is not i8k.ko driver specific.
->
-> Ok, then why is this driver not in a "hwmon-standard" location in the
-> kernel tree?
->
-Another historic reason. hwmon support was added to the driver
-only in 2011. Initially it only had support for the proc interface.
-The driver exists at least since 2005, when Linux started to use git.
+On Sat, Nov 29, 2014 at 01:38:10PM +0400, Dmitry Vyukov wrote:
+> Hello,
+> 
+> I am working on Kernel AddressSanitizer, a fast memory error detector
+> for kernel:
+> https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
+> 
+> Here is an error report that I got while running trinity:
 
-Maybe we should move it ?
+Alex, this looks like the code you added, you need to properly check for
+the size of the string before writing it back...
 
-Guenter
+Rest of the bug report below.
 
+greg k-h
+
+
+> 
+> BUG: AddressSanitizer: out of bounds access in vsnprintf+0xd0/0x890 at
+> addr ffff880057483261
+> Write of size 1 by task trinity-c54/4461
+> =============================================================================
+> BUG kmalloc-4096 (Tainted: G        W     ): kasan error
+> -----------------------------------------------------------------------------
+> INFO: Allocated in seq_open+0x5a/0xe0 age=1571449 cpu=0 pid=28869
+> __slab_alloc+0x4c4/0x4e0
+> __kmalloc+0x18b/0x1b0
+> seq_buf_alloc+0x16/0x40
+> traverse+0x243/0x350
+> seq_read+0x434/0x6b0
+> kernfs_fop_read+0x176/0x1f0
+> vfs_read+0xd7/0x240
+> SyS_read+0x57/0xc0
+> system_call_fastpath+0x12/0x17
+> INFO: Slab 0xffffea00015d2000 objects=7 used=7 fp=0x          (null)
+> flags=0x100000000004080
+> INFO: Object 0xffff880057482260 @offset=8800 fp=0xffffffffffffffff
+> 
+> CPU: 0 PID: 4461 Comm: trinity-c54 Tainted: G    B   W      3.18.0-rc1+ #8
+> Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
+>  ffffffff81fbdaac ffff88008e3ab8c8 ffffffff81c85c3f 0000000000001130
+>  ffff88011b003200 ffff88008e3ab8f8 ffffffff811ee018 ffff88011b003200
+>  ffffea00015d2000 ffff880057482260 ffff8800d748225f ffff88008e3ab928
+> Call Trace:
+>  [<ffffffff811f76a5>] __asan_store1+0x75/0xb0 mm/kasan/kasan.c:417
+>  [<ffffffff8147b660>] vsnprintf+0xd0/0x890 lib/vsprintf.c:1860
+>  [<ffffffff8147bf70>] sprintf+0x40/0x50 lib/vsprintf.c:1989
+>  [<ffffffff816e1e51>] driver_override_show+0x31/0x40 drivers/base/platform.c:755
+>  [<ffffffff816d92d9>] dev_attr_show+0x39/0x80 drivers/base/core.c:120
+>  [<ffffffff812a3892>] sysfs_kf_seq_show+0x152/0x230 fs/sysfs/file.c:63
+>  [<ffffffff812a13a6>] kernfs_seq_show+0x76/0x90 fs/kernfs/file.c:168
+>  [<ffffffff8122f755>] traverse+0x185/0x350 fs/seq_file.c:120
+>  [<ffffffff8122fee4>] seq_read+0x434/0x6b0 fs/seq_file.c:191
+> [<ffffffff812a22f6>] kernfs_fop_read+0x176/0x1f0 fs/kernfs/file.c:244
+>  [<ffffffff811fc131>] do_loop_readv_writev+0x71/0xa0 fs/read_write.c:708
+>  [<ffffffff811fe850>] do_readv_writev+0x350/0x360 fs/read_write.c:842
+>  [<ffffffff811fe8ab>] vfs_readv+0x4b/0x70 fs/read_write.c:867
+>  [<     inlined    >] SyS_preadv+0xca/0xf0 SYSC_preadv fs/read_write.c:945
+>  [<ffffffff811fec0a>] SyS_preadv+0xca/0xf0 fs/read_write.c:931
+>  [<ffffffff81c91f69>] system_call_fastpath+0x12/0x17
+> arch/x86/kernel/entry_64.S:422
+> Memory state around the buggy address:
+>  ffff880057482f80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>  ffff880057483000: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>  ffff880057483080: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>  ffff880057483100: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>  ffff880057483180: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >ffff880057483200: 00 00 00 00 00 00 00 00 00 00 00 00 fc fc fc fc
+>                                                        ^
+>  ffff880057483280: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+>  ffff880057483300: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+>  ffff880057483380: fc fc 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>  ffff880057483400: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>  ffff880057483480: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> ==================================================================
+> dev_attr_show: driver_override_show+0x0/0x40 returned bad count
+> fill_read_buffer: dev_attr_show+0x0/0x80 returned bad count
+> 
+> 
+> My source is on revision f114040e3ea6e07372334ade75d1ee0775c355e1.
+> 
+> I've looked at source code and it seems that driver_override_store
+> does not do length sanitization, so driver_override_show smashes
+> subsequent memory blocks in sprinf (with user-provided data?).
