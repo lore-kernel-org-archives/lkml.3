@@ -1,143 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804AbaK2WGe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 17:06:34 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:50716 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751738AbaK2WGd (ORCPT
+	id S1751826AbaK2WIl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 17:08:41 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28472 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751304AbaK2WIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 17:06:33 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mark Brown <broonie@kernel.org>
-Cc: Darren Hart <dvhart@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Ben Zhang <benzh@chromium.org>,
-        alsa-devel <alsa-devel@alsa-project.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Bard Liao <bardliao@realtek.com>,
-        Oder Chiou <oder_chiou@realtek.com>,
-        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
-        flove@realtek.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ASoC: rt5677: Add ACPI device probing
-Date: Sat, 29 Nov 2014 23:27:52 +0100
-Message-ID: <1820241.GUleD5gbzs@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141129115209.GD7712@sirena.org.uk>
-References: <1416034608-24238-1-git-send-email-benzh@chromium.org> <2127240.rWRTDu6LHQ@vostro.rjw.lan> <20141129115209.GD7712@sirena.org.uk>
+	Sat, 29 Nov 2014 17:08:40 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/6a4OORvzUuExIs1Raflij
+Date: Sat, 29 Nov 2014 14:06:19 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Alexander Kochetkov <al.kochet@gmail.com>
+Cc: Kevin Hilman <khilman@kernel.org>, linux-omap@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Wolfram Sang <wsa@the-dreams.de>
+Subject: Re: [RFC] i2c: omap: TEST: do IP reset during probe.
+Message-ID: <20141129220619.GZ2817@atomide.com>
+References: <1416685634-5864-3-git-send-email-al.kochet@gmail.com>
+ <1417028722-29306-1-git-send-email-al.kochet@gmail.com>
+ <7hzjbdd57j.fsf@deeprootsystems.com>
+ <20141128221350.GW2817@atomide.com>
+ <E4A4FA05-0752-41CB-B86B-84035C6EAF05@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E4A4FA05-0752-41CB-B86B-84035C6EAF05@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, November 29, 2014 11:52:09 AM Mark Brown wrote:
+* Alexander Kochetkov <al.kochet@gmail.com> [141128 15:27]:
+> Hello, Tony!
 > 
-> --9GYGtdBumnmR69ER
-> Content-Type: text/plain; charset=us-ascii
-> Content-Disposition: inline
-> Content-Transfer-Encoding: quoted-printable
-> 
-> On Sat, Nov 29, 2014 at 12:51:59AM +0100, Rafael J. Wysocki wrote:
-> > On Friday, November 28, 2014 04:00:36 PM Mark Brown wrote:
-> 
-> > > OK, we probably should have one to aid discoverability since as far as I
-> > > can tell what's happening is that people (hi Intel!) are allocating
-> > > their own identifiers for devices produced by other vendors that turn up
-> > > on their boards.  If people can find the set of IDs in use there's more
-> > > chance they'll use the same ones as other people.
-> 
-> > There's the PRP0001 ID that can be use to in combination with the
-> > "compatible" property which then works the same way as for DT.
-> 
-> > That should be sufficient if the properties are going to be the
-> > same for ACPI (_DSD) and DT.
-> 
-> We've got people making BIOSs right now for systems you can actually buy=20
-> that are intended to run Windows which we need to support; right now the
-> pressing problem I'm seeing is that we've got BIOS vendors not using
-> properties at all and we're going to be ending up with configuration
-> coming from big DMI tables instead which is miserable, Windows is
-> perfectly happy to have custom drivers installed per machine.  Do we
-> know if Windows supports PRP0001 as it currently stands?
+> I just want to know, is multimaster i2c feature is interesting for TI SOC,
+> so I could send another patches?
 
-No, it doesn't.
+Sure and thanks for looking into fixing things.
+ 
+> Or it's better to leave the thing without changes, as current single master version
+> well tested and work?
 
-Separate device IDs are necessary for Windows compatibility AFAICS.
+Well once the fixes are in, I don't see any reason to not add
+multimaster support.
+ 
+> Also I have a draft version of mixed multimaster/slave version. But it could introduce new bugs.
+> Are we ready for that? Thats because IP behavior, sometimes, doesn't correspond to TRMs[4][5].
+> It's the one of strange IP I ever seen on TI SOC. And TRM not as detailed as DSP TRMs.
 
-But that also means any device ID registered by us won't be suitable in that
-case, because Windows won't use it.
+I think we can pretty easily test the i2c support before things get
+merged. I guess it should then be possible to loop two i2c controllers
+and run automated tests on them :)
+ 
+> Looks, like you haven't seen my response in another thread[1].
+> So, duplicate it here.
 
-There are two different problems here, though.  The first one is a way to
-provide the existing Linux drivers with the information expected by them via
-ACPI and that's what _DSD (plus PRP0001 optionally) is.  The second one is
-to be able to handle systems with ACPI tables from a random vendor who only
-cares about Windows and that's more difficult to address, because our
-ecosystem is different from theirs.
+Sorry I guess I forgot to reply, let me know if I still missed something.
 
-There basically are two ways around that.  The first one is to have all
-knowledge related to device IDs in drivers (which effectively is what
-Windows does and which implies "board files" of sorts) and the second one is
-to make it possible to use overlays on top of the existing ACPI tables that
-will allow people to provide the properties expected by a more generic driver
-(this way, if the vendor didn't care to provide _DSD, for example, in the
-original ACPI tables, the system integrator would be able to use an overlay
-in an initramfs or boot partition to amend them).
+I'll give your two fixes a try on Monday hopefully.
 
-There is a plan to do the latter, but that is going to take some time to
-complete.
+Regards,
 
-> > > If those are device IDs then what you're saying is what I'd expect to
-> > > happen and it's part of the reason I'd expect us to be registering IDs
-> > > along with registering properties - if people are defining device
-> > > specific properties they really ought to be tied to the IDs that are in
-> > > use especially if (as seems likely to be the case with the current state
-> > > of the world) people are doing things without attempting to coordinate
-> > > and we're ending up trying to document the deployed reality.
-> 
-> > The rule of thumb (in my view) should be that if the device object's _DSD=
->  is
-> > going to return the same set of properties as for DT and no other special
-> > handling determined by the ID is required (ie. nothing along the lines of
-> > "if the device ID is X, the _ABC method works like that" which has to be =
-> known
-> > by the driver), "PRP0001" should be returned by _HID and then the value o=
-> f the
-> > "compatible" property should be the same as for DT.
-> 
-> This is a reasonable idea but we do need it to be compatible with
-> Windows and we still need to make sure we have a process in place that
-> BIOS authors and driver authors focused on Windows can reasonably be
-> expected to work with.  That's not something we have right now for DT
-> (our DT process involves contributing to Linux) so the problem remains
-> effectively the same.
-
-We can't make Windows use our stuff and they have a different model
-(a custom driver per device ID vs a common driver per IP block possibly
-matching multiple device IDs).
-
-> We also need a way of getting the word out to people that they should be
-> doing this (also a problem no matter if we use PRP0001 or something UEFI
-> specific).
-
-What do you mean by "something UEFI specific"?
-
-> > Otherwise, a new device ID needs to be allocated for the device and _HID
-> > should return that ID.  Also, if the device is compatible with another
-> > device with an already allocated ID (for _HID), _CID may return the devic=
-> e ID
-> > of the compatible device.  [Of course, it's better if _HID is the same for
-> > identical devices.]
-> 
-> I honestly don't see BIOS authors as being likely to care about adding
-> things to the CID if their systems are working (I'm assuming that HID is
-> the primary device ID and CID are further backup compatible IDs).
-
-They will if they care to be compatible with old (binary) OSes that didn't
-know about the new device ID, but shipped drivers that could handle the
-device (although possibly in a "crippled" way).
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Tony
