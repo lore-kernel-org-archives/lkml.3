@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735AbaK2RfI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 12:35:08 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:44594 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506AbaK2Re6 (ORCPT
+	id S1751793AbaK2Rgl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 12:36:41 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:49382 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751395AbaK2Rgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 12:34:58 -0500
-Date: Sat, 29 Nov 2014 09:34:47 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, ntrrgc@gmail.com,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / video: check _DOD list when creating backlight
- device
-Message-ID: <20141129173447.GA3608@norris-Latitude-E6410>
-References: <542A4949.2020208@intel.com>
- <1648939.GaN1bonAuX@vostro.rjw.lan>
- <5436470B.3030306@intel.com>
- <20141128095928.GA5106@norris-Latitude-E6410>
- <54786294.5030105@intel.com>
- <20141128171812.GA3658@norris-Latitude-E6410>
- <5479C3BB.5080905@intel.com>
+	Sat, 29 Nov 2014 12:36:40 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18x42dUTwnY59mVYRb3wWHQ
+Date: Sat, 29 Nov 2014 09:34:19 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-serial@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Sekhar Nori <nsekhar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, uwe@kleine-koenig.org
+Subject: Re: [PATCH] tty: serial: serial-omap: depend on !8250_omap
+Message-ID: <20141129173418.GY2817@atomide.com>
+References: <1417039306-2384-1-git-send-email-bigeasy@linutronix.de>
+ <20141129094823.GA10840@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5479C3BB.5080905@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141129094823.GA10840@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 29, 2014 at 09:01:47PM +0800, Aaron Lu wrote:
-> On 11/29/2014 01:18 AM, Brian Norris wrote:
-> > On Fri, Nov 28, 2014 at 07:55:00PM +0800, Aaron Lu wrote:
-> >> On 11/28/2014 05:59 PM, Brian Norris wrote:
-> >>> Do you need any additional info to handle the regression, or should we
-> >>> just revert the patch?
-> >>
-> >> Please attach acpidump, dmesg with video.dyndbg="module video +pft" in
-> >> kernel cmdline, list the /sys/class/backlight with and without this
-> >> commit, thanks.
-[...]
-> > Before reverting:
-> > 
-> > $ ls -al /sys/class/backlight
-> > total 0
-> > drwxr-xr-x  2 root root 0 Nov 28 09:01 .
-> > drwxr-xr-x 58 root root 0 Nov 28 09:01 ..
-> > 
-> > After reverting:
-> > 
-> > $ ls -al /sys/class/backlight
-> > total 0
-> > drwxr-xr-x  2 root root 0 Nov 28 09:10 .
-> > drwxr-xr-x 50 root root 0 Nov 28 09:10 ..
-> > lrwxrwxrwx  1 root root 0 Nov 28 09:09 acpi_video0 -> ../../devices/pci0000:00/0000:00:01.0/0000:01:00.0/backlight/acpi_video0
+* Sebastian Andrzej Siewior <bigeasy@linutronix.de> [141129 01:50]:
+> * Sebastian Andrzej Siewior | 2014-11-26 23:01:46 [+0100]:
 > 
-> The current logic to bind device doesn't work with your system, that
-> logic is there for a long time so I prefer not to change that, instead,
-> I can change the newly added function acpi_video_device_in_dod to let it
-> directly compare the 0-12 bits of the ID to decide if the video output
-> device is in the _DOD list. Can you please try the following patch?
+> >Technically speaking this is not required. If both are enabled then the
+> >Maikefile order says that 8250 one wins, the second is never probed.
+> >
+> >If we choose to enable 8250_omap via defconfig then one might get supprised
+> >that his console isn't working anymore since nothing says use ttySx
+> >instead ttyOx.
+> >This patch _tries_ to bring this to the users' attention by not showing
+> >the serial-omap driver once the 8250 one is enabled. So the user might
+> >choose to use the help text which says that this driver (8250_omap)
+> >uses ttySx instead ttyOx.
+> >
+> >Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> >---
+> >This is my attempt to warn the defconfig user of the defconfig change
+> >(which did not yet happen). Any suggestions?
 > 
-> diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-> index 41e6b977ceb2..185a57d13723 100644
-> --- a/drivers/acpi/video.c
-> +++ b/drivers/acpi/video.c
-> @@ -1164,7 +1164,8 @@ static bool acpi_video_device_in_dod(struct acpi_video_device *device)
->  		return true;
->  
->  	for (i = 0; i < video->attached_count; i++) {
-> -		if (video->attached_array[i].bind_info == device)
-> +		if ((video->attached_array[i].value.int_val & 0xfff) ==
-> +		    (device->device_id & 0xfff))
->  			return true;
->  	}
+> This is was Uwe Kleine-König suggested off-list:
+> 
+> |Currently there are two drivers for the serial device. Until the new one
+> |matured enough to drop the old one, let them conflict each other. They
+> |both handle the same devices, but only one can be responsible for a
+> |single device. There is no technical need, but having two drivers in the
+> |same kernel might result in surprises.
+> 
+> I personally don't mind having two drivers enabled since the makefile
+> order is always the same. My main concern is the ttyOx -> ttySx switch
+> after the newer driver is enabled by default via defconfig (and the user
+> does not know it). "make oldconfig" is covered by "default n".
+> Uwe's has a point about "matured enough to drop the old one". It isn't
+> mentioned anywhere that the newer driver supports also DMA. Is this
+> something we want to add to the help text?
+> Could someone that will probably be dealling with possible fallout comment
+> on this? This patch shouldn't go in without an ACK.
 
-Thanks for the patch! This works better for me:
+Well the nightmare userspace switch from ttyS to ttyO few years ago is
+something we want to avoid.. I think the best solution would be to make
+serial-omap.c transparently provide support for ttyO using the new 8250
+code so both ttyS and ttyO devices would just work. Otherwise it will
+be years of "my serial port stopped working" questions again.
 
-$ ls -al /sys/class/backlight/
-total 0
-drwxr-xr-x  2 root root 0 Nov 29 09:00 .
-drwxr-xr-x 50 root root 0 Nov 29 09:00 ..
-lrwxrwxrwx  1 root root 0 Nov 29 08:59 acpi_video0 -> ../../devices/pci0000:00/0000:00:01.0/0000:01:00.0/backlight/acpi_video0
+Regards,
 
-And I see no dmesg dev_dbg() prints from the acpi/video module.
-
-Tested-by: Brian Norris <computersforpeace@gmail.com>
-
-Should we try to get this into 3.18, then?
-
-Thanks,
-Brian
+Tony
