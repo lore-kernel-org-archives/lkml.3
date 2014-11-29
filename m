@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568AbaK2B2y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 20:28:54 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:58162 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522AbaK2B2w (ORCPT
+	id S1751575AbaK2Bcv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 20:32:51 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:40743 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431AbaK2Bcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 20:28:52 -0500
-Message-ID: <54792138.2060008@huawei.com>
-Date: Sat, 29 Nov 2014 09:28:24 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Fri, 28 Nov 2014 20:32:50 -0500
+From: Zeng Tao <prime.zeng@huawei.com>
+To: <gregkh@linuxfoundation.org>, <john.stultz@linaro.org>,
+        <ccross@android.com>, <benjamin.gaignard@linaro.org>,
+        <rebecca@android.com>, <fabio.estevam@freescale.com>
+CC: <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: ion : ion_cma_heap: fix bug for highmem cma
+Date: Sat, 29 Nov 2014 09:31:57 +0800
+Message-ID: <1417224717-203170-1-git-send-email-prime.zeng@huawei.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-CC: <masami.hiramatsu.pt@hitachi.com>, <linux@arm.linux.org.uk>,
-        <will.deacon@arm.com>, <taras.kondratiuk@linaro.org>,
-        <ben.dooks@codethink.co.uk>, <cl@linux.com>, <rabin@rab.in>,
-        <davem@davemloft.net>, <lizefan@huawei.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v10 2/2] ARM: kprobes: enable OPTPROBES for ARM 32
-References: <1416551751-50846-1-git-send-email-wangnan0@huawei.com>	 <1416551751-50846-3-git-send-email-wangnan0@huawei.com> <1417099007.2041.6.camel@linaro.org>
-In-Reply-To: <1417099007.2041.6.camel@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
+Content-Type: text/plain
+X-Originating-IP: [10.67.212.83]
 X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020205.54792153.0044,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 5eab2da87ec146b6f25dc31e7f8256c7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/27 22:36, Jon Medhurst (Tixy) wrote:
-> On Fri, 2014-11-21 at 14:35 +0800, Wang Nan wrote:
->> This patch introduce kprobeopt for ARM 32.
-> 
-> If I've understood things correctly, this is a feature which inserts
-> probes by using a branch instruction to some trampoline code rather than
-> using an undefined instruction as a breakpoint. That way we avoid the
-> overhead of processing the exception and it is this performance
-> improvement which is the main/only reason for implementing it?
-> 
-> If so, I though it good to see what kind of improvement we get by
-> running the micro benchmarks in the kprobes test code. On an A7/A15
-> big.LITTLE vexpress board the approximate figures I get are 0.3us for
-> optimised probe, 1us for un-optimised, so a three times performance
-> improvement. This is with an empty probe pre-handler and no post
-> handler, so with a more realistic usecase, the relative improvement we
-> get from optimisation would be less.
-> 
-> I thought it good to see what sort of benefits this code achieves,
-> especially as it could grow quite complex over time, and the cost of
-> that versus the benefit should be considered.
-> 
-> 
+when cma is located in highmem, virt_to_page will not
+work the right way, use pfn_to_page instead.
 
-Thanks for your comments and your comprehensive testing.
+Signed-off-by: Zeng Tao <prime.zeng@huawei.com>
+---
+ drivers/staging/android/ion/ion_cma_heap.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-In fact I have got even worst performance result on my hardware platform.
-However, by utilizing previous introduced checker code to check instructions
-in detail, I believe we can eliminate most of the emulation/simulation works
-so the cost can be reduced.
-
-Futhermore, kprobeopt can avoid exceptions, which have at least 2 advantanges:
-
-1. Make things simpler. Although exception processing is fast in real hardware,
-   it still need more state changing and processing than a branch instruction,
-   which may cause unexcepted problems.
-
-2. Branch instructions can be used in more cases than exception. For example,
-   at very early stage of kernel booting when exception vector is
-   not installed, and at kernel panic processing.
-
-
+diff --git a/drivers/staging/android/ion/ion_cma_heap.c b/drivers/staging/android/ion/ion_cma_heap.c
+index f8cabcb..cc45fc0 100644
+--- a/drivers/staging/android/ion/ion_cma_heap.c
++++ b/drivers/staging/android/ion/ion_cma_heap.c
+@@ -47,7 +47,7 @@ struct ion_cma_buffer_info {
+ static int ion_cma_get_sgtable(struct device *dev, struct sg_table *sgt,
+ 			       void *cpu_addr, dma_addr_t handle, size_t size)
+ {
+-	struct page *page = virt_to_page(cpu_addr);
++	struct page *page = pfn_to_page(handle >> PAGE_SHIFT);
+ 	int ret;
+ 
+ 	ret = sg_alloc_table(sgt, 1, GFP_KERNEL);
+-- 
+1.9.1
 
