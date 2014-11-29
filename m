@@ -1,171 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830AbaK2THl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 14:07:41 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:38265 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530AbaK2THk (ORCPT
+	id S1751706AbaK2TL7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 14:11:59 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:57364 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506AbaK2TL6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 14:07:40 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
-Date: Sat, 29 Nov 2014 20:07:36 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
-Cc: Gabriele Mazzotta <gabriele.mzt@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Steven Honeyman <stevenhoneyman@gmail.com>,
-        linux-kernel@vger.kernel.org
-References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com> <2162660.rjBG3mszUn@xps13> <547A1754.20903@roeck-us.net>
-In-Reply-To: <547A1754.20903@roeck-us.net>
+	Sat, 29 Nov 2014 14:11:58 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>,
+        linux-media <linux-media@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sakari Ailus <sakari.ailus@iki.fi>
+Subject: Re: [PATCH] media: v4l2-subdev.h: drop the guard CONFIG_VIDEO_V4L2_SUBDEV_API for v4l2_subdev_get_try_*()
+Date: Sat, 29 Nov 2014 21:12:25 +0200
+Message-ID: <3017627.SLutb67dz2@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <CA+V-a8s-mP+Fjok2s_nDUAOb4vN3RWyRc5VHuZqPdk4pJtv03A@mail.gmail.com>
+References: <1416220913-5047-1-git-send-email-prabhakar.csengg@gmail.com> <20141118180759.GT8907@valkosipuli.retiisi.org.uk> <CA+V-a8s-mP+Fjok2s_nDUAOb4vN3RWyRc5VHuZqPdk4pJtv03A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart12555498.D4sIgOcFoz";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201411292007.36975@pali>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart12555498.D4sIgOcFoz
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Hi Prabhakar,
 
-On Saturday 29 November 2014 19:58:28 Guenter Roeck wrote:
-> On 11/29/2014 10:27 AM, Gabriele Mazzotta wrote:
-> > On Saturday 29 November 2014 18:18:18 Pali Roh=C3=A1r wrote:
-> >> On Saturday 29 November 2014 18:07:19 Gabriele Mazzotta=20
-wrote:
-> >>> On Saturday 29 November 2014 17:09:35 Pali Roh=C3=A1r wrote:
-> >>>> On Saturday 29 November 2014 17:04:07 Pali Roh=C3=A1r wrote:
-> >>>>> This patch adds labels for temperature sensors if SMM
-> >>>>> function with EAX register 0x11a3 reports it. These
-> >>>>> informations was taken from DOS binary NBSVC.MDM.
-> >>>>>=20
-> >>>>> Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> >>>>> ---
-> >>>>>=20
-> >>>>>   drivers/char/i8k.c |  110
-> >>>>>=20
-> >>>>> +++++++++++++++++++++++++++++++++++++++++----------- 1
-> >>>>> file changed, 88 insertions(+), 22 deletions(-)
-> >>>>=20
-> >>>> I tested patch on Latitude E6440 and i8k CPU & GPU temps
-> >>>> match intel coretemp & amd radeion temps.
-> >>>>=20
-> >>>> But I would like if somebody with other Dell laptop can
-> >>>> test if temperature labels are correct...
-> >>>=20
-> >>> I tested it on my XPS13 9333, here what sensors outputs:
-> >>>=20
-> >>> acpitz-virtual-0
-> >>> Adapter: Virtual device
-> >>> temp1:        +27.8=C2=B0C  (crit =3D +105.0=C2=B0C)
-> >>> temp2:        +29.8=C2=B0C  (crit =3D +105.0=C2=B0C)
-> >>>=20
-> >>> coretemp-isa-0000
-> >>> Adapter: ISA adapter
-> >>> Physical id 0:  +62.0=C2=B0C  (high =3D +100.0=C2=B0C, crit =3D
-> >>> +100.0=C2=B0C) Core 0:         +62.0=C2=B0C  (high =3D +100.0=C2=B0C,=
- crit
-> >>> =3D +100.0=C2=B0C) Core 1:         +61.0=C2=B0C  (high =3D +100.0=C2=
-=B0C,
-> >>> crit =3D +100.0=C2=B0C)
-> >>>=20
-> >>> i8k-virtual-0
-> >>> Adapter: Virtual device
-> >>> fan2:           0 RPM
-> >>> CPU:          +62.0=C2=B0C
-> >>> Ambient:      +49.0=C2=B0C
-> >>> SODIMM:       +46.0=C2=B0C
-> >>> temp4:            N/A
-> >>>=20
-> >>> CPU seems to be correct, but I can't say anything on
-> >>> Ambient and SODIMM. temp4 is constantly equal to SODIMM
-> >>> without this patch, so I'd say N/A is correct.
-> >>>=20
-> >>>=20
-> >>> Gabriele
-> >>=20
-> >> It is unknown for me how to directly read Ambient and
-> >> SODIMM temperatures (without Dell SMM functions). So we
-> >> can only trust Dell SMM that it reporting correct values
-> >> and type is really Ambient and SODIMM.
-> >>=20
-> >> And about temp4:
-> >>=20
-> >> Label is not set when SMM function fails. Original DOS
-> >> NBSVC.MDM just ignore all sensors for which SMM type
-> >> function fails.
-> >>=20
-> >> This patch should not disable any sensor, so if you
-> >> previously had some value (<=3D 128=C2=B0C) and now not, then
-> >> there is some bug.
-> >>=20
-> >> Can you test this patch?
-> >> https://git.kernel.org/cgit/linux/kernel/git/gregkh/char-mi
-> >> sc.git/comm
-> >> it/?h=3Dchar-misc-testing&id=3D723493ca59c8d81fed3e7f261165fee
-> >> 493a29ffa
-> >>=20
-> >> It is possible that same value is caused by incorrect use
-> >> of prev[] array which should be fixed by above patch.
-> >>=20
-> >> Can you test i8k with and without above patch?
-> >=20
-> > I did some more tests. What I think is happening is that
-> > temp4_label returns -22, so I sensors prints N/A without
-> > actually reading temp4_input.
-> >=20
-> > I'm doing some tests to understand what's going on with
-> > temp4_input. It reports the value of the last temp*_input I
-> > read. If I read it right after I loaded i8k, I get an error
-> > (-22).
-> >=20
-> > The same doesn't happen for temp3_label, which constantly
-> > returns -22.
-> >=20
-> > I already had
-> > https://git.kernel.org/cgit/linux/kernel/git/gregkh/char-mi
-> > sc.git/commit/?h=3Dchar-misc-testing&id=3D723493ca59c8d81fed3e7f
-> > 261165fee493a29ffa applied. Without it, things seem not to
-> > change much. I either get an error (-22) or some incorrect
-> > values (for now always 1000) when I read temp4_input right
-> > after i8k was loaded. Once I read some other temp*_input, I
-> > always get the last value read.
->=20
-> I am seeing exactly the same behavior on an XPS13.
->=20
-> Guenter
+On Saturday 29 November 2014 18:30:09 Prabhakar Lad wrote:
+> On Tue, Nov 18, 2014 at 6:07 PM, Sakari Ailus <sakari.ailus@iki.fi> wrote:
+> > On Tue, Nov 18, 2014 at 10:39:24AM +0100, Hans Verkuil wrote:
+> >> On 11/17/14 11:41, Lad, Prabhakar wrote:
+> >> > this patch removes the guard CONFIG_VIDEO_V4L2_SUBDEV_API
+> >> > for v4l2_subdev_get_try_*() functions.
+> >> > In cases where a subdev using v4l2_subdev_get_try_*() calls
+> >> > internally and the bridge using subdev pad ops which is
+> >> > not MC aware forces to select MEDIA_CONTROLLER, as
+> >> > VIDEO_V4L2_SUBDEV_API is dependent on it.
+> >> > 
+> >> > Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> >> > ---
+> >> > 
+> >> >  include/media/v4l2-subdev.h | 2 --
+> >> >  1 file changed, 2 deletions(-)
+> >> > 
+> >> > diff --git a/include/media/v4l2-subdev.h b/include/media/v4l2-subdev.h
+> >> > index 5860292..076ca11 100644
+> >> > --- a/include/media/v4l2-subdev.h
+> >> > +++ b/include/media/v4l2-subdev.h
+> >> > @@ -642,7 +642,6 @@ struct v4l2_subdev_fh {
+> >> >  #define to_v4l2_subdev_fh(fh)      \
+> >> >     container_of(fh, struct v4l2_subdev_fh, vfh)
+> >> > 
+> >> > -#if defined(CONFIG_VIDEO_V4L2_SUBDEV_API)
+> >> >  #define __V4L2_SUBDEV_MK_GET_TRY(rtype, fun_name, field_name)         
+> >> >      \
+> >> >     static inline struct rtype *                                    \
+> >> >     v4l2_subdev_get_try_##fun_name(struct v4l2_subdev_fh *fh,       \
+> >> > 
+> >> > @@ -656,7 +655,6 @@ struct v4l2_subdev_fh {
+> >> >  __V4L2_SUBDEV_MK_GET_TRY(v4l2_mbus_framefmt, format, try_fmt)
+> >> >  __V4L2_SUBDEV_MK_GET_TRY(v4l2_rect, crop, try_crop)
+> >> >  __V4L2_SUBDEV_MK_GET_TRY(v4l2_rect, compose, try_compose)
+> >> > -#endif
+> >> > 
+> >> >  extern const struct v4l2_file_operations v4l2_subdev_fops;
+> >> 
+> >> The problem is that v4l2_subdev_get_try_*() needs a v4l2_subdev_fh which
+> >> you don't have if CONFIG_VIDEO_V4L2_SUBDEV_API is not defined. So I don't
+> >> see how removing the guards help with that.
+> >> 
+> >> What can be done is that if CONFIG_VIDEO_V4L2_SUBDEV_API is not defined,
+> >> then these functions return NULL.
+> > 
+> > Sure. That's a better choice than removing the config option dependency of
+> > the fields struct v4l2_subdev.
 
-Original Dell DOS executable ignores all temperature sensors if=20
-type SMM function fails (if I decoded and understand that DOS=20
-assembler code correctly). So maybe we should do same...
+Decoupling CONFIG_VIDEO_V4L2_SUBDEV_API from the availability of the in-kernel 
+pad format and selection rectangles helpers is definitely a good idea. I was 
+thinking about decoupling the try format and rectangles from v4l2_subdev_fh by 
+creating a kind of configuration store structure to store them, and embedding 
+that structure in v4l2_subdev_fh. The pad-level operations would then take a 
+pointer to the configuration store instead of the v4l2_subdev_fh. Bridge 
+drivers that want to implement TRY_FMT based on pad-level operations would 
+create a configuration store, use the pad-level operations, and destroy the 
+configuration store. The userspace subdev API would use the configuration 
+store from the file handle.
 
-But because our i8k.c code ignores sensor only if it returns=20
-invalid temperature, there could be possible regression that on=20
-same machines type SMM function is not implemented or not=20
-working...
+> >> BTW, one patch I will very happily accept is one where the
+> >> __V4L2_SUBDEV_MK_GET_TRY is removed and these three try functions are
+> >> just written as proper static inlines. I find it very obfuscated code.
+> > 
+> > I originally wrote them like that in order to avoid writing essentially
+> > the same code three times over. If there will be more targets, the same
+> > repeats further, should one write those functions open for all different
+> > macro arguments. That's why it was a macro to begin with.
+> > 
+> >> In addition, because it is a macro you won't find the function
+> >> definitions if you grep on the function name.
+> > 
+> > True as well. You could simply change the macro to include the full
+> > function name. This was not suggested in review back then AFAIR.
+> > 
+> >> But any functional changes here need to be Acked by Laurent first.
+> 
+> How do you want me to proceed on this ?
 
-What do you think?
+-- 
+Regards,
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+Laurent Pinchart
 
---nextPart12555498.D4sIgOcFoz
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlR6GXgACgkQi/DJPQPkQ1IrpQCgq9xWiji2ozvnEnPnHqUFvW+l
-7hgAoMacFqNyNabBjoWCxSiYX9JnpETf
-=iSA9
------END PGP SIGNATURE-----
-
---nextPart12555498.D4sIgOcFoz--
