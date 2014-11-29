@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751329AbaK2Pah (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 10:30:37 -0500
-Received: from mout.web.de ([212.227.17.12]:63833 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751075AbaK2Pag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 10:30:36 -0500
-Message-ID: <5479E693.3010200@users.sourceforge.net>
-Date: Sat, 29 Nov 2014 16:30:27 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751374AbaK2Pco (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 10:32:44 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:43009 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075AbaK2Pcm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Nov 2014 10:32:42 -0500
 MIME-Version: 1.0
-To: netdev@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] net-ipvlan: Deletion of an unnecessary check before the
- function call "free_percpu"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:8VvC2cdNPi+cHv5cwfZBs0cWyhhzR1215SvEdjBMG/GQObBJod7
- E9iLPbpyxnCi+gKezktFCHyc+GzFJpxh/1nVdQNOdRKtK7OBOF6+uDba17yvP1dUTIirxDP
- Bd5Y+TwnlzpeQdwXqyZ9tJk1myuFVw6HtSfzlfAfn+LGPVCL0OwkfI0tZjMzGA/kNN4Jrs8
- Gvg4XFBang9hzOH+izdVA==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <87mw7aof2m.fsf@x220.int.ebiederm.org>
+References: <b0f6c4df0e8ef8afcc7b786edecb4be8c752941e.1417215468.git.luto@amacapital.net>
+ <87mw7aof2m.fsf@x220.int.ebiederm.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sat, 29 Nov 2014 07:32:20 -0800
+Message-ID: <CALCETrVaeVcho=Sk_Tt6W4SKoK=WtOFZwRFAucFmi8Wi1XKGQA@mail.gmail.com>
+Subject: Re: [RFC PATCH] proc, pidns: Add highpid
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: David Herrmann <dh.herrmann@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        systemd Mailing List <systemd-devel@lists.freedesktop.org>,
+        criu@openvz.org, Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sat, 29 Nov 2014 16:23:20 +0100
+On Fri, Nov 28, 2014 at 7:34 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
+>
+>> Pid reuse is common, which means that it's difficult or impossible
+>> to read information about a pid from /proc without races.
+>
+> Sigh.
+>
+> What we need are not race free pids, but a file descriptor based process
+> management api.  Possibly one that starts by handing you a proc
+> directory.
 
-The free_percpu() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+I agree completely, and the Capsicum stuff from FreeBSD would probably
+be a very good start here.
 
-This issue was detected by using the Coccinelle software.
+>
+> Which probably means that we need a proc file we can write to and send
+> signals to a process, and another proc file we can select on and wait
+> for the process to exit.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/net/ipvlan/ipvlan_main.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+That too.  In fact, I have an old patch that went nowhere that makes
+the proc directory fd itself pollable.
 
-diff --git a/drivers/net/ipvlan/ipvlan_main.c b/drivers/net/ipvlan/ipvlan_main.c
-index 96b71b0..feb1853 100644
---- a/drivers/net/ipvlan/ipvlan_main.c
-+++ b/drivers/net/ipvlan/ipvlan_main.c
-@@ -125,8 +125,7 @@ static void ipvlan_uninit(struct net_device *dev)
- 	struct ipvl_dev *ipvlan = netdev_priv(dev);
- 	struct ipvl_port *port = ipvlan->port;
- 
--	if (ipvlan->pcpu_stats)
--		free_percpu(ipvlan->pcpu_stats);
-+	free_percpu(ipvlan->pcpu_stats);
- 
- 	port->count -= 1;
- 	if (!port->count)
--- 
-2.1.3
+>
+> Making pids bigger just looks like bandaid.
+>
+> Remember evovle things in the direction of an object capability system
+> things wind up being more maintainable.
 
+Yes, but this really is intended to be a much better bandaid than what
+people currently use.
+
+I'm aiming this at two main use cases that aren't going to switch to
+using fds any time soon.  One is shell stuff and PID files.  If we can
+put something like "12345@81726162" in /run/lock/foo.pid and safely
+kill `cat /run/lock/foo.pid`, that would be nice (even though sensible
+users don't use pid files any more, there are *tons* of things that
+still use them).  This could also be used for diagnostics.  Suppose
+the kernel log indicates a misbehaving pid.  There's currently no
+race-free way to poke at those pids.
+
+The much more pressing issue is that there are apparently programs
+that think that checking the process's starttime is a good idea for
+avoiding PID reuse races.  Both kdbus v1 and v2 do this, hopefully
+only for diagnostics.  This is, IMO, completely unacceptable, but I
+really don't expect kdbus to start passing even more fds around when
+they'll be ignored most of the time.  So, if kdbus is going to be
+merged at some point, I'd like to give it the opportunity to name the
+sender of a message in a way that is only mildly dangerous (in non
+race-related ways) as opposed to being totally broken.
+
+Now if someone wants to implement real light-weight capability-ish fds
+in Linux, that would be neat.  IIRC someone tried several years ago
+using fds with some high bits set, but it never went anywhere.
+
+FWIW, given that I seem to be the most vocal reviewer of the kdbus
+patches, I feel like it's nice to offer some assistance in a piece of
+the kdbus stuff that I think really would benefit from a new kernel
+feature.
+
+--Andy
