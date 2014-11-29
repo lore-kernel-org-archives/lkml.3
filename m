@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751793AbaK2Wew (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 17:34:52 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:56274 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751304AbaK2Weu (ORCPT
+	id S1751828AbaK2WqR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 17:46:17 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:57701 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717AbaK2WqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 17:34:50 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: x86@kernel.org
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH] x86 / PM: Replace CONFIG_PM_RUNTIME in io_apic.c
-Date: Sat, 29 Nov 2014 23:56:10 +0100
-Message-ID: <5062650.1vTULtXiIc@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Sat, 29 Nov 2014 17:46:15 -0500
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Zi Shen Lim <zlim.lnx@gmail.com>, Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 net] bpf: x86: fix epilogue generation for eBPF programs
+Date: Sat, 29 Nov 2014 14:46:13 -0800
+Message-Id: <1417301173-23691-1-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+classic BPF has a restriction that last insn is always BPF_RET.
+eBPF doesn't have BPF_RET instruction and this restriction.
+It has BPF_EXIT insn which can appear anywhere in the program
+one or more times and it doesn't have to be last insn.
+Fix eBPF JIT to emit epilogue when first BPF_EXIT is seen
+and all other BPF_EXIT instructions will be emitted as jump.
 
-After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-depending on CONFIG_PM_RUNTIME may now be changed to depend on
-CONFIG_PM.
+Since jump offset to epilogue is computed as:
+jmp_offset = ctx->cleanup_addr - addrs[i]
+we need to change type of cleanup_addr to signed to compute the offset as:
+(long long) ((int)20 - (int)30)
+instead of:
+(long long) ((unsigned int)20 - (int)30)
 
-Replace CONFIG_PM_RUNTIME with CONFIG_PM in x86/kernel/apic/io_apic.c.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Fixes: 622582786c9e ("net: filter: x86: internal BPF JIT")
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
+Note, this bug is applicable only to native eBPF programs
+which first were introduced in 3.18, so no need for stable.
 
-This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP
-is selected) which currently is only in linux-next (via linux-pm).
+arm64 JIT has the same problem, but the fix is not as trivial,
+so will be done as separate patch.
 
----
- arch/x86/kernel/apic/io_apic.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Since 3.18 can only load eBPF programs and cannot execute them,
+this patch can even be done in net-next only, but I think it's worth
+to apply it to 3.18(net), so that JITed output for native eBPF
+programs is correct when bpf syscall loads it with net.core.bpf_jit_enable=2
 
-Index: linux-pm/arch/x86/kernel/apic/io_apic.c
-===================================================================
---- linux-pm.orig/arch/x86/kernel/apic/io_apic.c
-+++ linux-pm/arch/x86/kernel/apic/io_apic.c
-@@ -3968,7 +3968,7 @@ bool mp_should_keep_irq(struct device *d
- {
- 	if (dev->power.is_prepared)
- 		return true;
--#ifdef	CONFIG_PM_RUNTIME
-+#ifdef	CONFIG_PM
- 	if (dev->power.runtime_status == RPM_SUSPENDING)
- 		return true;
- #endif
+ arch/x86/net/bpf_jit_comp.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
+index 3f62734..7e90244 100644
+--- a/arch/x86/net/bpf_jit_comp.c
++++ b/arch/x86/net/bpf_jit_comp.c
+@@ -178,7 +178,7 @@ static void jit_fill_hole(void *area, unsigned int size)
+ }
+ 
+ struct jit_context {
+-	unsigned int cleanup_addr; /* epilogue code offset */
++	int cleanup_addr; /* epilogue code offset */
+ 	bool seen_ld_abs;
+ };
+ 
+@@ -192,6 +192,7 @@ static int do_jit(struct bpf_prog *bpf_prog, int *addrs, u8 *image,
+ 	struct bpf_insn *insn = bpf_prog->insnsi;
+ 	int insn_cnt = bpf_prog->len;
+ 	bool seen_ld_abs = ctx->seen_ld_abs | (oldproglen == 0);
++	bool seen_exit = false;
+ 	u8 temp[BPF_MAX_INSN_SIZE + BPF_INSN_SAFETY];
+ 	int i;
+ 	int proglen = 0;
+@@ -854,10 +855,11 @@ common_load:
+ 			goto common_load;
+ 
+ 		case BPF_JMP | BPF_EXIT:
+-			if (i != insn_cnt - 1) {
++			if (seen_exit) {
+ 				jmp_offset = ctx->cleanup_addr - addrs[i];
+ 				goto emit_jmp;
+ 			}
++			seen_exit = true;
+ 			/* update cleanup_addr */
+ 			ctx->cleanup_addr = proglen;
+ 			/* mov rbx, qword ptr [rbp-X] */
+-- 
+1.7.9.5
 
