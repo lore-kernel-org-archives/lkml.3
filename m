@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751588AbaK2QbJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 11:31:09 -0500
-Received: from homie.mail.dreamhost.com ([208.97.132.208]:33776 "EHLO
-	homiemail-a62.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751335AbaK2QbH (ORCPT
+	id S1751546AbaK2Qc6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 11:32:58 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:34486 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075AbaK2Qc5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 11:31:07 -0500
-Date: Sat, 29 Nov 2014 17:31:05 +0100
-From: Jurriaan <jurriaan@onderneming10.net>
-To: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        ilw@linux.intel.com
-Subject: iwlwifi intel 6300 slow
-Message-ID: <20141129163104.GA23040@qnap.onderneming10.net>
+	Sat, 29 Nov 2014 11:32:57 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
+Date: Sat, 29 Nov 2014 17:32:53 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        linux-kernel@vger.kernel.org
+References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com> <201411291709.35406@pali> <5479F358.8060506@roeck-us.net>
+In-Reply-To: <5479F358.8060506@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed;
+  boundary="nextPart5918454.QTO851gV46";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201411291732.53269@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I had a Lenovo W700 laptop with Intel 5300 wireless card, running Debian
-Testing. Speed to and from my NAS via a Western Digital N900 router was
-about 16 megabyte/s - limited by the NAS.
+--nextPart5918454.QTO851gV46
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-After updating to a W701 with an Intel 6300 wireless card, speed is down
-to 1-2 megabyte/s. Replacing the card is not really an option, Lenovo
-has blessed this model with a whitelist in the BIOS.
+On Saturday 29 November 2014 17:24:56 Guenter Roeck wrote:
+> On 11/29/2014 08:09 AM, Pali Roh=C3=A1r wrote:
+> > On Saturday 29 November 2014 17:04:07 Pali Roh=C3=A1r wrote:
+> >> This patch adds labels for temperature sensors if SMM
+> >> function with EAX register 0x11a3 reports it. These
+> >> informations was taken from DOS binary NBSVC.MDM.
+> >>=20
+> >> Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> >> ---
+> >>=20
+> >>   drivers/char/i8k.c |  110
+> >>=20
+> >> +++++++++++++++++++++++++++++++++++++++++----------- 1 file
+> >> changed, 88 insertions(+), 22 deletions(-)
+> >=20
+> > I tested patch on Latitude E6440 and i8k CPU & GPU temps
+> > match intel coretemp & amd radeion temps.
+> >=20
+> > But I would like if somebody with other Dell laptop can test
+> > if temperature labels are correct...
+>=20
+> I have a couple; I'll try to give it a test this weekend.
+>=20
+> Guenter
 
-I tried booting 3.18-rc6, but that made no difference against 3.16.
+Ok, thanks! Can you include also this patch when you will do testing?
 
-There's a lot of complaints about this card on the net, but it seems
-most are about poor performance when roaming or with a weak signal. 
-I've tries the various 11n_disable=x swcrypto=x options, I've tried
-fiddling with the router (20/40 MHz, N only or mixed etc) but so far,
-the speed remains abysmal.
+https://git.kernel.org/cgit/linux/kernel/git/gregkh/char-misc.git/commit/?h=
+=3Dchar-misc-testing&id=3D723493ca59c8d81fed3e7f261165fee493a29ffa
 
-1)
-Can anybody tell me what logs/debugging I can post to help clear up this
-issue?
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-2)
-If anybody has this card running great with another router, I'd be very
-interested to learn which one!
+--nextPart5918454.QTO851gV46
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Thanks,
-Jurriaan
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-wlan0     IEEE 802.11abgn  ESSID:"onderneming10_5"
-          Mode:Managed  Frequency:5.2 GHz  Access Point: 00:90:A9:0E:D5:58
-          Bit Rate=270 Mb/s   Tx-Power=15 dBm
-          Retry short limit:7   RTS thr:off   Fragment thr:off
-          Encryption key:off
-          Power Management:off
-          Link Quality=52/70  Signal level=-58 dBm
-          Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
-          Tx excessive retries:0  Invalid misc:101   Missed beacon:0
+iEYEABECAAYFAlR59TUACgkQi/DJPQPkQ1IiFACfVH17+T/oWFwZM0w0juIJe+qi
+wy0AoJbpcc8H2DUSDupm8PV0UsaWJUik
+=dos9
+-----END PGP SIGNATURE-----
 
-i03:00.0 Network controller: Intel Corporation Centrino Ultimate-N 6300 (rev 35)
-	Subsystem: Intel Corporation Centrino Ultimate-N 6300 3x3 AGN
-        Flags: bus master, fast devsel, latency 0, IRQ 56
-        Memory at f6000000 (64-bit, non-prefetchable) [size=8K]
-        Capabilities: [c8] Power Management version 3
-        Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
-        Capabilities: [e0] Express Endpoint, MSI 00
-        Capabilities: [100] Advanced Error Reporting
-        Capabilities: [140] Device Serial Number 00-24-d7-ff-ff-61-65-8c
-        Kernel driver in use: iwlwifi
-
-iwlwifi 0000:03:00.0: CONFIG_IWLWIFI_DEBUG disabled
-iwlwifi 0000:03:00.0: CONFIG_IWLWIFI_DEBUGFS disabled
-iwlwifi 0000:03:00.0: CONFIG_IWLWIFI_DEVICE_TRACING disabled
-iwlwifi 0000:03:00.0: Detected Intel(R) Centrino(R) Ultimate-N 6300 AGN, REV=0x74
-iwlwifi 0000:03:00.0: L1 Enabled; Disabling L0S
+--nextPart5918454.QTO851gV46--
