@@ -1,54 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538AbaK2BxN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 20:53:13 -0500
-Received: from s72.web-hosting.com ([198.187.29.22]:51619 "EHLO
-	s72.web-hosting.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438AbaK2BxM (ORCPT
+	id S1751572AbaK2CCl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 21:02:41 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:60928 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751446AbaK2CCk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 20:53:12 -0500
-X-Greylist: delayed 2919 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Nov 2014 20:53:12 EST
-From: Sujith Manoharan <sujith@msujith.org>
+	Fri, 28 Nov 2014 21:02:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <21625.7161.847488.931468@gargle.gargle.HOWL>
-Date: Sat, 29 Nov 2014 06:36:01 +0530
-To: Andrej Gelenberg <andrej.gelenberg@udo.edu>
-Cc: <linux-kernel@vger.kernel.org>,
-        Rajkumar Manoharan <rmanohar@qti.qualcomm.com>,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: ath: phy1: DMA failed to stop in 10 ms
-In-Reply-To: <20141129015934.1d2925d5@bigpc>
-References: <20141129015934.1d2925d5@bigpc>
-X-Mailer: VM 8.2.0b under 25.0.50.1 (x86_64-unknown-linux-gnu)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - server72.web-hosting.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - msujith.org
-X-Get-Message-Sender-Via: server72.web-hosting.com: authenticated_id: sujith@msujith.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <547909B0.2090408@broadcom.com>
+References: <sbranden@broadcom.com>
+	<1416944441-12066-1-git-send-email-sbranden@broadcom.com>
+	<1416944441-12066-3-git-send-email-sbranden@broadcom.com>
+	<CAD7vxxKgcu9QLY8qH8WR0b_5WBu+MNxcemmZ8syYa__JaC6tsQ@mail.gmail.com>
+	<547909B0.2090408@broadcom.com>
+Date: Fri, 28 Nov 2014 18:02:39 -0800
+Message-ID: <CAD7vxxLv+uh5DxjNYy9X8iY7Egu_9u-JzUg7Xk2UiNsoJwb1tw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] pwm: kona: Fix incorrect enable after channel
+ polarity change
+From: Tim Kryger <tim.kryger@gmail.com>
+To: Arun Ramamurthy <arun.ramamurthy@broadcom.com>
+Cc: Scott Branden <sbranden@broadcom.com>,
+        Thierry Reding <thierry.reding@gmail.com>, Ray Jui <rjui@broadcom.com>,
+        Arun Ramamurthy <arunrama@broadcom.com>,
+        bcm-kernel-feedback-list@broadcom.com, linux-pwm@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrej Gelenberg wrote:
-> i got some problems with my Qualcomm Atheros AR9485 wlan pcie card. I
-> use my card as access point (with hotspotd) on amd64 machine. I use
-> self compiled vanilla kernel 3.17.4 and a get a lot of 
-> "DMA failed to stop" messages in my kernel log. I found some reports on
-> similar errors for *wrt, ubuntu and other distros in various
-> operation modes (ap and client). Increasing the timeout in mac.c to 100
-> ms do not help. iommu=soft do not help either and GART iommu is not an
-> option (usb don't work for me with amd_iommu=off). I found this patch:
-> https://dev.openwrt.org/browser/trunk/package/mac80211/patches/552-ath9k_rx_dma_stop_check.patch?rev=34910 ,
-> which seems to apply to my problem, but i am not sure if it is a proper
-> solution.
+On Fri, Nov 28, 2014 at 3:48 PM, Arun Ramamurthy
+<arun.ramamurthy@broadcom.com> wrote:
+>
+>
+> On 14-11-25 10:22 PM, Tim Kryger wrote:
+>>
+>> On Tue, Nov 25, 2014 at 11:40 AM, Scott Branden <sbranden@broadcom.com>
+>> wrote:
+>>>
+>>> From: Arun Ramamurthy <arunrama@broadcom.com>
+>>>
+>>> The pwm core code requires a separate call for enabling the channel
+>>> and hence the driver does not need to set pwm_trigger after a
+>>> polarity change
+>>
+>>
+>> The framework does restrict when polarity changes can occur but it
+>> isn't clear to me that there is any reason to delay applying the
+>> polarity change.
+>
+> I examined several other drivers such as pwm-atmel-tcb.c, pwm-ep93xx.c,
+> pwm-renesas-tpu.c, pwm-samsung.c in the 3.17 kernel tree and none of them
+> enable the channel after changing polarity. We would be the first driver to
+> do so.
 
-Can you please open a bug on bugzilla.kernel.org ?
+We are not "enabling" the channel as much as we are "triggering an
+application of settings" by hardware.
 
-Sujith
+Both pwm-ep93xx and pwm-samsung write polarity settings to the
+hardware immediately, presumably resulting in an immediate change in
+output.
+
+Alternatively, the pwm-atmel-tcb and pwm-renesas-tpu drivers save the
+polarity and write it to hardware later.
+
+There may be advantages to deferring the application of the polarity
+till a subsequent enable but both approaches appear to be acceptable.
+
+>
+>> Keep in mind that polarity matters even when a PWM
+>> is disabled.  While disabled, the output should be equivalent to an
+>> enabled configuration with zero duty.  Thus for normal polarity the
+>> output is constant low and for inversed polarity the output is
+>> constant high.
+>
+> The driver does set the duty cycle to zero when disabling the pwm
+> channel.However since the frame work prevents polarity change when the pwm
+> is enabled, I don’t see how one could expect the polarity change to be
+> reflected immediately without a separate call to pwm enable.
+>
+>
+>> I believe there is an expectation that the output is
+>> updated to reflect the requested polarity change prior to returning to
+>> the caller.
+>
+>
+> Once again I disagree with this based on other pwm drivers which only change
+> the polarity and do not enable the channel when their set polarity functions
+> are called.
+
+I don't know why you keep calling this an enable.  Its not an enable,
+it is only a trigger.
+
+Perhaps this would be best explained with an example:
+
+# Export PWM for access by userspace
+cd /sys/class/pwm/pwmchip0
+echo 0 > export
+cd pwm0
+
+# Request 50% duty output when PWM is enabled
+echo 50000 > duty_cycle
+echo 100000 > period
+
+# Command Inversed Polarity
+echo inversed > polarity
+
+# Command Normal Polarity
+echo normal > polarity
+
+# Enable PWM
+echo 1 > enable
+
+The polarity changes trigger immediate output updates but the PWM is
+not enabled until the end.
+
+Prior to the last step the output is either a constant high or low
+signal, not the 50% duty waveform.
+
+>
+>
+>>
+>>>
+>>> Signed-off-by: Arun Ramamurthy <arunrama@broadcom.com>
+>>> Reviewed-by: Ray Jui <rjui@broadcom.com>
+>>> Signed-off-by: Scott Branden <sbranden@broadcom.com>
+>>> ---
+>>>   drivers/pwm/pwm-bcm-kona.c | 5 -----
+>>>   1 file changed, 5 deletions(-)
+>>>
+>>> diff --git a/drivers/pwm/pwm-bcm-kona.c b/drivers/pwm/pwm-bcm-kona.c
+>>> index 29eef9e..fa0b5bf 100644
+>>> --- a/drivers/pwm/pwm-bcm-kona.c
+>>> +++ b/drivers/pwm/pwm-bcm-kona.c
+>>> @@ -173,11 +173,6 @@ static int kona_pwmc_set_polarity(struct pwm_chip
+>>> *chip, struct pwm_device *pwm,
+>>>
+>>>          writel(value, kp->base + PWM_CONTROL_OFFSET);
+>>>
+>>> -       kona_pwmc_apply_settings(kp, chan);
+>>> -
+>>> -       /* Wait for waveform to settle before gating off the clock */
+>>> -       ndelay(400);
+>>> -
+>>>          clk_disable_unprepare(kp->clk);
+>>>
+>>>          return 0;
+>>> --
+>>> 2.1.3
+>>>
+>
