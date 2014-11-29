@@ -1,44 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496AbaK2Iyc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 03:54:32 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:40971 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196AbaK2Iya (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 03:54:30 -0500
-MIME-Version: 1.0
-In-Reply-To: <54793E4E.7050602@gmail.com>
-References: <1417213013-19758-1-git-send-email-xerofoify@gmail.com>
-	<CACna6rxmOC0h9hOpa=5iWFM1THQ8Q4hCi8MnmqkZJbB_U0PJ0A@mail.gmail.com>
-	<20141129002148.1beb21d9@wiggum>
-	<54793E4E.7050602@gmail.com>
-Date: Sat, 29 Nov 2014 09:54:29 +0100
-Message-ID: <CACna6rzfZjKg4diAEE9hFcN5DFadhxC-Uv9aS1RDMXmJ4zbgVQ@mail.gmail.com>
-Subject: Re: [PATCH] drivers:net:wireless: Add mutex locking for function,
- b43_op_beacon_set_time in main.c
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+	id S1751556AbaK2I46 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 03:56:58 -0500
+Received: from bues.ch ([80.190.117.144]:47283 "EHLO bues.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751196AbaK2I45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Nov 2014 03:56:57 -0500
+Date: Sat, 29 Nov 2014 09:56:32 +0100
+From: Michael =?UTF-8?B?QsO8c2No?= <m@bues.ch>
 To: nick <xerofoify@gmail.com>
-Cc: =?UTF-8?Q?Michael_B=C3=BCsch?= <m@bues.ch>,
+Cc: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
         Stefano Brivio <stefano.brivio@polimi.it>,
         Network Development <netdev@vger.kernel.org>,
         "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         b43-dev <b43-dev@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH] drivers:net:wireless: Add mutex locking for function,
+ b43_op_beacon_set_time in main.c
+Message-ID: <20141129095632.69361457@wiggum>
+In-Reply-To: <54793E4E.7050602@gmail.com>
+References: <1417213013-19758-1-git-send-email-xerofoify@gmail.com>
+	<CACna6rxmOC0h9hOpa=5iWFM1THQ8Q4hCi8MnmqkZJbB_U0PJ0A@mail.gmail.com>
+	<20141129002148.1beb21d9@wiggum>
+	<54793E4E.7050602@gmail.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/IwltwmK3kbFqBgFDBLIx14S"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 November 2014 at 04:32, nick <xerofoify@gmail.com> wrote:
-> I don't have hardware for this driver on me, so I didn't test it. However this seems to
-> be correct from my reading of the code around this function and other locking related
+--Sig_/IwltwmK3kbFqBgFDBLIx14S
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, 28 Nov 2014 22:32:30 -0500
+nick <xerofoify@gmail.com> wrote:
+
+> I don't have hardware for this driver on me, so I didn't test it. However=
+ this seems to=20
+> be correct from my reading of the code around this function and other loc=
+king related
 > to this driver.
 
-So do you say it's not executed in an atomic?
+=46rom the current docs:
 
->From *early* look it seems b43_update_templates is called from
-b43_op_beacon_set_tim and b43_op_bss_info_changed, both or them are
-mac80211 callbacks. That also should be safe, however I didn't check
-if it may conflict with some in-kernel code (still, assuming it's not
-atomic code, which I don't know!).
+>  * @set_tim: Set TIM bit. mac80211 calls this function when a TIM bit
+>  *      must be set or cleared for a given STA. Must be atomic.
+
+So it is not allowed to lock a mutex here.
+
+--=20
+Michael
+
+--Sig_/IwltwmK3kbFqBgFDBLIx14S
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUeYpEAAoJEPUyvh2QjYsOLW0P/22FEoXAnALRPQwJY5SNn3bb
+Oop1nbVSvgoS55bid5NFtCdEQHDYXMfbXUBwgggrNlW2v24fRrGpJNRLkD1TBFzY
+qBYS/d9eZ3ov4pqOPuIfsDv1ZLNGysurqNh5I0O1HdrIK/0mdH4njmZcU+d9VIYW
+xwlk2p4W+F4oiIfc52oC6Vi0V/fBmOiI6uER7woeM51/c1TgVo9h49g1LD/PxYAY
+PEGJsBEz5yHa6gouHrOkNM9GgpwWL+MZLR4oaar1bLROK2uQaaOeTaqFoecNn6Tt
+rMtsTw4JSJEk4I3MFiHY45yEmAx4OomwtNHK5p2hVOR9oyXwz2x/yak7HdcbSJ4W
+yv2YjMZCv2XwG34mOuIoWd+AR38y9dDESe91n3cTohvJx+6N2CJhafVzejZ9svwK
+A/a3Wo05uEwj6q5gqNgtGNe8mWdq+GmMdhYDpPbqMxt295tytH7TnbzMhZZwsnNP
+J8eT0pG3/fGD1FRFegVIU7ofKtQjbp6jY6wxHfrajt/w3ZlImhvd4YEO35M9oxzP
+CT49vG6Hr9hKaDxWoBzlHYyM0tLvq2DeRtmvHrKCismy9zu/5vYdDyh6f50e3auL
+RTgShyTTdLPr23idRcc1IejycYOYq5/8uXNEr3aV8/c81SrH30a5mBaZBFl/0lmg
+DmOnwp1Ph3r6cUBEeRR8
+=XM39
+-----END PGP SIGNATURE-----
+
+--Sig_/IwltwmK3kbFqBgFDBLIx14S--
