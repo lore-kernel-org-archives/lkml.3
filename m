@@ -1,47 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534AbaK2Avn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 19:51:43 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:42848 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324AbaK2Avm (ORCPT
+	id S1751572AbaK2A4E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 19:56:04 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:56686 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751324AbaK2A4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 19:51:42 -0500
+	Fri, 28 Nov 2014 19:56:01 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        USB development list <linux-usb@vger.kernel.org>
+Subject: Re: [Update][PATCH] USB / PM: Drop CONFIG_PM_RUNTIME from the USB core
+Date: Sat, 29 Nov 2014 02:17:18 +0100
+Message-ID: <2562941.6pSKsRYOqk@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1411281102170.29147-100000@netrider.rowland.org>
+References: <Pine.LNX.4.44L0.1411281102170.29147-100000@netrider.rowland.org>
 MIME-Version: 1.0
-From: Ian Kumlien <ian.kumlien@gmail.com>
-Date: Sat, 29 Nov 2014 01:51:20 +0100
-Message-ID: <CAA85sZs6u08DxzV3gF3r-=LvBry0vUFMtfvG1pXRbz1FG6wnag@mail.gmail.com>
-Subject: Re: 3.18-rc regression: drm/nouveau: use shared fences for readable objects
-To: maarten.lankhorst@canonical.com
-Cc: mike@marineau.org, tobias.johannes.klausmann@mni.thm.de,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Friday, November 28, 2014 11:09:11 AM Alan Stern wrote:
+> On Fri, 28 Nov 2014, Rafael J. Wysocki wrote:
+> 
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > Subject: USB / PM: Drop CONFIG_PM_RUNTIME from the USB core
+> > 
+> > After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+> > selected) PM_RUNTIME is always set if PM is set, so quite a few
+> > #ifdef blocks depending on CONFIG_PM_RUNTIME may now be changed to
+> > depend on CONFIG_PM (or even dropped in some cases).
+> > 
+> > Replace CONFIG_PM_RUNTIME with CONFIG_PM in the USB core code
+> > and ABI documentation.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> > 
+> > Added headers and two ABI documentation files, plus one missing instance in
+> > drivers/usb/core/hcd.c.
+> > 
+> > Of course, this depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME
+> > if PM_SLEEP is selected) which is in linux-next only (via linux-pm) at the
+> > moment.
+> 
+> There are also one or two places in Documentation/usb that mention 
+> CONFIG_PM_RUNTIME.
 
-Sorry to but in like this but I'm suffering from the same kind of
-deadlocks with nouveau...
+I found this in Documentation/usb/power-management.txt:
 
-The really odd thing is that i could boot some -rc6+ kernel without
-problems but it hung
-while playing video and then it refused to start properly again.
+"Note: Dynamic PM support for USB is present only if the kernel was
+ built with CONFIG_USB_SUSPEND enabled (which depends on
+ CONFIG_PM_RUNTIME).  System PM support is present only if the kernel
+ was built with CONFIG_SUSPEND or CONFIG_HIBERNATION enabled.
 
+ (Starting with the 3.10 kernel release, dynamic PM support for USB is
+ present whenever the kernel was built with CONFIG_PM_RUNTIME enabled.
+ The CONFIG_USB_SUSPEND option has been eliminated.)"
 
-Anyway, to quote Maarten:
-Ok that most likely means the interrupt based wait is borked somehow,
-so lets find \
-out why..
+but I'm quite unsure how to change it.  What about:
 
-I fear that this happens because of a race in the interface, so my
-first attempt will \
-rule out abuse of the nvif api by nouveau_fence.c
+"System PM support is present only if the kernel was built with CONFIG_SUSPEND
+ or CONFIG_HIBERNATION enabled.  Dynamic PM support for USB is present whenever
+ the kernel was built with CONFIG_PM enabled.
 
-Can you test below patch with the default wait function?
----
+ [Historically, dynamic PM support for USB was present only if the kernel
+ had been built with CONFIG_USB_SUSPEND enabled (which depended on
+ CONFIG_PM_RUNTIME).  Starting with the 3.10 kernel release, dynamic PM support
+ for USB was present whenever the kernel was built with CONFIG_PM_RUNTIME
+ enabled.  The CONFIG_USB_SUSPEND option had been eliminated.]
 
-I tried the patch, straight on Linus' master and it didn't change
-anything for me :(
+Rafael
+
