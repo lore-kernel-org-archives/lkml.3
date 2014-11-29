@@ -1,119 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681AbaK2RxQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 12:53:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33313 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751615AbaK2RxO (ORCPT
+	id S1751763AbaK2Ryr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 12:54:47 -0500
+Received: from smtprelay0093.hostedemail.com ([216.40.44.93]:50368 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751339AbaK2Ryp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 12:53:14 -0500
-Date: Sat, 29 Nov 2014 09:51:52 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
-        Steven Honeyman <stevenhoneyman@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
-Message-ID: <20141129175152.GA32510@kroah.com>
-References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com>
- <20141129174315.GA32132@kroah.com>
- <201411291849.44032@pali>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201411291849.44032@pali>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 29 Nov 2014 12:54:45 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:4321:5007:6261:7514:7904:10004:10400:10848:11026:11232:11658:11914:12114:12517:12519:12555:12740:13069:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: note17_63770eb33ed16
+X-Filterd-Recvd-Size: 1754
+Message-ID: <1417283681.818.1.camel@perches.com>
+Subject: Re: [PATCH] Drivers:input:mousedev.c: Fixed trailing statement on
+ the next line
+From: Joe Perches <joe@perches.com>
+To: Athira S <athirasnamby@gmail.com>
+Cc: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sat, 29 Nov 2014 09:54:41 -0800
+In-Reply-To: <1417278043-4870-1-git-send-email-athirasnamby@gmail.com>
+References: <1417278043-4870-1-git-send-email-athirasnamby@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 29, 2014 at 06:49:43PM +0100, Pali Rohár wrote:
-> On Saturday 29 November 2014 18:43:15 Greg Kroah-Hartman wrote:
-> > On Sat, Nov 29, 2014 at 05:04:07PM +0100, Pali Rohár wrote:
-> > > This patch adds labels for temperature sensors if SMM
-> > > function with EAX register 0x11a3 reports it. These
-> > > informations was taken from DOS binary NBSVC.MDM.
-> > > 
-> > > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> > > ---
-> > > 
-> > >  drivers/char/i8k.c |  110
-> > >  +++++++++++++++++++++++++++++++++++++++++----------- 1
-> > >  file changed, 88 insertions(+), 22 deletions(-)
-> > > 
-> > > diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
-> > > index e34a019..77af46b 100644
-> > > --- a/drivers/char/i8k.c
-> > > +++ b/drivers/char/i8k.c
-> > > @@ -42,6 +42,7 @@
-> > > 
-> > >  #define I8K_SMM_GET_FAN		0x00a3
-> > >  #define I8K_SMM_GET_SPEED	0x02a3
-> > >  #define I8K_SMM_GET_TEMP	0x10a3
-> > > 
-> > > +#define I8K_SMM_GET_TEMP_TYPE	0x11a3
-> > > 
-> > >  #define I8K_SMM_GET_DELL_SIG1	0xfea3
-> > >  #define I8K_SMM_GET_DELL_SIG2	0xffa3
-> > > 
-> > > @@ -288,6 +289,14 @@ static int i8k_set_fan(int fan, int
-> > > speed)
-> > > 
-> > >  	return i8k_smm(&regs) ? : i8k_get_fan_status(fan);
-> > >  
-> > >  }
-> > > 
-> > > +static int i8k_get_temp_type(int sensor)
-> > > +{
-> > > +	struct smm_regs regs = { .eax = I8K_SMM_GET_TEMP_TYPE, };
-> > > +
-> > > +	regs.ebx = sensor & 0xff;
-> > > +	return i8k_smm(&regs) ? : regs.eax & 0xff;
-> > > +}
-> > > +
-> > > 
-> > >  /*
-> > >  
-> > >   * Read the cpu temperature.
-> > >   */
-> > > 
-> > > @@ -493,6 +502,29 @@ static int i8k_open_fs(struct inode
-> > > *inode, struct file *file)
-> > > 
-> > >   * Hwmon interface
-> > >   */
-> > > 
-> > > +static ssize_t i8k_hwmon_show_temp_label(struct device
-> > > *dev, +				   struct device_attribute *devattr,
-> > > +				   char *buf)
-> > > +{
-> > > +	static const char * const labels[] = {
-> > > +		"CPU",
-> > > +		"GPU",
-> > > +		"SODIMM",
-> > > +		"Other",
-> > > +		"Ambient",
-> > > +		"Other",
-> > > +	};
-> > > +	int index = to_sensor_dev_attr(devattr)->index;
-> > > +	int type;
-> > > +
-> > > +	type = i8k_get_temp_type(index);
-> > > +	if (type < 0)
-> > > +		return type;
-> > > +	if (type >= ARRAY_SIZE(labels))
-> > > +		type = ARRAY_SIZE(labels) - 1;
-> > > +	return sprintf(buf, "%s\n", labels[type]);
-> > > +}
-> > 
-> > No Documentation/ABI/ entry for your new sysfs file?
+On Sat, 2014-11-29 at 21:50 +0530, Athira S wrote:
+> Fixed checkpatch error:
+> trailing statements should be on next line
 > 
-> It is standard hwmon sysfs entry which is used by other hwmon 
-> drivers... It is not i8k.ko driver specific.
+> signed-off-by: Athira S <athirasnamby@gmail.com>
+> ---
+>  drivers/input/mousedev.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/input/mousedev.c b/drivers/input/mousedev.c
+> index be2cc5c..28988f5 100644
+> --- a/drivers/input/mousedev.c
+> +++ b/drivers/input/mousedev.c
+> @@ -248,8 +248,8 @@ static void mousedev_key_event(struct mousedev *mousedev,
+>  	case BTN_4:
+>  	case BTN_EXTRA:		index = 4; break;
+>  
+> -	default:
+> -	return;
+> +	default:	
+> +				return;
 
-Ok, then why is this driver not in a "hwmon-standard" location in the
-kernel tree?
+Please run your suggested patches though
+scripts/checkpatch.pl before sending them.
 
-greg k-h
+Don't send patches on top of your own
+unapplied patches.  Use the original and
+create a new patch.
+
+Probably none of this needs to be changed.
+
+
