@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496AbaK2A25 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 19:28:57 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:56986 "HELO
+	id S1751570AbaK2AbR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 19:31:17 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:61939 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751366AbaK2A2z (ORCPT
+	with SMTP id S1751366AbaK2AbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 19:28:55 -0500
+	Fri, 28 Nov 2014 19:31:15 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
+To: Linux PM list <linux-pm@vger.kernel.org>
+Cc: Linux PCI <linux-pci@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Kevin Hilman <khilman@kernel.org>
-Subject: Re: [PATCH 0/4] PM: Use CONFIG_PM instead of CONFIG_PM_RUNTIME in core code
-Date: Sat, 29 Nov 2014 01:50:12 +0100
-Message-ID: <2549404.ZIjrAGNJPJ@vostro.rjw.lan>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Bjorn Helgaas <bhelgaas@google.com>, Kevin Hilman <khilman@kernel.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [Replacement][PATCH 1/4] PM: Merge the SET*_RUNTIME_PM_OPS() macros
+Date: Sat, 29 Nov 2014 01:52:32 +0100
+Message-ID: <1551552.1uQKV96bxc@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAPDyKFpcHawZ8F+2QdDYO=+qbh=uQb+A+2Rq_M7g9VqMnFtM1A@mail.gmail.com>
-References: <Pine.LNX.4.44L0.1411271216470.8104-100000@netrider.rowland.org> <1803282.Wzz7IausxS@vostro.rjw.lan> <CAPDyKFpcHawZ8F+2QdDYO=+qbh=uQb+A+2Rq_M7g9VqMnFtM1A@mail.gmail.com>
+In-Reply-To: <1740704.VN27cDdEAu@vostro.rjw.lan>
+References: <37310416.jZXoh5nfSC@vostro.rjw.lan> <3484329.phAPviVnbd@vostro.rjw.lan> <1740704.VN27cDdEAu@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -29,21 +29,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 27, 2014 11:34:03 PM Ulf Hansson wrote:
-> [...]
+On Thursday, November 27, 2014 11:05:41 PM Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> > That said whether or not it is ever useful to set PM_RUNTIME alone is a good
-> > question.  In my opinion it is useful today, at least on some platforms that
-> > don't really support system suspend or hibernation in any form.  However, it
-> > may not be the case any more when suspend-to-idle becomes mature enough,
-> > because that should just work for any platform without any kind of special
-> > support.  We're still missing some timekeeping bits there, but once that
-> > gap has been covered, we may just eliminate PM_SLEEP as well if there's a
-> > broad consensus on that.
+> The SET_PM_RUNTIME_PM_OPS() and SET_RUNTIME_PM_OPS() macros are
+> identical except that one of them is not empty for CONFIG_PM set,
+> while the other one is not empty for CONFIG_PM_RUNTIME set,
+> respectively.
 > 
-> That's sounds like a good approach, thanks for sharing your ideas and plans.
+> However, after commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
+> PM_SLEEP is selected) PM_RUNTIME is always set if PM is set, so one
+> of these macros is now redundant.
 > 
-> Feel free to add my reviewed-by tag to this patchset as well.
+> For this reason, replace SET_PM_RUNTIME_PM_OPS() with
+> SET_RUNTIME_PM_OPS() everywhere and redefine the SET_PM_RUNTIME_PM_OPS
+> symbol as SET_RUNTIME_PM_OPS in case new code is starting to use the
+> macro being removed here.
 
-I'll do that, thanks!
+It turns out that I need to defer this one, because it breaks builds for
+CONFIG_PM selected without CONFIG_PM_SLEEP or CONFIG_PM_RUNTIME (which is
+arguably invalid, but some defconfigs evidently do that).
 
+I need to fix those defconfigs first.
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
