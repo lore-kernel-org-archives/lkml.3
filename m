@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569AbaK2Rks (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 12:40:48 -0500
-Received: from mout.web.de ([212.227.15.3]:55112 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751302AbaK2Rkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 12:40:46 -0500
-Message-ID: <547A050C.5040906@users.sourceforge.net>
-Date: Sat, 29 Nov 2014 18:40:28 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751636AbaK2RnL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 12:43:11 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:57080 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751312AbaK2RnJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Nov 2014 12:43:09 -0500
+Date: Sat, 29 Nov 2014 18:40:31 +0100
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Yingjoe Chen <yingjoe.chen@mediatek.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        srv_heupstream@mediatek.com, devicetree@vger.kernel.org,
+        hc.yen@mediatek.com, yh.chen@mediatek.com,
+        linux-kernel@vger.kernel.org, Yijing Wang <wangyijing@huawei.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>, nathan.chung@mediatek.com,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Grant Likely <grant.likely@linaro.org>, eddie.huang@mediatek.com,
+        yingjoe.chen@gmail.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v8 2/4] ARM: mediatek: Add sysirq interrupt polarity
+ support
+Message-ID: <20141129174030.GA4696@gmail.com>
+References: <1416902662-19281-1-git-send-email-yingjoe.chen@mediatek.com>
+ <1416902662-19281-3-git-send-email-yingjoe.chen@mediatek.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>, linux-spi@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] SPI-txx9: Deletion of an unnecessary check before the
- function call "clk_disable"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:iOIhU4oYspCjVuBi9zsdc3iobrErwnP07z7/rt4kIcxtIJGdVqw
- 3WdDbLg2FUEgmHUAkUk0kRdJgRLrw3nIzsbYl4RjWKamX/+vdhC84Zf9GzlNLjzYgsQNu7x
- wurCMuWe6Ebve0HqO+vonfW+5VaK8p8P6HffkpRhPUKPjPLQKj+S8P4vYY+XKMpzWQIiWOt
- ebYhHr8N0nCpBe0mYbQNw==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416902662-19281-3-git-send-email-yingjoe.chen@mediatek.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sat, 29 Nov 2014 18:34:20 +0100
+On Tue, Nov 25, 2014 at 04:04:20PM +0800, Yingjoe Chen wrote:
+> Mediatek SoCs have interrupt polarity support in sysirq which
+> allows to invert polarity for given interrupt. Add this support
+> using hierarchy irq domain.
+>
+> [...]
+> 
+> +static int __init mtk_sysirq_of_init(struct device_node *node,
+> +				     struct device_node *parent)
+> +{
+> +	struct irq_domain *domain, *domain_parent;
+> +	struct mtk_sysirq_chip_data *chip_data;
+> +	int ret = 0;
+> +
+> +	domain_parent = irq_find_host(parent);
+> +	if (!domain_parent) {
+> +		pr_err("mtk_sysirq: interrupt-parent not found\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	chip_data = kzalloc(sizeof(*chip_data), GFP_KERNEL);
+> +	if (!chip_data)
+> +		return -ENOMEM;
+> +
+> +	chip_data->intpol_base = of_io_request_and_map(node, 0, "intpol");
+> +	if (!chip_data->intpol_base) {
 
-The clk_disable() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+Hi,
 
-This issue was detected by using the Coccinelle software.
+you should use IS_ERR() to check the return value here.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/spi/spi-txx9.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/spi/spi-txx9.c b/drivers/spi/spi-txx9.c
-index 0da7c67..9190124 100644
---- a/drivers/spi/spi-txx9.c
-+++ b/drivers/spi/spi-txx9.c
-@@ -402,8 +402,7 @@ exit_busy:
- exit:
- 	if (c->workqueue)
- 		destroy_workqueue(c->workqueue);
--	if (c->clk)
--		clk_disable(c->clk);
-+	clk_disable(c->clk);
- 	spi_master_put(master);
- 	return ret;
- }
--- 
-2.1.3
-
+Beniamino
