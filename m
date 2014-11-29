@@ -1,85 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751541AbaK2Bkd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 20:40:33 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:15554 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431AbaK2Bkc (ORCPT
+	id S1751538AbaK2BxN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 20:53:13 -0500
+Received: from s72.web-hosting.com ([198.187.29.22]:51619 "EHLO
+	s72.web-hosting.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438AbaK2BxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 20:40:32 -0500
-Message-ID: <547923F2.6000701@huawei.com>
-Date: Sat, 29 Nov 2014 09:40:02 +0800
-From: Wang Weidong <wangweidong1@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Fri, 28 Nov 2014 20:53:12 -0500
+X-Greylist: delayed 2919 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Nov 2014 20:53:12 EST
+From: Sujith Manoharan <sujith@msujith.org>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: <viresh.kumar@linaro.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <guohanjun@huawei.com>
-Subject: Re: [PATCH 0/2] fix some problems for cpufreq
-References: <1417142619-14548-1-git-send-email-wangweidong1@huawei.com> <2248504.pAVebap2qN@vostro.rjw.lan>
-In-Reply-To: <2248504.pAVebap2qN@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.75]
-X-CFilter-Loop: Reflected
+Message-ID: <21625.7161.847488.931468@gargle.gargle.HOWL>
+Date: Sat, 29 Nov 2014 06:36:01 +0530
+To: Andrej Gelenberg <andrej.gelenberg@udo.edu>
+Cc: <linux-kernel@vger.kernel.org>,
+        Rajkumar Manoharan <rmanohar@qti.qualcomm.com>,
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: ath: phy1: DMA failed to stop in 10 ms
+In-Reply-To: <20141129015934.1d2925d5@bigpc>
+References: <20141129015934.1d2925d5@bigpc>
+X-Mailer: VM 8.2.0b under 25.0.50.1 (x86_64-unknown-linux-gnu)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - server72.web-hosting.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - msujith.org
+X-Get-Message-Sender-Via: server72.web-hosting.com: authenticated_id: sujith@msujith.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/29 9:26, Rafael J. Wysocki wrote:
-> On Friday, November 28, 2014 10:43:37 AM Wang Weidong wrote:
->> Hi Rafael and Viresh
->>
->> Sorry to trouble you again. As for:
->> "acpi-cpufreq: get the cur_freq from acpi_processor_performance states"
->> I do it again, and add the other patch.
->>
->> patch #1: acpi-cpufreq: make the freq_table store the same freq value
->>
->> I think it can work. The set of available states which come
->> from acpi won't change. Just like the power would be remove,
->> the acpi driver will do that:
->> call
->>  ->acpi_processor_ppc_has_changed
->>  ->cpufreq_update_policy
->>  ->acpi_ppc_notifier_block.notifier_call
->>    ->acpi_processor_ppc_notifier
->>    ->cpufreq_verify_within_limits
->> The progress will change the policy's min_freq and max_freq
->> while it won't change the set of states(freq_tables).
-> 
-> OK, so the above information needs to go into the changelog of patch [1/2].
-> Also, please clarify the problem description in that changelog, it is very
-> difficult to understand the way it is now.
-> 
+Andrej Gelenberg wrote:
+> i got some problems with my Qualcomm Atheros AR9485 wlan pcie card. I
+> use my card as access point (with hotspotd) on amd64 machine. I use
+> self compiled vanilla kernel 3.17.4 and a get a lot of 
+> "DMA failed to stop" messages in my kernel log. I found some reports on
+> similar errors for *wrt, ubuntu and other distros in various
+> operation modes (ap and client). Increasing the timeout in mac.c to 100
+> ms do not help. iommu=soft do not help either and GART iommu is not an
+> option (usb don't work for me with amd_iommu=off). I found this patch:
+> https://dev.openwrt.org/browser/trunk/package/mac80211/patches/552-ath9k_rx_dma_stop_check.patch?rev=34910 ,
+> which seems to apply to my problem, but i am not sure if it is a proper
+> solution.
 
-sure, I should do it.
+Can you please open a bug on bugzilla.kernel.org ?
 
->> patch #2: cpufreq: show the real avail freqs with the freq_table
->>
->> when the min_freq and max_freq change, we should sync the availble
->> freqs.
-> 
-> Why?  Do any other cpufreq drivers do that?
-> 
-
-If some cpufreq drivers support several freqs like this:
-1.05 Ghz 1.30Ghz 1.70GHz 2.10GHz 2.3GHz
-           |                |
-          min              max
-So what the available freqs is 1.30GHz 1.70GHz 2.10GHz
-
-when we do cpufreq-info or cat scaling_available_frequencies,
-I think the available freqs table show only show these 3 value,
-not all the values.
-
-Wang,
-Regards
-
-> Rafael
-> 
-> 
-> .
-> 
-
-
+Sujith
