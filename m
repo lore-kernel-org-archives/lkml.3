@@ -1,137 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884AbaK2WIt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 17:08:49 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:54328 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828AbaK2WIq (ORCPT
+	id S1751824AbaK2WLt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 17:11:49 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60408 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751555AbaK2WLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 17:08:46 -0500
-Date: Sat, 29 Nov 2014 14:08:43 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Sabrina Dubroca <sd@queasysnail.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Jens Axboe <axboe@kernel.dk>,
-        "Theodore Ts'o" <tytso@mit.edu>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: Re: linux-next: manual merge of the block tree with the ext4 tree
-Message-ID: <20141129220843.GA1472@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Sabrina Dubroca <sd@queasysnail.net>,
-	Stephen Rothwell <sfr@canb.auug.org.au>,
-	Jens Axboe <axboe@kernel.dk>, Theodore Ts'o <tytso@mit.edu>,
-	linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Tejun Heo <tj@kernel.org>
-References: <20141127145347.0083c0bc@canb.auug.org.au>
- <20141129100833.GA31892@kria>
+	Sat, 29 Nov 2014 17:11:47 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        USB development list <linux-usb@vger.kernel.org>
+Subject: Re: [Update][PATCH] USB / PM: Drop CONFIG_PM_RUNTIME from the USB core
+Date: Sat, 29 Nov 2014 23:33:07 +0100
+Message-ID: <1620629.NGrQGDcfut@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1411291233560.23420-100000@netrider.rowland.org>
+References: <Pine.LNX.4.44L0.1411291233560.23420-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141129100833.GA31892@kria>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Sat, Nov 29, 2014 at 11:08:33AM +0100, Sabrina Dubroca wrote:
-> Hello,
+On Saturday, November 29, 2014 12:34:36 PM Alan Stern wrote:
+> On Sat, 29 Nov 2014, Rafael J. Wysocki wrote:
 > 
-> [adding Jeremiah Mahler to CC]
-> 
-> 2014-11-27, 14:53:47 +1100, Stephen Rothwell wrote:
-> > Hi Jens,
+> > > There are also one or two places in Documentation/usb that mention 
+> > > CONFIG_PM_RUNTIME.
 > > 
-> > Today's linux-next merge of the block tree got a conflict in
-> > fs/fs-writeback.c between commit ef7fdf5e8c87 ("vfs: add support for a
-> > lazytime mount option") from the ext4 tree and commit 9c6ac78eb352
-> > ("writeback: fix a subtle race condition in I_DIRTY clearing") from the
-> > block tree.
+> > I found this in Documentation/usb/power-management.txt:
 > > 
-> > I fixed it up (I took a guess, plese check - see below) and can carry
-> > the fix as necessary (no action is required).
+> > "Note: Dynamic PM support for USB is present only if the kernel was
+> >  built with CONFIG_USB_SUSPEND enabled (which depends on
+> >  CONFIG_PM_RUNTIME).  System PM support is present only if the kernel
+> >  was built with CONFIG_SUSPEND or CONFIG_HIBERNATION enabled.
 > > 
-> > -- 
-> > Cheers,
-> > Stephen Rothwell                    sfr@canb.auug.org.au
+> >  (Starting with the 3.10 kernel release, dynamic PM support for USB is
+> >  present whenever the kernel was built with CONFIG_PM_RUNTIME enabled.
+> >  The CONFIG_USB_SUSPEND option has been eliminated.)"
 > > 
-> > diff --cc fs/fs-writeback.c
-> > index 3d87174408ae,2d609a5fbfea..000000000000
-> > --- a/fs/fs-writeback.c
-> > +++ b/fs/fs-writeback.c
-> > @@@ -482,14 -479,30 +482,30 @@@ __writeback_single_inode(struct inode *
-> >   	 * write_inode()
-> >   	 */
-> >   	spin_lock(&inode->i_lock);
-> > - 	/* Clear I_DIRTY_PAGES if we've written out all dirty pages */
-> > - 	if (!mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
-> > - 		inode->i_state &= ~I_DIRTY_PAGES;
-> > + 
-> >  -	dirty = inode->i_state & I_DIRTY;
-> >  -	inode->i_state &= ~I_DIRTY;
-> >  +	dirty = inode->i_state & I_DIRTY_INODE;
-> >  +	inode->i_state &= ~I_DIRTY_INODE;
-> > + 
-> > + 	/*
-> > + 	 * Paired with smp_mb() in __mark_inode_dirty().  This allows
-> > + 	 * __mark_inode_dirty() to test i_state without grabbing i_lock -
-> > + 	 * either they see the I_DIRTY bits cleared or we see the dirtied
-> > + 	 * inode.
-> > + 	 *
-> > + 	 * I_DIRTY_PAGES is always cleared together above even if @mapping
-> > + 	 * still has dirty pages.  The flag is reinstated after smp_mb() if
-> > + 	 * necessary.  This guarantees that either __mark_inode_dirty()
-> > + 	 * sees clear I_DIRTY_PAGES or we see PAGECACHE_TAG_DIRTY.
-> > + 	 */
-> > + 	smp_mb();
-> > + 
-> > + 	if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
-> > + 		inode->i_state |= I_DIRTY_PAGES;
-> > + 
-> >   	spin_unlock(&inode->i_lock);
-> > + 
-> >   	/* Don't write the inode if only I_DIRTY_PAGES was set */
-> >  -	if (dirty & (I_DIRTY_SYNC | I_DIRTY_DATASYNC)) {
-> >  +	if (dirty) {
-> >   		int err = write_inode(inode, wbc);
-> >   		if (ret == 0)
-> >   			ret = err;
+> > but I'm quite unsure how to change it.  What about:
+> > 
+> > "System PM support is present only if the kernel was built with CONFIG_SUSPEND
+> >  or CONFIG_HIBERNATION enabled.  Dynamic PM support for USB is present whenever
+> >  the kernel was built with CONFIG_PM enabled.
+> > 
+> >  [Historically, dynamic PM support for USB was present only if the kernel
+> >  had been built with CONFIG_USB_SUSPEND enabled (which depended on
+> >  CONFIG_PM_RUNTIME).  Starting with the 3.10 kernel release, dynamic PM support
+> >  for USB was present whenever the kernel was built with CONFIG_PM_RUNTIME
+> >  enabled.  The CONFIG_USB_SUSPEND option had been eliminated.]
 > 
-> 
-> I think there's a problem in your fix, Stephen.
-> 
-> I'm getting hangs at boot (strangely -- in QEMU -- only when booting
-> via grub, not when using -kernel) and during shutdown.  Jeremiah seems
-> to have the same problem and his bisection led to the merge commit:
-> https://lkml.org/lkml/2014/11/29/17
-> 
-> The following solves both issues for me.  I think it makes sense given
-> the #defines from ef7fdf5e8c87, since Tejun intended to clear
-> I_DIRTY_PAGES.
-> 
-> 
-> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-> index b70e45f45afa..6b2510d97a0a 100644
-> --- a/fs/fs-writeback.c
-> +++ b/fs/fs-writeback.c
-> @@ -484,7 +484,7 @@ __writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
->  	spin_lock(&inode->i_lock);
->  
->  	dirty = inode->i_state & I_DIRTY_INODE;
-> -	inode->i_state &= ~I_DIRTY_INODE;
-> +	inode->i_state &= ~I_DIRTY;
->  
->  	/*
->  	 * Paired with smp_mb() in __mark_inode_dirty().  This allows
-> 
-> 
-> -- 
-> Thanks,
-> Sabrina
+> That sounds fine.  Thanks.
 
-That change fixes the problem.
+OK, thanks.
 
-Thanks Sabrina and Stephen!
+I'll add that to the patch and resend it, then.
 
--- 
-- Jeremiah Mahler
+Rafael
+
