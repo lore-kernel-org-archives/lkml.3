@@ -1,93 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751649AbaK2SP5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 13:15:57 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:35662 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402AbaK2SP4 (ORCPT
+	id S1751715AbaK2STL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 13:19:11 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:33229 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751402AbaK2STH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 13:15:56 -0500
-Message-ID: <547A0D58.5020806@roeck-us.net>
-Date: Sat, 29 Nov 2014 10:15:52 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Sat, 29 Nov 2014 13:19:07 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19sQbnbjaZq49xhMbfY+WD8xQOml4xahxo=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 7A6CA626B49
+Date: Sat, 29 Nov 2014 13:18:53 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Javier =?iso-8859-1?Q?Gonz=E1lez?= <javier@javigon.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, joshc@codeaurora.org,
+        johannes.thumshirn@men.de, kheitke@codeaurora.org,
+        laurent.pinchart+renesas@ideasonboard.com, geert+renesas@glider.be,
+        horms+renesas@verge.net.au, damm@opensource.se, tomi.valkeinen@ti.com,
+        mbohan@codeaurora.org, michal.simek@xilinx.com, pawel.moll@arm.com,
+        Andrew.Thoelke@arm.com
+Subject: Re: [RFC PATCH 0/3] Generic TrustZone Driver in Linux Kernel
+Message-ID: <20141129181853.GR22670@titan.lakedaemon.net>
+References: <1417187016-7731-1-git-send-email-javier@javigon.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Honeyman <stevenhoneyman@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
-References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com> <5479F328.7080304@roeck-us.net> <201411291730.28743@pali>
-In-Reply-To: <201411291730.28743@pali>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020201.547A0D5B.0227,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 2
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1417187016-7731-1-git-send-email-javier@javigon.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2014 08:30 AM, Pali Rohár wrote:
-> On Saturday 29 November 2014 17:24:08 Guenter Roeck wrote:
->> On 11/29/2014 08:04 AM, Pali Rohár wrote:
->>> +static bool __init i8k_check_temp(int sensor)
->>> +{
->>> +	int err;
->>> +
->>> +	/*
->>> +	 * Check if temperature sensor type is valid.
->>> +	 *
->>> +	 * If it is valid then sensor should work. But some
->>> sensors are not +	 * available at any time. E.g GPU sensor
->>> on Optimus/PowerExpress/Enduro +	 * card does not work (or
->>> return bogus value) when card is turned off. +	 * So this
->>> function should not fail in this case. +	 */
->>> +	err = i8k_get_temp_type(sensor);
->>> +	if (err >= 0)
->>> +		return true;
->>> +
->>
->> Are you sure this function is provided for all systems ?
->> I am a bit concerned that we may wrongly disable sensors this
->> way, especially on older systems.
->>
->
-> I do not know if that function is provided on all systems. But
-> this code does not disable sensors. If function fail, then we
-> fallback to temperature read down. Return true means that we
-> enable sensor.
->
+Javier,
 
-You are right. Guess I didn't have enough coffee this morning.
+On Fri, Nov 28, 2014 at 04:03:33PM +0100, Javier Gonz�lez wrote:
+> Hi all,
+> 
+> This set of patches is a first iteration to introduce a generic
+> TrustZone driver to the Linux Kernel. Since there is no place to add
+> drivers related to secure processors, a new subsystem for secure
+> hardware in general (drivers/sechw) is also introduced. TPM is a good
+> candidate to me moved here if this change is accepted.
+> 
+> Today, TrustZone solutions are implementation specific. In user space,
+> mobile devices are normally compliant with Global Platform's API
+> <http://www.globalplatform.org>. However, there is no common TrustZone
+> interface for kernel space, as it exists for Trusted Computing Module
+> (TPM). As a result, different TrustZone frameworks use different kernel
+> loadable modules to provide the context to communicate with the Trusted
+> Execution Environment leveraged by TrustZone's secure world.
+> 
+> Regarding use cases, TrustZone has traditionally been used for
+> offloading secure tasks to the secure world. Examples include banking
+> applications, Digital Rights Management (DRM), or specific secure
+> solutions. As more and more frameworks enabling TrustZone appear, new
+> use cases are starting to emerge: key management, encryption, integrity
+> checking, etc. Extreme cases today involve running a RTOS in the secure
+> world, or using the secure world toimplement usage control policies
+> governing the normal world. The advent of ARMv8 will only expand this
+> list.
+> 
+> This set of patches introduce a generic TrustZone driver for kernel
+> space. The first design goal is to be flexible enough as to NOT
+> introduce policy regarding the TrustZone interface. In this way, we
+> introduce a session-based open/close read/write interface where
+> several TrustZone drivers can potentially be used. The design is
+> simple and it consist on an interface that different TrustZone drivers
+> can implement to communicate with the specific frameworks.
+> 
+> Major TODO's:
+>  * Patch has TODOs, FIXMEs and XXXs that need to be cleaned.
+>  * Refactor part of Open Virtualization's driver. Some part are complex
+>  * and can be simplified.
+>  * Add support for different boards. At the moment only zynq-7000 ZC702
+>  is supported. A sepparate patch containing the patch for ZC702 will be
+>  sent sepparately - rebasing from 3.8 to 3.17 at the moment.
+> 
+> Development is taking place at:
+> 	https://github.com/TrustZoneGenericDriver/linux-xlnx tz_driver
+> At 14.5_trd_tz_driver_generic it can be found the same driver together
+> with TEE support for Zynq ZC702 in 3.8
+> 
+> Since all testing is being done in the Xilinx ZC702 board, using
+> Xilinx's Linux tree is convenient. Once the board rebasing to 3.17 is
+> completed, development will move to:
+> 	https://github.com/TrustZoneGenericDriver/linux
+> 
+> Feedback regarding the code, the interface, or its placement in
+> drivers/sechw is more than welcome. The idea is to refine ths TrustZone
+> driver while working on supporting more targets.
 
-Thanks,
-Guenter
+Please add me to the Cc: on future revisions.
 
+You don't mention a mailinglist.  Is there one for this project?  Also,
+TrustZone is a specious marketing name.  For those of us not actively
+working with it, wtf is it in engineering terms?  Apparently it can do
+virtualization w/o virtualization extensions?
+
+Wouldn't a lot of the trustworthiness depend on the lack of
+vulnerabilities in this API or other communications interfaces?  Can end
+users choose to load a different binary (say, OpenVZ) than the DRM that
+came with the phone?  How is that handled?  How does this fit into a
+trusted boot sequence?
+
+And as GregKH mentioned, this definitely needs some cleanup before
+expecting others to spend time reviewing.  If this code is working for
+your usecase, perhaps the staging tree might be a better place to
+start.
+
+thx,
+
+Jason.
