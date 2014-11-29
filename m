@@ -1,85 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856AbaK2WIp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 17:08:45 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:52475 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751828AbaK2WIn (ORCPT
+	id S1751884AbaK2WIt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 17:08:49 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:54328 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828AbaK2WIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 17:08:43 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Wang Weidong <wangweidong1@huawei.com>
-Cc: viresh.kumar@linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, guohanjun@huawei.com
-Subject: Re: [PATCH 0/2] fix some problems for cpufreq
-Date: Sat, 29 Nov 2014 23:30:03 +0100
-Message-ID: <4004530.x5fm24OG42@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <547923F2.6000701@huawei.com>
-References: <1417142619-14548-1-git-send-email-wangweidong1@huawei.com> <2248504.pAVebap2qN@vostro.rjw.lan> <547923F2.6000701@huawei.com>
+	Sat, 29 Nov 2014 17:08:46 -0500
+Date: Sat, 29 Nov 2014 14:08:43 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Sabrina Dubroca <sd@queasysnail.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Jens Axboe <axboe@kernel.dk>,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: Re: linux-next: manual merge of the block tree with the ext4 tree
+Message-ID: <20141129220843.GA1472@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Sabrina Dubroca <sd@queasysnail.net>,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	Jens Axboe <axboe@kernel.dk>, Theodore Ts'o <tytso@mit.edu>,
+	linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Tejun Heo <tj@kernel.org>
+References: <20141127145347.0083c0bc@canb.auug.org.au>
+ <20141129100833.GA31892@kria>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141129100833.GA31892@kria>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, November 29, 2014 09:40:02 AM Wang Weidong wrote:
-> On 2014/11/29 9:26, Rafael J. Wysocki wrote:
-> > On Friday, November 28, 2014 10:43:37 AM Wang Weidong wrote:
-> >> Hi Rafael and Viresh
-> >>
-> >> Sorry to trouble you again. As for:
-> >> "acpi-cpufreq: get the cur_freq from acpi_processor_performance states"
-> >> I do it again, and add the other patch.
-> >>
-> >> patch #1: acpi-cpufreq: make the freq_table store the same freq value
-> >>
-> >> I think it can work. The set of available states which come
-> >> from acpi won't change. Just like the power would be remove,
-> >> the acpi driver will do that:
-> >> call
-> >>  ->acpi_processor_ppc_has_changed
-> >>  ->cpufreq_update_policy
-> >>  ->acpi_ppc_notifier_block.notifier_call
-> >>    ->acpi_processor_ppc_notifier
-> >>    ->cpufreq_verify_within_limits
-> >> The progress will change the policy's min_freq and max_freq
-> >> while it won't change the set of states(freq_tables).
-> > 
-> > OK, so the above information needs to go into the changelog of patch [1/2].
-> > Also, please clarify the problem description in that changelog, it is very
-> > difficult to understand the way it is now.
-> > 
-> 
-> sure, I should do it.
-> 
-> >> patch #2: cpufreq: show the real avail freqs with the freq_table
-> >>
-> >> when the min_freq and max_freq change, we should sync the availble
-> >> freqs.
-> > 
-> > Why?  Do any other cpufreq drivers do that?
-> > 
-> 
-> If some cpufreq drivers support several freqs like this:
-> 1.05 Ghz 1.30Ghz 1.70GHz 2.10GHz 2.3GHz
->            |                |
->           min              max
-> So what the available freqs is 1.30GHz 1.70GHz 2.10GHz
-> 
-> when we do cpufreq-info or cat scaling_available_frequencies,
-> I think the available freqs table show only show these 3 value,
-> not all the values.
+Hi,
 
-That changes an existing user space interface, however, and the
-only reason I can figure out from what you're saying is your personal
-opinion.  This isn't a good enough reason, however.
+On Sat, Nov 29, 2014 at 11:08:33AM +0100, Sabrina Dubroca wrote:
+> Hello,
+> 
+> [adding Jeremiah Mahler to CC]
+> 
+> 2014-11-27, 14:53:47 +1100, Stephen Rothwell wrote:
+> > Hi Jens,
+> > 
+> > Today's linux-next merge of the block tree got a conflict in
+> > fs/fs-writeback.c between commit ef7fdf5e8c87 ("vfs: add support for a
+> > lazytime mount option") from the ext4 tree and commit 9c6ac78eb352
+> > ("writeback: fix a subtle race condition in I_DIRTY clearing") from the
+> > block tree.
+> > 
+> > I fixed it up (I took a guess, plese check - see below) and can carry
+> > the fix as necessary (no action is required).
+> > 
+> > -- 
+> > Cheers,
+> > Stephen Rothwell                    sfr@canb.auug.org.au
+> > 
+> > diff --cc fs/fs-writeback.c
+> > index 3d87174408ae,2d609a5fbfea..000000000000
+> > --- a/fs/fs-writeback.c
+> > +++ b/fs/fs-writeback.c
+> > @@@ -482,14 -479,30 +482,30 @@@ __writeback_single_inode(struct inode *
+> >   	 * write_inode()
+> >   	 */
+> >   	spin_lock(&inode->i_lock);
+> > - 	/* Clear I_DIRTY_PAGES if we've written out all dirty pages */
+> > - 	if (!mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
+> > - 		inode->i_state &= ~I_DIRTY_PAGES;
+> > + 
+> >  -	dirty = inode->i_state & I_DIRTY;
+> >  -	inode->i_state &= ~I_DIRTY;
+> >  +	dirty = inode->i_state & I_DIRTY_INODE;
+> >  +	inode->i_state &= ~I_DIRTY_INODE;
+> > + 
+> > + 	/*
+> > + 	 * Paired with smp_mb() in __mark_inode_dirty().  This allows
+> > + 	 * __mark_inode_dirty() to test i_state without grabbing i_lock -
+> > + 	 * either they see the I_DIRTY bits cleared or we see the dirtied
+> > + 	 * inode.
+> > + 	 *
+> > + 	 * I_DIRTY_PAGES is always cleared together above even if @mapping
+> > + 	 * still has dirty pages.  The flag is reinstated after smp_mb() if
+> > + 	 * necessary.  This guarantees that either __mark_inode_dirty()
+> > + 	 * sees clear I_DIRTY_PAGES or we see PAGECACHE_TAG_DIRTY.
+> > + 	 */
+> > + 	smp_mb();
+> > + 
+> > + 	if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
+> > + 		inode->i_state |= I_DIRTY_PAGES;
+> > + 
+> >   	spin_unlock(&inode->i_lock);
+> > + 
+> >   	/* Don't write the inode if only I_DIRTY_PAGES was set */
+> >  -	if (dirty & (I_DIRTY_SYNC | I_DIRTY_DATASYNC)) {
+> >  +	if (dirty) {
+> >   		int err = write_inode(inode, wbc);
+> >   		if (ret == 0)
+> >   			ret = err;
+> 
+> 
+> I think there's a problem in your fix, Stephen.
+> 
+> I'm getting hangs at boot (strangely -- in QEMU -- only when booting
+> via grub, not when using -kernel) and during shutdown.  Jeremiah seems
+> to have the same problem and his bisection led to the merge commit:
+> https://lkml.org/lkml/2014/11/29/17
+> 
+> The following solves both issues for me.  I think it makes sense given
+> the #defines from ef7fdf5e8c87, since Tejun intended to clear
+> I_DIRTY_PAGES.
+> 
+> 
+> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> index b70e45f45afa..6b2510d97a0a 100644
+> --- a/fs/fs-writeback.c
+> +++ b/fs/fs-writeback.c
+> @@ -484,7 +484,7 @@ __writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
+>  	spin_lock(&inode->i_lock);
+>  
+>  	dirty = inode->i_state & I_DIRTY_INODE;
+> -	inode->i_state &= ~I_DIRTY_INODE;
+> +	inode->i_state &= ~I_DIRTY;
+>  
+>  	/*
+>  	 * Paired with smp_mb() in __mark_inode_dirty().  This allows
+> 
+> 
+> -- 
+> Thanks,
+> Sabrina
 
-What if there are utilities and scripts out there relying on the
-current behavior?
+That change fixes the problem.
 
+Thanks Sabrina and Stephen!
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+- Jeremiah Mahler
