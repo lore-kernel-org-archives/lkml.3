@@ -1,179 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751772AbaK2Vey (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 16:34:54 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:52553 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163AbaK2Vex (ORCPT
+	id S1751804AbaK2WGe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 17:06:34 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:50716 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751738AbaK2WGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 16:34:53 -0500
-Message-ID: <547A3BFA.7040900@roeck-us.net>
-Date: Sat, 29 Nov 2014 13:34:50 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Sat, 29 Nov 2014 17:06:33 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mark Brown <broonie@kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Ben Zhang <benzh@chromium.org>,
+        alsa-devel <alsa-devel@alsa-project.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Bard Liao <bardliao@realtek.com>,
+        Oder Chiou <oder_chiou@realtek.com>,
+        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
+        flove@realtek.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ASoC: rt5677: Add ACPI device probing
+Date: Sat, 29 Nov 2014 23:27:52 +0100
+Message-ID: <1820241.GUleD5gbzs@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141129115209.GD7712@sirena.org.uk>
+References: <1416034608-24238-1-git-send-email-benzh@chromium.org> <2127240.rWRTDu6LHQ@vostro.rjw.lan> <20141129115209.GD7712@sirena.org.uk>
 MIME-Version: 1.0
-To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
-CC: Gabriele Mazzotta <gabriele.mzt@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Honeyman <stevenhoneyman@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
-References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com> <2162660.rjBG3mszUn@xps13> <547A1754.20903@roeck-us.net> <201411292007.36975@pali>
-In-Reply-To: <201411292007.36975@pali>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Suspect
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 512
-X-CTCH-RefID: str=0001.0A020206.547A3BFD.001A,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=512,sb=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 1
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 1
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2014 11:07 AM, Pali Rohár wrote:
-> On Saturday 29 November 2014 19:58:28 Guenter Roeck wrote:
->> On 11/29/2014 10:27 AM, Gabriele Mazzotta wrote:
->>> On Saturday 29 November 2014 18:18:18 Pali Rohár wrote:
->>>> On Saturday 29 November 2014 18:07:19 Gabriele Mazzotta
-> wrote:
->>>>> On Saturday 29 November 2014 17:09:35 Pali Rohár wrote:
->>>>>> On Saturday 29 November 2014 17:04:07 Pali Rohár wrote:
->>>>>>> This patch adds labels for temperature sensors if SMM
->>>>>>> function with EAX register 0x11a3 reports it. These
->>>>>>> informations was taken from DOS binary NBSVC.MDM.
->>>>>>>
->>>>>>> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
->>>>>>> ---
->>>>>>>
->>>>>>>    drivers/char/i8k.c |  110
->>>>>>>
->>>>>>> +++++++++++++++++++++++++++++++++++++++++----------- 1
->>>>>>> file changed, 88 insertions(+), 22 deletions(-)
->>>>>>
->>>>>> I tested patch on Latitude E6440 and i8k CPU & GPU temps
->>>>>> match intel coretemp & amd radeion temps.
->>>>>>
->>>>>> But I would like if somebody with other Dell laptop can
->>>>>> test if temperature labels are correct...
->>>>>
->>>>> I tested it on my XPS13 9333, here what sensors outputs:
->>>>>
->>>>> acpitz-virtual-0
->>>>> Adapter: Virtual device
->>>>> temp1:        +27.8°C  (crit = +105.0°C)
->>>>> temp2:        +29.8°C  (crit = +105.0°C)
->>>>>
->>>>> coretemp-isa-0000
->>>>> Adapter: ISA adapter
->>>>> Physical id 0:  +62.0°C  (high = +100.0°C, crit =
->>>>> +100.0°C) Core 0:         +62.0°C  (high = +100.0°C, crit
->>>>> = +100.0°C) Core 1:         +61.0°C  (high = +100.0°C,
->>>>> crit = +100.0°C)
->>>>>
->>>>> i8k-virtual-0
->>>>> Adapter: Virtual device
->>>>> fan2:           0 RPM
->>>>> CPU:          +62.0°C
->>>>> Ambient:      +49.0°C
->>>>> SODIMM:       +46.0°C
->>>>> temp4:            N/A
->>>>>
->>>>> CPU seems to be correct, but I can't say anything on
->>>>> Ambient and SODIMM. temp4 is constantly equal to SODIMM
->>>>> without this patch, so I'd say N/A is correct.
->>>>>
->>>>>
->>>>> Gabriele
->>>>
->>>> It is unknown for me how to directly read Ambient and
->>>> SODIMM temperatures (without Dell SMM functions). So we
->>>> can only trust Dell SMM that it reporting correct values
->>>> and type is really Ambient and SODIMM.
->>>>
->>>> And about temp4:
->>>>
->>>> Label is not set when SMM function fails. Original DOS
->>>> NBSVC.MDM just ignore all sensors for which SMM type
->>>> function fails.
->>>>
->>>> This patch should not disable any sensor, so if you
->>>> previously had some value (<= 128°C) and now not, then
->>>> there is some bug.
->>>>
->>>> Can you test this patch?
->>>> https://git.kernel.org/cgit/linux/kernel/git/gregkh/char-mi
->>>> sc.git/comm
->>>> it/?h=char-misc-testing&id=723493ca59c8d81fed3e7f261165fee
->>>> 493a29ffa
->>>>
->>>> It is possible that same value is caused by incorrect use
->>>> of prev[] array which should be fixed by above patch.
->>>>
->>>> Can you test i8k with and without above patch?
->>>
->>> I did some more tests. What I think is happening is that
->>> temp4_label returns -22, so I sensors prints N/A without
->>> actually reading temp4_input.
->>>
->>> I'm doing some tests to understand what's going on with
->>> temp4_input. It reports the value of the last temp*_input I
->>> read. If I read it right after I loaded i8k, I get an error
->>> (-22).
->>>
->>> The same doesn't happen for temp3_label, which constantly
->>> returns -22.
->>>
->>> I already had
->>> https://git.kernel.org/cgit/linux/kernel/git/gregkh/char-mi
->>> sc.git/commit/?h=char-misc-testing&id=723493ca59c8d81fed3e7f
->>> 261165fee493a29ffa applied. Without it, things seem not to
->>> change much. I either get an error (-22) or some incorrect
->>> values (for now always 1000) when I read temp4_input right
->>> after i8k was loaded. Once I read some other temp*_input, I
->>> always get the last value read.
->>
->> I am seeing exactly the same behavior on an XPS13.
->>
->> Guenter
->
-> Original Dell DOS executable ignores all temperature sensors if
-> type SMM function fails (if I decoded and understand that DOS
-> assembler code correctly). So maybe we should do same...
->
-> But because our i8k.c code ignores sensor only if it returns
-> invalid temperature, there could be possible regression that on
-> same machines type SMM function is not implemented or not
-> working...
->
-> What do you think?
->
-Guess we should be able to do what the DOS executable does.
-Let me test on a couple of older systems and let's make
-a decision based on the results.
+On Saturday, November 29, 2014 11:52:09 AM Mark Brown wrote:
+> 
+> --9GYGtdBumnmR69ER
+> Content-Type: text/plain; charset=us-ascii
+> Content-Disposition: inline
+> Content-Transfer-Encoding: quoted-printable
+> 
+> On Sat, Nov 29, 2014 at 12:51:59AM +0100, Rafael J. Wysocki wrote:
+> > On Friday, November 28, 2014 04:00:36 PM Mark Brown wrote:
+> 
+> > > OK, we probably should have one to aid discoverability since as far as I
+> > > can tell what's happening is that people (hi Intel!) are allocating
+> > > their own identifiers for devices produced by other vendors that turn up
+> > > on their boards.  If people can find the set of IDs in use there's more
+> > > chance they'll use the same ones as other people.
+> 
+> > There's the PRP0001 ID that can be use to in combination with the
+> > "compatible" property which then works the same way as for DT.
+> 
+> > That should be sufficient if the properties are going to be the
+> > same for ACPI (_DSD) and DT.
+> 
+> We've got people making BIOSs right now for systems you can actually buy=20
+> that are intended to run Windows which we need to support; right now the
+> pressing problem I'm seeing is that we've got BIOS vendors not using
+> properties at all and we're going to be ending up with configuration
+> coming from big DMI tables instead which is miserable, Windows is
+> perfectly happy to have custom drivers installed per machine.  Do we
+> know if Windows supports PRP0001 as it currently stands?
 
-Guenter
+No, it doesn't.
 
+Separate device IDs are necessary for Windows compatibility AFAICS.
+
+But that also means any device ID registered by us won't be suitable in that
+case, because Windows won't use it.
+
+There are two different problems here, though.  The first one is a way to
+provide the existing Linux drivers with the information expected by them via
+ACPI and that's what _DSD (plus PRP0001 optionally) is.  The second one is
+to be able to handle systems with ACPI tables from a random vendor who only
+cares about Windows and that's more difficult to address, because our
+ecosystem is different from theirs.
+
+There basically are two ways around that.  The first one is to have all
+knowledge related to device IDs in drivers (which effectively is what
+Windows does and which implies "board files" of sorts) and the second one is
+to make it possible to use overlays on top of the existing ACPI tables that
+will allow people to provide the properties expected by a more generic driver
+(this way, if the vendor didn't care to provide _DSD, for example, in the
+original ACPI tables, the system integrator would be able to use an overlay
+in an initramfs or boot partition to amend them).
+
+There is a plan to do the latter, but that is going to take some time to
+complete.
+
+> > > If those are device IDs then what you're saying is what I'd expect to
+> > > happen and it's part of the reason I'd expect us to be registering IDs
+> > > along with registering properties - if people are defining device
+> > > specific properties they really ought to be tied to the IDs that are in
+> > > use especially if (as seems likely to be the case with the current state
+> > > of the world) people are doing things without attempting to coordinate
+> > > and we're ending up trying to document the deployed reality.
+> 
+> > The rule of thumb (in my view) should be that if the device object's _DSD=
+>  is
+> > going to return the same set of properties as for DT and no other special
+> > handling determined by the ID is required (ie. nothing along the lines of
+> > "if the device ID is X, the _ABC method works like that" which has to be =
+> known
+> > by the driver), "PRP0001" should be returned by _HID and then the value o=
+> f the
+> > "compatible" property should be the same as for DT.
+> 
+> This is a reasonable idea but we do need it to be compatible with
+> Windows and we still need to make sure we have a process in place that
+> BIOS authors and driver authors focused on Windows can reasonably be
+> expected to work with.  That's not something we have right now for DT
+> (our DT process involves contributing to Linux) so the problem remains
+> effectively the same.
+
+We can't make Windows use our stuff and they have a different model
+(a custom driver per device ID vs a common driver per IP block possibly
+matching multiple device IDs).
+
+> We also need a way of getting the word out to people that they should be
+> doing this (also a problem no matter if we use PRP0001 or something UEFI
+> specific).
+
+What do you mean by "something UEFI specific"?
+
+> > Otherwise, a new device ID needs to be allocated for the device and _HID
+> > should return that ID.  Also, if the device is compatible with another
+> > device with an already allocated ID (for _HID), _CID may return the devic=
+> e ID
+> > of the compatible device.  [Of course, it's better if _HID is the same for
+> > identical devices.]
+> 
+> I honestly don't see BIOS authors as being likely to care about adding
+> things to the CID if their systems are working (I'm assuming that HID is
+> the primary device ID and CID are further backup compatible IDs).
+
+They will if they care to be compatible with old (binary) OSes that didn't
+know about the new device ID, but shipped drivers that could handle the
+device (although possibly in a "crippled" way).
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
