@@ -1,117 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751715AbaK2STL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 13:19:11 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:33229 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751402AbaK2STH convert rfc822-to-8bit (ORCPT
+	id S1751611AbaK2S0Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 13:26:16 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:62648 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402AbaK2S0P convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 13:19:07 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19sQbnbjaZq49xhMbfY+WD8xQOml4xahxo=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 7A6CA626B49
-Date: Sat, 29 Nov 2014 13:18:53 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Javier =?iso-8859-1?Q?Gonz=E1lez?= <javier@javigon.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, joshc@codeaurora.org,
-        johannes.thumshirn@men.de, kheitke@codeaurora.org,
-        laurent.pinchart+renesas@ideasonboard.com, geert+renesas@glider.be,
-        horms+renesas@verge.net.au, damm@opensource.se, tomi.valkeinen@ti.com,
-        mbohan@codeaurora.org, michal.simek@xilinx.com, pawel.moll@arm.com,
-        Andrew.Thoelke@arm.com
-Subject: Re: [RFC PATCH 0/3] Generic TrustZone Driver in Linux Kernel
-Message-ID: <20141129181853.GR22670@titan.lakedaemon.net>
-References: <1417187016-7731-1-git-send-email-javier@javigon.com>
+	Sat, 29 Nov 2014 13:26:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1417187016-7731-1-git-send-email-javier@javigon.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1532665.63kW7uD9fo@avalon>
+References: <1417044344-20611-1-git-send-email-prabhakar.csengg@gmail.com>
+ <4838705.gmGJIAUqrM@avalon> <CA+V-a8sAUDo+ut1t2_twy6hNjX5WQpridCEm6NrNmrwQvR1Nrw@mail.gmail.com>
+ <1532665.63kW7uD9fo@avalon>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Sat, 29 Nov 2014 18:25:42 +0000
+Message-ID: <CA+V-a8vVepBkjMdQyckqXjciqPKGJJLHnW0Y3144BUx4q42=FA@mail.gmail.com>
+Subject: Re: [PATCH v3] media: usb: uvc: use vb2_ops_wait_prepare/finish helper
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Javier,
+Hi Laurent,
 
-On Fri, Nov 28, 2014 at 04:03:33PM +0100, Javier González wrote:
-> Hi all,
-> 
-> This set of patches is a first iteration to introduce a generic
-> TrustZone driver to the Linux Kernel. Since there is no place to add
-> drivers related to secure processors, a new subsystem for secure
-> hardware in general (drivers/sechw) is also introduced. TPM is a good
-> candidate to me moved here if this change is accepted.
-> 
-> Today, TrustZone solutions are implementation specific. In user space,
-> mobile devices are normally compliant with Global Platform's API
-> <http://www.globalplatform.org>. However, there is no common TrustZone
-> interface for kernel space, as it exists for Trusted Computing Module
-> (TPM). As a result, different TrustZone frameworks use different kernel
-> loadable modules to provide the context to communicate with the Trusted
-> Execution Environment leveraged by TrustZone's secure world.
-> 
-> Regarding use cases, TrustZone has traditionally been used for
-> offloading secure tasks to the secure world. Examples include banking
-> applications, Digital Rights Management (DRM), or specific secure
-> solutions. As more and more frameworks enabling TrustZone appear, new
-> use cases are starting to emerge: key management, encryption, integrity
-> checking, etc. Extreme cases today involve running a RTOS in the secure
-> world, or using the secure world toimplement usage control policies
-> governing the normal world. The advent of ARMv8 will only expand this
-> list.
-> 
-> This set of patches introduce a generic TrustZone driver for kernel
-> space. The first design goal is to be flexible enough as to NOT
-> introduce policy regarding the TrustZone interface. In this way, we
-> introduce a session-based open/close read/write interface where
-> several TrustZone drivers can potentially be used. The design is
-> simple and it consist on an interface that different TrustZone drivers
-> can implement to communicate with the specific frameworks.
-> 
-> Major TODO's:
->  * Patch has TODOs, FIXMEs and XXXs that need to be cleaned.
->  * Refactor part of Open Virtualization's driver. Some part are complex
->  * and can be simplified.
->  * Add support for different boards. At the moment only zynq-7000 ZC702
->  is supported. A sepparate patch containing the patch for ZC702 will be
->  sent sepparately - rebasing from 3.8 to 3.17 at the moment.
-> 
-> Development is taking place at:
-> 	https://github.com/TrustZoneGenericDriver/linux-xlnx tz_driver
-> At 14.5_trd_tz_driver_generic it can be found the same driver together
-> with TEE support for Zynq ZC702 in 3.8
-> 
-> Since all testing is being done in the Xilinx ZC702 board, using
-> Xilinx's Linux tree is convenient. Once the board rebasing to 3.17 is
-> completed, development will move to:
-> 	https://github.com/TrustZoneGenericDriver/linux
-> 
-> Feedback regarding the code, the interface, or its placement in
-> drivers/sechw is more than welcome. The idea is to refine ths TrustZone
-> driver while working on supporting more targets.
+On Sat, Nov 29, 2014 at 6:11 PM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> Hi Prabhakar,
+>
+> On Friday 28 November 2014 17:06:52 Prabhakar Lad wrote:
+>> On Thu, Nov 27, 2014 at 9:32 PM, Laurent Pinchart wrote:
+>> > Hi Prabhakar,
+>>
+>> [Snip]
+>>
+>> >> +     queue->queue.lock = &queue->mutex;
+>> >
+>> > I'm a bit concerned that this would introduce future breakages. Setting
+>> > the queue.lock pointer enables locking in all vb2_fop_* and vb2_ops_wait_*
+>> > functions. The uvcvideo driver isn't ready for that, but doesn't use the
+>> > vb2_fop_* functions yet, so that's not an issue. However, in the future,
+>> > videobuf2 might use the lock in more places, including functions used by
+>> > the uvcvideo driver. This could then cause breakages.
+>>
+>> Even if in future if videobuf2 uses this lock it would be in helpers mostly,
+>> so any way it doesnâ€™t harm :)
+>
+> My concern is about vb2 starting using the lock in existing helpers used by
+> the uvcvideo driver. I suppose we can deal with it later.
+>
+>> > It would be better to completely convert the uvcvideo driver to the
+>> > vb2_fop_* functions if we want to use vb2_ops_*. I'm not sure how complex
+>> > that would be though, and whether it would be possible while still
+>> > keeping the fine-grained locking implemented by the uvcvideo driver. Do
+>> > you think it should be attempted ?
+>>
+>> mmap & poll should be fairly simple, looks like open & release cannot be
+>> dropped as it does some usb_autopm_get/put_interface() calls which I am not
+>> aware of.
+>
+> I've looked at that, and there's a race condition in vb2_fop_poll() (for which
+> I've already sent a patch) and possible in vb2_mmap() (raised the issue on
+> #v4l today) as well that need to be fixed first.
+>
+> Anyway, for this patch
+>
+> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>
+> Have you tested it by the way ?
+>
+I have just compile tested it.
 
-Please add me to the Cc: on future revisions.
+> Should I take it in my tree or will you send a pull request for the whole
+> series ?
+>
+Probably you can pick this up via your tree.
 
-You don't mention a mailinglist.  Is there one for this project?  Also,
-TrustZone is a specious marketing name.  For those of us not actively
-working with it, wtf is it in engineering terms?  Apparently it can do
-virtualization w/o virtualization extensions?
+Thanks,
+--Prabhakar Lad
 
-Wouldn't a lot of the trustworthiness depend on the lack of
-vulnerabilities in this API or other communications interfaces?  Can end
-users choose to load a different binary (say, OpenVZ) than the DRM that
-came with the phone?  How is that handled?  How does this fit into a
-trusted boot sequence?
-
-And as GregKH mentioned, this definitely needs some cleanup before
-expecting others to spend time reviewing.  If this code is working for
-your usecase, perhaps the staging tree might be a better place to
-start.
-
-thx,
-
-Jason.
+>> >>       ret = vb2_queue_init(&queue->queue);
+>> >>       if (ret)
+>> >>               return ret;
+>
+> --
+> Regards,
+>
+> Laurent Pinchart
+>
