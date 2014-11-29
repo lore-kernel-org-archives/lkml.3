@@ -1,130 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620AbaK2QiI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 11:38:08 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:57273 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334AbaK2QiG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 11:38:06 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
-        rpurdie@rpsys.net, sakari.ailus@iki.fi, s.nawrocki@samsung.com,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: Re: [PATCH/RFC v8 04/14] v4l2-async: change custom.match callback argument type
-Date: Sat, 29 Nov 2014 18:38:31 +0200
-Message-ID: <5063831.7WQadZaPHh@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1417166286-27685-5-git-send-email-j.anaszewski@samsung.com>
-References: <1417166286-27685-1-git-send-email-j.anaszewski@samsung.com> <1417166286-27685-5-git-send-email-j.anaszewski@samsung.com>
+	id S1751425AbaK2Qpo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 11:45:44 -0500
+Received: from mout.web.de ([212.227.15.3]:54502 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751075AbaK2Qpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Nov 2014 11:45:43 -0500
+Message-ID: <5479F823.60900@users.sourceforge.net>
+Date: Sat, 29 Nov 2014 17:45:23 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Dave Chinner <david@fromorbit.com>, xfs@oss.sgi.com
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] XFS: Deletion of unnecessary checks before two function
+ calls
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:cAISUDfYit9/Cz6Ehk3Qw1+5s50gXDCI7t8fiDkh5judN7mTXhi
+ w0Sm2ZRoHay1a7kfZ0WX2X58ZvTcdDDKf94byfnSCV4NU7cOAgCwRrUn4lKx0REJXqvKiq0
+ xCyI9eRIP4cYkhZyiEyu8Ui3XdEuN2HI41n6de6AkLqnl5ZkKQQnEdJ49j4IXney94l7QTm
+ 7u3/wI87iFLefFF2rzZmg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jacek,
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Sat, 29 Nov 2014 17:40:22 +0100
 
-Thank you for the patch.
+The functions xfs_blkdev_put() and xfs_qm_dqrele() test whether their argument
+is NULL and then return immediately.
+Thus the test around the call is not needed.
 
-On Friday 28 November 2014 10:17:56 Jacek Anaszewski wrote:
-> It is useful to have an access to the async sub-device
-> being matched, not only to the related struct device.
-> Change match callback argument from struct device
-> to struct v4l2_subdev. It will allow e.g. for matching
-> a sub-device by its "name" property.
+This issue was detected by using the Coccinelle software.
 
-In principle I agree. However, we will need to reimplement v4l2-async based on 
-the component (drivers/base/component.c) framework at some point. As the 
-component framework is based on struct device, will it still be possible to 
-match on subdev name in that case ? If not, we might need to try to find 
-another approach to the issue.
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ fs/xfs/xfs_qm.c    | 12 +++++-------
+ fs/xfs/xfs_super.c |  3 +--
+ 2 files changed, 6 insertions(+), 9 deletions(-)
 
-> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> ---
->  drivers/media/v4l2-core/v4l2-async.c |   16 ++++++++--------
->  include/media/v4l2-async.h           |    2 +-
->  2 files changed, 9 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/media/v4l2-core/v4l2-async.c
-> b/drivers/media/v4l2-core/v4l2-async.c index 85a6a34..8140992 100644
-> --- a/drivers/media/v4l2-core/v4l2-async.c
-> +++ b/drivers/media/v4l2-core/v4l2-async.c
-> @@ -22,10 +22,10 @@
->  #include <media/v4l2-device.h>
->  #include <media/v4l2-subdev.h>
-> 
-> -static bool match_i2c(struct device *dev, struct v4l2_async_subdev *asd)
-> +static bool match_i2c(struct v4l2_subdev *sd, struct v4l2_async_subdev
-> *asd) {
->  #if IS_ENABLED(CONFIG_I2C)
-> -	struct i2c_client *client = i2c_verify_client(dev);
-> +	struct i2c_client *client = i2c_verify_client(sd->dev);
->  	return client &&
->  		asd->match.i2c.adapter_id == client->adapter->nr &&
->  		asd->match.i2c.address == client->addr;
-> @@ -34,14 +34,14 @@ static bool match_i2c(struct device *dev, struct
-> v4l2_async_subdev *asd) #endif
->  }
-> 
-> -static bool match_devname(struct device *dev, struct v4l2_async_subdev
-> *asd) +static bool match_devname(struct v4l2_subdev *sd, struct
-> v4l2_async_subdev *asd) {
-> -	return !strcmp(asd->match.device_name.name, dev_name(dev));
-> +	return !strcmp(asd->match.device_name.name, dev_name(sd->dev));
->  }
-> 
-> -static bool match_of(struct device *dev, struct v4l2_async_subdev *asd)
-> +static bool match_of(struct v4l2_subdev *sd, struct v4l2_async_subdev *asd)
-> {
-> -	return dev->of_node == asd->match.of.node;
-> +	return sd->dev->of_node == asd->match.of.node;
->  }
-> 
->  static LIST_HEAD(subdev_list);
-> @@ -52,7 +52,7 @@ static struct v4l2_async_subdev *v4l2_async_belongs(struct
-> v4l2_async_notifier * struct v4l2_subdev *sd)
->  {
->  	struct v4l2_async_subdev *asd;
-> -	bool (*match)(struct device *, struct v4l2_async_subdev *);
-> +	bool (*match)(struct v4l2_subdev *, struct v4l2_async_subdev *);
-> 
->  	list_for_each_entry(asd, &notifier->waiting, list) {
->  		/* bus_type has been verified valid before */
-> @@ -79,7 +79,7 @@ static struct v4l2_async_subdev *v4l2_async_belongs(struct
-> v4l2_async_notifier * }
-> 
->  		/* match cannot be NULL here */
-> -		if (match(sd->dev, asd))
-> +		if (match(sd, asd))
->  			return asd;
->  	}
-> 
-> diff --git a/include/media/v4l2-async.h b/include/media/v4l2-async.h
-> index 7683569..1c0b586 100644
-> --- a/include/media/v4l2-async.h
-> +++ b/include/media/v4l2-async.h
-> @@ -51,7 +51,7 @@ struct v4l2_async_subdev {
->  			unsigned short address;
->  		} i2c;
->  		struct {
-> -			bool (*match)(struct device *,
-> +			bool (*match)(struct v4l2_subdev *,
->  				      struct v4l2_async_subdev *);
->  			void *priv;
->  		} custom;
-
+diff --git a/fs/xfs/xfs_qm.c b/fs/xfs/xfs_qm.c
+index d68f230..9a4b50a 100644
+--- a/fs/xfs/xfs_qm.c
++++ b/fs/xfs/xfs_qm.c
+@@ -1749,23 +1749,21 @@ xfs_qm_vop_dqalloc(
+ 	xfs_iunlock(ip, lockflags);
+ 	if (O_udqpp)
+ 		*O_udqpp = uq;
+-	else if (uq)
++	else
+ 		xfs_qm_dqrele(uq);
+ 	if (O_gdqpp)
+ 		*O_gdqpp = gq;
+-	else if (gq)
++	else
+ 		xfs_qm_dqrele(gq);
+ 	if (O_pdqpp)
+ 		*O_pdqpp = pq;
+-	else if (pq)
++	else
+ 		xfs_qm_dqrele(pq);
+ 	return 0;
+ 
+ error_rele:
+-	if (gq)
+-		xfs_qm_dqrele(gq);
+-	if (uq)
+-		xfs_qm_dqrele(uq);
++	xfs_qm_dqrele(gq);
++	xfs_qm_dqrele(uq);
+ 	return error;
+ }
+ 
+diff --git a/fs/xfs/xfs_super.c b/fs/xfs/xfs_super.c
+index 206b97f..97eaa25 100644
+--- a/fs/xfs/xfs_super.c
++++ b/fs/xfs/xfs_super.c
+@@ -796,8 +796,7 @@ xfs_open_devices(
+  out_free_ddev_targ:
+ 	xfs_free_buftarg(mp, mp->m_ddev_targp);
+  out_close_rtdev:
+-	if (rtdev)
+-		xfs_blkdev_put(rtdev);
++	xfs_blkdev_put(rtdev);
+  out_close_logdev:
+ 	if (logdev && logdev != ddev)
+ 		xfs_blkdev_put(logdev);
 -- 
-Regards,
-
-Laurent Pinchart
+2.1.3
 
