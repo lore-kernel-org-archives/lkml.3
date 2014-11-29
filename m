@@ -1,218 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751636AbaK2QYw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 11:24:52 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:54029 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502AbaK2QYu (ORCPT
+	id S1751741AbaK2QZB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 11:25:01 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:54500 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642AbaK2QY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 11:24:50 -0500
+	Sat, 29 Nov 2014 11:24:58 -0500
+Message-ID: <5479F358.8060506@roeck-us.net>
+Date: Sat, 29 Nov 2014 08:24:56 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <87vblym17s.fsf@x220.int.ebiederm.org>
-References: <81ba656ffbdc62a7f7e94ad17f0238ee063fe6b3.1417214430.git.luto@amacapital.net>
- <87vblym17s.fsf@x220.int.ebiederm.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sat, 29 Nov 2014 08:24:28 -0800
-Message-ID: <CALCETrW6FiQP0KKYVSRV=zBY9PcU3xx_qnFW9ead2kYscB4Hvg@mail.gmail.com>
-Subject: Re: [RFC PATCH] userns: Disallow setgroups unless the gid_map writer
- is privileged
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-man <linux-man@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Richard Weinberger <richard@nod.at>,
-        Kenton Varda <kenton@sandstorm.io>, stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
+References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com> <201411291709.35406@pali>
+In-Reply-To: <201411291709.35406@pali>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020209.5479F359.01A7,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 7
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 29, 2014 at 8:16 AM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Andy Lutomirski <luto@amacapital.net> writes:
->
-> The patch is buggy.
->
-> Nacked-by: "Eric W. Biederman" <ebiederm@xmission.com>
->
+On 11/29/2014 08:09 AM, Pali Rohár wrote:
+> On Saturday 29 November 2014 17:04:07 Pali Rohár wrote:
+>> This patch adds labels for temperature sensors if SMM function
+>> with EAX register 0x11a3 reports it. These informations was
+>> taken from DOS binary NBSVC.MDM.
+>>
+>> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
 >> ---
->>
->> Eric, this is an alternative to your patch.  I think it will cause
->> less breakage, and it will keep unprivileged user namespaces
->> more or less fully functional.
->>
->> Kenton, I think that neither run-bundle nor supervisor-main will be
->> broken by this patch.
->>
->>  include/linux/user_namespace.h |  3 +++
->>  kernel/groups.c                |  3 +++
->>  kernel/user.c                  |  1 +
->>  kernel/user_namespace.c        | 36 ++++++++++++++++++++++++++++++++++++
->>  4 files changed, 43 insertions(+)
->>
->> diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
->> index e95372654f09..a74c1f3d44fe 100644
->> --- a/include/linux/user_namespace.h
->> +++ b/include/linux/user_namespace.h
->> @@ -17,6 +17,8 @@ struct uid_gid_map {        /* 64 bytes -- 1 cache line */
->>       } extent[UID_GID_MAP_MAX_EXTENTS];
->>  };
->>
->> +#define USERNS_SETGROUPS_ALLOWED 1
->> +
->>  struct user_namespace {
->>       struct uid_gid_map      uid_map;
->>       struct uid_gid_map      gid_map;
->> @@ -27,6 +29,7 @@ struct user_namespace {
->>       kuid_t                  owner;
->>       kgid_t                  group;
->>       unsigned int            proc_inum;
->> +     unsigned int            flags;
+>>   drivers/char/i8k.c |  110
+>> +++++++++++++++++++++++++++++++++++++++++----------- 1 file
+>> changed, 88 insertions(+), 22 deletions(-)
 >
-> If you are going to add a flags field it needs to be atomic as otherwise
-> changing or reading individual flags won't be safe without a lock.
-
-Will fix.
-
+> I tested patch on Latitude E6440 and i8k CPU & GPU temps match
+> intel coretemp & amd radeion temps.
 >
->>       /* Register of per-UID persistent keyrings for this namespace */
->>  #ifdef CONFIG_PERSISTENT_KEYRINGS
->> diff --git a/kernel/groups.c b/kernel/groups.c
->> index 451698f86cfa..e27433809978 100644
->> --- a/kernel/groups.c
->> +++ b/kernel/groups.c
->> @@ -6,6 +6,7 @@
->>  #include <linux/slab.h>
->>  #include <linux/security.h>
->>  #include <linux/syscalls.h>
->> +#include <linux/user_namespace.h>
->>  #include <asm/uaccess.h>
->>
->>  /* init to 2 - one for init_task, one to ensure it is never freed */
->> @@ -223,6 +224,8 @@ SYSCALL_DEFINE2(setgroups, int, gidsetsize, gid_t __user *, grouplist)
->>       struct group_info *group_info;
->>       int retval;
->>
->> +     if (!(current_user_ns()->flags & USERNS_SETGROUPS_ALLOWED))
->> +             return -EPERM;
->>       if (!ns_capable(current_user_ns(), CAP_SETGID))
->>               return -EPERM;
->>       if ((unsigned)gidsetsize > NGROUPS_MAX)
->> diff --git a/kernel/user.c b/kernel/user.c
->> index 4efa39350e44..f8cdb1ec6049 100644
->> --- a/kernel/user.c
->> +++ b/kernel/user.c
->> @@ -51,6 +51,7 @@ struct user_namespace init_user_ns = {
->>       .owner = GLOBAL_ROOT_UID,
->>       .group = GLOBAL_ROOT_GID,
->>       .proc_inum = PROC_USER_INIT_INO,
->> +     .flags = USERNS_SETGROUPS_ALLOWED,
->>  #ifdef CONFIG_PERSISTENT_KEYRINGS
->>       .persistent_keyring_register_sem =
->>       __RWSEM_INITIALIZER(init_user_ns.persistent_keyring_register_sem),
->> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
->> index aa312b0dc3ec..6e7b9ee5bddc 100644
->> --- a/kernel/user_namespace.c
->> +++ b/kernel/user_namespace.c
->> @@ -600,6 +600,8 @@ static ssize_t map_write(struct file *file, const char __user *buf,
->>       unsigned long page = 0;
->>       char *kbuf, *pos, *next_line;
->>       ssize_t ret = -EINVAL;
->> +     unsigned int gid_flags = 0;
->> +     bool seen_explicit_gid_flag = false;
->>
->>       /*
->>        * The id_map_mutex serializes all writes to any given map.
->> @@ -633,6 +635,19 @@ static ssize_t map_write(struct file *file, const char __user *buf,
->>       if (cap_valid(cap_setid) && !file_ns_capable(file, ns, CAP_SYS_ADMIN))
->>               goto out;
->>
->> +     /* Deal with supplementary groups. */
->> +     if (map == &ns->gid_map) {
->> +             /*
->> +              * By default, setgroups is allowed inside the userns
->> +              * if the writer has no supplementary groups (making
->> +              * it useless) or if the writer is privileged.
->> +              */
->> +             if ((ns->parent->flags & USERNS_SETGROUPS_ALLOWED) &&
->> +                 file_ns_capable(file, ns->parent, CAP_SETGID) &&
->> +                 ns_capable(ns->parent, CAP_SETGID))
->> +                     gid_flags = USERNS_SETGROUPS_ALLOWED;
+> But I would like if somebody with other Dell laptop can test if
+> temperature labels are correct...
 >
-> We can't do this.
->
-> It is wrong to mix permissions and flags to request functionality.
->
-> That way lies madness, and impossible maintenance, and it will silently
-> break every application that expects setgroups to work if they have
-> CAP_SETGID after a mapping has been established.
 
-We can make writing gid_map fail unless you either have permissions or
-add the "setgroups disallow" option.  Would that be better?  It avoids
-silent creation of a strangely behaving userns.  This would be an easy
-adjustment to this patch.
+I have a couple; I'll try to give it a test this weekend.
 
-I don't like the "allow setgroups if there are no supplementary
-groups" because it's weird and unexpected (and will therefore break
-things, I expect) and because it may interact insecurely with setns
-and other such things.
+Guenter
 
---Andy
-
->
->> +     }
->> +
->>       /* Get a buffer */
->>       ret = -ENOMEM;
->>       page = __get_free_page(GFP_TEMPORARY);
->> @@ -667,6 +682,25 @@ static ssize_t map_write(struct file *file, const char __user *buf,
->>                               next_line = NULL;
->>               }
->>
->> +             /* Is this line a gid_map option? */
->> +             if (map == &ns->gid_map) {
->> +                     if (!strcmp(pos, "setgroups deny")) {
->> +                             if (seen_explicit_gid_flag)
->> +                                     goto out;
->> +                             seen_explicit_gid_flag = 1;
->> +                             gid_flags = 0;
->> +                             continue;
->> +                     } else if (!strcmp(pos, "setgroups allow")) {
->> +                             if (seen_explicit_gid_flag)
->> +                                     goto out;
->> +                             if (!(gid_flags & USERNS_SETGROUPS_ALLOWED)) {
->> +                                     ret = -EPERM;
->> +                                     goto out;
->> +                             }
->> +                             continue;
->> +                     }
->> +             }
->> +
->>               pos = skip_spaces(pos);
->>               extent->first = simple_strtoul(pos, &pos, 10);
->>               if (!isspace(*pos))
->> @@ -746,6 +780,8 @@ static ssize_t map_write(struct file *file, const char __user *buf,
->>               new_map.nr_extents*sizeof(new_map.extent[0]));
->>       smp_wmb();
->>       map->nr_extents = new_map.nr_extents;
->> +     if (map == &ns->gid_map)
->> +             ns->flags |= gid_flags;
->>
->>       *ppos = count;
->>       ret = count;
->
-> Eric
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
