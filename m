@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751828AbaK2WqR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 17:46:17 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:57701 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717AbaK2WqP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 17:46:15 -0500
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Zi Shen Lim <zlim.lnx@gmail.com>, Eric Dumazet <edumazet@google.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 net] bpf: x86: fix epilogue generation for eBPF programs
-Date: Sat, 29 Nov 2014 14:46:13 -0800
-Message-Id: <1417301173-23691-1-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751827AbaK2XiM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 18:38:12 -0500
+Received: from mout.gmx.net ([212.227.15.19]:49255 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751735AbaK2XiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Nov 2014 18:38:11 -0500
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+To: eparis@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, jack@suse.cz,
+        Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Subject: [PATCH 1/3] fanotify: only destroy mark when both mask and ignored_mask are cleared
+Date: Sun, 30 Nov 2014 00:37:36 +0100
+Message-Id: <1417304258-16838-1-git-send-email-LinoSanfilippo@gmx.de>
+X-Mailer: git-send-email 1.9.1
+X-Provags-ID: V03:K0:2+JdX3LRIobBsT8kGT04DKHdT5qr6wXYwEg4bFxZI/epuEuvKb/
+ keDeuSZ8qlglFf4Rl908YAwwzxvUQqkbEir5CdoJVTilnTKjUjRKMu24ecxoe5UqIGuzQsp
+ 00DJ+7M8QVfSuNBAR+/3y1qFK2JdOpyZyQgmJP7H5CfNf0ALqvusLKRdUDqdgYWNhoWYOYH
+ S58foU1AEvUWSW/Jx233w==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-classic BPF has a restriction that last insn is always BPF_RET.
-eBPF doesn't have BPF_RET instruction and this restriction.
-It has BPF_EXIT insn which can appear anywhere in the program
-one or more times and it doesn't have to be last insn.
-Fix eBPF JIT to emit epilogue when first BPF_EXIT is seen
-and all other BPF_EXIT instructions will be emitted as jump.
+In fanotify_mark_remove_from_mask() a mark is destroyed if only one of both
+bitmasks (mask or ignored_mask) of a mark is cleared. However the other mask
+may still be set and contain information that should not be lost. Thus only
+destroy a mark if both masks are cleared.
 
-Since jump offset to epilogue is computed as:
-jmp_offset = ctx->cleanup_addr - addrs[i]
-we need to change type of cleanup_addr to signed to compute the offset as:
-(long long) ((int)20 - (int)30)
-instead of:
-(long long) ((unsigned int)20 - (int)30)
-
-Fixes: 622582786c9e ("net: filter: x86: internal BPF JIT")
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
 ---
-Note, this bug is applicable only to native eBPF programs
-which first were introduced in 3.18, so no need for stable.
+ fs/notify/fanotify/fanotify_user.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-arm64 JIT has the same problem, but the fix is not as trivial,
-so will be done as separate patch.
-
-Since 3.18 can only load eBPF programs and cannot execute them,
-this patch can even be done in net-next only, but I think it's worth
-to apply it to 3.18(net), so that JITed output for native eBPF
-programs is correct when bpf syscall loads it with net.core.bpf_jit_enable=2
-
- arch/x86/net/bpf_jit_comp.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
-index 3f62734..7e90244 100644
---- a/arch/x86/net/bpf_jit_comp.c
-+++ b/arch/x86/net/bpf_jit_comp.c
-@@ -178,7 +178,7 @@ static void jit_fill_hole(void *area, unsigned int size)
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index c991616..03a0dd1 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -488,6 +488,8 @@ static __u32 fanotify_mark_remove_from_mask(struct fsnotify_mark *fsn_mark,
+ 					    int *destroy)
+ {
+ 	__u32 oldmask;
++	__u32 new_mask;
++	__u32 new_ignored;
+ 
+ 	spin_lock(&fsn_mark->lock);
+ 	if (!(flags & FAN_MARK_IGNORED_MASK)) {
+@@ -497,9 +499,11 @@ static __u32 fanotify_mark_remove_from_mask(struct fsnotify_mark *fsn_mark,
+ 		oldmask = fsn_mark->ignored_mask;
+ 		fsnotify_set_mark_ignored_mask_locked(fsn_mark, (oldmask & ~mask));
+ 	}
++	new_mask = fsn_mark->mask;
++	new_ignored = fsn_mark->ignored_mask;
+ 	spin_unlock(&fsn_mark->lock);
+ 
+-	*destroy = !(oldmask & ~mask);
++	*destroy = !(new_mask | new_ignored);
+ 
+ 	return mask & oldmask;
  }
- 
- struct jit_context {
--	unsigned int cleanup_addr; /* epilogue code offset */
-+	int cleanup_addr; /* epilogue code offset */
- 	bool seen_ld_abs;
- };
- 
-@@ -192,6 +192,7 @@ static int do_jit(struct bpf_prog *bpf_prog, int *addrs, u8 *image,
- 	struct bpf_insn *insn = bpf_prog->insnsi;
- 	int insn_cnt = bpf_prog->len;
- 	bool seen_ld_abs = ctx->seen_ld_abs | (oldproglen == 0);
-+	bool seen_exit = false;
- 	u8 temp[BPF_MAX_INSN_SIZE + BPF_INSN_SAFETY];
- 	int i;
- 	int proglen = 0;
-@@ -854,10 +855,11 @@ common_load:
- 			goto common_load;
- 
- 		case BPF_JMP | BPF_EXIT:
--			if (i != insn_cnt - 1) {
-+			if (seen_exit) {
- 				jmp_offset = ctx->cleanup_addr - addrs[i];
- 				goto emit_jmp;
- 			}
-+			seen_exit = true;
- 			/* update cleanup_addr */
- 			ctx->cleanup_addr = proglen;
- 			/* mov rbx, qword ptr [rbp-X] */
 -- 
-1.7.9.5
+1.9.1
 
