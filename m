@@ -1,46 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713AbaK2SIX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 13:08:23 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:44969 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384AbaK2SIW (ORCPT
+	id S1751694AbaK2SLP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 13:11:15 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:57326 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408AbaK2SLO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 13:08:22 -0500
+	Sat, 29 Nov 2014 13:11:14 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>
+Subject: Re: [PATCH v3] media: usb: uvc: use vb2_ops_wait_prepare/finish helper
+Date: Sat, 29 Nov 2014 20:11:41 +0200
+Message-ID: <1532665.63kW7uD9fo@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <CA+V-a8sAUDo+ut1t2_twy6hNjX5WQpridCEm6NrNmrwQvR1Nrw@mail.gmail.com>
+References: <1417044344-20611-1-git-send-email-prabhakar.csengg@gmail.com> <4838705.gmGJIAUqrM@avalon> <CA+V-a8sAUDo+ut1t2_twy6hNjX5WQpridCEm6NrNmrwQvR1Nrw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <5479E11C.8080701@oracle.com>
-References: <1417046282-31825-1-git-send-email-sasha.levin@oracle.com>
-	<CA+55aFwjTTcGFbbEPWckxZHya5PFWo+MFbK9zMzoqZorXV21nQ@mail.gmail.com>
-	<54768059.1080406@oracle.com>
-	<CA+55aFxx+Ye+v6bkK0TwzkAHxSEUc7e-EAW-1JD8mySE2nVq2w@mail.gmail.com>
-	<5479E11C.8080701@oracle.com>
-Date: Sat, 29 Nov 2014 10:08:21 -0800
-X-Google-Sender-Auth: 305RSMUjO-1krmpTuPu6K0Nt4FM
-Message-ID: <CA+55aFzTc=vXUQ8ZrWWVj4DNmrZOEr3bcYpiGt6+KEVWPW-x2g@mail.gmail.com>
-Subject: Re: [RFC v2 1/2] compiler: use compiler to detect integer overflows
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 29, 2014 at 7:07 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
->
-> Since we can't just change those to unsigned
+Hi Prabhakar,
 
-Sure we can. Just cast them. A signed start/len is bogus crap, it's a
-random wrong type.
+On Friday 28 November 2014 17:06:52 Prabhakar Lad wrote:
+> On Thu, Nov 27, 2014 at 9:32 PM, Laurent Pinchart wrote:
+> > Hi Prabhakar,
+> 
+> [Snip]
+> 
+> >> +     queue->queue.lock = &queue->mutex;
+> > 
+> > I'm a bit concerned that this would introduce future breakages. Setting
+> > the queue.lock pointer enables locking in all vb2_fop_* and vb2_ops_wait_*
+> > functions. The uvcvideo driver isn't ready for that, but doesn't use the
+> > vb2_fop_* functions yet, so that's not an issue. However, in the future,
+> > videobuf2 might use the lock in more places, including functions used by
+> > the uvcvideo driver. This could then cause breakages.
+> 
+> Even if in future if videobuf2 uses this lock it would be in helpers mostly,
+> so any way it doesn’t harm :)
 
-If you want to, add a "if (len < 0) return -EINVAL;" before the cast,
-but treating negative numbers as big positive numbers sounds fine too.
+My concern is about vb2 starting using the lock in existing helpers used by 
+the uvcvideo driver. I suppose we can deal with it later.
 
-> we'd still need to do an overflow
-> check with signed integers somewhere.
+> > It would be better to completely convert the uvcvideo driver to the
+> > vb2_fop_* functions if we want to use vb2_ops_*. I'm not sure how complex
+> > that would be though, and whether it would be possible while still
+> > keeping the fine-grained locking implemented by the uvcvideo driver. Do
+> > you think it should be attempted ?
+> 
+> mmap & poll should be fairly simple, looks like open & release cannot be
+> dropped as it does some usb_autopm_get/put_interface() calls which I am not
+> aware of.
 
-Why? It's just a type. User space can't care, and signed values make
-no sense anyway.
+I've looked at that, and there's a race condition in vb2_fop_poll() (for which 
+I've already sent a patch) and possible in vb2_mmap() (raised the issue on 
+#v4l today) as well that need to be fixed first.
 
-                 Linus
+Anyway, for this patch
+
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+Have you tested it by the way ?
+
+Should I take it in my tree or will you send a pull request for the whole 
+series ?
+
+> >>       ret = vb2_queue_init(&queue->queue);
+> >>       if (ret)
+> >>               return ret;
+
+-- 
+Regards,
+
+Laurent Pinchart
+
