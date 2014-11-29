@@ -1,78 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693AbaK2AEW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 19:04:22 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:54829 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751374AbaK2AEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 19:04:21 -0500
-Date: Sat, 29 Nov 2014 01:04:17 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Giedrius Statkevicius <giedriuswork@gmail.com>
-Cc: dvhart@infradead.org, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alex Hung <alex.hung@canonical.com>
-Subject: Re: [PATCH] platform: x86: hp_wireless: Inform the user if
- hp_wireless_input_setup()/add() fails
-Message-ID: <20141129000417.GG30997@pd.tnic>
-References: <1417212867-25187-1-git-send-email-giedriuswork@gmail.com>
- <20141128231555.GA31468@pd.tnic>
- <547909CF.8060907@gmail.com>
+	id S1751486AbaK2AOG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 19:14:06 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:56436 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751312AbaK2AOE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 19:14:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <547909CF.8060907@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Date: Sat, 29 Nov 2014 01:15:57 +0100
+From: Stefan Agner <stefan@agner.ch>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, shawn.guo@linaro.org,
+        kernel@pengutronix.de, linux@roeck-us.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: imx: src: support vf610 system reset controller
+In-Reply-To: <18555848.LVhqYu0kXL@wuerfel>
+References: <1417193015-6033-1-git-send-email-stefan@agner.ch>
+ <2716009.DOfHfaSPkY@wuerfel> <6341b31998ff843d236bc2a3e34537b0@agner.ch>
+ <18555848.LVhqYu0kXL@wuerfel>
+Message-ID: <f8bc59dd2c2d20c8fc9f49ec354ac474@agner.ch>
+User-Agent: Roundcube Webmail/1.0.3
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Sat Nov 29 01:13:32 2014
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 54790fac12813357540601
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 29, 2014 at 01:48:31AM +0200, Giedrius Statkevicius wrote:
-> On 2014.11.29 01:15, Borislav Petkov wrote:
-> > On Sat, Nov 29, 2014 at 12:14:27AM +0200, Giedrius Statkevicius wrote:
-> >> In hpwl_add() there is a unused variable err to which we assign the
-> >> result of hp_wireless_input_setup() but we don't do anything depending
-> >> on the result so print out a message that informs the user if add()
-> >> (hp_wireless_input_setup()) fails since acpi_device_probe() doesn't
-> >> print anything in this case.
-> >>
-> >> Signed-off-by: Giedrius Statkevicius <giedriuswork@gmail.com>
-> >> ---
-> >>  drivers/platform/x86/hp-wireless.c | 3 +++
-> >>  1 file changed, 3 insertions(+)
-> >>
-> >> diff --git a/drivers/platform/x86/hp-wireless.c b/drivers/platform/x86/hp-wireless.c
-> >> index 415348f..4e4cc8b 100644
-> >> --- a/drivers/platform/x86/hp-wireless.c
-> >> +++ b/drivers/platform/x86/hp-wireless.c
-> >> @@ -85,6 +85,9 @@ static int hpwl_add(struct acpi_device *device)
-> >>  	int err;
-> >>  
-> >>  	err = hp_wireless_input_setup();
-> >> +	if (err)
-> >> +		pr_err("Failed to setup hp wireless hotkeys\n");
-> >> +
-> > 
-> > I don't think there's need for that. Just do:
-> > 
-> > 	return hp_wireless_input_setup();
-> > 
-> > and drop err completely.
-> > 
-> > The upper layer which calls the ->add() method should propagate the
-> > error properly.
-> Looking at other platform drivers code some add() methods do give
-> information to the user via pr_{err,warn,info} macros, some don't. My
-> first patch to deal with this just removed the err variable like you
-> have wrote but Darren Hart and Rafael J. Wysocki commented that maybe it
-> should be better to inform the user about this error. That is why
-> probably there was a variable for this in the first place but probably
-> the original author just forgot to add a pr_err().
+On 2014-11-28 23:22, Arnd Bergmann wrote:
+> On Friday 28 November 2014 23:09:09 Stefan Agner wrote:
+>> On 2014-11-28 22:24, Arnd Bergmann wrote:
+>> > On Friday 28 November 2014 22:02:01 Stefan Agner wrote:
+>> >
+>> >> > If the SRC is also capable of resetting individual blocks instead of just
+>> >> > the entire machine, it would be a reset driver in drivers/reset instead.
+>> >>
+>> >> Beside the system reset, there is only a mask functionality for the
+>> >> watchdogs (there are two watchdogs, one for Cortex-A5 and one for the
+>> >> M4). This makes the SRC module in the Vybrid a bit different then what
+>> >> is available on other i.MX SoC's...
+>> >
+>> > If you already have the watchdog registers in there and want to have
+>> > a watchdog driver too, the easiest way would be to register the reboot
+>> > handler from the watchdog driver.
+>>
+>> Hm, not sure we speak about the same here. The SRC module has two
+>> (multi-)bit fields to mask the watchdog reset event for each watchdog.
+>> Beside that, there are two full watchdog register maps, which are in
+>> different areas. There is already a driver for this watchdogs. I'm not
+>> sure what the idea behind this is exactly, I guess it would easily allow
+>> to (temporary) mask the other CPU's watchdog. However, I don't think we
+>> need that functionality, so I don't care about that right now.
+> 
+> Ok, I see, thanks for the clarification!
+> 
+>> There is also a restart handler in the watchdog driver, but I prefer to
+>> use the reset capabilities of the SRC since it has immediate effect.
+>>
+>> Lets get to the big picture again: I could register the whole SRC
+>> register map as a syscon device and then access the registers from my
+>> suspend/resume implementation later on. And similar in the restart
+>> driver, I would use syscon_regmap_lookup_by_compatible to check if it
+>> contains the vf610-src compatible string and register the restart
+>> driver/handler if available.
 
-Ah, I see. Original author added to CC.
+One thing which came into my mind regarding suspend: I might need to
+access the registers from assembler (in SRAM), can I do that through
+syscon/regmap? I had a quick look, but I don't found a way to get back
+the mapped IO base address.. By good reasons, of course, for most
+applications. But in my case, afaik I have no other choice.
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
 --
+Stefan
+
+> 
+> Correct, and also in the watchdog driver, I guess.
+> 
+> Instead of syscon_regmap_lookup_by_compatible, please use
+> syscon_regmap_lookup_by_phandle and put the link to the syscon
+> device into the device accessing it.
+> 
+> Also, see if you can use or extend drivers/power/reset/syscon-reboot.c
+> for your use case.
+> 
+> 	Arnd
+
