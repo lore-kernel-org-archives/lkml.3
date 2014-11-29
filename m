@@ -1,80 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751575AbaK2Re6 (ORCPT <rfc822;w@1wt.eu>);
+	id S1751735AbaK2RfI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 12:35:08 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:44594 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506AbaK2Re6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 29 Nov 2014 12:34:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48051 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751460AbaK2Re4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 12:34:56 -0500
-Date: Sat, 29 Nov 2014 19:34:12 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Amit Shah <amit.shah@redhat.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Nikhil Rao <nikhil.rao@intel.com>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>,
-        Joel Stanley <joel@jms.id.au>,
-        virtualization@lists.linux-foundation.org, lguest@lists.ozlabs.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [PATCH v6 02/46] virtio: use u32, not bitmap for features
-Message-ID: <20141129173412.GH22746@redhat.com>
-References: <1417118789-18231-1-git-send-email-mst@redhat.com>
- <1417118789-18231-3-git-send-email-mst@redhat.com>
- <20141128134457.37e427ce.cornelia.huck@de.ibm.com>
+Date: Sat, 29 Nov 2014 09:34:47 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, ntrrgc@gmail.com,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI / video: check _DOD list when creating backlight
+ device
+Message-ID: <20141129173447.GA3608@norris-Latitude-E6410>
+References: <542A4949.2020208@intel.com>
+ <1648939.GaN1bonAuX@vostro.rjw.lan>
+ <5436470B.3030306@intel.com>
+ <20141128095928.GA5106@norris-Latitude-E6410>
+ <54786294.5030105@intel.com>
+ <20141128171812.GA3658@norris-Latitude-E6410>
+ <5479C3BB.5080905@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141128134457.37e427ce.cornelia.huck@de.ibm.com>
+In-Reply-To: <5479C3BB.5080905@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 28, 2014 at 01:44:57PM +0100, Cornelia Huck wrote:
-> On Thu, 27 Nov 2014 22:07:41 +0200
-> "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> 
-> > It seemed like a good idea to use bitmap for features
-> > in struct virtio_device, but it's actually a pain,
-> > and seems to become even more painful when we get more
-> > than 32 feature bits.  Just change it to a u32 for now.
+On Sat, Nov 29, 2014 at 09:01:47PM +0800, Aaron Lu wrote:
+> On 11/29/2014 01:18 AM, Brian Norris wrote:
+> > On Fri, Nov 28, 2014 at 07:55:00PM +0800, Aaron Lu wrote:
+> >> On 11/28/2014 05:59 PM, Brian Norris wrote:
+> >>> Do you need any additional info to handle the regression, or should we
+> >>> just revert the patch?
+> >>
+> >> Please attach acpidump, dmesg with video.dyndbg="module video +pft" in
+> >> kernel cmdline, list the /sys/class/backlight with and without this
+> >> commit, thanks.
+[...]
+> > Before reverting:
 > > 
-> > Based on patch by Rusty.
+> > $ ls -al /sys/class/backlight
+> > total 0
+> > drwxr-xr-x  2 root root 0 Nov 28 09:01 .
+> > drwxr-xr-x 58 root root 0 Nov 28 09:01 ..
 > > 
-> > Suggested-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
-> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> > Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> 
-> > diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-> > index d34ebfa..ab95a4c 100644
-> > --- a/drivers/virtio/virtio_pci.c
-> > +++ b/drivers/virtio/virtio_pci.c
-> > @@ -120,8 +120,7 @@ static void vp_finalize_features(struct virtio_device *vdev)
-> >  	vring_transport_features(vdev);
+> > After reverting:
 > > 
-> >  	/* We only support 32 feature bits. */
+> > $ ls -al /sys/class/backlight
+> > total 0
+> > drwxr-xr-x  2 root root 0 Nov 28 09:10 .
+> > drwxr-xr-x 50 root root 0 Nov 28 09:10 ..
+> > lrwxrwxrwx  1 root root 0 Nov 28 09:09 acpi_video0 -> ../../devices/pci0000:00/0000:00:01.0/0000:01:00.0/backlight/acpi_video0
 > 
-> I think you can kill this comment...
+> The current logic to bind device doesn't work with your system, that
+> logic is there for a long time so I prefer not to change that, instead,
+> I can change the newly added function acpi_video_device_in_dod to let it
+> directly compare the 0-12 bits of the ID to decide if the video output
+> device is in the _DOD list. Can you please try the following patch?
+> 
+> diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+> index 41e6b977ceb2..185a57d13723 100644
+> --- a/drivers/acpi/video.c
+> +++ b/drivers/acpi/video.c
+> @@ -1164,7 +1164,8 @@ static bool acpi_video_device_in_dod(struct acpi_video_device *device)
+>  		return true;
+>  
+>  	for (i = 0; i < video->attached_count; i++) {
+> -		if (video->attached_array[i].bind_info == device)
+> +		if ((video->attached_array[i].value.int_val & 0xfff) ==
+> +		    (device->device_id & 0xfff))
+>  			return true;
+>  	}
 
-Why? It's still true for virtio pci at this point, that's why we
-just do iowrite32 here.
+Thanks for the patch! This works better for me:
 
-> > -	BUILD_BUG_ON(ARRAY_SIZE(vdev->features) != 1);
-> > -	iowrite32(vdev->features[0], vp_dev->ioaddr+VIRTIO_PCI_GUEST_FEATURES);
-> > +	iowrite32(vdev->features, vp_dev->ioaddr+VIRTIO_PCI_GUEST_FEATURES);
-> 
-> ...and add blanks around '+', as you're touching this line anyway.
-> 
-> >  }
-> > 
-> >  /* virtio config->get() implementation */
-> 
-> Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+$ ls -al /sys/class/backlight/
+total 0
+drwxr-xr-x  2 root root 0 Nov 29 09:00 .
+drwxr-xr-x 50 root root 0 Nov 29 09:00 ..
+lrwxrwxrwx  1 root root 0 Nov 29 08:59 acpi_video0 -> ../../devices/pci0000:00/0000:00:01.0/0000:01:00.0/backlight/acpi_video0
+
+And I see no dmesg dev_dbg() prints from the acpi/video module.
+
+Tested-by: Brian Norris <computersforpeace@gmail.com>
+
+Should we try to get this into 3.18, then?
+
+Thanks,
+Brian
