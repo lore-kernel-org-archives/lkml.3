@@ -1,195 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616AbaK2RSx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 12:18:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52987 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751043AbaK2RSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 12:18:51 -0500
-Date: Sat, 29 Nov 2014 19:17:18 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        cornelia.huck@de.ibm.com, rusty@au1.ibm.com, nab@linux-iscsi.org,
-        pbonzini@redhat.com, thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Tom Herbert <therbert@google.com>, Masatake YAMATO <yamato@redhat.com>,
-        Xi Wang <xii@google.com>, netdev@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH v6 37/46] tun: move internal flag defines out of uapi
-Message-ID: <20141129171718.GA22746@redhat.com>
-References: <1417118789-18231-1-git-send-email-mst@redhat.com>
- <1417118789-18231-38-git-send-email-mst@redhat.com>
- <1417162052.5822.0@smtp.corp.redhat.com>
+	id S1751530AbaK2RYJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 12:24:09 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:33202 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043AbaK2RYH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Nov 2014 12:24:07 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Sebastian Reichel <sre@kernel.org>, Pavel Machek <pavel@ucw.cz>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
+Subject: Disable input device
+Date: Sat, 29 Nov 2014 18:24:03 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417162052.5822.0@smtp.corp.redhat.com>
+Content-Type: multipart/signed;
+  boundary="nextPart1825506.TjKFcrOAEc";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201411291824.03996@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 28, 2014 at 08:15:32AM +0008, Jason Wang wrote:
-> 
-> 
-> On Fri, Nov 28, 2014 at 4:10 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> >TUN_ flags are internal and never exposed
-> >to userspace. Any application using it is almost
-> >certainly buggy.
-> >
-> >Move them out to tun.c, we'll remove them in follow-up patches.
-> >
-> >Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> >---
-> > include/uapi/linux/if_tun.h | 16 ++--------
-> > drivers/net/tun.c           | 74
-> >++++++++++++++-------------------------------
-> > 2 files changed, 26 insertions(+), 64 deletions(-)
-> >
-> >diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
-> >index e9502dd..277a260 100644
-> >--- a/include/uapi/linux/if_tun.h
-> >+++ b/include/uapi/linux/if_tun.h
-> >@@ -22,21 +22,11 @@
-> > /* Read queue size */
-> > #define TUN_READQ_SIZE	500
-> >-
-> >-/* TUN device flags */
-> >-#define TUN_TUN_DEV 	0x0001	
-> >-#define TUN_TAP_DEV	0x0002
-> >+/* TUN device type flags: deprecated. Use IFF_TUN/IFF_TAP instead. */
-> >+#define TUN_TUN_DEV 	IFF_TUN
-> >+#define TUN_TAP_DEV	IFF_TAP
-> > #define TUN_TYPE_MASK   0x000f
-> >-#define TUN_FASYNC	0x0010
-> >-#define TUN_NOCHECKSUM	0x0020
-> >-#define TUN_NO_PI	0x0040
-> >-/* This flag has no real effect */
-> >-#define TUN_ONE_QUEUE	0x0080
-> >-#define TUN_PERSIST 	0x0100	
-> >-#define TUN_VNET_HDR 	0x0200
-> >-#define TUN_TAP_MQ      0x0400
-> >-
-> > /* Ioctl defines */
-> > #define TUNSETNOCSUM  _IOW('T', 200, int)  #define TUNSETDEBUG
-> >_IOW('T', 201, int) diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> >index 9dd3746..bc89d07 100644
-> >--- a/drivers/net/tun.c
-> >+++ b/drivers/net/tun.c
-> >@@ -103,6 +103,21 @@ do {								\
-> > } while (0)
-> > #endif
-> >+/* TUN device flags */
-> >+
-> >+/* IFF_ATTACH_QUEUE is never stored in device flags,
-> >+ * overload it to mean fasync when stored there.
-> >+ */
-> >+#define TUN_FASYNC	IFF_ATTACH_QUEUE
-> >+#define TUN_NO_PI	IFF_NO_PI
-> >+/* This flag has no real effect */
-> >+#define TUN_ONE_QUEUE	IFF_ONE_QUEUE
-> >+#define TUN_PERSIST 	IFF_PERSIST
-> >+#define TUN_VNET_HDR 	IFF_VNET_HDR
-> >+#define TUN_TAP_MQ      IFF_MULTI_QUEUE
-> >+
-> >+#define TUN_FEATURES (IFF_NO_PI | IFF_ONE_QUEUE | IFF_VNET_HDR | \
-> >+		      IFF_MULTI_QUEUE)
-> > #define GOODCOPY_LEN 128
-> > #define FLT_EXACT_COUNT 8
-> >@@ -1521,32 +1536,7 @@ static struct proto tun_proto = {
-> > static int tun_flags(struct tun_struct *tun)
-> > {
-> >-	int flags = 0;
-> >-
-> >-	if (tun->flags & TUN_TUN_DEV)
-> >-		flags |= IFF_TUN;
-> >-	else
-> >-		flags |= IFF_TAP;
-> >-
-> >-	if (tun->flags & TUN_NO_PI)
-> >-		flags |= IFF_NO_PI;
-> >-
-> >-	/* This flag has no real effect.  We track the value for backwards
-> >-	 * compatibility.
-> >-	 */
-> >-	if (tun->flags & TUN_ONE_QUEUE)
-> >-		flags |= IFF_ONE_QUEUE;
-> >-
-> >-	if (tun->flags & TUN_VNET_HDR)
-> >-		flags |= IFF_VNET_HDR;
-> >-
-> >-	if (tun->flags & TUN_TAP_MQ)
-> >-		flags |= IFF_MULTI_QUEUE;
-> >-
-> >-	if (tun->flags & TUN_PERSIST)
-> >-		flags |= IFF_PERSIST;
-> >-
-> >-	return flags;
-> >+	return tun->flags & (TUN_FEATURES | IFF_PERSIST | IFF_TUN | IFF_TAP);
-> > }
-> >   static ssize_t tun_show_flags(struct device *dev, struct
-> >device_attribute *attr,
-> >@@ -1706,28 +1696,8 @@ static int tun_set_iff(struct net *net, struct file
-> >*file, struct ifreq *ifr)
-> > 	tun_debug(KERN_INFO, tun, "tun_set_iff\n");
-> >-	if (ifr->ifr_flags & IFF_NO_PI)
-> >-		tun->flags |= TUN_NO_PI;
-> >-	else
-> >-		tun->flags &= ~TUN_NO_PI;
-> >-
-> >-	/* This flag has no real effect.  We track the value for backwards
-> >-	 * compatibility.
-> >-	 */
-> >-	if (ifr->ifr_flags & IFF_ONE_QUEUE)
-> >-		tun->flags |= TUN_ONE_QUEUE;
-> >-	else
-> >-		tun->flags &= ~TUN_ONE_QUEUE;
-> >-
-> >-	if (ifr->ifr_flags & IFF_VNET_HDR)
-> >-		tun->flags |= TUN_VNET_HDR;
-> >-	else
-> >-		tun->flags &= ~TUN_VNET_HDR;
-> >-
-> >-	if (ifr->ifr_flags & IFF_MULTI_QUEUE)
-> >-		tun->flags |= TUN_TAP_MQ;
-> >-	else
-> >-		tun->flags &= ~TUN_TAP_MQ;
-> >+	tun->flags = (tun->flags & ~TUN_FEATURES) |
-> >+		(ifr->ifr_flags & TUN_FEATURES);
-> > 	/* Make sure persistent devices do not get stuck in
-> > 	 * xoff state.
-> >@@ -1890,9 +1860,11 @@ static long __tun_chr_ioctl(struct file *file,
-> >unsigned int cmd,
-> > 	if (cmd == TUNGETFEATURES) {
-> > 		/* Currently this just means: "what IFF flags are valid?".
-> > 		 * This is needed because we never checked for invalid flags on
-> >-		 * TUNSETIFF. */
-> >-		return put_user(IFF_TUN | IFF_TAP | IFF_NO_PI | IFF_ONE_QUEUE |
-> >-				IFF_VNET_HDR | IFF_MULTI_QUEUE,
-> >+		 * TUNSETIFF.  Why do we report IFF_TUN and IFF_TAP which are
-> >+		 * not legal for TUNSETIFF here?  It's probably a bug, but it
-> >+		 * doesn't seem to be worth fixing.
-> >+		 */
-> 
-> The question is not very clear. IFF_TUN and IFF_TAP are legal for
-> ifr.ifr_flags during TUNSETIFF. No?
+--nextPart1825506.TjKFcrOAEc
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
+Hello,
 
-Absolutely. I'm not sure what I meant anymore. I will drop this chunk -
-either by replacing this patch if I have to post another version, or
-by a separate patch if I don't.
+there is request to introduce some option (via sysfs) to disable=20
+one input device. Originally it was for tsc2005 touchscreen found=20
+on Nokia N900 cellphone. Use case is to completely disable=20
+touchscreen when phone is in pocket or when screen is locked via=20
+slide switch (to prevent random clicks).
 
-> >
-> >+		return put_user(IFF_TUN | IFF_TAP | TUN_FEATURES,
-> > 				(unsigned int __user*)argp);
-> > 	} else if (cmd == TUNSETQUEUE)
-> > 		return tun_set_queue(file, &ifr);
-> >-- 
-> >MST
-> >
-> >--
-> >To unsubscribe from this list: send the line "unsubscribe netdev" in
-> >the body of a message to majordomo@vger.kernel.org
-> >More majordomo info at  http://vger.kernel.org/majordomo-info.html
+But it would be better to have disable option for all input=20
+devices. Sometimes input device is not use and only consume=20
+power. Another case is when input device (e.g. keyboard or=20
+touchpad) is integrated into machine (e.g. on laptops) and user=20
+does not want to use it (so make sure that kernel does not send=20
+events to userspace).
+
+I would like to ask, how to solve it?
+
+What do you think about adding new sysfs file "disable" (accept=20
+values 1 or 0) for every input device? With "1" it cause that=20
+kernel will drop all events from specific input device and if=20
+driver provide some function is can be called (e.g. for power=20
+management or disabling device at hardware level).
+
+Or do you prefer something other?
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart1825506.TjKFcrOAEc
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlR6ATMACgkQi/DJPQPkQ1L1CwCgp15pe3+zYUHCR1FvXORiiVmk
+cYUAoM19UHq7/gOcyRFeHTw1dizzs17Z
+=+HQj
+-----END PGP SIGNATURE-----
+
+--nextPart1825506.TjKFcrOAEc--
