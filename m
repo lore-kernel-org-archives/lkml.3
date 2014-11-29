@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339AbaK2PVR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 10:21:17 -0500
-Received: from mga03.intel.com ([134.134.136.65]:22636 "EHLO mga03.intel.com"
+	id S1751329AbaK2Pah (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 10:30:37 -0500
+Received: from mout.web.de ([212.227.17.12]:63833 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751033AbaK2PVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 10:21:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,483,1413270000"; 
-   d="scan'208";a="645427328"
-Message-ID: <5479E467.5070701@linux.intel.com>
-Date: Sat, 29 Nov 2014 23:21:11 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751075AbaK2Pag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Nov 2014 10:30:36 -0500
+Message-ID: <5479E693.3010200@users.sourceforge.net>
+Date: Sat, 29 Nov 2014 16:30:27 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: linux-tip-commits@vger.kernel.org, matthias.bgg@gmail.com,
-        tony.luck@intel.com, tglx@linutronix.de, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, grant.likely@linaro.org,
-        wangyijing@huawei.com, marc.zyngier@arm.com, bhelgaas@google.com,
-        yingjoe.chen@mediatek.com, mingo@kernel.org
-Subject: Re: [tip:irq/irqdomain] irqdomain: Introduce helper function irq_domain_add_hierarchy()
-References: <1416061447-9472-5-git-send-email-jiang.liu@linux.intel.com> <tip-afb7da83b9f476728623130703acb553d7c7c4d9@git.kernel.org> <20141129125319.GA6491@pd.tnic> <5479D84D.7000500@linux.intel.com> <20141129145616.GC5075@pd.tnic>
-In-Reply-To: <20141129145616.GC5075@pd.tnic>
-Content-Type: text/plain; charset=utf-8
+To: netdev@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] net-ipvlan: Deletion of an unnecessary check before the
+ function call "free_percpu"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:8VvC2cdNPi+cHv5cwfZBs0cWyhhzR1215SvEdjBMG/GQObBJod7
+ E9iLPbpyxnCi+gKezktFCHyc+GzFJpxh/1nVdQNOdRKtK7OBOF6+uDba17yvP1dUTIirxDP
+ Bd5Y+TwnlzpeQdwXqyZ9tJk1myuFVw6HtSfzlfAfn+LGPVCL0OwkfI0tZjMzGA/kNN4Jrs8
+ Gvg4XFBang9hzOH+izdVA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/11/29 22:56, Borislav Petkov wrote:
-> On Sat, Nov 29, 2014 at 10:29:33PM +0800, Jiang Liu wrote:
->>  Thanks for reporting and fixing this. How about using GFP_ATOMIC
->> here?
-> 
-> Well, I don't see the need to use GFP_ATOMIC if we absolutely don't have
-> to. And in this case lockdep is, AFAICT, correct in saying that we still
-> can do allocations with interrupts disabled, only not go down into fs
-> and do all kinds of lock grabbing operations like page reclaim, writeout
-> or whatever it is being done nowadays there.
-> 
-> Yeah, this is also some old "no-no" in my memory which says that we
-> should almost never use GFP_ATOMIC if it can be helped.
-Thanks for the info about GFP_ATOMIC, originally I have an impression
-that we should use GFP_ATOMIC when interrupt is disabled:(
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Sat, 29 Nov 2014 16:23:20 +0100
 
-> 
-> OTOH, I wonder if this code would rather need to hand down explicit gfp
-> flags in case it should be able to do GFP_ATOMIC operations at some
-> point...
-> 
-> Thanks.
-> 
+The free_percpu() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
+
+This issue was detected by using the Coccinelle software.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/net/ipvlan/ipvlan_main.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/net/ipvlan/ipvlan_main.c b/drivers/net/ipvlan/ipvlan_main.c
+index 96b71b0..feb1853 100644
+--- a/drivers/net/ipvlan/ipvlan_main.c
++++ b/drivers/net/ipvlan/ipvlan_main.c
+@@ -125,8 +125,7 @@ static void ipvlan_uninit(struct net_device *dev)
+ 	struct ipvl_dev *ipvlan = netdev_priv(dev);
+ 	struct ipvl_port *port = ipvlan->port;
+ 
+-	if (ipvlan->pcpu_stats)
+-		free_percpu(ipvlan->pcpu_stats);
++	free_percpu(ipvlan->pcpu_stats);
+ 
+ 	port->count -= 1;
+ 	if (!port->count)
+-- 
+2.1.3
+
