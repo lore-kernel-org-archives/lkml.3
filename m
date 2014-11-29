@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519AbaK2JEJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 04:04:09 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:62414 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360AbaK2JEE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 04:04:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141129095632.69361457@wiggum>
-References: <1417213013-19758-1-git-send-email-xerofoify@gmail.com>
-	<CACna6rxmOC0h9hOpa=5iWFM1THQ8Q4hCi8MnmqkZJbB_U0PJ0A@mail.gmail.com>
-	<20141129002148.1beb21d9@wiggum>
-	<54793E4E.7050602@gmail.com>
-	<20141129095632.69361457@wiggum>
-Date: Sat, 29 Nov 2014 10:04:02 +0100
-Message-ID: <CACna6ryjZ-LY06wAMzoL77Wca3McUUT+VYsO4EPO87NqjBnaNw@mail.gmail.com>
-Subject: Re: [PATCH] drivers:net:wireless: Add mutex locking for function,
- b43_op_beacon_set_time in main.c
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: =?UTF-8?Q?Michael_B=C3=BCsch?= <m@bues.ch>
-Cc: nick <xerofoify@gmail.com>, Stefano Brivio <stefano.brivio@polimi.it>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        b43-dev <b43-dev@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1751500AbaK2JNa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 04:13:30 -0500
+Received: from mout.gmx.net ([212.227.17.21]:51538 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751335AbaK2JN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Nov 2014 04:13:27 -0500
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Arnd Bergmann <arnd@arndb.de>, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Heinrich Schuchardt <xypron.glpk@gmx.de>
+Subject: [PATCH 1/1] urandom: handle signals immediately
+Date: Sat, 29 Nov 2014 10:12:29 +0100
+Message-Id: <1417252349-808-1-git-send-email-xypron.glpk@gmx.de>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <54707352.8050208@gmx.de>
+References: <54707352.8050208@gmx.de>
+X-Provags-ID: V03:K0:1ijsGTarkAfaQgboOtaOx5Q7RLelzWm2+MlY/ayiq55BFRAMjD3
+ 4zmOeJqYdxUP5rybDPg+wzfM8J+TmJmVPjZo+1WFAK5OenwgIv1hUz0/GlD70hVljAUJv3j
+ R2BgdEL1Jv6+odPQ2q9GXxr4ZuKP1+Z0NRPMxABUdv3lABcI6hFc0mL6qn5uJ1+CKqZIhHV
+ d0jznd1Q57aDki+/8APLQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 November 2014 at 09:56, Michael Büsch <m@bues.ch> wrote:
-> On Fri, 28 Nov 2014 22:32:30 -0500
-> nick <xerofoify@gmail.com> wrote:
->
->> I don't have hardware for this driver on me, so I didn't test it. However this seems to
->> be correct from my reading of the code around this function and other locking related
->> to this driver.
->
-> From the current docs:
->
->>  * @set_tim: Set TIM bit. mac80211 calls this function when a TIM bit
->>  *      must be set or cleared for a given STA. Must be atomic.
->
-> So it is not allowed to lock a mutex here.
+Without the patch device /dev/urandom only considers signals when a
+rescheduling of the thread is requested. This may imply that
+signals will not be handled for time intervals in excess of 30s.
 
-Nicholas please be more careful with your patches. It seems your patch
-is wrong, you didn't check the docs and you didn't even say in the
-first place that it wasn't tested. You could at least submit with with
-RFT tag or sth.
+With the patch signals are handled in every round copying 10 bytes if more
+than 256 bytes have been collected. This 256 byte limit ensures the
+guarantee given by system call getrandom().
 
+With the patch rescheduling may occur even when reading less than 257 bytes.
+This restores the logic before the introduction of the getrandom() system
+call. getrandom() provides no guarantee concerning rescheduling.
+
+An example code for testing is provided in
+https://lkml.org/lkml/2014/11/22/41
+
+Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+---
+ drivers/char/random.c | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 04645c0..75e96c1 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -1189,21 +1189,20 @@ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
+ {
+ 	ssize_t ret = 0, i;
+ 	__u8 tmp[EXTRACT_SIZE];
+-	int large_request = (nbytes > 256);
+ 
+ 	trace_extract_entropy_user(r->name, nbytes, ENTROPY_BITS(r), _RET_IP_);
+ 	xfer_secondary_pool(r, nbytes);
+ 	nbytes = account(r, nbytes, 0, 0);
+ 
+ 	while (nbytes) {
+-		if (large_request && need_resched()) {
+-			if (signal_pending(current)) {
+-				if (ret == 0)
+-					ret = -ERESTARTSYS;
+-				break;
+-			}
++		/*
++		 * getrandom must not be interrupted by a signal while
++		 * reading up to 256 bytes.
++		 */
++		if (signal_pending(current) && ret > 256)
++			break;
++		if (need_resched())
+ 			schedule();
+-		}
+ 
+ 		extract_buf(r, tmp);
+ 		i = min_t(int, nbytes, EXTRACT_SIZE);
 -- 
-Rafał
+2.1.3
+
