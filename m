@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751731AbaK2Rcq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 12:32:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47471 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751479AbaK2Rcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 12:32:45 -0500
-Date: Sat, 29 Nov 2014 19:32:26 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Hildenbrand <dahi@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        cornelia.huck@de.ibm.com, rusty@au1.ibm.com, nab@linux-iscsi.org,
-        pbonzini@redhat.com, thuth@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH v6 01/46] virtio: add low-level APIs for feature bits
-Message-ID: <20141129173226.GG22746@redhat.com>
-References: <1417118789-18231-1-git-send-email-mst@redhat.com>
- <1417118789-18231-2-git-send-email-mst@redhat.com>
- <20141128131057.6046a382@thinkpad-w530>
+	id S1751444AbaK2Rej (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 12:34:39 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:36917 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751106AbaK2Reh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Nov 2014 12:34:37 -0500
+Date: Sat, 29 Nov 2014 12:34:36 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        USB development list <linux-usb@vger.kernel.org>
+Subject: Re: [Update][PATCH] USB / PM: Drop CONFIG_PM_RUNTIME from the USB
+ core
+In-Reply-To: <2562941.6pSKsRYOqk@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1411291233560.23420-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141128131057.6046a382@thinkpad-w530>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 28, 2014 at 01:10:57PM +0100, David Hildenbrand wrote:
-> > Add low level APIs to test/set/clear feature bits.
-> > For use by transports, to make it easier to
-> > write code independent of feature bit array format.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  include/linux/virtio_config.h | 53 ++++++++++++++++++++++++++++++++++++++++---
-> >  1 file changed, 50 insertions(+), 3 deletions(-)
-> > 
+On Sat, 29 Nov 2014, Rafael J. Wysocki wrote:
+
+> > There are also one or two places in Documentation/usb that mention 
+> > CONFIG_PM_RUNTIME.
 > 
-> As these functions really set feature bits, I would rather name them:
+> I found this in Documentation/usb/power-management.txt:
 > 
-> virtio_has_feature ...
-> virtio_set_feature ...
-> virtio_clear_feature ...
+> "Note: Dynamic PM support for USB is present only if the kernel was
+>  built with CONFIG_USB_SUSPEND enabled (which depends on
+>  CONFIG_PM_RUNTIME).  System PM support is present only if the kernel
+>  was built with CONFIG_SUSPEND or CONFIG_HIBERNATION enabled.
+> 
+>  (Starting with the 3.10 kernel release, dynamic PM support for USB is
+>  present whenever the kernel was built with CONFIG_PM_RUNTIME enabled.
+>  The CONFIG_USB_SUSPEND option has been eliminated.)"
+> 
+> but I'm quite unsure how to change it.  What about:
+> 
+> "System PM support is present only if the kernel was built with CONFIG_SUSPEND
+>  or CONFIG_HIBERNATION enabled.  Dynamic PM support for USB is present whenever
+>  the kernel was built with CONFIG_PM enabled.
+> 
+>  [Historically, dynamic PM support for USB was present only if the kernel
+>  had been built with CONFIG_USB_SUSPEND enabled (which depended on
+>  CONFIG_PM_RUNTIME).  Starting with the 3.10 kernel release, dynamic PM support
+>  for USB was present whenever the kernel was built with CONFIG_PM_RUNTIME
+>  enabled.  The CONFIG_USB_SUSPEND option had been eliminated.]
 
-We have these as high level APIs for drivers.
-These are low level ones so need a different
-name.
+That sounds fine.  Thanks.
 
+Alan Stern
 
-> But in general, this looks good to me!
