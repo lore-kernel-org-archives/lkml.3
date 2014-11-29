@@ -1,114 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788AbaK2S14 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 13:27:56 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:43512 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644AbaK2S1z convert rfc822-to-8bit (ORCPT
+	id S1751794AbaK2Sap (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 13:30:45 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:38783 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402AbaK2San (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 13:27:55 -0500
-From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Honeyman <stevenhoneyman@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
-Date: Sat, 29 Nov 2014 19:27:52 +0100
-Message-ID: <2162660.rjBG3mszUn@xps13>
-User-Agent: KMail/4.14.2 (Linux/3.18.0-rc5+; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <201411291818.18074@pali>
-References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com> <1419444.Nxv4HBGmNA@xps13> <201411291818.18074@pali>
+	Sat, 29 Nov 2014 13:30:43 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+In-Reply-To: <20141118180759.GT8907@valkosipuli.retiisi.org.uk>
+References: <1416220913-5047-1-git-send-email-prabhakar.csengg@gmail.com>
+ <546B13CC.6050605@xs4all.nl> <20141118180759.GT8907@valkosipuli.retiisi.org.uk>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Sat, 29 Nov 2014 18:30:09 +0000
+Message-ID: <CA+V-a8s-mP+Fjok2s_nDUAOb4vN3RWyRc5VHuZqPdk4pJtv03A@mail.gmail.com>
+Subject: Re: [PATCH] media: v4l2-subdev.h: drop the guard CONFIG_VIDEO_V4L2_SUBDEV_API
+ for v4l2_subdev_get_try_*()
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>,
+        linux-media <linux-media@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sakari Ailus <sakari.ailus@iki.fi>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 29 November 2014 18:18:18 Pali Rohár wrote:
-> On Saturday 29 November 2014 18:07:19 Gabriele Mazzotta wrote:
-> > On Saturday 29 November 2014 17:09:35 Pali Rohár wrote:
-> > > On Saturday 29 November 2014 17:04:07 Pali Rohár wrote:
-> > > > This patch adds labels for temperature sensors if SMM
-> > > > function with EAX register 0x11a3 reports it. These
-> > > > informations was taken from DOS binary NBSVC.MDM.
-> > > > 
-> > > > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> > > > ---
-> > > > 
-> > > >  drivers/char/i8k.c |  110
-> > > > 
-> > > > +++++++++++++++++++++++++++++++++++++++++----------- 1
-> > > > file changed, 88 insertions(+), 22 deletions(-)
-> > > 
-> > > I tested patch on Latitude E6440 and i8k CPU & GPU temps
-> > > match intel coretemp & amd radeion temps.
-> > > 
-> > > But I would like if somebody with other Dell laptop can test
-> > > if temperature labels are correct...
-> > 
-> > I tested it on my XPS13 9333, here what sensors outputs:
-> > 
-> > acpitz-virtual-0
-> > Adapter: Virtual device
-> > temp1:        +27.8°C  (crit = +105.0°C)
-> > temp2:        +29.8°C  (crit = +105.0°C)
-> > 
-> > coretemp-isa-0000
-> > Adapter: ISA adapter
-> > Physical id 0:  +62.0°C  (high = +100.0°C, crit = +100.0°C)
-> > Core 0:         +62.0°C  (high = +100.0°C, crit = +100.0°C)
-> > Core 1:         +61.0°C  (high = +100.0°C, crit = +100.0°C)
-> > 
-> > i8k-virtual-0
-> > Adapter: Virtual device
-> > fan2:           0 RPM
-> > CPU:          +62.0°C
-> > Ambient:      +49.0°C
-> > SODIMM:       +46.0°C
-> > temp4:            N/A
-> > 
-> > CPU seems to be correct, but I can't say anything on Ambient
-> > and SODIMM. temp4 is constantly equal to SODIMM without this
-> > patch, so I'd say N/A is correct.
-> > 
-> > 
-> > Gabriele
-> 
-> It is unknown for me how to directly read Ambient and SODIMM
-> temperatures (without Dell SMM functions). So we can only trust
-> Dell SMM that it reporting correct values and type is really
-> Ambient and SODIMM.
-> 
-> And about temp4:
-> 
-> Label is not set when SMM function fails. Original DOS NBSVC.MDM
-> just ignore all sensors for which SMM type function fails.
-> 
-> This patch should not disable any sensor, so if you previously
-> had some value (<= 128°C) and now not, then there is some bug.
-> 
-> Can you test this patch?
-> https://git.kernel.org/cgit/linux/kernel/git/gregkh/char-misc.git/comm
-> it/?h=char-misc-testing&id=723493ca59c8d81fed3e7f261165fee493a29ffa
-> 
-> It is possible that same value is caused by incorrect use of
-> prev[] array which should be fixed by above patch.
-> 
-> Can you test i8k with and without above patch?
+Hi Laurent,
 
-I did some more tests. What I think is happening is that temp4_label
-returns -22, so I sensors prints N/A without actually reading temp4_input.
+On Tue, Nov 18, 2014 at 6:07 PM, Sakari Ailus <sakari.ailus@iki.fi> wrote:
+> Hi Hans and Prabhakar,
+>
+> On Tue, Nov 18, 2014 at 10:39:24AM +0100, Hans Verkuil wrote:
+>> On 11/17/14 11:41, Lad, Prabhakar wrote:
+>> > this patch removes the guard CONFIG_VIDEO_V4L2_SUBDEV_API
+>> > for v4l2_subdev_get_try_*() functions.
+>> > In cases where a subdev using v4l2_subdev_get_try_*() calls
+>> > internally and the bridge using subdev pad ops which is
+>> > not MC aware forces to select MEDIA_CONTROLLER, as
+>> > VIDEO_V4L2_SUBDEV_API is dependent on it.
+>> >
+>> > Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>> > ---
+>> >  include/media/v4l2-subdev.h | 2 --
+>> >  1 file changed, 2 deletions(-)
+>> >
+>> > diff --git a/include/media/v4l2-subdev.h b/include/media/v4l2-subdev.h
+>> > index 5860292..076ca11 100644
+>> > --- a/include/media/v4l2-subdev.h
+>> > +++ b/include/media/v4l2-subdev.h
+>> > @@ -642,7 +642,6 @@ struct v4l2_subdev_fh {
+>> >  #define to_v4l2_subdev_fh(fh)      \
+>> >     container_of(fh, struct v4l2_subdev_fh, vfh)
+>> >
+>> > -#if defined(CONFIG_VIDEO_V4L2_SUBDEV_API)
+>> >  #define __V4L2_SUBDEV_MK_GET_TRY(rtype, fun_name, field_name)              \
+>> >     static inline struct rtype *                                    \
+>> >     v4l2_subdev_get_try_##fun_name(struct v4l2_subdev_fh *fh,       \
+>> > @@ -656,7 +655,6 @@ struct v4l2_subdev_fh {
+>> >  __V4L2_SUBDEV_MK_GET_TRY(v4l2_mbus_framefmt, format, try_fmt)
+>> >  __V4L2_SUBDEV_MK_GET_TRY(v4l2_rect, crop, try_crop)
+>> >  __V4L2_SUBDEV_MK_GET_TRY(v4l2_rect, compose, try_compose)
+>> > -#endif
+>> >
+>> >  extern const struct v4l2_file_operations v4l2_subdev_fops;
+>> >
+>> >
+>>
+>> The problem is that v4l2_subdev_get_try_*() needs a v4l2_subdev_fh which
+>> you don't have if CONFIG_VIDEO_V4L2_SUBDEV_API is not defined. So I don't
+>> see how removing the guards help with that.
+>>
+>> What can be done is that if CONFIG_VIDEO_V4L2_SUBDEV_API is not defined,
+>> then these functions return NULL.
+>
+> Sure. That's a better choice than removing the config option dependency of
+> the fields struct v4l2_subdev.
+>
+>> BTW, one patch I will very happily accept is one where the __V4L2_SUBDEV_MK_GET_TRY
+>> is removed and these three try functions are just written as proper
+>> static inlines. I find it very obfuscated code.
+>
+> I originally wrote them like that in order to avoid writing essentially the
+> same code three times over. If there will be more targets, the same repeats
+> further, should one write those functions open for all different macro
+> arguments. That's why it was a macro to begin with.
+>
+>> In addition, because it is a macro you won't find the function definitions
+>> if you grep on the function name.
+>
+> True as well. You could simply change the macro to include the full function
+> name. This was not suggested in review back then AFAIR.
+>
+>> But any functional changes here need to be Acked by Laurent first.
+>
 
-I'm doing some tests to understand what's going on with temp4_input.
-It reports the value of the last temp*_input I read. If I read it right
-after I loaded i8k, I get an error (-22).
+How do you want me to proceed on this ?
 
-The same doesn't happen for temp3_label, which constantly returns -22.
-
-I already had https://git.kernel.org/cgit/linux/kernel/git/gregkh/char-misc.git/commit/?h=char-misc-testing&id=723493ca59c8d81fed3e7f261165fee493a29ffa
-applied. Without it, things seem not to change much.
-I either get an error (-22) or some incorrect values (for now always
-1000) when I read temp4_input right after i8k was loaded.
-Once I read some other temp*_input, I always get the last value read.
+Thanks,
+--Prabhakar Lad
