@@ -1,107 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861AbaK2VAo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 16:00:44 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:43472 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800AbaK2VAV (ORCPT
+	id S1751772AbaK2Vey (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 16:34:54 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:52553 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163AbaK2Vex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 16:00:21 -0500
-From: Alexander Kochetkov <al.kochet@gmail.com>
-To: Kevin Hilman <khilman@kernel.org>, Tony Lindgren <tony@atomide.com>,
-        Felipe Balbi <balbi@ti.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Alexander Kochetkov <al.kochet@gmail.com>
-Cc: linux-omap@vger.kernel.org, linux-i2c@vger.kernel.org,
+	Sat, 29 Nov 2014 16:34:53 -0500
+Message-ID: <547A3BFA.7040900@roeck-us.net>
+Date: Sat, 29 Nov 2014 13:34:50 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
+CC: Gabriele Mazzotta <gabriele.mzt@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: [RFC 2/2] i2c: omap: show that the reason of system lockup is an unhandled ISR event
-Date: Sun, 30 Nov 2014 01:00:03 +0400
-Message-Id: <1417294803-14729-3-git-send-email-al.kochet@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1417294803-14729-1-git-send-email-al.kochet@gmail.com>
-References: <1417294803-14729-1-git-send-email-al.kochet@gmail.com>
+Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
+References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com> <2162660.rjBG3mszUn@xps13> <547A1754.20903@roeck-us.net> <201411292007.36975@pali>
+In-Reply-To: <201411292007.36975@pali>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Suspect
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 512
+X-CTCH-RefID: str=0001.0A020206.547A3BFD.001A,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=512,sb=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 1
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 079d8af24b948261e1dae5d7df6b31b7bf205cb4 ("i2c: omap: bus:
-add a receiver flag") changed ISR loop to silently ignore unwanted
-XDR/XRDY or RDR/RRDY events without processing. That unwanted events
-will fire interrupt again and most likely they will be ignored again.
-As a result, system enters lockup state. CPU loops through omap_i2c_isr()
-and omap_i2c_isr_thread(). The lockup is signaled with the message
-"sched: RT throttling activated" shown on console.
+On 11/29/2014 11:07 AM, Pali Rohár wrote:
+> On Saturday 29 November 2014 19:58:28 Guenter Roeck wrote:
+>> On 11/29/2014 10:27 AM, Gabriele Mazzotta wrote:
+>>> On Saturday 29 November 2014 18:18:18 Pali Rohár wrote:
+>>>> On Saturday 29 November 2014 18:07:19 Gabriele Mazzotta
+> wrote:
+>>>>> On Saturday 29 November 2014 17:09:35 Pali Rohár wrote:
+>>>>>> On Saturday 29 November 2014 17:04:07 Pali Rohár wrote:
+>>>>>>> This patch adds labels for temperature sensors if SMM
+>>>>>>> function with EAX register 0x11a3 reports it. These
+>>>>>>> informations was taken from DOS binary NBSVC.MDM.
+>>>>>>>
+>>>>>>> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+>>>>>>> ---
+>>>>>>>
+>>>>>>>    drivers/char/i8k.c |  110
+>>>>>>>
+>>>>>>> +++++++++++++++++++++++++++++++++++++++++----------- 1
+>>>>>>> file changed, 88 insertions(+), 22 deletions(-)
+>>>>>>
+>>>>>> I tested patch on Latitude E6440 and i8k CPU & GPU temps
+>>>>>> match intel coretemp & amd radeion temps.
+>>>>>>
+>>>>>> But I would like if somebody with other Dell laptop can
+>>>>>> test if temperature labels are correct...
+>>>>>
+>>>>> I tested it on my XPS13 9333, here what sensors outputs:
+>>>>>
+>>>>> acpitz-virtual-0
+>>>>> Adapter: Virtual device
+>>>>> temp1:        +27.8°C  (crit = +105.0°C)
+>>>>> temp2:        +29.8°C  (crit = +105.0°C)
+>>>>>
+>>>>> coretemp-isa-0000
+>>>>> Adapter: ISA adapter
+>>>>> Physical id 0:  +62.0°C  (high = +100.0°C, crit =
+>>>>> +100.0°C) Core 0:         +62.0°C  (high = +100.0°C, crit
+>>>>> = +100.0°C) Core 1:         +61.0°C  (high = +100.0°C,
+>>>>> crit = +100.0°C)
+>>>>>
+>>>>> i8k-virtual-0
+>>>>> Adapter: Virtual device
+>>>>> fan2:           0 RPM
+>>>>> CPU:          +62.0°C
+>>>>> Ambient:      +49.0°C
+>>>>> SODIMM:       +46.0°C
+>>>>> temp4:            N/A
+>>>>>
+>>>>> CPU seems to be correct, but I can't say anything on
+>>>>> Ambient and SODIMM. temp4 is constantly equal to SODIMM
+>>>>> without this patch, so I'd say N/A is correct.
+>>>>>
+>>>>>
+>>>>> Gabriele
+>>>>
+>>>> It is unknown for me how to directly read Ambient and
+>>>> SODIMM temperatures (without Dell SMM functions). So we
+>>>> can only trust Dell SMM that it reporting correct values
+>>>> and type is really Ambient and SODIMM.
+>>>>
+>>>> And about temp4:
+>>>>
+>>>> Label is not set when SMM function fails. Original DOS
+>>>> NBSVC.MDM just ignore all sensors for which SMM type
+>>>> function fails.
+>>>>
+>>>> This patch should not disable any sensor, so if you
+>>>> previously had some value (<= 128°C) and now not, then
+>>>> there is some bug.
+>>>>
+>>>> Can you test this patch?
+>>>> https://git.kernel.org/cgit/linux/kernel/git/gregkh/char-mi
+>>>> sc.git/comm
+>>>> it/?h=char-misc-testing&id=723493ca59c8d81fed3e7f261165fee
+>>>> 493a29ffa
+>>>>
+>>>> It is possible that same value is caused by incorrect use
+>>>> of prev[] array which should be fixed by above patch.
+>>>>
+>>>> Can you test i8k with and without above patch?
+>>>
+>>> I did some more tests. What I think is happening is that
+>>> temp4_label returns -22, so I sensors prints N/A without
+>>> actually reading temp4_input.
+>>>
+>>> I'm doing some tests to understand what's going on with
+>>> temp4_input. It reports the value of the last temp*_input I
+>>> read. If I read it right after I loaded i8k, I get an error
+>>> (-22).
+>>>
+>>> The same doesn't happen for temp3_label, which constantly
+>>> returns -22.
+>>>
+>>> I already had
+>>> https://git.kernel.org/cgit/linux/kernel/git/gregkh/char-mi
+>>> sc.git/commit/?h=char-misc-testing&id=723493ca59c8d81fed3e7f
+>>> 261165fee493a29ffa applied. Without it, things seem not to
+>>> change much. I either get an error (-22) or some incorrect
+>>> values (for now always 1000) when I read temp4_input right
+>>> after i8k was loaded. Once I read some other temp*_input, I
+>>> always get the last value read.
+>>
+>> I am seeing exactly the same behavior on an XPS13.
+>>
+>> Guenter
+>
+> Original Dell DOS executable ignores all temperature sensors if
+> type SMM function fails (if I decoded and understand that DOS
+> assembler code correctly). So maybe we should do same...
+>
+> But because our i8k.c code ignores sensor only if it returns
+> invalid temperature, there could be possible regression that on
+> same machines type SMM function is not implemented or not
+> working...
+>
+> What do you think?
+>
+Guess we should be able to do what the DOS executable does.
+Let me test on a couple of older systems and let's make
+a decision based on the results.
 
-The commit allow unwanted events to enter into processing loop and
-to be acked (at least) and processed (show error message).
-Sometimes if unwannted event is acked, the ISR can continue it's work.
-Sometimes system still remains in the lockup, but at least the reason
-is obvious.
-
-That unwanted events I tested with are events from IP slave receiver,
-fired when General Call (GC) command is detected on the bus. As after
-every master transfer IP enter into slave receiver mode. ISR must be
-ready for events from slave receiver or slave receiver must be
-disabled after master transfer to avoid lockups.
-
-Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
-Fixes 079d8af24b948261e1dae5d7df6b31b7bf205cb4 "i2c: omap: bus: add a receiver flag"
----
- drivers/i2c/busses/i2c-omap.c |   28 ++++++++++++++++++++++------
- 1 file changed, 22 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index e890295..192f9ce 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -939,6 +939,22 @@ static void omap_i2c_receive_data(struct omap_i2c_dev *dev, u8 num_bytes,
- 		bool is_rdr)
- {
- 	u16 w;
-+	int warn = 0;
-+
-+	if (unlikely(!dev->receiver)) {
-+		warn = 1;
-+		/* REVISIT: errata i207 during transmission? */
-+		if (dev->errata & I2C_OMAP_ERRATA_I207) {
-+			if (is_rdr & !num_bytes)
-+				warn = 0;
-+		}
-+		num_bytes = 0;
-+	}
-+
-+	if (unlikely(warn)) {
-+		dev_err(dev->dev, "%s interrupt while sending\n",
-+			is_rdr ? "RDR" : "RRDY");
-+	}
- 
- 	if (unlikely(num_bytes > dev->buf_len)) {
- 		dev_err(dev->dev, "%s interrupt can't receive %u byte(s)\n",
-@@ -971,6 +987,12 @@ static int omap_i2c_transmit_data(struct omap_i2c_dev *dev, u8 num_bytes,
- {
- 	u16 w;
- 
-+	if (unlikely(dev->receiver)) {
-+		dev_err(dev->dev, "%s interrupt while receiving\n",
-+			is_xdr ? "XDR" : "XRDY");
-+		num_bytes = 0;
-+	}
-+
- 	if (unlikely(num_bytes > dev->buf_len)) {
- 		dev_err(dev->dev, "%s interrupt can't transmit %u byte(s)\n",
- 			is_xdr ? "XDR" : "XRDY", (num_bytes - dev->buf_len));
-@@ -1043,12 +1065,6 @@ omap_i2c_isr_thread(int this_irq, void *dev_id)
- 		stat = omap_i2c_read_reg(dev, OMAP_I2C_STAT_REG);
- 		stat &= bits;
- 
--		/* If we're in receiver mode, ignore XDR/XRDY */
--		if (dev->receiver)
--			stat &= ~(OMAP_I2C_STAT_XDR | OMAP_I2C_STAT_XRDY);
--		else
--			stat &= ~(OMAP_I2C_STAT_RDR | OMAP_I2C_STAT_RRDY);
--
- 		if (!stat) {
- 			/* my work here is done */
- 			goto out;
--- 
-1.7.9.5
+Guenter
 
