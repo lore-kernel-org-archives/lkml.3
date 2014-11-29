@@ -1,117 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590AbaK1X6R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 18:58:17 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:41911 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530AbaK1X6O convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 18:58:14 -0500
+	id S1751693AbaK2AEW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 19:04:22 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:54829 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751374AbaK2AEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Nov 2014 19:04:21 -0500
+Date: Sat, 29 Nov 2014 01:04:17 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Giedrius Statkevicius <giedriuswork@gmail.com>
+Cc: dvhart@infradead.org, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alex Hung <alex.hung@canonical.com>
+Subject: Re: [PATCH] platform: x86: hp_wireless: Inform the user if
+ hp_wireless_input_setup()/add() fails
+Message-ID: <20141129000417.GG30997@pd.tnic>
+References: <1417212867-25187-1-git-send-email-giedriuswork@gmail.com>
+ <20141128231555.GA31468@pd.tnic>
+ <547909CF.8060907@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <OFCF68BFE0.14A043A7-ON86257D8D.000BF746-86257D8D.000BF749@ni.com>
-References: <1415504283-31321-1-git-send-email-crosthwaite.peter@gmail.com>
-	<1415504283-31321-2-git-send-email-crosthwaite.peter@gmail.com>
-	<548fd9c6edf94ca2b20299895f78b139@BN1AFFO11FD036.protection.gbl>
-	<CAPokK=ovsR--ARj-2rNV6udbPEPqy4bChqC5FJw-u6O=cnHZQA@mail.gmail.com>
-	<a7677222807f4dd3a7d74df647e48598@BL2FFO11FD053.protection.gbl>
-	<CAPokK=ohd6L=ExZ7xQCGpEDj=BbN6RUec2F+=Trz3BCn1Nw-sQ@mail.gmail.com>
-	<OFCF68BFE0.14A043A7-ON86257D8D.000BF746-86257D8D.000BF749@ni.com>
-Date: Sat, 29 Nov 2014 09:58:13 +1000
-Message-ID: <CAPokK=r6qVrpdHrM=NeDabkijQWB3R-r7LKuTcXcYdxLBBqDTQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] arm: dts: zynq: Add Digilent ZYBO board
-From: Peter Crosthwaite <crosthwaitepeter@gmail.com>
-To: Steve Wang <steven.wang@digilentinc.com>
-Cc: linux-kernel@vger.kernel.org, michals@xilinx.com,
-        =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        sorenb@xilinx.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <547909CF.8060907@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
+On Sat, Nov 29, 2014 at 01:48:31AM +0200, Giedrius Statkevicius wrote:
+> On 2014.11.29 01:15, Borislav Petkov wrote:
+> > On Sat, Nov 29, 2014 at 12:14:27AM +0200, Giedrius Statkevicius wrote:
+> >> In hpwl_add() there is a unused variable err to which we assign the
+> >> result of hp_wireless_input_setup() but we don't do anything depending
+> >> on the result so print out a message that informs the user if add()
+> >> (hp_wireless_input_setup()) fails since acpi_device_probe() doesn't
+> >> print anything in this case.
+> >>
+> >> Signed-off-by: Giedrius Statkevicius <giedriuswork@gmail.com>
+> >> ---
+> >>  drivers/platform/x86/hp-wireless.c | 3 +++
+> >>  1 file changed, 3 insertions(+)
+> >>
+> >> diff --git a/drivers/platform/x86/hp-wireless.c b/drivers/platform/x86/hp-wireless.c
+> >> index 415348f..4e4cc8b 100644
+> >> --- a/drivers/platform/x86/hp-wireless.c
+> >> +++ b/drivers/platform/x86/hp-wireless.c
+> >> @@ -85,6 +85,9 @@ static int hpwl_add(struct acpi_device *device)
+> >>  	int err;
+> >>  
+> >>  	err = hp_wireless_input_setup();
+> >> +	if (err)
+> >> +		pr_err("Failed to setup hp wireless hotkeys\n");
+> >> +
+> > 
+> > I don't think there's need for that. Just do:
+> > 
+> > 	return hp_wireless_input_setup();
+> > 
+> > and drop err completely.
+> > 
+> > The upper layer which calls the ->add() method should propagate the
+> > error properly.
+> Looking at other platform drivers code some add() methods do give
+> information to the user via pr_{err,warn,info} macros, some don't. My
+> first patch to deal with this just removed the err variable like you
+> have wrote but Darren Hart and Rafael J. Wysocki commented that maybe it
+> should be better to inform the user about this error. That is why
+> probably there was a variable for this in the first place but probably
+> the original author just forgot to add a pr_err().
 
-On Tue, Nov 11, 2014 at 12:10 PM, Steve Wang
-<steven.wang@digilentinc.com> wrote:
-> Hi, Peter,
->
-> According to naming convention, I think "dglnt" is good enough ^.^
->
-> By the way, I think there is a need to address another issue that needs to
-> be addressed for ZYBO as well (maybe in a separate thread):
-> MAC address pre-load from on-board EEPROM.
+Ah, I see. Original author added to CC.
 
-So i'm not doing any networking work so I don't have visibility of
-this feature. My understanding though is its an extra feature and
-default networking behaviour provided by the SoC should still be
-functional making this follow up work?
+-- 
+Regards/Gruss,
+    Boris.
 
-The alternative would be to disable gem in the dts on first commit.
-
-> I think ZYBO might still be the only Zynq-based board that has an on-board
-> EEPROM for MAC address as well.
->
-
-Is that just software policy though? Should there be DTS level
-awareness of MAC address via EEPROM contents or should the dts just
-describe the EEPROM?
-
-Regards,
-Peter
-
-> Regards,
-> Steve
->
-> -----Peter Crosthwaite <crosthwaitepeter@gmail.com> wrote: -----
-> To: Sören Brinkmann <soren.brinkmann@xilinx.com>, Steve Wang
-> <steven.wang@digilentinc.com>
-> From: Peter Crosthwaite <crosthwaitepeter@gmail.com>
-> Date: 11/10/2014 02:56PM
-> Cc: linux-kernel@vger.kernel.org, michals@xilinx.com, sorenb@xilinx.com
-> Subject: Re: [PATCH 2/2] arm: dts: zynq: Add Digilent ZYBO board
->
->
-> On Tue, Nov 11, 2014 at 8:42 AM, Sören Brinkmann
-> <soren.brinkmann@xilinx.com> wrote:
->> On Tue, 2014-11-11 at 08:39AM +1000, Peter Crosthwaite wrote:
->>> On Mon, Nov 10, 2014 at 7:47 AM, Sören Brinkmann
->>> <soren.brinkmann@xilinx.com> wrote:
->>> > Hi Peter,
->>> >
->>> > On Sun, 2014-11-09 at 01:38PM +1000, Peter Crosthwaite wrote:
->>> >> Add a DTS describing the Digilent ZYBO board. Similar to ZED but with
->>> >
->>> > "Digilent ZYBO" here...
->>> >
->>> > [...]
->>> >> +/ {
->>> >> +     model = "Zynq ZYBO Development Board";
->>> >> +     compatible = "xlnx,zynq-zybo", "xlnx,zynq-7000";
->>> >
->>> > ... "xlnx,zynq-zybo" here. Seems inconsistent. IMHO, there should
->>> > rather be
->>> > a digilent vendor prefix.
->>> >
->>>
->>> Was going for consistency with ZED which also makes this mistake:
->>>
->>>     model = "Zynq Zed Development Board";
->>>     compatible = "xlnx,zynq-zed", "xlnx,zynq-7000";
->>>
->>> We have to choose between consistency and correctness. If we do fix it
->>> though, what is Diglent's four-letter vendor prefix?
->>
->> Since Digilent is the board vendor, I'm for using the appropriate
->> prefix. Vendor prefixes are found in
->> Documentation/devicetree/bindings/vendor-prefixes.txt.
->>
->
-> It's not there,
->
-> Steven, does Digilent have a preferred dts vendor prefix?
->
-> Regards,
-> Peter
->
->>         Soren
+Sent from a fat crate under my desk. Formatting is fine.
+--
