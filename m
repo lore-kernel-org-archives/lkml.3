@@ -1,111 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552AbaK2Jxa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Nov 2014 04:53:30 -0500
-Received: from www.linutronix.de ([62.245.132.108]:36720 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317AbaK2Jx3 (ORCPT
+	id S1751586AbaK2J4a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Nov 2014 04:56:30 -0500
+Received: from smtp2-out.insa-rennes.fr ([193.52.94.25]:24968 "EHLO
+	smtp2-out.insa-rennes.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335AbaK2J42 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Nov 2014 04:53:29 -0500
-Date: Sat, 29 Nov 2014 10:53:24 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [GIT PULL] irq updates for 3.18
-Message-ID: <alpine.DEB.2.11.1411291050450.3961@nanos>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Sat, 29 Nov 2014 04:56:28 -0500
+X-Greylist: delayed 590 seconds by postgrey-1.27 at vger.kernel.org; Sat, 29 Nov 2014 04:56:27 EST
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqUEAGqVeVQKBQEl/2dsb2JhbABb0hcCgR0BAQEBAX2EAwEBBHkQCyElDwIQNgYBDAEFAgEBiCcDzCINhgIBAQEBAQEBAQIBAQEBAQEBG45DgVcKJDMHhEgBBJpGgy+GJDeEJoJGikolSYEFgUIBAQE
+Message-ID: <547995EF.10804@supelec.fr>
+Date: Sat, 29 Nov 2014 10:46:23 +0100
+From: Laurent Georget <laurent.georget@supelec.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Richard Cochran <richardcochran@gmail.com>
+CC: linux-man@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch v2] adjtimex.2: add explanation about ADJ_TAI action
+References: <54787B5C.1080802@supelec.fr> <20141128210043.GB14432@localhost.localdomain> <5478FF09.6090508@supelec.fr> <54799198.1070907@gmail.com>
+In-Reply-To: <54799198.1070907@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Hello,
 
-please pull the latest irq-urgent-for-linus git tree from:
+Le 29/11/2014 10:27, Michael Kerrisk (man-pages) a écrit :
+> Hello Laurent,
+> 
+> Thanks for working on this. I have one question; see below.
+> 
+>>
+>> diff --git a/man2/adjtimex.2 b/man2/adjtimex.2
+>> index 20a2f0b..871e607 100644
+>> --- a/man2/adjtimex.2
+>> +++ b/man2/adjtimex.2
+>> @@ -26,9 +26,6 @@
+>>  .\" Modified 2004-05-27 by Michael Kerrisk <mtk.manpages@gmail.com>
+>>  .\" Modified 2014-11-28 by Laurent Georget <laurent.georget@supelec.fr>
+>>  .\"
+>> -.\" FIXME Document ADJ_TAI (added in Linux 2.6.26)
+>> -.\"		commit 153b5d054ac2d98ea0d86504884326b6777f683d
+>> -.\"
+>>  .\" FIXME Document ADJ_MICRO and ADJ_NANO (added in Linux 2.6.26)
+>>  .\"		commit eea83d896e318bda54be2d2770d2c5d6668d11db
+>>  .\"		Author: Roman Zippel <zippel@linux-m68k.org>
+>> @@ -74,6 +71,17 @@ struct timex {
+>>                              (read-only) */
+>>      struct timeval time; /* current time (read-only) */
+>>      long tick;           /* usecs between clock ticks */
+> 
+> What is the following piece about? Did you mean to include it in this patch?
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq-urgent-for-linus
+Those are new fields added in struct timex since the last edition of the
+man page. Maybe I should split the commit in two subcommits: the first
+one to add the new fields, and the second one to specifically add the
+ADJ_TAI flag?
 
-Three fixlets from the ARM SoC camp:
- - Correct irqdomain initialization for atmel-aic
- - Correct error handling for device tree parsing in bcm controllers
+> 
+>> +
+>> +    long ppsfreq;        /* pps frequency (scaled ppm) (read-only) */
+>> +    long jitter;         /* pps jitter (usec) (read-only) */
+>> +    int shift;           /* interval duration (sec) (read-only) */
+>> +    long stabil;         /* pps stability (scaled ppm) (read-only) */
+>> +    long jitcnt;         /* jitter limit exceeded (read-only) */
+>> +    long calcnt;         /* calibration intervals (read-only) */
+>> +    long errcnt;         /* calibration errors (read-only) */
+>> +    long stbcnt;         /* stability limit exceeded (read-only) */
+>> +
+>> +    int tai;             /* TAI offset (s) (read-only) */
+>>  };
+> 
+> Thanks,
+> 
+> Michael
+> 
 
 Thanks,
 
-	tglx
+Laurent
 
------------------->
-Boris Brezillon (1):
-      irqchip: atmel-aic: Fix irqdomain initialization
-
-Dmitry Torokhov (2):
-      irqchip: bcm7120-l2: Fix error handling of irq_of_parse_and_map
-      irqchip: brcmstb-l2: Fix error handling of irq_of_parse_and_map
-
-
- drivers/irqchip/irq-atmel-aic-common.c | 6 +++---
- drivers/irqchip/irq-bcm7120-l2.c       | 4 ++--
- drivers/irqchip/irq-brcmstb-l2.c       | 4 ++--
- 3 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/irqchip/irq-atmel-aic-common.c b/drivers/irqchip/irq-atmel-aic-common.c
-index 6ae3cdee0681..cc4f9d80122e 100644
---- a/drivers/irqchip/irq-atmel-aic-common.c
-+++ b/drivers/irqchip/irq-atmel-aic-common.c
-@@ -217,8 +217,9 @@ struct irq_domain *__init aic_common_of_init(struct device_node *node,
- 	}
- 
- 	ret = irq_alloc_domain_generic_chips(domain, 32, 1, name,
--					     handle_level_irq, 0, 0,
--					     IRQCHIP_SKIP_SET_WAKE);
-+					     handle_fasteoi_irq,
-+					     IRQ_NOREQUEST | IRQ_NOPROBE |
-+					     IRQ_NOAUTOEN, 0, 0);
- 	if (ret)
- 		goto err_domain_remove;
- 
-@@ -230,7 +231,6 @@ struct irq_domain *__init aic_common_of_init(struct device_node *node,
- 		gc->unused = 0;
- 		gc->wake_enabled = ~0;
- 		gc->chip_types[0].type = IRQ_TYPE_SENSE_MASK;
--		gc->chip_types[0].handler = handle_fasteoi_irq;
- 		gc->chip_types[0].chip.irq_eoi = irq_gc_eoi;
- 		gc->chip_types[0].chip.irq_set_wake = irq_gc_set_wake;
- 		gc->chip_types[0].chip.irq_shutdown = aic_common_shutdown;
-diff --git a/drivers/irqchip/irq-bcm7120-l2.c b/drivers/irqchip/irq-bcm7120-l2.c
-index b9f4fb808e49..5fb38a2ac226 100644
---- a/drivers/irqchip/irq-bcm7120-l2.c
-+++ b/drivers/irqchip/irq-bcm7120-l2.c
-@@ -101,9 +101,9 @@ static int bcm7120_l2_intc_init_one(struct device_node *dn,
- 	int parent_irq;
- 
- 	parent_irq = irq_of_parse_and_map(dn, irq);
--	if (parent_irq < 0) {
-+	if (!parent_irq) {
- 		pr_err("failed to map interrupt %d\n", irq);
--		return parent_irq;
-+		return -EINVAL;
- 	}
- 
- 	data->irq_map_mask |= be32_to_cpup(map_mask + irq);
-diff --git a/drivers/irqchip/irq-brcmstb-l2.c b/drivers/irqchip/irq-brcmstb-l2.c
-index c15c840987d2..14691a4cb84c 100644
---- a/drivers/irqchip/irq-brcmstb-l2.c
-+++ b/drivers/irqchip/irq-brcmstb-l2.c
-@@ -135,9 +135,9 @@ int __init brcmstb_l2_intc_of_init(struct device_node *np,
- 	__raw_writel(0xffffffff, data->base + CPU_CLEAR);
- 
- 	data->parent_irq = irq_of_parse_and_map(np, 0);
--	if (data->parent_irq < 0) {
-+	if (!data->parent_irq) {
- 		pr_err("failed to find parent interrupt\n");
--		ret = data->parent_irq;
-+		ret = -EINVAL;
- 		goto out_unmap;
- 	}
- 
