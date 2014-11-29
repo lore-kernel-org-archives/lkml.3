@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751510AbaK2Amc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Nov 2014 19:42:32 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:65276 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751324AbaK2Ama (ORCPT
+	id S1751534AbaK2Avn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Nov 2014 19:51:43 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:42848 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324AbaK2Avm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Nov 2014 19:42:30 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>, linux-sh@vger.kernel.org,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org,
-        Kevin Hilman <khilman@kernel.org>
-Subject: [PATCH] PM / Kconfig: Do not select PM directly from Kconfig files
-Date: Sat, 29 Nov 2014 02:03:48 +0100
-Message-ID: <4088467.A4Xd3YfMSv@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+	Fri, 28 Nov 2014 19:51:42 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+From: Ian Kumlien <ian.kumlien@gmail.com>
+Date: Sat, 29 Nov 2014 01:51:20 +0100
+Message-ID: <CAA85sZs6u08DxzV3gF3r-=LvBry0vUFMtfvG1pXRbz1FG6wnag@mail.gmail.com>
+Subject: Re: 3.18-rc regression: drm/nouveau: use shared fences for readable objects
+To: maarten.lankhorst@canonical.com
+Cc: mike@marineau.org, tobias.johannes.klausmann@mni.thm.de,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hi,
 
-It is not valid to select CONFIG_PM directly without selecting
-CONFIG_PM_SLEEP or CONFIG_PM_RUNTIME too, because that breaks
-dependencies (ia64 does that) and it is not necessary to select
-CONFIG_PM directly if CONFIG_PM_SLEEP or CONFIG_PM_RUNTIME is
-set, because it will be set automatically then (sh does that).
+Sorry to but in like this but I'm suffering from the same kind of
+deadlocks with nouveau...
 
-Fix those mistakes.
+The really odd thing is that i could boot some -rc6+ kernel without
+problems but it hung
+while playing video and then it refused to start properly again.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+
+Anyway, to quote Maarten:
+Ok that most likely means the interrupt based wait is borked somehow,
+so lets find \
+out why..
+
+I fear that this happens because of a race in the interface, so my
+first attempt will \
+rule out abuse of the nvif api by nouveau_fence.c
+
+Can you test below patch with the default wait function?
 ---
- arch/ia64/Kconfig |    1 -
- arch/sh/Kconfig   |    1 -
- 2 files changed, 2 deletions(-)
 
-Index: linux-pm/arch/ia64/Kconfig
-===================================================================
---- linux-pm.orig/arch/ia64/Kconfig
-+++ linux-pm/arch/ia64/Kconfig
-@@ -11,7 +11,6 @@ config IA64
- 	select PCI if (!IA64_HP_SIM)
- 	select ACPI if (!IA64_HP_SIM)
- 	select ARCH_MIGHT_HAVE_ACPI_PDC if ACPI
--	select PM if (!IA64_HP_SIM)
- 	select HAVE_UNSTABLE_SCHED_CLOCK
- 	select HAVE_IDE
- 	select HAVE_OPROFILE
-Index: linux-pm/arch/sh/Kconfig
-===================================================================
---- linux-pm.orig/arch/sh/Kconfig
-+++ linux-pm/arch/sh/Kconfig
-@@ -222,7 +222,6 @@ config CPU_SHX3
- config ARCH_SHMOBILE
- 	bool
- 	select ARCH_SUSPEND_POSSIBLE
--	select PM
- 	select PM_RUNTIME
- 
- config CPU_HAS_PMU
-
+I tried the patch, straight on Linus' master and it didn't change
+anything for me :(
