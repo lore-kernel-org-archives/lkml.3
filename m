@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356AbaK3PKD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 10:10:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42588 "EHLO mx1.redhat.com"
+	id S1752173AbaK3PJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 10:09:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44790 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751679AbaK3PJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 10:09:59 -0500
-Date: Sun, 30 Nov 2014 17:09:34 +0200
+	id S1751717AbaK3PJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 10:09:55 -0500
+Date: Sun, 30 Nov 2014 17:09:26 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
@@ -17,11 +17,12 @@ Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
         Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Nikhil Rao <nikhil.rao@intel.com>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>, lguest@lists.ozlabs.org,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Siva Yerramreddy <yshivakrishna@gmail.com>,
+        Joel Stanley <joel@jms.id.au>, lguest@lists.ozlabs.org,
         linux-s390@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: [PATCH v7 05/46] virtio: assert 32 bit features in transports
-Message-ID: <1417359787-10138-6-git-send-email-mst@redhat.com>
+Subject: [PATCH v7 04/46] virtio: add support for 64 bit features.
+Message-ID: <1417359787-10138-5-git-send-email-mst@redhat.com>
 References: <1417359787-10138-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -32,124 +33,239 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At this point, no transports set any of the high 32 feature bits.
-Since transports generally can't (yet) cope with such bits, add BUG_ON
-checks to make sure they are not set by mistake.
+Change u32 to u64, and use BIT_ULL and 1ULL everywhere.
 
-Based on rproc patch by Rusty.
+Note: transports are unchanged, and only set low 32 bit.
+This guarantees that no transport sets e.g. VERSION_1
+by mistake without proper support.
+
+Based on patch by Rusty.
 
 Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
 Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 ---
- drivers/lguest/lguest_device.c         | 3 +++
- drivers/misc/mic/card/mic_virtio.c     | 3 +++
- drivers/remoteproc/remoteproc_virtio.c | 3 +++
- drivers/s390/kvm/kvm_virtio.c          | 3 +++
- drivers/s390/kvm/virtio_ccw.c          | 3 +++
- drivers/virtio/virtio_mmio.c           | 3 +++
- drivers/virtio/virtio_pci.c            | 3 +++
- 7 files changed, 21 insertions(+)
+ include/linux/virtio.h                 |  2 +-
+ include/linux/virtio_config.h          | 20 ++++++++++----------
+ tools/virtio/linux/virtio.h            |  2 +-
+ drivers/lguest/lguest_device.c         |  2 +-
+ drivers/misc/mic/card/mic_virtio.c     |  2 +-
+ drivers/remoteproc/remoteproc_virtio.c |  2 +-
+ drivers/s390/kvm/kvm_virtio.c          |  2 +-
+ drivers/s390/kvm/virtio_ccw.c          |  2 +-
+ drivers/virtio/virtio.c                |  8 ++++----
+ drivers/virtio/virtio_mmio.c           |  2 +-
+ drivers/virtio/virtio_pci.c            |  2 +-
+ 11 files changed, 23 insertions(+), 23 deletions(-)
 
+diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+index 7828a7f..149284e 100644
+--- a/include/linux/virtio.h
++++ b/include/linux/virtio.h
+@@ -101,7 +101,7 @@ struct virtio_device {
+ 	const struct virtio_config_ops *config;
+ 	const struct vringh_config_ops *vringh_config;
+ 	struct list_head vqs;
+-	u32 features;
++	u64 features;
+ 	void *priv;
+ };
+ 
+diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
+index ffc2ae0..f517884 100644
+--- a/include/linux/virtio_config.h
++++ b/include/linux/virtio_config.h
+@@ -66,7 +66,7 @@ struct virtio_config_ops {
+ 			vq_callback_t *callbacks[],
+ 			const char *names[]);
+ 	void (*del_vqs)(struct virtio_device *);
+-	u32 (*get_features)(struct virtio_device *vdev);
++	u64 (*get_features)(struct virtio_device *vdev);
+ 	void (*finalize_features)(struct virtio_device *vdev);
+ 	const char *(*bus_name)(struct virtio_device *vdev);
+ 	int (*set_vq_affinity)(struct virtqueue *vq, int cpu);
+@@ -88,11 +88,11 @@ static inline bool __virtio_test_bit(const struct virtio_device *vdev,
+ {
+ 	/* Did you forget to fix assumptions on max features? */
+ 	if (__builtin_constant_p(fbit))
+-		BUILD_BUG_ON(fbit >= 32);
++		BUILD_BUG_ON(fbit >= 64);
+ 	else
+-		BUG_ON(fbit >= 32);
++		BUG_ON(fbit >= 64);
+ 
+-	return vdev->features & BIT(fbit);
++	return vdev->features & BIT_ULL(fbit);
+ }
+ 
+ /**
+@@ -105,11 +105,11 @@ static inline void __virtio_set_bit(struct virtio_device *vdev,
+ {
+ 	/* Did you forget to fix assumptions on max features? */
+ 	if (__builtin_constant_p(fbit))
+-		BUILD_BUG_ON(fbit >= 32);
++		BUILD_BUG_ON(fbit >= 64);
+ 	else
+-		BUG_ON(fbit >= 32);
++		BUG_ON(fbit >= 64);
+ 
+-	vdev->features |= BIT(fbit);
++	vdev->features |= BIT_ULL(fbit);
+ }
+ 
+ /**
+@@ -122,11 +122,11 @@ static inline void __virtio_clear_bit(struct virtio_device *vdev,
+ {
+ 	/* Did you forget to fix assumptions on max features? */
+ 	if (__builtin_constant_p(fbit))
+-		BUILD_BUG_ON(fbit >= 32);
++		BUILD_BUG_ON(fbit >= 64);
+ 	else
+-		BUG_ON(fbit >= 32);
++		BUG_ON(fbit >= 64);
+ 
+-	vdev->features &= ~BIT(fbit);
++	vdev->features &= ~BIT_ULL(fbit);
+ }
+ 
+ /**
+diff --git a/tools/virtio/linux/virtio.h b/tools/virtio/linux/virtio.h
+index 72bff70..8eb6421 100644
+--- a/tools/virtio/linux/virtio.h
++++ b/tools/virtio/linux/virtio.h
+@@ -10,7 +10,7 @@
+ 
+ struct virtio_device {
+ 	void *dev;
+-	u32 features;
++	u64 features;
+ };
+ 
+ struct virtqueue {
 diff --git a/drivers/lguest/lguest_device.c b/drivers/lguest/lguest_device.c
-index d81170a..9b77b66 100644
+index 97aeb7d..d81170a 100644
 --- a/drivers/lguest/lguest_device.c
 +++ b/drivers/lguest/lguest_device.c
-@@ -136,6 +136,9 @@ static void lg_finalize_features(struct virtio_device *vdev)
- 	/* Give virtio_ring a chance to accept features. */
- 	vring_transport_features(vdev);
+@@ -94,7 +94,7 @@ static unsigned desc_size(const struct lguest_device_desc *desc)
+ }
  
-+	/* Make sure we don't have any features > 32 bits! */
-+	BUG_ON((u32)vdev->features != vdev->features);
-+
- 	/*
- 	 * Since lguest is currently x86-only, we're little-endian.  That
- 	 * means we could just memcpy.  But it's not time critical, and in
+ /* This gets the device's feature bits. */
+-static u32 lg_get_features(struct virtio_device *vdev)
++static u64 lg_get_features(struct virtio_device *vdev)
+ {
+ 	unsigned int i;
+ 	u32 features = 0;
 diff --git a/drivers/misc/mic/card/mic_virtio.c b/drivers/misc/mic/card/mic_virtio.c
-index f5e7561..d027d29 100644
+index d5da9ff..f5e7561 100644
 --- a/drivers/misc/mic/card/mic_virtio.c
 +++ b/drivers/misc/mic/card/mic_virtio.c
-@@ -96,6 +96,9 @@ static void mic_finalize_features(struct virtio_device *vdev)
- 	/* Give virtio_ring a chance to accept features. */
- 	vring_transport_features(vdev);
+@@ -68,7 +68,7 @@ static inline struct device *mic_dev(struct mic_vdev *mvdev)
+ }
  
-+	/* Make sure we don't have any features > 32 bits! */
-+	BUG_ON((u32)vdev->features != vdev->features);
-+
- 	memset_io(out_features, 0, feature_len);
- 	bits = min_t(unsigned, feature_len,
- 		sizeof(vdev->features)) * 8;
+ /* This gets the device's feature bits. */
+-static u32 mic_get_features(struct virtio_device *vdev)
++static u64 mic_get_features(struct virtio_device *vdev)
+ {
+ 	unsigned int i, bits;
+ 	u32 features = 0;
 diff --git a/drivers/remoteproc/remoteproc_virtio.c b/drivers/remoteproc/remoteproc_virtio.c
-index 62897db..627737e 100644
+index dafaf38..62897db 100644
 --- a/drivers/remoteproc/remoteproc_virtio.c
 +++ b/drivers/remoteproc/remoteproc_virtio.c
-@@ -227,6 +227,9 @@ static void rproc_virtio_finalize_features(struct virtio_device *vdev)
- 	/* Give virtio_ring a chance to accept features */
- 	vring_transport_features(vdev);
+@@ -207,7 +207,7 @@ static void rproc_virtio_reset(struct virtio_device *vdev)
+ }
  
-+	/* Make sure we don't have any features > 32 bits! */
-+	BUG_ON((u32)vdev->features != vdev->features);
-+
- 	/*
- 	 * Remember the finalized features of our vdev, and provide it
- 	 * to the remote processor once it is powered on.
+ /* provide the vdev features as retrieved from the firmware */
+-static u32 rproc_virtio_get_features(struct virtio_device *vdev)
++static u64 rproc_virtio_get_features(struct virtio_device *vdev)
+ {
+ 	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
+ 	struct fw_rsc_vdev *rsc;
 diff --git a/drivers/s390/kvm/kvm_virtio.c b/drivers/s390/kvm/kvm_virtio.c
-index 2336c7e..f5575cc 100644
+index fcd312d..2336c7e 100644
 --- a/drivers/s390/kvm/kvm_virtio.c
 +++ b/drivers/s390/kvm/kvm_virtio.c
-@@ -103,6 +103,9 @@ static void kvm_finalize_features(struct virtio_device *vdev)
- 	/* Give virtio_ring a chance to accept features. */
- 	vring_transport_features(vdev);
+@@ -80,7 +80,7 @@ static unsigned desc_size(const struct kvm_device_desc *desc)
+ }
  
-+	/* Make sure we don't have any features > 32 bits! */
-+	BUG_ON((u32)vdev->features != vdev->features);
-+
- 	memset(out_features, 0, desc->feature_len);
- 	bits = min_t(unsigned, desc->feature_len, sizeof(vdev->features)) * 8;
- 	for (i = 0; i < bits; i++) {
+ /* This gets the device's feature bits. */
+-static u32 kvm_get_features(struct virtio_device *vdev)
++static u64 kvm_get_features(struct virtio_device *vdev)
+ {
+ 	unsigned int i;
+ 	u32 features = 0;
 diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
-index 56d7895..244d611 100644
+index 1dbee95..56d7895 100644
 --- a/drivers/s390/kvm/virtio_ccw.c
 +++ b/drivers/s390/kvm/virtio_ccw.c
-@@ -714,6 +714,9 @@ static void virtio_ccw_finalize_features(struct virtio_device *vdev)
- 	/* Give virtio_ring a chance to accept features. */
- 	vring_transport_features(vdev);
+@@ -660,7 +660,7 @@ static void virtio_ccw_reset(struct virtio_device *vdev)
+ 	kfree(ccw);
+ }
  
-+	/* Make sure we don't have any features > 32 bits! */
-+	BUG_ON((u32)vdev->features != vdev->features);
-+
- 	features->index = 0;
- 	features->features = cpu_to_le32(vdev->features);
- 	/* Write the feature bits to the host. */
+-static u32 virtio_ccw_get_features(struct virtio_device *vdev)
++static u64 virtio_ccw_get_features(struct virtio_device *vdev)
+ {
+ 	struct virtio_ccw_device *vcdev = to_vc_device(vdev);
+ 	struct virtio_feature_desc *features;
+diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
+index 2b9aafb..746d350 100644
+--- a/drivers/virtio/virtio.c
++++ b/drivers/virtio/virtio.c
+@@ -159,7 +159,7 @@ static int virtio_dev_probe(struct device *_d)
+ 	int err, i;
+ 	struct virtio_device *dev = dev_to_virtio(_d);
+ 	struct virtio_driver *drv = drv_to_virtio(dev->dev.driver);
+-	u32 device_features;
++	u64 device_features;
+ 
+ 	/* We have a driver! */
+ 	add_status(dev, VIRTIO_CONFIG_S_DRIVER);
+@@ -171,14 +171,14 @@ static int virtio_dev_probe(struct device *_d)
+ 	dev->features = 0;
+ 	for (i = 0; i < drv->feature_table_size; i++) {
+ 		unsigned int f = drv->feature_table[i];
+-		BUG_ON(f >= 32);
+-		if (device_features & (1 << f))
++		BUG_ON(f >= 64);
++		if (device_features & (1ULL << f))
+ 			__virtio_set_bit(dev, f);
+ 	}
+ 
+ 	/* Transport features always preserved to pass to finalize_features. */
+ 	for (i = VIRTIO_TRANSPORT_F_START; i < VIRTIO_TRANSPORT_F_END; i++)
+-		if (device_features & (1 << i))
++		if (device_features & (1ULL << i))
+ 			__virtio_set_bit(dev, i);
+ 
+ 	dev->config->finalize_features(dev);
 diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
-index c63d0ef..aec1dae 100644
+index eb5b0e2..c63d0ef 100644
 --- a/drivers/virtio/virtio_mmio.c
 +++ b/drivers/virtio/virtio_mmio.c
-@@ -159,6 +159,9 @@ static void vm_finalize_features(struct virtio_device *vdev)
- 	/* Give virtio_ring a chance to accept features. */
- 	vring_transport_features(vdev);
+@@ -142,7 +142,7 @@ struct virtio_mmio_vq_info {
  
-+	/* Make sure we don't have any features > 32 bits! */
-+	BUG_ON((u32)vdev->features != vdev->features);
-+
- 	writel(0, vm_dev->base + VIRTIO_MMIO_GUEST_FEATURES_SEL);
- 	writel(vdev->features, vm_dev->base + VIRTIO_MMIO_GUEST_FEATURES);
- }
+ /* Configuration interface */
+ 
+-static u32 vm_get_features(struct virtio_device *vdev)
++static u64 vm_get_features(struct virtio_device *vdev)
+ {
+ 	struct virtio_mmio_device *vm_dev = to_virtio_mmio_device(vdev);
+ 
 diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index 7e0efa7..dd6df97 100644
+index 4e112c1..7e0efa7 100644
 --- a/drivers/virtio/virtio_pci.c
 +++ b/drivers/virtio/virtio_pci.c
-@@ -119,6 +119,9 @@ static void vp_finalize_features(struct virtio_device *vdev)
- 	/* Give virtio_ring a chance to accept features. */
- 	vring_transport_features(vdev);
- 
-+	/* Make sure we don't have any features > 32 bits! */
-+	BUG_ON((u32)vdev->features != vdev->features);
-+
- 	/* We only support 32 feature bits. */
- 	iowrite32(vdev->features, vp_dev->ioaddr + VIRTIO_PCI_GUEST_FEATURES);
+@@ -102,7 +102,7 @@ static struct virtio_pci_device *to_vp_device(struct virtio_device *vdev)
  }
+ 
+ /* virtio config->get_features() implementation */
+-static u32 vp_get_features(struct virtio_device *vdev)
++static u64 vp_get_features(struct virtio_device *vdev)
+ {
+ 	struct virtio_pci_device *vp_dev = to_vp_device(vdev);
+ 
 -- 
 MST
 
