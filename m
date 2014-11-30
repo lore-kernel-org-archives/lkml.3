@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721AbaK3PLN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 10:11:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39406 "EHLO mx1.redhat.com"
+	id S1752741AbaK3PLU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 10:11:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44985 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752701AbaK3PLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 10:11:08 -0500
-Date: Sun, 30 Nov 2014 17:10:51 +0200
+	id S1752716AbaK3PLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 10:11:13 -0500
+Date: Sun, 30 Nov 2014 17:10:56 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
@@ -15,8 +15,8 @@ Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
         Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
-Subject: [PATCH v7 19/46] KVM: s390 allow virtio_ccw status writes to fail
-Message-ID: <1417359787-10138-20-git-send-email-mst@redhat.com>
+Subject: [PATCH v7 20/46] KVM: s390: enable virtio-ccw revision 1
+Message-ID: <1417359787-10138-21-git-send-email-mst@redhat.com>
 References: <1417359787-10138-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,42 +27,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gracefully handle failure to write device status.
-We really should handle other errors as well, but this one is needed for
-virtio 1.0 compliance.
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
 
+Now that virtio-ccw has everything needed to support virtio 1.0 in
+place, try to enable it if the host supports it.
+
+Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 ---
- drivers/s390/kvm/virtio_ccw.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/s390/kvm/virtio_ccw.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
-index 1c21c08..45ab269 100644
+index 45ab269..4a3e6e5 100644
 --- a/drivers/s390/kvm/virtio_ccw.c
 +++ b/drivers/s390/kvm/virtio_ccw.c
-@@ -862,7 +862,9 @@ static u8 virtio_ccw_get_status(struct virtio_device *vdev)
- static void virtio_ccw_set_status(struct virtio_device *vdev, u8 status)
- {
- 	struct virtio_ccw_device *vcdev = to_vc_device(vdev);
-+	u8 old_status = *vcdev->status;
- 	struct ccw1 *ccw;
-+	int ret;
+@@ -103,7 +103,7 @@ struct virtio_rev_info {
+ };
  
- 	ccw = kzalloc(sizeof(*ccw), GFP_DMA | GFP_KERNEL);
- 	if (!ccw)
-@@ -874,7 +876,10 @@ static void virtio_ccw_set_status(struct virtio_device *vdev, u8 status)
- 	ccw->flags = 0;
- 	ccw->count = sizeof(status);
- 	ccw->cda = (__u32)(unsigned long)vcdev->status;
--	ccw_io_helper(vcdev, ccw, VIRTIO_CCW_DOING_WRITE_STATUS);
-+	ret = ccw_io_helper(vcdev, ccw, VIRTIO_CCW_DOING_WRITE_STATUS);
-+	/* Write failed? We assume status is unchanged. */
-+	if (ret)
-+		*vcdev->status = old_status;
- 	kfree(ccw);
- }
+ /* the highest virtio-ccw revision we support */
+-#define VIRTIO_CCW_REV_MAX 0
++#define VIRTIO_CCW_REV_MAX 1
  
+ struct virtio_ccw_vq_info {
+ 	struct virtqueue *vq;
 -- 
 MST
 
