@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926AbaK3PMB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 10:12:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45128 "EHLO mx1.redhat.com"
+	id S1752961AbaK3PMI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 10:12:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59735 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752871AbaK3PL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 10:11:56 -0500
-Date: Sun, 30 Nov 2014 17:11:34 +0200
+	id S1752921AbaK3PMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 10:12:01 -0500
+Date: Sun, 30 Nov 2014 17:11:44 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
@@ -14,8 +14,8 @@ Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
         Jason Wang <jasowang@redhat.com>, kvm@vger.kernel.org,
         virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: [PATCH v7 28/46] vhost: make features 64 bit
-Message-ID: <1417359787-10138-29-git-send-email-mst@redhat.com>
+Subject: [PATCH v7 30/46] vhost/net: force len for TX to host endian
+Message-ID: <1417359787-10138-31-git-send-email-mst@redhat.com>
 References: <1417359787-10138-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -26,35 +26,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to use bit 32 for virtio 1.0
+vhost/net keeps a copy of some used ring but (ab)uses length
+field for internal house-keeping. This works because
+for tx used length is always 0.
+Suppress sparse errors: we use native endian-ness internally but never
+expose it to guest.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Reviewed-by: Jason Wang <jasowang@redhat.com>
 ---
- drivers/vhost/vhost.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/vhost/net.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index 3eda654..c624b09 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -106,7 +106,7 @@ struct vhost_virtqueue {
- 	/* Protected by virtqueue mutex. */
- 	struct vhost_memory *memory;
- 	void *private_data;
--	unsigned acked_features;
-+	u64 acked_features;
- 	/* Log write descriptors */
- 	void __user *log_base;
- 	struct vhost_log *log;
-@@ -174,6 +174,6 @@ enum {
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 8dae2f7..dce5c58 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -48,15 +48,15 @@ MODULE_PARM_DESC(experimental_zcopytx, "Enable Zero Copy TX;"
+  * status internally; used for zerocopy tx only.
+  */
+ /* Lower device DMA failed */
+-#define VHOST_DMA_FAILED_LEN	3
++#define VHOST_DMA_FAILED_LEN	((__force __virtio32)3)
+ /* Lower device DMA done */
+-#define VHOST_DMA_DONE_LEN	2
++#define VHOST_DMA_DONE_LEN	((__force __virtio32)2)
+ /* Lower device DMA in progress */
+-#define VHOST_DMA_IN_PROGRESS	1
++#define VHOST_DMA_IN_PROGRESS	((__force __virtio32)1)
+ /* Buffer unused */
+-#define VHOST_DMA_CLEAR_LEN	0
++#define VHOST_DMA_CLEAR_LEN	((__force __virtio32)0)
  
- static inline int vhost_has_feature(struct vhost_virtqueue *vq, int bit)
- {
--	return vq->acked_features & (1 << bit);
-+	return vq->acked_features & (1ULL << bit);
- }
- #endif
+-#define VHOST_DMA_IS_DONE(len) ((len) >= VHOST_DMA_DONE_LEN)
++#define VHOST_DMA_IS_DONE(len) ((__force u32)(len) >= (__force u32)VHOST_DMA_DONE_LEN)
+ 
+ enum {
+ 	VHOST_NET_FEATURES = VHOST_FEATURES |
 -- 
 MST
 
