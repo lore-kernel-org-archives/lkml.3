@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429AbaK3NIt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 08:08:49 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:65439 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051AbaK3NIc (ORCPT
+	id S1752294AbaK3NIb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 08:08:31 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:56417 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752051AbaK3NI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 08:08:32 -0500
+	Sun, 30 Nov 2014 08:08:28 -0500
 From: Marek Belisko <marek@goldelico.com>
 To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
@@ -16,94 +16,42 @@ Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-fbdev@vger.kernel.org, hns@goldelico.com,
         Marek Belisko <marek@goldelico.com>
-Subject: [PATCH v3 3/3] arm: dts: omap3-gta04: Add handling for tv output
-Date: Sun, 30 Nov 2014 14:07:47 +0100
-Message-Id: <1417352867-7436-4-git-send-email-marek@goldelico.com>
+Subject: [PATCH v3 0/3] omapdss: Add video output support for gta04
+Date: Sun, 30 Nov 2014 14:07:44 +0100
+Message-Id: <1417352867-7436-1-git-send-email-marek@goldelico.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417352867-7436-1-git-send-email-marek@goldelico.com>
-References: <1417352867-7436-1-git-send-email-marek@goldelico.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add handling for gta04 tv out chain:
-venc -> opa362 -> svideo
+changes from v2:
+- rename amplifier-opa362.c to encoder-opa362
+- drop inversion handlign from driver
+- add ti,invert-polarity to venc node
 
-Use invert-polarity in venc node because opa362
-is doing polarity inversion also.
+I also drop devconf1 handling patches because discussion how to
+properly implement is not yet finished and this part is independent
+from video driver.
 
-Signed-off-by: Marek Belisko <marek@goldelico.com>
----
- arch/arm/boot/dts/omap3-gta04.dtsi | 49 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 49 insertions(+)
+changes from v1:
+- fix opa362 compilation error
+- fix opa362 DT documentation
+- move devconf1 definition to omap3.dtsi
 
-diff --git a/arch/arm/boot/dts/omap3-gta04.dtsi b/arch/arm/boot/dts/omap3-gta04.dtsi
-index fd34f91..e9f221d 100644
---- a/arch/arm/boot/dts/omap3-gta04.dtsi
-+++ b/arch/arm/boot/dts/omap3-gta04.dtsi
-@@ -83,6 +83,41 @@
- 		compatible = "usb-nop-xceiv";
- 		reset-gpios = <&gpio6 14 GPIO_ACTIVE_LOW>;
- 	};
-+
-+	tv0: connector@1 {
-+		compatible = "svideo-connector";
-+		label = "tv";
-+
-+		port {
-+			tv_connector_in: endpoint {
-+				remote-endpoint = <&opa_out>;
-+			};
-+		};
-+	};
-+
-+	tv_amp: opa362 {
-+		compatible = "ti,opa362";
-+		gpios = <&gpio1 23 0>;
-+
-+		ports {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			port@0 {
-+				reg = <0>;
-+				opa_in: endpoint@0 {
-+					remote-endpoint = <&venc_out>;
-+				};
-+			};
-+
-+			port@1 {
-+				reg = <1>;
-+				opa_out: endpoint@0 {
-+					remote-endpoint = <&tv_connector_in>;
-+				};
-+			};
-+		};
-+	};
- };
- 
- &omap3_pmx_core {
-@@ -396,6 +431,20 @@
- 	};
- };
- 
-+&venc {
-+	status = "okay";
-+
-+	vdda-supply = <&vdac>;
-+
-+	port {
-+		venc_out: endpoint {
-+			remote-endpoint = <&opa_in>;
-+			ti,channels = <2>;
-+			ti,invert-polarity;
-+		};
-+	};
-+};
-+
- &gpmc {
- 	ranges = <0 0 0x30000000 0x04>; /* CS0: NAND */
- 
+Marek Belisko (3):
+  video: omapdss: Add opa362 driver
+  Documentation: DT: Add documentation for ti,opa362 bindings
+  arm: dts: omap3-gta04: Add handling for tv output
+
+ .../devicetree/bindings/video/ti,opa362.txt        |  38 +++
+ arch/arm/boot/dts/omap3-gta04.dtsi                 |  49 ++++
+ drivers/video/fbdev/omap2/displays-new/Kconfig     |   6 +
+ drivers/video/fbdev/omap2/displays-new/Makefile    |   1 +
+ .../fbdev/omap2/displays-new/encoder-opa362.c      | 283 +++++++++++++++++++++
+ 5 files changed, 377 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/video/ti,opa362.txt
+ create mode 100644 drivers/video/fbdev/omap2/displays-new/encoder-opa362.c
+
 -- 
 1.9.1
 
