@@ -1,78 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521AbaK3Qpe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 11:45:34 -0500
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:41493 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752437AbaK3Qpc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 11:45:32 -0500
+	id S1752567AbaK3QqI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 11:46:08 -0500
+Received: from mout.web.de ([212.227.17.12]:50989 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752437AbaK3QqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 11:46:05 -0500
+Message-ID: <547B49C2.4020000@users.sourceforge.net>
+Date: Sun, 30 Nov 2014 17:45:54 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <b0f6c4df0e8ef8afcc7b786edecb4be8c752941e.1417215468.git.luto@amacapital.net>
-References: <b0f6c4df0e8ef8afcc7b786edecb4be8c752941e.1417215468.git.luto@amacapital.net>
-Date: Sun, 30 Nov 2014 17:45:31 +0100
-Message-ID: <CANq1E4Qv1pukOr8ocUtE0QzLgWFEb3pT=5JXvERj98m-j9FS3Q@mail.gmail.com>
-Subject: Re: [RFC PATCH] proc, pidns: Add highpid
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linux API <linux-api@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        systemd Mailing List <systemd-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+To: Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
+        netdev@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 2/3] net-PPP: Less function calls in mppe_alloc() after error
+ detection
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <547B4886.4080406@users.sourceforge.net>
+In-Reply-To: <547B4886.4080406@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:XXPZZf2rT2/GencIBmUUNzYZvpRSkLz7Xde6PIfROkDhS/YkMg+
+ 1qQdp8dI6Yv7qPds3/+V+MHctyvSJivSANb4PdRIaPaldvZ9zyku/M4AswYQKPyB9rq7X0o
+ C9CUOJn5O7k5mCImRtPexb4uu4djRELak4OOwXKbywaZWgbbWMvpv/YVjhdVMuJHjAHUfo/
+ DBQ6ZbwDleO54K5/ziG+A==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy
+>From 06c1a0fff81142dfa6d933479e17bb1b45ab9dc7 Mon Sep 17 00:00:00 2001
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Sun, 30 Nov 2014 17:07:34 +0100
 
-On Sat, Nov 29, 2014 at 12:05 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> Pid reuse is common, which means that it's difficult or impossible
-> to read information about a pid from /proc without races.
->
-> This introduces a second number associated with each (task, pidns)
-> pair called highpid.  Highpid is a 64-bit number, and, barring
-> extremely unlikely circumstances or outright error, a (highpid, pid)
-> will never be reused.
->
-> With just this change, a program can open /proc/PID/status, read the
-> "Highpid" field, and confirm that it has the expected value.  If the
-> pid has been reused, then highpid will be different.
->
-> The initial implementation is straightforward: highpid is simply a
-> 64-bit counter. If a high-end system can fork every 3 ns (which
-> would be amazing, given that just allocating a pid requires at
-> atomic operation), it would take well over 1000 years for highpid to
-> wrap.
->
-> For CRIU's benefit, the next highpid can be set by a privileged
-> user.
->
-> NB: The sysctl stuff only works on 64-bit systems.  If the approach
-> looks good, I'll fix that somehow.
->
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->
-> If this goes in, there's plenty of room to add new interfaces to
-> make this more useful.  For example, we could add a fancier tgkill
-> that adds and validates hightgid and highpid, and we might want to
-> add a syscall to read one's own hightgid and highpid.  These would
-> be quite useful for pidfiles.
->
-> David, would this be useful for kdbus?
+The functions crypto_free_blkcipher((), crypto_free_hash() and kfree() could be
+called in some cases by the mppe_alloc() function during error handling even
+if the passed data structure element contained still a null pointer.
+This implementation detail could be improved by adjustments for jump labels.
 
-Much appreciated! This would serve well as replacement for
-'starttime'. I'd prefer if pid_t was 64bit, but I guess that ship
-sailed long ago. Though, your patch might in the end just introduce a
-new pid64, which replaces the old pid and lives in parallel.
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/net/ppp/ppp_mppe.c | 24 +++++++++++-------------
+ 1 file changed, 11 insertions(+), 13 deletions(-)
 
-Anyway, considering that we actually want the same pid-reuse
-protection for tid, tgid, ppid and so on, we'd have to add a
-'starttime' for all of them. Sounds ugly.. so we might just end up
-dropping 'starttime' and introduce KDBUS_ITEM_PIDS2 whenever a 'fix'
-is merged upstream.
+diff --git a/drivers/net/ppp/ppp_mppe.c b/drivers/net/ppp/ppp_mppe.c
+index 7e44212..962c1a0 100644
+--- a/drivers/net/ppp/ppp_mppe.c
++++ b/drivers/net/ppp/ppp_mppe.c
+@@ -197,11 +197,11 @@ static void *mppe_alloc(unsigned char *options, int optlen)
+ 
+ 	if (optlen != CILEN_MPPE + sizeof(state->master_key) ||
+ 	    options[0] != CI_MPPE || options[1] != CILEN_MPPE)
+-		goto out;
++		return NULL;
+ 
+ 	state = kzalloc(sizeof(*state), GFP_KERNEL);
+ 	if (state == NULL)
+-		goto out;
++		return NULL;
+ 
+ 
+ 	state->arc4 = crypto_alloc_blkcipher("ecb(arc4)", 0, CRYPTO_ALG_ASYNC);
+@@ -213,16 +213,16 @@ static void *mppe_alloc(unsigned char *options, int optlen)
+ 	state->sha1 = crypto_alloc_hash("sha1", 0, CRYPTO_ALG_ASYNC);
+ 	if (IS_ERR(state->sha1)) {
+ 		state->sha1 = NULL;
+-		goto out_free;
++		goto out_free_blkcipher;
+ 	}
+ 
+ 	digestsize = crypto_hash_digestsize(state->sha1);
+ 	if (digestsize < MPPE_MAX_KEY_LEN)
+-		goto out_free;
++		goto out_free_hash;
+ 
+ 	state->sha1_digest = kmalloc(digestsize, GFP_KERNEL);
+ 	if (!state->sha1_digest)
+-		goto out_free;
++		goto out_free_hash;
+ 
+ 	/* Save keys. */
+ 	memcpy(state->master_key, &options[CILEN_MPPE],
+@@ -237,14 +237,12 @@ static void *mppe_alloc(unsigned char *options, int optlen)
+ 
+ 	return (void *)state;
+ 
+-	out_free:
+-	kfree(state->sha1_digest);
+-	    if (state->sha1)
+-		crypto_free_hash(state->sha1);
+-	    if (state->arc4)
+-		crypto_free_blkcipher(state->arc4);
+-	    kfree(state);
+-	out:
++out_free_hash:
++	crypto_free_hash(state->sha1);
++out_free_blkcipher:
++	crypto_free_blkcipher(state->arc4);
++out_free:
++	kfree(state);
+ 	return NULL;
+ }
+ 
+-- 
+2.1.3
 
-Thanks a lot!
-David
