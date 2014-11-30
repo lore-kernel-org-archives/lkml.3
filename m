@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813AbaK3RJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 12:09:28 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:38159 "EHLO
+	id S1752832AbaK3RJo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 12:09:44 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:38155 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752767AbaK3RJ0 (ORCPT
+	by vger.kernel.org with ESMTP id S1752769AbaK3RJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Nov 2014 12:09:26 -0500
 X-IronPort-AV: E=Sophos;i="5.07,488,1413237600"; 
-   d="scan'208";a="110322839"
+   d="scan'208";a="110322840"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Russell King <linux@arm.linux.org.uk>, linux-crypto@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/8 v2] crypto: replace memset by memzero_explicit
-Date: Sun, 30 Nov 2014 18:03:48 +0100
-Message-Id: <1417367029-32762-8-git-send-email-Julia.Lawall@lip6.fr>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: kernel-janitors@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 8/8 v2] wusb: replace memset by memzero_explicit
+Date: Sun, 30 Nov 2014 18:03:49 +0100
+Message-Id: <1417367029-32762-9-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1417367029-32762-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1417367029-32762-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -60,24 +59,42 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 Daniel Borkmann suggested that these patches could go through Herbert Xu's
 cryptodev tree.
 
-I was not able to compile this one.
-
 v2: fixed email address
 
- arch/arm/crypto/sha512_neon_glue.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/wusbcore/dev-sysfs.c |    2 +-
+ drivers/usb/wusbcore/security.c  |    8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/crypto/sha512_neon_glue.c b/arch/arm/crypto/sha512_neon_glue.c
-index f3452c6..b124dce 100644
---- a/arch/arm/crypto/sha512_neon_glue.c
-+++ b/arch/arm/crypto/sha512_neon_glue.c
-@@ -241,7 +241,7 @@ static int sha384_neon_final(struct shash_desc *desc, u8 *hash)
- 	sha512_neon_final(desc, D);
- 
- 	memcpy(hash, D, SHA384_DIGEST_SIZE);
--	memset(D, 0, SHA512_DIGEST_SIZE);
-+	memzero_explicit(D, SHA512_DIGEST_SIZE);
- 
- 	return 0;
+diff --git a/drivers/usb/wusbcore/dev-sysfs.c b/drivers/usb/wusbcore/dev-sysfs.c
+index 1018345..415b140 100644
+--- a/drivers/usb/wusbcore/dev-sysfs.c
++++ b/drivers/usb/wusbcore/dev-sysfs.c
+@@ -101,7 +101,7 @@ static ssize_t wusb_ck_store(struct device *dev,
+ 	if (wusbhc == NULL)
+ 		return -ENODEV;
+ 	result = wusb_dev_4way_handshake(wusbhc, usb_dev->wusb_dev, &ck);
+-	memset(&ck, 0, sizeof(ck));
++	memzero_explicit(&ck, sizeof(ck));
+ 	wusbhc_put(wusbhc);
+ 	return result < 0 ? result : size;
  }
+diff --git a/drivers/usb/wusbcore/security.c b/drivers/usb/wusbcore/security.c
+index cc74d66..b66faaf 100644
+--- a/drivers/usb/wusbcore/security.c
++++ b/drivers/usb/wusbcore/security.c
+@@ -522,10 +522,10 @@ error_hs3:
+ error_hs2:
+ error_hs1:
+ 	memset(hs, 0, 3*sizeof(hs[0]));
+-	memset(&keydvt_out, 0, sizeof(keydvt_out));
+-	memset(&keydvt_in, 0, sizeof(keydvt_in));
+-	memset(&ccm_n, 0, sizeof(ccm_n));
+-	memset(mic, 0, sizeof(mic));
++	memzero_explicit(&keydvt_out, sizeof(keydvt_out));
++	memzero_explicit(&keydvt_in, sizeof(keydvt_in));
++	memzero_explicit(&ccm_n, sizeof(ccm_n));
++	memzero_explicit(mic, sizeof(mic));
+ 	if (result < 0)
+ 		wusb_dev_set_encryption(usb_dev, 0);
+ error_dev_set_encryption:
 
