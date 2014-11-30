@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320AbaK3Qkw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 11:40:52 -0500
-Received: from mout.web.de ([212.227.15.4]:54673 "EHLO mout.web.de"
+	id S1752448AbaK3Qme (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 11:42:34 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65276 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751917AbaK3Qku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 11:40:50 -0500
-Message-ID: <547B4886.4080406@users.sourceforge.net>
-Date: Sun, 30 Nov 2014 17:40:38 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752314AbaK3Qmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 11:42:33 -0500
+Message-ID: <547B48F3.6020909@nod.at>
+Date: Sun, 30 Nov 2014 17:42:27 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-To: Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 0/3] net-PPP: Deletion of a few unnecessary checks
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
+To: Simon Danner <danner.simon@gmail.com>,
+        Laurence Oberman <oberman.l@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
+Subject: Re: Crash when copying from broken external hdd
+References: <1417258323.9558.3.camel@gmail.com>	 <CAFLxGvwKwZh38+-is8dX6zOFAiz0gVo+Yio3B=2eiMqmGCZfqA@mail.gmail.com>	 <CAAzz28gHzPSC+VsSeq56oWj-KByCqK0oqeG3N4HM3D1iX_z6uQ@mail.gmail.com> <1417365364.4806.1.camel@gmail.com>
+In-Reply-To: <1417365364.4806.1.camel@gmail.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:ziLeTTf7J3VHO5maAsaVXolk9I4V8MG0JDYt2jR6zJCW3L38lw/
- ov/fb2Yp9oPVfS+8bIcdJDGsmLgEYNce/k3TkrS1+i1yBvT20EdxgCioBIk9bZbcqbWzzg/
- /cZhB4Uptdl1wQx6IU8iv3Zy9EZuggKaIzadr9EGoJCAUFKxCw1RWP3PVhGO8WN3FOFi39Q
- hvgnijsHBlxsajH5Z6AGg==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sun, 30 Nov 2014 17:25:40 +0100
+Am 30.11.2014 um 17:36 schrieb Simon Danner:
+> Hi,
+> here the two screenshots i could take, from 3.17.4 and 3.18 git.
 
-Further update suggestions were taken into account after a patch was applied
-from static source code analysis.
+You're hitting BUG_ON(blk_queued_rq(req)); in blk_finish_request()
 
-Markus Elfring (3):
-  Deletion of unnecessary checks before the function call "kfree"
-  Less function calls in mppe_alloc() after error detection
-  Delete an unnecessary assignment
+Thanks,
+//richard
 
- drivers/net/ppp/ppp_mppe.c | 32 +++++++++++++-------------------
- 1 file changed, 13 insertions(+), 19 deletions(-)
-
--- 
-2.1.3
-
+> Thanks
+> Simon
+> 
+> On Sun, 2014-11-30 at 10:58 -0500, Laurence Oberman wrote:
+>> I need more of the stack if you have it, the screenshot is not attached.
+>> Thanks
+>> Laurence
+>>
+>> On Sun, Nov 30, 2014 at 6:11 AM, Richard Weinberger
+>> <richard.weinberger@gmail.com> wrote:
+>>> On Sat, Nov 29, 2014 at 11:52 AM, Simon Danner <danner.simon@gmail.com> wrote:
+>>>> Hello,
+>>>> i get the following crash after i try to copy files from a broken
+>>>> external hdd to another external hdd.
+>>>> It happens after a few minutes, with latest git and 3.17.4 from Arch.
+>>>> Attached screenshot is from latest mainline git.
+>>>>
+>>>> i hope this can be fixed somehow,
+>>>> Regards Simon Danner
+>>>
+>>> Can you decode scsi_requed_end+0x122?
+>>> CC'ing block and scsi folks.
+>>>
+>>> --
+>>> Thanks,
+>>> //richard
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
