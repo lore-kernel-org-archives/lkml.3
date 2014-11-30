@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463AbaK3MPt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 07:15:49 -0500
-Received: from mail.sigma-star.at ([95.130.255.111]:14391 "EHLO
+	id S1752482AbaK3MQG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 07:16:06 -0500
+Received: from mail.sigma-star.at ([95.130.255.111]:14389 "EHLO
 	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344AbaK3MPj (ORCPT
+	with ESMTP id S1752376AbaK3MPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Nov 2014 07:15:39 -0500
 From: Richard Weinberger <richard@nod.at>
 To: dedekind1@gmail.com
 Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
         Richard Weinberger <richard@nod.at>
-Subject: [PATCH 6/6] UBI: Fastmap: Add new module parameter fm_debug
-Date: Sun, 30 Nov 2014 13:15:28 +0100
-Message-Id: <1417349728-9070-7-git-send-email-richard@nod.at>
+Subject: [PATCH 4/6] UBI: Fastmap: Add self check to detect absent PEBs
+Date: Sun, 30 Nov 2014 13:15:26 +0100
+Message-Id: <1417349728-9070-5-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1417349728-9070-1-git-send-email-richard@nod.at>
 References: <1417349728-9070-1-git-send-email-richard@nod.at>
@@ -21,62 +21,194 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If fm_debug is set fastmap debugging is enabled by default.
-This is useful if one wants to debug fastmap on an UBI device
-with serves the rootfs.
-The the UBI attach mechanism runs long before debugfs can be mounted
-and chk_fastmap set.
+This self check allows Fastmap to detect absent PEBs while
+writing a new fastmap to the MTD device.
+It will help to find implementation issues in Fastmap.
 
 Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- drivers/mtd/ubi/build.c | 5 +++++
- drivers/mtd/ubi/debug.h | 5 +++++
- 2 files changed, 10 insertions(+)
+ drivers/mtd/ubi/fastmap.c | 86 +++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 84 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mtd/ubi/build.c b/drivers/mtd/ubi/build.c
-index 12f4776..88903a9 100644
---- a/drivers/mtd/ubi/build.c
-+++ b/drivers/mtd/ubi/build.c
-@@ -81,6 +81,7 @@ static struct mtd_dev_param __initdata mtd_dev_param[UBI_MAX_DEVICES];
- #ifdef CONFIG_MTD_UBI_FASTMAP
- /* UBI module parameter to enable fastmap automatically on non-fastmap images */
- static bool fm_autoconvert;
-+static bool fm_debug;
- #endif
- /* Root UBI "class" object (corresponds to '/<sysfs>/class/ubi/') */
- struct class *ubi_class;
-@@ -951,6 +952,8 @@ int ubi_attach_mtd_dev(struct mtd_info *mtd, int ubi_num,
+diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
+index db2625d..0c1e2c3 100644
+--- a/drivers/mtd/ubi/fastmap.c
++++ b/drivers/mtd/ubi/fastmap.c
+@@ -1,5 +1,6 @@
+ /*
+  * Copyright (c) 2012 Linutronix GmbH
++ * Copyright (c) 2014 sigma star gmbh
+  * Author: Richard Weinberger <richard@nod.at>
+  *
+  * This program is free software; you can redistribute it and/or modify
+@@ -17,6 +18,69 @@
+ #include "ubi.h"
  
- 	ubi->fm_wl_pool.max_size = ubi->fm_pool.max_size / 2;
- 	ubi->fm_disabled = !fm_autoconvert;
-+	if (fm_debug)
-+		ubi_enable_dbg_chk_fastmap(ubi);
- 
- 	if (!ubi->fm_disabled && (int)mtd_div_by_eb(ubi->mtd->size, ubi->mtd)
- 	    <= UBI_FM_MAX_START) {
-@@ -1503,6 +1506,8 @@ MODULE_PARM_DESC(mtd, "MTD devices to attach. Parameter format: mtd=<name|num|pa
- #ifdef CONFIG_MTD_UBI_FASTMAP
- module_param(fm_autoconvert, bool, 0644);
- MODULE_PARM_DESC(fm_autoconvert, "Set this parameter to enable fastmap automatically on images without a fastmap.");
-+module_param(fm_debug, bool, 0);
-+MODULE_PARM_DESC(fm_debug, "Set this parameter to enable fastmap debugging by default. Warning, this will make fastmap slow!");
- #endif
- MODULE_VERSION(__stringify(UBI_VERSION));
- MODULE_DESCRIPTION("UBI - Unsorted Block Images");
-diff --git a/drivers/mtd/ubi/debug.h b/drivers/mtd/ubi/debug.h
-index e99ef37..c6ea443 100644
---- a/drivers/mtd/ubi/debug.h
-+++ b/drivers/mtd/ubi/debug.h
-@@ -132,4 +132,9 @@ static inline int ubi_dbg_chk_fastmap(const struct ubi_device *ubi)
- {
- 	return ubi->dbg.chk_fastmap;
- }
-+
-+static inline void ubi_enable_dbg_chk_fastmap(struct ubi_device *ubi)
+ /**
++ * init_seen - allocate memory for used for debugging.
++ * @ubi: UBI device description object
++ */
++static inline int *init_seen(struct ubi_device *ubi)
 +{
-+	ubi->dbg.chk_fastmap = 1;
++	int *ret;
++
++	if (!ubi_dbg_chk_fastmap(ubi))
++		return NULL;
++
++	ret = kcalloc(ubi->peb_count, sizeof(int), GFP_KERNEL);
++	if (!ret)
++		return ERR_PTR(-ENOMEM);
++
++	return ret;
 +}
- #endif /* !__UBI_DEBUG_H__ */
++
++/**
++ * free_seen - free the seen logic integer array.
++ * @seen: integer array of @ubi->peb_count size
++ */
++static inline void free_seen(int *seen)
++{
++	kfree(seen);
++}
++
++/**
++ * set_seen - mark a PEB as seen.
++ * @ubi: UBI device description object
++ * @pnum: The PEB to be makred as seen
++ * @seen: integer array of @ubi->peb_count size
++ */
++static inline void set_seen(struct ubi_device *ubi, int pnum, int *seen)
++{
++	if (!ubi_dbg_chk_fastmap(ubi) || !seen)
++		return;
++
++	seen[pnum] = 1;
++}
++
++/**
++ * self_check_seen - check whether all PEB have been seen by fastmap.
++ * @ubi: UBI device description object
++ * @seen: integer array of @ubi->peb_count size
++ */
++static int self_check_seen(struct ubi_device *ubi, int *seen)
++{
++	int pnum, ret = 0;
++
++	if (!ubi_dbg_chk_fastmap(ubi) || !seen)
++		return 0;
++
++	for (pnum = 0; pnum < ubi->peb_count; pnum++) {
++		if (!seen[pnum] && ubi->lookuptbl[pnum]) {
++			ubi_err(ubi, "self-check failed for PEB %d, fastmap didn't see it", pnum);
++			ret = -EINVAL;
++		}
++	}
++
++	return ret;
++}
++
++/**
+  * ubi_calc_fm_size - calculates the fastmap size in bytes for an UBI device.
+  * @ubi: UBI device description object
+  */
+@@ -1030,6 +1094,7 @@ static int ubi_write_fastmap(struct ubi_device *ubi,
+ 	struct ubi_work *ubi_wrk;
+ 	int ret, i, j, free_peb_count, used_peb_count, vol_count;
+ 	int scrub_peb_count, erase_peb_count;
++	int *seen_pebs = NULL;
+ 
+ 	fm_raw = ubi->fm_buf;
+ 	memset(ubi->fm_buf, 0, ubi->fm_size);
+@@ -1046,6 +1111,12 @@ static int ubi_write_fastmap(struct ubi_device *ubi,
+ 		goto out_kfree;
+ 	}
+ 
++	seen_pebs = init_seen(ubi);
++	if (IS_ERR(seen_pebs)) {
++		ret = PTR_ERR(seen_pebs);
++		goto out_kfree;
++	}
++
+ 	spin_lock(&ubi->volumes_lock);
+ 	spin_lock(&ubi->wl_lock);
+ 
+@@ -1076,8 +1147,10 @@ static int ubi_write_fastmap(struct ubi_device *ubi,
+ 	fmpl1->size = cpu_to_be16(ubi->fm_pool.size);
+ 	fmpl1->max_size = cpu_to_be16(ubi->fm_pool.max_size);
+ 
+-	for (i = 0; i < ubi->fm_pool.size; i++)
++	for (i = 0; i < ubi->fm_pool.size; i++) {
+ 		fmpl1->pebs[i] = cpu_to_be32(ubi->fm_pool.pebs[i]);
++		set_seen(ubi, ubi->fm_pool.pebs[i], seen_pebs);
++	}
+ 
+ 	fmpl2 = (struct ubi_fm_scan_pool *)(fm_raw + fm_pos);
+ 	fm_pos += sizeof(*fmpl2);
+@@ -1085,14 +1158,17 @@ static int ubi_write_fastmap(struct ubi_device *ubi,
+ 	fmpl2->size = cpu_to_be16(ubi->fm_wl_pool.size);
+ 	fmpl2->max_size = cpu_to_be16(ubi->fm_wl_pool.max_size);
+ 
+-	for (i = 0; i < ubi->fm_wl_pool.size; i++)
++	for (i = 0; i < ubi->fm_wl_pool.size; i++) {
+ 		fmpl2->pebs[i] = cpu_to_be32(ubi->fm_wl_pool.pebs[i]);
++		set_seen(ubi, ubi->fm_wl_pool.pebs[i], seen_pebs);
++	}
+ 
+ 	for (node = rb_first(&ubi->free); node; node = rb_next(node)) {
+ 		wl_e = rb_entry(node, struct ubi_wl_entry, u.rb);
+ 		fec = (struct ubi_fm_ec *)(fm_raw + fm_pos);
+ 
+ 		fec->pnum = cpu_to_be32(wl_e->pnum);
++		set_seen(ubi, wl_e->pnum, seen_pebs);
+ 		fec->ec = cpu_to_be32(wl_e->ec);
+ 
+ 		free_peb_count++;
+@@ -1106,6 +1182,7 @@ static int ubi_write_fastmap(struct ubi_device *ubi,
+ 		fec = (struct ubi_fm_ec *)(fm_raw + fm_pos);
+ 
+ 		fec->pnum = cpu_to_be32(wl_e->pnum);
++		set_seen(ubi, wl_e->pnum, seen_pebs);
+ 		fec->ec = cpu_to_be32(wl_e->ec);
+ 
+ 		used_peb_count++;
+@@ -1132,6 +1209,7 @@ static int ubi_write_fastmap(struct ubi_device *ubi,
+ 		fec = (struct ubi_fm_ec *)(fm_raw + fm_pos);
+ 
+ 		fec->pnum = cpu_to_be32(wl_e->pnum);
++		set_seen(ubi, wl_e->pnum, seen_pebs);
+ 		fec->ec = cpu_to_be32(wl_e->ec);
+ 
+ 		scrub_peb_count++;
+@@ -1149,6 +1227,7 @@ static int ubi_write_fastmap(struct ubi_device *ubi,
+ 			fec = (struct ubi_fm_ec *)(fm_raw + fm_pos);
+ 
+ 			fec->pnum = cpu_to_be32(wl_e->pnum);
++			set_seen(ubi, wl_e->pnum, seen_pebs);
+ 			fec->ec = cpu_to_be32(wl_e->ec);
+ 
+ 			erase_peb_count++;
+@@ -1208,6 +1287,7 @@ static int ubi_write_fastmap(struct ubi_device *ubi,
+ 
+ 	for (i = 0; i < new_fm->used_blocks; i++) {
+ 		fmsb->block_loc[i] = cpu_to_be32(new_fm->e[i]->pnum);
++		set_seen(ubi, new_fm->e[i]->pnum, seen_pebs);
+ 		fmsb->block_ec[i] = cpu_to_be32(new_fm->e[i]->ec);
+ 	}
+ 
+@@ -1241,11 +1321,13 @@ static int ubi_write_fastmap(struct ubi_device *ubi,
+ 	ubi_assert(new_fm);
+ 	ubi->fm = new_fm;
+ 
++	ret = self_check_seen(ubi, seen_pebs);
+ 	dbg_bld("fastmap written!");
+ 
+ out_kfree:
+ 	ubi_free_vid_hdr(ubi, avhdr);
+ 	ubi_free_vid_hdr(ubi, dvhdr);
++	free_seen(seen_pebs);
+ out:
+ 	return ret;
+ }
 -- 
 1.8.4.5
 
