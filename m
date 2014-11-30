@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758AbaK3SVH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 13:21:07 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:8586 "EHLO
-	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752471AbaK3STs (ORCPT
+	id S1752680AbaK3SWL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 13:22:11 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:44937 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552AbaK3SWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 13:19:48 -0500
-X-IronPort-AV: E=Sophos;i="5.07,488,1413237600"; 
-   d="scan'208";a="91119166"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: kernel-janitors@vger.kernel.org, linux-scsi@vger.kernel.org,
-        target-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] target: remove unneeded array
-Date: Sun, 30 Nov 2014 19:14:12 +0100
-Message-Id: <1417371255-2282-2-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1417371255-2282-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1417371255-2282-1-git-send-email-Julia.Lawall@lip6.fr>
+	Sun, 30 Nov 2014 13:22:09 -0500
+Message-ID: <547B604E.5050207@roeck-us.net>
+Date: Sun, 30 Nov 2014 10:22:06 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
+CC: Gabriele Mazzotta <gabriele.mzt@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
+References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com> <201411301844.44562@pali> <547B59CD.90305@roeck-us.net> <201411301900.48898@pali>
+In-Reply-To: <201411301900.48898@pali>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.547B6050.0167,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On 11/30/2014 10:00 AM, Pali Rohár wrote:
+[ ...]
 
-Delete a local array that is only used to be initialized by memset.
+>
+> Yes, you are right. I will create new patches.
+>
+Hi Pali,
 
-A semantic patch that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
+When doing so, please watch out for line lengths.
+Some of your previous patches created lines with more than
+80 characters per line.
 
-// <smpl>
-@@
-identifier x;
-type T;
-@@
-
-{
-... when any
--T x[...];
-<+... when != x
-- memset(x,...);
-...+>
-}
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
- drivers/target/target_core_pr.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/target/target_core_pr.c b/drivers/target/target_core_pr.c
-index 4c261c3..a0f850b 100644
---- a/drivers/target/target_core_pr.c
-+++ b/drivers/target/target_core_pr.c
-@@ -1429,14 +1429,12 @@ core_scsi3_decode_spec_i_port(
- 	struct target_core_fabric_ops *tmp_tf_ops;
- 	unsigned char *buf;
- 	unsigned char *ptr, *i_str = NULL, proto_ident, tmp_proto_ident;
--	char *iport_ptr = NULL, dest_iport[64], i_buf[PR_REG_ISID_ID_LEN];
-+	char *iport_ptr = NULL, i_buf[PR_REG_ISID_ID_LEN];
- 	sense_reason_t ret;
- 	u32 tpdl, tid_len = 0;
- 	int dest_local_nexus;
- 	u32 dest_rtpi = 0;
- 
--	memset(dest_iport, 0, 64);
--
- 	local_se_deve = se_sess->se_node_acl->device_list[cmd->orig_fe_lun];
- 	/*
- 	 * Allocate a struct pr_transport_id_holder and setup the
-@@ -3059,7 +3057,7 @@ core_scsi3_emulate_pro_register_and_move(struct se_cmd *cmd, u64 res_key,
- 	struct t10_reservation *pr_tmpl = &dev->t10_pr;
- 	unsigned char *buf;
- 	unsigned char *initiator_str;
--	char *iport_ptr = NULL, dest_iport[64], i_buf[PR_REG_ISID_ID_LEN];
-+	char *iport_ptr = NULL, i_buf[PR_REG_ISID_ID_LEN];
- 	u32 tid_len, tmp_tid_len;
- 	int new_reg = 0, type, scope, matching_iname;
- 	sense_reason_t ret;
-@@ -3071,7 +3069,6 @@ core_scsi3_emulate_pro_register_and_move(struct se_cmd *cmd, u64 res_key,
- 		return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
- 	}
- 
--	memset(dest_iport, 0, 64);
- 	memset(i_buf, 0, PR_REG_ISID_ID_LEN);
- 	se_tpg = se_sess->se_tpg;
- 	tf_ops = se_tpg->se_tpg_tfo;
+Thanks,
+Guenter
 
