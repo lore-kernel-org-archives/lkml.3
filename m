@@ -1,72 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589AbaK3Rrf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 12:47:35 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:43855
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752184AbaK3Rre (ORCPT
+	id S1752499AbaK3RyZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 12:54:25 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:42744 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752184AbaK3RyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 12:47:34 -0500
-X-IronPort-AV: E=Sophos;i="5.07,488,1413237600"; 
-   d="scan'208";a="91117350"
-Date: Sun, 30 Nov 2014 18:47:29 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-cc: SF Markus Elfring <elfring@users.sourceforge.net>,
-        Olof Johansson <olof@lixom.net>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 1/1] net-PA Semi: Deletion of unnecessary checks before
- the function call "pci_dev_put"
-In-Reply-To: <547B579F.10709@gmx.de>
-Message-ID: <alpine.DEB.2.10.1411301846560.2522@hadrien>
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net>
- <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net>
- <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net> <547A09B1.9090102@users.sourceforge.net> <547B579F.10709@gmx.de>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Sun, 30 Nov 2014 12:54:24 -0500
+Message-ID: <547B59CD.90305@roeck-us.net>
+Date: Sun, 30 Nov 2014 09:54:21 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
+CC: Gabriele Mazzotta <gabriele.mzt@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
+References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com> <201411301053.40222@pali> <547B3F12.9030705@roeck-us.net> <201411301844.44562@pali>
+In-Reply-To: <201411301844.44562@pali>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Suspect
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 512
+X-CTCH-RefID: str=0001.0A020202.547B59CF.011F,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=512,sb=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 1
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Sun, 30 Nov 2014, Lino Sanfilippo wrote:
-
-> On 29.11.2014 19:00, SF Markus Elfring wrote:
+On 11/30/2014 09:44 AM, Pali Rohár wrote:
+> On Sunday 30 November 2014 17:00:18 Guenter Roeck wrote:
+>> On 11/30/2014 01:53 AM, Pali Rohár wrote:
+>> [ ... ]
+>>
+>>>>> Original Dell DOS executable ignores all temperature
+>>>>> sensors if type SMM function fails (if I decoded and
+>>>>> understand that DOS assembler code correctly). So maybe
+>>>>> we should do same...
+>>>>>
+>>>>> But because our i8k.c code ignores sensor only if it
+>>>>> returns invalid temperature, there could be possible
+>>>>> regression that on same machines type SMM function is not
+>>>>> implemented or not working...
+>>>>>
+>>>>> What do you think?
+>>>>
+>>>> Tested with XPS13, Studio 1555 (with GPU), and XPS M140.
+>>>> Reading the type works with all of them. The Studio 1555
+>>>> reports the GPU temperature in temp4. The M140 is quite old
+>>>> (about 10 years), so I guess we can be reasonably sure that
+>>>> all laptops currently in use support reporting the type.
+>>>
+>>> Good. Then I will split this patch into two parts. One which
+>>> adds labels and one which change init code to register only
+>>> those sensors which have valid type.
+>>
+>> Ok.
+>>
+>>>> Do you know what is returned for the type if the GPU is
+>>>> turned off on a system with GPU ? I think that is the only
+>>>> open question.
+>>>
+>>> Yes, on my E6440 in both cases when GPU is turned off and on
+>>> is returned same type (GPU). So this does not help us.
+>>
+>> Unless I misunderstand you, it does help us; it simplifies
+>> sensor detection since we don't have to handle the special
+>> case that the GPU is turned off anymore.
+>>
+>> Thanks,
+>> Guenter
 >
-> >  out:
-> > -	if (mac->iob_pdev)
-> > -		pci_dev_put(mac->iob_pdev);
-> > -	if (mac->dma_pdev)
-> > -		pci_dev_put(mac->dma_pdev);
-> > +	pci_dev_put(mac->iob_pdev);
-> > +	pci_dev_put(mac->dma_pdev);
-> >
-> >  	free_netdev(dev);
-> >  out_disable_device:
-> >
+> Yes, sensor type is returned always correctly, so this is good.
 >
-> Hi,
+> I mean that it cannot be used for detecting if GPU is turned on
+> or off.
 >
-> I know there has been some criticism about those kind of "code
-> improvements" already but i would like to point out just one more thing:
->
-> Some of those NULL pointer checks on input parameters may have been
-> added subsequently to functions. So there may be older kernel versions
-> out there in which those checks dont exists in some cases. If some of
-> the now "cleaned up" code is backported to such a kernel chances are
-> good that those missing checks are overseen. And then neither caller nor
-> callee is doing the NULL pointer check.
->
-> Quite frankly i would vote for the opposite approach: Never rely on the
-> callee do to checks for NULL and do it always in the caller. An
-> exception could be for calls on a fast path. But most of those checks
-> are done on error paths anyway.
 
-I have heard of at least one case where the problem you are raising
-happened in practice...
+Yes, but that is a good thing, because it helps us figuring out
+if the GPU sensor should be enabled or not during probe,
+so we no longer need to try reading the temperature, and we
+no longer have to handle the case of "GPU supported, but turned
+off" during probe.
 
-julia
+When reading the temperature, returning -ENODATA if the GPU
+is turned off is the best we can do.
+
+Thanks,
+Guenter
+
