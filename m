@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566AbaK3QsB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 11:48:01 -0500
-Received: from mout.web.de ([212.227.15.4]:60416 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752111AbaK3QsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 11:48:00 -0500
-Message-ID: <547B4A35.7000500@users.sourceforge.net>
-Date: Sun, 30 Nov 2014 17:47:49 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752333AbaK3Q65 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 11:58:57 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:61209 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752098AbaK3Q6z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 11:58:55 -0500
+Date: Sun, 30 Nov 2014 17:58:50 +0100
+From: Konrad Zapalowicz <bergo.torino@gmail.com>
+To: Anjana Sasindran <anjanasasindran123@gmail.com>
+Cc: gregkh@linuxfoundation.org, paul.gortmaker@windriver.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers:staging:octeon:ethernet-rx.c: Added blank line
+ after declarations
+Message-ID: <20141130165850.GA5709@t400>
+References: <1417364729-5279-1-git-send-email-anjanasasindran123@gmail.com>
 MIME-Version: 1.0
-To: Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 3/3] net-PPP: Delete an unnecessary assignment
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <547B4886.4080406@users.sourceforge.net>
-In-Reply-To: <547B4886.4080406@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:miZioYw1GXqTMsQqywf/7f58jLloHTFJ9DrJP+zgSN+ExgHDBzM
- 5vQ6y40msroHqeBaX91KBrXzIpsgGbgGQ/xx7NWDnGIbl0V+5FJga7xqdZ24Lar2cOhq7Af
- cBYjDudLEvHmmr6zrNvLozJ2Z09TiIIJPzTAty+QH5UhQS06u2T8TTrP3L58a8hmm6jeJ2W
- 3iYYPKA5ZqdxIMguId2lA==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417364729-5279-1-git-send-email-anjanasasindran123@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sun, 30 Nov 2014 17:17:36 +0100
+On 11/30, Anjana Sasindran wrote:
+> This patch fixes the checkpatch.pl warnings:
 
-The data structure element "arc4" was assigned a null pointer by the
-mppe_alloc() function if a previous function call "crypto_alloc_blkcipher"
-failed. This assignment became unnecessary with previous source
-code adjustments.
-Let us delete it from the affected implementation because the element "arc4"
-will not be accessible outside the function after the detected
-allocation failure.
+Your subject line is somewhat broken as it does not really follow the
+canonical patch format. You can read up on it here (section 15)
+https://www.kernel.org/doc/Documentation/SubmittingPatches and this is
+the short version:
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/net/ppp/ppp_mppe.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+	- it is not necessary to put the full path to the driver/file in
+	  the subject line. The patches that apply to the staging start
+	  with the 'staging' mark (so no need for the 'drivers')
+	  followed by the driver name ('octeon' in this case).
 
-diff --git a/drivers/net/ppp/ppp_mppe.c b/drivers/net/ppp/ppp_mppe.c
-index 962c1a0..d913bc9 100644
---- a/drivers/net/ppp/ppp_mppe.c
-+++ b/drivers/net/ppp/ppp_mppe.c
-@@ -205,10 +205,8 @@ static void *mppe_alloc(unsigned char *options, int optlen)
+	- the file name is not needed in the subject as this information
+	  is in the diff anyway.
+
+	- use the space after the colon ':' because otherwise it is hard
+	  to read.
+
+Hope this pays offs in the future.
+
+Thanks,
+Konrad
  
- 
- 	state->arc4 = crypto_alloc_blkcipher("ecb(arc4)", 0, CRYPTO_ALG_ASYNC);
--	if (IS_ERR(state->arc4)) {
--		state->arc4 = NULL;
-+	if (IS_ERR(state->arc4))
- 		goto out_free;
--	}
- 
- 	state->sha1 = crypto_alloc_hash("sha1", 0, CRYPTO_ALG_ASYNC);
- 	if (IS_ERR(state->sha1)) {
--- 
-2.1.3
-
+> WARNING: Missing blank line after declaration
+> 
+> Signed-off-by: Anjana Sasindran <anjanasasindran123@gmail.com>
+> ---
+>  drivers/staging/octeon/ethernet-rx.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
+> index 44e372f..61131ff 100644
+> --- a/drivers/staging/octeon/ethernet-rx.c
+> +++ b/drivers/staging/octeon/ethernet-rx.c
+> @@ -84,6 +84,7 @@ static int cvm_irq_cpu;
+>  static void cvm_oct_enable_napi(void *_)
+>  {
+>  	int cpu = smp_processor_id();
+> +
+>  	napi_schedule(&cvm_oct_napi[cpu].napi);
+>  }
+>  
+> @@ -169,6 +170,7 @@ static inline int cvm_oct_check_rcv_error(cvmx_wqe_t *work)
+>  		int interface = cvmx_helper_get_interface_num(work->ipprt);
+>  		int index = cvmx_helper_get_interface_index_num(work->ipprt);
+>  		union cvmx_gmxx_rxx_frm_ctl gmxx_rxx_frm_ctl;
+> +
+>  		gmxx_rxx_frm_ctl.u64 =
+>  		    cvmx_read_csr(CVMX_GMXX_RXX_FRM_CTL(index, interface));
+>  		if (gmxx_rxx_frm_ctl.s.pre_chk == 0) {
+> @@ -272,6 +274,7 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+>  		did_work_request = 0;
+>  		if (work == NULL) {
+>  			union cvmx_pow_wq_int wq_int;
+> +
+>  			wq_int.u64 = 0;
+>  			wq_int.s.iq_dis = 1 << pow_receive_group;
+>  			wq_int.s.wq_int = 1 << pow_receive_group;
+> @@ -296,6 +299,7 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+>  			union cvmx_pow_wq_int_cntx counts;
+>  			int backlog;
+>  			int cores_in_use = core_state.baseline_cores - atomic_read(&core_state.available_cores);
+> +
+>  			counts.u64 = cvmx_read_csr(CVMX_POW_WQ_INT_CNTX(pow_receive_group));
+>  			backlog = counts.s.iq_cnt + counts.s.ds_cnt;
+>  			if (backlog > budget * cores_in_use && napi != NULL)
+> -- 
+> 1.9.1
+> 
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
