@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382AbaK3Vgh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 16:36:37 -0500
-Received: from mout.gmx.net ([212.227.15.18]:60374 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752021AbaK3Vgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 16:36:35 -0500
-Message-ID: <547B8DE2.9030301@gmx.de>
-Date: Sun, 30 Nov 2014 22:36:34 +0100
-From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752279AbaK3Vn4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 16:43:56 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:65191 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021AbaK3Vnz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 16:43:55 -0500
 MIME-Version: 1.0
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-CC: Julia Lawall <julia.lawall@lip6.fr>, Olof Johansson <olof@lixom.net>,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org
-Subject: Re: net-PA Semi: Deletion of unnecessary checks before the function
- call "pci_dev_put"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <547A09B1.9090102@users.sourceforge.net> <547B579F.10709@gmx.de> <alpine.DEB.2.10.1411301846560.2522@hadrien> <547B6F9A.8030806@gmx.de> <547B80B7.5030707@users.sourceforge.net>
-In-Reply-To: <547B80B7.5030707@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:qiTbyc1hLth4s+L4zuzEvLrswLxyCRKlTxCyh134rhZ5y4qo+Zy
- r1MHJ4cB7EmCBRq/ZaZMlGQ6cqVP+i/aCNJkKmY5O83weB9NMP+fvQKUINXbyF4X3kZFD2W
- jzp52DhZyzey0W0cDuvfeflsN7HxrwWk25gYvqZ9LoGT9ao0KwualXZU32e9NkU0SQcZPm1
- KkIv+VQ2n4Iow9YDdQDEw==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <1417359787-10138-45-git-send-email-mst@redhat.com>
+References: <1417359787-10138-1-git-send-email-mst@redhat.com> <1417359787-10138-45-git-send-email-mst@redhat.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Sun, 30 Nov 2014 21:43:23 +0000
+Message-ID: <CA+V-a8t6Gp8XyCAM8DVFrhyJzN5wdEMv8nn59mCP1FP6QQLwXg@mail.gmail.com>
+Subject: Re: [PATCH v7 44/46] virtio_scsi: export to userspace
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
+        cornelia.huck@de.ibm.com, rusty@au1.ibm.com, nab@linux-iscsi.org,
+        pbonzini@redhat.com, thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Bjarke Istrup Pedersen <gurligebis@gentoo.org>,
+        Andy Grover <agrover@redhat.com>,
+        stephen hemminger <stephen@networkplumber.org>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        Anup Patel <anup.patel@linaro.org>,
+        linux-api <linux-api@vger.kernel.org>,
+        virtualization@lists.linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30.11.2014 21:40, SF Markus Elfring wrote:
->> Maybe this topic should be clarified somewhere (e.g. in "CodingStyle")?
->> On the other hand i always found it obvious that its the callers
->> responsibility to only pass sane parameters to the called functions...
-> 
-> Can you imagine that any more source code places which would benefit from
-> check adjustments because of defensive programming?
-> 
+Hi Michael,
 
-I am not sure if i understand your question correctly. But i would not
-call sanity checks for function parameters "defensive programming". I
-would rather call it not being totally careless. So to me the question
-if those checks should be done or not is different from the question
-whether there are code parts that would benefit from an adjustment to
-defensive programming.
+Thanks for the patch.
+
+On Sun, Nov 30, 2014 at 3:12 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> Replace uXX by __uXX and _packed by __attribute((packed))
+> as seems to be the norm for userspace headers.
+>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+
+> ---
+>  include/uapi/linux/virtio_scsi.h | 74 ++++++++++++++++++++--------------------
+>  include/uapi/linux/Kbuild        |  1 +
+
+Probably worth making a separate patch for this ? as it doesnt
+match with patch description aswel.
+
+Apart from that patch looks good.
+
+Acked-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
 Regards,
-Lino
-
+--Prabhakar Lad
