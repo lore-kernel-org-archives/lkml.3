@@ -1,91 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687AbaK3KRj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 05:17:39 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:31985 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156AbaK3KRh (ORCPT
+	id S1752069AbaK3KUn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 05:20:43 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:33636 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142AbaK3KUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 05:17:37 -0500
-Message-ID: <547AEEB4.2020803@huawei.com>
-Date: Sun, 30 Nov 2014 18:17:24 +0800
-From: Wang Weidong <wangweidong1@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Sun, 30 Nov 2014 05:20:41 -0500
 MIME-Version: 1.0
-To: Wang Weidong <wangweidong1@huawei.com>, <rjw@rjwysocki.net>,
-        <viresh.kumar@linaro.org>
-CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <guohanjun@huawei.com>
-Subject: [PATCH v2] acpi-cpufreq: make the freq_table store the same freq
- value
-References: <1417142619-14548-1-git-send-email-wangweidong1@huawei.com>
-In-Reply-To: <1417142619-14548-1-git-send-email-wangweidong1@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.75]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020205.547AEEBF.0042,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 53a068a31ca5ef00b4bbd667b6ede609
+In-Reply-To: <20141130101056.GB484@cbox>
+References: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org>
+ <1416931805-23223-6-git-send-email-alex.bennee@linaro.org>
+ <CAFEAcA-cjM9yUXi6tc79UP0fBKAagtFKQgV3iAjz5DWr9yxZUQ@mail.gmail.com> <20141130101056.GB484@cbox>
+From: Peter Maydell <peter.maydell@linaro.org>
+Date: Sun, 30 Nov 2014 10:20:19 +0000
+Message-ID: <CAFEAcA882aVrnkKFVMaLA0NzkN9OGHJTQseo_w5UFkmBfTDnTQ@mail.gmail.com>
+Subject: Re: [PATCH 5/7] KVM: arm64: guest debug, add support for single-step
+To: Christoffer Dall <christoffer.dall@linaro.org>
+Cc: =?UTF-8?B?QWxleCBCZW5uw6ll?= <alex.bennee@linaro.org>,
+        kvm-devel <kvm@vger.kernel.org>,
+        arm-mail-list <linux-arm-kernel@lists.infradead.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        Marc Zyngier <marc.zyngier@arm.com>, Alexander Graf <agraf@suse.de>,
+        "J. Kiszka" <jan.kiszka@siemens.com>,
+        David Hildenbrand <dahi@linux.vnet.ibm.com>,
+        Bharat Bhushan <r65777@freescale.com>, bp@suse.de,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:ABI/API" <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI's P-states will report the acpi_processor_px *states to acpi-cpufreq.
-When the states likes these:
+On 30 November 2014 at 10:10, Christoffer Dall
+<christoffer.dall@linaro.org> wrote:
+> In any case, I think it was related to how userspace observes the state
+> of the CPU, because when you do the MMIO operation emulation in
+> userspace, currently if you observe the PC though GET_ONE_REG, you'll
+> see a PC pointing to the next instruction, not the one you're emulating
+> which is strange.
 
-[index:freq, 0:2400 1:2400 2:2000 3:1600...],
+Also if we ever add support for userspace to say "this MMIO should
+fault" then we definitely need the PC-advance to happen afterwards,
+not before.
 
-we will initialize the freq_tables to those:
+> Not sure what the relation to a guest single-stepping itself was.
 
-[index:driver_data:freq, 0:0:2400, 1:2:2000 2:3,1600 ... CPUFREQ_TABLE_END]
+I think it just came up in the course of that discussion, because
+single-step handling also needs to perform an action (clear PSTATE.SS)
+as part of the "advance over this insn" operation. But I think that
+you're right that doing the advance before dropping out to userspace
+is no worse for singlestep than it is for any other case.
 
-So when set the freqs to 2000, the data->acpi_data->state is 2
-(data->freq_table[1].driver_data), So when call get_cur_freq_on_cpu, we get
-the freqs is data->freq_table[2].frequency,the value is 1600.
-
-we can make the freq_table store the same value to fix this case problem.
-
-Signed-off-by: Wang Weidong <wangweidong1@huawei.com>
----
-Change note: 
-
-v2: to check weather the freq_table will be changeable and clarify the problem.
-
-The set of available states which come from acpi won't change. Just like
-the power would be remove, the acpi driver will do that:
-
- ->acpi_processor_ppc_has_changed
- ->cpufreq_update_policy
- ->acpi_ppc_notifier_block.notifier_call
-   ->acpi_processor_ppc_notifier
-   ->cpufreq_verify_within_limits
-
-The progress will change the policy's min_freq and max_freq
-while it won't change the set of states(freq_tables).
-
----
- drivers/cpufreq/acpi-cpufreq.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
-index b0c18ed..93634a4 100644
---- a/drivers/cpufreq/acpi-cpufreq.c
-+++ b/drivers/cpufreq/acpi-cpufreq.c
-@@ -779,7 +779,7 @@ static int acpi_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 
- 	/* table init */
- 	for (i = 0; i < perf->state_count; i++) {
--		if (i > 0 && perf->states[i].core_frequency >=
-+		if (i > 0 && perf->states[i].core_frequency >
- 		    data->freq_table[valid_states-1].frequency / 1000)
- 			continue;
- 
--- 
-1.7.12
-
-
-
+-- PMM
