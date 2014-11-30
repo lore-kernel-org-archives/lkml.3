@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684AbaK3SUQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 13:20:16 -0500
+	id S1752716AbaK3SUn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 13:20:43 -0500
 Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:8142 "EHLO
 	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752332AbaK3STu (ORCPT
+	by vger.kernel.org with ESMTP id S1752490AbaK3STt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 13:19:50 -0500
+	Sun, 30 Nov 2014 13:19:49 -0500
 X-IronPort-AV: E=Sophos;i="5.07,488,1413237600"; 
-   d="scan'208";a="91119172"
+   d="scan'208";a="91119167"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Valentina Manea <valentina.manea.m@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] usbip: remove unneeded structure
-Date: Sun, 30 Nov 2014 19:14:15 +0100
-Message-Id: <1417371255-2282-5-git-send-email-Julia.Lawall@lip6.fr>
+To: Anil Gurumurthy <anil.gurumurthy@qlogic.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Sudarsana Kalluru <sudarsana.kalluru@qlogic.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/4] drivers/scsi/bfa/bfa_svc.c: remove unneeded structure
+Date: Sun, 30 Nov 2014 19:14:13 +0100
+Message-Id: <1417371255-2282-3-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1417371255-2282-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1417371255-2282-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -47,27 +49,39 @@ identifier x,i;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- tools/usb/usbip/src/usbipd.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/scsi/bfa/bfa_svc.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
-diff --git a/tools/usb/usbip/src/usbipd.c b/tools/usb/usbip/src/usbipd.c
-index 2f87f2d..2a7cd2b 100644
---- a/tools/usb/usbip/src/usbipd.c
-+++ b/tools/usb/usbip/src/usbipd.c
-@@ -91,7 +91,6 @@ static void usbipd_help(void)
- static int recv_request_import(int sockfd)
+diff --git a/drivers/scsi/bfa/bfa_svc.c b/drivers/scsi/bfa/bfa_svc.c
+index 625225f..cf46683 100644
+--- a/drivers/scsi/bfa/bfa_svc.c
++++ b/drivers/scsi/bfa/bfa_svc.c
+@@ -404,13 +404,10 @@ bfa_plog_fchdr(struct bfa_plog_s *plog, enum bfa_plog_mid mid,
+ 			enum bfa_plog_eid event,
+ 			u16 misc, struct fchs_s *fchdr)
  {
- 	struct op_import_request req;
--	struct op_common reply;
- 	struct usbip_exported_device *edev;
- 	struct usbip_usb_device pdu_udev;
- 	struct list_head *i;
-@@ -100,7 +99,6 @@ static int recv_request_import(int sockfd)
- 	int rc;
+-	struct bfa_plog_rec_s  lp;
+ 	u32	*tmp_int = (u32 *) fchdr;
+ 	u32	ints[BFA_PL_INT_LOG_SZ];
  
- 	memset(&req, 0, sizeof(req));
--	memset(&reply, 0, sizeof(reply));
+ 	if (plog->plog_enabled) {
+-		memset(&lp, 0, sizeof(struct bfa_plog_rec_s));
+-
+ 		ints[0] = tmp_int[0];
+ 		ints[1] = tmp_int[1];
+ 		ints[2] = tmp_int[4];
+@@ -424,13 +421,10 @@ bfa_plog_fchdr_and_pl(struct bfa_plog_s *plog, enum bfa_plog_mid mid,
+ 		      enum bfa_plog_eid event, u16 misc, struct fchs_s *fchdr,
+ 		      u32 pld_w0)
+ {
+-	struct bfa_plog_rec_s  lp;
+ 	u32	*tmp_int = (u32 *) fchdr;
+ 	u32	ints[BFA_PL_INT_LOG_SZ];
  
- 	rc = usbip_net_recv(sockfd, &req, sizeof(req));
- 	if (rc < 0) {
+ 	if (plog->plog_enabled) {
+-		memset(&lp, 0, sizeof(struct bfa_plog_rec_s));
+-
+ 		ints[0] = tmp_int[0];
+ 		ints[1] = tmp_int[1];
+ 		ints[2] = tmp_int[4];
 
