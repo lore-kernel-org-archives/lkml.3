@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632AbaK3STv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 13:19:51 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:8586 "EHLO
+	id S1752684AbaK3SUQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 13:20:16 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:8142 "EHLO
 	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752574AbaK3STt (ORCPT
+	by vger.kernel.org with ESMTP id S1752332AbaK3STu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 13:19:49 -0500
+	Sun, 30 Nov 2014 13:19:50 -0500
 X-IronPort-AV: E=Sophos;i="5.07,488,1413237600"; 
-   d="scan'208";a="91119169"
+   d="scan'208";a="91119172"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Benjamin Romer <benjamin.romer@unisys.com>
-Cc: kernel-janitors@vger.kernel.org,
-        David Kershner <david.kershner@unisys.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        sparmaintainer@unisys.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] staging: unisys: remove unneeded structure
-Date: Sun, 30 Nov 2014 19:14:14 +0100
-Message-Id: <1417371255-2282-4-git-send-email-Julia.Lawall@lip6.fr>
+To: Valentina Manea <valentina.manea.m@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/4] usbip: remove unneeded structure
+Date: Sun, 30 Nov 2014 19:14:15 +0100
+Message-Id: <1417371255-2282-5-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1417371255-2282-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1417371255-2282-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -50,28 +47,27 @@ identifier x,i;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/staging/unisys/visorchipset/visorchipset_main.c |    3 ---
- 1 file changed, 3 deletions(-)
+ tools/usb/usbip/src/usbipd.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/staging/unisys/visorchipset/visorchipset_main.c b/drivers/staging/unisys/visorchipset/visorchipset_main.c
-index c8f7bea..7e6be32 100644
---- a/drivers/staging/unisys/visorchipset/visorchipset_main.c
-+++ b/drivers/staging/unisys/visorchipset/visorchipset_main.c
-@@ -1940,7 +1940,6 @@ static HOSTADDRESS controlvm_get_channel_address(void)
- static void
- controlvm_periodic_work(struct work_struct *work)
+diff --git a/tools/usb/usbip/src/usbipd.c b/tools/usb/usbip/src/usbipd.c
+index 2f87f2d..2a7cd2b 100644
+--- a/tools/usb/usbip/src/usbipd.c
++++ b/tools/usb/usbip/src/usbipd.c
+@@ -91,7 +91,6 @@ static void usbipd_help(void)
+ static int recv_request_import(int sockfd)
  {
--	struct visorchipset_channel_info chanInfo;
- 	struct controlvm_message inmsg;
- 	BOOL gotACommand = FALSE;
- 	BOOL handle_command_failed = FALSE;
-@@ -1955,8 +1954,6 @@ controlvm_periodic_work(struct work_struct *work)
- 	if (visorchipset_clientregwait && !clientregistered)
- 		goto Away;
+ 	struct op_import_request req;
+-	struct op_common reply;
+ 	struct usbip_exported_device *edev;
+ 	struct usbip_usb_device pdu_udev;
+ 	struct list_head *i;
+@@ -100,7 +99,6 @@ static int recv_request_import(int sockfd)
+ 	int rc;
  
--	memset(&chanInfo, 0, sizeof(struct visorchipset_channel_info));
--
- 	Poll_Count++;
- 	if (Poll_Count >= 250)
- 		;	/* keep going */
+ 	memset(&req, 0, sizeof(req));
+-	memset(&reply, 0, sizeof(reply));
+ 
+ 	rc = usbip_net_recv(sockfd, &req, sizeof(req));
+ 	if (rc < 0) {
 
