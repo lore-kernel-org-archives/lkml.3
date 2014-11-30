@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217AbaK3MjR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 07:39:17 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:45906 "EHLO
+	id S1752287AbaK3MkQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 07:40:16 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:45919 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751943AbaK3MjQ (ORCPT
+	with ESMTP id S1751955AbaK3MkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 07:39:16 -0500
-Date: Sun, 30 Nov 2014 13:39:11 +0100
+	Sun, 30 Nov 2014 07:40:14 -0500
+Date: Sun, 30 Nov 2014 13:40:08 +0100
 From: Boris Brezillon <boris.brezillon@free-electrons.com>
 To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+Cc: Dave Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
         Thierry Reding <thierry.reding@gmail.com>,
         linux-kernel@vger.kernel.org,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>, linux-media@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] drm: add bus_formats and nbus_formats fields to
- drm_display_info
-Message-ID: <20141130133911.2daef8f4@bbrezillon>
-In-Reply-To: <56712774.y8GaD3rGMh@avalon>
+        Hans Verkuil <hans.verkuil@cisco.com>, linux-media@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [PATCH v3 0/3] drm: describe display bus format
+Message-ID: <20141130134008.4471abdd@bbrezillon>
+In-Reply-To: <7292023.aOo0xYF6kL@avalon>
 References: <1416318380-20122-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1416318380-20122-2-git-send-email-boris.brezillon@free-electrons.com>
-	<56712774.y8GaD3rGMh@avalon>
+	<20141127143750.3984ddd0@bbrezillon>
+	<7292023.aOo0xYF6kL@avalon>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -32,102 +32,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Laurent,
 
-On Sat, 29 Nov 2014 00:13:47 +0200
+On Sat, 29 Nov 2014 00:29:10 +0200
 Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
 
 > Hi Boris,
 > 
-> Thank you for the patch. I just have two small comments.
+> On Thursday 27 November 2014 14:37:50 Boris Brezillon wrote:
+> > On Tue, 18 Nov 2014 14:46:17 +0100 Boris Brezillon wrote:
+> > > Hello,
+> > > 
+> > > This series makes use of the MEDIA_BUS_FMT definition to describe how
+> > > the data are transmitted to the display.
+> > > 
+> > > This will allow drivers to configure their output display bus according
+> > > to the display capabilities.
+> > > For example some display controllers support DPI (or raw RGB) connectors
+> > > and need to specify which format will be transmitted on the DPI bus
+> > > (RGB444, RGB565, RGB888, ...).
+> > > 
+> > > This series also adds a field to the panel_desc struct so that one
+> > > can specify which format is natevely supported by a panel.
+> > 
+> > Thierry, Laurent, Dave, can you take a look at this patch series: this
+> > is the last missing dependency to get the atmel-hlcdc DRM driver
+> > mainlined, and I was expecting to get this driver in 3.19...
 > 
-> On Tuesday 18 November 2014 14:46:18 Boris Brezillon wrote:
-> > Add bus_formats and nbus_formats fields and
-> > drm_display_info_set_bus_formats helper function to specify the bus
-> > formats supported by a given display.
-> > 
-> > This information can be used by display controller drivers to configure
-> > the output interface appropriately (i.e. RGB565, RGB666 or RGB888 on raw
-> > RGB or LVDS busses).
-> > 
-> > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> > ---
-> >  drivers/gpu/drm/drm_crtc.c | 30 ++++++++++++++++++++++++++++++
-> >  include/drm/drm_crtc.h     |  7 +++++++
-> >  2 files changed, 37 insertions(+)
-> > 
-> > diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-> > index e79c8d3..17e3acf 100644
-> > --- a/drivers/gpu/drm/drm_crtc.c
-> > +++ b/drivers/gpu/drm/drm_crtc.c
-> > @@ -763,6 +763,36 @@ static void drm_mode_remove(struct drm_connector
-> > *connector, drm_mode_destroy(connector->dev, mode);
-> >  }
-> > 
-> > +/*
-> > + * drm_display_info_set_bus_formats - set the supported bus formats
-> > + * @info: display info to store bus formats in
-> > + * @fmts: array containing the supported bus formats
-> > + * @nfmts: the number of entries in the fmts array
-> > + *
-> > + * Store the suppported bus formats in display info structure.
+> I've reviewed the series, it looks globally fine to me. I just had two small 
+> comments on patch 1/3.
 > 
-> Could you document that the formats are specified as MEDIA_BUS_FMT_* values ?
 
-Sure, I'll clearly state that.
-
-> 
-> > + */
-> > +int drm_display_info_set_bus_formats(struct drm_display_info *info, const
-> > u32 *fmts, +				     unsigned int num_fmts)
-> > +{
-> > +	u32 *formats = NULL;
-> > +
-> > +	if (!fmts && num_fmts)
-> > +		return -EINVAL;
-> > +
-> > +	if (fmts && num_fmts) {
-> > +		formats = kmemdup(fmts, sizeof(*fmts) * num_fmts, GFP_KERNEL);
-> > +		if (!formats)
-> > +			return -ENOMEM;
-> > +	}
-> > +
-> > +	kfree(info->bus_formats);
-> > +	info->bus_formats = formats;
-> > +	info->num_bus_formats = num_fmts;
-> > +
-> > +	return 0;
-> > +}
-> > +EXPORT_SYMBOL(drm_display_info_set_bus_formats);
-> > +
-> >  /**
-> >   * drm_connector_get_cmdline_mode - reads the user's cmdline mode
-> >   * @connector: connector to quwery
-> > diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
-> > index c40070a..2e0a3e8 100644
-> > --- a/include/drm/drm_crtc.h
-> > +++ b/include/drm/drm_crtc.h
-> > @@ -31,6 +31,7 @@
-> >  #include <linux/idr.h>
-> >  #include <linux/fb.h>
-> >  #include <linux/hdmi.h>
-> > +#include <linux/media-bus-format.h>
-> >  #include <uapi/drm/drm_mode.h>
-> >  #include <uapi/drm/drm_fourcc.h>
-> >  #include <drm/drm_modeset_lock.h>
-> > @@ -130,6 +131,9 @@ struct drm_display_info {
-> >  	enum subpixel_order subpixel_order;
-> >  	u32 color_formats;
-> > 
-> > +	const u32 *bus_formats;
-> > +	int num_bus_formats;
-> 
-> As the number of formats is never negative, I would make it an unsigned int.
-
-Okay, I'll make it an unsigned int.
+Thanks for the review, I'll address your comments in the next version.
 
 Regards,
 
 Boris
-
 
 -- 
 Boris Brezillon, Free Electrons
