@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919AbaK3T0R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 14:26:17 -0500
-Received: from smtprelay0043.hostedemail.com ([216.40.44.43]:41634 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751359AbaK3T0Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 14:26:16 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:560:599:968:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3871:3872:3873:4321:5007:6261:8531:10004:10400:10848:10967:11026:11232:11658:11914:12517:12519:12740:13069:13161:13229:13311:13357:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bead67_5391461330545
-X-Filterd-Recvd-Size: 1523
-Message-ID: <1417375572.818.10.camel@perches.com>
-Subject: Re: [PATCH] sound: use enum names instead of magic numbers
-From: Joe Perches <joe@perches.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Date: Sun, 30 Nov 2014 11:26:12 -0800
-In-Reply-To: <s5hwq6d9hze.wl-tiwai@suse.de>
-References: <1417201196-12392-1-git-send-email-KyleChamberlin@project20million.org>
-	 <s5h7fydbv6w.wl-tiwai@suse.de> <1417294692.818.3.camel@perches.com>
-	 <s5h1tolaxmc.wl-tiwai@suse.de> <1417337732.818.8.camel@perches.com>
-	 <s5hwq6d9hze.wl-tiwai@suse.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
+	id S1752069AbaK3T1d (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 14:27:33 -0500
+Received: from mout.gmx.net ([212.227.17.22]:55126 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751906AbaK3T1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 14:27:32 -0500
+Message-ID: <547B6F9A.8030806@gmx.de>
+Date: Sun, 30 Nov 2014 20:27:22 +0100
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: SF Markus Elfring <elfring@users.sourceforge.net>,
+        Olof Johansson <olof@lixom.net>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 1/1] net-PA Semi: Deletion of unnecessary checks before
+ the function call "pci_dev_put"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <547A09B1.9090102@users.sourceforge.net> <547B579F.10709@gmx.de> <alpine.DEB.2.10.1411301846560.2522@hadrien>
+In-Reply-To: <alpine.DEB.2.10.1411301846560.2522@hadrien>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:SeBGBVLr3aEA9O3VGEa8yGRaIwmhhO71PuuAhIrWnwDt+5cF727
+ DFaZXdP+I47jQu4Z5rMUc0XWzjM5Zi6xFrL9QnVnzglEacqd5TSUbcYAVcQUlJaMhA0bgE9
+ GNCASt11zl770g72qF3KC1X2PEUk66STNvqaUYSpmVnC3IAjNeORZ/Z+ONhXq4bxwbGhvRI
+ hWM2a2UMRY/QiWwmTC9mw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-11-30 at 10:04 +0100, Takashi Iwai wrote:
-> At Sun, 30 Nov 2014 00:55:32 -0800, Joe Perches wrote:
-> > On Sun, 2014-11-30 at 09:41 +0100, Takashi Iwai wrote:
-> > > At Sat, 29 Nov 2014 12:58:12 -0800, Joe Perches wrote:
-> > > > There's an enum defined for these magic numbers,
-> > > > might as well use it.
-> > > > 
-> > > > Miscellanea:
-> > > > o Use ##__VA_ARGS__
-[]
-> > Write it as you chose.  It is pretty trivial.
+On 30.11.2014 18:47, Julia Lawall wrote:
+
 > 
-> ... trivial for anyone ;)
+> I have heard of at least one case where the problem you are raising
+> happened in practice...
+> 
+> julia
 
-The other option is simply to remove the enum
-as the values are unused.
+If one case is known then there are probably a lot more that have not
+been discovered yet.
+Maybe this topic should be clarified somewhere (e.g. in "CodingStyle")?
+On the other hand i always found it obvious that its the callers
+responsibility to only pass sane parameters to the called functions...
 
-
+Regards,
+Lino
