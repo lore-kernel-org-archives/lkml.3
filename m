@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218AbaLWPsv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 10:48:51 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:48368 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983AbaLWPsu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 10:48:50 -0500
-From: Ben Chan <kroderia@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Kroderia <kroderia@gmail.com>
-Subject: [PATCH 1/1] staging: skein: Delete a useless white space line
-Date: Tue, 23 Dec 2014 15:48:16 +0000
-Message-Id: <1419349696-6375-1-git-send-email-kroderia@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756239AbaLWPxR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 10:53:17 -0500
+Received: from farakaranet.com ([79.175.172.18]:57389 "EHLO farakaranet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750983AbaLWPxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 10:53:16 -0500
+X-Greylist: delayed 133758 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Dec 2014 10:53:15 EST
+X-FEAS-AUTH-USER: 
+To: undisclosed-recipients:;
+Message-Id: <20141130135040.4146@localhost.localdomain>
+Reply-To: <natan_pang@yahoo.co.uk>
+From: "Mr. Natan Pang" <test@farakaranet.com>
+Subject: From Mr. Natan Pang...
+Date: Sun, 30 Nov 2014 13:50:39 +0700
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kroderia <kroderia@gmail.com>
+Hello Dear,
 
-Delete a useless white space line according to the coding style.
+I am Mr. Natan Pang a banker, I have emailed you earlier on without any response from you. In my first email I mentioned about our deceased customer a citizen of your country whose relatives my Bank cannot locate to claim his estate.
 
-Signed-off-by: Ben Chan <kroderia@gmail.com>
----
- drivers/staging/skein/skein_generic.c |    1 -
- 1 file changed, 1 deletion(-)
+I got your address from online directory service and decided to write you as I cannot achieve this opportunity alone without the support of a foreigner. I am asking for your consent so that I can present you to my Bank Management as the next of kin to the late customer account proceeds value ($4,000,000)(Four Million United State Dollars) to be transferred into your account for our mutual benefit  
 
-diff --git a/drivers/staging/skein/skein_generic.c b/drivers/staging/skein/skein_generic.c
-index 85bd7d0..899078f 100644
---- a/drivers/staging/skein/skein_generic.c
-+++ b/drivers/staging/skein/skein_generic.c
-@@ -191,7 +191,6 @@ static int __init skein_generic_init(void)
- 
- 	return 0;
- 
--		
- unreg512:
- 	crypto_unregister_shash(&alg512);
- unreg256:
--- 
-1.7.10.4
+At the successful transfer of this fund, we shall share the fund on a pro rata based percentage [50% - 50%]. I am compelled to do this because I do not want my Bank to take over the ownership of this fund.
+
+If you are interested and in agreement with me, get back to me quickly and I will send to you all the information you may need to proceed without coming to the Bank, and be rest assured that it is risk free project.
+
+I look forward to your reply.
+
+Yours faithfully,
+Mr. Natan Pang
+natan_pang@yahoo.co.uk
 
