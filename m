@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460AbaK3QcX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 11:32:23 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:43547 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024AbaK3QcW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 11:32:22 -0500
+	id S1752320AbaK3Qkw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 11:40:52 -0500
+Received: from mout.web.de ([212.227.15.4]:54673 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751917AbaK3Qku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 11:40:50 -0500
+Message-ID: <547B4886.4080406@users.sourceforge.net>
+Date: Sun, 30 Nov 2014 17:40:38 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1417316668-23538-1-git-send-email-xerofoify@gmail.com>
-References: <1417316668-23538-1-git-send-email-xerofoify@gmail.com>
-Date: Sun, 30 Nov 2014 11:32:21 -0500
-X-Google-Sender-Auth: xYxhkTOr0PZgy2arZp22Z3i06A0
-Message-ID: <CAOcJUbyjmUGOiAAQTc=O9OMk7vw8A6sYQg9svKNVw_zCyt5Jcg@mail.gmail.com>
-Subject: Re: [PATCH] drivers:media: Add proper sanity checking for register
- setting to variable in lg2160.c
-From: Michael Ira Krufky <mkrufky@linuxtv.org>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
+        netdev@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 0/3] net-PPP: Deletion of a few unnecessary checks
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:ziLeTTf7J3VHO5maAsaVXolk9I4V8MG0JDYt2jR6zJCW3L38lw/
+ ov/fb2Yp9oPVfS+8bIcdJDGsmLgEYNce/k3TkrS1+i1yBvT20EdxgCioBIk9bZbcqbWzzg/
+ /cZhB4Uptdl1wQx6IU8iv3Zy9EZuggKaIzadr9EGoJCAUFKxCw1RWP3PVhGO8WN3FOFi39Q
+ hvgnijsHBlxsajH5Z6AGg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 29, 2014 at 10:04 PM, Nicholas Krause <xerofoify@gmail.com> wrote:
-> Fixs issue with setting the variable value of val in the functionm,lg2161_set_output_interface
-> and not sanity checking if the value has been correctly set with the correct value of the struct
-> state of type lg216x_state passed to the function by the calling code.
->
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->  drivers/media/dvb-frontends/lg2160.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/media/dvb-frontends/lg2160.c b/drivers/media/dvb-frontends/lg2160.c
-> index 5fd14f8..9aec63a 100644
-> --- a/drivers/media/dvb-frontends/lg2160.c
-> +++ b/drivers/media/dvb-frontends/lg2160.c
-> @@ -459,7 +459,9 @@ static int lg2161_set_output_interface(struct lg216x_state *state)
->                 goto fail;
->
->         val &= ~0x07;
-> -       val |= state->cfg->output_if; /* FIXME: needs sanity check */
-> +       val |= state->cfg->output_if;
-> +       if (lg_fail(val))
-> +               goto fail;
->
->         ret = lg216x_write_reg(state, 0x0014, val);
->         lg_fail(ret);
-> --
-> 2.1.0
->
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Sun, 30 Nov 2014 17:25:40 +0100
 
+Further update suggestions were taken into account after a patch was applied
+from static source code analysis.
 
-NACK.
+Markus Elfring (3):
+  Deletion of unnecessary checks before the function call "kfree"
+  Less function calls in mppe_alloc() after error detection
+  Delete an unnecessary assignment
 
-Thank you for the patch, Nicholas, but the change that you propose
-won't actually help here -- val is a u8, and the lg_fail() macro tests
-for negative values.  val can never be negative, and that's why I
-didn't add the "lg_fail()" test myself when I wrote this function.
+ drivers/net/ppp/ppp_mppe.c | 32 +++++++++++++-------------------
+ 1 file changed, 13 insertions(+), 19 deletions(-)
 
-What's actually happening in this function is that the value is first
-set when reading register 0014, we take that value, unset the three
-lowest bits, then we raise the bits in state->cfg->output_if, and
-write it back to the same register.
+-- 
+2.1.3
 
-In fact, the FIXME comment should be removed -- this is not a bug
-anymore and the sanity check is built-in.  That FIXME comment is a
-remnant of an older version of this function :-P
-
-If you want to send a patch that just removes the FIXME comment, that
-would be accepted, but this patch should not be merged.
-
-Cheers,
-
-Michael Ira Krufky
