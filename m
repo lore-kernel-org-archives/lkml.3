@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124AbaK3PMd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 10:12:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39574 "EHLO mx1.redhat.com"
+	id S1753141AbaK3PMt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 10:12:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42200 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752044AbaK3PMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 10:12:30 -0500
-Date: Sun, 30 Nov 2014 17:12:13 +0200
+	id S1752044AbaK3PMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 10:12:46 -0500
+Date: Sun, 30 Nov 2014 17:12:32 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: [PATCH v7 36/46] vhost/net: suppress compiler warning
-Message-ID: <1417359787-10138-37-git-send-email-mst@redhat.com>
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        netdev@vger.kernel.org, linux-api@vger.kernel.org
+Subject: [PATCH v7 39/46] tun: add VNET_LE flag
+Message-ID: <1417359787-10138-40-git-send-email-mst@redhat.com>
 References: <1417359787-10138-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,26 +25,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-len is always initialized since function is called with size > 0.
+virtio 1.0 modified virtio net header format,
+making all fields little endian.
+
+Users can tweak header format before submitting it to tun,
+but this means more data copies where none were necessary.
+And if the iovec is in RO memory, this means we might
+need to split iovec also means we might in theory overflow
+iovec max size.
+
+This patch adds a simpler way for applications to handle this,
+using new "little endian" flag in tun.
+As a result, tun simply byte-swaps header fields as appropriate.
+This is a NOP on LE architectures.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/vhost/net.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/uapi/linux/if_tun.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 984242e..54ffbb0 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -501,7 +501,7 @@ static int get_rx_bufs(struct vhost_virtqueue *vq,
- 	int headcount = 0;
- 	unsigned d;
- 	int r, nlogs = 0;
--	u32 len;
-+	u32 uninitialized_var(len);
- 
- 	while (datalen > 0 && headcount < quota) {
- 		if (unlikely(seg >= UIO_MAXIOV)) {
+diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
+index 277a260..18b2403 100644
+--- a/include/uapi/linux/if_tun.h
++++ b/include/uapi/linux/if_tun.h
+@@ -57,6 +57,7 @@
+ #define IFF_ONE_QUEUE	0x2000
+ #define IFF_VNET_HDR	0x4000
+ #define IFF_TUN_EXCL	0x8000
++#define IFF_VNET_LE	0x10000
+ #define IFF_MULTI_QUEUE 0x0100
+ #define IFF_ATTACH_QUEUE 0x0200
+ #define IFF_DETACH_QUEUE 0x0400
 -- 
 MST
 
