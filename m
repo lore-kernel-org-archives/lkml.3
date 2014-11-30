@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610AbaK3Pb0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 10:31:26 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:8029 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034AbaK3PbZ (ORCPT
+	id S1752030AbaK3Pjn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 10:39:43 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:53670 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104AbaK3Pjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 10:31:25 -0500
-X-IronPort-AV: E=Sophos;i="5.07,487,1413270000"; 
-   d="scan'208";a="51906536"
-From: Arend van Spriel <arend@broadcom.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, Arend van Spriel <arend@broadcom.com>
-Subject: [PATCH] fs: debugfs: add forward declaration for struct device type
-Date: Sun, 30 Nov 2014 16:31:21 +0100
-Message-ID: <1417361481-1136-1-git-send-email-arend@broadcom.com>
-X-Mailer: git-send-email 1.9.1
+	Sun, 30 Nov 2014 10:39:42 -0500
+Date: Sun, 30 Nov 2014 23:39:26 +0800
+From: Huang Shijie <shijie8@gmail.com>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
+Subject: Re: [PATCH v5 1/3] mtd: nand: gpmi: add gpmi_move_bits function
+Message-ID: <20141130153918.GA14834@localhost.localdomain>
+References: <1417020793-3354-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1417020793-3354-2-git-send-email-boris.brezillon@free-electrons.com>
+ <20141126175708.1acb90ac@bbrezillon>
+ <20141130081110.GC3608@norris-Latitude-E6410>
+ <20141130095500.16f75e05@bbrezillon>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141130095500.16f75e05@bbrezillon>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function debugfs_create_devm_seqfile() has a parameter of type
-struct device pointer. This type needs to be forward declared to
-avoid compilation issues on certain architectures and/or kernel
-configurations. The function was introduced with:
+On Sun, Nov 30, 2014 at 09:55:00AM +0100, Boris Brezillon wrote:
+> Hi Brian,
+> 
+> On Sun, 30 Nov 2014 00:11:10 -0800
+> Brian Norris <computersforpeace@gmail.com> wrote:
+> 
+> > On Wed, Nov 26, 2014 at 05:57:08PM +0100, Boris Brezillon wrote:
+> > > On Wed, 26 Nov 2014 17:53:11 +0100 Boris Brezillon <boris.brezillon@free-electrons.com> wrote:
+> > > > +/**
+> > > > + * gpmi_move_bits - move bits from one memory region to another
+> > > > + * @dst: destination buffer
+> > > > + * @dst_bit_off: bit offset we're starting to write at
+> > > > + * @src: source buffer
+> > > > + * @src_bit_off: bit offset we're starting to read from
+> > > > + * @nbits: number of bits to copy
+> > > > + *
+> > > > + * This functions copies bits from one memory region to another, and is used by
+> > > > + * the GPMI driver to copy ECC sections which are not guaranteed to be byte
+> > > > + * aligned.
+> > > 
+> > > I forgot to add that src and dst should not overlap, otherwise it won't
+> > > work...
+> > 
+> > Hmm, normally that's implied for copy-like operations. But since you
+> > named this function "move" (rather than "copy" or "cpy"), that's a
+> > little less clear.
+> 
+> Indeed, that's a good point.
+> 
+> > 
+> > Did you have a good reason for the "move" name? If not, maybe it's worth
+> > changing.
+> 
+> No, I don't, and I'd prefer changing the name than implementing a non
+> destructive move function.
+> 
+> I'll send a new version with this change.
+Please add my tested-by.
 
-  commit 98210b7f73f1db182bd9a558a031093cd166e907
-  Author: Arend van Spriel <arend@broadcom.com>
-  Date:   Sun Nov 9 11:31:58 2014 +0100
-
-     debugfs: add helper function to create device related seq_file
-
-The reported build failure for sparc64 architecture was:
-
-  make.cross ARCH=sparc64
-
-All warnings:
-
-   In file included from fs/debugfs/file.c:21:0:
-   include/linux/debugfs.h:105:10: warning: 'struct device' declared
-   inside parameter list
-             void *data));
-             ^
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Arend van Spriel <arend@broadcom.com>
----
- include/linux/debugfs.h | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
-index 4bbe2ac..e3e9f31 100644
---- a/include/linux/debugfs.h
-+++ b/include/linux/debugfs.h
-@@ -20,6 +20,7 @@
- 
- #include <linux/types.h>
- 
-+struct device;
- struct file_operations;
- 
- struct debugfs_blob_wrapper {
--- 
-1.9.1
-
+Tested-by: Huang Shijie <shijie8@gmail.com>
