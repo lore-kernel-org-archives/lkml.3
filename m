@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752112AbaK3KIz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 05:08:55 -0500
-Received: from mout.web.de ([212.227.17.11]:56159 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751561AbaK3KIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 05:08:53 -0500
-Message-ID: <547AECA4.3050800@users.sourceforge.net>
-Date: Sun, 30 Nov 2014 11:08:36 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752176AbaK3KKU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 05:10:20 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:65405 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751992AbaK3KKR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 05:10:17 -0500
+Date: Sun, 30 Nov 2014 11:10:56 +0100
+From: Christoffer Dall <christoffer.dall@linaro.org>
+To: Peter Maydell <peter.maydell@linaro.org>
+Cc: Alex =?iso-8859-1?Q?Benn=E9e?= <alex.bennee@linaro.org>,
+        kvm-devel <kvm@vger.kernel.org>,
+        arm-mail-list <linux-arm-kernel@lists.infradead.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        Marc Zyngier <marc.zyngier@arm.com>, Alexander Graf <agraf@suse.de>,
+        "J. Kiszka" <jan.kiszka@siemens.com>,
+        David Hildenbrand <dahi@linux.vnet.ibm.com>,
+        Bharat Bhushan <r65777@freescale.com>, bp@suse.de,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:ABI/API" <linux-api@vger.kernel.org>
+Subject: Re: [PATCH 5/7] KVM: arm64: guest debug, add support for single-step
+Message-ID: <20141130101056.GB484@cbox>
+References: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org>
+ <1416931805-23223-6-git-send-email-alex.bennee@linaro.org>
+ <CAFEAcA-cjM9yUXi6tc79UP0fBKAagtFKQgV3iAjz5DWr9yxZUQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        linux-acpi@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] ACPI: Deletion of an unnecessary check before the function
- call "pci_dev_put"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:9nZPhlKKqXVdteGIU6005pwLaR7QAJF0W0RXgKvRPTAqRb6AZ8c
- aak4A9mu08HPrkipUqPlaIgWiXvWxDbvgxmuQ3yh/gCKPE2zPNKouDoeN3apVOvyqOplJxr
- 526m6JZXXxGbZS9O1NVo4gZtxCGUT7ekMLdPfmMi3WDWjB0xHHEgjNs2lnriT7SOYiHOKeP
- VfuvD+NQsn3pJtt/FfNOw==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFEAcA-cjM9yUXi6tc79UP0fBKAagtFKQgV3iAjz5DWr9yxZUQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sun, 30 Nov 2014 10:59:10 +0100
+On Wed, Nov 26, 2014 at 07:27:06PM +0000, Peter Maydell wrote:
+> On 25 November 2014 at 16:10, Alex Bennée <alex.bennee@linaro.org> wrote:
+> > This adds support for single-stepping the guest. As userspace can and
+> > will manipulate guest registers before restarting any tweaking of the
+> > registers has to occur just before control is passed back to the guest.
+> > Furthermore while guest debugging is in effect we need to squash the
+> > ability of the guest to single-step itself as we have no easy way of
+> > re-entering the guest after the exception has been delivered to the
+> > hypervisor.
+> 
+> A corner case I don't think this patch handles: if the debugger
+> tries to single step an insn which is emulated by the
+> hypervisor (because it's a load/store which is trapped and
+> handled as emulated mmio in userspace) then we won't
+> correctly update the single-step state machine (and so we'll end
+> up incorrectly stopping after the following insn rather than
+> before, I think).
+> 
+> You should be able to achieve this effect by simply always clearing
+> the guest's PSTATE.SS when you advance the PC to skip the emulated
+> instruction (cf the comment in the pseudocode SSAdvance() function).
+> 
+> I think we should also be doing this PC advance on return from
+> userspace's handling of the mmio rather than before we drop back
+> to userspace as we do now, but I can't remember why I think that.
+> Christoffer, I don't suppose you recall, do you? I think it was
+> you I had this conversation with on IRC a month or so back...
+> 
+I don't remember clearly, no.  Was it not during lunch at LCU we had
+this conversation?
 
-The pci_dev_put() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+In any case, I think it was related to how userspace observes the state
+of the CPU, because when you do the MMIO operation emulation in
+userspace, currently if you observe the PC though GET_ONE_REG, you'll
+see a PC pointing to the next instruction, not the one you're emulating
+which is strange.
 
-This issue was detected by using the Coccinelle software.
+Not sure what the relation to a guest single-stepping itself was.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/acpi/ioapic.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/acpi/ioapic.c b/drivers/acpi/ioapic.c
-index 9a631a6..35963d3 100644
---- a/drivers/acpi/ioapic.c
-+++ b/drivers/acpi/ioapic.c
-@@ -185,8 +185,7 @@ exit_disable:
- 	if (dev)
- 		pci_disable_device(dev);
- exit_put:
--	if (dev)
--		pci_dev_put(dev);
-+	pci_dev_put(dev);
- exit_free:
- 	kfree(ioapic);
- exit:
--- 
-2.1.3
-
+-Christoffer
