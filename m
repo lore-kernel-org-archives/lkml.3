@@ -1,93 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908AbaK3GYb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 01:24:31 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:56977 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751637AbaK3GY3 (ORCPT
+	id S1751900AbaK3GlO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 01:41:14 -0500
+Received: from kvm5.telegraphics.com.au ([98.124.60.144]:52372 "EHLO
+	kvm5.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751637AbaK3GlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 01:24:29 -0500
+	Sun, 30 Nov 2014 01:41:13 -0500
+Date: Sun, 30 Nov 2014 17:40:31 +1100 (AEDT)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] scsi: Some seq_file cleanups/optimizations
+In-Reply-To: <1417221258-4937-1-git-send-email-linux@rasmusvillemoes.dk>
+Message-ID: <alpine.LNX.2.00.1411301709120.4858@nippy.intranet>
+References: <1417221258-4937-1-git-send-email-linux@rasmusvillemoes.dk>
 MIME-Version: 1.0
-In-Reply-To: <20141129.210158.2021042941461629799.davem@davemloft.net>
-References: <1417066951-1999-1-git-send-email-ast@plumgrid.com>
-	<1417066951-1999-4-git-send-email-ast@plumgrid.com>
-	<20141129.210158.2021042941461629799.davem@davemloft.net>
-Date: Sat, 29 Nov 2014 22:24:28 -0800
-Message-ID: <CAMEtUuw+z61FL81-_aZ0=D5XKm-_gh+Cs1uGL2th+0A+hcYPGQ@mail.gmail.com>
-Subject: Re: [PATCH net-next 3/6] samples: bpf: example of stateful socket filtering
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: David Miller <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 29, 2014 at 9:01 PM, David Miller <davem@davemloft.net> wrote:
-> From: Alexei Starovoitov <ast@plumgrid.com>
-> Date: Wed, 26 Nov 2014 21:42:28 -0800
->
->> this socket filter example does:
->> - creates arraymap in kernel with key 4 bytes and value 8 bytes
->>
->> - loads eBPF program:
->>   r0 = skb[14 + 9]; // load one byte of ip->proto
->  ...
->> +             BPF_LD_ABS(BPF_B, 14 + 9 /* R0 = ip->proto */),
->
-> I do not want anything having to do with fixed offsets from
-> the skb.
->
-> Nothing should know where things are in the SKB structure,
-> especially user facing things.
->
-> That's why we have explicit BPF operations for fetching
-> specific SKB members, so that the layout is completely
-> transparent to the entity generating BPF programs.
->
-> Besides retaining the flexibility of changing the SKB
-> layout arbitrarily without breaking bpf programs, there
-> are also security considerations from allowing bpf
-> programs to load arbitrary offsets.
->
-> Sorry, I do not like this patch series at all.
 
-sigh.
-You misunderstood one wrong comment in the whole series.
-r0 = skb[14 + 9]; // load one byte of ip->proto
-is saying
-r0 = skb->data[14 + 9]; // load one byte of ip->proto
-it's loading one byte of packet payload and
-not one byte of skb structure.
+On Sat, 29 Nov 2014, Rasmus Villemoes wrote:
 
-There are plenty of other comments where I mentioned that.
-Including cover letter:
-"Though native eBPF programs are way more powerful than classic filters
-(attachable through similar setsockopt() call), they don't have skb field
-accessors yet. Like skb->pkt_type, skb->dev->ifindex are not accessible.
-There are sevaral ways to achieve that. That will be in the next set of patches.
-So in this set native eBPF programs can only read data from packet and
-access maps"
+> These patches mostly replace seq_printf with simpler and faster 
+> equivalents, e.g. seq_printf(m, "something") => seq_puts(m, "something") 
+> and seq_printf(m, "\n") => seq_putc(m, '\n). But before my Coccinelle 
+> scripts could be unleashed I had to clean up some unnecessary, and in 
+> the PRINTP case quite obfuscating, macros.
 
-and in patch #2:
-+static bool sock_filter_is_valid_access(int off, int size, enum
-bpf_access_type type)
-+{
-+       /* skb fields cannot be accessed yet */
-+       return false;
-+}
+Nice cleanup.
 
-In other words, there is no way to access skb fields yet.
-There are several different ways I've implemented to
-access skb fields, but they all had their cons and pros, so I
-dropped them all to focus on basic things first.
-Which is: read packet data and access maps.
+FYI, the PRINTP and *_RELEASE macros and others have been removed already 
+as part of a patch series that covers all of the NCR5380 drivers.
 
-Please let me know if you want me to fix this comment
-in this patch of sample code.
+That patch series is queued for v3.19: 
+git://git.infradead.org/users/hch/scsi-queue.git drivers-for-3.19
+
+Some of your patches to NCR5380.c, atari_NCR5380.c, g_NCR5380.c, 
+sun3_NCR5380.c will not apply to that branch.
+
+It isn't my job to resolve merge conflicts, but seeing as the patches you 
+sent were generated by Coccinelle scripts then perhaps it would be better 
+to re-run them against the drivers branch (?)
+
+> 
+> The patches don't change the semantics of the code (well, that's the
+> idea anyway), but should make it slightly smaller and faster.
+> 
+> Rasmus Villemoes (7):
+>   scsi: Remove SPRINTF macro
+>   scsi/g_NCR5380: Remove obfuscating macros
+>   scsi/advansys: Replace seq_printf with seq_puts
+>   scsi/aha152x: Replace seq_printf with seq_puts
+>   scsi: misc:  Replace seq_printf with seq_puts
+>   scsi: misc: Merge consecutive seq_puts calls
+>   scsi: misc: Print single-character strings with seq_putc
+> 
+>  drivers/scsi/BusLogic.c             |  10 +-
+>  drivers/scsi/NCR5380.c              |  42 +++--
+>  drivers/scsi/advansys.c             | 145 ++++++++---------
+>  drivers/scsi/aha152x.c              | 301 ++++++++++++++++++------------------
+>  drivers/scsi/aic7xxx/aic79xx_proc.c |  38 +++--
+>  drivers/scsi/aic7xxx/aic7xxx_proc.c |  24 +--
+>  drivers/scsi/arm/fas216.c           |   6 +-
+>  drivers/scsi/atari_NCR5380.c        |   4 +-
+>  drivers/scsi/atp870u.c              |   5 +-
+>  drivers/scsi/dc395x.c               |  78 +++++-----
+>  drivers/scsi/dpt_i2o.c              |   2 +-
+>  drivers/scsi/eata_pio.c             |   2 +-
+>  drivers/scsi/esas2r/esas2r_main.c   |   2 +-
+>  drivers/scsi/g_NCR5380.c            |  66 ++++----
+>  drivers/scsi/gdth_proc.c            |  24 +--
+>  drivers/scsi/in2000.c               |  18 +--
+>  drivers/scsi/ips.c                  |   7 +-
+>  drivers/scsi/megaraid.c             |   2 +-
+>  drivers/scsi/nsp32.c                |  41 +++--
+>  drivers/scsi/pcmcia/nsp_cs.c        |  50 +++---
+>  drivers/scsi/qla2xxx/qla_dfs.c      |   8 +-
+>  drivers/scsi/scsi_proc.c            |  22 +--
+>  drivers/scsi/scsi_trace.c           |   6 +-
+>  drivers/scsi/sun3_NCR5380.c         |   4 +-
+>  drivers/scsi/wd33c93.c              |  18 +--
+>  drivers/scsi/wd7000.c               |  41 +++--
+>  26 files changed, 460 insertions(+), 506 deletions(-)
+> 
+> 
+
+-- 
