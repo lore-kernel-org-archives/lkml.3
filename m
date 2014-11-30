@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080AbaK3I1s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 03:27:48 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:36919 "EHLO
+	id S1751999AbaK3IkF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 03:40:05 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:53935 "EHLO
 	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996AbaK3I1C (ORCPT
+	with ESMTP id S1751893AbaK3IkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 03:27:02 -0500
-From: Omar Sandoval <osandov@osandov.com>
-To: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        Joe Perches <joe@perches.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
-Cc: Omar Sandoval <osandov@osandov.com>
-Subject: [PATCH 2/3] btrfs: fix suspicious RCU in BTRFS_IOC_DEV_INFO
-Date: Sun, 30 Nov 2014 00:26:48 -0800
-Message-Id: <6566ef127f0d7ad4d33dd90362dd76e431359ef8.1417335583.git.osandov@osandov.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <cover.1417335583.git.osandov@osandov.com>
-References: <cover.1417335583.git.osandov@osandov.com>
-In-Reply-To: <cover.1417335583.git.osandov@osandov.com>
-References: <cover.1417335583.git.osandov@osandov.com>
+	Sun, 30 Nov 2014 03:40:04 -0500
+From: Athira Sharikkal <athirasnamby@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: soren.brinkmann@xilinx.com, laurent.pinchart@ideasonboard.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Athira S <athirasnamby@gmail.com>
+Subject: [PATCH] Drivers:staging:clocking-wizard: Added a newline
+Date: Sun, 30 Nov 2014 14:09:51 +0530
+Message-Id: <1417336791-11437-1-git-send-email-athirasnamby@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A naked read of the value of an RCU pointer isn't safe. Put the whole access in
-an RCU critical section, not just the pointer dereference.
+From: Athira S <athirasnamby@gmail.com>
 
-Signed-off-by: Omar Sandoval <osandov@osandov.com>
+Fixed checkpatch warning:
+Missing a newline after declarations
+
+Signed-off-by: Athira S <athirasnamby@gmail.com>
 ---
- fs/btrfs/ioctl.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/staging/clocking-wizard/clk-xlnx-clock-wizard.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-index ecdf68f..dd55844 100644
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -2706,6 +2706,7 @@ static long btrfs_ioctl_dev_info(struct btrfs_root *root, void __user *arg)
- 	struct btrfs_fs_devices *fs_devices = root->fs_info->fs_devices;
- 	int ret = 0;
- 	char *s_uuid = NULL;
-+	struct rcu_string *name;
- 
- 	di_args = memdup_user(arg, sizeof(*di_args));
- 	if (IS_ERR(di_args))
-@@ -2726,17 +2727,16 @@ static long btrfs_ioctl_dev_info(struct btrfs_root *root, void __user *arg)
- 	di_args->bytes_used = btrfs_device_get_bytes_used(dev);
- 	di_args->total_bytes = btrfs_device_get_total_bytes(dev);
- 	memcpy(di_args->uuid, dev->uuid, sizeof(di_args->uuid));
--	if (dev->name) {
--		struct rcu_string *name;
- 
--		rcu_read_lock();
--		name = rcu_dereference(dev->name);
-+	rcu_read_lock();
-+	name = rcu_dereference(dev->name);
-+	if (name) {
- 		strncpy(di_args->path, name->str, sizeof(di_args->path));
--		rcu_read_unlock();
- 		di_args->path[sizeof(di_args->path) - 1] = 0;
- 	} else {
- 		di_args->path[0] = '\0';
- 	}
-+	rcu_read_unlock();
- 
- out:
- 	mutex_unlock(&fs_devices->device_list_mutex);
+diff --git a/drivers/staging/clocking-wizard/clk-xlnx-clock-wizard.c b/drivers/staging/clocking-wizard/clk-xlnx-clock-wizard.c
+index 7202d8e..bb01cb8 100644
+--- a/drivers/staging/clocking-wizard/clk-xlnx-clock-wizard.c
++++ b/drivers/staging/clocking-wizard/clk-xlnx-clock-wizard.c
+@@ -248,6 +248,7 @@ static int clk_wzrd_probe(struct platform_device *pdev)
+ 				clkout_name, clk_name, 0, 1, reg);
+ 		if (IS_ERR(clk_wzrd->clkout[i])) {
+ 			int j;
++
+ 			for (j = i + 1; j < WZRD_NUM_OUTPUTS; j++)
+ 				clk_unregister(clk_wzrd->clkout[j]);
+ 			dev_err(&pdev->dev,
 -- 
-2.1.3
+1.9.1
 
