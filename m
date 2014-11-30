@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225AbaK3Uys (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 15:54:48 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:31333 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751650AbaK3Uyr (ORCPT
+	id S1752454AbaK3UzI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 15:55:08 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:58339 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253AbaK3UzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 15:54:47 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ak4RAOuCe1R5LLkm/2dsb2JhbABbgwaBKbNLAQEBAQEBBpRPhSIEAgKBCRcBAQEBAX2EAwEBBDocIxAIAxgJJQ8FJQMhE4g/0XcBAQgCAR8Yhh+JWWsHgymBHwEEnEaMMIkUHoNxKzCCRwEBAQ
-Date: Mon, 1 Dec 2014 07:54:30 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        gregkh@linuxfoundation.org, rafael.j.wysocki@intel.com,
-        pebolle@tiscali.nl, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: defconfig: Enable CONFIG_FHANDLE
-Message-ID: <20141130205430.GD16151@dastard>
-References: <1416958612-7448-1-git-send-email-richard@nod.at>
+	Sun, 30 Nov 2014 15:55:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416958612-7448-1-git-send-email-richard@nod.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <547B48F3.6020909@nod.at>
+References: <1417258323.9558.3.camel@gmail.com>
+	<CAFLxGvwKwZh38+-is8dX6zOFAiz0gVo+Yio3B=2eiMqmGCZfqA@mail.gmail.com>
+	<CAAzz28gHzPSC+VsSeq56oWj-KByCqK0oqeG3N4HM3D1iX_z6uQ@mail.gmail.com>
+	<1417365364.4806.1.camel@gmail.com>
+	<547B48F3.6020909@nod.at>
+Date: Sun, 30 Nov 2014 15:55:03 -0500
+Message-ID: <CAAzz28j0kTWaqnyAXR-1ASmzqdyp5hjYx1WmRg3_CN62Bt577w@mail.gmail.com>
+Subject: Re: Crash when copying from broken external hdd
+From: Laurence Oberman <oberman.l@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: Simon Danner <danner.simon@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 12:36:52AM +0100, Richard Weinberger wrote:
-> systemd has a hard dependency on CONFIG_FHANDLE.
-> If you run systemd with CONFIG_FHANDLE=n it will somehow
-> boot but fail to spawn a getty or other basic services.
-> As systemd is now used by most x86 distributions it
-> makes sense to enabled this by default and save kernel
-> hackers a lot of value debugging time.
+The BUG_ON is taken because
+blk_queued_rq(req)) returns true which means the request->queuelist is
+empty, i.e no more entries by the time the request is dereferenced
 
-The bigger question to me is this: why does systemd need to
-store/open by handle rather than just opening paths directly when
-needed? This interface is intended for stable, pathless access to
-inodes across unmount/mount contexts (e.g. userspace NFS servers,
-filesystem backup programs, etc) so I'm curious as to the problem
-systemd is solving using this interface. I just can't see the
-problem being solved here, and why path based security checks on
-every open() aren't necessary...
+Can I get the messages file entries (last 100 lines) just prior to the
+panic, not the whole file.
+If its large attach  .gz and email to me.
 
-Cheers,
+Thanks
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+On Sun, Nov 30, 2014 at 11:42 AM, Richard Weinberger <richard@nod.at> wrote:
+> Am 30.11.2014 um 17:36 schrieb Simon Danner:
+>> Hi,
+>> here the two screenshots i could take, from 3.17.4 and 3.18 git.
+>
+> You're hitting BUG_ON(blk_queued_rq(req)); in blk_finish_request()
+>
+> Thanks,
+> //richard
+>
+>> Thanks
+>> Simon
+>>
+>> On Sun, 2014-11-30 at 10:58 -0500, Laurence Oberman wrote:
+>>> I need more of the stack if you have it, the screenshot is not attached.
+>>> Thanks
+>>> Laurence
+>>>
+>>> On Sun, Nov 30, 2014 at 6:11 AM, Richard Weinberger
+>>> <richard.weinberger@gmail.com> wrote:
+>>>> On Sat, Nov 29, 2014 at 11:52 AM, Simon Danner <danner.simon@gmail.com> wrote:
+>>>>> Hello,
+>>>>> i get the following crash after i try to copy files from a broken
+>>>>> external hdd to another external hdd.
+>>>>> It happens after a few minutes, with latest git and 3.17.4 from Arch.
+>>>>> Attached screenshot is from latest mainline git.
+>>>>>
+>>>>> i hope this can be fixed somehow,
+>>>>> Regards Simon Danner
+>>>>
+>>>> Can you decode scsi_requed_end+0x122?
+>>>> CC'ing block and scsi folks.
+>>>>
+>>>> --
+>>>> Thanks,
+>>>> //richard
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
