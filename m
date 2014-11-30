@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761AbaK3RJY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 12:09:24 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:16438 "EHLO
+	id S1752691AbaK3RLe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 12:11:34 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:38155 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752154AbaK3RJW (ORCPT
+	by vger.kernel.org with ESMTP id S1752472AbaK3RJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 12:09:22 -0500
+	Sun, 30 Nov 2014 12:09:23 -0500
 X-IronPort-AV: E=Sophos;i="5.07,488,1413237600"; 
-   d="scan'208";a="110322833"
+   d="scan'208";a="110322834"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: kernel-janitors@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        linux-crypto@vger.kernel.org, sparclinux@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/8 v2] purgatory/sha256: replace memset by memzero_explicit
-Date: Sun, 30 Nov 2014 18:03:42 +0100
-Message-Id: <1417367029-32762-2-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 2/8 v2] sparc64: replace memset by memzero_explicit
+Date: Sun, 30 Nov 2014 18:03:43 +0100
+Message-Id: <1417367029-32762-3-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1417367029-32762-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1417367029-32762-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -60,22 +60,38 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 Daniel Borkmann suggested that these patches could go through Herbert Xu's
 cryptodev tree.
 
+I was not able to compile these.
+
 v2: fixed email address
 
- arch/x86/purgatory/sha256.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/sparc/crypto/sha256_glue.c |    2 +-
+ arch/sparc/crypto/sha512_glue.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/purgatory/sha256.c b/arch/x86/purgatory/sha256.c
-index 548ca67..8271ca5 100644
---- a/arch/x86/purgatory/sha256.c
-+++ b/arch/x86/purgatory/sha256.c
-@@ -205,7 +205,7 @@ static void sha256_transform(u32 *state, const u8 *input)
+diff --git a/arch/sparc/crypto/sha512_glue.c b/arch/sparc/crypto/sha512_glue.c
+index 9fff885..11eb36c 100644
+--- a/arch/sparc/crypto/sha512_glue.c
++++ b/arch/sparc/crypto/sha512_glue.c
+@@ -139,7 +139,7 @@ static int sha384_sparc64_final(struct shash_desc *desc, u8 *hash)
+ 	sha512_sparc64_final(desc, D);
  
- 	/* clear any sensitive info... */
- 	a = b = c = d = e = f = g = h = t1 = t2 = 0;
--	memset(W, 0, 64 * sizeof(u32));
-+	memzero_explicit(W, 64 * sizeof(u32));
+ 	memcpy(hash, D, 48);
+-	memset(D, 0, 64);
++	memzero_explicit(D, 64);
+ 
+ 	return 0;
  }
+diff --git a/arch/sparc/crypto/sha256_glue.c b/arch/sparc/crypto/sha256_glue.c
+index 41f27cc..285268c 100644
+--- a/arch/sparc/crypto/sha256_glue.c
++++ b/arch/sparc/crypto/sha256_glue.c
+@@ -135,7 +135,7 @@ static int sha224_sparc64_final(struct shash_desc *desc, u8 *hash)
+ 	sha256_sparc64_final(desc, D);
  
- int sha256_init(struct sha256_state *sctx)
+ 	memcpy(hash, D, SHA224_DIGEST_SIZE);
+-	memset(D, 0, SHA256_DIGEST_SIZE);
++	memzero_explicit(D, SHA256_DIGEST_SIZE);
+ 
+ 	return 0;
+ }
 
