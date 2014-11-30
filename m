@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064AbaK3Twf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 14:52:35 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:47803 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650AbaK3Twd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 14:52:33 -0500
-Message-ID: <547B757F.2040900@lwfinger.net>
-Date: Sun, 30 Nov 2014 13:52:31 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: nick <xerofoify@gmail.com>
-CC: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+	id S1752141AbaK3Tyr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 14:54:47 -0500
+Received: from syn.loicp.eu ([176.31.96.212]:39275 "EHLO mx0.loicp.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751650AbaK3Typ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 14:54:45 -0500
+Date: Sun, 30 Nov 2014 20:54:40 +0100
+From: =?utf-8?B?TG/Dr2M=?= Pefferkorn <loic@loicp.eu>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: oleg.drokin@intel.com, andreas.dilger@intel.com, gdonald@gmail.com,
+        keith.mannthey@intel.com, john.hammond@intel.com,
+        devel@driverdev.osuosl.org, HPDD-discuss@ml01.01.org,
         linux-kernel@vger.kernel.org
-Subject: Re: Non Explained TODOs in halbtcoutsrc.c
-References: <547A581A.7040609@gmail.com> <547A9D91.9080406@lwfinger.net> <547A9F9D.8050103@gmail.com>
-In-Reply-To: <547A9F9D.8050103@gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] staging: lustre: fix sparse warnings related to lock
+ context imbalance
+Message-ID: <20141130195439.GA12032@iron>
+References: <02a457cec587341d0f1665491f6360323694b008.1417017302.git.loic@loicp.eu>
+ <20141126205443.GB10615@kroah.com>
+ <20141127183410.GA4582@iron>
+ <20141128222207.GC27558@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141128222207.GC27558@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2014 10:39 PM, nick wrote:
-> Larry,
-> Do you known who wrote that code as this I can email them for the explanations for them.
-> If not I assume we can remove them as the code makes logical sense unless there are
-> hardware or other quirks that need to be handled. :)
-> Cheers and Thanks for Your Time,
-> Nick
->
-> On 2014-11-29 11:31 PM, Larry Finger wrote:
->> On 11/29/2014 05:34 PM, nick wrote:
->>> Greetings Larry,
->>> After reading the code around the TODOS, I can't understand you reasoning for them in this file as they seem to
->>> unneeded as the logic for the switch statement with them seems to be fine. If there are reasons for them in this
->>> file, it would be nice to hear from you on why they are needed as TODO as a comment is rather unclear for anybody
->>> reading this file.
->>> Nick
->>
->> I did not write that code. I merely make it available through the git repo, and modify it so that it will build on all kernel versions. I do not understand the TODOs any more than you do.
->>
->> Larry
+On Fri, Nov 28, 2014 at 02:22:07PM -0800, Greg KH wrote:
+> 
+> That's even worse than I imagined.  Putting sparse markings on these
+> function calls is just papering over nonsense.  Please work on unwinding
+> the mess so that you don't need callbacks for locks, that is an
+> abstraction that isn't needed.
+> 
+> Same here, ick ick ick.
+> 
+> 
+> Don't hide "implementation of locks" in functions like this, it only
+> causes problems.  This code has layers of layers of layers of
+> abstractions due to it wanting to be originally ported to other
+> operating systems and lots of different kernel versions of Linux itself.
+> Unwinding and removing those layers is a good thing to do, don't paper
+> over the nonsense by putting sparse markings on pointless functions.
+> 
+> thanks,
 
-Sorry, I do not have permission to reveal the E-mail addresses of any Realtek 
-software developers. I have added the appropriate developer as a Bcc to this 
-E-mail. That will leave it up to that individual to respond to you.
+Hi guys,
 
-Larry
+Thanks for your reply. I'm going to write a v2.
 
-
+-- 
+Cheers,
+Loïc
