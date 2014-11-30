@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394AbaK3OTP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 09:19:15 -0500
-Received: from mout.gmx.net ([212.227.15.19]:63355 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751958AbaK3OTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 09:19:14 -0500
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Scot Doyle <lkml14@scotdoyle.com>
-Subject: Re: [PATCH v10] tpm_tis: verify interrupt during init
-Date: Sun, 30 Nov 2014 15:24:11 +0100
-User-Agent: KMail/1.13.7 (Linux/3.17.2; KDE/4.12.5; x86_64; ; )
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        Michael Mullin <masmullin@gmail.com>,
-        Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net
-References: <20140908220238.GB6204@obsidianresearch.com> <alpine.DEB.2.11.1409242234220.2311@localhost.localdomain> <20140929172457.GC15607@obsidianresearch.com>
-In-Reply-To: <20140929172457.GC15607@obsidianresearch.com>
+	id S1751927AbaK3Ool (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 09:44:41 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:48147 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751679AbaK3Ook (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 09:44:40 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [PATCH] i8k: Fix temperature bug handling in i8k_get_temp()
+Date: Sun, 30 Nov 2014 15:44:36 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        linux-kernel@vger.kernel.org
+References: <201411181546.51284@pali> <1416322614-10308-1-git-send-email-pali.rohar@gmail.com> <20141130001207.GA26101@roeck-us.net>
+In-Reply-To: <20141130001207.GA26101@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: multipart/signed;
+  boundary="nextPart1660214.YuunbV9Eor";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201411301524.11327.PeterHuewe@gmx.de>
-X-Provags-ID: V03:K0:a+PpV7sy8LagLCiu6JlbBAhj+Ym5GbJer8I6OFafQ+ndh85TZkH
- 3Z6nzNW/AYlTtmJZOftIwwEN+VN0ZkfAZY3BDSUuIuLXs08LdQ2yGGgeK8hr8TW3Fdg432O
- 4qFeVvxcwg3rjwNePmiC9teNvexGZHpjI/RDA6jX1WkqH9drwvhVCwr0+Fga5YXckWFmNIK
- LVNjVEpXkCQSq7kjjDR7Q==
-X-UI-Out-Filterresults: notjunk:1;
+Message-Id: <201411301544.36856@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Scot,
+--nextPart1660214.YuunbV9Eor
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Am Montag, 29. September 2014, 19:24:57 schrieb Jason Gunthorpe:
-> On Wed, Sep 24, 2014 at 10:41:10PM +0000, Scot Doyle wrote:
-> > Some machines, such as the Acer C720 and Toshiba CB35, have TPMs that do
-> > not send IRQs while also having an ACPI TPM entry indicating that they
-> > will be sent. These machines freeze on resume while the tpm_tis module
-> > waits for an IRQ, eventually timing out.
-> > 
-> > When in interrupt mode, the tpm_tis module should receive an IRQ during
-> > module init. Fall back to polling mode if none is received when expected.
-> > 
-> > Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
-> > Tested-by: Michael Mullin <masmullin@gmail.com>
-> 
-> Looks good with enable fixed
-> 
-> Reviewed-By: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+On Sunday 30 November 2014 01:12:07 Guenter Roeck wrote:
+> > diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
+> > index 7272b08..e34a019 100644
+> > --- a/drivers/char/i8k.c
+> > +++ b/drivers/char/i8k.c
+> > @@ -298,7 +298,7 @@ static int i8k_get_temp(int sensor)
+> >
+> >       int temp;
+> > =20
+> >  #ifdef I8K_TEMPERATURE_BUG
+> >
+> > -     static int prev[4];
+> > +     static int prev[4] =3D { I8K_MAX_TEMP+1, I8K_MAX_TEMP+1,
+> > I8K_MAX_TEMP+1, I8K_MAX_TEMP+1 };
+>=20
+> This results in a checkpatch warning. Please split, and add a
+> space before and after '+'. Actually, I would suggest to use
+> something something like
+>=20
+> #define I8K_INVALID_TEMP        (I8K_MAX_TEMP + 1)
+>=20
+> and to use it instead of hard-coding "I8K_MAX_TEMP + 1" in the
+> code.
 
+I will define I8K_INVALID_TEMP and use it instead I8K_MAX_TEMP.
 
-Applied to my tree:
-https://github.com/PeterHuewe/linux-tpmdd for-james
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-Will be included in the next pull-request.
+--nextPart1660214.YuunbV9Eor
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Thanks,
-Peter
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlR7LVQACgkQi/DJPQPkQ1J+3wCfVzqonzfGZYohEKiTOZcuWC1y
+1N8AoJlzMIvOrrONDRKLfEWu8C4OgF7D
+=WuB4
+-----END PGP SIGNATURE-----
+
+--nextPart1660214.YuunbV9Eor--
