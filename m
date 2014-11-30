@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839AbaK3RKL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 12:10:11 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:16438 "EHLO
+	id S1752744AbaK3RKn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 12:10:43 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:38155 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752744AbaK3RJZ (ORCPT
+	by vger.kernel.org with ESMTP id S1752024AbaK3RJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Nov 2014 12:09:25 -0500
 X-IronPort-AV: E=Sophos;i="5.07,488,1413237600"; 
-   d="scan'208";a="110322838"
+   d="scan'208";a="110322837"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, linux-crypto@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 6/8 v2] crypto: replace memset by memzero_explicit
-Date: Sun, 30 Nov 2014 18:03:47 +0100
-Message-Id: <1417367029-32762-7-git-send-email-Julia.Lawall@lip6.fr>
+To: Alasdair Kergon <agk@redhat.com>
+Cc: kernel-janitors@vger.kernel.org, Mike Snitzer <snitzer@redhat.com>,
+        dm-devel@redhat.com, Neil Brown <neilb@suse.de>,
+        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/8 v2] dm: replace memset by memzero_explicit
+Date: Sun, 30 Nov 2014 18:03:46 +0100
+Message-Id: <1417367029-32762-6-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1417367029-32762-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1417367029-32762-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -64,20 +62,20 @@ cryptodev tree.
 
 v2: fixed email address
 
- arch/powerpc/crypto/sha1.c |    2 +-
+ drivers/md/dm-crypt.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/crypto/sha1.c b/arch/powerpc/crypto/sha1.c
-index 0f88c7b..d3feba5 100644
---- a/arch/powerpc/crypto/sha1.c
-+++ b/arch/powerpc/crypto/sha1.c
-@@ -66,7 +66,7 @@ static int sha1_update(struct shash_desc *desc, const u8 *data,
- 			src = data + done;
- 		} while (done + 63 < len);
+diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
+index fc93b93..08981be 100644
+--- a/drivers/md/dm-crypt.c
++++ b/drivers/md/dm-crypt.c
+@@ -705,7 +705,7 @@ static int crypt_iv_tcw_whitening(struct crypt_config *cc,
+ 	for (i = 0; i < ((1 << SECTOR_SHIFT) / 8); i++)
+ 		crypto_xor(data + i * 8, buf, 8);
+ out:
+-	memset(buf, 0, sizeof(buf));
++	memzero_explicit(buf, sizeof(buf));
+ 	return r;
+ }
  
--		memset(temp, 0, sizeof(temp));
-+		memzero_explicit(temp, sizeof(temp));
- 		partial = 0;
- 	}
- 	memcpy(sctx->buffer + partial, src, len - done);
 
