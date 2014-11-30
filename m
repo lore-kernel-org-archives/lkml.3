@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049AbaK3Iqc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 03:46:32 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:37042 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846AbaK3Iqb (ORCPT
+	id S1751981AbaK3IzJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 03:55:09 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:45338 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751846AbaK3IzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 03:46:31 -0500
-Date: Sun, 30 Nov 2014 00:46:27 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
+	Sun, 30 Nov 2014 03:55:07 -0500
+Date: Sun, 30 Nov 2014 09:55:00 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Brian Norris <computersforpeace@gmail.com>
 Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
         Huang Shijie <shijie8@gmail.com>, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
-Subject: Re: [PATCH v5 0/3] mtd: nand: gpmi: add proper raw access support
-Message-ID: <20141130084627.GD3608@norris-Latitude-E6410>
+Subject: Re: [PATCH v5 1/3] mtd: nand: gpmi: add gpmi_move_bits function
+Message-ID: <20141130095500.16f75e05@bbrezillon>
+In-Reply-To: <20141130081110.GC3608@norris-Latitude-E6410>
 References: <1417020793-3354-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1417020793-3354-2-git-send-email-boris.brezillon@free-electrons.com>
+	<20141126175708.1acb90ac@bbrezillon>
+	<20141130081110.GC3608@norris-Latitude-E6410>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417020793-3354-1-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 05:53:10PM +0100, Boris Brezillon wrote:
-> This series provides an implementation for raw accesses taking care of
-> hidding the specific layout used by the GPMI controller.
-> 
-> Best Regards,
-> 
-> Boris
-> 
-> Changes since v4:
->  - fixed a few corner cases in gpmi_move_bits (tested it with:
->    https://github.com/bbrezillon/gpmi-move-bits-test/blob/master/gpmi-move-bits-test.c)
+Hi Brian,
 
-Thanks for this.
+On Sun, 30 Nov 2014 00:11:10 -0800
+Brian Norris <computersforpeace@gmail.com> wrote:
 
-BTW, I was going to ask if you benchmarked the much simpler
-simple_move_bits() version against the more complicated version here,
-but I just ran it myself; the simple version performed about 10x slower
-when testing on my PC. So I guess that can justify some extra
-complexity!
-
->  - add documentation and comments for the new gpmi functions
+> On Wed, Nov 26, 2014 at 05:57:08PM +0100, Boris Brezillon wrote:
+> > On Wed, 26 Nov 2014 17:53:11 +0100 Boris Brezillon <boris.brezillon@free-electrons.com> wrote:
+> > > +/**
+> > > + * gpmi_move_bits - move bits from one memory region to another
+> > > + * @dst: destination buffer
+> > > + * @dst_bit_off: bit offset we're starting to write at
+> > > + * @src: source buffer
+> > > + * @src_bit_off: bit offset we're starting to read from
+> > > + * @nbits: number of bits to copy
+> > > + *
+> > > + * This functions copies bits from one memory region to another, and is used by
+> > > + * the GPMI driver to copy ECC sections which are not guaranteed to be byte
+> > > + * aligned.
+> > 
+> > I forgot to add that src and dst should not overlap, otherwise it won't
+> > work...
 > 
-> Changes since v3:
->  - add comments to the gpmi_move_bits function
->  - extend raw read/write documentation
->  - move last part of the raw_page_read function into a conditional block
+> Hmm, normally that's implied for copy-like operations. But since you
+> named this function "move" (rather than "copy" or "cpy"), that's a
+> little less clear.
+
+Indeed, that's a good point.
+
 > 
-> Changes since v2:
->  - fixed a bug in gpmi_move_bits
->  - add a raw_buffer field to be used when using raw access methods
->    (experienced memory corruptions when directly using page_buffer_virt
->    buffer)
->  - add raw OOB access functions
+> Did you have a good reason for the "move" name? If not, maybe it's worth
+> changing.
 
-Other than my comment about move vs. copy, I think this looks good
-enough.
+No, I don't, and I'd prefer changing the name than implementing a non
+destructive move function.
 
-Brian
+I'll send a new version with this change.
+
+Thanks,
+
+Boris
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
