@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511AbaK3VQn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 16:16:43 -0500
-Received: from mout.web.de ([212.227.17.11]:51619 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752243AbaK3VQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 16:16:40 -0500
-Message-ID: <547B8912.7040502@users.sourceforge.net>
-Date: Sun, 30 Nov 2014 22:16:02 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752204AbaK3VVN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 16:21:13 -0500
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:64853 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900AbaK3VVL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 16:21:11 -0500
+Message-ID: <547b8a45.6e608c0a.20f9.1002@mx.google.com>
+Date: Sun, 30 Nov 2014 19:21:05 -0200
+From: =?UTF-8?B?RMOibmllbA==?= Fraga <fragabr@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+In-Reply-To: <CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
+References: <20141114213124.GB3344@redhat.com>
+	<CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
+	<20141115213405.GA31971@redhat.com>
+	<20141116014006.GA5016@redhat.com>
+	<CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
+	<20141126002501.GA11752@redhat.com>
+	<CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>
+	<20141126024032.GA13246@redhat.com>
+	<20141126225745.GA30346@redhat.com>
+	<CA+55aFz-JUX6CU-aO+cwLHYtH7BA+dgyUnEGoy8T4S62gEDFpA@mail.gmail.com>
+	<20141127225637.GA24019@redhat.com>
+	<m5dart$co$1@ger.gmane.org>
+	<CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
+Organization: http://www.youtube.com/DanielFragaBR
+X-Mailer: Claws Mail 3.11.1-9-g1f531c (GTK+ 2.24.25; x86_64-unknown-linux-gnu)
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH 3/3] net-PPP: Delete an unnecessary assignment
-References: <5307CAA2.8060406@users.sourceforge.net>	 <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>	 <530A086E.8010901@users.sourceforge.net>	 <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>	 <530A72AA.3000601@users.sourceforge.net>	 <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>	 <530B5FB6.6010207@users.sourceforge.net>	 <alpine.DEB.2.10.1402241710370.2074@hadrien>	 <530C5E18.1020800@users.sourceforge.net>	 <alpine.DEB.2.10.1402251014170.2080@hadrien>	 <530CD2C4.4050903@users.sourceforge.net>	 <alpine.DEB.2.10.1402251840450.7035@hadrien>	 <530CF8FF.8080600@users.sourceforge.net>	 <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>	 <530DD06F.4090703@users.sourceforge.net>	 <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>	 <5317A59D.4@users.sourceforge.net> <547B4886.4080406@users.sourceforge.net>	 <547B4A35.7000500@users.sourceforge.net> <1417377583.4442.11.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1417377583.4442.11.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:DwPq+xSRSoAloX3L+ZPqEwBz219U8j3CtlW030FoLBjLGtjAH8/
- xyp4dyh/w58vXaoQxI4UYTBY3Wl7v9dkse06rmMHKCyQBpCp5QY83T7uMrGHxbbPpRLEgmM
- duWyxIYl1Rcad6+gVTwV5OXm9DdGdZkJ1cTEV75y5gI+QLDSkn6TnqB0tYkZXhA0W4HkDW/
- sAw9DFDbS9cZokjUAt+ig==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I have no idea why its a patch on its own, and why state->arc4 gets
-> special treatment while state->sha1 does not.
+On Sun, 30 Nov 2014 12:45:31 -0800
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-I did not fiddle with the data structure element "sha1" because
-I assumed that it might be still relevant for the call of a function
-like crypto_free_blkcipher().
+> Yours looks very different. Dave (and Sasha Levin) have reported
+> rcy_preempt stalls too, but it's not clear it's the same issue.
+> 
+> In case yours is repeatable (you seem to say it is), can you try it
+> without TREE_PREEMPT_RCU?
 
+	Yes, but "menuconfig" doesn't allow me to disable it (it's
+always checked). Newbie question: does TREE_PREEMPT_RCU depends on any
+other option? Thanks.
 
-> This definitely belongs to the previous patch, refactoring error
-> handling in mppe_alloc()
-
-I have got different preferences for change distribution over several
-patches here.
-I find it safer to tackle an assignment clean-up after adjustments
-for jump labels.
-
-
-> Also, it seems your patches do not fix bugs, so so you need to target
-> net-next tree, as explained in Documentation/networking/netdev-FAQ.txt
-
-Do you want that I resend my update suggestion?
-
-Regards,
-Markus
+-- 
+Linux 3.16.0-00115-g19583ca: Shuffling Zombie Juror
+http://www.youtube.com/DanielFragaBR
+http://exchangewar.info
+Bitcoin: 12H6661yoLDUZaYPdah6urZS5WiXwTAUgL
