@@ -1,95 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010AbaK3KI0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 05:08:26 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:60307 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156AbaK3KIZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 05:08:25 -0500
-From: Janet Liu <jianhua.ljh@gmail.com>
-To: oleg.drokin@intel.com, andreas.dilger@intel.com,
-        gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Janet Liu <jianhua.ljh@gmail.com>
-Subject: [PATCHv1] staging: lustre: fixed sparse warnings related to static declarations
-Date: Sun, 30 Nov 2014 18:08:10 +0800
-Message-Id: <1417342090-8012-1-git-send-email-jianhua.ljh@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752112AbaK3KIz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 05:08:55 -0500
+Received: from mout.web.de ([212.227.17.11]:56159 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751561AbaK3KIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 05:08:53 -0500
+Message-ID: <547AECA4.3050800@users.sourceforge.net>
+Date: Sun, 30 Nov 2014 11:08:36 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        linux-acpi@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] ACPI: Deletion of an unnecessary check before the function
+ call "pci_dev_put"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:9nZPhlKKqXVdteGIU6005pwLaR7QAJF0W0RXgKvRPTAqRb6AZ8c
+ aak4A9mu08HPrkipUqPlaIgWiXvWxDbvgxmuQ3yh/gCKPE2zPNKouDoeN3apVOvyqOplJxr
+ 526m6JZXXxGbZS9O1NVo4gZtxCGUT7ekMLdPfmMi3WDWjB0xHHEgjNs2lnriT7SOYiHOKeP
+ VfuvD+NQsn3pJtt/FfNOw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/staging/lustre/lustre/mdc/mdc_request.c:63:5: warning: symbol 'mdc_unpack_capa' was not declared. Should it be static?
-drivers/staging/lustre/lustre/mdc/mdc_request.c:150:5: warning: symbol 'mdc_getstatus' was not declared. Should it be static?
-drivers/staging/lustre/lustre/mdc/mdc_request.c:217:5: warning: symbol 'mdc_getattr' was not declared. Should it be static?
-drivers/staging/lustre/lustre/mdc/mdc_request.c:261:5: warning: symbol 'mdc_getattr_name' was not declared. Should it be static?
-drivers/staging/lustre/lustre/mdc/mdc_request.c:444:5: warning: symbol 'mdc_setxattr' was not declared. Should it be static?
-drivers/staging/lustre/lustre/mdc/mdc_request.c:455:5: warning: symbol 'mdc_getxattr' was not declared. Should it be static?
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Sun, 30 Nov 2014 10:59:10 +0100
 
-Signed-off-by: Janet Liu <jianhua.ljh@gmail.com>
+The pci_dev_put() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
+
+This issue was detected by using the Coccinelle software.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 ---
- drivers/staging/lustre/lustre/mdc/mdc_request.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/acpi/ioapic.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/mdc/mdc_request.c b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-index 14e1ba1..3b0f245 100644
---- a/drivers/staging/lustre/lustre/mdc/mdc_request.c
-+++ b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-@@ -60,7 +60,7 @@ struct mdc_renew_capa_args {
- 
- static int mdc_cleanup(struct obd_device *obd);
- 
--int mdc_unpack_capa(struct obd_export *exp, struct ptlrpc_request *req,
-+static int mdc_unpack_capa(struct obd_export *exp, struct ptlrpc_request *req,
- 		    const struct req_msg_field *field, struct obd_capa **oc)
- {
- 	struct lustre_capa *capa;
-@@ -147,7 +147,7 @@ out:
- }
- 
- /* This should be mdc_get_info("rootfid") */
--int mdc_getstatus(struct obd_export *exp, struct lu_fid *rootfid,
-+static int mdc_getstatus(struct obd_export *exp, struct lu_fid *rootfid,
- 		  struct obd_capa **pc)
- {
- 	return send_getstatus(class_exp2cliimp(exp), rootfid, pc,
-@@ -214,7 +214,7 @@ static int mdc_getattr_common(struct obd_export *exp,
- 	return 0;
- }
- 
--int mdc_getattr(struct obd_export *exp, struct md_op_data *op_data,
-+static int mdc_getattr(struct obd_export *exp, struct md_op_data *op_data,
- 		struct ptlrpc_request **request)
- {
- 	struct ptlrpc_request *req;
-@@ -258,7 +258,7 @@ int mdc_getattr(struct obd_export *exp, struct md_op_data *op_data,
- 	return rc;
- }
- 
--int mdc_getattr_name(struct obd_export *exp, struct md_op_data *op_data,
-+static int mdc_getattr_name(struct obd_export *exp, struct md_op_data *op_data,
- 		     struct ptlrpc_request **request)
- {
- 	struct ptlrpc_request *req;
-@@ -441,7 +441,7 @@ static int mdc_xattr_common(struct obd_export *exp,
- 	return rc;
- }
- 
--int mdc_setxattr(struct obd_export *exp, const struct lu_fid *fid,
-+static int mdc_setxattr(struct obd_export *exp, const struct lu_fid *fid,
- 		 struct obd_capa *oc, u64 valid, const char *xattr_name,
- 		 const char *input, int input_size, int output_size,
- 		 int flags, __u32 suppgid, struct ptlrpc_request **request)
-@@ -452,7 +452,7 @@ int mdc_setxattr(struct obd_export *exp, const struct lu_fid *fid,
- 				suppgid, request);
- }
- 
--int mdc_getxattr(struct obd_export *exp, const struct lu_fid *fid,
-+static int mdc_getxattr(struct obd_export *exp, const struct lu_fid *fid,
- 		 struct obd_capa *oc, u64 valid, const char *xattr_name,
- 		 const char *input, int input_size, int output_size,
- 		 int flags, struct ptlrpc_request **request)
+diff --git a/drivers/acpi/ioapic.c b/drivers/acpi/ioapic.c
+index 9a631a6..35963d3 100644
+--- a/drivers/acpi/ioapic.c
++++ b/drivers/acpi/ioapic.c
+@@ -185,8 +185,7 @@ exit_disable:
+ 	if (dev)
+ 		pci_disable_device(dev);
+ exit_put:
+-	if (dev)
+-		pci_dev_put(dev);
++	pci_dev_put(dev);
+ exit_free:
+ 	kfree(ioapic);
+ exit:
 -- 
-1.7.9.5
+2.1.3
 
