@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204AbaK3VVN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 16:21:13 -0500
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:64853 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751900AbaK3VVL (ORCPT
+	id S1752243AbaK3VbJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 16:31:09 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:47457 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021AbaK3VbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 16:21:11 -0500
-Message-ID: <547b8a45.6e608c0a.20f9.1002@mx.google.com>
-Date: Sun, 30 Nov 2014 19:21:05 -0200
-From: =?UTF-8?B?RMOibmllbA==?= Fraga <fragabr@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-In-Reply-To: <CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
-References: <20141114213124.GB3344@redhat.com>
-	<CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
-	<20141115213405.GA31971@redhat.com>
-	<20141116014006.GA5016@redhat.com>
-	<CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
-	<20141126002501.GA11752@redhat.com>
-	<CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>
-	<20141126024032.GA13246@redhat.com>
-	<20141126225745.GA30346@redhat.com>
-	<CA+55aFz-JUX6CU-aO+cwLHYtH7BA+dgyUnEGoy8T4S62gEDFpA@mail.gmail.com>
-	<20141127225637.GA24019@redhat.com>
-	<m5dart$co$1@ger.gmane.org>
-	<CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
-Organization: http://www.youtube.com/DanielFragaBR
-X-Mailer: Claws Mail 3.11.1-9-g1f531c (GTK+ 2.24.25; x86_64-unknown-linux-gnu)
+	Sun, 30 Nov 2014 16:31:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1680188.7K1XCBdsCk@avalon>
+References: <1416220913-5047-1-git-send-email-prabhakar.csengg@gmail.com>
+ <3017627.SLutb67dz2@avalon> <CA+V-a8tNW8JXKEeaAwEKkB+SCS2_My228spsgpbb5JQPjdC2Og@mail.gmail.com>
+ <1680188.7K1XCBdsCk@avalon>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Sun, 30 Nov 2014 21:30:35 +0000
+Message-ID: <CA+V-a8uaw2X_a3rfx0=avbuGnUdbqveMvJaU25hewzv9eAA8+Q@mail.gmail.com>
+Subject: Re: [PATCH] media: v4l2-subdev.h: drop the guard CONFIG_VIDEO_V4L2_SUBDEV_API
+ for v4l2_subdev_get_try_*()
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>,
+        linux-media <linux-media@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sakari Ailus <sakari.ailus@iki.fi>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 30 Nov 2014 12:45:31 -0800
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Hi Laurent,
 
-> Yours looks very different. Dave (and Sasha Levin) have reported
-> rcy_preempt stalls too, but it's not clear it's the same issue.
-> 
-> In case yours is repeatable (you seem to say it is), can you try it
-> without TREE_PREEMPT_RCU?
+On Sun, Nov 30, 2014 at 9:16 PM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> On Sunday 30 November 2014 21:05:50 Prabhakar Lad wrote:
+>> On Sat, Nov 29, 2014 at 7:12 PM, Laurent Pinchart wrote:
+>> > Hi Prabhakar,
+>>
+>> [Snip]
+>>
+>> >> > Sure. That's a better choice than removing the config option dependency
+>> >> > of the fields struct v4l2_subdev.
+>> >
+>> > Decoupling CONFIG_VIDEO_V4L2_SUBDEV_API from the availability of the
+>> > in-kernel pad format and selection rectangles helpers is definitely a
+>> > good idea. I was thinking about decoupling the try format and rectangles
+>> > from v4l2_subdev_fh by creating a kind of configuration store structure
+>> > to store them, and embedding that structure in v4l2_subdev_fh. The
+>> > pad-level operations would then take a pointer to the configuration store
+>> > instead of the v4l2_subdev_fh. Bridge drivers that want to implement
+>> > TRY_FMT based on pad-level operations would create a configuration store,
+>> > use the pad-level operations, and destroy the configuration store. The
+>> > userspace subdev API would use the configuration store from the file
+>> > handle.
+>>
+>> are planning to work/post any time soon ? Or are you OK with suggestion from
+>> Hans ?
+>
+> I have no plan to work on that myself now, I was hoping you could implement it
+> ;-)
+>
+OK will implement it.
 
-	Yes, but "menuconfig" doesn't allow me to disable it (it's
-always checked). Newbie question: does TREE_PREEMPT_RCU depends on any
-other option? Thanks.
+Can you please elaborate a more on this "The userspace subdev API would use
+the configuration store from the file  handle."
 
--- 
-Linux 3.16.0-00115-g19583ca: Shuffling Zombie Juror
-http://www.youtube.com/DanielFragaBR
-http://exchangewar.info
-Bitcoin: 12H6661yoLDUZaYPdah6urZS5WiXwTAUgL
+Thanks,
+--Prabhakar Lad
