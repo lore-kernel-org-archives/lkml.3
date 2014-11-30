@@ -1,54 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374AbaK3QbC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 11:31:02 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:34051 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957AbaK3Qa7 (ORCPT
+	id S1752460AbaK3QcX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 11:32:23 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:43547 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024AbaK3QcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 11:30:59 -0500
-Message-ID: <547B463B.6060001@dev.mellanox.co.il>
-Date: Sun, 30 Nov 2014 18:30:51 +0200
-From: Sagi Grimberg <sagig@dev.mellanox.co.il>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Sun, 30 Nov 2014 11:32:22 -0500
 MIME-Version: 1.0
-To: Lino Sanfilippo <LinoSanfilippo@gmx.de>, nab@linux-iscsi.org
-CC: sagig@mellanox.com, cvubrugier@yahoo.fr, joern@logfs.org,
-        steven.allen@purestorage.com, arshad.hussain@calsoftinc.com,
-        agrover@redhat.com, linux-scsi@vger.kernel.org,
-        target-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iscsi-target: fix error path in iscsi_target_init_module()
-References: <1417345211-5583-1-git-send-email-LinoSanfilippo@gmx.de>
-In-Reply-To: <1417345211-5583-1-git-send-email-LinoSanfilippo@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1417316668-23538-1-git-send-email-xerofoify@gmail.com>
+References: <1417316668-23538-1-git-send-email-xerofoify@gmail.com>
+Date: Sun, 30 Nov 2014 11:32:21 -0500
+X-Google-Sender-Auth: xYxhkTOr0PZgy2arZp22Z3i06A0
+Message-ID: <CAOcJUbyjmUGOiAAQTc=O9OMk7vw8A6sYQg9svKNVw_zCyt5Jcg@mail.gmail.com>
+Subject: Re: [PATCH] drivers:media: Add proper sanity checking for register
+ setting to variable in lg2160.c
+From: Michael Ira Krufky <mkrufky@linuxtv.org>
+To: Nicholas Krause <xerofoify@gmail.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2014 1:00 PM, Lino Sanfilippo wrote:
-> In iscsi_target_init_module() unwind transport protocol registration in case
-> that iscsit_load_discovery_tpg() failed.
+On Sat, Nov 29, 2014 at 10:04 PM, Nicholas Krause <xerofoify@gmail.com> wrote:
+> Fixs issue with setting the variable value of val in the functionm,lg2161_set_output_interface
+> and not sanity checking if the value has been correctly set with the correct value of the struct
+> state of type lg216x_state passed to the function by the calling code.
 >
-> Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
 > ---
->   drivers/target/iscsi/iscsi_target.c | 1 +
->   1 file changed, 1 insertion(+)
+>  drivers/media/dvb-frontends/lg2160.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 >
-> diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
-> index 73e58d2..f8ec322 100644
-> --- a/drivers/target/iscsi/iscsi_target.c
-> +++ b/drivers/target/iscsi/iscsi_target.c
-> @@ -609,6 +609,7 @@ static int __init iscsi_target_init_module(void)
+> diff --git a/drivers/media/dvb-frontends/lg2160.c b/drivers/media/dvb-frontends/lg2160.c
+> index 5fd14f8..9aec63a 100644
+> --- a/drivers/media/dvb-frontends/lg2160.c
+> +++ b/drivers/media/dvb-frontends/lg2160.c
+> @@ -459,7 +459,9 @@ static int lg2161_set_output_interface(struct lg216x_state *state)
+>                 goto fail;
 >
->   	return ret;
->   r2t_out:
-> +	iscsit_unregister_transport(&iscsi_target_transport);
->   	kmem_cache_destroy(lio_r2t_cache);
->   ooo_out:
->   	kmem_cache_destroy(lio_ooo_cache);
+>         val &= ~0x07;
+> -       val |= state->cfg->output_if; /* FIXME: needs sanity check */
+> +       val |= state->cfg->output_if;
+> +       if (lg_fail(val))
+> +               goto fail;
+>
+>         ret = lg216x_write_reg(state, 0x0014, val);
+>         lg_fail(ret);
+> --
+> 2.1.0
 >
 
-Yep, Looks good.
 
-Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
+NACK.
+
+Thank you for the patch, Nicholas, but the change that you propose
+won't actually help here -- val is a u8, and the lg_fail() macro tests
+for negative values.  val can never be negative, and that's why I
+didn't add the "lg_fail()" test myself when I wrote this function.
+
+What's actually happening in this function is that the value is first
+set when reading register 0014, we take that value, unset the three
+lowest bits, then we raise the bits in state->cfg->output_if, and
+write it back to the same register.
+
+In fact, the FIXME comment should be removed -- this is not a bug
+anymore and the sanity check is built-in.  That FIXME comment is a
+remnant of an older version of this function :-P
+
+If you want to send a patch that just removes the FIXME comment, that
+would be accepted, but this patch should not be merged.
+
+Cheers,
+
+Michael Ira Krufky
