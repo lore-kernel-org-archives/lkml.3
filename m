@@ -1,89 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319AbaK3PRj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 10:17:39 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:38968 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967AbaK3PMN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 10:12:13 -0500
+	id S1752904AbaK3PL7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 10:11:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48628 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752581AbaK3PL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 10:11:56 -0500
+Date: Sun, 30 Nov 2014 17:11:39 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        Jason Wang <jasowang@redhat.com>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: [PATCH v7 29/46] vhost: add memory access wrappers
+Message-ID: <1417359787-10138-30-git-send-email-mst@redhat.com>
+References: <1417359787-10138-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <6566ef127f0d7ad4d33dd90362dd76e431359ef8.1417335583.git.osandov@osandov.com>
-References: <cover.1417335583.git.osandov@osandov.com> <6566ef127f0d7ad4d33dd90362dd76e431359ef8.1417335583.git.osandov@osandov.com>
-From: Pranith Kumar <bobby.prani+lkml@gmail.com>
-Date: Sun, 30 Nov 2014 10:11:41 -0500
-X-Google-Sender-Auth: kdcVCuPHzIxIJ3OLJoreJkQLVHA
-Message-ID: <CAJhHMCD6voVEry=CkSyu5FpjiYXzh1aWxNq2_gmxasHqgV+csA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] btrfs: fix suspicious RCU in BTRFS_IOC_DEV_INFO
-To: Omar Sandoval <osandov@osandov.com>
-Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        Joe Perches <joe@perches.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417359787-10138-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 30, 2014 at 3:26 AM, Omar Sandoval <osandov@osandov.com> wrote:
-> A naked read of the value of an RCU pointer isn't safe. Put the whole access in
-> an RCU critical section, not just the pointer dereference.
->
-> Signed-off-by: Omar Sandoval <osandov@osandov.com>
+Add guest memory access wrappers to handle virtio endianness
+conversions.
 
-You can use rcu_access_pointer() in the if() condition check rather
-than increasing the read critical section. We should try to keep the
-critical section as small as possible.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Reviewed-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/vhost/vhost.h | 31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
 
-Also, since we have rcu_str_deref() we can use that instead of
-rcu_dereference() on device->name. Thoughts?
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index c624b09..1f321fd 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -176,4 +176,35 @@ static inline int vhost_has_feature(struct vhost_virtqueue *vq, int bit)
+ {
+ 	return vq->acked_features & (1ULL << bit);
+ }
++
++/* Memory accessors */
++static inline u16 vhost16_to_cpu(struct vhost_virtqueue *vq, __virtio16 val)
++{
++	return __virtio16_to_cpu(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
++}
++
++static inline __virtio16 cpu_to_vhost16(struct vhost_virtqueue *vq, u16 val)
++{
++	return __cpu_to_virtio16(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
++}
++
++static inline u32 vhost32_to_cpu(struct vhost_virtqueue *vq, __virtio32 val)
++{
++	return __virtio32_to_cpu(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
++}
++
++static inline __virtio32 cpu_to_vhost32(struct vhost_virtqueue *vq, u32 val)
++{
++	return __cpu_to_virtio32(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
++}
++
++static inline u64 vhost64_to_cpu(struct vhost_virtqueue *vq, __virtio64 val)
++{
++	return __virtio64_to_cpu(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
++}
++
++static inline __virtio64 cpu_to_vhost64(struct vhost_virtqueue *vq, u64 val)
++{
++	return __cpu_to_virtio64(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
++}
+ #endif
+-- 
+MST
 
-> ---
->  fs/btrfs/ioctl.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
->
-> diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-> index ecdf68f..dd55844 100644
-> --- a/fs/btrfs/ioctl.c
-> +++ b/fs/btrfs/ioctl.c
-> @@ -2706,6 +2706,7 @@ static long btrfs_ioctl_dev_info(struct btrfs_root *root, void __user *arg)
->         struct btrfs_fs_devices *fs_devices = root->fs_info->fs_devices;
->         int ret = 0;
->         char *s_uuid = NULL;
-> +       struct rcu_string *name;
->
->         di_args = memdup_user(arg, sizeof(*di_args));
->         if (IS_ERR(di_args))
-> @@ -2726,17 +2727,16 @@ static long btrfs_ioctl_dev_info(struct btrfs_root *root, void __user *arg)
->         di_args->bytes_used = btrfs_device_get_bytes_used(dev);
->         di_args->total_bytes = btrfs_device_get_total_bytes(dev);
->         memcpy(di_args->uuid, dev->uuid, sizeof(di_args->uuid));
-> -       if (dev->name) {
-> -               struct rcu_string *name;
->
-> -               rcu_read_lock();
-> -               name = rcu_dereference(dev->name);
-> +       rcu_read_lock();
-> +       name = rcu_dereference(dev->name);
-> +       if (name) {
->                 strncpy(di_args->path, name->str, sizeof(di_args->path));
-> -               rcu_read_unlock();
->                 di_args->path[sizeof(di_args->path) - 1] = 0;
->         } else {
->                 di_args->path[0] = '\0';
->         }
-> +       rcu_read_unlock();
->
->  out:
->         mutex_unlock(&fs_devices->device_list_mutex);
-> --
-> 2.1.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
