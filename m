@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243AbaK3VbJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 16:31:09 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:47457 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021AbaK3VbI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 16:31:08 -0500
+	id S1752382AbaK3Vgh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 16:36:37 -0500
+Received: from mout.gmx.net ([212.227.15.18]:60374 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752021AbaK3Vgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 16:36:35 -0500
+Message-ID: <547B8DE2.9030301@gmx.de>
+Date: Sun, 30 Nov 2014 22:36:34 +0100
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1680188.7K1XCBdsCk@avalon>
-References: <1416220913-5047-1-git-send-email-prabhakar.csengg@gmail.com>
- <3017627.SLutb67dz2@avalon> <CA+V-a8tNW8JXKEeaAwEKkB+SCS2_My228spsgpbb5JQPjdC2Og@mail.gmail.com>
- <1680188.7K1XCBdsCk@avalon>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Sun, 30 Nov 2014 21:30:35 +0000
-Message-ID: <CA+V-a8uaw2X_a3rfx0=avbuGnUdbqveMvJaU25hewzv9eAA8+Q@mail.gmail.com>
-Subject: Re: [PATCH] media: v4l2-subdev.h: drop the guard CONFIG_VIDEO_V4L2_SUBDEV_API
- for v4l2_subdev_get_try_*()
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>,
-        linux-media <linux-media@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Sakari Ailus <sakari.ailus@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sakari Ailus <sakari.ailus@iki.fi>
-Content-Type: text/plain; charset=UTF-8
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+CC: Julia Lawall <julia.lawall@lip6.fr>, Olof Johansson <olof@lixom.net>,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org
+Subject: Re: net-PA Semi: Deletion of unnecessary checks before the function
+ call "pci_dev_put"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <547A09B1.9090102@users.sourceforge.net> <547B579F.10709@gmx.de> <alpine.DEB.2.10.1411301846560.2522@hadrien> <547B6F9A.8030806@gmx.de> <547B80B7.5030707@users.sourceforge.net>
+In-Reply-To: <547B80B7.5030707@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:qiTbyc1hLth4s+L4zuzEvLrswLxyCRKlTxCyh134rhZ5y4qo+Zy
+ r1MHJ4cB7EmCBRq/ZaZMlGQ6cqVP+i/aCNJkKmY5O83weB9NMP+fvQKUINXbyF4X3kZFD2W
+ jzp52DhZyzey0W0cDuvfeflsN7HxrwWk25gYvqZ9LoGT9ao0KwualXZU32e9NkU0SQcZPm1
+ KkIv+VQ2n4Iow9YDdQDEw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+On 30.11.2014 21:40, SF Markus Elfring wrote:
+>> Maybe this topic should be clarified somewhere (e.g. in "CodingStyle")?
+>> On the other hand i always found it obvious that its the callers
+>> responsibility to only pass sane parameters to the called functions...
+> 
+> Can you imagine that any more source code places which would benefit from
+> check adjustments because of defensive programming?
+> 
 
-On Sun, Nov 30, 2014 at 9:16 PM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> On Sunday 30 November 2014 21:05:50 Prabhakar Lad wrote:
->> On Sat, Nov 29, 2014 at 7:12 PM, Laurent Pinchart wrote:
->> > Hi Prabhakar,
->>
->> [Snip]
->>
->> >> > Sure. That's a better choice than removing the config option dependency
->> >> > of the fields struct v4l2_subdev.
->> >
->> > Decoupling CONFIG_VIDEO_V4L2_SUBDEV_API from the availability of the
->> > in-kernel pad format and selection rectangles helpers is definitely a
->> > good idea. I was thinking about decoupling the try format and rectangles
->> > from v4l2_subdev_fh by creating a kind of configuration store structure
->> > to store them, and embedding that structure in v4l2_subdev_fh. The
->> > pad-level operations would then take a pointer to the configuration store
->> > instead of the v4l2_subdev_fh. Bridge drivers that want to implement
->> > TRY_FMT based on pad-level operations would create a configuration store,
->> > use the pad-level operations, and destroy the configuration store. The
->> > userspace subdev API would use the configuration store from the file
->> > handle.
->>
->> are planning to work/post any time soon ? Or are you OK with suggestion from
->> Hans ?
->
-> I have no plan to work on that myself now, I was hoping you could implement it
-> ;-)
->
-OK will implement it.
+I am not sure if i understand your question correctly. But i would not
+call sanity checks for function parameters "defensive programming". I
+would rather call it not being totally careless. So to me the question
+if those checks should be done or not is different from the question
+whether there are code parts that would benefit from an adjustment to
+defensive programming.
 
-Can you please elaborate a more on this "The userspace subdev API would use
-the configuration store from the file  handle."
+Regards,
+Lino
 
-Thanks,
---Prabhakar Lad
