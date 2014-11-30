@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440AbaK3RPR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 12:15:17 -0500
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:43397 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752061AbaK3RPP (ORCPT
+	id S1752533AbaK3RRt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 12:17:49 -0500
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:43266 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752098AbaK3RRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 12:15:15 -0500
+	Sun, 30 Nov 2014 12:17:47 -0500
 MIME-Version: 1.0
-In-Reply-To: <871tolysbb.fsf@mid.deneb.enyo.de>
+In-Reply-To: <8761dxysl0.fsf@mid.deneb.enyo.de>
 References: <1416546149-24799-1-git-send-email-gregkh@linuxfoundation.org>
 	<1416546149-24799-2-git-send-email-gregkh@linuxfoundation.org>
-	<871tolysbb.fsf@mid.deneb.enyo.de>
-Date: Sun, 30 Nov 2014 18:15:14 +0100
-Message-ID: <CANq1E4RjwCVEVT7031CeiKrNvRFkLBZc4-X1uKdrdzpf=EwJ+A@mail.gmail.com>
+	<8761dxysl0.fsf@mid.deneb.enyo.de>
+Date: Sun, 30 Nov 2014 18:17:46 +0100
+Message-ID: <CANq1E4TEw08C1sdgVxE0faGEDg3hD+K-XH1Ra=3+0LRPhx1bgQ@mail.gmail.com>
 Subject: Re: kdbus: add documentation
 From: David Herrmann <dh.herrmann@gmail.com>
 To: Florian Weimer <fw@deneb.enyo.de>
@@ -33,22 +33,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi
 
-On Sun, Nov 30, 2014 at 10:02 AM, Florian Weimer <fw@deneb.enyo.de> wrote:
+On Sun, Nov 30, 2014 at 9:56 AM, Florian Weimer <fw@deneb.enyo.de> wrote:
 > * Greg Kroah-Hartman:
 >
->> +7.4 Receiving messages
+>> +The focus of this document is an overview of the low-level, native kernel D-Bus
+>> +transport called kdbus. Kdbus exposes its functionality via files in a
+>> +filesystem called 'kdbusfs'. All communication between processes takes place
+>> +via ioctls on files exposed through the mount point of a kdbusfs. The default
+>> +mount point of kdbusfs is /sys/fs/kdbus.
 >
->> +Also, if the connection allowed for file descriptor to be passed
->> +(KDBUS_HELLO_ACCEPT_FD), and if the message contained any, they will be
->> +installed into the receiving process after the KDBUS_CMD_MSG_RECV ioctl
->> +returns. The receiving task is obliged to close all of them appropriately.
->
-> What happens if this is not possible because the file descriptor limit
-> of the processes would be exceeded?  EMFILE, and the message will not
-> be received?
+> Does this mean the bus does not enforce the correctness of the D-Bus
+> introspection metadata?  That's really unfortunate.  Classic D-Bus
+> does not do this, either, and combined with the variety of approaches
+> used to implement D-Bus endpoints, it makes it really difficult to
+> figure out what D-Bus services, exactly, a process provides.
 
-The message is returned without installing the FDs. This is signaled
-by EMFILE, but a valid pool offset.
+kdbus operates on the transport-level only. We never touch or look at
+transferred data. As such, DBus introspection data as defined by
+org.freedesktop.DBus.Introspectable is not verified by the transport
+layer.
 
 Thanks
 David
