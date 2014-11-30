@@ -1,80 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751650AbaK3Jzb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 04:55:31 -0500
-Received: from mail.eperm.de ([89.247.134.16]:54840 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056AbaK3Jza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 04:55:30 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: linux-crypto@vger.kernel.org, "'LKML'" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] crypto: algif_skcipher - initialize upon init request
-Date: Sun, 30 Nov 2014 10:55:26 +0100
-Message-ID: <2770903.h32OWUVXRy@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.4-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+	id S1751563AbaK3KGk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 05:06:40 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:35275 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051AbaK3KGj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 05:06:39 -0500
+Date: Sun, 30 Nov 2014 11:07:18 +0100
+From: Christoffer Dall <christoffer.dall@linaro.org>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: Marc Zyngier <marc.zyngier@arm.com>, "gleb@kernel.org" <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kvm: arm: vgic: Let one looping code instead of two
+ looping code
+Message-ID: <20141130100718.GA484@cbox>
+References: <547A9A7C.1080508@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <547A9A7C.1080508@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using the algif_skcipher, the following call sequence causess a
-re-initialization:
+On Sun, Nov 30, 2014 at 12:18:04PM +0800, Chen Gang wrote:
+> Use one looping instead of two, so can let code more simpler and get a
+> little better performance.
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 
-1. sendmsg with ALG_SET_OP and iov == NULL, iovlen == 0 (i.e
-initializing the cipher, but not sending data)
+Performance?  Please, this is vgic_create....
 
-2. sendmsg with msg->msg-controllen == 0 and iov != NULL (using the initalized
-cipher handle by sending data)
+This does nothing else than introduce churn.
 
-In step 2, the cipher operation type (encryption or decryption) is reset
-to always decryption, because the local variable of enc is put into
-ctx->enc as ctx->user is still zero.
-
-The same applies when all send data is processed and ctx->used falls to
-zero followed by user space to send new data.
-
-This patch changes the behavior to only reset the cipher operation type
-(and the IV) if such configuration request is received.
-
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
----
- crypto/algif_skcipher.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/crypto/algif_skcipher.c b/crypto/algif_skcipher.c
-index f80e652..1f157c7 100644
---- a/crypto/algif_skcipher.c
-+++ b/crypto/algif_skcipher.c
-@@ -251,6 +251,7 @@ static int skcipher_sendmsg(struct kiocb *unused, struct socket *sock,
- 	struct af_alg_control con = {};
- 	long copied = 0;
- 	bool enc = 0;
-+	bool init = 0;
- 	int err;
- 	int i;
- 
-@@ -259,6 +260,7 @@ static int skcipher_sendmsg(struct kiocb *unused, struct socket *sock,
- 		if (err)
- 			return err;
- 
-+		init = 1;
- 		switch (con.op) {
- 		case ALG_OP_ENCRYPT:
- 			enc = 1;
-@@ -280,7 +282,7 @@ static int skcipher_sendmsg(struct kiocb *unused, struct socket *sock,
- 	if (!ctx->more && ctx->used)
- 		goto unlock;
- 
--	if (!ctx->used) {
-+	if (init) {
- 		ctx->enc = enc;
- 		if (con.iv)
- 			memcpy(ctx->iv, con.iv->iv, ivsize);
--- 
-2.1.0
-
-
+-Christoffer
