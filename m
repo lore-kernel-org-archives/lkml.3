@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326AbaK3L5J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 06:57:09 -0500
-Received: from mout.gmx.net ([212.227.15.18]:54670 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752217AbaK3L5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 06:57:07 -0500
-From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-To: stephen@networkplumber.org
-Cc: mlindner@marvell.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lino Sanfilippo <LinoSanfilippo@gmx.de>
-Subject: [PATCH] sky2: avoid pci write posting after disabling irqs
-Date: Sun, 30 Nov 2014 12:56:51 +0100
-Message-Id: <1417348611-1752-1-git-send-email-LinoSanfilippo@gmx.de>
-X-Mailer: git-send-email 1.9.1
-X-Provags-ID: V03:K0:8D81MfsZgFI2kqsPx7DTLsYxtc2wMc8XtdkOl0nLUURPuE5xmVA
- IA4FEyilpFZSQ2QWHeapUasGDTgdqkp8dDfpE3LG97dfct+Zcw8zMEfCp+qR0pEbhP7FdEb
- 2Hm259KiTa20JR+K7+qJhr4sRPvZ2jglE0Uw1/JuVH6Auz3mJu2xzr1B817HKlWoStQS1aP
- etZbEm+cdGdsnbn9KPnQw==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1752255AbaK3MEp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 07:04:45 -0500
+Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040AbaK3MEn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 07:04:43 -0500
+From: Richard Weinberger <richard@nod.at>
+To: dedekind1@gmail.com
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 1/6] UBI: Fastmap: Fix leb_count unbalance
+Date: Sun, 30 Nov 2014 13:04:25 +0100
+Message-Id: <1417349070-8894-2-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1417349070-8894-1-git-send-email-richard@nod.at>
+References: <1417349070-8894-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In sky2_change_mtu setting B0_IMSK to 0 may be delayed due to PCI write posting
-which could result in irqs being still active when synchronize_irq is called.
-Since we are not prepared to handle any further irqs after synchronize_irq
-(our resources are freed after that) force the write by a consecutive read from
-the same register.
-Similar situation in sky2_all_down: Here we disabled irqs by a write to B0_IMSK
-but did not ensure that this write took place before synchronize_irq. Fix that
-too.
+If a LEB is unmapped we have to decrement leb_count as well.
 
-Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- drivers/net/ethernet/marvell/sky2.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/mtd/ubi/fastmap.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
-index bd33662..f14544c 100644
---- a/drivers/net/ethernet/marvell/sky2.c
-+++ b/drivers/net/ethernet/marvell/sky2.c
-@@ -2419,6 +2419,7 @@ static int sky2_change_mtu(struct net_device *dev, int new_mtu)
- 
- 	imask = sky2_read32(hw, B0_IMSK);
- 	sky2_write32(hw, B0_IMSK, 0);
-+	sky2_read32(hw, B0_IMSK);
- 
- 	dev->trans_start = jiffies;	/* prevent tx timeout */
- 	napi_disable(&hw->napi);
-@@ -3487,8 +3488,8 @@ static void sky2_all_down(struct sky2_hw *hw)
- 	int i;
- 
- 	if (hw->flags & SKY2_HW_IRQ_SETUP) {
--		sky2_read32(hw, B0_IMSK);
- 		sky2_write32(hw, B0_IMSK, 0);
-+		sky2_read32(hw, B0_IMSK);
- 
- 		synchronize_irq(hw->pdev->irq);
- 		napi_disable(&hw->napi);
+diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
+index 3d913f5..5db41a5 100644
+--- a/drivers/mtd/ubi/fastmap.c
++++ b/drivers/mtd/ubi/fastmap.c
+@@ -362,6 +362,7 @@ static void unmap_peb(struct ubi_attach_info *ai, int pnum)
+ 			aeb = rb_entry(node2, struct ubi_ainf_peb, u.rb);
+ 			if (aeb->pnum == pnum) {
+ 				rb_erase(&aeb->u.rb, &av->root);
++				av->leb_count--;
+ 				kmem_cache_free(ai->aeb_slab_cache, aeb);
+ 				return;
+ 			}
 -- 
-1.9.1
+1.8.4.5
 
