@@ -1,81 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486AbaK3Qon (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 11:44:43 -0500
-Received: from mout.web.de ([212.227.17.12]:51141 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751917AbaK3Qol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 11:44:41 -0500
-Message-ID: <547B496E.604@users.sourceforge.net>
-Date: Sun, 30 Nov 2014 17:44:30 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752521AbaK3Qpe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 11:45:34 -0500
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:41493 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752437AbaK3Qpc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 11:45:32 -0500
 MIME-Version: 1.0
-To: Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/3] net-PPP: Deletion of unnecessary checks before the function
- call "kfree"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <547B4886.4080406@users.sourceforge.net>
-In-Reply-To: <547B4886.4080406@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:ixMVX7XuGQmXehlAQpMWTrQl1IFnbyQu2JX1chA6t5rRW6eXjHV
- SckeAKr/m8ZvNXb7ni+Iv3/Zg1xqwZsXGCln3hxPzsqoHdm7fUXVQbqVfTKsuqY4g1i4kOf
- xW0U5zhCM6oFG7BtczJWHd51esG/M2SJbHxsyOJtYfb7/XO4AC7GW2vCodw4gtL8qqZ4WkL
- cakgJPW9W6U8wWvH4jclQ==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <b0f6c4df0e8ef8afcc7b786edecb4be8c752941e.1417215468.git.luto@amacapital.net>
+References: <b0f6c4df0e8ef8afcc7b786edecb4be8c752941e.1417215468.git.luto@amacapital.net>
+Date: Sun, 30 Nov 2014 17:45:31 +0100
+Message-ID: <CANq1E4Qv1pukOr8ocUtE0QzLgWFEb3pT=5JXvERj98m-j9FS3Q@mail.gmail.com>
+Subject: Re: [RFC PATCH] proc, pidns: Add highpid
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Linux API <linux-api@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        systemd Mailing List <systemd-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sun, 30 Nov 2014 17:02:07 +0100
+Hi Andy
 
-The kfree() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+On Sat, Nov 29, 2014 at 12:05 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> Pid reuse is common, which means that it's difficult or impossible
+> to read information about a pid from /proc without races.
+>
+> This introduces a second number associated with each (task, pidns)
+> pair called highpid.  Highpid is a 64-bit number, and, barring
+> extremely unlikely circumstances or outright error, a (highpid, pid)
+> will never be reused.
+>
+> With just this change, a program can open /proc/PID/status, read the
+> "Highpid" field, and confirm that it has the expected value.  If the
+> pid has been reused, then highpid will be different.
+>
+> The initial implementation is straightforward: highpid is simply a
+> 64-bit counter. If a high-end system can fork every 3 ns (which
+> would be amazing, given that just allocating a pid requires at
+> atomic operation), it would take well over 1000 years for highpid to
+> wrap.
+>
+> For CRIU's benefit, the next highpid can be set by a privileged
+> user.
+>
+> NB: The sysctl stuff only works on 64-bit systems.  If the approach
+> looks good, I'll fix that somehow.
+>
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ---
+>
+> If this goes in, there's plenty of room to add new interfaces to
+> make this more useful.  For example, we could add a fancier tgkill
+> that adds and validates hightgid and highpid, and we might want to
+> add a syscall to read one's own hightgid and highpid.  These would
+> be quite useful for pidfiles.
+>
+> David, would this be useful for kdbus?
 
-This issue was detected by using the Coccinelle software.
+Much appreciated! This would serve well as replacement for
+'starttime'. I'd prefer if pid_t was 64bit, but I guess that ship
+sailed long ago. Though, your patch might in the end just introduce a
+new pid64, which replaces the old pid and lives in parallel.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/net/ppp/ppp_mppe.c | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+Anyway, considering that we actually want the same pid-reuse
+protection for tid, tgid, ppid and so on, we'd have to add a
+'starttime' for all of them. Sounds ugly.. so we might just end up
+dropping 'starttime' and introduce KDBUS_ITEM_PIDS2 whenever a 'fix'
+is merged upstream.
 
-diff --git a/drivers/net/ppp/ppp_mppe.c b/drivers/net/ppp/ppp_mppe.c
-index 911b216..7e44212 100644
---- a/drivers/net/ppp/ppp_mppe.c
-+++ b/drivers/net/ppp/ppp_mppe.c
-@@ -238,8 +238,7 @@ static void *mppe_alloc(unsigned char *options, int optlen)
- 	return (void *)state;
- 
- 	out_free:
--	    if (state->sha1_digest)
--		kfree(state->sha1_digest);
-+	kfree(state->sha1_digest);
- 	    if (state->sha1)
- 		crypto_free_hash(state->sha1);
- 	    if (state->arc4)
-@@ -256,13 +255,12 @@ static void mppe_free(void *arg)
- {
- 	struct ppp_mppe_state *state = (struct ppp_mppe_state *) arg;
- 	if (state) {
--	    if (state->sha1_digest)
- 		kfree(state->sha1_digest);
--	    if (state->sha1)
--		crypto_free_hash(state->sha1);
--	    if (state->arc4)
--		crypto_free_blkcipher(state->arc4);
--	    kfree(state);
-+		if (state->sha1)
-+			crypto_free_hash(state->sha1);
-+		if (state->arc4)
-+			crypto_free_blkcipher(state->arc4);
-+		kfree(state);
- 	}
- }
- 
--- 
-2.1.3
-
+Thanks a lot!
+David
