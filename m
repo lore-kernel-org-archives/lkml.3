@@ -1,162 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbaK3K7k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 05:59:40 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:63310 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501AbaK3K7j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 05:59:39 -0500
-From: Arjun Sreedharan <arjun024@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        linux-am33-list@redhat.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] mn10300: remove redundant hex()
-Date: Sun, 30 Nov 2014 16:29:21 +0530
-Message-Id: <1417345161-18548-1-git-send-email-arjun024@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S1752238AbaK3LAx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 06:00:53 -0500
+Received: from mout.gmx.net ([212.227.17.20]:54549 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751228AbaK3LAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 06:00:50 -0500
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+To: nab@linux-iscsi.org
+Cc: sagig@mellanox.com, cvubrugier@yahoo.fr, joern@logfs.org,
+        steven.allen@purestorage.com, arshad.hussain@calsoftinc.com,
+        agrover@redhat.com, linux-scsi@vger.kernel.org,
+        target-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Subject: [PATCH] iscsi-target: fix error path in iscsi_target_init_module()
+Date: Sun, 30 Nov 2014 12:00:11 +0100
+Message-Id: <1417345211-5583-1-git-send-email-LinoSanfilippo@gmx.de>
+X-Mailer: git-send-email 1.9.1
+X-Provags-ID: V03:K0:EGY2XLnJ3GehKjbuWJ3FsM5Uh1VkZ8ZVX27DH6RXbMUM26FbwjM
+ nGaafY3f48MGZnpe8KvfEWwkwL+PWHUmUmJdWvXKRps1Z7wCVIcjS/+641JkdFYi5TisNzI
+ Oyv+HunOCh75CTnXxFjcsKjSZD7koAm1wjawhVsL6P0IJRMy9duisxPPQqaVcY+eIVJhi3X
+ Yvh3HHyKqEKS/b27qxjgA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-replace rendundant hex() with kernel's hex_to_bin()
+In iscsi_target_init_module() unwind transport protocol registration in case
+that iscsit_load_discovery_tpg() failed.
 
-Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
+Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
 ---
- arch/mn10300/kernel/gdb-stub.c | 61 ++++++++++++++++--------------------------
- 1 file changed, 23 insertions(+), 38 deletions(-)
+ drivers/target/iscsi/iscsi_target.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/mn10300/kernel/gdb-stub.c b/arch/mn10300/kernel/gdb-stub.c
-index a128c57..06adf39 100644
---- a/arch/mn10300/kernel/gdb-stub.c
-+++ b/arch/mn10300/kernel/gdb-stub.c
-@@ -176,27 +176,12 @@ static struct gdbstub_bkpt gdbstub_bkpts[256];
- static void getpacket(char *buffer);
- static int putpacket(char *buffer);
- static int computeSignal(enum exception_code excep);
--static int hex(unsigned char ch);
- static int hexToInt(char **ptr, int *intValue);
- static unsigned char *mem2hex(const void *mem, char *buf, int count,
- 			      int may_fault);
- static const char *hex2mem(const char *buf, void *_mem, int count,
- 			   int may_fault);
+diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+index 73e58d2..f8ec322 100644
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -609,6 +609,7 @@ static int __init iscsi_target_init_module(void)
  
--/*
-- * Convert ch from a hex digit to an int
-- */
--static int hex(unsigned char ch)
--{
--	if (ch >= 'a' && ch <= 'f')
--		return ch - 'a' + 10;
--	if (ch >= '0' && ch <= '9')
--		return ch - '0';
--	if (ch >= 'A' && ch <= 'F')
--		return ch - 'A' + 10;
--	return -1;
--}
--
- #ifdef CONFIG_GDBSTUB_DEBUGGING
- 
- void debug_to_serial(const char *p, int n)
-@@ -283,12 +268,12 @@ static void getpacket(char *buffer)
- 		ret = gdbstub_io_rx_char(&ch, 0);
- 		if (ret < 0)
- 			error = ret;
--		xmitcsum = hex(ch) << 4;
-+		xmitcsum = hex_to_bin(ch) << 4;
- 
- 		ret = gdbstub_io_rx_char(&ch, 0);
- 		if (ret < 0)
- 			error = ret;
--		xmitcsum |= hex(ch);
-+		xmitcsum |= hex_to_bin(ch);
- 
- 		if (error) {
- 			if (error == -EIO)
-@@ -391,7 +376,7 @@ static int hexToInt(char **ptr, int *intValue)
- 	*intValue = 0;
- 
- 	while (**ptr) {
--		hexValue = hex(**ptr);
-+		hexValue = hex_to_bin(**ptr);
- 		if (hexValue < 0)
- 			break;
- 
-@@ -857,8 +842,8 @@ const char *hex2mem(const char *buf, void *_mem, int count, int may_fault)
- 	} ch;
- 
- 	if ((u32) mem & 1 && count >= 1) {
--		ch.b[0]  = hex(*buf++) << 4;
--		ch.b[0] |= hex(*buf++);
-+		ch.b[0]  = hex_to_bin(*buf++) << 4;
-+		ch.b[0] |= hex_to_bin(*buf++);
- 		if (gdbstub_write_byte(ch.val, mem) != 0)
- 			return 0;
- 		mem++;
-@@ -866,10 +851,10 @@ const char *hex2mem(const char *buf, void *_mem, int count, int may_fault)
- 	}
- 
- 	if ((u32) mem & 3 && count >= 2) {
--		ch.b[0]  = hex(*buf++) << 4;
--		ch.b[0] |= hex(*buf++);
--		ch.b[1]  = hex(*buf++) << 4;
--		ch.b[1] |= hex(*buf++);
-+		ch.b[0]  = hex_to_bin(*buf++) << 4;
-+		ch.b[0] |= hex_to_bin(*buf++);
-+		ch.b[1]  = hex_to_bin(*buf++) << 4;
-+		ch.b[1] |= hex_to_bin(*buf++);
- 		if (gdbstub_write_word(ch.val, mem) != 0)
- 			return 0;
- 		mem += 2;
-@@ -877,14 +862,14 @@ const char *hex2mem(const char *buf, void *_mem, int count, int may_fault)
- 	}
- 
- 	while (count >= 4) {
--		ch.b[0]  = hex(*buf++) << 4;
--		ch.b[0] |= hex(*buf++);
--		ch.b[1]  = hex(*buf++) << 4;
--		ch.b[1] |= hex(*buf++);
--		ch.b[2]  = hex(*buf++) << 4;
--		ch.b[2] |= hex(*buf++);
--		ch.b[3]  = hex(*buf++) << 4;
--		ch.b[3] |= hex(*buf++);
-+		ch.b[0]  = hex_to_bin(*buf++) << 4;
-+		ch.b[0] |= hex_to_bin(*buf++);
-+		ch.b[1]  = hex_to_bin(*buf++) << 4;
-+		ch.b[1] |= hex_to_bin(*buf++);
-+		ch.b[2]  = hex_to_bin(*buf++) << 4;
-+		ch.b[2] |= hex_to_bin(*buf++);
-+		ch.b[3]  = hex_to_bin(*buf++) << 4;
-+		ch.b[3] |= hex_to_bin(*buf++);
- 		if (gdbstub_write_dword(ch.val, mem) != 0)
- 			return 0;
- 		mem += 4;
-@@ -892,10 +877,10 @@ const char *hex2mem(const char *buf, void *_mem, int count, int may_fault)
- 	}
- 
- 	if (count >= 2) {
--		ch.b[0]  = hex(*buf++) << 4;
--		ch.b[0] |= hex(*buf++);
--		ch.b[1]  = hex(*buf++) << 4;
--		ch.b[1] |= hex(*buf++);
-+		ch.b[0]  = hex_to_bin(*buf++) << 4;
-+		ch.b[0] |= hex_to_bin(*buf++);
-+		ch.b[1]  = hex_to_bin(*buf++) << 4;
-+		ch.b[1] |= hex_to_bin(*buf++);
- 		if (gdbstub_write_word(ch.val, mem) != 0)
- 			return 0;
- 		mem += 2;
-@@ -903,8 +888,8 @@ const char *hex2mem(const char *buf, void *_mem, int count, int may_fault)
- 	}
- 
- 	if (count >= 1) {
--		ch.b[0]  = hex(*buf++) << 4;
--		ch.b[0] |= hex(*buf++);
-+		ch.b[0]  = hex_to_bin(*buf++) << 4;
-+		ch.b[0] |= hex_to_bin(*buf++);
- 		if (gdbstub_write_byte(ch.val, mem) != 0)
- 			return 0;
- 	}
+ 	return ret;
+ r2t_out:
++	iscsit_unregister_transport(&iscsi_target_transport);
+ 	kmem_cache_destroy(lio_r2t_cache);
+ ooo_out:
+ 	kmem_cache_destroy(lio_ooo_cache);
 -- 
-1.7.11.7
+1.9.1
 
