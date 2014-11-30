@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287AbaK3MkQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 07:40:16 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:45919 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751955AbaK3MkO (ORCPT
+	id S1752117AbaK3Mre (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 07:47:34 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:59574 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958AbaK3Mrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 07:40:14 -0500
-Date: Sun, 30 Nov 2014 13:40:08 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Dave Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Thierry Reding <thierry.reding@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>, linux-media@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH v3 0/3] drm: describe display bus format
-Message-ID: <20141130134008.4471abdd@bbrezillon>
-In-Reply-To: <7292023.aOo0xYF6kL@avalon>
-References: <1416318380-20122-1-git-send-email-boris.brezillon@free-electrons.com>
-	<20141127143750.3984ddd0@bbrezillon>
-	<7292023.aOo0xYF6kL@avalon>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Sun, 30 Nov 2014 07:47:32 -0500
+Date: Sun, 30 Nov 2014 13:47:30 +0100
+From: Christoffer Dall <christoffer.dall@linaro.org>
+To: Eric Auger <eric.auger@linaro.org>
+Cc: eric.auger@st.com, marc.zyngier@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, alex.williamson@redhat.com, joel.schopp@amd.com,
+        kim.phillips@freescale.com, paulus@samba.org, gleb@kernel.org,
+        pbonzini@redhat.com, agraf@suse.de, linux-kernel@vger.kernel.org,
+        patches@linaro.org, will.deacon@arm.com,
+        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        john.liuli@huawei.com, ming.lei@canonical.com, feng.wu@intel.com
+Subject: Re: [PATCH v3 3/8] VFIO: platform: forwarded state tested when
+ selecting IRQ handler
+Message-ID: <20141130124730.GD82106@macair>
+References: <1416767760-14487-1-git-send-email-eric.auger@linaro.org>
+ <1416767760-14487-4-git-send-email-eric.auger@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416767760-14487-4-git-send-email-eric.auger@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+The subject reads strangely, perhaps just:
 
-On Sat, 29 Nov 2014 00:29:10 +0200
-Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
+VFIO: platform: test forward state when selecting IRQ handler
 
-> Hi Boris,
+On Sun, Nov 23, 2014 at 07:35:55PM +0100, Eric Auger wrote:
+> In case the IRQ is forwarded, the VFIO platform IRQ handler does not
+> need to disable the IRQ anymore.
 > 
-> On Thursday 27 November 2014 14:37:50 Boris Brezillon wrote:
-> > On Tue, 18 Nov 2014 14:46:17 +0100 Boris Brezillon wrote:
-> > > Hello,
-> > > 
-> > > This series makes use of the MEDIA_BUS_FMT definition to describe how
-> > > the data are transmitted to the display.
-> > > 
-> > > This will allow drivers to configure their output display bus according
-> > > to the display capabilities.
-> > > For example some display controllers support DPI (or raw RGB) connectors
-> > > and need to specify which format will be transmitted on the DPI bus
-> > > (RGB444, RGB565, RGB888, ...).
-> > > 
-> > > This series also adds a field to the panel_desc struct so that one
-> > > can specify which format is natevely supported by a panel.
-> > 
-> > Thierry, Laurent, Dave, can you take a look at this patch series: this
-> > is the last missing dependency to get the atmel-hlcdc DRM driver
-> > mainlined, and I was expecting to get this driver in 3.19...
+> When setting the IRQ handler we now also test the forwarded state. In
+> case the IRQ is forwarded we select the edge handler (no automaske).
 > 
-> I've reviewed the series, it looks globally fine to me. I just had two small 
-> comments on patch 1/3.
+> Signed-off-by: Eric Auger <eric.auger@linaro.org>
 > 
+> ---
+> 
+> v2 -> v3:
+> - forwarded state was tested in the handler. Now the forwarded state
+>   is tested before setting the handler. This definitively limits
+>   the dynamics of forwarded state changes but I don't think there is
+>   a use case where we need to be able to change the state at any time.
 
-Thanks for the review, I'll address your comments in the next version.
+user space can change this by calling the VFIO_IRQ_SET_ACTION_TRIGGER
+whenever it wants, right?
 
-Regards,
-
-Boris
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+> ---
+>  drivers/vfio/platform/vfio_platform_irq.c | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/vfio/platform/vfio_platform_irq.c b/drivers/vfio/platform/vfio_platform_irq.c
+> index 08d400e..61a2920 100644
+> --- a/drivers/vfio/platform/vfio_platform_irq.c
+> +++ b/drivers/vfio/platform/vfio_platform_irq.c
+> @@ -230,8 +230,13 @@ static int vfio_platform_set_irq_trigger(struct vfio_platform_device *vdev,
+>  {
+>  	struct vfio_platform_irq *irq = &vdev->irqs[index];
+>  	irq_handler_t handler;
+> +	struct irq_data *d;
+> +	bool is_forwarded;
+>  
+> -	if (vdev->irqs[index].flags & VFIO_IRQ_INFO_MASKABLE)
+> +	d = irq_get_irq_data(irq->hwirq);
+> +	is_forwarded = irqd_irq_forwarded(d);
+> +
+> +	if ((vdev->irqs[index].flags & VFIO_IRQ_INFO_MASKABLE) && !is_forwarded)
+>  		handler = vfio_maskable_irq_handler;
+>  	else
+>  		handler = vfio_irq_handler;
+> -- 
+> 1.9.1
+> 
