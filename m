@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586AbaK3WfD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 17:35:03 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:46901 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178AbaK3WfA (ORCPT
+	id S1752462AbaK3XJV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 18:09:21 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:18950 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752032AbaK3XJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 17:35:00 -0500
-Date: Sun, 30 Nov 2014 14:34:51 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Pranith Kumar <bobby.prani@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        David Rientjes <rientjes@google.com>, Joerg Roedel <jroedel@suse.de>,
-        NeilBrown <neilb@suse.de>, Sasha Levin <sasha.levin@oracle.com>,
-        Paul McQuade <paulmcquad@gmail.com>,
-        "open list:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
-        open list <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH 13/16] ksm: Replace smp_read_barrier_depends() with
- lockless_dereference()
-In-Reply-To: <1415906662-4576-14-git-send-email-bobby.prani@gmail.com>
-Message-ID: <alpine.LSU.2.11.1411301412100.1824@eggly.anvils>
-References: <1415906662-4576-1-git-send-email-bobby.prani@gmail.com> <1415906662-4576-14-git-send-email-bobby.prani@gmail.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Sun, 30 Nov 2014 18:09:20 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjEdAM+ie1R5LLkm/2dsb2JhbABbgwaBKbNMAQEBAgEGlE+FIgICAQECgQkXAQEBAQF9hAIBAQEEOhwjEAgDFAEDCSUPBSUDIROIP9FzAQEBAQEFAQEBAR4Yhh+JYGQHgymBHwWOfY1JlUSEDyswgQSBQwEBAQ
+Date: Mon, 1 Dec 2014 10:09:04 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: xfs@oss.sgi.com, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH 1/1] XFS: Deletion of unnecessary checks before two
+ function calls
+Message-ID: <20141130230904.GF16151@dastard>
+References: <530C5E18.1020800@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251014170.2080@hadrien>
+ <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien>
+ <530CF8FF.8080600@users.sourceforge.net>
+ <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+ <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net>
+ <5479F823.60900@users.sourceforge.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5479F823.60900@users.sourceforge.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Nov 2014, Pranith Kumar wrote:
-
-> Recently lockless_dereference() was added which can be used in place of
-> hard-coding smp_read_barrier_depends(). The following PATCH makes the change.
+On Sat, Nov 29, 2014 at 05:45:23PM +0100, SF Markus Elfring wrote:
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Sat, 29 Nov 2014 17:40:22 +0100
 > 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-
-Sorry, I don't think your patch is buggy, but I do think it
-makes this tricky piece of code harder to follow, not easier.
-
-It is certainly not a standard use of lockless_dereference() (kpfn
-is not a pointer), and it both hides and moves where the barrier is.
-And then at the end of the function, there's still explicit barriers
-and ACCESS_ONCE comparison with kpfn, which this makes more obscure.
-
-Unless you are actually fixing a bug (I don't pretend to have
-tested this on Alpha, and I can get barriers wrong as we all do),
-or smp_read_barrier_depends() is about to be withdrawn from use,
-I'd rather say NAK to this patch.
-
-Hugh
-
-> ---
->  mm/ksm.c | 7 +++----
->  1 file changed, 3 insertions(+), 4 deletions(-)
+> The functions xfs_blkdev_put() and xfs_qm_dqrele() test whether their argument
+> is NULL and then return immediately.
+> Thus the test around the call is not needed.
 > 
-> diff --git a/mm/ksm.c b/mm/ksm.c
-> index d247efa..a67de79 100644
-> --- a/mm/ksm.c
-> +++ b/mm/ksm.c
-> @@ -542,15 +542,14 @@ static struct page *get_ksm_page(struct stable_node *stable_node, bool lock_it)
->  	expected_mapping = (void *)stable_node +
->  				(PAGE_MAPPING_ANON | PAGE_MAPPING_KSM);
->  again:
-> -	kpfn = ACCESS_ONCE(stable_node->kpfn);
-> -	page = pfn_to_page(kpfn);
-> -
->  	/*
->  	 * page is computed from kpfn, so on most architectures reading
->  	 * page->mapping is naturally ordered after reading node->kpfn,
->  	 * but on Alpha we need to be more careful.
->  	 */
-> -	smp_read_barrier_depends();
-> +	kpfn = lockless_dereference(stable_node->kpfn);
-> +	page = pfn_to_page(kpfn);
-> +
->  	if (ACCESS_ONCE(page->mapping) != expected_mapping)
->  		goto stale;
->  
-> -- 
-> 1.9.1
+> This issue was detected by using the Coccinelle software.
+> 
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+
+Looks fine.
+
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+
+
+-- 
+Dave Chinner
+david@fromorbit.com
