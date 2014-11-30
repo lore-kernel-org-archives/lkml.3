@@ -1,41 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222AbaK3LL7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 06:11:59 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:42091 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758AbaK3LL6 (ORCPT
+	id S1752237AbaK3Lfv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 06:35:51 -0500
+Received: from mail.sigma-star.at ([95.130.255.111]:14386 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751706AbaK3Lfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 06:11:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <1417258323.9558.3.camel@gmail.com>
-References: <1417258323.9558.3.camel@gmail.com>
-Date: Sun, 30 Nov 2014 12:11:57 +0100
-Message-ID: <CAFLxGvwKwZh38+-is8dX6zOFAiz0gVo+Yio3B=2eiMqmGCZfqA@mail.gmail.com>
-Subject: Re: Crash when copying from broken external hdd
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Simon Danner <danner.simon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 30 Nov 2014 06:35:48 -0500
+From: Richard Weinberger <richard@nod.at>
+To: dedekind1@gmail.com
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 1/6] UBI: Fastmap: Fix memory leaks while closing the WL sub-system
+Date: Sun, 30 Nov 2014 12:35:35 +0100
+Message-Id: <1417347340-6872-2-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1417347340-6872-1-git-send-email-richard@nod.at>
+References: <1417347340-6872-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 29, 2014 at 11:52 AM, Simon Danner <danner.simon@gmail.com> wrote:
-> Hello,
-> i get the following crash after i try to copy files from a broken
-> external hdd to another external hdd.
-> It happens after a few minutes, with latest git and 3.17.4 from Arch.
-> Attached screenshot is from latest mainline git.
->
-> i hope this can be fixed somehow,
-> Regards Simon Danner
+Add a ubi_fastmap_close() to free all resources used by fastmap
+at WL shutdown.
 
-Can you decode scsi_requed_end+0x122?
-CC'ing block and scsi folks.
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ drivers/mtd/ubi/wl.c | 21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+index c2822f7..47b215f 100644
+--- a/drivers/mtd/ubi/wl.c
++++ b/drivers/mtd/ubi/wl.c
+@@ -2064,6 +2064,23 @@ static void protection_queue_destroy(struct ubi_device *ubi)
+ 	}
+ }
+ 
++static void ubi_fastmap_close(struct ubi_device *ubi)
++{
++#ifdef CONFIG_MTD_UBI_FASTMAP
++	int i;
++
++	flush_work(&ubi->fm_work);
++	return_unused_pool_pebs(ubi, &ubi->fm_pool);
++	return_unused_pool_pebs(ubi, &ubi->fm_wl_pool);
++
++	if (ubi->fm) {
++		for (i = 0; i < ubi->fm->used_blocks; i++)
++			kfree(ubi->fm->e[i]);
++	}
++	kfree(ubi->fm);
++#endif
++}
++
+ /**
+  * ubi_wl_close - close the wear-leveling sub-system.
+  * @ubi: UBI device description object
+@@ -2071,9 +2088,7 @@ static void protection_queue_destroy(struct ubi_device *ubi)
+ void ubi_wl_close(struct ubi_device *ubi)
+ {
+ 	dbg_wl("close the WL sub-system");
+-#ifdef CONFIG_MTD_UBI_FASTMAP
+-	flush_work(&ubi->fm_work);
+-#endif
++	ubi_fastmap_close(ubi);
+ 	shutdown_work(ubi);
+ 	protection_queue_destroy(ubi);
+ 	tree_destroy(&ubi->used);
 -- 
-Thanks,
-//richard
+1.8.4.5
+
