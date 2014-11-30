@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595AbaK3WQN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 17:16:13 -0500
-Received: from ozlabs.org ([103.22.144.67]:43420 "EHLO ozlabs.org"
+	id S1752453AbaK3WXe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 17:23:34 -0500
+Received: from mout.web.de ([212.227.17.11]:63149 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752539AbaK3WQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 17:16:12 -0500
-Date: Mon, 1 Dec 2014 09:16:07 +1100
-From: Paul Mackerras <paulus@samba.org>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] slab: Fix nodeid bounds check for non-contiguous node IDs
-Message-ID: <20141130221606.GA25929@iris.ozlabs.ibm.com>
+	id S1752117AbaK3WXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 17:23:32 -0500
+Message-ID: <547B98D5.8000909@users.sourceforge.net>
+Date: Sun, 30 Nov 2014 23:23:17 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+        Pawel Osciak <pawel@osciak.com>, linux-media@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] [media] V4L2: Deletion of an unnecessary check before
+ the function call "vb2_put_vma"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:ut9f10+9aqj3lJX0AcCCM9hIehPQYDnvtj19yPHFJxiTXgkZyxT
+ Mrw1FlmCSFVEk4qy63onzQCMNFcBwT/n0tGiaMPFk5tNeYi1rp7nRW31NXnISMJPg9klbnk
+ yMaFSbZYTVI9nf20Qev/K13ZIUXQzKe4QgU6LKKozE4Cf7VdbfUHKee7RITIgIPDIg+RhBt
+ 4Uk+jQcOrU31x44H5BLRQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bounds check for nodeid in ____cache_alloc_node gives false
-positives on machines where the node IDs are not contiguous, leading
-to a panic at boot time.  For example, on a POWER8 machine the node
-IDs are typically 0, 1, 16 and 17.  This means that num_online_nodes()
-returns 4, so when ____cache_alloc_node is called with nodeid = 16 the
-VM_BUG_ON triggers.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Sun, 30 Nov 2014 23:10:51 +0100
 
-To fix this, we instead compare the nodeid with MAX_NUMNODES, and
-additionally make sure it isn't negative (since nodeid is an int).
-The check is there mainly to protect the array dereference in the
-get_node() call in the next line, and the array being dereferenced is
-of size MAX_NUMNODES.  If the nodeid is in range but invalid, the
-BUG_ON in the next line will catch that.
+The vb2_put_vma() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
 
-Signed-off-by: Paul Mackerras <paulus@samba.org>
+This issue was detected by using the Coccinelle software.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 ---
-diff --git a/mm/slab.c b/mm/slab.c
-index eb2b2ea..f34e053 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3076,7 +3076,7 @@ static void *____cache_alloc_node(struct kmem_cache *cachep, gfp_t flags,
- 	void *obj;
- 	int x;
- 
--	VM_BUG_ON(nodeid > num_online_nodes());
-+	VM_BUG_ON(nodeid < 0 || nodeid >= MAX_NUMNODES);
- 	n = get_node(cachep, nodeid);
- 	BUG_ON(!n);
- 
+ drivers/media/v4l2-core/videobuf2-vmalloc.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/media/v4l2-core/videobuf2-vmalloc.c b/drivers/media/v4l2-core/videobuf2-vmalloc.c
+index 3966b12..fba944e 100644
+--- a/drivers/media/v4l2-core/videobuf2-vmalloc.c
++++ b/drivers/media/v4l2-core/videobuf2-vmalloc.c
+@@ -154,8 +154,7 @@ static void vb2_vmalloc_put_userptr(void *buf_priv)
+ 		}
+ 		kfree(buf->pages);
+ 	} else {
+-		if (buf->vma)
+-			vb2_put_vma(buf->vma);
++		vb2_put_vma(buf->vma);
+ 		iounmap(buf->vaddr);
+ 	}
+ 	kfree(buf);
+-- 
+2.1.3
+
