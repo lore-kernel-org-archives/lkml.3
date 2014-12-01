@@ -1,86 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823AbaLARMF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 12:12:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40008 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753699AbaLARMC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 12:12:02 -0500
-Date: Mon, 1 Dec 2014 11:11:05 -0600
-From: Seth Jennings <sjenning@redhat.com>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Miroslav Benes <mbenes@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 3/3] samples: add sample live patching module
-Message-ID: <20141201171105.GB11179@cerebellum.variantweb.net>
-References: <1416935709-404-1-git-send-email-sjenning@redhat.com>
- <1416935709-404-4-git-send-email-sjenning@redhat.com>
- <20141127170513.GA22608@pathway.suse.cz>
+	id S1753396AbaLARPX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 12:15:23 -0500
+Received: from exprod5og116.obsmtp.com ([64.18.0.147]:35820 "HELO
+	exprod5og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752783AbaLARPW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 12:15:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141127170513.GA22608@pathway.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1417453389-1588-2-git-send-email-stefan@agner.ch>
+References: <1417453389-1588-1-git-send-email-stefan@agner.ch>
+	<1417453389-1588-2-git-send-email-stefan@agner.ch>
+Date: Mon, 1 Dec 2014 09:15:21 -0800
+Message-ID: <CAL85gmBq30pWxP0buKbM8so6QqsJq2YojiSK1EWtMPsH_7foeg@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] power: reset: read priority from device tree
+From: Feng Kan <fkan@apm.com>
+To: Stefan Agner <stefan@agner.ch>
+Cc: shawn.guo@linaro.org, kernel@pengutronix.de,
+        Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
+        sre@kernel.org, grant.likely@linaro.org, robh+dt@kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 06:05:13PM +0100, Petr Mladek wrote:
-> On Tue 2014-11-25 11:15:09, Seth Jennings wrote:
-> > Add a sample live patching module.
-> > 
-> > Signed-off-by: Seth Jennings <sjenning@redhat.com>
-> > ---
-> >  MAINTAINERS                          |  1 +
-> >  samples/Kconfig                      |  7 +++
-> >  samples/livepatch/Makefile           |  1 +
-> >  samples/livepatch/livepatch-sample.c | 87 ++++++++++++++++++++++++++++++++++++
-> >  4 files changed, 96 insertions(+)
-> >  create mode 100644 samples/livepatch/Makefile
-> >  create mode 100644 samples/livepatch/livepatch-sample.c
-> 
-> [...] 
-> 
-> > diff --git a/samples/livepatch/Makefile b/samples/livepatch/Makefile
-> > new file mode 100644
-> > index 0000000..7f1cdc1
-> > --- /dev/null
-> > +++ b/samples/livepatch/Makefile
-> > @@ -0,0 +1 @@
-> > +obj-$(CONFIG_SAMPLE_LIVE_PATCHING) += livepatch-sample.o
-> > diff --git a/samples/livepatch/livepatch-sample.c b/samples/livepatch/livepatch-sample.c
-> > new file mode 100644
-> > index 0000000..21f159d
-> 
-> The Makefile is ignored because there is missing:
-> 
-> 
-> diff --git a/samples/Makefile b/samples/Makefile
-> index 1a60c62e2045..f00257bcc5a7 100644
-> --- a/samples/Makefile
-> +++ b/samples/Makefile
-> @@ -1,4 +1,4 @@
->  # Makefile for Linux samples code
->  
-> -obj-$(CONFIG_SAMPLES)	+= kobject/ kprobes/ trace_events/ \
-> +obj-$(CONFIG_SAMPLES)	+= kobject/ kprobes/ trace_events/ livepatch/ \
->  			   hw_breakpoint/ kfifo/ kdb/ hidraw/ rpmsg/ seccomp/
+On Mon, Dec 1, 2014 at 9:03 AM, Stefan Agner <stefan@agner.ch> wrote:
+> This patch adds an optional property which allows to specify the
+> reset source priority. This priority is used by the kernel restart
+> handler call chain to sort out the proper reset/restart method.
+> Depending on the power design of a board or other machine/board
+> specific peculiarity, it is not possible to pick a generic priority.
+>
+> Signed-off-by: Stefan Agner <stefan@agner.ch>
+> ---
+>  Documentation/devicetree/bindings/power/reset/syscon-reboot.txt | 3 +++
+>  drivers/power/reset/syscon-reboot.c                             | 5 ++++-
+>  2 files changed, 7 insertions(+), 1 deletion(-)
+>
+> diff --git a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+> index 1190631..ee41d9c 100644
+> --- a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+> +++ b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+> @@ -11,6 +11,9 @@ Required properties:
+>  - offset: offset in the register map for the reboot register (in bytes)
+>  - mask: the reset value written to the reboot register (32 bit access)
+>
+> +Optional properties:
+> +- priority: define the priority of the reset (0-255, defaults to 128)
+> +
+>  Default will be little endian mode, 32 bit access only.
+>
+>  Examples:
+> diff --git a/drivers/power/reset/syscon-reboot.c b/drivers/power/reset/syscon-reboot.c
+> index 815b901..3060d6b 100644
+> --- a/drivers/power/reset/syscon-reboot.c
+> +++ b/drivers/power/reset/syscon-reboot.c
+> @@ -67,8 +67,11 @@ static int syscon_reboot_probe(struct platform_device *pdev)
+>         if (of_property_read_u32(pdev->dev.of_node, "mask", &ctx->mask))
+>                 return -EINVAL;
+>
+> -       ctx->restart_handler.notifier_call = syscon_restart_handle;
+>         ctx->restart_handler.priority = 128;
+> +       of_property_read_u32(pdev->dev.of_node, "priority",
+> +                            &ctx->restart_handler.priority);
 
-Applied, thanks!
-
-Seth
-
-> 
-> 
-> Best Regards,
-> Petr
+What is this for?
+> +
+> +       ctx->restart_handler.notifier_call = syscon_restart_handle;
+>         err = register_restart_handler(&ctx->restart_handler);
+>         if (err)
+>                 dev_err(dev, "can't register restart notifier (err=%d)\n", err);
 > --
-> To unsubscribe from this list: send the line "unsubscribe live-patching" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 2.1.3
+>
