@@ -1,73 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930AbaLAOOM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 09:14:12 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:49908 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753355AbaLAOOJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 09:14:09 -0500
-Date: Mon, 1 Dec 2014 15:14:02 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 07/30] cputime: Convert kcpustat to nsecs
-Message-ID: <20141201151402.31a6cc9a@mschwide>
-In-Reply-To: <1417199040-21044-8-git-send-email-fweisbec@gmail.com>
-References: <1417199040-21044-1-git-send-email-fweisbec@gmail.com>
-	<1417199040-21044-8-git-send-email-fweisbec@gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1753941AbaLAOPA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 09:15:00 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:51593 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753491AbaLAOO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 09:14:59 -0500
+X-IronPort-AV: E=Sophos;i="5.07,494,1413244800"; 
+   d="scan'208";a="198075466"
+Message-ID: <547C77E0.5060607@citrix.com>
+Date: Mon, 1 Dec 2014 14:14:56 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120114-0021-0000-0000-000001F9B057
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <bhelgaas@google.com>,
+        <linux@eikelenboom.it>
+Subject: Re: [Xen-devel] [PATCH v4 7/7] xen/pciback: Restore configuration
+ space when detaching from a guest.
+References: <1416608271-18931-1-git-send-email-konrad.wilk@oracle.com> <1416608271-18931-8-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1416608271-18931-8-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Nov 2014 19:23:37 +0100
-Frederic Weisbecker <fweisbec@gmail.com> wrote:
-
-> Kernel cpu stats are stored in cputime_t which is an architecture
-> defined type, and hence a bit opaque and requiring accessors and mutators
-> for any operation.
+On 21/11/14 22:17, Konrad Rzeszutek Wilk wrote:
+> The commit "xen/pciback: Don't deadlock when unbinding." was using
+> the version of pci_reset_function which would lock the device lock.
+> That is no good as we can dead-lock. As such we swapped to using
+> the lock-less version and requiring that the callers
+> of 'pcistub_put_pci_dev' take the device lock. And as such
+> this bug got exposed.
 > 
-> Converting them to nsecs simplifies the code a little bit.
-
-Quite honestly I do not see much of an improvement here, on set of
-functions (cputime_to_xxx) gets replaced by another (nsecs_to_xxx).
-
-On the contrary for s390 I see a degradation, consider a hunk like
-this:
-
-> @@ -128,9 +128,9 @@ static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu, u64 *wall)
+> Using the lock-less version is  OK, except that we tried to
+> use 'pci_restore_state' after the lock-less version of
+> __pci_reset_function_locked - which won't work as 'state_saved'
+> is set to false. Said 'state_saved' is a toggle boolean that
+> is to be used by the sequence of a) pci_save_state/pci_restore_state
+> or b) pci_load_and_free_saved_state/pci_restore_state. We don't
+> want to use a) as the guest might have messed up the PCI
+> configuration space and we want it to revert to the state
+> when the PCI device was binded to us. Therefore we pick
+> b) to restore the configuration space.
 > 
->  	idle_time = cur_wall_time - busy_time;
->  	if (wall)
-> -		*wall = cputime_to_usecs(cur_wall_time);
-> +		*wall = div_u64(cur_wall_time, NSEC_PER_USEC);
+> We restore from our 'golden' version of PCI configuration space, when an:
+>  - Device is unbinded from pciback
+>  - Device is detached from a guest.
 > 
-> -	return cputime_to_usecs(idle_time);
-> +	return div_u64(idle_time, NSEC_PER_USEC);
->  }
+> Reported-by:  Sander Eikelenboom <linux@eikelenboom.it>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  drivers/xen/xen-pciback/pci_stub.c | 20 ++++++++++++++++----
+>  1 file changed, 16 insertions(+), 4 deletions(-)
 > 
->  u64 get_cpu_idle_time(unsigned int cpu, u64 *wall, int io_busy)
+> diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
+> index 843a2ba..eb8b58e 100644
+> --- a/drivers/xen/xen-pciback/pci_stub.c
+> +++ b/drivers/xen/xen-pciback/pci_stub.c
+> @@ -105,7 +105,7 @@ static void pcistub_device_release(struct kref *kref)
+>  	 */
+>  	__pci_reset_function_locked(dev);
+>  	if (pci_load_and_free_saved_state(dev, &dev_data->pci_saved_state))
+> -		dev_dbg(&dev->dev, "Could not reload PCI state\n");
+> +		dev_info(&dev->dev, "Could not reload PCI state\n");
 
-For s390 cputime_to_usecs is a shift, with the new code we now have a division.
-Fortunately this is in a piece of code that s390 does not use..
+Why dev_info when...
 
--- 
-blue skies,
-   Martin.
+> @@ -279,9 +281,19 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+>  	 * (so it's ready for the next domain)
+>  	 */
+>  	device_lock_assert(&dev->dev);
+> -	__pci_reset_function_locked(dev);
+> -	pci_restore_state(dev);
+> -
+> +	dev_data = pci_get_drvdata(dev);
+> +	ret = pci_load_saved_state(dev, dev_data->pci_saved_state);
+> +	if (ret < 0)
+> +		dev_warn(&dev->dev, "Could not reload PCI state\n");
 
-"Reality continues to ruin my life." - Calvin.
+... this one is dev_warn?
 
+> +	else {
+> +		__pci_reset_function_locked(dev);
+
+I think the reset should always be attempted regardless of whether the
+correct state was loaded or not.
+
+David
