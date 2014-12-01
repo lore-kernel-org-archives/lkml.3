@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786AbaLAIVK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 03:21:10 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:49314 "EHLO
+	id S1752842AbaLAIVr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 03:21:47 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:49338 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752635AbaLAIVH (ORCPT
+	with ESMTP id S1752765AbaLAIVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 03:21:07 -0500
+	Mon, 1 Dec 2014 03:21:10 -0500
 From: Boris Brezillon <boris.brezillon@free-electrons.com>
 To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
         Thierry Reding <thierry.reding@gmail.com>
@@ -16,9 +16,9 @@ Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>,
         Andrew Victor <linux@maxim.org.za>,
         Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v4 1/3] drm: add bus_formats and num_bus_formats fields to drm_display_info
-Date: Mon,  1 Dec 2014 09:20:55 +0100
-Message-Id: <1417422061-10384-2-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v4 2/3] drm: panel: simple-panel: add support for bus_format retrieval
+Date: Mon,  1 Dec 2014 09:21:00 +0100
+Message-Id: <1417422061-10384-7-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417422061-10384-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1417422061-10384-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -26,95 +26,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add bus_formats and num_bus_formats fields and
-drm_display_info_set_bus_formats helper function to specify the bus
-formats supported by a given display.
-
-This information can be used by display controller drivers to configure
-the output interface appropriately (i.e. RGB565, RGB666 or RGB888 on raw
-RGB or LVDS busses).
+Provide a way to specify panel requirement in terms of supported media bus
+format (particularly useful for panels connected to an RGB or LVDS bus).
 
 Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 ---
- drivers/gpu/drm/drm_crtc.c | 32 ++++++++++++++++++++++++++++++++
- include/drm/drm_crtc.h     |  7 +++++++
- 2 files changed, 39 insertions(+)
+ drivers/gpu/drm/panel/panel-simple.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-index e79c8d3..d3b7ed0 100644
---- a/drivers/gpu/drm/drm_crtc.c
-+++ b/drivers/gpu/drm/drm_crtc.c
-@@ -763,6 +763,38 @@ static void drm_mode_remove(struct drm_connector *connector,
- 	drm_mode_destroy(connector->dev, mode);
+diff --git a/drivers/gpu/drm/panel/panel-simple.c b/drivers/gpu/drm/panel/panel-simple.c
+index 23de22f..66838a5 100644
+--- a/drivers/gpu/drm/panel/panel-simple.c
++++ b/drivers/gpu/drm/panel/panel-simple.c
+@@ -61,6 +61,8 @@ struct panel_desc {
+ 		unsigned int disable;
+ 		unsigned int unprepare;
+ 	} delay;
++
++	u32 bus_format;
+ };
+ 
+ struct panel_simple {
+@@ -111,6 +113,9 @@ static int panel_simple_get_fixed_modes(struct panel_simple *panel)
+ 	connector->display_info.bpc = panel->desc->bpc;
+ 	connector->display_info.width_mm = panel->desc->size.width;
+ 	connector->display_info.height_mm = panel->desc->size.height;
++	if (panel->desc->bus_format)
++		drm_display_info_set_bus_formats(&connector->display_info,
++						 &panel->desc->bus_format, 1);
+ 
+ 	return num;
  }
- 
-+/*
-+ * drm_display_info_set_bus_formats - set the supported bus formats
-+ * @info: display info to store bus formats in
-+ * @fmts: array containing the supported bus formats
-+ * @nfmts: the number of entries in the fmts array
-+ *
-+ * Store the suppported bus formats in display info structure.
-+ * See MEDIA_BUS_FMT_* definitions in include/uapi/linux/media-bus-format.h for
-+ * a full list of available formats.
-+ */
-+int drm_display_info_set_bus_formats(struct drm_display_info *info, const u32 *fmts,
-+				     unsigned int num_fmts)
-+{
-+	u32 *formats = NULL;
-+
-+	if (!fmts && num_fmts)
-+		return -EINVAL;
-+
-+	if (fmts && num_fmts) {
-+		formats = kmemdup(fmts, sizeof(*fmts) * num_fmts, GFP_KERNEL);
-+		if (!formats)
-+			return -ENOMEM;
-+	}
-+
-+	kfree(info->bus_formats);
-+	info->bus_formats = formats;
-+	info->num_bus_formats = num_fmts;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(drm_display_info_set_bus_formats);
-+
- /**
-  * drm_connector_get_cmdline_mode - reads the user's cmdline mode
-  * @connector: connector to quwery
-diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
-index c40070a..a35844f 100644
---- a/include/drm/drm_crtc.h
-+++ b/include/drm/drm_crtc.h
-@@ -31,6 +31,7 @@
- #include <linux/idr.h>
- #include <linux/fb.h>
- #include <linux/hdmi.h>
-+#include <linux/media-bus-format.h>
- #include <uapi/drm/drm_mode.h>
- #include <uapi/drm/drm_fourcc.h>
- #include <drm/drm_modeset_lock.h>
-@@ -130,6 +131,9 @@ struct drm_display_info {
- 	enum subpixel_order subpixel_order;
- 	u32 color_formats;
- 
-+	const u32 *bus_formats;
-+	unsigned int num_bus_formats;
-+
- 	/* Mask of supported hdmi deep color modes */
- 	u8 edid_hdmi_dc_modes;
- 
-@@ -982,6 +986,9 @@ extern int drm_mode_connector_set_path_property(struct drm_connector *connector,
- extern int drm_mode_connector_update_edid_property(struct drm_connector *connector,
- 						struct edid *edid);
- 
-+extern int drm_display_info_set_bus_formats(struct drm_display_info *info,
-+					    const u32 *fmts, unsigned int nfmts);
-+
- static inline bool drm_property_type_is(struct drm_property *property,
- 		uint32_t type)
- {
 -- 
 1.9.1
 
