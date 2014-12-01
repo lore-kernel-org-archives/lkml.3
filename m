@@ -1,122 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395AbaLALpf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 06:45:35 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52997 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753302AbaLALpd (ORCPT
+	id S1753411AbaLALp4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 06:45:56 -0500
+Received: from mail-ob0-f194.google.com ([209.85.214.194]:40664 "EHLO
+	mail-ob0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753212AbaLALpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 06:45:33 -0500
-Message-ID: <1417434133.4624.9.camel@pengutronix.de>
-Subject: Re: [PATCH v14 05/12] drm: imx: imx-hdmi: move imx-hdmi to
- bridge/dw_hdmi
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Andy Yan <andy.yan@rock-chips.com>
-Cc: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Date: Mon, 01 Dec 2014 12:42:13 +0100
-In-Reply-To: <1417433086-12964-1-git-send-email-andy.yan@rock-chips.com>
-References: <1417432770-12719-1-git-send-email-andy.yan@rock-chips.com>
-	 <1417433086-12964-1-git-send-email-andy.yan@rock-chips.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 1 Dec 2014 06:45:55 -0500
+MIME-Version: 1.0
+Date: Mon, 1 Dec 2014 15:45:54 +0400
+Message-ID: <CABV6-SW3F6+Tzv8zK=CJqPxWc4xTx6NSt5vyGQRsemcaesuLLg@mail.gmail.com>
+Subject: no connectivity on PF with Intel 82599/SR-IOV/OVS
+From: "Dmitry N." <plretbox@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+Hello all.
 
-Am Montag, den 01.12.2014, 19:24 +0800 schrieb Andy Yan:
-[...]
-> diff --git a/include/drm/bridge/dw_hdmi.h b/include/drm/bridge/dw_hdmi.h
-> new file mode 100644
-> index 0000000..1bbf3ca
-> --- /dev/null
-> +++ b/include/drm/bridge/dw_hdmi.h
-> @@ -0,0 +1,57 @@
-> +/*
-> + * Copyright (C) 2011 Freescale Semiconductor, Inc.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + */
-> +
-> +#ifndef __DW_HDMI__
-> +#define __DW_HDMI__
-> +
-> +#include <drm/drmP.h>
-> +
-> +enum {
-> +	RES_8,
-> +	RES_10,
-> +	RES_12,
-> +	RES_MAX,
-> +};
-> +
-> +enum dw_hdmi_devtype {
-> +	IMX6Q_HDMI,
-> +	IMX6DL_HDMI,
-> +};
-> +
-> +struct mpll_config {
-> +	unsigned long mpixelclock;
-> +	struct {
-> +		u16 cpce;
-> +		u16 gmp;
-> +	} res[RES_MAX];
-> +};
-> +
-> +struct curr_ctrl {
-> +	unsigned long mpixelclock;
-> +	u16 curr[RES_MAX];
-> +};
-> +
-> +struct sym_term {
-> +	unsigned long mpixelclock;
-> +	u16 sym_ctr;    /*clock symbol and transmitter control*/
-> +	u16 term;       /*transmission termination value*/
-> +};
+I'm having an issue with SR-IOV on 82599 NIC in lab env. Basically
+what I have is Ubuntu 12.04 with a set of vanilla kernels and Open
+vSwitch.
 
-since this is going to be used by multiple drivers, the enums and
-structs should all be properly namespaced. How about DW_HDMI_RES_x,
-struct dw_hdmi_mpll_config, struct dw_hdmi_curr_ctrl, and struct
-dw_hdmi_sym_term?
+A simplified scheme for ovs setup:
+br-mgmt -> [vlan 102]br-eth0 -> eth0 -> fabric
 
-> +struct dw_hdmi_plat_data {
-> +	enum dw_hdmi_devtype dev_type;
-> +	const struct mpll_config *mpll_cfg;
-> +	const struct curr_ctrl *cur_ctr;
-> +	const struct sym_term *sym_term;
-> +};
-> +
-> +void dw_hdmi_unbind(struct device *dev, struct device *master, void *data);
-> +int dw_hdmi_bind(struct device *dev, struct device *master,
-> +		 void *data, struct drm_encoder *encoder,
-> +		 const struct dw_hdmi_plat_data *plat_data);
-> +#endif /* __IMX_HDMI_H__ */
+When VFs are disabled, connectivity works fine. However when at least
+one VF is enabled, traffic just doesn't go any further than br-eth0.
+Oddly enough, it acts this way only if VLAN is configured on br-eth0
+via OVS. When I try to configure VLAN with ip link, it works just
+fine.
 
-regards
-Philipp
+It's not an udev issue because re-adding eth0 to br-eth0 doesn't help.
+I've tried different OVS and ixgbe/ixgbevf versions against different
+kernel versions and ruled out issues with OVS and ixgbe.
 
+This could be a kernel bug.
+
+Kernel versions I've tried:
+3.11.0 works fine
+3.12.24 has this issue
+3.14.23 has this issue
+3.15.10 has this issue
+3.16.7 and later kernels: the situation is opposite: when VFs are
+disabled, there is no connectivity on PF; as soon as at leas 1 VF is
+enabled, connectivity appears.
+
+OVS versions:
+2.3.0 for user space
+2.3.0 (and kernel native where 2.3.0 is not supported - starting with
+3.15.x) for kernel space
+
+ixgbe:
+latest from Intel website (3.22.3)
+
+ixgbevf:
+latest from Intel website (2.15.3)
+
+Any suggestions? Thanks.
