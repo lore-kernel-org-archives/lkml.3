@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628AbaLADNn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 22:13:43 -0500
-Received: from mga03.intel.com ([134.134.136.65]:7351 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752326AbaLADNm convert rfc822-to-8bit (ORCPT
+	id S1752652AbaLADQC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 22:16:02 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:61487 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752387AbaLADP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 22:13:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,489,1413270000"; 
-   d="scan'208";a="616388603"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>
-Subject: RE: [PATCH urgent v2] sched: Add missing rcu protection to
- wake_up_all_idle_cpus
-Thread-Topic: [PATCH urgent v2] sched: Add missing rcu protection to
- wake_up_all_idle_cpus
-Thread-Index: AQHQC++NLFlfGioHH0uJToFDDseD15x6ETtA
-Date: Mon, 1 Dec 2014 03:13:26 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01EE72A9@SHSMSX101.ccr.corp.intel.com>
-References: <729365dddca178506dfd0a9451006344cd6808bc.1417277372.git.luto@amacapital.net>
-In-Reply-To: <729365dddca178506dfd0a9451006344cd6808bc.1417277372.git.luto@amacapital.net>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 30 Nov 2014 22:15:59 -0500
+Date: Sun, 30 Nov 2014 19:15:55 -0800
+From: Omar Sandoval <osandov@osandov.com>
+To: Pranith Kumar <bobby.prani+lkml@gmail.com>
+Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        Joe Perches <joe@perches.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 2/3] btrfs: fix suspicious RCU in BTRFS_IOC_DEV_INFO
+Message-ID: <20141201031555.GB14040@mew>
+References: <cover.1417335583.git.osandov@osandov.com>
+ <6566ef127f0d7ad4d33dd90362dd76e431359ef8.1417335583.git.osandov@osandov.com>
+ <CAJhHMCD6voVEry=CkSyu5FpjiYXzh1aWxNq2_gmxasHqgV+csA@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJhHMCD6voVEry=CkSyu5FpjiYXzh1aWxNq2_gmxasHqgV+csA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Andy Lutomirski [mailto:luto@amacapital.net]
-> Sent: Sunday, November 30, 2014 12:14 AM
-> To: Ingo Molnar; Thomas Gleixner; linux-kernel@vger.kernel.org
-> Cc: Peter Zijlstra; Andy Lutomirski; Liu, Chuansheng
-> Subject: [PATCH urgent v2] sched: Add missing rcu protection to
-> wake_up_all_idle_cpus
+On Sun, Nov 30, 2014 at 10:11:41AM -0500, Pranith Kumar wrote:
+> On Sun, Nov 30, 2014 at 3:26 AM, Omar Sandoval <osandov@osandov.com> wrote:
+> > A naked read of the value of an RCU pointer isn't safe. Put the whole access in
+> > an RCU critical section, not just the pointer dereference.
+> >
+> > Signed-off-by: Omar Sandoval <osandov@osandov.com>
 > 
-> Locklessly doing is_idle_task(rq->curr) is only okay because of RCU
-> protection.  The older variant of the broken code checked
-> rq->curr == rq->idle instead and therefore didn't need RCU.
+> You can use rcu_access_pointer() in the if() condition check rather
+> than increasing the read critical section. We should try to keep the
+> critical section as small as possible.
 > 
-> Fixes: f6be8af1c95d sched: Add new API wake_up_if_idle() to wake up the idle
-> cpu
-> Cc: Chuansheng Liu <chuansheng.liu@intel.com>
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
-Reviewed-by: Chuansheng Liu <chuansheng.liu@intel.com>
+> Also, since we have rcu_str_deref() we can use that instead of
+> rcu_dereference() on device->name. Thoughts?
+> 
+That's right, I forgot about rcu_access_pointer. The difference is probably
+negligible, and I doubt the performance of this ioctl is very important. Since
+we're going to be dereferencing the pointer anyways in some (most?) cases, I
+think this is a bit more readable.
 
-Thanks Andy.
-
+-- 
+Omar
