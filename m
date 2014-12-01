@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932677AbaLAWIw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 17:08:52 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:26079 "EHLO
+	id S932696AbaLAWJD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 17:09:03 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:26095 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932636AbaLAWIs (ORCPT
+	with ESMTP id S932660AbaLAWIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 17:08:48 -0500
-Date: Mon, 1 Dec 2014 11:40:35 -0500
+	Mon, 1 Dec 2014 17:08:51 -0500
+Date: Mon, 1 Dec 2014 11:51:55 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
+To: Waiman Long <waiman.long@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
         x86@kernel.org, linux-kernel@vger.kernel.org,
         virtualization@lists.linux-foundation.org,
         xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
@@ -25,175 +25,115 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         David Vrabel <david.vrabel@citrix.com>,
         Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
         Douglas Hatch <doug.hatch@hp.com>
-Subject: Re: [PATCH v13 09/11] pvqspinlock, x86: Add para-virtualization
+Subject: Re: [PATCH v12 09/11] pvqspinlock, x86: Add para-virtualization
  support
-Message-ID: <20141201164035.GF3180@laptop.dumpdata.com>
-References: <1414613951-32532-1-git-send-email-Waiman.Long@hp.com>
- <1414613951-32532-10-git-send-email-Waiman.Long@hp.com>
+Message-ID: <20141201165155.GH3180@laptop.dumpdata.com>
+References: <1413483040-58399-1-git-send-email-Waiman.Long@hp.com>
+ <1413483040-58399-10-git-send-email-Waiman.Long@hp.com>
+ <20141024085437.GV21513@worktop.programming.kicks-ass.net>
+ <544E830C.6070307@hp.com>
+ <20141027180252.GC12989@laptop.dumpdata.com>
+ <54751FF6.5050808@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1414613951-32532-10-git-send-email-Waiman.Long@hp.com>
+In-Reply-To: <54751FF6.5050808@hp.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 04:19:09PM -0400, Waiman Long wrote:
-> This patch adds para-virtualization support to the queue spinlock
-> code base with minimal impact to the native case. There are some
-> minor code changes in the generic qspinlock.c file which should be
-> usable in other architectures. The other code changes are specific
-> to x86 processors and so are all put under the arch/x86 directory.
+On Tue, Nov 25, 2014 at 07:33:58PM -0500, Waiman Long wrote:
+> On 10/27/2014 02:02 PM, Konrad Rzeszutek Wilk wrote:
+> >On Mon, Oct 27, 2014 at 01:38:20PM -0400, Waiman Long wrote:
+> >>
+> >>My concern is that spin_unlock() can be called in many places, including
+> >>loadable kernel modules. Can the paravirt_patch_ident_32() function able to
+> >>patch all of them in reasonable time? How about a kernel module loaded later
+> >>at run time?
+> >It has too. When the modules are loaded the .paravirt symbols are exposed
+> >and the module loader patches that.
+> >
+> >And during bootup time (before modules are loaded) it also patches everything
+> >- when it only runs on one CPU.
+> >
 > 
-> On the lock side, the slowpath code is split into 2 separate functions
-> generated from the same code - one for bare metal and one for PV guest.
-> The switching is done in the _raw_spin_lock* functions. This makes
-> sure that the performance impact to the bare metal case is minimal,
-> just a few NOPs in the _raw_spin_lock* functions. In the PV slowpath
-> code, there are 2 paravirt callee saved calls that minimize register
-> pressure.
+> I have been changing the patching code to patch the unlock call sites and it
+> seems to be working now. However, when I manually inserted a kernel module
+> using insmod and run the code in the newly inserted module, I got memory
+> access violation as follows:
 > 
-> On the unlock side, however, the disabling of unlock function inlining
-> does have some slight impact on bare metal performance.
+> BUG: unable to handle kernel NULL pointer dereference at           (null)
+> IP: [<          (null)>]           (null)
+> PGD 18d62f3067 PUD 18d476f067 PMD 0
+> Oops: 0010 [#1] SMP
+> Modules linked in: locktest(OE) ebtable_nat ebtables xt_CHECKSUM
+> iptable_mangle bridge autofs4 8021q garp stp llc ipt_REJECT
+> nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT
+> nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter
+> ip6_tables ipv6 vhost_net macvtap macvlan vhost tun uinput ppdev parport_pc
+> parport sg microcode pcspkr virtio_balloon snd_hda_codec_generic
+> virtio_console snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep
+> snd_seq snd_seq_device snd_pcm snd_timer snd soundcore virtio_net i2c_piix4
+> i2c_core ext4(E) jbd2(E) mbcache(E) floppy(E) virtio_blk(E) sr_mod(E)
+> cdrom(E) virtio_pci(E) virtio_ring(E) virtio(E) pata_acpi(E) ata_generic(E)
+> ata_piix(E) dm_mirror(E) dm_region_hash(E) dm_log(E) dm_mod(E) [last
+> unloaded: speedstep_lib]
+> CPU: 1 PID: 3907 Comm: run-locktest Tainted: G        W  OE  3.17.0-pvqlock
+> #3
+> Hardware name: Red Hat KVM, BIOS Bochs 01/01/2011
+> task: ffff8818cc5baf90 ti: ffff8818b7094000 task.ti: ffff8818b7094000
+> RIP: 0010:[<0000000000000000>]  [<          (null)>]           (null)
+> RSP: 0018:ffff8818b7097db0  EFLAGS: 00010246
+> RAX: 0000000000000000 RBX: 00000000004c4b40 RCX: 0000000000000000
+> RDX: 0000000000000001 RSI: 0000000000000000 RDI: ffff8818d3f052c0
+> RBP: ffff8818b7097dd8 R08: 0000000080522014 R09: 0000000000000000
+> R10: 0000000000001000 R11: 0000000000000001 R12: 0000000000000001
+> R13: 0000000000000000 R14: 0000000000000001 R15: ffff8818b7097ea0
+> FS:  00007fb828ece700(0000) GS:ffff88193ec20000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 0000000000000000 CR3: 00000018cc7e9000 CR4: 00000000000006e0
+> Stack:
+>  ffffffffa06ff395 ffff8818d465e000 ffffffff8164bec0 0000000000000001
+>  0000000000000050 ffff8818b7097e18 ffffffffa06ff785 ffff8818b7097e38
+>  0000000000000246 0000000054755e3a 0000000039f8ba72 ffff8818c174f000
+> Call Trace:
+>  [<ffffffffa06ff395>] ? test_spinlock+0x65/0x90 [locktest]
+>  [<ffffffffa06ff785>] etime_show+0xd5/0x120 [locktest]
+>  [<ffffffff812a2dc6>] kobj_attr_show+0x16/0x20
+>  [<ffffffff8121a7fa>] sysfs_kf_seq_show+0xca/0x1b0
+>  [<ffffffff81218a13>] kernfs_seq_show+0x23/0x30
+>  [<ffffffff811c82db>] seq_read+0xbb/0x400
+>  [<ffffffff812197e5>] kernfs_fop_read+0x35/0x40
+>  [<ffffffff811a4223>] vfs_read+0xa3/0x110
+>  [<ffffffff811a47e6>] SyS_read+0x56/0xd0
+>  [<ffffffff810f3e16>] ? __audit_syscall_exit+0x216/0x2c0
+>  [<ffffffff815b3ca9>] system_call_fastpath+0x16/0x1b
+> Code:  Bad RIP value.
+>  RSP <ffff8818b7097db0>
+> CR2: 0000000000000000
+> ---[ end trace 69d0e259c9ec632f ]---
 > 
-> The actual paravirt code comes in 5 parts;
-> 
->  - init_node; this initializes the extra data members required for PV
->    state. PV state data is kept 1 cacheline ahead of the regular data.
-> 
->  - link_and_wait_node; this replaces the regular MCS queuing code. CPU
->    halting can happen if the wait is too long.
-> 
->  - wait_head; this waits until the lock is avialable and the CPU will
->    be halted if the wait is too long.
-> 
->  - wait_check; this is called after acquiring the lock to see if the
->    next queue head CPU is halted. If this is the case, the lock bit is
->    changed to indicate the queue head will have to be kicked on unlock.
-> 
->  - queue_unlock;  this routine has a jump label to check if paravirt
->    is enabled. If yes, it has to do an atomic cmpxchg to clear the lock
->    bit or call the slowpath function to kick the queue head cpu.
-> 
-> Tracking the head is done in two parts, firstly the pv_wait_head will
-> store its cpu number in whichever node is pointed to by the tail part
-> of the lock word. Secondly, pv_link_and_wait_node() will propagate the
-> existing head from the old to the new tail node.
-> 
-> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-> ---
->  arch/x86/include/asm/paravirt.h       |   19 ++
->  arch/x86/include/asm/paravirt_types.h |   20 ++
->  arch/x86/include/asm/pvqspinlock.h    |  411 +++++++++++++++++++++++++++++++++
->  arch/x86/include/asm/qspinlock.h      |   71 ++++++-
->  arch/x86/kernel/paravirt-spinlocks.c  |    6 +
->  include/asm-generic/qspinlock.h       |    2 +
->  kernel/locking/qspinlock.c            |   69 +++++-
->  7 files changed, 591 insertions(+), 7 deletions(-)
->  create mode 100644 arch/x86/include/asm/pvqspinlock.h
-> 
-> diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-> index cd6e161..7e296e6 100644
-> --- a/arch/x86/include/asm/paravirt.h
-> +++ b/arch/x86/include/asm/paravirt.h
-> @@ -712,6 +712,24 @@ static inline void __set_fixmap(unsigned /* enum fixed_addresses */ idx,
->  
->  #if defined(CONFIG_SMP) && defined(CONFIG_PARAVIRT_SPINLOCKS)
->  
-> +#ifdef CONFIG_QUEUE_SPINLOCK
-> +
-> +static __always_inline void pv_kick_cpu(int cpu)
-> +{
-> +	PVOP_VCALLEE1(pv_lock_ops.kick_cpu, cpu);
-> +}
-> +
-> +static __always_inline void pv_lockwait(u8 *lockbyte)
-> +{
-> +	PVOP_VCALLEE1(pv_lock_ops.lockwait, lockbyte);
-> +}
-> +
-> +static __always_inline void pv_lockstat(enum pv_lock_stats type)
-> +{
-> +	PVOP_VCALLEE1(pv_lock_ops.lockstat, type);
-> +}
-> +
-> +#else
->  static __always_inline void __ticket_lock_spinning(struct arch_spinlock *lock,
->  							__ticket_t ticket)
->  {
-> @@ -723,6 +741,7 @@ static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock,
->  {
->  	PVOP_VCALL2(pv_lock_ops.unlock_kick, lock, ticket);
->  }
-> +#endif
->  
->  #endif
->  
-> diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
-> index 7549b8b..49e4b76 100644
-> --- a/arch/x86/include/asm/paravirt_types.h
-> +++ b/arch/x86/include/asm/paravirt_types.h
-> @@ -326,6 +326,9 @@ struct pv_mmu_ops {
->  			   phys_addr_t phys, pgprot_t flags);
->  };
->  
-> +struct mcs_spinlock;
-> +struct qspinlock;
-> +
->  struct arch_spinlock;
->  #ifdef CONFIG_SMP
->  #include <asm/spinlock_types.h>
-> @@ -333,9 +336,26 @@ struct arch_spinlock;
->  typedef u16 __ticket_t;
->  #endif
->  
-> +#ifdef CONFIG_QUEUE_SPINLOCK
-> +enum pv_lock_stats {
-> +	PV_HALT_QHEAD,		/* Queue head halting	    */
-> +	PV_HALT_QNODE,		/* Other queue node halting */
-> +	PV_HALT_ABORT,		/* Halting aborted	    */
-> +	PV_WAKE_KICKED,		/* Wakeup by kicking	    */
-> +	PV_WAKE_SPURIOUS,	/* Spurious wakeup	    */
-> +	PV_KICK_NOHALT		/* Kick but CPU not halted  */
-> +};
-> +#endif
-> +
->  struct pv_lock_ops {
-> +#ifdef CONFIG_QUEUE_SPINLOCK
-> +	struct paravirt_callee_save kick_cpu;
-> +	struct paravirt_callee_save lockstat;
-> +	struct paravirt_callee_save lockwait;
-> +#else
->  	struct paravirt_callee_save lock_spinning;
->  	void (*unlock_kick)(struct arch_spinlock *lock, __ticket_t ticket);
-> +#endif
->  };
->  
->  /* This contains all the paravirt structures: we get a convenient
-> diff --git a/arch/x86/include/asm/pvqspinlock.h b/arch/x86/include/asm/pvqspinlock.h
-> new file mode 100644
-> index 0000000..85ccde6
-> --- /dev/null
-> +++ b/arch/x86/include/asm/pvqspinlock.h
-> @@ -0,0 +1,411 @@
-> +#ifndef _ASM_X86_PVQSPINLOCK_H
-> +#define _ASM_X86_PVQSPINLOCK_H
-> +
-> +/*
-> + *	Queue Spinlock Para-Virtualization (PV) Support
-> + *
-> + * The PV support code for queue spinlock is roughly the same as that
-> + * of the ticket spinlock. Each CPU waiting for the lock will spin until it
-> + * reaches a threshold. When that happens, it will put itself to a halt state
-> + * so that the hypervisor can reuse the CPU cycles in some other guests as
-> + * well as returning other hold-up CPUs faster.
+> It seems like call site patching isn't properly done or the kernel module
+> that I built was missing some critical information necessary for the proper
 
-Kind of. There is a lot more of going to sleep here than the PV ticketlock.
-In there the CPU would go to sleep and wait until it was its turn in. Here
-we need go to sleep when we are at the queue and then wake up to move a bit.
+Did the readelf give you the paravirt note section?
+> linking. Anyway, I will include the unlock call patching code as a separate
+> patch as it seems there may be problem under certain circumstance.
 
-That means the next in the line has at least two halt and wakeups?
+one way to troubleshoot those is to enable the paravirt patching code to
+actually print where it is patching the code. That way when you load the
+module you can confirm it has done its job.
 
-How does it compare to the PV ticketlocks that exists right now?
+Then you can verify that the address  where the code is called:
+
+ffffffffa06ff395
+
+is indeed patched. You might as well also do a hexdump in the module loading
+to confim that the patching had been done correctly.
+> 
+> BTW, the kernel panic problem that your team reported had been fixed. The
+> fix will be in the next version of the patch.
+> 
+> -Longman
