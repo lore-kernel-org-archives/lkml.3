@@ -1,70 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932798AbaLAWMx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 17:12:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58772 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932160AbaLAWMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 17:12:51 -0500
-Message-ID: <547CE7D6.4030601@redhat.com>
-Date: Mon, 01 Dec 2014 23:12:38 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932591AbaLAWQq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 17:16:46 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:59358 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932476AbaLAWQo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 17:16:44 -0500
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>, gleb@kernel.org,
-        kvm@vger.kernel.org
-CC: bp@suse.de, x86@kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, david.vrabel@citrix.com
-Subject: Re: [PATCH] x86, microcode: Don't initialize microcode code on paravirt
-References: <1417469264-31470-1-git-send-email-boris.ostrovsky@oracle.com> <20141201215725.GG24289@laptop.dumpdata.com>
-In-Reply-To: <20141201215725.GG24289@laptop.dumpdata.com>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+Date: Mon, 01 Dec 2014 23:18:47 +0100
+From: Stefan Agner <stefan@agner.ch>
+To: Guenter Roeck <linux@roeck-us.net>, Feng Kan <fkan@apm.com>,
+        mark.rutland@arm.com
+Cc: shawn.guo@linaro.org, kernel@pengutronix.de, Arnd Bergmann <arnd@arndb.de>,
+        sre@kernel.org, grant.likely@linaro.org, robh+dt@kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] power: reset: read priority from device tree
+In-Reply-To: <20141201174215.GB24692@roeck-us.net>
+References: <1417453389-1588-1-git-send-email-stefan@agner.ch>
+ <1417453389-1588-2-git-send-email-stefan@agner.ch>
+ <CAL85gmBq30pWxP0buKbM8so6QqsJq2YojiSK1EWtMPsH_7foeg@mail.gmail.com>
+ <ea4f7a2bfdb9bea45cab9418c211083b@agner.ch>
+ <CAL85gmBNE7oDbE+LX+V=AFJO61Ta0Gekoq6sDb8TkEnoPsNFVA@mail.gmail.com>
+ <20141201174215.GB24692@roeck-us.net>
+Message-ID: <3916ca2867ced70e16903d6d44aaae8f@agner.ch>
+User-Agent: Roundcube Webmail/1.0.3
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Mon Dec  1 23:16:09 2014
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 547ce8a912813582220642
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 01/12/2014 22:57, Konrad Rzeszutek Wilk wrote:
-> On Mon, Dec 01, 2014 at 04:27:44PM -0500, Boris Ostrovsky wrote:
->> Paravirtual guests are not expected to load microcode into processors
->> and therefore it is not necessary to initialize microcode loading
->> logic.
+On 2014-12-01 18:42, Guenter Roeck wrote:
+> On Mon, Dec 01, 2014 at 09:38:09AM -0800, Feng Kan wrote:
+>> On Mon, Dec 1, 2014 at 9:29 AM, Stefan Agner <stefan@agner.ch> wrote:
+>> > On 2014-12-01 18:15, Feng Kan wrote:
+>> >> On Mon, Dec 1, 2014 at 9:03 AM, Stefan Agner <stefan@agner.ch> wrote:
+>> >>> This patch adds an optional property which allows to specify the
+>> >>> reset source priority. This priority is used by the kernel restart
+>> >>> handler call chain to sort out the proper reset/restart method.
+>> >>> Depending on the power design of a board or other machine/board
+>> >>> specific peculiarity, it is not possible to pick a generic priority.
+>> >>>
+>> >>> Signed-off-by: Stefan Agner <stefan@agner.ch>
+>> >>> ---
+>> >>>  Documentation/devicetree/bindings/power/reset/syscon-reboot.txt | 3 +++
+>> >>>  drivers/power/reset/syscon-reboot.c                             | 5 ++++-
+>> >>>  2 files changed, 7 insertions(+), 1 deletion(-)
+>> >>>
+>> >>> diff --git a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+>> >>> index 1190631..ee41d9c 100644
+>> >>> --- a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+>> >>> +++ b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+>> >>> @@ -11,6 +11,9 @@ Required properties:
+>> >>>  - offset: offset in the register map for the reboot register (in bytes)
+>> >>>  - mask: the reset value written to the reboot register (32 bit access)
+>> >>>
+>> >>> +Optional properties:
+>> >>> +- priority: define the priority of the reset (0-255, defaults to 128)
+>> >>> +
+>> >>>  Default will be little endian mode, 32 bit access only.
+>> >>>
+>> >>>  Examples:
+>> >>> diff --git a/drivers/power/reset/syscon-reboot.c b/drivers/power/reset/syscon-reboot.c
+>> >>> index 815b901..3060d6b 100644
+>> >>> --- a/drivers/power/reset/syscon-reboot.c
+>> >>> +++ b/drivers/power/reset/syscon-reboot.c
+>> >>> @@ -67,8 +67,11 @@ static int syscon_reboot_probe(struct platform_device *pdev)
+>> >>>         if (of_property_read_u32(pdev->dev.of_node, "mask", &ctx->mask))
+>> >>>                 return -EINVAL;
+>> >>>
+>> >>> -       ctx->restart_handler.notifier_call = syscon_restart_handle;
+>> >>>         ctx->restart_handler.priority = 128;
+>> >>> +       of_property_read_u32(pdev->dev.of_node, "priority",
+>> >>> +                            &ctx->restart_handler.priority);
+>> >>
+>> >> What is this for?
+>> >
+>> > What do you mean? The moved line "ctx->restart_handler.notifier_call =
+>> > syscon_restart_handle;"? When one reads the diff, it looks like that
+>> > line was moved, in fact I tried to keep the of_property_read function
+>> > calls together. But I had to move the assignation of the default
+>> > priority in front of restart_handler.priority. That's what is the
+>> > outcome...
+>>
+>> I believe Guenter explained above already. Actually this help to solve one of
+>> my problem. Thanks.
 > 
-> CC-ing the KVM folks since they use the paravirt interface too.
+> Since Mark doesn't seem to be happy with the idea of making the priority
+> dt-configurable, the alternative might be to just set a higher priority for
+> syscon triggered resets, as suggested by Stefan. Not as flexible, but it
+> should be ok for most use cases.
+> 
 
-We also do not want to load microcode. :)  Thanks for the heads-up.
+I read the other branch of this thread too, but IMHO, this would be the
+best solution for now. It's a one line change and does the job. After
+all, we have that priority for a reason, it doesn't makes sense having
+all of them at a common default. As mentioned in an other reply, I think
+it is especially reasonable to configure the syscon-reboot driver a bit
+higher, since this driver is more likely to be used for a dedicated
+reboot feature provided by the SoC, which usually is the preferred one.
+If it happens one day that a SoC ends up with conflicting priorities or
+other priority odds, we can add the DT support then...
 
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+What do you think, can I go with that for now? (Guenter, Feng, Mark...?)
 
-Paolo
+--
+Stefan
 
->> In fact, under certain circumstances initializing this logic may cause
->> the guest to crash. Specifically, 32-bit kernels use __pa_nodebug()
->> macro which does not work in Xen (the code path that leads to this macro
->> happens during resume when we call mc_bp_resume()->load_ucode_ap()
->> ->check_loader_disabled_ap())
->>
->> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
->> ---
->>  arch/x86/kernel/cpu/microcode/core.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/kernel/cpu/microcode/core.c b/arch/x86/kernel/cpu/microcode/core.c
->> index 2ce9051..ebd232d 100644
->> --- a/arch/x86/kernel/cpu/microcode/core.c
->> +++ b/arch/x86/kernel/cpu/microcode/core.c
->> @@ -557,7 +557,7 @@ static int __init microcode_init(void)
->>  	struct cpuinfo_x86 *c = &cpu_data(0);
->>  	int error;
->>  
->> -	if (dis_ucode_ldr)
->> +	if (paravirt_enabled() || dis_ucode_ldr)
->>  		return 0;
->>  
->>  	if (c->x86_vendor == X86_VENDOR_INTEL)
->> -- 
->> 1.7.1
->>
