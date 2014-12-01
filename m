@@ -1,73 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929AbaLAOV4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 09:21:56 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:48044 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753448AbaLAOVy (ORCPT
+	id S1753760AbaLAOXo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 09:23:44 -0500
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:53232 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753355AbaLAOXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 09:21:54 -0500
+	Mon, 1 Dec 2014 09:23:43 -0500
+Date: Mon, 1 Dec 2014 14:23:11 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Richard Yao <ryao@gentoo.org>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-api@vger.kernel.org
+Subject: Re: Why not make kdbus use CUSE?
+Message-ID: <20141201142311.37c81ff1@lxorguk.ukuu.org.uk>
+In-Reply-To: <20141129063416.GE32286@woodpecker.gentoo.org>
+References: <20141129063416.GE32286@woodpecker.gentoo.org>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdY8sEJMr-cxzrUEW1sqP3bGLH=Q2hDP1NBQ5m9A+RhP5Q@mail.gmail.com>
-References: <CAFp+6iF-N63YSsdv2a6=MYp_mD=eQY_Oi8=9JVNU5dG0BA7YGQ@mail.gmail.com>
-	<1416834177-11170-1-git-send-email-gautam.vivek@samsung.com>
-	<CAGOxZ51P30BY2sOhUeMRK64CGF1fNcc-63RCXiAqZ6Rgpv3K7Q@mail.gmail.com>
-	<CAFp+6iFcMGTBQDcdK0cbcu0s9a3022nogaUvbPA2ZsCN80hRSA@mail.gmail.com>
-	<CAFp+6iFaf_RMprLCLXK=o=KGSTQuVL3geKx5yfevTuvFdjYLNg@mail.gmail.com>
-	<CACRpkdY8sEJMr-cxzrUEW1sqP3bGLH=Q2hDP1NBQ5m9A+RhP5Q@mail.gmail.com>
-Date: Mon, 1 Dec 2014 19:51:53 +0530
-Message-ID: <CAFp+6iHiC9mouT-v_yGHm5adDerCpT-s7EeWwwwYi-NzdLBnrA@mail.gmail.com>
-Subject: Re: [PATCH V2 1/2] pinctrl: exynos: Add BUS1 pin controller for exynos7
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>, Alim Akhtar <alim.akhtar@gmail.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        "robh+dt" <robh+dt@kernel.org>, kgene <kgene@kernel.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 28, 2014 at 9:15 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Fri, Nov 28, 2014 at 4:39 AM, Vivek Gautam <gautamvivek1987@gmail.com> wrote:
->> On Fri, Nov 28, 2014 at 9:05 AM, Vivek Gautam <gautamvivek1987@gmail.com> wrote:
->
->>>> On Mon, Nov 24, 2014 at 6:32 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
->>>>> USB and Power regulator on Exynos7 require gpios available
->>>>> in BUS1 pin controller block.
->>>>> So adding the BUS1 pinctrl support.
->>>>>
->>>>> Signed-off-by: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
->>>>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->>>>> Cc: Linus Walleij <linus.walleij@linaro.org>
->>
->> If the change looks good, will it be possible to pick it fo 3.19-rc1 ?
->> That will really help enabling USB IP on exynos7.
->
-> As you know the Exynos driver has a maintainer, Tomasz Figa, I will not
-> merge patches without his ACK.
->
-> Apart from that, there are *again* a lot of Exynos patches flying around and
-> I start to loose track of them. If they do not apply together and start to
-> conflict I will just ask Tomasz to stack them and provide a pull request
-> again.
+> told quite plainly that such distributions are not worth consideration. If kdbus
+> is merged despite concerns about security and backward compatibility, could we
+> at least have the shim moved to libc netural place, like Linus' tree?
 
-True, this merge cycle has surely got number of exynos7 related
-patches in flight,
-which are difficult to keep track of.
-Thanks for asking Tomasz.
+I would expect any other libc would fork the shim anyway (or just not
+bother with systemd in most cases).
 
-
-
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+Alan
