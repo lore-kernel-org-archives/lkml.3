@@ -1,74 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148AbaLALTw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 06:19:52 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:42291 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752779AbaLALTv (ORCPT
+	id S1753287AbaLALUF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 06:20:05 -0500
+Received: from lucky1.263xmail.com ([211.157.147.130]:60613 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753212AbaLALUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 06:19:51 -0500
-Message-ID: <547C4ECD.20802@arm.com>
-Date: Mon, 01 Dec 2014 11:19:41 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Liviu Dudau <Liviu.Dudau@arm.com>
-CC: Rob Herring <robh+dt@kernel.org>, Mark Rutland <Mark.Rutland@arm.com>,
+	Mon, 1 Dec 2014 06:20:02 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <3a3993b40e836e1d9148bdfcf9bcae30>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
+        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] irqchip: gic: Allow interrupt level to be set for PPIs.
-References: <1417197340-27298-1-git-send-email-Liviu.Dudau@arm.com> <20141201104145.GY3836@n2100.arm.linux.org.uk> <20141201104612.GM828@e106497-lin.cambridge.arm.com> <20141201110358.GA3836@n2100.arm.linux.org.uk>
-In-Reply-To: <20141201110358.GA3836@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+        Kumar Gala <galak@codeaurora.org>, Andy Yan <andy.yan@rock-chips.com>
+Subject: [PATCH v14 0/12] dw-hdmi: convert imx hdmi to bridge/dw_hdmi
+Date: Mon,  1 Dec 2014 19:19:30 +0800
+Message-Id: <1417432770-12719-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
 
-On 01/12/14 11:03, Russell King - ARM Linux wrote:
-> On Mon, Dec 01, 2014 at 10:46:13AM +0000, Liviu Dudau wrote:
->> On Mon, Dec 01, 2014 at 10:41:45AM +0000, Russell King - ARM Linux wrote:
->>> On Fri, Nov 28, 2014 at 05:55:40PM +0000, Liviu Dudau wrote:
->>>> +	/*
->>>> +	 * PPIs are optionally configurable, but we cannot distinguish
->>>> +	 * between high and low, nor falling and rising. Change the
->>>> +	 * type so that it passes the next check.
->>>
->>> This comment could do with a /lot/ of improvement.  It sounds like the
->>> only reason this code exists is to bypass the check.  If that's all
->>> that's being done, there's better ways to code it.
->>
->> Hi Russell,
->>
->> You are right, all I want to do is bypass the next check because *if*
->> the PPIs can be configured, then any combination is valid (edge 
->> raising/falling, level low/high). In real systems, PPIs tend to be
->> configured with active level low. That falls the existing check.
-> 
->  "fails" :)
-> 
-> If all you want to do is to bypass the following check, what's wrong
-> with actually doing that:
-> 
-> -	if (type != IRQ_TYPE_LEVEL_HIGH && type != IRQ_TYPE_EDGE_RISING)
-> +	if (gicirq >= 32 && type != IRQ_TYPE_LEVEL_HIGH &&
-> +	    type != IRQ_TYPE_EDGE_RISING)
-> 		return -EINVAL;
-> 
+We found Freescale imx6 and Rockchip rk3288 and Ingenic JZ4780 (Xburst/MIPS)
+use the interface compatible Designware HDMI IP, but they also have some
+lightly differences, such as phy pll configuration, register width(imx hdmi
+register is one byte, but rk3288 is 4 bytes width and can only be accessed
+by word), 4K support(imx6 doesn't support 4k, but rk3288 does), and HDMI2.0
+support.
 
-I think that will require some additional changes to gic_configure_irq
-(in irq-gic-common.c).
+To reuse the imx-hdmi driver, we make this patch set:
+(1): fix some CodingStyle warning to make checkpatch happy
+(2): convert imx-hdmi to drm_bridge
+(3): split platform specific code
+(4): move imx-hdmi to bridge/dw_hdmi
+(5): extend dw_hdmi.c to support rk3288 hdmi
+(6): add rockchip rk3288 platform specific code dw_hdmi-rockchip.c
 
-Thanks,
+Changes in v14:
+- add defer probing, adviced by Philipp Zabel
+- remove drm_connector_register, because imx-drm core has registered
+connector
 
-	M.
+Changes in v13:
+- patch against drm-next
+- split platform specific phy configuration
+- split phy configuration from patch#4
+
+Changes in v12:
+- refactor of_node_put(ddc_node)
+- squash patch <convert dw_hdmi to drm_bridge>
+- add comment for the depend on patch
+
+Changes in v11:
+- squash patch  <split some phy configuration to platform driver>
+
+Changes in v10:
+- split generic dw_hdmi.c improvements from patch#11 (add rk3288 support)
+- add more display mode support mpll configuration for rk3288
+
+Changes in v9:
+- move some phy configuration to platform driver
+
+Changes in v8:
+- correct some spelling mistake
+- modify ddc-i2c-bus and interrupt description
+- Add documentation for rockchip dw hdmi
+
+Changes in v7:
+- remove unused variables from structure dw_hdmi
+- remove a wrong modification
+- add copyrights for dw_hdmi-imx.c
+
+Changes in v6:
+- rearrange the patch order
+- refactor register access without reg_shift
+
+Changes in v5:
+- refactor reg-io-width
+
+Changes in v4:
+- fix checkpatch CHECK
+- defer probe ddc i2c adapter
+
+Changes in v3:
+- split multi-register access to one indepent patch
+
+Andy Yan (12):
+  drm: imx: imx-hdmi: make checkpatch happy
+  drm: imx: imx-hdmi: return defer if can't get ddc i2c adapter
+  drm: imx: imx-hdmi: convert imx-hdmi to drm_bridge mode
+  drm: imx: imx-hdmi: split phy configuration to platform driver
+  drm: imx: imx-hdmi: move imx-hdmi to bridge/dw_hdmi
+  dt-bindings: add document for dw_hdmi
+  drm: bridge/dw_hdmi: add support for multi-byte register width access
+  drm: bridge/dw_hdmi: add mode_valid support
+  drm: bridge/dw_hdmi: clear i2cmphy_stat0 reg in hdmi_phy_wait_i2c_done
+  drm: bridge/dw_hdmi: add function dw_hdmi_phy_enable_spare
+  dt-bindings: Add documentation for rockchip dw hdmi
+  drm: bridge/dw_hdmi: add rockchip rk3288 support
+
+ .../devicetree/bindings/drm/bridge/dw_hdmi.txt     |  40 ++
+ .../devicetree/bindings/video/dw_hdmi-rockchip.txt |  43 ++
+ drivers/gpu/drm/bridge/Kconfig                     |   5 +
+ drivers/gpu/drm/bridge/Makefile                    |   1 +
+ .../gpu/drm/{imx/imx-hdmi.c => bridge/dw_hdmi.c}   | 755 +++++++++------------
+ .../gpu/drm/{imx/imx-hdmi.h => bridge/dw_hdmi.h}   |   4 +-
+ drivers/gpu/drm/imx/Kconfig                        |   1 +
+ drivers/gpu/drm/imx/Makefile                       |   2 +-
+ drivers/gpu/drm/imx/dw_hdmi-imx.c                  | 281 ++++++++
+ drivers/gpu/drm/rockchip/Kconfig                   |  10 +
+ drivers/gpu/drm/rockchip/Makefile                  |   2 +-
+ drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c        | 355 ++++++++++
+ include/drm/bridge/dw_hdmi.h                       |  60 ++
+ 13 files changed, 1138 insertions(+), 421 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+ create mode 100644 Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
+ rename drivers/gpu/drm/{imx/imx-hdmi.c => bridge/dw_hdmi.c} (71%)
+ rename drivers/gpu/drm/{imx/imx-hdmi.h => bridge/dw_hdmi.h} (99%)
+ create mode 100644 drivers/gpu/drm/imx/dw_hdmi-imx.c
+ create mode 100644 drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
+ create mode 100644 include/drm/bridge/dw_hdmi.h
+
 -- 
-Jazz is not dead. It just smells funny...
+1.9.1
+
+
