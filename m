@@ -1,139 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537AbaLAUp3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 15:45:29 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:15813 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932248AbaLAUp0 (ORCPT
+	id S932552AbaLAUrB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 15:47:01 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:39056 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932243AbaLAUq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 15:45:26 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 01 Dec 2014 12:43:20 -0800
-Message-ID: <547CD380.3030707@nvidia.com>
-Date: Mon, 1 Dec 2014 12:45:52 -0800
-From: navneet kumar <navneetk@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Eduardo Valentin <edubezval@gmail.com>
-CC: <rui.zhang@intel.com>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] thermal: of: notify sensor driver on trip updates
-References: <1417050989-25405-1-git-send-email-navneetk@nvidia.com> <1417050989-25405-3-git-send-email-navneetk@nvidia.com> <20141127143236.GD3342@developer>
-In-Reply-To: <20141127143236.GD3342@developer>
-X-Originating-IP: [172.17.185.249]
-X-ClientProxiedBy: HQMAIL108.nvidia.com (172.18.146.13) To
- HQMAIL104.nvidia.com (172.18.146.11)
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Dec 2014 15:46:59 -0500
+From: Andrey Skvortsov <andrej.skvortzov@gmail.com>
+X-Google-Original-From: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Gary Zambrano <zambrano@broadcom.com>, Michael Buesch <m@bues.ch>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
+Subject: [PATCH] SSB / B44: fix WOL for BCM4401
+Date: Mon,  1 Dec 2014 23:46:38 +0300
+Message-Id: <1417466798-15735-1-git-send-email-Andrej.Skvortzov@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <20141201111125.GA11974@localhost.localdomain>
+References: <20141201111125.GA11974@localhost.localdomain>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eduardo,
+Wake On Lan was not working on laptop DELL Vostro 1500.
+If WOL was turned on, BCM4401 was powered up in suspend mode. LEDs blinked.
+But the laptop could not be woken up with the Magic Packet. The reason for
+that was that PCIE was not enabled as a system wakeup source and
+therefore the host PCI bridge was not powered up in suspend mode.
+PCIE was not enabled in suspend by PM because no child devices were
+registered as wakeup source during suspend process.
+On laptop BCM4401 is connected through the SSB bus, that is connected to the
+PCI-Express bus. SSB and B44 did not use standard PM wakeup functions
+and did not forward wakeup settings to their parents.
+To fix that B44 driver enables PM wakeup and registers new wakeup source
+using device_set_wakeup_enable(). Wakeup is automatically reported to the parent SSB
+bus via power.wakeup_path. SSB bus enables wakeup for the parent PCI bridge, if there is any
+child devices with enabled wakeup functionality. All other steps are
+done by PM core code.
 
-On 11/27/2014 06:32 AM, Eduardo Valentin wrote:
-> * PGP Signed by an unknown key
-> 
-> Hello Navneet,
-> 
-> On Wed, Nov 26, 2014 at 05:16:29PM -0800, Navneet Kumar wrote:
->> From: navneet kumar <navneetk@nvidia.com>
->>
->> some thermal sensor hardwares include logic which
->> can raise interrupts at certain programmed temperature
->> thresholds.
->>
->> Drivers for such sensors should be able to learn the
->> appropriate threshold temperatures for interrupts by querying
->> the thermal framework.
->>
->> This change provides a mechanism to allow a sensor driver to
->> update it's thresholds when userspace changes a trip point
->> temperature.
->>
->> While this behavior may not make sense in thermal zones
->> with more than one sensor, no such examples exist in
->> the kernel.
->>
->> Signed-off-by: navneet kumar <navneetk@nvidia.com>
->> ---
->>  drivers/thermal/of-thermal.c | 7 +++++++
->>  include/linux/thermal.h      | 1 +
->>  2 files changed, 8 insertions(+)
->>
->> diff --git a/drivers/thermal/of-thermal.c b/drivers/thermal/of-thermal.c
->> index 3d47a0cf3825..3568e4a586dc 100644
->> --- a/drivers/thermal/of-thermal.c
->> +++ b/drivers/thermal/of-thermal.c
->> @@ -258,6 +258,9 @@ static int of_thermal_set_trip_temp(struct thermal_zone_device *tz, int trip,
->>  	/* thermal framework should take care of data->mask & (1 << trip) */
->>  	data->trips[trip].temperature = temp;
->>  
->> +	if (data->sops.trip_update)
->> +		data->sops.trip_update(data->sensor_data, trip);
->> +
->>  	return 0;
->>  }
->>  
->> @@ -285,6 +288,9 @@ static int of_thermal_set_trip_hyst(struct thermal_zone_device *tz, int trip,
->>  	/* thermal framework should take care of data->mask & (1 << trip) */
->>  	data->trips[trip].hysteresis = hyst;
->>  
->> +	if (data->sops.trip_update)
->> +		data->sops.trip_update(data->sensor_data, trip);
->> +
->>  	return 0;
->>  }
->>  
->> @@ -500,6 +506,7 @@ void thermal_zone_of_sensor_unregister(struct device *dev,
->>  
->>  	tz->sops.get_temp = NULL;
->>  	tz->sops.get_trend = NULL;
->> +	tz->sops.trip_update = NULL;
->>  	tz->sensor_data = NULL;
->>  	mutex_unlock(&tzd->lock);
->>  }
->> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
->> index 58341c56a01f..b93e65815175 100644
->> --- a/include/linux/thermal.h
->> +++ b/include/linux/thermal.h
->> @@ -292,6 +292,7 @@ struct thermal_genl_event {
->>  struct thermal_of_sensor_ops {
->>  	int (*get_temp)(void *, long *);
->>  	int (*get_trend)(void *, long *);
->> +	int (*trip_update)(void *, int);
-> 
-> First thing I ask you is to update your work on top of my -linus branch,
-> as I already mentioned. Reasoning is that part of the changes you are
-> sending is already there.
-will do.
-> 
-> As for this new callback, I am fine with it as long as it is also
-> available for drivers that do not use of-thermal. Once again, of-thermal
-> is not a competitor of thermal core. It will never be. It is not a new
-> thermal API. 
-I agree that this callback is not a part of the thermal_core functionality.
-However, when a driver registers directly with the thermal_core (doesn't use
-of-thermal), it 'owns' the set_trip_XX callbacks in the first place; which is
-the sole purpose of using the 'trip_update' callback in of-thermal.
+Signed-off-by: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
+---
+ drivers/net/ethernet/broadcom/b44.c |    2 ++
+ drivers/ssb/pcihost_wrapper.c       |   33 ++++++++++++++++++++++-----------
+ 2 files changed, 24 insertions(+), 11 deletions(-)
 
-Adding an additional 'update' to the thermal_core ops would be a no-op. right?
-> 
-> That said, it does not make sense to have functionality in of-thermal that
-> do not belong to thermal core. Exceptions are, of course, for helping
-> doing the same operations we already have in thermal core.
-> 
-> All the best,
-> 
-> Eduardo Valentin
-> 
->>  };
->>  
->>  /* Function declarations */
->> -- 
->> 1.8.1.5
->>
-> 
-> * Unknown Key
-> * 0x7DA4E256
-> 
+diff --git a/drivers/net/ethernet/broadcom/b44.c b/drivers/net/ethernet/broadcom/b44.c
+index 416620f..ffeaf47 100644
+--- a/drivers/net/ethernet/broadcom/b44.c
++++ b/drivers/net/ethernet/broadcom/b44.c
+@@ -2104,6 +2104,7 @@ static int b44_set_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
+ 		bp->flags &= ~B44_FLAG_WOL_ENABLE;
+ 	spin_unlock_irq(&bp->lock);
+ 
++	device_set_wakeup_enable(bp->sdev->dev, wol->wolopts & WAKE_MAGIC);
+ 	return 0;
+ }
+ 
+@@ -2452,6 +2453,7 @@ static int b44_init_one(struct ssb_device *sdev,
+ 		}
+ 	}
+ 
++	device_set_wakeup_capable(sdev->dev, true);
+ 	netdev_info(dev, "%s %pM\n", DRV_DESCRIPTION, dev->dev_addr);
+ 
+ 	return 0;
+diff --git a/drivers/ssb/pcihost_wrapper.c b/drivers/ssb/pcihost_wrapper.c
+index 69161bb..410215c 100644
+--- a/drivers/ssb/pcihost_wrapper.c
++++ b/drivers/ssb/pcihost_wrapper.c
+@@ -11,15 +11,17 @@
+  * Licensed under the GNU/GPL. See COPYING for details.
+  */
+ 
++#include <linux/pm.h>
+ #include <linux/pci.h>
+ #include <linux/export.h>
+ #include <linux/slab.h>
+ #include <linux/ssb/ssb.h>
+ 
+ 
+-#ifdef CONFIG_PM
+-static int ssb_pcihost_suspend(struct pci_dev *dev, pm_message_t state)
++#ifdef CONFIG_PM_SLEEP
++static int ssb_pcihost_suspend(struct device *d)
+ {
++	struct pci_dev *dev = to_pci_dev(d);
+ 	struct ssb_bus *ssb = pci_get_drvdata(dev);
+ 	int err;
+ 
+@@ -28,17 +30,23 @@ static int ssb_pcihost_suspend(struct pci_dev *dev, pm_message_t state)
+ 		return err;
+ 	pci_save_state(dev);
+ 	pci_disable_device(dev);
+-	pci_set_power_state(dev, pci_choose_state(dev, state));
++
++	/* if there is a wakeup enabled child device on ssb bus,
++	   enable pci wakeup posibility. */
++	device_set_wakeup_enable(d, d->power.wakeup_path);
++
++	pci_prepare_to_sleep(dev);
+ 
+ 	return 0;
+ }
+ 
+-static int ssb_pcihost_resume(struct pci_dev *dev)
++static int ssb_pcihost_resume(struct device *d)
+ {
++	struct pci_dev *dev = to_pci_dev(d);
+ 	struct ssb_bus *ssb = pci_get_drvdata(dev);
+ 	int err;
+ 
+-	pci_set_power_state(dev, PCI_D0);
++	pci_back_from_sleep(dev);
+ 	err = pci_enable_device(dev);
+ 	if (err)
+ 		return err;
+@@ -49,10 +57,12 @@ static int ssb_pcihost_resume(struct pci_dev *dev)
+ 
+ 	return 0;
+ }
+-#else /* CONFIG_PM */
+-# define ssb_pcihost_suspend	NULL
+-# define ssb_pcihost_resume	NULL
+-#endif /* CONFIG_PM */
++
++static const struct dev_pm_ops ssb_pcihost_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(ssb_pcihost_suspend, ssb_pcihost_resume)
++};
++
++#endif /* CONFIG_PM_SLEEP */
+ 
+ static int ssb_pcihost_probe(struct pci_dev *dev,
+ 			     const struct pci_device_id *id)
+@@ -115,8 +125,9 @@ int ssb_pcihost_register(struct pci_driver *driver)
+ {
+ 	driver->probe = ssb_pcihost_probe;
+ 	driver->remove = ssb_pcihost_remove;
+-	driver->suspend = ssb_pcihost_suspend;
+-	driver->resume = ssb_pcihost_resume;
++#ifdef CONFIG_PM_SLEEP
++	driver->driver.pm = &ssb_pcihost_pm_ops;
++#endif
+ 
+ 	return pci_register_driver(driver);
+ }
+-- 
+1.7.2.5
+
