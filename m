@@ -1,104 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932246AbaLAToX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 14:44:23 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:56986 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932119AbaLAToV (ORCPT
+	id S1754102AbaLATqF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 14:46:05 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:46287 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753311AbaLATqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 14:44:21 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v3 05/11] memory: add Atmel EBI (External Bus Interface) driver
-Date: Mon, 01 Dec 2014 20:43:31 +0100
-Message-ID: <2476626.8iiXDzb2Te@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141201192923.6a85e52b@bbrezillon>
-References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com> <4214030.Z2iCEM6hVA@wuerfel> <20141201192923.6a85e52b@bbrezillon>
+	Mon, 1 Dec 2014 14:46:03 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [PATCH 2/3] i8k: Rework error retries
+Date: Mon, 1 Dec 2014 20:45:59 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+References: <1417381240-7641-1-git-send-email-linux@roeck-us.net> <1417381240-7641-2-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1417381240-7641-2-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:hWtdWL4J9AVuwNyeMBu4/lCwx51tIxhDdxaB4hLfL6p
- 3Oo13Q7QjDt0kmFRhTdsWrfbzrAHfA8co6x0FjgB19YVkZC8EH
- 1PxsvTUqMeZUgq+P+Mg4ldbyQ1HNp+NLzadbK4sp+5WlvSEWA3
- 3VtECY3mY6KzHBqbFbN0G9wzQskddn62Rbws66dqoJ/fahIKs5
- RQojceR3so7dqhOP5F0/Q/UrSoiCu2Iy3CplOLZaXfhQYI1iT/
- rONwX3Dxit0UdTFkJwlOzGLsZ18azXqxXq5aFfzfPX/QsYyyO3
- ql8abpFUlTtscdXVri9/mPD4NAFeG94RYysgc/8pHYJDR1+Qnu
- dxvunmL77UnQr0vSAdpg=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: multipart/signed;
+  boundary="nextPart1455025.ZsU8UBEka1";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201412012045.59404@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 01 December 2014 19:29:23 Boris Brezillon wrote:
-> Hi Arnd,
-> 
-> On Mon, 01 Dec 2014 17:26:27 +0100
-> Arnd Bergmann <arnd@arndb.de> wrote:
-> 
-> > On Monday 01 December 2014 11:27:21 Boris Brezillon wrote:
-> > > The EBI (External Bus Interface) is used to access external peripherals
-> > > (NOR, SRAM, NAND, and other specific devices like ethernet controllers).
-> > > Each device is assigned a CS line and an address range and can have its
-> > > own configuration (timings, access mode, bus width, ...).
-> > > This driver provides a generic DT binding to configure a device according
-> > > to its requirements.
-> > > For specific device controllers (like the NAND one) the SMC timings
-> > > should be configured by the controller driver through the matrix and
-> > > smc syscon regmaps.
-> > 
-> > Nice!
-> > 
-> > > +
-> > > +#define AT91_EBICSA_REGFIELD(soc)			\
-> > > +	REG_FIELD(soc ## _MATRIX_EBICSA_OFF, 0,		\
-> > > +		  AT91_MATRIX_EBI_NUM_CS - 1)
-> > > +
-> > > +#define AT91_MULTI_EBICSA_REGFIELD(soc, n)		\
-> > > +	REG_FIELD(soc ## _MATRIX_EBI ## n ## CSA_OFF,	\
-> > > +		  0, AT91_MATRIX_EBI_NUM_CS - 1)
-> > 
-> > I don't like the use macros that concatenate symbol names like
-> > this. Why not do either
-> > 
-> > - open-code the macro contents in the few uses, to allow
-> >   grepping for them, or
-> 
-> I'm not sure to get this one, are you suggesting to do something like
-> this:
-> 
-> #define AT91_EBICSA_REGFIELD(off)			\
-> 	REG_FIELD(ebicsa_off, AT91_MATRIX_EBI_NUM_CS - 1)
-> 
+--nextPart1455025.ZsU8UBEka1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-That would be acceptable too, but what I really meant is one step further:
+On Sunday 30 November 2014 22:00:39 Guenter Roeck wrote:
+> Instead of returning a previous value if the SMM code returns
+> an error when trying to read a temperature, retry once.
+> If that fails again, return -ENODATA. Also return -ENODATA if
+> an attempt is made to read the GPU temperature but the GPU is
+> currently turned off.
+>=20
+> Drop the I8K_TEMPERATURE_BUG definition and handle the related
+> bug unconditionally.
+>=20
+> Cc: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+> Applies on top of Pali's patch series.
+>=20
+>  drivers/char/i8k.c | 47
+> ++++++++++++++++++++++++----------------------- 1 file
+> changed, 24 insertions(+), 23 deletions(-)
+>=20
 
-static const struct reg_field at91sam9260_ebi_csa = 
-	REG_FIELD(AT91SAM9260_MATRIX_EBICSA_OFF, 0, AT91_MATRIX_EBI_NUM_CS - 1);
+Working fine GPU temp (turned on or off).
 
-> > - put the register number in the syscon reference and look it
-> >   up from there (this would be slightly more complicated for the
-> >   second macro)
-> 
-> I've told several times not to encode register offsets or register ids
-> in the DT :-) (and if I'm not mistaken that's what you're suggesting
-> here).
+Tested-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
 
-I think it's actually fine for syscon references, although in general
-I would agree with that. The difference in my opinion is that syscon
-by nature is a set of registers.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-	Arnd
+--nextPart1455025.ZsU8UBEka1
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlR8xXcACgkQi/DJPQPkQ1Jo+ACgw4LyEqUIZaC3TLjYvVNcVP9P
+XNQAoIkmi5pyhK0kqZwkxzqIvmDUk600
+=NGEm
+-----END PGP SIGNATURE-----
+
+--nextPart1455025.ZsU8UBEka1--
