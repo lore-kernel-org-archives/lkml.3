@@ -1,86 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372AbaLAL26 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 06:28:58 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:51251 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317AbaLAL24 (ORCPT
+	id S1753516AbaLAL3P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 06:29:15 -0500
+Received: from lucky1.263xmail.com ([211.157.147.131]:51989 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753004AbaLAL3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 06:28:56 -0500
-Date: Mon, 1 Dec 2014 12:28:44 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: David Hildenbrand <dahi@linux.vnet.ibm.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>, rusty@au1.ibm.com,
-        nab@linux-iscsi.org, pbonzini@redhat.com, thuth@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v7 16/46] virtio_blk: v1.0 support
-Message-ID: <20141201122844.1f0a0fa8.cornelia.huck@de.ibm.com>
-In-Reply-To: <20141201110136.1ff29a67@thinkpad-w530>
-References: <1417359787-10138-1-git-send-email-mst@redhat.com>
-	<1417359787-10138-17-git-send-email-mst@redhat.com>
-	<20141201091641.3085e682@thinkpad-w530>
-	<20141201092850.GD15607@redhat.com>
-	<20141201110136.1ff29a67@thinkpad-w530>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120111-0041-0000-0000-00000250B3DA
+	Mon, 1 Dec 2014 06:29:12 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <69961813cd62f1aff2ff6289bae75a48>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
+        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Andy Yan <andy.yan@rock-chips.com>
+Subject: [PATCH v14 11/12] dt-bindings: Add documentation for rockchip dw hdmi
+Date: Mon,  1 Dec 2014 19:28:44 +0800
+Message-Id: <1417433324-13255-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417432770-12719-1-git-send-email-andy.yan@rock-chips.com>
+References: <1417432770-12719-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Dec 2014 11:01:36 +0100
-David Hildenbrand <dahi@linux.vnet.ibm.com> wrote:
+Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
 
-> > On Mon, Dec 01, 2014 at 09:16:41AM +0100, David Hildenbrand wrote:
-> > > > Based on patch by Cornelia Huck.
-> > > > 
-> > > > Note: for consistency, and to avoid sparse errors,
-> > > >       convert all fields, even those no longer in use
-> > > >       for virtio v1.0.
-> > > > 
-> > > > Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-> > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > ...
-> > > > 
-> > > > -static unsigned int features[] = {
-> > > > +static unsigned int features_legacy[] = {
-> > > >  	VIRTIO_BLK_F_SEG_MAX, VIRTIO_BLK_F_SIZE_MAX, VIRTIO_BLK_F_GEOMETRY,
-> > > >  	VIRTIO_BLK_F_RO, VIRTIO_BLK_F_BLK_SIZE, VIRTIO_BLK_F_SCSI,
-> > > >  	VIRTIO_BLK_F_WCE, VIRTIO_BLK_F_TOPOLOGY, VIRTIO_BLK_F_CONFIG_WCE,
-> > > >  	VIRTIO_BLK_F_MQ,
-> > > > +}
-> > > > +;
-> > > > +static unsigned int features[] = {
-> > > > +	VIRTIO_BLK_F_SEG_MAX, VIRTIO_BLK_F_SIZE_MAX, VIRTIO_BLK_F_GEOMETRY,
-> > > > +	VIRTIO_BLK_F_RO, VIRTIO_BLK_F_BLK_SIZE,
-> > > > +	VIRTIO_BLK_F_TOPOLOGY,
-> > > > +	VIRTIO_BLK_F_MQ,
-> > > > +	VIRTIO_F_VERSION_1,
-> > > 
-> > > We can fit this into less lines, like done for features_legacy.
-> > 
-> > Wrt packing code more tightly, I did it like this to
-> > make it easier to compare the arrays.
-> > Each flag is on the same line in original and new array.
-> 
-> This just looks inconsistent to me.
-> 
-> 1. features_legacy is tightly packed
-> 2. half of features is tightly packed
-> 
-> So either all tightly packed or put every item on a single line. At least
-> that's what I would do :)
+---
 
-I agree with the reasoning that this makes it easy to compare legacy
-vs. standard at a glance, so I vote for keeping it this way.
+Changes in v14: None
+Changes in v13: None
+Changes in v12: None
+Changes in v11: None
+Changes in v10: None
+Changes in v9: None
+Changes in v8:
+- Add documentation for rockchip dw hdmi
+
+Changes in v7: None
+Changes in v6: None
+Changes in v5: None
+Changes in v4: None
+Changes in v3: None
+
+ .../devicetree/bindings/video/dw_hdmi-rockchip.txt | 43 ++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
+
+diff --git a/Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt b/Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
+new file mode 100644
+index 0000000..0735464
+--- /dev/null
++++ b/Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
+@@ -0,0 +1,43 @@
++Rockchip specific extensions to the Synopsys Designware HDMI
++================================
++
++Required properties:
++- compatible: "rockchip,rk3288-dw-hdmi";
++- reg: Physical base address and length of the controller's registers.
++- ddc-i2c-bus:  phandle of an I2C controller used for DDC EDID probing
++- clocks: from common clock binding: handle to hdmi clock.
++- clock-names: should be "clk" "hdcp_clk"
++- rockchip,grf: this soc should set GRF regs to mux vopl/vopb.
++- interrupts: HDMI interrupt number
++- ports: contain a port node with endpoint definitions as defined in
++  Documentation/devicetree/bindings/media/video-interfaces.txt. For
++  vopb,set the reg = <0> and set the reg = <1> for vopl.
++- reg-io-width: the width of the reg:1,4, the value should be 4 on
++  rk3288 platform
++
++Example:
++hdmi: hdmi@ff980000 {
++	compatible = "rockchip,rk3288-dw-hdmi";
++	reg = <0xff980000 0x20000>;
++	reg-io-width = <4>;
++	ddc-i2c-bus = <&i2c5>;
++	rockchip,grf = <&grf>;
++	interrupts = <GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>;
++	clocks = <&cru  PCLK_HDMI_CTRL>, <&cru SCLK_HDMI_HDCP>;
++	clock-names = "clk", "hdcp_clk";
++	status = "disabled";
++	ports {
++		hdmi_in: port {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			hdmi_in_vopb: endpoint@0 {
++				reg = <0>;
++				remote-endpoint = <&vopb_out_hdmi>;
++			};
++			hdmi_in_vopl: endpoint@1 {
++				reg = <1>;
++				remote-endpoint = <&vopl_out_hdmi>;
++			};
++		};
++	};
++};
+-- 
+1.9.1
+
 
