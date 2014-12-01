@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236AbaLAQFs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 11:05:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51747 "EHLO mx1.redhat.com"
+	id S932279AbaLAQMw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 11:12:52 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:38695 "EHLO lists.s-osg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932139AbaLAQFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 11:05:43 -0500
-Date: Mon, 1 Dec 2014 18:05:15 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Jason Wang <jasowang@redhat.com>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: [PATCH v8 30/50] vhost: add memory access wrappers
-Message-ID: <1417449619-24896-31-git-send-email-mst@redhat.com>
-References: <1417449619-24896-1-git-send-email-mst@redhat.com>
+	id S932120AbaLAQMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 11:12:49 -0500
+Message-ID: <547C9367.2070804@osg.samsung.com>
+Date: Mon, 01 Dec 2014 09:12:23 -0700
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417449619-24896-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: gregkh@linuxfoundation.org, akpm@linux-foundation.org, mmarek@suse.cz,
+        davem@davemloft.net, keescook@chromium.org, tranmanphong@gmail.com,
+        dh.herrmann@gmail.com, hughd@google.com, bobby.prani@gmail.com,
+        ebiederm@xmission.com, serge.hallyn@ubuntu.com,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
+        Shuah Khan <shuahkh@osg.samsung.com>
+Subject: Re: [PATCH v2 11/19] selftests/memory-hotplug: add install target
+ to enable installing test
+References: <cover.1415735831.git.shuahkh@osg.samsung.com> <8cdb2abb6eaa794801548e04ee6b9f403778e126.1415735831.git.shuahkh@osg.samsung.com> <5476BB87.6010808@hitachi.com>
+In-Reply-To: <5476BB87.6010808@hitachi.com>
+Content-Type: text/plain; charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add guest memory access wrappers to handle virtio endianness
-conversions.
+On 11/26/2014 10:49 PM, Masami Hiramatsu wrote:
+> (2014/11/12 5:27), Shuah Khan wrote:
+>> Add a new make target to enable installing test. This target
+>> installs test in the kselftest install location and add to the
+>> kselftest script to run the test. Install target can be run
+>> only from top level source dir.
+>>
+>> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+>> ---
+>>  tools/testing/selftests/memory-hotplug/Makefile    |  17 +-
+>>  .../selftests/memory-hotplug/mem-on-off-test.sh    | 238 +++++++++++++++++++++
+>>  .../selftests/memory-hotplug/on-off-test.sh        | 238 ---------------------
+>>  3 files changed, 253 insertions(+), 240 deletions(-)
+>>  create mode 100644 tools/testing/selftests/memory-hotplug/mem-on-off-test.sh
+>>  delete mode 100644 tools/testing/selftests/memory-hotplug/on-off-test.sh
+>>
+>> diff --git a/tools/testing/selftests/memory-hotplug/Makefile b/tools/testing/selftests/memory-hotplug/Makefile
+>> index d46b8d4..8921631 100644
+>> --- a/tools/testing/selftests/memory-hotplug/Makefile
+>> +++ b/tools/testing/selftests/memory-hotplug/Makefile
+>> @@ -1,9 +1,22 @@
+>> +TEST_STR=/bin/bash ./mem-on-off-test.sh -r 2 || echo memory-hotplug selftests: [FAIL]
+>> +
+>>  all:
+>>  
+>> +install:
+>> +ifdef INSTALL_KSFT_PATH
+>> +	install ./mem-on-off-test.sh $(INSTALL_KSFT_PATH)/mem-on-off-test.sh
+>> +	@echo echo Start memory hotplug test .... >> $(KSELFTEST)
+>> +	@echo "$(TEST_STR)" >> $(KSELFTEST) >> $(KSELFTEST)
+>> +	@echo echo End memory hotplug test .... >> $(KSELFTEST)
+>> +	@echo echo ============================== >> $(KSELFTEST)
+>> +else
+>> +	@echo Run make kselftest_install in top level source directory
+>> +endif
+> 
+> I saw this pattern repeated many times in this series.
+> Can we make it a macro and include it instead of repeating this code?
+> 
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Reviewed-by: Jason Wang <jasowang@redhat.com>
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
----
- drivers/vhost/vhost.h | 31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
+I might be able to move this to the selftest Makfile and use target as the
+string. I will play with it and see if I can reduce the duplication further.
 
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index 55a95c9..a0a6c98 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -176,4 +176,35 @@ static inline bool vhost_has_feature(struct vhost_virtqueue *vq, int bit)
- {
- 	return vq->acked_features & (1ULL << bit);
- }
-+
-+/* Memory accessors */
-+static inline u16 vhost16_to_cpu(struct vhost_virtqueue *vq, __virtio16 val)
-+{
-+	return __virtio16_to_cpu(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
-+}
-+
-+static inline __virtio16 cpu_to_vhost16(struct vhost_virtqueue *vq, u16 val)
-+{
-+	return __cpu_to_virtio16(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
-+}
-+
-+static inline u32 vhost32_to_cpu(struct vhost_virtqueue *vq, __virtio32 val)
-+{
-+	return __virtio32_to_cpu(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
-+}
-+
-+static inline __virtio32 cpu_to_vhost32(struct vhost_virtqueue *vq, u32 val)
-+{
-+	return __cpu_to_virtio32(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
-+}
-+
-+static inline u64 vhost64_to_cpu(struct vhost_virtqueue *vq, __virtio64 val)
-+{
-+	return __virtio64_to_cpu(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
-+}
-+
-+static inline __virtio64 cpu_to_vhost64(struct vhost_virtqueue *vq, u64 val)
-+{
-+	return __cpu_to_virtio64(vhost_has_feature(vq, VIRTIO_F_VERSION_1), val);
-+}
- #endif
+thanks,
+-- Shuah
+
+
 -- 
-MST
-
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
