@@ -1,121 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546AbaLABbD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 20:31:03 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:35373 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204AbaLABbA (ORCPT
+	id S1752566AbaLABcP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 20:32:15 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:21295 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752064AbaLABcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 20:31:00 -0500
-From: Ethan Zhao <ethan.zhao@oracle.com>
-To: dirk.j.brandewie@intel.com, linda.knippers@hp.com, viresh.kumar@linaro.org,
-        rjw@rjwysocki.net, corbet@lwn.net
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, ethan.kernel@gmail.com,
-        Ethan Zhao <ethan.zhao@oracle.com>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: [PATCH 1/2 V5] intel_pstate: skip this driver if Sun server has _PPC method
-Date: Mon,  1 Dec 2014 10:30:23 +0900
-Message-Id: <1417397423-29511-1-git-send-email-ethan.zhao@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Sun, 30 Nov 2014 20:32:13 -0500
+Message-ID: <547BC518.40806@fb.com>
+Date: Sun, 30 Nov 2014 18:32:08 -0700
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Shaohua Li <shli@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] blk-mq: move the kdump check to blk_mq_alloc_tag_set
+References: <8bbd9edbdc0c1e8550af9607d3765a44145be5bd.1417391479.git.shli@kernel.org>
+In-Reply-To: <8bbd9edbdc0c1e8550af9607d3765a44145be5bd.1417391479.git.shli@kernel.org>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-11-30_03:2014-11-28,2014-11-30,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.84241510936545e-13 kscore.compositescore=0
+ circleOfTrustscore=502.112 compositescore=0.986137415400633
+ urlsuspect_oldscore=0.986137415400633 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.986137415400633 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412010014
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oracle Sun X86 servers have dynamic power capping capability that works via
-ACPI _PPC method etc, so skip loading this driver if Sun server has ACPI _PPC
-enabled.
+On 11/30/2014 05:00 PM, Shaohua Li wrote:
+> We call blk_mq_alloc_tag_set() first then blk_mq_init_queue(). The requests are
+> allocated in the former function. So the kdump check should be moved to there
+> to really save memory.
 
-Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
-Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-Tested-by: Linda Knippers <linda.knippers@hp.com>
----
-  v2: fix break HP Proliant issue.
-  v3: expand the hardware vendor list.
-  v4: refine code.
-  v5: change enum PCC to PPC.
+Strange, it was even tested, but must have been altered after the fact. 
+Patch looks good to me, applied.
 
- drivers/cpufreq/intel_pstate.c | 45 ++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 41 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 27bb6d3..1bb62ca 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -943,15 +943,46 @@ static bool intel_pstate_no_acpi_pss(void)
- 	return true;
- }
- 
-+static bool intel_pstate_has_acpi_ppc(void)
-+{
-+	int i;
-+
-+	for_each_possible_cpu(i) {
-+		struct acpi_processor *pr = per_cpu(processors, i);
-+
-+		if (!pr)
-+			continue;
-+		if (acpi_has_method(pr->handle, "_PPC"))
-+			return true;
-+	}
-+	return false;
-+}
-+
-+enum {
-+	PSS,
-+	PPC,
-+};
-+
- struct hw_vendor_info {
- 	u16  valid;
- 	char oem_id[ACPI_OEM_ID_SIZE];
- 	char oem_table_id[ACPI_OEM_TABLE_ID_SIZE];
-+	int  oem_pwr_table;
- };
- 
- /* Hardware vendor-specific info that has its own power management modes */
- static struct hw_vendor_info vendor_info[] = {
--	{1, "HP    ", "ProLiant"},
-+	{1, "HP    ", "ProLiant", PSS},
-+	{1, "ORACLE", "X4-2    ", PPC},
-+	{1, "ORACLE", "X4-2L   ", PPC},
-+	{1, "ORACLE", "X4-2B   ", PPC},
-+	{1, "ORACLE", "X3-2    ", PPC},
-+	{1, "ORACLE", "X3-2L   ", PPC},
-+	{1, "ORACLE", "X3-2B   ", PPC},
-+	{1, "ORACLE", "X4470M2 ", PPC},
-+	{1, "ORACLE", "X4270M3 ", PPC},
-+	{1, "ORACLE", "X4270M2 ", PPC},
-+	{1, "ORACLE", "X4170M2 ", PPC},
- 	{0, "", ""},
- };
- 
-@@ -966,15 +997,21 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
- 
- 	for (v_info = vendor_info; v_info->valid; v_info++) {
- 		if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
--		    !strncmp(hdr.oem_table_id, v_info->oem_table_id, ACPI_OEM_TABLE_ID_SIZE) &&
--		    intel_pstate_no_acpi_pss())
--			return true;
-+			!strncmp(hdr.oem_table_id, v_info->oem_table_id,
-+						ACPI_OEM_TABLE_ID_SIZE))
-+			switch (v_info->oem_pwr_table) {
-+			case PSS:
-+				return intel_pstate_no_acpi_pss();
-+			case PCC:
-+				return intel_pstate_has_acpi_ppc();
-+			}
- 	}
- 
- 	return false;
- }
- #else /* CONFIG_ACPI not enabled */
- static inline bool intel_pstate_platform_pwr_mgmt_exists(void) { return false; }
-+static inline bool intel_pstate_has_acpi_ppc(void) { return false; }
- #endif /* CONFIG_ACPI */
- 
- static int __init intel_pstate_init(void)
 -- 
-1.8.3.1
+Jens Axboe
 
