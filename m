@@ -1,85 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097AbaLAPpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 10:45:15 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:49364 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753685AbaLAPpN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 10:45:13 -0500
+	id S932106AbaLAPp4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 10:45:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49368 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753838AbaLAPpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 10:45:55 -0500
+Date: Mon, 1 Dec 2014 17:45:35 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v7 31/46] vhost: virtio 1.0 endian-ness support
+Message-ID: <20141201154535.GA22432@redhat.com>
+References: <1417359787-10138-1-git-send-email-mst@redhat.com>
+ <1417359787-10138-32-git-send-email-mst@redhat.com>
+ <20141201133353.0bbaa2e1.cornelia.huck@de.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <547C86BF.2040705@citrix.com>
-References: <1417040805-15857-1-git-send-email-mcgrof@do-not-panic.com>
- <5476C66F.5040308@suse.com> <20141127183616.GV25677@wotan.suse.de>
- <547C4CEF.1010603@citrix.com> <20141201150546.GC25677@wotan.suse.de> <547C86BF.2040705@citrix.com>
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-Date: Mon, 1 Dec 2014 10:44:50 -0500
-X-Google-Sender-Auth: CzGAbo1oTtTvGZJX7F4TQh0xGao
-Message-ID: <CAB=NE6WPvCJnAfdbZqcw5pJtZrfxo0zQu6J2gpXp69G-UTtiUg@mail.gmail.com>
-Subject: Re: [PATCH] xen: privcmd: schedule() after private hypercall when non CONFIG_PREEMPT
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Juergen Gross <jgross@suse.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        boris.ostrovsky@oracle.com, xen-devel@lists.xenproject.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, kvm@vger.kernel.org, Davidlohr Bueso <dbueso@suse.de>,
-        Joerg Roedel <jroedel@suse.de>, Borislav Petkov <bp@suse.de>,
-        Jan Beulich <JBeulich@suse.com>, Olaf Hering <ohering@suse.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141201133353.0bbaa2e1.cornelia.huck@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 1, 2014 at 10:18 AM, David Vrabel <david.vrabel@citrix.com> wrote:
-> On 01/12/14 15:05, Luis R. Rodriguez wrote:
->> On Mon, Dec 01, 2014 at 11:11:43AM +0000, David Vrabel wrote:
->>> On 27/11/14 18:36, Luis R. Rodriguez wrote:
->>>> On Thu, Nov 27, 2014 at 07:36:31AM +0100, Juergen Gross wrote:
->>>>> On 11/26/2014 11:26 PM, Luis R. Rodriguez wrote:
->>>>>> From: "Luis R. Rodriguez" <mcgrof@suse.com>
->>>>>>
->>>>>> Some folks had reported that some xen hypercalls take a long time
->>>>>> to complete when issued from the userspace private ioctl mechanism,
->>>>>> this can happen for instance with some hypercalls that have many
->>>>>> sub-operations, this can happen for instance on hypercalls that use
->>> [...]
->>>>>> --- a/drivers/xen/privcmd.c
->>>>>> +++ b/drivers/xen/privcmd.c
->>>>>> @@ -60,6 +60,9 @@ static long privcmd_ioctl_hypercall(void __user *udata)
->>>>>>                              hypercall.arg[0], hypercall.arg[1],
->>>>>>                              hypercall.arg[2], hypercall.arg[3],
->>>>>>                              hypercall.arg[4]);
->>>>>> +#ifndef CONFIG_PREEMPT
->>>>>> + schedule();
->>>>>> +#endif
->>>
->>> As Juergen points out, this does nothing.  You need to schedule while in
->>> the middle of the hypercall.
->>>
->>> Remember that Xen's hypercall preemption only preempts the hypercall to
->>> run interrupts in the guest.
->>
->> How is it ensured that when the kernel preempts on this code path on
->> CONFIG_PREEMPT=n kernel that only interrupts in the guest are run?
->
-> Sorry, I really didn't describe this very well.
->
-> If a hypercall needs a continuation, Xen returns to the guest with the
-> IP set to the hypercall instruction, and on the way back to the guest
-> Xen may schedule a different VCPU or it will do any upcalls (as per normal).
->
-> The guest is free to return from the upcall to the original task
-> (continuing the hypercall) or to a different one.
+On Mon, Dec 01, 2014 at 01:33:53PM +0100, Cornelia Huck wrote:
+> On Sun, 30 Nov 2014 17:11:49 +0200
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  drivers/vhost/vhost.c | 93 +++++++++++++++++++++++++++++++--------------------
+> >  1 file changed, 56 insertions(+), 37 deletions(-)
+> > 
+> 
+> > @@ -1113,18 +1120,19 @@ static int get_indirect(struct vhost_virtqueue *vq,
+> >  {
+> >  	struct vring_desc desc;
+> >  	unsigned int i = 0, count, found = 0;
+> > +	u32 len = vhost32_to_cpu(vq, indirect->len);
+> >  	int ret;
+> > 
+> >  	/* Sanity check */
+> > -	if (unlikely(indirect->len % sizeof desc)) {
+> > +	if (unlikely(len % sizeof desc)) {
+> >  		vq_err(vq, "Invalid length in indirect descriptor: "
+> >  		       "len 0x%llx not multiple of 0x%zx\n",
+> > -		       (unsigned long long)indirect->len,
+> > +		       (unsigned long long)vhost32_to_cpu(vq, indirect->len),
+> 
+> Can't you use len here?
+> 
+> >  		       sizeof desc);
+> >  		return -EINVAL;
+> >  	}
+> > 
+> > -	ret = translate_desc(vq, indirect->addr, indirect->len, vq->indirect,
+> > +	ret = translate_desc(vq, vhost64_to_cpu(vq, indirect->addr), len, vq->indirect,
+> >  			     UIO_MAXIOV);
+> >  	if (unlikely(ret < 0)) {
+> >  		vq_err(vq, "Translation failure %d in indirect.\n", ret);
+> 
+> 
+> > @@ -1404,7 +1422,7 @@ int vhost_add_used_n(struct vhost_virtqueue *vq, struct vring_used_elem *heads,
+> > 
+> >  	/* Make sure buffer is written before we update index. */
+> >  	smp_wmb();
+> > -	if (put_user(vq->last_used_idx, &vq->used->idx)) {
+> > +	if (__put_user(cpu_to_vhost16(vq, vq->last_used_idx), &vq->used->idx)) {
+> 
+> Why s/put_user/__put_user/ - I don't see how endianness conversions
+> should have an influence there?
+> 
+> >  		vq_err(vq, "Failed to increment used idx");
+> >  		return -EFAULT;
+> >  	}
+> 
+> > @@ -1449,11 +1468,11 @@ static bool vhost_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+> >  	if (unlikely(!v))
+> >  		return true;
+> > 
+> > -	if (get_user(event, vhost_used_event(vq))) {
+> > +	if (__get_user(event, vhost_used_event(vq))) {
+> 
+> Dito: why the change?
 
-OK so that addresses what Xen will do when using continuation and
-hypercall preemption, my concern here was that using
-preempt_schedule_irq() on CONFIG_PREEMPT=n kernels in the middle of a
-hypercall on the return from an interrupt (e.g., the timer interrupt)
-would still let the kernel preempt to tasks other than those related
-to Xen.
+I remember now.
+put_user/get_user macros don't work well
+with __virtio tags.
 
-My gripe was that if this was being done it'd be a bit abusive of the
-API even if its safe.
+As __ are a good idea anyway, I just switched to that
+everywhere.
 
-  Luis
+
+
+> >  		vq_err(vq, "Failed to get used event idx");
+> >  		return true;
+> >  	}
+> > -	return vring_need_event(event, new, old);
+> > +	return vring_need_event(vhost16_to_cpu(vq, event), new, old);
+> >  }
+> > 
+> >  /* This actually signals the guest, using eventfd. */
