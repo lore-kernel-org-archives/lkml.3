@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932469AbaLAQHj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 11:07:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44797 "EHLO mx1.redhat.com"
+	id S932489AbaLAQIo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 11:08:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44370 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932254AbaLAQHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 11:07:36 -0500
-Date: Mon, 1 Dec 2014 18:06:39 +0200
+	id S932397AbaLAQHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 11:07:17 -0500
+Date: Mon, 1 Dec 2014 18:06:55 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
         thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Atzm Watanabe <atzm@stratosphere.co.jp>,
-        Tom Herbert <therbert@google.com>,
-        Willem de Bruijn <willemb@google.com>, netdev@vger.kernel.org
-Subject: [PATCH v8 46/50] af_packet: virtio 1.0 stubs
-Message-ID: <1417449619-24896-47-git-send-email-mst@redhat.com>
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: [PATCH v8 49/50] virtio: make VIRTIO_F_VERSION_1 a transport bit
+Message-ID: <1417449619-24896-50-git-send-email-mst@redhat.com>
 References: <1417449619-24896-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -30,98 +26,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This merely fixes sparse warnings, without actually
-adding support for the new APIs.
-
-Still working out the best way to enable the new
-functionality.
+Activate VIRTIO_F_VERSION_1 automatically unless legacy_only
+is set.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- net/packet/af_packet.c | 35 ++++++++++++++++++++++-------------
- 1 file changed, 22 insertions(+), 13 deletions(-)
+ include/uapi/linux/virtio_config.h | 4 ++--
+ drivers/virtio/virtio.c            | 6 +++++-
+ drivers/virtio/virtio_ring.c       | 2 ++
+ 3 files changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index 87d20f4..d4a877e 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -2444,13 +2444,15 @@ static int packet_snd(struct socket *sock, struct msghdr *msg, size_t len)
- 			goto out_unlock;
+diff --git a/include/uapi/linux/virtio_config.h b/include/uapi/linux/virtio_config.h
+index 4d05671..a6d0cde 100644
+--- a/include/uapi/linux/virtio_config.h
++++ b/include/uapi/linux/virtio_config.h
+@@ -43,11 +43,11 @@
+ /* We've given up on this device. */
+ #define VIRTIO_CONFIG_S_FAILED		0x80
  
- 		if ((vnet_hdr.flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) &&
--		    (vnet_hdr.csum_start + vnet_hdr.csum_offset + 2 >
--		      vnet_hdr.hdr_len))
--			vnet_hdr.hdr_len = vnet_hdr.csum_start +
--						 vnet_hdr.csum_offset + 2;
-+		    (__virtio16_to_cpu(false, vnet_hdr.csum_start) +
-+		     __virtio16_to_cpu(false, vnet_hdr.csum_offset) + 2 >
-+		      __virtio16_to_cpu(false, vnet_hdr.hdr_len)))
-+			vnet_hdr.hdr_len = __cpu_to_virtio16(false,
-+				 __virtio16_to_cpu(false, vnet_hdr.csum_start) +
-+				__virtio16_to_cpu(false, vnet_hdr.csum_offset) + 2);
+-/* Some virtio feature bits (currently bits 28 through 31) are reserved for the
++/* Some virtio feature bits (currently bits 28 through 32) are reserved for the
+  * transport being used (eg. virtio_ring), the rest are per-device feature
+  * bits. */
+ #define VIRTIO_TRANSPORT_F_START	28
+-#define VIRTIO_TRANSPORT_F_END		32
++#define VIRTIO_TRANSPORT_F_END		33
  
- 		err = -EINVAL;
--		if (vnet_hdr.hdr_len > len)
-+		if (__virtio16_to_cpu(false, vnet_hdr.hdr_len) > len)
- 			goto out_unlock;
+ /* Do we get callbacks when the ring is completely used, even if we've
+  * suppressed them? */
+diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
+index f9ad99c..fa6b75d 100644
+--- a/drivers/virtio/virtio.c
++++ b/drivers/virtio/virtio.c
+@@ -197,7 +197,11 @@ static int virtio_dev_probe(struct device *_d)
+ 		driver_features_legacy = driver_features;
+ 	}
  
- 		if (vnet_hdr.gso_type != VIRTIO_NET_HDR_GSO_NONE) {
-@@ -2492,7 +2494,8 @@ static int packet_snd(struct socket *sock, struct msghdr *msg, size_t len)
- 	err = -ENOBUFS;
- 	hlen = LL_RESERVED_SPACE(dev);
- 	tlen = dev->needed_tailroom;
--	skb = packet_alloc_skb(sk, hlen + tlen, hlen, len, vnet_hdr.hdr_len,
-+	skb = packet_alloc_skb(sk, hlen + tlen, hlen, len,
-+			       __virtio16_to_cpu(false, vnet_hdr.hdr_len),
- 			       msg->msg_flags & MSG_DONTWAIT, &err);
- 	if (skb == NULL)
- 		goto out_unlock;
-@@ -2534,14 +2537,16 @@ static int packet_snd(struct socket *sock, struct msghdr *msg, size_t len)
- 
- 	if (po->has_vnet_hdr) {
- 		if (vnet_hdr.flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) {
--			if (!skb_partial_csum_set(skb, vnet_hdr.csum_start,
--						  vnet_hdr.csum_offset)) {
-+			u16 s = __virtio16_to_cpu(false, vnet_hdr.csum_start);
-+			u16 o = __virtio16_to_cpu(false, vnet_hdr.csum_offset);
-+			if (!skb_partial_csum_set(skb, s, o)) {
- 				err = -EINVAL;
- 				goto out_free;
- 			}
- 		}
- 
--		skb_shinfo(skb)->gso_size = vnet_hdr.gso_size;
-+		skb_shinfo(skb)->gso_size =
-+			__virtio16_to_cpu(false, vnet_hdr.gso_size);
- 		skb_shinfo(skb)->gso_type = gso_type;
- 
- 		/* Header must be checked, and gso_segs computed. */
-@@ -2912,8 +2917,10 @@ static int packet_recvmsg(struct kiocb *iocb, struct socket *sock,
- 			struct skb_shared_info *sinfo = skb_shinfo(skb);
- 
- 			/* This is a hint as to how much should be linear. */
--			vnet_hdr.hdr_len = skb_headlen(skb);
--			vnet_hdr.gso_size = sinfo->gso_size;
-+			vnet_hdr.hdr_len =
-+				__cpu_to_virtio16(false, skb_headlen(skb));
-+			vnet_hdr.gso_size =
-+				__cpu_to_virtio16(false, sinfo->gso_size);
- 			if (sinfo->gso_type & SKB_GSO_TCPV4)
- 				vnet_hdr.gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
- 			else if (sinfo->gso_type & SKB_GSO_TCPV6)
-@@ -2931,8 +2938,10 @@ static int packet_recvmsg(struct kiocb *iocb, struct socket *sock,
- 
- 		if (skb->ip_summed == CHECKSUM_PARTIAL) {
- 			vnet_hdr.flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
--			vnet_hdr.csum_start = skb_checksum_start_offset(skb);
--			vnet_hdr.csum_offset = skb->csum_offset;
-+			vnet_hdr.csum_start = __cpu_to_virtio16(false,
-+					  skb_checksum_start_offset(skb));
-+			vnet_hdr.csum_offset = __cpu_to_virtio16(false,
-+							 skb->csum_offset);
- 		} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
- 			vnet_hdr.flags = VIRTIO_NET_HDR_F_DATA_VALID;
- 		} /* else everything is zero */
+-	if (driver_features & device_features & (1ULL << VIRTIO_F_VERSION_1))
++	/* Detect legacy-only drivers and disable VIRTIO_F_VERSION_1. */
++	if (drv->legacy_only)
++		device_features &= ~(1ULL << VIRTIO_F_VERSION_1);
++
++	if (device_features & (1ULL << VIRTIO_F_VERSION_1))
+ 		dev->features = driver_features & device_features;
+ 	else
+ 		dev->features = driver_features_legacy & device_features;
+diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+index 55532a4..00ec6b3 100644
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -780,6 +780,8 @@ void vring_transport_features(struct virtio_device *vdev)
+ 			break;
+ 		case VIRTIO_RING_F_EVENT_IDX:
+ 			break;
++		case VIRTIO_F_VERSION_1:
++			break;
+ 		default:
+ 			/* We don't understand this bit. */
+ 			__virtio_clear_bit(vdev, i);
 -- 
 MST
 
