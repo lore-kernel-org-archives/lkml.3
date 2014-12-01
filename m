@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932900AbaLAXJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 18:09:28 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:38758 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932553AbaLAXJZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 18:09:25 -0500
-Date: Mon, 1 Dec 2014 18:08:38 -0500
-From: Chris Mason <clm@fb.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Dave Jones <davej@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141201230339.GA20487@ret.masoncoding.com>
-Mail-Followup-To: Chris Mason <clm@fb.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	=?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-	Dave Jones <davej@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <CA+55aFz-JUX6CU-aO+cwLHYtH7BA+dgyUnEGoy8T4S62gEDFpA@mail.gmail.com>
- <20141127225637.GA24019@redhat.com>
- <m5dart$co$1@ger.gmane.org>
- <CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
- <547b8a45.6e608c0a.20f9.1002@mx.google.com>
- <CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
- <547bbe36.48548c0a.105c.779c@mx.google.com>
- <20141201191431.GA17385@linux.vnet.ibm.com>
- <547ccf74.a5198c0a.25de.26d9@mx.google.com>
- <CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-02_01:2014-12-01,2014-12-01,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=70.7710805427282
- compositescore=0.182402046397986 urlsuspect_oldscore=0.182402046397986
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=1996008
- rbsscore=0.182402046397986 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1412010220
-X-FB-Internal: deliver
+	id S932913AbaLAXJh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 18:09:37 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46610 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932553AbaLAXJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 18:09:33 -0500
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 0/9] perf/core improvements
+Date: Mon,  1 Dec 2014 20:09:15 -0300
+Message-Id: <1417475364-27371-1-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm not sure if this is related, but running trinity here, I noticed it
-was stuck at 100% system time on every CPU.  perf report tells me we are
-spending all of our time in spin_lock under the sync system call.
+Hi Ingo,
 
-I think it's coming from contention in the bdi_queue_work() call from
-inside sync_inodes_sb, which is spin_lock_bh(). 
+	Please consider pulling, on top of one previous pull request.
 
-I wonder if we're just spinning so hard on this one bh lock that we're
-starving the watchdog?
+- Arnaldo
 
-Dave, do you have spinlock debugging on?  
 
--chris
+The following changes since commit 1d9e446b91e182055d874fbb30150aad479a4981:
+
+  perf tools: Add snapshot format file parsing (2014-11-24 18:03:51 -0300)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo-2
+
+for you to fetch changes up to 09a6a1b07e5a579ef770d9728f5b158408c73c23:
+
+  perf report: In branch stack mode use address history sorting (2014-12-01 20:00:31 -0300)
+
+----------------------------------------------------------------
+perf/core improvements:
+
+User visible:
+
+o Support handling complete branch stacks as histograms (Andi Kleen)
+
+Infrastructure:
+
+o Prep work for supporting per-pkg and snapshot counters in 'perf stat' (Jiri Olsa)
+
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+----------------------------------------------------------------
+Andi Kleen (3):
+      perf callchain: Support handling complete branch stacks as histograms
+      perf report: Add --branch-history option
+      perf report: In branch stack mode use address history sorting
+
+Jiri Olsa (6):
+      perf stat: Use perf_evsel__read_cb in read_counter
+      perf stat: Make read_counter work over the thread dimension
+      perf stat: Use read_counter in read_counter_aggr
+      perf tools: Remove perf_evsel__read interface
+      perf stat: Add support for per-pkg counters
+      perf stat: Add support for snapshot counters
+
+ tools/perf/Documentation/perf-report.txt |  12 ++-
+ tools/perf/builtin-report.c              |  31 ++++++--
+ tools/perf/builtin-stat.c                | 105 +++++++++++++++++++++++---
+ tools/perf/util/callchain.c              |   4 +
+ tools/perf/util/callchain.h              |   1 +
+ tools/perf/util/evsel.c                  |  34 ---------
+ tools/perf/util/evsel.h                  |  30 +-------
+ tools/perf/util/machine.c                | 126 ++++++++++++++++++++++++++++---
+ tools/perf/util/symbol.h                 |   3 +-
+ 9 files changed, 257 insertions(+), 89 deletions(-)
