@@ -1,144 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932756AbaLAWgP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 17:36:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52133 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932726AbaLAWgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 17:36:13 -0500
-Date: Mon, 1 Dec 2014 23:36:11 +0100
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Juergen Gross <jgross@suse.com>, Joerg Roedel <jroedel@suse.de>,
-        kvm@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        x86@kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <dbueso@suse.de>, Jan Beulich <JBeulich@suse.com>,
-        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
-        Borislav Petkov <bp@suse.de>, Olaf Hering <ohering@suse.de>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen: privcmd: schedule() after private
-	hypercall when non CONFIG_PREEMPT
-Message-ID: <20141201223611.GM25677@wotan.suse.de>
-References: <1417040805-15857-1-git-send-email-mcgrof@do-not-panic.com> <5476C66F.5040308@suse.com> <20141127183616.GV25677@wotan.suse.de> <547C4CEF.1010603@citrix.com> <20141201150546.GC25677@wotan.suse.de> <547C86BF.2040705@citrix.com> <CAB=NE6WPvCJnAfdbZqcw5pJtZrfxo0zQu6J2gpXp69G-UTtiUg@mail.gmail.com> <547C8F30.1010306@citrix.com> <20141201161905.GH25677@wotan.suse.de> <547CB07C.1050507@citrix.com>
+	id S932799AbaLAWgl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 17:36:41 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:60960 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932521AbaLAWgj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 17:36:39 -0500
+Date: Mon, 1 Dec 2014 14:35:13 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Stefan Agner <stefan@agner.ch>
+Cc: Feng Kan <fkan@apm.com>, mark.rutland@arm.com, shawn.guo@linaro.org,
+        kernel@pengutronix.de, Arnd Bergmann <arnd@arndb.de>, sre@kernel.org,
+        grant.likely@linaro.org, robh+dt@kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] power: reset: read priority from device tree
+Message-ID: <20141201223513.GA32035@roeck-us.net>
+References: <1417453389-1588-1-git-send-email-stefan@agner.ch>
+ <1417453389-1588-2-git-send-email-stefan@agner.ch>
+ <CAL85gmBq30pWxP0buKbM8so6QqsJq2YojiSK1EWtMPsH_7foeg@mail.gmail.com>
+ <ea4f7a2bfdb9bea45cab9418c211083b@agner.ch>
+ <CAL85gmBNE7oDbE+LX+V=AFJO61Ta0Gekoq6sDb8TkEnoPsNFVA@mail.gmail.com>
+ <20141201174215.GB24692@roeck-us.net>
+ <3916ca2867ced70e16903d6d44aaae8f@agner.ch>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <547CB07C.1050507@citrix.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <3916ca2867ced70e16903d6d44aaae8f@agner.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020208.547CED77.0057,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 14
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 06:16:28PM +0000, David Vrabel wrote:
-> On 01/12/14 16:19, Luis R. Rodriguez wrote:
-> > On Mon, Dec 01, 2014 at 03:54:24PM +0000, David Vrabel wrote:
-> >> On 01/12/14 15:44, Luis R. Rodriguez wrote:
-> >>> On Mon, Dec 1, 2014 at 10:18 AM, David Vrabel <david.vrabel@citrix.com> wrote:
-> >>>> On 01/12/14 15:05, Luis R. Rodriguez wrote:
-> >>>>> On Mon, Dec 01, 2014 at 11:11:43AM +0000, David Vrabel wrote:
-> >>>>>> On 27/11/14 18:36, Luis R. Rodriguez wrote:
-> >>>>>>> On Thu, Nov 27, 2014 at 07:36:31AM +0100, Juergen Gross wrote:
-> >>>>>>>> On 11/26/2014 11:26 PM, Luis R. Rodriguez wrote:
-> >>>>>>>>> From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> >>>>>>>>>
-> >>>>>>>>> Some folks had reported that some xen hypercalls take a long time
-> >>>>>>>>> to complete when issued from the userspace private ioctl mechanism,
-> >>>>>>>>> this can happen for instance with some hypercalls that have many
-> >>>>>>>>> sub-operations, this can happen for instance on hypercalls that use
-> >>>>>> [...]
-> >>>>>>>>> --- a/drivers/xen/privcmd.c
-> >>>>>>>>> +++ b/drivers/xen/privcmd.c
-> >>>>>>>>> @@ -60,6 +60,9 @@ static long privcmd_ioctl_hypercall(void __user *udata)
-> >>>>>>>>>                              hypercall.arg[0], hypercall.arg[1],
-> >>>>>>>>>                              hypercall.arg[2], hypercall.arg[3],
-> >>>>>>>>>                              hypercall.arg[4]);
-> >>>>>>>>> +#ifndef CONFIG_PREEMPT
-> >>>>>>>>> + schedule();
-> >>>>>>>>> +#endif
-> >>>>>>
-> >>>>>> As Juergen points out, this does nothing.  You need to schedule while in
-> >>>>>> the middle of the hypercall.
-> >>>>>>
-> >>>>>> Remember that Xen's hypercall preemption only preempts the hypercall to
-> >>>>>> run interrupts in the guest.
-> >>>>>
-> >>>>> How is it ensured that when the kernel preempts on this code path on
-> >>>>> CONFIG_PREEMPT=n kernel that only interrupts in the guest are run?
-> >>>>
-> >>>> Sorry, I really didn't describe this very well.
-> >>>>
-> >>>> If a hypercall needs a continuation, Xen returns to the guest with the
-> >>>> IP set to the hypercall instruction, and on the way back to the guest
-> >>>> Xen may schedule a different VCPU or it will do any upcalls (as per normal).
-> >>>>
-> >>>> The guest is free to return from the upcall to the original task
-> >>>> (continuing the hypercall) or to a different one.
-> >>>
-> >>> OK so that addresses what Xen will do when using continuation and
-> >>> hypercall preemption, my concern here was that using
-> >>> preempt_schedule_irq() on CONFIG_PREEMPT=n kernels in the middle of a
-> >>> hypercall on the return from an interrupt (e.g., the timer interrupt)
-> >>> would still let the kernel preempt to tasks other than those related
-> >>> to Xen.
+On Mon, Dec 01, 2014 at 11:18:47PM +0100, Stefan Agner wrote:
+> On 2014-12-01 18:42, Guenter Roeck wrote:
+> > On Mon, Dec 01, 2014 at 09:38:09AM -0800, Feng Kan wrote:
+> >> On Mon, Dec 1, 2014 at 9:29 AM, Stefan Agner <stefan@agner.ch> wrote:
+> >> > On 2014-12-01 18:15, Feng Kan wrote:
+> >> >> On Mon, Dec 1, 2014 at 9:03 AM, Stefan Agner <stefan@agner.ch> wrote:
+> >> >>> This patch adds an optional property which allows to specify the
+> >> >>> reset source priority. This priority is used by the kernel restart
+> >> >>> handler call chain to sort out the proper reset/restart method.
+> >> >>> Depending on the power design of a board or other machine/board
+> >> >>> specific peculiarity, it is not possible to pick a generic priority.
+> >> >>>
+> >> >>> Signed-off-by: Stefan Agner <stefan@agner.ch>
+> >> >>> ---
+> >> >>>  Documentation/devicetree/bindings/power/reset/syscon-reboot.txt | 3 +++
+> >> >>>  drivers/power/reset/syscon-reboot.c                             | 5 ++++-
+> >> >>>  2 files changed, 7 insertions(+), 1 deletion(-)
+> >> >>>
+> >> >>> diff --git a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+> >> >>> index 1190631..ee41d9c 100644
+> >> >>> --- a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+> >> >>> +++ b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+> >> >>> @@ -11,6 +11,9 @@ Required properties:
+> >> >>>  - offset: offset in the register map for the reboot register (in bytes)
+> >> >>>  - mask: the reset value written to the reboot register (32 bit access)
+> >> >>>
+> >> >>> +Optional properties:
+> >> >>> +- priority: define the priority of the reset (0-255, defaults to 128)
+> >> >>> +
+> >> >>>  Default will be little endian mode, 32 bit access only.
+> >> >>>
+> >> >>>  Examples:
+> >> >>> diff --git a/drivers/power/reset/syscon-reboot.c b/drivers/power/reset/syscon-reboot.c
+> >> >>> index 815b901..3060d6b 100644
+> >> >>> --- a/drivers/power/reset/syscon-reboot.c
+> >> >>> +++ b/drivers/power/reset/syscon-reboot.c
+> >> >>> @@ -67,8 +67,11 @@ static int syscon_reboot_probe(struct platform_device *pdev)
+> >> >>>         if (of_property_read_u32(pdev->dev.of_node, "mask", &ctx->mask))
+> >> >>>                 return -EINVAL;
+> >> >>>
+> >> >>> -       ctx->restart_handler.notifier_call = syscon_restart_handle;
+> >> >>>         ctx->restart_handler.priority = 128;
+> >> >>> +       of_property_read_u32(pdev->dev.of_node, "priority",
+> >> >>> +                            &ctx->restart_handler.priority);
+> >> >>
+> >> >> What is this for?
+> >> >
+> >> > What do you mean? The moved line "ctx->restart_handler.notifier_call =
+> >> > syscon_restart_handle;"? When one reads the diff, it looks like that
+> >> > line was moved, in fact I tried to keep the of_property_read function
+> >> > calls together. But I had to move the assignation of the default
+> >> > priority in front of restart_handler.priority. That's what is the
+> >> > outcome...
 > >>
-> >> Um.  Why would that be a problem?  We do want to switch to any task the
-> >> Linux scheduler thinks is best.
+> >> I believe Guenter explained above already. Actually this help to solve one of
+> >> my problem. Thanks.
 > > 
-> > Its safe but -- it technically is doing kernel preemption, unless we want
-> > to adjust the definition of CONFIG_PREEMPT=n to exclude hypercalls. This
-> > was my original concern with the use of preempt_schedule_irq() to do this.
-> > I am afraid of setting precedents without being clear or wider review and
-> > acceptance.
+> > Since Mark doesn't seem to be happy with the idea of making the priority
+> > dt-configurable, the alternative might be to just set a higher priority for
+> > syscon triggered resets, as suggested by Stefan. Not as flexible, but it
+> > should be ok for most use cases.
+> > 
 > 
-> It's voluntary preemption at a well defined point. 
+> I read the other branch of this thread too, but IMHO, this would be the
+> best solution for now. It's a one line change and does the job. After
+> all, we have that priority for a reason, it doesn't makes sense having
+> all of them at a common default. As mentioned in an other reply, I think
+> it is especially reasonable to configure the syscon-reboot driver a bit
+> higher, since this driver is more likely to be used for a dedicated
+> reboot feature provided by the SoC, which usually is the preferred one.
+> If it happens one day that a SoC ends up with conflicting priorities or
+> other priority odds, we can add the DT support then...
+> 
+> What do you think, can I go with that for now? (Guenter, Feng, Mark...?)
+> 
+Ok with me. After all, one only needs to remove the entry from the dt file
+if not wanted/needed, so one could argue that its existence already implies
+"preferred".
 
-Its voluntarily preempting the kernel even for CONFIG_PREEMPT=n kernels... 
-
-> It's no different to a cond_resched() call.
-
-Then I do agree its a fair analogy (and find this obviously odd that how
-widespread cond_resched() is), we just don't have an equivalent for IRQ
-context, why not avoid the special check then and use this all the time in the
-middle of a hypercall on the return from an interrupt (e.g., the timer
-interrupt)?
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 5e344bb..e60b5a1 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2759,6 +2759,12 @@ static inline int signal_pending_state(long state, struct task_struct *p)
-  */
- extern int _cond_resched(void);
- 
-+/*
-+ * Voluntarily preempting the kernel even for CONFIG_PREEMPT=n kernels
-+ * on very special circumstances.
-+ */
-+extern int cond_resched_irq(void);
-+
- #define cond_resched() ({			\
- 	__might_sleep(__FILE__, __LINE__, 0);	\
- 	_cond_resched();			\
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 240157c..1c4d443 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4264,6 +4264,16 @@ int __sched _cond_resched(void)
- }
- EXPORT_SYMBOL(_cond_resched);
- 
-+int __sched cond_resched_irq(void)
-+{
-+	if (should_resched()) {
-+		preempt_schedule_irq();
-+		return 1;
-+	}
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(cond_resched_irq);
-+
- /*
-  * __cond_resched_lock() - if a reschedule is pending, drop the given lock,
-  * call schedule, and on return reacquire the lock.
-  Luis
+Guenter
