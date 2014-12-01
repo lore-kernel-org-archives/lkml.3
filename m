@@ -1,105 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758AbaLAMhX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 07:37:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57126 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753683AbaLAMhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 07:37:19 -0500
-Date: Mon, 1 Dec 2014 14:37:01 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v7 31/46] vhost: virtio 1.0 endian-ness support
-Message-ID: <20141201123701.GB17958@redhat.com>
-References: <1417359787-10138-1-git-send-email-mst@redhat.com>
- <1417359787-10138-32-git-send-email-mst@redhat.com>
- <20141201133353.0bbaa2e1.cornelia.huck@de.ibm.com>
+	id S1753788AbaLAMhk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 07:37:40 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:51540 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753768AbaLAMhh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 07:37:37 -0500
+Date: Mon, 1 Dec 2014 15:37:04 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: micky_ching@realsil.com.cn
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, chris@printf.net,
+        ulf.hansson@linaro.org, gregkh@linuxfoundation.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        wei_wang@realsil.com.cn, rogerable@realtek.com,
+        devel@linuxdriverproject.org
+Subject: Re: [PATCH v2 2/2] mmc: rtsx: add support for sdio card
+Message-ID: <20141201123704.GE4994@mwanda>
+References: <cover.1417141102.git.micky_ching@realsil.com.cn>
+ <544df18ef543c169c93e4c9bd64e94c4ed3c1f9b.1417141102.git.micky_ching@realsil.com.cn>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141201133353.0bbaa2e1.cornelia.huck@de.ibm.com>
+In-Reply-To: <544df18ef543c169c93e4c9bd64e94c4ed3c1f9b.1417141102.git.micky_ching@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 01:33:53PM +0100, Cornelia Huck wrote:
-> On Sun, 30 Nov 2014 17:11:49 +0200
-> "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  drivers/vhost/vhost.c | 93 +++++++++++++++++++++++++++++++--------------------
-> >  1 file changed, 56 insertions(+), 37 deletions(-)
-> > 
-> 
-> > @@ -1113,18 +1120,19 @@ static int get_indirect(struct vhost_virtqueue *vq,
-> >  {
-> >  	struct vring_desc desc;
-> >  	unsigned int i = 0, count, found = 0;
-> > +	u32 len = vhost32_to_cpu(vq, indirect->len);
-> >  	int ret;
-> > 
-> >  	/* Sanity check */
-> > -	if (unlikely(indirect->len % sizeof desc)) {
-> > +	if (unlikely(len % sizeof desc)) {
-> >  		vq_err(vq, "Invalid length in indirect descriptor: "
-> >  		       "len 0x%llx not multiple of 0x%zx\n",
-> > -		       (unsigned long long)indirect->len,
-> > +		       (unsigned long long)vhost32_to_cpu(vq, indirect->len),
-> 
-> Can't you use len here?
+On Fri, Nov 28, 2014 at 02:31:56PM +0800, micky_ching@realsil.com.cn wrote:
+>  #ifdef DEBUG
+> -static void sd_print_debug_regs(struct realtek_pci_sdmmc *host)
+> +static void dump_reg_range(struct realtek_pci_sdmmc *host, u16 start, u16 end)
+>  {
+> -	struct rtsx_pcr *pcr = host->pcr;
+> -	u16 i;
+> -	u8 *ptr;
+> +	u16 len = end - start + 1;
+> +	int i;
+> +	u8 data[8];
+>  
+> -	/* Print SD host internal registers */
+> -	rtsx_pci_init_cmd(pcr);
+> -	for (i = 0xFDA0; i <= 0xFDAE; i++)
+> -		rtsx_pci_add_cmd(pcr, READ_REG_CMD, i, 0, 0);
+> -	for (i = 0xFD52; i <= 0xFD69; i++)
+> -		rtsx_pci_add_cmd(pcr, READ_REG_CMD, i, 0, 0);
+> -	rtsx_pci_send_cmd(pcr, 100);
+> -
+> -	ptr = rtsx_pci_get_cmd_data(pcr);
+> -	for (i = 0xFDA0; i <= 0xFDAE; i++)
+> -		dev_dbg(sdmmc_dev(host), "0x%04X: 0x%02x\n", i, *(ptr++));
+> -	for (i = 0xFD52; i <= 0xFD69; i++)
+> -		dev_dbg(sdmmc_dev(host), "0x%04X: 0x%02x\n", i, *(ptr++));
+> +	if (!data)
+> +		return;
 
-Not if I want error message to be readable.
+Delete this check.  It will cause a static checker warning because
+arrays never NULL.
 
-> >  		       sizeof desc);
-> >  		return -EINVAL;
-> >  	}
-> > 
-> > -	ret = translate_desc(vq, indirect->addr, indirect->len, vq->indirect,
-> > +	ret = translate_desc(vq, vhost64_to_cpu(vq, indirect->addr), len, vq->indirect,
-> >  			     UIO_MAXIOV);
-> >  	if (unlikely(ret < 0)) {
-> >  		vq_err(vq, "Translation failure %d in indirect.\n", ret);
-> 
-> 
-> > @@ -1404,7 +1422,7 @@ int vhost_add_used_n(struct vhost_virtqueue *vq, struct vring_used_elem *heads,
-> > 
-> >  	/* Make sure buffer is written before we update index. */
-> >  	smp_wmb();
-> > -	if (put_user(vq->last_used_idx, &vq->used->idx)) {
-> > +	if (__put_user(cpu_to_vhost16(vq, vq->last_used_idx), &vq->used->idx)) {
-> 
-> Why s/put_user/__put_user/ - I don't see how endianness conversions
-> should have an influence there?
+> +
+> +	for (i = 0; i < len; i += 8) {
+> +		int j;
+> +		int n = min(8, len - i);
+> +
+> +		memset(&data, 0, sizeof(data));
+> +		for (j = 0; j < n; j++)
+> +			rtsx_pci_read_register(host->pcr, start + i + j,
+> +				data + j);
+> +		dev_dbg(sdmmc_dev(host), "0x%04X(%d): %8ph\n", start, n, data);
 
-We should generally to __ variants since addresses are pre-validated.
-But I agree - should be a separate patch.
+This should be start + i, sorry for not spotting that earlier.
 
-> 
-> >  		vq_err(vq, "Failed to increment used idx");
-> >  		return -EFAULT;
-> >  	}
-> 
-> > @@ -1449,11 +1468,11 @@ static bool vhost_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
-> >  	if (unlikely(!v))
-> >  		return true;
-> > 
-> > -	if (get_user(event, vhost_used_event(vq))) {
-> > +	if (__get_user(event, vhost_used_event(vq))) {
-> 
-> Dito: why the change?
+regards,
+dan carpenter
 
-Same. Will split this out, it's unrelated to virtio 1.0.
-
-> >  		vq_err(vq, "Failed to get used event idx");
-> >  		return true;
-> >  	}
-> > -	return vring_need_event(event, new, old);
-> > +	return vring_need_event(vhost16_to_cpu(vq, event), new, old);
-> >  }
-> > 
-> >  /* This actually signals the guest, using eventfd. */
