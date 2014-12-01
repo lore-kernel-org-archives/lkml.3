@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980AbaLAREU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 12:04:20 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:58740 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753052AbaLARD1 (ORCPT
+	id S1753703AbaLARFJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 12:05:09 -0500
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:42931 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752982AbaLARFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 12:03:27 -0500
-From: Stefan Agner <stefan@agner.ch>
-To: shawn.guo@linaro.org, kernel@pengutronix.de, linux@roeck-us.net,
-        arnd@arndb.de, sre@kernel.org, fkan@apm.com, grant.likely@linaro.org,
-        robh+dt@kernel.org
-Cc: dbaryshkov@gmail.com, dwmw2@infradead.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        stefan@agner.ch
-Subject: [PATCH v2 2/3] ARM: dts: vf610: add system reset controller and syscon-reboot
-Date: Mon,  1 Dec 2014 18:03:08 +0100
-Message-Id: <1417453389-1588-3-git-send-email-stefan@agner.ch>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1417453389-1588-1-git-send-email-stefan@agner.ch>
-References: <1417453389-1588-1-git-send-email-stefan@agner.ch>
+	Mon, 1 Dec 2014 12:05:06 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141201114854.GB18466@arm.com>
+References: <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
+	<20141118145234.GA7487@redhat.com>
+	<alpine.DEB.2.11.1411181914020.3909@nanos>
+	<20141118215540.GD35311@redhat.com>
+	<20141119021902.GA14216@redhat.com>
+	<CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
+	<20141119145902.GA13387@redhat.com>
+	<546D0530.8040800@mit.edu>
+	<20141120152509.GA5412@redhat.com>
+	<20141125122217.GA15280@arm.com>
+	<20141201114854.GB18466@arm.com>
+Date: Mon, 1 Dec 2014 09:05:06 -0800
+X-Google-Sender-Auth: UA3Jr1hWfcxFZqDBgtm2yxayOqE
+Message-ID: <CA+55aFyhB5LBVadA5TfuX8+TrZZWTHwT-2NCYRLat8Fp6eBjgw@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Dave Jones <davej@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
+        Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the system reset controller (SRC) module and use syscon-reboot
-to register a restart handler which restarts the SoC using the
-SRC SW_RST bit.
+On Mon, Dec 1, 2014 at 3:48 AM, Will Deacon <will.deacon@arm.com> wrote:
+>
+> so for some bizarre reason, child1 (27912) managed to execve oom_score
+> from /proc.
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
- arch/arm/boot/dts/vf500.dtsi |  4 ++++
- arch/arm/boot/dts/vfxxx.dtsi | 13 +++++++++++++
- 2 files changed, 17 insertions(+)
+That sounds like you have a binfmt that accepts crap. Possibly
+ARM-specific, although more likely it's just a misc script.
 
-diff --git a/arch/arm/boot/dts/vf500.dtsi b/arch/arm/boot/dts/vf500.dtsi
-index de67005..3f38f49 100644
---- a/arch/arm/boot/dts/vf500.dtsi
-+++ b/arch/arm/boot/dts/vf500.dtsi
-@@ -130,6 +130,10 @@
- 	interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_HIGH>;
- };
- 
-+&src {
-+	interrupts = <GIC_SPI 96 IRQ_TYPE_LEVEL_HIGH>;
-+};
-+
- &uart0 {
- 	interrupts = <GIC_SPI 61 IRQ_TYPE_LEVEL_HIGH>;
- };
-diff --git a/arch/arm/boot/dts/vfxxx.dtsi b/arch/arm/boot/dts/vfxxx.dtsi
-index 505969a..3e696d7 100644
---- a/arch/arm/boot/dts/vfxxx.dtsi
-+++ b/arch/arm/boot/dts/vfxxx.dtsi
-@@ -43,6 +43,14 @@
- 		clock-frequency = <32768>;
- 	};
- 
-+	reboot: syscon-reboot {
-+		compatible = "syscon-reboot";
-+		regmap = <&src>;
-+		offset = <0x0>;
-+		mask = <0x1000>;
-+		priority = <192>;
-+	};
-+
- 	soc {
- 		#address-cells = <1>;
- 		#size-cells = <1>;
-@@ -318,6 +326,11 @@
- 				clocks = <&clks VF610_CLK_USBC0>;
- 				status = "disabled";
- 			};
-+
-+			src: src@4006e000 {
-+				compatible = "fsl,vf610-src", "syscon";
-+				reg = <0x4006e000 0x1000>;
-+			};
- 		};
- 
- 		aips1: aips-bus@40080000 {
--- 
-2.1.3
+> We can see the child that did the execve has somehow gained its own
+> child process (27921) that we're unable to backtrace. I can't see any
+> clone/fork syscalls in the log for 27912.
 
+Well, it wouldn't be trinity any more, it would likely be some execve
+script (think "/bin/sh", except likely through binfmt_misc).
+
+Do you have anything in /proc/sys/fs/binfmt_misc? I don't see anything
+else that would trigger it.
+
+This doesn't really look anything like DaveJ's issue, but who knows..
+
+                       Linus
