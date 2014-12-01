@@ -1,83 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471AbaLAL0R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 06:26:17 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:54279 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105AbaLAL0O (ORCPT
+	id S1753486AbaLAL0f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 06:26:35 -0500
+Received: from lucky1.263xmail.com ([211.157.147.130]:34310 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105AbaLAL0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 06:26:14 -0500
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] ext4: fix suboptimal seek_{data,hole} extents traversial
-In-Reply-To: <20141129175255.GC4362@thunk.org>
-References: <87egu7k6ym.fsf@openvz.org> <1413552334-32240-1-git-send-email-dmonakhov@openvz.org> <20141125211433.GB28449@thunk.org> <873893id1x.fsf@openvz.org> <20141129175255.GC4362@thunk.org>
-User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.4.1 (x86_64-pc-linux-gnu)
-Date: Mon, 01 Dec 2014 14:25:46 +0300
-Message-ID: <87a937d32d.fsf@openvz.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha512; protocol="application/pgp-signature"
+	Mon, 1 Dec 2014 06:26:31 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <05312a2685702c5205aca98deffa3ddc>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
+        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Andy Yan <andy.yan@rock-chips.com>
+Subject: [PATCH v14 07/12] drm: bridge/dw_hdmi: add support for multi-byte register width access
+Date: Mon,  1 Dec 2014 19:26:04 +0800
+Message-Id: <1417433164-13067-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417432770-12719-1-git-send-email-andy.yan@rock-chips.com>
+References: <1417432770-12719-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain
-Content-Transfer-Encoding: quoted-printable
+On rockchip rk3288, only word(32-bit) accesses are
+permitted for hdmi registers.  Byte width accesses (writeb,
+readb) generate an imprecise external abort.
 
-Theodore Ts'o <tytso@mit.edu> writes:
+Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
 
-> On Fri, Nov 28, 2014 at 06:02:02PM +0300, Dmitry Monakhov wrote:
->> FYI: inline_data feature is fatally broken
->
-> Thanks for finding the bugs!
->
->> 2) ext4_inline_data_fiemap(0 ignores start and len arguments from ext4_f=
-ilemap()
->>    which obviously result in endless loop for anyone who want to use
->>    fiemap for inline files (which my patch try to do)
->
-> Would this have been triggered using filefrag?  I just checked and
-> noticed we don't have a filefrag test in xfstests; of course it would
-> be impossible to test other than the filefrag -v command successfully
-> completed, but maybe it might be worth adding such a test.
-This works only because filefrag use big buffer. If one want to call
-fiemap with start !=3D 0 it will loop. So we definitely need a regression
-test for fiemap. I'll do it.
+---
 
-BTW bug can be spotted even in case of filefrag -v:
-#### Create small file with inlined data=20
-# echo test > /mnt/f1
-#### Now boost it's i_size=20=20
-# truncate --size 4096000 /mnt/f1
-# filefrag -v /mnt/f1
-Filesystem cylinder groups approximately 39
-File size of /mnt/f1 is 4096000 (1000 blocks of 4096 bytes)
- ext:     logical_offset:        physical_offset: length:   expected:
- flags:
-    0:        0.. 4095999:    2762792..   6858791: 4096000:last,not_aligned=
-,inline,eof
-    /mnt/f1: 1 extent found
-###According to fiemap we are inlined 4Mb data. :)
+Changes in v14: None
+Changes in v13: None
+Changes in v12: None
+Changes in v11: None
+Changes in v10: None
+Changes in v9: None
+Changes in v8: None
+Changes in v7: None
+Changes in v6:
+- refactor register access without reg_shift
 
-At this moment I'm testing my patches, I'll send it today.
->
-> 	       	     	      	       	      	   - Ted
+Changes in v5:
+- refactor reg-io-width
 
---=-=-=
-Content-Type: application/pgp-signature; name="signature.asc"
+Changes in v4: None
+Changes in v3:
+- split multi-register access to one indepent patch
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+ drivers/gpu/drm/bridge/dw_hdmi.c | 57 +++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 51 insertions(+), 6 deletions(-)
 
-iQEcBAEBCgAGBQJUfFA6AAoJELhyPTmIL6kBfGMIALqO+os7ix8PBP2dJ+k6z2Gm
-9/FYBxvTlcGFZSJoCXpQ6TicVW2L0Ox/aL0C10HdYN93wMAvvjBJqlf42NdsQgei
-inXxoiZnFWS8SUktLt5+zPSJJUF8UQsCvviclhS/7jTwUAXahcHOaXc+u1itEztX
-AqbwbSTtYsmHFxMQra3x0YYoQ9RyZA/0GO78zjPz8esytBI85D+0Gl1x/ZOKMwE7
-6BfppS3jrFcqJNcK2p9MnikHc/2Um5Xd6k99VdKpc5qlpEId+m1rqtwpXjcACtIz
-BJGq2g6Q/Qqn6LbDEexaiJ7AbGbyvbihna0Dyqqx02Wzwzly1Vzp63HhB/I8vpM=
-=DRVe
------END PGP SIGNATURE-----
---=-=-=--
+diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
+index a53bf63..5e88c8d 100644
+--- a/drivers/gpu/drm/bridge/dw_hdmi.c
++++ b/drivers/gpu/drm/bridge/dw_hdmi.c
+@@ -100,6 +100,11 @@ struct hdmi_data_info {
+ 	struct hdmi_vmode video_mode;
+ };
+ 
++union dw_reg_ptr {
++	u32 __iomem *p32;
++	u8 __iomem *p8;
++};
++
+ struct dw_hdmi {
+ 	struct drm_connector connector;
+ 	struct drm_encoder *encoder;
+@@ -121,20 +126,43 @@ struct dw_hdmi {
+ 
+ 	struct regmap *regmap;
+ 	struct i2c_adapter *ddc;
+-	void __iomem *regs;
++	union dw_reg_ptr regs;
+ 
+ 	unsigned int sample_rate;
+ 	int ratio;
++
++	void (*write)(struct dw_hdmi *hdmi, u8 val, int offset);
++	u8 (*read)(struct dw_hdmi *hdmi, int offset);
+ };
+ 
++static void dw_hdmi_writel(struct dw_hdmi *hdmi, u8 val, int offset)
++{
++	writel(val, hdmi->regs.p32 + offset);
++}
++
++static u8 dw_hdmi_readl(struct dw_hdmi *hdmi, int offset)
++{
++	return readl(hdmi->regs.p32 + offset);
++}
++
++static void dw_hdmi_writeb(struct dw_hdmi *hdmi, u8 val, int offset)
++{
++	writeb(val, hdmi->regs.p8 + offset);
++}
++
++static u8 dw_hdmi_readb(struct dw_hdmi *hdmi, int offset)
++{
++	return readb(hdmi->regs.p8 + offset);
++}
++
+ static inline void hdmi_writeb(struct dw_hdmi *hdmi, u8 val, int offset)
+ {
+-	writeb(val, hdmi->regs + offset);
++	hdmi->write(hdmi, val, offset);
+ }
+ 
+ static inline u8 hdmi_readb(struct dw_hdmi *hdmi, int offset)
+ {
+-	return readb(hdmi->regs + offset);
++	return hdmi->read(hdmi, offset);
+ }
+ 
+ static void hdmi_modb(struct dw_hdmi *hdmi, u8 data, u8 mask, unsigned reg)
+@@ -1508,6 +1536,7 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
+ 	struct dw_hdmi *hdmi;
+ 	struct resource *iores;
+ 	int ret, irq;
++	u32 val = 1;
+ 
+ 	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
+ 	if (!hdmi)
+@@ -1520,6 +1549,22 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
+ 	hdmi->ratio = 100;
+ 	hdmi->encoder = encoder;
+ 
++	of_property_read_u32(np, "reg-io-width", &val);
++
++	switch (val) {
++	case 4:
++		hdmi->write = dw_hdmi_writel;
++		hdmi->read = dw_hdmi_readl;
++		break;
++	case 1:
++		hdmi->write = dw_hdmi_writeb;
++		hdmi->read = dw_hdmi_readb;
++		break;
++	default:
++		dev_err(dev, "reg-io-width must be 1 or 4\n");
++		return -EINVAL;
++	}
++
+ 	ddc_node = of_parse_phandle(np, "ddc-i2c-bus", 0);
+ 	if (ddc_node) {
+ 		hdmi->ddc = of_find_i2c_adapter_by_node(ddc_node);
+@@ -1544,9 +1589,9 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
+ 		return ret;
+ 
+ 	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	hdmi->regs = devm_ioremap_resource(dev, iores);
+-	if (IS_ERR(hdmi->regs))
+-		return PTR_ERR(hdmi->regs);
++	hdmi->regs.p32 = devm_ioremap_resource(dev, iores);
++	if (IS_ERR(hdmi->regs.p32))
++		return PTR_ERR(hdmi->regs.p32);
+ 
+ 	/* Product and revision IDs */
+ 	dev_info(dev,
+-- 
+1.9.1
+
+
