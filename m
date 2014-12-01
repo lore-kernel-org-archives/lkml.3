@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932428AbaLAVre (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 16:47:34 -0500
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:48657 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932197AbaLAVrc (ORCPT
+	id S932496AbaLAVth (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 16:49:37 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:37465 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932197AbaLAVtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 16:47:32 -0500
-From: Paul Moore <paul@paul-moore.com>
-To: Yao Dongdong <yaodongdong@huawei.com>
-Cc: sds@tycho.nsa.gov, james.l.morris@oracle.com, serge@hallyn.com,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lizefan@huawei.com
-Subject: Re: [PATCH] selinux: Remove security_ops extern
-Date: Mon, 01 Dec 2014 16:47:29 -0500
-Message-ID: <2400532.lYxijS5ODp@sifl>
-User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <1417148735-13522-1-git-send-email-yaodongdong@huawei.com>
-References: <1417148735-13522-1-git-send-email-yaodongdong@huawei.com>
+	Mon, 1 Dec 2014 16:49:36 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20141201213417.GA5842@redhat.com>
+References: <20141201213357.GA5834@redhat.com>
+	<20141201213417.GA5842@redhat.com>
+Date: Mon, 1 Dec 2014 13:49:35 -0800
+X-Google-Sender-Auth: jy5IlbuqcoVztk5ztbnjxAHoYvc
+Message-ID: <CA+55aFz6a99n_bGGi0CrOeWA3KRVdAJtPiF_3iP1aVx_wE+mMA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] x86, ticketlock: spin_unlock_wait() can livelock
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Waiman Long <Waiman.Long@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 28, 2014 04:25:35 AM Yao Dongdong wrote:
-> security_ops is not used in this file.
-> 
-> Signed-off-by: Yao Dongdong <yaodongdong@huawei.com>
-> ---
->  security/selinux/hooks.c | 2 --
->  1 file changed, 2 deletions(-)
+On Mon, Dec 1, 2014 at 1:34 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> But we do not need to wait for arch_spin_is_locked() == F. If it is
+> locked we only need to wait until the current owner drops this lock.
+> So we could simply spin until old_head != lock->tickets.head in this
+> case, but .head can overflow and thus we can't check "unlocked" only
+> once before the main loop.
 
-Applied, thanks.
+Ack. Looks like a good idea. Can you point to the report that you
+think this might be the cause of?
 
-> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-> index c603b20..6da7532 100644
-> --- a/security/selinux/hooks.c
-> +++ b/security/selinux/hooks.c
-> @@ -95,8 +95,6 @@
->  #include "audit.h"
->  #include "avc_ss.h"
-> 
-> -extern struct security_operations *security_ops;
-> -
->  /* SECMARK reference count */
->  static atomic_t selinux_secmark_refcount = ATOMIC_INIT(0);
-
--- 
-paul moore
-www.paul-moore.com
-
+                    Linus
