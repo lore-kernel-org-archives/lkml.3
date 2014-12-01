@@ -1,240 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700AbaLAHDw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 02:03:52 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:59823 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752426AbaLAHDu (ORCPT
+	id S1752721AbaLAHF2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 02:05:28 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53323 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752426AbaLAHF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 02:03:50 -0500
+	Mon, 1 Dec 2014 02:05:27 -0500
+Date: Mon, 1 Dec 2014 08:04:37 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Flora Fu <flora.fu@mediatek.com>
+Cc: Rob Herring <robh+dt@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-arm-kernel@lists.infradead.org, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sandeep Nair <sandeep_n@ti.com>, Andy Gross <agross@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <treding@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "Joe.C" <yingjoe.chen@mediatek.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srv_heupstream@mediatek.com,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Eddie Huang <eddie.huang@mediatek.com>,
+        Dongdong Cheng <dongdong.cheng@mediatek.com>
+Subject: Re: [PATCH v2 0/8] Add Support for MediaTek PMIC MT6397 MFD Core and
+ Regulator
+Message-ID: <20141201070437.GQ14482@pengutronix.de>
+References: <1417146874-5232-1-git-send-email-flora.fu@mediatek.com>
 MIME-Version: 1.0
-In-Reply-To: <b0f6c4df0e8ef8afcc7b786edecb4be8c752941e.1417215468.git.luto@amacapital.net>
-References: <b0f6c4df0e8ef8afcc7b786edecb4be8c752941e.1417215468.git.luto@amacapital.net>
-Date: Mon, 1 Dec 2014 11:03:48 +0400
-Message-ID: <CALYGNiOV9Ms=JW5sOhdmh2BmR1v+4obE8DQ0v+3rgQYkh=h2GQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] proc, pidns: Add highpid
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: David Herrmann <dh.herrmann@gmail.com>, linux-api@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        systemd Mailing List <systemd-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417146874-5232-1-git-send-email-flora.fu@mediatek.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 07:52:43 up 46 days, 18:06, 44 users,  load average: 0.05, 0.09,
+ 0.07
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm. What about per-task/thread UUID? exported via separate file: /proc/PID/uuid
-It could be created at the first access, thus this wouldn't shlowdown clone().
-Also it could be droped at execve(), so it'll describe execution
-context more precisely than pid.
+Hi Flora,
 
-On Sat, Nov 29, 2014 at 2:05 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> Pid reuse is common, which means that it's difficult or impossible
-> to read information about a pid from /proc without races.
->
-> This introduces a second number associated with each (task, pidns)
-> pair called highpid.  Highpid is a 64-bit number, and, barring
-> extremely unlikely circumstances or outright error, a (highpid, pid)
-> will never be reused.
->
-> With just this change, a program can open /proc/PID/status, read the
-> "Highpid" field, and confirm that it has the expected value.  If the
-> pid has been reused, then highpid will be different.
->
-> The initial implementation is straightforward: highpid is simply a
-> 64-bit counter. If a high-end system can fork every 3 ns (which
-> would be amazing, given that just allocating a pid requires at
-> atomic operation), it would take well over 1000 years for highpid to
-> wrap.
->
-> For CRIU's benefit, the next highpid can be set by a privileged
-> user.
->
-> NB: The sysctl stuff only works on 64-bit systems.  If the approach
-> looks good, I'll fix that somehow.
->
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->
-> If this goes in, there's plenty of room to add new interfaces to
-> make this more useful.  For example, we could add a fancier tgkill
-> that adds and validates hightgid and highpid, and we might want to
-> add a syscall to read one's own hightgid and highpid.  These would
-> be quite useful for pidfiles.
->
-> David, would this be useful for kdbus?
->
-> CRIU people: will this be unduly difficult to support in CRIU?
->
-> If you all think this is a good idea, I'll fix the sysctl stuff and
-> document it.  It might also be worth adding "Hightgid" to status.
->
->  fs/proc/array.c               |  5 ++++-
->  include/linux/pid.h           |  2 ++
->  include/linux/pid_namespace.h |  1 +
->  kernel/pid.c                  | 19 +++++++++++++++----
->  kernel/pid_namespace.c        | 22 ++++++++++++++++++++++
->  5 files changed, 44 insertions(+), 5 deletions(-)
->
-> diff --git a/fs/proc/array.c b/fs/proc/array.c
-> index cd3653e4f35c..f1e0e69d19f9 100644
-> --- a/fs/proc/array.c
-> +++ b/fs/proc/array.c
-> @@ -159,6 +159,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
->         int g;
->         struct fdtable *fdt = NULL;
->         const struct cred *cred;
-> +       const struct upid *upid;
->         pid_t ppid, tpid;
->
->         rcu_read_lock();
-> @@ -170,12 +171,14 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
->                 if (tracer)
->                         tpid = task_pid_nr_ns(tracer, ns);
->         }
-> +       upid = pid_upid_ns(pid, ns);
->         cred = get_task_cred(p);
->         seq_printf(m,
->                 "State:\t%s\n"
->                 "Tgid:\t%d\n"
->                 "Ngid:\t%d\n"
->                 "Pid:\t%d\n"
-> +               "Highpid:\t%llu\n"
->                 "PPid:\t%d\n"
->                 "TracerPid:\t%d\n"
->                 "Uid:\t%d\t%d\t%d\t%d\n"
-> @@ -183,7 +186,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
->                 get_task_state(p),
->                 task_tgid_nr_ns(p, ns),
->                 task_numa_group_id(p),
-> -               pid_nr_ns(pid, ns),
-> +               upid ? upid->nr : 0, upid ? upid->highnr : 0,
->                 ppid, tpid,
->                 from_kuid_munged(user_ns, cred->uid),
->                 from_kuid_munged(user_ns, cred->euid),
-> diff --git a/include/linux/pid.h b/include/linux/pid.h
-> index 23705a53abba..ece70b64d04c 100644
-> --- a/include/linux/pid.h
-> +++ b/include/linux/pid.h
-> @@ -51,6 +51,7 @@ struct upid {
->         /* Try to keep pid_chain in the same cacheline as nr for find_vpid */
->         int nr;
->         struct pid_namespace *ns;
-> +       u64 highnr;
->         struct hlist_node pid_chain;
->  };
->
-> @@ -170,6 +171,7 @@ static inline pid_t pid_nr(struct pid *pid)
->  }
->
->  pid_t pid_nr_ns(struct pid *pid, struct pid_namespace *ns);
-> +const struct upid *pid_upid_ns(struct pid *pid, struct pid_namespace *ns);
->  pid_t pid_vnr(struct pid *pid);
->
->  #define do_each_pid_task(pid, type, task)                              \
-> diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
-> index 1997ffc295a7..1f9f0455d7ef 100644
-> --- a/include/linux/pid_namespace.h
-> +++ b/include/linux/pid_namespace.h
-> @@ -26,6 +26,7 @@ struct pid_namespace {
->         struct rcu_head rcu;
->         int last_pid;
->         unsigned int nr_hashed;
-> +       atomic64_t next_highpid;
->         struct task_struct *child_reaper;
->         struct kmem_cache *pid_cachep;
->         unsigned int level;
-> diff --git a/kernel/pid.c b/kernel/pid.c
-> index 9b9a26698144..863d11a9bfbf 100644
-> --- a/kernel/pid.c
-> +++ b/kernel/pid.c
-> @@ -312,6 +312,8 @@ struct pid *alloc_pid(struct pid_namespace *ns)
->
->                 pid->numbers[i].nr = nr;
->                 pid->numbers[i].ns = tmp;
-> +               pid->numbers[i].highnr =
-> +                       atomic64_inc_return(&tmp->next_highpid) - 1;
->                 tmp = tmp->parent;
->         }
->
-> @@ -492,17 +494,26 @@ struct pid *find_get_pid(pid_t nr)
->  }
->  EXPORT_SYMBOL_GPL(find_get_pid);
->
-> -pid_t pid_nr_ns(struct pid *pid, struct pid_namespace *ns)
-> +const struct upid *pid_upid_ns(struct pid *pid, struct pid_namespace *ns)
->  {
->         struct upid *upid;
-> -       pid_t nr = 0;
->
->         if (pid && ns->level <= pid->level) {
->                 upid = &pid->numbers[ns->level];
->                 if (upid->ns == ns)
-> -                       nr = upid->nr;
-> +                       return upid;
->         }
-> -       return nr;
-> +       return NULL;
-> +}
-> +EXPORT_SYMBOL_GPL(pid_upid_ns);
-> +
-> +pid_t pid_nr_ns(struct pid *pid, struct pid_namespace *ns)
-> +{
-> +       const struct upid *upid = pid_upid_ns(pid, ns);
-> +
-> +       if (!upid)
-> +               return 0;
-> +       return upid->nr;
->  }
->  EXPORT_SYMBOL_GPL(pid_nr_ns);
->
-> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-> index db95d8eb761b..e246802b4361 100644
-> --- a/kernel/pid_namespace.c
-> +++ b/kernel/pid_namespace.c
-> @@ -268,6 +268,22 @@ static int pid_ns_ctl_handler(struct ctl_table *table, int write,
->         return proc_dointvec_minmax(&tmp, write, buffer, lenp, ppos);
->  }
->
-> +static int pid_ns_next_highpid_handler(struct ctl_table *table, int write,
-> +               void __user *buffer, size_t *lenp, loff_t *ppos)
-> +{
-> +       struct pid_namespace *pid_ns = task_active_pid_ns(current);
-> +       struct ctl_table tmp = *table;
-> +
-> +       if (write && !ns_capable(pid_ns->user_ns, CAP_SYS_ADMIN))
-> +               return -EPERM;
-> +
-> +       /* This needs to be fixed. */
-> +       BUILD_BUG_ON(sizeof(u64) != sizeof(unsigned long));
-> +
-> +       tmp.data = &pid_ns->next_highpid;
-> +       return proc_dointvec(&tmp, write, buffer, lenp, ppos);
-> +}
-> +
->  extern int pid_max;
->  static int zero = 0;
->  static struct ctl_table pid_ns_ctl_table[] = {
-> @@ -279,6 +295,12 @@ static struct ctl_table pid_ns_ctl_table[] = {
->                 .extra1 = &zero,
->                 .extra2 = &pid_max,
->         },
-> +       {
-> +               .procname = "ns_next_highpid",
-> +               .maxlen = sizeof(u64),
-> +               .mode = 0666, /* permissions are checked in the handler */
-> +               .proc_handler = pid_ns_next_highpid_handler,
-> +       },
->         { }
->  };
->  static struct ctl_path kern_path[] = { { .procname = "kernel", }, { } };
+Your Cc list is huge. You should limit it to the lists and to the
+individuals you know are interested in this series, like maintainers,
+people who work on Mediatek SoCs, people who commented on previous
+series.
+
+Sascha
+
+On Fri, Nov 28, 2014 at 11:54:26AM +0800, Flora Fu wrote:
+> 
+> The patch sets add support for MediaTek PMIC MT6397 MFD core and its regulator driver.
+> This is hardware layout for access PMIC MT6397 from AP SoC MT8135.
+> Between PMIC MT6397 and MT8135, the physical signal channel is SPI bus.
+> A specific hardware called PMIC Wrapper or PWRAP to handle access protocols in both PMIC and AP side.
+> 
+> +-----------------+           +---------------+
+> |                 |           |               |
+> | Mediatek AP SoC |           |               |
+> | (ex. MT8135)    |           |    MT6397     |
+> |                 |           |               |
+> |      +--------+ | (SPI bus) | +--------+    |
+> |      |        | |-----------| |        |    |
+> |      |  PMIC  | |-----------| |  PMIC  |    |
+> |      | Wrapper| |-----------| | Wrapper|    |
+> |      |        | |-----------| |        |    |
+> |      +--------+ |           | +--------+    |
+> |                 |           |               |
+> +-----------------+           +---------------+
+> 
+> Changes since v1
+> ================
+> (1) Patch 1/8: Add MT8135 PMIC wrapper driver for SoC's proprietary hardware.
+> (2) Patch 2/8: Update patch of MT6397 MFD driver to contain only MFD related codes and fix defeat of coding styles.
+> (3) Patch 3/8: Update MT6397 regulator driver
+> 	- use helpers and standard ways for specifying data in regulator description.
+> 	- add more comments to explaining why the driver implement its own regulator_ops for ".is_enabled", ".set_voltage_sel" and ".get_voltage_sel".
+> 	- update driver implement for coding styles.
+> (4) Patch 4/8: Add document for MT8135 PMIC wrapper.
+> (5) Patch 5/8: Update document for MT6397 MFD.
+> (6) Patch 6/8: Update document for MT6397 regulators.
+> (7) Patch 7/8: Add device tree for MT6397 MFD in mt8135.dtsi.
+> (8) Patch 8/8: Update device tree for MT6397 regulators in mt8135.dtsi.
+> 
+> Initial version (v1):
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/302984.html
+> 
+> This driver is based on 3.18-rc1.
+> 
+> Flora Fu (8):
+>   soc: mediatek: Add PMIC wrapper for MT8135 and MT6397 SoC
+>   mfd: MT6397: Add support for PMIC MT6397 MFD
+>   regulator: MT6397: Add support for MT6397 regulator
+>   dt-bindings:: Add document for MT8135 PMIC Wrapper
+>   dt-bindings: Add document for MT6397 MFD
+>   dt-bindings: Add document for MT6397 regulator
+>   ARM: dts: mt8135: Add support for PMIC MT6397 MFD
+>   ARM: dts: mt8135: Add support for MT6397 regulator
+> 
+>  Documentation/devicetree/bindings/mfd/mt6397.txt   |  73 ++
+>  .../bindings/regulator/mt6397-regulator.txt        |  32 +
+>  .../soc/mediatek/mediatek,mt8135-pwrap.txt         |  79 ++
+>  arch/arm/boot/dts/mt8135.dtsi                      | 211 ++++++
+>  drivers/mfd/Kconfig                                |  10 +
+>  drivers/mfd/Makefile                               |   1 +
+>  drivers/mfd/mt6397-core.c                          |  84 ++
+>  drivers/regulator/Kconfig                          |   9 +
+>  drivers/regulator/Makefile                         |   2 +-
+>  drivers/regulator/mt6397-regulator.c               | 369 +++++++++
+>  drivers/soc/Kconfig                                |   1 +
+>  drivers/soc/Makefile                               |   1 +
+>  drivers/soc/mediatek/Kconfig                       |  11 +
+>  drivers/soc/mediatek/Makefile                      |   1 +
+>  drivers/soc/mediatek/mt8135-pmic-wrap.c            | 844 +++++++++++++++++++++
+>  drivers/soc/mediatek/mt8135-pmic-wrap.h            | 138 ++++
+>  include/linux/mfd/mt6397/core.h                    |  23 +
+>  include/linux/mfd/mt6397/registers.h               | 362 +++++++++
+>  include/linux/regulator/mt6397-regulator.h         |  49 ++
+>  include/linux/soc/mediatek/mtk-pmic-wrap.h         |  25 +
+>  20 files changed, 2324 insertions(+), 1 deletion(-)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/mt6397.txt
+>  create mode 100644 Documentation/devicetree/bindings/regulator/mt6397-regulator.txt
+>  create mode 100644 Documentation/devicetree/bindings/soc/mediatek/mediatek,mt8135-pwrap.txt
+>  create mode 100644 drivers/mfd/mt6397-core.c
+>  create mode 100644 drivers/regulator/mt6397-regulator.c
+>  create mode 100644 drivers/soc/mediatek/Kconfig
+>  create mode 100644 drivers/soc/mediatek/Makefile
+>  create mode 100644 drivers/soc/mediatek/mt8135-pmic-wrap.c
+>  create mode 100644 drivers/soc/mediatek/mt8135-pmic-wrap.h
+>  create mode 100644 include/linux/mfd/mt6397/core.h
+>  create mode 100644 include/linux/mfd/mt6397/registers.h
+>  create mode 100644 include/linux/regulator/mt6397-regulator.h
+>  create mode 100644 include/linux/soc/mediatek/mtk-pmic-wrap.h
+> 
 > --
-> 1.9.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> 1.8.1.1.dirty
+> 
+> 
+> 
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
