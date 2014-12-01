@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932662AbaLAWTn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 17:19:43 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:59348 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160AbaLAWTj (ORCPT
+	id S932579AbaLAWVb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 17:21:31 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:53321 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753934AbaLAWVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 17:19:39 -0500
+	Mon, 1 Dec 2014 17:21:30 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Kevin Hilman <khilman@kernel.org>
+Subject: Re: [PATCH] PM / Kconfig: Do not select PM directly from Kconfig files
+Date: Mon, 01 Dec 2014 23:42:52 +0100
+Message-ID: <1709855.vJRHLWCgos@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAMuHMdU-PH=L4L-Jt8BVCvcFwJJY6PhEEBPWtO3wLhh2ndyA6g@mail.gmail.com>
+References: <4088467.A4Xd3YfMSv@vostro.rjw.lan> <CAMuHMdU-PH=L4L-Jt8BVCvcFwJJY6PhEEBPWtO3wLhh2ndyA6g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1417423940-1669-5-git-send-email-zyw@rock-chips.com>
-References: <1417423940-1669-1-git-send-email-zyw@rock-chips.com>
-	<1417423940-1669-5-git-send-email-zyw@rock-chips.com>
-Date: Mon, 1 Dec 2014 14:19:38 -0800
-X-Google-Sender-Auth: nBfaURAOGmLzfDdQpadhsTcRH0w
-Message-ID: <CAD=FV=XHUze3ovhFSN7_9rvM6tpKrF90ii1XbHPxw4q-7ob+dA@mail.gmail.com>
-Subject: Re: [PATCH v10 4/4] ARM: dts: rockchip: add suspend settings for rk3288-evb-rk808
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kevin Hilman <khilman@kernel.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris,
+On Monday, December 01, 2014 10:21:54 AM Geert Uytterhoeven wrote:
+> On Sat, Nov 29, 2014 at 2:03 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >
+> > It is not valid to select CONFIG_PM directly without selecting
+> > CONFIG_PM_SLEEP or CONFIG_PM_RUNTIME too, because that breaks
+> > dependencies (ia64 does that) and it is not necessary to select
+> > CONFIG_PM directly if CONFIG_PM_SLEEP or CONFIG_PM_RUNTIME is
+> > set, because it will be set automatically then (sh does that).
+> >
+> > Fix those mistakes.
+> >
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> >  arch/ia64/Kconfig |    1 -
+> >  arch/sh/Kconfig   |    1 -
+> 
+> For the sh part:
+> 
+> Acked-by: Geert Uytterhoeven <geert+renesas@glider.be>
 
-On Mon, Dec 1, 2014 at 12:52 AM, Chris Zhong <zyw@rock-chips.com> wrote:
-> Add suspend-voltages and necessary pin-states for suspend on
-> rk3288-evb-rk808 boards. global_pwroff would be pulled high when
-> RK3288 entering suspend, this pin is a sleep signal for RK808, so
-> RK808 could goto sleep mode, and some regulators would be disable.
->
-> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
->
-> ---
->
-> Changes in v10:
-> - remove regulator-suspend-mem-enabled and regulator-suspend-mem-microvolt
-> - enable the lcd, codec, sdmmc power during suspend
->
-> Changes in v9:
-> - update the subject and description
->
-> Changes in v8:
-> - keep all except cpu&tp power rail on during suspend
-> - add regulator-on-in-suspend before set suspend voltage
-> - add a reference of ddrio_pwroff and ddr0_retention
->
-> Changes in v7:
-> - add regulator-state-mem sub node for suspend
->
-> Changes in v6: None
-> Changes in v5: None
-> Changes in v4: None
-> Changes in v3: None
-> Changes in v2: None
->
->  arch/arm/boot/dts/rk3288-evb-rk808.dts | 53 +++++++++++++++++++++++++++++++++-
->  1 file changed, 52 insertions(+), 1 deletion(-)
+Thanks!
 
-I'm still not 100% clear on why it wakes up by itself, but I guess (?)
-that could be solved in a separate patch.  I did confirm that if I
-hacked the wakeup source to be just from GPIOs that it stayed asleep
-and could be awakened by the power button.  I tested on linux-next
-with evb-rk808.
+> Note that sh is orphaned, so you should resend your patch to Andrew Morton,
+> or queue it yourself.
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
-Tested-by: Doug Anderson <dianders@chromium.org>
+Since it depends on material already in my tree, I'm going to queue it up myself.
 
--Doug
+Rafael
+
