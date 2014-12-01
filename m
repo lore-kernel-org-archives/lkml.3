@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003AbaLAQ2g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 11:28:36 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:42622 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753930AbaLAQ2d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 11:28:33 -0500
-Date: Mon, 1 Dec 2014 16:28:10 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 10/12] kmemleak: disable kasan instrumentation for
- kmemleak
-Message-ID: <20141201162810.GA13676@localhost>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1417104057-20335-1-git-send-email-a.ryabinin@samsung.com>
- <1417104057-20335-11-git-send-email-a.ryabinin@samsung.com>
+	id S1754089AbaLAQ3o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 11:29:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58073 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752836AbaLAQ3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 11:29:42 -0500
+Date: Mon, 1 Dec 2014 18:05:39 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        Jason Wang <jasowang@redhat.com>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: [PATCH v8 35/50] vhost/net: larger header for virtio 1.0
+Message-ID: <1417449619-24896-36-git-send-email-mst@redhat.com>
+References: <1417449619-24896-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1417104057-20335-11-git-send-email-a.ryabinin@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1417449619-24896-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 04:00:54PM +0000, Andrey Ryabinin wrote:
-> kmalloc internally round up allocation size, and kmemleak
-> uses rounded up size as object's size. This makes kasan
-> to complain while kmemleak scans memory or calculates of object's
-> checksum. The simplest solution here is to disable kasan.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Reviewed-by: Jason Wang <jasowang@redhat.com>
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+---
+ drivers/vhost/net.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-This would indeed be the simplest since by the time kmemleak callbacks
-get called (from slub) we lose the original size information (especially
-for kmem_cache_alloc).
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index c218188..8ff4a6d 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -1030,7 +1030,8 @@ static int vhost_net_set_features(struct vhost_net *n, u64 features)
+ 	size_t vhost_hlen, sock_hlen, hdr_len;
+ 	int i;
+ 
+-	hdr_len = (features & (1 << VIRTIO_NET_F_MRG_RXBUF)) ?
++	hdr_len = (features & ((1ULL << VIRTIO_NET_F_MRG_RXBUF) |
++			       (1ULL << VIRTIO_F_VERSION_1))) ?
+ 			sizeof(struct virtio_net_hdr_mrg_rxbuf) :
+ 			sizeof(struct virtio_net_hdr);
+ 	if (features & (1 << VHOST_NET_F_VIRTIO_NET_HDR)) {
+-- 
+MST
 
-> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-> ---
->  mm/kmemleak.c | 6 ++++++
->  1 file changed, 6 insertions(+)
-
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
