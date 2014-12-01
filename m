@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205AbaLAATG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 19:19:06 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:35191 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751920AbaLAATE (ORCPT
+	id S1752292AbaLAAVV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 19:21:21 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:42154 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752220AbaLAAVU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 19:19:04 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkUQAEuze1R5LLkm/2dsb2JhbABbgwaBKbNMAQEBAgEGlE+FIgQCAoEKFwEBAQEBfYQCAQEBAwE6HCMFCwgDGAklDwUlAyETiDcI0WYBCyAYhh+JWWsHhEgBBJxGjDCJFB6DcSswgkcBAQE
-Date: Mon, 1 Dec 2014 11:18:49 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        gregkh@linuxfoundation.org, rafael.j.wysocki@intel.com,
-        pebolle@tiscali.nl, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: defconfig: Enable CONFIG_FHANDLE
-Message-ID: <20141201001849.GJ9561@dastard>
-References: <1416958612-7448-1-git-send-email-richard@nod.at>
- <20141130205430.GD16151@dastard>
- <547B8731.90305@nod.at>
+	Sun, 30 Nov 2014 19:21:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <547B8731.90305@nod.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <547b8a45.6e608c0a.20f9.1002@mx.google.com>
+References: <20141114213124.GB3344@redhat.com>
+	<CA+55aFx16ks_azU0eAcx+qZ5-o8Xo0zzP6aNjrskai8rqp+eMg@mail.gmail.com>
+	<20141115213405.GA31971@redhat.com>
+	<20141116014006.GA5016@redhat.com>
+	<CA+55aFwLH6zGf7O=o2+H0Z8=8nW4zwUbw3Q4bJGttHACv9g+FQ@mail.gmail.com>
+	<20141126002501.GA11752@redhat.com>
+	<CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>
+	<20141126024032.GA13246@redhat.com>
+	<20141126225745.GA30346@redhat.com>
+	<CA+55aFz-JUX6CU-aO+cwLHYtH7BA+dgyUnEGoy8T4S62gEDFpA@mail.gmail.com>
+	<20141127225637.GA24019@redhat.com>
+	<m5dart$co$1@ger.gmane.org>
+	<CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
+	<547b8a45.6e608c0a.20f9.1002@mx.google.com>
+Date: Sun, 30 Nov 2014 16:21:19 -0800
+X-Google-Sender-Auth: xtMba_skNd7RCf-UI7fqY9WMmj0
+Message-ID: <CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 30, 2014 at 10:08:01PM +0100, Richard Weinberger wrote:
-> Am 30.11.2014 um 21:54 schrieb Dave Chinner:
-> > On Wed, Nov 26, 2014 at 12:36:52AM +0100, Richard Weinberger wrote:
-> >> systemd has a hard dependency on CONFIG_FHANDLE.
-> >> If you run systemd with CONFIG_FHANDLE=n it will somehow
-> >> boot but fail to spawn a getty or other basic services.
-> >> As systemd is now used by most x86 distributions it
-> >> makes sense to enabled this by default and save kernel
-> >> hackers a lot of value debugging time.
-> > 
-> > The bigger question to me is this: why does systemd need to
-> > store/open by handle rather than just opening paths directly when
-> > needed? This interface is intended for stable, pathless access to
-> > inodes across unmount/mount contexts (e.g. userspace NFS servers,
-> > filesystem backup programs, etc) so I'm curious as to the problem
-> > systemd is solving using this interface. I just can't see the
-> > problem being solved here, and why path based security checks on
-> > every open() aren't necessary...
-> 
-> Digging inter systemd source shows that they are using name_to_handle_at()
-> to get the mount id of a given path.
+On Sun, Nov 30, 2014 at 1:21 PM, Dâniel Fraga <fragabr@gmail.com> wrote:
+>
+>         Yes, but "menuconfig" doesn't allow me to disable it (it's
+> always checked). Newbie question: does TREE_PREEMPT_RCU depends on any
+> other option? Thanks.
 
->From the name_to_handle_at() man page:
+Maybe you'll have to turn off RCU_CPU_STALL_VERBOSE first.
 
-    The mount_id argument returns an identifier for the filesystem
-    mount that corresponds to pathname.  This corresponds to the
-    first  field in  one  of  the records in /proc/self/mountinfo.
-    Opening the pathname in the fifth field of that record yields a
-    file descriptor for the mount point; that file descriptor can be
-    used in a subsequent call to open_by_handle_at().
+Although I think you should be able to just edit the .config file,
+delete the like that says
 
-So why do they need CONFIG_FHANDLE to get the mount id in userspace?
-Indeed, what do they even need the mount id for?
+    CONFIG_TREE_PREEMPT_RCU=y
 
-> The actual struct file_handle result is always ignored.
+and then just do a "make oldconfig", and then verify that
+TREE_PREEMPT_RCU hasn't been re-enabled by some dependency. But it
+shouldn't have, and that "make oldconfig" should get rid of anything
+that depends on TREE_PREEMPT_RCU.
 
-That sounds like a classic case of interface abuse. i.e. using an
-interface for something it was not designed or intended for....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+                  Linus
