@@ -1,158 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874AbaLAJfR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 04:35:17 -0500
-Received: from mga09.intel.com ([134.134.136.24]:14393 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752716AbaLAJfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 04:35:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,492,1413270000"; 
-   d="scan'208";a="646103243"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Jay Aurabind <mail@aurabindo.in>, Daniel Vetter <daniel.vetter@intel.com>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/i915 Trouble with minimum brightness
-In-Reply-To: <5478C9AA.2010600@aurabindo.in>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <5478C9AA.2010600@aurabindo.in>
-User-Agent: Notmuch/0.19~rc1+1~g08b4944 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 01 Dec 2014 11:34:55 +0200
-Message-ID: <87k32bbtmo.fsf@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752951AbaLAJfj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 04:35:39 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:39545 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752738AbaLAJfh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 04:35:37 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-25-547c366680c8
+Message-id: <547C3664.9090806@samsung.com>
+Date: Mon, 01 Dec 2014 10:35:32 +0100
+From: Jacek Anaszewski <j.anaszewski@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
+        rpurdie@rpsys.net, sakari.ailus@iki.fi, s.nawrocki@samsung.com,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH/RFC v8 04/14] v4l2-async: change custom.match callback
+ argument type
+References: <1417166286-27685-1-git-send-email-j.anaszewski@samsung.com>
+ <1417166286-27685-5-git-send-email-j.anaszewski@samsung.com>
+ <5063831.7WQadZaPHh@avalon>
+In-reply-to: <5063831.7WQadZaPHh@avalon>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsVy+t/xq7ppZjUhBm9vM1psnLGe1eLozolM
+	Fu83zmOyWPJzF5PF2aY37BadE5ewW1zeNYfNYuubdYwWPRu2slosvX6RyeLuqaNsFrt3PWW1
+	OPymndXizP6VbA58HmvmrWH0mPJ7I6vHzll32T0+fIzzmN0xk9Xj8NeFLB575v9g9ejbsorR
+	Y8Xq7+wenzfJBXBFcdmkpOZklqUW6dslcGWc73ArOM5T8evlA7YGxulcXYwcHBICJhLvj4Z1
+	MXICmWISF+6tZ+ti5OIQEljKKPFwfiMrhPORUeLBmXmMIFW8AloSu3e8ZgGxWQRUJZ4vu8gM
+	YrMJGEr8fPGaCcQWFYiQ+HN6HytEvaDEj8n3wOpFBCwkehdNB5vDLPCVSWLaC08QW1ggSuLw
+	zNmMcJsvNTawgyQ4BTQkjqw8wArRYC2xctI2qGZ5ic1r3jJPYBSYhWTHLCRls5CULWBkXsUo
+	mlqaXFCclJ5rqFecmFtcmpeul5yfu4kREltfdjAuPmZ1iFGAg1GJh/fCquoQIdbEsuLK3EOM
+	EhzMSiK80w1qQoR4UxIrq1KL8uOLSnNSiw8xMnFwSjUw+uyxDCnYJcNl8M5W7If1yTfSTfzv
+	Inysq5/E+u3/2r2Lh6OjsWvTjU3zmDe1SwdytGQsEOnx/6/vErr1dbaKwoVDaQl/lbNlwuKe
+	3W377NdRvvySVPbz+RlnktizlVO3Onye885kQqdf3nqWy3LPFj16d3iiTfyGFLtnM2JYXNtE
+	fA4dXXVSiaU4I9FQi7moOBEAgMgZoosCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Nov 2014, Jay Aurabind <mail@aurabindo.in> wrote:
-> Hello all,
->
-> I notice that some activity has been going on with the minimum value
-> of display brightness recently (e1c412e7575).
->
-> But the minimum value thats currently chosen is not at all acceptable
-> for my eyes. My display is working perfectly without that restriction
-> on minimum intensity.  I tend to stare at the screen a lot and the
-> current minimum settings is straining my eyes.
->
-> Even if you say that it may not be good for the devices, I still
-> insist, because I want my *display* to fail first, not my eyes.  So
-> please try providing a way for the needy users to override this
-> minimum settings. I hope adding a module parameter would be easy fix.
->
-> Something like this: ? (I dont call myself a kernel programmer yet,
-> just scratching the surface)
->
->
-> Provide provision for users to disable restriction on minimum brightness
-> value introduced in:
->
->     commit e1c412e75754ab7b7002f3e18a2652d999c40d4b
->     Author: Jani Nikula <jani.nikula@intel.com>
->     Date:   Wed Nov 5 14:46:31 2014 +0200
->
->         drm/i915: safeguard against too high minimum brightness
->
-> There are systems which work reliably without restriction on minimum
-> value of display brightness. Also the arbitrary value may be too high
-> for many users as well.
+Hi Laurent,
 
-Please file a new bug at [1], reference this mail, and attach
-/sys/kernel/debug/dri/0/i915_opregion.
+On 11/29/2014 05:38 PM, Laurent Pinchart wrote:
+> Hi Jacek,
+>
+> Thank you for the patch.
+>
+> On Friday 28 November 2014 10:17:56 Jacek Anaszewski wrote:
+>> It is useful to have an access to the async sub-device
+>> being matched, not only to the related struct device.
+>> Change match callback argument from struct device
+>> to struct v4l2_subdev. It will allow e.g. for matching
+>> a sub-device by its "name" property.
+>
+> In principle I agree. However, we will need to reimplement v4l2-async based on
+> the component (drivers/base/component.c) framework at some point. As the
+> component framework is based on struct device, will it still be possible to
+> match on subdev name in that case ? If not, we might need to try to find
+> another approach to the issue.
 
-The minimum value is chosen and provided by the OEM. There's still some
-open questions about the interpretation of the value though (which lead
-to the commit you referenced), so I'm hesitant to make changes before we
-have those cleared up.
+There were reservations raised [1] concerning the way of matching
+by name, as the labels are not guaranteed to be globally unique across
+Device Tree. I admit, this issue has to be solved in a different way.
+Especially in view of prospective transition to using
+drivers/base/component.c
 
-In general I am not fond of adding new module parameters for tuning
-things. Every new knob is another point of failure that we need to test,
-and they are pretty much part of the ABI we can't easily drop or change.
+I propose to add a new structure:
 
-BR,
-Jani.
+struct v4l2_asd_match{
+	bool (*match)(struct v4l2_async_subdev *, void *);
+	void *priv;
+}
 
-[1] https://bugs.freedesktop.org/enter_bug.cgi?product=DRI&component=DRM/Intel
+and a function:
+v4l2_async_register_subdev_with_match(struct v4l2_subdev *sd, struct 
+v4l2_asd_match*).
 
+This way we could pass DT sub-node related to a sub-led in a priv
+field of v4l2_asd_match upon registration.
 
->
-> Signed-off-by: Aurabindo J <mail@aurabindo.in>
-> ---
->  drivers/gpu/drm/i915/i915_drv.h    |  1 +
->  drivers/gpu/drm/i915/i915_params.c |  6 ++++++
->  drivers/gpu/drm/i915/intel_panel.c | 14 ++++++++++----
->  3 files changed, 17 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-> index 16a6f6d..55d2ead 100644
-> --- a/drivers/gpu/drm/i915/i915_drv.h
-> +++ b/drivers/gpu/drm/i915/i915_drv.h
-> @@ -2213,6 +2213,7 @@ struct i915_params {
->  	int disable_power_well;
->  	int enable_ips;
->  	int invert_brightness;
-> +	int restrict_min_brightness;
->  	int enable_cmd_parser;
->  	/* leave bools at the end to not create holes */
->  	bool enable_hangcheck;
-> diff --git a/drivers/gpu/drm/i915/i915_params.c b/drivers/gpu/drm/i915/i915_params.c
-> index c91cb20..0601c2a 100644
-> --- a/drivers/gpu/drm/i915/i915_params.c
-> +++ b/drivers/gpu/drm/i915/i915_params.c
-> @@ -46,6 +46,7 @@ struct i915_params i915 __read_mostly = {
->  	.prefault_disable = 0,
->  	.reset = true,
->  	.invert_brightness = 0,
-> +	.restrict_min_brightness = 1,
->  	.disable_display = 0,
->  	.enable_cmd_parser = 1,
->  	.disable_vtd_wa = 0,
-> @@ -155,6 +156,11 @@ MODULE_PARM_DESC(invert_brightness,
->  	"to dri-devel@lists.freedesktop.org, if your machine needs it. "
->  	"It will then be included in an upcoming module version.");
->
-> +module_param_named(restrict_min_brightness, i915.restrict_min_brightness, int, 0600);
-> +MODULE_PARM_DESC(restrict_min_brightness,
-> +	"Restrict minimum brightness "
-> +	"(-1 disable restriction, 0 value from VBT, 1 arbitrary value )");
-> +
->  module_param_named(disable_display, i915.disable_display, bool, 0600);
->  MODULE_PARM_DESC(disable_display, "Disable display (default: false)");
->
-> diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-> index 41b3be2..def9f4e 100644
-> --- a/drivers/gpu/drm/i915/intel_panel.c
-> +++ b/drivers/gpu/drm/i915/intel_panel.c
-> @@ -1109,10 +1109,16 @@ static u32 get_backlight_min_vbt(struct intel_connector *connector)
->  	 * against this by letting the minimum be at most (arbitrarily chosen)
->  	 * 25% of the max.
->  	 */
-> -	min = clamp_t(int, dev_priv->vbt.backlight.min_brightness, 0, 64);
-> -	if (min != dev_priv->vbt.backlight.min_brightness) {
-> -		DRM_DEBUG_KMS("clamping VBT min backlight %d/255 to %d/255\n",
-> -			      dev_priv->vbt.backlight.min_brightness, min);
-> +	if (i915.restrict_min_brightness < 0)
-> +		min = 0;
-> +	else if (i915.restrict_min_brightness == 0)
-> +		min = dev_priv->vbt.backlight.min_brightness;
-> +	else {
-> +		min = clamp_t(int, dev_priv->vbt.backlight.min_brightness, 0, 64);
-> +		if (min != dev_priv->vbt.backlight.min_brightness) {
-> +			DRM_DEBUG_KMS("clamping VBT min backlight %d/255 to %d/255\n",
-> +					dev_priv->vbt.backlight.min_brightness, min);
-> +	    }
->  	}
->
->  	/* vbt value is a coefficient in range [0..255] */
-> -- 
-> 2.1.3
->
->
->
->
->
+This is similar approach as in case of drivers/base/component.c.
 
--- 
-Jani Nikula, Intel Open Source Technology Center
+Best Regards,
+Jacek Anaszewski
+
+[1] http://www.spinics.net/lists/linux-leds/msg02532.html
