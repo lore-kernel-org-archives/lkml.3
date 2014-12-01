@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932504AbaLAU3U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 15:29:20 -0500
-Received: from s3.sipsolutions.net ([5.9.151.49]:60008 "EHLO sipsolutions.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932158AbaLAU3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 15:29:18 -0500
-Message-ID: <1417465745.28610.0.camel@sipsolutions.net>
-Subject: Re: net-PA Semi: Deletion of unnecessary checks before the function
- call "pci_dev_put"
-From: Johannes Berg <johannes@sipsolutions.net>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: Lino Sanfilippo <LinoSanfilippo@gmx.de>, Olof Johansson <olof@lixom.net>,
-        netdev@vger.kernel.org, backports@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
-Date: Mon, 01 Dec 2014 21:29:05 +0100
-In-Reply-To: <547BC5AD.6090500@users.sourceforge.net> (sfid-20141201_023451_153915_6CFB474F)
-References: <5307CAA2.8060406@users.sourceforge.net>
-	 <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
-	 <530A086E.8010901@users.sourceforge.net>
-	 <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
-	 <530A72AA.3000601@users.sourceforge.net>
-	 <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
-	 <530B5FB6.6010207@users.sourceforge.net>
-	 <alpine.DEB.2.10.1402241710370.2074@hadrien>
-	 <530C5E18.1020800@users.sourceforge.net>
-	 <alpine.DEB.2.10.1402251014170.2080@hadrien>
-	 <530CD2C4.4050903@users.sourceforge.net>
-	 <alpine.DEB.2.10.1402251840450.7035@hadrien>
-	 <530CF8FF.8080600@users.sourceforge.net>
-	 <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
-	 <530DD06F.4090703@users.sourceforge.net>
-	 <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
-	 <5317A59D.4@users.sourceforge.net> <547A09B1.9090102@users.sourceforge.net>
-	 <547B579F.10709@gmx.de> <547BC5AD.6090500@users.sourceforge.net>
-	 (sfid-20141201_023451_153915_6CFB474F)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
+	id S932464AbaLAUam (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 15:30:42 -0500
+Received: from smtp-out-249.synserver.de ([212.40.185.249]:1072 "EHLO
+	smtp-out-249.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932158AbaLAUal (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 15:30:41 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 13028
+Message-ID: <547CCFF7.2000205@metafoo.de>
+Date: Mon, 01 Dec 2014 21:30:47 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+MIME-Version: 1.0
+To: Timur Tabi <timur@tabi.org>, Arnd Bergmann <arnd@arndb.de>
+CC: linuxppc-dev@lists.ozlabs.org, Mark Brown <broonie@kernel.org>,
+        alsa-devel@alsa-project.org, Jiada Wang <jiada_wang@mentor.com>,
+        linux-kernel@vger.kernel.org, lgirdwood@gmail.com,
+        nicoleotsuka@gmail.com, tiwai@suse.de, Li.Xiubo@freescale.com,
+        Markus Pargmann <mpa@pengutronix.de>
+Subject: Re: [alsa-devel] [PATCH] ASoC: fsl_ssi: free irq before irq_dispose_mapping()
+References: <1417402251-6596-1-git-send-email-jiada_wang@mentor.com> <2547588.Qc4F2IfZke@wuerfel> <547CC89F.1030205@tabi.org> <3401240.VsRpsiV8WN@wuerfel> <547CCB78.5090007@tabi.org>
+In-Reply-To: <547CCB78.5090007@tabi.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-12-01 at 02:34 +0100, SF Markus Elfring wrote:
+On 12/01/2014 09:11 PM, Timur Tabi wrote:
+> On 12/01/2014 02:01 PM, Arnd Bergmann wrote:
+>>> >Does this mean that fsl_ssi.c should not be calling
+>>> >irq_of_parse_and_map?  How else should it get the IRQ?
+>> platform_get_irq()
+>
+> Ok, but that function also calls irq_create_of_mapping().  So it still
+> appears that the only way to get the IRQ is to map it, but then we can't use
+> devm_request_irq().
+>
 
-> > Some of those NULL pointer checks on input parameters may have been
-> > added subsequently to functions. So there may be older kernel versions
-> > out there in which those checks dont exists in some cases. If some of
-> > the now "cleaned up" code is backported to such a kernel chances are
-> > good that those missing checks are overseen. And then neither caller nor
-> > callee is doing the NULL pointer check.
-
-> I assume that a few backporters can tell you more about their corresponding
-> software development experiences.
-> http://www.do-not-panic.com/2014/04/automatic-linux-kernel-backporting-with-coccinelle.html
-
-In such cases we just provide an appropriate wrapper and replace callers
-of the original function by callers of the wrapper, typically with a
-#define.
-
-So this kind of evolution is no problem for the (automated) backports
-using the backports project - although it can be difficult to detect
-such a thing is needed.
-
-johannes
-
+Hm... that's new. But it's not really a driver issue anymore if it is done 
+in the core. So I guess for now just use platform_get_irq() and ignore the 
+other issue.
