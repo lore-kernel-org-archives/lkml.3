@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436AbaLAMdy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 07:33:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60638 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752759AbaLAMdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 07:33:52 -0500
-Date: Mon, 1 Dec 2014 14:33:34 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Jason Wang <jasowang@redhat.com>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v7 30/46] vhost/net: force len for TX to host endian
-Message-ID: <20141201123334.GB17875@redhat.com>
-References: <1417359787-10138-1-git-send-email-mst@redhat.com>
- <1417359787-10138-31-git-send-email-mst@redhat.com>
- <20141201132051.4ab028d9.cornelia.huck@de.ibm.com>
+	id S1753467AbaLAMeA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 07:34:00 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:40873 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752759AbaLAMd5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 07:33:57 -0500
+Message-ID: <547C6022.1030904@parallels.com>
+Date: Mon, 1 Dec 2014 15:33:38 +0300
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141201132051.4ab028d9.cornelia.huck@de.ibm.com>
+To: Florian Weimer <fw@deneb.enyo.de>, Andy Lutomirski <luto@amacapital.net>
+CC: <criu@openvz.org>, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        systemd Mailing List <systemd-devel@lists.freedesktop.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] proc, pidns: Add highpid
+References: <b0f6c4df0e8ef8afcc7b786edecb4be8c752941e.1417215468.git.luto@amacapital.net>	<87k32d13d5.fsf@mid.deneb.enyo.de>	<CALCETrV_aArOr7v4AqLHdyGGNU-5XBPmvBXEqbVU36EJ_G26uQ@mail.gmail.com> <87egsjrhmp.fsf@mid.deneb.enyo.de>
+In-Reply-To: <87egsjrhmp.fsf@mid.deneb.enyo.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-ClientProxiedBy: US-EXCH2.sw.swsoft.com (10.255.249.46) To
+ US-EXCH.sw.swsoft.com (10.255.249.47)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 01:20:51PM +0100, Cornelia Huck wrote:
-> On Sun, 30 Nov 2014 17:11:44 +0200
-> "Michael S. Tsirkin" <mst@redhat.com> wrote:
+On 12/01/2014 09:47 AM, Florian Weimer wrote:
+> * Andy Lutomirski:
 > 
-> > vhost/net keeps a copy of some used ring but (ab)uses length
-> > field for internal house-keeping. This works because
-> > for tx used length is always 0.
-> > Suppress sparse errors: we use native endian-ness internally but never
-> > expose it to guest.
+>> On Nov 30, 2014 1:47 AM, "Florian Weimer" <fw@deneb.enyo.de> wrote:
+>>>
+>>> * Andy Lutomirski:
+>>>
+>>>> The initial implementation is straightforward: highpid is simply a
+>>>> 64-bit counter. If a high-end system can fork every 3 ns (which
+>>>> would be amazing, given that just allocating a pid requires at
+>>>> atomic operation), it would take well over 1000 years for highpid to
+>>>> wrap.
+>>>
+>>> I'm not sure if I'm reading the patch correctly, but is the counter
+>>> namespaced?  If yes, why?
+>>
+>> It's namespaced so that CRIU can migrate/restore a whole pid namespace.
 > 
-> I admit that I find this patch description hard to read :)
-> 
-> 
-> "vhost/net keeps a copy of the used ring in host memory but (ab)uses
-> the length field for internal house-keeping. This works because the
-> length in the used ring for tx is always 0. In order to suppress sparse
-> errors, we need to force native endianness."
-> 
-> ?
+> Oh well, this requirement is at odds with system-wide uniqueness.  Is
+> CRIU really that important? :-)
 
-Yes. Add to this "These values are never exposed to guest."
+Well, in this context it is. Since the main (if not the only) use-case for
+highpid is to read one, remember, then compare to new value, restoring it
+to wrong/arbitrary value will break the using applications in 100% cases.
 
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > Reviewed-by: Jason Wang <jasowang@redhat.com>
-> > ---
-> >  drivers/vhost/net.c | 10 +++++-----
-> >  1 file changed, 5 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> > index 8dae2f7..dce5c58 100644
-> > --- a/drivers/vhost/net.c
-> > +++ b/drivers/vhost/net.c
-> > @@ -48,15 +48,15 @@ MODULE_PARM_DESC(experimental_zcopytx, "Enable Zero Copy TX;"
-> >   * status internally; used for zerocopy tx only.
-> >   */
-> >  /* Lower device DMA failed */
-> > -#define VHOST_DMA_FAILED_LEN	3
-> > +#define VHOST_DMA_FAILED_LEN	((__force __virtio32)3)
-> >  /* Lower device DMA done */
-> > -#define VHOST_DMA_DONE_LEN	2
-> > +#define VHOST_DMA_DONE_LEN	((__force __virtio32)2)
-> >  /* Lower device DMA in progress */
-> > -#define VHOST_DMA_IN_PROGRESS	1
-> > +#define VHOST_DMA_IN_PROGRESS	((__force __virtio32)1)
-> >  /* Buffer unused */
-> > -#define VHOST_DMA_CLEAR_LEN	0
-> > +#define VHOST_DMA_CLEAR_LEN	((__force __virtio32)0)
-> > 
-> > -#define VHOST_DMA_IS_DONE(len) ((len) >= VHOST_DMA_DONE_LEN)
-> > +#define VHOST_DMA_IS_DONE(len) ((__force u32)(len) >= (__force u32)VHOST_DMA_DONE_LEN)
-> > 
-> >  enum {
-> >  	VHOST_NET_FEATURES = VHOST_FEATURES |
+Thus we really need the ability to restore this value.
+
+Thanks,
+Pavel
+
