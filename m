@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691AbaLAIRU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 03:17:20 -0500
-Received: from aer-iport-4.cisco.com ([173.38.203.54]:19961 "EHLO
-	aer-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752390AbaLAIRT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 03:17:19 -0500
-X-IronPort-AV: E=Sophos;i="5.07,492,1413244800"; 
-   d="scan'208";a="252200794"
-Message-ID: <547C2400.3050409@cisco.com>
-Date: Mon, 01 Dec 2014 09:17:04 +0100
-From: Hans Verkuil <hansverk@cisco.com>
-Organization: Cisco Systems Norway
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1752724AbaLAITc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 03:19:32 -0500
+Received: from ozlabs.org ([103.22.144.67]:38780 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752652AbaLAITb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 03:19:31 -0500
+Date: Mon, 1 Dec 2014 19:19:23 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Subject: linux-next: build failure after merge of the usb tree
+Message-ID: <20141201191923.6366f9b5@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Anjana Sasindran <anjanasasindran123@gmail.com>,
-        gregkh@linuxfoundation.org, joe@perches.com, m.chehab@samsung.com,
-        hans.verkuil@cisco.com
-CC: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] drivers:staging:media:omap24xx:v4l2-int-device.h: Added
- a '*' before ')'--(parenthesis closing)
-References: <1417345082-3526-1-git-send-email-anjanasasindran123@gmail.com>
-In-Reply-To: <1417345082-3526-1-git-send-email-anjanasasindran123@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: hansverk
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/bQ36yLyIi138xoOu28SGi1W"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2014 11:58 AM, Anjana Sasindran wrote:
-> This patch fix a checkpatch.pl error:
-> 
-> ERROR: space prohibited before ')' parenthesis closing
-> 
-> Signed-off-by: Anjana Sasindran <anjanasasindran123@gmail.com>
+--Sig_/bQ36yLyIi138xoOu28SGi1W
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for the patch, but this driver is removed in kernel 3.19.
-So there is no point in patching it.
+Hi Greg,
 
-Regards,
+After merging the usb tree, today's linux-next build (arm
+multi_v7_defconfig) failed like this:
 
-	Hans
+arch/arm/mach-omap2/twl-common.c:94:21: error: array type has incomplete el=
+ement type
+ struct phy_consumer consumers[] =3D {
+                     ^
 
-> ---
->  drivers/staging/media/omap24xx/v4l2-int-device.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/media/omap24xx/v4l2-int-device.h b/drivers/staging/media/omap24xx/v4l2-int-device.h
-> index 0286c95..9490595 100644
-> --- a/drivers/staging/media/omap24xx/v4l2-int-device.h
-> +++ b/drivers/staging/media/omap24xx/v4l2-int-device.h
-> @@ -292,7 +292,7 @@ V4L2_INT_WRAPPER_1(s_video_routing, struct v4l2_routing, *);
->  
->  V4L2_INT_WRAPPER_0(dev_init);
->  V4L2_INT_WRAPPER_0(dev_exit);
-> -V4L2_INT_WRAPPER_1(s_power, enum v4l2_power, );
-> +V4L2_INT_WRAPPER_1(s_power, enum v4l2_power, *);
->  V4L2_INT_WRAPPER_1(g_priv, void, *);
->  V4L2_INT_WRAPPER_1(g_ifparm, struct v4l2_ifparm, *);
->  V4L2_INT_WRAPPER_1(g_needs_reset, void, *);
-> 
+Caused by commit dbc98635e0d4 ("phy: remove the old lookup method").
 
+I have used the usb tree from next-20141128 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/bQ36yLyIi138xoOu28SGi1W
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIbBAEBCAAGBQJUfCSRAAoJEMDTa8Ir7ZwVaKsP9jfnLwFNR5S4Tr7peZ0DqdmZ
+2nZUlDXjhPrLykjIg00RW8u4b7YebK5j6eGWQDEFBnB57vc3kPomy25ibW3vU7+M
+Hx+5h0ssaww4ly09wuw/cjwaLgg8ytmPra9+DSovItdY4fbNgU5lmGTN5kRyRvt5
+89xrAEkUGobD177y8ivtmgjPHNBsrXloRGgP/8RyZXievr3LA7/eiCV/rsdRSPLa
+B4SbMw3o4iUkK0ntMGB7+cWtyKwqJ/ENlgw+5NHtyVu/D3gaZMTqkW/7KS70vFmu
+UiTPzj3wtahZYwmxAylaBViyBak1/9tE4TLKoquQOBxgPm2YJZugqfI1E8ZbOZR1
+4TH0BfiTh2TK3fnPMguYdKZybpaa9UU6ZbetGj6Wn88iGEU7TmQSIIr9bht8MNDu
+x4/mwS2kq8XqgeKLNGlj38GxyYpkAdkDjo0MpcltGOAMCZJ25WkFYLkbgaREyO6V
+CuJ+I3wBIrI1XTrqc+2nlbRDzNeUKVQS226aEmbMG/r0MgWIQlPe8LbuEaThx4Jy
+Fk9u14fDUlPWHqa0IZ1JMP36hU7KTT1cxvKgCCwoCAk7NiOnKMYIr0b4DOdFwB+t
+uXczFRW47PvGKYlBm0e9eluu5L+7B+xjwtsCB6nltgKRxfPKRxGbs8amQTjr6IOw
+Egc1NyuWTWgWYI+Y7/c=
+=5+Bc
+-----END PGP SIGNATURE-----
+
+--Sig_/bQ36yLyIi138xoOu28SGi1W--
