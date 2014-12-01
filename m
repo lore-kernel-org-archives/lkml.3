@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470AbaLAUfx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 15:35:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50249 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932373AbaLAUfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 15:35:51 -0500
-Date: Mon, 1 Dec 2014 21:36:05 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Mathieu Magnaudet <mathieu.magnaudet@gmail.com>
-cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hid: export hid_report_len as an inline function in
- hid.h
-In-Reply-To: <1417100556-7096-1-git-send-email-mathieu.magnaudet@enac.fr>
-Message-ID: <alpine.LNX.2.00.1412012134240.2524@pobox.suse.cz>
-References: <1417100556-7096-1-git-send-email-mathieu.magnaudet@enac.fr>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932500AbaLAUgh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 15:36:37 -0500
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:39538 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753936AbaLAUgf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 15:36:35 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <547ccf74.a5198c0a.25de.26d9@mx.google.com>
+References: <CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>
+	<20141126024032.GA13246@redhat.com>
+	<20141126225745.GA30346@redhat.com>
+	<CA+55aFz-JUX6CU-aO+cwLHYtH7BA+dgyUnEGoy8T4S62gEDFpA@mail.gmail.com>
+	<20141127225637.GA24019@redhat.com>
+	<m5dart$co$1@ger.gmane.org>
+	<CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
+	<547b8a45.6e608c0a.20f9.1002@mx.google.com>
+	<CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
+	<547bbe36.48548c0a.105c.779c@mx.google.com>
+	<20141201191431.GA17385@linux.vnet.ibm.com>
+	<547ccf74.a5198c0a.25de.26d9@mx.google.com>
+Date: Mon, 1 Dec 2014 12:36:34 -0800
+X-Google-Sender-Auth: BU29cIVBEWXcU8_qjnK_HKdVBKA
+Message-ID: <CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
+        Dave Jones <davej@redhat.com>, Sasha Levin <sasha.levin@oracle.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Nov 2014, Mathieu Magnaudet wrote:
+On Mon, Dec 1, 2014 at 12:28 PM, Dâniel Fraga <fragabr@gmail.com> wrote:
+>
+>         Hi Paul. Please, I'd like the patch, because without
+> preemption, I'm unable to trigger this bug.
 
-> in several hid drivers it is necessary to calculate the length
-> of an hid_report. This patch exports the existing static function
-> hid_report_len of hid-core.c as an inline function in hid.h
-> 
-> Signed-off-by: Mathieu Magnaudet <mathieu.magnaudet@enac.fr>
+Ok, that's already interesting information. And yes, it would probably
+be interesting to see if CONFIG_PREEMPT=y but !CONFIG_TREE_PREEMPT_RCU
+then solves it too, to narrow it down to one but not the other..
 
-Applied, thanks.
+DaveJ - what about your situation? The standard Fedora kernels use
+CONFIG_PREEMPT_VOLUNTARY, do you have CONFIG_PREEMPT and
+CONFIG_TREE_PREEMPT_RCU enabled? I think you and Sasha both saw some
+RCU oddities too, no?
 
-[ ... snip ... ]
-> diff --git a/include/linux/hid.h b/include/linux/hid.h
-> index d585d02..06c4607 100644
-> --- a/include/linux/hid.h
-> +++ b/include/linux/hid.h
-> @@ -1087,6 +1087,17 @@ static inline void hid_hw_wait(struct hid_device *hdev)
->  		hdev->ll_driver->wait(hdev);
->  }
->  
-> +/**
-> + * hid_report_len - calculate the report length
-> + *
-> + * @report: the report we want to know the length
-> + */
-> +static inline int hid_report_len(struct hid_report *report)
-> +{
-> +	/* equivalent to DIV_ROUND_UP(report->size, 8) + !!(report->id > 0) */
-> +	return ((report->size - 1) >> 3) + 1 + (report->id > 0);
-
-BTW this makes me -- being the person resposible for that ugly calculation 
--- wonder whether we shouldn't, in the name of readability, just drop the 
-comment and make the code look that way instead.
-
--- 
-Jiri Kosina
-SUSE Labs
+                    Linus
