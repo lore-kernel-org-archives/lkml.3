@@ -1,98 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509AbaLANb1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 08:31:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40472 "EHLO mx2.suse.de"
+	id S1753632AbaLANcs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 08:32:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40493 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752693AbaLANbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 08:31:25 -0500
-Date: Mon, 1 Dec 2014 14:31:35 +0100 (CET)
-From: Miroslav Benes <mbenes@suse.cz>
-To: Josh Poimboeuf <jpoimboe@redhat.com>
-cc: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Petr Mladek <pmladek@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 2/3] kernel: add support for live patching
-In-Reply-To: <20141126154042.GB29079@treble.hsd1.ky.comcast.net>
-Message-ID: <alpine.LNX.2.00.1412011416110.23443@pobox.suse.cz>
-References: <1416935709-404-1-git-send-email-sjenning@redhat.com> <1416935709-404-3-git-send-email-sjenning@redhat.com> <alpine.LNX.2.00.1411261451570.10866@pobox.suse.cz> <20141126154042.GB29079@treble.hsd1.ky.comcast.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752404AbaLANcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 08:32:47 -0500
+Date: Mon, 1 Dec 2014 14:32:45 +0100
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Juergen Gross <jgross@suse.com>, Andrew Cooper <andrew.cooper3@citrix.com>,
+        x86@kernel.org, kvm@vger.kernel.org,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        linux-kernel@vger.kernel.org, Davidlohr Bueso <dbueso@suse.de>,
+        Joerg Roedel <jroedel@suse.de>, Jan Beulich <JBeulich@suse.com>,
+        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
+        Borislav Petkov <bp@suse.de>, Olaf Hering <ohering@suse.de>
+Subject: Re: [Xen-devel] [PATCH] xen: privcmd: schedule() after private
+	hypercall when non CONFIG_PREEMPT
+Message-ID: <20141201133245.GA25677@wotan.suse.de>
+References: <1417040805-15857-1-git-send-email-mcgrof@do-not-panic.com> <5476C66F.5040308@suse.com> <20141127183616.GV25677@wotan.suse.de> <54777277.5040401@citrix.com> <5477FECF.2060404@suse.com> <547C4A7E.6020207@citrix.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <547C4A7E.6020207@citrix.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Nov 2014, Josh Poimboeuf wrote:
-
-> Hi Miroslav,
-> 
-> Just addressing one of your comments below.  I'll let Seth respond to
-> the others :-)
-> 
-> On Wed, Nov 26, 2014 at 03:19:17PM +0100, Miroslav Benes wrote:
-> > > +/**
-> > > + * struct klp_func - function structure for live patching
-> > > + * @old_name:	name of the function to be patched
-> > > + * @new_func:	pointer to the patched function code
-> > > + * @old_addr:	a hint conveying at what address the old function
-> > > + *		can be found (optional, vmlinux patches only)
-> > > + */
-> > > +struct klp_func {
-> > > +	/* external */
-> > > +	const char *old_name;
-> > > +	void *new_func;
-> > > +	/*
-> > > +	 * The old_addr field is optional and can be used to resolve
-> > > +	 * duplicate symbol names in the vmlinux object.  If this
-> > > +	 * information is not present, the symbol is located by name
-> > > +	 * with kallsyms. If the name is not unique and old_addr is
-> > > +	 * not provided, the patch application fails as there is no
-> > > +	 * way to resolve the ambiguity.
-> > > +	 */
-> > > +	unsigned long old_addr;
+On Mon, Dec 01, 2014 at 11:01:18AM +0000, David Vrabel wrote:
+> On 28/11/14 04:49, Juergen Gross wrote:
+> > On 11/27/2014 07:50 PM, Andrew Cooper wrote:
+> >> 
+> >> XenServer uses
+> >>
+> >> https://github.com/xenserver/linux-3.x.pg/blob/master/master/0001-x86-xen-allow-privcmd-hypercalls-to-be-preempted.patch
+> >>
+> >>
+> >> to deal with these issues.  That patch is based on 3.10.
 > > 
-> > I wonder if we really need old_addr as an external field. I assume that 
-> > userspace tool in kpatch use it as a "hint" for kernel part and thus 
-> > kallsyms is not needed there (and it solves ambiguity problem as well). 
-> > But I am not sure if it is gonna be the same in upstream. When kernel is 
-> > randomized (CONFIG_RANDOMIZE_BASE is set to 'y', though default is 'n') 
-> > old_addr is not usable (and we throw it away in the code). Without 
-> > old_addr being set by the user we could spare some of code (calls to 
-> > klp_verify_vmlinux_symbol and such). 
-> 
-> Even with CONFIG_RANDOMIZE_BASE, the function offsets will be the same
-> regardless of the base address.  So we could still use old_addr to
-> determine the offset.
-> 
-> > So the question is whether future userspace tool in upstream would need it 
-> > and would use it. Please note that I do not mean it as a kpatch or kgraft 
-> > way to do things, I'm just not sure about old_addr being "public" and want 
-> > do discuss the options.
+> > Clever. :-)
 > > 
-> > The ambiguity of symbols was discussed in some other thread in lkml in 
-> > october (I guess) with no conclusion IIRC...
+> >>
+> >> I can remember whether this has been submitted upstream before (and
+> >> there were outstanding issues), or whether it fell at an inconvenient
+> >> time with our development cycles.
+> > 
+> > I found
+> > 
+> > http://lists.xen.org/archives/html/xen-devel/2014-02/msg02540.html
+> > 
+> > and nothing else.
 > 
-> We need to resolve ambiguity somehow, and old_addr is a way to do that.
-> Do you have any other ideas?
+> I dropped it because it copy-and-paste a bunch of otherwise generic x86
+> assembler and looked unlikely to get an x86 maintainer ack.  If you
+> think otherwise, feel free to pick it up and run with it.
 
-Unfortunately I don't.
+I was trying to run with it, but my biggest gripe with this was
+the use of preempt_schedule_irq(), but we can review that on the
+other thread.
 
-But similarly we don't deal with ambiguity in modules either. And it is 
-(at least theoretically) possible. Two static functions of the same name 
-in two different .c files which the final module is linked from. You have 
-to use kallsyms and it would get confused. Maybe this sounds odd but it 
-could happen. 
-
-Thus the old_addr value is not general protection (as modules are still 
-affected) and it is questionable whether the user should use it.
-
-I do not have strong opinion on this and if no one else shares my 
-thoughts, I am not against.
-
-Mira
+  Luis
