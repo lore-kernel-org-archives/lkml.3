@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807AbaLANzw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 08:55:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41492 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753614AbaLANzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 08:55:51 -0500
-Message-ID: <547C7364.8000009@suse.cz>
-Date: Mon, 01 Dec 2014 14:55:48 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Jason Cooper <jason@lakedaemon.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	id S1753836AbaLAN5u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 08:57:50 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:42482 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753355AbaLAN5t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 08:57:49 -0500
+Message-ID: <1417442259.4058.5.camel@arm.com>
+Subject: Re: [PATCH v2] MAINTAINERS: ARM Versatile Express platform
+From: Pawel Moll <pawel.moll@arm.com>
+To: Joe Perches <joe@perches.com>
+Cc: "arm@kernel.org" <arm@kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: kbuild: Fix forced rebuild after 'make dtbs'
-References: <CACRpkdYmJWy1_vs0tWRA7SvkQnvbXXKqf7pHpH5b5tZ6vR+KJg@mail.gmail.com>	<1414961549-31666-1-git-send-email-jason@lakedaemon.net>	<5474F78F.2060906@suse.cz>	<20141125235150.GH3836@n2100.arm.linux.org.uk>	<20141126005710.GE22670@titan.lakedaemon.net>	<CACRpkdZJoWbQeuZ4ZXGbQr0+SNG_9ZA+cQkAA0C2F9rnZDYtyQ@mail.gmail.com>	<20141126144153.GK3836@n2100.arm.linux.org.uk> <CACRpkdYwQT3+RLxP_b_kYJoHV4L7sZ7yiU=JZWVq_zHKz0EY_g@mail.gmail.com>
-In-Reply-To: <CACRpkdYwQT3+RLxP_b_kYJoHV4L7sZ7yiU=JZWVq_zHKz0EY_g@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 01 Dec 2014 13:57:39 +0000
+In-Reply-To: <1417197395.4305.5.camel@perches.com>
+References: <1416939455-1814-2-git-send-email-pawel.moll@arm.com>
+	 <1417003985-21564-1-git-send-email-pawel.moll@arm.com>
+	 <1417197395.4305.5.camel@perches.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-11-28 15:10, Linus Walleij wrote:
-> On Wed, Nov 26, 2014 at 3:41 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
->> On Wed, Nov 26, 2014 at 02:57:42PM +0100, Linus Walleij wrote:
->>> make -f Makefile -j5 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
->>> KBUILD_OUTPUT=build-u300 u300_defconfig
->>> make -f Makefile -j5 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
->>> KBUILD_OUTPUT=build-u300 zImage CONFIG_DEBUG_SECTION_MISMATCH=y
->>> make -f Makefile -j5 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
->>> KBUILD_OUTPUT=build-u300 dtbs
->>> make -f Makefile -j5 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
->>> KBUILD_OUTPUT=build-u300 zImage CONFIG_DEBUG_SECTION_MISMATCH=y
->>>
->>> -> Rebuilds everything.
->>>
->>> This doesn't occur before the offending commit. So it only happens
->>> when specifying extra environment variables on the command line.
->>
->> I suspect if you also provide the CONFIG_DEBUG_SECTION_MISMATCH=y on the
->> dtbs line, everything will work properly.
+On Fri, 2014-11-28 at 17:56 +0000, Joe Perches wrote:
+> On Wed, 2014-11-26 at 12:13 +0000, Pawel Moll wrote:
+> > This patch adds a separate section for the ARM
+> > Versatile Express platform maintainers, listing
+> > all different bits and bobs used by it.
+> > 
+> > Acked-by: Liviu Dudau <liviu.dudau@arm.com>
+> > Acked-by: Sudeep Holla <sudeep.holla@arm.com>
+> > Acked-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> > Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> > Acked-by: Michael Turquette <mturquette@linaro.org>
+> > ---
+> >  MAINTAINERS | 12 ++++++++++++
+> >  1 file changed, 12 insertions(+)
+> > 
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> > index 0ff630d..924454f 100644
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -1503,6 +1503,18 @@ S:	Maintained
+> >  F:	drivers/clk/ux500/
+> >  F:	include/linux/platform_data/clk-ux500.h
+> >  
+> > +ARM/VERSATILE EXPRESS PLATFORM
+> > +M:	Liviu Dudau <liviu.dudau@arm.com>
+> > +M:	Sudeep Holla <sudeep.holla@arm.com>
+> > +M:	Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> > +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> > +S:	Maintained
+> > +F:	arch/arm/boot/dts/vexpress*
+> > +F:	arch/arm/mach-vexpress/
+> > +F:	*/*/vexpress*
+> > +F:	drivers/clk/versatile/clk-vexpress-osc.c
+> > +F:	drivers/clocksource/versatile.c
 > 
-> Yay, it works! :)
+> Your original submission had:
 > 
->> The problem is that dtbs line executes a prepare, which I guess rebuilds
->> the bounds stuff.  So, the dtbs target results in it being rebuilt without
->> the section mismatch, and then you re-execute a make with it, causing
->> the bounds stuff to be rebuilt again.
+> F:     drivers/power/reset/vexpress-poweroff.c
 > 
-> Yep. Not very intuitive to require passing section mismatch debug
-> flags to DTB rebuilding but whatever, it's not so bad I can't live with
-> it.
+> This file is not matched by:
+> 
+> F:	*/*/vexpress*
 
-Still, the dependency on the 'prepare' target is superfluous, if the
-only requirement is that $(KERNELRELEASE) be set properly.
+Oh boy, of course. I'll send fix in a second.
 
-Michal
+Pawel
 
