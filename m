@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613AbaLAWp2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 17:45:28 -0500
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:56215 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026AbaLAWp1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 17:45:27 -0500
+	id S932635AbaLAWtO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 17:49:14 -0500
+Received: from tundra.namei.org ([65.99.196.166]:51362 "EHLO namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753603AbaLAWtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 17:49:11 -0500
+Date: Tue, 2 Dec 2014 09:49:04 +1100 (AEDT)
+From: James Morris <jmorris@namei.org>
+To: David Howells <dhowells@redhat.com>
+cc: linux-nfs@vger.kernel.org, linux-security-module@vger.kernel.org,
+        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Keyrings (& NFS) fixes
+In-Reply-To: <12126.1417429021@warthog.procyon.org.uk>
+Message-ID: <alpine.LRH.2.11.1412020947060.18348@namei.org>
+References: <12126.1417429021@warthog.procyon.org.uk>
+User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <CAE8gLhn9wFBLvdxTonD5m8Q_wYG_eg_TQOuZnEFPEVXstHdbvw@mail.gmail.com>
-References: <CAE8gLhn9wFBLvdxTonD5m8Q_wYG_eg_TQOuZnEFPEVXstHdbvw@mail.gmail.com>
-Date: Mon, 1 Dec 2014 23:45:26 +0100
-Message-ID: <CAE8gLhkBUWrXsRxBDTpj1sNVKZLe7aVeqMuJArW2ACOkvpR-OQ@mail.gmail.com>
-Subject: Re: PROBLEM: [Launchpad #1396889] [Lenovo ThinkPad T400] kexec reboot fails
-From: MegaBrutal <megabrutal@gmail.com>
-To: Linux kernel <linux-kernel@vger.kernel.org>
-Cc: Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-12-01 7:32 GMT+01:00 MegaBrutal <megabrutal@gmail.com>:
-> [X.] Other notes, patches, fixes, workarounds:
-> Downstream report (Ubuntu Launchpad):
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1396889
->
-> With kernel bisection, I've found, the first bad commit is
-> 8ab3820fd5b2896d66da7bb2a906bc382e63e7bc x86, kaslr: Return location
-> from decompress_kernel
-> which introduces KASLR.
-> http://lkml.kernel.org/r/1381450698-28710-3-git-send-email-keescook@chromium.org
->
-> The problem only presents itself when CONFIG_RANDOMIZE_BASE=y.
->
-> For workaround, there is a "nokaslr" kernel parameter to disable the
-> feature, even if the kernel was compiled with CONFIG_RANDOMIZE_BASE.
+On Mon, 1 Dec 2014, David Howells wrote:
 
-Need to add: as I tested today, unfortunately the "nokaslr" kernel
-option doesn't work around the bug. If a kernel was compiled with
-CONFIG_RANDOMIZE_BASE, it won't properly kexec on my ThinkPad T400,
-even if the "nokaslr" kernel option is provided!
+> Hi James,
+> 
+> Can you pass these patches on to Linus please?
+> 
+> The first one fixes the handling of maximum buffer size for key descriptions,
+> fixing the size at 4095 + NUL char rather than whatever PAGE_SIZE happens to
+> be and permits you to read back the full description without it getting
+> clipped because some extra information got prepended.
+> 
+> The second and third fix a bug in NFS idmapper handling whereby a key
+> representing a mapping between an id and a name expires and causing
+> EKEYEXPIRED to be seen internally in NFS (which prevents the mapping from
+> happening) rather than re-looking up the mapping.
+> 
+> Thanks,
+> David
+> ---
+> The following changes since commit a6aacbde406eeb6f8fc218b2c6172825f5e73fcf:
+> 
+>   Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/zohar/linux-integrity into next (2014-11-19 21:36:07 +1100)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-fixes-20141121
+> 
 
-This could actually help to find the bug, as whatever bad happens must
-happen before the kernel checks for the presence of the "nokaslr"
-kernel parameter.
+Because these patches are going to current Linus, you need to apply these 
+patches to a tree based on his tree, and send a pull req to me for that.
+
+
+-- 
+James Morris
+<jmorris@namei.org>
+
