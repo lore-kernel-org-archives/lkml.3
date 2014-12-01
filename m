@@ -1,168 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097AbaLAOru (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 09:47:50 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:61156 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932067AbaLAOrs (ORCPT
+	id S1753737AbaLAOwQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 09:52:16 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:36054 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753437AbaLAOwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 09:47:48 -0500
-Message-ID: <547C7F3A.2000601@linaro.org>
-Date: Mon, 01 Dec 2014 15:46:18 +0100
-From: Eric Auger <eric.auger@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Christoffer Dall <christoffer.dall@linaro.org>
-CC: eric.auger@st.com, marc.zyngier@arm.com,
-        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        kvm@vger.kernel.org, alex.williamson@redhat.com, joel.schopp@amd.com,
-        kim.phillips@freescale.com, paulus@samba.org, gleb@kernel.org,
-        pbonzini@redhat.com, agraf@suse.de, linux-kernel@vger.kernel.org,
-        patches@linaro.org, will.deacon@arm.com,
-        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
-        john.liuli@huawei.com, ming.lei@canonical.com, feng.wu@intel.com
-Subject: Re: [PATCH v3 4/8] KVM: kvm-vfio: User API for IRQ forwarding
-References: <1416767760-14487-1-git-send-email-eric.auger@linaro.org> <1416767760-14487-5-git-send-email-eric.auger@linaro.org> <20141130125314.GE82106@macair>
-In-Reply-To: <20141130125314.GE82106@macair>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Dec 2014 09:52:14 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7f126d000001e9a-21-547c809a2a34
+Content-transfer-encoding: 8BIT
+Message-id: <1417445528.31392.8.camel@AMDC1943>
+Subject: Re: [PATCH v2 3/5] pinctrl: exynos: Fix GPIO setup failure because
+ domain clock being gated
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>, Kukjin Kim <kgene@kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Kevin Hilman <khilman@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Date: Mon, 01 Dec 2014 15:52:08 +0100
+In-reply-to: <CA+Ln22H_a9CWxrYO_i9Esm6keXA8XLLYmE1Vg-8ynamJ1sAwpQ@mail.gmail.com>
+References: <1417011857-10419-1-git-send-email-k.kozlowski@samsung.com>
+ <1417011857-10419-4-git-send-email-k.kozlowski@samsung.com>
+ <CACRpkdb8F8YcvFeHPvOKHjx_p4HEpimck3XRabB3oHpZTdmRQQ@mail.gmail.com>
+ <1417183724.18249.36.camel@AMDC1943>
+ <CA+Ln22Ejo51VPWf6DmuRvV_fZr_H=-BXAshSPSOokNE1bz=-QA@mail.gmail.com>
+ <1417423043.4055.14.camel@AMDC1943>
+ <CA+Ln22H_a9CWxrYO_i9Esm6keXA8XLLYmE1Vg-8ynamJ1sAwpQ@mail.gmail.com>
+X-Mailer: Evolution 3.10.4-0ubuntu2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsVy+t/xy7qzGmpCDLYvNbLYOGM9q8X8I+dY
+	LdquHGS3OPq7wKL/8Wtmi6ebHzNZnG16w24x5c9yJotNj6+xWmye/4fR4vKuOWwWM87vY7K4
+	fZnXYu2Ru+wWTydcZLM4/Kad1eLYjCWMFqt2/WF0EPJoae5h8/j7/DqLx85Zd9k9Nq3qZPO4
+	c20Pm8fmJfUefVtWMXp83iQXwBHFZZOSmpNZllqkb5fAlbH09zrmgqdqFeuO/WFsYDwk18XI
+	wSEhYCLxdHlqFyMnkCkmceHeerYuRi4OIYGljBJfJhxjB0nwCghK/Jh8jwWknllAXuLIpWyQ
+	MLOAusSkeYuYIeo/M0psu3KJCaSGV0BfYudOQ5AaYYE0iW3TZzGC2GwCxhKbly9hA7FFgHq/
+	TelnB+llFnjAJnH7xQZWkASLgKrE082nWEHmcAoES8yZGQUxfzmzxI4zKxghblaWaOx3m8Ao
+	MAvJdbMQrpuF5LoFjMyrGEVTS5MLipPScw31ihNzi0vz0vWS83M3MUKi7MsOxsXHrA4xCnAw
+	KvHwXlhVHSLEmlhWXJl7iFGCg1lJhJe1oCZEiDclsbIqtSg/vqg0J7X4ECMTB6dUA2P3gQvW
+	wq0R81S/K3V4fr+hWnQtqM75xwS1PaH1PSIlfN3/5h1QKbCKlTj7e3l+Rky1xsQtIfce/vrk
+	mcF4VVz+8f7Djne3ZLaYHjPwijx2IGv9NsG9LmvNYyXfeBQYrn7Gxb7LaUa+R2/ZJTmOywqc
+	xZyi73W+Fov/brtufYlf5NUql9O8yUosxRmJhlrMRcWJAOxP4SWQAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2014 01:53 PM, Christoffer Dall wrote:
-> On Sun, Nov 23, 2014 at 07:35:56PM +0100, Eric Auger wrote:
->> This patch adds and document a new KVM_DEV_VFIO_DEVICE group
+On pon, 2014-12-01 at 23:34 +0900, Tomasz Figa wrote:
+> 2014-12-01 17:37 GMT+09:00 Krzysztof Kozlowski <k.kozlowski@samsung.com>:
+> >
+> > On nie, 2014-11-30 at 21:19 +0900, Tomasz Figa wrote:
+> >> Hi Krzysztof,
+> >>
+> >> 2014-11-28 23:08 GMT+09:00 Krzysztof Kozlowski <k.kozlowski@samsung.com>:
+> >> > On pią, 2014-11-28 at 15:04 +0100, Linus Walleij wrote:
+> >> >> On Wed, Nov 26, 2014 at 3:24 PM, Krzysztof Kozlowski
+> >> >> <k.kozlowski@samsung.com> wrote:
+> >> >>
+> >> >> > The audio subsystem on Exynos 5420 has separate clocks and GPIO. To
+> >> >> > operate properly on GPIOs the main block clock 'mau_epll' must be
+> >> >> > enabled.
+> >> >> >
+> >> >> > This was observed on Peach Pi/Pit and Arndale Octa (after enabling i2s0)
+> >> >> > after introducing runtime PM to pl330 DMA driver. After that commit the
+> >> >> > 'mau_epll' was gated, because the "amba" clock was disabled and there
+> >> >> > were no more users of mau_epll.
+> >> >> >
+> >> >> > The system hang just before probing i2s0 because
+> >> >> > samsung_pinmux_setup() tried to access memory from audss block which was
+> >> >> > gated.
+> >> >> >
+> >> >> > Add a clock property to the pinctrl driver and enable the clock during
+> >> >> > GPIO setup. During normal GPIO operations (set, get, set_direction) the
+> >> >> > clock is not enabled.
+> >>
+> >> Could you make sure that possibility of gating this clock is worth the
+> >> effort of adding gating code to all affected drivers? If there is no
+> >> significant change in power consumption maybe it could be simply keep
+> >> running all the time?
+> >
+> > I had an impression that last time you disliked such idea:
+> > http://www.spinics.net/lists/arm-kernel/msg338127.html
+> > That's why I developed these patches. Because keeping a clock always on,
+> > even when it is unused, is undesirable.
 > 
-> documents
-OK
+> I was mostly concerned about the particular solution implemented by
+> that patch that kept the clocks enabled on all platforms, not only the
+> affected one. However...
 > 
->> and 2 device attributes: KVM_DEV_VFIO_DEVICE_FORWARD_IRQ,
->> KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ. The purpose is to be able
->> to set a VFIO device IRQ as forwarded or not forwarded.
->> the command takes as argument a handle to a new struct named
->> kvm_arch_forwarded_irq.
->>
->> Signed-off-by: Eric Auger <eric.auger@linaro.org>
->>
->> ---
->>
->> v2 -> v3:
->> - rework vfio kvm device documentation
->> - reword commit message and title
->> - add subindex in kvm_arch_forwarded_irq to be closer to VFIO API
->> - forwarding state can only be changed with VFIO IRQ signaling is off
->>
->> v1 -> v2:
->> - struct kvm_arch_forwarded_irq moved from arch/arm/include/uapi/asm/kvm.h
->>   to include/uapi/linux/kvm.h
->>   also irq_index renamed into index and guest_irq renamed into gsi
->> - ASSIGN/DEASSIGN renamed into FORWARD/UNFORWARD
->> ---
->>  Documentation/virtual/kvm/devices/vfio.txt | 34 ++++++++++++++++++++++++------
->>  include/uapi/linux/kvm.h                   | 10 +++++++++
->>  2 files changed, 38 insertions(+), 6 deletions(-)
->>
->> diff --git a/Documentation/virtual/kvm/devices/vfio.txt b/Documentation/virtual/kvm/devices/vfio.txt
->> index ef51740..f7aff29 100644
->> --- a/Documentation/virtual/kvm/devices/vfio.txt
->> +++ b/Documentation/virtual/kvm/devices/vfio.txt
->> @@ -4,15 +4,24 @@ VFIO virtual device
->>  Device types supported:
->>    KVM_DEV_TYPE_VFIO
->>  
->> -Only one VFIO instance may be created per VM.  The created device
->> -tracks VFIO groups in use by the VM and features of those groups
->> -important to the correctness and acceleration of the VM.  As groups
->> -are enabled and disabled for use by the VM, KVM should be updated
->> -about their presence.  When registered with KVM, a reference to the
->> -VFIO-group is held by KVM.
->> +Only one VFIO instance may be created per VM.
->> +
->> +The created device tracks VFIO groups in use by the VM and features
->> +of those groups important to the correctness and acceleration of
->> +the VM.  As groups are enabled and disabled for use by the VM, KVM
->> +should be updated about their presence.  When registered with KVM,
->> +a reference to the VFIO-group is held by KVM.
->> +
->> +The device also tracks & enable VFIO device forwarded IRQs, if any.
+> >
+> > Anyway, I did some simple measurements (after booting Arndale Octa
+> > to /bin/sh, idle):
+> >  - with mau_epll gated: ~523 mA
+> >  - with mau_epll always on: ~531 mA
+> >
+> > Keeping it on increases energy usage by 1.5% in idle (with measurement
+> > uncertainty ~0.4%).
+> >
 > 
-> s/tracks & enable/tracks and enables/
-ok
+> ...this definitely shows that the effort isn't worthless, which means
+> that your patch goes in the right direction.
+
+Great!
+
 > 
->> +A physical forwarded IRQ is directly completed by the guest. This
->> +requires HW support in the interrupt controller which must be able
->> +to automatically complete the physical IRQ when it detects the guest
->> +has completed the corresponding virtual IRQ. The modality sometimes
->> +is named direct EOI.
+> >
+> >> Also isn't a similar problem happening due to power domains? I believe
+> >> the whole maudio block is located in a separate power domain but
+> >> somehow it doesn't get turned off?
+> >
+> > There is Maudio power domain... but I think it is not related here.
 > 
-> this last sentence is a bit floating out there; perhaps you want to be
-> more specific and say what it is on ARM.
-Well this is naming some people used at the KVM forum. I thought this
-was something known on other archs but I can drop this comment.
+> Could you somehow check what happens when the maudio power domain is
+> turned off and maudio pin controller is accessed? Could you also check
+> the difference in power consumption with this domain powered on and
+> off?
+
+I can try. I'll let you know the results.
+
 > 
->>  
->>  Groups:
->>    KVM_DEV_VFIO_GROUP
->> +  KVM_DEV_VFIO_DEVICE
->>  
->>  KVM_DEV_VFIO_GROUP attributes:
->>    KVM_DEV_VFIO_GROUP_ADD: Add a VFIO group to VFIO-KVM device tracking
->> @@ -20,3 +29,16 @@ KVM_DEV_VFIO_GROUP attributes:
->>  
->>  For each, kvm_device_attr.addr points to an int32_t file descriptor
->>  for the VFIO group.
->> +
->> +KVM_DEV_VFIO_DEVICE attributes:
->> +  KVM_DEV_VFIO_DEVICE_FORWARD_IRQ: set a VFIO device IRQ as forwarded
->> +  KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ: set a VFIO device IRQ as not forwarded
->> +
->> +For each, kvm_device_attr.addr points to a kvm_arch_forwarded_irq struct.
->> +
->> +The forwarded state can only be changed when the VFIO signaling mechanism
->> +for this physical IRQ is not set. In other words, forwarding must be
->> +activated before VFIO_DEVICE_SET_IRQS has been called to trigger the IRQ
->> +or associate an eventfd to it. Unforwarding can only be called while the
->> +signaling has been disabled with VFIO_DEVICE_SET_IRQS. If this condition is
->> +not satisfied, the command returns an -EBUSY.
+> > Pinctrl driver does not have runtime PM and is not attached to a domain.
+> > I thought about other solution to this problem (with utilization of
+> > power domains):
+> >  - add runtime PM to pinctrl and audss clocks,
+> >  - attach pinctrl and audss clocks to maudio power domain,
+> >  - enable the clock when power domain is turned on.
+> > However almost the same changes had to be added to pinctrl and audss
+> > clocks drivers (replace clock_enable() with pm_runtime_get_sync()).
 > 
-> s/command/ioctl/
-ok
+> Well, if the dependency is there due to hardware design, I think it
+> needs to be reflected in the drivers as well.
 > 
->> diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
->> index 6076882..a269a42 100644
->> --- a/include/uapi/linux/kvm.h
->> +++ b/include/uapi/linux/kvm.h
->> @@ -946,6 +946,9 @@ struct kvm_device_attr {
->>  #define  KVM_DEV_VFIO_GROUP			1
->>  #define   KVM_DEV_VFIO_GROUP_ADD			1
->>  #define   KVM_DEV_VFIO_GROUP_DEL			2
->> +#define  KVM_DEV_VFIO_DEVICE			2
->> +#define   KVM_DEV_VFIO_DEVICE_FORWARD_IRQ			1
->> +#define   KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ			2
->>  
->>  enum kvm_device_type {
->>  	KVM_DEV_TYPE_FSL_MPIC_20	= 1,
->> @@ -963,6 +966,13 @@ enum kvm_device_type {
->>  	KVM_DEV_TYPE_MAX,
->>  };
->>  
->> +struct kvm_arch_forwarded_irq {
->> +	__u32 fd; /* file desciptor of the VFIO device */
->> +	__u32 index; /* VFIO device IRQ index */
->> +	__u32 subindex; /* VFIO device IRQ subindex */
->> +	__u32 gsi; /* gsi, ie. virtual IRQ number */
->> +};
->> +
->>  /*
->>   * ioctls for VM fds
->>   */
->> -- 
->> 1.9.1
->>
+> Few other issues that came to my mind:
 > 
-> otherwise this looks reasonable.
-thanks
-Eric
-> 
+>  - Your previous patch added clock control only to pinctrl operations.
+> Shouldn't GPIO operations be included as well?
+
+Yeah... but does it make any sense? For example imagine GPIO is
+configured as input. Enabling the clock won't change anything because
+already that clock should be enabled by peripheral which writes to such
+GPIO.
+
+>  - If power domain dependency is there too, what happens with GPIO
+> pins if the domain is powered off? If they lose their states, wouldn't
+> it necessary to keep the domain powered on whenever there is some GPIO
+> pin requested (which usually = in use)? (I'd assume that special
+> functions shouldn't take a reference on runtime PM, because they are
+> related to IP blocks in the same PM domain, which will implicitly keep
+> the domain powered on.)
+
+What you're saying makes sense but that look like job for sound soc
+driver? Anyway the domain is not present in DTS so by default it is
+turned on.
+
+>  - Doesn't the clock controller also lose its state whenever the power
+> domain is powered off? I guess that would be similar to ISP clock
+> controller, issues of which are still not resolved in mainline.
+> Sylwester could tell you more about this, I guess.
+
+Once again - the domain.
+
+Best regards,
+Krzysztof
+
 
