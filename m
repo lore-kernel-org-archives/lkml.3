@@ -1,37 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463AbaLAULn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 15:11:43 -0500
-Received: from muin.pair.com ([209.68.1.55]:59684 "EHLO muin.pair.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932436AbaLAULi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 15:11:38 -0500
-Message-ID: <547CCB78.5090007@tabi.org>
-Date: Mon, 01 Dec 2014 14:11:36 -0600
-From: Timur Tabi <timur@tabi.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932483AbaLAUL5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 15:11:57 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:46490 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932112AbaLAULy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 15:11:54 -0500
+Message-ID: <547CCBFF.5070605@gmail.com>
+Date: Tue, 02 Dec 2014 04:13:51 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linuxppc-dev@lists.ozlabs.org, Mark Brown <broonie@kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>, alsa-devel@alsa-project.org,
-        Jiada Wang <jiada_wang@mentor.com>, linux-kernel@vger.kernel.org,
-        lgirdwood@gmail.com, nicoleotsuka@gmail.com, tiwai@suse.de,
-        Li.Xiubo@freescale.com, Markus Pargmann <mpa@pengutronix.de>
-Subject: Re: [alsa-devel] [PATCH] ASoC: fsl_ssi: free irq before irq_dispose_mapping()
-References: <1417402251-6596-1-git-send-email-jiada_wang@mentor.com> <2547588.Qc4F2IfZke@wuerfel> <547CC89F.1030205@tabi.org> <3401240.VsRpsiV8WN@wuerfel>
-In-Reply-To: <3401240.VsRpsiV8WN@wuerfel>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Marc Zyngier <marc.zyngier@arm.com>,
+        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
+        "gleb@kernel.org" <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3] virt: kvm: arm: vgic: Process the failure case when kvm_register_device_ops()
+ fails
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2014 02:01 PM, Arnd Bergmann wrote:
->> >Does this mean that fsl_ssi.c should not be calling
->> >irq_of_parse_and_map?  How else should it get the IRQ?
-> platform_get_irq()
+kvm_register_device_ops() may fail, so need process the related failure
+case.
 
-Ok, but that function also calls irq_create_of_mapping().  So it still 
-appears that the only way to get the IRQ is to map it, but then we can't 
-use devm_request_irq().
+Since it is related with neither vgic_arch_setup() nor on_each_cpu(),
+can move it before them, then simplify the related failure processing
+code.
 
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ virt/kvm/arm/vgic.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
+index cf23c13..814cae2 100644
+--- a/virt/kvm/arm/vgic.c
++++ b/virt/kvm/arm/vgic.c
+@@ -2471,13 +2471,20 @@ int kvm_vgic_hyp_init(void)
+ 		goto out_free_irq;
+ 	}
+ 
++	ret = kvm_register_device_ops(&kvm_arm_vgic_v2_ops,
++				      KVM_DEV_TYPE_ARM_VGIC_V2);
++	if (ret) {
++		__unregister_cpu_notifier(&vgic_cpu_nb);
++		kvm_err("Cannot register vgic device ops\n");
++		goto out_free_irq;
++	}
++
+ 	/* Callback into for arch code for setup */
+ 	vgic_arch_setup(vgic);
+ 
+ 	on_each_cpu(vgic_init_maintenance_interrupt, NULL, 1);
+ 
+-	return kvm_register_device_ops(&kvm_arm_vgic_v2_ops,
+-				       KVM_DEV_TYPE_ARM_VGIC_V2);
++	return 0;
+ 
+ out_free_irq:
+ 	free_percpu_irq(vgic->maint_irq, kvm_get_running_vcpus());
+-- 
+1.9.3
