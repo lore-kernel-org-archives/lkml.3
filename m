@@ -1,100 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952AbaLARiM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 12:38:12 -0500
-Received: from exprod5og119.obsmtp.com ([64.18.0.189]:54923 "HELO
-	exprod5og119.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753121AbaLARiK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 12:38:10 -0500
+	id S1754038AbaLARij (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 12:38:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57908 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753965AbaLARii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 12:38:38 -0500
+Message-ID: <547CA79A.10206@redhat.com>
+Date: Mon, 01 Dec 2014 18:38:34 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <ea4f7a2bfdb9bea45cab9418c211083b@agner.ch>
-References: <1417453389-1588-1-git-send-email-stefan@agner.ch>
-	<1417453389-1588-2-git-send-email-stefan@agner.ch>
-	<CAL85gmBq30pWxP0buKbM8so6QqsJq2YojiSK1EWtMPsH_7foeg@mail.gmail.com>
-	<ea4f7a2bfdb9bea45cab9418c211083b@agner.ch>
-Date: Mon, 1 Dec 2014 09:38:09 -0800
-Message-ID: <CAL85gmBNE7oDbE+LX+V=AFJO61Ta0Gekoq6sDb8TkEnoPsNFVA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] power: reset: read priority from device tree
-From: Feng Kan <fkan@apm.com>
-To: Stefan Agner <stefan@agner.ch>
-Cc: shawn.guo@linaro.org, kernel@pengutronix.de,
-        Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
-        sre@kernel.org, grant.likely@linaro.org, robh+dt@kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Igor Mammedov <imammedo@redhat.com>, linux-kernel@vger.kernel.org
+CC: kvm@vger.kernel.org
+Subject: Re: [PATCH 0/5] kvm: memslots lookup optimization
+References: <1417454967-4465-1-git-send-email-imammedo@redhat.com>
+In-Reply-To: <1417454967-4465-1-git-send-email-imammedo@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 1, 2014 at 9:29 AM, Stefan Agner <stefan@agner.ch> wrote:
-> On 2014-12-01 18:15, Feng Kan wrote:
->> On Mon, Dec 1, 2014 at 9:03 AM, Stefan Agner <stefan@agner.ch> wrote:
->>> This patch adds an optional property which allows to specify the
->>> reset source priority. This priority is used by the kernel restart
->>> handler call chain to sort out the proper reset/restart method.
->>> Depending on the power design of a board or other machine/board
->>> specific peculiarity, it is not possible to pick a generic priority.
->>>
->>> Signed-off-by: Stefan Agner <stefan@agner.ch>
->>> ---
->>>  Documentation/devicetree/bindings/power/reset/syscon-reboot.txt | 3 +++
->>>  drivers/power/reset/syscon-reboot.c                             | 5 ++++-
->>>  2 files changed, 7 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
->>> index 1190631..ee41d9c 100644
->>> --- a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
->>> +++ b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
->>> @@ -11,6 +11,9 @@ Required properties:
->>>  - offset: offset in the register map for the reboot register (in bytes)
->>>  - mask: the reset value written to the reboot register (32 bit access)
->>>
->>> +Optional properties:
->>> +- priority: define the priority of the reset (0-255, defaults to 128)
->>> +
->>>  Default will be little endian mode, 32 bit access only.
->>>
->>>  Examples:
->>> diff --git a/drivers/power/reset/syscon-reboot.c b/drivers/power/reset/syscon-reboot.c
->>> index 815b901..3060d6b 100644
->>> --- a/drivers/power/reset/syscon-reboot.c
->>> +++ b/drivers/power/reset/syscon-reboot.c
->>> @@ -67,8 +67,11 @@ static int syscon_reboot_probe(struct platform_device *pdev)
->>>         if (of_property_read_u32(pdev->dev.of_node, "mask", &ctx->mask))
->>>                 return -EINVAL;
->>>
->>> -       ctx->restart_handler.notifier_call = syscon_restart_handle;
->>>         ctx->restart_handler.priority = 128;
->>> +       of_property_read_u32(pdev->dev.of_node, "priority",
->>> +                            &ctx->restart_handler.priority);
->>
->> What is this for?
->
-> What do you mean? The moved line "ctx->restart_handler.notifier_call =
-> syscon_restart_handle;"? When one reads the diff, it looks like that
-> line was moved, in fact I tried to keep the of_property_read function
-> calls together. But I had to move the assignation of the default
-> priority in front of restart_handler.priority. That's what is the
-> outcome...
 
-I believe Guenter explained above already. Actually this help to solve one of
-my problem. Thanks.
->
-> --
-> Stefan
->
->>> +
->>> +       ctx->restart_handler.notifier_call = syscon_restart_handle;
->>>         err = register_restart_handler(&ctx->restart_handler);
->>>         if (err)
->>>                 dev_err(dev, "can't register restart notifier (err=%d)\n", err);
->>> --
->>> 2.1.3
->>>
->
+
+On 01/12/2014 18:29, Igor Mammedov wrote:
+> Series speed-ups GFN to memslot lookup time by:
+>  * introducing LRU cache, which improves looukup time for
+>    same slot workload (typically boot time of Windows and Linux guest)
+>  * switching to binary search for GFN to memslot lookup,
+>    improving lookup time with large amount of memory slots
+> 
+> Igor Mammedov (5):
+>   kvm: update_memslots: drop not needed check for the same number of
+>     pages
+>   kvm: update_memslots: drop not needed check for the same slot
+>   kvm: search_memslots: add simple LRU memslot caching
+>   kvm: change memslot sorting rule from size to GFN
+>   kvm: optimize GFN to memslot lookup with large slots amount
+> 
+>  include/linux/kvm_host.h | 28 +++++++++++++++++++++++-----
+>  virt/kvm/kvm_main.c      | 46 ++++++++++++++++++++++++++--------------------
+>  2 files changed, 49 insertions(+), 25 deletions(-)
+> 
+
+Applied patches 1-3 for now, I'm not in the mood for proving that the
+binary search is correct. :)
+
+Paolo
