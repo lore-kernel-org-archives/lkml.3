@@ -1,76 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102AbaLATqF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 14:46:05 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:46287 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311AbaLATqD (ORCPT
+	id S932229AbaLATvJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 14:51:09 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:42340 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932156AbaLATvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 14:46:03 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH 2/3] i8k: Rework error retries
-Date: Mon, 1 Dec 2014 20:45:59 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.1; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-References: <1417381240-7641-1-git-send-email-linux@roeck-us.net> <1417381240-7641-2-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1417381240-7641-2-git-send-email-linux@roeck-us.net>
+	Mon, 1 Dec 2014 14:51:07 -0500
+From: Kevin Hilman <khilman@kernel.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: heiko@sntech.de, dianders@chromium.org, mturquette@linaro.org,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-rockchip@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        Tony Xie <xxx@rock-chips.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v10 0/4] This suspend patch is only support cut off the power of cpu and some external
+References: <1417423940-1669-1-git-send-email-zyw@rock-chips.com>
+Date: Mon, 01 Dec 2014 11:51:03 -0800
+In-Reply-To: <1417423940-1669-1-git-send-email-zyw@rock-chips.com> (Chris
+	Zhong's message of "Mon, 1 Dec 2014 16:52:16 +0800")
+Message-ID: <7htx1f409k.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1455025.ZsU8UBEka1";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201412012045.59404@pali>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1455025.ZsU8UBEka1
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Chris Zhong <zyw@rock-chips.com> writes:
 
-On Sunday 30 November 2014 22:00:39 Guenter Roeck wrote:
-> Instead of returning a previous value if the SMM code returns
-> an error when trying to read a temperature, retry once.
-> If that fails again, return -ENODATA. Also return -ENODATA if
-> an attempt is made to read the GPU temperature but the GPU is
-> currently turned off.
->=20
-> Drop the I8K_TEMPERATURE_BUG definition and handle the related
-> bug unconditionally.
->=20
-> Cc: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
-> Applies on top of Pali's patch series.
->=20
->  drivers/char/i8k.c | 47
-> ++++++++++++++++++++++++----------------------- 1 file
-> changed, 24 insertions(+), 23 deletions(-)
->=20
+> devices, since we still lack power_domain driver, so the other power rail
+> of rk3288 need keep power on.
+> I have tested it on rk3288-evb board, atop next-20141112. goto suspend by type
+> "echo mem > /sys/power/state", vdd_cpu is about 0mv by measuring, so it can be
+> determined in sleep mode, then press power button to wakeup it.
 
-Working fine GPU temp (turned on or off).
+I tested this on top of today's linux-next (next-20141201) and it
+suspends, but doesn't wake up from any of the button presses.  What
+wakeup sources are configured for the rk3288-evb-rk808?
 
-Tested-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart1455025.ZsU8UBEka1
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlR8xXcACgkQi/DJPQPkQ1Jo+ACgw4LyEqUIZaC3TLjYvVNcVP9P
-XNQAoIkmi5pyhK0kqZwkxzqIvmDUk600
-=NGEm
------END PGP SIGNATURE-----
-
---nextPart1455025.ZsU8UBEka1--
+Kevin
