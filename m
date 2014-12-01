@@ -1,57 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932295AbaLATPU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 14:15:20 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:40240 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932150AbaLATPS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 14:15:18 -0500
+	id S932317AbaLATQL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 14:16:11 -0500
+Received: from numascale.com ([213.162.240.84]:38210 "EHLO numascale.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753411AbaLATQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 14:16:09 -0500
+Message-ID: <547CBE68.1040704@numascale.com>
+Date: Mon, 01 Dec 2014 14:15:52 -0500
+From: Daniel J Blueman <daniel@numascale.com>
+Organization: Numascale AS
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <5476F3C5.8020709@linaro.org>
-References: <1416993266-16514-1-git-send-email-kiran.kumar@linaro.org>
-	<CAMbhsRR0XzJ9ouYuoE2z+oCR9jRt8XBEfuVgd7sLJMg24bMKyQ@mail.gmail.com>
-	<5476F3C5.8020709@linaro.org>
-Date: Mon, 1 Dec 2014 11:15:17 -0800
-X-Google-Sender-Auth: u9j9CSl4QLtOAFGZygk4jKwzHzA
-Message-ID: <CAMbhsRSWRhVoZiX1L4WopGZfaEpNBkCR67yO94ei2W03zpN2rQ@mail.gmail.com>
-Subject: Re: [RFC v3] debug: prevent entering debug mode on errors
-From: Colin Cross <ccross@android.com>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Kiran Raparthy <kiran.kumar@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@linux.intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Jonathan Corbet <corbet@lwn.net>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [Patch Part3 v4 38/38] x86, irq: Add kernel parameter vector_alloc
+ to set CPU vector allocation policy
+References: <1416901802-24211-1-git-send-email-jiang.liu@linux.intel.com> <1416901802-24211-39-git-send-email-jiang.liu@linux.intel.com> <CAErSpo7-GezRLKe4hTAm=KhYHUw6zggi+4LRXjh25K-f+_hAng@mail.gmail.com>
+In-Reply-To: <CAErSpo7-GezRLKe4hTAm=KhYHUw6zggi+4LRXjh25K-f+_hAng@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - numascale.com
+X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 1:49 AM, Daniel Thompson
-<daniel.thompson@linaro.org> wrote:
-> On 26/11/14 17:45, Colin Cross wrote:
->> The original patch was more useful as it allowed re-enabling break on
->> panic on specific devices where you were trying to debug a
->> reproducible issue.  What about using a module_param similar to
->> kgdbreboot, but setting the default based on CONFIG_PANIC_TIMEOUT to
->> avoid extra configuration?
+On 12/01/2014 01:49 PM, Bjorn Helgaas wrote:
+> On Tue, Nov 25, 2014 at 12:50 AM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
+>> Parameter vector_alloc should be set to an integer with:
+>> bit 0:  enable allocating CPU vector from CPUs on device local node.
+>>          That's to allocate from cpumask_of_node(irq_data->node).
+>> bit 1: enable the default policy, which is to allocate from
+>>         apic->target_cpus().
+>>
+>> When allocating vectors, it tries all enabled policies from lower bit
+>> position to higher bit position.
+>>
+>> This option could be use to optimize interrupt distribution on large
+>> system such as NumaChip etc.
 >
-> This change was due to my review so perhaps I'd better answer this...
->
-> panic_timeout is the value of the panic sysctl. In addition to the
-> normal sysctl tooling (which I don't think is available on most android
-> systems), its value can be set using panic=0 on the kernel command line
-> or via /proc/sys/kernel/panic at runtime.
->
-> CONFIG_PANIC_TIMEOUT merely sets the default value of the sysctl. I
-> guess perhaps the patch description could be improved to make this clearer.
->
-> Therefore, the only loss of function I expected versus the original is
-> that it would be hard to get as far as a reproducible panic if the
-> system also has a ton of reproducible oopses that we don't want to fix.
-> Is such a use-case important?
+> Why can't we figure this out automatically?  Having a kernel parameter
+> is a pain in the neck for users.
 
-OK, works for me.
+For the Numachip case, it would be sufficient to add a call to 
+set_vector_alloc_policy in the APIC driver, as this will always be 
+preferred for local MSI handling.
+
+I'll follow up with a patch in the next day or so; further support for 
+other systems can be added later as and when tested.
+
+>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+>> Cc: Daniel J Blueman <daniel@numascale.com>
+>> ---
+>>   Documentation/kernel-parameters.txt |    6 ++++++
+>>   arch/x86/kernel/apic/vector.c       |   11 +++++++++++
+>>   2 files changed, 17 insertions(+)
+>>
+>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>> index 4c81a860cc2b..a175c5016954 100644
+>> --- a/Documentation/kernel-parameters.txt
+>> +++ b/Documentation/kernel-parameters.txt
+>> @@ -3709,6 +3709,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>>          vector=         [IA-64,SMP]
+>>                          vector=percpu: enable percpu vector domain
+>>
+>> +       vector_alloc=   [x86,SMP]
+>> +                       vector_alloc=policy: policy is a bitmap, bit 0
+>> +                       for allocating CPU vector from CPUs on device local
+>> +                       node; bit 1 for the default policy to allocating from
+>> +                       apic->target_cpus(). All higher bits are reserved.
+>> +
+>>          video=          [FB] Frame buffer configuration
+>>                          See Documentation/fb/modedb.txt.
+>>
+>> diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
+>> index 16de8906ee1e..1158843551c7 100644
+>> --- a/arch/x86/kernel/apic/vector.c
+>> +++ b/arch/x86/kernel/apic/vector.c
+>> @@ -79,6 +79,17 @@ void set_vector_alloc_policy(unsigned int policy)
+>>                  x86_vector_alloc_policy = policy | X86_VECTOR_POL_CALLER;
+>>   }
+>>
+>> +static int __init apic_parse_vector_policy(char *str)
+>> +{
+>> +       int policy;
+>> +
+>> +       if (get_option(&str, &policy) == 1)
+>> +               set_vector_alloc_policy(policy);
+>> +
+>> +       return 1;
+>> +}
+>> +__setup("vector_alloc=", apic_parse_vector_policy);
+>> +
+>>   static struct apic_chip_data *alloc_apic_chip_data(int node)
+>>   {
+>>          struct apic_chip_data *data;
+-- 
+Daniel J Blueman
+Principal Software Engineer, Numascale
