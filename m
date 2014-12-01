@@ -1,119 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426AbaLAFGQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 00:06:16 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:58763 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaLAFGO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 00:06:14 -0500
-From: Chase Southwood <chase.southwood@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@gmail.com>
-Subject: [PATCH] staging: comedi: change some printk calls to pr_err
-Date: Sun, 30 Nov 2014 23:05:56 -0600
-Message-Id: <1417410356-25504-1-git-send-email-chase.southwood@gmail.com>
-X-Mailer: git-send-email 2.1.3
+	id S1752455AbaLAFMa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 00:12:30 -0500
+Received: from mout.web.de ([212.227.17.12]:64736 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751003AbaLAFM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 00:12:29 -0500
+Message-ID: <547BF8B5.309@users.sourceforge.net>
+Date: Mon, 01 Dec 2014 06:12:21 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        dmaengine@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] DMA: Delete a check before free_percpu()
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:jsrl7snAqSR+f0q0wROjCtMH4cLeFJPOyymOPvsUY7iKbYF+e+r
+ 32ahMDqQMoRC2elHmw3KrVfwFxL7cTNw7R/a6PtrUJQ4SpPd1DoSLB6bhyh8/GfndwV6vOZ
+ YXz+n/PcV3wuCaQvAwYfh9uk0XNvwVn+OP+vSTbKk8PKo1hmVAelJtCxPFxlih4xzKz8jg2
+ 6Fxn7iAqoXqxHcfyVLXKg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are a handful of calls to printk in ni_stc.h without specified log
-levels, as well as one in ni_mio_common.c.  This patch converts these
-calls to pr_err() instead, so that they are now explicitly log level
-ERR.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 1 Dec 2014 06:06:57 +0100
 
-Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+The free_percpu() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
+
+This issue was detected by using the Coccinelle software.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 ---
-I tacked the change to ni_mio_common.c on to this patch since it's the same
-exact change and it's just one line, so I think a single patch is justified
-here.
- drivers/staging/comedi/drivers/ni_mio_common.c |  2 +-
- drivers/staging/comedi/drivers/ni_stc.h        | 14 +++++++-------
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/dma/dmaengine.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
-index 353c17b..11e7017 100644
---- a/drivers/staging/comedi/drivers/ni_mio_common.c
-+++ b/drivers/staging/comedi/drivers/ni_mio_common.c
-@@ -3945,7 +3945,7 @@ static unsigned ni_gpct_to_stc_register(enum ni_gpct_register reg)
- 		stc_register = Interrupt_B_Enable_Register;
- 		break;
- 	default:
--		printk("%s: unhandled register 0x%x in switch.\n",
-+		pr_err("%s: unhandled register 0x%x in switch.\n",
- 		       __func__, reg);
- 		BUG();
- 		return 0;
-diff --git a/drivers/staging/comedi/drivers/ni_stc.h b/drivers/staging/comedi/drivers/ni_stc.h
-index 131e904..bd69c3f 100644
---- a/drivers/staging/comedi/drivers/ni_stc.h
-+++ b/drivers/staging/comedi/drivers/ni_stc.h
-@@ -334,7 +334,7 @@ static inline unsigned RTSI_Output_Bit(unsigned channel, int is_mseries)
- 		max_channel = 6;
+diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+index 24bfaf0..e057935 100644
+--- a/drivers/dma/dmaengine.c
++++ b/drivers/dma/dmaengine.c
+@@ -330,8 +330,7 @@ static int __init dma_channel_table_init(void)
+ 	if (err) {
+ 		pr_err("initialization failure\n");
+ 		for_each_dma_cap_mask(cap, dma_cap_mask_all)
+-			if (channel_table[cap])
+-				free_percpu(channel_table[cap]);
++			free_percpu(channel_table[cap]);
  	}
- 	if (channel > max_channel) {
--		printk("%s: bug, invalid RTSI_channel=%i\n", __func__, channel);
-+		pr_err("%s: bug, invalid RTSI_channel=%i\n", __func__, channel);
- 		return 0;
- 	}
- 	return 1 << (base_bit_shift + channel);
-@@ -1090,7 +1090,7 @@ static inline int M_Offset_Static_AI_Control(int i)
- 		0x263,
- 	};
- 	if (((unsigned)i) >= ARRAY_SIZE(offset)) {
--		printk("%s: invalid channel=%i\n", __func__, i);
-+		pr_err("%s: invalid channel=%i\n", __func__, i);
- 		return offset[0];
- 	}
- 	return offset[i];
-@@ -1105,7 +1105,7 @@ static inline int M_Offset_AO_Reference_Attenuation(int channel)
- 		0x267
- 	};
- 	if (((unsigned)channel) >= ARRAY_SIZE(offset)) {
--		printk("%s: invalid channel=%i\n", __func__, channel);
-+		pr_err("%s: invalid channel=%i\n", __func__, channel);
- 		return offset[0];
- 	}
- 	return offset[channel];
-@@ -1114,7 +1114,7 @@ static inline int M_Offset_AO_Reference_Attenuation(int channel)
- static inline unsigned M_Offset_PFI_Output_Select(unsigned n)
- {
- 	if (n < 1 || n > NUM_PFI_OUTPUT_SELECT_REGS) {
--		printk("%s: invalid pfi output select register=%i\n",
-+		pr_err("%s: invalid pfi output select register=%i\n",
- 		       __func__, n);
- 		return M_Offset_PFI_Output_Select_1;
- 	}
-@@ -1171,7 +1171,7 @@ static inline unsigned MSeries_PLL_In_Source_Select_RTSI_Bits(unsigned
- 							      RTSI_channel)
- {
- 	if (RTSI_channel > 7) {
--		printk("%s: bug, invalid RTSI_channel=%i\n", __func__,
-+		pr_err("%s: bug, invalid RTSI_channel=%i\n", __func__,
- 		       RTSI_channel);
- 		return 0;
- 	}
-@@ -1192,7 +1192,7 @@ static inline unsigned MSeries_PLL_Divisor_Bits(unsigned divisor)
- {
- 	static const unsigned max_divisor = 0x10;
- 	if (divisor < 1 || divisor > max_divisor) {
--		printk("%s: bug, invalid divisor=%i\n", __func__, divisor);
-+		pr_err("%s: bug, invalid divisor=%i\n", __func__, divisor);
- 		return 0;
- 	}
- 	return (divisor & 0xf) << 8;
-@@ -1202,7 +1202,7 @@ static inline unsigned MSeries_PLL_Multiplier_Bits(unsigned multiplier)
- {
- 	static const unsigned max_multiplier = 0x100;
- 	if (multiplier < 1 || multiplier > max_multiplier) {
--		printk("%s: bug, invalid multiplier=%i\n", __func__,
-+		pr_err("%s: bug, invalid multiplier=%i\n", __func__,
- 		       multiplier);
- 		return 0;
- 	}
+ 
+ 	return err;
 -- 
 2.1.3
 
