@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601AbaLANGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 08:06:32 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:52145 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753355AbaLANGa (ORCPT
+	id S1753674AbaLANHH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 08:07:07 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:57052 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753455AbaLANHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 08:06:30 -0500
-Date: Mon, 1 Dec 2014 14:06:27 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Thierry Reding <thierry.reding@gmail.com>,
-        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>
-Subject: Re: [PATCH RESEND v4 1/3] drm: add bus_formats and num_bus_formats
- fields to drm_display_info
-Message-ID: <20141201140627.4c715bba@bbrezillon>
-In-Reply-To: <10659671.3WzjQ3SUBa@avalon>
-References: <1417422061-10384-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1417423335-11408-1-git-send-email-boris.brezillon@free-electrons.com>
-	<10659671.3WzjQ3SUBa@avalon>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 1 Dec 2014 08:07:04 -0500
+Message-ID: <547C67F3.7080807@gmail.com>
+Date: Mon, 01 Dec 2014 21:06:59 +0800
+From: Zhou Wang <wangzhou.bry@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+To: Brian Norris <computersforpeace@gmail.com>
+CC: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        devicetree@vger.kernel.org, mark.rutland@arm.com, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, robh+dt@kernel.org,
+        galak@codeaurora.org, caizhiyong@huawei.com, haojian.zhuang@gmail.com,
+        xuwei5@hisilicon.com, wangzhou1@hisilicon.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 0/2] mtd: hisilicon: add a new driver for NAND controller
+ of hisilicon hip04 Soc
+References: <1415105221-7732-1-git-send-email-wangzhou.bry@gmail.com> <20141130090853.GG3608@norris-Latitude-E6410>
+In-Reply-To: <20141130090853.GG3608@norris-Latitude-E6410>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+On 2014年11月30日 17:08, Brian Norris wrote:
+> On Tue, Nov 04, 2014 at 08:46:59PM +0800, Zhou Wang wrote:
+>> This patchset adds the support for NAND controller of hisilicon hip04 Soc.
+>> The NAND controller IP was developed by hisilicon and needs a new driver to
+>> support it. This patchset is based on v3.18-rc1. I have tested that NAND flash
+>> controller works fine in Hip04 D01 board.
+>
+> Have you tested on the MTD test modules (drivers/mtd/tests/*)? This is
+> important, as we seem to regularly get UBIFS bug reports from users
+> whose drivers have not even passed some of the simple tests.
+>
+> Also, it might be worth testing out the UBI tests found in the mtd-utils
+> package.
+>
+> Brian
+>
 
-On Mon, 01 Dec 2014 15:00:15 +0200
-Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
+Hi Brian,
 
-> Hi Boris,
-> 
-> Thank you for the patch.
-> 
-> On Monday 01 December 2014 09:42:15 Boris Brezillon wrote:
-> > Add bus_formats and num_bus_formats fields and
-> > drm_display_info_set_bus_formats helper function to specify the bus
-> > formats supported by a given display.
-> > 
-> > This information can be used by display controller drivers to configure
-> > the output interface appropriately (i.e. RGB565, RGB666 or RGB888 on raw
-> > RGB or LVDS busses).
-> > 
-> > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> 
-> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> 
-> > ---
-> > Hi,
-> > 
-> > Sorry for the noise: I ran checkpatch after sending the series and it found
-> > a typo and two "line over 80 characters" warnings.
-> > 
-> > This version fixes those warnings.
-> 
-> Please remember to increment the version number next time, it gets confusing 
-> otherwise when people start asking questions such as "which v4 ?".
+I have not tested on the MTD test modules, I will do this test and
+the UBI tests ASAP. Thank you very much for so many helpful comments!
 
-Okay. I wasn't sure, and eventually decided to just prefix the version
-with RESEND because these were only cosmetic changes, and I fixed them
-right after sending the v4.
-
-I'll know for next time ;-).
-
-Thanks,
-
-Boris
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Best Regards,
+Zhou Wang
