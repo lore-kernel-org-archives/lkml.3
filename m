@@ -1,89 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932808AbaLAXNe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 18:13:34 -0500
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:35737 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932514AbaLAXNd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 18:13:33 -0500
-Date: Mon, 1 Dec 2014 15:13:30 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
-        Michal Marek <mmarek@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v8 01/12] Add kernel address sanitizer infrastructure.
-In-Reply-To: <1417104057-20335-2-git-send-email-a.ryabinin@samsung.com>
-Message-ID: <alpine.DEB.2.10.1412011512390.26834@chino.kir.corp.google.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1417104057-20335-1-git-send-email-a.ryabinin@samsung.com> <1417104057-20335-2-git-send-email-a.ryabinin@samsung.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S932838AbaLAXO2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 18:14:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52748 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932408AbaLAXO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 18:14:27 -0500
+Message-ID: <547CF650.4070907@suse.de>
+Date: Tue, 02 Dec 2014 00:14:24 +0100
+From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: Michal Simek <michal.simek@xilinx.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        Ola Jeppson <ola@adapteva.com>
+Subject: Re: [PATCH] ARM: zynq: DT: Add USB to device tree
+References: <1417459352-23401-1-git-send-email-soren.brinkmann@xilinx.com> <547CCEE3.6020806@suse.de> <fb6f17c51aef4a498eb2a3e01a81df34@BN1BFFO11FD017.protection.gbl> <e016ae7c103a4fbd844826c9e25fe9c2@BY2FFO11FD036.protection.gbl>
+In-Reply-To: <e016ae7c103a4fbd844826c9e25fe9c2@BY2FFO11FD036.protection.gbl>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Nov 2014, Andrey Ryabinin wrote:
+Am 01.12.2014 um 23:56 schrieb Sören Brinkmann:
+> On Mon, 2014-12-01 at 01:24PM -0800, Sören Brinkmann wrote:
+>> On Mon, 2014-12-01 at 09:26PM +0100, Andreas Färber wrote:
+>>> Am 01.12.2014 um 19:42 schrieb Soren Brinkmann:
+>>>> Add USB nodes to zc702, zc706 and zed device trees.
+>>>>
+>>>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>>>> ---
+>>>>  arch/arm/boot/dts/zynq-7000.dtsi | 22 +++++++++++++++++++++-
+>>>>  arch/arm/boot/dts/zynq-zc702.dts | 11 +++++++++++
+>>>>  arch/arm/boot/dts/zynq-zc706.dts | 10 ++++++++++
+>>>>  arch/arm/boot/dts/zynq-zed.dts   | 10 ++++++++++
+>>>>  4 files changed, 52 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
+>>>> index ce2ef5bec4f2..9ed60938f301 100644
+>>>> --- a/arch/arm/boot/dts/zynq-7000.dtsi
+>>>> +++ b/arch/arm/boot/dts/zynq-7000.dtsi
+> [...]
+>>>> @@ -324,6 +344,6 @@
+>>>>  			reg = <0xf8005000 0x1000>;
+>>>>  			reset = <0>;
+>>>>  			timeout-sec = <10>;
+>>>> -		};
+>>>> +		} ;
+>>>>  	};
+>>>>  };
+>>>
+>>> Unrelated accidental change here though. :)
+> 
+> Since a v2 is needed now, does this really require a dedicated patch to
+> fix this bogus space here or do we just look the other way?
 
-> diff --git a/Documentation/kasan.txt b/Documentation/kasan.txt
-> new file mode 100644
-> index 0000000..a3a9009
-> --- /dev/null
-> +++ b/Documentation/kasan.txt
-> @@ -0,0 +1,169 @@
-> +Kernel address sanitizer
-> +================
-> +
-> +0. Overview
-> +===========
-> +
-> +Kernel Address sanitizer (KASan) is a dynamic memory error detector. It provides
-> +a fast and comprehensive solution for finding use-after-free and out-of-bounds
-> +bugs.
-> +
-> +KASan uses compile-time instrumentation for checking every memory access,
-> +therefore you will need a certain version of GCC >= 4.9.2
-> +
-> +Currently KASan is supported only for x86_64 architecture and requires that the
-> +kernel be built with the SLUB allocator.
-> +
-> +1. Usage
-> +=========
-> +
-> +To enable KASAN configure kernel with:
-> +
-> +	  CONFIG_KASAN = y
-> +
-> +and choose between CONFIG_KASAN_OUTLINE and CONFIG_KASAN_INLINE. Outline/inline
-> +is compiler instrumentation types. The former produces smaller binary the
-> +latter is 1.1 - 2 times faster. Inline instrumentation requires GCC 5.0 or
-> +latter.
-> +
-> +Currently KASAN works only with the SLUB memory allocator.
-> +For better bug detection and nicer report, enable CONFIG_STACKTRACE and put
-> +at least 'slub_debug=U' in the boot cmdline.
-> +
-> +To disable instrumentation for specific files or directories, add a line
-> +similar to the following to the respective kernel Makefile:
-> +
-> +        For a single file (e.g. main.o):
-> +                KASAN_SANITIZE_main.o := n
-> +
-> +        For all files in one directory:
-> +                KASAN_SANITIZE := n
-> +
+Sorry, I don't understand the question: If as you say a v2 is needed,
+why knowingly introduce a space between } and ; in your patch? Maybe I'm
+missing something or you're looking at the patch in reverse...?
 
-More precisely, this requires CONFIG_SLUB_DEBUG and not just CONFIG_SLUB.
+Andreas
+
+-- 
+SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 21284 AG Nürnberg
