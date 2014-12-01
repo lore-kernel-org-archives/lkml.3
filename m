@@ -1,84 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaLARZc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 12:25:32 -0500
-Received: from www.linutronix.de ([62.245.132.108]:44280 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937AbaLARZa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 12:25:30 -0500
-Message-ID: <547CA483.3070801@linutronix.de>
-Date: Mon, 01 Dec 2014 18:25:23 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1753634AbaLARZx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 12:25:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44712 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752897AbaLARZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 12:25:51 -0500
+Date: Mon, 1 Dec 2014 18:02:42 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com
+Subject: [PATCH v8 00/50] linux: towards virtio-1 guest support
+Message-ID: <1417449619-24896-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: linux-serial@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Sekhar Nori <nsekhar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, uwe@kleine-koenig.org
-Subject: Re: [PATCH] tty: serial: serial-omap: depend on !8250_omap
-References: <1417039306-2384-1-git-send-email-bigeasy@linutronix.de> <20141129094823.GA10840@linutronix.de> <20141129173418.GY2817@atomide.com> <20141201140914.728aaa46@lxorguk.ukuu.org.uk> <20141201163813.GA2817@atomide.com>
-In-Reply-To: <20141201163813.GA2817@atomide.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2014 05:38 PM, Tony Lindgren wrote:
-> * One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> [141201 06:11]:
->>> Well the nightmare userspace switch from ttyS to ttyO few years ago is
->>> something we want to avoid.. I think the best solution would be to make
->>> serial-omap.c transparently provide support for ttyO using the new 8250
->>> code so both ttyS and ttyO devices would just work. Otherwise it will
->>> be years of "my serial port stopped working" questions again.
->>
->> Thata a udev problem not a kernel one surely.
-> 
-> How do you suggest we get people to update their kernel command line
-> and inittab? Udev may not even be installed.
+David, assuming patches are acceptable, I'd like them all to be merged through
+virtio or vhost trees to avoid dependency headaches.  Could you please ack
+doing that for net related patches, especially these:
+	  tun: move internal flag defines out of uapi
+	  tun: drop most type defines
+	  tun: add VNET_LE flag
+	  tun: TUN_VNET_LE support, fix sparse warnings for virtio headers
+	  macvtap: TUN_VNET_HDR support
+	  vhost/scsi: partial virtio 1.0 support
+	  af_packet: virtio 1.0 stubs
 
-There are three use cases that I can think of right now:
-- people that enable that new driver via oldconfig
-  I would expect that they read the help message in Kconfig. No worry
-  about them.
+Alternatively, I can prepare a tree with virtio changes and merge
+that into your net-next - if Rusty approves, or keeps
+silence :)
 
-- people that get a complete system via magic_build_tool (may yocto or
-  whatever)
-  If $TOOL decides to use the new driver, then it should update
-  commandline in bootloader. Those things create usually bootloader +
-  kernel + rootfile system. If the commandline is saved on flash/mmc
-  then it won't be reset from default. However udev should help here.
-  So not a problem either (udev can't fix the kernel boot output but we
-  should see atleast the login console).
+Could you comment on this please?
 
-- people that build omap2plus_defconfig and we switch to the new driver
-  Those people get switched from one driver to the other without
-  knowing. This is what I tried to bring to everyone's attention. The
-  defconfig hasn't been changed yet so it is not problem for next
-  release (yet).
+Up to half a hundred patches now. This is getting ridiculous.
 
-I agree that this is a user problem. We agreed not to introduce a
-console proxy in kernel _or_ hack the command line in kernel (to
-replace O with S).
-So I think the problem boils down to educate the user about this
-change. Making the old driver disappear was one way of getting the
-user's attention. Another idea would be to introduce a #warning which is
-also activated by the defconfig and informs the user about the change.
-Ideally this #warning could be switched off by Kconfig once the user
-reads & deactivates it. This requires the pay attention to warnings
-during build. #error would make sure he does but it breaks auto-builds
-so it is not an option.
+Based on patches by Cornelia and others, but with an API that should allow
+better static checking of code, slightly more concervative changes in vring and
+drivers, and compatibility for existing drivers so that this series can be
+applied gradually.
+At the end of series, all drivers are converted, and compatibility flags are
+dropped.
 
-> Regards,
-> 
-> Tony
-> 
+All drivers have been converted now, with the exception
+of the balloon driver which we plan to rewrite
+rather than convert.
+All drivers now pass sparse without warnings.
 
-Sebastian
+net and blk patches have been tested on s390.
+Other patches pass sparse so they are most likely
+ok too, but haven't been through testing yet -
+they can be dropped from patchset if necessary.
+
+Please review, and consider for 3.19
+
+changes since v7:
+	all drivers have been converted now.
+	new patches:
+	  virtio_console: virtio 1.0 support
+	  virtio_balloon: add legacy_only flag
+	  virtio: make VIRTIO_F_VERSION_1 a transport bit
+	  virtio: drop VIRTIO_F_VERSION_1 from drivers
+	vhost: make features 64 bit
+		fix bug noted by Sergei Shtylyov,
+		bugfix suggested by Ben Hutchings
+	virtio_net: disable mac write for virtio 1.0
+		moved earlier in the series
+	vhost/net: force len for TX to host endian
+		commit log reworded
+	vhost: virtio 1.0 endian-ness support
+		simplify error printing code sligthly
+	vhost/net: suppress compiler warning
+		smashed into code introducing the warning,
+		added a comment
+
+
+changes since v6:
+	tun: move internal flag defines out of uapi
+		document reasons for patch split
+	macvtap: TUN_VNET_LE support
+		fix patch subject
+	virtio: add low-level APIs for feature bits
+		fix comment in code s/set/clear/
+		document reasons for names selected
+	KVM: s390: enable virtio-ccw revision 1
+		fix up comment
+	virtio: use u32, not bitmap for features
+		fix whitespace
+	virtio_ccw: add support for 64 bit features
+		tweak comment in code
+
+	included reviewed-by tags by Cornelia David and Jason
+
+Changes since v5:
+	rewritten feature bit handling, based on suggestion by David:
+	changes are now smaller and easier to review.
+	new patch:
+	  virtio: add low-level APIs for feature bits
+	rewritten patches:
+	  virtio: use u32, not bitmap for features
+	  virtio: add support for 64 bit features.
+	
+Changes since v4:
+	I have dropped 64 bit feature negotiation from
+	most transports (except ccw).
+	For symmetry, I split out ccw bits:
+		  virtio: add support for 64 bit features.
+			adds core and device support for 64 bit features
+		  virtio_ccw: add support for 64 bit features.
+			actually enables 64 bit features in ccw.
+	detail below.
+
+	this is still really a cosmetic change: just reordering/splitting
+	patches, and dropping code changes that aren't needed.
+
+	new patches:
+	  mic_virtio: robust feature array size calculation
+	  virtio: assert 32 bit features in transports
+
+	addressed comments by Cornelia:
+		      virtio: disable virtio 1.0 in transports:
+			patch dropped
+		      virtio: memory access APIs
+			tweaked comments as suggested by Cornelia
+		      virtio_config: endian conversion for v1.0
+			dropped reviewed-by tags -
+				they applied to a very old version of patch
+		      virtio: set FEATURES_OK
+			replaced printk by dev_err
+		      virtio: add legacy feature table support
+			comment changes suggested by Cornelia
+		      virtio_blk: v1.0 support
+			dropped reviewed-by tags -
+				they applied to a very old version of patch
+		      virtio_net: enable v1.0 support
+			only write mac for legacy devices
+		      vhost: add memory access wrappers
+			move chunk to vhost: make features 64 bit
+			better patch description
+		      vhost: make features 64 bit
+			moved this patch earlier in series
+		      vhost/net: force len for TX to host endian
+			better patch description
+		      virtio_scsi: v1.0 support
+			fix bug: use high level, not low level wrappers
+			
+
+	included reviewed-by tags for patches:
+		KVM: s390 allow virtio_ccw status writes to fail
+				added reviewed-by tag by Cornelia
+		virtio_scsi: v1.0 support
+		virtio_scsi: move to uapi
+		virtio_scsi: export to userspace
+		vhost/scsi: partial virtio 1.0 support
+				added reviewed-by tag by Paolo
+
+Changes since v3:
+	- move virtio 1.0 feature bit out of transport bits:
+	  for now it's managed by drivers
+	- disable virtio 1.0 feature bit explicitly - for transports
+	  that don't support it
+
+Cornelia Huck (3):
+  virtio: allow transports to get avail/used addresses
+  KVM: s390: virtio-ccw revision 1 SET_VQ
+  KVM: s390: enable virtio-ccw revision 1
+
+Michael S. Tsirkin (46):
+  virtio: add low-level APIs for feature bits
+  virtio: use u32, not bitmap for features
+  mic_virtio: robust feature array size calculation
+  virtio: add support for 64 bit features.
+  virtio: assert 32 bit features in transports
+  virtio_ccw: add support for 64 bit features.
+  virtio: add virtio 1.0 feature bit
+  virtio: memory access APIs
+  virtio_ring: switch to new memory access APIs
+  virtio_config: endian conversion for v1.0
+  virtio: set FEATURES_OK
+  virtio: simplify feature bit handling
+  virtio: add legacy feature table support
+  virtio_net: v1.0 endianness
+  virtio_blk: v1.0 support
+  KVM: s390 allow virtio_ccw status writes to fail
+  virtio_blk: make serial attribute static
+  virtio_blk: fix race at module removal
+  virtio_net: pass vi around
+  virtio_net: get rid of virtio_net_hdr/skb_vnet_hdr
+  virtio_net: stricter short buffer length checks
+  virtio_net: bigger header when VERSION_1 is set
+  virtio_net: disable mac write for virtio 1.0
+  virtio_net: enable v1.0 support
+  vhost: make features 64 bit
+  vhost: add memory access wrappers
+  vhost/net: force len for TX to host endian
+  vhost: switch to __get/__put_user exclusively
+  vhost: virtio 1.0 endian-ness support
+  vhost/net: virtio 1.0 byte swap
+  vhost/net: larger header for virtio 1.0
+  vhost/net: enable virtio 1.0
+  tun: move internal flag defines out of uapi
+  tun: drop most type defines
+  tun: add VNET_LE flag
+  tun: TUN_VNET_LE support, fix sparse warnings for virtio headers
+  macvtap: TUN_VNET_LE support
+  virtio_scsi: v1.0 support
+  virtio_scsi: move to uapi
+  virtio_scsi: export to userspace
+  vhost/scsi: partial virtio 1.0 support
+  af_packet: virtio 1.0 stubs
+  virtio_console: virtio 1.0 support
+  virtio_balloon: add legacy_only flag
+  virtio: make VIRTIO_F_VERSION_1 a transport bit
+  virtio: drop VIRTIO_F_VERSION_1 from drivers
+
+Thomas Huth (1):
+  KVM: s390: Set virtio-ccw transport revision
+
+ drivers/vhost/vhost.h                  |  37 ++++++-
+ include/linux/virtio.h                 |  12 ++-
+ include/linux/virtio_byteorder.h       |  59 +++++++++++
+ include/linux/virtio_config.h          | 100 +++++++++++++++++--
+ include/uapi/linux/if_tun.h            |  17 +---
+ include/uapi/linux/virtio_blk.h        |  15 +--
+ include/uapi/linux/virtio_config.h     |   9 +-
+ include/uapi/linux/virtio_console.h    |   7 +-
+ include/uapi/linux/virtio_net.h        |  15 +--
+ include/uapi/linux/virtio_ring.h       |  45 ++++-----
+ include/{ => uapi}/linux/virtio_scsi.h | 106 ++++++++++----------
+ include/uapi/linux/virtio_types.h      |  46 +++++++++
+ tools/virtio/linux/virtio.h            |  22 +----
+ tools/virtio/linux/virtio_config.h     |   2 +-
+ drivers/block/virtio_blk.c             |  74 ++++++++------
+ drivers/char/virtio_console.c          |  30 +++---
+ drivers/lguest/lguest_device.c         |  13 ++-
+ drivers/misc/mic/card/mic_virtio.c     |  10 +-
+ drivers/net/macvtap.c                  |  68 ++++++++-----
+ drivers/net/tun.c                      | 168 ++++++++++++++------------------
+ drivers/net/virtio_net.c               | 161 +++++++++++++++---------------
+ drivers/remoteproc/remoteproc_virtio.c |   7 +-
+ drivers/s390/kvm/kvm_virtio.c          |   7 +-
+ drivers/s390/kvm/virtio_ccw.c          | 172 +++++++++++++++++++++++++++------
+ drivers/scsi/virtio_scsi.c             |  50 ++++++----
+ drivers/vhost/net.c                    |  31 +++---
+ drivers/vhost/scsi.c                   |  22 +++--
+ drivers/vhost/vhost.c                  |  93 +++++++++++-------
+ drivers/virtio/virtio.c                |  78 +++++++++++----
+ drivers/virtio/virtio_balloon.c        |   1 +
+ drivers/virtio/virtio_mmio.c           |  13 ++-
+ drivers/virtio/virtio_pci.c            |   8 +-
+ drivers/virtio/virtio_ring.c           | 109 ++++++++++++---------
+ net/packet/af_packet.c                 |  35 ++++---
+ tools/virtio/virtio_test.c             |   5 +-
+ tools/virtio/vringh_test.c             |  16 +--
+ include/uapi/linux/Kbuild              |   2 +
+ 37 files changed, 1061 insertions(+), 604 deletions(-)
+ create mode 100644 include/linux/virtio_byteorder.h
+ rename include/{ => uapi}/linux/virtio_scsi.h (73%)
+ create mode 100644 include/uapi/linux/virtio_types.h
+
+-- 
+MST
+
