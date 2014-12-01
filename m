@@ -1,89 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593AbaLAOF4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 09:05:56 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:56629 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752404AbaLAOFz (ORCPT
+	id S1753723AbaLAOHF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 09:07:05 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:54681 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753631AbaLAOHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 09:05:55 -0500
-Date: Mon, 1 Dec 2014 15:05:47 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 03/30] cputime: Introduce nsecs_to_cputime64()
-Message-ID: <20141201150547.3521e8fa@mschwide>
-In-Reply-To: <1417199040-21044-4-git-send-email-fweisbec@gmail.com>
-References: <1417199040-21044-1-git-send-email-fweisbec@gmail.com>
-	<1417199040-21044-4-git-send-email-fweisbec@gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 1 Dec 2014 09:07:03 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: akpm@linux-foundation.org, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] mm/thp: Allocate transparent hugepages on local node
+In-Reply-To: <20141201113340.GA545@node.dhcp.inet.fi>
+References: <1417412803-27234-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20141201113340.GA545@node.dhcp.inet.fi>
+User-Agent: Notmuch/0.19+2~g32855b9 (http://notmuchmail.org) Emacs/25.0.50.1 (x86_64-pc-linux-gnu)
+Date: Mon, 01 Dec 2014 19:36:50 +0530
+Message-ID: <87vblvh3b9.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120114-0013-0000-0000-0000020D107A
+x-cbid: 14120114-0005-0000-0000-0000028596AB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Nov 2014 19:23:33 +0100
-Frederic Weisbecker <fweisbec@gmail.com> wrote:
+"Kirill A. Shutemov" <kirill@shutemov.name> writes:
 
-> This will be needed for the conversion of kernel stat to nsecs.
-> 
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Tony Luck <tony.luck@intel.com>
-> Cc: Wu Fengguang <fengguang.wu@intel.com>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  include/linux/cputime.h | 10 ++++++++++
->  1 file changed, 10 insertions(+)
-> 
-> diff --git a/include/linux/cputime.h b/include/linux/cputime.h
-> index f2eb2ee..a225ab9 100644
-> --- a/include/linux/cputime.h
-> +++ b/include/linux/cputime.h
-> @@ -13,4 +13,14 @@
->  	usecs_to_cputime((__nsecs) / NSEC_PER_USEC)
->  #endif
-> 
-> +#ifndef nsecs_to_cputime
-> +# define nsecs_to_cputime(__nsecs)	\
-> +	usecs_to_cputime((__nsecs) / NSEC_PER_USEC)
-> +#endif
-> +
-> +#ifndef nsecs_to_cputime64
-> +# define nsecs_to_cputime64(__nsecs)	\
-> +	((__force cputime64_t) nsecs_to_cputime(__nsecs))
-> +#endif
-> +
->  #endif /* __LINUX_CPUTIME_H */
+> On Mon, Dec 01, 2014 at 11:16:43AM +0530, Aneesh Kumar K.V wrote:
+>> This make sure that we try to allocate hugepages from local node if
+>> allowed by mempolicy. If we can't, we fallback to small page allocation
+>> based on mempolicy. This is based on the observation that allocating pages
+>> on local node is more beneficial that allocating hugepages on remote node.
+>> 
+>> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+>> ---
+>>  include/linux/gfp.h |  4 ++++
+>>  mm/huge_memory.c    | 24 +++++++++---------------
+>>  mm/mempolicy.c      | 40 ++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 53 insertions(+), 15 deletions(-)
+>> 
+>> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+>> index 41b30fd4d041..fcbd017b4fb4 100644
+>> --- a/include/linux/gfp.h
+>> +++ b/include/linux/gfp.h
+>> @@ -338,11 +338,15 @@ alloc_pages(gfp_t gfp_mask, unsigned int order)
+>>  extern struct page *alloc_pages_vma(gfp_t gfp_mask, int order,
+>>  			struct vm_area_struct *vma, unsigned long addr,
+>>  			int node);
+>> +extern struct page *alloc_hugepage_vma(gfp_t gfp, struct vm_area_struct *vma,
+>> +				       unsigned long addr, int order);
+>>  #else
+>>  #define alloc_pages(gfp_mask, order) \
+>>  		alloc_pages_node(numa_node_id(), gfp_mask, order)
+>>  #define alloc_pages_vma(gfp_mask, order, vma, addr, node)	\
+>>  	alloc_pages(gfp_mask, order)
+>> +#define alloc_hugepage_vma(gfp_mask, vma, addr, order)	\
+>> +	alloc_pages(gfp_mask, order)
+>>  #endif
+>>  #define alloc_page(gfp_mask) alloc_pages(gfp_mask, 0)
+>>  #define alloc_page_vma(gfp_mask, vma, addr)			\
+>> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+>> index de984159cf0b..7903eb995b7f 100644
+>> --- a/mm/huge_memory.c
+>> +++ b/mm/huge_memory.c
+>> @@ -766,15 +766,6 @@ static inline gfp_t alloc_hugepage_gfpmask(int defrag, gfp_t extra_gfp)
+>>  	return (GFP_TRANSHUGE & ~(defrag ? 0 : __GFP_WAIT)) | extra_gfp;
+>>  }
+>>  
+>> -static inline struct page *alloc_hugepage_vma(int defrag,
+>> -					      struct vm_area_struct *vma,
+>> -					      unsigned long haddr, int nd,
+>> -					      gfp_t extra_gfp)
+>> -{
+>> -	return alloc_pages_vma(alloc_hugepage_gfpmask(defrag, extra_gfp),
+>> -			       HPAGE_PMD_ORDER, vma, haddr, nd);
+>> -}
+>> -
+>>  /* Caller must hold page table lock. */
+>>  static bool set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
+>>  		struct vm_area_struct *vma, unsigned long haddr, pmd_t *pmd,
+>> @@ -796,6 +787,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>>  			       unsigned long address, pmd_t *pmd,
+>>  			       unsigned int flags)
+>>  {
+>> +	gfp_t gfp;
+>>  	struct page *page;
+>>  	unsigned long haddr = address & HPAGE_PMD_MASK;
+>>  
+>> @@ -830,8 +822,8 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>>  		}
+>>  		return 0;
+>>  	}
+>> -	page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
+>> -			vma, haddr, numa_node_id(), 0);
+>> +	gfp = alloc_hugepage_gfpmask(transparent_hugepage_defrag(vma), 0);
+>> +	page = alloc_hugepage_vma(gfp, vma, haddr, HPAGE_PMD_ORDER);
+>>  	if (unlikely(!page)) {
+>>  		count_vm_event(THP_FAULT_FALLBACK);
+>>  		return VM_FAULT_FALLBACK;
+>> @@ -1119,10 +1111,12 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>>  	spin_unlock(ptl);
+>>  alloc:
+>>  	if (transparent_hugepage_enabled(vma) &&
+>> -	    !transparent_hugepage_debug_cow())
+>> -		new_page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
+>> -					      vma, haddr, numa_node_id(), 0);
+>> -	else
+>> +	    !transparent_hugepage_debug_cow()) {
+>> +		gfp_t gfp;
+>> +
+>> +		gfp = alloc_hugepage_gfpmask(transparent_hugepage_defrag(vma), 0);
+>> +		new_page = alloc_hugepage_vma(gfp, vma, haddr, HPAGE_PMD_ORDER);
+>
+> Should node of page we're handling wp-fault for be part of decision?
 
-For any architecture with a cputime_t better than a micro-second
-the conversion to micro seconds degrades the precision a lot.
 
-I would prefer to see the compile fail for e.g. s390 instead
-of silently introducing *broken* cputime values.
+We are doing that in alloc_hugepage_vma by using numa_node_id(), I am
+not sure whether it really matters w.r.t to the task getting preempted
+and running on another node ? Even if we make it same as the node on
+which the page fault happened, we could end up running on another
+node. That situation is no worse than what we have today. 
 
--- 
-blue skies,
-   Martin.
 
-"Reality continues to ruin my life." - Calvin.
+
+>
+>> +	} else
+>>  		new_page = NULL;
+>>  
+>>  	if (unlikely(!new_page)) {
+>> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+>> index e58725aff7e9..fa96af5b31f7 100644
+>> --- a/mm/mempolicy.c
+>> +++ b/mm/mempolicy.c
+>> @@ -2041,6 +2041,46 @@ retry_cpuset:
+>>  	return page;
+>>  }
+>>  
+>> +struct page *alloc_hugepage_vma(gfp_t gfp, struct vm_area_struct *vma,
+>> +				unsigned long addr, int order)
+>> +{
+>> +	struct page *page;
+>> +	nodemask_t *nmask;
+>> +	struct mempolicy *pol;
+>> +	int node = numa_node_id();
+>
+> Hm. What if the code will be preempted and scheduled on different node?
+> I'm not really familiar with mempolicy details and not sure if we should
+> care. Probably not.
+>
+>> +	unsigned int cpuset_mems_cookie;
+>> +
+>> +retry_cpuset:
+>> +	pol = get_vma_policy(vma, addr);
+>> +	cpuset_mems_cookie = read_mems_allowed_begin();
+>> +
+>> +	if (pol->mode != MPOL_INTERLEAVE) {
+>> +		/*
+>> +		 * For interleave policy, we don't worry about
+>> +		 * current node. Otherwise if current node is
+>> +		 * in nodemask, try to allocate hugepage from
+>> +		 * current node. Don't fall back to other nodes
+>> +		 * for THP.
+>> +		 */
+>
+> The comment probably should be above "if ()", not below.
+
+ok
+
+>
+>> +		nmask = policy_nodemask(gfp, pol);
+>> +		if (!nmask || node_isset(node, *nmask)) {
+>> +			mpol_cond_put(pol);
+>> +			page = alloc_pages_exact_node(node, gfp, order);
+>> +			if (unlikely(!page &&
+>> +				     read_mems_allowed_retry(cpuset_mems_cookie)))
+>> +				goto retry_cpuset;
+>> +			return page;
+>> +		}
+>> +	}
+>> +	mpol_cond_put(pol);
+>> +	/*
+>> +	 * if current node is not part of node mask, try
+>> +	 * the allocation from any node, and we can do retry
+>> +	 * in that case.
+>> +	 */
+>> +	return alloc_pages_vma(gfp, order, vma, addr, node);
+>> +}
+>> +
+>>  /**
+>>   * 	alloc_pages_current - Allocate pages.
+>>   *
+
+-aneesh
 
