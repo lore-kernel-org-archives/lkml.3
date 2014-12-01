@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760AbaLAIVJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 03:21:09 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:49303 "EHLO
+	id S1752881AbaLAIWJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 03:22:09 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:49338 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752632AbaLAIVH (ORCPT
+	with ESMTP id S1752749AbaLAIVJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 03:21:07 -0500
+	Mon, 1 Dec 2014 03:21:09 -0500
 From: Boris Brezillon <boris.brezillon@free-electrons.com>
 To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
         Thierry Reding <thierry.reding@gmail.com>
@@ -17,9 +17,11 @@ Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Andrew Victor <linux@maxim.org.za>,
         Boris Brezillon <boris.brezillon@free-electrons.com>
 Subject: [PATCH v4 0/3] drm: describe display bus format
-Date: Mon,  1 Dec 2014 09:20:54 +0100
-Message-Id: <1417422061-10384-1-git-send-email-boris.brezillon@free-electrons.com>
+Date: Mon,  1 Dec 2014 09:20:58 +0100
+Message-Id: <1417422061-10384-5-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417422061-10384-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1417422061-10384-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
