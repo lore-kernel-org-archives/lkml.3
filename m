@@ -1,131 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495AbaLARH4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 12:07:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53522 "EHLO mx1.redhat.com"
+	id S1753667AbaLARIC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 12:08:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46079 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752039AbaLARHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 12:07:54 -0500
-Date: Mon, 1 Dec 2014 11:07:18 -0600
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Miroslav Benes <mbenes@suse.cz>
-Cc: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Petr Mladek <pmladek@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 2/3] kernel: add support for live patching
-Message-ID: <20141201170718.GA12633@treble.redhat.com>
-References: <1416935709-404-1-git-send-email-sjenning@redhat.com>
- <1416935709-404-3-git-send-email-sjenning@redhat.com>
- <alpine.LNX.2.00.1411261451570.10866@pobox.suse.cz>
- <20141126154042.GB29079@treble.hsd1.ky.comcast.net>
- <alpine.LNX.2.00.1412011416110.23443@pobox.suse.cz>
+	id S1752874AbaLARH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 12:07:58 -0500
+Message-ID: <547CA064.5080106@suse.com>
+Date: Mon, 01 Dec 2014 18:07:48 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1412011416110.23443@pobox.suse.cz>
-User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
+To: "Luis R. Rodriguez" <mcgrof@suse.com>,
+        David Vrabel <david.vrabel@citrix.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        boris.ostrovsky@oracle.com, xen-devel@lists.xenproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        x86@kernel.org, kvm@vger.kernel.org, Davidlohr Bueso <dbueso@suse.de>,
+        Joerg Roedel <jroedel@suse.de>, Borislav Petkov <bp@suse.de>,
+        Jan Beulich <JBeulich@suse.com>, Olaf Hering <ohering@suse.de>
+Subject: Re: [PATCH] xen: privcmd: schedule() after private hypercall when
+ non CONFIG_PREEMPT
+References: <1417040805-15857-1-git-send-email-mcgrof@do-not-panic.com> <5476C66F.5040308@suse.com> <20141127183616.GV25677@wotan.suse.de> <547C4CEF.1010603@citrix.com> <20141201150546.GC25677@wotan.suse.de> <547C86BF.2040705@citrix.com> <CAB=NE6WPvCJnAfdbZqcw5pJtZrfxo0zQu6J2gpXp69G-UTtiUg@mail.gmail.com> <547C8F30.1010306@citrix.com> <20141201161905.GH25677@wotan.suse.de>
+In-Reply-To: <20141201161905.GH25677@wotan.suse.de>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 02:31:35PM +0100, Miroslav Benes wrote:
-> On Wed, 26 Nov 2014, Josh Poimboeuf wrote:
-> 
-> > Hi Miroslav,
-> > 
-> > Just addressing one of your comments below.  I'll let Seth respond to
-> > the others :-)
-> > 
-> > On Wed, Nov 26, 2014 at 03:19:17PM +0100, Miroslav Benes wrote:
-> > > > +/**
-> > > > + * struct klp_func - function structure for live patching
-> > > > + * @old_name:	name of the function to be patched
-> > > > + * @new_func:	pointer to the patched function code
-> > > > + * @old_addr:	a hint conveying at what address the old function
-> > > > + *		can be found (optional, vmlinux patches only)
-> > > > + */
-> > > > +struct klp_func {
-> > > > +	/* external */
-> > > > +	const char *old_name;
-> > > > +	void *new_func;
-> > > > +	/*
-> > > > +	 * The old_addr field is optional and can be used to resolve
-> > > > +	 * duplicate symbol names in the vmlinux object.  If this
-> > > > +	 * information is not present, the symbol is located by name
-> > > > +	 * with kallsyms. If the name is not unique and old_addr is
-> > > > +	 * not provided, the patch application fails as there is no
-> > > > +	 * way to resolve the ambiguity.
-> > > > +	 */
-> > > > +	unsigned long old_addr;
-> > > 
-> > > I wonder if we really need old_addr as an external field. I assume that 
-> > > userspace tool in kpatch use it as a "hint" for kernel part and thus 
-> > > kallsyms is not needed there (and it solves ambiguity problem as well). 
-> > > But I am not sure if it is gonna be the same in upstream. When kernel is 
-> > > randomized (CONFIG_RANDOMIZE_BASE is set to 'y', though default is 'n') 
-> > > old_addr is not usable (and we throw it away in the code). Without 
-> > > old_addr being set by the user we could spare some of code (calls to 
-> > > klp_verify_vmlinux_symbol and such). 
-> > 
-> > Even with CONFIG_RANDOMIZE_BASE, the function offsets will be the same
-> > regardless of the base address.  So we could still use old_addr to
-> > determine the offset.
-> > 
-> > > So the question is whether future userspace tool in upstream would need it 
-> > > and would use it. Please note that I do not mean it as a kpatch or kgraft 
-> > > way to do things, I'm just not sure about old_addr being "public" and want 
-> > > do discuss the options.
-> > > 
-> > > The ambiguity of symbols was discussed in some other thread in lkml in 
-> > > october (I guess) with no conclusion IIRC...
-> > 
-> > We need to resolve ambiguity somehow, and old_addr is a way to do that.
-> > Do you have any other ideas?
-> 
-> Unfortunately I don't.
-> 
-> But similarly we don't deal with ambiguity in modules either. And it is 
-> (at least theoretically) possible. Two static functions of the same name 
-> in two different .c files which the final module is linked from. You have 
-> to use kallsyms and it would get confused. Maybe this sounds odd but it 
-> could happen. 
+On 12/01/2014 05:19 PM, Luis R. Rodriguez wrote:
+> On Mon, Dec 01, 2014 at 03:54:24PM +0000, David Vrabel wrote:
+>> On 01/12/14 15:44, Luis R. Rodriguez wrote:
+>>> On Mon, Dec 1, 2014 at 10:18 AM, David Vrabel <david.vrabel@citrix.com> wrote:
+>>>> On 01/12/14 15:05, Luis R. Rodriguez wrote:
+>>>>> On Mon, Dec 01, 2014 at 11:11:43AM +0000, David Vrabel wrote:
+>>>>>> On 27/11/14 18:36, Luis R. Rodriguez wrote:
+>>>>>>> On Thu, Nov 27, 2014 at 07:36:31AM +0100, Juergen Gross wrote:
+>>>>>>>> On 11/26/2014 11:26 PM, Luis R. Rodriguez wrote:
+>>>>>>>>> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>>>>>>>>>
+>>>>>>>>> Some folks had reported that some xen hypercalls take a long time
+>>>>>>>>> to complete when issued from the userspace private ioctl mechanism,
+>>>>>>>>> this can happen for instance with some hypercalls that have many
+>>>>>>>>> sub-operations, this can happen for instance on hypercalls that use
+>>>>>> [...]
+>>>>>>>>> --- a/drivers/xen/privcmd.c
+>>>>>>>>> +++ b/drivers/xen/privcmd.c
+>>>>>>>>> @@ -60,6 +60,9 @@ static long privcmd_ioctl_hypercall(void __user *udata)
+>>>>>>>>>                               hypercall.arg[0], hypercall.arg[1],
+>>>>>>>>>                               hypercall.arg[2], hypercall.arg[3],
+>>>>>>>>>                               hypercall.arg[4]);
+>>>>>>>>> +#ifndef CONFIG_PREEMPT
+>>>>>>>>> + schedule();
+>>>>>>>>> +#endif
+>>>>>>
+>>>>>> As Juergen points out, this does nothing.  You need to schedule while in
+>>>>>> the middle of the hypercall.
+>>>>>>
+>>>>>> Remember that Xen's hypercall preemption only preempts the hypercall to
+>>>>>> run interrupts in the guest.
+>>>>>
+>>>>> How is it ensured that when the kernel preempts on this code path on
+>>>>> CONFIG_PREEMPT=n kernel that only interrupts in the guest are run?
+>>>>
+>>>> Sorry, I really didn't describe this very well.
+>>>>
+>>>> If a hypercall needs a continuation, Xen returns to the guest with the
+>>>> IP set to the hypercall instruction, and on the way back to the guest
+>>>> Xen may schedule a different VCPU or it will do any upcalls (as per normal).
+>>>>
+>>>> The guest is free to return from the upcall to the original task
+>>>> (continuing the hypercall) or to a different one.
+>>>
+>>> OK so that addresses what Xen will do when using continuation and
+>>> hypercall preemption, my concern here was that using
+>>> preempt_schedule_irq() on CONFIG_PREEMPT=n kernels in the middle of a
+>>> hypercall on the return from an interrupt (e.g., the timer interrupt)
+>>> would still let the kernel preempt to tasks other than those related
+>>> to Xen.
+>>
+>> Um.  Why would that be a problem?  We do want to switch to any task the
+>> Linux scheduler thinks is best.
+>
+> Its safe but -- it technically is doing kernel preemption, unless we want
+> to adjust the definition of CONFIG_PREEMPT=n to exclude hypercalls. This
+> was my original concern with the use of preempt_schedule_irq() to do this.
+> I am afraid of setting precedents without being clear or wider review and
+> acceptance.
 
-True, this is a remote possibility, but we haven't run into this issue
-yet.  If it becomes a problem, we can try to come up with another way to
-resolve duplicates.
+I wonder whether it would be more acceptable to add (or completely
+switch to) another preemption model: PREEMPT_SWITCHABLE. This would be
+similar to CONFIG_PREEMPT, but the "normal" value of __preempt_count
+would be settable via kernel parameter (default 2):
 
-Here's one idea: since the symbols are always listed in the same order
-in kallsyms (per-object), instead of old_addr we could have sym_idx.  A
-sym_idx of 2 could mean "I want the 2nd occurence of foo in the object's
-kallsyms list".
+0: preempt
+1: preempt_voluntary
+2: preempt_none
 
-However I'd rather keep our current old_addr scheme for now, since it's
-what we have implemented already.  And there are plenty of more
-important things we need to do first.
+The kernel would run with preemption enabled. cond_sched() would
+reschedule if __preempt_count <= 1. And in case of long running kernel
+activities (like the hypercall case or other stuff requiring schedule()
+calls to avoid hangups) we would just set __preempt_count to 0 during
+these periods and restore the old value afterwards.
 
-> Thus the old_addr value is not general protection (as modules are still 
-> affected) and it is questionable whether the user should use it.
+This would be a rather intrusive but clean change IMO.
 
-It's not really protection, since even if you don't specify old_addr and
-you rely on kallsyms, klp_find_symbol will return an error if there are
-any duplicates.
+Any thoughts?
 
-It's really just a way to increase the size of the set of functions
-which can be patched (duplicately named functions).
 
-We also rely on something similar for relocations: klp_reloc.src.  It's
-even more important there, since duplicately named static objects are
-more common than duplicately named functions.
-
-> I do not have strong opinion on this and if no one else shares my 
-> thoughts, I am not against.
-> 
-> Mira
-
--- 
-Josh
+Juergen
