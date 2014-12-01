@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217AbaLAQEA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 11:04:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55972 "EHLO mx1.redhat.com"
+	id S1754236AbaLAQEF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 11:04:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55991 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753649AbaLAQD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 11:03:58 -0500
-Date: Mon, 1 Dec 2014 18:03:39 +0200
+	id S1754159AbaLAQEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 11:04:02 -0500
+Date: Mon, 1 Dec 2014 18:03:43 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
         thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
         Rusty Russell <rusty@rustcorp.com.au>,
-        David Hildenbrand <dahi@linux.vnet.com>,
         virtualization@lists.linux-foundation.org
-Subject: [PATCH v8 10/50] virtio_config: endian conversion for v1.0
-Message-ID: <1417449619-24896-11-git-send-email-mst@redhat.com>
+Subject: [PATCH v8 11/50] virtio: allow transports to get avail/used addresses
+Message-ID: <1417449619-24896-12-git-send-email-mst@redhat.com>
 References: <1417449619-24896-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,68 +26,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We (ab)use virtio conversion functions for device-specific
-config space accesses.
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
 
-Based on original patches by Cornelia and Rusty.
+For virtio-1, we can theoretically have a more complex virtqueue
+layout with avail and used buffers not on a contiguous memory area
+with the descriptor table. For now, it's fine for a transport driver
+to stay with the old layout: It needs, however, a way to access
+the locations of the avail/used rings so it can register them with
+the host.
 
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
 Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Reviewed-by: David Hildenbrand <dahi@linux.vnet.com>
----
- include/linux/virtio_config.h | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
-index 02f0acb..1fa5faa 100644
---- a/include/linux/virtio_config.h
-+++ b/include/linux/virtio_config.h
-@@ -318,12 +318,13 @@ static inline u16 virtio_cread16(struct virtio_device *vdev,
- {
- 	u16 ret;
- 	vdev->config->get(vdev, offset, &ret, sizeof(ret));
--	return ret;
-+	return virtio16_to_cpu(vdev, (__force __virtio16)ret);
- }
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ include/linux/virtio.h       |  3 +++
+ drivers/virtio/virtio_ring.c | 16 ++++++++++++++++
+ 2 files changed, 19 insertions(+)
+
+diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+index 149284e..d6359a5 100644
+--- a/include/linux/virtio.h
++++ b/include/linux/virtio.h
+@@ -75,6 +75,9 @@ unsigned int virtqueue_get_vring_size(struct virtqueue *vq);
  
- static inline void virtio_cwrite16(struct virtio_device *vdev,
- 				   unsigned int offset, u16 val)
- {
-+	val = (__force u16)cpu_to_virtio16(vdev, val);
- 	vdev->config->set(vdev, offset, &val, sizeof(val));
- }
+ bool virtqueue_is_broken(struct virtqueue *vq);
  
-@@ -332,12 +333,13 @@ static inline u32 virtio_cread32(struct virtio_device *vdev,
- {
- 	u32 ret;
- 	vdev->config->get(vdev, offset, &ret, sizeof(ret));
--	return ret;
-+	return virtio32_to_cpu(vdev, (__force __virtio32)ret);
++void *virtqueue_get_avail(struct virtqueue *vq);
++void *virtqueue_get_used(struct virtqueue *vq);
++
+ /**
+  * virtio_device - representation of a device using virtio
+  * @index: unique position on the virtio bus
+diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+index 0d3c737..55532a4 100644
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -827,4 +827,20 @@ void virtio_break_device(struct virtio_device *dev)
  }
+ EXPORT_SYMBOL_GPL(virtio_break_device);
  
- static inline void virtio_cwrite32(struct virtio_device *vdev,
- 				   unsigned int offset, u32 val)
- {
-+	val = (__force u32)cpu_to_virtio32(vdev, val);
- 	vdev->config->set(vdev, offset, &val, sizeof(val));
- }
- 
-@@ -346,12 +348,13 @@ static inline u64 virtio_cread64(struct virtio_device *vdev,
- {
- 	u64 ret;
- 	vdev->config->get(vdev, offset, &ret, sizeof(ret));
--	return ret;
-+	return virtio64_to_cpu(vdev, (__force __virtio64)ret);
- }
- 
- static inline void virtio_cwrite64(struct virtio_device *vdev,
- 				   unsigned int offset, u64 val)
- {
-+	val = (__force u64)cpu_to_virtio64(vdev, val);
- 	vdev->config->set(vdev, offset, &val, sizeof(val));
- }
- 
++void *virtqueue_get_avail(struct virtqueue *_vq)
++{
++	struct vring_virtqueue *vq = to_vvq(_vq);
++
++	return vq->vring.avail;
++}
++EXPORT_SYMBOL_GPL(virtqueue_get_avail);
++
++void *virtqueue_get_used(struct virtqueue *_vq)
++{
++	struct vring_virtqueue *vq = to_vvq(_vq);
++
++	return vq->vring.used;
++}
++EXPORT_SYMBOL_GPL(virtqueue_get_used);
++
+ MODULE_LICENSE("GPL");
 -- 
 MST
 
