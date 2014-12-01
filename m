@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917AbaLAN7S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 08:59:18 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:34601 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753457AbaLAN7O (ORCPT
+	id S1753593AbaLAOF4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 09:05:56 -0500
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:56629 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752404AbaLAOFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 08:59:14 -0500
-Message-ID: <547C742E.6060801@linaro.org>
-Date: Mon, 01 Dec 2014 13:59:10 +0000
-From: Zoltan Kiss <zoltan.kiss@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 1 Dec 2014 09:05:55 -0500
+Date: Mon, 1 Dec 2014 15:05:47 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH 03/30] cputime: Introduce nsecs_to_cputime64()
+Message-ID: <20141201150547.3521e8fa@mschwide>
+In-Reply-To: <1417199040-21044-4-git-send-email-fweisbec@gmail.com>
+References: <1417199040-21044-1-git-send-email-fweisbec@gmail.com>
+	<1417199040-21044-4-git-send-email-fweisbec@gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Zoltan Kiss <zoltan.kiss@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-CC: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Durrant <paul.durrant@citrix.com>, xen-devel@lists.xenproject.org
-Subject: Re: [Xen-devel] [PATCH] xen-netfront: Fix handling packets on compound
- pages with skb_linearize
-References: <1407778343-13622-1-git-send-email-zoltan.kiss@citrix.com>	<547C2CFC.7060908@canonical.com> <547C6EF6.8020604@citrix.com>
-In-Reply-To: <547C6EF6.8020604@citrix.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120114-0013-0000-0000-0000020D107A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 28 Nov 2014 19:23:33 +0100
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
+> This will be needed for the conversion of kernel stat to nsecs.
+> 
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Tony Luck <tony.luck@intel.com>
+> Cc: Wu Fengguang <fengguang.wu@intel.com>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> ---
+>  include/linux/cputime.h | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+> 
+> diff --git a/include/linux/cputime.h b/include/linux/cputime.h
+> index f2eb2ee..a225ab9 100644
+> --- a/include/linux/cputime.h
+> +++ b/include/linux/cputime.h
+> @@ -13,4 +13,14 @@
+>  	usecs_to_cputime((__nsecs) / NSEC_PER_USEC)
+>  #endif
+> 
+> +#ifndef nsecs_to_cputime
+> +# define nsecs_to_cputime(__nsecs)	\
+> +	usecs_to_cputime((__nsecs) / NSEC_PER_USEC)
+> +#endif
+> +
+> +#ifndef nsecs_to_cputime64
+> +# define nsecs_to_cputime64(__nsecs)	\
+> +	((__force cputime64_t) nsecs_to_cputime(__nsecs))
+> +#endif
+> +
+>  #endif /* __LINUX_CPUTIME_H */
 
-On 01/12/14 13:36, David Vrabel wrote:
-> On 01/12/14 08:55, Stefan Bader wrote:
->> On 11.08.2014 19:32, Zoltan Kiss wrote:
->>> There is a long known problem with the netfront/netback interface: if the guest
->>> tries to send a packet which constitues more than MAX_SKB_FRAGS + 1 ring slots,
->>> it gets dropped. The reason is that netback maps these slots to a frag in the
->>> frags array, which is limited by size. Having so many slots can occur since
->>> compound pages were introduced, as the ring protocol slice them up into
->>> individual (non-compound) page aligned slots. The theoretical worst case
->>> scenario looks like this (note, skbs are limited to 64 Kb here):
->>> linear buffer: at most PAGE_SIZE - 17 * 2 bytes, overlapping page boundary,
->>> using 2 slots
->>> first 15 frags: 1 + PAGE_SIZE + 1 bytes long, first and last bytes are at the
->>> end and the beginning of a page, therefore they use 3 * 15 = 45 slots
->>> last 2 frags: 1 + 1 bytes, overlapping page boundary, 2 * 2 = 4 slots
->>> Although I don't think this 51 slots skb can really happen, we need a solution
->>> which can deal with every scenario. In real life there is only a few slots
->>> overdue, but usually it causes the TCP stream to be blocked, as the retry will
->>> most likely have the same buffer layout.
->>> This patch solves this problem by linearizing the packet. This is not the
->>> fastest way, and it can fail much easier as it tries to allocate a big linear
->>> area for the whole packet, but probably easier by an order of magnitude than
->>> anything else. Probably this code path is not touched very frequently anyway.
->>>
->>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
->>> Cc: Wei Liu <wei.liu2@citrix.com>
->>> Cc: Ian Campbell <Ian.Campbell@citrix.com>
->>> Cc: Paul Durrant <paul.durrant@citrix.com>
->>> Cc: netdev@vger.kernel.org
->>> Cc: linux-kernel@vger.kernel.org
->>> Cc: xen-devel@lists.xenproject.org
->>
->> This does not seem to be marked explicitly as stable. Has someone already asked
->> David Miller to put it on his stable queue? IMO it qualifies quite well and the
->> actual change should be simple to pick/backport.
->
-> I think it's a candidate, yes.
->
-> Can you expand on the user visible impact of the bug this patch fixes?
-> I think it results in certain types of traffic not working (because the
-> domU always generates skb's with the problematic frag layout), but I
-> can't remember the details.
+For any architecture with a cputime_t better than a micro-second
+the conversion to micro seconds degrades the precision a lot.
 
-Yes, this line in the comment talks about it: "In real life there is 
-only a few slots overdue, but usually it causes the TCP stream to be 
-blocked, as the retry will most likely have the same buffer layout."
-Maybe we can add what kind of traffic triggered this so far, AFAIK NFS 
-was one of them, and Stefan had an another use case. But my memories are 
-blur about this.
+I would prefer to see the compile fail for e.g. s390 instead
+of silently introducing *broken* cputime values.
 
-Zoli
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
