@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443AbaLAMTI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 07:19:08 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:57384 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753093AbaLAMTG (ORCPT
+	id S1753483AbaLAMTP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 07:19:15 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:60547 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753447AbaLAMTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 07:19:06 -0500
-Date: Mon, 1 Dec 2014 12:18:58 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: micky_ching@realsil.com.cn
-Cc: sameo@linux.intel.com, chris@printf.net, ulf.hansson@linaro.org,
-        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, gregkh@linuxfoundation.org,
-        dan.carpenter@oracle.com, rogerable@realtek.com,
-        wei_wang@realsil.com.cn
-Subject: Re: [PATCH v2 1/2] mfd: rtsx: add func to split u32 into register
-Message-ID: <20141201121858.GA11932@x1>
-References: <cover.1417141102.git.micky_ching@realsil.com.cn>
- <6a6de978f479758fb9e767d8a6e013e8a006a39a.1417141102.git.micky_ching@realsil.com.cn>
+	Mon, 1 Dec 2014 07:19:13 -0500
+Message-ID: <547C5CBC.6060607@cogentembedded.com>
+Date: Mon, 01 Dec 2014 15:19:08 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <6a6de978f479758fb9e767d8a6e013e8a006a39a.1417141102.git.micky_ching@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: SF Markus Elfring <elfring@users.sourceforge.net>,
+        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
+        netdev@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH 1/3] net-PPP: Deletion of unnecessary checks before the
+ function call "kfree"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <547B4886.4080406@users.sourceforge.net> <547B496E.604@users.sourceforge.net>
+In-Reply-To: <547B496E.604@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Nov 2014, micky_ching@realsil.com.cn wrote:
+Hello.
 
-> From: Micky Ching <micky_ching@realsil.com.cn>
-> 
-> Add helper function to write u32 to registers, if we want to put u32
-> value to 4 continuous register, this can help us reduce tedious work.
-> 
-> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+On 11/30/2014 7:44 PM, SF Markus Elfring wrote:
+
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Sun, 30 Nov 2014 17:02:07 +0100
+
+> The kfree() function tests whether its argument is NULL and then
+> returns immediately. Thus the test around the call is not needed.
+
+> This issue was detected by using the Coccinelle software.
+
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 > ---
->  include/linux/mfd/rtsx_pci.h | 9 +++++++++
->  1 file changed, 9 insertions(+)
+>   drivers/net/ppp/ppp_mppe.c | 14 ++++++--------
+>   1 file changed, 6 insertions(+), 8 deletions(-)
 
-Does this supersede patch Dan was commenting on?
+> diff --git a/drivers/net/ppp/ppp_mppe.c b/drivers/net/ppp/ppp_mppe.c
+> index 911b216..7e44212 100644
+> --- a/drivers/net/ppp/ppp_mppe.c
+> +++ b/drivers/net/ppp/ppp_mppe.c
+> @@ -238,8 +238,7 @@ static void *mppe_alloc(unsigned char *options, int optlen)
+>   	return (void *)state;
+>
+>   	out_free:
+> -	    if (state->sha1_digest)
+> -		kfree(state->sha1_digest);
+> +	kfree(state->sha1_digest);
 
-> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-> index 74346d5..9234449 100644
-> --- a/include/linux/mfd/rtsx_pci.h
-> +++ b/include/linux/mfd/rtsx_pci.h
-> @@ -558,6 +558,7 @@
->  #define SD_SAMPLE_POINT_CTL		0xFDA7
->  #define SD_PUSH_POINT_CTL		0xFDA8
->  #define SD_CMD0				0xFDA9
-> +#define   SD_CMD_START			0x40
->  #define SD_CMD1				0xFDAA
->  #define SD_CMD2				0xFDAB
->  #define SD_CMD3				0xFDAC
-> @@ -967,4 +968,12 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
->  	return (u8 *)(pcr->host_cmds_ptr);
->  }
->  
-> +static inline void rtsx_pci_write_be32(struct rtsx_pcr *pcr, u16 reg, u32 val)
-> +{
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg,     0xFF, val >> 24);
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 1, 0xFF, val >> 16);
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 2, 0xFF, val >> 8);
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 3, 0xFF, val);
-> +}
-> +
->  #endif
+    Please keep this line aligned to the others.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+>   	    if (state->sha1)
+>   		crypto_free_hash(state->sha1);
+>   	    if (state->arc4)
+
+[...]
+
+WBR, Sergei
+
