@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632AbaLANcs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 08:32:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40493 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752404AbaLANcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 08:32:47 -0500
-Date: Mon, 1 Dec 2014 14:32:45 +0100
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Juergen Gross <jgross@suse.com>, Andrew Cooper <andrew.cooper3@citrix.com>,
-        x86@kernel.org, kvm@vger.kernel.org,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        linux-kernel@vger.kernel.org, Davidlohr Bueso <dbueso@suse.de>,
-        Joerg Roedel <jroedel@suse.de>, Jan Beulich <JBeulich@suse.com>,
-        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
-        Borislav Petkov <bp@suse.de>, Olaf Hering <ohering@suse.de>
-Subject: Re: [Xen-devel] [PATCH] xen: privcmd: schedule() after private
-	hypercall when non CONFIG_PREEMPT
-Message-ID: <20141201133245.GA25677@wotan.suse.de>
-References: <1417040805-15857-1-git-send-email-mcgrof@do-not-panic.com> <5476C66F.5040308@suse.com> <20141127183616.GV25677@wotan.suse.de> <54777277.5040401@citrix.com> <5477FECF.2060404@suse.com> <547C4A7E.6020207@citrix.com>
+	id S1753739AbaLANd4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 08:33:56 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:57897 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753686AbaLANdy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 08:33:54 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: suravee.suthikulpanit@amd.com, mark.rutland@arm.com, will.deacon@arm.com,
+        marc.zyngier@arm.com, catalin.marinas@arm.com, liviu.dudau@arm.com,
+        linux-kernel@vger.kernel.org, arm@kernel.org,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Subject: Re: [PATCH 1/2] arm64: amd-seattle: Fix dma-ranges property
+Date: Mon, 01 Dec 2014 14:33:42 +0100
+Message-ID: <2316008.jChdsJ8v0y@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1417405600-19232-2-git-send-email-suravee.suthikulpanit@amd.com>
+References: <1417405600-19232-1-git-send-email-suravee.suthikulpanit@amd.com> <1417405600-19232-2-git-send-email-suravee.suthikulpanit@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <547C4A7E.6020207@citrix.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:WcMtMoMKweVm0rJWPHCQwaNNsWWAY88RvZQKpelPqCE
+ tnvT+RmBPiegz2LVuxHqW3ICsZhgYe3dReC1xWe8ieAoOw4TXP
+ B4FyAbU1rmNpe0yHt7FwRHc3HB8oPFoDXndfduMEVdLTiOgLSd
+ 6xHLXUi5PHpYPgvXaptpjifsz2kNP9oErPKDLUGzraQ3X3QiwD
+ NTQzfSNjDs3AjzaUtucSGx7DjqzM2QMZRNYs1Ow0RHG+fi2U7i
+ wL7OdpaOI7tWq3OcbL5wg71Bl5vRDpq9uFx7lHYE0/Zc6ZIP0U
+ 3VHFMBp1LriU148WnJSRVX0tslBme4vbX8ar2JZZ5E+W4rDYXJ
+ BJpTIDX2PYAsyTxbi+5Q=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 11:01:18AM +0000, David Vrabel wrote:
-> On 28/11/14 04:49, Juergen Gross wrote:
-> > On 11/27/2014 07:50 PM, Andrew Cooper wrote:
-> >> 
-> >> XenServer uses
-> >>
-> >> https://github.com/xenserver/linux-3.x.pg/blob/master/master/0001-x86-xen-allow-privcmd-hypercalls-to-be-preempted.patch
-> >>
-> >>
-> >> to deal with these issues.  That patch is based on 3.10.
-> > 
-> > Clever. :-)
-> > 
-> >>
-> >> I can remember whether this has been submitted upstream before (and
-> >> there were outstanding issues), or whether it fell at an inconvenient
-> >> time with our development cycles.
-> > 
-> > I found
-> > 
-> > http://lists.xen.org/archives/html/xen-devel/2014-02/msg02540.html
-> > 
-> > and nothing else.
+On Sunday 30 November 2014 21:46:39 suravee.suthikulpanit@amd.com wrote:
+> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 > 
-> I dropped it because it copy-and-paste a bunch of otherwise generic x86
-> assembler and looked unlikely to get an x86 maintainer ack.  If you
-> think otherwise, feel free to pick it up and run with it.
+> AMD Seattle should support 40-bit DMA.
+> 
+> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> 
 
-I was trying to run with it, but my biggest gripe with this was
-the use of preempt_schedule_irq(), but we can review that on the
-other thread.
+The change looks good, but two things about the patch description:
 
-  Luis
+- You should be a little more verbose, especially after we had discussed
+  this to some detail on IRC, explain why you use the specific values.
+
+- You should configure git-send-email to know your full email address
+  including the name. Right now it gets sent from
+  "suravee.suthikulpanit@amd.com" instead of "Suravee Suthikulpanit
+  <Suravee.Suthikulpanit@amd.com>", and that causes the extra From
+  line at the start of the mail, besides looking a bit strange.
+
+Thanks,
+
+	Arnd
