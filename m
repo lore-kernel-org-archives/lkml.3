@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753630AbaLANq3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 08:46:29 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:38664 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752404AbaLANq1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 08:46:27 -0500
-Date: Mon, 1 Dec 2014 14:46:13 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [RFC PATCH 04/30] s390: Convert open coded idle time seqcount
-Message-ID: <20141201134613.GF4074@osiris>
-References: <1417199040-21044-1-git-send-email-fweisbec@gmail.com>
- <1417199040-21044-5-git-send-email-fweisbec@gmail.com>
+	id S1753849AbaLANro (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 08:47:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56784 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753412AbaLANrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 08:47:42 -0500
+Date: Mon, 1 Dec 2014 15:47:19 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: David Hildenbrand <dahi@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>, rusty@au1.ibm.com,
+        nab@linux-iscsi.org, pbonzini@redhat.com, thuth@linux.vnet.ibm.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v7 16/46] virtio_blk: v1.0 support
+Message-ID: <20141201134719.GA18305@redhat.com>
+References: <1417359787-10138-17-git-send-email-mst@redhat.com>
+ <20141201091641.3085e682@thinkpad-w530>
+ <20141201092658.GC15607@redhat.com>
+ <20141201123315.1b95d06f.cornelia.huck@de.ibm.com>
+ <20141201114645.GA17505@redhat.com>
+ <20141201130258.6f01c1e3.cornelia.huck@de.ibm.com>
+ <20141201123455.GA17958@redhat.com>
+ <20141201134036.726e7386.cornelia.huck@de.ibm.com>
+ <20141201125126.GB18106@redhat.com>
+ <20141201140004.57d53155.cornelia.huck@de.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1417199040-21044-5-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120113-0021-0000-0000-000001F98DF8
+In-Reply-To: <20141201140004.57d53155.cornelia.huck@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 28, 2014 at 07:23:34PM +0100, Frederic Weisbecker wrote:
-> s390 uses open coded seqcount to synchronize idle time accounting.
-> Lets consolidate it with the standard API.
+On Mon, Dec 01, 2014 at 02:00:04PM +0100, Cornelia Huck wrote:
+> On Mon, 1 Dec 2014 14:51:26 +0200
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
 > 
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Tony Luck <tony.luck@intel.com>
-> Cc: Wu Fengguang <fengguang.wu@intel.com>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  arch/s390/include/asm/idle.h |  3 ++-
->  arch/s390/kernel/idle.c      | 28 +++++++++++++++-------------
->  2 files changed, 17 insertions(+), 14 deletions(-)
+> > On Mon, Dec 01, 2014 at 01:40:36PM +0100, Cornelia Huck wrote:
+> > > On Mon, 1 Dec 2014 14:34:55 +0200
+> > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > 
+> > > > On Mon, Dec 01, 2014 at 01:02:58PM +0100, Cornelia Huck wrote:
+> > > > > On Mon, 1 Dec 2014 13:46:45 +0200
+> > > > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > > > 
+> > > > > > On Mon, Dec 01, 2014 at 12:33:15PM +0100, Cornelia Huck wrote:
+> > > > > > > On Mon, 1 Dec 2014 11:26:58 +0200
+> > > > > > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > > > > > 
+> > > > > > > > For some places on data path, it might be worth it
+> > > > > > > > to cache the correct value e.g. as part of device
+> > > > > > > > structure. This replaces a branch with a memory load,
+> > > > > > > > so the gain would have to be measured, best done
+> > > > > > > > separately?
+> > > > > > > 
+> > > > > > > I think we'll want to do some measuring once the basic structure is
+> > > > > > > in place anyway.
+> > > > > > 
+> > > > > > What's meant by in place here?
+> > > > > 
+> > > > > That this patchset is ready :)
+> > > > 
+> > > > Also it's ready to the level where benchmarking is possible, right?  I
+> > > > don't think you should wait until we finish polishing up commit
+> > > > messages.
+> > > 
+> > > My point is that I haven't even found time yet to test this
+> > > thouroughly :(
+> > 
+> > If my experience shows anything, it's unlikely we'll get appropriate
+> > testing without code being upstream first.
+> > That's why I pushed on with sparse tagging btw.
+> > This way we can be reasonably sure we didn't miss some path.
+> 
+> I know that I'm likely the only one to test ccw (unless I manage to get
+> some other also-busy people to try this out).
+> 
+> What's the status of virtio-pci, btw? Can people actually test this
+> sanely?
 
-This is a nice cleanup. I'll apply it to the s390 tree, so it will
-go upstream independently of this discussion.
+Sure, I'm testing that it's not broken by these patches.
+Others can do so, too.
 
-Thanks,
-Heiko
+Once ccw is done on host and guest (will be complete after I
+send v8), it will be easier to add virtio 1.0 for more transports.
 
+OTOH if we require that everything is ready and perfect before merging
+anything we'll never get anywhere.
+
+-- 
+MST
