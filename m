@@ -1,77 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783AbaLAIjZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 03:39:25 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:59413 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479AbaLAIjU (ORCPT
+	id S1752721AbaLAImc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 03:42:32 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:49501 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752479AbaLAImb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 03:39:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <1417371255-2282-5-git-send-email-Julia.Lawall@lip6.fr>
-References: <1417371255-2282-1-git-send-email-Julia.Lawall@lip6.fr>
-	<1417371255-2282-5-git-send-email-Julia.Lawall@lip6.fr>
-Date: Mon, 1 Dec 2014 10:39:19 +0200
-Message-ID: <CABdoFFem4O8X1R1-DBftpxaPSo83hcmhF-WGUjUGY_fUJjGEUg@mail.gmail.com>
-Subject: Re: [PATCH 4/4] usbip: remove unneeded structure
-From: Valentina Manea <valentina.manea.m@gmail.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Shuah Khan <shuah.kh@samsung.com>, linux-usb@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 1 Dec 2014 03:42:31 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Thierry Reding <thierry.reding@gmail.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH RESEND v4 1/3] drm: add bus_formats and num_bus_formats fields to drm_display_info
+Date: Mon,  1 Dec 2014 09:42:15 +0100
+Message-Id: <1417423335-11408-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417422061-10384-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1417422061-10384-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 30, 2014 at 8:14 PM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> Delete a local structure that is only used to be initialized by memset.
->
-> A semantic patch that makes this change is as follows:
-> (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> @@
-> identifier x,i;
-> @@
->
-> {
-> ... when any
-> -struct i x;
-> <+... when != x
-> - memset(&x,...);
-> ...+>
-> }
-> // </smpl>
->
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> ---
->  tools/usb/usbip/src/usbipd.c |    2 --
->  1 file changed, 2 deletions(-)
->
-> diff --git a/tools/usb/usbip/src/usbipd.c b/tools/usb/usbip/src/usbipd.c
-> index 2f87f2d..2a7cd2b 100644
-> --- a/tools/usb/usbip/src/usbipd.c
-> +++ b/tools/usb/usbip/src/usbipd.c
-> @@ -91,7 +91,6 @@ static void usbipd_help(void)
->  static int recv_request_import(int sockfd)
->  {
->         struct op_import_request req;
-> -       struct op_common reply;
->         struct usbip_exported_device *edev;
->         struct usbip_usb_device pdu_udev;
->         struct list_head *i;
-> @@ -100,7 +99,6 @@ static int recv_request_import(int sockfd)
->         int rc;
->
->         memset(&req, 0, sizeof(req));
-> -       memset(&reply, 0, sizeof(reply));
->
->         rc = usbip_net_recv(sockfd, &req, sizeof(req));
->         if (rc < 0) {
->
+Add bus_formats and num_bus_formats fields and
+drm_display_info_set_bus_formats helper function to specify the bus
+formats supported by a given display.
 
-Acked-by: Valentina Manea <valentina.manea.m@gmail.com>
+This information can be used by display controller drivers to configure
+the output interface appropriately (i.e. RGB565, RGB666 or RGB888 on raw
+RGB or LVDS busses).
+
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+---
+Hi,
+
+Sorry for the noise: I ran checkpatch after sending the series and it found
+a typo and two "line over 80 characters" warnings.
+
+This version fixes those warnings.
+
+Regards,
+
+Boris
+
+ drivers/gpu/drm/drm_crtc.c | 33 +++++++++++++++++++++++++++++++++
+ include/drm/drm_crtc.h     |  8 ++++++++
+ 2 files changed, 41 insertions(+)
+
+diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+index e79c8d3..20030ec 100644
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -763,6 +763,39 @@ static void drm_mode_remove(struct drm_connector *connector,
+ 	drm_mode_destroy(connector->dev, mode);
+ }
+ 
++/*
++ * drm_display_info_set_bus_formats - set the supported bus formats
++ * @info: display info to store bus formats in
++ * @fmts: array containing the supported bus formats
++ * @nfmts: the number of entries in the fmts array
++ *
++ * Store the supported bus formats in display info structure.
++ * See MEDIA_BUS_FMT_* definitions in include/uapi/linux/media-bus-format.h for
++ * a full list of available formats.
++ */
++int drm_display_info_set_bus_formats(struct drm_display_info *info,
++				     const u32 *fmts,
++				     unsigned int num_fmts)
++{
++	u32 *formats = NULL;
++
++	if (!fmts && num_fmts)
++		return -EINVAL;
++
++	if (fmts && num_fmts) {
++		formats = kmemdup(fmts, sizeof(*fmts) * num_fmts, GFP_KERNEL);
++		if (!formats)
++			return -ENOMEM;
++	}
++
++	kfree(info->bus_formats);
++	info->bus_formats = formats;
++	info->num_bus_formats = num_fmts;
++
++	return 0;
++}
++EXPORT_SYMBOL(drm_display_info_set_bus_formats);
++
+ /**
+  * drm_connector_get_cmdline_mode - reads the user's cmdline mode
+  * @connector: connector to quwery
+diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
+index c40070a..65dd08a 100644
+--- a/include/drm/drm_crtc.h
++++ b/include/drm/drm_crtc.h
+@@ -31,6 +31,7 @@
+ #include <linux/idr.h>
+ #include <linux/fb.h>
+ #include <linux/hdmi.h>
++#include <linux/media-bus-format.h>
+ #include <uapi/drm/drm_mode.h>
+ #include <uapi/drm/drm_fourcc.h>
+ #include <drm/drm_modeset_lock.h>
+@@ -130,6 +131,9 @@ struct drm_display_info {
+ 	enum subpixel_order subpixel_order;
+ 	u32 color_formats;
+ 
++	const u32 *bus_formats;
++	unsigned int num_bus_formats;
++
+ 	/* Mask of supported hdmi deep color modes */
+ 	u8 edid_hdmi_dc_modes;
+ 
+@@ -982,6 +986,10 @@ extern int drm_mode_connector_set_path_property(struct drm_connector *connector,
+ extern int drm_mode_connector_update_edid_property(struct drm_connector *connector,
+ 						struct edid *edid);
+ 
++extern int drm_display_info_set_bus_formats(struct drm_display_info *info,
++					    const u32 *fmts,
++					    unsigned int nfmts);
++
+ static inline bool drm_property_type_is(struct drm_property *property,
+ 		uint32_t type)
+ {
+-- 
+1.9.1
+
