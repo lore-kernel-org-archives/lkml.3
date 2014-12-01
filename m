@@ -1,180 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbaLALp2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 06:45:28 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:37688 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753205AbaLALp1 (ORCPT
+	id S1753395AbaLALpf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 06:45:35 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52997 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753302AbaLALpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 06:45:27 -0500
-Date: Mon, 1 Dec 2014 11:45:22 +0000
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [ 22/48] net: sendmsg: fix NULL pointer dereference
-Message-ID: <20141201114522.GC6874@hercules>
-References: <28c765bc23bd4bae1611534e510f49f8@local>
- <20141116215329.569150542@1wt.eu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141116215329.569150542@1wt.eu>
+	Mon, 1 Dec 2014 06:45:33 -0500
+Message-ID: <1417434133.4624.9.camel@pengutronix.de>
+Subject: Re: [PATCH v14 05/12] drm: imx: imx-hdmi: move imx-hdmi to
+ bridge/dw_hdmi
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Andy Yan <andy.yan@rock-chips.com>
+Cc: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Date: Mon, 01 Dec 2014 12:42:13 +0100
+In-Reply-To: <1417433086-12964-1-git-send-email-andy.yan@rock-chips.com>
+References: <1417432770-12719-1-git-send-email-andy.yan@rock-chips.com>
+	 <1417433086-12964-1-git-send-email-andy.yan@rock-chips.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 16, 2014 at 10:53:50PM +0100, Willy Tarreau wrote:
-> 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-> 
-> [ Upstream commit 40eea803c6b2cfaab092f053248cbeab3f368412 ]
-> 
-> Sasha's report:
-> 	> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> 	> kernel with the KASAN patchset, I've stumbled on the following spew:
-> 	>
-> 	> [ 4448.949424] ==================================================================
-> 	> [ 4448.951737] AddressSanitizer: user-memory-access on address 0
-> 	> [ 4448.952988] Read of size 2 by thread T19638:
-> 	> [ 4448.954510] CPU: 28 PID: 19638 Comm: trinity-c76 Not tainted 3.16.0-rc4-next-20140711-sasha-00046-g07d3099-dirty #813
-> 	> [ 4448.956823]  ffff88046d86ca40 0000000000000000 ffff880082f37e78 ffff880082f37a40
-> 	> [ 4448.958233]  ffffffffb6e47068 ffff880082f37a68 ffff880082f37a58 ffffffffb242708d
-> 	> [ 4448.959552]  0000000000000000 ffff880082f37a88 ffffffffb24255b1 0000000000000000
-> 	> [ 4448.961266] Call Trace:
-> 	> [ 4448.963158] dump_stack (lib/dump_stack.c:52)
-> 	> [ 4448.964244] kasan_report_user_access (mm/kasan/report.c:184)
-> 	> [ 4448.965507] __asan_load2 (mm/kasan/kasan.c:352)
-> 	> [ 4448.966482] ? netlink_sendmsg (net/netlink/af_netlink.c:2339)
-> 	> [ 4448.967541] netlink_sendmsg (net/netlink/af_netlink.c:2339)
-> 	> [ 4448.968537] ? get_parent_ip (kernel/sched/core.c:2555)
-> 	> [ 4448.970103] sock_sendmsg (net/socket.c:654)
-> 	> [ 4448.971584] ? might_fault (mm/memory.c:3741)
-> 	> [ 4448.972526] ? might_fault (./arch/x86/include/asm/current.h:14 mm/memory.c:3740)
-> 	> [ 4448.973596] ? verify_iovec (net/core/iovec.c:64)
-> 	> [ 4448.974522] ___sys_sendmsg (net/socket.c:2096)
-> 	> [ 4448.975797] ? put_lock_stats.isra.13 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
-> 	> [ 4448.977030] ? lock_release_holdtime (kernel/locking/lockdep.c:273)
-> 	> [ 4448.978197] ? lock_release_non_nested (kernel/locking/lockdep.c:3434 (discriminator 1))
-> 	> [ 4448.979346] ? check_chain_key (kernel/locking/lockdep.c:2188)
-> 	> [ 4448.980535] __sys_sendmmsg (net/socket.c:2181)
-> 	> [ 4448.981592] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
-> 	> [ 4448.982773] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
-> 	> [ 4448.984458] ? syscall_trace_enter (arch/x86/kernel/ptrace.c:1500 (discriminator 2))
-> 	> [ 4448.985621] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
-> 	> [ 4448.986754] SyS_sendmmsg (net/socket.c:2201)
-> 	> [ 4448.987708] tracesys (arch/x86/kernel/entry_64.S:542)
-> 	> [ 4448.988929] ==================================================================
-> 
-> This reports means that we've come to netlink_sendmsg() with msg->msg_name == NULL and msg->msg_namelen > 0.
-> 
-> After this report there was no usual "Unable to handle kernel NULL pointer dereference"
-> and this gave me a clue that address 0 is mapped and contains valid socket address structure in it.
-> 
-> This bug was introduced in f3d3342602f8bcbf37d7c46641cb9bca7618eb1c
-> (net: rework recvmsg handler msg_name and msg_namelen logic).
-> Commit message states that:
-> 	"Set msg->msg_name = NULL if user specified a NULL in msg_name but had a
-> 	 non-null msg_namelen in verify_iovec/verify_compat_iovec. This doesn't
-> 	 affect sendto as it would bail out earlier while trying to copy-in the
-> 	 address."
-> But in fact this affects sendto when address 0 is mapped and contains
-> socket address structure in it. In such case copy-in address will succeed,
-> verify_iovec() function will successfully exit with msg->msg_namelen > 0
-> and msg->msg_name == NULL.
-> 
-> This patch fixes it by setting msg_namelen to 0 if msg_name == NULL.
-> 
-> Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-> Cc: Eric Dumazet <edumazet@google.com>
-> Cc: <stable@vger.kernel.org>
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-> Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> Signed-off-by: Willy Tarreau <w@1wt.eu>
-> ---
->  net/compat.c     | 9 +++++----
->  net/core/iovec.c | 6 +++---
->  2 files changed, 8 insertions(+), 7 deletions(-)
-> 
-> diff --git a/net/compat.c b/net/compat.c
-> index e9672c8..71ed839 100644
-> --- a/net/compat.c
-> +++ b/net/compat.c
-> @@ -83,7 +83,7 @@ int verify_compat_iovec(struct msghdr *kern_msg, struct iovec *kern_iov,
->  {
->  	int tot_len;
->  
-> -	if (kern_msg->msg_namelen) {
-> +	if (kern_msg->msg_namelen && kern_msg->msg_namelen) {
+Hi Andy,
 
-I know my review is already too late for the release, but the above
-line isn't correct -- it's checking msg_namelen twice, instead of
-checking msg_name as well:
+Am Montag, den 01.12.2014, 19:24 +0800 schrieb Andy Yan:
+[...]
+> diff --git a/include/drm/bridge/dw_hdmi.h b/include/drm/bridge/dw_hdmi.h
+> new file mode 100644
+> index 0000000..1bbf3ca
+> --- /dev/null
+> +++ b/include/drm/bridge/dw_hdmi.h
+> @@ -0,0 +1,57 @@
+> +/*
+> + * Copyright (C) 2011 Freescale Semiconductor, Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + */
+> +
+> +#ifndef __DW_HDMI__
+> +#define __DW_HDMI__
+> +
+> +#include <drm/drmP.h>
+> +
+> +enum {
+> +	RES_8,
+> +	RES_10,
+> +	RES_12,
+> +	RES_MAX,
+> +};
+> +
+> +enum dw_hdmi_devtype {
+> +	IMX6Q_HDMI,
+> +	IMX6DL_HDMI,
+> +};
+> +
+> +struct mpll_config {
+> +	unsigned long mpixelclock;
+> +	struct {
+> +		u16 cpce;
+> +		u16 gmp;
+> +	} res[RES_MAX];
+> +};
+> +
+> +struct curr_ctrl {
+> +	unsigned long mpixelclock;
+> +	u16 curr[RES_MAX];
+> +};
+> +
+> +struct sym_term {
+> +	unsigned long mpixelclock;
+> +	u16 sym_ctr;    /*clock symbol and transmitter control*/
+> +	u16 term;       /*transmission termination value*/
+> +};
 
-	if (kern_msg->msg_name && kern_msg->msg_namelen)
+since this is going to be used by multiple drivers, the enums and
+structs should all be properly namespaced. How about DW_HDMI_RES_x,
+struct dw_hdmi_mpll_config, struct dw_hdmi_curr_ctrl, and struct
+dw_hdmi_sym_term?
 
-Cheers,
---
-Luís
+> +struct dw_hdmi_plat_data {
+> +	enum dw_hdmi_devtype dev_type;
+> +	const struct mpll_config *mpll_cfg;
+> +	const struct curr_ctrl *cur_ctr;
+> +	const struct sym_term *sym_term;
+> +};
+> +
+> +void dw_hdmi_unbind(struct device *dev, struct device *master, void *data);
+> +int dw_hdmi_bind(struct device *dev, struct device *master,
+> +		 void *data, struct drm_encoder *encoder,
+> +		 const struct dw_hdmi_plat_data *plat_data);
+> +#endif /* __IMX_HDMI_H__ */
 
->  		if (mode==VERIFY_READ) {
->  			int err = move_addr_to_kernel(kern_msg->msg_name,
->  						      kern_msg->msg_namelen,
-> @@ -91,10 +91,11 @@ int verify_compat_iovec(struct msghdr *kern_msg, struct iovec *kern_iov,
->  			if (err < 0)
->  				return err;
->  		}
-> -		if (kern_msg->msg_name)
-> -			kern_msg->msg_name = kern_address;
-> -	} else
-> +		kern_msg->msg_name = kern_address;
-> +	} else {
->  		kern_msg->msg_name = NULL;
-> +		kern_msg->msg_namelen = 0;
-> +	}
->  
->  	tot_len = iov_from_user_compat_to_kern(kern_iov,
->  					  (struct compat_iovec __user *)kern_msg->msg_iov,
-> diff --git a/net/core/iovec.c b/net/core/iovec.c
-> index 39369e9..3face24 100644
-> --- a/net/core/iovec.c
-> +++ b/net/core/iovec.c
-> @@ -40,17 +40,17 @@ int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address,
->  {
->  	int size, ct, err;
->  
-> -	if (m->msg_namelen) {
-> +	if (m->msg_name && m->msg_namelen) {
->  		if (mode == VERIFY_READ) {
->  			err = move_addr_to_kernel(m->msg_name, m->msg_namelen,
->  						  address);
->  			if (err < 0)
->  				return err;
->  		}
-> -		if (m->msg_name)
-> -			m->msg_name = address;
-> +		m->msg_name = address;
->  	} else {
->  		m->msg_name = NULL;
-> +		m->msg_namelen = 0;
->  	}
->  
->  	size = m->msg_iovlen * sizeof(struct iovec);
-> -- 
-> 1.7.12.2.21.g234cd45.dirty
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+regards
+Philipp
+
