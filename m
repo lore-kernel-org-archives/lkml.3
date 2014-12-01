@@ -1,115 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754506AbaLAQRm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 11:17:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46306 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752926AbaLAQRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 11:17:40 -0500
-Date: Mon, 1 Dec 2014 18:03:17 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
-Subject: [PATCH v8 06/50] virtio_ccw: add support for 64 bit features.
-Message-ID: <1417449619-24896-7-git-send-email-mst@redhat.com>
-References: <1417449619-24896-1-git-send-email-mst@redhat.com>
+	id S1754522AbaLAQR5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 11:17:57 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:61192 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752939AbaLAQRl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 11:17:41 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: Alexander Stein <alexander.stein@systec-electronic.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Subject: Re: [PATCH v3 05/11] memory: add Atmel EBI (External Bus Interface) driver
+Date: Mon, 01 Dec 2014 17:17:30 +0100
+Message-ID: <2417519.MDE3mu6n7n@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141201115006.08197c40@bbrezillon>
+References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com> <19172687.eVxczUuuhC@ws-stein> <20141201115006.08197c40@bbrezillon>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417449619-24896-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:T1OqJCtf925Nfvt9RxOFvE80Pz2BXm23zAKSK78qrxg
+ 80XBNe3ukydnuFLV+PJBMQhmkFLckWHPE3QkV6qnI6yJtH0n4U
+ ZfHDRUGTRdcMXADJPUn+VthVd+U6kZsbfDUdOXRWvD5Xyp7S3P
+ mh9l6smsbOEYojFd89ReVoOxFEWw/rZpmUiv9yeb95kB42F0uK
+ gV1ji3eQXUfH06qcvCY82cJRqjuEPky/IHD1foE3lCAbyZFkuZ
+ 0kUQho13efUW4huxNQ3e7Gv8fkAJhDbcM9s4d3xWNyTSTRb45D
+ GvLiFIEAHevqvPJ5TTjhRaWV/hU3gLk9y0zqurzXApbeSriuDZ
+ lNXUc3yr7nHbAMYMewJM=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Negotiate full 64 bit features.
-Change u32 to u64, make sure to use 1ULL everywhere.
+On Monday 01 December 2014 11:50:06 Boris Brezillon wrote:
+> 
+> I don't have a strong opinion regarding where this driver should
+> live (I even considered putting it in drivers/bus) :-).
+> But note that there are other "external memory interface" drivers
+> in drivers/memory too: TI AEMIF and Marvell DEVBUS  ;-).
+> 
+> Does anyone else think this driver should go in drivers/bus ?
+> 
 
-Note: devices guarantee that VERSION_1 is clear unless
-revision 1 is negotiated.
+I think drivers/memory is better.
 
-Note: We don't need to re-setup the ccw, but we do it
-for clarity.
-
-Based on patches by Rusty, Thomas Huth and Cornelia.
-
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Reviewed-by: David Hildebrand <dahi@linux.vnet.ibm.com>
----
- drivers/s390/kvm/virtio_ccw.c | 30 +++++++++++++++++++++++-------
- 1 file changed, 23 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
-index 244d611..65d0c80 100644
---- a/drivers/s390/kvm/virtio_ccw.c
-+++ b/drivers/s390/kvm/virtio_ccw.c
-@@ -664,7 +664,8 @@ static u64 virtio_ccw_get_features(struct virtio_device *vdev)
- {
- 	struct virtio_ccw_device *vcdev = to_vc_device(vdev);
- 	struct virtio_feature_desc *features;
--	int ret, rc;
-+	int ret;
-+	u64 rc;
- 	struct ccw1 *ccw;
- 
- 	ccw = kzalloc(sizeof(*ccw), GFP_DMA | GFP_KERNEL);
-@@ -677,7 +678,6 @@ static u64 virtio_ccw_get_features(struct virtio_device *vdev)
- 		goto out_free;
- 	}
- 	/* Read the feature bits from the host. */
--	/* TODO: Features > 32 bits */
- 	features->index = 0;
- 	ccw->cmd_code = CCW_CMD_READ_FEAT;
- 	ccw->flags = 0;
-@@ -691,6 +691,16 @@ static u64 virtio_ccw_get_features(struct virtio_device *vdev)
- 
- 	rc = le32_to_cpu(features->features);
- 
-+	/* Read second half of the feature bits from the host. */
-+	features->index = 1;
-+	ccw->cmd_code = CCW_CMD_READ_FEAT;
-+	ccw->flags = 0;
-+	ccw->count = sizeof(*features);
-+	ccw->cda = (__u32)(unsigned long)features;
-+	ret = ccw_io_helper(vcdev, ccw, VIRTIO_CCW_DOING_READ_FEAT);
-+	if (ret == 0)
-+		rc |= (u64)le32_to_cpu(features->features) << 32;
-+
- out_free:
- 	kfree(features);
- 	kfree(ccw);
-@@ -714,12 +724,18 @@ static void virtio_ccw_finalize_features(struct virtio_device *vdev)
- 	/* Give virtio_ring a chance to accept features. */
- 	vring_transport_features(vdev);
- 
--	/* Make sure we don't have any features > 32 bits! */
--	BUG_ON((u32)vdev->features != vdev->features);
--
- 	features->index = 0;
--	features->features = cpu_to_le32(vdev->features);
--	/* Write the feature bits to the host. */
-+	features->features = cpu_to_le32((u32)vdev->features);
-+	/* Write the first half of the feature bits to the host. */
-+	ccw->cmd_code = CCW_CMD_WRITE_FEAT;
-+	ccw->flags = 0;
-+	ccw->count = sizeof(*features);
-+	ccw->cda = (__u32)(unsigned long)features;
-+	ccw_io_helper(vcdev, ccw, VIRTIO_CCW_DOING_WRITE_FEAT);
-+
-+	features->index = 1;
-+	features->features = cpu_to_le32(vdev->features >> 32);
-+	/* Write the second half of the feature bits to the host. */
- 	ccw->cmd_code = CCW_CMD_WRITE_FEAT;
- 	ccw->flags = 0;
- 	ccw->count = sizeof(*features);
--- 
-MST
-
+	Arnd
