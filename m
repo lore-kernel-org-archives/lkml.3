@@ -1,98 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683AbaLAHWs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 02:22:48 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:54950 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608AbaLAHWq (ORCPT
+	id S1752676AbaLAH2V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 02:28:21 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:59934 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471AbaLAH2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 02:22:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141129000417.GG30997@pd.tnic>
-References: <1417212867-25187-1-git-send-email-giedriuswork@gmail.com>
-	<20141128231555.GA31468@pd.tnic>
-	<547909CF.8060907@gmail.com>
-	<20141129000417.GG30997@pd.tnic>
-Date: Mon, 1 Dec 2014 15:22:45 +0800
-Message-ID: <CAJ=jqubXzyP+4S7Hp3Sp6WvjLuSvCMLJoWqmL2Qz-5zgsr+9Uw@mail.gmail.com>
-Subject: Re: [PATCH] platform: x86: hp_wireless: Inform the user if
- hp_wireless_input_setup()/add() fails
-From: Alex Hung <alex.hung@canonical.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Giedrius Statkevicius <giedriuswork@gmail.com>,
-        Darren Hart <dvhart@infradead.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
+	Mon, 1 Dec 2014 02:28:20 -0500
+Date: Sun, 30 Nov 2014 23:28:11 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <dave@stgolabs.net>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH] mm: unmapped page migration avoid unmap+remap overhead
+In-Reply-To: <547C0E4E.4020605@jp.fujitsu.com>
+Message-ID: <alpine.LSU.2.11.1411302302280.6613@eggly.anvils>
+References: <alpine.LSU.2.11.1411302046420.5335@eggly.anvils> <547C0E4E.4020605@jp.fujitsu.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 1 Dec 2014, Yasuaki Ishimatsu wrote:
+> (2014/12/01 13:52), Hugh Dickins wrote:
+> > @@ -798,7 +798,7 @@ static int __unmap_and_move(struct page
+> >   				int force, enum migrate_mode mode)
+> >   {
+> >   	int rc = -EAGAIN;
+> > -	int remap_swapcache = 1;
+> > +	int page_was_mapped = 0;
+> >   	struct anon_vma *anon_vma = NULL;
+> > 
+> >   	if (!trylock_page(page)) {
+> > @@ -870,7 +870,6 @@ static int __unmap_and_move(struct page
+> >   			 * migrated but are not remapped when migration
+> >   			 * completes
+> >   			 */
+> > -			remap_swapcache = 0;
+> >   		} else {
+> >   			goto out_unlock;
+> >   		}
+> > @@ -910,13 +909,17 @@ static int __unmap_and_move(struct page
+> >   	}
+> > 
+> >   	/* Establish migration ptes or remove ptes */
+> 
+> > -	try_to_unmap(page, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
+> > +	if (page_mapped(page)) {
+> > +		try_to_unmap(page,
+> > +			TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
+> > +		page_was_mapped = 1;
+> > +	}
+> 
+> Is there no possibility that page is swap cache? If page is swap cache,
+> this code changes behavior of move_to_new_page(). Is it O.K.?
 
-I think adding a pr_err message has a benefit - if kernel prints this
-message, a develop can quickly identify where it gets wrong by a
-string search on entire kernel source code.
+Certainly the page may be swap cache, but I don't see how the behavior
+of move_to_new_page() is changed.
 
-Other than this, both solutions are great.
+Do you mean how I removed that "remap_swapcache = 0;" line above, so that
+it now looks as if move_to_new_page() may be called with page_was_mapped
+1, where before it was called with remap_swapcache 0?
 
+No: although it cannot be seen from the patch context, that reset
+of remap_swapcache was in a block where we have a PageAnon page, but
+page_get_anon_vma() failed to "get" the anon_vma for it: that means
+that the page was not mapped, so page_was_mapped will be 0 too.
 
+(I was going to add that the page might be faulted back in again by
+the time we reach the page_mapped() test above try_to_unmap(), and
+that yes I'd would be making a change in that case, but it does not
+matter at all to diverge in racy cases.  But actually even that cannot
+happen, since faulting back swap needs page lock which we hold here.)
 
-On Sat, Nov 29, 2014 at 8:04 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Sat, Nov 29, 2014 at 01:48:31AM +0200, Giedrius Statkevicius wrote:
->> On 2014.11.29 01:15, Borislav Petkov wrote:
->> > On Sat, Nov 29, 2014 at 12:14:27AM +0200, Giedrius Statkevicius wrote:
->> >> In hpwl_add() there is a unused variable err to which we assign the
->> >> result of hp_wireless_input_setup() but we don't do anything depending
->> >> on the result so print out a message that informs the user if add()
->> >> (hp_wireless_input_setup()) fails since acpi_device_probe() doesn't
->> >> print anything in this case.
->> >>
->> >> Signed-off-by: Giedrius Statkevicius <giedriuswork@gmail.com>
->> >> ---
->> >>  drivers/platform/x86/hp-wireless.c | 3 +++
->> >>  1 file changed, 3 insertions(+)
->> >>
->> >> diff --git a/drivers/platform/x86/hp-wireless.c b/drivers/platform/x86/hp-wireless.c
->> >> index 415348f..4e4cc8b 100644
->> >> --- a/drivers/platform/x86/hp-wireless.c
->> >> +++ b/drivers/platform/x86/hp-wireless.c
->> >> @@ -85,6 +85,9 @@ static int hpwl_add(struct acpi_device *device)
->> >>    int err;
->> >>
->> >>    err = hp_wireless_input_setup();
->> >> +  if (err)
->> >> +          pr_err("Failed to setup hp wireless hotkeys\n");
->> >> +
->> >
->> > I don't think there's need for that. Just do:
->> >
->> >     return hp_wireless_input_setup();
->> >
->> > and drop err completely.
->> >
->> > The upper layer which calls the ->add() method should propagate the
->> > error properly.
->> Looking at other platform drivers code some add() methods do give
->> information to the user via pr_{err,warn,info} macros, some don't. My
->> first patch to deal with this just removed the err variable like you
->> have wrote but Darren Hart and Rafael J. Wysocki commented that maybe it
->> should be better to inform the user about this error. That is why
->> probably there was a variable for this in the first place but probably
->> the original author just forgot to add a pr_err().
->
-> Ah, I see. Original author added to CC.
->
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+There is an argument that move_to_new_page() behavior should be
+changed in the case of swap cache: since try_to_unmap() then uses
+the ordinary swap instead of a migration entry, there's not much
+point in going to remove swap entries afterwards; though it would
+be good to make those pages present again.  But I didn't try to
+change that in this patch: this was just a lock contention thing.
 
-
-
--- 
-Cheers,
-Alex Hung
+Hugh
