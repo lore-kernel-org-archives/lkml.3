@@ -1,105 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932544AbaLAUOu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 15:14:50 -0500
-Received: from mail-bl2on0073.outbound.protection.outlook.com ([65.55.169.73]:9728
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932242AbaLAUOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 15:14:48 -0500
-Message-ID: <547CCC27.4050404@opensource.altera.com>
-Date: Mon, 1 Dec 2014 14:14:31 -0600
-From: Dinh Nguyen <dinguyen@opensource.altera.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S932365AbaLAURB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 15:17:01 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45406 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932196AbaLAURA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 15:17:00 -0500
+Date: Mon, 1 Dec 2014 20:16:37 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Timur Tabi <timur@tabi.org>, linuxppc-dev@lists.ozlabs.org,
+        Lars-Peter Clausen <lars@metafoo.de>, alsa-devel@alsa-project.org,
+        Jiada Wang <jiada_wang@mentor.com>, linux-kernel@vger.kernel.org,
+        lgirdwood@gmail.com, nicoleotsuka@gmail.com, tiwai@suse.de,
+        Li.Xiubo@freescale.com, Markus Pargmann <mpa@pengutronix.de>
+Message-ID: <20141201201637.GQ7712@sirena.org.uk>
+References: <1417402251-6596-1-git-send-email-jiada_wang@mentor.com>
+ <2547588.Qc4F2IfZke@wuerfel>
+ <547CC89F.1030205@tabi.org>
+ <3401240.VsRpsiV8WN@wuerfel>
 MIME-Version: 1.0
-To: <davem@davemloft.net>, <peppe.cavallaro@st.com>
-CC: <dinh.linux@gmail.com>, <maxime.ripard@free-electrons.com>,
-        <olof@lixom.net>, <vbridger@opensource.altera.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] stmmac: platform: fix stmmac probe failure
-References: <1417464054-8777-1-git-send-email-dinguyen@opensource.altera.com>
-In-Reply-To: <1417464054-8777-1-git-send-email-dinguyen@opensource.altera.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [99.103.66.154]
-X-ClientProxiedBy: BN1PR12CA0032.namprd12.prod.outlook.com (25.160.77.42) To
- BY1PR0301MB1192.namprd03.prod.outlook.com (25.160.195.150)
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1192;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1192;
-X-Forefront-PRVS: 0412A98A59
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(979002)(6009001)(377454003)(24454002)(479174003)(199003)(51704005)(189002)(46102003)(15202345003)(92566001)(15188555004)(92726001)(106356001)(105586002)(107046002)(95666004)(19300405004)(64126003)(31966008)(99396003)(102836001)(4396001)(120916001)(23756003)(97736003)(101416001)(87976001)(21056001)(19580405001)(80316001)(59896002)(575784001)(86362001)(33656002)(65816999)(76176999)(50986999)(87266999)(54356999)(15975445006)(83506001)(40100003)(19580395003)(122386002)(47776003)(20776003)(64706001)(42186005)(50466002)(68736005)(65956001)(66066001)(65806001)(77096004)(62966003)(77156002)(562404015)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY1PR0301MB1192;H:Dinhs-MacBook-Pro.local;FPR:;SPF:None;MLV:ovrnspm;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1192;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB0840;
-X-OriginatorOrg: opensource.altera.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nSDEzYKH9NcCJl81"
+Content-Disposition: inline
+In-Reply-To: <3401240.VsRpsiV8WN@wuerfel>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel] [PATCH] ASoC: fsl_ssi: free irq before
+ irq_dispose_mapping()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apologies for the noise, but it looks like Arnd has already send a patch
-for this.
 
-http://www.spinics.net/lists/netdev/msg306603.html
+--nSDEzYKH9NcCJl81
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Dinh
+On Mon, Dec 01, 2014 at 09:01:43PM +0100, Arnd Bergmann wrote:
+> On Monday 01 December 2014 13:59:27 Timur Tabi wrote:
+> > On 12/01/2014 01:56 PM, Arnd Bergmann wrote:
 
-On 12/1/14, 2:00 PM, dinguyen@opensource.altera.com wrote:
-> From: Dinh Nguyen <dinguyen@opensource.altera.com>
-> 
-> The commit 571dcfde23712b ("stmmac: platform: fix default values of the filter
-> bins setting") broke support for stmmac probe for all CONFIG_OF platforms.
-> 
-> [    0.743567] Unable to handle kernel NULL pointer dereference at virtual address 00000048
-> [    0.751679] pgd = c0004000
-> [    0.754384] [00000048] *pgd=00000000
-> [    0.757983] Internal error: Oops: 805 [#1] SMP ARM
-> [    0.762774] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.18.0-rc7 #1
-> [    0.769034] task: ee86c000 ti: ee870000 task.ti: ee870000
-> [    0.774429] PC is at stmmac_pltfr_probe+0x40/0x5d0
-> [    0.779217] LR is at devm_ioremap_nocache+0x54/0x74
-> ...
-> [    0.951644] [<c0287938>] (stmmac_pltfr_probe) from [<c0234c4c>] (platform_drv_probe+0x44/0xa4)
-> [    0.960250] [<c0234c4c>] (platform_drv_probe) from [<c023390c>] (driver_probe_device+0x10c/0x240)
-> [    0.969113] [<c023390c>] (driver_probe_device) from [<c0233b10>] (__driver_attach+0x8c/0x90)
-> [    0.977544] [<c0233b10>] (__driver_attach) from [<c02320fc>] (bus_for_each_dev+0x6c/0xa0)
-> 
-> The reason is that in stmmac_pltfr_probe(), the plat_dat on a CONFIG_OF
-> platform is NULL until devm_kzalloc() is called to allocate plat_dat.
-> 
-> Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
-> ---
->  drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-> index 5b0da39..62c9e75 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-> @@ -265,12 +265,6 @@ static int stmmac_pltfr_probe(struct platform_device *pdev)
->  
->  	plat_dat = dev_get_platdata(&pdev->dev);
->  
-> -	/* Set default value for multicast hash bins */
-> -	plat_dat->multicast_filter_bins = HASH_TABLE_SIZE;
-> -
-> -	/* Set default value for unicast filter entries */
-> -	plat_dat->unicast_filter_entries = 1;
-> -
->  	if (pdev->dev.of_node) {
->  		if (!plat_dat)
->  			plat_dat = devm_kzalloc(&pdev->dev,
-> @@ -288,6 +282,12 @@ static int stmmac_pltfr_probe(struct platform_device *pdev)
->  		}
->  	}
->  
-> +	/* Set default value for multicast hash bins */
-> +	plat_dat->multicast_filter_bins = HASH_TABLE_SIZE;
-> +
-> +	/* Set default value for unicast filter entries */
-> +	plat_dat->unicast_filter_entries = 1;
-> +
->  	/* Custom setup (if needed) */
->  	if (plat_dat->setup) {
->  		plat_dat->bsp_priv = plat_dat->setup(pdev);
-> 
+> > > All other drivers that call irq_of_parse_and_map and pass that into
+> > > devm_request_irq just never unmap, and their interrupts are already
+> > > mapped by the platform code, so I think it's not even a leak.
+
+> > Does this mean that fsl_ssi.c should not be calling=20
+> > irq_of_parse_and_map?  How else should it get the IRQ?
+
+> platform_get_irq()
+
+Right, and just to emphasize what we were saying earlier the code was
+fine when originally written - both mapping inside platform_get_irq()
+and devm_ came along quite a while after the driver was originally
+written.
+
+--nSDEzYKH9NcCJl81
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUfMylAAoJECTWi3JdVIfQLs0H/0mdxVbkYXh6Wwqh996cOx5J
++u+51SvcjYuetWXv9bSJz26C3jkHt21NDe087CqGbZBDtlcLtK8YedTbISyrQp9D
+vqzmu5H3hACrQBR2VT7v5jrmFn6jmSXMMUfGCVET5ptNgCTZzhV6Q01R114e2gjn
+4kdZ8Db5NdRU6G9raoXUwDIflH1nB7KrFkR5DS9c08fobIxXcsH/eqLZgOVWH1qn
+igDUlTrQoUMbUMHIxBhjG6u5lxIyx3wofV2RQhYhHwr6FlTGVWvnXpaERg1ych8u
+srXkCh2AR+UPCHz/h5wpVj8KULFTASpyW9GxO3f950bbQ4X64FHR3URIC8FXa5c=
+=PUZr
+-----END PGP SIGNATURE-----
+
+--nSDEzYKH9NcCJl81--
