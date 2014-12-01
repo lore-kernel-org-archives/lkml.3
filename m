@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932464AbaLAUam (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 15:30:42 -0500
-Received: from smtp-out-249.synserver.de ([212.40.185.249]:1072 "EHLO
-	smtp-out-249.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932158AbaLAUal (ORCPT
+	id S932327AbaLAUeu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 15:34:50 -0500
+Received: from mail-oi0-f48.google.com ([209.85.218.48]:37668 "EHLO
+	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753890AbaLAUeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 15:30:41 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 13028
-Message-ID: <547CCFF7.2000205@metafoo.de>
-Date: Mon, 01 Dec 2014 21:30:47 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Mon, 1 Dec 2014 15:34:46 -0500
 MIME-Version: 1.0
-To: Timur Tabi <timur@tabi.org>, Arnd Bergmann <arnd@arndb.de>
-CC: linuxppc-dev@lists.ozlabs.org, Mark Brown <broonie@kernel.org>,
-        alsa-devel@alsa-project.org, Jiada Wang <jiada_wang@mentor.com>,
-        linux-kernel@vger.kernel.org, lgirdwood@gmail.com,
-        nicoleotsuka@gmail.com, tiwai@suse.de, Li.Xiubo@freescale.com,
-        Markus Pargmann <mpa@pengutronix.de>
-Subject: Re: [alsa-devel] [PATCH] ASoC: fsl_ssi: free irq before irq_dispose_mapping()
-References: <1417402251-6596-1-git-send-email-jiada_wang@mentor.com> <2547588.Qc4F2IfZke@wuerfel> <547CC89F.1030205@tabi.org> <3401240.VsRpsiV8WN@wuerfel> <547CCB78.5090007@tabi.org>
-In-Reply-To: <547CCB78.5090007@tabi.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.LRH.2.11.1411281037250.28866@namei.org>
+References: <20141125194319.GA9328@www.outflux.net>
+	<alpine.LRH.2.11.1411270022240.22560@namei.org>
+	<20141127084614.209450b9@canb.auug.org.au>
+	<CAGXu5jJQK39HnyVMmVrerY+wiL+P80JTE8nscDa7Wyyk1hZing@mail.gmail.com>
+	<alpine.LRH.2.11.1411281037250.28866@namei.org>
+Date: Mon, 1 Dec 2014 12:34:46 -0800
+X-Google-Sender-Auth: usTTyG5VG_6tSoyP0IiDC3-BpoU
+Message-ID: <CAGXu5jJ3KEidL1KdrXnR39r_Na9WaE=VdbeKPkjRQd1OOAZO3A@mail.gmail.com>
+Subject: Re: [PULL] seccomp update (next)
+From: Kees Cook <keescook@chromium.org>
+To: James Morris <jmorris@namei.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pranith Kumar <bobby.prani@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2014 09:11 PM, Timur Tabi wrote:
-> On 12/01/2014 02:01 PM, Arnd Bergmann wrote:
->>> >Does this mean that fsl_ssi.c should not be calling
->>> >irq_of_parse_and_map?  How else should it get the IRQ?
->> platform_get_irq()
+On Thu, Nov 27, 2014 at 3:37 PM, James Morris <jmorris@namei.org> wrote:
+> On Wed, 26 Nov 2014, Kees Cook wrote:
 >
-> Ok, but that function also calls irq_create_of_mapping().  So it still
-> appears that the only way to get the IRQ is to map it, but then we can't use
-> devm_request_irq().
+>> > That would be because your tree is based on v3.17 and Kees' is based on
+>> > v3.18-rc6 ...
+>>
+>> James, I can base on whatever you like. I can do v3.17, or even
+>> against your security-next. It seems everyone uses something
+>> different. :)
 >
+> It's best to track my next branch as your upstream.
 
-Hm... that's new. But it's not really a driver issue anymore if it is done 
-in the core. So I guess for now just use platform_get_irq() and ignore the 
-other issue.
+It'll trigger collisions with what's the x86 -next from luto's
+changes. Should I just let Stephen sort that out?
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
