@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932204AbaLATlp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 14:41:45 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:54682 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932182AbaLATlo (ORCPT
+	id S932224AbaLATmV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 14:42:21 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45385 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753643AbaLATmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 14:41:44 -0500
-Date: Mon, 1 Dec 2014 11:41:39 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        Huang Shijie <shijie8@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
-Subject: Re: [PATCH] mtd: gpmi: properly handle bitflips in erased pages
-Message-ID: <20141201194139.GI21347@ld-irv-0074>
-References: <1417461159-2972-1-git-send-email-boris.brezillon@free-electrons.com>
+	Mon, 1 Dec 2014 14:42:20 -0500
+Date: Mon, 1 Dec 2014 19:41:47 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Timur Tabi <timur@tabi.org>, Markus Pargmann <mpa@pengutronix.de>,
+        Jiada Wang <jiada_wang@mentor.com>, alsa-devel@alsa-project.org,
+        lgirdwood@gmail.com, tiwai@suse.de, Li.Xiubo@freescale.com,
+        nicoleotsuka@gmail.com, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20141201194147.GP7712@sirena.org.uk>
+References: <1417402251-6596-1-git-send-email-jiada_wang@mentor.com>
+ <20141201065046.GB27289@pengutronix.de>
+ <547C9C34.9080602@metafoo.de>
+ <547CB817.10806@tabi.org>
+ <547CC407.30308@metafoo.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="A4pi7p1avD4z6Uqy"
 Content-Disposition: inline
-In-Reply-To: <1417461159-2972-1-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <547CC407.30308@metafoo.de>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel] [PATCH] ASoC: fsl_ssi: free irq before
+ irq_dispose_mapping()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
 
-On Mon, Dec 01, 2014 at 08:12:39PM +0100, Boris Brezillon wrote:
-> Brian, I really like the idea of having a generic implementation for this
-> feature (using read_page_raw) as you suggested here [1], but this implies
-> having a temporary buffer to store the page read in raw mode and keep the page
-> read in normal (HW ECC engine eanbled) mode, and I'm not sure we want to
-> allocate more buffers than we already have.
+--A4pi7p1avD4z6Uqy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Why does this require an additional buffer? If we've already noticed an
-ECC error, we're expected to return raw data anyway, so what's the
-problem with clobbering the original data with a raw version of the
-data?
+On Mon, Dec 01, 2014 at 08:39:51PM +0100, Lars-Peter Clausen wrote:
+> On 12/01/2014 07:48 PM, Timur Tabi wrote:
 
-I really *really* do not want to merge another one-off attempt at
-"solving" this problem in the low-level driver, if at all possible.
+> >A quick grep shows the following drivers that call both functions:
 
-Brian
+> Most of these drivers will probably work fine without irq_of_parse_and_map().
 
-P.S. Sorry for not following up on my last attempt of a generic
-solution. I don't think I got enough constructive feedback, other than
-"this does not work for me", so I didn't pursue it further. If we have
-the attention of more than one driver developer here (i.e., at least you
-and me), then I'd really like to finish this off for good (?).
+I'd also note that quite a few of these drivers look pretty legacy - a
+very large proportion are for old PowerPC hardware, though by no means
+all.
+
+--A4pi7p1avD4z6Uqy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUfMR7AAoJECTWi3JdVIfQxC4H/Rw91cGM/GoVnm+lMlkCjMT8
+b0OZH4hfeGQfs5roSNkjab0foHUwXfKEmOcUnh4eHUiO3OJdAuLA2s4LWWKwf7Tp
+I8+oYR268oi/uf4bhiREBOzrbj3+I8gqZmE7C9lXi3VVqjJm+/CgsoK+C+ntcf0N
+LSJMaOMPQtu5CAAQNlSJCsaGbCdAdhEKOBTRyxaPHrR9HVnBI3nwXqthtqhntZDw
+JMIlHh/v5rJsFW4oWuX6ym/g0VHQ2jvdmJJ9doJrrHdODdJrW16CYAU8ATY9iIY1
+D+MMxQqoPYYfATRC7i6IkD+pKXxRm9PEg6efhPR89m0sndwXDTrCvzNBQRvdbgs=
+=DYcS
+-----END PGP SIGNATURE-----
+
+--A4pi7p1avD4z6Uqy--
