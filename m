@@ -1,101 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932584AbaLAW2D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 17:28:03 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:43248 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160AbaLAW2A (ORCPT
+	id S932639AbaLAW2o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 17:28:44 -0500
+Received: from mail-bn1bbn0105.outbound.protection.outlook.com ([157.56.111.105]:49664
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932160AbaLAW2m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 17:28:00 -0500
+	Mon, 1 Dec 2014 17:28:42 -0500
+From: Stuart Yoder <stuart.yoder@freescale.com>
+To: Alexander Graf <agraf@suse.de>, Jose Rivera <German.Rivera@freescale.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Kim Phillips <Kim.Phillips@freescale.com>,
+        Scott Wood <scottwood@freescale.com>,
+        "bhamciu1@freescale.com" <bhamciu1@freescale.com>,
+        "R89243@freescale.com" <R89243@freescale.com>,
+        Geoff Thorpe <Geoff.Thorpe@freescale.com>,
+        "bhupesh.sharma@freescale.com" <bhupesh.sharma@freescale.com>,
+        "nir.erez@freescale.com" <nir.erez@freescale.com>,
+        Richard Schmitt <richard.schmitt@freescale.com>
+Subject: RE: [PATCH 1/3 v4] drivers/bus: Added Freescale Management Complex
+ APIs
+Thread-Topic: [PATCH 1/3 v4] drivers/bus: Added Freescale Management Complex
+ APIs
+Thread-Index: AQHQCk6VizjvEAXJzUaTeK76eOkwuZx7VtaA
+Date: Mon, 1 Dec 2014 22:28:36 +0000
+Message-ID: <CY1PR0301MB0748FD38A1FD925F273EB33A877D0@CY1PR0301MB0748.namprd03.prod.outlook.com>
+References: <1415901246-24131-1-git-send-email-German.Rivera@freescale.com>
+ <1415901246-24131-2-git-send-email-German.Rivera@freescale.com>
+ <54773557.6020600@suse.de>
+In-Reply-To: <54773557.6020600@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.168.50]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1305;UriScan:;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1305;
+x-forefront-prvs: 0412A98A59
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(13464003)(51704005)(24454002)(199003)(51444003)(377454003)(86362001)(46102003)(62966003)(77156002)(74316001)(19580395003)(19580405001)(54606007)(66066001)(92566001)(99286002)(2201001)(95666004)(68736005)(92726001)(77096004)(31966008)(54356999)(76176999)(50986999)(64706001)(105586002)(33656002)(101416001)(20776003)(106356001)(76576001)(2656002)(2501002)(107046002)(87936001)(54206007)(99396003)(4396001)(122556002)(106116001)(40100003)(97736003)(21056001)(120916001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB1305;H:CY1PR0301MB0748.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <547C4A69.8020002@xs4all.nl>
-References: <1416791411-9731-1-git-send-email-prabhakar.csengg@gmail.com>
- <547C3ED3.1060205@xs4all.nl> <547C4A69.8020002@xs4all.nl>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Mon, 1 Dec 2014 22:27:28 +0000
-Message-ID: <CA+V-a8uL4J0Y2ZfDxe7jhxzGcCNe9QbCDUjDZrC+mZ5E6sX2jg@mail.gmail.com>
-Subject: Re: [PATCH] media: platform: add VPFE capture driver support for AM437X
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: LMML <linux-media@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-api <linux-api@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Content-Type: text/plain; charset=UTF-8
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1178;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
 
-On Mon, Dec 1, 2014 at 11:00 AM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
-> On 12/01/2014 11:11 AM, Hans Verkuil wrote:
->> Hi all,
->>
->> Thanks for the patch, review comments are below.
->>
->> For the next version I would appreciate if someone can test this driver with
->> the latest v4l2-compliance from the v4l-utils git repo. If possible test streaming
->> as well (v4l2-compliance -s), ideally with both a sensor and a STD receiver input.
->> But that depends on the available hardware of course.
->>
->> I'd like to see the v4l2-compliance output. It's always good to have that on
->> record.
->>
->>
->> On 11/24/2014 02:10 AM, Lad, Prabhakar wrote:
->>> From: Benoit Parrot <bparrot@ti.com>
->>>
->>> This patch adds Video Processing Front End (VPFE) driver for
->>> AM437X family of devices
->>> Driver supports the following:
->>> - V4L2 API using MMAP buffer access based on videobuf2 api
->>> - Asynchronous sensor/decoder sub device registration
->>> - DT support
->>>
->>> Signed-off-by: Benoit Parrot <bparrot@ti.com>
->>> Signed-off-by: Darren Etheridge <detheridge@ti.com>
->>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->>> ---
->>>  .../devicetree/bindings/media/ti-am437xx-vpfe.txt  |   61 +
->>>  MAINTAINERS                                        |    9 +
->>>  drivers/media/platform/Kconfig                     |    1 +
->>>  drivers/media/platform/Makefile                    |    2 +
->>>  drivers/media/platform/am437x/Kconfig              |   10 +
->>>  drivers/media/platform/am437x/Makefile             |    2 +
->>>  drivers/media/platform/am437x/vpfe.c               | 2764 ++++++++++++++++++++
->>>  drivers/media/platform/am437x/vpfe.h               |  286 ++
->>>  drivers/media/platform/am437x/vpfe_regs.h          |  140 +
->>>  include/uapi/linux/Kbuild                          |    1 +
->>>  include/uapi/linux/am437x_vpfe.h                   |  122 +
->>>  11 files changed, 3398 insertions(+)
->
-> Can the source names be improved? There are too many 'vpfe' sources.
-> Perhaps prefix all with 'am437x-'?
->
-I did think of it but, dropped it as anyway the source's are present
-in am437x folder, again naming the files am437x-xxx.x didn't make
-me feel good. If you still insists I'll do it.
 
-> In general I prefer '-' over '_' in a source name: it's looks better
-> IMHO.
->
-I am almost done with all the review comments, if we take a decision
-on this quickly I can post a v2 soon.
+> -----Original Message-----
+> From: Alexander Graf [mailto:agraf@suse.de]
+> Sent: Thursday, November 27, 2014 8:30 AM
+> To: Rivera Jose-B46482; gregkh@linuxfoundation.org; arnd@arndb.de; linux-kernel@vger.kernel.org
+> Cc: Yoder Stuart-B08248; Phillips Kim-R1AAHA; Wood Scott-B07421; Hamciuc Bogdan-BHAMCIU1; Marginean
+> Alexandru-R89243; Thorpe Geoff-R01361; Sharma Bhupesh-B45370; Erez Nir-RM30794; Schmitt Richard-B43082
+> Subject: Re: [PATCH 1/3 v4] drivers/bus: Added Freescale Management Complex APIs
+> 
+> 
+> 
+> On 13.11.14 18:54, J. German Rivera wrote:
+> > APIs to access the Management Complex (MC) hardware
+> > module of Freescale LS2 SoCs. This patch includes
+> > APIs to check the MC firmware version and to manipulate
+> > DPRC objects in the MC.
+> >
+> > Signed-off-by: J. German Rivera <German.Rivera@freescale.com>
+> > Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
+> 
+> [...]
+> 
+> > +/*
+> > + * Object descriptor, returned from dprc_get_obj()
+> > + */
+> > +struct dprc_obj_desc {
+> > +	/* Type of object: NULL terminated string */
+> > +	char type[16];
+> 
+> I don't see where it actually gets NULL terminated - all 16 bytes come
+> directly from the device.
+> 
+> While it's probably ok to trust it, I think we'd still be safer off if
+> we just make this a char[17] array to always have our NULL terminating
+> string. That way we're guaranteed we'll never run over our memory
+> boundaries.
 
-> One question, unrelated to this patch series:
->
-> Prabhakar, would it make sense to look at the various existing TI sources
-> as well and rename them to make it more explicit for which SoCs they are
-> meant? Most are pretty vague with variations on vpe, vpif, vpfe, etc. but
-> no reference to the actual SoC they are for.
->
-vpe - definitely needs to be changed.
-vpif - under davinci is common for (Davinci series
-dm6467/dm6467t/omapl138/am1808)
-vpfe -  under davinci is common for (Davinci series dm36x/dm6446/dm355)
+The device is supposed to guarantee that the string is null 
+terminated...so there will never be valid chars in the 16th
+character.  So, what about just forcing type[15] = '\0'?
 
-I am falling short of names for renaming this common drivers :)
+I think that would be better than making it a char[17].
 
-Thanks,
---Prabhakar Lad
+Stuart
