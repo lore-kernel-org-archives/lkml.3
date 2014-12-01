@@ -1,93 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070AbaLARl6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 12:41:58 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:40228 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751966AbaLARlz (ORCPT
+	id S1754095AbaLARnZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 12:43:25 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:58226 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753220AbaLARnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 12:41:55 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/VizbZuUpl9uCZtvlnxXQJ
-Date: Mon, 1 Dec 2014 09:39:33 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-serial@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Sekhar Nori <nsekhar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, uwe@kleine-koenig.org
-Subject: Re: [PATCH] tty: serial: serial-omap: depend on !8250_omap
-Message-ID: <20141201173932.GB2817@atomide.com>
-References: <1417039306-2384-1-git-send-email-bigeasy@linutronix.de>
- <20141129094823.GA10840@linutronix.de>
- <20141129173418.GY2817@atomide.com>
- <20141201140914.728aaa46@lxorguk.ukuu.org.uk>
- <20141201163813.GA2817@atomide.com>
- <547CA483.3070801@linutronix.de>
+	Mon, 1 Dec 2014 12:43:24 -0500
+Date: Mon, 1 Dec 2014 09:42:15 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Feng Kan <fkan@apm.com>
+Cc: Stefan Agner <stefan@agner.ch>, shawn.guo@linaro.org,
+        kernel@pengutronix.de, Arnd Bergmann <arnd@arndb.de>, sre@kernel.org,
+        grant.likely@linaro.org, robh+dt@kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] power: reset: read priority from device tree
+Message-ID: <20141201174215.GB24692@roeck-us.net>
+References: <1417453389-1588-1-git-send-email-stefan@agner.ch>
+ <1417453389-1588-2-git-send-email-stefan@agner.ch>
+ <CAL85gmBq30pWxP0buKbM8so6QqsJq2YojiSK1EWtMPsH_7foeg@mail.gmail.com>
+ <ea4f7a2bfdb9bea45cab9418c211083b@agner.ch>
+ <CAL85gmBNE7oDbE+LX+V=AFJO61Ta0Gekoq6sDb8TkEnoPsNFVA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <547CA483.3070801@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAL85gmBNE7oDbE+LX+V=AFJO61Ta0Gekoq6sDb8TkEnoPsNFVA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020208.547CA8BC.0024,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 13
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sebastian Andrzej Siewior <bigeasy@linutronix.de> [141201 09:27]:
-> On 12/01/2014 05:38 PM, Tony Lindgren wrote:
-> > * One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> [141201 06:11]:
-> >>> Well the nightmare userspace switch from ttyS to ttyO few years ago is
-> >>> something we want to avoid.. I think the best solution would be to make
-> >>> serial-omap.c transparently provide support for ttyO using the new 8250
-> >>> code so both ttyS and ttyO devices would just work. Otherwise it will
-> >>> be years of "my serial port stopped working" questions again.
+On Mon, Dec 01, 2014 at 09:38:09AM -0800, Feng Kan wrote:
+> On Mon, Dec 1, 2014 at 9:29 AM, Stefan Agner <stefan@agner.ch> wrote:
+> > On 2014-12-01 18:15, Feng Kan wrote:
+> >> On Mon, Dec 1, 2014 at 9:03 AM, Stefan Agner <stefan@agner.ch> wrote:
+> >>> This patch adds an optional property which allows to specify the
+> >>> reset source priority. This priority is used by the kernel restart
+> >>> handler call chain to sort out the proper reset/restart method.
+> >>> Depending on the power design of a board or other machine/board
+> >>> specific peculiarity, it is not possible to pick a generic priority.
+> >>>
+> >>> Signed-off-by: Stefan Agner <stefan@agner.ch>
+> >>> ---
+> >>>  Documentation/devicetree/bindings/power/reset/syscon-reboot.txt | 3 +++
+> >>>  drivers/power/reset/syscon-reboot.c                             | 5 ++++-
+> >>>  2 files changed, 7 insertions(+), 1 deletion(-)
+> >>>
+> >>> diff --git a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+> >>> index 1190631..ee41d9c 100644
+> >>> --- a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+> >>> +++ b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+> >>> @@ -11,6 +11,9 @@ Required properties:
+> >>>  - offset: offset in the register map for the reboot register (in bytes)
+> >>>  - mask: the reset value written to the reboot register (32 bit access)
+> >>>
+> >>> +Optional properties:
+> >>> +- priority: define the priority of the reset (0-255, defaults to 128)
+> >>> +
+> >>>  Default will be little endian mode, 32 bit access only.
+> >>>
+> >>>  Examples:
+> >>> diff --git a/drivers/power/reset/syscon-reboot.c b/drivers/power/reset/syscon-reboot.c
+> >>> index 815b901..3060d6b 100644
+> >>> --- a/drivers/power/reset/syscon-reboot.c
+> >>> +++ b/drivers/power/reset/syscon-reboot.c
+> >>> @@ -67,8 +67,11 @@ static int syscon_reboot_probe(struct platform_device *pdev)
+> >>>         if (of_property_read_u32(pdev->dev.of_node, "mask", &ctx->mask))
+> >>>                 return -EINVAL;
+> >>>
+> >>> -       ctx->restart_handler.notifier_call = syscon_restart_handle;
+> >>>         ctx->restart_handler.priority = 128;
+> >>> +       of_property_read_u32(pdev->dev.of_node, "priority",
+> >>> +                            &ctx->restart_handler.priority);
 > >>
-> >> Thata a udev problem not a kernel one surely.
-> > 
-> > How do you suggest we get people to update their kernel command line
-> > and inittab? Udev may not even be installed.
+> >> What is this for?
+> >
+> > What do you mean? The moved line "ctx->restart_handler.notifier_call =
+> > syscon_restart_handle;"? When one reads the diff, it looks like that
+> > line was moved, in fact I tried to keep the of_property_read function
+> > calls together. But I had to move the assignation of the default
+> > priority in front of restart_handler.priority. That's what is the
+> > outcome...
 > 
-> There are three use cases that I can think of right now:
-> - people that enable that new driver via oldconfig
->   I would expect that they read the help message in Kconfig. No worry
->   about them.
-> 
-> - people that get a complete system via magic_build_tool (may yocto or
->   whatever)
->   If $TOOL decides to use the new driver, then it should update
->   commandline in bootloader. Those things create usually bootloader +
->   kernel + rootfile system. If the commandline is saved on flash/mmc
->   then it won't be reset from default. However udev should help here.
->   So not a problem either (udev can't fix the kernel boot output but we
->   should see atleast the login console).
-> 
-> - people that build omap2plus_defconfig and we switch to the new driver
->   Those people get switched from one driver to the other without
->   knowing. This is what I tried to bring to everyone's attention. The
->   defconfig hasn't been changed yet so it is not problem for next
->   release (yet).
-> 
-> I agree that this is a user problem. We agreed not to introduce a
-> console proxy in kernel _or_ hack the command line in kernel (to
-> replace O with S).
-> So I think the problem boils down to educate the user about this
-> change. Making the old driver disappear was one way of getting the
-> user's attention. Another idea would be to introduce a #warning which is
-> also activated by the defconfig and informs the user about the change.
-> Ideally this #warning could be switched off by Kconfig once the user
-> reads & deactivates it. This requires the pay attention to warnings
-> during build. #error would make sure he does but it breaks auto-builds
-> so it is not an option.
+> I believe Guenter explained above already. Actually this help to solve one of
+> my problem. Thanks.
 
-The problem is the kernel will just mysteriously stop outputting
-anything if we enable the new driver. This is a "flag day" type
-problem that needs the user to somehow coordinate the kernel version,
-kernel .config, kernel cmdline, dev entries, and the inittab.
+Since Mark doesn't seem to be happy with the idea of making the priority
+dt-configurable, the alternative might be to just set a higher priority for
+syscon triggered resets, as suggested by Stefan. Not as flexible, but it
+should be ok for most use cases.
 
-Regards,
-
-Tony
+Guenter
