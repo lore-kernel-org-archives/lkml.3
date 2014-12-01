@@ -1,152 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932820AbaLAXk4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 18:40:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53061 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754025AbaLAXkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 18:40:53 -0500
-Message-ID: <547CFC82.8060701@suse.de>
-Date: Tue, 02 Dec 2014 00:40:50 +0100
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932757AbaLAXow (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 18:44:52 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:35897 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932408AbaLAXov (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 18:44:51 -0500
+Date: Mon, 1 Dec 2014 18:44:40 -0500
+From: Chris Mason <clm@fb.com>
+Subject: Re: frequent lockups in 3.18rc4
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        =?iso-8859-1?q?D=E2niel?= Fraga <fragabr@gmail.com>,
+        Dave Jones <davej@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <1417477480.21136.0@mail.thefacebook.com>
+In-Reply-To: <CA+55aFxOKsK-E438QEOd5Tq2dUZjO8sOnQtpTtPmpBKngmgpkg@mail.gmail.com>
+References: <CA+55aFz-JUX6CU-aO+cwLHYtH7BA+dgyUnEGoy8T4S62gEDFpA@mail.gmail.com>
+	<20141127225637.GA24019@redhat.com> <m5dart$co$1@ger.gmane.org>
+	<CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
+	<547b8a45.6e608c0a.20f9.1002@mx.google.com>
+	<CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
+	<547bbe36.48548c0a.105c.779c@mx.google.com>
+	<20141201191431.GA17385@linux.vnet.ibm.com>
+	<547ccf74.a5198c0a.25de.26d9@mx.google.com>
+	<CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
+	<20141201230339.GA20487@ret.masoncoding.com>
+	<CA+55aFxOKsK-E438QEOd5Tq2dUZjO8sOnQtpTtPmpBKngmgpkg@mail.gmail.com>
+X-Mailer: geary/0.8.2
 MIME-Version: 1.0
-To: Stuart Yoder <stuart.yoder@freescale.com>,
-        Jose Rivera <German.Rivera@freescale.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Kim Phillips <Kim.Phillips@freescale.com>,
-        Scott Wood <scottwood@freescale.com>,
-        "bhamciu1@freescale.com" <bhamciu1@freescale.com>,
-        "R89243@freescale.com" <R89243@freescale.com>,
-        Geoff Thorpe <Geoff.Thorpe@freescale.com>,
-        "bhupesh.sharma@freescale.com" <bhupesh.sharma@freescale.com>,
-        "nir.erez@freescale.com" <nir.erez@freescale.com>,
-        Richard Schmitt <richard.schmitt@freescale.com>
-Subject: Re: [PATCH 1/3 v4] drivers/bus: Added Freescale Management Complex
- APIs
-References: <1415901246-24131-1-git-send-email-German.Rivera@freescale.com> <1415901246-24131-2-git-send-email-German.Rivera@freescale.com> <54774DC9.4040103@suse.de> <CY1PR0301MB0748306F3BB357FF103625BC877D0@CY1PR0301MB0748.namprd03.prod.outlook.com>
-In-Reply-To: <CY1PR0301MB0748306F3BB357FF103625BC877D0@CY1PR0301MB0748.namprd03.prod.outlook.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"; format=flowed
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-02_01:2014-12-01,2014-12-01,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=82.9551594286039
+ compositescore=0.140620555742602 urlsuspect_oldscore=0.140620555742602
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.140620555742602 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412010223
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On 01.12.14 23:53, Stuart Yoder wrote:
+On Mon, Dec 1, 2014 at 6:25 PM, Linus Torvalds 
+<torvalds@linux-foundation.org> wrote:
+> On Mon, Dec 1, 2014 at 3:08 PM, Chris Mason <clm@fb.com> wrote:
+>>  I'm not sure if this is related, but running trinity here, I 
+>> noticed it
+>>  was stuck at 100% system time on every CPU.  perf report tells me 
+>> we are
+>>  spending all of our time in spin_lock under the sync system call.
+>> 
+>>  I think it's coming from contention in the bdi_queue_work() call 
+>> from
+>>  inside sync_inodes_sb, which is spin_lock_bh().
 > 
-> 
->> -----Original Message-----
->> From: Alexander Graf [mailto:agraf@suse.de]
->> Sent: Thursday, November 27, 2014 10:14 AM
->> To: Rivera Jose-B46482; gregkh@linuxfoundation.org; arnd@arndb.de; linux-kernel@vger.kernel.org
->> Cc: Yoder Stuart-B08248; Phillips Kim-R1AAHA; Wood Scott-B07421; Hamciuc Bogdan-BHAMCIU1; Marginean
->> Alexandru-R89243; Thorpe Geoff-R01361; Sharma Bhupesh-B45370; Erez Nir-RM30794; Schmitt Richard-B43082
->> Subject: Re: [PATCH 1/3 v4] drivers/bus: Added Freescale Management Complex APIs
->>
->>
->>
->> On 13.11.14 18:54, J. German Rivera wrote:
->>> APIs to access the Management Complex (MC) hardware
->>> module of Freescale LS2 SoCs. This patch includes
->>> APIs to check the MC firmware version and to manipulate
->>> DPRC objects in the MC.
->>>
->>> Signed-off-by: J. German Rivera <German.Rivera@freescale.com>
->>> Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
->>
->> [...]
->>
->>> +/**
->>> + * Creates an MC I/O object
->>> + *
->>> + * @dev: device to be associated with the MC I/O object
->>> + * @mc_portal_phys_addr: physical address of the MC portal to use
->>> + * @mc_portal_size: size in bytes of the MC portal
->>> + * @flags: flags for the new MC I/O object
->>> + * @new_mc_io: Area to return pointer to newly created MC I/O object
->>> + *
->>> + * Returns '0' on Success; Error code otherwise.
->>> + */
->>> +int __must_check fsl_create_mc_io(struct device *dev,
->>> +				  phys_addr_t mc_portal_phys_addr,
->>> +				  uint32_t mc_portal_size,
->>> +				  uint32_t flags, struct fsl_mc_io **new_mc_io)
->>> +{
->>> +	struct fsl_mc_io *mc_io;
->>> +	void __iomem *mc_portal_virt_addr;
->>> +	struct resource *res;
->>> +
->>> +	mc_io = devm_kzalloc(dev, sizeof(*mc_io), GFP_KERNEL);
->>> +	if (mc_io == NULL)
->>> +		return -ENOMEM;
->>> +
->>> +	mc_io->dev = dev;
->>> +	mc_io->flags = flags;
->>> +	mc_io->portal_phys_addr = mc_portal_phys_addr;
->>> +	mc_io->portal_size = mc_portal_size;
->>> +	res = devm_request_mem_region(dev,
->>> +				      mc_portal_phys_addr,
->>> +				      mc_portal_size,
->>> +				      "mc_portal");
->>> +	if (res == NULL) {
->>> +		dev_err(dev,
->>> +			"devm_request_mem_region failed for MC portal %#llx\n",
->>> +			mc_portal_phys_addr);
->>> +		return -EBUSY;
->>> +	}
->>> +
->>> +	mc_portal_virt_addr = devm_ioremap_nocache(dev,
->>> +						   mc_portal_phys_addr,
->>> +						   mc_portal_size);
->>
->> While I can't complain about the device itself, I will note that I think
->> it's a pretty bad design decision to expose actual host physical
->> addresses in the protocol.
-> 
-> I tend to agree.  I'll look into creating a proposed change to the architecture
-> to have the MC communicate a physical offset of some kind.
-> 
->> Basically this means that you won't be able to pass a full MC complex
->> into a guest, even if you could virtualize IRQ and DMA access unless you
->> map it at the exact same location as the host's MC complex.
-> 
-> Right.  But is that really an issue in practice?
+> Please do a perf run with -g to get the call chain to make sure..
 
-Well, it obviously depends on what you're trying to do. For everything
-that's envisioned today I don't think it's a problem, but I like to
-stick to the "know as little as you have to know" rule when it comes to
-communication protocols.
+The call chain goes something like this:
 
->> Could we at least add a "ranges" property to the MC device description
->> and check whether the physical addresses we get are within that range -
->> if nothing else, at least as sanity check? Then maybe add some calls in
->> the next version that act on that range rather than actual host physical
->> addresses?
-> 
-> So you mean something like:
-> 
->         fsl_mc: fsl-mc@80c000000 {
->                 compatible = "fsl,qoriq-mc";
->                 #stream-id-cells = <2>;
->                 reg = <0x00000008 0x0c000000 0 0x40>,    /* MC portal base */
->                       <0x00000000 0x08340000 0 0x40000>; /* MC control reg */
->                 ranges = <0x8 0x0 0x8 0x0 0x20000000>;
->                 lpi-parent = <&its>;
->         };
-> 
-> The physical addresses returned by the MC fall into a 512MB "portal"
-> region at 0x8_0000_0000 in the physical address map.  For now map it 1:1, but in the
-> future it could become:
->                    ranges = <0x0 0x0 0x8 0x0 0x20000000>;
-> 
-> ...if I can get the hardware architecture changed.
+               --- _raw_spin_lock
+                   |
+                   |--99.72%-- sync_inodes_sb
+                   |          sync_inodes_one_sb
+                   |          iterate_supers
+                   |          sys_sync
+                   |          |
+                   |          |--79.66%-- system_call_fastpath
+                   |          |          syscall
+                   |          |
+                   |           --20.34%-- ia32_sysret
+                   |                     __do_syscall
+                    --0.28%-- [...]
 
-Yup, I think that makes things a lot less error prone - you don't
-randomly access any pointer the device tells you to access :).
+(the 64bit call variation is similar)  Adding -v doesn't really help, 
+because it isn't giving me the address inside sync_inodes_sb()
+
+I first read this and guessed it must be leaving out the call to 
+bdi_queue_work, hoping the spin_lock_bh and lock debugging were teaming 
+up to stall the box.
+
+But looking harder it's probably inside wait_sb_inodes:
+
+        spin_lock(&inode_sb_list_lock);
+
+Which is a little harder to blame.  Maaaaaybe with lock debugging, but 
+its enough of a stretch that I wouldn't have emailed at all if I hadn't 
+fixated on the bdi code.
+
+-chris
 
 
-Alex
+
