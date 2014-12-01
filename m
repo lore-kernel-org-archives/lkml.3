@@ -1,34 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826AbaLAOUD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 09:20:03 -0500
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:35886 "EHLO
+	id S1753888AbaLAOVO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 09:21:14 -0500
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:36200 "EHLO
 	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753565AbaLAOUB (ORCPT
+	with ESMTP id S1753795AbaLAOVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 09:20:01 -0500
-Date: Mon, 1 Dec 2014 15:19:50 +0100
+	Mon, 1 Dec 2014 09:21:12 -0500
+Date: Mon, 1 Dec 2014 15:21:03 +0100
 From: Cornelia Huck <cornelia.huck@de.ibm.com>
 To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: David Hildenbrand <dahi@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>, rusty@au1.ibm.com,
-        nab@linux-iscsi.org, pbonzini@redhat.com, thuth@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v7 16/46] virtio_blk: v1.0 support
-Message-ID: <20141201151950.0df00078.cornelia.huck@de.ibm.com>
-In-Reply-To: <20141201134719.GA18305@redhat.com>
-References: <1417359787-10138-17-git-send-email-mst@redhat.com>
-	<20141201091641.3085e682@thinkpad-w530>
-	<20141201092658.GC15607@redhat.com>
-	<20141201123315.1b95d06f.cornelia.huck@de.ibm.com>
-	<20141201114645.GA17505@redhat.com>
-	<20141201130258.6f01c1e3.cornelia.huck@de.ibm.com>
-	<20141201123455.GA17958@redhat.com>
-	<20141201134036.726e7386.cornelia.huck@de.ibm.com>
-	<20141201125126.GB18106@redhat.com>
-	<20141201140004.57d53155.cornelia.huck@de.ibm.com>
-	<20141201134719.GA18305@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v7 36/46] vhost/net: suppress compiler warning
+Message-ID: <20141201152103.0f375544.cornelia.huck@de.ibm.com>
+In-Reply-To: <20141201134839.GB18305@redhat.com>
+References: <1417359787-10138-1-git-send-email-mst@redhat.com>
+	<1417359787-10138-37-git-send-email-mst@redhat.com>
+	<20141201133740.56d7d6d8.cornelia.huck@de.ibm.com>
+	<20141201134839.GB18305@redhat.com>
 Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
  Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
  Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
@@ -39,73 +31,44 @@ Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120114-0017-0000-0000-0000020ABB61
+x-cbid: 14120114-0017-0000-0000-0000020ABC5D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Dec 2014 15:47:19 +0200
+On Mon, 1 Dec 2014 15:48:39 +0200
 "Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-> On Mon, Dec 01, 2014 at 02:00:04PM +0100, Cornelia Huck wrote:
-> > On Mon, 1 Dec 2014 14:51:26 +0200
+> On Mon, Dec 01, 2014 at 01:37:40PM +0100, Cornelia Huck wrote:
+> > On Sun, 30 Nov 2014 17:12:13 +0200
 > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
 > > 
-> > > On Mon, Dec 01, 2014 at 01:40:36PM +0100, Cornelia Huck wrote:
-> > > > On Mon, 1 Dec 2014 14:34:55 +0200
-> > > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > > > 
-> > > > > On Mon, Dec 01, 2014 at 01:02:58PM +0100, Cornelia Huck wrote:
-> > > > > > On Mon, 1 Dec 2014 13:46:45 +0200
-> > > > > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > > > > > 
-> > > > > > > On Mon, Dec 01, 2014 at 12:33:15PM +0100, Cornelia Huck wrote:
-> > > > > > > > On Mon, 1 Dec 2014 11:26:58 +0200
-> > > > > > > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > > > > > > > 
-> > > > > > > > > For some places on data path, it might be worth it
-> > > > > > > > > to cache the correct value e.g. as part of device
-> > > > > > > > > structure. This replaces a branch with a memory load,
-> > > > > > > > > so the gain would have to be measured, best done
-> > > > > > > > > separately?
-> > > > > > > > 
-> > > > > > > > I think we'll want to do some measuring once the basic structure is
-> > > > > > > > in place anyway.
-> > > > > > > 
-> > > > > > > What's meant by in place here?
-> > > > > > 
-> > > > > > That this patchset is ready :)
-> > > > > 
-> > > > > Also it's ready to the level where benchmarking is possible, right?  I
-> > > > > don't think you should wait until we finish polishing up commit
-> > > > > messages.
-> > > > 
-> > > > My point is that I haven't even found time yet to test this
-> > > > thouroughly :(
+> > > len is always initialized since function is called with size > 0.
 > > > 
-> > > If my experience shows anything, it's unlikely we'll get appropriate
-> > > testing without code being upstream first.
-> > > That's why I pushed on with sparse tagging btw.
-> > > This way we can be reasonably sure we didn't miss some path.
+> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > ---
+> > >  drivers/vhost/net.c | 2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> > > index 984242e..54ffbb0 100644
+> > > --- a/drivers/vhost/net.c
+> > > +++ b/drivers/vhost/net.c
+> > > @@ -501,7 +501,7 @@ static int get_rx_bufs(struct vhost_virtqueue *vq,
+> > >  	int headcount = 0;
+> > >  	unsigned d;
+> > >  	int r, nlogs = 0;
+> > > -	u32 len;
+> > > +	u32 uninitialized_var(len);
+> > > 
+> > >  	while (datalen > 0 && headcount < quota) {
+> > >  		if (unlikely(seg >= UIO_MAXIOV)) {
 > > 
-> > I know that I'm likely the only one to test ccw (unless I manage to get
-> > some other also-busy people to try this out).
-> > 
-> > What's the status of virtio-pci, btw? Can people actually test this
-> > sanely?
+> > Want to merge this with the patch introducing the variable and add a
+> > comment there?
 > 
-> Sure, I'm testing that it's not broken by these patches.
-> Others can do so, too.
+> Not really. Warnings in bisect are fine  I think.
 
-So basically just regression testing, right?
-
-> 
-> Once ccw is done on host and guest (will be complete after I
-> send v8), it will be easier to add virtio 1.0 for more transports.
-> 
-> OTOH if we require that everything is ready and perfect before merging
-> anything we'll never get anywhere.
-
-I'm not looking for perfect, I'm just trying to juggle testing this +
-doing qemu changes + various other stuff that is eating my time :)
+I'm not sure what a separate patch buys us, though, as it should be
+trivial to merge.
 
