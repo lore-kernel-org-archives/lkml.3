@@ -1,85 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936AbaLAJyv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 04:54:51 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:57752 "EHLO bear.ext.ti.com"
+	id S1752978AbaLAJz2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 04:55:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47147 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752680AbaLAJyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 04:54:47 -0500
-Message-ID: <547C3A95.30605@ti.com>
-Date: Mon, 1 Dec 2014 15:23:25 +0530
-From: Vignesh R <vigneshr@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752841AbaLAJz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 04:55:27 -0500
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: Dexuan Cui <decui@microsoft.com>
+Cc: Jason Wang <jasowang@redhat.com>,
+        "gregkh\@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel\@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "olaf\@aepfle.de" <olaf@aepfle.de>,
+        "apw\@canonical.com" <apw@canonical.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH v3] hv: hv_fcopy: drop the obsolete message on transfer failure
+References: <1417093747-21073-1-git-send-email-decui@microsoft.com>
+	<1417157243.3268.1@smtp.corp.redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C613E66566@HKNPRD3002MB017.064d.mgd.msft.net>
+	<1417169573.5822.12@smtp.corp.redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C613E66AAA@HKNPRD3002MB017.064d.mgd.msft.net>
+	<1417422163.877.1@smtp.corp.redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C613E691B8@HKNPRD3002MB017.064d.mgd.msft.net>
+Date: Mon, 01 Dec 2014 10:55:02 +0100
+In-Reply-To: <F792CF86EFE20D4AB8064279AFBA51C613E691B8@HKNPRD3002MB017.064d.mgd.msft.net>
+	(Dexuan Cui's message of "Mon, 1 Dec 2014 09:47:14 +0000")
+Message-ID: <871tojzocp.fsf@vitty.brq.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        <richardcochran@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
-        Brad Griffis <bgriffis@ti.com>,
-        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jan Kardell <jan.kardell@telliq.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-iio@vger.kernel.org>,
-        <linux-input@vger.kernel.org>
-Subject: Re: [PATCH v4 0/6] Touchscreen performance related fixes
-References: <1415941651-28962-1-git-send-email-vigneshr@ti.com> <20141124115116.GA14997@linutronix.de>
-In-Reply-To: <20141124115116.GA14997@linutronix.de>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+Dexuan Cui <decui@microsoft.com> writes:
 
-On Monday 24 November 2014 05:21 PM, Sebastian Andrzej Siewior wrote:
-> * Vignesh R | 2014-11-14 10:37:25 [+0530]:
-> 
->> This series of patches fix TSC defects related to lag in touchscreen
->> performance and cursor jump at touch release. The lag was result of
->> udelay in TSC interrupt handler. Cursor jump due to false pen-up event.
->> The patches implement Advisory 1.0.31 in silicon errata of am335x-evm
-> am335x not -evm. The am335x-evm is a board (with its own advisory
-> document) built around the SoC.
-> 
-> Just testing the v4. I can use now IIO and touchscren at the same time.
-> back at v1 I reported that it does not work, this has been fixed now.
-> I had it running for a few minutes, now I see one of WARN_ON() beeing
-> triggered (I've cut a few numbers so don't wonder about PID 2 and so on):
-> 
+>> -----Original Message-----
+>> From: Jason Wang [mailto:jasowang@redhat.com]
+>> Sent: Monday, December 1, 2014 16:23 PM
+>> To: Dexuan Cui
+>> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; driverdev-
+>> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com; KY
+>> Srinivasan; vkuznets@redhat.com; Haiyang Zhang
+>> Subject: RE: [PATCH v3] hv: hv_fcopy: drop the obsolete message on transfer
+>> failure
+>> On Fri, Nov 28, 2014 at 7:54 PM, Dexuan Cui <decui@microsoft.com> wrote:
+>> >>  -----Original Message-----
+>> >>  From: Jason Wang [mailto:jasowang@redhat.com]
+>> >>  Sent: Friday, November 28, 2014 18:13 PM
+>> >>  To: Dexuan Cui
+>> >>  Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+>> >> driverdev-
+>> >>  devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com; KY
+>> >>  Srinivasan; vkuznets@redhat.com; Haiyang Zhang
+>> >>  Subject: RE: [PATCH v3] hv: hv_fcopy: drop the obsolete message on
+>> >> transfer
+>> >>  failure
+>> >>  On Fri, Nov 28, 2014 at 4:36 PM, Dexuan Cui <decui@microsoft.com>
+>> >> wrote:
+>> >>  >>  -----Original Message-----
+>> >>  >>  From: Jason Wang [mailto:jasowang@redhat.com]
+>> >>  >>  Sent: Friday, November 28, 2014 14:47 PM
+>> >>  >>  To: Dexuan Cui
+>> >>  >>  Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+>> >>  >> driverdev-
+>> >>  >>  devel@linuxdriverproject.org; olaf@aepfle.de;
+>> >> apw@canonical.com; KY
+>> >>  >>  Srinivasan; vkuznets@redhat.com; Haiyang Zhang
+>> >>  >>  Subject: Re: [PATCH v3] hv: hv_fcopy: drop the obsolete message
+>> >> on
+>> >>  >> transfer
+>> >>  >>  failure
+>> >>  >>  On Thu, Nov 27, 2014 at 9:09 PM, Dexuan Cui
+>> >> <decui@microsoft.com>
+>> >>  >> wrote:
+>> >>  >>  > In the case the user-space daemon crashes, hangs or is
+>> >> killed, we
+>> >>  >>  > need to down the semaphore, otherwise, after the daemon starts
+>> >>  >> next
+>> >>  >>  > time, the obsolete data in fcopy_transaction.message or
+>> >>  >>  > fcopy_transaction.fcopy_msg will be used immediately.
+>> >>  >>  >
+>> >>  >>  > Cc: Jason Wang <jasowang@redhat.com>
+>> >>  >>  > Cc: Vitaly Kuznetsov <vkuznets@redhat.com>
+>> >>  >>  > Cc: K. Y. Srinivasan <kys@microsoft.com>
+>> >>  >>  > Signed-off-by: Dexuan Cui <decui@microsoft.com>
+>> >>  >>  > ---
+>> >>  >>  >
+>> >>  >>  > v2: I removed the "FCP" prefix as Greg asked.
+>> >>  >>  >
+>> >>  >>  >     I also updated the output message a little:
+>> >>  >>  >     "FCP: failed to acquire the semaphore" -->
+>> >>  >>  >     "can not acquire the semaphore: it is benign"
+>> >>  >>  >
+>> >>  >>  > v3: I added the code in fcopy_release() as Jason Wang
+>> >> suggested.
+>> >>  >>  >     I removed the pr_debug (it isn't so meaningful)and added a
+>> >>  >>  > comment instead.
+>> >>  >>  >
+>> >>  >>  >  drivers/hv/hv_fcopy.c | 19 +++++++++++++++++++
+>> >>  >>  >  1 file changed, 19 insertions(+)
+>> >>  >>  >
+>> >>  >>  > diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c
+>> >>  >>  > index 23b2ce2..faa6ba6 100644
+>> >>  >>  > --- a/drivers/hv/hv_fcopy.c
+>> >>  >>  > +++ b/drivers/hv/hv_fcopy.c
+>> >>  >>  > @@ -86,6 +86,18 @@ static void fcopy_work_func(struct
+>> >> work_struct
+>> >>  >>  > *dummy)
+>> >>  >>  >  	 * process the pending transaction.
+>> >>  >>  >  	 */
+>> >>  >>  >  	fcopy_respond_to_host(HV_E_FAIL);
+>> >>  >>  > +
+>> >>  >>  > +	/* In the case the user-space daemon crashes, hangs or is
+>> >>  >> killed, we
+>> >>  >>  > +	 * need to down the semaphore, otherwise, after the daemon
+>> >>  >> starts
+>> >>  >>  > next
+>> >>  >>  > +	 * time, the obsolete data in fcopy_transaction.message or
+>> >>  >>  > +	 * fcopy_transaction.fcopy_msg will be used immediately.
+>> >>  >>  > +	 *
+>> >>  >>  > +	 * NOTE: fcopy_read() happens to get the semaphore (very
+>> >> rare)?
+>> >>  >>  > We're
+>> >>  >>  > +	 * still OK, because we've reported the failure to the host.
+>> >>  >>  > +	 */
+>> >>  >>  > +	if (down_trylock(&fcopy_transaction.read_sema))
+>> >>  >>  > +		;
+>> >>  >>
+>> >>  >>  Sorry, I'm not quite understand how if () ; can help here.
+>> >>  >>
+>> >>  >>  Btw, a question not relate to this patch.
+>> >>  >>
+>> >>  >>  What happens if a daemon is resume from SIGSTOP and expires the
+>> >>  >> check
+>> >>  >>  here?
+>> >>  > Hi Jason,
+>> >>  > My idea is: here we need down_trylock(), but in case we can't get
+>> >> the
+>> >>  > semaphore, it's OK anyway:
+>> >>  >
+>> >>  > Scenario 1):
+>> >>  > 1.1: when the daemon is blocked on the pread(), the daemon
+>> >> receives
+>> >>  > SIGSTOP;
+>> >>  > 1.2: the host user runs the PowerShell Copy-VMFile command;
+>> >>  > 1.3.1: the driver reports the failure to the host user in 5s and
+>> >>  > 1.3.2: the driver down()-es the semaphore;
+>> >>  > 1.4: the daemon receives SIGCONT and it will be still blocked on
+>> >> the
+>> >>  > pread().
+>> >>  > Without the down_trylock(), in 1.4, the daemon can receive an
+>> >>  > obsolete message.
+>> >>  > NOTE: in this scenario, the daemon is not killed.
+>> >>  >
+>> >>  > Scenario 2):
+>> >>  > In senario 1), if the daemon receives SIGCONT between 1.3.1 and
+>> >> 1.3.2
+>> >>  > and
+>> >>  > do down() in fcopy_read(), it will receive the message but: the
+>> >>  > driver has
+>> >>  > reported the failure to the host user and the driver's 1.3.2 can't
+>> >>  > get the
+>> >>  > semaphore -- IMO this is acceptably OK, though in the VM, an
+>> >>  > incomplete
+>> >>  > file will be left there.
+>> >>  > BTW, I think in the daemon's hv_start_fcopy() we should add a
+>> >>  > close(target_fd) before open()-ing a new one.
+>> >>
+>> >>  Right, but how about the case when resuming from SIGSTOP but no
+>> >> timeout?
+>> > Sorry, I don't understand this:
+>> > if no timeout, fcopy_read() will get the semaphore and fcopy_write()
+>> > will try to cancel fcopy_work.
+>> 
+>> Yes.
+>> >
+>> >
+>> >>  Looks like in this case userspace() may wait in down_interruptible()
+>> >>  until timeout. We probably need something like this:
+>> >>
+>> >>          if (down_interruptible(&fcopy_transaction.read_sema)) {
+>> >>                  up(&fcopy_transaction.read_sema);
+>> >>                  return -EINTR;
+>> >>          }
+>> > until "timeout"?
+>> > if the daemon can't get the semaphore, it can only be wake by a
+>> > signal(the
+>> > daemon doesn't install handler, so by default most signals will kill
+>> > the daemon).
+>> > In case a signal waking up the daemon doesn't kill the daemon, why
+>> > should
+>> > we do up()?
+>> 
+>> True, no need since we do down_trylock() in release().
+>> 
+>> Btw, there's no EINTR handling in handling pread() return value,
+>> may add such one which should be useful for something like debugging.
+>> 
+>> >
+>> >
+>> >>
+>> >>  This should synchronize with the timeout work for sure.
+>> >>  But how about only schedule it after this?
+>> >>  It does not may sense to start the timer during interrupt
+>> >>  since the file may not even opened and it may take time
+>> >>  to handle signals?
+>> >>
+>> >>  >
+>> >>  >>  >
+>> >>  >>  > +
+>> >>  >>  >  }
+>> >>  >>  >
+>> >>  >>  >  static int fcopy_handle_handshake(u32 version)
+>> >>  >>  > @@ -351,6 +363,13 @@ static int fcopy_release(struct inode
+>> >> *inode,
+>> >>  >>  > struct file *f)
+>> >>  >>  >  	 */
+>> >>  >>  >  	in_hand_shake = true;
+>> >>  >>  >  	opened = false;
+>> >>  >>  > +
+>> >>  >>  > +	if (cancel_delayed_work_sync(&fcopy_work)) {
+>> >>  >>  > +		/* We haven't up()-ed the semaphore(very rare)? */
+>> >>  >>  > +		if (down_trylock(&fcopy_transaction.read_sema))
+>> >>  >>  > +			;
+>> >>  >>
+>> >>  >>  And this.
+>> >>  >
+>> >>  > Scenario 3):
+>> >>  > When the daemon exits(e.g., SIGKILL received), if there is a
+>> >>  > fcopy_work
+>> >>  > pending (scheduled but not start to run yet), we should cancel the
+>> >>  > work (as you suggested) and down() the semaphore, otherwise, the
+>> >>  > obsolete message will be received by the next instance of the
+>> >> daemon.
+>> >>
+>> >>  Yes
+>> >>  >
+>> >>  >
+>> >>  > Scenario 4):  in the driver's hv_fcopy_onchannelcallback():
+>> >>  >         schedule_delayed_work(&fcopy_work, 5*HZ);
+>> >>  >         ----> if fcopy_release() is running on another vcpu, just
+>> >>  > before the next line?
+>> >>  >         fcopy_send_data();
+>> >>  >
+>> >>  > In this case, fcopy_release() can cancel fcopy_work, but
+>> >>  > can't get the semaphore since it hasn't been up()-ed.
+>> >>  > Hmm, in this case,   fcopy_send_data() will do up()  later, and
+>> >> we'll
+>> >>  > buffer an obsolete message in the driver, and the message will be
+>> >>  > fetched by the next instance of the daemon...
+>> >>  >
+>> >>  > Looks we need a spinlock here?
+>> >>
+>> >>  Unless fcopy_release() can wait for all data for current transation
+>> >>  to be received. Spinlock won't help.
+>> >>
+>> >>  But an idea is let the daemon the handle such cases. E.g make sure
+>> >> the
+>> >>  processing begins with START_COPY and end with
+>> COMPLETE/CANCEL_COPY.
+>> >>  Drop all requests that does not start with START_COPY.
+>> >>
+>> >>  Thought?
+>> > Good idea.
+>> > I also think we should reinforce the concept of state machine in the
+>> > daemon code.
+>> 
+>> Yes, it needs.
+> I agree.
+> Obviously we can do something to make the daemon/driver work better
+> in the corner cases.
+>
+>> >
+>> > The daemon/driver communication has so many corner cases...
+>> 
+>> Looks so, let's first address the issue mentioned in this patch.
+> OK.
+>
+>> I don't have any more comments other than changing
+>> 
+>>  if(down_trylock(&fcopy_transaction.read_sema))
+>>      ;
+>> 
+>> to
+>> 
+>> down_trylock(&fcopy_transaction.read_sema);
+> Hi Jason,
+> This is to address Vitaly's comment in the bugzilla:
+> https://bugzilla.redhat.com/show_bug.cgi?id=1162100#c5
+>
+> down_trylock(&fcopy_transaction.read_sema) will
+>
+> "
+> produces the following compile warning:
+> drivers/hv/hv_fcopy.c: In function ‘fcopy_work_func’:
+> drivers/hv/hv_fcopy.c:95:2: warning: ignoring return value of ‘down_trylock’, declared with attribute warn_unused_result [-Wunused-result]
+>   (void)down_trylock(&fcopy_transaction.read_sema);
+> "
+>
+> Actually I personally don't care about the warning, because we only
+> see it when we run some kind of code checker program.  :-)
+>
+> I can change my v3  to the "normal" style you prefer, if
+> there is no strong objection from Vitaly?
 
-I fixed the issue that was triggering the WARN_ON(). I think it would be
-better if you tested these patches, before I posted them on the
-mainline. I don't want to clutter the list with too main versions. Here
-is the link to the tree with latest changes:
+Well, I still prefer pr_debug() there: these are being compiled out on
+non-debug builds. I'm not objecting to any solution here though, really
+a minor issue.
 
-git clone -b tsc-devel git://git.ti.com/kernel/tsc-adc.git
-(tsc-devel branch)
+>
+> Thanks,
+> -- Dexuan
 
-Please test the above tree and let me know the results.
-I will post new version(v5) if there are no issues wrt IIO and TSC
-working at the same time.
-
-The cursor jump at touch release has been fixed. But I do see random
-cursor movement when dragging on the screen. This is not due to false
-pen-up events. My patches do not aim at fixing them. (the aim is to
-remove udelay in irq handler and fix false pen-ups).
-With these changes, false pen-ups have been eliminated and there is a
-significant improvement in the performance of TSC. I feel these patches
-can go in, if there are no other serious issues.
-
-I will work on random cursor jump in a separate patch series.
-
-Regards
-Vignesh
+-- 
+  Vitaly
