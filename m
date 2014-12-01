@@ -1,147 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753572AbaLAM7o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 07:59:44 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:59135 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753298AbaLAM7n (ORCPT
+	id S1753622AbaLANA3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 08:00:29 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:56654 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459AbaLANA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 07:59:43 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Thierry Reding <thierry.reding@gmail.com>,
-        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>
-Subject: Re: [PATCH RESEND v4 1/3] drm: add bus_formats and num_bus_formats fields to drm_display_info
-Date: Mon, 01 Dec 2014 15:00:15 +0200
-Message-ID: <10659671.3WzjQ3SUBa@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1417423335-11408-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1417422061-10384-1-git-send-email-boris.brezillon@free-electrons.com> <1417423335-11408-1-git-send-email-boris.brezillon@free-electrons.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Mon, 1 Dec 2014 08:00:27 -0500
+Date: Mon, 1 Dec 2014 14:00:04 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: David Hildenbrand <dahi@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>, rusty@au1.ibm.com,
+        nab@linux-iscsi.org, pbonzini@redhat.com, thuth@linux.vnet.ibm.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v7 16/46] virtio_blk: v1.0 support
+Message-ID: <20141201140004.57d53155.cornelia.huck@de.ibm.com>
+In-Reply-To: <20141201125126.GB18106@redhat.com>
+References: <1417359787-10138-1-git-send-email-mst@redhat.com>
+	<1417359787-10138-17-git-send-email-mst@redhat.com>
+	<20141201091641.3085e682@thinkpad-w530>
+	<20141201092658.GC15607@redhat.com>
+	<20141201123315.1b95d06f.cornelia.huck@de.ibm.com>
+	<20141201114645.GA17505@redhat.com>
+	<20141201130258.6f01c1e3.cornelia.huck@de.ibm.com>
+	<20141201123455.GA17958@redhat.com>
+	<20141201134036.726e7386.cornelia.huck@de.ibm.com>
+	<20141201125126.GB18106@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120113-0041-0000-0000-000002511789
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+On Mon, 1 Dec 2014 14:51:26 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-Thank you for the patch.
+> On Mon, Dec 01, 2014 at 01:40:36PM +0100, Cornelia Huck wrote:
+> > On Mon, 1 Dec 2014 14:34:55 +0200
+> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > 
+> > > On Mon, Dec 01, 2014 at 01:02:58PM +0100, Cornelia Huck wrote:
+> > > > On Mon, 1 Dec 2014 13:46:45 +0200
+> > > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > > 
+> > > > > On Mon, Dec 01, 2014 at 12:33:15PM +0100, Cornelia Huck wrote:
+> > > > > > On Mon, 1 Dec 2014 11:26:58 +0200
+> > > > > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > > > > 
+> > > > > > > For some places on data path, it might be worth it
+> > > > > > > to cache the correct value e.g. as part of device
+> > > > > > > structure. This replaces a branch with a memory load,
+> > > > > > > so the gain would have to be measured, best done
+> > > > > > > separately?
+> > > > > > 
+> > > > > > I think we'll want to do some measuring once the basic structure is
+> > > > > > in place anyway.
+> > > > > 
+> > > > > What's meant by in place here?
+> > > > 
+> > > > That this patchset is ready :)
+> > > 
+> > > Also it's ready to the level where benchmarking is possible, right?  I
+> > > don't think you should wait until we finish polishing up commit
+> > > messages.
+> > 
+> > My point is that I haven't even found time yet to test this
+> > thouroughly :(
+> 
+> If my experience shows anything, it's unlikely we'll get appropriate
+> testing without code being upstream first.
+> That's why I pushed on with sparse tagging btw.
+> This way we can be reasonably sure we didn't miss some path.
 
-On Monday 01 December 2014 09:42:15 Boris Brezillon wrote:
-> Add bus_formats and num_bus_formats fields and
-> drm_display_info_set_bus_formats helper function to specify the bus
-> formats supported by a given display.
-> 
-> This information can be used by display controller drivers to configure
-> the output interface appropriately (i.e. RGB565, RGB666 or RGB888 on raw
-> RGB or LVDS busses).
-> 
-> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+I know that I'm likely the only one to test ccw (unless I manage to get
+some other also-busy people to try this out).
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
-> ---
-> Hi,
-> 
-> Sorry for the noise: I ran checkpatch after sending the series and it found
-> a typo and two "line over 80 characters" warnings.
-> 
-> This version fixes those warnings.
-
-Please remember to increment the version number next time, it gets confusing 
-otherwise when people start asking questions such as "which v4 ?".
-
->  drivers/gpu/drm/drm_crtc.c | 33 +++++++++++++++++++++++++++++++++
->  include/drm/drm_crtc.h     |  8 ++++++++
->  2 files changed, 41 insertions(+)
-> 
-> diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-> index e79c8d3..20030ec 100644
-> --- a/drivers/gpu/drm/drm_crtc.c
-> +++ b/drivers/gpu/drm/drm_crtc.c
-> @@ -763,6 +763,39 @@ static void drm_mode_remove(struct drm_connector
-> *connector, drm_mode_destroy(connector->dev, mode);
->  }
-> 
-> +/*
-> + * drm_display_info_set_bus_formats - set the supported bus formats
-> + * @info: display info to store bus formats in
-> + * @fmts: array containing the supported bus formats
-> + * @nfmts: the number of entries in the fmts array
-> + *
-> + * Store the supported bus formats in display info structure.
-> + * See MEDIA_BUS_FMT_* definitions in include/uapi/linux/media-bus-format.h
-> for
-> + * a full list of available formats.
-> + */
-> +int drm_display_info_set_bus_formats(struct drm_display_info *info,
-> +				     const u32 *fmts,
-> +				     unsigned int num_fmts)
-> +{
-> +	u32 *formats = NULL;
-> +
-> +	if (!fmts && num_fmts)
-> +		return -EINVAL;
-> +
-> +	if (fmts && num_fmts) {
-> +		formats = kmemdup(fmts, sizeof(*fmts) * num_fmts, GFP_KERNEL);
-> +		if (!formats)
-> +			return -ENOMEM;
-> +	}
-> +
-> +	kfree(info->bus_formats);
-> +	info->bus_formats = formats;
-> +	info->num_bus_formats = num_fmts;
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(drm_display_info_set_bus_formats);
-> +
->  /**
->   * drm_connector_get_cmdline_mode - reads the user's cmdline mode
->   * @connector: connector to quwery
-> diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
-> index c40070a..65dd08a 100644
-> --- a/include/drm/drm_crtc.h
-> +++ b/include/drm/drm_crtc.h
-> @@ -31,6 +31,7 @@
->  #include <linux/idr.h>
->  #include <linux/fb.h>
->  #include <linux/hdmi.h>
-> +#include <linux/media-bus-format.h>
->  #include <uapi/drm/drm_mode.h>
->  #include <uapi/drm/drm_fourcc.h>
->  #include <drm/drm_modeset_lock.h>
-> @@ -130,6 +131,9 @@ struct drm_display_info {
->  	enum subpixel_order subpixel_order;
->  	u32 color_formats;
-> 
-> +	const u32 *bus_formats;
-> +	unsigned int num_bus_formats;
-> +
->  	/* Mask of supported hdmi deep color modes */
->  	u8 edid_hdmi_dc_modes;
-> 
-> @@ -982,6 +986,10 @@ extern int drm_mode_connector_set_path_property(struct
-> drm_connector *connector, extern int
-> drm_mode_connector_update_edid_property(struct drm_connector *connector,
-> struct edid *edid);
-> 
-> +extern int drm_display_info_set_bus_formats(struct drm_display_info *info,
-> +					    const u32 *fmts,
-> +					    unsigned int nfmts);
-> +
->  static inline bool drm_property_type_is(struct drm_property *property,
->  		uint32_t type)
->  {
-
--- 
-Regards,
-
-Laurent Pinchart
+What's the status of virtio-pci, btw? Can people actually test this
+sanely?
 
