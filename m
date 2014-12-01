@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425AbaLALgN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 06:36:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47920 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753004AbaLALgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 06:36:12 -0500
-Date: Mon, 1 Dec 2014 13:35:57 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Amit Shah <amit.shah@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	id S1753488AbaLALgf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 06:36:35 -0500
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:60773 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753021AbaLALge (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 06:36:34 -0500
+Date: Mon, 1 Dec 2014 12:36:21 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
         virtualization@lists.linux-foundation.org
-Subject: [PATCH] virtio_console: fix sparse warnings
-Message-ID: <1417433749-17408-1-git-send-email-mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Mutt-Fcc: =sent
+Subject: Re: [PATCH v7 22/46] virtio_blk: fix race at module removal
+Message-ID: <20141201123621.22be329d.cornelia.huck@de.ibm.com>
+In-Reply-To: <1417359787-10138-23-git-send-email-mst@redhat.com>
+References: <1417359787-10138-1-git-send-email-mst@redhat.com>
+	<1417359787-10138-23-git-send-email-mst@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120111-0029-0000-0000-000001F4EA69
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CHECK drivers/char/virtio_console.c
-drivers/char/virtio_console.c:687:36: warning: incorrect type in
-	argument 1 (different address spaces)
-drivers/char/virtio_console.c:687:36:    expected void [noderef]
-	<asn:1>*to
-drivers/char/virtio_console.c:687:36:    got char *out_buf
-drivers/char/virtio_console.c:790:35: warning: incorrect type in
-	argument 2 (different address spaces)
-drivers/char/virtio_console.c:790:35:    expected char *out_buf
-drivers/char/virtio_console.c:790:35:    got char [noderef]
-	<asn:1>*ubuf
+On Sun, 30 Nov 2014 17:11:06 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-fill_readbuf is reused with both kernel and userspace pointers,
-depending on value of to_user flag.
+> If a device appears while module is being removed,
+> driver will get a callback after we've given up
+> on the major number.
+> 
+> In theory this means this major number can get reused
+> by something else, resulting in a conflict.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  drivers/block/virtio_blk.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Tag address parameter as __user, and cast to/from regular pointer type
-when we know it's safe.
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/char/virtio_console.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index 775c898..ccb5357 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -669,8 +669,8 @@ done:
-  * Give out the data that's requested from the buffer that we have
-  * queued up.
-  */
--static ssize_t fill_readbuf(struct port *port, char *out_buf, size_t out_count,
--			    bool to_user)
-+static ssize_t fill_readbuf(struct port *port, char __user *out_buf,
-+			    size_t out_count, bool to_user)
- {
- 	struct port_buffer *buf;
- 	unsigned long flags;
-@@ -688,7 +688,8 @@ static ssize_t fill_readbuf(struct port *port, char *out_buf, size_t out_count,
- 		if (ret)
- 			return -EFAULT;
- 	} else {
--		memcpy(out_buf, buf->buf + buf->offset, out_count);
-+		memcpy((__force char *)out_buf, buf->buf + buf->offset,
-+		       out_count);
- 	}
- 
- 	buf->offset += out_count;
-@@ -1162,7 +1163,7 @@ static int get_chars(u32 vtermno, char *buf, int count)
- 	/* If we don't have an input queue yet, we can't get input. */
- 	BUG_ON(!port->in_vq);
- 
--	return fill_readbuf(port, buf, count, false);
-+	return fill_readbuf(port, (__force char __user *)buf, count, false);
- }
- 
- static void resize_console(struct port *port)
--- 
-MST
