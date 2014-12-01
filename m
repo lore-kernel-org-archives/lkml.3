@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795AbaLAJE6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 04:04:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34224 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752690AbaLAJEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 04:04:54 -0500
-Date: Mon, 1 Dec 2014 10:04:50 +0100
-From: Jan Kara <jack@suse.cz>
-To: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-Cc: eparis@redhat.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, jack@suse.cz
-Subject: Re: [PATCH 1/3] fanotify: only destroy mark when both mask and
- ignored_mask are cleared
-Message-ID: <20141201090450.GB16185@quack.suse.cz>
-References: <1417304258-16838-1-git-send-email-LinoSanfilippo@gmx.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417304258-16838-1-git-send-email-LinoSanfilippo@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752790AbaLAJJL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 04:09:11 -0500
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:38463 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752671AbaLAJJJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 04:09:09 -0500
+Date: Mon, 1 Dec 2014 10:08:54 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH v7 01/46] virtio: add low-level APIs for feature bits
+Message-ID: <20141201100854.2a21b168.cornelia.huck@de.ibm.com>
+In-Reply-To: <1417359787-10138-2-git-send-email-mst@redhat.com>
+References: <1417359787-10138-1-git-send-email-mst@redhat.com>
+	<1417359787-10138-2-git-send-email-mst@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120109-0009-0000-0000-000002347387
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 30-11-14 00:37:36, Lino Sanfilippo wrote:
-> In fanotify_mark_remove_from_mask() a mark is destroyed if only one of both
-> bitmasks (mask or ignored_mask) of a mark is cleared. However the other mask
-> may still be set and contain information that should not be lost. Thus only
-> destroy a mark if both masks are cleared.
+On Sun, 30 Nov 2014 17:09:08 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
+
+> Add low level APIs to test/set/clear feature bits.
+> For use by transports, to make it easier to
+> write code independent of feature bit array format.
 > 
-> Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+> Note: APIs is prefixed with __ and has _bit suffix
+> to stress its low level nature.  It's for use by transports only:
+> drivers should use virtio_has_feature and never need to set/clear
+> features.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 > ---
->  fs/notify/fanotify/fanotify_user.c | 6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-> index c991616..03a0dd1 100644
-> --- a/fs/notify/fanotify/fanotify_user.c
-> +++ b/fs/notify/fanotify/fanotify_user.c
-> @@ -488,6 +488,8 @@ static __u32 fanotify_mark_remove_from_mask(struct fsnotify_mark *fsn_mark,
->  					    int *destroy)
->  {
->  	__u32 oldmask;
-> +	__u32 new_mask;
-> +	__u32 new_ignored;
->  
->  	spin_lock(&fsn_mark->lock);
->  	if (!(flags & FAN_MARK_IGNORED_MASK)) {
-> @@ -497,9 +499,11 @@ static __u32 fanotify_mark_remove_from_mask(struct fsnotify_mark *fsn_mark,
->  		oldmask = fsn_mark->ignored_mask;
->  		fsnotify_set_mark_ignored_mask_locked(fsn_mark, (oldmask & ~mask));
->  	}
-> +	new_mask = fsn_mark->mask;
-> +	new_ignored = fsn_mark->ignored_mask;
->  	spin_unlock(&fsn_mark->lock);
->  
-> -	*destroy = !(oldmask & ~mask);
-> +	*destroy = !(new_mask | new_ignored);
-  There's no need for new variables, is there? You can just set *destroy
-under the spinlock...
+>  include/linux/virtio_config.h | 53 ++++++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 50 insertions(+), 3 deletions(-)
 
-								Honza
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
