@@ -1,240 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974AbaLAOq3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 09:46:29 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:44812 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838AbaLAOq1 (ORCPT
+	id S932097AbaLAOru (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 09:47:50 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:61156 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932067AbaLAOrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 09:46:27 -0500
+	Mon, 1 Dec 2014 09:47:48 -0500
+Message-ID: <547C7F3A.2000601@linaro.org>
+Date: Mon, 01 Dec 2014 15:46:18 +0100
+From: Eric Auger <eric.auger@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <547C723C.6020305@zonque.org>
-References: <1416546149-24799-1-git-send-email-gregkh@linuxfoundation.org>
- <1416546149-24799-8-git-send-email-gregkh@linuxfoundation.org>
- <546F977B.7040500@amacapital.net> <547C723C.6020305@zonque.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 1 Dec 2014 06:46:04 -0800
-Message-ID: <CALCETrVcMxLZg1QLWYJEaCsUiDH6Uo7-EqEijHckbfJs_nQf4A@mail.gmail.com>
-Subject: Re: kdbus: add code to gather metadata
-To: Daniel Mack <daniel@zonque.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tom Gundersen <teg@jklm.no>, Jiri Kosina <jkosina@suse.cz>,
-        Linux API <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Djalal Harouni <tixxdz@opendz.org>
-Content-Type: text/plain; charset=UTF-8
+To: Christoffer Dall <christoffer.dall@linaro.org>
+CC: eric.auger@st.com, marc.zyngier@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, alex.williamson@redhat.com, joel.schopp@amd.com,
+        kim.phillips@freescale.com, paulus@samba.org, gleb@kernel.org,
+        pbonzini@redhat.com, agraf@suse.de, linux-kernel@vger.kernel.org,
+        patches@linaro.org, will.deacon@arm.com,
+        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        john.liuli@huawei.com, ming.lei@canonical.com, feng.wu@intel.com
+Subject: Re: [PATCH v3 4/8] KVM: kvm-vfio: User API for IRQ forwarding
+References: <1416767760-14487-1-git-send-email-eric.auger@linaro.org> <1416767760-14487-5-git-send-email-eric.auger@linaro.org> <20141130125314.GE82106@macair>
+In-Reply-To: <20141130125314.GE82106@macair>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 1, 2014 at 5:50 AM, Daniel Mack <daniel@zonque.org> wrote:
-> Hi Andy,
->
-> Sorry for the late response.
->
-> On 11/21/2014 08:50 PM, Andy Lutomirski wrote:
->>> +static int kdbus_meta_append_cred(struct kdbus_meta *meta,
->>> +                              const struct kdbus_domain *domain)
->>> +{
->>> +    struct kdbus_creds creds = {
->>> +            .uid = from_kuid_munged(domain->user_namespace, current_uid()),
->>> +            .gid = from_kgid_munged(domain->user_namespace, current_gid()),
->>> +            .pid = task_pid_nr_ns(current, domain->pid_namespace),
->>> +            .tid = task_tgid_nr_ns(current, domain->pid_namespace),
+On 11/30/2014 01:53 PM, Christoffer Dall wrote:
+> On Sun, Nov 23, 2014 at 07:35:56PM +0100, Eric Auger wrote:
+>> This patch adds and document a new KVM_DEV_VFIO_DEVICE group
+> 
+> documents
+OK
+> 
+>> and 2 device attributes: KVM_DEV_VFIO_DEVICE_FORWARD_IRQ,
+>> KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ. The purpose is to be able
+>> to set a VFIO device IRQ as forwarded or not forwarded.
+>> the command takes as argument a handle to a new struct named
+>> kvm_arch_forwarded_irq.
 >>
->> This is better than before -- at least it gets translation right part of
->> the way.  But it's still wrong if the receiver's namespace doesn't match
->> the domain.
->
-> Alright. The code now translates the items into each receiver's
-> namespaces individually, so we can also take possible chroot()
-> environments into account to do path translations.
-
-Thanks!
-
-I suspect you'll get a lot of "(unreachable)/foo/bar".
-
->
->> Also, please move pid and tgid into their own item.  They suck for
->> reasons that have been beaten to death.  Let's make it possible to
->> deprecate them separately in the future.
->
-> Ok, done now. As mentioned in the highpid thread, we can easily add
-> another item once we have a better source of information.
-
-I'll see if I can get highpid in soon enough that starttime can be
-dropped entirely.  Once it shows up, there will be an API that can
-probably never be removed that isn't namespaced correctly and can't be
-checkpointed.
-
->
->>> +static int kdbus_meta_append_caps(struct kdbus_meta *meta)
->>> +{
->>> +    struct caps {
->>> +            u32 last_cap;
->>> +            struct {
->>> +                    u32 caps[_KERNEL_CAPABILITY_U32S];
->>> +            } set[4];
->>> +    } caps;
->>> +    unsigned int i;
->>> +    const struct cred *cred = current_cred();
->>> +
->>> +    caps.last_cap = CAP_LAST_CAP;
->>> +
->>> +    for (i = 0; i < _KERNEL_CAPABILITY_U32S; i++) {
->>> +            caps.set[0].caps[i] = cred->cap_inheritable.cap[i];
->>> +            caps.set[1].caps[i] = cred->cap_permitted.cap[i];
->>> +            caps.set[2].caps[i] = cred->cap_effective.cap[i];
->>> +            caps.set[3].caps[i] = cred->cap_bset.cap[i];
->>> +    }
+>> Signed-off-by: Eric Auger <eric.auger@linaro.org>
 >>
->> Please leave this in so that I can root every single kdbus-using system.
->>  It'll be lots of fun.
+>> ---
 >>
->> Snark aside, the correct fix is IMO to delete this function entirely.
->> Even if you could find a way to implement it safely (which will be
->> distinctly nontrivial), it seems like a bad idea to begin with.
->
-> Yes, we currently have no way of translating caps from one user
-> namespace to another, which means we cannot allow such an item to cross
-> user namespaces. We can add this functionality later once we have the
-> neccessary APIs.
-
-I still don't expect this metadata item to ever make sense to use.
-The best argument I've heard is that it would enable CAP_SYS_BOOT to
-ask systemd for a reboot.  I think this is bogus:
-
-Realistically, this probably just means that users of /sbin/reboot
-might continue to work as expected.  Except:
-
-1. CAP_SYS_BOOT was never sufficient for /sbin/reboot to reboot
-cleanly -- clean reboots historically went through /dev/initctl.
-
-2. This only makes sense anyway if /sbin/reboot gets updated to speak
-dbus.  So you have a new reboot binary that you want to work as long
-as it ends up with CAP_SYS_BOOT.  But caps are so broken that this
-won't work intelligently no matter what kdbus does.  A user can have
-CAP_SYS_BOOT or not, but whether or not /sbin/reboot inherits that bit
-is almost entirely a function of that user's euid and has very little
-to do with whether that user has CAP_SYS_BOOT.  So you might as well
-just check euid == 0 in the first place.
-
-And setting fscap bits on /sbin/reboot so that a new reboot binary can
-prove to systemd that it has CAP_SYS_BOOT makes no sense.  Either put
-the policy in systemd in the first place, or make /sbin/reboot setuid
-root.
-
-And passing the permitted, inheritable, and bounding sets makes even
-less sense.  Yes, you could pass the entirety of /proc/PID/stat and
-/proc/PID/status, but that's silly, and passing caps around via kdbus
-for diagnostics seems ridiculous.
-
-If you put it in now, it's here to stay even if it proves to be a bad
-idea, whereas if you don't put it in at first, you can always add it
-if a good reason comes up.
-
->
->>> +#ifdef CONFIG_CGROUPS
->>> +static int kdbus_meta_append_cgroup(struct kdbus_meta *meta)
->>> +{
->>> +    char *buf, *path;
->>> +    int ret;
->>> +
->>> +    buf = (char *)__get_free_page(GFP_TEMPORARY | __GFP_ZERO);
->>> +    if (!buf)
->>> +            return -ENOMEM;
->>> +
->>> +    path = task_cgroup_path(current, buf, PAGE_SIZE);
+>> v2 -> v3:
+>> - rework vfio kvm device documentation
+>> - reword commit message and title
+>> - add subindex in kvm_arch_forwarded_irq to be closer to VFIO API
+>> - forwarding state can only be changed with VFIO IRQ signaling is off
 >>
->> This may have strange interactions with cgroupns.  It's fixable, though,
->> but only once you implement translation at receive time, and I think
->> you'll have to do that to get any of this to work right.
->
-> Yes, agreed. We'll add translation to this item once cgroup namespaces
-> are in place. Until then, we'll expose the same information as other
-> parts of the Linux API already do.
-
-I don't expect this to become a problem.
-
->
->>> +#ifdef CONFIG_AUDITSYSCALL
->>> +static int kdbus_meta_append_audit(struct kdbus_meta *meta,
->>> +                               const struct kdbus_domain *domain)
->>> +{
->>> +    struct kdbus_audit audit;
->>> +
->>> +    audit.loginuid = from_kuid_munged(domain->user_namespace,
->>> +                                      audit_get_loginuid(current));
->>> +    audit.sessionid = audit_get_sessionid(current);
->>> +
->>> +    return kdbus_meta_append_data(meta, KDBUS_ITEM_AUDIT,
->>> +                                  &audit, sizeof(audit));
+>> v1 -> v2:
+>> - struct kvm_arch_forwarded_irq moved from arch/arm/include/uapi/asm/kvm.h
+>>   to include/uapi/linux/kvm.h
+>>   also irq_index renamed into index and guest_irq renamed into gsi
+>> - ASSIGN/DEASSIGN renamed into FORWARD/UNFORWARD
+>> ---
+>>  Documentation/virtual/kvm/devices/vfio.txt | 34 ++++++++++++++++++++++++------
+>>  include/uapi/linux/kvm.h                   | 10 +++++++++
+>>  2 files changed, 38 insertions(+), 6 deletions(-)
 >>
->> So *that's* what audit means.  Please document this and consider
->> renaming it to something like AUDIT_LOGINUID_AND_SESSIONID.
->
-> The documentation was indeed bogus and is fixed now, along with man
-> other details. Thanks for spotting this!
-
-:)
-
-
->
->>> +#ifdef CONFIG_SECURITY
->>> +static int kdbus_meta_append_seclabel(struct kdbus_meta *meta)
->>> +{
->>> +    u32 len, sid;
->>> +    char *label;
->>> +    int ret;
->>> +
->>> +    security_task_getsecid(current, &sid);
->>> +    ret = security_secid_to_secctx(sid, &label, &len);
->>> +    if (ret == -EOPNOTSUPP)
->>> +            return 0;
->>> +    if (ret < 0)
->>> +            return ret;
->>> +
->>> +    if (label && len > 0)
->>> +            ret = kdbus_meta_append_data(meta, KDBUS_ITEM_SECLABEL,
->>> +                                         label, len);
+>> diff --git a/Documentation/virtual/kvm/devices/vfio.txt b/Documentation/virtual/kvm/devices/vfio.txt
+>> index ef51740..f7aff29 100644
+>> --- a/Documentation/virtual/kvm/devices/vfio.txt
+>> +++ b/Documentation/virtual/kvm/devices/vfio.txt
+>> @@ -4,15 +4,24 @@ VFIO virtual device
+>>  Device types supported:
+>>    KVM_DEV_TYPE_VFIO
+>>  
+>> -Only one VFIO instance may be created per VM.  The created device
+>> -tracks VFIO groups in use by the VM and features of those groups
+>> -important to the correctness and acceleration of the VM.  As groups
+>> -are enabled and disabled for use by the VM, KVM should be updated
+>> -about their presence.  When registered with KVM, a reference to the
+>> -VFIO-group is held by KVM.
+>> +Only one VFIO instance may be created per VM.
+>> +
+>> +The created device tracks VFIO groups in use by the VM and features
+>> +of those groups important to the correctness and acceleration of
+>> +the VM.  As groups are enabled and disabled for use by the VM, KVM
+>> +should be updated about their presence.  When registered with KVM,
+>> +a reference to the VFIO-group is held by KVM.
+>> +
+>> +The device also tracks & enable VFIO device forwarded IRQs, if any.
+> 
+> s/tracks & enable/tracks and enables/
+ok
+> 
+>> +A physical forwarded IRQ is directly completed by the guest. This
+>> +requires HW support in the interrupt controller which must be able
+>> +to automatically complete the physical IRQ when it detects the guest
+>> +has completed the corresponding virtual IRQ. The modality sometimes
+>> +is named direct EOI.
+> 
+> this last sentence is a bit floating out there; perhaps you want to be
+> more specific and say what it is on ARM.
+Well this is naming some people used at the KVM forum. I thought this
+was something known on other archs but I can drop this comment.
+> 
+>>  
+>>  Groups:
+>>    KVM_DEV_VFIO_GROUP
+>> +  KVM_DEV_VFIO_DEVICE
+>>  
+>>  KVM_DEV_VFIO_GROUP attributes:
+>>    KVM_DEV_VFIO_GROUP_ADD: Add a VFIO group to VFIO-KVM device tracking
+>> @@ -20,3 +29,16 @@ KVM_DEV_VFIO_GROUP attributes:
+>>  
+>>  For each, kvm_device_attr.addr points to an int32_t file descriptor
+>>  for the VFIO group.
+>> +
+>> +KVM_DEV_VFIO_DEVICE attributes:
+>> +  KVM_DEV_VFIO_DEVICE_FORWARD_IRQ: set a VFIO device IRQ as forwarded
+>> +  KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ: set a VFIO device IRQ as not forwarded
+>> +
+>> +For each, kvm_device_attr.addr points to a kvm_arch_forwarded_irq struct.
+>> +
+>> +The forwarded state can only be changed when the VFIO signaling mechanism
+>> +for this physical IRQ is not set. In other words, forwarding must be
+>> +activated before VFIO_DEVICE_SET_IRQS has been called to trigger the IRQ
+>> +or associate an eventfd to it. Unforwarding can only be called while the
+>> +signaling has been disabled with VFIO_DEVICE_SET_IRQS. If this condition is
+>> +not satisfied, the command returns an -EBUSY.
+> 
+> s/command/ioctl/
+ok
+> 
+>> diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+>> index 6076882..a269a42 100644
+>> --- a/include/uapi/linux/kvm.h
+>> +++ b/include/uapi/linux/kvm.h
+>> @@ -946,6 +946,9 @@ struct kvm_device_attr {
+>>  #define  KVM_DEV_VFIO_GROUP			1
+>>  #define   KVM_DEV_VFIO_GROUP_ADD			1
+>>  #define   KVM_DEV_VFIO_GROUP_DEL			2
+>> +#define  KVM_DEV_VFIO_DEVICE			2
+>> +#define   KVM_DEV_VFIO_DEVICE_FORWARD_IRQ			1
+>> +#define   KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ			2
+>>  
+>>  enum kvm_device_type {
+>>  	KVM_DEV_TYPE_FSL_MPIC_20	= 1,
+>> @@ -963,6 +966,13 @@ enum kvm_device_type {
+>>  	KVM_DEV_TYPE_MAX,
+>>  };
+>>  
+>> +struct kvm_arch_forwarded_irq {
+>> +	__u32 fd; /* file desciptor of the VFIO device */
+>> +	__u32 index; /* VFIO device IRQ index */
+>> +	__u32 subindex; /* VFIO device IRQ subindex */
+>> +	__u32 gsi; /* gsi, ie. virtual IRQ number */
+>> +};
+>> +
+>>  /*
+>>   * ioctls for VM fds
+>>   */
+>> -- 
+>> 1.9.1
 >>
->> This thing needs a clear, valid use case.  I think that the use case
->> should document how non-enforcing mode is supposed to work, too.
->
-> kdbus just passes the seclabel along, if people want to use this for
-> security checks, then they need to call into libselinux, and should do
-> that by taking the enforcing mode into consideration. This is already
-> done in a lot of software that way.
->
->> Also, there should be a justification for why the LSM hooks by
->> themselves aren't good enough to remove the need for this.
->
-> SELinux and other MACs might want to do additional per-service security
-> checks. For example, a service manager might want to check the security
-> label of a service file against the security label of the client process
-> using the SELinux database before allow access. For this, we need to be
-> able to pass the client's security label race-free to libselinux so that
-> it can make its decision.
+> 
+> otherwise this looks reasonable.
+thanks
+Eric
+> 
 
-Yeah, but what happens on systems that use a different LSM?  And isn't
-the point of the new LSM kdbus hooks to do this automatically without
-userspace's help?
-
-Admittedly, I don't see much of a problem with this feature existing,
-as long as the non-selinux people are okay with it.
-
->
-> I've added the above to the documentation now.
->
->
->
-> Thanks for your review again - much appreciated!
-
-And thanks for addressing most of the issues.  The code is starting to
-look much better to me.
-
---Andy
