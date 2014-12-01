@@ -1,104 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932132AbaLAStf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 13:49:35 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:63011 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753934AbaLAStc (ORCPT
+	id S932165AbaLASvp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 13:51:45 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:55892 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752771AbaLASvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 13:49:32 -0500
+	Mon, 1 Dec 2014 13:51:44 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Stefan Agner <stefan@agner.ch>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "linux@roeck-us.net" <linux@roeck-us.net>,
+        "sre@kernel.org" <sre@kernel.org>, "fkan@apm.com" <fkan@apm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] power: reset: read priority from device tree
+Date: Mon, 01 Dec 2014 19:50:40 +0100
+Message-ID: <3594295.ivTLMMcK6I@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141201174100.GC22708@leverpostej>
+References: <1417453389-1588-1-git-send-email-stefan@agner.ch> <e5c5a44c84b95c4e48ed01c4dcffd35a@agner.ch> <20141201174100.GC22708@leverpostej>
 MIME-Version: 1.0
-In-Reply-To: <1416901802-24211-39-git-send-email-jiang.liu@linux.intel.com>
-References: <1416901802-24211-1-git-send-email-jiang.liu@linux.intel.com> <1416901802-24211-39-git-send-email-jiang.liu@linux.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 1 Dec 2014 11:49:11 -0700
-Message-ID: <CAErSpo7-GezRLKe4hTAm=KhYHUw6zggi+4LRXjh25K-f+_hAng@mail.gmail.com>
-Subject: Re: [Patch Part3 v4 38/38] x86, irq: Add kernel parameter
- vector_alloc to set CPU vector allocation policy
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Jonathan Corbet <corbet@lwn.net>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Daniel J Blueman <daniel@numascale.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:me9OByuvrgEdVjfq92Y3NCVfH/LUa13QjkXLjQvYo6R
+ B2z7vzCkpuKAbQWBgDgSMQ2MQR0KiqaWFMK1olwtqbmboDNPfR
+ HIeY+8A+wfOBGWiUk8TnAk2A15pJZWjrIcVzcEouaLuiFUHXlG
+ LrwhepP0kZNlWbZNOo/3DzNwRln8MIf2gMAlcFG7ARw35N+5fA
+ 1aPG/si9ifDmZ3DZab3M2YhGdegTQ90yjv2+peHuThC4inP8Ql
+ LQMGe55zG827MEoVvsUWVKAIoucak8P4zhBI5pRUydzFBfvP/5
+ ePsRhFmXsi5dLMu1c8XMbGLbIxiav+dHmJ4l1lHX4+pGHw2LfV
+ Q2KCNcEx9lzze00FIdmI=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 12:50 AM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
-> Parameter vector_alloc should be set to an integer with:
-> bit 0:  enable allocating CPU vector from CPUs on device local node.
->         That's to allocate from cpumask_of_node(irq_data->node).
-> bit 1: enable the default policy, which is to allocate from
->        apic->target_cpus().
->
-> When allocating vectors, it tries all enabled policies from lower bit
-> position to higher bit position.
->
-> This option could be use to optimize interrupt distribution on large
-> system such as NumaChip etc.
+On Monday 01 December 2014 17:41:00 Mark Rutland wrote:
+> Otherwise, I would imagine that most systems have a single preferred
+> mechanism with some possible fallback(s), for which a single
+> preferred-poweroff property might suffice, and has better interaction
+> w.r.t. priority (in that it should _always_ be tried first). Even that's
+> difficult to reconcile with FW bindings though, especially EFI (which we
+> sometimes must use in preference for variable storage and capsule
+> updates).
 
-Why can't we figure this out automatically?  Having a kernel parameter
-is a pain in the neck for users.
+The preferred-poweroff property sounds better to me, too. I can see
+two ways of doing that though, and I'm not sure which one you mean.
+Would you put that as a bool property into the device that does the reboot,
+or would you put it as reference into the /chosen or /aliases node?
 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> Cc: Daniel J Blueman <daniel@numascale.com>
-> ---
->  Documentation/kernel-parameters.txt |    6 ++++++
->  arch/x86/kernel/apic/vector.c       |   11 +++++++++++
->  2 files changed, 17 insertions(+)
->
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 4c81a860cc2b..a175c5016954 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -3709,6 +3709,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->         vector=         [IA-64,SMP]
->                         vector=percpu: enable percpu vector domain
->
-> +       vector_alloc=   [x86,SMP]
-> +                       vector_alloc=policy: policy is a bitmap, bit 0
-> +                       for allocating CPU vector from CPUs on device local
-> +                       node; bit 1 for the default policy to allocating from
-> +                       apic->target_cpus(). All higher bits are reserved.
-> +
->         video=          [FB] Frame buffer configuration
->                         See Documentation/fb/modedb.txt.
->
-> diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
-> index 16de8906ee1e..1158843551c7 100644
-> --- a/arch/x86/kernel/apic/vector.c
-> +++ b/arch/x86/kernel/apic/vector.c
-> @@ -79,6 +79,17 @@ void set_vector_alloc_policy(unsigned int policy)
->                 x86_vector_alloc_policy = policy | X86_VECTOR_POL_CALLER;
->  }
->
-> +static int __init apic_parse_vector_policy(char *str)
-> +{
-> +       int policy;
-> +
-> +       if (get_option(&str, &policy) == 1)
-> +               set_vector_alloc_policy(policy);
-> +
-> +       return 1;
-> +}
-> +__setup("vector_alloc=", apic_parse_vector_policy);
-> +
->  static struct apic_chip_data *alloc_apic_chip_data(int node)
->  {
->         struct apic_chip_data *data;
-> --
-> 1.7.10.4
->
+I think the latter would be better as it avoids any ambiguity, but
+either way would work.
+
+	Arnd
