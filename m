@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499AbaLANUF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 08:20:05 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:44067 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752934AbaLANUD (ORCPT
+	id S1753523AbaLANYn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 08:24:43 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:34434 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693AbaLANYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 08:20:03 -0500
-Message-ID: <547C6AE0.80808@arm.com>
-Date: Mon, 01 Dec 2014 13:19:28 +0000
-From: Andrew Jackson <Andrew.Jackson@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 1 Dec 2014 08:24:42 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+CC: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 1/4] ARM: at91/defconfig: add the XDMA driver
+Date: Mon, 1 Dec 2014 14:24:37 +0100
+Message-ID: <eb931e7c5534cd949ba61307f0380826e62ceb2c.1417440150.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 2.1.3
 MIME-Version: 1.0
-To: Jean-Francois Moine <moinejf@free.fr>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Dave Airlie <airlied@gmail.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] drm: i2c: tda998x: Retry fetching the EDID if it fails
- first time.
-References: <546B84C6.3090809@arm.com>	<20141128091905.3e491c39@armhf>	<54783A2F.5010405@arm.com> <20141129114102.02366857@armhf>
-In-Reply-To: <20141129114102.02366857@armhf>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/14 10:41, Jean-Francois Moine wrote:
-> On Fri, 28 Nov 2014 09:02:39 +0000
-> Andrew Jackson <Andrew.Jackson@arm.com> wrote:
-> 
->>> It seems that your patch is deprecated by Laurent Pinchart's
->>> 	[PATCH] drm: tda998x: Use drm_do_get_edid()
->>> http://lists.freedesktop.org/archives/dri-devel/2014-November/072906.html
->>>   
->>
->> Thank you for the heads-up, I'd not seen that.  I'll consider how my patch might be modified to suit the new infrastructure.
-> 
-> You don't need any patch: drm_do_get_edid() already loops on reading
-> the EDID.
-> 
+Add the Atmel eXtended DMA Controller driver option. This driver is first used
+on SAMA5D4 SoCs and only relevant in sama5_defconfig file.
 
-Thank you again: that saves me work!
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/configs/sama5_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-   Andrew
+diff --git a/arch/arm/configs/sama5_defconfig b/arch/arm/configs/sama5_defconfig
+index 12e1fcbc9a2b..d1a2ee5b7b50 100644
+--- a/arch/arm/configs/sama5_defconfig
++++ b/arch/arm/configs/sama5_defconfig
+@@ -177,6 +177,7 @@ CONFIG_LEDS_TRIGGER_GPIO=y
+ CONFIG_RTC_CLASS=y
+ CONFIG_RTC_DRV_AT91RM9200=y
+ CONFIG_DMADEVICES=y
++CONFIG_AT_XDMAC=y
+ # CONFIG_IOMMU_SUPPORT is not set
+ CONFIG_IIO=y
+ CONFIG_AT91_ADC=y
+-- 
+2.1.3
+
