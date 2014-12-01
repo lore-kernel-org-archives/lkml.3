@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662AbaLAHeM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 02:34:12 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:6966 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483AbaLAHeK (ORCPT
+	id S1752709AbaLAHif (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 02:38:35 -0500
+Received: from regular1.263xmail.com ([211.150.99.130]:44899 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204AbaLAHid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 02:34:10 -0500
-X-IronPort-AV: E=Sophos;i="5.07,492,1413270000"; 
-   d="scan'208";a="51929533"
-Message-ID: <547C19ED.10201@broadcom.com>
-Date: Mon, 1 Dec 2014 08:34:05 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Felix Fietkau" <nbd@openwrt.org>,
-        Ben Greear <greearb@candelatech.com>
-Subject: Re: linux-next: manual merge of the driver-core tree with the net-next
- tree
-References: <20141201181933.6dfaad66@canb.auug.org.au>
-In-Reply-To: <20141201181933.6dfaad66@canb.auug.org.au>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Dec 2014 02:38:33 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: jay.xu@rock-chips.com
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: jay.xu@rock-chips.com
+X-UNIQUE-TAG: <6e9647e25895a7f3b0b9ee488a9e44a0>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Jianqun Xu <jay.xu@rock-chips.com>
+To: heiko@sntech.de, linux@arm.linux.org.uk, grant.likely@linaro.org,
+        robh+dt@kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-rockchip@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Jianqun Xu <jay.xu@rock-chips.com>
+Subject: [PATCH 1/2] rockchip: efuse: add documentation for rk3288 efuse driver
+Date: Mon,  1 Dec 2014 15:34:40 +0800
+Message-Id: <1417419281-9243-2-git-send-email-jay.xu@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417419281-9243-1-git-send-email-jay.xu@rock-chips.com>
+References: <1417419281-9243-1-git-send-email-jay.xu@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01-12-14 08:19, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the driver-core tree got a conflict in
-> drivers/net/wireless/ath/ath9k/debug.c between commits 70e535ed0029
-> ("ath9k: clean up debugfs print of reset causes"), 7b8aaead958e
-> ("ath9k: restart hardware after noise floor calibration failure") and
-> 325e18817668 ("ath9k: fix misc debugfs when not using chan context")
-> from the net-next tree and commit 631bee257bd5 ("ath: use seq_file api
-> for ath9k debugfs files") from the driver-core tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
-> 
-> Greg, I am not sure why those 2 commits are even in your tree.  Do they
-> depend on something else in your tree?
+In RK3288, there are two eFuse. One is organized as 32bits by 8 one-time programmable
+electrical fuses with random access interface, and the other is organized as 32bits by 32
+one-time programmable electrical fuses.
+The 32x32 eFuse can only be accessed by APB bus when IO_SECURITYsel is high.
 
-They do. The three commits below are related:
+Signed-off-by: Jianqun Xu <jay.xu@rock-chips.com>
+---
+ .../devicetree/bindings/fuse/rockchip,rk3288-efuse.txt     | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/fuse/rockchip,rk3288-efuse.txt
 
-d32394f ath: ath9k: use debugfs_create_devm_seqfile() helper for
-seq_file entrie
-631bee2 ath: use seq_file api for ath9k debugfs files
-98210b7 debugfs: add helper function to create device related seq_file
+diff --git a/Documentation/devicetree/bindings/fuse/rockchip,rk3288-efuse.txt b/Documentation/devicetree/bindings/fuse/rockchip,rk3288-efuse.txt
+new file mode 100644
+index 0000000..82af730
+--- /dev/null
++++ b/Documentation/devicetree/bindings/fuse/rockchip,rk3288-efuse.txt
+@@ -0,0 +1,14 @@
++ROCKCHIP RK3288 efuse block.
++
++Required properties:
++- compatible : should be:
++	"rockchip,rk3288-efuse"
++- reg: Should contain 1 entry: the entry gives the physical address and length
++       of the fuse registers.
++
++Example:
++
++	efuse: efuse@ffb40000 {
++		compatible = "rockchip,rk3288-efuse";
++		reg = <0xffb40000 0x10000>;
++	};
+-- 
+1.9.1
 
-The ath patches were made to provide example of using the new helper
-function and get some idea about code savings. Greg and John discussed
-who would take them. I noticed other ath changes in net-next so I kinda
-expected this email ;-)
 
-Regards,
-Arend
