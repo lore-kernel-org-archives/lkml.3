@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932488AbaLAU2l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 15:28:41 -0500
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:48021 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932268AbaLAU2i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 15:28:38 -0500
-Message-ID: <547ccf74.a5198c0a.25de.26d9@mx.google.com>
-Date: Mon, 1 Dec 2014 18:28:31 -0200
-From: =?UTF-8?B?RMOibmllbA==?= Fraga <fragabr@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-In-Reply-To: <20141201191431.GA17385@linux.vnet.ibm.com>
-References: <CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>
-	<20141126024032.GA13246@redhat.com>
-	<20141126225745.GA30346@redhat.com>
-	<CA+55aFz-JUX6CU-aO+cwLHYtH7BA+dgyUnEGoy8T4S62gEDFpA@mail.gmail.com>
-	<20141127225637.GA24019@redhat.com>
-	<m5dart$co$1@ger.gmane.org>
-	<CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
-	<547b8a45.6e608c0a.20f9.1002@mx.google.com>
-	<CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
-	<547bbe36.48548c0a.105c.779c@mx.google.com>
-	<20141201191431.GA17385@linux.vnet.ibm.com>
-Organization: http://www.youtube.com/DanielFragaBR
-X-Mailer: Claws Mail 3.11.1-9-g1f531c (GTK+ 2.24.25; x86_64-unknown-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S932504AbaLAU3U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 15:29:20 -0500
+Received: from s3.sipsolutions.net ([5.9.151.49]:60008 "EHLO sipsolutions.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932158AbaLAU3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 15:29:18 -0500
+Message-ID: <1417465745.28610.0.camel@sipsolutions.net>
+Subject: Re: net-PA Semi: Deletion of unnecessary checks before the function
+ call "pci_dev_put"
+From: Johannes Berg <johannes@sipsolutions.net>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Lino Sanfilippo <LinoSanfilippo@gmx.de>, Olof Johansson <olof@lixom.net>,
+        netdev@vger.kernel.org, backports@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>
+Date: Mon, 01 Dec 2014 21:29:05 +0100
+In-Reply-To: <547BC5AD.6090500@users.sourceforge.net> (sfid-20141201_023451_153915_6CFB474F)
+References: <5307CAA2.8060406@users.sourceforge.net>
+	 <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
+	 <530A086E.8010901@users.sourceforge.net>
+	 <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
+	 <530A72AA.3000601@users.sourceforge.net>
+	 <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
+	 <530B5FB6.6010207@users.sourceforge.net>
+	 <alpine.DEB.2.10.1402241710370.2074@hadrien>
+	 <530C5E18.1020800@users.sourceforge.net>
+	 <alpine.DEB.2.10.1402251014170.2080@hadrien>
+	 <530CD2C4.4050903@users.sourceforge.net>
+	 <alpine.DEB.2.10.1402251840450.7035@hadrien>
+	 <530CF8FF.8080600@users.sourceforge.net>
+	 <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+	 <530DD06F.4090703@users.sourceforge.net>
+	 <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+	 <5317A59D.4@users.sourceforge.net> <547A09B1.9090102@users.sourceforge.net>
+	 <547B579F.10709@gmx.de> <547BC5AD.6090500@users.sourceforge.net>
+	 (sfid-20141201_023451_153915_6CFB474F)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Dec 2014 11:14:31 -0800
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On Mon, 2014-12-01 at 02:34 +0100, SF Markus Elfring wrote:
 
-> If it would help to have !CONFIG_TREE_PREEMPT_RCU with CONFIG_PREEMPT=y,
-> please let me know and I will create a patch that forces this.
-> (Not mainline material, but if it helps with debug...)
+> > Some of those NULL pointer checks on input parameters may have been
+> > added subsequently to functions. So there may be older kernel versions
+> > out there in which those checks dont exists in some cases. If some of
+> > the now "cleaned up" code is backported to such a kernel chances are
+> > good that those missing checks are overseen. And then neither caller nor
+> > callee is doing the NULL pointer check.
 
-	Hi Paul. Please, I'd like the patch, because without
-preemption, I'm unable to trigger this bug.
+> I assume that a few backporters can tell you more about their corresponding
+> software development experiences.
+> http://www.do-not-panic.com/2014/04/automatic-linux-kernel-backporting-with-coccinelle.html
 
-	Thanks.
+In such cases we just provide an appropriate wrapper and replace callers
+of the original function by callers of the wrapper, typically with a
+#define.
 
--- 
-Linux 3.17.0: Shuffling Zombie Juror
-http://www.youtube.com/DanielFragaBR
-http://exchangewar.info
-Bitcoin: 12H6661yoLDUZaYPdah6urZS5WiXwTAUgL
+So this kind of evolution is no problem for the (automated) backports
+using the backports project - although it can be difficult to detect
+such a thing is needed.
+
+johannes
+
