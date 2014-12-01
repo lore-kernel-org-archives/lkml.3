@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251AbaLAQFu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 11:05:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44042 "EHLO mx1.redhat.com"
+	id S932278AbaLAQFz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 11:05:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52376 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932205AbaLAQFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 11:05:43 -0500
-Date: Mon, 1 Dec 2014 18:05:09 +0200
+	id S932205AbaLAQFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 11:05:52 -0500
+Date: Mon, 1 Dec 2014 18:05:25 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Jason Wang <jasowang@redhat.com>,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org
-Subject: [PATCH v8 29/50] vhost: make features 64 bit
-Message-ID: <1417449619-24896-30-git-send-email-mst@redhat.com>
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: [PATCH v8 32/50] vhost: switch to __get/__put_user exclusively
+Message-ID: <1417449619-24896-33-git-send-email-mst@redhat.com>
 References: <1417449619-24896-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -28,41 +25,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to use bit 32 for virtio 1.0.
-Make vhost_has_feature bool to avoid discarding high bits.
+Most places in vhost can use __get/__put_user rather than
+get/put_user since addresses are pre-validated.
+This should be good for performance, but this also
+will help make code sparse-clean: get/put_user macros
+don't play well with __virtioXX bitwise tags.
+Switch to get/put_user to __ variants everywhere in vhost.
+There's one exception - for consistency switch that
+as well, and add an explicit access_ok check.
 
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Reviewed-by: Jason Wang <jasowang@redhat.com>
 ---
- drivers/vhost/vhost.h | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/vhost/vhost.c | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index 3eda654..55a95c9 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -106,7 +106,7 @@ struct vhost_virtqueue {
- 	/* Protected by virtqueue mutex. */
- 	struct vhost_memory *memory;
- 	void *private_data;
--	unsigned acked_features;
-+	u64 acked_features;
- 	/* Log write descriptors */
- 	void __user *log_base;
- 	struct vhost_log *log;
-@@ -172,8 +172,8 @@ enum {
- 			 (1ULL << VHOST_F_LOG_ALL),
- };
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index c90f437..6a40837 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -1038,6 +1038,7 @@ static int vhost_update_avail_event(struct vhost_virtqueue *vq, u16 avail_event)
  
--static inline int vhost_has_feature(struct vhost_virtqueue *vq, int bit)
-+static inline bool vhost_has_feature(struct vhost_virtqueue *vq, int bit)
+ int vhost_init_used(struct vhost_virtqueue *vq)
  {
--	return vq->acked_features & (1 << bit);
-+	return vq->acked_features & (1ULL << bit);
++	u16 last_used_idx;
+ 	int r;
+ 	if (!vq->private_data)
+ 		return 0;
+@@ -1046,7 +1047,13 @@ int vhost_init_used(struct vhost_virtqueue *vq)
+ 	if (r)
+ 		return r;
+ 	vq->signalled_used_valid = false;
+-	return get_user(vq->last_used_idx, &vq->used->idx);
++	if (!access_ok(VERIFY_READ, &vq->used->idx, sizeof vq->used->idx))
++		return -EFAULT;
++	r = __get_user(last_used_idx, &vq->used->idx);
++	if (r)
++		return r;
++	vq->last_used_idx = last_used_idx;
++	return 0;
  }
- #endif
+ EXPORT_SYMBOL_GPL(vhost_init_used);
+ 
+@@ -1404,7 +1411,7 @@ int vhost_add_used_n(struct vhost_virtqueue *vq, struct vring_used_elem *heads,
+ 
+ 	/* Make sure buffer is written before we update index. */
+ 	smp_wmb();
+-	if (put_user(vq->last_used_idx, &vq->used->idx)) {
++	if (__put_user(vq->last_used_idx, &vq->used->idx)) {
+ 		vq_err(vq, "Failed to increment used idx");
+ 		return -EFAULT;
+ 	}
+@@ -1449,7 +1456,7 @@ static bool vhost_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+ 	if (unlikely(!v))
+ 		return true;
+ 
+-	if (get_user(event, vhost_used_event(vq))) {
++	if (__get_user(event, vhost_used_event(vq))) {
+ 		vq_err(vq, "Failed to get used event idx");
+ 		return true;
+ 	}
 -- 
 MST
 
