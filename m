@@ -1,170 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413AbaLALw7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 06:52:59 -0500
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:62218 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753381AbaLALw6 (ORCPT
+	id S1753428AbaLALyG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 06:54:06 -0500
+Received: from lucky1.263xmail.com ([211.157.147.133]:36008 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013AbaLALyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 06:52:58 -0500
-Message-ID: <1417434775.30245.29.camel@x220>
-Subject: Re: [PATCH 1/4] ARM: at91: remove at91sam9263 legacy board support
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Date: Mon, 01 Dec 2014 12:52:55 +0100
-In-Reply-To: <cf26d39a4a251662dbc363092b319b788d223a7b.1416392687.git.nicolas.ferre@atmel.com>
-References: <cover.1416392687.git.nicolas.ferre@atmel.com>
-	 <cf26d39a4a251662dbc363092b319b788d223a7b.1416392687.git.nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Dec 2014 11:52:55.0179 (UTC) FILETIME=[57E995B0:01D00D5D]
-X-RcptDomain: vger.kernel.org
+	Mon, 1 Dec 2014 06:54:04 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: l.stach@pengutronix.de
+X-SENDER-IP: 121.15.173.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <4d9529808b8b167af6f177870c9b4a57>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <547C56D2.5030302@rock-chips.com>
+Date: Mon, 01 Dec 2014 19:53:54 +0800
+From: Andy Yan <andy.yan@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Philipp Zabel <p.zabel@pengutronix.de>
+CC: Mark Rutland <mark.rutland@arm.com>, heiko@sntech.de, airlied@linux.ie,
+        dri-devel@lists.freedesktop.org, ykk@rock-chips.com,
+        devel@driverdev.osuosl.org, Pawel Moll <pawel.moll@arm.com>,
+        linux-rockchip@lists.infradead.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Dave Airlie <airlied@redhat.com>, jay.xu@rock-chips.com,
+        devicetree@vger.kernel.org, Zubair.Kakakhel@imgtec.com,
+        Arnd Bergmann <arnd@arndb.de>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Inki Dae <inki.dae@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        Sean Paul <seanpaul@chromium.org>, rmk+kernel@arm.linux.org.uk,
+        mark.yao@rock-chips.com, fabio.estevam@freescale.com,
+        Josh Boyer <jwboyer@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, djkurtz@google.com,
+        Kumar Gala <galak@codeaurora.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Lucas Stach <l.stach@pengutronix.de>
+Subject: Re: [PATCH v14 05/12] drm: imx: imx-hdmi: move imx-hdmi to bridge/dw_hdmi
+References: <1417432770-12719-1-git-send-email-andy.yan@rock-chips.com> <1417433086-12964-1-git-send-email-andy.yan@rock-chips.com> <1417434133.4624.9.camel@pengutronix.de>
+In-Reply-To: <1417434133.4624.9.camel@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-11-19 at 11:31 +0100, Nicolas Ferre wrote:
-> Remove legacy support for at91sam9rl boards.
-> This include board files removal plus all legacy code for non DT boards
-> support.
-> Use the Device Tree for running this board with newer kernels.
-> 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
+Hi Philipp:
 
-There's some further cleanup possible after this patch. I noticed that
-when it landed in today's linux-next (ie, next-20141201) as commit
-4403ac46edcd ("ARM: at91: remove at91sam9263 legacy board support").
+On 2014年12月01日 19:42, Philipp Zabel wrote:
+> Hi Andy,
+>
+> Am Montag, den 01.12.2014, 19:24 +0800 schrieb Andy Yan:
+> [...]
+>> diff --git a/include/drm/bridge/dw_hdmi.h b/include/drm/bridge/dw_hdmi.h
+>> new file mode 100644
+>> index 0000000..1bbf3ca
+>> --- /dev/null
+>> +++ b/include/drm/bridge/dw_hdmi.h
+>> @@ -0,0 +1,57 @@
+>> +/*
+>> + * Copyright (C) 2011 Freescale Semiconductor, Inc.
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License as published by
+>> + * the Free Software Foundation; either version 2 of the License, or
+>> + * (at your option) any later version.
+>> + */
+>> +
+>> +#ifndef __DW_HDMI__
+>> +#define __DW_HDMI__
+>> +
+>> +#include <drm/drmP.h>
+>> +
+>> +enum {
+>> +	RES_8,
+>> +	RES_10,
+>> +	RES_12,
+>> +	RES_MAX,
+>> +};
+>> +
+>> +enum dw_hdmi_devtype {
+>> +	IMX6Q_HDMI,
+>> +	IMX6DL_HDMI,
+>> +};
+>> +
+>> +struct mpll_config {
+>> +	unsigned long mpixelclock;
+>> +	struct {
+>> +		u16 cpce;
+>> +		u16 gmp;
+>> +	} res[RES_MAX];
+>> +};
+>> +
+>> +struct curr_ctrl {
+>> +	unsigned long mpixelclock;
+>> +	u16 curr[RES_MAX];
+>> +};
+>> +
+>> +struct sym_term {
+>> +	unsigned long mpixelclock;
+>> +	u16 sym_ctr;    /*clock symbol and transmitter control*/
+>> +	u16 term;       /*transmission termination value*/
+>> +};
+> since this is going to be used by multiple drivers, the enums and
+> structs should all be properly namespaced. How about DW_HDMI_RES_x,
+> struct dw_hdmi_mpll_config, struct dw_hdmi_curr_ctrl, and struct
+> dw_hdmi_sym_term?
 
->  arch/arm/configs/at91sam9263_defconfig   |  151 ---
->  arch/arm/mach-at91/Kconfig.non_dt        |   21 -
->  arch/arm/mach-at91/Makefile              |    4 -
->  arch/arm/mach-at91/at91sam9263.c         |  399 --------
->  arch/arm/mach-at91/at91sam9263_devices.c | 1538 ------------------------------
->  arch/arm/mach-at91/board-sam9263ek.c     |  493 ----------
->  6 files changed, 2606 deletions(-)
->  delete mode 100644 arch/arm/configs/at91sam9263_defconfig
->  delete mode 100644 arch/arm/mach-at91/at91sam9263_devices.c
->  delete mode 100644 arch/arm/mach-at91/board-sam9263ek.c
-> 
->[...]
-> diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
-> deleted file mode 100644
-> index cef0e2f57068..000000000000
-> --- a/arch/arm/mach-at91/at91sam9263_devices.c
-> +++ /dev/null
->[...]
-> -/* --------------------------------------------------------------------
-> - *  RTT
-> - * -------------------------------------------------------------------- */
-> -
-> -static struct resource rtt0_resources[] = {
-> -	{
-> -		.start	= AT91SAM9263_BASE_RTT0,
-> -		.end	= AT91SAM9263_BASE_RTT0 + SZ_16 - 1,
-> -		.flags	= IORESOURCE_MEM,
-> -	}, {
-> -		.flags	= IORESOURCE_MEM,
-> -	}, {
-> -		.flags  = IORESOURCE_IRQ,
-> -	}
-> -};
-> -
-> -static struct platform_device at91sam9263_rtt0_device = {
-> -	.name		= "at91_rtt",
-> -	.id		= 0,
-> -	.resource	= rtt0_resources,
-> -};
-> -
-> -static struct resource rtt1_resources[] = {
-> -	{
-> -		.start	= AT91SAM9263_BASE_RTT1,
-> -		.end	= AT91SAM9263_BASE_RTT1 + SZ_16 - 1,
-> -		.flags	= IORESOURCE_MEM,
-> -	}, {
-> -		.flags	= IORESOURCE_MEM,
-> -	}, {
-> -		.flags  = IORESOURCE_IRQ,
-> -	}
-> -};
-> -
-> -static struct platform_device at91sam9263_rtt1_device = {
-> -	.name		= "at91_rtt",
-> -	.id		= 1,
-> -	.resource	= rtt1_resources,
-> -};
-> -
-> -#if IS_ENABLED(CONFIG_RTC_DRV_AT91SAM9)
-> -static void __init at91_add_device_rtt_rtc(void)
-> -{
-> -	struct platform_device *pdev;
-> -	struct resource *r;
-> -
-> -	switch (CONFIG_RTC_DRV_AT91SAM9_RTT) {
+   That sounds good, I will take your advice in PATCH V15.
+   Thanks
+>> +struct dw_hdmi_plat_data {
+>> +	enum dw_hdmi_devtype dev_type;
+>> +	const struct mpll_config *mpll_cfg;
+>> +	const struct curr_ctrl *cur_ctr;
+>> +	const struct sym_term *sym_term;
+>> +};
+>> +
+>> +void dw_hdmi_unbind(struct device *dev, struct device *master, void *data);
+>> +int dw_hdmi_bind(struct device *dev, struct device *master,
+>> +		 void *data, struct drm_encoder *encoder,
+>> +		 const struct dw_hdmi_plat_data *plat_data);
+>> +#endif /* __IMX_HDMI_H__ */
+> regards
+> Philipp
+>
+>
+> _______________________________________________
+> Linux-rockchip mailing list
+> Linux-rockchip@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-rockchip
+>
+>
+>
 
-This and...
-
-> -	case 0:
-> -		/*
-> -		 * The second resource is needed only for the chosen RTT:
-> -		 * GPBR will serve as the storage for RTC time offset
-> -		 */
-> -		at91sam9263_rtt0_device.num_resources = 3;
-> -		at91sam9263_rtt1_device.num_resources = 1;
-> -		pdev = &at91sam9263_rtt0_device;
-> -		r = rtt0_resources;
-> -		break;
-> -	case 1:
-> -		at91sam9263_rtt0_device.num_resources = 1;
-> -		at91sam9263_rtt1_device.num_resources = 3;
-> -		pdev = &at91sam9263_rtt1_device;
-> -		r = rtt1_resources;
-> -		break;
-> -	default:
-> -		pr_err("at91sam9263: only supports 2 RTT (%d)\n",
-> -		       CONFIG_RTC_DRV_AT91SAM9_RTT);
-
-this are the only places were the Kconfig symbol RTC_DRV_AT91SAM9_RTT
-was used. It is useless now. That matches its help text, that reads:
-    This option is only relevant for legacy board support and
-    won't be used when booting a DT board.
-
-> -		return;
-> -	}
-> -
-> -	pdev->name = "rtc-at91sam9";
-> -	r[1].start = AT91SAM9263_BASE_GPBR + 4 * CONFIG_RTC_DRV_AT91SAM9_GPBR;
-> -	r[1].end = r[1].start + 3;
-> -	r[2].start = NR_IRQS_LEGACY + AT91_ID_SYS;
-> -	r[2].end = NR_IRQS_LEGACY + AT91_ID_SYS;
-> -}
-> -#else
-> -static void __init at91_add_device_rtt_rtc(void)
-> -{
-> -	/* Only one resource is needed: RTT not used as RTC */
-> -	at91sam9263_rtt0_device.num_resources = 1;
-> -	at91sam9263_rtt1_device.num_resources = 1;
-> -}
-> -#endif
-> -
-> -static void __init at91_add_device_rtt(void)
-> -{
-> -	at91_add_device_rtt_rtc();
-> -	platform_device_register(&at91sam9263_rtt0_device);
-> -	platform_device_register(&at91sam9263_rtt1_device);
-> -}
-
-Is a patch to remove that symbol from drivers/rtc/Kconfig queued
-somewhere?
-
-
-Paul Bolle
 
