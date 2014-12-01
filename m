@@ -1,78 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667AbaLANhB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 08:37:01 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:21627 "EHLO SMTP.CITRIX.COM"
+	id S1753600AbaLANkK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 08:40:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52299 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752404AbaLANg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 08:36:59 -0500
-X-IronPort-AV: E=Sophos;i="5.07,494,1413244800"; 
-   d="scan'208";a="198060225"
-Message-ID: <547C6EF6.8020604@citrix.com>
-Date: Mon, 1 Dec 2014 13:36:54 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1752596AbaLANkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 08:40:08 -0500
+Message-ID: <547C6F88.9000206@redhat.com>
+Date: Mon, 01 Dec 2014 14:39:20 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Stefan Bader <stefan.bader@canonical.com>,
-        Zoltan Kiss <zoltan.kiss@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>
-CC: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Paul Durrant <paul.durrant@citrix.com>,
-        <xen-devel@lists.xenproject.org>
-Subject: Re: [Xen-devel] [PATCH] xen-netfront: Fix handling packets on compound
- pages with skb_linearize
-References: <1407778343-13622-1-git-send-email-zoltan.kiss@citrix.com> <547C2CFC.7060908@canonical.com>
-In-Reply-To: <547C2CFC.7060908@canonical.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-DLP: MIA2
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: tytso@mit.edu, zatimend@hotmail.co.uk, linux-kernel@vger.kernel.org,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Kees Cook <keescook@chromium.org>, Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH] random: add and use memzero_explicit() for clearing data
+References: <1408996899-4892-1-git-send-email-dborkman@redhat.com> <20141201102529.GA9666@mwanda> <547C4B59.1000807@redhat.com> <20141201112957.GC5048@mwanda> <20141201113815.GD5048@mwanda>
+In-Reply-To: <20141201113815.GD5048@mwanda>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/14 08:55, Stefan Bader wrote:
-> On 11.08.2014 19:32, Zoltan Kiss wrote:
->> There is a long known problem with the netfront/netback interface: if the guest
->> tries to send a packet which constitues more than MAX_SKB_FRAGS + 1 ring slots,
->> it gets dropped. The reason is that netback maps these slots to a frag in the
->> frags array, which is limited by size. Having so many slots can occur since
->> compound pages were introduced, as the ring protocol slice them up into
->> individual (non-compound) page aligned slots. The theoretical worst case
->> scenario looks like this (note, skbs are limited to 64 Kb here):
->> linear buffer: at most PAGE_SIZE - 17 * 2 bytes, overlapping page boundary,
->> using 2 slots
->> first 15 frags: 1 + PAGE_SIZE + 1 bytes long, first and last bytes are at the
->> end and the beginning of a page, therefore they use 3 * 15 = 45 slots
->> last 2 frags: 1 + 1 bytes, overlapping page boundary, 2 * 2 = 4 slots
->> Although I don't think this 51 slots skb can really happen, we need a solution
->> which can deal with every scenario. In real life there is only a few slots
->> overdue, but usually it causes the TCP stream to be blocked, as the retry will
->> most likely have the same buffer layout.
->> This patch solves this problem by linearizing the packet. This is not the
->> fastest way, and it can fail much easier as it tries to allocate a big linear
->> area for the whole packet, but probably easier by an order of magnitude than
->> anything else. Probably this code path is not touched very frequently anyway.
+On 12/01/2014 12:38 PM, Dan Carpenter wrote:
+> On Mon, Dec 01, 2014 at 02:29:57PM +0300, Dan Carpenter wrote:
+>> On Mon, Dec 01, 2014 at 12:04:57PM +0100, Daniel Borkmann wrote:
+>>> Well, BSD has helpers such as bzero_explicit() for such cases to work
+>>> around this, which memzero_explicit() similarly does; see also [1].
+>>>
+>>>    [1] https://gcc.gnu.org/ml/gcc-help/2014-10/msg00059.html
 >>
->> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
->> Cc: Wei Liu <wei.liu2@citrix.com>
->> Cc: Ian Campbell <Ian.Campbell@citrix.com>
->> Cc: Paul Durrant <paul.durrant@citrix.com>
->> Cc: netdev@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org
->> Cc: xen-devel@lists.xenproject.org
-> 
-> This does not seem to be marked explicitly as stable. Has someone already asked
-> David Miller to put it on his stable queue? IMO it qualifies quite well and the
-> actual change should be simple to pick/backport.
+>> We should make memset() a define and call a custom function internally.
+>
+> Or we could specify -fno-builtin-memset like the GCC people suggest.
 
-I think it's a candidate, yes.
-
-Can you expand on the user visible impact of the bug this patch fixes?
-I think it results in certain types of traffic not working (because the
-domU always generates skb's with the problematic frag layout), but I
-can't remember the details.
-
-David
+If there's a better, reliable way, I'm all for it. To me, memzero_explicit()
+seemed like the least intrusive variant doing the job, I'm unsure if globally
+setting -fno-builtin-memset will come with unforeseen side-effects on some
+archs (besides performance-wise).
