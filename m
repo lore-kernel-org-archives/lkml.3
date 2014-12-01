@@ -1,64 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932735AbaLAWeV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 17:34:21 -0500
-Received: from mout.web.de ([212.227.17.11]:62101 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932518AbaLAWeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 17:34:09 -0500
-Message-ID: <547CECC9.1080508@users.sourceforge.net>
-Date: Mon, 01 Dec 2014 23:33:45 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932754AbaLAWea (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 17:34:30 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:49539 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932518AbaLAWe3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 17:34:29 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mark Brown <broonie@kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Ben Zhang <benzh@chromium.org>,
+        alsa-devel <alsa-devel@alsa-project.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Bard Liao <bardliao@realtek.com>,
+        Oder Chiou <oder_chiou@realtek.com>,
+        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
+        flove@realtek.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ASoC: rt5677: Add ACPI device probing
+Date: Mon, 01 Dec 2014 23:55:46 +0100
+Message-ID: <8649298.kjiCI4IipL@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141201221907.GR7712@sirena.org.uk>
+References: <1416034608-24238-1-git-send-email-benzh@chromium.org> <1437951.HUEy7xa933@vostro.rjw.lan> <20141201221907.GR7712@sirena.org.uk>
 MIME-Version: 1.0
-To: Antti Palosaari <crope@iki.fi>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        devel@driverdev.osuosl.org, linux-media@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/2] [media] mn88473: Deletion of an unnecessary check before
- the function call "release_firmware"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <547CEBF5.4040004@users.sourceforge.net>
-In-Reply-To: <547CEBF5.4040004@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:P5BtDMHHIJGGL1DQEzkNaI5+WAFHqC8m66SXRRphVW6Obcthjgo
- KtLD5nceufLxNdSn5TcmFIhoLEDQTRnM/BYC35AaId5w4NoBAjGOAGUtiO9w43WWEm/PAL6
- hB3P6A1qnAzm5ekC2T8vcdQsXHPYB5wvQyHivnm2FkXuTJrX6AG5jjJaiYFY+qdY026RRPV
- ctDXwOwOAULHnYuEgpG3Q==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: multipart/signed; boundary="nextPart2310997.WuvYB3skSH"; micalg="pgp-sha256"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Mon, 1 Dec 2014 22:55:29 +0100
 
-The release_firmware() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+--nextPart2310997.WuvYB3skSH
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="utf-8"
 
-This issue was detected by using the Coccinelle software.
+On Monday, December 01, 2014 10:19:07 PM Mark Brown wrote:
+> On Mon, Dec 01, 2014 at 11:16:31PM +0100, Rafael J. Wysocki wrote:
+> > On Monday, December 01, 2014 05:51:00 PM Mark Brown wrote:
+>=20
+> > > The dream here is that people working on building systems, people=
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/staging/media/mn88473/mn88473.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+> > > working on Windows drivers and people working on Linux drivers wi=
+ll at
+> > > some point be able to collaborate. If we're going to go off and d=
+o our
+> > > own thing for Linux without talking to anyone that's not really a=
+ddressing
+> > > the issue.
+>=20
+> > Well, that's already going on in the DT land, isn't it?  It has bee=
+n going on
+> > for quite a while AFAICS.
+>=20
+> In theory (and where it's actually relevant in practice to at least s=
+ome
+> extent) this stuff is all OS neutral, there's a definite willingness =
+for
+> it to be so.
+>=20
+> > > There's also the option that Windows drivers start using _DSD the=
+mselves
+> > > which is, I understand, the goal towards which the people working=
+ on at
+> > > least audio are heading.
+>=20
+> > Technically, Windows driver writers can evaluate _DSD and handle th=
+e
+> > information the way we do, but I'm not sure if this is really conve=
+nient for
+> > them.
+>=20
+> I'm not sure how convenient it is, though I'm reasonably sure a helpe=
+r
+> library could make it so.
 
-diff --git a/drivers/staging/media/mn88473/mn88473.c b/drivers/staging/media/mn88473/mn88473.c
-index 1659335..52180bb 100644
---- a/drivers/staging/media/mn88473/mn88473.c
-+++ b/drivers/staging/media/mn88473/mn88473.c
-@@ -262,8 +262,7 @@ static int mn88473_init(struct dvb_frontend *fe)
- 
- 	return 0;
- err:
--	if (fw)
--		release_firmware(fw);
-+	release_firmware(fw);
- 
- 	dev_dbg(&client->dev, "failed=%d\n", ret);
- 	return ret;
--- 
-2.1.3
+Well, for that we'd need to find a Windows developer willing to write o=
+ne I suppose ...
+
+> > We use _DSD, because we want drivers to work with DT as well with A=
+CPI without
+> > adding special DT-specific or ACPI-specific code to them.  The peop=
+le who work
+> > on Windows drivers don't have this problem, so as I said, if they c=
+are about
+> > Linux at all, that may be a good enough motivation for them to look=
+ at _DSD,
+> > but if they don't, I honestly don't see why they would do that.
+>=20
+> They care about getting properties out, or at least they should, and =
+in
+> this market many of the device vendors care about Linux at least as m=
+uch
+> as they do Windows (sometimes even more than they care about Windows,=
+
+> there's overlap with the Android market).
+
+OK
+
+> > > Note that all this discussion is pretty much about drivers for si=
+ngle
+> > > devices which can be wired into the system in a flexible manner, =
+even in
+> > > a Windows world you won't vary the device ID.  At present we're q=
+uirking
+> > > on DMI.
+>=20
+> > So the answer to that in my view is: Use _DSD and allocate your own=
+ device IDs
+> > for Windows drivers to bind to.
+>=20
+> Right, so we circle back to the original question about documenting
+> those IDs and _DSD properties.  :)
+
+IDs are allocated by whoever owns the device description (the starting =
+3 or 4
+code letters need to be registered via the UEFI Forum/ASWG).
+
+Properties can be registered with the UEFI Forum via the ASWG too.
+
+> > > > > We also need a way of getting the word out to people that the=
+y should be
+> > > > > doing this (also a problem no matter if we use PRP0001 or som=
+ething UEFI
+> > > > > specific).
+>=20
+> > > > What do you mean by "something UEFI specific"?
+>=20
+> > > Sorry, I mean ACPI specific (UEFI forum).
+>=20
+> > Do you mean a special device ID of some sort, then?
+>=20
+> No, just a regular one.
+>=20
+> > > It's not just the device IDs you need, it's the properties too.
+>=20
+> > I suppose you have some specific examples in mind that I may not be=
+ familiar
+> > with and we may spend an arbitrary amount of time speaking past eac=
+h other. :-)
+>=20
+> Things like Documentation/devicetree/bindings/sound/wm8962.txt (at le=
+ast
+> the optional properties), basically "how is this device wired into th=
+e
+> board" properties.
+>=20
+> > That's where we are today.  Do you have any suggestions on what els=
+e we can do?
+>=20
+> I'd like to see a space where people working with a device can publis=
+h
+> what they've done in terms of firmware binding for it in a manner tha=
+t
+> might work for them; at present it seems like the UEFI forum is the b=
+est
+> place to start doing that, there's the start of a register and proces=
+s
+> for updating it there at least.
+
+That's correct.
+
+=2D-=20
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
+--nextPart2310997.WuvYB3skSH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAABCAAGBQJUfPH3AAoJEILEb/54YlRx0+QQAKI0FQdOWrFD92TWgyRq9ocI
+slSyRM9gkR/nnS59rp4mg79emAUwKnIpD5OFdwrJx8WhSxmIVrymt+lwHwZsN8pk
+SVPywS2FDVQoSbFXLjDuxemCVal++Rp6GO2qGjn4QFZfHbkfOgyWPVqlILLWC+jA
+t37R7/X2JLPCD9IapRIUNIfmwecebLPvYX7JpXUMjxbE01eVIn5fCSo/f9zmBAr0
+RNqyuUC01k5oFUg9ZbviUhtPEc0lItPkoyBfLTmHhGyFu1vE70Wn1hAGHOVgwgWD
+oocFAKuJoRBywpfAPgvBNfWXxbfAQn6jmGrnPIBeK4ahKhQcKOEa2ONhvdlINIBo
+DD9eo6+blSA50zX7l/xYgawdl0PyGBKNuOqBz6nULUlrOOnEZ/EzTCjmZpimCeuz
+IsazJHuiAYXmAWIwh4l5RRtuCPr7aBKTSdbJDUU07OYyHO+8/6tumfuTTqyBI/yq
+Itztyo4FVzvcT3Qki5P5KXeEEBoG919w65nRT9Iw/m18fG2CQxh1V9Sy3u47hDnr
+D7lfIRFyGZB+I4wGvPI/QOgZhlTCgldVn0TVY7d314bUIAVxH7VzXKIwu+zk+iTp
+syTYna9wP9+qaQ5QF9uvPZdMMIEmy2F41M3ivaJrpPTIt+AnisngGkg1sOCSD0km
+iPuO5pE1R/YhWlGhhEDr
+=D0EQ
+-----END PGP SIGNATURE-----
+
+--nextPart2310997.WuvYB3skSH--
 
