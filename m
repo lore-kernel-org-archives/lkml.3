@@ -1,140 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932487AbaLAUoI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 15:44:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38650 "EHLO mx1.redhat.com"
+	id S932503AbaLAUpI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 15:45:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60092 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753936AbaLAUoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 15:44:06 -0500
-Subject: Re: POSIX mutex destruction requirements vs. futexes
-From: Torvald Riegel <triegel@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-In-Reply-To: <CA+55aFxiPbr9CJt_+G03zzYvkrr0ENNHFKNU08AjZh-j=PzUig@mail.gmail.com>
-References: <1417098455.1771.338.camel@triegel.csb>
-	 <CA+55aFxBpLik53Q+Nwpcztox_4ZeEGqr2stiU5qzz1SGdfLGOw@mail.gmail.com>
-	 <1417435546.1771.400.camel@triegel.csb>
-	 <CA+55aFxiPbr9CJt_+G03zzYvkrr0ENNHFKNU08AjZh-j=PzUig@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 01 Dec 2014 21:44:00 +0100
-Message-ID: <1417466640.1771.576.camel@triegel.csb>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932355AbaLAUpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 15:45:07 -0500
+Date: Mon, 1 Dec 2014 21:44:28 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: =?iso-8859-1?Q?J=E9r=E9mie?= Galarneau 
+	<jeremie.galarneau@efficios.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Alexandre Montplaisir <alexmonthy@voxpopuli.im>,
+        linux-kernel@vger.kernel.org,
+        Dominique Toupin <dominique.toupin@ericsson.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Jeremie Galarneau <jgalar@efficios.com>,
+        David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Trace Compass Developer Discussions 
+	<tracecompass-dev@eclipse.org>,
+        Matthew Khouzam <matthew.khouzam@ericsson.com>, andreas@linutronix.de
+Subject: Re: Support for Perf CTF traces now in master (was Re: FW: [RFC 0/5]
+ perf tools: Add perf data CTF conversion)
+Message-ID: <20141201204428.GC13302@krava.brq.redhat.com>
+References: <53F4F38C.4080407@voxpopuli.im>
+ <5457C259.8030605@linutronix.de>
+ <545829CA.7040900@voxpopuli.im>
+ <20141105125028.GA30087@linutronix.de>
+ <545AEA37.601@voxpopuli.im>
+ <5460156E.3050601@voxpopuli.im>
+ <5463DBD5.9080303@voxpopuli.im>
+ <20141126173721.GA6829@linutronix.de>
+ <20141128112650.GD27703@krava.brq.redhat.com>
+ <CA+jJMxsM6iX8wGjWw_kR6Db=of8d8pOg0wEFUxAdktCVsMOpXA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+jJMxsM6iX8wGjWw_kR6Db=of8d8pOg0wEFUxAdktCVsMOpXA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-12-01 at 10:31 -0800, Linus Torvalds wrote:
-> On Mon, Dec 1, 2014 at 4:05 AM, Torvald Riegel <triegel@redhat.com> wrote:
-> > On Thu, 2014-11-27 at 11:38 -0800, Linus Torvalds wrote:
-> >>
-> >> > (1)  Allow spurious wake-ups from FUTEX_WAIT.
-> >>
-> >> because afaik that is what we actually *do* today (we'll wake up
-> >> whoever re-used that location in another thread), and it's mainly
-> >> about the whole documentation issue. No?
+On Mon, Dec 01, 2014 at 12:28:08PM -0500, Jérémie Galarneau wrote:
+> On Fri, Nov 28, 2014 at 6:26 AM, Jiri Olsa <jolsa@redhat.com> wrote:
+> > On Wed, Nov 26, 2014 at 06:37:21PM +0100, Sebastian Andrzej Siewior wrote:
+> >> * Alexandre Montplaisir | 2014-11-12 17:14:45 [-0500]:
 > >
-> > If that's what the kernel prefers to do, this would be fine with me.
+> > SNIP
+> >
+> >>
+> >> >This was based on the most recent file format I was aware of, we will
+> >> >update it accordingly if required.
+> >> >
+> >> >Testing welcome!
+> >>
+> >> I pushed the perf changes I mentioned to
+> >>
+> >>   git://git.breakpoint.cc/bigeasy/linux.git ctf_convert_7
+> >>
+> >
+> > from perf data convert point of view (and libbabeltrace).. ;-)
+> >
+> > I tried to convert big perf.data (2GB) and my laptop got stuck
+> > for few minutes.. the reason is that perf allocated too much memory
+> >
+> > I needed to add occasional bt_ctf_stream_flush into the
+> > processing (patch attached)
+> >
+> > What I do now is checking if we processed given amount of events
+> > for the stream and once the value is crossed I flush it.
+> >
+> > My question is if there's a way to find out the allocated memory
+> > for the stream?  It'd be nicer to setup maximum allocation size
+> > rather than the number of events.
+> >
 > 
-> I think it's more of a "can we even do anything else"?
+> Not currently, although I agree that this would be a nice feature.
+> Perhaps by setting a maximal packet size, CTF Writer could handle the
+> automatic flushing.
 > 
-> The kernel doesn't even see the reuse of the futex, or the fast path
-> parts. Not seeing the fast path is obviously by design, and not seeing
-> the reuse is partly due to pthreads interfaces (I guess people should
-> generally call mutex_destroy, but I doubt people really do, and even
-> if they did, how would user space actually handle the nasty race
-> between "pthread_unlock -> stale futex_wake" "pthread_mutex_destroy()"
-> anyway?).
+> Thoughts?
 
-User space could count stale (or, pending) futex_wake calls and spin in
-pthread_mutex_destroy() until this count is zero.  However, that would
-increase contention significantly, and we must spin, not block in
-pthread_mutex_destroy() at least for process-shared mutexes, because
-there's no place to put a futex for this destruction-time blocking that
-is not subject to the same issue again.  (For process-private futexes,
-this could be a memory location that is only ever used by glibc.)
-There might even be more issues related to unmapping memory of
-process-shared mutexes based on reference-counting in the critical
-sections.
+hum, it looks like 2 separated things to me.. the packet size is
+result format related size.. I'm more interested in the size of
+the 'struct ctf_stream' within the writer during the processing
 
-The additional contention of counting stale futex_wake's worries me
-most.  You only need to count when threads actually use futexes to
-block, and perhaps glibc's mutex implementation could be changed to
-spin-wait aggressively, and perhaps we could add some explicit handover
-to other lock owners or something similar to avoid issuing a futex_wake
-unless really necessary -- but this seems like quite a lot of hoops to
-jump through to work around a relatively small aspect of the current
-futexes.
+it seems it wont be trivial to track this AFAICS from sources, but
+I guess I can live so far with tracking the the number of events,
+until we find something else
 
-> So the thing is, I don't see how we could possibly change the existing
-> FUTEX_WAKE behavior.
-> 
-> And introducing a new "debug mode" that explicitly adds spurious
-> events might as well be done in user space with a wrapper about
-> FUTEX_WAKE or something.
-
-User space could introduce a wrapper (e.g., glibc could provide a futex
-wrapper that allows spurious wakeup on return of 0) -- but glibc can't
-prevent users from not using futexes directly and not through the
-wrapper.  Or should it try to intercept direct, non-wrapper uses of the
-futex syscall in some way?
-
-That's why I included a "debug mode" -- I'd rather call it a "new" mode
-than a debug mode, because it's not really about debugging -- in the
-list of options (ie, options (2) and (3)).  This would allow glibc (and
-other libraries) to use the futex variants with the new semantics in the
-most natural way.  And yet would not create situations in which calls to
-the old futex variant *appear* to allow spurious wake-ups (due to
-glibc's or other libraries' fault -- libstdc++ is in the same boat, for
-example).
-
-> Because as far as the *kernel* is concerned, there is no "spurious
-> wake" event.  It's not spurious. It's real and exists, and the wakeup
-> was really done by the user. The fact that it's really a stale wakeup
-> for a previous allocation of a pthread mutex data structure is
-> something that is completely and fundamentally invisible to the
-> kernel.
-> 
-> No?
-
-I agree, and that's why I mentioned that it may seem odd to fix this on
-the level of the kernel interface.  However, it just seems the best
-approach when considering practice in kernel and user space, the
-by-design futex properties, and the realities of what POSIX requires.
-
-> So even from a documentation standpoint, it's really not about "kernel
-> interfaces" being incorrectly documented, as about a big honking
-> warning about internal pthread_mutex() implementation in a library,
-> and the impact that library choice has on allocation re-use, and how
-> that means that even if the FUTEX_WAKE is guaranteed to not be
-> spurious from a *kernel* standpoint, certain use models will create
-> their own spurious wake events in very subtle ways.
-
-I agree it's not the kernel's fault, but that doesn't solve the dilemma.
-It's one aspect of the futex design -- whether spurious wake-ups are
-allowed for a return of 0 -- that makes it hard to use futexes for
-POSIX, C++11 (and C11, most likely) synchronization primitives without
-user space violating the kernel interface's semantics.  In an ideal
-world, we'd have considered that right away when designing futexes, made
-a decision that works well for both the kernel and user space, and
-specified the return conditions accordingly.  IMO, allowing spurious
-wake-ups doesn't actually make using futexes any harder, so allowing
-them from the start would have been fine.
-
-If somebody has any suggestions for how to fix this in user space, with
-no or at least an acceptable performance hit, and in a way that works
-with process-shared POSIX mutexes, I'm all ears.  I don't see a good
-user space solutions in the sense of being more efficient and more
-effective than a kernel-side solution, so this is why I think options
-(2) and (3) might be good.  They would give us the futex design that
-works best for POSIX etc. and yet would never affect old programs using
-futexes directly because they would use the old-style semantics.
-
-If options (2) and (3) are not acceptable to the kernel community and if
-we find don't find other solutions, then I'd like to at least document
-the issue in the kernel man pages (making sure pointing out that this is
-caused by user space realities).
-
-Thoughts?
-
+thanks,
+jirka
