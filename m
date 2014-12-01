@@ -1,98 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771AbaLAJNH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 04:13:07 -0500
-Received: from mga09.intel.com ([134.134.136.24]:63371 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752716AbaLAJNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 04:13:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,492,1413270000"; 
-   d="scan'208";a="616519909"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-spi@vger.kernel.org
-Cc: Mark Brown <broonie@kernel.org>, Daniel Mack <daniel@zonque.org>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Robert Jarzmik <robert.jarzmik@free.fr>,
-        Martin Oldfield <m@mjoldfield.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] spi/pxa2xx: Clear cur_chip pointer before starting next message
-Date: Mon,  1 Dec 2014 11:12:46 +0200
-Message-Id: <1417425166-150374-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 2.1.3
+	id S1752894AbaLAJNV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 04:13:21 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:57077 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752716AbaLAJNT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 04:13:19 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f5-b7fc86d0000066b7-25-547c312d9337
+Content-transfer-encoding: 8BIT
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>, Kukjin Kim <kgene@kernel.org>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] clk: samsung: exynos4415: Fix build with PM_SLEEP disabled
+Date: Mon, 01 Dec 2014 10:12:54 +0100
+Message-id: <1417425174-26694-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t/xy7q6hjUhBmv2MFlsnLGe1eL6l+es
+	Fq9fGFr0P37NbHG26Q27xabH11gtLu+aw2Yx4/w+Jou1R+6yWzydcJHN4vCbdlaLVbv+MDrw
+	eOycdZfdY9OqTjaPO9f2sHlsXlLv0bdlFaPH501yAWxRXDYpqTmZZalF+nYJXBk72x6yFJzl
+	q1g5u5m9gfEqTxcjJ4eEgInEkvmH2CBsMYkL99YD2VwcQgJLGSUePFnDDJLgFRCU+DH5HksX
+	IwcHs4C8xJFL2SBhZgF1iUnzFjFD1PcxSaw5/IsFJMEmYCyxefkSsKEiAh1MEt3HVECKmAXe
+	MkqsP7+eESQhLOAtsXHXEbAiFgFViTNdx5kglrlLHJnazgRxkZzEyWOTWScw8s1CcscshDtm
+	IbljASPzKkbR1NLkguKk9FwjveLE3OLSvHS95PzcTYyQYP+6g3HpMatDjAIcjEo8vJprq0OE
+	WBPLiitzDzFKcDArifD+egEU4k1JrKxKLcqPLyrNSS0+xMjEwSnVwBiksv8m39uLGoVMTKck
+	U9aw9+xT3Bg8rWuT8ps3bnGq1yoflgkv3XZrzd2ttRUaDAIJlrLmTicPLWfg3bmqw/nbAtHE
+	NKXCv1ULrjcprJDerfip88KB2PMci98c3eL65oWTYsUa5UdvC1e8blP84dyWyC4WmtmY4Cqg
+	de11Yrxqi7zqio8buZVYijMSDbWYi4oTAZQtc2pUAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Once the current message is finished, the driver notifies SPI core about
-this by calling spi_finalize_current_message(). This function queues next
-message to be transferred. If there are more messages in the queue, it is
-possible that the driver is asked to transfer the next message at this
-point.
+Fix following build errors when PM_SLEEP is disabled (e.g. by disabling
+SUSPEND and HIBERNATION):
 
-When spi_finalize_current_message() returns the driver clears the
-drv_data->cur_chip pointer to NULL. The problem is that if the driver
-already started the next message clearing drv_data->cur_chip will cause
-NULL pointer dereference which crashes the kernel like:
+drivers/clk/samsung/clk-exynos4415.c: In function ‘exynos4415_cmu_init’:
+drivers/clk/samsung/clk-exynos4415.c:982:2: error: ‘exynos4415_ctx’ undeclared (first use in this function)
+drivers/clk/samsung/clk-exynos4415.c:982:2: note: each undeclared identifier is reported only once for each function it appears in
+drivers/clk/samsung/clk-exynos4415.c: In function ‘exynos4415_cmu_dmc_init’:
+drivers/clk/samsung/clk-exynos4415.c:1123:2: error: ‘exynos4415_dmc_ctx’ undeclared (first use in this function)
+make[3]: *** [drivers/clk/samsung/clk-exynos4415.o] Error 1
 
- BUG: unable to handle kernel NULL pointer dereference at 0000000000000048
- IP: [<ffffffffa0022bc8>] cs_deassert+0x18/0x70 [spi_pxa2xx_platform]
- PGD 78bb8067 PUD 37712067 PMD 0
- Oops: 0000 [#1] SMP
- Modules linked in:
- CPU: 1 PID: 11 Comm: ksoftirqd/1 Tainted: G           O   3.18.0-rc4-mjo #5
- Hardware name: Intel Corp. VALLEYVIEW B3 PLATFORM/NOTEBOOK, BIOS MNW2CRB1.X64.0071.R30.1408131301 08/13/2014
- task: ffff880077f9f290 ti: ffff88007a820000 task.ti: ffff88007a820000
- RIP: 0010:[<ffffffffa0022bc8>]  [<ffffffffa0022bc8>] cs_deassert+0x18/0x70 [spi_pxa2xx_platform]
- RSP: 0018:ffff88007a823d08  EFLAGS: 00010202
- RAX: 0000000000000008 RBX: ffff8800379a4430 RCX: 0000000000000026
- RDX: 0000000000000000 RSI: 0000000000000246 RDI: ffff8800379a4430
- RBP: ffff88007a823d18 R08: 00000000ffffffff R09: 000000007a9bc65a
- R10: 000000000000028f R11: 0000000000000005 R12: ffff880070123e98
- R13: ffff880070123de8 R14: 0000000000000100 R15: ffffc90004888000
- FS:  0000000000000000(0000) GS:ffff880079a80000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
- CR2: 0000000000000048 CR3: 000000007029b000 CR4: 00000000001007e0
- Stack:
-  ffff88007a823d58 ffff8800379a4430 ffff88007a823d48 ffffffffa0022c89
-  0000000000000000 ffff8800379a4430 0000000000000000 0000000000000006
-  ffff88007a823da8 ffffffffa0023be0 ffff88007a823dd8 ffffffff81076204
- Call Trace:
-  [<ffffffffa0022c89>] giveback+0x69/0xa0 [spi_pxa2xx_platform]
-  [<ffffffffa0023be0>] pump_transfers+0x710/0x740 [spi_pxa2xx_platform]
-  [<ffffffff81076204>] ? pick_next_task_fair+0x744/0x830
-  [<ffffffff81049679>] tasklet_action+0xa9/0xe0
-  [<ffffffff81049a0e>] __do_softirq+0xee/0x280
-  [<ffffffff81049bc0>] run_ksoftirqd+0x20/0x40
-  [<ffffffff810646df>] smpboot_thread_fn+0xff/0x1b0
-  [<ffffffff810645e0>] ? SyS_setgroups+0x150/0x150
-  [<ffffffff81060f9d>] kthread+0xcd/0xf0
-  [<ffffffff81060ed0>] ? kthread_create_on_node+0x180/0x180
-  [<ffffffff8187a82c>] ret_from_fork+0x7c/0xb0
-
-Fix this by clearing drv_data->cur_chip before we call spi_finalize_current_message().
-
-Reported-by: Martin Oldfield <m@mjoldfield.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/spi/spi-pxa2xx.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/clk/samsung/clk-exynos4415.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
-index 9e9e0f971e6c..d95656d05eb6 100644
---- a/drivers/spi/spi-pxa2xx.c
-+++ b/drivers/spi/spi-pxa2xx.c
-@@ -402,8 +402,8 @@ static void giveback(struct driver_data *drv_data)
- 			cs_deassert(drv_data);
- 	}
+diff --git a/drivers/clk/samsung/clk-exynos4415.c b/drivers/clk/samsung/clk-exynos4415.c
+index c7208c7a3add..2123fc251e0f 100644
+--- a/drivers/clk/samsung/clk-exynos4415.c
++++ b/drivers/clk/samsung/clk-exynos4415.c
+@@ -118,12 +118,13 @@ enum exynos4415_plls {
+ 	nr_plls,
+ };
  
--	spi_finalize_current_message(drv_data->master);
- 	drv_data->cur_chip = NULL;
-+	spi_finalize_current_message(drv_data->master);
- }
++static struct samsung_clk_provider *exynos4415_ctx;
++
+ /*
+  * Support for CMU save/restore across system suspends
+  */
+ #ifdef CONFIG_PM_SLEEP
+ static struct samsung_clk_reg_dump *exynos4415_clk_regs;
+-static struct samsung_clk_provider *exynos4415_ctx;
  
- static void reset_sccr1(struct driver_data *drv_data)
+ static unsigned long exynos4415_cmu_clk_regs[] __initdata = {
+ 	SRC_LEFTBUS,
+@@ -1031,9 +1032,10 @@ enum exynos4415_dmc_plls {
+ 	nr_dmc_plls,
+ };
+ 
++static struct samsung_clk_provider *exynos4415_dmc_ctx;
++
+ #ifdef CONFIG_PM_SLEEP
+ static struct samsung_clk_reg_dump *exynos4415_dmc_clk_regs;
+-static struct samsung_clk_provider *exynos4415_dmc_ctx;
+ 
+ static unsigned long exynos4415_cmu_dmc_clk_regs[] __initdata = {
+ 	MPLL_LOCK,
 -- 
-2.1.3
+1.9.1
 
