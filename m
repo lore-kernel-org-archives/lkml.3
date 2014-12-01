@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890AbaLAN7F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 08:59:05 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:19926 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753852AbaLAN7A (ORCPT
+	id S1753917AbaLAN7S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 08:59:18 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:34601 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753457AbaLAN7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 08:59:00 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-0e-547c7421af3f
-Message-id: <547C7420.4080801@samsung.com>
-Date: Mon, 01 Dec 2014 14:58:56 +0100
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        b.zolnierkie@samsung.com, cooloney@gmail.com, rpurdie@rpsys.net,
-        sakari.ailus@iki.fi, s.nawrocki@samsung.com
-Subject: Re: [PATCH/RFC v8 02/14] Documentation: leds: Add description of LED
- Flash class extension
-References: <1417166286-27685-1-git-send-email-j.anaszewski@samsung.com>
- <1417166286-27685-3-git-send-email-j.anaszewski@samsung.com>
- <20141129125832.GA315@amd> <547C539A.4010500@samsung.com>
- <20141201130437.GB24737@amd>
-In-reply-to: <20141201130437.GB24737@amd>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t/xy7qKJTUhBnP/a1hsnLGe1eLozolM
-	Fmeb3rBbXN41h81i65t1jBY9G7ayWtw9dZTNYveup6wWh9+0s1qc2b+SzYHLY+esu+weh78u
-	ZPHYM/8Hq0ffllWMHitWf2f3+LxJLoAtissmJTUnsyy1SN8ugSvjwMp9LAUzuSqmTZ3L1MDY
-	xdHFyMkhIWAi8e/5PWYIW0ziwr31bF2MXBxCAksZJf6f3MIC4XxklJjyuJMdpIpXQEtia8tK
-	FhCbRUBVYsK/JWBxNgFDiZ8vXjOB2KICERJ/Tu9jhagXlPgx+R5YvYiAvMTWvhXMIEOZBV4w
-	Ssx4B7KOk0NYIFXizZt/jCC2kMAjRok5c6tBbE4BTYm1jw6ANTMLWEusnLSNEcKWl9i85i3z
-	BEaBWUh2zEJSNgtJ2QJG5lWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsYIRHxdQfj0mNWhxgF
-	OBiVeHg111aHCLEmlhVX5h5ilOBgVhLhZS2oCRHiTUmsrEotyo8vKs1JLT7EyMTBKdXAKPL6
-	4VOmFau2V2fwTshXfMRpWunWUbtZ6dhi7SU5T2PqptXtKf/Xt/zPxjNvH1kHLXHby9mqI39+
-	84n8M+wlyznVP2x7LBKpo564buf8Y9eqr8zSO/JUdH278/JqlWpvt1Mh9t53FrMyPpy1b75A
-	p5p7yZk1RYdcWlkD35snSRabx88LX7e4WomlOCPRUIu5qDgRAHyIHmtmAgAA
+	Mon, 1 Dec 2014 08:59:14 -0500
+Message-ID: <547C742E.6060801@linaro.org>
+Date: Mon, 01 Dec 2014 13:59:10 +0000
+From: Zoltan Kiss <zoltan.kiss@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: David Vrabel <david.vrabel@citrix.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Zoltan Kiss <zoltan.kiss@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+CC: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Durrant <paul.durrant@citrix.com>, xen-devel@lists.xenproject.org
+Subject: Re: [Xen-devel] [PATCH] xen-netfront: Fix handling packets on compound
+ pages with skb_linearize
+References: <1407778343-13622-1-git-send-email-zoltan.kiss@citrix.com>	<547C2CFC.7060908@canonical.com> <547C6EF6.8020604@citrix.com>
+In-Reply-To: <547C6EF6.8020604@citrix.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
 
-On 12/01/2014 02:04 PM, Pavel Machek wrote:
-> Hi!
->
->>> How are faults cleared? Should it be list of strings, instead of
->>> bitmask? We may want to add new fault modes in future...
+
+On 01/12/14 13:36, David Vrabel wrote:
+> On 01/12/14 08:55, Stefan Bader wrote:
+>> On 11.08.2014 19:32, Zoltan Kiss wrote:
+>>> There is a long known problem with the netfront/netback interface: if the guest
+>>> tries to send a packet which constitues more than MAX_SKB_FRAGS + 1 ring slots,
+>>> it gets dropped. The reason is that netback maps these slots to a frag in the
+>>> frags array, which is limited by size. Having so many slots can occur since
+>>> compound pages were introduced, as the ring protocol slice them up into
+>>> individual (non-compound) page aligned slots. The theoretical worst case
+>>> scenario looks like this (note, skbs are limited to 64 Kb here):
+>>> linear buffer: at most PAGE_SIZE - 17 * 2 bytes, overlapping page boundary,
+>>> using 2 slots
+>>> first 15 frags: 1 + PAGE_SIZE + 1 bytes long, first and last bytes are at the
+>>> end and the beginning of a page, therefore they use 3 * 15 = 45 slots
+>>> last 2 frags: 1 + 1 bytes, overlapping page boundary, 2 * 2 = 4 slots
+>>> Although I don't think this 51 slots skb can really happen, we need a solution
+>>> which can deal with every scenario. In real life there is only a few slots
+>>> overdue, but usually it causes the TCP stream to be blocked, as the retry will
+>>> most likely have the same buffer layout.
+>>> This patch solves this problem by linearizing the packet. This is not the
+>>> fastest way, and it can fail much easier as it tries to allocate a big linear
+>>> area for the whole packet, but probably easier by an order of magnitude than
+>>> anything else. Probably this code path is not touched very frequently anyway.
+>>>
+>>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>>> Cc: Wei Liu <wei.liu2@citrix.com>
+>>> Cc: Ian Campbell <Ian.Campbell@citrix.com>
+>>> Cc: Paul Durrant <paul.durrant@citrix.com>
+>>> Cc: netdev@vger.kernel.org
+>>> Cc: linux-kernel@vger.kernel.org
+>>> Cc: xen-devel@lists.xenproject.org
 >>
->> Faults are cleared by reading the attribute. I will add this note.
->> There can be more than one fault at a time. I think that the bitmask
->> is a flexible solution. I don't see any troubles related to adding
->> new fault modes in the future, do you?
+>> This does not seem to be marked explicitly as stable. Has someone already asked
+>> David Miller to put it on his stable queue? IMO it qualifies quite well and the
+>> actual change should be simple to pick/backport.
 >
-> I do not think that "read attribute to clear" is good idea. Normally,
-> you'd want the error attribute world-readable, but you don't want
-> non-root users to clear the errors.
+> I think it's a candidate, yes.
+>
+> Can you expand on the user visible impact of the bug this patch fixes?
+> I think it results in certain types of traffic not working (because the
+> domU always generates skb's with the problematic frag layout), but I
+> can't remember the details.
 
-This is also V4L2_CID_FLASH_FAULT control semantics.
-Moreover many devices clear the errors upon reading register.
-I don't see anything wrong in the fact that an user can clear
-an error. If the user has a permission to use a device then
-it also should be allowed to clear the errors.
+Yes, this line in the comment talks about it: "In real life there is 
+only a few slots overdue, but usually it causes the TCP stream to be 
+blocked, as the retry will most likely have the same buffer layout."
+Maybe we can add what kind of traffic triggered this so far, AFAIK NFS 
+was one of them, and Stefan had an another use case. But my memories are 
+blur about this.
 
-> I am not sure if bitmask is good solution. I'd return space-separated
-> strings like "overtemp". That way, there's good chance that other LED
-> drivers would be able to use similar interface...
-
-The format of a sysfs attribute should be concise.
-The error codes are generic and map directly to the V4L2 Flash
-error codes.
-
-Best Regards,
-Jacek Anaszewski
+Zoli
