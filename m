@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425AbaLAAVy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 19:21:54 -0500
-Received: from zabrina.hetzner-de.towertech.it ([178.63.16.19]:38080 "EHLO
-	zabrina.hetzner-de.towertech.it" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752378AbaLAAVx (ORCPT
+	id S1752245AbaLAA0A (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 19:26:00 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61740 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751920AbaLAAZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 19:21:53 -0500
-X-Greylist: delayed 473 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Nov 2014 19:21:52 EST
-Date: Mon, 1 Dec 2014 01:13:56 +0100
-From: Alessandro Zummo <a.zummo@towertech.it>
-To: "pang.xunlei" <pang.xunlei@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, lkml <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Sven Schnelle <svens@stackframe.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: Re: [RFC PATCH 4/4] rtc/imxdi: Update driver to address time issues
-Message-ID: <20141201011356.7588625d@linux.lan.towertech.it>
-In-Reply-To: <CADcy93X+XoKruoS6LJsGevjKpQCNX4BVvjh0rYdGivShGLQfGw@mail.gmail.com>
-References: <1417089760-26848-1-git-send-email-pang.xunlei@linaro.org>
-	<1417089760-26848-5-git-send-email-pang.xunlei@linaro.org>
-	<alpine.DEB.2.11.1411280019590.3961@nanos>
-	<CADcy93X+XoKruoS6LJsGevjKpQCNX4BVvjh0rYdGivShGLQfGw@mail.gmail.com>
-Organization: Tower Technologies
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 30 Nov 2014 19:25:58 -0500
+From: Peter Crosthwaite <crosthwaitepeter@gmail.com>
+X-Google-Original-From: Peter Crosthwaite <crosthwaite.peter@gmail.com>
+To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Cc: michals@xilinx.com, sorenb@xilinx.com, steven.wang@digilentinc.com
+Subject: [PATCH v3 1/3] doc: dt: vendor-prefixes: Add Digilent Inc
+Date: Mon,  1 Dec 2014 10:25:48 +1000
+Message-Id: <1417393550-6674-1-git-send-email-crosthwaite.peter@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 29 Nov 2014 00:20:00 +0800
-"pang.xunlei" <pang.xunlei@linaro.org> wrote:
+Digilent is a board designer, making various Linux capabable FPGA and
+processor boards. Add to the vendor list.
 
-> Anyway, they are ungraceful being there. I'll refine this patchset carefully
-> according to your valuable suggestions, and will send out another version.
-> 
-> Thanks for your review!
+Acked-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Signed-off-by: Peter Crosthwaite <crosthwaite.peter@gmail.com>
+---
+http://www.digilentinc.com
+---
+ Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+ 1 file changed, 1 insertion(+)
 
- I have quite the feeling those patches will cause headaches
- to a lot of people.
- 
- Too many of this stuff seems a copy & paste work, without actually
- looking/thinking to the side effects.
-
- Is there any particular reason your are pursuing this?
-
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index c177cd7..b1df0ad 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -41,6 +41,7 @@ dallas	Maxim Integrated Products (formerly Dallas Semiconductor)
+ davicom	DAVICOM Semiconductor, Inc.
+ denx	Denx Software Engineering
+ digi	Digi International Inc.
++digilent	Diglent, Inc.
+ dlg	Dialog Semiconductor
+ dlink	D-Link Corporation
+ dmo	Data Modul AG
 -- 
-
- Best regards,
-
- Alessandro Zummo,
-  Tower Technologies - Torino, Italy
-
-  http://www.towertech.it
+1.9.1
 
