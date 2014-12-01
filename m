@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575AbaLAQWm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 11:22:42 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:49674 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753391AbaLAQWk (ORCPT
+	id S932228AbaLAQXM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 11:23:12 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:37213 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753388AbaLAQXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 11:22:40 -0500
-Date: Mon, 1 Dec 2014 08:22:32 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jean Delvare <jdelvare@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [PATCH 3/3] i8k: Add support for Dell XPS 13
-Message-ID: <20141201162232.GA23419@roeck-us.net>
-References: <1417381240-7641-1-git-send-email-linux@roeck-us.net>
- <1417381240-7641-3-git-send-email-linux@roeck-us.net>
- <20141201133645.2a423043@endymion.delvare>
+	Mon, 1 Dec 2014 11:23:09 -0500
+Date: Mon, 1 Dec 2014 17:23:06 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [RFC PATCH 06/30] s390: Introduce cputime64_to_nsecs()
+Message-ID: <20141201162304.GC27302@lerouge>
+References: <1417199040-21044-1-git-send-email-fweisbec@gmail.com>
+ <1417199040-21044-7-git-send-email-fweisbec@gmail.com>
+ <20141201122452.GE4074@osiris>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141201133645.2a423043@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020205.547C95CF.013C,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <20141201122452.GE4074@osiris>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 01:36:45PM +0100, Jean Delvare wrote:
-> On Sun, 30 Nov 2014 13:00:40 -0800, Guenter Roeck wrote:
-> > XPS 13 does not support turbo speed, so its initialization data
-> > matches that of XPS M140. Make XPS initialization data generic,
-> > and add support for XPS 13.
+On Mon, Dec 01, 2014 at 01:24:52PM +0100, Heiko Carstens wrote:
+> On Fri, Nov 28, 2014 at 07:23:36PM +0100, Frederic Weisbecker wrote:
+> > This will be needed for the conversion of kernel stat to nsecs.
 > > 
-> > Cc: Pali Rohár <pali.rohar@gmail.com>
-> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> > Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> > Cc: Ingo Molnar <mingo@kernel.org>
+> > Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> > Cc: Oleg Nesterov <oleg@redhat.com>
+> > Cc: Paul Mackerras <paulus@samba.org>
+> > Cc: Peter Zijlstra <peterz@infradead.org>
+> > Cc: Rik van Riel <riel@redhat.com>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: Tony Luck <tony.luck@intel.com>
+> > Cc: Wu Fengguang <fengguang.wu@intel.com>
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 > > ---
+> >  arch/s390/include/asm/cputime.h | 5 +++++
+> >  1 file changed, 5 insertions(+)
+> > 
+> > diff --git a/arch/s390/include/asm/cputime.h b/arch/s390/include/asm/cputime.h
+> > index 820b38a..75ba96f 100644
+> > --- a/arch/s390/include/asm/cputime.h
+> > +++ b/arch/s390/include/asm/cputime.h
+> > @@ -59,6 +59,11 @@ static inline cputime64_t jiffies64_to_cputime64(const u64 jif)
+> >  	return (__force cputime64_t)(jif * (CPUTIME_PER_SEC / HZ));
+> >  }
+> > 
+> > +static inline u64 cputime64_to_nsecs(cputime64_t cputime)
+> > +{
+> > +	return (__force u64)cputime * CPUTIME_PER_USEC * NSEC_PER_USEC;
+> > +}
+> > +
+> 
+> This is incorrect. You probably wanted to write something like
+> 
+> 	return (__force u64)cputime / CPUTIME_PER_USEC * NSEC_PER_USEC; ?
 
-[ ... ]
-> 
-> Looks reasonable.
-> 
-> Reviewed-by: Jean Delvare <jdelvare@suse.de>
-> 
-Thanks a lot for the reviews!
+You're right :-)
 
-Guenter
+> 
+> However we would still lose a lot of precision.
+> The correct algorithm to convert from cputime to nanoseconds can be found in
+> tod_to_ns() - see arch/s390/include/asm/timex.h
+> 
+> And if you see that rather complex algorithm, I doubt we want to have the
+> changes you propose. We need to have that calculation three times for each
+> irq (user, system and steal time) and would still have worse precision than
+> we have right now. Not talking about the additional wasted cpu cycles...
+
+Yeah indeed. So probably it could be better to accumulate the time in cputime_t
+and flush it as nsecs on tick.
+
+> 
+> But I guess Martin wanted to comment on your patches anyway ;)
+> 
