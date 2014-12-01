@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841AbaLAIvw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 03:51:52 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:6807 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479AbaLAIvv (ORCPT
+	id S1752864AbaLAIv4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 03:51:56 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:5299 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479AbaLAIvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 03:51:51 -0500
+	Mon, 1 Dec 2014 03:51:54 -0500
 From: Wang Nan <wangnan0@huawei.com>
 To: <tixy@linaro.org>, <masami.hiramatsu.pt@hitachi.com>,
         <linux@arm.linux.org.uk>
 CC: <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v11 1/7] ARM: probes: move all probe code to dedicate directory
-Date: Mon, 1 Dec 2014 16:48:15 +0800
-Message-ID: <1417423695-47521-1-git-send-email-wangnan0@huawei.com>
+Subject: [PATCH v11 2/7] ARM: kprobes: introduces checker
+Date: Mon, 1 Dec 2014 16:48:25 +0800
+Message-ID: <1417423705-47594-1-git-send-email-wangnan0@huawei.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1417423513-47161-1-git-send-email-wangnan0@huawei.com>
 References: <1417423513-47161-1-git-send-email-wangnan0@huawei.com>
@@ -22,244 +22,359 @@ MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.107.197.247]
 X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020205.547C2C28.0111,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 764fc5615e5ec8051849ac15d816cf7b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In discussion on LKML (https://lkml.org/lkml/2014/11/28/158), Russell
-King suggest to move all probe related code to arch/arm/probes. This
-patch do the work. Due to dependency on 'arch/arm/kernel/patch.h', this
-patch also move patch.h to 'arch/arm/include/asm/patch.h', and related
-'#include' directive are also midified to '#include <asm/patch.h>'.
+This patch introdces 'checker' to decoding phase, and calls checkers
+when instruction decoding. This allows further decoding for specific
+instructions.  This patch introduces a stub call of checkers in kprobe
+arch_prepare_kprobe() as an example and for further expansion.
 
 Signed-off-by: Wang Nan <wangnan0@huawei.com>
----
- arch/arm/Makefile                                |  1 +
- arch/arm/{kernel => include/asm}/patch.h         |  0
- arch/arm/kernel/Makefile                         | 16 ++--------------
- arch/arm/kernel/jump_label.c                     |  2 +-
- arch/arm/kernel/patch.c                          |  3 +--
- arch/arm/probes/Makefile                         | 15 +++++++++++++++
- arch/arm/{kernel => probes}/kprobes-arm.c        |  0
- arch/arm/{kernel => probes}/kprobes-common.c     |  0
- arch/arm/{kernel => probes}/kprobes-test-arm.c   |  0
- arch/arm/{kernel => probes}/kprobes-test-thumb.c |  0
- arch/arm/{kernel => probes}/kprobes-test.c       |  0
- arch/arm/{kernel => probes}/kprobes-test.h       |  0
- arch/arm/{kernel => probes}/kprobes-thumb.c      |  0
- arch/arm/{kernel => probes}/kprobes.c            |  2 +-
- arch/arm/{kernel => probes}/kprobes.h            |  0
- arch/arm/{kernel => probes}/probes-arm.c         |  0
- arch/arm/{kernel => probes}/probes-arm.h         |  0
- arch/arm/{kernel => probes}/probes-thumb.c       |  0
- arch/arm/{kernel => probes}/probes-thumb.h       |  0
- arch/arm/{kernel => probes}/probes.c             |  0
- arch/arm/{kernel => probes}/probes.h             |  0
- arch/arm/{kernel => probes}/uprobes-arm.c        |  0
- arch/arm/{kernel => probes}/uprobes.c            |  0
- arch/arm/{kernel => probes}/uprobes.h            |  0
- 24 files changed, 21 insertions(+), 18 deletions(-)
- rename arch/arm/{kernel => include/asm}/patch.h (100%)
- create mode 100644 arch/arm/probes/Makefile
- rename arch/arm/{kernel => probes}/kprobes-arm.c (100%)
- rename arch/arm/{kernel => probes}/kprobes-common.c (100%)
- rename arch/arm/{kernel => probes}/kprobes-test-arm.c (100%)
- rename arch/arm/{kernel => probes}/kprobes-test-thumb.c (100%)
- rename arch/arm/{kernel => probes}/kprobes-test.c (100%)
- rename arch/arm/{kernel => probes}/kprobes-test.h (100%)
- rename arch/arm/{kernel => probes}/kprobes-thumb.c (100%)
- rename arch/arm/{kernel => probes}/kprobes.c (99%)
- rename arch/arm/{kernel => probes}/kprobes.h (100%)
- rename arch/arm/{kernel => probes}/probes-arm.c (100%)
- rename arch/arm/{kernel => probes}/probes-arm.h (100%)
- rename arch/arm/{kernel => probes}/probes-thumb.c (100%)
- rename arch/arm/{kernel => probes}/probes-thumb.h (100%)
- rename arch/arm/{kernel => probes}/probes.c (100%)
- rename arch/arm/{kernel => probes}/probes.h (100%)
- rename arch/arm/{kernel => probes}/uprobes-arm.c (100%)
- rename arch/arm/{kernel => probes}/uprobes.c (100%)
- rename arch/arm/{kernel => probes}/uprobes.h (100%)
+Reviewed-by: Jon Medhurst <tixy@linaro.org>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index 034a949..a57d9bb 100644
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -266,6 +266,7 @@ core-$(CONFIG_KVM_ARM_HOST) 	+= arch/arm/kvm/
- 
- # If we have a machine-specific directory, then include it in the build.
- core-y				+= arch/arm/kernel/ arch/arm/mm/ arch/arm/common/
-+core-y				+= arch/arm/probes/
- core-y				+= arch/arm/net/
- core-y				+= arch/arm/crypto/
- core-y				+= arch/arm/firmware/
-diff --git a/arch/arm/kernel/patch.h b/arch/arm/include/asm/patch.h
-similarity index 100%
-rename from arch/arm/kernel/patch.h
-rename to arch/arm/include/asm/patch.h
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 38ddd9f..40d3e00 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -51,20 +51,8 @@ obj-$(CONFIG_DYNAMIC_FTRACE)	+= ftrace.o insn.o
- obj-$(CONFIG_FUNCTION_GRAPH_TRACER)	+= ftrace.o insn.o
- obj-$(CONFIG_JUMP_LABEL)	+= jump_label.o insn.o patch.o
- obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel.o
--obj-$(CONFIG_UPROBES)		+= probes.o probes-arm.o uprobes.o uprobes-arm.o
--obj-$(CONFIG_KPROBES)		+= probes.o kprobes.o kprobes-common.o patch.o
--ifdef CONFIG_THUMB2_KERNEL
--obj-$(CONFIG_KPROBES)		+= kprobes-thumb.o probes-thumb.o
--else
--obj-$(CONFIG_KPROBES)		+= kprobes-arm.o probes-arm.o
--endif
--obj-$(CONFIG_ARM_KPROBES_TEST)	+= test-kprobes.o
--test-kprobes-objs		:= kprobes-test.o
--ifdef CONFIG_THUMB2_KERNEL
--test-kprobes-objs		+= kprobes-test-thumb.o
--else
--test-kprobes-objs		+= kprobes-test-arm.o
--endif
-+# Main staffs in KPROBES are in arch/arm/probes/ .
-+obj-$(CONFIG_KPROBES)		+= patch.o
- obj-$(CONFIG_OABI_COMPAT)	+= sys_oabi-compat.o
- obj-$(CONFIG_ARM_THUMBEE)	+= thumbee.o
- obj-$(CONFIG_KGDB)		+= kgdb.o
-diff --git a/arch/arm/kernel/jump_label.c b/arch/arm/kernel/jump_label.c
-index 4ce4f78..c6c73ed 100644
---- a/arch/arm/kernel/jump_label.c
-+++ b/arch/arm/kernel/jump_label.c
-@@ -1,8 +1,8 @@
- #include <linux/kernel.h>
- #include <linux/jump_label.h>
-+#include <asm/patch.h>
- 
- #include "insn.h"
--#include "patch.h"
- 
- #ifdef HAVE_JUMP_LABEL
- 
-diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
-index 07314af..08bcfa1 100644
---- a/arch/arm/kernel/patch.c
-+++ b/arch/arm/kernel/patch.c
-@@ -5,8 +5,7 @@
- #include <asm/cacheflush.h>
- #include <asm/smp_plat.h>
- #include <asm/opcodes.h>
--
--#include "patch.h"
-+#include <asm/patch.h>
- 
- struct patch {
- 	void *addr;
-diff --git a/arch/arm/probes/Makefile b/arch/arm/probes/Makefile
-new file mode 100644
-index 0000000..34b53b0
---- /dev/null
-+++ b/arch/arm/probes/Makefile
-@@ -0,0 +1,15 @@
-+obj-$(CONFIG_UPROBES)		+= probes.o probes-arm.o uprobes.o uprobes-arm.o
-+obj-$(CONFIG_KPROBES)		+= probes.o kprobes.o kprobes-common.o
-+ifdef CONFIG_THUMB2_KERNEL
-+obj-$(CONFIG_KPROBES)		+= kprobes-thumb.o probes-thumb.o
-+else
-+obj-$(CONFIG_KPROBES)		+= kprobes-arm.o probes-arm.o
-+endif
-+obj-$(CONFIG_ARM_KPROBES_TEST)	+= test-kprobes.o
-+test-kprobes-objs		:= kprobes-test.o
-+ifdef CONFIG_THUMB2_KERNEL
-+test-kprobes-objs		+= kprobes-test-thumb.o
-+else
-+test-kprobes-objs		+= kprobes-test-arm.o
-+endif
+---
+
+v1 -> v2:
+ - kprobe checker stubs are introduced in this patch.
+
+v2 -> v3:
+ - Code cleanups following Masami Hiramatsu and Tixy's advises.
+ - Commit message improvements.
+
+v3 -> v4:
+ - Move to arch/arm/probes.
+---
+ arch/arm/probes/kprobes-arm.c   |  2 ++
+ arch/arm/probes/kprobes-thumb.c |  3 +++
+ arch/arm/probes/kprobes.c       |  6 ++++-
+ arch/arm/probes/kprobes.h       |  7 +++--
+ arch/arm/probes/probes-arm.c    |  5 ++--
+ arch/arm/probes/probes-arm.h    |  3 ++-
+ arch/arm/probes/probes-thumb.c  | 10 ++++---
+ arch/arm/probes/probes-thumb.h  |  6 +++--
+ arch/arm/probes/probes.c        | 60 ++++++++++++++++++++++++++++++++++++-----
+ arch/arm/probes/probes.h        | 11 +++++++-
+ arch/arm/probes/uprobes.c       |  2 +-
+ 11 files changed, 95 insertions(+), 20 deletions(-)
+
+diff --git a/arch/arm/probes/kprobes-arm.c b/arch/arm/probes/kprobes-arm.c
+index ac300c6..5a81275 100644
+--- a/arch/arm/probes/kprobes-arm.c
++++ b/arch/arm/probes/kprobes-arm.c
+@@ -341,3 +341,5 @@ const union decode_action kprobes_arm_actions[NUM_PROBES_ARM_ACTIONS] = {
+ 	[PROBES_BRANCH] = {.handler = simulate_bbl},
+ 	[PROBES_LDMSTM] = {.decoder = kprobe_decode_ldmstm}
+ };
 +
-diff --git a/arch/arm/kernel/kprobes-arm.c b/arch/arm/probes/kprobes-arm.c
-similarity index 100%
-rename from arch/arm/kernel/kprobes-arm.c
-rename to arch/arm/probes/kprobes-arm.c
-diff --git a/arch/arm/kernel/kprobes-common.c b/arch/arm/probes/kprobes-common.c
-similarity index 100%
-rename from arch/arm/kernel/kprobes-common.c
-rename to arch/arm/probes/kprobes-common.c
-diff --git a/arch/arm/kernel/kprobes-test-arm.c b/arch/arm/probes/kprobes-test-arm.c
-similarity index 100%
-rename from arch/arm/kernel/kprobes-test-arm.c
-rename to arch/arm/probes/kprobes-test-arm.c
-diff --git a/arch/arm/kernel/kprobes-test-thumb.c b/arch/arm/probes/kprobes-test-thumb.c
-similarity index 100%
-rename from arch/arm/kernel/kprobes-test-thumb.c
-rename to arch/arm/probes/kprobes-test-thumb.c
-diff --git a/arch/arm/kernel/kprobes-test.c b/arch/arm/probes/kprobes-test.c
-similarity index 100%
-rename from arch/arm/kernel/kprobes-test.c
-rename to arch/arm/probes/kprobes-test.c
-diff --git a/arch/arm/kernel/kprobes-test.h b/arch/arm/probes/kprobes-test.h
-similarity index 100%
-rename from arch/arm/kernel/kprobes-test.h
-rename to arch/arm/probes/kprobes-test.h
-diff --git a/arch/arm/kernel/kprobes-thumb.c b/arch/arm/probes/kprobes-thumb.c
-similarity index 100%
-rename from arch/arm/kernel/kprobes-thumb.c
-rename to arch/arm/probes/kprobes-thumb.c
-diff --git a/arch/arm/kernel/kprobes.c b/arch/arm/probes/kprobes.c
-similarity index 99%
-rename from arch/arm/kernel/kprobes.c
-rename to arch/arm/probes/kprobes.c
-index 6d64420..43b2488 100644
---- a/arch/arm/kernel/kprobes.c
++const struct decode_checker *kprobes_arm_checkers[] = {NULL};
+diff --git a/arch/arm/probes/kprobes-thumb.c b/arch/arm/probes/kprobes-thumb.c
+index 9495d7f..b8ba7d2 100644
+--- a/arch/arm/probes/kprobes-thumb.c
++++ b/arch/arm/probes/kprobes-thumb.c
+@@ -664,3 +664,6 @@ const union decode_action kprobes_t32_actions[NUM_PROBES_T32_ACTIONS] = {
+ 	[PROBES_T32_MUL_ADD_LONG] = {
+ 		.handler = t32_emulate_rdlo12rdhi8rn16rm0_noflags},
+ };
++
++const struct decode_checker *kprobes_t32_checkers[] = {NULL};
++const struct decode_checker *kprobes_t16_checkers[] = {NULL};
+diff --git a/arch/arm/probes/kprobes.c b/arch/arm/probes/kprobes.c
+index 43b2488..e6e16a2 100644
+--- a/arch/arm/probes/kprobes.c
 +++ b/arch/arm/probes/kprobes.c
-@@ -30,11 +30,11 @@
- #include <asm/cacheflush.h>
- #include <linux/percpu.h>
- #include <linux/bug.h>
-+#include <asm/patch.h>
+@@ -61,6 +61,7 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+ 	kprobe_decode_insn_t *decode_insn;
+ 	const union decode_action *actions;
+ 	int is;
++	const struct decode_checker **checkers;
  
- #include "kprobes.h"
- #include "probes-arm.h"
- #include "probes-thumb.h"
--#include "patch.h"
+ 	if (in_exception_text(addr))
+ 		return -EINVAL;
+@@ -74,9 +75,11 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+ 		insn = __opcode_thumb32_compose(insn, inst2);
+ 		decode_insn = thumb32_probes_decode_insn;
+ 		actions = kprobes_t32_actions;
++		checkers = kprobes_t32_checkers;
+ 	} else {
+ 		decode_insn = thumb16_probes_decode_insn;
+ 		actions = kprobes_t16_actions;
++		checkers = kprobes_t16_checkers;
+ 	}
+ #else /* !CONFIG_THUMB2_KERNEL */
+ 	thumb = false;
+@@ -85,12 +88,13 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+ 	insn = __mem_to_opcode_arm(*p->addr);
+ 	decode_insn = arm_probes_decode_insn;
+ 	actions = kprobes_arm_actions;
++	checkers = kprobes_arm_checkers;
+ #endif
  
- #define MIN_STACK_SIZE(addr) 				\
- 	min((unsigned long)MAX_STACK_SIZE,		\
-diff --git a/arch/arm/kernel/kprobes.h b/arch/arm/probes/kprobes.h
-similarity index 100%
-rename from arch/arm/kernel/kprobes.h
-rename to arch/arm/probes/kprobes.h
-diff --git a/arch/arm/kernel/probes-arm.c b/arch/arm/probes/probes-arm.c
-similarity index 100%
-rename from arch/arm/kernel/probes-arm.c
-rename to arch/arm/probes/probes-arm.c
-diff --git a/arch/arm/kernel/probes-arm.h b/arch/arm/probes/probes-arm.h
-similarity index 100%
-rename from arch/arm/kernel/probes-arm.h
-rename to arch/arm/probes/probes-arm.h
-diff --git a/arch/arm/kernel/probes-thumb.c b/arch/arm/probes/probes-thumb.c
-similarity index 100%
-rename from arch/arm/kernel/probes-thumb.c
-rename to arch/arm/probes/probes-thumb.c
-diff --git a/arch/arm/kernel/probes-thumb.h b/arch/arm/probes/probes-thumb.h
-similarity index 100%
-rename from arch/arm/kernel/probes-thumb.h
-rename to arch/arm/probes/probes-thumb.h
-diff --git a/arch/arm/kernel/probes.c b/arch/arm/probes/probes.c
-similarity index 100%
-rename from arch/arm/kernel/probes.c
-rename to arch/arm/probes/probes.c
-diff --git a/arch/arm/kernel/probes.h b/arch/arm/probes/probes.h
-similarity index 100%
-rename from arch/arm/kernel/probes.h
-rename to arch/arm/probes/probes.h
-diff --git a/arch/arm/kernel/uprobes-arm.c b/arch/arm/probes/uprobes-arm.c
-similarity index 100%
-rename from arch/arm/kernel/uprobes-arm.c
-rename to arch/arm/probes/uprobes-arm.c
-diff --git a/arch/arm/kernel/uprobes.c b/arch/arm/probes/uprobes.c
-similarity index 100%
-rename from arch/arm/kernel/uprobes.c
-rename to arch/arm/probes/uprobes.c
-diff --git a/arch/arm/kernel/uprobes.h b/arch/arm/probes/uprobes.h
-similarity index 100%
-rename from arch/arm/kernel/uprobes.h
-rename to arch/arm/probes/uprobes.h
+ 	p->opcode = insn;
+ 	p->ainsn.insn = tmp_insn;
+ 
+-	switch ((*decode_insn)(insn, &p->ainsn, true, actions)) {
++	switch ((*decode_insn)(insn, &p->ainsn, true, actions, checkers)) {
+ 	case INSN_REJECTED:	/* not supported */
+ 		return -EINVAL;
+ 
+diff --git a/arch/arm/probes/kprobes.h b/arch/arm/probes/kprobes.h
+index 9a2712e..05f3b40 100644
+--- a/arch/arm/probes/kprobes.h
++++ b/arch/arm/probes/kprobes.h
+@@ -36,16 +36,19 @@ kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_probes_insn *asi,
+ typedef enum probes_insn (kprobe_decode_insn_t)(probes_opcode_t,
+ 						struct arch_probes_insn *,
+ 						bool,
+-						const union decode_action *);
++						const union decode_action *,
++						const struct decode_checker *[*]);
+ 
+ #ifdef CONFIG_THUMB2_KERNEL
+ 
+ extern const union decode_action kprobes_t32_actions[];
+ extern const union decode_action kprobes_t16_actions[];
+-
++extern const struct decode_checker *kprobes_t32_checkers[];
++extern const struct decode_checker *kprobes_t16_checkers[];
+ #else /* !CONFIG_THUMB2_KERNEL */
+ 
+ extern const union decode_action kprobes_arm_actions[];
++extern const struct decode_checker *kprobes_arm_checkers[];
+ 
+ #endif
+ 
+diff --git a/arch/arm/probes/probes-arm.c b/arch/arm/probes/probes-arm.c
+index 8eaef81..125feda 100644
+--- a/arch/arm/probes/probes-arm.c
++++ b/arch/arm/probes/probes-arm.c
+@@ -725,10 +725,11 @@ static void __kprobes arm_singlestep(probes_opcode_t insn,
+  */
+ enum probes_insn __kprobes
+ arm_probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
+-		       bool emulate, const union decode_action *actions)
++		       bool emulate, const union decode_action *actions,
++		       const struct decode_checker *checkers[])
+ {
+ 	asi->insn_singlestep = arm_singlestep;
+ 	asi->insn_check_cc = probes_condition_checks[insn>>28];
+ 	return probes_decode_insn(insn, asi, probes_decode_arm_table, false,
+-				  emulate, actions);
++				  emulate, actions, checkers);
+ }
+diff --git a/arch/arm/probes/probes-arm.h b/arch/arm/probes/probes-arm.h
+index ace6572..8b11ec4 100644
+--- a/arch/arm/probes/probes-arm.h
++++ b/arch/arm/probes/probes-arm.h
+@@ -68,6 +68,7 @@ extern const union decode_item probes_decode_arm_table[];
+ 
+ enum probes_insn arm_probes_decode_insn(probes_opcode_t,
+ 		struct arch_probes_insn *, bool emulate,
+-		const union decode_action *actions);
++		const union decode_action *actions,
++		const struct decode_checker *checkers[]);
+ 
+ #endif
+diff --git a/arch/arm/probes/probes-thumb.c b/arch/arm/probes/probes-thumb.c
+index 4131351..a5022b4 100644
+--- a/arch/arm/probes/probes-thumb.c
++++ b/arch/arm/probes/probes-thumb.c
+@@ -863,20 +863,22 @@ static void __kprobes thumb32_singlestep(probes_opcode_t opcode,
+ 
+ enum probes_insn __kprobes
+ thumb16_probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
+-			   bool emulate, const union decode_action *actions)
++			   bool emulate, const union decode_action *actions,
++			   const struct decode_checker *checkers[])
+ {
+ 	asi->insn_singlestep = thumb16_singlestep;
+ 	asi->insn_check_cc = thumb_check_cc;
+ 	return probes_decode_insn(insn, asi, probes_decode_thumb16_table, true,
+-				  emulate, actions);
++				  emulate, actions, checkers);
+ }
+ 
+ enum probes_insn __kprobes
+ thumb32_probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
+-			   bool emulate, const union decode_action *actions)
++			   bool emulate, const union decode_action *actions,
++			   const struct decode_checker *checkers[])
+ {
+ 	asi->insn_singlestep = thumb32_singlestep;
+ 	asi->insn_check_cc = thumb_check_cc;
+ 	return probes_decode_insn(insn, asi, probes_decode_thumb32_table, true,
+-				  emulate, actions);
++				  emulate, actions, checkers);
+ }
+diff --git a/arch/arm/probes/probes-thumb.h b/arch/arm/probes/probes-thumb.h
+index 7c6f6eb..ccfe3e4 100644
+--- a/arch/arm/probes/probes-thumb.h
++++ b/arch/arm/probes/probes-thumb.h
+@@ -89,9 +89,11 @@ extern const union decode_item probes_decode_thumb16_table[];
+ 
+ enum probes_insn __kprobes
+ thumb16_probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
+-		bool emulate, const union decode_action *actions);
++		bool emulate, const union decode_action *actions,
++		const struct decode_checker *checkers[]);
+ enum probes_insn __kprobes
+ thumb32_probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
+-		bool emulate, const union decode_action *actions);
++		bool emulate, const union decode_action *actions,
++		const struct decode_checker *checkers[]);
+ 
+ #endif
+diff --git a/arch/arm/probes/probes.c b/arch/arm/probes/probes.c
+index a8ab540..6a7d92e 100644
+--- a/arch/arm/probes/probes.c
++++ b/arch/arm/probes/probes.c
+@@ -342,6 +342,31 @@ static const int decode_struct_sizes[NUM_DECODE_TYPES] = {
+ 	[DECODE_TYPE_REJECT]	= sizeof(struct decode_reject)
+ };
+ 
++static int run_checkers(const struct decode_checker *checkers[],
++		int action, probes_opcode_t insn,
++		struct arch_probes_insn *asi,
++		const struct decode_header *h)
++{
++	const struct decode_checker **p;
++
++	if (!checkers)
++		return INSN_GOOD;
++
++	p = checkers;
++	while (*p != NULL) {
++		int retval;
++		probes_check_t *checker_func = (*p)[action].checker;
++
++		retval = INSN_GOOD;
++		if (checker_func)
++			retval = checker_func(insn, asi, h);
++		if (retval == INSN_REJECTED)
++			return retval;
++		p++;
++	}
++	return INSN_GOOD;
++}
++
+ /*
+  * probes_decode_insn operates on data tables in order to decode an ARM
+  * architecture instruction onto which a kprobe has been placed.
+@@ -388,11 +413,17 @@ static const int decode_struct_sizes[NUM_DECODE_TYPES] = {
+ int __kprobes
+ probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
+ 		   const union decode_item *table, bool thumb,
+-		   bool emulate, const union decode_action *actions)
++		   bool emulate, const union decode_action *actions,
++		   const struct decode_checker *checkers[])
+ {
+ 	const struct decode_header *h = (struct decode_header *)table;
+ 	const struct decode_header *next;
+ 	bool matched = false;
++	/*
++	 * @insn can be modified by decode_regs. Save its original
++	 * value for checkers.
++	 */
++	probes_opcode_t origin_insn = insn;
+ 
+ 	if (emulate)
+ 		insn = prepare_emulated_insn(insn, asi, thumb);
+@@ -422,24 +453,41 @@ probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
+ 		}
+ 
+ 		case DECODE_TYPE_CUSTOM: {
++			int err;
+ 			struct decode_custom *d = (struct decode_custom *)h;
+-			return actions[d->decoder.action].decoder(insn, asi, h);
++			int action = d->decoder.action;
++
++			err = run_checkers(checkers, action, origin_insn, asi, h);
++			if (err == INSN_REJECTED)
++				return INSN_REJECTED;
++			return actions[action].decoder(insn, asi, h);
+ 		}
+ 
+ 		case DECODE_TYPE_SIMULATE: {
++			int err;
+ 			struct decode_simulate *d = (struct decode_simulate *)h;
+-			asi->insn_handler = actions[d->handler.action].handler;
++			int action = d->handler.action;
++
++			err = run_checkers(checkers, action, origin_insn, asi, h);
++			if (err == INSN_REJECTED)
++				return INSN_REJECTED;
++			asi->insn_handler = actions[action].handler;
+ 			return INSN_GOOD_NO_SLOT;
+ 		}
+ 
+ 		case DECODE_TYPE_EMULATE: {
++			int err;
+ 			struct decode_emulate *d = (struct decode_emulate *)h;
++			int action = d->handler.action;
++
++			err = run_checkers(checkers, action, origin_insn, asi, h);
++			if (err == INSN_REJECTED)
++				return INSN_REJECTED;
+ 
+ 			if (!emulate)
+-				return actions[d->handler.action].decoder(insn,
+-					asi, h);
++				return actions[action].decoder(insn, asi, h);
+ 
+-			asi->insn_handler = actions[d->handler.action].handler;
++			asi->insn_handler = actions[action].handler;
+ 			set_emulated_insn(insn, asi, thumb);
+ 			return INSN_GOOD;
+ 		}
+diff --git a/arch/arm/probes/probes.h b/arch/arm/probes/probes.h
+index dba9f24..b4bf1f5 100644
+--- a/arch/arm/probes/probes.h
++++ b/arch/arm/probes/probes.h
+@@ -314,6 +314,14 @@ union decode_action {
+ 	probes_custom_decode_t	*decoder;
+ };
+ 
++typedef enum probes_insn (probes_check_t)(probes_opcode_t,
++					   struct arch_probes_insn *,
++					   const struct decode_header *);
++
++struct decode_checker {
++	probes_check_t	*checker;
++};
++
+ #define DECODE_END			\
+ 	{.bits = DECODE_TYPE_END}
+ 
+@@ -402,6 +410,7 @@ probes_insn_handler_t probes_emulate_none;
+ int __kprobes
+ probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
+ 		const union decode_item *table, bool thumb, bool emulate,
+-		const union decode_action *actions);
++		const union decode_action *actions,
++		const struct decode_checker **checkers);
+ 
+ #endif
+diff --git a/arch/arm/probes/uprobes.c b/arch/arm/probes/uprobes.c
+index 56adf9c..372585a 100644
+--- a/arch/arm/probes/uprobes.c
++++ b/arch/arm/probes/uprobes.c
+@@ -88,7 +88,7 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 	auprobe->ixol[1] = __opcode_to_mem_arm(UPROBE_SS_ARM_INSN);
+ 
+ 	ret = arm_probes_decode_insn(insn, &auprobe->asi, false,
+-				     uprobes_probes_actions);
++				     uprobes_probes_actions, NULL);
+ 	switch (ret) {
+ 	case INSN_REJECTED:
+ 		return -EINVAL;
 -- 
 1.8.4
 
