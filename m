@@ -1,84 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263AbaLAI4a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 03:56:30 -0500
-Received: from regular1.263xmail.com ([211.150.99.135]:47672 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752693AbaLAI43 (ORCPT
+	id S1752792AbaLAI7F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 03:59:05 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:49643 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752650AbaLAI7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 03:56:29 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: zyw@rock-chips.com
-X-FST-TO: linux-kernel@vger.kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: zyw@rock-chips.com
-X-UNIQUE-TAG: <3f1940c148671c760def8bcd4f095540>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <547C2D2D.8050409@rock-chips.com>
-Date: Mon, 01 Dec 2014 16:56:13 +0800
-From: Chris Zhong <zyw@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 1 Dec 2014 03:59:02 -0500
+Date: Mon, 1 Dec 2014 09:58:58 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        Huang Shijie <shijie8@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
+Subject: Re: [PATCH v6 0/3] mtd: nand: gpmi: add proper raw access support
+Message-ID: <20141201095858.75ac3889@bbrezillon>
+In-Reply-To: <20141201084709.GI29070@brian-ubuntu>
+References: <1417371030-24015-1-git-send-email-boris.brezillon@free-electrons.com>
+	<20141201084709.GI29070@brian-ubuntu>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kevin Hilman <khilman@kernel.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Tony Xie <xxx@rock-chips.com>, Kumar Gala <galak@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v9 3/4] ARM: dts: add RK3288 suspend support
-References: <1416900743-29204-1-git-send-email-zyw@rock-chips.com>	<1416900743-29204-4-git-send-email-zyw@rock-chips.com> <CAD=FV=Vv3ZG3WjMSkGdAW=2Vpev2JWfqJtyFdX=PVB_YjY7__g@mail.gmail.com>
-In-Reply-To: <CAD=FV=Vv3ZG3WjMSkGdAW=2Vpev2JWfqJtyFdX=PVB_YjY7__g@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Brian,
 
-On 12/01/2014 01:26 PM, Doug Anderson wrote:
-> Chris,
->
-> On Mon, Nov 24, 2014 at 11:32 PM, Chris Zhong <zyw@rock-chips.com> wrote:
->> add pmu sram node for suspend, add global_pwroff pinctrl.
->> The pmu sram is used to store the resume code.
->> global_pwroff is held low level at work, it would be pull to high
->> when entering suspend. reference this in the board DTS file since
->> some boards need it.
->>
->> Signed-off-by: Tony Xie <xxx@rock-chips.com>
->> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
->> Reviewed-by: Doug Anderson <dianders@chromium.org>
->> Tested-by: Doug Anderson <dianders@chromium.org>
->>
->> ---
->>
->> Changes in v9: None
-> This is untrue.  v8 had more stuff than v9.  See:
->
-> https://patchwork.kernel.org/patch/5311621/
->
-> vs.
->
-> https://patchwork.kernel.org/patch/5372911/
->
-> I prefer v8.
->
->
->
-Ah, I missed the ddr pinctrl in V9, Thank you.
-I have modified it, and post the V10.
+On Mon, 1 Dec 2014 00:47:09 -0800
+Brian Norris <computersforpeace@gmail.com> wrote:
 
+> On Sun, Nov 30, 2014 at 07:10:27PM +0100, Boris Brezillon wrote:
+> > Hello,
+> > 
+> > This series provides an implementation for raw accesses taking care of
+> > hidding the specific layout used by the GPMI controller.
+> > 
+> > Best Regards,
+> > 
+> > Boris
+> > 
+> > Changes since v5:
+> >  - rename gpmi_move_bits into gpmi_copy_bits
+> > 
+> > Changes since v4:
+> >  - fixed a few corner cases in gpmi_move_bits (tested it with:
+> >    https://github.com/bbrezillon/gpmi-move-bits-test/blob/master/gpmi-move-bits-test.c)
+> >  - add documentation and comments for the new gpmi functions
+> > 
+> > Changes since v3:
+> >  - add comments to the gpmi_move_bits function
+> >  - extend raw read/write documentation
+> >  - move last part of the raw_page_read function into a conditional block
+> > 
+> > Changes since v2:
+> >  - fixed a bug in gpmi_move_bits
+> >  - add a raw_buffer field to be used when using raw access methods
+> >    (experienced memory corruptions when directly using page_buffer_virt
+> >    buffer)
+> >  - add raw OOB access functions
+> 
+> Applied the series. Thanks!
+> 
+> Out of curiosity, what tests does gpmi-nand.c now pass/fail?
+
+The oobtest is still failing. I started to debug it, but didn't have
+enough time to make it work.
+
+The nandbiterrs test is working, though I didn't manage to make the
+incremental test fail (writing the same pattern 10000 times without
+erasing the block between each write does not generate any bit flips) on
+my SLC NAND: MT29F2G08ABAEAH4.
+Can someone with another SLC NAND chip try it ?
+
+> 
+> Also, is it time to yank / fixup some of these comments from
+> gpmi-nand.c?
+
+I was asking myself the same question...
+
+> 
+>  ...
+>  * FIXME: The following paragraph is incorrect, now that there exist
+>  * ecc.read_oob_raw and ecc.write_oob_raw functions.
+>  *
+>  * Since MTD assumes the OOB is not covered by ECC, there is no pair of
+>  * ECC-based/raw functions for reading or or writing the OOB. The fact that the
+>  * caller wants an ECC-based or raw view of the page is not propagated down to
+>  * this driver.
+>  */
+
+I guess we can remove them.
+Huang can you confirm that the raw access functions introduced in this
+series are covering what's described here ?
+
+Regards,
+
+Boris
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
