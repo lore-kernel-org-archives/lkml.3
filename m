@@ -1,112 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932806AbaLAXMm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 18:12:42 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:38233 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932576AbaLAXGu (ORCPT
+	id S932808AbaLAXNe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 18:13:34 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:35737 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932514AbaLAXNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 18:06:50 -0500
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 net-next 0/6] allow eBPF programs to be attached to sockets
-Date: Mon,  1 Dec 2014 15:06:33 -0800
-Message-Id: <1417475199-15950-1-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 1 Dec 2014 18:13:33 -0500
+Date: Mon, 1 Dec 2014 15:13:30 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
+        Michal Marek <mmarek@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH v8 01/12] Add kernel address sanitizer infrastructure.
+In-Reply-To: <1417104057-20335-2-git-send-email-a.ryabinin@samsung.com>
+Message-ID: <alpine.DEB.2.10.1412011512390.26834@chino.kir.corp.google.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1417104057-20335-1-git-send-email-a.ryabinin@samsung.com> <1417104057-20335-2-git-send-email-a.ryabinin@samsung.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-V1->V2:
+On Thu, 27 Nov 2014, Andrey Ryabinin wrote:
 
-fixed comments in sample code to state clearly that packet data is accessed
-with LD_ABS instructions and not internal skb fields.
-Also replaced constants in:
-BPF_LD_ABS(BPF_B, 14 + 9 /* R0 = ip->proto */),
-with:
-BPF_LD_ABS(BPF_B, ETH_HLEN + offsetof(struct iphdr, protocol) /* R0 = ip->proto */),
+> diff --git a/Documentation/kasan.txt b/Documentation/kasan.txt
+> new file mode 100644
+> index 0000000..a3a9009
+> --- /dev/null
+> +++ b/Documentation/kasan.txt
+> @@ -0,0 +1,169 @@
+> +Kernel address sanitizer
+> +================
+> +
+> +0. Overview
+> +===========
+> +
+> +Kernel Address sanitizer (KASan) is a dynamic memory error detector. It provides
+> +a fast and comprehensive solution for finding use-after-free and out-of-bounds
+> +bugs.
+> +
+> +KASan uses compile-time instrumentation for checking every memory access,
+> +therefore you will need a certain version of GCC >= 4.9.2
+> +
+> +Currently KASan is supported only for x86_64 architecture and requires that the
+> +kernel be built with the SLUB allocator.
+> +
+> +1. Usage
+> +=========
+> +
+> +To enable KASAN configure kernel with:
+> +
+> +	  CONFIG_KASAN = y
+> +
+> +and choose between CONFIG_KASAN_OUTLINE and CONFIG_KASAN_INLINE. Outline/inline
+> +is compiler instrumentation types. The former produces smaller binary the
+> +latter is 1.1 - 2 times faster. Inline instrumentation requires GCC 5.0 or
+> +latter.
+> +
+> +Currently KASAN works only with the SLUB memory allocator.
+> +For better bug detection and nicer report, enable CONFIG_STACKTRACE and put
+> +at least 'slub_debug=U' in the boot cmdline.
+> +
+> +To disable instrumentation for specific files or directories, add a line
+> +similar to the following to the respective kernel Makefile:
+> +
+> +        For a single file (e.g. main.o):
+> +                KASAN_SANITIZE_main.o := n
+> +
+> +        For all files in one directory:
+> +                KASAN_SANITIZE := n
+> +
 
-V1 cover:
-
-Introduce BPF_PROG_TYPE_SOCKET_FILTER type of eBPF programs that can be
-attached to sockets with setsockopt().
-Allow such programs to access maps via lookup/update/delete helpers.
-
-This feature was previewed by bpf manpage in commit b4fc1a460f30("Merge branch 'bpf-next'")
-Now it can actually run.
-
-1st patch adds LD_ABS/LD_IND instruction verification and
-2nd patch adds new setsockopt() flag.
-Patches 3-6 are examples in assembler and in C.
-
-Though native eBPF programs are way more powerful than classic filters
-(attachable through similar setsockopt() call), they don't have skb field
-accessors yet. Like skb->pkt_type, skb->dev->ifindex are not accessible.
-There are sevaral ways to achieve that. That will be in the next set of patches.
-So in this set native eBPF programs can only read data from packet and
-access maps.
-
-The most powerful example is sockex2_kern.c from patch 6 where ~200 lines of C
-are compiled into ~300 of eBPF instructions.
-It shows how quite complex packet parsing can be done.
-
-LLVM used to build examples is at https://github.com/iovisor/llvm
-which is fork of llvm trunk that I'm cleaning up for upstreaming.
-
-Alexei Starovoitov (6):
-  bpf: verifier: add checks for BPF_ABS | BPF_IND instructions
-  net: sock: allow eBPF programs to be attached to sockets
-  samples: bpf: example of stateful socket filtering
-  samples: bpf: elf_bpf file loader
-  samples: bpf: trivial eBPF program in C
-  samples: bpf: large eBPF program in C
-
- arch/alpha/include/uapi/asm/socket.h   |    3 +
- arch/avr32/include/uapi/asm/socket.h   |    3 +
- arch/cris/include/uapi/asm/socket.h    |    3 +
- arch/frv/include/uapi/asm/socket.h     |    3 +
- arch/ia64/include/uapi/asm/socket.h    |    3 +
- arch/m32r/include/uapi/asm/socket.h    |    3 +
- arch/mips/include/uapi/asm/socket.h    |    3 +
- arch/mn10300/include/uapi/asm/socket.h |    3 +
- arch/parisc/include/uapi/asm/socket.h  |    3 +
- arch/powerpc/include/uapi/asm/socket.h |    3 +
- arch/s390/include/uapi/asm/socket.h    |    3 +
- arch/sparc/include/uapi/asm/socket.h   |    3 +
- arch/xtensa/include/uapi/asm/socket.h  |    3 +
- include/linux/bpf.h                    |    4 +
- include/linux/filter.h                 |    1 +
- include/uapi/asm-generic/socket.h      |    3 +
- include/uapi/linux/bpf.h               |    1 +
- kernel/bpf/verifier.c                  |   70 ++++++++++-
- net/core/filter.c                      |   97 +++++++++++++-
- net/core/sock.c                        |   13 ++
- samples/bpf/Makefile                   |   20 +++
- samples/bpf/bpf_helpers.h              |   40 ++++++
- samples/bpf/bpf_load.c                 |  203 ++++++++++++++++++++++++++++++
- samples/bpf/bpf_load.h                 |   24 ++++
- samples/bpf/libbpf.c                   |   28 +++++
- samples/bpf/libbpf.h                   |   15 ++-
- samples/bpf/sock_example.c             |  101 +++++++++++++++
- samples/bpf/sockex1_kern.c             |   25 ++++
- samples/bpf/sockex1_user.c             |   49 ++++++++
- samples/bpf/sockex2_kern.c             |  215 ++++++++++++++++++++++++++++++++
- samples/bpf/sockex2_user.c             |   44 +++++++
- 31 files changed, 987 insertions(+), 5 deletions(-)
- create mode 100644 samples/bpf/bpf_helpers.h
- create mode 100644 samples/bpf/bpf_load.c
- create mode 100644 samples/bpf/bpf_load.h
- create mode 100644 samples/bpf/sock_example.c
- create mode 100644 samples/bpf/sockex1_kern.c
- create mode 100644 samples/bpf/sockex1_user.c
- create mode 100644 samples/bpf/sockex2_kern.c
- create mode 100644 samples/bpf/sockex2_user.c
-
--- 
-1.7.9.5
-
+More precisely, this requires CONFIG_SLUB_DEBUG and not just CONFIG_SLUB.
