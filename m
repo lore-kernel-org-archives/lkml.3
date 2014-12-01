@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110AbaLAKBp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 05:01:45 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:37525 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752691AbaLAKBo (ORCPT
+	id S1752836AbaLAKEw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 05:04:52 -0500
+Received: from www.linutronix.de ([62.245.132.108]:41723 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415AbaLAKEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 05:01:44 -0500
-Date: Mon, 1 Dec 2014 11:01:36 +0100
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        cornelia.huck@de.ibm.com, rusty@au1.ibm.com, nab@linux-iscsi.org,
-        pbonzini@redhat.com, thuth@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v7 16/46] virtio_blk: v1.0 support
-Message-ID: <20141201110136.1ff29a67@thinkpad-w530>
-In-Reply-To: <20141201092850.GD15607@redhat.com>
-References: <1417359787-10138-1-git-send-email-mst@redhat.com>
-	<1417359787-10138-17-git-send-email-mst@redhat.com>
-	<20141201091641.3085e682@thinkpad-w530>
-	<20141201092850.GD15607@redhat.com>
-Organization: IBM Deutschland GmbH
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	Mon, 1 Dec 2014 05:04:50 -0500
+Date: Mon, 1 Dec 2014 11:04:47 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] x86 / PM: Replace CONFIG_PM_RUNTIME in io_apic.c
+In-Reply-To: <5062650.1vTULtXiIc@vostro.rjw.lan>
+Message-ID: <alpine.DEB.2.11.1412011101150.3961@nanos>
+References: <5062650.1vTULtXiIc@vostro.rjw.lan>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120110-0021-0000-0000-000001F889DC
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, Dec 01, 2014 at 09:16:41AM +0100, David Hildenbrand wrote:
-> > > Based on patch by Cornelia Huck.
-> > > 
-> > > Note: for consistency, and to avoid sparse errors,
-> > >       convert all fields, even those no longer in use
-> > >       for virtio v1.0.
-> > > 
-> > > Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ...
-> > > 
-> > > -static unsigned int features[] = {
-> > > +static unsigned int features_legacy[] = {
-> > >  	VIRTIO_BLK_F_SEG_MAX, VIRTIO_BLK_F_SIZE_MAX, VIRTIO_BLK_F_GEOMETRY,
-> > >  	VIRTIO_BLK_F_RO, VIRTIO_BLK_F_BLK_SIZE, VIRTIO_BLK_F_SCSI,
-> > >  	VIRTIO_BLK_F_WCE, VIRTIO_BLK_F_TOPOLOGY, VIRTIO_BLK_F_CONFIG_WCE,
-> > >  	VIRTIO_BLK_F_MQ,
-> > > +}
-> > > +;
-> > > +static unsigned int features[] = {
-> > > +	VIRTIO_BLK_F_SEG_MAX, VIRTIO_BLK_F_SIZE_MAX, VIRTIO_BLK_F_GEOMETRY,
-> > > +	VIRTIO_BLK_F_RO, VIRTIO_BLK_F_BLK_SIZE,
-> > > +	VIRTIO_BLK_F_TOPOLOGY,
-> > > +	VIRTIO_BLK_F_MQ,
-> > > +	VIRTIO_F_VERSION_1,
-> > 
-> > We can fit this into less lines, like done for features_legacy.
+On Sat, 29 Nov 2014, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> Wrt packing code more tightly, I did it like this to
-> make it easier to compare the arrays.
-> Each flag is on the same line in original and new array.
-
-This just looks inconsistent to me.
-
-1. features_legacy is tightly packed
-2. half of features is tightly packed
-
-So either all tightly packed or put every item on a single line. At least
-that's what I would do :)
-
+> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+> depending on CONFIG_PM_RUNTIME may now be changed to depend on
+> CONFIG_PM.
 > 
-> > I was asking myself if we could do the conversion of the statical values
-> > somehow upfront, to reduce the patch size and avoid cpu_to_virtio.* at those
-> > places.
-> > 
-> > Otherwise looks good to me.
-> > 
+> Replace CONFIG_PM_RUNTIME with CONFIG_PM in x86/kernel/apic/io_apic.c.
 > 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+> 
+> This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP
+> is selected) which currently is only in linux-next (via linux-pm).
 
+The function below is moving in linux-next to a different place
+.... So it has to wait until everything has hit linus tree.
+
+Feel free to send the cleanups directly to Linus after linux-pm and
+x86 has been merged.
+ 
+Thanks,
+
+	tglx
