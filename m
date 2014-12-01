@@ -1,110 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932871AbaLAXSf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 18:18:35 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:56398 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932461AbaLAXSc (ORCPT
+	id S932772AbaLAXUn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 18:20:43 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:57835 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932408AbaLAXUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 18:18:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141201153336.GB3180@laptop.dumpdata.com>
-References: <cover.1414516558.git.luto@amacapital.net> <6b0c9b0fc128de68634c730a5b1a80e1d085ad02.1414516558.git.luto@amacapital.net>
- <20141028174629.GA2150@jtriplet-mobl1> <CALCETrUihPeKODJqi3tMYwyWYhML1Z=gr4wrVK5VnaFo=KGVJA@mail.gmail.com>
- <20141029200016.GK3424@laptop.dumpdata.com> <CALCETrW+f8S9fNrui_J34q3Ve4jwA=neGe-tYZ_Lbp+ML3LiRw@mail.gmail.com>
- <20141201153336.GB3180@laptop.dumpdata.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 1 Dec 2014 15:18:11 -0800
-Message-ID: <CALCETrUR6RKPZ7XpEp6NNu7n2W4TdAPQTCkB8Tpc2iF2SfdROw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] x86_64,vsyscall: Make vsyscall emulation configurable
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Josh Triplett <josh@joshtriplett.org>,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 1 Dec 2014 18:20:39 -0500
+From: James Hogan <james.hogan@imgtec.com>
+To: Mike Turquette <mturquette@linaro.org>, linux-metag@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Heiko Stuebner <heiko@sntech.de>, James Hogan <james.hogan@imgtec.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>
+Subject: [PATCH v2 00/16] tz1090: add clock components
+Date: Mon,  1 Dec 2014 23:19:50 +0000
+Message-Id: <1417476006-10407-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 1, 2014 2:08 PM, "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com> wrote:
->
-> On Wed, Oct 29, 2014 at 02:30:29PM -0700, Andy Lutomirski wrote:
-> > On Oct 29, 2014 1:00 PM, "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com> wrote:
-> > >
-> > > On Tue, Oct 28, 2014 at 11:09:53AM -0700, Andy Lutomirski wrote:
-> > > > On Tue, Oct 28, 2014 at 10:57 AM, Josh Triplett <josh@joshtriplett.org> wrote:
-> > > > > On Tue, Oct 28, 2014 at 10:22:28AM -0700, Andy Lutomirski wrote:
-> > > > >> This adds CONFIG_X86_VSYSCALL_EMULATION, guarded by CONFIG_EXPERT.
-> > > > >> Turning it off completely disables vsyscall emulation, saving ~3.5k
-> > > > >> for vsyscall_64.c, 4k for vsyscall_emu_64.S (the fake vsyscall
-> > > > >> page), some tiny amount of core mm code that supports a gate area,
-> > > > >> and possibly 4k for a wasted pagetable.  The latter is because the
-> > > > >> vsyscall addresses are misaligned and fit poorly in the fixmap.
-> > > > >>
-> > > > >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> > > > >
-> > > > > One minor nit below, but with or without that change,
-> > > > > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> > > > >
-> > > > >> --- a/arch/x86/xen/mmu.c
-> > > > >> +++ b/arch/x86/xen/mmu.c
-> > > > >> @@ -1456,11 +1456,13 @@ static int xen_pgd_alloc(struct mm_struct *mm)
-> > > > >>               user_pgd = (pgd_t *)__get_free_page(GFP_KERNEL | __GFP_ZERO);
-> > > > >>               page->private = (unsigned long)user_pgd;
-> > > > >>
-> > > > >> +#ifdef CONFIG_X86_VSYSCALL_EMULATION
-> > > > >>               if (user_pgd != NULL) {
-> > > > >>                       user_pgd[pgd_index(VSYSCALL_ADDR)] =
-> > > > >>                               __pgd(__pa(level3_user_vsyscall) | _PAGE_TABLE);
-> > > > >>                       ret = 0;
-> > > > >>               }
-> > > > >> +#endif
-> > > > >
-> > > > > Could you instead make the if use IS_ENABLED?
-> > > > >
-> > > > >                 if (IS_ENABLED(CONFIG_X86_VSYSCALL_EMULATION) && user_pgd != NULL)
-> > > > >
-> > > > > That has the advantage of ensuring that the code continues to compile.
-> > > > > (Given that you haven't removed level3_user_vsyscall, that should work.)
-> > > >
-> > > > I need the ret = 0, I think, so I'll resend.
-> > > >
-> > > > I think I'd rather use #ifdef here, since I think it would be great if
-> > > > the Xen people could clean this up further.  With this change, under
-> > > > some configurations, there should be no user-accessible kernel
-> > > > addresses at all.  (Also, is there some PV mechanism
->
-> What about the vsyscall time stamp (aka kvm-clock). That is not
-> really VSYSCALL emulation based but normal code?
+This patchset adds common clock framework support for the TZ1090 SoC.
 
-That's entirely separate now.
+Patch 1 adds common code to simplify TZ1090 clock providers.
 
->
-> > > > that I'm not thinking of that will break with this change?  I know
-> > > > I've tripped over Xen pagetable and fixmap oddities before.)
-> > >
-> > > Not that I know of. The vsyscall is the only one that I know of that
-> > > does this.
-> >
-> > There's kvm-clock, too, but that may never co-exist with Xen.
->
-> It will eventually.
+Patches 2 to 6 add TZ1090 clock types, specifically:
+* Gate banks (a register containing clock gate bits)
+* Mux banks (a register containing clock mux bits)
+* Clock deleters (delete up to 1023 out of every 1024 clocks)
+* PLLs (True Circuits, but TZ1090 specific register interface)
+* Divider clock (pretty basic divider, but specific to TZ1090)
 
-Hmm. Maybe I should clean up the read code first.
+Patches 7 to 14 add clock providers and DT bindings:
+* Top level register  (TOP) clocks
+* High end peripheral (HEP) clocks
+* Peripheral (PERIP) clocks
+* PowerDown Controller (PDC) clocks
 
---Andy
+Finally patch 15 defines most of the TZ1090 clocks in DT using these
+clock providers, with a few placeholders for less interesting clocks
+from more complex components, and patch 16 hooks up the Meta core clock
+so that the precise frequency of the Meta clock source can be
+determined. These are mostly for reference to give an idea how the clock
+components are intended to be used, and I'll take this one through the
+metag tree when the drivers/clk/ stuff is accepted.
 
-> >
-> > I tagged v2 here:
-> >
-> > https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/tag/?id=optional-vsyscall-emulation-v2
-> >
-> > and I'll send it out in a bit.
-> >
-> > --Andy
-> >
-> > >
-> > > Do you have a full patchset somewhere for testing?
-> > > >
-> > > > --Andy
+Changes since v1:
+
+Rework (the main change):
+- Convert explicit DT representation of clock infrastructure using
+  generic bindings for individual components to several TZ1090 specific
+  bindings representing groups of TZ1090 clocks (thanks Heiko). This
+  results in more lines of code overall, but it is nicer and more
+  maintainable.
+- Add common code for allocating and registering TZ1090 specific clock
+  providers. Various tz1090_clk_register_*() helper functions are
+  provided to conveniently register various low level TZ1090 clocks in a
+  clock provider from static initialisation data, which can be
+  initialised statically using provided macros.
+- Drop DT bindings for TZ1090 gate banks, mux banks, deleters, dividers
+  and PLLs as they will be instantiated directly from a larger clock
+  provider rather than individually from DT.
+- Switch back to using clk_divider::width rather than clk_divider::mask.
+  Mask was only added to make it easier to be exposed in a DT binding,
+  which is no longer required.
+- Add DT bindings and clock providers for TZ1090 top level register
+  clocks (TOP), high end peripheral clocks (HEP), peripheral (PERIP)
+  clocks, and powerdown controller clocks (PDC).
+- Add headers in <dt-bindings/clock/> to enumerate provided clocks.
+- Move divider specific flags (policy) to clock providers as dividers
+  will be instantiated by a provider rather than directly from DT.
+
+Functional changes and corrections:
+- Tweak various clock names. A couple were wrong, some had the slightly
+  redundant text "clk" in them, and others were output clocks so were
+  better named without the "_en" which the output of clock gates tend to
+  be called.
+- Add TOP_CLKEN register to top clocks, which gates system clock to PDC.
+- Combine unrepresented AFE block clocks into single fixed-clock
+  placeholder.
+
+Other cleanups and refactorings:
+- Split out wrapped (meta exclusive locked) divider driver from PDC
+  clock driver to clk-tz1090-divider.c.
+- Change the PDC clocks DT bindings and driver to conceptually represent
+  all clocks provided by the PDC in TZ1090 rather than the same generic
+  arrangement of clocks as the PDC in TZ1090, since the driver will use
+  the common TZ1090 specific clock provider helpers to provide specific
+  clocks.
+- Change PDC clocks compatible string from "img,tz1090-pdc-clock" to
+  "img,tz1090-pdc-clocks" to match the intended purpose.
+- Add clock-names as required property to PDC clocks DT binding as used
+  by common TZ1090 clock provider code.
+- Mention standard clock-indices and clock-output-names in PDC clocks DT
+  binding as optional properties for when the clocks may be used by
+  other clock providers and should match the names used in the driver.
+- Split out use of Meta core clock into separate patch 16.
+- Renamed function prefixes from clk_tz1090_ to tz1090_clk_ for
+  consistency with the rest.
+- Tweak ascii art clock diagrams a little.
+
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Heiko Stuebner <heiko@sntech.de>
+Cc: linux-metag@vger.kernel.org
+Cc: devicetree@vger.kernel.org
+
+James Hogan (16):
+  clk: tz1090: add clock provider common code
+  clk: tz1090: add gate bank clock driver
+  clk: tz1090: add mux bank clock driver
+  clk: tz1090: add deleter clock driver
+  clk: tz1090: add divider clock driver
+  clk: tz1090: add PLL clock driver
+  dt: binding: add binding for TZ1090 PDC clocks
+  clk: tz1090: add PDC clock provider driver
+  dt: binding: add binding for TZ1090 TOP clocks
+  clk: tz1090: add TOP clock provider driver
+  dt: binding: add binding for TZ1090 HEP clocks
+  clk: tz1090: add HEP clock provider driver
+  dt: binding: add binding for TZ1090 PERIP clocks
+  clk: tz1090: add PERIP clock provider driver
+  metag: tz1090: add TZ1090 clocks to device tree
+  metag: tz1090: connect Meta core clock
+
+ .../bindings/clock/img,tz1090-hep-cru.txt          |  53 +++
+ .../bindings/clock/img,tz1090-pdc-clocks.txt       |  59 ++++
+ .../bindings/clock/img,tz1090-perip-cru.txt        |  49 +++
+ .../bindings/clock/img,tz1090-top-clocks.txt       |  68 ++++
+ arch/metag/Kconfig.soc                             |   1 +
+ arch/metag/boot/dts/tz1090.dtsi                    |   4 +
+ arch/metag/boot/dts/tz1090_clk.dtsi                | 143 ++++++++
+ drivers/clk/Makefile                               |   1 +
+ drivers/clk/tz1090/Makefile                        |  13 +
+ drivers/clk/tz1090/clk-tz1090-deleter.c            | 132 ++++++++
+ drivers/clk/tz1090/clk-tz1090-divider.c            | 151 +++++++++
+ drivers/clk/tz1090/clk-tz1090-gate-bank.c          | 149 +++++++++
+ drivers/clk/tz1090/clk-tz1090-hep.c                |  46 +++
+ drivers/clk/tz1090/clk-tz1090-mux-bank.c           | 139 ++++++++
+ drivers/clk/tz1090/clk-tz1090-pdc.c                |  52 +++
+ drivers/clk/tz1090/clk-tz1090-perip.c              |  57 ++++
+ drivers/clk/tz1090/clk-tz1090-pll.c                | 276 ++++++++++++++++
+ drivers/clk/tz1090/clk-tz1090-top.c                | 364 +++++++++++++++++++++
+ drivers/clk/tz1090/clk.c                           |  89 +++++
+ drivers/clk/tz1090/clk.h                           | 254 ++++++++++++++
+ include/dt-bindings/clock/tz1090-hep.h             |  19 ++
+ include/dt-bindings/clock/tz1090-pdc.h             |  18 +
+ include/dt-bindings/clock/tz1090-perip.h           |  30 ++
+ include/dt-bindings/clock/tz1090-top.h             | 118 +++++++
+ 24 files changed, 2285 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/img,tz1090-hep-cru.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/img,tz1090-pdc-clocks.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/img,tz1090-perip-cru.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/img,tz1090-top-clocks.txt
+ create mode 100644 arch/metag/boot/dts/tz1090_clk.dtsi
+ create mode 100644 drivers/clk/tz1090/Makefile
+ create mode 100644 drivers/clk/tz1090/clk-tz1090-deleter.c
+ create mode 100644 drivers/clk/tz1090/clk-tz1090-divider.c
+ create mode 100644 drivers/clk/tz1090/clk-tz1090-gate-bank.c
+ create mode 100644 drivers/clk/tz1090/clk-tz1090-hep.c
+ create mode 100644 drivers/clk/tz1090/clk-tz1090-mux-bank.c
+ create mode 100644 drivers/clk/tz1090/clk-tz1090-pdc.c
+ create mode 100644 drivers/clk/tz1090/clk-tz1090-perip.c
+ create mode 100644 drivers/clk/tz1090/clk-tz1090-pll.c
+ create mode 100644 drivers/clk/tz1090/clk-tz1090-top.c
+ create mode 100644 drivers/clk/tz1090/clk.c
+ create mode 100644 drivers/clk/tz1090/clk.h
+ create mode 100644 include/dt-bindings/clock/tz1090-hep.h
+ create mode 100644 include/dt-bindings/clock/tz1090-pdc.h
+ create mode 100644 include/dt-bindings/clock/tz1090-perip.h
+ create mode 100644 include/dt-bindings/clock/tz1090-top.h
+
+-- 
+2.0.4
+
