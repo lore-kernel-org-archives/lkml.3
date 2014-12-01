@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132AbaLAS7j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 13:59:39 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:33334 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753310AbaLAS7i (ORCPT
+	id S1754184AbaLATAS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 14:00:18 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:60216 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754137AbaLATAQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 13:59:38 -0500
-Date: Mon, 1 Dec 2014 10:59:34 -0800
-From: Shaohua Li <shli@kernel.org>
-To: Jens Axboe <axboe@fb.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] blk-mq: don't use rw_is_sync() to determine sync request
-Message-ID: <20141201185934.GA52328@kernel.org>
-References: <4f327fd4f830a3fceab3694cdd7621c37f780809.1417391999.git.shli@kernel.org>
- <547BC5CF.7080904@fb.com>
- <20141201035712.GA8443@kernel.org>
+	Mon, 1 Dec 2014 14:00:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141201035712.GA8443@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <547CAEA3.3090906@redhat.com>
+References: <CAP145pgZ2rbALf-Ce=uGc72DBCNXBvkrEPG43VUkSqkpiLuKsA@mail.gmail.com>
+	<547CA719.6060101@redhat.com>
+	<CAP145pggcEUKz3QhDEGdzWZDusPfwJsZ8juqjbRr+8g6RxuJfA@mail.gmail.com>
+	<547CAEA3.3090906@redhat.com>
+Date: Mon, 1 Dec 2014 20:00:15 +0100
+Message-ID: <CAP145pici-xNuvyhdyRdSok_p_1KXvuNKeceMcdaWdEw8VOBuQ@mail.gmail.com>
+Subject: Re: panic in skb_push via sctp
+From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: linux-sctp@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vyasevich@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 30, 2014 at 07:57:12PM -0800, Shaohua Li wrote:
-> On Sun, Nov 30, 2014 at 06:35:11PM -0700, Jens Axboe wrote:
-> > On 11/30/2014 05:01 PM, Shaohua Li wrote:
-> > >Buffer read is counted as sync in rw_is_sync(). If we use it,
-> > >blk_sq_make_request() will not do per-process plug any more.
-> > >
-> > >I haven't changed blk_mq_make_request() yet. It makes sense to dispatch
-> > >REQ_SYNC request immediately. But for buffer read, it's weird not to do
-> > >per-process plug, as buffer read doesn't need low latency.
-> > >blk_mq_merge_queue_io() isn't very helpful, as we don't have delay mechanism
-> > >there, the queue is immediately flushed, which makes the merge very
-> > >superficial.
-> > 
-> > A read is sync, buffered or not. A buffered read is every bit as
-> > latency sensitive as an O_DIRECT read. I think it'd be fine to
-> > modify rw_is_sync() to disregard REQ_AHEAD as sync (and ensure it's
-> > carried forward in the request flags, too). At least to the extent
-> > that we process plug and get the merging, since for streamed reads
-> > we'd soon be waiting on them anyway.
-> 
-> A quick search shows nobody uses REQ_AHEAD. For stream reads, only first several
-> reads are waited I suppose, later reads are read ahead. Maybe only counts
-> REQ_META read as sync?
+2014-12-01 19:08 GMT+01:00 Daniel Borkmann <dborkman@redhat.com>:
+>
+>> Thanks for looking into it. I can try with your patch, but no
+>> guarantees that the fuzzer will hit the same condition in some
+>> reasonable time-frame. Will get back in some time with results.
+>
+>
+> Ok, thanks!
+>
+>> PS. If you think it's possible to create a repro (userland code) which
+>> can trigger this, I can give it a try.
+>
+>
+> Did by accident trinity create tunnels? It looks that upper layer
+> protocols (except SCTP) all allocate and reserve MAX_HEADER to
+> accommodate enough head room in worst case for possible tunnels.
 
-Changing rw_is_sync() sounds risky, as it will change behavior of other parts,
-like CFQ. REQ_META/REQ_PRIO isn't an option, metadata does readahead too.
-And nobody uses REQ_AHEAD. explictly checking REQ_SYNC in blk_sq_make_request()
-sounds better, which is just for pluging and we use it for ages in
-blk_queue_bio().
+Not sure, but I run it inside a pid/ipc/uts/etc/user-namespaces where
+it operates with a full set of capabilities, so most of the SOCK_RAW
+and tunnel-like-creating calls succeed, so maybe..
 
--Shaohua
+-- 
+Robert Święcki
