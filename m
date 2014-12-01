@@ -1,272 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944AbaLAQsF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 11:48:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45136 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753224AbaLAQsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 11:48:03 -0500
-Date: Mon, 1 Dec 2014 18:05:55 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Jason Wang <jasowang@redhat.com>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Ben Hutchings <ben@decadent.org.uk>, Tom Herbert <therbert@google.com>,
-        Masatake YAMATO <yamato@redhat.com>, Xi Wang <xii@google.com>,
-        netdev@vger.kernel.org
-Subject: [PATCH v8 38/50] tun: drop most type defines
-Message-ID: <1417449619-24896-39-git-send-email-mst@redhat.com>
-References: <1417449619-24896-1-git-send-email-mst@redhat.com>
+	id S1754054AbaLAQsy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 11:48:54 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:41596 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504AbaLAQsw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 11:48:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417449619-24896-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+In-Reply-To: <CALYGNiM0C3RND_3yVzCMUtzoo33kG5jS+C1KL19j8JYf150-Og@mail.gmail.com>
+References: <b0f6c4df0e8ef8afcc7b786edecb4be8c752941e.1417215468.git.luto@amacapital.net>
+ <CALYGNiOV9Ms=JW5sOhdmh2BmR1v+4obE8DQ0v+3rgQYkh=h2GQ@mail.gmail.com>
+ <CALCETrW0Kmi+bJSSegjD4pSZoYhDMyQUJALZY72r388giV+ruQ@mail.gmail.com> <CALYGNiM0C3RND_3yVzCMUtzoo33kG5jS+C1KL19j8JYf150-Og@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 1 Dec 2014 08:48:29 -0800
+Message-ID: <CALCETrXz8P1csgYQuvQc8N=Sx+OX=wSmJF-edodcD_H7x87JeQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] proc, pidns: Add highpid
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: David Herrmann <dh.herrmann@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        systemd Mailing List <systemd-devel@lists.freedesktop.org>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        =?UTF-8?B?0JXQvNC10LvRjNGP0L3QvtCyINCf0LDQstC10Ls=?= 
+	<xemul@parallels.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's just as easy to use IFF_ flags directly,
-there's no point in adding our own defines.
+On Mon, Dec 1, 2014 at 8:39 AM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+> On Mon, Dec 1, 2014 at 7:21 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Sun, Nov 30, 2014 at 11:03 PM, Konstantin Khlebnikov
+>> <koct9i@gmail.com> wrote:
+>>> Hmm. What about per-task/thread UUID? exported via separate file: /proc/PID/uuid
+>>> It could be created at the first access, thus this wouldn't shlowdown clone().
+>>> Also it could be droped at execve(), so it'll describe execution
+>>> context more precisely than pid.
+>>>
+>>
+>> I'd be all for this if it weren't for two issues:
+>>
+>> 1. This thing needs to work as soon as init is started, and we can't
+>> reliably generate random numbers that early.
+>>
+>> 2. Migration / CRIU is rather fundamentally at odds with making
+>> anything universally unique, as opposed to just per-user-ns.
+>>
+>> So, given that I don't think we can actually provide a universally
+>> unique pid-like thing, I'd rather not even try.
+>
+> Well... another idea: what about pid generation counter? Of course it
+> should be per-pid-ns.
+> As I see struct upid has nice 32-bit hole next to 'nr' field. (on
+> 64-bit systems)
+>
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/net/tun.c | 62 +++++++++++++++++++++++++------------------------------
- 1 file changed, 28 insertions(+), 34 deletions(-)
+I thought about that, but it has two issues:
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index b4e4ca0..36be4fd 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -109,12 +109,6 @@ do {								\
-  * overload it to mean fasync when stored there.
-  */
- #define TUN_FASYNC	IFF_ATTACH_QUEUE
--#define TUN_NO_PI	IFF_NO_PI
--/* This flag has no real effect */
--#define TUN_ONE_QUEUE	IFF_ONE_QUEUE
--#define TUN_PERSIST 	IFF_PERSIST
--#define TUN_VNET_HDR 	IFF_VNET_HDR
--#define TUN_TAP_MQ      IFF_MULTI_QUEUE
- 
- #define TUN_FEATURES (IFF_NO_PI | IFF_ONE_QUEUE | IFF_VNET_HDR | \
- 		      IFF_MULTI_QUEUE)
-@@ -487,7 +481,7 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
- 		if (tun && tun->numqueues == 0 && tun->numdisabled == 0) {
- 			netif_carrier_off(tun->dev);
- 
--			if (!(tun->flags & TUN_PERSIST) &&
-+			if (!(tun->flags & IFF_PERSIST) &&
- 			    tun->dev->reg_state == NETREG_REGISTERED)
- 				unregister_netdevice(tun->dev);
- 		}
-@@ -538,7 +532,7 @@ static void tun_detach_all(struct net_device *dev)
- 	}
- 	BUG_ON(tun->numdisabled != 0);
- 
--	if (tun->flags & TUN_PERSIST)
-+	if (tun->flags & IFF_PERSIST)
- 		module_put(THIS_MODULE);
- }
- 
-@@ -556,7 +550,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file, bool skip_filte
- 		goto out;
- 
- 	err = -EBUSY;
--	if (!(tun->flags & TUN_TAP_MQ) && tun->numqueues == 1)
-+	if (!(tun->flags & IFF_MULTI_QUEUE) && tun->numqueues == 1)
- 		goto out;
- 
- 	err = -E2BIG;
-@@ -935,7 +929,7 @@ static void tun_net_init(struct net_device *dev)
- 	struct tun_struct *tun = netdev_priv(dev);
- 
- 	switch (tun->flags & TUN_TYPE_MASK) {
--	case TUN_TUN_DEV:
-+	case IFF_TUN:
- 		dev->netdev_ops = &tun_netdev_ops;
- 
- 		/* Point-to-Point TUN Device */
-@@ -949,7 +943,7 @@ static void tun_net_init(struct net_device *dev)
- 		dev->tx_queue_len = TUN_READQ_SIZE;  /* We prefer our own queue length */
- 		break;
- 
--	case TUN_TAP_DEV:
-+	case IFF_TAP:
- 		dev->netdev_ops = &tap_netdev_ops;
- 		/* Ethernet TAP Device */
- 		ether_setup(dev);
-@@ -1040,7 +1034,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 	int err;
- 	u32 rxhash;
- 
--	if (!(tun->flags & TUN_NO_PI)) {
-+	if (!(tun->flags & IFF_NO_PI)) {
- 		if (len < sizeof(pi))
- 			return -EINVAL;
- 		len -= sizeof(pi);
-@@ -1050,7 +1044,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 		offset += sizeof(pi);
- 	}
- 
--	if (tun->flags & TUN_VNET_HDR) {
-+	if (tun->flags & IFF_VNET_HDR) {
- 		if (len < tun->vnet_hdr_sz)
- 			return -EINVAL;
- 		len -= tun->vnet_hdr_sz;
-@@ -1067,7 +1061,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 		offset += tun->vnet_hdr_sz;
- 	}
- 
--	if ((tun->flags & TUN_TYPE_MASK) == TUN_TAP_DEV) {
-+	if ((tun->flags & TUN_TYPE_MASK) == IFF_TAP) {
- 		align += NET_IP_ALIGN;
- 		if (unlikely(len < ETH_HLEN ||
- 			     (gso.hdr_len && gso.hdr_len < ETH_HLEN)))
-@@ -1130,8 +1124,8 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 	}
- 
- 	switch (tun->flags & TUN_TYPE_MASK) {
--	case TUN_TUN_DEV:
--		if (tun->flags & TUN_NO_PI) {
-+	case IFF_TUN:
-+		if (tun->flags & IFF_NO_PI) {
- 			switch (skb->data[0] & 0xf0) {
- 			case 0x40:
- 				pi.proto = htons(ETH_P_IP);
-@@ -1150,7 +1144,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 		skb->protocol = pi.proto;
- 		skb->dev = tun->dev;
- 		break;
--	case TUN_TAP_DEV:
-+	case IFF_TAP:
- 		skb->protocol = eth_type_trans(skb, tun->dev);
- 		break;
- 	}
-@@ -1256,10 +1250,10 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 	if (vlan_tx_tag_present(skb))
- 		vlan_hlen = VLAN_HLEN;
- 
--	if (tun->flags & TUN_VNET_HDR)
-+	if (tun->flags & IFF_VNET_HDR)
- 		vnet_hdr_sz = tun->vnet_hdr_sz;
- 
--	if (!(tun->flags & TUN_NO_PI)) {
-+	if (!(tun->flags & IFF_NO_PI)) {
- 		if ((len -= sizeof(pi)) < 0)
- 			return -EINVAL;
- 
-@@ -1592,7 +1586,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 			return -EINVAL;
- 
- 		if (!!(ifr->ifr_flags & IFF_MULTI_QUEUE) !=
--		    !!(tun->flags & TUN_TAP_MQ))
-+		    !!(tun->flags & IFF_MULTI_QUEUE))
- 			return -EINVAL;
- 
- 		if (tun_not_capable(tun))
-@@ -1605,7 +1599,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 		if (err < 0)
- 			return err;
- 
--		if (tun->flags & TUN_TAP_MQ &&
-+		if (tun->flags & IFF_MULTI_QUEUE &&
- 		    (tun->numqueues + tun->numdisabled > 1)) {
- 			/* One or more queue has already been attached, no need
- 			 * to initialize the device again.
-@@ -1628,11 +1622,11 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 		/* Set dev type */
- 		if (ifr->ifr_flags & IFF_TUN) {
- 			/* TUN device */
--			flags |= TUN_TUN_DEV;
-+			flags |= IFF_TUN;
- 			name = "tun%d";
- 		} else if (ifr->ifr_flags & IFF_TAP) {
- 			/* TAP device */
--			flags |= TUN_TAP_DEV;
-+			flags |= IFF_TAP;
- 			name = "tap%d";
- 		} else
- 			return -EINVAL;
-@@ -1825,7 +1819,7 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
- 		ret = tun_attach(tun, file, false);
- 	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
- 		tun = rtnl_dereference(tfile->tun);
--		if (!tun || !(tun->flags & TUN_TAP_MQ) || tfile->detached)
-+		if (!tun || !(tun->flags & IFF_MULTI_QUEUE) || tfile->detached)
- 			ret = -EINVAL;
- 		else
- 			__tun_detach(tfile, false);
-@@ -1929,12 +1923,12 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 		/* Disable/Enable persist mode. Keep an extra reference to the
- 		 * module to prevent the module being unprobed.
- 		 */
--		if (arg && !(tun->flags & TUN_PERSIST)) {
--			tun->flags |= TUN_PERSIST;
-+		if (arg && !(tun->flags & IFF_PERSIST)) {
-+			tun->flags |= IFF_PERSIST;
- 			__module_get(THIS_MODULE);
- 		}
--		if (!arg && (tun->flags & TUN_PERSIST)) {
--			tun->flags &= ~TUN_PERSIST;
-+		if (!arg && (tun->flags & IFF_PERSIST)) {
-+			tun->flags &= ~IFF_PERSIST;
- 			module_put(THIS_MODULE);
- 		}
- 
-@@ -1992,7 +1986,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 	case TUNSETTXFILTER:
- 		/* Can be set only for TAPs */
- 		ret = -EINVAL;
--		if ((tun->flags & TUN_TYPE_MASK) != TUN_TAP_DEV)
-+		if ((tun->flags & TUN_TYPE_MASK) != IFF_TAP)
- 			break;
- 		ret = update_filter(&tun->txflt, (void __user *)arg);
- 		break;
-@@ -2051,7 +2045,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 	case TUNATTACHFILTER:
- 		/* Can be set only for TAPs */
- 		ret = -EINVAL;
--		if ((tun->flags & TUN_TYPE_MASK) != TUN_TAP_DEV)
-+		if ((tun->flags & TUN_TYPE_MASK) != IFF_TAP)
- 			break;
- 		ret = -EFAULT;
- 		if (copy_from_user(&tun->fprog, argp, sizeof(tun->fprog)))
-@@ -2063,7 +2057,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 	case TUNDETACHFILTER:
- 		/* Can be set only for TAPs */
- 		ret = -EINVAL;
--		if ((tun->flags & TUN_TYPE_MASK) != TUN_TAP_DEV)
-+		if ((tun->flags & TUN_TYPE_MASK) != IFF_TAP)
- 			break;
- 		ret = 0;
- 		tun_detach_filter(tun, tun->numqueues);
-@@ -2071,7 +2065,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 
- 	case TUNGETFILTER:
- 		ret = -EINVAL;
--		if ((tun->flags & TUN_TYPE_MASK) != TUN_TAP_DEV)
-+		if ((tun->flags & TUN_TYPE_MASK) != IFF_TAP)
- 			break;
- 		ret = -EFAULT;
- 		if (copy_to_user(argp, &tun->fprog, sizeof(tun->fprog)))
-@@ -2264,10 +2258,10 @@ static void tun_get_drvinfo(struct net_device *dev, struct ethtool_drvinfo *info
- 	strlcpy(info->version, DRV_VERSION, sizeof(info->version));
- 
- 	switch (tun->flags & TUN_TYPE_MASK) {
--	case TUN_TUN_DEV:
-+	case IFF_TUN:
- 		strlcpy(info->bus_info, "tun", sizeof(info->bus_info));
- 		break;
--	case TUN_TAP_DEV:
-+	case IFF_TAP:
- 		strlcpy(info->bus_info, "tap", sizeof(info->bus_info));
- 		break;
- 	}
+1. Implementing it will be pain.  The pid allocation algorithm is
+already complicated, and it wasn't obvious to me how to accurately
+detect wraparound without racing against other wrapping users.
+
+2. I don't think it will be reliable.  Suppose that there are pid_max
+- 1 processes.  One of them can repeatedly clone and exit,
+incrementing the generation counter each time.  After 2^32 iterations,
+which won't take all that long, the pid generation will wrap.
+
+--Andy
+
+>>
+>> That being said, I want to rework this a little bit.  I think that
+>> highpid should be restricted to the range 2^32 through 2^64 - 4096.
+>> The former prevents anyone from confusing highpid with regular pid,
+>> and the latter means that we don't need to worry about confusion
+>> between errors and valid highpids (e.g. -1 will never be a highpid).
+>>
+>> Implementing that will be only mildly annoying.
+>>
+>> --Andy
+>>
+>>> On Sat, Nov 29, 2014 at 2:05 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>> Pid reuse is common, which means that it's difficult or impossible
+>>>> to read information about a pid from /proc without races.
+>>>>
+>>>> This introduces a second number associated with each (task, pidns)
+>>>> pair called highpid.  Highpid is a 64-bit number, and, barring
+>>>> extremely unlikely circumstances or outright error, a (highpid, pid)
+>>>> will never be reused.
+>>>>
+>>>> With just this change, a program can open /proc/PID/status, read the
+>>>> "Highpid" field, and confirm that it has the expected value.  If the
+>>>> pid has been reused, then highpid will be different.
+>>>>
+>>>> The initial implementation is straightforward: highpid is simply a
+>>>> 64-bit counter. If a high-end system can fork every 3 ns (which
+>>>> would be amazing, given that just allocating a pid requires at
+>>>> atomic operation), it would take well over 1000 years for highpid to
+>>>> wrap.
+>>>>
+>>>> For CRIU's benefit, the next highpid can be set by a privileged
+>>>> user.
+>>>>
+>>>> NB: The sysctl stuff only works on 64-bit systems.  If the approach
+>>>> looks good, I'll fix that somehow.
+>>>>
+>>>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>>>> ---
+>>>>
+>>>> If this goes in, there's plenty of room to add new interfaces to
+>>>> make this more useful.  For example, we could add a fancier tgkill
+>>>> that adds and validates hightgid and highpid, and we might want to
+>>>> add a syscall to read one's own hightgid and highpid.  These would
+>>>> be quite useful for pidfiles.
+>>>>
+>>>> David, would this be useful for kdbus?
+>>>>
+>>>> CRIU people: will this be unduly difficult to support in CRIU?
+>>>>
+>>>> If you all think this is a good idea, I'll fix the sysctl stuff and
+>>>> document it.  It might also be worth adding "Hightgid" to status.
+>>>>
+>>>>  fs/proc/array.c               |  5 ++++-
+>>>>  include/linux/pid.h           |  2 ++
+>>>>  include/linux/pid_namespace.h |  1 +
+>>>>  kernel/pid.c                  | 19 +++++++++++++++----
+>>>>  kernel/pid_namespace.c        | 22 ++++++++++++++++++++++
+>>>>  5 files changed, 44 insertions(+), 5 deletions(-)
+>>>>
+>>>> diff --git a/fs/proc/array.c b/fs/proc/array.c
+>>>> index cd3653e4f35c..f1e0e69d19f9 100644
+>>>> --- a/fs/proc/array.c
+>>>> +++ b/fs/proc/array.c
+>>>> @@ -159,6 +159,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+>>>>         int g;
+>>>>         struct fdtable *fdt = NULL;
+>>>>         const struct cred *cred;
+>>>> +       const struct upid *upid;
+>>>>         pid_t ppid, tpid;
+>>>>
+>>>>         rcu_read_lock();
+>>>> @@ -170,12 +171,14 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+>>>>                 if (tracer)
+>>>>                         tpid = task_pid_nr_ns(tracer, ns);
+>>>>         }
+>>>> +       upid = pid_upid_ns(pid, ns);
+>>>>         cred = get_task_cred(p);
+>>>>         seq_printf(m,
+>>>>                 "State:\t%s\n"
+>>>>                 "Tgid:\t%d\n"
+>>>>                 "Ngid:\t%d\n"
+>>>>                 "Pid:\t%d\n"
+>>>> +               "Highpid:\t%llu\n"
+>>>>                 "PPid:\t%d\n"
+>>>>                 "TracerPid:\t%d\n"
+>>>>                 "Uid:\t%d\t%d\t%d\t%d\n"
+>>>> @@ -183,7 +186,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+>>>>                 get_task_state(p),
+>>>>                 task_tgid_nr_ns(p, ns),
+>>>>                 task_numa_group_id(p),
+>>>> -               pid_nr_ns(pid, ns),
+>>>> +               upid ? upid->nr : 0, upid ? upid->highnr : 0,
+>>>>                 ppid, tpid,
+>>>>                 from_kuid_munged(user_ns, cred->uid),
+>>>>                 from_kuid_munged(user_ns, cred->euid),
+>>>> diff --git a/include/linux/pid.h b/include/linux/pid.h
+>>>> index 23705a53abba..ece70b64d04c 100644
+>>>> --- a/include/linux/pid.h
+>>>> +++ b/include/linux/pid.h
+>>>> @@ -51,6 +51,7 @@ struct upid {
+>>>>         /* Try to keep pid_chain in the same cacheline as nr for find_vpid */
+>>>>         int nr;
+>>>>         struct pid_namespace *ns;
+>>>> +       u64 highnr;
+>>>>         struct hlist_node pid_chain;
+>>>>  };
+>>>>
+>>>> @@ -170,6 +171,7 @@ static inline pid_t pid_nr(struct pid *pid)
+>>>>  }
+>>>>
+>>>>  pid_t pid_nr_ns(struct pid *pid, struct pid_namespace *ns);
+>>>> +const struct upid *pid_upid_ns(struct pid *pid, struct pid_namespace *ns);
+>>>>  pid_t pid_vnr(struct pid *pid);
+>>>>
+>>>>  #define do_each_pid_task(pid, type, task)                              \
+>>>> diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
+>>>> index 1997ffc295a7..1f9f0455d7ef 100644
+>>>> --- a/include/linux/pid_namespace.h
+>>>> +++ b/include/linux/pid_namespace.h
+>>>> @@ -26,6 +26,7 @@ struct pid_namespace {
+>>>>         struct rcu_head rcu;
+>>>>         int last_pid;
+>>>>         unsigned int nr_hashed;
+>>>> +       atomic64_t next_highpid;
+>>>>         struct task_struct *child_reaper;
+>>>>         struct kmem_cache *pid_cachep;
+>>>>         unsigned int level;
+>>>> diff --git a/kernel/pid.c b/kernel/pid.c
+>>>> index 9b9a26698144..863d11a9bfbf 100644
+>>>> --- a/kernel/pid.c
+>>>> +++ b/kernel/pid.c
+>>>> @@ -312,6 +312,8 @@ struct pid *alloc_pid(struct pid_namespace *ns)
+>>>>
+>>>>                 pid->numbers[i].nr = nr;
+>>>>                 pid->numbers[i].ns = tmp;
+>>>> +               pid->numbers[i].highnr =
+>>>> +                       atomic64_inc_return(&tmp->next_highpid) - 1;
+>>>>                 tmp = tmp->parent;
+>>>>         }
+>>>>
+>>>> @@ -492,17 +494,26 @@ struct pid *find_get_pid(pid_t nr)
+>>>>  }
+>>>>  EXPORT_SYMBOL_GPL(find_get_pid);
+>>>>
+>>>> -pid_t pid_nr_ns(struct pid *pid, struct pid_namespace *ns)
+>>>> +const struct upid *pid_upid_ns(struct pid *pid, struct pid_namespace *ns)
+>>>>  {
+>>>>         struct upid *upid;
+>>>> -       pid_t nr = 0;
+>>>>
+>>>>         if (pid && ns->level <= pid->level) {
+>>>>                 upid = &pid->numbers[ns->level];
+>>>>                 if (upid->ns == ns)
+>>>> -                       nr = upid->nr;
+>>>> +                       return upid;
+>>>>         }
+>>>> -       return nr;
+>>>> +       return NULL;
+>>>> +}
+>>>> +EXPORT_SYMBOL_GPL(pid_upid_ns);
+>>>> +
+>>>> +pid_t pid_nr_ns(struct pid *pid, struct pid_namespace *ns)
+>>>> +{
+>>>> +       const struct upid *upid = pid_upid_ns(pid, ns);
+>>>> +
+>>>> +       if (!upid)
+>>>> +               return 0;
+>>>> +       return upid->nr;
+>>>>  }
+>>>>  EXPORT_SYMBOL_GPL(pid_nr_ns);
+>>>>
+>>>> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+>>>> index db95d8eb761b..e246802b4361 100644
+>>>> --- a/kernel/pid_namespace.c
+>>>> +++ b/kernel/pid_namespace.c
+>>>> @@ -268,6 +268,22 @@ static int pid_ns_ctl_handler(struct ctl_table *table, int write,
+>>>>         return proc_dointvec_minmax(&tmp, write, buffer, lenp, ppos);
+>>>>  }
+>>>>
+>>>> +static int pid_ns_next_highpid_handler(struct ctl_table *table, int write,
+>>>> +               void __user *buffer, size_t *lenp, loff_t *ppos)
+>>>> +{
+>>>> +       struct pid_namespace *pid_ns = task_active_pid_ns(current);
+>>>> +       struct ctl_table tmp = *table;
+>>>> +
+>>>> +       if (write && !ns_capable(pid_ns->user_ns, CAP_SYS_ADMIN))
+>>>> +               return -EPERM;
+>>>> +
+>>>> +       /* This needs to be fixed. */
+>>>> +       BUILD_BUG_ON(sizeof(u64) != sizeof(unsigned long));
+>>>> +
+>>>> +       tmp.data = &pid_ns->next_highpid;
+>>>> +       return proc_dointvec(&tmp, write, buffer, lenp, ppos);
+>>>> +}
+>>>> +
+>>>>  extern int pid_max;
+>>>>  static int zero = 0;
+>>>>  static struct ctl_table pid_ns_ctl_table[] = {
+>>>> @@ -279,6 +295,12 @@ static struct ctl_table pid_ns_ctl_table[] = {
+>>>>                 .extra1 = &zero,
+>>>>                 .extra2 = &pid_max,
+>>>>         },
+>>>> +       {
+>>>> +               .procname = "ns_next_highpid",
+>>>> +               .maxlen = sizeof(u64),
+>>>> +               .mode = 0666, /* permissions are checked in the handler */
+>>>> +               .proc_handler = pid_ns_next_highpid_handler,
+>>>> +       },
+>>>>         { }
+>>>>  };
+>>>>  static struct ctl_path kern_path[] = { { .procname = "kernel", }, { } };
+>>>> --
+>>>> 1.9.3
+>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>
+>>
+>> --
+>> Andy Lutomirski
+>> AMA Capital Management, LLC
+
+
+
 -- 
-MST
-
+Andy Lutomirski
+AMA Capital Management, LLC
