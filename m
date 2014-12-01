@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640AbaLAMrA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 07:47:00 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:35647 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753609AbaLAMq6 (ORCPT
+	id S1753553AbaLAMsU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 07:48:20 -0500
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:65266 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752928AbaLAMsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 07:46:58 -0500
-Date: Mon, 1 Dec 2014 12:46:51 +0000
+	Mon, 1 Dec 2014 07:48:19 -0500
+Date: Mon, 1 Dec 2014 12:48:12 +0000
 From: Lee Jones <lee.jones@linaro.org>
-To: micky_ching@realsil.com.cn
-Cc: sameo@linux.intel.com, chris@printf.net, ulf.hansson@linaro.org,
-        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, gregkh@linuxfoundation.org,
-        dan.carpenter@oracle.com, rogerable@realtek.com,
-        wei_wang@realsil.com.cn
-Subject: Re: [PATCH v2 1/2] mfd: rtsx: add func to split u32 into register
-Message-ID: <20141201124651.GA12068@x1>
-References: <cover.1417141102.git.micky_ching@realsil.com.cn>
- <6a6de978f479758fb9e767d8a6e013e8a006a39a.1417141102.git.micky_ching@realsil.com.cn>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: atmel-hlcdc: Add Kconfig option description and name
+Message-ID: <20141201124812.GB12068@x1>
+References: <1417431156-4914-1-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <6a6de978f479758fb9e767d8a6e013e8a006a39a.1417141102.git.micky_ching@realsil.com.cn>
+In-Reply-To: <1417431156-4914-1-git-send-email-boris.brezillon@free-electrons.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Nov 2014, micky_ching@realsil.com.cn wrote:
+On Mon, 01 Dec 2014, Boris Brezillon wrote:
 
-> From: Micky Ching <micky_ching@realsil.com.cn>
+> The MFD_ATMEL_HLCDC was first intended to be selected by its sub-devices
+> but these sub-devices now depends on this option, we thus need to add
+> a name and a description so that users can see it.
 > 
-> Add helper function to write u32 to registers, if we want to put u32
-> value to 4 continuous register, this can help us reduce tedious work.
-> 
-> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 > ---
->  include/linux/mfd/rtsx_pci.h | 9 +++++++++
->  1 file changed, 9 insertions(+)
+>  drivers/mfd/Kconfig | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
 
-Looks fine to me.  Let me know how you want to handle this:
+Applied, thanks.
 
-For my own reference:
-
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
-> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-> index 74346d5..9234449 100644
-> --- a/include/linux/mfd/rtsx_pci.h
-> +++ b/include/linux/mfd/rtsx_pci.h
-> @@ -558,6 +558,7 @@
->  #define SD_SAMPLE_POINT_CTL		0xFDA7
->  #define SD_PUSH_POINT_CTL		0xFDA8
->  #define SD_CMD0				0xFDA9
-> +#define   SD_CMD_START			0x40
->  #define SD_CMD1				0xFDAA
->  #define SD_CMD2				0xFDAB
->  #define SD_CMD3				0xFDAC
-> @@ -967,4 +968,12 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
->  	return (u8 *)(pcr->host_cmds_ptr);
->  }
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index c9200d3..4a637f4 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -60,10 +60,15 @@ config MFD_AAT2870_CORE
+>  	  functionality of the device.
 >  
-> +static inline void rtsx_pci_write_be32(struct rtsx_pcr *pcr, u16 reg, u32 val)
-> +{
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg,     0xFF, val >> 24);
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 1, 0xFF, val >> 16);
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 2, 0xFF, val >> 8);
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 3, 0xFF, val);
-> +}
-> +
->  #endif
+>  config MFD_ATMEL_HLCDC
+> -	tristate
+> +	tristate "Atmel HLCDC (High-end LCD Controller)"
+>  	select MFD_CORE
+>  	select REGMAP_MMIO
+>  	depends on OF
+> +	help
+> +	  If you say yes here you get support for the HLCDC block.
+> +	  This driver provides common support for accessing the device,
+> +	  additional drivers must be enabled in order to use the
+> +	  functionality of the device.
+>  
+>  config MFD_BCM590XX
+>  	tristate "Broadcom BCM590xx PMUs"
 
 -- 
 Lee Jones
