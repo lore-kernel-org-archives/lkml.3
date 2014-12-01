@@ -1,59 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703AbaLARFJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 12:05:09 -0500
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:42931 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982AbaLARFG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 12:05:06 -0500
+	id S1753495AbaLARH4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 12:07:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53522 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752039AbaLARHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 12:07:54 -0500
+Date: Mon, 1 Dec 2014 11:07:18 -0600
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Miroslav Benes <mbenes@suse.cz>
+Cc: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Petr Mladek <pmladek@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 2/3] kernel: add support for live patching
+Message-ID: <20141201170718.GA12633@treble.redhat.com>
+References: <1416935709-404-1-git-send-email-sjenning@redhat.com>
+ <1416935709-404-3-git-send-email-sjenning@redhat.com>
+ <alpine.LNX.2.00.1411261451570.10866@pobox.suse.cz>
+ <20141126154042.GB29079@treble.hsd1.ky.comcast.net>
+ <alpine.LNX.2.00.1412011416110.23443@pobox.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20141201114854.GB18466@arm.com>
-References: <CA+55aFyOTpVQiku0xn=UHnXdYweKHZ5AsEUN9wUvOqH9XX4ENg@mail.gmail.com>
-	<20141118145234.GA7487@redhat.com>
-	<alpine.DEB.2.11.1411181914020.3909@nanos>
-	<20141118215540.GD35311@redhat.com>
-	<20141119021902.GA14216@redhat.com>
-	<CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
-	<20141119145902.GA13387@redhat.com>
-	<546D0530.8040800@mit.edu>
-	<20141120152509.GA5412@redhat.com>
-	<20141125122217.GA15280@arm.com>
-	<20141201114854.GB18466@arm.com>
-Date: Mon, 1 Dec 2014 09:05:06 -0800
-X-Google-Sender-Auth: UA3Jr1hWfcxFZqDBgtm2yxayOqE
-Message-ID: <CA+55aFyhB5LBVadA5TfuX8+TrZZWTHwT-2NCYRLat8Fp6eBjgw@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Dave Jones <davej@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
-        Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1412011416110.23443@pobox.suse.cz>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 1, 2014 at 3:48 AM, Will Deacon <will.deacon@arm.com> wrote:
->
-> so for some bizarre reason, child1 (27912) managed to execve oom_score
-> from /proc.
+On Mon, Dec 01, 2014 at 02:31:35PM +0100, Miroslav Benes wrote:
+> On Wed, 26 Nov 2014, Josh Poimboeuf wrote:
+> 
+> > Hi Miroslav,
+> > 
+> > Just addressing one of your comments below.  I'll let Seth respond to
+> > the others :-)
+> > 
+> > On Wed, Nov 26, 2014 at 03:19:17PM +0100, Miroslav Benes wrote:
+> > > > +/**
+> > > > + * struct klp_func - function structure for live patching
+> > > > + * @old_name:	name of the function to be patched
+> > > > + * @new_func:	pointer to the patched function code
+> > > > + * @old_addr:	a hint conveying at what address the old function
+> > > > + *		can be found (optional, vmlinux patches only)
+> > > > + */
+> > > > +struct klp_func {
+> > > > +	/* external */
+> > > > +	const char *old_name;
+> > > > +	void *new_func;
+> > > > +	/*
+> > > > +	 * The old_addr field is optional and can be used to resolve
+> > > > +	 * duplicate symbol names in the vmlinux object.  If this
+> > > > +	 * information is not present, the symbol is located by name
+> > > > +	 * with kallsyms. If the name is not unique and old_addr is
+> > > > +	 * not provided, the patch application fails as there is no
+> > > > +	 * way to resolve the ambiguity.
+> > > > +	 */
+> > > > +	unsigned long old_addr;
+> > > 
+> > > I wonder if we really need old_addr as an external field. I assume that 
+> > > userspace tool in kpatch use it as a "hint" for kernel part and thus 
+> > > kallsyms is not needed there (and it solves ambiguity problem as well). 
+> > > But I am not sure if it is gonna be the same in upstream. When kernel is 
+> > > randomized (CONFIG_RANDOMIZE_BASE is set to 'y', though default is 'n') 
+> > > old_addr is not usable (and we throw it away in the code). Without 
+> > > old_addr being set by the user we could spare some of code (calls to 
+> > > klp_verify_vmlinux_symbol and such). 
+> > 
+> > Even with CONFIG_RANDOMIZE_BASE, the function offsets will be the same
+> > regardless of the base address.  So we could still use old_addr to
+> > determine the offset.
+> > 
+> > > So the question is whether future userspace tool in upstream would need it 
+> > > and would use it. Please note that I do not mean it as a kpatch or kgraft 
+> > > way to do things, I'm just not sure about old_addr being "public" and want 
+> > > do discuss the options.
+> > > 
+> > > The ambiguity of symbols was discussed in some other thread in lkml in 
+> > > october (I guess) with no conclusion IIRC...
+> > 
+> > We need to resolve ambiguity somehow, and old_addr is a way to do that.
+> > Do you have any other ideas?
+> 
+> Unfortunately I don't.
+> 
+> But similarly we don't deal with ambiguity in modules either. And it is 
+> (at least theoretically) possible. Two static functions of the same name 
+> in two different .c files which the final module is linked from. You have 
+> to use kallsyms and it would get confused. Maybe this sounds odd but it 
+> could happen. 
 
-That sounds like you have a binfmt that accepts crap. Possibly
-ARM-specific, although more likely it's just a misc script.
+True, this is a remote possibility, but we haven't run into this issue
+yet.  If it becomes a problem, we can try to come up with another way to
+resolve duplicates.
 
-> We can see the child that did the execve has somehow gained its own
-> child process (27921) that we're unable to backtrace. I can't see any
-> clone/fork syscalls in the log for 27912.
+Here's one idea: since the symbols are always listed in the same order
+in kallsyms (per-object), instead of old_addr we could have sym_idx.  A
+sym_idx of 2 could mean "I want the 2nd occurence of foo in the object's
+kallsyms list".
 
-Well, it wouldn't be trinity any more, it would likely be some execve
-script (think "/bin/sh", except likely through binfmt_misc).
+However I'd rather keep our current old_addr scheme for now, since it's
+what we have implemented already.  And there are plenty of more
+important things we need to do first.
 
-Do you have anything in /proc/sys/fs/binfmt_misc? I don't see anything
-else that would trigger it.
+> Thus the old_addr value is not general protection (as modules are still 
+> affected) and it is questionable whether the user should use it.
 
-This doesn't really look anything like DaveJ's issue, but who knows..
+It's not really protection, since even if you don't specify old_addr and
+you rely on kallsyms, klp_find_symbol will return an error if there are
+any duplicates.
 
-                       Linus
+It's really just a way to increase the size of the set of functions
+which can be patched (duplicately named functions).
+
+We also rely on something similar for relocations: klp_reloc.src.  It's
+even more important there, since duplicately named static objects are
+more common than duplicately named functions.
+
+> I do not have strong opinion on this and if no one else shares my 
+> thoughts, I am not against.
+> 
+> Mira
+
+-- 
+Josh
