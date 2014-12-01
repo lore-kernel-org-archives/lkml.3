@@ -1,107 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255AbaLAL2j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 06:28:39 -0500
-Received: from lucky1.263xmail.com ([211.157.147.133]:40247 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752795AbaLAL2i (ORCPT
+	id S1753372AbaLAL26 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 06:28:58 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:51251 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753317AbaLAL24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 06:28:38 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <15b117bcfa2670c0a3b4578af66c943f>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
-        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Andy Yan <andy.yan@rock-chips.com>
-Subject: [PATCH v14 10/12] drm: bridge/dw_hdmi: add function dw_hdmi_phy_enable_spare
-Date: Mon,  1 Dec 2014 19:28:10 +0800
-Message-Id: <1417433290-13208-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417432770-12719-1-git-send-email-andy.yan@rock-chips.com>
-References: <1417432770-12719-1-git-send-email-andy.yan@rock-chips.com>
+	Mon, 1 Dec 2014 06:28:56 -0500
+Date: Mon, 1 Dec 2014 12:28:44 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>, rusty@au1.ibm.com,
+        nab@linux-iscsi.org, pbonzini@redhat.com, thuth@linux.vnet.ibm.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v7 16/46] virtio_blk: v1.0 support
+Message-ID: <20141201122844.1f0a0fa8.cornelia.huck@de.ibm.com>
+In-Reply-To: <20141201110136.1ff29a67@thinkpad-w530>
+References: <1417359787-10138-1-git-send-email-mst@redhat.com>
+	<1417359787-10138-17-git-send-email-mst@redhat.com>
+	<20141201091641.3085e682@thinkpad-w530>
+	<20141201092850.GD15607@redhat.com>
+	<20141201110136.1ff29a67@thinkpad-w530>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120111-0041-0000-0000-00000250B3DA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RK3288 HDMI will not work without the spare bit of
-HDMI_PHY_CONF0 enable
+On Mon, 1 Dec 2014 11:01:36 +0100
+David Hildenbrand <dahi@linux.vnet.ibm.com> wrote:
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
----
+> > On Mon, Dec 01, 2014 at 09:16:41AM +0100, David Hildenbrand wrote:
+> > > > Based on patch by Cornelia Huck.
+> > > > 
+> > > > Note: for consistency, and to avoid sparse errors,
+> > > >       convert all fields, even those no longer in use
+> > > >       for virtio v1.0.
+> > > > 
+> > > > Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+> > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > ...
+> > > > 
+> > > > -static unsigned int features[] = {
+> > > > +static unsigned int features_legacy[] = {
+> > > >  	VIRTIO_BLK_F_SEG_MAX, VIRTIO_BLK_F_SIZE_MAX, VIRTIO_BLK_F_GEOMETRY,
+> > > >  	VIRTIO_BLK_F_RO, VIRTIO_BLK_F_BLK_SIZE, VIRTIO_BLK_F_SCSI,
+> > > >  	VIRTIO_BLK_F_WCE, VIRTIO_BLK_F_TOPOLOGY, VIRTIO_BLK_F_CONFIG_WCE,
+> > > >  	VIRTIO_BLK_F_MQ,
+> > > > +}
+> > > > +;
+> > > > +static unsigned int features[] = {
+> > > > +	VIRTIO_BLK_F_SEG_MAX, VIRTIO_BLK_F_SIZE_MAX, VIRTIO_BLK_F_GEOMETRY,
+> > > > +	VIRTIO_BLK_F_RO, VIRTIO_BLK_F_BLK_SIZE,
+> > > > +	VIRTIO_BLK_F_TOPOLOGY,
+> > > > +	VIRTIO_BLK_F_MQ,
+> > > > +	VIRTIO_F_VERSION_1,
+> > > 
+> > > We can fit this into less lines, like done for features_legacy.
+> > 
+> > Wrt packing code more tightly, I did it like this to
+> > make it easier to compare the arrays.
+> > Each flag is on the same line in original and new array.
+> 
+> This just looks inconsistent to me.
+> 
+> 1. features_legacy is tightly packed
+> 2. half of features is tightly packed
+> 
+> So either all tightly packed or put every item on a single line. At least
+> that's what I would do :)
 
-Changes in v14: None
-Changes in v13: None
-Changes in v12: None
-Changes in v11: None
-Changes in v10: None
-Changes in v9: None
-Changes in v8: None
-Changes in v7: None
-Changes in v6: None
-Changes in v5: None
-Changes in v4: None
-Changes in v3: None
-
- drivers/gpu/drm/bridge/dw_hdmi.c | 7 +++++++
- drivers/gpu/drm/bridge/dw_hdmi.h | 3 ++-
- 2 files changed, 9 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
-index 5be643c..df52347 100644
---- a/drivers/gpu/drm/bridge/dw_hdmi.c
-+++ b/drivers/gpu/drm/bridge/dw_hdmi.c
-@@ -715,6 +715,13 @@ static void dw_hdmi_phy_enable_tmds(struct dw_hdmi *hdmi, u8 enable)
- 			 HDMI_PHY_CONF0_ENTMDS_MASK);
- }
- 
-+static void dw_hdmi_phy_enable_spare(struct dw_hdmi *hdmi, u8 enable)
-+{
-+	hdmi_mask_writeb(hdmi, enable, HDMI_PHY_CONF0,
-+			 HDMI_PHY_CONF0_SPARECTRL_OFFSET,
-+			 HDMI_PHY_CONF0_SPARECTRL_MASK);
-+}
-+
- static void dw_hdmi_phy_gen2_pddq(struct dw_hdmi *hdmi, u8 enable)
- {
- 	hdmi_mask_writeb(hdmi, enable, HDMI_PHY_CONF0,
-diff --git a/drivers/gpu/drm/bridge/dw_hdmi.h b/drivers/gpu/drm/bridge/dw_hdmi.h
-index baa7849..175dbc8 100644
---- a/drivers/gpu/drm/bridge/dw_hdmi.h
-+++ b/drivers/gpu/drm/bridge/dw_hdmi.h
-@@ -837,7 +837,8 @@ enum {
- 	HDMI_PHY_CONF0_PDZ_OFFSET = 7,
- 	HDMI_PHY_CONF0_ENTMDS_MASK = 0x40,
- 	HDMI_PHY_CONF0_ENTMDS_OFFSET = 6,
--	HDMI_PHY_CONF0_SPARECTRL = 0x20,
-+	HDMI_PHY_CONF0_SPARECTRL_MASK = 0x20,
-+	HDMI_PHY_CONF0_SPARECTRL_OFFSET = 5,
- 	HDMI_PHY_CONF0_GEN2_PDDQ_MASK = 0x10,
- 	HDMI_PHY_CONF0_GEN2_PDDQ_OFFSET = 4,
- 	HDMI_PHY_CONF0_GEN2_TXPWRON_MASK = 0x8,
--- 
-1.9.1
-
+I agree with the reasoning that this makes it easy to compare legacy
+vs. standard at a glance, so I vote for keeping it this way.
 
