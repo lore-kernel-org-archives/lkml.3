@@ -1,118 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932589AbaLAQKk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 11:10:40 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:46072 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932538AbaLAQKh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 11:10:37 -0500
-Date: Mon, 1 Dec 2014 17:10:34 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 07/30] cputime: Convert kcpustat to nsecs
-Message-ID: <20141201161031.GA27302@lerouge>
-References: <1417199040-21044-1-git-send-email-fweisbec@gmail.com>
- <1417199040-21044-8-git-send-email-fweisbec@gmail.com>
- <20141201151402.31a6cc9a@mschwide>
+	id S932350AbaLAQHH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 11:07:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5293 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932300AbaLAQHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 11:07:03 -0500
+Date: Mon, 1 Dec 2014 18:06:27 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bjarke Istrup Pedersen <gurligebis@gentoo.org>,
+        Andy Grover <agrover@redhat.com>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        Anup Patel <anup.patel@linaro.org>,
+        stephen hemminger <stephen@networkplumber.org>,
+        David Drysdale <drysdale@google.com>, linux-api@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH v8 44/50] virtio_scsi: export to userspace
+Message-ID: <1417449619-24896-45-git-send-email-mst@redhat.com>
+References: <1417449619-24896-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141201151402.31a6cc9a@mschwide>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1417449619-24896-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 03:14:02PM +0100, Martin Schwidefsky wrote:
-> On Fri, 28 Nov 2014 19:23:37 +0100
-> Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > Kernel cpu stats are stored in cputime_t which is an architecture
-> > defined type, and hence a bit opaque and requiring accessors and mutators
-> > for any operation.
-> > 
-> > Converting them to nsecs simplifies the code a little bit.
-> 
-> Quite honestly I do not see much of an improvement here, on set of
-> functions (cputime_to_xxx) gets replaced by another (nsecs_to_xxx).
+Replace uXX by __uXX and _packed by __attribute((packed))
+as seems to be the norm for userspace headers.
 
-Well it's not just that. Irqtime accounting gets simplified (no more
-temporary buffer getting flushed on tick), same goes for guest accounting.
-cpufreq gets one less level of conversion. Some places also lost their cputime_t
-accessors due to internal nsecs use.
-Plus a few other simplifications here and there that I haven't yet finished
-like VIRT_CPU_ACCOUNTING_GEN that won't need cputime_t accessors anymore.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ include/uapi/linux/virtio_scsi.h | 74 ++++++++++++++++++++--------------------
+ include/uapi/linux/Kbuild        |  1 +
+ 2 files changed, 38 insertions(+), 37 deletions(-)
 
-Also once the patchset is complete, we should be able to remove a significant
-part of cputime_t accessors and mutators if only archs use them for one or
-two conversions (probably cputime_to_nsecs() alone would be enough). And there are
-many implementations of cputime_t: jiffies, nsecs, powerpc and s390. Expect
-the removal of jiffies and nsecs based cputime_t plus the largest part of powerpc
-and s390 implementations.
+diff --git a/include/uapi/linux/virtio_scsi.h b/include/uapi/linux/virtio_scsi.h
+index af44864..42b9370 100644
+--- a/include/uapi/linux/virtio_scsi.h
++++ b/include/uapi/linux/virtio_scsi.h
+@@ -34,78 +34,78 @@
+ 
+ /* SCSI command request, followed by data-out */
+ struct virtio_scsi_cmd_req {
+-	u8 lun[8];		/* Logical Unit Number */
++	__u8 lun[8];		/* Logical Unit Number */
+ 	__virtio64 tag;		/* Command identifier */
+-	u8 task_attr;		/* Task attribute */
+-	u8 prio;		/* SAM command priority field */
+-	u8 crn;
+-	u8 cdb[VIRTIO_SCSI_CDB_SIZE];
+-} __packed;
++	__u8 task_attr;		/* Task attribute */
++	__u8 prio;		/* SAM command priority field */
++	__u8 crn;
++	__u8 cdb[VIRTIO_SCSI_CDB_SIZE];
++} __attribute__((packed));
+ 
+ /* SCSI command request, followed by protection information */
+ struct virtio_scsi_cmd_req_pi {
+-	u8 lun[8];		/* Logical Unit Number */
++	__u8 lun[8];		/* Logical Unit Number */
+ 	__virtio64 tag;		/* Command identifier */
+-	u8 task_attr;		/* Task attribute */
+-	u8 prio;		/* SAM command priority field */
+-	u8 crn;
++	__u8 task_attr;		/* Task attribute */
++	__u8 prio;		/* SAM command priority field */
++	__u8 crn;
+ 	__virtio32 pi_bytesout;	/* DataOUT PI Number of bytes */
+ 	__virtio32 pi_bytesin;		/* DataIN PI Number of bytes */
+-	u8 cdb[VIRTIO_SCSI_CDB_SIZE];
+-} __packed;
++	__u8 cdb[VIRTIO_SCSI_CDB_SIZE];
++} __attribute__((packed));
+ 
+ /* Response, followed by sense data and data-in */
+ struct virtio_scsi_cmd_resp {
+ 	__virtio32 sense_len;		/* Sense data length */
+ 	__virtio32 resid;		/* Residual bytes in data buffer */
+ 	__virtio16 status_qualifier;	/* Status qualifier */
+-	u8 status;		/* Command completion status */
+-	u8 response;		/* Response values */
+-	u8 sense[VIRTIO_SCSI_SENSE_SIZE];
+-} __packed;
++	__u8 status;		/* Command completion status */
++	__u8 response;		/* Response values */
++	__u8 sense[VIRTIO_SCSI_SENSE_SIZE];
++} __attribute__((packed));
+ 
+ /* Task Management Request */
+ struct virtio_scsi_ctrl_tmf_req {
+ 	__virtio32 type;
+ 	__virtio32 subtype;
+-	u8 lun[8];
++	__u8 lun[8];
+ 	__virtio64 tag;
+-} __packed;
++} __attribute__((packed));
+ 
+ struct virtio_scsi_ctrl_tmf_resp {
+-	u8 response;
+-} __packed;
++	__u8 response;
++} __attribute__((packed));
+ 
+ /* Asynchronous notification query/subscription */
+ struct virtio_scsi_ctrl_an_req {
+ 	__virtio32 type;
+-	u8 lun[8];
++	__u8 lun[8];
+ 	__virtio32 event_requested;
+-} __packed;
++} __attribute__((packed));
+ 
+ struct virtio_scsi_ctrl_an_resp {
+ 	__virtio32 event_actual;
+-	u8 response;
+-} __packed;
++	__u8 response;
++} __attribute__((packed));
+ 
+ struct virtio_scsi_event {
+ 	__virtio32 event;
+-	u8 lun[8];
++	__u8 lun[8];
+ 	__virtio32 reason;
+-} __packed;
++} __attribute__((packed));
+ 
+ struct virtio_scsi_config {
+-	u32 num_queues;
+-	u32 seg_max;
+-	u32 max_sectors;
+-	u32 cmd_per_lun;
+-	u32 event_info_size;
+-	u32 sense_size;
+-	u32 cdb_size;
+-	u16 max_channel;
+-	u16 max_target;
+-	u32 max_lun;
+-} __packed;
++	__u32 num_queues;
++	__u32 seg_max;
++	__u32 max_sectors;
++	__u32 cmd_per_lun;
++	__u32 event_info_size;
++	__u32 sense_size;
++	__u32 cdb_size;
++	__u16 max_channel;
++	__u16 max_target;
++	__u32 max_lun;
++} __attribute__((packed));
+ 
+ /* Feature Bits */
+ #define VIRTIO_SCSI_F_INOUT                    0
+diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
+index 44a5581..e61947c 100644
+--- a/include/uapi/linux/Kbuild
++++ b/include/uapi/linux/Kbuild
+@@ -428,6 +428,7 @@ header-y += virtio_net.h
+ header-y += virtio_pci.h
+ header-y += virtio_ring.h
+ header-y += virtio_rng.h
++header-y += virtio_scsi.h
+ header=y += vm_sockets.h
+ header-y += vt.h
+ header-y += wait.h
+-- 
+MST
 
-> 
-> On the contrary for s390 I see a degradation, consider a hunk like
-> this:
-> 
-> > @@ -128,9 +128,9 @@ static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu, u64 *wall)
-> > 
-> >  	idle_time = cur_wall_time - busy_time;
-> >  	if (wall)
-> > -		*wall = cputime_to_usecs(cur_wall_time);
-> > +		*wall = div_u64(cur_wall_time, NSEC_PER_USEC);
-> > 
-> > -	return cputime_to_usecs(idle_time);
-> > +	return div_u64(idle_time, NSEC_PER_USEC);
-> >  }
-> > 
-> >  u64 get_cpu_idle_time(unsigned int cpu, u64 *wall, int io_busy)
-> 
-> For s390 cputime_to_usecs is a shift, with the new code we now have a division.
-> Fortunately this is in a piece of code that s390 does not use..
-
-Speaking about the degradation in s390:
-
-s390 is really a special case. And it would be a shame if we prevent from a
-real core cleanup just for this special case especially as it's fairly possible
-to keep a specific treatment for s390 in order not to impact its performances
-and time precision. We could simply accumulate the cputime in per-cpu values:
-
-struct s390_cputime {
-       cputime_t user, sys, softirq, hardirq, steal;
-}
-
-DEFINE_PER_CPU(struct s390_cputime, s390_cputime);
-
-Then on irq entry/exit, just add the accumulated time to the relevant buffer
-and account for real (through any account_...time() functions) only on tick
-and task switch. There the costly operations (unit conversion and call to
-account_...._time() functions) are deferred to a rarer yet periodic enough
-event. This is what s390 does already for user/system time and kernel
-boundaries.
-
-This way we should even improve the situation compared to what we have
-upstream. It's going to be faster because calling the accounting functions
-can be costlier than simple per-cpu ops. And also we keep the cputime_t
-granularity. For archs like s390 which have a granularity higher than nsecs,
-we can have:
-
-   u64 cputime_to_nsecs(cputime_t time, u64 *rem);
-
-And to avoid remainder losses, we can do that from the tick:
-
-    delta_cputime = this_cpu_read(s390_cputime.hardirq);
-    delta_nsec = cputime_to_nsecs(delta_cputime, &rem);
-    account_system_time(delta_nsec, HARDIRQ_OFFSET);
-    this_cpu_write(s390_cputime.hardirq, rem);
-
-Although I doubt that remainders below one nsec lost each tick matter that much.
-But if it does, it's fairly possible to handle like above.
