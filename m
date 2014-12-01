@@ -1,111 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381AbaLAMHp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 07:07:45 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45222 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753051AbaLAMHn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 07:07:43 -0500
-Message-ID: <1417435456.4624.12.camel@pengutronix.de>
-Subject: Re: [PATCH v13 07/12] drm: bridge/dw_hdmi: add support for
- multi-byte register width access
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Andy Yan <andy.yan@rock-chips.com>
-Cc: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
-        rmk+kernel@arm.linux.org.uk,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Date: Mon, 01 Dec 2014 13:04:16 +0100
-In-Reply-To: <547843B9.6000806@rock-chips.com>
-References: <1417008157-31861-1-git-send-email-andy.yan@rock-chips.com>
-		 <1417008759-32257-1-git-send-email-andy.yan@rock-chips.com>
-	 <1417019657.3177.10.camel@pengutronix.de> <547843B9.6000806@rock-chips.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1753400AbaLAMIm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 07:08:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38134 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753051AbaLAMIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 07:08:41 -0500
+Date: Mon, 1 Dec 2014 13:08:50 +0100 (CET)
+From: Miroslav Benes <mbenes@suse.cz>
+To: Petr Mladek <pmladek@suse.cz>
+cc: Seth Jennings <sjenning@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] livepatch: clean up klp_find_object_module() usage: was:
+ Re: [PATCHv4 2/3] kernel: add support for live patching
+In-Reply-To: <20141128171435.GE32376@dhcp128.suse.cz>
+Message-ID: <alpine.LNX.2.00.1412011256420.23443@pobox.suse.cz>
+References: <1416935709-404-1-git-send-email-sjenning@redhat.com> <1416935709-404-3-git-send-email-sjenning@redhat.com> <20141128170735.GD32376@dhcp128.suse.cz> <20141128171435.GE32376@dhcp128.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 28.11.2014, 17:43 +0800 schrieb Andy Yan:
-> Hi Zabel:
-> On 2014年11月27日 00:34, Philipp Zabel wrote:
-> > Am Mittwoch, den 26.11.2014, 21:32 +0800 schrieb Andy Yan:
-> >> On rockchip rk3288, only word(32-bit) accesses are
-> >> permitted for hdmi registers.  Byte width accesses (writeb,
-> >> readb) generate an imprecise external abort.
-> >>
-> >> Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
-> >>
-> >> ---
-> >>
-> >> Changes in v13: None
-> >> Changes in v12: None
-> >> Changes in v11: None
-> >> Changes in v10: None
-> >> Changes in v9: None
-> >> Changes in v8: None
-> >> Changes in v7: None
-> >> Changes in v6:
-> >> - refactor register access without reg_shift
-> >>
-> >> Changes in v5:
-> >> - refactor reg-io-width
-> >>
-> >> Changes in v4: None
-> >> Changes in v3:
-> >> - split multi-register access to one indepent patch
-> >>
-> >>   drivers/gpu/drm/bridge/dw_hdmi.c | 57 +++++++++++++++++++++++++++++++++++-----
-> >>   1 file changed, 51 insertions(+), 6 deletions(-)
-> >>
-> >> diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
-> >> index a53bf63..5e88c8d 100644
-> >> --- a/drivers/gpu/drm/bridge/dw_hdmi.c
-> >> +++ b/drivers/gpu/drm/bridge/dw_hdmi.c
-> >> @@ -100,6 +100,11 @@ struct hdmi_data_info {
-> >>   	struct hdmi_vmode video_mode;
-> >>   };
-> >>   
-> >> +union dw_reg_ptr {
-> >> +	u32 __iomem *p32;
-> >> +	u8 __iomem *p8;
-> >> +};
-> > I see no need to introduce this. Just explicitly multiply the offset in
-> > dw_hdmi_writel.
-> >
->      Is there any disadvantage to do like this?
->      The compiler can help us do the explicitly multiply by this way.
+On Fri, 28 Nov 2014, Petr Mladek wrote:
 
-Four additional lines, a new defined type, a few more changes to struct
-dw_hdmi and dw_hdmi_bind necessary.
+> On Fri 2014-11-28 18:07:37, Petr Mladek wrote:
+> > On Tue 2014-11-25 11:15:08, Seth Jennings wrote:
+> > > This commit introduces code for the live patching core.  It implements
+> > > an ftrace-based mechanism and kernel interface for doing live patching
+> > > of kernel and kernel module functions.
+> 
+> [...]
+> 
+> > > +/* sets obj->mod if object is not vmlinux and module is found */
+> > > +static bool klp_find_object_module(struct klp_object *obj)
+> > > +{
+> > > +	if (!obj->name)
+> > > +		return 1;
+> > > +
+> > > +	mutex_lock(&module_mutex);
+> > > +	/*
+> > > +	 * We don't need to take a reference on the module here because we have
+> > > +	 * the klp_mutex, which is also taken by the module notifier.  This
+> > > +	 * prevents any module from unloading until we release the klp_mutex.
+> > > +	 */
+> > > +	obj->mod = find_module(obj->name);
+> > > +	mutex_unlock(&module_mutex);
+> > > +
+> > > +	return !!obj->mod;
+> > 
+> > I know that this is effective to return boolean here because
+> > it handles also patch against the kernel core (vmlinux). But
+> > the logic looks tricky. I would prefer a cleaner design and
+> > use this function only to set obj->mod.
+> > 
+> > I wanted to see how it would look like, so I will send a patch for
+> > this in a separate mail.
+> 
+> The patch is below. Of course, merge it into the original
+> patch if you agree with the idea, please.
+> 
+> 
+> >From 93eb9f9a25ad8aa0301e246f7685d3e787037566 Mon Sep 17 00:00:00 2001
+> From: Petr Mladek <pmladek@suse.cz>
+> Date: Fri, 28 Nov 2014 15:32:27 +0100
+> Subject: [PATCH 1/2] livepatch: clean up klp_find_object_module() usage
+> 
+> The function klp_find_object_module() looks quite tricky. It has two effects:
+> sets obj->mod and decides whether the module is available or not. The second
+> effect is the tricky part because it handles also the code kernel code "vmlinux"
+> and is not module related. It causes returning bool, and doing the crazy double
+> negation.
+> 
+> This patch tries to make a bit cleaner design:
+> 
+> 1. klp_find_object_module() handles only obj->mod. It returns
+>    the pointer or NULL.
+> 
+> 2. It modifies klp_enable_object() to do nothing when the related
+>    module has not been loaded yet.
+> 
+> 3. The result is that the return value klp_find_object_module() is
+>    not used in the end.
+> 
+> We lose a check for potential klp_enable_object() misuse but it makes the code
+> easier. In fact, the check for unloaded module is rather long. We might want
+> to make it easier using some extra flag or another state of the object.
+> Such flag might be used for the check of misuse.
+> 
+> Signed-off-by: Petr Mladek <pmladek@suse.cz>
 
-Technically I see no problem to let the compiler do the multiplication,
-my issue is that it ever so slightly obfuscates the code. Instead of
-just writing "* 4" in two functions, we get a new union that you need to
-know about when looking at struct dw_hdmi and dw_hdmi_bind, regs.p8 is
-used but never assigned directly, it's just a tiny bit of additional
-effort needed to understand the code. But when the cost to avoid that is
-so small...
+Hi, 
 
-regards
-Philipp
+I agree with the idea but actually don't like the implementation. I'll try 
+to propose few changes which would hopefully preserve the effect but make 
+the end result slightly better.
 
+> ---
+>  kernel/livepatch/core.c | 14 +++++++-------
+>  1 file changed, 7 insertions(+), 7 deletions(-)
+> 
+> diff --git a/kernel/livepatch/core.c b/kernel/livepatch/core.c
+> index 8e2e8cd242f5..9b1601729014 100644
+> --- a/kernel/livepatch/core.c
+> +++ b/kernel/livepatch/core.c
+> @@ -40,10 +40,10 @@ static LIST_HEAD(klp_patches);
+>  static struct kobject *klp_root_kobj;
+>  
+>  /* sets obj->mod if object is not vmlinux and module is found */
+> -static bool klp_find_object_module(struct klp_object *obj)
+> +static struct module *klp_find_object_module(struct klp_object *obj)
+>  {
+>  	if (!obj->name)
+> -		return 1;
+> +		return NULL;
+>  
+>  	mutex_lock(&module_mutex);
+>  	/*
+> @@ -54,7 +54,7 @@ static bool klp_find_object_module(struct klp_object *obj)
+>  	obj->mod = find_module(obj->name);
+>  	mutex_unlock(&module_mutex);
+>  
+> -	return !!obj->mod;
+> +	return obj->mod;
+>  }
+
+As we do not need the return value in the end, we could maybe drop it 
+completely, leading to change in if condition
+
+	if (!obj->name)
+		return;
+
+>  struct klp_find_arg {
+> @@ -318,8 +318,9 @@ static int klp_enable_object(struct module *pmod, struct klp_object *obj)
+>  	struct klp_func *func;
+>  	int ret;
+>  
+> -	if (WARN_ON(!obj->mod && obj->name))
+> -		return -EINVAL;
+> +	/* nope when the patched module has not been loaded yet */
+> +	if (obj->name && !obj->mod)
+> +		return 0;
+
+I have a problem with this one. In case the condition is true we do 
+nothing, return back and pretend that everything is alright (return 0). 
+I see that we would call klp_enable_object everytime in your proposal and 
+decide here whether we want to do something or not. But I think that we 
+should return some error and deal with it in the caller function. Thus 
+original WARN_ON should stay here.
+
+>  	if (obj->relocs) {
+>  		ret = klp_write_object_relocations(pmod, obj);
+> @@ -401,8 +402,7 @@ static int __klp_enable_patch(struct klp_patch *patch)
+>  	pr_notice("enabling patch '%s'\n", patch->mod->name);
+>  
+>  	for (obj = patch->objs; obj->funcs; obj++) {
+> -		if (!klp_find_object_module(obj))
+> -			continue;
+> +		klp_find_object_module(obj);
+>  		ret = klp_enable_object(patch->mod, obj);
+>  		if (ret)
+>  			goto unregister;
+
+I propose this piece of code
+
+for (obj = patch->objs; obj->funcs; obj++) {
+	klp_find_object_module(obj);
+	if (obj->name && !obj->mod)
+		continue;
+	ret = klp_enable_object(patch->mod, obj);
+	...
+}
+
+What do you think? Also it could pay off to define inline function for the 
+check. Somethink like klp_is_module_and_loaded...
+
+Mira
