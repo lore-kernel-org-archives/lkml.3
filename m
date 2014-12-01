@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438AbaLAMRH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 07:17:07 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:53999 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347AbaLAMRD (ORCPT
+	id S1753443AbaLAMTI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 07:19:08 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:57384 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753093AbaLAMTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 07:17:03 -0500
-Date: Mon, 1 Dec 2014 12:16:54 +0000
+	Mon, 1 Dec 2014 07:19:06 -0500
+Date: Mon, 1 Dec 2014 12:18:58 +0000
 From: Lee Jones <lee.jones@linaro.org>
 To: micky_ching@realsil.com.cn
 Cc: sameo@linux.intel.com, chris@printf.net, ulf.hansson@linaro.org,
@@ -15,21 +15,21 @@ Cc: sameo@linux.intel.com, chris@printf.net, ulf.hansson@linaro.org,
         linux-mmc@vger.kernel.org, gregkh@linuxfoundation.org,
         dan.carpenter@oracle.com, rogerable@realtek.com,
         wei_wang@realsil.com.cn
-Subject: Re: [PATCH 1/2] mfd: rtsx: add func to split u32 into register
-Message-ID: <20141201121654.GF15845@x1>
-References: <cover.1417056337.git.micky_ching@realsil.com.cn>
- <51dde5250305623c420e78fa555800ef8fef0a09.1417056337.git.micky_ching@realsil.com.cn>
+Subject: Re: [PATCH v2 1/2] mfd: rtsx: add func to split u32 into register
+Message-ID: <20141201121858.GA11932@x1>
+References: <cover.1417141102.git.micky_ching@realsil.com.cn>
+ <6a6de978f479758fb9e767d8a6e013e8a006a39a.1417141102.git.micky_ching@realsil.com.cn>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <51dde5250305623c420e78fa555800ef8fef0a09.1417056337.git.micky_ching@realsil.com.cn>
+In-Reply-To: <6a6de978f479758fb9e767d8a6e013e8a006a39a.1417141102.git.micky_ching@realsil.com.cn>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Nov 2014, micky_ching@realsil.com.cn wrote:
+On Fri, 28 Nov 2014, micky_ching@realsil.com.cn wrote:
 
 > From: Micky Ching <micky_ching@realsil.com.cn>
 > 
@@ -38,18 +38,24 @@ On Thu, 27 Nov 2014, micky_ching@realsil.com.cn wrote:
 > 
 > Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
 > ---
->  include/linux/mfd/rtsx_pci.h | 15 +++++++++++++++
->  1 file changed, 15 insertions(+)
+>  include/linux/mfd/rtsx_pci.h | 9 +++++++++
+>  1 file changed, 9 insertions(+)
 
-Okay, I'm happy that Dan is now satisfied.
-
-Can I take this patch, or does patch 2 depend on it?
+Does this supersede patch Dan was commenting on?
 
 > diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-> index 74346d5..bf45ea2 100644
+> index 74346d5..9234449 100644
 > --- a/include/linux/mfd/rtsx_pci.h
 > +++ b/include/linux/mfd/rtsx_pci.h
-> @@ -967,4 +967,19 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
+> @@ -558,6 +558,7 @@
+>  #define SD_SAMPLE_POINT_CTL		0xFDA7
+>  #define SD_PUSH_POINT_CTL		0xFDA8
+>  #define SD_CMD0				0xFDA9
+> +#define   SD_CMD_START			0x40
+>  #define SD_CMD1				0xFDAA
+>  #define SD_CMD2				0xFDAB
+>  #define SD_CMD3				0xFDAC
+> @@ -967,4 +968,12 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
 >  	return (u8 *)(pcr->host_cmds_ptr);
 >  }
 >  
@@ -61,13 +67,6 @@ Can I take this patch, or does patch 2 depend on it?
 > +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 3, 0xFF, val);
 > +}
 > +
-> +static inline void rtsx_pci_write_le32(struct rtsx_pcr *pcr, u16 reg, u32 val)
-> +{
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg,     0xFF, val);
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 1, 0xFF, val >> 8);
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 2, 0xFF, val >> 16);
-> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 3, 0xFF, val >> 24);
-> +}
 >  #endif
 
 -- 
