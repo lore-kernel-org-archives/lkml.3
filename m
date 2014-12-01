@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932597AbaLAUsQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 15:48:16 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:61503 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932112AbaLAUsP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 15:48:15 -0500
-Message-ID: <547CD413.10803@googlemail.com>
-Date: Mon, 01 Dec 2014 20:48:19 +0000
-From: Chris Clayton <chris2553@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.1
+	id S932606AbaLAUtG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 15:49:06 -0500
+Received: from mail-by2on0062.outbound.protection.outlook.com ([207.46.100.62]:23713
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932318AbaLAUtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 15:49:04 -0500
+Message-ID: <547CD3ED.1080804@opensource.altera.com>
+Date: Mon, 1 Dec 2014 14:47:41 -0600
+From: Thor Thayer <tthayer@opensource.altera.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, eternal.n08@gmail.com, keescook@chromium.org,
-        hpa@linux.intel.com, hpa@zytor.com, tglx@linutronix.de, bp@suse.de,
-        mingo@kernel.org, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86: Use $(OBJDUMP) instead of plain objdump
-References: <54705C8E.1080400@googlemail.com> <tip-e2e68ae688b0a3766cd75aedf4ed4e39be402009@git.kernel.org>
-In-Reply-To: <tip-e2e68ae688b0a3766cd75aedf4ed4e39be402009@git.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: <bp@alien8.de>, <dougthompson@xmission.com>, <m.chehab@samsung.com>,
+        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux@arm.linux.org.uk>, <dinguyen@opensource.altera.com>,
+        <grant.likely@linaro.org>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>
+Subject: Re: [RESEND PATCHv5 5/5] arm: dts: Add Altera L2 Cache and OCRAM
+ EDAC
+References: <1415751263-1830-1-git-send-email-tthayer@opensource.altera.com> <1415751263-1830-6-git-send-email-tthayer@opensource.altera.com> <546BB27A.20405@opensource.altera.com>
+In-Reply-To: <546BB27A.20405@opensource.altera.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BLUPR05CA0057.namprd05.prod.outlook.com (10.141.20.27) To
+ BY2PR03MB127.namprd03.prod.outlook.com (10.242.36.27)
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB127;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB127;
+X-Forefront-PRVS: 0412A98A59
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(6049001)(51704005)(189002)(199003)(377454003)(479174003)(53754006)(24454002)(164054003)(95666004)(23746002)(15975445006)(99396003)(40100003)(19580395003)(80316001)(120916001)(122386002)(97736003)(83506001)(107046002)(101416001)(106356001)(77096004)(68736005)(105586002)(87976001)(102836001)(86362001)(33656002)(15202345003)(46102003)(92566001)(2201001)(92726001)(42186005)(4396001)(31966008)(76176999)(54356999)(50986999)(65816999)(87266999)(21056001)(77156002)(64126003)(62966003)(19580405001)(47776003)(20776003)(65806001)(19300405004)(64706001)(66066001)(921003)(1121003)(562404015);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB127;H:[137.57.160.203];FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB127;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB074;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Boris,
 
-Is it planned to get this fix through in time for release of 3.18? It appears to have been in -next for a week.
+On 11/18/2014 02:56 PM, Thor Thayer wrote:
+> Hi all,
+>
+> On 11/11/2014 06:14 PM, tthayer@opensource.altera.com wrote:
+>> From: Thor Thayer<tthayer@opensource.altera.com>
+>>
+>> Adding the device tree entries and bindings needed to support
+>> the Altera L2 cache and On-Chip RAM EDAC. This patch relies upon
+>> an earlier patch to declare and setup On-chip RAM properly.
+>> http://www.spinics.net/lists/devicetree/msg51117.html
+>
+> Any comments on these devicetree additions?
+>
+> Thanks,
+> Thor
+>> Signed-off-by: Thor Thayer<tthayer@opensource.altera.com>
+>> ---
+>> v2: Remove OCRAM declaration and reference prior patch.
+>>
+>> v3-5: No Change
+>> ---
 
-Chris
+I originally submitted this series on November 11, 2014.
 
-On 11/23/14 20:24, tip-bot for Chris Clayton wrote:
-> Commit-ID:  e2e68ae688b0a3766cd75aedf4ed4e39be402009
-> Gitweb:     http://git.kernel.org/tip/e2e68ae688b0a3766cd75aedf4ed4e39be402009
-> Author:     Chris Clayton <chris2553@googlemail.com>
-> AuthorDate: Sat, 22 Nov 2014 09:51:10 +0000
-> Committer:  Thomas Gleixner <tglx@linutronix.de>
-> CommitDate: Sun, 23 Nov 2014 21:21:53 +0100
-> 
-> x86: Use $(OBJDUMP) instead of plain objdump
-> 
-> commit e6023367d779 'x86, kaslr: Prevent .bss from overlaping initrd'
-> broke the cross compile of x86. It added a objdump invocation, which
-> invokes the host native objdump and ignores an active cross tool
-> chain.
-> 
-> Use $(OBJDUMP) instead which takes the CROSS_COMPILE prefix into
-> account.
-> 
-> [ tglx: Massage changelog and use $(OBJDUMP) ]
-> 
-> Fixes: e6023367d779 'x86, kaslr: Prevent .bss from overlaping initrd'
-> Signed-off-by: Chris Clayton <chris2553@googlemail.com>
-> Acked-by: Kees Cook <keescook@chromium.org>
-> Acked-by: Borislav Petkov <bp@suse.de>
-> Cc: Junjie Mao <eternal.n08@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: H. Peter Anvin <hpa@linux.intel.com>
-> Cc: stable@vger.kernel.org
-> Link: http://lkml.kernel.org/r/54705C8E.1080400@googlemail.com
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  arch/x86/boot/compressed/Makefile | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-> index be1e07d..45abc36 100644
-> --- a/arch/x86/boot/compressed/Makefile
-> +++ b/arch/x86/boot/compressed/Makefile
-> @@ -76,7 +76,7 @@ suffix-$(CONFIG_KERNEL_XZ)	:= xz
->  suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
->  suffix-$(CONFIG_KERNEL_LZ4) 	:= lz4
->  
-> -RUN_SIZE = $(shell objdump -h vmlinux | \
-> +RUN_SIZE = $(shell $(OBJDUMP) -h vmlinux | \
->  	     perl $(srctree)/arch/x86/tools/calc_run_size.pl)
->  quiet_cmd_mkpiggy = MKPIGGY $@
->        cmd_mkpiggy = $(obj)/mkpiggy $< $(RUN_SIZE) > $@ || ( rm -f $@ ; false )
-> 
+I haven't received any comments or ACKs on the device tree patch portion 
+(patch 5 of 5). According to 
+Documentation/devicetree/bindings/submitting-patches.txt, if the patch 
+hasn't been Acked after a couple of weeks, the maintainer can pull the 
+changes if they are comfortable with those changes.
+
+Dinh checked for merge conflicts in the DTS files in his November 7 
+email (queued patches for 3.19).
+
+Dinh acked patches 1 & 2 on November 12.
+
+Thanks,
+
+Thor
+
