@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310AbaLAK3m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 05:29:42 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:50412 "EHLO
+	id S1752962AbaLAK1e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 05:27:34 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:50354 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752596AbaLAK1f (ORCPT
+	with ESMTP id S1752596AbaLAK1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 05:27:35 -0500
+	Mon, 1 Dec 2014 05:27:32 -0500
 From: Boris Brezillon <boris.brezillon@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -21,56 +21,69 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Arnd Bergmann <arnd@arndb.de>,
         Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
         Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v3 04/11] mfd: syscon: Add Atmel SMC binding doc
-Date: Mon,  1 Dec 2014 11:27:20 +0100
-Message-Id: <1417429647-3419-5-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v3 00/11] memory: add Atmel EBI (External Bus Interface) driver
+Date: Mon,  1 Dec 2014 11:27:16 +0100
+Message-Id: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The SMC registers are used to configure Atmel EBI (External Bus Interface)
-to interface with standard memory devices (NAND, NOR, SRAM or specialized
-devices like FPGAs).
+The EBI (External Bus Interface) is used to access external peripherals
+(NOR, SRAM, NAND, and other specific devices like ethernet controllers).
+Each device is assigned a CS line and an address range and can have its
+own configuration (timings, access mode, bus width, ...).
+This driver provides a generic DT binding to configure a device according
+to its requirements.
+For specific device controllers (like the NAND one) the SMC timings
+should be configured by the controller driver through the matrix and
+smc syscon regmaps.
 
-Declare this memory region as a syscon, so that different drivers can
-configure the SMC interface (mostly timing configuration) according to
-their need.
+The first 4 patches introduce 2 syscon devices needed to configure the
+EBI bus, patch 5 and 6 adds support for the EBI bus, and the remaining
+patches declares the EBI related nodes in sama5d3 dts[i] files.
 
-Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-Acked-by: Lee Jones <lee.jones@linaro.org>
----
- Documentation/devicetree/bindings/mfd/atmel-smc.txt | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+Changes since v2:
+- minor fixes int DT bindings doc
+- fix SMC macros
+- make use of SMC macros defined in include/linux/mfd/syscon/atmel-smc.h
+
+Changes since v1:
+- almost everything :-)
+
+Boris Brezillon (11):
+  mfd: syscon: Add atmel-matrix registers definition
+  mfd: syscon: Add Atmel Matrix bus DT binding documentation
+  mfd: syscon: Add atmel-smc registers definition
+  mfd: syscon: Add Atmel SMC binding doc
+  memory: add Atmel EBI (External Bus Interface) driver
+  memory: atmel-ebi: add DT bindings documentation
+  ARM: at91: select ATMEL_EBI when compiling a kernel for at91sam9 or
+    sama5d3
+  ARM: at91/dt: add HSMC (Static Memory Controller) node in sama5d3 dtsi
+  ARM: at91/dt: add matrix node in sama5d3 dtsi
+  ARM: at91/dt: add EBI (External Bus Interface) node in sama5d3 dtsi
+  ARM: at91/dt: add NOR definition in sama5d3xcm dtsi
+
+ .../bindings/memory-controllers/atmel-ebi.txt      | 155 +++++
+ .../devicetree/bindings/mfd/atmel-matrix.txt       |  24 +
+ .../devicetree/bindings/mfd/atmel-smc.txt          |  19 +
+ arch/arm/boot/dts/sama5d3.dtsi                     |  93 +++
+ arch/arm/boot/dts/sama5d3xcm.dtsi                  |  34 ++
+ arch/arm/mach-at91/Kconfig                         |   2 +
+ drivers/memory/Kconfig                             |  11 +
+ drivers/memory/Makefile                            |   1 +
+ drivers/memory/atmel-ebi.c                         | 627 +++++++++++++++++++++
+ include/linux/mfd/syscon/atmel-matrix.h            | 114 ++++
+ include/linux/mfd/syscon/atmel-smc.h               |  65 +++
+ 11 files changed, 1145 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
+ create mode 100644 Documentation/devicetree/bindings/mfd/atmel-matrix.txt
  create mode 100644 Documentation/devicetree/bindings/mfd/atmel-smc.txt
+ create mode 100644 drivers/memory/atmel-ebi.c
+ create mode 100644 include/linux/mfd/syscon/atmel-matrix.h
+ create mode 100644 include/linux/mfd/syscon/atmel-smc.h
 
-diff --git a/Documentation/devicetree/bindings/mfd/atmel-smc.txt b/Documentation/devicetree/bindings/mfd/atmel-smc.txt
-new file mode 100644
-index 0000000..26eeed3
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/atmel-smc.txt
-@@ -0,0 +1,19 @@
-+* Device tree bindings for Atmel SMC (Static Memory Controller)
-+
-+The SMC registers are used to configure Atmel EBI (External Bus Interface)
-+to interface with standard memory devices (NAND, NOR, SRAM or specialized
-+devices like FPGAs).
-+
-+Required properties:
-+- compatible:		Should be one of the following
-+			"atmel,at91sam9260-smc", "syscon"
-+			"atmel,sama5d3-smc", "syscon"
-+- reg:			Contains offset/length value of the SMC memory
-+			region.
-+
-+Example:
-+
-+smc: smc@ffffc000 {
-+	compatible = "atmel,sama5d3-smc", "syscon";
-+	reg = <0xffffc000 0x1000>;
-+};
 -- 
 1.9.1
 
