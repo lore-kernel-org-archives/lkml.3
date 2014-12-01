@@ -1,139 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696AbaLAWJD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 17:09:03 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:26095 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932660AbaLAWIv (ORCPT
+	id S932710AbaLAWJU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 17:09:20 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:35643 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932679AbaLAWJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 17:08:51 -0500
-Date: Mon, 1 Dec 2014 11:51:55 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
-        Douglas Hatch <doug.hatch@hp.com>
-Subject: Re: [PATCH v12 09/11] pvqspinlock, x86: Add para-virtualization
- support
-Message-ID: <20141201165155.GH3180@laptop.dumpdata.com>
-References: <1413483040-58399-1-git-send-email-Waiman.Long@hp.com>
- <1413483040-58399-10-git-send-email-Waiman.Long@hp.com>
- <20141024085437.GV21513@worktop.programming.kicks-ass.net>
- <544E830C.6070307@hp.com>
- <20141027180252.GC12989@laptop.dumpdata.com>
- <54751FF6.5050808@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54751FF6.5050808@hp.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 1 Dec 2014 17:09:01 -0500
+Date: Tue, 02 Dec 2014 07:08:55 +0900 (JST)
+Message-Id: <20141202.070855.1111026133315369925.konishi.ryusuke@lab.ntt.co.jp>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-nilfs@vger.kernel.org,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        Andreas Rohner <andreas.rohner@gmx.net>
+Subject: Re: [PATCH 1/3] nilfs2: avoid duplicate segment construction for
+ fsync()
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+In-Reply-To: <1417452107-6411-2-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+References: <1417452107-6411-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+	<1417452107-6411-2-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 25, 2014 at 07:33:58PM -0500, Waiman Long wrote:
-> On 10/27/2014 02:02 PM, Konrad Rzeszutek Wilk wrote:
-> >On Mon, Oct 27, 2014 at 01:38:20PM -0400, Waiman Long wrote:
-> >>
-> >>My concern is that spin_unlock() can be called in many places, including
-> >>loadable kernel modules. Can the paravirt_patch_ident_32() function able to
-> >>patch all of them in reasonable time? How about a kernel module loaded later
-> >>at run time?
-> >It has too. When the modules are loaded the .paravirt symbols are exposed
-> >and the module loader patches that.
-> >
-> >And during bootup time (before modules are loaded) it also patches everything
-> >- when it only runs on one CPU.
-> >
+On Tue,  2 Dec 2014 01:41:45 +0900, Ryusuke Konishi wrote:
+> From: Andreas Rohner <andreas.rohner@gmx.net>
 > 
-> I have been changing the patching code to patch the unlock call sites and it
-> seems to be working now. However, when I manually inserted a kernel module
-> using insmod and run the code in the newly inserted module, I got memory
-> access violation as follows:
-> 
-> BUG: unable to handle kernel NULL pointer dereference at           (null)
-> IP: [<          (null)>]           (null)
-> PGD 18d62f3067 PUD 18d476f067 PMD 0
-> Oops: 0010 [#1] SMP
-> Modules linked in: locktest(OE) ebtable_nat ebtables xt_CHECKSUM
-> iptable_mangle bridge autofs4 8021q garp stp llc ipt_REJECT
-> nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT
-> nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter
-> ip6_tables ipv6 vhost_net macvtap macvlan vhost tun uinput ppdev parport_pc
-> parport sg microcode pcspkr virtio_balloon snd_hda_codec_generic
-> virtio_console snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep
-> snd_seq snd_seq_device snd_pcm snd_timer snd soundcore virtio_net i2c_piix4
-> i2c_core ext4(E) jbd2(E) mbcache(E) floppy(E) virtio_blk(E) sr_mod(E)
-> cdrom(E) virtio_pci(E) virtio_ring(E) virtio(E) pata_acpi(E) ata_generic(E)
-> ata_piix(E) dm_mirror(E) dm_region_hash(E) dm_log(E) dm_mod(E) [last
-> unloaded: speedstep_lib]
-> CPU: 1 PID: 3907 Comm: run-locktest Tainted: G        W  OE  3.17.0-pvqlock
-> #3
-> Hardware name: Red Hat KVM, BIOS Bochs 01/01/2011
-> task: ffff8818cc5baf90 ti: ffff8818b7094000 task.ti: ffff8818b7094000
-> RIP: 0010:[<0000000000000000>]  [<          (null)>]           (null)
-> RSP: 0018:ffff8818b7097db0  EFLAGS: 00010246
-> RAX: 0000000000000000 RBX: 00000000004c4b40 RCX: 0000000000000000
-> RDX: 0000000000000001 RSI: 0000000000000000 RDI: ffff8818d3f052c0
-> RBP: ffff8818b7097dd8 R08: 0000000080522014 R09: 0000000000000000
-> R10: 0000000000001000 R11: 0000000000000001 R12: 0000000000000001
-> R13: 0000000000000000 R14: 0000000000000001 R15: ffff8818b7097ea0
-> FS:  00007fb828ece700(0000) GS:ffff88193ec20000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 0000000000000000 CR3: 00000018cc7e9000 CR4: 00000000000006e0
-> Stack:
->  ffffffffa06ff395 ffff8818d465e000 ffffffff8164bec0 0000000000000001
->  0000000000000050 ffff8818b7097e18 ffffffffa06ff785 ffff8818b7097e38
->  0000000000000246 0000000054755e3a 0000000039f8ba72 ffff8818c174f000
-> Call Trace:
->  [<ffffffffa06ff395>] ? test_spinlock+0x65/0x90 [locktest]
->  [<ffffffffa06ff785>] etime_show+0xd5/0x120 [locktest]
->  [<ffffffff812a2dc6>] kobj_attr_show+0x16/0x20
->  [<ffffffff8121a7fa>] sysfs_kf_seq_show+0xca/0x1b0
->  [<ffffffff81218a13>] kernfs_seq_show+0x23/0x30
->  [<ffffffff811c82db>] seq_read+0xbb/0x400
->  [<ffffffff812197e5>] kernfs_fop_read+0x35/0x40
->  [<ffffffff811a4223>] vfs_read+0xa3/0x110
->  [<ffffffff811a47e6>] SyS_read+0x56/0xd0
->  [<ffffffff810f3e16>] ? __audit_syscall_exit+0x216/0x2c0
->  [<ffffffff815b3ca9>] system_call_fastpath+0x16/0x1b
-> Code:  Bad RIP value.
->  RSP <ffff8818b7097db0>
-> CR2: 0000000000000000
-> ---[ end trace 69d0e259c9ec632f ]---
-> 
-> It seems like call site patching isn't properly done or the kernel module
-> that I built was missing some critical information necessary for the proper
+> This patch removes filemap_write_and_wait_range() from
+> nilfs_sync_file(), because it triggers a data segment construction by
+> calling nilfs_writepages() with WB_SYNC_ALL. A data segment construction
+> does not remove the inode from the i_dirty list and it does not clear
+> the NILFS_I_DIRTY flag. Therefore nilfs_inode_dirty() still returns
+> true, which leads to an unnecessary duplicate segment construction in
+> nilfs_sync_file().
+<snip>
+> diff --git a/fs/nilfs2/file.c b/fs/nilfs2/file.c
+> index e9e3325..1ad6bdf 100644
+> --- a/fs/nilfs2/file.c
+> +++ b/fs/nilfs2/file.c
+> @@ -41,19 +41,14 @@ int nilfs_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
+>  	struct inode *inode = file->f_mapping->host;
+>  	int err;
+>  
+> -	err = filemap_write_and_wait_range(inode->i_mapping, start, end);
+> -	if (err)
+> -		return err;
+> -	mutex_lock(&inode->i_mutex);
+> -
+> -	if (nilfs_inode_dirty(inode)) {
+> -		if (datasync)
+> -			err = nilfs_construct_dsync_segment(inode->i_sb, inode,
+> -							    0, LLONG_MAX);
+> -		else
+> -			err = nilfs_construct_segment(inode->i_sb);
+> -	}
+> -	mutex_unlock(&inode->i_mutex);
+> +	if (!nilfs_inode_dirty(inode))
+> +		return 0;
+> +
+> +	if (datasync)
+> +		err = nilfs_construct_dsync_segment(inode->i_sb, inode,
+> +						    start, end);
+> +	else
+> +		err = nilfs_construct_segment(inode->i_sb);
+>  
+>  	nilfs = inode->i_sb->s_fs_info;
+>  	if (!err)
 
-Did the readelf give you the paravirt note section?
-> linking. Anyway, I will include the unlock call patching code as a separate
-> patch as it seems there may be problem under certain circumstance.
+I found this patch introduces another data integrity issue.  If
+nilfs_inode_dirty() is not true, it returns without calling
+nilfs_flush_device() and skips a disk cache flush.
 
-one way to troubleshoot those is to enable the paravirt patching code to
-actually print where it is patching the code. That way when you load the
-module you can confirm it has done its job.
+Andreas made a revised patch to correct it.
 
-Then you can verify that the address  where the code is called:
+Could you apply the following one instead ?
 
-ffffffffa06ff395
+Regards,
+Ryusuke Konishi
+-----
+From: Andreas Rohner <andreas.rohner@gmx.net>
+Date: Mon, 1 Dec 2014 19:03:11 +0100
+Subject: [PATCH] nilfs2: avoid duplicate segment construction for fsync()
 
-is indeed patched. You might as well also do a hexdump in the module loading
-to confim that the patching had been done correctly.
-> 
-> BTW, the kernel panic problem that your team reported had been fixed. The
-> fix will be in the next version of the patch.
-> 
-> -Longman
+This patch removes filemap_write_and_wait_range() from
+nilfs_sync_file(), because it triggers a data segment construction by
+calling nilfs_writepages() with WB_SYNC_ALL. A data segment construction
+does not remove the inode from the i_dirty list and it does not clear
+the NILFS_I_DIRTY flag. Therefore nilfs_inode_dirty() still returns
+true, which leads to an unnecessary duplicate segment construction in
+nilfs_sync_file().
+
+A call to filemap_write_and_wait_range() is not needed, because NILFS2
+does not rely on the generic writeback mechanisms. Instead it implements
+its own mechanism to collect all dirty pages and write them into
+segments. It is more efficient to initiate the segment construction
+directly in nilfs_sync_file() without the detour over
+filemap_write_and_wait_range().
+
+Additionally the lock of i_mutex is not needed, because all code blocks
+that are protected by i_mutex are also protected by a NILFS transaction:
+
+Function                i_mutex     nilfs_transaction
+------------------------------------------------------
+nilfs_ioctl_setflags:   yes         yes
+nilfs_fiemap:           yes         no
+nilfs_write_begin:      yes         yes
+nilfs_write_end:        yes         yes
+nilfs_lookup:           yes         no
+nilfs_create:           yes         yes
+nilfs_link:             yes         yes
+nilfs_mknod:            yes         yes
+nilfs_symlink:          yes         yes
+nilfs_mkdir:            yes         yes
+nilfs_unlink:           yes         yes
+nilfs_rmdir:            yes         yes
+nilfs_rename:           yes         yes
+nilfs_setattr:          yes         yes
+
+For nilfs_lookup() i_mutex is held for the parent directory, to protect
+it from modification. The segment construction does not modify directory
+inodes, so no lock is needed.
+
+nilfs_fiemap() reads the block layout on the disk, by using
+nilfs_bmap_lookup_contig(). This is already protected by bmap->b_sem.
+
+Signed-off-by: Andreas Rohner <andreas.rohner@gmx.net>
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+---
+ fs/nilfs2/file.c | 10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
+
+diff --git a/fs/nilfs2/file.c b/fs/nilfs2/file.c
+index e9e3325..3a03e0a 100644
+--- a/fs/nilfs2/file.c
++++ b/fs/nilfs2/file.c
+@@ -39,21 +39,15 @@ int nilfs_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
+ 	 */
+ 	struct the_nilfs *nilfs;
+ 	struct inode *inode = file->f_mapping->host;
+-	int err;
+-
+-	err = filemap_write_and_wait_range(inode->i_mapping, start, end);
+-	if (err)
+-		return err;
+-	mutex_lock(&inode->i_mutex);
++	int err = 0;
+ 
+ 	if (nilfs_inode_dirty(inode)) {
+ 		if (datasync)
+ 			err = nilfs_construct_dsync_segment(inode->i_sb, inode,
+-							    0, LLONG_MAX);
++							    start, end);
+ 		else
+ 			err = nilfs_construct_segment(inode->i_sb);
+ 	}
+-	mutex_unlock(&inode->i_mutex);
+ 
+ 	nilfs = inode->i_sb->s_fs_info;
+ 	if (!err)
+-- 
+1.8.3.1
+
+
