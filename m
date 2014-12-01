@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813AbaLAI75 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 03:59:57 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:12262 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650AbaLAI74 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 03:59:56 -0500
-Message-ID: <547C2DFE.7010005@huawei.com>
-Date: Mon, 1 Dec 2014 16:59:42 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1752795AbaLAJE6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 04:04:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34224 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752690AbaLAJEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 04:04:54 -0500
+Date: Mon, 1 Dec 2014 10:04:50 +0100
+From: Jan Kara <jack@suse.cz>
+To: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Cc: eparis@redhat.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, jack@suse.cz
+Subject: Re: [PATCH 1/3] fanotify: only destroy mark when both mask and
+ ignored_mask are cleared
+Message-ID: <20141201090450.GB16185@quack.suse.cz>
+References: <1417304258-16838-1-git-send-email-LinoSanfilippo@gmx.de>
 MIME-Version: 1.0
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-CC: <masami.hiramatsu.pt@hitachi.com>, <linux@arm.linux.org.uk>,
-        <will.deacon@arm.com>, <taras.kondratiuk@linaro.org>,
-        <ben.dooks@codethink.co.uk>, <cl@linux.com>, <rabin@rab.in>,
-        <davem@davemloft.net>, <lizefan@huawei.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v10 2/2] ARM: kprobes: enable OPTPROBES for ARM 32
-References: <1416551751-50846-1-git-send-email-wangnan0@huawei.com>	 <1416551751-50846-3-git-send-email-wangnan0@huawei.com> <1417099007.2041.6.camel@linaro.org> <547BC490.9020806@huawei.com>
-In-Reply-To: <547BC490.9020806@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A02020A.547C2E0B.001D,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 5eab2da87ec146b6f25dc31e7f8256c7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417304258-16838-1-git-send-email-LinoSanfilippo@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
->>> +/*
->>> + * NOTE: the first sub and add instruction will be modified according
->>> + * to the stack cost of the instruction.
->>> + */
->>> +asm (
->>> +			".global optprobe_template_entry\n"
->>> +			"optprobe_template_entry:\n"
->>> +			"	sub	sp, sp, #0xff\n"
->>> +			"	stmia	sp, {r0 - r14} \n"
->>
->> AEABI requires that the stack be aligned to a multiple of 8 bytes at
->> function call boundaries, however kprobes can be inserted in the middle
->> of functions where such alignment isn't guaranteed to be maintained.
->> Therefore, this trampoline code needs to make adjust SP if necessary to
->> ensure that alignment. See svc_entry in arch/arm/kernel/entry-armv.S for
->> an example of how this is done; though note, we can't use that exact
->> method because we can't change the flags value without saving them
->> first. (Exception handlers don't have to worry about that because the
->> flags are saved in spsr).
->>
+On Sun 30-11-14 00:37:36, Lino Sanfilippo wrote:
+> In fanotify_mark_remove_from_mask() a mark is destroyed if only one of both
+> bitmasks (mask or ignored_mask) of a mark is cleared. However the other mask
+> may still be set and contain information that should not be lost. Thus only
+> destroy a mark if both masks are cleared.
 > 
-> So I think we have to push a flag into stack for it.
+> Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+> ---
+>  fs/notify/fanotify/fanotify_user.c | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
 > 
+> diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+> index c991616..03a0dd1 100644
+> --- a/fs/notify/fanotify/fanotify_user.c
+> +++ b/fs/notify/fanotify/fanotify_user.c
+> @@ -488,6 +488,8 @@ static __u32 fanotify_mark_remove_from_mask(struct fsnotify_mark *fsn_mark,
+>  					    int *destroy)
+>  {
+>  	__u32 oldmask;
+> +	__u32 new_mask;
+> +	__u32 new_ignored;
+>  
+>  	spin_lock(&fsn_mark->lock);
+>  	if (!(flags & FAN_MARK_IGNORED_MASK)) {
+> @@ -497,9 +499,11 @@ static __u32 fanotify_mark_remove_from_mask(struct fsnotify_mark *fsn_mark,
+>  		oldmask = fsn_mark->ignored_mask;
+>  		fsnotify_set_mark_ignored_mask_locked(fsn_mark, (oldmask & ~mask));
+>  	}
+> +	new_mask = fsn_mark->mask;
+> +	new_ignored = fsn_mark->ignored_mask;
+>  	spin_unlock(&fsn_mark->lock);
+>  
+> -	*destroy = !(oldmask & ~mask);
+> +	*destroy = !(new_mask | new_ignored);
+  There's no need for new variables, is there? You can just set *destroy
+under the spinlock...
 
-By more thinking I found another method on it. Please see my version 11 patch:
+								Honza
 
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-December/307562.html
-
-
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
