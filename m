@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500AbaLAUgh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 15:36:37 -0500
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:39538 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753936AbaLAUgf convert rfc822-to-8bit (ORCPT
+	id S932541AbaLAUgj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 15:36:39 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:57807 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753987AbaLAUgf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Dec 2014 15:36:35 -0500
 MIME-Version: 1.0
-In-Reply-To: <547ccf74.a5198c0a.25de.26d9@mx.google.com>
-References: <CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com>
-	<20141126024032.GA13246@redhat.com>
-	<20141126225745.GA30346@redhat.com>
-	<CA+55aFz-JUX6CU-aO+cwLHYtH7BA+dgyUnEGoy8T4S62gEDFpA@mail.gmail.com>
-	<20141127225637.GA24019@redhat.com>
-	<m5dart$co$1@ger.gmane.org>
-	<CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
-	<547b8a45.6e608c0a.20f9.1002@mx.google.com>
-	<CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
-	<547bbe36.48548c0a.105c.779c@mx.google.com>
-	<20141201191431.GA17385@linux.vnet.ibm.com>
-	<547ccf74.a5198c0a.25de.26d9@mx.google.com>
-Date: Mon, 1 Dec 2014 12:36:34 -0800
-X-Google-Sender-Auth: BU29cIVBEWXcU8_qjnK_HKdVBKA
-Message-ID: <CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        Dave Jones <davej@redhat.com>, Sasha Levin <sasha.levin@oracle.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+X-Originating-IP: [2620:0:1000:157d:643c:8d32:1602:17de]
+In-Reply-To: <547A09B1.9090102@users.sourceforge.net>
+References: <5307CAA2.8060406@users.sourceforge.net>
+	<alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
+	<530A086E.8010901@users.sourceforge.net>
+	<alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
+	<530A72AA.3000601@users.sourceforge.net>
+	<alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
+	<530B5FB6.6010207@users.sourceforge.net>
+	<alpine.DEB.2.10.1402241710370.2074@hadrien>
+	<530C5E18.1020800@users.sourceforge.net>
+	<alpine.DEB.2.10.1402251014170.2080@hadrien>
+	<530CD2C4.4050903@users.sourceforge.net>
+	<alpine.DEB.2.10.1402251840450.7035@hadrien>
+	<530CF8FF.8080600@users.sourceforge.net>
+	<alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+	<530DD06F.4090703@users.sourceforge.net>
+	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+	<5317A59D.4@users.sourceforge.net>
+	<547A09B1.9090102@users.sourceforge.net>
+Date: Mon, 1 Dec 2014 12:36:33 -0800
+Message-ID: <CAOesGMi+=ue34aQcDH0wPBjrvi+3cSJG1=m9fbj+tgds_twkPg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] net-PA Semi: Deletion of unnecessary checks before
+ the function call "pci_dev_put"
+From: Olof Johansson <olof@lixom.net>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 1, 2014 at 12:28 PM, Dâniel Fraga <fragabr@gmail.com> wrote:
+On Sat, Nov 29, 2014 at 10:00 AM, SF Markus Elfring
+<elfring@users.sourceforge.net> wrote:
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Sat, 29 Nov 2014 18:55:40 +0100
 >
->         Hi Paul. Please, I'd like the patch, because without
-> preemption, I'm unable to trigger this bug.
+> The pci_dev_put() function tests whether its argument is NULL
+> and then returns immediately. Thus the test around the call
+> is not needed.
+>
+> This issue was detected by using the Coccinelle software.
+>
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 
-Ok, that's already interesting information. And yes, it would probably
-be interesting to see if CONFIG_PREEMPT=y but !CONFIG_TREE_PREEMPT_RCU
-then solves it too, to narrow it down to one but not the other..
+For this particular case:
 
-DaveJ - what about your situation? The standard Fedora kernels use
-CONFIG_PREEMPT_VOLUNTARY, do you have CONFIG_PREEMPT and
-CONFIG_TREE_PREEMPT_RCU enabled? I think you and Sasha both saw some
-RCU oddities too, no?
+Acked-by: Olof Johansson <olof@lixom.net>
 
-                    Linus
+Note that the "this might cause problems with backports" case is
+mostly academic in the scope of _this particular driver_. It's still a
+very valid discussion and issue though.
+
+So I'll be happy to give the ack on this driver, but the larger
+problem needs consideration still.
+
+
+-Olof
