@@ -1,86 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863AbaLAJZe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 04:25:34 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:35564 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733AbaLAJZd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 04:25:33 -0500
-Date: Mon, 1 Dec 2014 01:25:29 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Zhou Wang <wangzhou.bry@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        devicetree@vger.kernel.org, mark.rutland@arm.com, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, robh+dt@kernel.org,
-        galak@codeaurora.org, caizhiyong@huawei.com, haojian.zhuang@gmail.com,
-        xuwei5@hisilicon.com, wangzhou1@hisilicon.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 1/2] mtd: hisilicon: add a new NAND controller driver
- for hisilicon hip04 Soc
-Message-ID: <20141201092529.GM29070@brian-ubuntu>
-References: <1415105221-7732-1-git-send-email-wangzhou.bry@gmail.com>
- <1415105221-7732-2-git-send-email-wangzhou.bry@gmail.com>
+	id S1752885AbaLAJ1W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 04:27:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41080 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752722AbaLAJ1U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 04:27:20 -0500
+Date: Mon, 1 Dec 2014 11:26:58 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        cornelia.huck@de.ibm.com, rusty@au1.ibm.com, nab@linux-iscsi.org,
+        pbonzini@redhat.com, thuth@linux.vnet.ibm.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v7 16/46] virtio_blk: v1.0 support
+Message-ID: <20141201092658.GC15607@redhat.com>
+References: <1417359787-10138-1-git-send-email-mst@redhat.com>
+ <1417359787-10138-17-git-send-email-mst@redhat.com>
+ <20141201091641.3085e682@thinkpad-w530>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415105221-7732-2-git-send-email-wangzhou.bry@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141201091641.3085e682@thinkpad-w530>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I forgot to mention these comments:
+On Mon, Dec 01, 2014 at 09:16:41AM +0100, David Hildenbrand wrote:
+> > Based on patch by Cornelia Huck.
+> > 
+> > Note: for consistency, and to avoid sparse errors,
+> >       convert all fields, even those no longer in use
+> >       for virtio v1.0.
+> > 
+> > Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ...
+> > 
+> > -static unsigned int features[] = {
+> > +static unsigned int features_legacy[] = {
+> >  	VIRTIO_BLK_F_SEG_MAX, VIRTIO_BLK_F_SIZE_MAX, VIRTIO_BLK_F_GEOMETRY,
+> >  	VIRTIO_BLK_F_RO, VIRTIO_BLK_F_BLK_SIZE, VIRTIO_BLK_F_SCSI,
+> >  	VIRTIO_BLK_F_WCE, VIRTIO_BLK_F_TOPOLOGY, VIRTIO_BLK_F_CONFIG_WCE,
+> >  	VIRTIO_BLK_F_MQ,
+> > +}
+> > +;
+> > +static unsigned int features[] = {
+> > +	VIRTIO_BLK_F_SEG_MAX, VIRTIO_BLK_F_SIZE_MAX, VIRTIO_BLK_F_GEOMETRY,
+> > +	VIRTIO_BLK_F_RO, VIRTIO_BLK_F_BLK_SIZE,
+> > +	VIRTIO_BLK_F_TOPOLOGY,
+> > +	VIRTIO_BLK_F_MQ,
+> > +	VIRTIO_F_VERSION_1,
+> 
+> We can fit this into less lines, like done for features_legacy.
+> 
+> I was asking myself if we could do the conversion of the statical values
+> somehow upfront, to reduce the patch size and avoid cpu_to_virtio.* at those
+> places.
+> 
+> Otherwise looks good to me.
+> 
 
-On Tue, Nov 04, 2014 at 08:47:00PM +0800, Zhou Wang wrote:
-> +static int hisi_nfc_remove(struct platform_device *pdev)
-> +{
-> +	struct hinfc_host *host = platform_get_drvdata(pdev);
-> +	struct mtd_info *mtd = &host->mtd;
-> +
-> +	nand_release(mtd);
-> +	dma_free_coherent(&pdev->dev, mtd->writesize + mtd->oobsize,
-> +			  host->buffer, host->dma_buffer);
-> +
-> +	return 0;
-> +}
-> +
-> +#ifdef CONFIG_PM_SLEEP
-> +static int hisi_nfc_suspend(struct platform_device *pdev,
-> +			       pm_message_t state)
+I don't see how we can reduce the patch size.
+For BE architectures it's dynamic, so at best the values
+will become macros/incline functions taking a flag.
 
-This is the wrong prototype. See struct dev_pm_ops.
+For some places on data path, it might be worth it
+to cache the correct value e.g. as part of device
+structure. This replaces a branch with a memory load,
+so the gain would have to be measured, best done
+separately?
 
-> +{
-> +	struct hinfc_host *host = platform_get_drvdata(pdev);
-> +
-> +	while ((hinfc_read(host, HINFC504_STATUS) & 0x1) == 0x0)
-> +		;
-> +
-> +	while ((hinfc_read(host, HINFC504_DMA_CTRL))
-> +		& HINFC504_DMA_CTRL_DMA_START)
-> +		_cond_resched();
-> +
-> +	return 0;
-> +}
-> +
-> +static int hisi_nfc_resume(struct platform_device *pdev)
-
-Same here.
-
-> +{
-> +	int cs;
-> +	struct hinfc_host *host = platform_get_drvdata(pdev);
-> +	struct nand_chip *chip = &host->chip;
-> +
-> +	for (cs = 0; cs < chip->numchips; cs++)
-> +		hisi_nfc_send_cmd_reset(host, cs);
-> +	hinfc_write(host, SET_HINFC504_PWIDTH(HINFC504_W_LATCH,
-> +		    HINFC504_R_LATCH, HINFC504_RW_LATCH), HINFC504_PWIDTH);
-> +
-> +	return 0;
-> +}
-> +#endif
-> +static SIMPLE_DEV_PM_OPS(hisi_nfc_pm_ops, hisi_nfc_suspend, hisi_nfc_resume);
-
-Brian
+-- 
+MST
