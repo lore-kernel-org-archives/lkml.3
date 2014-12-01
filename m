@@ -1,149 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425AbaLAQjX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 11:39:23 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:38734 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752817AbaLAQjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 11:39:21 -0500
-Message-ID: <547C99B6.7070903@osg.samsung.com>
-Date: Mon, 01 Dec 2014 09:39:18 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753501AbaLAQkH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 11:40:07 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:53793 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752817AbaLAQkE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 11:40:04 -0500
+Date: Mon, 1 Dec 2014 17:36:39 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Benoit Parrot <bparrot@ti.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
+Message-ID: <20141201163639.GI25249@lukather>
+References: <1416527684-19017-1-git-send-email-bparrot@ti.com>
+ <1416527684-19017-2-git-send-email-bparrot@ti.com>
+ <CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com>
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>, gregkh@linuxfoundation.org,
-        akpm@linux-foundation.org, davem@davemloft.net, keescook@chromium.org,
-        tranmanphong@gmail.com, dh.herrmann@gmail.com, hughd@google.com,
-        bobby.prani@gmail.com, ebiederm@xmission.com, serge.hallyn@ubuntu.com
-CC: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        "masami.hiramatsu.pt@hitachi.com >> Masami Hiramatsu" 
-	<masami.hiramatsu.pt@hitachi.com>,
-        Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: [PATCH v2 02/19] kbuild: kselftest_install - add a new make target
- to install selftests
-References: <cover.1415735831.git.shuahkh@osg.samsung.com> <a2344d4df903d673afe1631118f40917f773cc9a.1415735831.git.shuahkh@osg.samsung.com> <547C8D81.1030605@suse.cz>
-In-Reply-To: <547C8D81.1030605@suse.cz>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="b+chlBtRKJDCtqTb"
+Content-Disposition: inline
+In-Reply-To: <CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2014 08:47 AM, Michal Marek wrote:
-> On 2014-11-11 21:27, Shuah Khan wrote:
->> Add a new make target to install to install kernel selftests.
->> This new target will build and install selftests. kselftest
->> target now depends on kselftest_install and runs the generated
->> kselftest script to reduce duplicate work and for common look
->> and feel when running tests.
->>
->> Approach:
->>
->> make kselftest_target:
->> -- exports kselftest INSTALL_KSFT_PATH
->>    default $(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)
->> -- exports path for ksefltest.sh
->> -- runs selftests make install target:
->>
->> selftests make install target
->> -- creates kselftest.sh script in install install dir
->> -- runs install targets for all INSTALL_TARGETS
->>    (Note: ftrace and powerpc aren't included in INSTALL_TARGETS,
->>           to not add more content to patch v1 series. This work
->>           will happen soon. In this series these two targets are
->>           run after running the generated kselftest script, without
->>           any regression in the way these tests are run with
->>           "make kselftest" prior to this work.)
->> -- install target can be run only from top level source dir.
->>
->> Individual test make install targets:
->> -- install test programs and/or scripts in install dir
->> -- append to the ksefltest.sh file to add commands to run test
->> -- install target can be run only from top level source dir.
->>
->> Adds the following new ways to initiate selftests:
->> -- Installing and running kselftest from install directory
->>    by running  "make kselftest"
->> -- Running kselftest script from install directory
->>
->> Maintains the following ways to run tests:
->> -- make -C tools/testing/selftests run_tests
->> -- make -C tools/testing/selftests TARGETS=target run_tests
->>    Ability specify targets: e.g TARGETS=net
->> -- make run_tests from tools/testing/selftests
->> -- make run_tests from individual test directories:
->>    e.g: make run_tests in tools/testing/selftests/breakpoints
->>
->> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
->> ---
->>  Makefile | 21 +++++++++++++++++++--
->>  1 file changed, 19 insertions(+), 2 deletions(-)
->>
->> diff --git a/Makefile b/Makefile
->> index 05d67af..ccbd2e1 100644
->> --- a/Makefile
->> +++ b/Makefile
->> @@ -1071,12 +1071,26 @@ headers_check: headers_install
->>  	$(Q)$(MAKE) $(hdr-inst)=arch/$(hdr-arch)/include/uapi/asm $(hdr-dst) HDRCHECK=1
->>  
->>  # ---------------------------------------------------------------------------
->> -# Kernel selftest
->> +# Kernel selftest targets
->> +
->> +PHONY += __kselftest_configure
->> +INSTALL_KSFT_PATH=$(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)
->> +export INSTALL_KSFT_PATH
->> +KSELFTEST=$(INSTALL_KSFT_PATH)/kselftest.sh
->> +export KSELFTEST
-> 
-> Can this be moved to tools/testing/selftests/Makefile? It's only used in
-> this part of the tree.
 
-I looked into doing that. KERNELRELEASE will have to be exported for
-tools/testing/selftests/Makefile to use it? Does that sound okay?
+--b+chlBtRKJDCtqTb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> 
->>  PHONY += kselftest
->> -kselftest:
->> +kselftest: kselftest_install
->>  	$(Q)$(MAKE) -C tools/testing/selftests run_tests
->>  
->> +# Kernel selftest install
->> +
->> +PHONY += kselftest_install
->> +kselftest_install: __kselftest_configure
->> +	@rm -rf $(INSTALL_KSFT_PATH)
->> +	@mkdir -p $(INSTALL_KSFT_PATH)
-> 
-> Please use $(Q) insteaf od hardcoding the @.
+Hi,
 
-I can do that.
+On Fri, Nov 28, 2014 at 04:30:01PM +0900, Alexandre Courbot wrote:
+> > +/**
+> > + * do_gpio_hog - Given node is a GPIO hog configuration, handle it
+> > + * @np:                device node to get GPIO from
+> > + *
+> > + * This is only used by of_gpiochip_add to request/set GPIO initial
+> > + * configuration.
+> > + */
+> > +static int do_gpio_hog(struct device_node *np)
+> > +{
+> > +       struct gpio_desc *desc =3D NULL;
+> > +       int err;
+> > +       const char *name;
+> > +       enum gpio_lookup_flags lflags;
+> > +       enum gpiod_flags dflags;
+> > +
+> > +       desc =3D of_get_gpio_hog(np, &name, &lflags, &dflags);
+> > +       if (!desc)
+> > +               return -ENOTSUPP;
+> > +       else if (IS_ERR(desc))
+> > +               return PTR_ERR(desc);
+> > +
+> > +       err =3D gpiod_request(desc, name);
+>=20
+> Using this function means that a GPIO chip module cannot be unloaded
+> if it uses GPIO hogs. Is it the intended behavior? If not, please use
+> gpiochip_request_own_desc() instead, and make sure to call
+> gpiochip_free_own_desc() for each hog when the driver is unloaded.
 
-> 
-> 
->> +	$(Q)$(MAKE) -C tools/testing/selftests install
-> 
-> The install target is only added by the next patch, which in turn
-> depends on changes done by later patches. The order (in the current
-> numbering) should be 01/19, 04/19, ... 19/19, 03/19 and 02/19.
-> 
+The only thing I'd like to have would be that the request here would
+be non-exclusive, so that a later driver would still be allowed later
+on to request that GPIO later on and manage it itself (ideally using
+the usual gpiod_request function).
 
-Right. I can re-order the patches in my next version and make other
-changes you recommended.
+Maxime
 
-Also, it might be easier to get this series in, if you can Ack the main
-Makefile patch (when we are ready i.e), so I can take it through
-kselftest tree.
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-thanks,
--- Shuah
+--b+chlBtRKJDCtqTb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+iQIcBAEBAgAGBQJUfJkXAAoJEBx+YmzsjxAgqY0QAJbT5ky9AzUmJVMbI/JXLVEJ
+sRSHFLrRDQzD9VMaE8tVERMyKOW2KLVZKY74MY6qxhtokSgSa49KICJkSc5nIKIR
+J0Tp73BpB2XPcBHBahtvWiKSvvekpKn3+FslG0Fx4s+8UkgYdPlweNT9D7lWuuTx
+wgBhkU+c7ehPloiKFg4m1EDW0OhL3iAkrXGgh7zVcglGOb489B1sc8FvDvn+DL2o
+kQoxJkoc1ZQMlLV74Uf/fYLeDNWAGiB0f9sDLS3ZLYw0IPgxREV7UJJxXbJkTLZa
+rjKVfD0uDrlKt5THovz/Mw4jA1VAnnkGNJF3YvidPm0bsMoKimJ3i2YKK3ZKnU2F
+gRqA3Ew1AXNLLuBWaR6kfhX4TcJ6KoYIXQOLZYM02jhjkZkyuefunlnBMGiGDnOn
+wwIx6jhYtKIEWxolQBYcISBYnG5XPkxbmW+bb6pKObutlTQP/cPZr6Z4/whbjQvY
+Z3ClNygSoX2PlsvD4iC90o0X11rseJgaLZV0A6f/bFXxyfeTy2o8mmqLOOb+XkA7
+wILCrA8NAe9oKj744/qCj+obtwDd5rbNkm2XwXWEPs17xDyJzMT0QDskrABxNSTV
+N3wLFGE7jhy+fdHRS8GBdr6BQb+u8L6EQHyij6sNDtu5jbqEGqozjy1LzdFxFwlX
+84/vYq92GfF/7QNVUGp2
+=Oa5f
+-----END PGP SIGNATURE-----
+
+--b+chlBtRKJDCtqTb--
