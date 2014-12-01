@@ -1,64 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932609AbaLAWCC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 17:02:02 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:48140 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932466AbaLAWB7 (ORCPT
+	id S932607AbaLAWD4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 17:03:56 -0500
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:57436 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932160AbaLAWDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 17:01:59 -0500
+	Mon, 1 Dec 2014 17:03:54 -0500
+Message-ID: <547CE5C7.1060909@hp.com>
+Date: Mon, 01 Dec 2014 17:03:51 -0500
+From: Linda Knippers <linda.knippers@hp.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-X-Originating-IP: [70.48.182.199]
-In-Reply-To: <CAMuHMdXHAZFujShNnAHY8BRv85ncrtcRvRgPS0Br0T9gSxZ+1A@mail.gmail.com>
-References: <547CD304.20407@gmail.com>
-	<CAMo8BfKg=eb7wA2O+cKO+oLDDERh2CKBS7dyAvfqvCESEHWYEg@mail.gmail.com>
-	<CAMuHMdXHAZFujShNnAHY8BRv85ncrtcRvRgPS0Br0T9gSxZ+1A@mail.gmail.com>
-Date: Mon, 1 Dec 2014 17:01:58 -0500
-Message-ID: <CAE2sS1hDXqLvF9yY5-3d4pmDPiQy8aQ1fYov3_+BKM8uQ3ZSwA@mail.gmail.com>
-Subject: Re: [PATCH] arch: uapi: asm: mman.h: Support MADV_FREE for madvise()
-From: "Carlos O'Donell" <carlos@systemhalted.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Max Filippov <jcmvbkbc@gmail.com>, Chen Gang <gang.chen.5i5j@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "rth@twiddle.net" <rth@twiddle.net>,
-        "ink@jurassic.park.msu.ru" <ink@jurassic.park.msu.ru>,
-        "mattst88@gmail.com" <mattst88@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "jejb@parisc-linux.org" <jejb@parisc-linux.org>,
-        "deller@gmx.de" <deller@gmx.de>, "chris@zankel.net" <chris@zankel.net>,
-        "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+To: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Ethan Zhao <ethan.zhao@oracle.com>, dirk.j.brandewie@intel.com,
+        viresh.kumar@linaro.org, rjw@rjwysocki.net, corbet@lwn.net
+CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, ethan.kernel@gmail.com
+Subject: Re: [PATCH 1/2 V6] intel_pstate: skip this driver if Sun server has
+ _PPC method
+References: <1417401128-32086-1-git-send-email-ethan.zhao@oracle.com> <547C853B.4000700@gmail.com>
+In-Reply-To: <547C853B.4000700@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 1, 2014 at 4:35 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Mon, Dec 1, 2014 at 9:52 PM, Max Filippov <jcmvbkbc@gmail.com> wrote:
->> On Mon, Dec 1, 2014 at 11:43 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
->>> At present, kernel supports madvise(MADV_FREE), so can benefit to all
->>> related architectures (can grep MADV_WILLNEED or MADV_REMOVE in "arch/"
->>> to know about all related architectures).
+On 12/1/2014 10:11 AM, Dirk Brandewie wrote:
+> On 11/30/2014 06:32 PM, Ethan Zhao wrote:
+>> Oracle Sun X86 servers have dynamic power capping capability that works via
+>> ACPI _PPC method etc, so skip loading this driver if Sun server has ACPI _PPC
+>> enabled.
 >>
->> A similar patch has been posted a while ago:
+>> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+>> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+>> Tested-by: Linda Knippers <linda.knippers@hp.com>
+> 
+> In the future you should not add other peoples Signed-off-by or Tested-by
+> tags unless they have explicitly told you can do so. Other than that I
+> am fine with this patch.
+
+I hadn't previously testing this version of the patch but I have now so I'm
+now ok with the Tested-by.
+
+Thanks,
+
+--ljk
+> 
+> --Dirk
+>> ---
+>>    v2: fix break HP Proliant issue.
+>>    v3: expand the hardware vendor list.
+>>    v4: refine code.
+>>    v5v6: change enum PCC to PPC.
 >>
->> http://www.spinics.net/lists/linux-mm/msg81538.html
->
-> Would it be possible to use the same number everywhere?
+>>   drivers/cpufreq/intel_pstate.c | 45 ++++++++++++++++++++++++++++++++++++++----
+>>   1 file changed, 41 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+>> index 27bb6d3..1bb62ca 100644
+>> --- a/drivers/cpufreq/intel_pstate.c
+>> +++ b/drivers/cpufreq/intel_pstate.c
+>> @@ -943,15 +943,46 @@ static bool intel_pstate_no_acpi_pss(void)
+>>       return true;
+>>   }
+>>
+>> +static bool intel_pstate_has_acpi_ppc(void)
+>> +{
+>> +    int i;
+>> +
+>> +    for_each_possible_cpu(i) {
+>> +        struct acpi_processor *pr = per_cpu(processors, i);
+>> +
+>> +        if (!pr)
+>> +            continue;
+>> +        if (acpi_has_method(pr->handle, "_PPC"))
+>> +            return true;
+>> +    }
+>> +    return false;
+>> +}
+>> +
+>> +enum {
+>> +    PSS,
+>> +    PPC,
+>> +};
+>> +
+>>   struct hw_vendor_info {
+>>       u16  valid;
+>>       char oem_id[ACPI_OEM_ID_SIZE];
+>>       char oem_table_id[ACPI_OEM_TABLE_ID_SIZE];
+>> +    int  oem_pwr_table;
+>>   };
+>>
+>>   /* Hardware vendor-specific info that has its own power management modes */
+>>   static struct hw_vendor_info vendor_info[] = {
+>> -    {1, "HP    ", "ProLiant"},
+>> +    {1, "HP    ", "ProLiant", PSS},
+>> +    {1, "ORACLE", "X4-2    ", PPC},
+>> +    {1, "ORACLE", "X4-2L   ", PPC},
+>> +    {1, "ORACLE", "X4-2B   ", PPC},
+>> +    {1, "ORACLE", "X3-2    ", PPC},
+>> +    {1, "ORACLE", "X3-2L   ", PPC},
+>> +    {1, "ORACLE", "X3-2B   ", PPC},
+>> +    {1, "ORACLE", "X4470M2 ", PPC},
+>> +    {1, "ORACLE", "X4270M3 ", PPC},
+>> +    {1, "ORACLE", "X4270M2 ", PPC},
+>> +    {1, "ORACLE", "X4170M2 ", PPC},
+>>       {0, "", ""},
+>>   };
+>>
+>> @@ -966,15 +997,21 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
+>>
+>>       for (v_info = vendor_info; v_info->valid; v_info++) {
+>>           if (!strncmp(hdr.oem_id, v_info->oem_id, ACPI_OEM_ID_SIZE) &&
+>> -            !strncmp(hdr.oem_table_id, v_info->oem_table_id,
+>> ACPI_OEM_TABLE_ID_SIZE) &&
+>> -            intel_pstate_no_acpi_pss())
+>> -            return true;
+>> +            !strncmp(hdr.oem_table_id, v_info->oem_table_id,
+>> +                        ACPI_OEM_TABLE_ID_SIZE))
+>> +            switch (v_info->oem_pwr_table) {
+>> +            case PSS:
+>> +                return intel_pstate_no_acpi_pss();
+>> +            case PPC:
+>> +                return intel_pstate_has_acpi_ppc();
+>> +            }
+>>       }
+>>
+>>       return false;
+>>   }
+>>   #else /* CONFIG_ACPI not enabled */
+>>   static inline bool intel_pstate_platform_pwr_mgmt_exists(void) { return
+>> false; }
+>> +static inline bool intel_pstate_has_acpi_ppc(void) { return false; }
+>>   #endif /* CONFIG_ACPI */
+>>
+>>   static int __init intel_pstate_init(void)
+>>
+> 
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Yes please. It's ridiculous that we still need patches like this.
-
-I proposed unifying all this two years ago, but didn't follow up.
-
->From glibc's perspective it would be simpler if we started using the
-same number everywhere.
-
-http://www.spinics.net/lists/linux-api/msg02064.html
-
-Cheers,
-Carlos.
