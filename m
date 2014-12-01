@@ -1,184 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932505AbaLAQJK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 11:09:10 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:50068 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932397AbaLAQJG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 11:09:06 -0500
-Message-ID: <547C92A1.8000902@atmel.com>
-Date: Mon, 1 Dec 2014 17:09:05 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932520AbaLAQJh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 11:09:37 -0500
+Received: from arrakis.dune.hu ([78.24.191.176]:58305 "EHLO arrakis.dune.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932205AbaLAQJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 11:09:34 -0500
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Valentin Rothberg <valentinrothberg@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [PATCH 1/4] ARM: at91: remove at91sam9263 legacy board support
-References: <cover.1416392687.git.nicolas.ferre@atmel.com>	 <cf26d39a4a251662dbc363092b319b788d223a7b.1416392687.git.nicolas.ferre@atmel.com> <1417434775.30245.29.camel@x220>
-In-Reply-To: <1417434775.30245.29.camel@x220>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <1417149142-3756-9-git-send-email-cernekee@gmail.com>
+References: <1417149142-3756-1-git-send-email-cernekee@gmail.com> <1417149142-3756-9-git-send-email-cernekee@gmail.com>
+From: Jonas Gorski <jogo@openwrt.org>
+Date: Mon, 1 Dec 2014 17:09:04 +0100
+Message-ID: <CAOiHx=nb4Ub_bseHUrz+HrnJxDEKMijQ=r+ASZ-p5MtTi81Big@mail.gmail.com>
+Subject: Re: [PATCH V4 08/16] irqchip: Add new driver for BCM7038-style level
+ 1 interrupt controllers
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Jon Fraser <jfraser@broadcom.com>, Dmitry Torokhov <dtor@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        computersforpeace@gmail.com,
+        MIPS Mailing List <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 01/12/2014 12:52, Paul Bolle a écrit :
-> On Wed, 2014-11-19 at 11:31 +0100, Nicolas Ferre wrote:
->> Remove legacy support for at91sam9rl boards.
->> This include board files removal plus all legacy code for non DT boards
->> support.
->> Use the Device Tree for running this board with newer kernels.
->>
->> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->> ---
-> 
-> There's some further cleanup possible after this patch. I noticed that
-> when it landed in today's linux-next (ie, next-20141201) as commit
-> 4403ac46edcd ("ARM: at91: remove at91sam9263 legacy board support").
-> 
->>  arch/arm/configs/at91sam9263_defconfig   |  151 ---
->>  arch/arm/mach-at91/Kconfig.non_dt        |   21 -
->>  arch/arm/mach-at91/Makefile              |    4 -
->>  arch/arm/mach-at91/at91sam9263.c         |  399 --------
->>  arch/arm/mach-at91/at91sam9263_devices.c | 1538 ------------------------------
->>  arch/arm/mach-at91/board-sam9263ek.c     |  493 ----------
->>  6 files changed, 2606 deletions(-)
->>  delete mode 100644 arch/arm/configs/at91sam9263_defconfig
->>  delete mode 100644 arch/arm/mach-at91/at91sam9263_devices.c
->>  delete mode 100644 arch/arm/mach-at91/board-sam9263ek.c
->>
->> [...]
->> diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
->> deleted file mode 100644
->> index cef0e2f57068..000000000000
->> --- a/arch/arm/mach-at91/at91sam9263_devices.c
->> +++ /dev/null
->> [...]
->> -/* --------------------------------------------------------------------
->> - *  RTT
->> - * -------------------------------------------------------------------- */
->> -
->> -static struct resource rtt0_resources[] = {
->> -	{
->> -		.start	= AT91SAM9263_BASE_RTT0,
->> -		.end	= AT91SAM9263_BASE_RTT0 + SZ_16 - 1,
->> -		.flags	= IORESOURCE_MEM,
->> -	}, {
->> -		.flags	= IORESOURCE_MEM,
->> -	}, {
->> -		.flags  = IORESOURCE_IRQ,
->> -	}
->> -};
->> -
->> -static struct platform_device at91sam9263_rtt0_device = {
->> -	.name		= "at91_rtt",
->> -	.id		= 0,
->> -	.resource	= rtt0_resources,
->> -};
->> -
->> -static struct resource rtt1_resources[] = {
->> -	{
->> -		.start	= AT91SAM9263_BASE_RTT1,
->> -		.end	= AT91SAM9263_BASE_RTT1 + SZ_16 - 1,
->> -		.flags	= IORESOURCE_MEM,
->> -	}, {
->> -		.flags	= IORESOURCE_MEM,
->> -	}, {
->> -		.flags  = IORESOURCE_IRQ,
->> -	}
->> -};
->> -
->> -static struct platform_device at91sam9263_rtt1_device = {
->> -	.name		= "at91_rtt",
->> -	.id		= 1,
->> -	.resource	= rtt1_resources,
->> -};
->> -
->> -#if IS_ENABLED(CONFIG_RTC_DRV_AT91SAM9)
->> -static void __init at91_add_device_rtt_rtc(void)
->> -{
->> -	struct platform_device *pdev;
->> -	struct resource *r;
->> -
->> -	switch (CONFIG_RTC_DRV_AT91SAM9_RTT) {
-> 
-> This and...
-> 
->> -	case 0:
->> -		/*
->> -		 * The second resource is needed only for the chosen RTT:
->> -		 * GPBR will serve as the storage for RTC time offset
->> -		 */
->> -		at91sam9263_rtt0_device.num_resources = 3;
->> -		at91sam9263_rtt1_device.num_resources = 1;
->> -		pdev = &at91sam9263_rtt0_device;
->> -		r = rtt0_resources;
->> -		break;
->> -	case 1:
->> -		at91sam9263_rtt0_device.num_resources = 1;
->> -		at91sam9263_rtt1_device.num_resources = 3;
->> -		pdev = &at91sam9263_rtt1_device;
->> -		r = rtt1_resources;
->> -		break;
->> -	default:
->> -		pr_err("at91sam9263: only supports 2 RTT (%d)\n",
->> -		       CONFIG_RTC_DRV_AT91SAM9_RTT);
-> 
-> this are the only places were the Kconfig symbol RTC_DRV_AT91SAM9_RTT
-> was used. It is useless now. That matches its help text, that reads:
->     This option is only relevant for legacy board support and
->     won't be used when booting a DT board.
-> 
->> -		return;
->> -	}
->> -
->> -	pdev->name = "rtc-at91sam9";
->> -	r[1].start = AT91SAM9263_BASE_GPBR + 4 * CONFIG_RTC_DRV_AT91SAM9_GPBR;
->> -	r[1].end = r[1].start + 3;
->> -	r[2].start = NR_IRQS_LEGACY + AT91_ID_SYS;
->> -	r[2].end = NR_IRQS_LEGACY + AT91_ID_SYS;
->> -}
->> -#else
->> -static void __init at91_add_device_rtt_rtc(void)
->> -{
->> -	/* Only one resource is needed: RTT not used as RTC */
->> -	at91sam9263_rtt0_device.num_resources = 1;
->> -	at91sam9263_rtt1_device.num_resources = 1;
->> -}
->> -#endif
->> -
->> -static void __init at91_add_device_rtt(void)
->> -{
->> -	at91_add_device_rtt_rtc();
->> -	platform_device_register(&at91sam9263_rtt0_device);
->> -	platform_device_register(&at91sam9263_rtt1_device);
->> -}
-> 
-> Is a patch to remove that symbol from drivers/rtc/Kconfig queued
-> somewhere?
+On Fri, Nov 28, 2014 at 5:32 AM, Kevin Cernekee <cernekee@gmail.com> wrote:
+> This is the main peripheral IRQ controller on the BCM7xxx MIPS chips;
+> it has the following characteristics:
+>
+>  - 64 to 160+ level IRQs
+>  - Atomic set/clear registers
+>  - Reasonably predictable register layout (N status words, then N
+>    mask status words, then N mask set words, then N mask clear words)
+>  - SMP affinity supported on most systems
+>  - Typically connected to MIPS IRQ 2,3,2,3 on CPUs 0,1,2,3
+>
+> This driver registers one IRQ domain and one IRQ chip to cover all
+> instances of the block.  Up to 4 instances of the block may appear, as
+> it supports 4-way IRQ affinity on BCM7435.
+>
+> The same block exists on the ARM BCM7xxx chips, but typically the ARM GIC
+> is used instead.  So this driver is primarily intended for MIPS STB chips.
+>
+> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+> ---
+>  .../interrupt-controller/brcm,bcm7038-l1-intc.txt  |  52 ++++
+>  drivers/irqchip/Kconfig                            |   5 +
+>  drivers/irqchip/Makefile                           |   1 +
+>  drivers/irqchip/irq-bcm7038-l1.c                   | 335 +++++++++++++++++++++
+>  4 files changed, 393 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/interrupt-controller/brcm,bcm7038-l1-intc.txt
+>  create mode 100644 drivers/irqchip/irq-bcm7038-l1.c
+>
+> diff --git a/Documentation/devicetree/bindings/interrupt-controller/brcm,bcm7038-l1-intc.txt b/Documentation/devicetree/bindings/interrupt-controller/brcm,bcm7038-l1-intc.txt
+> new file mode 100644
+> index 000000000000..cc217b22dccd
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/interrupt-controller/brcm,bcm7038-l1-intc.txt
+> @@ -0,0 +1,52 @@
+> +Broadcom BCM7038-style Level 1 interrupt controller
+> +
+> +This block is a first level interrupt controller that is typically connected
+> +directly to one of the HW INT lines on each CPU.  Every BCM7xxx set-top chip
+> +since BCM7038 has contained this hardware.
+> +
+> +Key elements of the hardware design include:
+> +
+> +- 64, 96, 128, or 160 incoming level IRQ lines
+> +
+> +- Most onchip peripherals are wired directly to an L1 input
+> +
+> +- A separate instance of the register set for each CPU, allowing individual
+> +  peripheral IRQs to be routed to any CPU
+> +
+> +- Atomic mask/unmask operations
+> +
+> +- No polarity/level/edge settings
+> +
+> +- No FIFO or priority encoder logic; software is expected to read all
+> +  2-5 status words to determine which IRQs are pending
+> +
+> +Required properties:
+> +
+> +- compatible: should be "brcm,bcm7038-l1-intc"
+> +- reg: specifies the base physical address and size of the registers;
+> +  the number of supported IRQs is inferred from the size argument
+> +- interrupt-controller: identifies the node as an interrupt controller
+> +- #interrupt-cells: specifies the number of cells needed to encode an interrupt
+> +  source, should be 1.
+> +- interrupt-parent: specifies the phandle to the parent interrupt controller(s)
+> +  this one is cascaded from
 
-Hi Paul,
+I'm not that firm in interrupt controller terminology, but can this be
+a level 1 interrupt controller if it has a parent interrupt
+controller? Isn't the parent the level 1 interrupt controller? Or
+would the parent then be a level 0 interrupt controller? ;-)
 
-In fact these config options are flagged as being useless for !DT. As
-the modifications of this Kconfig (in a "drivers" branch) and the
-removal of !DT boards (in a "cleaup" branch) will happen in 3.19, I was
-planning to come back to these 2 options by removing them later in order
-to avoid to solve a merge conflict.
 
-https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/drivers/rtc/Kconfig?id=3969eb48ad7f3f3bef61f5474b7214e601fd2d75
-
-As you can see in the commit above, they have been properly tagged by Boris.
-
-So, I suggest to get rid of them during 3.19-rc phase.
-
-Thanks, bye.
--- 
-Nicolas Ferre
+Regards,
+Jonas
