@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaK3KuB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 05:50:01 -0500
-Received: from mout.gmx.net ([212.227.15.18]:60181 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751051AbaK3KuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 05:50:00 -0500
-From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-To: arnd@arndb.de
-Cc: paul.gortmaker@windriver.com, w-lkml@lebenslange-mailadresse.de,
-        f.fainelli@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lino Sanfilippo <LinoSanfilippo@gmx.de>
-Subject: [PATCH] pxa168: close race between napi and irq activation
-Date: Sun, 30 Nov 2014 11:49:36 +0100
-Message-Id: <1417344576-4940-1-git-send-email-LinoSanfilippo@gmx.de>
-X-Mailer: git-send-email 1.9.1
-X-Provags-ID: V03:K0:MQGG070XYtuZHltn7bDQ/Oku7vUT6j1MEtCXYinPxJwLudUhY9U
- 0Qqo+YlKbBQhJ6HhpN8UTn/1ySkqVU3WcoMkpAPd6BK6GCWnGZmq1Hmy/BDrR7S87qrh/1z
- 6EjXkT0nulWv6/OpH7K3Dulf1Wrj5/gJaYlREOGZmUhmw8alBvINxPLgWoixLOmwAgTveAb
- cunWf8n6IGOfbJ2EMEDKQ==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1752208AbaK3Kug (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 05:50:36 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:35381 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851AbaK3Kue (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 05:50:34 -0500
+Message-ID: <547C7570.1020006@gmail.com>
+Date: Mon, 01 Dec 2014 22:04:32 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Christoffer Dall <christoffer.dall@linaro.org>
+CC: Marc Zyngier <marc.zyngier@arm.com>, "gleb@kernel.org" <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kvm: arm: vgic: Let one looping code instead of two looping
+ code
+References: <547A9A7C.1080508@gmail.com> <20141130100718.GA484@cbox>
+In-Reply-To: <20141130100718.GA484@cbox>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In pxa168_eth_open() the irqs are enabled before napi. This opens a tiny time
-window in which the irq handler is processed, disables irqs but then is not able
-to schedule the not yet activated napi, leaving irqs disabled forever (since
-irqs are reenabled in napi poll function).
-Fix this race by activating napi before irqs are activated.
+On 11/30/2014 06:07 PM, Christoffer Dall wrote:
+> On Sun, Nov 30, 2014 at 12:18:04PM +0800, Chen Gang wrote:
+>> Use one looping instead of two, so can let code more simpler and get a
+>> little better performance.
+>>
+>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> 
+> Performance?  Please, this is vgic_create....
+> 
 
-Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
----
-Please note that i could not test this since I dont have access to the
-concerning hardware.
+I guess your meaning is "this code is not performance sensitive", do not
+mean "1 looping can not get a little better performance than 2 looping".
+If what I guess is incorrect, please let me know.
 
- drivers/net/ethernet/marvell/pxa168_eth.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> This does nothing else than introduce churn.
+> 
 
-diff --git a/drivers/net/ethernet/marvell/pxa168_eth.c b/drivers/net/ethernet/marvell/pxa168_eth.c
-index c3b209c..a3e394c 100644
---- a/drivers/net/ethernet/marvell/pxa168_eth.c
-+++ b/drivers/net/ethernet/marvell/pxa168_eth.c
-@@ -1153,8 +1153,8 @@ static int pxa168_eth_open(struct net_device *dev)
- 	pep->rx_used_desc_q = 0;
- 	pep->rx_curr_desc_q = 0;
- 	netif_carrier_off(dev);
--	eth_port_start(dev);
- 	napi_enable(&pep->napi);
-+	eth_port_start(dev);
- 	return 0;
- out_free_rx_skb:
- 	rxq_deinit(dev);
+I don't think it does nothing, it can let code simpler than before:
+remove the redundant looping -- the 2 looping do the same thing which
+is commented just above the firstly looping.
+
+And I don't know which churn this patch will introduce. At least, no one
+want to waste him/her time resources to intend churn, please provide
+more details about it.
+
+If kvm does not like me, or does not like members to find issues based
+on reading source code, please let me know (no reply means kvm does not
+like me or this way), I will quit, so can save time resources both.
+
+
+Thanks.
 -- 
-1.9.1
+Chen Gang
 
+Open share and attitude like air water and life which God blessed
