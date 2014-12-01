@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645AbaLADZJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 22:25:09 -0500
-Received: from mail-bn1on0146.outbound.protection.outlook.com ([157.56.110.146]:35200
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752227AbaLADZH convert rfc822-to-8bit (ORCPT
+	id S1752453AbaLADbR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 22:31:17 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:28510 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752219AbaLADbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 22:25:07 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: "thierry.reding@gmail.com" <thierry.reding@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>
-Subject: RE: [PATCH v2 0/3] pwm: ftm: add Power Management support
-Thread-Topic: [PATCH v2 0/3] pwm: ftm: add Power Management support
-Thread-Index: AQHP6Df/Ewkv3RMNekymn6py5vm4o5x6XAxw
-Date: Mon, 1 Dec 2014 03:25:02 +0000
-Message-ID: <BY2PR0301MB06135ED75E8DCEC04E442E0B9B7D0@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1413350495-40980-1-git-send-email-Li.Xiubo@freescale.com>
-In-Reply-To: <1413350495-40980-1-git-send-email-Li.Xiubo@freescale.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.53]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0614;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0614;
-x-forefront-prvs: 0412A98A59
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(51704005)(13464003)(377454003)(199003)(106116001)(106356001)(107046002)(110136001)(2501002)(105586002)(74316001)(21056001)(77096004)(97736003)(86362001)(2656002)(2351001)(40100003)(122556002)(99396003)(54606007)(31966008)(62966003)(77156002)(4396001)(120916001)(101416001)(19580405001)(54356999)(33656002)(92566001)(99286002)(20776003)(19580395003)(92726001)(64706001)(76576001)(95666004)(66066001)(76176999)(87936001)(50986999)(46102003)(54206007);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0614;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	Sun, 30 Nov 2014 22:31:16 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-df-547be1014851
+From: Chao Yu <chao2.yu@samsung.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [f2fs-dev][PATCH] f2fs: fix to return correct error number in
+ f2fs_write_begin
+Date: Mon, 01 Dec 2014 11:30:20 +0800
+Message-id: <002001d00d17$41d48500$c57d8f00$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AdANFrftFSJttHyiSgyHzWpOXqfmBw==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t9jAV3Gh9UhBm0b5C2u7Wtksniyfhaz
+	xaVF7hZ79p5ksbi8aw6bA6vHplWdbB67F3xm8ujbsorR4/MmuQCWKC6blNSczLLUIn27BK6M
+	51+nMBecYak40LOUrYHxEnMXIyeHhICJxIsrs6BsMYkL99azdTFycQgJLGKUWHPqGiOE84NR
+	4syHfrAqNgEVieUd/5lAbBEBL4lJ+0+wgNjMApkS95pmgNUIC0RKXH17jR3EZhFQleh7uQWs
+	nlfAUuLmon/MELagxI/J96B6tSTW7zzOBGHLS2xe8xbqIgWJHWdfAx3BAbRLT+LpIRWIEnGJ
+	jUdusUxgFJiFZNIsJJNmIZk0C0nLAkaWVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBwf1M
+	egfjqgaLQ4wCHIxKPLyS86tDhFgTy4orcw8xSnAwK4nwnvMACvGmJFZWpRblxxeV5qQWH2KU
+	5mBREue9cTM3REggPbEkNTs1tSC1CCbLxMEp1cCosyC5WmPvvWRRZuM9+54IbBEUT1y3VnB6
+	2l7te2k7/PIf3E7dfur7v79X9jzPXdwRYqcqI7JR+Ovcj+cmilUvbFc4uOyzx+vNK1ZZHkw1
+	z9UNZF0fpjWhK4hBpCHxxMa/szoUI8JPs5u+PP9b9igz7xLB8i1/FBsX/mZZ6Bf/ye/Xpg+X
+	+Rp2KbEUZyQaajEXFScCANTsjrRqAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping :) .
+Fix the wrong error number in error path of f2fs_write_begin.
 
-Thanks very much.
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/data.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-BRs
-Xiubo
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index c7bc626..7ec697b 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -960,8 +960,10 @@ repeat:
+ 
+ 	/* check inline_data */
+ 	ipage = get_node_page(sbi, inode->i_ino);
+-	if (IS_ERR(ipage))
++	if (IS_ERR(ipage)) {
++		err = PTR_ERR(ipage);
+ 		goto unlock_fail;
++	}
+ 
+ 	set_new_dnode(&dn, inode, ipage, ipage, 0);
+ 
+-- 
+2.1.2
 
-
-
-> -----Original Message-----
-> From: Xiubo Li [mailto:Li.Xiubo@freescale.com]
-> Sent: Wednesday, October 15, 2014 1:22 PM
-> To: thierry.reding@gmail.com; linux-pwm@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org; Xiubo Li-B47053
-> Subject: [PATCH v2 0/3] pwm: ftm: add Power Management support
-> 
-> Changes in v2:
-> - Fix one bug.
-> - Add regmap cache support.
-> - Remove run time PM for now.
-> 
-> Xiubo Li (3):
->   pwm: ftm: fix one bug of wrong counting the use counter.
->   pwm: ftm: add regmap rbtree type cache support.
->   pwm: ftm: add Power Management support for FTM pwm.
-> 
->  drivers/pwm/pwm-fsl-ftm.c | 64 ++++++++++++++++++++++++++++++++++++++++++++--
-> -
->  1 file changed, 60 insertions(+), 4 deletions(-)
-> 
-> --
-> 2.1.0.27.g96db324
 
