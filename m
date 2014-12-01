@@ -1,186 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400AbaLAMIm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 07:08:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38134 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753051AbaLAMIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 07:08:41 -0500
-Date: Mon, 1 Dec 2014 13:08:50 +0100 (CET)
-From: Miroslav Benes <mbenes@suse.cz>
-To: Petr Mladek <pmladek@suse.cz>
-cc: Seth Jennings <sjenning@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] livepatch: clean up klp_find_object_module() usage: was:
- Re: [PATCHv4 2/3] kernel: add support for live patching
-In-Reply-To: <20141128171435.GE32376@dhcp128.suse.cz>
-Message-ID: <alpine.LNX.2.00.1412011256420.23443@pobox.suse.cz>
-References: <1416935709-404-1-git-send-email-sjenning@redhat.com> <1416935709-404-3-git-send-email-sjenning@redhat.com> <20141128170735.GD32376@dhcp128.suse.cz> <20141128171435.GE32376@dhcp128.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753317AbaLAMNn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 07:13:43 -0500
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:43528 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753156AbaLAMNm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 07:13:42 -0500
+Date: Mon, 1 Dec 2014 13:13:31 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        Jason Wang <jasowang@redhat.com>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v7 29/46] vhost: add memory access wrappers
+Message-ID: <20141201131331.226d964a.cornelia.huck@de.ibm.com>
+In-Reply-To: <1417359787-10138-30-git-send-email-mst@redhat.com>
+References: <1417359787-10138-1-git-send-email-mst@redhat.com>
+	<1417359787-10138-30-git-send-email-mst@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120112-0017-0000-0000-0000020A274D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Nov 2014, Petr Mladek wrote:
+On Sun, 30 Nov 2014 17:11:39 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-> On Fri 2014-11-28 18:07:37, Petr Mladek wrote:
-> > On Tue 2014-11-25 11:15:08, Seth Jennings wrote:
-> > > This commit introduces code for the live patching core.  It implements
-> > > an ftrace-based mechanism and kernel interface for doing live patching
-> > > of kernel and kernel module functions.
+> Add guest memory access wrappers to handle virtio endianness
+> conversions.
 > 
-> [...]
-> 
-> > > +/* sets obj->mod if object is not vmlinux and module is found */
-> > > +static bool klp_find_object_module(struct klp_object *obj)
-> > > +{
-> > > +	if (!obj->name)
-> > > +		return 1;
-> > > +
-> > > +	mutex_lock(&module_mutex);
-> > > +	/*
-> > > +	 * We don't need to take a reference on the module here because we have
-> > > +	 * the klp_mutex, which is also taken by the module notifier.  This
-> > > +	 * prevents any module from unloading until we release the klp_mutex.
-> > > +	 */
-> > > +	obj->mod = find_module(obj->name);
-> > > +	mutex_unlock(&module_mutex);
-> > > +
-> > > +	return !!obj->mod;
-> > 
-> > I know that this is effective to return boolean here because
-> > it handles also patch against the kernel core (vmlinux). But
-> > the logic looks tricky. I would prefer a cleaner design and
-> > use this function only to set obj->mod.
-> > 
-> > I wanted to see how it would look like, so I will send a patch for
-> > this in a separate mail.
-> 
-> The patch is below. Of course, merge it into the original
-> patch if you agree with the idea, please.
-> 
-> 
-> >From 93eb9f9a25ad8aa0301e246f7685d3e787037566 Mon Sep 17 00:00:00 2001
-> From: Petr Mladek <pmladek@suse.cz>
-> Date: Fri, 28 Nov 2014 15:32:27 +0100
-> Subject: [PATCH 1/2] livepatch: clean up klp_find_object_module() usage
-> 
-> The function klp_find_object_module() looks quite tricky. It has two effects:
-> sets obj->mod and decides whether the module is available or not. The second
-> effect is the tricky part because it handles also the code kernel code "vmlinux"
-> and is not module related. It causes returning bool, and doing the crazy double
-> negation.
-> 
-> This patch tries to make a bit cleaner design:
-> 
-> 1. klp_find_object_module() handles only obj->mod. It returns
->    the pointer or NULL.
-> 
-> 2. It modifies klp_enable_object() to do nothing when the related
->    module has not been loaded yet.
-> 
-> 3. The result is that the return value klp_find_object_module() is
->    not used in the end.
-> 
-> We lose a check for potential klp_enable_object() misuse but it makes the code
-> easier. In fact, the check for unloaded module is rather long. We might want
-> to make it easier using some extra flag or another state of the object.
-> Such flag might be used for the check of misuse.
-> 
-> Signed-off-by: Petr Mladek <pmladek@suse.cz>
-
-Hi, 
-
-I agree with the idea but actually don't like the implementation. I'll try 
-to propose few changes which would hopefully preserve the effect but make 
-the end result slightly better.
-
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> Reviewed-by: Jason Wang <jasowang@redhat.com>
 > ---
->  kernel/livepatch/core.c | 14 +++++++-------
->  1 file changed, 7 insertions(+), 7 deletions(-)
+>  drivers/vhost/vhost.h | 31 +++++++++++++++++++++++++++++++
+>  1 file changed, 31 insertions(+)
 > 
-> diff --git a/kernel/livepatch/core.c b/kernel/livepatch/core.c
-> index 8e2e8cd242f5..9b1601729014 100644
-> --- a/kernel/livepatch/core.c
-> +++ b/kernel/livepatch/core.c
-> @@ -40,10 +40,10 @@ static LIST_HEAD(klp_patches);
->  static struct kobject *klp_root_kobj;
->  
->  /* sets obj->mod if object is not vmlinux and module is found */
-> -static bool klp_find_object_module(struct klp_object *obj)
-> +static struct module *klp_find_object_module(struct klp_object *obj)
->  {
->  	if (!obj->name)
-> -		return 1;
-> +		return NULL;
->  
->  	mutex_lock(&module_mutex);
->  	/*
-> @@ -54,7 +54,7 @@ static bool klp_find_object_module(struct klp_object *obj)
->  	obj->mod = find_module(obj->name);
->  	mutex_unlock(&module_mutex);
->  
-> -	return !!obj->mod;
-> +	return obj->mod;
->  }
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 
-As we do not need the return value in the end, we could maybe drop it 
-completely, leading to change in if condition
-
-	if (!obj->name)
-		return;
-
->  struct klp_find_arg {
-> @@ -318,8 +318,9 @@ static int klp_enable_object(struct module *pmod, struct klp_object *obj)
->  	struct klp_func *func;
->  	int ret;
->  
-> -	if (WARN_ON(!obj->mod && obj->name))
-> -		return -EINVAL;
-> +	/* nope when the patched module has not been loaded yet */
-> +	if (obj->name && !obj->mod)
-> +		return 0;
-
-I have a problem with this one. In case the condition is true we do 
-nothing, return back and pretend that everything is alright (return 0). 
-I see that we would call klp_enable_object everytime in your proposal and 
-decide here whether we want to do something or not. But I think that we 
-should return some error and deal with it in the caller function. Thus 
-original WARN_ON should stay here.
-
->  	if (obj->relocs) {
->  		ret = klp_write_object_relocations(pmod, obj);
-> @@ -401,8 +402,7 @@ static int __klp_enable_patch(struct klp_patch *patch)
->  	pr_notice("enabling patch '%s'\n", patch->mod->name);
->  
->  	for (obj = patch->objs; obj->funcs; obj++) {
-> -		if (!klp_find_object_module(obj))
-> -			continue;
-> +		klp_find_object_module(obj);
->  		ret = klp_enable_object(patch->mod, obj);
->  		if (ret)
->  			goto unregister;
-
-I propose this piece of code
-
-for (obj = patch->objs; obj->funcs; obj++) {
-	klp_find_object_module(obj);
-	if (obj->name && !obj->mod)
-		continue;
-	ret = klp_enable_object(patch->mod, obj);
-	...
-}
-
-What do you think? Also it could pay off to define inline function for the 
-check. Somethink like klp_is_module_and_loaded...
-
-Mira
