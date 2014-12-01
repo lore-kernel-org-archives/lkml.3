@@ -1,148 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932123AbaLAPbl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 10:31:41 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:64932 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753102AbaLAPbj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 10:31:39 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Olof Johansson <olof@lixom.net>, monstr@monstr.eu,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Antti Palosaari <crope@iki.fi>, Jingoo Han <jg1.han@samsung.com>,
-        Sandeep Nair <sandeep_n@ti.com>, Kumar Gala <galak@codeaurora.org>,
-        Santosh Shilimkar <santosh.shilimkar@gmail.com>,
-        Andy Gross <agross@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Thierry Reding <treding@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v5 6/7] ARM: zynq: Add OCM controller driver
-Date: Mon, 01 Dec 2014 16:31:19 +0100
-Message-ID: <4151221.1fPmelvPbd@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <4788755d350890d81f1bac4bf237c5ddfb68b795.1417440250.git.michal.simek@xilinx.com>
-References: <cover.1417440250.git.michal.simek@xilinx.com> <4788755d350890d81f1bac4bf237c5ddfb68b795.1417440250.git.michal.simek@xilinx.com>
+	id S1754035AbaLAPeu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 10:34:50 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:44273 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753778AbaLAPeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 10:34:46 -0500
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+To: Wolfram Sang <wsa@the-dreams.de>, Sekhar Nori <nsekhar@ti.com>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: <linux-i2c@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>,
+        Murali Karicheri <m-karicheri2@ti.com>
+Subject: [PATCH v3 0/5] i2c: davinci improvements and fixes
+Date: Mon, 1 Dec 2014 17:34:02 +0200
+Message-ID: <1417448047-15236-1-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:51fLUooR1zCITOT2BufQohFAH7rKyCCqLwn2JtMrs2N
- 8idB+DyAGZsWuUdvJ1et9cfGgKbJE+zUJAr6TtNCo22rIljpJp
- YUDZubpPPJbdbQC9yuVY9fwXCzBYbpsrvu89R1ke5eBmCtB2Uf
- 1WomYXulTUbJTxTAcqIZSQKKJNpTJnDrVUPkL0ARk2x8uJ49Mi
- GPOm6E+Gydtvhg/XJXpwjTrImho3bqHPIpsrom4Wu5bowF0Ygp
- OC4TZrS6vm/yzU1P6C5rKHce7RZifSHHNYilV0DihLj9EDQ+fA
- qtknlF6N++vqH4SHzeEqgSwOJlvCGTHx50n9giHLk8Yg8c/Z2B
- uA/alrtTnxe4vaZvXGME=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 01 December 2014 14:24:57 Michal Simek wrote:
-> The driver provide memory allocator which can
-> be used by others drivers to allocate memory inside OCM.
-> All locations for 64kB blocks are supported
-> and driver is trying to allocate the largest continuous
-> block of memory.
-> 
-> Checking mpcore addressing filterring is not done here
-> but could be added in future.
-> 
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+This series contains some fixes and improvements for Davinci I2C:
+patch 1 - small improvement
+patch 2 - fixes "Bus busy" state for some case (was reported long time ago:()
 
-The driver doesn't actually have any interface as far as I can tell,
-so I wonder how you expect it to be used.
+patch 3-5 - converts driver to use I2C bus recovery infrastructure and
+adds Davinci I2C bus recovery mechanizm based on using ICPFUNC registers.
+These patches are combination of two patches from Ben Gardiner [1] and
+Mike Looijmans [2] which i've reworked to use I2C bus recovery infrastructure
 
-Do you have a list of drivers that would be using it?
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2011-April/047305.html
+"[PATCH 0/6] i2c-davinci gpio pulsed SCL recovery with ICPFUNC"
+[2] https://lkml.org/lkml/2014/2/28/133
+"[PATCH] i2c-davinci: Implement a bus recovery that actually works"
 
-How does it relate to the generic "mmio-sram" binding? Is this
-meant as a specialization?
+Changes in v3:
+- minor comments applied
 
-> +/**
-> + * zynq_ocmc_irq_handler - Interrupt service routine of the OCM controller
-> + * @irq:	IRQ number
-> + * @data:	Pointer to the zynq_ocmc_dev structure
-> + *
-> + * Return:     IRQ_HANDLED always
-> + */
-> +static irqreturn_t zynq_ocmc_irq_handler(int irq, void *data)
-> +{
-> +	u32 sts;
-> +	u32 err_addr;
-> +	struct zynq_ocmc_dev *zynq_ocmc = data;
-> +
-> +	/* check status */
-> +	sts = readl(zynq_ocmc->base + ZYNQ_OCMC_IRQ_STS);
-> +	if (sts & ZYNQ_OCMC_IRQ_STS_ERR_MASK) {
-> +		/* check error address */
-> +		err_addr = readl(zynq_ocmc->base + ZYNQ_OCMC_PARITY_ERRADDRESS);
-> +		pr_err("%s: OCM err intr generated at 0x%04x (stat: 0x%08x).",
-> +		       __func__, err_addr, sts & ZYNQ_OCMC_IRQ_STS_ERR_MASK);
-> +	}
-> +	pr_warn("%s: Interrupt generated by OCM, but no error is found.",
-> +		__func__);
-> +
-> +	return IRQ_HANDLED;
-> +}
+Changes in v2:
+- patch 1: error handling improved
+- patch 2: commit message updated
+- patch 4: minor comments applied
+- patch 5: added new optional DT property "ti,has-pfunc"
 
-I'm also puzzled by this: you don't really do anything here but print
-a message. What is the purpose of this interrupt? As this looks unrelated
-to the rest of the driver, maybe this should be part of drivers/edac
-instead?
+Link on v2:
+ https://lkml.org/lkml/2014/11/26/252
 
-> +static int zynq_ocmc_probe(struct platform_device *pdev)
-> +{
-> +       int ret;
-> +       struct zynq_ocmc_dev *zynq_ocmc;
-> +       u32 i, ocm_config, curr;
-> +       struct resource *res;
-> +
-> +       ocm_config = zynq_slcr_get_ocm_config();
-> +
-> +       zynq_ocmc = devm_kzalloc(&pdev->dev, sizeof(*zynq_ocmc),
-> GFP_KERNEL);
-> +       if (!zynq_ocmc)
-> +               return -ENOMEM;
-> +
-> +       zynq_ocmc->pool = devm_gen_pool_create(&pdev->dev,
-> +                                              ilog2(ZYNQ_OCMC_GRANULARITY),
-> +                                              -1);
-> +       if (!zynq_ocmc->pool)
-> +               return -ENOMEM;
-> +
-> +       curr = 0; /* For storing current struct resource for OCM */
-> +       for (i = 0; i < ZYNQ_OCMC_BLOCKS; i++) {
-> +               u32 base, start, end;
-> +
-> +               /* Setup base address for 64kB OCM block */
-> +               if (ocm_config & BIT(i))
-> +                       base = ZYNQ_OCMC_HIGHADDR;
-> +               else
-> +                       base = ZYNQ_OCMC_LOWADDR;
+Link on v1:
+ http://www.spinics.net/lists/linux-i2c/msg17601.html
 
-You write in the introductory mail that you want to support detecting the
-address from the slcr, and possibly even allow changing it at runtime,
-but I don't understand what that would be good for.
+CC: Sekhar Nori <nsekhar@ti.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>
+CC: Santosh Shilimkar <ssantosh@kernel.org>
+CC: Murali Karicheri <m-karicheri2@ti.com>
 
-It's not uncommon to describe in DT settings that one can also find
-out from hardware but that are set up by the boot loader in a particular
-way. Why not this one? For all I can tell, that would let you simply
-use one driver for the EDAC and the generic mmio-sram from the memory,
-without the need to do anything further.
+Grygorii Strashko (5):
+  i2c: i2c-davinci: switch to use platform_get_irq
+  i2c: davinci: generate STP always when NACK is received
+  i2c: recovery: change input parameter to i2c_adapter for
+    prepare/unprepare_recovery
+  i2c: davinci: use bus recovery infrastructure
+  i2c: davinci: use ICPFUNC to toggle I2C as gpio for bus recovery
 
-	Arnd
+ .../devicetree/bindings/i2c/i2c-davinci.txt        |   3 +
+ drivers/i2c/busses/i2c-davinci.c                   | 205 +++++++++++++++------
+ drivers/i2c/i2c-core.c                             |   4 +-
+ include/linux/i2c.h                                |   4 +-
+ include/linux/platform_data/i2c-davinci.h          |   1 +
+ 5 files changed, 159 insertions(+), 58 deletions(-)
+
+-- 
+1.9.1
+
