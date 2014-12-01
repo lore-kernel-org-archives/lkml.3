@@ -1,112 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932164AbaLAS3a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 13:29:30 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:54718 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932075AbaLAS32 (ORCPT
+	id S932177AbaLASbe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 13:31:34 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:43685 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932101AbaLASbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 13:29:28 -0500
-Date: Mon, 1 Dec 2014 19:29:23 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v3 05/11] memory: add Atmel EBI (External Bus Interface)
- driver
-Message-ID: <20141201192923.6a85e52b@bbrezillon>
-In-Reply-To: <4214030.Z2iCEM6hVA@wuerfel>
-References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1417429647-3419-6-git-send-email-boris.brezillon@free-electrons.com>
-	<4214030.Z2iCEM6hVA@wuerfel>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 1 Dec 2014 13:31:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1417435546.1771.400.camel@triegel.csb>
+References: <1417098455.1771.338.camel@triegel.csb>
+	<CA+55aFxBpLik53Q+Nwpcztox_4ZeEGqr2stiU5qzz1SGdfLGOw@mail.gmail.com>
+	<1417435546.1771.400.camel@triegel.csb>
+Date: Mon, 1 Dec 2014 10:31:32 -0800
+X-Google-Sender-Auth: B5m17pFepYtmzo3s3_hfPK4ROuE
+Message-ID: <CA+55aFxiPbr9CJt_+G03zzYvkrr0ENNHFKNU08AjZh-j=PzUig@mail.gmail.com>
+Subject: Re: POSIX mutex destruction requirements vs. futexes
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Torvald Riegel <triegel@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Mon, Dec 1, 2014 at 4:05 AM, Torvald Riegel <triegel@redhat.com> wrote:
+> On Thu, 2014-11-27 at 11:38 -0800, Linus Torvalds wrote:
+>>
+>> > (1)  Allow spurious wake-ups from FUTEX_WAIT.
+>>
+>> because afaik that is what we actually *do* today (we'll wake up
+>> whoever re-used that location in another thread), and it's mainly
+>> about the whole documentation issue. No?
+>
+> If that's what the kernel prefers to do, this would be fine with me.
 
-On Mon, 01 Dec 2014 17:26:27 +0100
-Arnd Bergmann <arnd@arndb.de> wrote:
+I think it's more of a "can we even do anything else"?
 
-> On Monday 01 December 2014 11:27:21 Boris Brezillon wrote:
-> > The EBI (External Bus Interface) is used to access external peripherals
-> > (NOR, SRAM, NAND, and other specific devices like ethernet controllers).
-> > Each device is assigned a CS line and an address range and can have its
-> > own configuration (timings, access mode, bus width, ...).
-> > This driver provides a generic DT binding to configure a device according
-> > to its requirements.
-> > For specific device controllers (like the NAND one) the SMC timings
-> > should be configured by the controller driver through the matrix and
-> > smc syscon regmaps.
-> 
-> Nice!
-> 
-> > +
-> > +#define AT91_EBICSA_REGFIELD(soc)			\
-> > +	REG_FIELD(soc ## _MATRIX_EBICSA_OFF, 0,		\
-> > +		  AT91_MATRIX_EBI_NUM_CS - 1)
-> > +
-> > +#define AT91_MULTI_EBICSA_REGFIELD(soc, n)		\
-> > +	REG_FIELD(soc ## _MATRIX_EBI ## n ## CSA_OFF,	\
-> > +		  0, AT91_MATRIX_EBI_NUM_CS - 1)
-> 
-> I don't like the use macros that concatenate symbol names like
-> this. Why not do either
-> 
-> - open-code the macro contents in the few uses, to allow
->   grepping for them, or
+The kernel doesn't even see the reuse of the futex, or the fast path
+parts. Not seeing the fast path is obviously by design, and not seeing
+the reuse is partly due to pthreads interfaces (I guess people should
+generally call mutex_destroy, but I doubt people really do, and even
+if they did, how would user space actually handle the nasty race
+between "pthread_unlock -> stale futex_wake" "pthread_mutex_destroy()"
+anyway?).
 
-I'm not sure to get this one, are you suggesting to do something like
-this:
+So the thing is, I don't see how we could possibly change the existing
+FUTEX_WAKE behavior.
 
-#define AT91_EBICSA_REGFIELD(off)			\
-	REG_FIELD(ebicsa_off, AT91_MATRIX_EBI_NUM_CS - 1)
+And introducing a new "debug mode" that explicitly adds spurious
+events might as well be done in user space with a wrapper about
+FUTEX_WAKE or something.
 
-> 
-> - put the register number in the syscon reference and look it
->   up from there (this would be slightly more complicated for the
->   second macro)
+Because as far as the *kernel* is concerned, there is no "spurious
+wake" event.  It's not spurious. It's real and exists, and the wakeup
+was really done by the user. The fact that it's really a stale wakeup
+for a previous allocation of a pthread mutex data structure is
+something that is completely and fundamentally invisible to the
+kernel.
 
-I've told several times not to encode register offsets or register ids
-in the DT :-) (and if I'm not mistaken that's what you're suggesting
-here).
+No?
 
-> 
-> > +
-> > +	np = of_parse_phandle(pdev->dev.of_node, "atmel,smc", 0);
-> > +	if (!np)
-> > +		return -EINVAL;
-> > +
-> > +	ebi->smc = syscon_node_to_regmap(np);
-> > +	if (IS_ERR(ebi->smc))
-> > +		return PTR_ERR(ebi->smc);
-> 
-> I think this and the second instance of it can be shortened to
-> 
-> 	ebi->smc = syscon_regmap_lookup_by_phandle(pdev->dev.of_node, "atmel,smc");
+So even from a documentation standpoint, it's really not about "kernel
+interfaces" being incorrectly documented, as about a big honking
+warning about internal pthread_mutex() implementation in a library,
+and the impact that library choice has on allocation re-use, and how
+that means that even if the FUTEX_WAKE is guaranteed to not be
+spurious from a *kernel* standpoint, certain use models will create
+their own spurious wake events in very subtle ways.
 
-Sure.
+So I do disgree with you on the "explicitly allow spurious wake-ups",
+in the sense that no, the kernel doesn't do that. But it is definitely
+worth adding documentation about how users can cause their *own*
+"spurious" wakeups.
 
-Regards,
+So I think we continue to guarantee "no spurious wakeups" from a
+kernel interface standpoint. Old programs that depend on it will
+continue to work.
 
-Boris
+But at the same time, old programs that have broken libraries that
+didn't realize that those libraries themselves caused "spurious"
+wakeups are broken, but it's not due to some kernel issue, it's a
+user-mode internal implementation (that is easy to get wrong - as
+mentioned, we've had this bug ourselves inside the kernel).
 
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+                       Linus
