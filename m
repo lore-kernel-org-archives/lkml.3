@@ -1,50 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804AbaLANZe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 08:25:34 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:34720 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747AbaLANZb (ORCPT
+	id S1753779AbaLANZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 08:25:27 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:44236 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753747AbaLANZX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 08:25:31 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-CC: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 4/4] ARM: at91/defconfig: add DM9000 to at91_dt
-Date: Mon, 1 Dec 2014 14:24:40 +0100
-Message-ID: <a810207c369c57acefc5624ff7dfeb4d92de52ff.1417440150.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <eb931e7c5534cd949ba61307f0380826e62ceb2c.1417440150.git.nicolas.ferre@atmel.com>
-References: <eb931e7c5534cd949ba61307f0380826e62ceb2c.1417440150.git.nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 1 Dec 2014 08:25:23 -0500
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-arm-kernel@lists.infradead.org,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
+Cc: monstr@monstr.eu, Josh Cartwright <josh.cartwright@ni.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v5 7/7] ARM: zynq: DT: Add OCM controller node
+Date: Mon,  1 Dec 2014 14:24:58 +0100
+Message-Id: <897eae026fb7f601dd453941f178fae534ac7216.1417440250.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <cover.1417440250.git.michal.simek@xilinx.com>
+References: <cover.1417440250.git.michal.simek@xilinx.com>
+In-Reply-To: <cover.1417440250.git.michal.simek@xilinx.com>
+References: <cover.1417440250.git.michal.simek@xilinx.com>
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-3328-1417440318-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This chip is present on at91sam9261ek board: add it to the at91_dt_defconfig.
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+--=_mimegpg-monstr-desktop-3328-1417440318-0001
+
+Add the on-chip-memory controller node to the Zynq devicetree.
+
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
- arch/arm/configs/at91_dt_defconfig | 1 +
- 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/configs/at91_dt_defconfig b/arch/arm/configs/at91_dt_defconfig
-index 6ccf937a60f2..a67375f24b21 100644
---- a/arch/arm/configs/at91_dt_defconfig
-+++ b/arch/arm/configs/at91_dt_defconfig
-@@ -80,6 +80,7 @@ CONFIG_BLK_DEV_SD=y
- CONFIG_NETDEVICES=y
- CONFIG_MACB=y
- # CONFIG_NET_VENDOR_BROADCOM is not set
-+CONFIG_DM9000=y
- # CONFIG_NET_VENDOR_FARADAY is not set
- # CONFIG_NET_VENDOR_INTEL is not set
- # CONFIG_NET_VENDOR_MARVELL is not set
--- 
-2.1.3
+Changes in v5: None
+Changes in v4:
+- Use memory-controller@... instead of ocmc@...
 
+Changes in v3:
+- Extract from OCM driver
+
+Changes in v2: None
+
+ arch/arm/boot/dts/zynq-7000.dtsi | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
+index 24036c440440..040f95e817c8 100644
+--- a/arch/arm/boot/dts/zynq-7000.dtsi
++++ b/arch/arm/boot/dts/zynq-7000.dtsi
+@@ -151,6 +151,13 @@
+ 			reg = <0xf8006000 0x1000>;
+ 		} ;
+
++		ocmc: memory-controller@f800c000 {
++			compatible = "xlnx,zynq-ocmc-1.0";
++			interrupt-parent = <&intc>;
++			interrupts = <0 3 4>;
++			reg = <0xf800c000 0x1000>;
++		};
++
+ 		uart0: serial@e0000000 {
+ 			compatible = "xlnx,xuartps", "cdns,uart-r1p8";
+ 			status = "disabled";
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-3328-1417440318-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlR8bD4ACgkQykllyylKDCEH+gCfY3uSJN5Vzdvqa8rzpKHdGQ3T
+nmQAoIitRGekq+o/179eifI0fhDN1BlK
+=MJkz
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-3328-1417440318-0001--
