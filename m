@@ -1,146 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396AbaLAUA7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 15:00:59 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:50257 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932101AbaLAUA5 (ORCPT
+	id S932399AbaLAUBv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 15:01:51 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:59463 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932101AbaLAUBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 15:00:57 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19CygfAHREgtSHylzsIUXYL
-Date: Mon, 1 Dec 2014 11:58:42 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Alexander Kochetkov <al.kochet@gmail.com>
-Cc: Kevin Hilman <khilman@kernel.org>, Felipe Balbi <balbi@ti.com>,
-        Wolfram Sang <wsa@the-dreams.de>, linux-omap@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/2] i2c: omap: fix buffer overruns during RX/TX data
- processing
-Message-ID: <20141201195841.GD2817@atomide.com>
-References: <1417294803-14729-1-git-send-email-al.kochet@gmail.com>
- <1417294803-14729-2-git-send-email-al.kochet@gmail.com>
+	Mon, 1 Dec 2014 15:01:50 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Timur Tabi <timur@tabi.org>
+Cc: linuxppc-dev@lists.ozlabs.org, Mark Brown <broonie@kernel.org>,
+        Lars-Peter Clausen <lars@metafoo.de>, alsa-devel@alsa-project.org,
+        Jiada Wang <jiada_wang@mentor.com>, linux-kernel@vger.kernel.org,
+        lgirdwood@gmail.com, nicoleotsuka@gmail.com, tiwai@suse.de,
+        Li.Xiubo@freescale.com, Markus Pargmann <mpa@pengutronix.de>
+Subject: Re: [alsa-devel] [PATCH] ASoC: fsl_ssi: free irq before irq_dispose_mapping()
+Date: Mon, 01 Dec 2014 21:01:43 +0100
+Message-ID: <3401240.VsRpsiV8WN@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <547CC89F.1030205@tabi.org>
+References: <1417402251-6596-1-git-send-email-jiada_wang@mentor.com> <2547588.Qc4F2IfZke@wuerfel> <547CC89F.1030205@tabi.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417294803-14729-2-git-send-email-al.kochet@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:zNmWa4uECF2+693o7jhWO4Go5h7JBaLzsgJy+t0CbZl
+ T8HSH+MEiuYFNQDa+cY5AnqsAwgDzaqOBoC2oRXK8tAM5rk9Oc
+ 3US+3Pfj8P3hPHv6ki6M9KMKC75qhsE5AoY9V/4/PvaFiI5v4D
+ GXNFehBvlJw/JVbJquZBRSYUm78sDCk4VQnn2KP2YC/R8PzEz1
+ Eqi1CDCRfGR3hpnuTI/8FaW+QMA4EpcU/+3drkz0+bCbtGWyt5
+ 4w/Quiiyw7wSgpO2xW3E8GrsX+CzAjCOzXSww3n61RboAbtNga
+ tTZAjc/M5ZSz62qPue5ArjVldwz1TiLjVpSc8CKRhLLSqHXcfI
+ SIH4gLPHQAUx7Ov+DOeU=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Alexander Kochetkov <al.kochet@gmail.com> [141129 13:02]:
-> commit dd74548ddece4b9d68e5528287a272fa552c81d0 ("i2c: omap:
-> resize fifos before each message") dropped check for dev->buf_len.
-> As result, data processing loop cause dev->buf overruns for
-> devices with 16-bit data register (omap2420).
+On Monday 01 December 2014 13:59:27 Timur Tabi wrote:
+> On 12/01/2014 01:56 PM, Arnd Bergmann wrote:
+> > All other drivers that call irq_of_parse_and_map and pass that into
+> > devm_request_irq just never unmap, and their interrupts are already
+> > mapped by the platform code, so I think it's not even a leak.
 > 
-> In the dd74548ddece4b9d68 code, for each loop iteration if the
-> flag OMAP_I2C_FLAG_16BIT_DATA_REG is set (omap2420), dev->buf
-> is incremented twice, and dev->buf_len decremented twice.
-> 
-> Also buffer overrun could happen (in theory) due to wrong
-> ISR handling (bug).
-> 
-> The commit fix data processing for omap2420 and add guard checks
-> in the data processing loops do disallow accesses to the buffer,
-> when dev->buf_len is zero. Also added warnings to unhide the bug.
-> 
-> Found by code review.
-> 
-> Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
-> Fixes: dd74548ddece4b9d68e5528287a272fa552c81d0 "i2c: omap: resize fifos before each message"
-> Reported-by: Tony Lindgren <tony@atomide.com>
+> Does this mean that fsl_ssi.c should not be calling 
+> irq_of_parse_and_map?  How else should it get the IRQ?
 
-I think this is a different issue than what I'm seeing.
+platform_get_irq()
 
-Not sure if I've seen what you're describing.. The $subject patch
-should be reviewed by Felipe and Aaro, but this does not help
-things on 2430.
-
-Regards,
-
-Tony
-
-
->  drivers/i2c/busses/i2c-omap.c |   36 ++++++++++++++++++++++++++++--------
->  1 file changed, 28 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-> index 4563200..e890295 100644
-> --- a/drivers/i2c/busses/i2c-omap.c
-> +++ b/drivers/i2c/busses/i2c-omap.c
-> @@ -938,20 +938,30 @@ static int errata_omap3_i462(struct omap_i2c_dev *dev)
->  static void omap_i2c_receive_data(struct omap_i2c_dev *dev, u8 num_bytes,
->  		bool is_rdr)
->  {
-> -	u16		w;
-> +	u16 w;
-> +
-> +	if (unlikely(num_bytes > dev->buf_len)) {
-> +		dev_err(dev->dev, "%s interrupt can't receive %u byte(s)\n",
-> +			is_rdr ? "RDR" : "RRDY", (num_bytes - dev->buf_len));
-> +		num_bytes = dev->buf_len;
-> +	}
->  
-> -	while (num_bytes--) {
-> +	while (num_bytes) {
->  		w = omap_i2c_read_reg(dev, OMAP_I2C_DATA_REG);
->  		*dev->buf++ = w;
->  		dev->buf_len--;
-> +		num_bytes--;
->  
->  		/*
->  		 * Data reg in 2430, omap3 and
->  		 * omap4 is 8 bit wide
->  		 */
->  		if (dev->flags & OMAP_I2C_FLAG_16BIT_DATA_REG) {
-> -			*dev->buf++ = w >> 8;
-> -			dev->buf_len--;
-> +			if (num_bytes) {
-> +				*dev->buf++ = w >> 8;
-> +				dev->buf_len--;
-> +				num_bytes--;
-> +			}
->  		}
->  	}
->  }
-> @@ -959,19 +969,29 @@ static void omap_i2c_receive_data(struct omap_i2c_dev *dev, u8 num_bytes,
->  static int omap_i2c_transmit_data(struct omap_i2c_dev *dev, u8 num_bytes,
->  		bool is_xdr)
->  {
-> -	u16		w;
-> +	u16 w;
-> +
-> +	if (unlikely(num_bytes > dev->buf_len)) {
-> +		dev_err(dev->dev, "%s interrupt can't transmit %u byte(s)\n",
-> +			is_xdr ? "XDR" : "XRDY", (num_bytes - dev->buf_len));
-> +		num_bytes = dev->buf_len;
-> +	}
->  
-> -	while (num_bytes--) {
-> +	while (num_bytes) {
->  		w = *dev->buf++;
->  		dev->buf_len--;
-> +		num_bytes--;
->  
->  		/*
->  		 * Data reg in 2430, omap3 and
->  		 * omap4 is 8 bit wide
->  		 */
->  		if (dev->flags & OMAP_I2C_FLAG_16BIT_DATA_REG) {
-> -			w |= *dev->buf++ << 8;
-> -			dev->buf_len--;
-> +			if (num_bytes) {
-> +				w |= *dev->buf++ << 8;
-> +				dev->buf_len--;
-> +				num_bytes--;
-> +			}
->  		}
->  
->  		if (dev->errata & I2C_OMAP_ERRATA_I462) {
-> -- 
-> 1.7.9.5
-> 
+	Arnd
