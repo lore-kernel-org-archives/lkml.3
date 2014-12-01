@@ -1,168 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960AbaLAIw3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 03:52:29 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:5965 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752919AbaLAIw0 (ORCPT
+	id S1753255AbaLAIzt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 03:55:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36512 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752719AbaLAIzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 03:52:26 -0500
-From: Wang Nan <wangnan0@huawei.com>
-To: <tixy@linaro.org>, <masami.hiramatsu.pt@hitachi.com>,
-        <linux@arm.linux.org.uk>
-CC: <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v11 5/7] ARM: kprobes: Add test cases for stack consuming instructions
-Date: Mon, 1 Dec 2014 16:48:52 +0800
-Message-ID: <1417423732-47767-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1417423513-47161-1-git-send-email-wangnan0@huawei.com>
-References: <1417423513-47161-1-git-send-email-wangnan0@huawei.com>
+	Mon, 1 Dec 2014 03:55:47 -0500
+Message-ID: <547C2CFC.7060908@canonical.com>
+Date: Mon, 01 Dec 2014 09:55:24 +0100
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020201.547C2C48.0008,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 98f04fda45cd0ea23579ddebe39807d2
+To: Zoltan Kiss <zoltan.kiss@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>
+CC: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Durrant <paul.durrant@citrix.com>, xen-devel@lists.xenproject.org
+Subject: Re: [Xen-devel] [PATCH] xen-netfront: Fix handling packets on compound
+ pages with skb_linearize
+References: <1407778343-13622-1-git-send-email-zoltan.kiss@citrix.com>
+In-Reply-To: <1407778343-13622-1-git-send-email-zoltan.kiss@citrix.com>
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="s150fMuQq0LSLSF52s9aqbJl7oRUV2dRv"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These have extra 'checker' functions associated with them so
-lets make sure those get covered by testing.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--s150fMuQq0LSLSF52s9aqbJl7oRUV2dRv
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Jon Medhurst <tixy@linaro.org>
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
+On 11.08.2014 19:32, Zoltan Kiss wrote:
+> There is a long known problem with the netfront/netback interface: if t=
+he guest
+> tries to send a packet which constitues more than MAX_SKB_FRAGS + 1 rin=
+g slots,
+> it gets dropped. The reason is that netback maps these slots to a frag =
+in the
+> frags array, which is limited by size. Having so many slots can occur s=
+ince
+> compound pages were introduced, as the ring protocol slice them up into=
 
----
+> individual (non-compound) page aligned slots. The theoretical worst cas=
+e
+> scenario looks like this (note, skbs are limited to 64 Kb here):
+> linear buffer: at most PAGE_SIZE - 17 * 2 bytes, overlapping page bound=
+ary,
+> using 2 slots
+> first 15 frags: 1 + PAGE_SIZE + 1 bytes long, first and last bytes are =
+at the
+> end and the beginning of a page, therefore they use 3 * 15 =3D 45 slots=
 
-v1 -> v2:
- - Move to arch/arm/probes/ .
----
- arch/arm/probes/kprobes-test-arm.c   | 17 +++++++++++++++--
- arch/arm/probes/kprobes-test-thumb.c | 12 ++++++++++++
- 2 files changed, 27 insertions(+), 2 deletions(-)
+> last 2 frags: 1 + 1 bytes, overlapping page boundary, 2 * 2 =3D 4 slots=
 
-diff --git a/arch/arm/probes/kprobes-test-arm.c b/arch/arm/probes/kprobes-test-arm.c
-index d8ad5bb..7aa96b6 100644
---- a/arch/arm/probes/kprobes-test-arm.c
-+++ b/arch/arm/probes/kprobes-test-arm.c
-@@ -12,6 +12,7 @@
- #include <linux/module.h>
- #include <asm/system_info.h>
- #include <asm/opcodes.h>
-+#include <asm/probes.h>
- 
- #include "kprobes-test.h"
- 
-@@ -478,6 +479,7 @@ void kprobe_arm_test_cases(void)
- 	TEST_RPR(  "strh	r",0, VAL1,", [r",1, 48,", -r",2, 24,"]")
- 	TEST_RPR(  "streqh	r",14,VAL2,", [r",11,0, ", r",12, 48,"]")
- 	TEST_UNSUPPORTED(  "streqh	r14, [r13, r12]")
-+	TEST_UNSUPPORTED(  "streqh	r14, [r12, r13]")
- 	TEST_RPR(  "strh	r",1, VAL1,", [r",2, 24,", r",3,  48,"]!")
- 	TEST_RPR(  "strneh	r",12,VAL2,", [r",11,48,", -r",10,24,"]!")
- 	TEST_RPR(  "strh	r",2, VAL1,", [r",3, 24,"], r",4, 48,"")
-@@ -502,6 +504,9 @@ void kprobe_arm_test_cases(void)
- 	TEST_RP(   "strplh	r",12,VAL2,", [r",11,24,", #-4]!")
- 	TEST_RP(   "strh	r",2, VAL1,", [r",3, 24,"], #48")
- 	TEST_RP(   "strh	r",10,VAL2,", [r",9, 64,"], #-48")
-+	TEST_RP(   "strh	r",3, VAL1,", [r",13,TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"]!")
-+	TEST_UNSUPPORTED("strh r3, [r13, #-"__stringify(MAX_STACK_SIZE)"-8]!")
-+	TEST_RP(   "strh	r",4, VAL1,", [r",14,TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"-8]!")
- 	TEST_UNSUPPORTED(__inst_arm(0xe1efc3b0) "	@ strh r12, [pc, #48]!")
- 	TEST_UNSUPPORTED(__inst_arm(0xe0c9f3b0) "	@ strh pc, [r9], #48")
- 
-@@ -568,6 +573,7 @@ void kprobe_arm_test_cases(void)
- 	TEST_RPR(  "strd	r",0, VAL1,", [r",1, 48,", -r",2,24,"]")
- 	TEST_RPR(  "strccd	r",8, VAL2,", [r",11,0, ", r",12,48,"]")
- 	TEST_UNSUPPORTED(  "strccd r8, [r13, r12]")
-+	TEST_UNSUPPORTED(  "strccd r8, [r12, r13]")
- 	TEST_RPR(  "strd	r",4, VAL1,", [r",2, 24,", r",3, 48,"]!")
- 	TEST_RPR(  "strcsd	r",12,VAL2,", [r",11,48,", -r",10,24,"]!")
- 	TEST_RPR(  "strd	r",2, VAL1,", [r",5, 24,"], r",4,48,"")
-@@ -591,6 +597,9 @@ void kprobe_arm_test_cases(void)
- 	TEST_RP(   "strvcd	r",12,VAL2,", [r",11,24,", #-16]!")
- 	TEST_RP(   "strd	r",2, VAL1,", [r",4, 24,"], #48")
- 	TEST_RP(   "strd	r",10,VAL2,", [r",9, 64,"], #-48")
-+	TEST_RP(   "strd	r",6, VAL1,", [r",13,TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"]!")
-+	TEST_UNSUPPORTED("strd r6, [r13, #-"__stringify(MAX_STACK_SIZE)"-8]!")
-+	TEST_RP(   "strd	r",4, VAL1,", [r",12,TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"-8]!")
- 	TEST_UNSUPPORTED(__inst_arm(0xe1efc3f0) "	@ strd r12, [pc, #48]!")
- 
- 	TEST_P(	   "ldrd	r0, [r",0, 24,", #-8]")
-@@ -639,16 +648,20 @@ void kprobe_arm_test_cases(void)
- 	TEST_RP( "str"byte"	r",12,VAL2,", [r",11,24,", #-4]!")		\
- 	TEST_RP( "str"byte"	r",2, VAL1,", [r",3, 24,"], #48")		\
- 	TEST_RP( "str"byte"	r",10,VAL2,", [r",9, 64,"], #-48")		\
-+	TEST_RP( "str"byte"	r",3, VAL1,", [r",13,TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"]!") \
-+	TEST_UNSUPPORTED("str"byte" r3, [r13, #-"__stringify(MAX_STACK_SIZE)"-8]!")				\
-+	TEST_RP( "str"byte"	r",4, VAL1,", [r",10,TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"-8]!") \
- 	TEST_RPR("str"byte"	r",0, VAL1,", [r",1, 48,", -r",2, 24,"]")	\
- 	TEST_RPR("str"byte"	r",14,VAL2,", [r",11,0, ", r",12, 48,"]")	\
--	TEST_UNSUPPORTED("str"byte" r14, [r13, r12]")	\
-+	TEST_UNSUPPORTED("str"byte" r14, [r13, r12]")				\
-+	TEST_UNSUPPORTED("str"byte" r14, [r12, r13]")				\
- 	TEST_RPR("str"byte"	r",1, VAL1,", [r",2, 24,", r",3,  48,"]!")	\
- 	TEST_RPR("str"byte"	r",12,VAL2,", [r",11,48,", -r",10,24,"]!")	\
- 	TEST_RPR("str"byte"	r",2, VAL1,", [r",3, 24,"], r",4, 48,"")	\
- 	TEST_RPR("str"byte"	r",10,VAL2,", [r",9, 48,"], -r",11,24,"")	\
- 	TEST_RPR("str"byte"	r",0, VAL1,", [r",1, 24,", r",2,  32,", asl #1]")\
- 	TEST_RPR("str"byte"	r",14,VAL2,", [r",11,0, ", r",12, 32,", lsr #2]")\
--	TEST_UNSUPPORTED("str"byte"	r14, [r13, r12, lsr #2]")\
-+	TEST_UNSUPPORTED("str"byte"	r14, [r13, r12, lsr #2]")		\
- 	TEST_RPR("str"byte"	r",1, VAL1,", [r",2, 24,", r",3,  32,", asr #3]!")\
- 	TEST_RPR("str"byte"	r",12,VAL2,", [r",11,24,", r",10, 4,", ror #31]!")\
- 	TEST_P(  "ldr"byte"	r0, [r",0,  24,", #-2]")			\
-diff --git a/arch/arm/probes/kprobes-test-thumb.c b/arch/arm/probes/kprobes-test-thumb.c
-index 844dd10..25e0a7c 100644
---- a/arch/arm/probes/kprobes-test-thumb.c
-+++ b/arch/arm/probes/kprobes-test-thumb.c
-@@ -11,6 +11,7 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <asm/opcodes.h>
-+#include <asm/probes.h>
- 
- #include "kprobes-test.h"
- 
-@@ -416,6 +417,9 @@ void kprobe_thumb32_test_cases(void)
- 	TEST_RR( "strd	r",14,VAL2,", r",12,VAL1,", [sp, #16]!")
- 	TEST_RRP("strd	r",1, VAL1,", r",0, VAL2,", [r",7, 24,"], #16")
- 	TEST_RR( "strd	r",7, VAL2,", r",8, VAL1,", [sp], #-16")
-+	TEST_RRP("strd	r",6, VAL1,", r",7, VAL2,", [r",13, TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"]!")
-+	TEST_UNSUPPORTED("strd r6, r7, [r13, #-"__stringify(MAX_STACK_SIZE)"-8]!")
-+	TEST_RRP("strd	r",4, VAL1,", r",5, VAL2,", [r",14, TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"-8]!")
- 	TEST_UNSUPPORTED(__inst_thumb32(0xe9efec04) "	@ strd	r14, r12, [pc, #16]!")
- 	TEST_UNSUPPORTED(__inst_thumb32(0xe8efec04) "	@ strd	r14, r12, [pc], #16")
- 
-@@ -821,14 +825,22 @@ CONDITION_INSTRUCTIONS(22,
- 	TEST_RP( "str"size"	r",14,VAL2,", [r",1, 256,  ", #-128]!")		\
- 	TEST_RPR("str"size".w	r",0, VAL1,", [r",1, 0,", r",2, 4,"]")		\
- 	TEST_RPR("str"size"	r",14,VAL2,", [r",10,0,", r",11,4,", lsl #1]")	\
-+	TEST_UNSUPPORTED("str"size"	r0, [r13, r1]")				\
- 	TEST_R(  "str"size".w	r",7, VAL1,", [sp, #24]")			\
- 	TEST_RP( "str"size".w	r",0, VAL2,", [r",0,0, "]")			\
-+	TEST_RP( "str"size"	r",6, VAL1,", [r",13, TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"]!") \
-+	TEST_UNSUPPORTED("str"size"	r6, [r13, #-"__stringify(MAX_STACK_SIZE)"-8]!")			\
-+	TEST_RP( "str"size"	r",4, VAL2,", [r",12, TEST_MEMORY_SIZE,", #-"__stringify(MAX_STACK_SIZE)"-8]!") \
- 	TEST_UNSUPPORTED("str"size"t	r0, [r1, #4]")
- 
- 	SINGLE_STORE("b")
- 	SINGLE_STORE("h")
- 	SINGLE_STORE("")
- 
-+	TEST_UNSUPPORTED(__inst_thumb32(0xf801000d) "	@ strb	r0, [r1, r13]")
-+	TEST_UNSUPPORTED(__inst_thumb32(0xf821000d) "	@ strh	r0, [r1, r13]")
-+	TEST_UNSUPPORTED(__inst_thumb32(0xf841000d) "	@ str	r0, [r1, r13]")
-+
- 	TEST("str	sp, [sp]")
- 	TEST_UNSUPPORTED(__inst_thumb32(0xf8cfe000) "	@ str	r14, [pc]")
- 	TEST_UNSUPPORTED(__inst_thumb32(0xf8cef000) "	@ str	pc, [r14]")
--- 
-1.8.4
+> Although I don't think this 51 slots skb can really happen, we need a s=
+olution
+> which can deal with every scenario. In real life there is only a few sl=
+ots
+> overdue, but usually it causes the TCP stream to be blocked, as the ret=
+ry will
+> most likely have the same buffer layout.
+> This patch solves this problem by linearizing the packet. This is not t=
+he
+> fastest way, and it can fail much easier as it tries to allocate a big =
+linear
+> area for the whole packet, but probably easier by an order of magnitude=
+ than
+> anything else. Probably this code path is not touched very frequently a=
+nyway.
+>=20
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Cc: Wei Liu <wei.liu2@citrix.com>
+> Cc: Ian Campbell <Ian.Campbell@citrix.com>
+> Cc: Paul Durrant <paul.durrant@citrix.com>
+> Cc: netdev@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: xen-devel@lists.xenproject.org
 
+This does not seem to be marked explicitly as stable. Has someone already=
+ asked
+David Miller to put it on his stable queue? IMO it qualifies quite well a=
+nd the
+actual change should be simple to pick/backport.
+
+-Stefan
+
+>=20
+> diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
+> index 055222b..23359ae 100644
+> --- a/drivers/net/xen-netfront.c
+> +++ b/drivers/net/xen-netfront.c
+> @@ -628,9 +628,10 @@ static int xennet_start_xmit(struct sk_buff *skb, =
+struct net_device *dev)
+>  	slots =3D DIV_ROUND_UP(offset + len, PAGE_SIZE) +
+>  		xennet_count_skb_frag_slots(skb);
+>  	if (unlikely(slots > MAX_SKB_FRAGS + 1)) {
+> -		net_alert_ratelimited(
+> -			"xennet: skb rides the rocket: %d slots\n", slots);
+> -		goto drop;
+> +		net_dbg_ratelimited("xennet: skb rides the rocket: %d slots, %d byte=
+s\n",
+> +				    slots, skb->len);
+> +		if (skb_linearize(skb))
+> +			goto drop;
+>  	}
+> =20
+>  	spin_lock_irqsave(&queue->tx_lock, flags);
+>=20
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
+>=20
+
+
+
+--s150fMuQq0LSLSF52s9aqbJl7oRUV2dRv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUfC0OAAoJEOhnXe7L7s6jxHEQALgipbF0gVIGN6YUt6utLg5b
+QJ8obUcc1Ixkj8sjx3zzngSS2uViTjjLRKGg7LSEDxFkflvcytjPgImqv/xKOE5r
+s7teGzYSy1E6qFgoTCHXy80wgWhrFP26Y5AjmFa4x+nFMAiMFE/BEFHj82XC9sZ1
+vhtYugM9HsJwUhh4qWYPLltZyGWIzOgVzs3X1R/pE1VL8kMaLvlgNqZUHUv51bOo
+zSmUOqzbqnPxWw4E8tLxVwL3e9QckjJ+8YFGK7ozW3xM4lmgKrya7JMUOB3EnrFQ
+aZ1pvnnfXZUO1ScelgFNaxEg9cCVhzxdaM91RrbRb64p0DD6ToqZDkCLcOJKezzg
+qz/gj4QqmXFE7ZlOe5HV0nSHFeIb6hnObO7Yi2D35nIceTaDtRRmB8Z2659b3Gex
+F9jtoJ1kejrFaSQMoEnywDMyyn+oL0KvhDcIZOd9uzuZ2Nva8+Xpabc1Ihml7vUo
+DYg6em1xyrjnf3TznDX+eC1ZyE1IPtZLacDFcAahFSBjhW/seYBqUnEFyccEDofu
+OyMqwoC9R6E+Xj04VYZUOLaXMP7EMAnzuMHZpLrlwDXL8+791hFF6QG417KzYM2B
+0++nkvypnif2QVdakursAzcM+IEbSEpoys0QvRjOEVnPwoSkWptqLXWRfpW4hsv4
+O+GqOZhH4RVSE4cYcrl1
+=Ec0I
+-----END PGP SIGNATURE-----
+
+--s150fMuQq0LSLSF52s9aqbJl7oRUV2dRv--
