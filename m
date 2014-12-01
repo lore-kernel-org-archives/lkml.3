@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932894AbaLAXUy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 18:20:54 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:64882 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932690AbaLAXUu (ORCPT
+	id S933046AbaLAXXs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 18:23:48 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:44639 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754137AbaLAXUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 18:20:50 -0500
+	Mon, 1 Dec 2014 18:20:49 -0500
 From: James Hogan <james.hogan@imgtec.com>
 To: Mike Turquette <mturquette@linaro.org>, linux-metag@vger.kernel.org,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
 Cc: Heiko Stuebner <heiko@sntech.de>, James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH v2 06/16] clk: tz1090: add PLL clock driver
-Date: Mon,  1 Dec 2014 23:19:56 +0000
-Message-Id: <1417476006-10407-7-git-send-email-james.hogan@imgtec.com>
+Subject: [PATCH v2 05/16] clk: tz1090: add divider clock driver
+Date: Mon,  1 Dec 2014 23:19:55 +0000
+Message-Id: <1417476006-10407-6-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1417476006-10407-1-git-send-email-james.hogan@imgtec.com>
 References: <1417476006-10407-1-git-send-email-james.hogan@imgtec.com>
@@ -21,366 +21,293 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a clock driver for the main PLLs in the TZ1090 SoC, the system PLL
-and the ADC PLL. The system PLL is used to derive the core Meta clock,
-the DDR clock, and the system clock. The ADC PLL can be used for various
-purposes, but is usually used for the pixel clock.
+Add a clock driver for dividers in the TZ1090 SoC, which divide an input
+clock by an integer. The generic divider operations are optionally
+wrapped in order to acquire and release the Meta global exclusive lock
+(__global_lock2) to ensure atomicity with other non-Linux cores and
+threads which may need to use some other fields in the same register.
 
-The PLL is a True Circuits PLL, but the arrangement of the fields in the
-registers is specific to the TZ1090 SoC.
+The tz1090_clk_register_dividers() helper function can be used to
+register a set of dividers from static initialisation data. DIV(),
+DIV_FLAGS(), and DIV_SHARED() (for globally locked divider) macros are
+provided in tz1090/clk.h to aid the creation of this data.  For example:
 
-The driver supports recalc_rate, round_rate, and set_rate operations.
-
-The tz1090_clk_register_plls() helper function can be used to register a
-set of PLLs from static initialisation data. A PLL() macro is provided
-in tz1090/clk.h to aid the creation of this data. For example:
-
-static const struct tz1090_clk_pll plls[] __initconst = {
-	PLL(CLK_TOP_SYSPLL, "sys_sw", "sys_pll", TOP_SYSPLL_CTL0),
+static const struct tz1090_clk_divider dividers[] __initconst = {
+	DIV(CLK_TOP_SYS_DIV, "sys_pll", "sys_div", TOP_SYSCLK_DIV, 8),
+	DIV_FLAGS(CLK_TOP_UART, "uart_en", "uart", TOP_UARTCLK_DIV, 8,
+		  CLK_SET_RATE_PARENT, 0),
+	DIV_SHARED(CLK_PDC_XTAL1_DIV, "@xtal1", "xtal1_div", PDC_SOC0,
+		   11, 16),
 	...
 };
 ...
-tz1090_clk_register_plls(p, plls, ARRAY_SIZE(plls));
+tz1090_clk_register_dividers(p, dividers, ARRAY_SIZE(dividers));
 
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
 Cc: Mike Turquette <mturquette@linaro.org>
 Cc: linux-metag@vger.kernel.org
 ---
-Changes since v1 (patch 4):
+Changes since v1 (patches 14 and 12):
+- Drop divider DT binding and divider specific flags (policy) as
+  dividers will be instantiated directly from a provider. These were the
+  only things in clk-tz1090-divider.c.
+- Split out wrapped (meta exclusive locked) divider driver from PDC
+  clock driver.
 - Renamed function prefixes from clk_tz1090_ to tz1090_clk_ for
   consistency with the rest.
-- Drop DT binding as it will be instantiated directly from a provider.
-- Add tz1090_clk_register_plls() to conveniently register a set of PLLs
-  in a clock provider from static initilisation data.
+- Switch back to using clk_divider::width rather than clk_divider::mask.
+  Mask was only added to make it easier to be exposed in a DT binding,
+  which is no longer required.
+- Add tz1090_clk_register_dividers() to conveniently register a set of
+  dividers in a clock provider from static initilisation data, either
+  wrapped or generic dividers.
 - Extend tz1090/clk.h interface for easy static initialisation with
   macros.
 ---
- drivers/clk/tz1090/Makefile         |   1 +
- drivers/clk/tz1090/clk-tz1090-pll.c | 276 ++++++++++++++++++++++++++++++++++++
- drivers/clk/tz1090/clk.h            |  22 +++
- 3 files changed, 299 insertions(+)
- create mode 100644 drivers/clk/tz1090/clk-tz1090-pll.c
+ drivers/clk/tz1090/Makefile             |   1 +
+ drivers/clk/tz1090/clk-tz1090-divider.c | 151 ++++++++++++++++++++++++++++++++
+ drivers/clk/tz1090/clk.h                |  63 +++++++++++++
+ 3 files changed, 215 insertions(+)
+ create mode 100644 drivers/clk/tz1090/clk-tz1090-divider.c
 
 diff --git a/drivers/clk/tz1090/Makefile b/drivers/clk/tz1090/Makefile
-index a7127d9..a28a5bb 100644
+index 39c29ac..a7127d9 100644
 --- a/drivers/clk/tz1090/Makefile
 +++ b/drivers/clk/tz1090/Makefile
-@@ -5,3 +5,4 @@ obj-y		+= clk-tz1090-deleter.o
- obj-y		+= clk-tz1090-divider.o
+@@ -2,5 +2,6 @@
+ obj-y		+= clk.o
+ 
+ obj-y		+= clk-tz1090-deleter.o
++obj-y		+= clk-tz1090-divider.o
  obj-y		+= clk-tz1090-gate-bank.o
  obj-y		+= clk-tz1090-mux-bank.o
-+obj-y		+= clk-tz1090-pll.o
-diff --git a/drivers/clk/tz1090/clk-tz1090-pll.c b/drivers/clk/tz1090/clk-tz1090-pll.c
+diff --git a/drivers/clk/tz1090/clk-tz1090-divider.c b/drivers/clk/tz1090/clk-tz1090-divider.c
 new file mode 100644
-index 0000000..ca8260b
+index 0000000..22db67d
 --- /dev/null
-+++ b/drivers/clk/tz1090/clk-tz1090-pll.c
-@@ -0,0 +1,276 @@
++++ b/drivers/clk/tz1090/clk-tz1090-divider.c
+@@ -0,0 +1,151 @@
 +/*
-+ * Copyright (C) 2011 Sascha Hauer, Pengutronix <s.hauer@pengutronix.de>
-+ * Copyright (C) 2011 Richard Zhao, Linaro <richard.zhao@linaro.org>
-+ * Copyright (C) 2011-2012 Mike Turquette, Linaro Ltd <mturquette@linaro.org>
 + * Copyright (C) 2013-2014 Imagination Technologies Ltd.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * This program is free software; you can redistribute it and/or modify it under
++ * the terms of the GNU General Public License version 2 as published by the
++ * Free Software Foundation.
 + *
-+ * True Circuits PLL in TZ1090 SoC.
++ * TZ1090 Divider Clock.
 + */
 +
 +#include <linux/clk-provider.h>
-+#include <linux/delay.h>
 +#include <linux/err.h>
 +#include <linux/io.h>
 +#include <linux/slab.h>
++#include <asm/global_lock.h>
 +
 +#include "clk.h"
 +
-+/* Register definitions */
-+
-+#define PLL_CTL0		0
-+#define  PLL_CTL0_BWADJ_M		0xfff
-+#define  PLL_CTL0_BWADJ_S		20
-+#define  PLL_CTL0_CLKF_M		0x1fff
-+#define  PLL_CTL0_CLKF_S		4
-+#define  PLL_CTL0_CLKOD_M		0x7
-+#define  PLL_CTL0_CLKOD_S		0
-+#define PLL_CTL1		4
-+#define  PLL_CTL1_RESET_B		BIT(28)
-+#define  PLL_CTL1_FASTEN_B		BIT(27)
-+#define  PLL_CTL1_ENSAT_B		BIT(26)
-+#define  PLL_CTL1_BYPASS_B		BIT(25)
-+#define  PLL_CTL1_PWRDN_B		BIT(24)
-+#define  PLL_CTL1_CLKR_M		0x3f
-+#define  PLL_CTL1_CLKR_S		0
-+
 +/**
-+ * struct tz1090_clk_pll_priv - PLL in TZ1090
++ * struct tz1090_clk_div_priv - tz1090 divider clock
 + *
-+ * @hw:		handle between common and hardware-specific interfaces
-+ * @reg:	first of two registers
++ * @div:	the parent class
++ * @ops:	pointer to clk_ops of parent class
 + *
-+ * PLL in TZ1090.
++ * Divider clock whose field shares a register with other fields which may be
++ * used by multiple threads/cores and other drivers.
 + */
-+struct tz1090_clk_pll_priv {
-+	struct clk_hw	hw;
-+	void __iomem	*reg;
++struct tz1090_clk_div_priv {
++	struct clk_divider	div;
++	const struct clk_ops	*ops;
 +};
 +
-+#define to_tz1090_clk_pll(_hw) container_of(_hw, struct tz1090_clk_pll_priv, hw)
-+
-+static unsigned long tz1090_clk_pll_recalc_rate(struct clk_hw *hw,
-+						unsigned long f_in)
++static inline struct tz1090_clk_div_priv *to_tz1090_clk_div(struct clk_hw *hw)
 +{
-+	struct tz1090_clk_pll_priv *pll = to_tz1090_clk_pll(hw);
-+	u32 ctl0, ctl1;
-+	unsigned int clk_f;	/* feedback divide */
-+	unsigned int clk_od;	/* output divide */
-+	unsigned int clk_r;	/* reference divide */
-+	unsigned long f_out;
++	struct clk_divider *div = container_of(hw, struct clk_divider, hw);
 +
-+	ctl0 = readl(pll->reg + PLL_CTL0);
-+	ctl1 = readl(pll->reg + PLL_CTL1);
-+
-+	/* Bypass? */
-+	if (ctl1 & PLL_CTL1_BYPASS_B)
-+		return f_in;
-+
-+	/* Get divider values */
-+	clk_f  = 1 + ((ctl0 >> PLL_CTL0_CLKF_S)  & PLL_CTL0_CLKF_M);
-+	clk_od = 1 + ((ctl0 >> PLL_CTL0_CLKOD_S) & PLL_CTL0_CLKOD_M);
-+	clk_r  = 1 + ((ctl1 >> PLL_CTL1_CLKR_S)  & PLL_CTL1_CLKR_M);
-+
-+	/*
-+	 * formula:
-+	 * f_out = (f_in / clk_r) * (clk_f / 2) / clk_od
-+	 *       = (f_in * clk_f) / (2 * clk_r * clk_od)
-+	 */
-+	f_out = div_u64((u64)f_in * clk_f,
-+			2 * clk_r * clk_od);
-+	return f_out;
++	return container_of(div, struct tz1090_clk_div_priv, div);
 +}
 +
-+/* finds best pll parameters and returns rate on success (or 0) */
-+static int tz1090_clk_pll_bestvals(struct clk_hw *hw, unsigned long parent_rate,
-+				   unsigned long rate, unsigned long *clkf,
-+				   unsigned long *clkr, unsigned long *clkod)
++static unsigned long tz1090_clk_divider_recalc_rate(struct clk_hw *hw,
++						    unsigned long parent_rate)
 +{
-+	unsigned long odmin, odmax;
-+	unsigned long bestf = 1, bestr = 1, bestod = 1;
-+	unsigned long rod2, cur, best = 0;
-+	unsigned long f, r, od;
++	struct tz1090_clk_div_priv *div = to_tz1090_clk_div(hw);
 +
-+	/* 120MHz/freq < od < 600MHz/freq */
-+	odmin = 120000000/rate + 1;
-+	odmax = 600000000/rate;
-+
-+	if (odmin < 1)
-+		odmin = 1;
-+	if (odmax > PLL_CTL0_CLKOD_M + 1)
-+		odmax = PLL_CTL0_CLKOD_M + 1;
-+
-+	/*
-+	 * Search through valid combinations of od and r, starting with lower
-+	 * output divider values to get a lower intermediate frequency.
-+	 */
-+	for (od = odmin; od <= odmax; ++od) {
-+		for (r = 1; r <= PLL_CTL1_CLKR_M + 1; ++r) {
-+			/*
-+			 * Calculate best f for given r and od, rounding down
-+			 * So for f, freq <= rate
-+			 * And for f+1, freq > rate
-+			 * We have to do rate+1 because rate may have itself
-+			 * been rounded down.
-+			 */
-+			rod2 = 2 * r * od;
-+			f = div_u64((u64)(rate + 1) * rod2, parent_rate);
-+			if (f < 1)
-+				continue;
-+			if (f > PLL_CTL0_CLKF_M + 1)
-+				f = PLL_CTL0_CLKF_M + 1;
-+
-+			/* Calculate final rate and see if it's the best */
-+			cur = div_u64((u64)parent_rate * f, rod2);
-+			if (cur > best) {
-+				bestf = f;
-+				bestr = r;
-+				bestod = od;
-+				best = cur;
-+				/* Can't improve on a perfect match */
-+				if (cur == rate)
-+					goto done;
-+			}
-+		}
-+	}
-+	if (!best)
-+		return 0;
-+done:
-+	pr_debug("tz1090_clk_pll: final %lu/%lu * %lu/2/%lu=%lu (req=%lu, err=%ld)\n",
-+		 parent_rate, bestr, bestf, bestod, best, rate, best - rate);
-+
-+	*clkf = bestf;
-+	*clkr = bestr;
-+	*clkod = bestod;
-+	return best;
++	return div->ops->recalc_rate(&div->div.hw, parent_rate);
 +}
 +
-+static long tz1090_clk_pll_round_rate(struct clk_hw *hw, unsigned long rate,
-+				      unsigned long *prate)
++static long tz1090_clk_divider_round_rate(struct clk_hw *hw, unsigned long rate,
++					  unsigned long *prate)
 +{
-+	unsigned long clkf, clkr, clkod;
-+	unsigned long parent_rate = *prate;
++	struct tz1090_clk_div_priv *div = to_tz1090_clk_div(hw);
 +
-+	return tz1090_clk_pll_bestvals(hw, parent_rate, rate, &clkf, &clkr,
-+				       &clkod);
++	return div->ops->round_rate(&div->div.hw, rate, prate);
 +}
 +
-+static int tz1090_clk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
-+				   unsigned long parent_rate)
++/* Acquire exclusive lock since other cores may access the same register */
++static int tz1090_clk_divider_set_rate(struct clk_hw *hw, unsigned long rate,
++				       unsigned long parent_rate)
 +{
-+	struct tz1090_clk_pll_priv *pll = to_tz1090_clk_pll(hw);
-+	unsigned long clkf, clkr, clkod, bwadj;
-+	u32 ctl0, ctl1;
++	struct tz1090_clk_div_priv *div = to_tz1090_clk_div(hw);
++	int ret;
++	unsigned long flags;
 +
-+	if (!tz1090_clk_pll_bestvals(hw, parent_rate, rate,
-+				     &clkf, &clkr, &clkod))
-+		return -EINVAL;
++	__global_lock2(flags);
++	ret = div->ops->set_rate(&div->div.hw, rate, parent_rate);
++	__global_unlock2(flags);
 +
-+	/* offset the values ready to go in the PLL registers */
-+	--clkr;
-+	--clkf;
-+	--clkod;
-+	bwadj = clkf / 2;
-+
-+	/* bypass, reset and configure PLL */
-+	ctl0 =	(bwadj << PLL_CTL0_BWADJ_S) |
-+		(clkf  << PLL_CTL0_CLKF_S)  |
-+		(clkod << PLL_CTL0_CLKOD_S);
-+	ctl1 =	PLL_CTL1_RESET_B  |
-+		PLL_CTL1_ENSAT_B  |
-+		PLL_CTL1_BYPASS_B |
-+		(clkr  << PLL_CTL1_CLKR_S);
-+	writel(ctl1, pll->reg + PLL_CTL1);
-+	writel(ctl0, pll->reg + PLL_CTL0);
-+
-+	/* allow 5us after clkf before deasserting reset */
-+	udelay(5);
-+
-+	/* take PLL out of reset and enable fasten */
-+	ctl1 &= ~PLL_CTL1_RESET_B;
-+	ctl1 |= PLL_CTL1_FASTEN_B;
-+	writel(ctl1, pll->reg + PLL_CTL1);
-+
-+	/* count at least 500 divided ref clks to allow time to lock */
-+	msleep(1 + 500*1000*(clkr+1)/parent_rate);
-+
-+	/* take PLL out of fasten / bypass */
-+	ctl1 &= ~PLL_CTL1_FASTEN_B;
-+	ctl1 &= ~PLL_CTL1_BYPASS_B;
-+	writel(ctl1, pll->reg + PLL_CTL1);
-+
-+	return 0;
++	return ret;
 +}
 +
-+static const struct clk_ops tz1090_clk_pll_ops = {
-+	.recalc_rate	= tz1090_clk_pll_recalc_rate,
-+	.round_rate	= tz1090_clk_pll_round_rate,
-+	.set_rate	= tz1090_clk_pll_set_rate,
++static const struct clk_ops tz1090_clk_div_ops = {
++	.recalc_rate	= tz1090_clk_divider_recalc_rate,
++	.round_rate	= tz1090_clk_divider_round_rate,
++	.set_rate	= tz1090_clk_divider_set_rate,
 +};
 +
-+/**
-+ * __register_pll() - register a PLL with the clock framework
-+ * @name: name of this clock
-+ * @parent_name: name of clock's parent
-+ * @flags: framework-specific flags
-+ * @reg: register address to adjust PLL
-+ *
-+ * Register a TZ1090 PLL clock to the clock framework.
-+ */
-+static struct clk *__init __register_pll(const char *name,
-+					 const char *parent_name,
-+					 unsigned long flags,
-+					 void __iomem *reg)
++static struct clk *__init __register_divider(const char *name,
++					     const char *parent_name,
++					     unsigned long flags,
++					     void __iomem *reg, u8 shift,
++					     u8 width, u8 clk_divider_flags)
 +{
-+	struct tz1090_clk_pll_priv *pll;
++	struct tz1090_clk_div_priv *div;
 +	struct clk *clk;
 +	struct clk_init_data init;
 +
-+	/* allocate the pll */
-+	pll = kzalloc(sizeof(struct tz1090_clk_pll_priv), GFP_KERNEL);
-+	if (!pll)
++	/* allocate the divider */
++	div = kzalloc(sizeof(struct tz1090_clk_div_priv), GFP_KERNEL);
++	if (!div)
 +		return ERR_PTR(-ENOMEM);
 +
 +	init.name = name;
-+	init.ops = &tz1090_clk_pll_ops;
++	init.ops = &tz1090_clk_div_ops;
 +	init.flags = flags | CLK_IS_BASIC;
 +	init.parent_names = (parent_name ? &parent_name : NULL);
 +	init.num_parents = (parent_name ? 1 : 0);
 +
-+	/* struct tz1090_clk_pll_priv assignments */
-+	pll->reg = reg;
-+	pll->hw.init = &init;
++	/* struct clk_divider assignments */
++	div->div.reg = reg;
++	div->div.shift = shift;
++	div->div.width = width;
++	div->div.flags = clk_divider_flags;
++	div->div.hw.init = &init;
++
++	/* struct tz1090_clk_div_priv assignments */
++	div->ops = &clk_divider_ops;
 +
 +	/* register the clock */
-+	clk = clk_register(NULL, &pll->hw);
++	clk = clk_register(NULL, &div->div.hw);
 +
 +	if (IS_ERR(clk))
-+		kfree(pll);
++		kfree(div);
 +
 +	return clk;
 +}
 +
 +/**
-+ * tz1090_clk_register_plls() - Register set of PLLs with a provider.
++ * tz1090_clk_register_dividers() - Register set of dividers with a provider.
 + * @p:		TZ1090 clock provider.
-+ * @plls:	Array of PLL descriptions.
-+ * @count	Number of PLLs described in the array.
++ * @dividers:	Array of divider descriptions.
++ * @count	Number of dividers described in the array.
 + */
-+void __init tz1090_clk_register_plls(struct tz1090_clk_provider *p,
-+				     const struct tz1090_clk_pll *plls,
-+				     unsigned int count)
++void __init tz1090_clk_register_dividers(struct tz1090_clk_provider *p,
++				const struct tz1090_clk_divider *dividers,
++				unsigned int count)
 +{
-+	const struct tz1090_clk_pll *pll;
++	const struct tz1090_clk_divider *div;
 +	struct clk *clk;
 +	unsigned int i;
 +
-+	for (pll = plls, i = 0; i < count; ++pll, ++i) {
-+		clk = __register_pll(tz1090_clk_xlate(p, pll->name),
-+				     tz1090_clk_xlate(p, pll->parent), 0,
-+				     p->base + pll->reg_base);
-+		p->clk_data.clks[pll->id] = clk;
++	for (div = dividers, i = 0; i < count; ++div, ++i) {
++		/*
++		 * Dividers in registers shared between OSes must protect the
++		 * register with a global lock. Others with dedicated registers
++		 * can just use a normal divider.
++		 */
++		if (div->shared)
++			clk = __register_divider(tz1090_clk_xlate(p, div->name),
++					tz1090_clk_xlate(p, div->parent),
++					div->flags, p->base + div->reg,
++					div->shift, div->width, div->div_flags);
++		else
++			clk = clk_register_divider(NULL,
++					tz1090_clk_xlate(p, div->name),
++					tz1090_clk_xlate(p, div->parent),
++					div->flags, p->base + div->reg,
++					div->shift, div->width, div->div_flags,
++					NULL);
++		p->clk_data.clks[div->id] = clk;
 +	}
 +}
 diff --git a/drivers/clk/tz1090/clk.h b/drivers/clk/tz1090/clk.h
-index ca51f87..ae77ed5 100644
+index 8f90908..ca51f87 100644
 --- a/drivers/clk/tz1090/clk.h
 +++ b/drivers/clk/tz1090/clk.h
-@@ -229,4 +229,26 @@ void tz1090_clk_register_dividers(struct tz1090_clk_provider *p,
- 				  const struct tz1090_clk_divider *dividers,
+@@ -166,4 +166,67 @@ void tz1090_clk_register_deleters(struct tz1090_clk_provider *p,
+ 				  const struct tz1090_clk_deleter *deleters,
  				  unsigned int count);
  
 +
-+/* PLLs */
++/* Dividers */
 +
-+struct tz1090_clk_pll {
++/**
++ * struct tz1090_clk_divider - Describes a clock divider.
++ * @id:		Id of output clock in provider.
++ * @reg:	Offset of divider register in the MMIO region.
++ * @flags:	Clock flags.
++ * @div_flags:	Divider flags.
++ * @shift:	Shift of field controlling divider.
++ * @width:	Width of field controlling divider.
++ * @shared:	1 if register is shared with other important fields and requires
++ *		global locking.
++ * @name:	Name of divided clock to provide.
++ * @parent:	Name of parent/source clocks.
++ */
++struct tz1090_clk_divider {
 +	unsigned int		id;
-+	unsigned long		reg_base;
++	unsigned long		reg;
++	unsigned long		flags;
++	u8			div_flags;
++	u8			shift;
++	u8			width;
++	u8			shared;
 +	const char		*name;
 +	const char		*parent;
 +};
 +
-+#define PLL(_id, _parent, _name, _reg)			\
-+	{						\
-+		.id		= (_id),		\
-+		.reg_base	= (_reg),		\
-+		.name		= (_name),		\
-+		.parent		= (_parent),		\
++#define DIV(_id, _parent, _name, _reg, _width)	\
++	{								\
++		.id		= (_id),				\
++		.reg		= (_reg),				\
++		.width		= (_width),				\
++		.name		= (_name),				\
++		.parent		= (_parent),				\
 +	}
 +
-+void tz1090_clk_register_plls(struct tz1090_clk_provider *p,
-+			      const struct tz1090_clk_pll *plls,
-+			      unsigned int count);
++#define DIV_FLAGS(_id, _parent, _name, _reg, _width, _flags, _divflags)	\
++	{								\
++		.id		= (_id),				\
++		.reg		= (_reg),				\
++		.flags		= (_flags),				\
++		.div_flags	= (_divflags),				\
++		.width		= (_width),				\
++		.name		= (_name),				\
++		.parent		= (_parent),				\
++	}
++
++#define DIV_SHARED(_id, _parent, _name, _reg, _width, _shift)		\
++	{								\
++		.id		= (_id),				\
++		.reg		= (_reg),				\
++		.shift		= (_shift),				\
++		.width		= (_width),				\
++		.shared		= 1,					\
++		.name		= (_name),				\
++		.parent		= (_parent),				\
++	}
++
++void tz1090_clk_register_dividers(struct tz1090_clk_provider *p,
++				  const struct tz1090_clk_divider *dividers,
++				  unsigned int count);
 +
  #endif
 -- 
