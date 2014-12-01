@@ -1,54 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932508AbaLAVTl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 16:19:41 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:34654 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932379AbaLAVTk (ORCPT
+	id S932513AbaLAVW5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 16:22:57 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:55618 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932080AbaLAVW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 16:19:40 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-To: bp@suse.de
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        david.vrabel@citrix.com, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com
-Subject: [PATCH] x86, microcode: Don't initialize microcode code on paravirt
-Date: Mon,  1 Dec 2014 16:27:44 -0500
-Message-Id: <1417469264-31470-1-git-send-email-boris.ostrovsky@oracle.com>
-X-Mailer: git-send-email 1.7.1
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Mon, 1 Dec 2014 16:22:56 -0500
+Date: Mon, 1 Dec 2014 22:22:38 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>
+Subject: Re: [PATCH v4 1/3] drm: add bus_formats and num_bus_formats fields
+ to drm_display_info
+Message-ID: <20141201222238.40e9ff86@bbrezillon>
+In-Reply-To: <20141201154257.GD11943@ulmo.nvidia.com>
+References: <1417422061-10384-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1417422061-10384-6-git-send-email-boris.brezillon@free-electrons.com>
+	<20141201154257.GD11943@ulmo.nvidia.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paravirtual guests are not expected to load microcode into processors
-and therefore it is not necessary to initialize microcode loading
-logic.
+Hi Thierry,
 
-In fact, under certain circumstances initializing this logic may cause
-the guest to crash. Specifically, 32-bit kernels use __pa_nodebug()
-macro which does not work in Xen (the code path that leads to this macro
-happens during resume when we call mc_bp_resume()->load_ucode_ap()
-->check_loader_disabled_ap())
+On Mon, 1 Dec 2014 16:42:58 +0100
+Thierry Reding <thierry.reding@gmail.com> wrote:
 
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
----
- arch/x86/kernel/cpu/microcode/core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> On Mon, Dec 01, 2014 at 09:20:59AM +0100, Boris Brezillon wrote:
+> > Add bus_formats and num_bus_formats fields and
+> > drm_display_info_set_bus_formats helper function to specify the bus
+> > formats supported by a given display.
+> > 
+> > This information can be used by display controller drivers to configure
+> > the output interface appropriately (i.e. RGB565, RGB666 or RGB888 on raw
+> > RGB or LVDS busses).
+> > 
+> > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > ---
+> >  drivers/gpu/drm/drm_crtc.c | 32 ++++++++++++++++++++++++++++++++
+> >  include/drm/drm_crtc.h     |  7 +++++++
+> >  2 files changed, 39 insertions(+)
+> > 
+> > diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+> > index e79c8d3..d3b7ed0 100644
+> > --- a/drivers/gpu/drm/drm_crtc.c
+> > +++ b/drivers/gpu/drm/drm_crtc.c
+> > @@ -763,6 +763,38 @@ static void drm_mode_remove(struct drm_connector *connector,
+> >  	drm_mode_destroy(connector->dev, mode);
+> >  }
+> >  
+> > +/*
+> 
+> This needs a /** marker to make it a valid kerneldoc comment.
 
-diff --git a/arch/x86/kernel/cpu/microcode/core.c b/arch/x86/kernel/cpu/microcode/core.c
-index 2ce9051..ebd232d 100644
---- a/arch/x86/kernel/cpu/microcode/core.c
-+++ b/arch/x86/kernel/cpu/microcode/core.c
-@@ -557,7 +557,7 @@ static int __init microcode_init(void)
- 	struct cpuinfo_x86 *c = &cpu_data(0);
- 	int error;
- 
--	if (dis_ucode_ldr)
-+	if (paravirt_enabled() || dis_ucode_ldr)
- 		return 0;
- 
- 	if (c->x86_vendor == X86_VENDOR_INTEL)
+Yep, I'll fix that.
+
+> 
+> > + * drm_display_info_set_bus_formats - set the supported bus formats
+> > + * @info: display info to store bus formats in
+> > + * @fmts: array containing the supported bus formats
+> > + * @nfmts: the number of entries in the fmts array
+> > + *
+> > + * Store the suppported bus formats in display info structure.
+> > + * See MEDIA_BUS_FMT_* definitions in include/uapi/linux/media-bus-format.h for
+> > + * a full list of available formats.
+> > + */
+> > +int drm_display_info_set_bus_formats(struct drm_display_info *info, const u32 *fmts,
+> 
+> This one still exceeds 80-characters per line, but perhaps I'm reviewing
+> the wrong patch? Also I think fmts should be formats here.
+> 
+> > +				     unsigned int num_fmts)
+> 
+> And this should be num_formats, for consistency. Also make sure to keep
+> this consistent with the kerneldoc.
+> 
+> > +{
+> > +	u32 *formats = NULL;
+> 
+> If you name the parameter formats, maybe bus_formats would be a good
+> alternative for this local variable. Or fmts here. I think it's most
+> important that the public API gets the more idiomatic name.
+
+Okay, I'll rework the argument and variable names.
+
+> 
+> > +
+> > +	if (!fmts && num_fmts)
+> > +		return -EINVAL;
+> > +
+> > +	if (fmts && num_fmts) {
+> > +		formats = kmemdup(fmts, sizeof(*fmts) * num_fmts, GFP_KERNEL);
+> > +		if (!formats)
+> > +			return -ENOMEM;
+> > +	}
+> > +
+> > +	kfree(info->bus_formats);
+> > +	info->bus_formats = formats;
+> > +	info->num_bus_formats = num_fmts;
+> > +
+> > +	return 0;
+> > +}
+> > +EXPORT_SYMBOL(drm_display_info_set_bus_formats);
+> 
+> I think you'll want to call kfree() on the bus_formats array from
+> drm_connector_cleanup() as well to make sure you don't leak this on
+> driver unload.
+
+Indeed, I'll fix that memory leak.
+
+Thanks,
+
+Boris
+
 -- 
-1.7.1
-
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
