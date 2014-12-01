@@ -1,288 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120AbaLAXUs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 18:20:48 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:45720 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932690AbaLAXUn (ORCPT
+	id S933092AbaLAX0E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 18:26:04 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:59946 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932484AbaLAXZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 18:20:43 -0500
-From: James Hogan <james.hogan@imgtec.com>
-To: Mike Turquette <mturquette@linaro.org>, linux-metag@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Heiko Stuebner <heiko@sntech.de>, James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH v2 02/16] clk: tz1090: add gate bank clock driver
-Date: Mon,  1 Dec 2014 23:19:52 +0000
-Message-Id: <1417476006-10407-3-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1417476006-10407-1-git-send-email-james.hogan@imgtec.com>
-References: <1417476006-10407-1-git-send-email-james.hogan@imgtec.com>
+	Mon, 1 Dec 2014 18:25:48 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>,
+        linux-media <linux-media@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sakari Ailus <sakari.ailus@iki.fi>
+Subject: Re: [PATCH] media: v4l2-subdev.h: drop the guard CONFIG_VIDEO_V4L2_SUBDEV_API for v4l2_subdev_get_try_*()
+Date: Tue, 02 Dec 2014 01:26:21 +0200
+Message-ID: <1429705.acTXlHE2TG@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <CA+V-a8uaw2X_a3rfx0=avbuGnUdbqveMvJaU25hewzv9eAA8+Q@mail.gmail.com>
+References: <1416220913-5047-1-git-send-email-prabhakar.csengg@gmail.com> <1680188.7K1XCBdsCk@avalon> <CA+V-a8uaw2X_a3rfx0=avbuGnUdbqveMvJaU25hewzv9eAA8+Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a clock driver for banks of clock gates in the TZ1090 SoC. A single
-32 bit register controls up to 32 separate clock gates. The generic
-clock gate clock operations are wrapped in order to acquire and release
-the Meta global exclusive lock (__global_lock2) to ensure atomicity with
-other non-Linux cores and threads which may need to control some of the
-clocks.
+Hi Prabhakar,
 
-The tz1090_clk_register_gate_bank() helper function can be used to
-register a gate bank from static initialisation data. Macros are
-provided in tz1090/clk.h to aid the creation of this data, for example:
+On Sunday 30 November 2014 21:30:35 Prabhakar Lad wrote:
+> On Sun, Nov 30, 2014 at 9:16 PM, Laurent Pinchart wrote:
+> > On Sunday 30 November 2014 21:05:50 Prabhakar Lad wrote:
+> >> On Sat, Nov 29, 2014 at 7:12 PM, Laurent Pinchart wrote:
+> >> > Hi Prabhakar,
+> >> 
+> >> [Snip]
+> >> 
+> >>>>> Sure. That's a better choice than removing the config option
+> >>>>> dependency of the fields struct v4l2_subdev.
+> >>> 
+> >>> Decoupling CONFIG_VIDEO_V4L2_SUBDEV_API from the availability of the
+> >>> in-kernel pad format and selection rectangles helpers is definitely a
+> >>> good idea. I was thinking about decoupling the try format and
+> >>> rectangles from v4l2_subdev_fh by creating a kind of configuration store
+> >>> structure to store them, and embedding that structure in v4l2_subdev_fh.
+> >>> The pad-level operations would then take a pointer to the configuration
+> >>> store instead of the v4l2_subdev_fh. Bridge drivers that want to
+> >>> implement TRY_FMT based on pad-level operations would create a
+> >>> configuration store, use the pad-level operations, and destroy the
+> >>> configuration store. The userspace subdev API would use the
+> >>> configuration store from the file handle.
+> >> 
+> >> are planning to work/post any time soon ? Or are you OK with suggestion
+> >> from Hans ?
+> > 
+> > I have no plan to work on that myself now, I was hoping you could
+> > implement it ;-)
+> 
+> OK will implement it.
+> 
+> Can you please elaborate a more on this "The userspace subdev API would use
+> the configuration store from the file handle."
 
-GATE_BANK(tz1090_perip_clken, 0, PERIP_CLKEN,
-        /*   bit in      out */
-        GATE( 0, "@sys", "sys_scb0")
-        GATE( 1, "@sys", "sys_scb1")
-        GATE( 2, "@sys", "sys_scb2")
-        ...
-);
-...
-clk_register_gate_bank(p, &tz1090_perip_clken);
+Basically,
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: linux-metag@vger.kernel.org
----
-Changes since v1 (patch 6):
-- Renamed function prefixes from clk_tz1090_ to tz1090_clk_ for
-  consistency with the rest.
-- Drop DT binding as it will be instantiated directly from a provider.
-- Add tz1090_clk_register_gate_bank() to conveniently register a bank of
-  gates in a clock provider from static initilisation data.
-- Extend tz1090/clk.h interface for easy static initialisation with
-  macros.
----
- drivers/clk/tz1090/Makefile               |   2 +
- drivers/clk/tz1090/clk-tz1090-gate-bank.c | 149 ++++++++++++++++++++++++++++++
- drivers/clk/tz1090/clk.h                  |  49 ++++++++++
- 3 files changed, 200 insertions(+)
- create mode 100644 drivers/clk/tz1090/clk-tz1090-gate-bank.c
+1. Create a subdev pad configuration store structure to store the formats and 
+selection rectangles for each pad.
 
-diff --git a/drivers/clk/tz1090/Makefile b/drivers/clk/tz1090/Makefile
-index a2ace14..ab88f53 100644
---- a/drivers/clk/tz1090/Makefile
-+++ b/drivers/clk/tz1090/Makefile
-@@ -1,2 +1,4 @@
- # Makefile for TZ1090-specific clocks
- obj-y		+= clk.o
-+
-+obj-y		+= clk-tz1090-gate-bank.o
-diff --git a/drivers/clk/tz1090/clk-tz1090-gate-bank.c b/drivers/clk/tz1090/clk-tz1090-gate-bank.c
-new file mode 100644
-index 0000000..5834afd
---- /dev/null
-+++ b/drivers/clk/tz1090/clk-tz1090-gate-bank.c
-@@ -0,0 +1,149 @@
-+/*
-+ * Copyright (C) 2013-2014 Imagination Technologies Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it under
-+ * the terms of the GNU General Public License version 2 as published by the
-+ * Free Software Foundation.
-+ *
-+ * TZ1090 Clock gate bank
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/slab.h>
-+#include <asm/global_lock.h>
-+
-+#include "clk.h"
-+
-+/**
-+ * struct tz1090_clk_gate_priv - tz1090 gating clock
-+ *
-+ * @mux:	the parent class
-+ * @ops:	pointer to clk_ops of parent class
-+ *
-+ * Clock which can gate its output. Extends basic mux by using a global
-+ * exclusive lock when read-modify-writing the mux field so that multiple
-+ * threads/cores can use different fields in the same register.
-+ */
-+struct tz1090_clk_gate_priv {
-+	struct clk_gate		gate;
-+	const struct clk_ops	*ops;
-+};
-+
-+static inline struct tz1090_clk_gate_priv *to_tz1090_clk_gate(struct clk_hw *hw)
-+{
-+	struct clk_gate *gate = container_of(hw, struct clk_gate, hw);
-+
-+	return container_of(gate, struct tz1090_clk_gate_priv, gate);
-+}
-+
-+/* Acquire exclusive lock since other cores may access the same register */
-+static int tz1090_clk_gate_enable(struct clk_hw *hw)
-+{
-+	struct tz1090_clk_gate_priv *gate = to_tz1090_clk_gate(hw);
-+	int ret;
-+	unsigned long flags;
-+
-+	__global_lock2(flags);
-+	ret = gate->ops->enable(&gate->gate.hw);
-+	__global_unlock2(flags);
-+
-+	return ret;
-+}
-+
-+/* Acquire exclusive lock since other cores may access the same register */
-+static void tz1090_clk_gate_disable(struct clk_hw *hw)
-+{
-+	struct tz1090_clk_gate_priv *gate = to_tz1090_clk_gate(hw);
-+	unsigned long flags;
-+
-+	__global_lock2(flags);
-+	gate->ops->disable(&gate->gate.hw);
-+	__global_unlock2(flags);
-+}
-+
-+static int tz1090_clk_gate_is_enabled(struct clk_hw *hw)
-+{
-+	struct tz1090_clk_gate_priv *gate = to_tz1090_clk_gate(hw);
-+
-+	return gate->ops->is_enabled(&gate->gate.hw);
-+}
-+
-+static const struct clk_ops tz1090_clk_gate_ops = {
-+	.enable = tz1090_clk_gate_enable,
-+	.disable = tz1090_clk_gate_disable,
-+	.is_enabled = tz1090_clk_gate_is_enabled,
-+};
-+
-+/**
-+ * __register_gate() - register a TZ1090 gate clock with clock framework.
-+ * @name: name of this clock
-+ * @parent_name: name of this clock's parent
-+ * @flags: framework-specific flags for this clock
-+ * @reg: register address to control gating of this clock
-+ * @bit_idx: which bit in the register controls gating of this clock
-+ * @clk_gate_flags: gate-specific flags for this clock
-+ */
-+static struct clk *__init __register_gate(const char *name,
-+					  const char *parent_name,
-+					  unsigned long flags,
-+					  void __iomem *reg,
-+					  u8 bit_idx,
-+					  u8 clk_gate_flags)
-+{
-+	struct tz1090_clk_gate_priv *gate;
-+	struct clk *clk;
-+	struct clk_init_data init;
-+
-+	/* allocate the gate */
-+	gate = kzalloc(sizeof(struct tz1090_clk_gate_priv), GFP_KERNEL);
-+	if (!gate)
-+		return ERR_PTR(-ENOMEM);
-+
-+	init.name = name;
-+	init.ops = &tz1090_clk_gate_ops;
-+	init.flags = flags | CLK_IS_BASIC;
-+	init.parent_names = (parent_name ? &parent_name : NULL);
-+	init.num_parents = (parent_name ? 1 : 0);
-+
-+	/* struct clk_gate assignments */
-+	gate->gate.reg = reg;
-+	gate->gate.bit_idx = bit_idx;
-+	gate->gate.flags = clk_gate_flags;
-+	gate->gate.hw.init = &init;
-+
-+	/* struct tz1090_clk_gate_priv assignments */
-+	gate->ops = &clk_gate_ops;
-+
-+	clk = clk_register(NULL, &gate->gate.hw);
-+
-+	if (IS_ERR(clk))
-+		kfree(gate);
-+
-+	return clk;
-+}
-+
-+/**
-+ * tz1090_clk_register_gate_bank() - Register bank of gates with a provider.
-+ * @p:		TZ1090 clock provider.
-+ * @bank:	Data describing gate bank.
-+ */
-+void __init tz1090_clk_register_gate_bank(struct tz1090_clk_provider *p,
-+					const struct tz1090_clk_gate_bank *bank)
-+{
-+	const struct tz1090_clk_gate *gate;
-+	struct clk *clk;
-+	unsigned int id = bank->id_base;
-+
-+	for (gate = bank->gates; gate->name; ++gate, ++id) {
-+		clk = __register_gate(tz1090_clk_xlate(p, gate->name),
-+				      tz1090_clk_xlate(p, gate->parent),
-+				      CLK_IGNORE_UNUSED | CLK_SET_RATE_PARENT,
-+				      p->base + bank->reg_base, gate->shift, 0);
-+		p->clk_data.clks[id] = clk;
-+	}
-+}
-diff --git a/drivers/clk/tz1090/clk.h b/drivers/clk/tz1090/clk.h
-index c20e7b4..06274b7 100644
---- a/drivers/clk/tz1090/clk.h
-+++ b/drivers/clk/tz1090/clk.h
-@@ -34,4 +34,53 @@ const char *tz1090_clk_xlate(struct tz1090_clk_provider *p,
- 			     const char *clk_name);
- void tz1090_clk_register_provider(struct tz1090_clk_provider *p);
- 
-+
-+/* Clock gate banks */
-+
-+/**
-+ * struct tz1090_clk_gate - Describes an individual gate in a bank.
-+ * @shift:	Shift of bit controlling gate within the bank control register.
-+ * @name:	Name of gated clock to provide.
-+ * @parent:	Name of parent/source clock.
-+ */
-+struct tz1090_clk_gate {
-+	unsigned int	shift;
-+	const char	*name;
-+	const char	*parent;
-+};
-+
-+/**
-+ * struct tz1090_clk_gate_bank - Describes a gate bank.
-+ * @id_base:	Base id of bank in provider.
-+ *		Individual gates get the id id_base + index in gates array.
-+ * @reg_base:	Offset of gate bank register in the MMIO region.
-+ * @gates:	Pointer to array of gates in the bank, terminated by one with a
-+ *		NULL name field.
-+ */
-+struct tz1090_clk_gate_bank {
-+	unsigned int			id_base;
-+	unsigned long			reg_base;
-+	const struct tz1090_clk_gate	*gates;
-+};
-+
-+#define GATE(_shift, _parent, _name)					\
-+	{								\
-+		.shift		= (_shift),				\
-+		.name		= (_name),				\
-+		.parent		= (_parent),				\
-+	},
-+
-+#define GATE_BANK(_name, _id, _reg, _gates)				\
-+	static const struct tz1090_clk_gate_bank _name __initconst = {	\
-+		.id_base	= (_id),				\
-+		.reg_base	= (_reg),				\
-+		.gates		= (const struct tz1090_clk_gate[]) {	\
-+			_gates						\
-+			{ .name	= NULL }				\
-+		},							\
-+	}
-+
-+void tz1090_clk_register_gate_bank(struct tz1090_clk_provider *p,
-+				   const struct tz1090_clk_gate_bank *bank);
-+
- #endif
+2. Embed an instance of that structure in v4l2_subdev_fh.
+
+3. Modify the subdev pad ops to take a configuration store pointer instead of 
+a file handle pointer.
+
+The userspace API implementation (v4l2-subdev.c) would then pass &fh->store to 
+the pad operations instead of fh.
+
+Bridge drivers that need to implement TRY_FMT on top of pad ops would create a 
+temporary store (or temporary stores when multiple subsdevs are involved), 
+call the pad ops with a pointer to the temporary store to propagate TRY 
+formats, destroy the store(s) and return the resulting format.
+
+Is that clear ?
+
 -- 
-2.0.4
+Regards,
+
+Laurent Pinchart
 
