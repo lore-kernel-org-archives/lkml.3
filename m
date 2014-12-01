@@ -1,76 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015AbaLAKiF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 05:38:05 -0500
-Received: from webbox1416.server-home.net ([77.236.96.61]:35532 "EHLO
-	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752691AbaLAKiD (ORCPT
+	id S1753123AbaLAKis (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 05:38:48 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:41699 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752758AbaLAKiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 05:38:03 -0500
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: Re: [PATCH v3 05/11] memory: add Atmel EBI (External Bus Interface) driver
-Date: Mon, 01 Dec 2014 11:40:03 +0100
-Message-ID: <19172687.eVxczUuuhC@ws-stein>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1417429647-3419-6-git-send-email-boris.brezillon@free-electrons.com>
-References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com> <1417429647-3419-6-git-send-email-boris.brezillon@free-electrons.com>
+	Mon, 1 Dec 2014 05:38:46 -0500
+Date: Mon, 1 Dec 2014 10:38:32 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Tim Sander <tim@krieglstein.org>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Daniel Drake <drake@endlessm.com>,
+        Dmitry Pervushin <dpervushin@gmail.com>
+Subject: Re: [PATCH 3.18-rc3 v9 5/5] arm: smp: Handle ipi_cpu_backtrace()
+ using FIQ (if available)
+Message-ID: <20141201103832.GX3836@n2100.arm.linux.org.uk>
+References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
+ <13373554.4deCsZOMXS@dabox>
+ <20141128100828.GQ3836@n2100.arm.linux.org.uk>
+ <1633306.naE1qIcAOt@dabox>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1633306.naE1qIcAOt@dabox>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
-
-On Monday 01 December 2014 11:27:21, Boris Brezillon wrote:
-> The EBI (External Bus Interface) is used to access external peripherals
-> (NOR, SRAM, NAND, and other specific devices like ethernet controllers).
-> Each device is assigned a CS line and an address range and can have its
-> own configuration (timings, access mode, bus width, ...).
-> This driver provides a generic DT binding to configure a device according
-> to its requirements.
-> For specific device controllers (like the NAND one) the SMC timings
-> should be configured by the controller driver through the matrix and
-> smc syscon regmaps.
+On Mon, Dec 01, 2014 at 11:32:00AM +0100, Tim Sander wrote:
+> Hi Russel, Daniel
 > 
-> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> ---
->  drivers/memory/Kconfig     |  11 +
->  drivers/memory/Makefile    |   1 +
->  drivers/memory/atmel-ebi.c | 627 +++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 639 insertions(+)
->  create mode 100644 drivers/memory/atmel-ebi.c
+> Am Freitag, 28. November 2014, 10:08:28 schrieb Russell King - ARM Linux:
+> > The two things are mutually exclusive.  You can either have FIQ being used
+> > for debug purposes, where we decode the FIQ reason and call some function
+> > (which means that we will only service one FIQ at a time) or you can use
+> > it in exclusive mode (provided by fiq.c) where your handler has sole usage
+> > of the vector, and benefits from fast and immediate servicing of the event.
+>
+> As far as i am aware, die CONFIG_FIQ symbol is not pulled by all ARM 
+> platforms. Since there are ARM platforms which don't use this symbol but the 
+> hardware is fully capable of handling FIQ requests i would expect, that adding
+> CONFIG_FIQ to a plattform, that this platform honors the set_fiq_handler 
+> functionality. 
 
-While I like this feature, shouldn't this driver go to drivers/bus/ like the imx-weim driver? The latter one does the same, so I wonder why one is in drivers/bus while the other is in drivers/memory.
+That whole paragraph doesn't make much sense to me.
 
-Best regards,
-Alexander
+Look, in my mind it is very simple.  If you are using CONFIG_FIQ on a
+SMP platform, your life will be very difficult.  The FIQ code enabled
+by that symbol is not designed to be used on SMP systems, *period*.
+
+If you decide to enable CONFIG_FIQ, and you use that code on a SMP
+platform, I'm going to say right now so it's totally clear: if you
+encounter a problem, I don't want to know about it.  The code is not
+designed for use on that situation.
+
+Therefore, as far as I'm concerned, the two facilities are mututally
+exclusive.
+
+I had thought about whether the IPI FIQ should be disabled when a
+replacement FIQ handler is installed, I deem it not to be a use case
+that the mainline kernel needs to be concerned about.
+
+> Yes, but if the FIQ handler is also used for IPI, set_fiq_handler gets IPI 
+> interrupts (with the patch starting this thread)? So i think that the patch 
+> needs to look like:
+> --- a/arch/arm/kernel/traps.c
+> +++ b/arch/arm/kernel/traps.c
+> @@ -483,6 +483,9 @@ asmlinkage void __exception_irq_entry 
+> handle_fiq_as_nmi(struct pt_regs *regs)
+> +#ifndef CONFIG_FIQ
+>  #ifdef CONFIG_ARM_GIC
+>         gic_handle_fiq_ipi();
+>  #endif
+> +#endif
+
+No.  With a single zImage kernel, you could very well have SMP and FIQ
+both enabled, but have a non-SMP platform using FIQ, but also support
+SMP platforms as well.  Your change prevents that happening.
+
 -- 
-Dipl.-Inf. Alexander Stein
-
-SYS TEC electronic GmbH
-Am Windrad 2
-08468 Heinsdorfergrund
-Tel.: 03765 38600-1156
-Fax: 03765 38600-4100
-Email: alexander.stein@systec-electronic.com
-Website: www.systec-electronic.com
- 
-Managing Director: Dipl.-Phys. Siegmar Schmidt
-Commercial registry: Amtsgericht Chemnitz, HRB 28082
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
