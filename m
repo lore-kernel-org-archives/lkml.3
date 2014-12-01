@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932405AbaLAQHS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 11:07:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52368 "EHLO mx1.redhat.com"
+	id S932429AbaLAQHX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 11:07:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52394 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932368AbaLAQHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 11:07:12 -0500
-Date: Mon, 1 Dec 2014 18:06:45 +0200
+	id S932368AbaLAQHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 11:07:20 -0500
+Date: Mon, 1 Dec 2014 18:06:34 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Amit Shah <amit.shah@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
-Subject: [PATCH v8 47/50] virtio_console: virtio 1.0 support
-Message-ID: <1417449619-24896-48-git-send-email-mst@redhat.com>
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: [PATCH v8 45/50] vhost/scsi: partial virtio 1.0 support
+Message-ID: <1417449619-24896-46-git-send-email-mst@redhat.com>
 References: <1417449619-24896-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -28,131 +25,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pretty straight-forward, just use accessors for all fields.
+Include all endian conversions as required by virtio 1.0.
+Don't set virtio 1.0 yet, since that requires ANY_LAYOUT
+which we don't yet support.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- include/uapi/linux/virtio_console.h |  7 ++++---
- drivers/char/virtio_console.c       | 29 +++++++++++++++++------------
- 2 files changed, 21 insertions(+), 15 deletions(-)
+ drivers/vhost/scsi.c | 22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
 
-diff --git a/include/uapi/linux/virtio_console.h b/include/uapi/linux/virtio_console.h
-index ba260dd..b7fb108 100644
---- a/include/uapi/linux/virtio_console.h
-+++ b/include/uapi/linux/virtio_console.h
-@@ -32,6 +32,7 @@
- #ifndef _UAPI_LINUX_VIRTIO_CONSOLE_H
- #define _UAPI_LINUX_VIRTIO_CONSOLE_H
- #include <linux/types.h>
-+#include <linux/virtio_types.h>
- #include <linux/virtio_ids.h>
- #include <linux/virtio_config.h>
- 
-@@ -58,9 +59,9 @@ struct virtio_console_config {
-  * particular port.
-  */
- struct virtio_console_control {
--	__u32 id;		/* Port number */
--	__u16 event;		/* The kind of control event (see below) */
--	__u16 value;		/* Extra information for the key */
-+	__virtio32 id;		/* Port number */
-+	__virtio16 event;	/* The kind of control event (see below) */
-+	__virtio16 value;	/* Extra information for the key */
+diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
+index a17f118..01c01cb 100644
+--- a/drivers/vhost/scsi.c
++++ b/drivers/vhost/scsi.c
+@@ -168,6 +168,7 @@ enum {
+ 	VHOST_SCSI_VQ_IO = 2,
  };
  
- /* Some events for control messages */
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index 8d00aa7..775c898 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -566,9 +566,9 @@ static ssize_t __send_control_msg(struct ports_device *portdev, u32 port_id,
- 	if (!use_multiport(portdev))
- 		return 0;
- 
--	cpkt.id = port_id;
--	cpkt.event = event;
--	cpkt.value = value;
-+	cpkt.id = cpu_to_virtio32(portdev->vdev, port_id);
-+	cpkt.event = cpu_to_virtio16(portdev->vdev, event);
-+	cpkt.value = cpu_to_virtio16(portdev->vdev, value);
- 
- 	vq = portdev->c_ovq;
- 
-@@ -1602,7 +1602,8 @@ static void unplug_port(struct port *port)
- }
- 
- /* Any private messages that the Host and Guest want to share */
--static void handle_control_message(struct ports_device *portdev,
-+static void handle_control_message(struct virtio_device *vdev,
-+				   struct ports_device *portdev,
- 				   struct port_buffer *buf)
- {
- 	struct virtio_console_control *cpkt;
-@@ -1612,15 +1613,16 @@ static void handle_control_message(struct ports_device *portdev,
- 
- 	cpkt = (struct virtio_console_control *)(buf->buf + buf->offset);
- 
--	port = find_port_by_id(portdev, cpkt->id);
--	if (!port && cpkt->event != VIRTIO_CONSOLE_PORT_ADD) {
-+	port = find_port_by_id(portdev, virtio32_to_cpu(vdev, cpkt->id));
-+	if (!port &&
-+	    cpkt->event != cpu_to_virtio16(vdev, VIRTIO_CONSOLE_PORT_ADD)) {
- 		/* No valid header at start of buffer.  Drop it. */
- 		dev_dbg(&portdev->vdev->dev,
- 			"Invalid index %u in control packet\n", cpkt->id);
- 		return;
++/* Note: can't set VIRTIO_F_VERSION_1 yet, since that implies ANY_LAYOUT. */
+ enum {
+ 	VHOST_SCSI_FEATURES = VHOST_FEATURES | (1ULL << VIRTIO_SCSI_F_HOTPLUG) |
+ 					       (1ULL << VIRTIO_SCSI_F_T10_PI)
+@@ -577,8 +578,8 @@ tcm_vhost_allocate_evt(struct vhost_scsi *vs,
+ 		return NULL;
  	}
  
--	switch (cpkt->event) {
-+	switch (virtio16_to_cpu(vdev, cpkt->event)) {
- 	case VIRTIO_CONSOLE_PORT_ADD:
- 		if (port) {
- 			dev_dbg(&portdev->vdev->dev,
-@@ -1628,13 +1630,15 @@ static void handle_control_message(struct ports_device *portdev,
- 			send_control_msg(port, VIRTIO_CONSOLE_PORT_READY, 1);
- 			break;
- 		}
--		if (cpkt->id >= portdev->config.max_nr_ports) {
-+		if (virtio32_to_cpu(vdev, cpkt->id) >=
-+		    portdev->config.max_nr_ports) {
- 			dev_warn(&portdev->vdev->dev,
--				"Request for adding port with out-of-bound id %u, max. supported id: %u\n",
-+				"Request for adding port with "
-+				"out-of-bound id %u, max. supported id: %u\n",
- 				cpkt->id, portdev->config.max_nr_ports - 1);
- 			break;
- 		}
--		add_port(portdev, cpkt->id);
-+		add_port(portdev, virtio32_to_cpu(vdev, cpkt->id));
- 		break;
- 	case VIRTIO_CONSOLE_PORT_REMOVE:
- 		unplug_port(port);
-@@ -1670,7 +1674,7 @@ static void handle_control_message(struct ports_device *portdev,
- 		break;
+-	evt->event.event = event;
+-	evt->event.reason = reason;
++	evt->event.event = cpu_to_vhost32(vq, event);
++	evt->event.reason = cpu_to_vhost32(vq, reason);
+ 	vs->vs_events_nr++;
+ 
+ 	return evt;
+@@ -636,7 +637,7 @@ again:
  	}
- 	case VIRTIO_CONSOLE_PORT_OPEN:
--		port->host_connected = cpkt->value;
-+		port->host_connected = virtio16_to_cpu(vdev, cpkt->value);
- 		wake_up_interruptible(&port->waitqueue);
- 		/*
- 		 * If the host port got closed and the host had any
-@@ -1752,7 +1756,7 @@ static void control_work_handler(struct work_struct *work)
- 		buf->len = len;
- 		buf->offset = 0;
  
--		handle_control_message(portdev, buf);
-+		handle_control_message(vq->vdev, portdev, buf);
+ 	if (vs->vs_events_missed) {
+-		event->event |= VIRTIO_SCSI_T_EVENTS_MISSED;
++		event->event |= cpu_to_vhost32(vq, VIRTIO_SCSI_T_EVENTS_MISSED);
+ 		vs->vs_events_missed = false;
+ 	}
  
- 		spin_lock(&portdev->c_ivq_lock);
- 		if (add_inbuf(portdev->c_ivq, buf) < 0) {
-@@ -2126,6 +2130,7 @@ static struct virtio_device_id id_table[] = {
- static unsigned int features[] = {
- 	VIRTIO_CONSOLE_F_SIZE,
- 	VIRTIO_CONSOLE_F_MULTIPORT,
-+	VIRTIO_F_VERSION_1,
- };
+@@ -695,12 +696,13 @@ static void vhost_scsi_complete_cmd_work(struct vhost_work *work)
+ 			cmd, se_cmd->residual_count, se_cmd->scsi_status);
  
- static struct virtio_device_id rproc_serial_id_table[] = {
+ 		memset(&v_rsp, 0, sizeof(v_rsp));
+-		v_rsp.resid = se_cmd->residual_count;
++		v_rsp.resid = cpu_to_vhost32(cmd->tvc_vq, se_cmd->residual_count);
+ 		/* TODO is status_qualifier field needed? */
+ 		v_rsp.status = se_cmd->scsi_status;
+-		v_rsp.sense_len = se_cmd->scsi_sense_length;
++		v_rsp.sense_len = cpu_to_vhost32(cmd->tvc_vq,
++						 se_cmd->scsi_sense_length);
+ 		memcpy(v_rsp.sense, cmd->tvc_sense_buf,
+-		       v_rsp.sense_len);
++		       se_cmd->scsi_sense_length);
+ 		ret = copy_to_user(cmd->tvc_resp, &v_rsp, sizeof(v_rsp));
+ 		if (likely(ret == 0)) {
+ 			struct vhost_scsi_virtqueue *q;
+@@ -1095,14 +1097,14 @@ vhost_scsi_handle_vq(struct vhost_scsi *vs, struct vhost_virtqueue *vq)
+ 						", but wrong data_direction\n");
+ 					goto err_cmd;
+ 				}
+-				prot_bytes = v_req_pi.pi_bytesout;
++				prot_bytes = vhost32_to_cpu(vq, v_req_pi.pi_bytesout);
+ 			} else if (v_req_pi.pi_bytesin) {
+ 				if (data_direction != DMA_FROM_DEVICE) {
+ 					vq_err(vq, "Received non zero di_pi_niov"
+ 						", but wrong data_direction\n");
+ 					goto err_cmd;
+ 				}
+-				prot_bytes = v_req_pi.pi_bytesin;
++				prot_bytes = vhost32_to_cpu(vq, v_req_pi.pi_bytesin);
+ 			}
+ 			if (prot_bytes) {
+ 				int tmp = 0;
+@@ -1117,12 +1119,12 @@ vhost_scsi_handle_vq(struct vhost_scsi *vs, struct vhost_virtqueue *vq)
+ 				data_first += prot_niov;
+ 				data_niov = data_num - prot_niov;
+ 			}
+-			tag = v_req_pi.tag;
++			tag = vhost64_to_cpu(vq, v_req_pi.tag);
+ 			task_attr = v_req_pi.task_attr;
+ 			cdb = &v_req_pi.cdb[0];
+ 			lun = ((v_req_pi.lun[2] << 8) | v_req_pi.lun[3]) & 0x3FFF;
+ 		} else {
+-			tag = v_req.tag;
++			tag = vhost64_to_cpu(vq, v_req.tag);
+ 			task_attr = v_req.task_attr;
+ 			cdb = &v_req.cdb[0];
+ 			lun = ((v_req.lun[2] << 8) | v_req.lun[3]) & 0x3FFF;
 -- 
 MST
 
