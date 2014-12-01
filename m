@@ -1,78 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881AbaLAKRN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 05:17:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48824 "EHLO mx1.redhat.com"
+	id S1753075AbaLAKRS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 05:17:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57759 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752596AbaLAKRM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 05:17:12 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: jmorris@namei.org
-cc: dhowells@redhat.com, linux-nfs@vger.kernel.org,
-        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Keyrings (& NFS) fixes
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <12125.1417429021.1@warthog.procyon.org.uk>
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 01 Dec 2014 10:17:01 +0000
-Message-ID: <12126.1417429021@warthog.procyon.org.uk>
+	id S1752899AbaLAKRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 05:17:16 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: mst@redhat.com, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        davem@davemloft.net
+Cc: pagupta@redhat.com, Jason Wang <jasowang@redhat.com>
+Subject: [PATCH RFC v4 net-next 0/5] virtio_net: enabling tx interrupts
+Date: Mon,  1 Dec 2014 18:17:03 +0800
+Message-Id: <1417429028-11971-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+Hello:
 
-Can you pass these patches on to Linus please?
+We used to orphan packets before transmission for virtio-net. This breaks
+socket accounting and can lead serveral functions won't work, e.g:
 
-The first one fixes the handling of maximum buffer size for key descriptions,
-fixing the size at 4095 + NUL char rather than whatever PAGE_SIZE happens to
-be and permits you to read back the full description without it getting
-clipped because some extra information got prepended.
+- Byte Queue Limit depends on tx completion nofication to work.
+- Packet Generator depends on tx completion nofication for the last
+  transmitted packet to complete.
+- TCP Small Queue depends on proper accounting of sk_wmem_alloc to work.
 
-The second and third fix a bug in NFS idmapper handling whereby a key
-representing a mapping between an id and a name expires and causing
-EKEYEXPIRED to be seen internally in NFS (which prevents the mapping from
-happening) rather than re-looking up the mapping.
+This series tries to solve the issue by enabling tx interrupts. To minize
+the performance impacts of this, several optimizations were used:
 
-Thanks,
-David
----
-The following changes since commit a6aacbde406eeb6f8fc218b2c6172825f5e73fcf:
+- In guest side, virtqueue_enable_cb_delayed() was used to delay the tx
+  interrupt untile 3/4 pending packets were sent.
+- In host side, interrupt coalescing were used to reduce tx interrupts.
 
-  Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/zohar/linux-integrity into next (2014-11-19 21:36:07 +1100)
+Performance test results[1] (tx-frames 16 tx-usecs 16) shows:
 
-are available in the git repository at:
+- For guest receiving. No obvious regression on throughput were
+  noticed. More cpu utilization were noticed in few cases.
+- For guest transmission. Very huge improvement on througput for small
+  packet transmission were noticed. This is expected since TSQ and other
+  optimization for small packet transmission work after tx interrupt. But
+  will use more cpu for large packets.
+- For TCP_RR, regression (10% on transaction rate and cpu utilization) were
+  found. Tx interrupt won't help but cause overhead in this case. Using
+  more aggressive coalescing parameters may help to reduce the regression.
 
+Changes from RFC V3:
+- Don't free tx packets in ndo_start_xmit()
+- Add interrupt coalescing support for virtio-net
+Changes from RFC v2:
+- clean up code, address issues raised by Jason
+Changes from RFC v1:
+- address comments by Jason Wang, use delayed cb everywhere
+- rebased Jason's patch on top of mine and include it (with some tweaks)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-fixes-20141121
+Please reivew. Comments were more than welcomed.
 
-for you to fetch changes up to 15761d91a57e3ff8032e31c5d82bf7836f6a1b20:
+[1] Performance Test result:
 
-  KEYS: request_key() should reget expired keys rather than give EKEYEXPIRED (2014-11-20 13:38:17 +0000)
+Environment:
+- Two Intel(R) Xeon(R) CPU E5620 @ 2.40GHz machines connected back to back
+  with 82599ES cards.
+- Both host and guest were net-next.git plus the patch
+- Coalescing parameters for the card:
+  Adaptive RX: off  TX: off
+  rx-usecs: 1
+  rx-frames: 0
+  tx-usecs: 0
+  tx-frames: 0
+- Vhost_net was enabled and zerocopy was disabled
+- Tests was done by netperf-2.6
+- Guest has 2 vcpus with single queue virtio-net
 
-----------------------------------------------------------------
-(from the branch description for keys-fixes local branch)
+Results:
+- Numbers of square brackets are whose significance is grater than 95%
 
-Keyrings fixes
-Keyrings fixes
+Guest RX:
 
-----------------------------------------------------------------
-David Howells (3):
-      KEYS: Fix the size of the key description passed to/from userspace
-      KEYS: Simplify KEYRING_SEARCH_{NO,DO}_STATE_CHECK flags
-      KEYS: request_key() should reget expired keys rather than give EKEYEXPIRED
+size/sessions/+throughput/+cpu/+per_cpu_throughput/
+64/1/+2.0326/[+6.2807%]/-3.9970%/
+64/2/-0.2104%/[+3.2012%]/[-3.3058%]/
+64/4/+1.5956%/+2.2451%/-0.6353%/
+64/8/+1.1732%/+3.5123%/-2.2598%/
+256/1/+3.7619%/[+5.8117%]/-1.9372%/
+256/2/-0.0661%/[+3.2511%]/-3.2127%/
+256/4/+1.1435%/[-8.1842%]/[+10.1591%]/
+256/8/[+2.2447%]/[+6.2044%]/[-3.7283%]/
+1024/1/+9.1479%/[+12.0997%]/[-2.6332%]/
+1024/2/[-17.3341%]/[+0.0000%]/[-17.3341%]/
+1024/4/[-0.6284%]/-1.0376%/+0.4135%/
+1024/8/+1.1444%/-1.6069%/+2.7961%/
+4096/1/+0.0401%/-0.5993%/+0.6433%/
+4096/2/[-0.5894%]/-2.2071%/+1.6542%/
+4096/4/[-0.5560%]/-1.4969%/+0.9553%/
+4096/8/-0.3362%/+2.7086%/-2.9645%/
+16384/1/-0.0285%/+0.7247%/-0.7478%/
+16384/2/-0.5286%/+0.3287%/-0.8545%/
+16384/4/-0.3297%/-2.0543%/+1.7608%/
+16384/8/+1.0932%/+4.0253%/-2.8187%/
+65535/1/+0.0003%/-0.1502%/+0.1508%/
+65535/2/[-0.6065%]/+0.2309%/-0.8355%/
+65535/4/[-0.6861%]/[+3.9451%]/[-4.4554%]/
+65535/8/+1.8359%/+3.1590%/-1.2825%/
 
- security/keys/internal.h         |  1 +
- security/keys/keyctl.c           | 56 +++++++++++++++++++---------------------
- security/keys/keyring.c          | 10 ++++---
- security/keys/request_key.c      |  2 ++
- security/keys/request_key_auth.c |  1 +
- 5 files changed, 36 insertions(+), 34 deletions(-)
+Guest RX:
+size/sessions/+throughput/+cpu/+per_cpu_throughput/
+64/1/[+65.0961%]/[-8.6807%]/[+80.7900%]/
+64/2/[+6.0288%]/[-2.2823%]/[+8.5052%]/
+64/4/[+5.9038%]/[-2.1834%]/[+8.2677%]/
+64/8/[+5.4154%]/[-2.1804%]/[+7.7651%]/
+256/1/[+184.6462%]/[+4.8906%]/[+171.3742%]/
+256/2/[+46.0731%]/[-8.9626%]/[+60.4539%]/
+256/4/[+45.8547%]/[-8.3027%]/[+59.0612%]/
+256/8/[+45.3486%]/[-8.4024%]/[+58.6817%]/
+1024/1/[+432.5372%]/[+3.9566%]/[+412.2689%]/
+1024/2/[-1.4207%]/[-23.6426%]/[+29.1025%]/
+1024/4/-0.1003%/[-13.6416%]/[+15.6804%]/
+1024/8/[+0.2200%]/[+2.0634%]/[-1.8061%]/
+4096/1/[+18.4835%]/[-46.1508%]/[+120.0283%]/
+4096/2/+0.1770%/[-26.2780%]/[+35.8848%]/
+4096/4/-0.1012%/-0.7353%/+0.6388%/
+4096/8/-0.6091%/+1.4159%/-1.9968%/
+16384/1/-0.0424%/[+11.9373%]/[-10.7021%]/
+16384/2/+0.0482%/+2.4685%/-2.3620%/
+16384/4/+0.0840%/[+5.3587%]/[-5.0064%]/
+16384/8/+0.0048%/[+5.0176%]/[-4.7733%]/
+65535/1/-0.0095%/[+10.9408%]/[-9.8705%]/
+65535/2/+0.1515%/[+8.1709%]/[-7.4137%]/
+65535/4/+0.0203%/[+5.4316%]/[-5.1325%]/
+65535/8/+0.1427%/[+6.2753%]/[-5.7705%]/
+
+size/sessions/+trans.rate/+cpu/+per_cpu_trans.rate/
+64/1/+0.2346%/[+11.5080%]/[-10.1099%]/
+64/25/[-10.7893%]/-0.5791%/[-10.2697%]/
+64/50/[-11.5997%]/-0.3429%/[-11.2956%]/
+256/1/+0.7219%/[+13.2374%]/[-11.0524%]/
+256/25/-6.9567%/+0.8887%/[-7.7763%]/
+256/50/[-4.8814%]/-0.0338%/[-4.8492%]/
+4096/1/-1.6061%/-0.7561%/-0.8565%/
+4096/25/[+2.2120%]/[+1.0839%]/+1.1161%/
+4096/50/[+5.6180%]/[+3.2116%]/[+2.3315%]/
+
+Jason Wang (4):
+  virtio_net: enable tx interrupt
+  virtio-net: optimize free_old_xmit_skbs stats
+  virtio-net: add basic interrupt coalescing support
+  vhost_net: interrupt coalescing support
+
+Michael S. Tsirkin (1):
+  virtio_net: bql
+
+ drivers/net/virtio_net.c        | 211 ++++++++++++++++++++++++++++++++--------
+ drivers/vhost/net.c             | 200 +++++++++++++++++++++++++++++++++++--
+ include/uapi/linux/vhost.h      |  12 +++
+ include/uapi/linux/virtio_net.h |  12 +++
+ 4 files changed, 383 insertions(+), 52 deletions(-)
+
+-- 
+1.8.3.1
 
