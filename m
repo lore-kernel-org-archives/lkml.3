@@ -1,106 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792AbaLAI7F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 03:59:05 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:49643 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752650AbaLAI7C (ORCPT
+	id S1752813AbaLAI75 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 03:59:57 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:12262 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752650AbaLAI74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 03:59:02 -0500
-Date: Mon, 1 Dec 2014 09:58:58 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        Huang Shijie <shijie8@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
-Subject: Re: [PATCH v6 0/3] mtd: nand: gpmi: add proper raw access support
-Message-ID: <20141201095858.75ac3889@bbrezillon>
-In-Reply-To: <20141201084709.GI29070@brian-ubuntu>
-References: <1417371030-24015-1-git-send-email-boris.brezillon@free-electrons.com>
-	<20141201084709.GI29070@brian-ubuntu>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 1 Dec 2014 03:59:56 -0500
+Message-ID: <547C2DFE.7010005@huawei.com>
+Date: Mon, 1 Dec 2014 16:59:42 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+CC: <masami.hiramatsu.pt@hitachi.com>, <linux@arm.linux.org.uk>,
+        <will.deacon@arm.com>, <taras.kondratiuk@linaro.org>,
+        <ben.dooks@codethink.co.uk>, <cl@linux.com>, <rabin@rab.in>,
+        <davem@davemloft.net>, <lizefan@huawei.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v10 2/2] ARM: kprobes: enable OPTPROBES for ARM 32
+References: <1416551751-50846-1-git-send-email-wangnan0@huawei.com>	 <1416551751-50846-3-git-send-email-wangnan0@huawei.com> <1417099007.2041.6.camel@linaro.org> <547BC490.9020806@huawei.com>
+In-Reply-To: <547BC490.9020806@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A02020A.547C2E0B.001D,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 5eab2da87ec146b6f25dc31e7f8256c7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Brian,
 
-On Mon, 1 Dec 2014 00:47:09 -0800
-Brian Norris <computersforpeace@gmail.com> wrote:
-
-> On Sun, Nov 30, 2014 at 07:10:27PM +0100, Boris Brezillon wrote:
-> > Hello,
-> > 
-> > This series provides an implementation for raw accesses taking care of
-> > hidding the specific layout used by the GPMI controller.
-> > 
-> > Best Regards,
-> > 
-> > Boris
-> > 
-> > Changes since v5:
-> >  - rename gpmi_move_bits into gpmi_copy_bits
-> > 
-> > Changes since v4:
-> >  - fixed a few corner cases in gpmi_move_bits (tested it with:
-> >    https://github.com/bbrezillon/gpmi-move-bits-test/blob/master/gpmi-move-bits-test.c)
-> >  - add documentation and comments for the new gpmi functions
-> > 
-> > Changes since v3:
-> >  - add comments to the gpmi_move_bits function
-> >  - extend raw read/write documentation
-> >  - move last part of the raw_page_read function into a conditional block
-> > 
-> > Changes since v2:
-> >  - fixed a bug in gpmi_move_bits
-> >  - add a raw_buffer field to be used when using raw access methods
-> >    (experienced memory corruptions when directly using page_buffer_virt
-> >    buffer)
-> >  - add raw OOB access functions
+>>> +/*
+>>> + * NOTE: the first sub and add instruction will be modified according
+>>> + * to the stack cost of the instruction.
+>>> + */
+>>> +asm (
+>>> +			".global optprobe_template_entry\n"
+>>> +			"optprobe_template_entry:\n"
+>>> +			"	sub	sp, sp, #0xff\n"
+>>> +			"	stmia	sp, {r0 - r14} \n"
+>>
+>> AEABI requires that the stack be aligned to a multiple of 8 bytes at
+>> function call boundaries, however kprobes can be inserted in the middle
+>> of functions where such alignment isn't guaranteed to be maintained.
+>> Therefore, this trampoline code needs to make adjust SP if necessary to
+>> ensure that alignment. See svc_entry in arch/arm/kernel/entry-armv.S for
+>> an example of how this is done; though note, we can't use that exact
+>> method because we can't change the flags value without saving them
+>> first. (Exception handlers don't have to worry about that because the
+>> flags are saved in spsr).
+>>
 > 
-> Applied the series. Thanks!
+> So I think we have to push a flag into stack for it.
 > 
-> Out of curiosity, what tests does gpmi-nand.c now pass/fail?
 
-The oobtest is still failing. I started to debug it, but didn't have
-enough time to make it work.
+By more thinking I found another method on it. Please see my version 11 patch:
 
-The nandbiterrs test is working, though I didn't manage to make the
-incremental test fail (writing the same pattern 10000 times without
-erasing the block between each write does not generate any bit flips) on
-my SLC NAND: MT29F2G08ABAEAH4.
-Can someone with another SLC NAND chip try it ?
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-December/307562.html
 
-> 
-> Also, is it time to yank / fixup some of these comments from
-> gpmi-nand.c?
 
-I was asking myself the same question...
-
-> 
->  ...
->  * FIXME: The following paragraph is incorrect, now that there exist
->  * ecc.read_oob_raw and ecc.write_oob_raw functions.
->  *
->  * Since MTD assumes the OOB is not covered by ECC, there is no pair of
->  * ECC-based/raw functions for reading or or writing the OOB. The fact that the
->  * caller wants an ECC-based or raw view of the page is not propagated down to
->  * this driver.
->  */
-
-I guess we can remove them.
-Huang can you confirm that the raw access functions introduced in this
-series are covering what's described here ?
-
-Regards,
-
-Boris
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
