@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676AbaLAH2V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 02:28:21 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:59934 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471AbaLAH2U (ORCPT
+	id S1752662AbaLAHeM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 02:34:12 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:6966 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752483AbaLAHeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 02:28:20 -0500
-Date: Sun, 30 Nov 2014 23:28:11 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <dave@stgolabs.net>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: unmapped page migration avoid unmap+remap overhead
-In-Reply-To: <547C0E4E.4020605@jp.fujitsu.com>
-Message-ID: <alpine.LSU.2.11.1411302302280.6613@eggly.anvils>
-References: <alpine.LSU.2.11.1411302046420.5335@eggly.anvils> <547C0E4E.4020605@jp.fujitsu.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Mon, 1 Dec 2014 02:34:10 -0500
+X-IronPort-AV: E=Sophos;i="5.07,492,1413270000"; 
+   d="scan'208";a="51929533"
+Message-ID: <547C19ED.10201@broadcom.com>
+Date: Mon, 1 Dec 2014 08:34:05 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Felix Fietkau" <nbd@openwrt.org>,
+        Ben Greear <greearb@candelatech.com>
+Subject: Re: linux-next: manual merge of the driver-core tree with the net-next
+ tree
+References: <20141201181933.6dfaad66@canb.auug.org.au>
+In-Reply-To: <20141201181933.6dfaad66@canb.auug.org.au>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Dec 2014, Yasuaki Ishimatsu wrote:
-> (2014/12/01 13:52), Hugh Dickins wrote:
-> > @@ -798,7 +798,7 @@ static int __unmap_and_move(struct page
-> >   				int force, enum migrate_mode mode)
-> >   {
-> >   	int rc = -EAGAIN;
-> > -	int remap_swapcache = 1;
-> > +	int page_was_mapped = 0;
-> >   	struct anon_vma *anon_vma = NULL;
-> > 
-> >   	if (!trylock_page(page)) {
-> > @@ -870,7 +870,6 @@ static int __unmap_and_move(struct page
-> >   			 * migrated but are not remapped when migration
-> >   			 * completes
-> >   			 */
-> > -			remap_swapcache = 0;
-> >   		} else {
-> >   			goto out_unlock;
-> >   		}
-> > @@ -910,13 +909,17 @@ static int __unmap_and_move(struct page
-> >   	}
-> > 
-> >   	/* Establish migration ptes or remove ptes */
+On 01-12-14 08:19, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> > -	try_to_unmap(page, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
-> > +	if (page_mapped(page)) {
-> > +		try_to_unmap(page,
-> > +			TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
-> > +		page_was_mapped = 1;
-> > +	}
+> Today's linux-next merge of the driver-core tree got a conflict in
+> drivers/net/wireless/ath/ath9k/debug.c between commits 70e535ed0029
+> ("ath9k: clean up debugfs print of reset causes"), 7b8aaead958e
+> ("ath9k: restart hardware after noise floor calibration failure") and
+> 325e18817668 ("ath9k: fix misc debugfs when not using chan context")
+> from the net-next tree and commit 631bee257bd5 ("ath: use seq_file api
+> for ath9k debugfs files") from the driver-core tree.
 > 
-> Is there no possibility that page is swap cache? If page is swap cache,
-> this code changes behavior of move_to_new_page(). Is it O.K.?
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+> 
+> Greg, I am not sure why those 2 commits are even in your tree.  Do they
+> depend on something else in your tree?
 
-Certainly the page may be swap cache, but I don't see how the behavior
-of move_to_new_page() is changed.
+They do. The three commits below are related:
 
-Do you mean how I removed that "remap_swapcache = 0;" line above, so that
-it now looks as if move_to_new_page() may be called with page_was_mapped
-1, where before it was called with remap_swapcache 0?
+d32394f ath: ath9k: use debugfs_create_devm_seqfile() helper for
+seq_file entrie
+631bee2 ath: use seq_file api for ath9k debugfs files
+98210b7 debugfs: add helper function to create device related seq_file
 
-No: although it cannot be seen from the patch context, that reset
-of remap_swapcache was in a block where we have a PageAnon page, but
-page_get_anon_vma() failed to "get" the anon_vma for it: that means
-that the page was not mapped, so page_was_mapped will be 0 too.
+The ath patches were made to provide example of using the new helper
+function and get some idea about code savings. Greg and John discussed
+who would take them. I noticed other ath changes in net-next so I kinda
+expected this email ;-)
 
-(I was going to add that the page might be faulted back in again by
-the time we reach the page_mapped() test above try_to_unmap(), and
-that yes I'd would be making a change in that case, but it does not
-matter at all to diverge in racy cases.  But actually even that cannot
-happen, since faulting back swap needs page lock which we hold here.)
-
-There is an argument that move_to_new_page() behavior should be
-changed in the case of swap cache: since try_to_unmap() then uses
-the ordinary swap instead of a migration entry, there's not much
-point in going to remove swap entries afterwards; though it would
-be good to make those pages present again.  But I didn't try to
-change that in this patch: this was just a lock contention thing.
-
-Hugh
+Regards,
+Arend
