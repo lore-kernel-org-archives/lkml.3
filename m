@@ -1,118 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932707AbaLAXzt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 18:55:49 -0500
-Received: from gate.crashing.org ([63.228.1.57]:44082 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753315AbaLAXzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 18:55:48 -0500
-Message-ID: <1417473519.7182.6.camel@kernel.crashing.org>
-Subject: Re: [PATCH 02/10] mm: Add p[te|md] protnone helpers for use by NUMA
- balancing
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 02 Dec 2014 09:38:39 +1100
-In-Reply-To: <1416578268-19597-3-git-send-email-mgorman@suse.de>
-References: <1416578268-19597-1-git-send-email-mgorman@suse.de>
-	 <1416578268-19597-3-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932716AbaLAX7J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 18:59:09 -0500
+Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:33492 "HELO
+	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751634AbaLAX7H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 18:59:07 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAEP_g=979u0baWXGmCxo61a-KYEUwkruqBNof_zQpsvJxRFqSA@mail.gmail.com>
+References: <1416525081-27779-1-git-send-email-joestringer@nicira.com>
+ <CAEP_g=-VEWi2Qo6gcJGr2+NXWEhkuMyu7BiAke6H=x+PTLcNcg@mail.gmail.com>
+ <CANr6G5zrA6NUtcyhX1cwEO1Hiq9jnarB36P6m5eoHUFqWWc26Q@mail.gmail.com>
+ <CANr6G5xRbG=UnJEdBEN_5ZRjNikCjuUseb1VbQmjjfb36jDP0g@mail.gmail.com>
+ <CA+mtBx-Q=Ebrx_8NVB5mWURj-oWB3gdNs5fSAL=Frr9sOmyvHw@mail.gmail.com> <CAEP_g=979u0baWXGmCxo61a-KYEUwkruqBNof_zQpsvJxRFqSA@mail.gmail.com>
+From: Joe Stringer <joestringer@nicira.com>
+Date: Mon, 1 Dec 2014 15:58:45 -0800
+Message-ID: <CANr6G5zK3MPYeco6QmfuxUpGR1Qx2PkkCexiTPQRETHnem_-nA@mail.gmail.com>
+Subject: Re: [PATCHv2 net] i40e: Implement ndo_gso_check()
+To: Jesse Gross <jesse@nicira.com>
+Cc: Tom Herbert <therbert@google.com>, netdev <netdev@vger.kernel.org>,
+        Shannon Nelson <shannon.nelson@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "linux.nics" <linux.nics@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-21 at 13:57 +0000, Mel Gorman wrote:
+On 1 December 2014 at 15:53, Jesse Gross <jesse@nicira.com> wrote:
+> On Mon, Dec 1, 2014 at 3:47 PM, Tom Herbert <therbert@google.com> wrote:
+>> On Mon, Dec 1, 2014 at 3:35 PM, Joe Stringer <joestringer@nicira.com> wrote:
+>>> On 21 November 2014 at 09:59, Joe Stringer <joestringer@nicira.com> wrote:
+>>>> On 20 November 2014 16:19, Jesse Gross <jesse@nicira.com> wrote:
+>>>>> I don't know if we need to have the check at all for IPIP though -
+>>>>> after all the driver doesn't expose support for it all (actually it
+>>>>> doesn't expose GRE either). This raises kind of an interesting
+>>>>> question about the checks though - it's pretty easy to add support to
+>>>>> the driver for a new GSO type (and I imagine that people will be
+>>>>> adding GRE soon) and forget to update the check.
+>>>>
+>>>> If the check is more conservative, then testing would show that it's
+>>>> not working and lead people to figure out why (and update the check).
+>>>
+>>> More concretely, one suggestion would be something like following at
+>>> the start of each gso_check():
+>>>
+>>> +       const int supported = SKB_GSO_TCPV4 | SKB_GSO_TCPV6 | SKB_GSO_FCOE |
+>>> +                             SKB_GSO_UDP | SKB_GSO_UDP_TUNNEL;
+>>> +
+>>> +       if (skb_shinfo(skb)->gso_type & ~supported)
+>>> +               return false;
+>>
+>> This should already be handled by net_gso_ok.
+>
+> My original point wasn't so much that this isn't handled at the moment
+> but that it's easy to add a supported GSO type but then forget to
+> update this check - i.e. if a driver already supports UDP_TUNNEL and
+> adds support for GRE with the same constraints. It seems not entirely
+> ideal that this function is acting as a blacklist rather than a
+> whitelist.
 
->  #ifdef CONFIG_NUMA_BALANCING
-> +/*
-> + * These work without NUMA balancing but the kernel does not care. See the
-> + * comment in include/asm-generic/pgtable.h
-> + */
-> +static inline int pte_protnone(pte_t pte)
-> +{
-> +	return (pte_val(pte) &
-> +		(_PAGE_PRESENT | _PAGE_USER)) == _PAGE_PRESENT;
-> +}
-
-I would add a comment clarifying that this only works for user pages,
-ie, this accessor will always return "true" for a kernel page on ppc.
-
-> +static inline int pmd_protnone(pmd_t pmd)
-> +{
-> +	return pte_protnone(pmd_pte(pmd));
-> +}
-> +
->  static inline int pte_present(pte_t pte)
->  {
->  	return pte_val(pte) & _PAGE_NUMA_MASK;
-> diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-> index 081d6f4..2e25780 100644
-> --- a/arch/x86/include/asm/pgtable.h
-> +++ b/arch/x86/include/asm/pgtable.h
-> @@ -502,6 +502,22 @@ static inline int pmd_present(pmd_t pmd)
->  				 _PAGE_NUMA);
->  }
->  
-> +#ifdef CONFIG_NUMA_BALANCING
-> +/*
-> + * These work without NUMA balancing but the kernel does not care. See the
-> + * comment in include/asm-generic/pgtable.h
-> + */
-> +static inline int pte_protnone(pte_t pte)
-> +{
-> +	return pte_flags(pte) & _PAGE_PROTNONE;
-> +}
-> +
-> +static inline int pmd_protnone(pmd_t pmd)
-> +{
-> +	return pmd_flags(pmd) & _PAGE_PROTNONE;
-> +}
-> +#endif /* CONFIG_NUMA_BALANCING */
-> +
->  static inline int pmd_none(pmd_t pmd)
->  {
->  	/* Only check low word on 32-bit platforms, since it might be
-> diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-> index 177d597..d497d08 100644
-> --- a/include/asm-generic/pgtable.h
-> +++ b/include/asm-generic/pgtable.h
-> @@ -688,6 +688,26 @@ static inline int pmd_trans_unstable(pmd_t *pmd)
->  #endif
->  }
->  
-> +#ifndef CONFIG_NUMA_BALANCING
-> +/*
-> + * Technically a PTE can be PROTNONE even when not doing NUMA balancing but
-> + * the only case the kernel cares is for NUMA balancing and is only ever set
-> + * when the VMA is accessible. For PROT_NONE VMAs, the PTEs are not marked
-> + * _PAGE_PROTNONE so by by default, implement the helper as "always no". It
-> + * is the responsibility of the caller to distinguish between PROT_NONE
-> + * protections and NUMA hinting fault protections.
-> + */
-> +static inline int pte_protnone(pte_t pte)
-> +{
-> +	return 0;
-> +}
-> +
-> +static inline int pmd_protnone(pmd_t pmd)
-> +{
-> +	return 0;
-> +}
-> +#endif /* CONFIG_NUMA_BALANCING */
-> +
->  #ifdef CONFIG_NUMA_BALANCING
->  /*
->   * _PAGE_NUMA distinguishes between an unmapped page table entry, an entry that
-
-
+How much less ideal is it to forget to update the check than to make
+this a blacklist?
