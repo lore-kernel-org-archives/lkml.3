@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421AbaLAQ5J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 11:57:09 -0500
-Received: from mail-oi0-f42.google.com ([209.85.218.42]:40996 "EHLO
-	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752936AbaLAQ5G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 11:57:06 -0500
-Message-ID: <547C9DDF.5060906@lwfinger.net>
-Date: Mon, 01 Dec 2014 10:57:03 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
+	id S1753560AbaLAQ5l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 11:57:41 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:38739 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753056AbaLAQ5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 11:57:39 -0500
+Message-ID: <547C9E01.9000606@osg.samsung.com>
+Date: Mon, 01 Dec 2014 09:57:37 -0700
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Anjana Sasindran <anjanasasindran123@gmail.com>,
-        gregkh@linuxfoundation.org, es.Sorensen@redhat.com
-CC: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8723au: hal: Removed spaces before starting
- of a line
-References: <1417449197-3227-1-git-send-email-anjanasasindran123@gmail.com>
-In-Reply-To: <1417449197-3227-1-git-send-email-anjanasasindran123@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Cyrill Gorcunov <gorcunov@gmail.com>, Arnd Bergmann <arnd@arndb.de>
+CC: Michael Ellerman <mpe@ellerman.id.au>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, Andrew Morton <akpm@osdl.org>,
+        Shuah Khan <shuahkh@osg.samsung.com>
+Subject: Re: [PATCH 1/3] kcmp: Move kcmp.h into uapi
+References: <1414040834-30209-1-git-send-email-mpe@ellerman.id.au> <2940943.qiYEMaLEXx@wuerfel> <20141023081457.GE16267@moon>
+In-Reply-To: <20141023081457.GE16267@moon>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2014 09:53 AM, Anjana Sasindran wrote:
-> This patch fix the checkpatch.pl warning:
->
-> WARNING: please, no spaces at the start of a line
->
-> Signed-off-by: Anjana Sasindran <anjanasasindran123@gmail.com>
-> ---
->   drivers/staging/rtl8723au/hal/odm_RegConfig8723A.c | 6 +++---
->   1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/staging/rtl8723au/hal/odm_RegConfig8723A.c b/drivers/staging/rtl8723au/hal/odm_RegConfig8723A.c
-> index 88e0126..959e89e 100644
-> --- a/drivers/staging/rtl8723au/hal/odm_RegConfig8723A.c
-> +++ b/drivers/staging/rtl8723au/hal/odm_RegConfig8723A.c
-> @@ -20,7 +20,7 @@ odm_ConfigRFReg_8723A(
->   	struct dm_odm_t *pDM_Odm,
->   	u32					Addr,
->   	u32					Data,
-> -  enum RF_RADIO_PATH     RF_PATH,
-> +enum RF_RADIO_PATH     RF_PATH,
+On 10/23/2014 02:14 AM, Cyrill Gorcunov wrote:
+> On Thu, Oct 23, 2014 at 09:49:14AM +0200, Arnd Bergmann wrote:
+>> On Thursday 23 October 2014 16:07:12 Michael Ellerman wrote:
+>>> --- a/include/linux/kcmp.h
+>>> +++ b/include/linux/kcmp.h
+>>> @@ -1,17 +1,6 @@
+>>>  #ifndef _LINUX_KCMP_H
+>>>  #define _LINUX_KCMP_H
+>>>  
+>>> -/* Comparison type */
+>>> -enum kcmp_type {
+>>> -       KCMP_FILE,
+>>> -       KCMP_VM,
+>>> -       KCMP_FILES,
+>>> -       KCMP_FS,
+>>> -       KCMP_SIGHAND,
+>>> -       KCMP_IO,
+>>> -       KCMP_SYSVSEM,
+>>> -
+>>> -       KCMP_TYPES,
+>>> -};
+>>> +#include <uapi/linux/kcmp.h>
+>>>  
+>>>  #endif /* _LINUX_KCMP_H */
+>>>
+>>
+>> If the file is empty except for the uapi include, I think it's better to
+>> delete it completely. The include path logic should ensure we pick the
+>> other one up.
+> 
+> Good point, somehow managed to miss this.
+> 
 
-NACK. You are blindly "fixing" a checkpatch warning, but you are making the code 
-worse!! Obviously, this line should start with a tab to make the arguments of 
-this routine line up. Even if you were to do that, the style would be wrong.
+Michael,
 
-If I were fixing this section, my patch would look like:
+Are you planning to send v2 to address the comments?
 
---- a/drivers/staging/rtl8723au/hal/odm_RegConfig8723A.c
-+++ b/drivers/staging/rtl8723au/hal/odm_RegConfig8723A.c
-@@ -15,14 +15,8 @@
+-- Shuah
 
-  #include "odm_precomp.h"
-
--void
--odm_ConfigRFReg_8723A(
--       struct dm_odm_t *pDM_Odm,
--       u32                                     Addr,
--       u32                                     Data,
--  enum RF_RADIO_PATH     RF_PATH,
--       u32                                 RegAddr
--       )
-+void odm_ConfigRFReg_8723A(struct dm_odm_t *pDM_Odm, u32 Addr, u32 Data,
-+			    enum RF_RADIO_PATH RF_PATH, u32 RegAddr)
-  {
-  	if (Addr == 0xfe) {
-  		msleep(50);
-
-That change would make the procedure entry line easier to read. Of course, the 
-commit message would need to say something like "checkpatch warns of spaces at 
-the beginning of a line. To fix this, the procedure entry is reformatted."
-
-Caution, my patch fragment is white-space damaged. You will need to do it yourself.
-
->   	u32				    RegAddr
->   	)
->   {
-> @@ -60,7 +60,7 @@ odm_ConfigBB_AGC_8723A(
->   	u32		Addr,
->   	u32		Bitmask,
->   	u32		Data
-> -  )
-> +)
->   {
->   	ODM_SetBBReg(pDM_Odm, Addr, Bitmask, Data);
->   	/*  Add 1us delay between BB/RF register setting. */
-> @@ -77,7 +77,7 @@ odm_ConfigBB_PHY_8723A(
->   	u32		Addr,
->   	u32		Bitmask,
->   	u32		Data
-> -  )
-> +)
->   {
->   	if (Addr == 0xfe)
->   		msleep(50);
->
-
-Same criticism here.
-
-Larry
-
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
