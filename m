@@ -1,147 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923AbaLAPC4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 10:02:56 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:42150 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496AbaLAPCy (ORCPT
+	id S1754046AbaLAPDU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 10:03:20 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:42028 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753938AbaLAPDT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 10:02:54 -0500
-Date: Mon, 1 Dec 2014 15:02:40 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Tim Sander <tim@krieglstein.org>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>
-Subject: Re: [PATCH 3.18-rc3 v9 5/5] arm: smp: Handle ipi_cpu_backtrace()
- using FIQ (if available)
-Message-ID: <20141201150240.GF3836@n2100.arm.linux.org.uk>
-References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
- <1633306.naE1qIcAOt@dabox>
- <20141201103832.GX3836@n2100.arm.linux.org.uk>
- <5910085.Y47hdorDAO@dabox>
+	Mon, 1 Dec 2014 10:03:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5910085.Y47hdorDAO@dabox>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1454366.cVgT9MeyeC@diego>
+References: <1416217842-4716-1-git-send-email-caesar.wang@rock-chips.com> <1454366.cVgT9MeyeC@diego>
+From: Tomasz Figa <tfiga@chromium.org>
+Date: Mon, 1 Dec 2014 23:57:01 +0900
+Message-ID: <CAAFQd5BvNKsuRmMkh7C9hYPQCwiDFXUuN2SwcxtfLu5KmHdymA@mail.gmail.com>
+Subject: Re: [PATCH v12 0/3] ARM: rk3288: Add PM Domain support
+To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Cc: Caesar Wang <caesar.wang@rock-chips.com>, khilman@kernel.org,
+        linus.walleij@linaro.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        linux-doc@vger.kernel.org, dianders@chromium.org,
+        linux-rockchip@lists.infradead.org,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>, fzf@rock-chips.com,
+        cf@rock-chips.com, chris.zhong@rock-chips.com, xxm@rock-chips.com,
+        chm@rock-chips.com, djkurtz@chromium.org,
+        "jinkun.hong" <jinkun.hong@rock-chips.com>,
+        Jack Dai <jack.dai@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 02:54:10PM +0100, Tim Sander wrote:
-> Hi Russell
-> 
-> Am Montag, 1. Dezember 2014, 10:38:32 schrieb Russell King - ARM Linux:
-> > That whole paragraph doesn't make much sense to me.
-> > 
-> > Look, in my mind it is very simple.  If you are using CONFIG_FIQ on a
-> > SMP platform, your life will be very difficult.  The FIQ code enabled
-> > by that symbol is not designed to be used on SMP systems, *period*.
+On Fri, Nov 28, 2014 at 6:57 PM, Heiko Stübner <heiko@sntech.de> wrote:
 >
-> Well the only extra thing you had to do is set up the FIQ registers on every 
-> cpu, but i would not call that very difficult. Other than that i am not
-> aware of any problems that are not also present on a uniprocessor system.
-> So i have a hard time following your reasoning why SMP is different from
-> UP in regard to the CONFIG_FIQ.
+> Am Montag, 17. November 2014, 17:50:38 schrieb Caesar Wang:
+> >     Add power domain drivers based on generic power domain for
+> >     Rockchip platform, and support RK3288.
+> >
+> >     https://chromium-review.googlesource.com/#/c/220253/9
+> >     This is the GPU driver, add the following information in DT,
+> >     and it can support the PMDOMAIN
+>
+> I'm not sure what to do with this series. Kevin had concerns about the clocks
+> being part of the power-domains and I don't see them actually addressed and/or
+> Kevin being satisfied - actually he isn't even on the recipients list of this
+> version of the series.
+>
+>
+> @Ceasar: you should include people being part of important previous
+> conversations in new versions of patchsets - especially when they have voiced
+> concerns.
+>
+>
+> I've added Tomasz whom I remember having previous experience on the Exynos
+> Powerdomains, so maybe he can add some other perspective - new ideas.
+>
 
-One of the things which FIQ handlers can do is they have their own private
-registers which they can modify on each invocation of the FIQ handler -
-for example, as a software DMA pointer.
+Thanks Heiko for adding me to this thread.
 
-Each CPU has its own private set of FIQ registers, so merely copying the
-registers to each CPU will only set their initial state: updates by one
-CPU to the register set will not be seen by a different CPU.
+>
+> @Tomasz: this is the part of Kevin's concerns from v10 of the powerdomain
+> series:
+>
+> Am Donnerstag, 13. November 2014, 12:24:47 schrieben Kevin Hilman:
+> > Heiko Stübner <heiko@sntech.de> writes:
+> > > Am Dienstag, 11. November 2014, 08:53:13 schrieb Kevin Hilman:
+> > >> I still don't like having lists of clocks in the power-domain DT.
+> > >>
+> > >> DT is supposed to describe the hardware, and clocks are properties of
+> > >> devices, not power-domains, so the DT description should follow from
+> > >> that.
+> > >
+> > > on the policy side one could argue that if the clock needs to be enabled
+> > > to
+> > > achieve sucessful domain state-changes, that it is also a property of the
+> > > domain itself in addition to the device.
+> >
+> > You could, but from a hardware perspective, the clock is a property of
+> > the device.
+> >
 
-> > If you decide to enable CONFIG_FIQ, and you use that code on a SMP
-> > platform, I'm going to say right now so it's totally clear: if you
-> > encounter a problem, I don't want to know about it.  The code is not
-> > designed for use on that situation.
-> Even with using the FIQ on a Linux SMP system you have not heard from me 
-> before, as i knew that this is not your problem (and that is not to say that 
-> there where none!). The only interface Linux has been making available is 
-> set_fiq_handler. So it was clear that the FIQ is its own domain otherwise 
-> untouched by the kernel.
+Well, the system controller which control the power domains is also a
+device. In DT we do not represent the domains alone, but rather the
+system controller, which acts as a power domain provider. If it need
+certain clocks to do its work, then I believe it should have them
+listed in its node. However the dependencies between clocks and power
+domains are not clear to me either, so I don't have any strong opinion
+on whether this would be the best solution.
 
-Correct, because FIQs have very little use in Linux.  They have been used
-in the past to implement:
-- software DMA to floppy disk controllers (see arch/arm/lib/floppydma.S)
-- audio DMA (arch/arm/mach-imx/ssi-fiq.S)
-- s2c24xx SPI DMA (drivers/spi/spi-s3c24xx-fiq.S)
-- Keyboard (yes, how that qualifies for FIQ I don't know
-  (arch/arm/mach-omap1/ams-delta-fiq-handler.S)
+> > > And on the pratical side we don't have drivers nor bindings for a big part
+> > > of the domain users - and this will probably be true for quite some time.
+> > > This of course makes it very impractical (or impossible) to collect the
+> > > clocks for parts like the gpu (mali), hevc, vcodec (video
+> > > encoder/decoder), rga (2d stuff), iep, isp.
+> >
+> > This doesn't sound impossible at all.
+> >
+> > You have to collect the clocks anyways.  The only debate is whether to
+> > list them in the device node or the power-domain node.
+> >
+> > Even for devices without drivers, you just need a minimal node in the DT if
+> > which lists the clocks and has a phandle to the parent power domain.
+> >
+> > Sounds rather simple to me, and since the DT is supposed to describe the
+> > hardware, doing it this way makes looking at the DT actually help
+> > understand the hardware.
+>
 
-The first three do exactly what I describe above, and none of these users
-are SMP platforms.  Hence, the FIQ code which we currently have does exactly
-what we need it to for the platforms we have.
+If the dependency between clocks and power domain is kind of "all
+clocks of all devices in this domain should be enabled when performing
+operation on the domain" then IMHO it should be more reasonable to put
+the clocks only in nodes of respective devices and then follow the
+links from the domain to devices inside of it and retrieve the clocks
+from there, so that they don't have to be duplicated. AFAIK, we don't
+like redundancy in DT.
 
-Now, you're talking about using this in a SMP context - that's a totally
-new use for this code which - as I have said several times now - is not
-really something that this code is intended to support.
-
-> And i really don't get it, that neither ARM nor the kernel community
-> sees fast interrupts as a worthwhile usecase. Unfortunatly the interrupt
-> latencies with Linux are at least a order of magnitude higher than the
-> pure hardware even with longer pipelines can deliver. 
-
-First point: fast interrupts won't be fast if you load them up with all
-the interrupt demux and locking that normal interrupts have; if you
-start doing that, then you end up having to make /all/ IRQ-safe locks
-in the kernel not only disable normal interrupts, but also disable the
-FIQs as well.
-
-At that point, FIQs are no longer "fast" - they will be subject to
-exactly the same latencies as normal interrupts.
-
-Second point: we have embraced FIQs where it is appropriate to do so,
-but within the restrictions that FIQs present - that is, to keep them
-fast, we have to avoid the problem in the first point above, which
-means normal C code called from FIQs /can't/ take any kernel lock what
-so ever without potentially causing a deadlock.
-
-Even if you think you can (why would UP have locks if it's not SMP)
-debugging facilities such as the lock validator will bite you if you
-try taking a lock in FIQ context which was already taken in the parent
-context.
-
-Third point: FIQs are not available on a lot of ARM platforms.  Hardware
-which routes interrupts to FIQs is very limited, normally it's only a
-few interrupts which appear there.  Moreover, with more modern platforms
-where the kernel runs in the non-secure side, FIQs are /totally/ and
-/completely/ unavailable there - FIQs are only available for the secure
-monitor to use.
-
-> > No.  With a single zImage kernel, you could very well have SMP and FIQ
-> > both enabled, but have a non-SMP platform using FIQ, but also support
-> > SMP platforms as well.  Your change prevents that happening.
-> 
-> Ah, well i have to get used to this "new" devicetree thingy, where one size 
-> fits all...
-
-No, you're conflating different things there.  It doesn't have much
-to do with DT vs non-DT, because this same problem existed before DT
-came along, since there were platforms which could be both UP and SMP.
-
-> Still if you boot a single process system which has FIQ available and has a 
-> GIC with such a kernel, then you also reprogramm the IPI's as FIQs. But i 
-> guess thats not a problem as Linux does not self IPI the kernel as other os'es
-> do?
-
-I'm really sorry, but your above paragraph doesn't make much sense to me.
-"single process system" - if there's only one process, there's no point
-having a scheduler (it has nothing to schedule) and so I guess you're
-not talking about Linux there.
-
-Or do you mean "single processor system" (in other words, uniprocessor or
-UP).  In that case, the kernel doesn't use IPIs, because, by definition,
-there's no other processors for it to signal to.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Best regards,
+Tomasz
