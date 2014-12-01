@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988AbaLASnw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 13:43:52 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:59560 "EHLO e8.ny.us.ibm.com"
+	id S1754027AbaLASs6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 13:48:58 -0500
+Received: from muin.pair.com ([209.68.1.55]:62380 "EHLO muin.pair.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752840AbaLASnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 13:43:51 -0500
-Date: Mon, 1 Dec 2014 10:43:24 -0800
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: lizf@kernel.org
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Cong Wang <cwang@twopensource.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Zefan Li <lizefan@huawei.com>
-Subject: Re: [PATCH 3.4 43/91] perf: Fix a race condition in
- perf_remove_from_context()
-Message-ID: <20141201184324.GA5032@us.ibm.com>
-References: <1417077368-9217-1-git-send-email-lizf@kernel.org>
- <1417077794-9299-43-git-send-email-lizf@kernel.org>
+	id S1752862AbaLASs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 13:48:57 -0500
+Message-ID: <547CB817.10806@tabi.org>
+Date: Mon, 01 Dec 2014 12:48:55 -0600
+From: Timur Tabi <timur@tabi.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417077794-9299-43-git-send-email-lizf@kernel.org>
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120118-0029-0000-0000-0000014505EC
+To: Lars-Peter Clausen <lars@metafoo.de>, Markus Pargmann <mpa@pengutronix.de>,
+        Jiada Wang <jiada_wang@mentor.com>
+CC: alsa-devel@alsa-project.org, lgirdwood@gmail.com, tiwai@suse.de,
+        Li.Xiubo@freescale.com, nicoleotsuka@gmail.com, broonie@kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH] ASoC: fsl_ssi: free irq before irq_dispose_mapping()
+References: <1417402251-6596-1-git-send-email-jiada_wang@mentor.com> <20141201065046.GB27289@pengutronix.de> <547C9C34.9080602@metafoo.de>
+In-Reply-To: <547C9C34.9080602@metafoo.de>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lizf@kernel.org [lizf@kernel.org] wrote:
-| From: Cong Wang <cwang@twopensource.com>
-| 
-| 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
-| 
-<snip>
-| 
-| diff --git a/kernel/events/core.c b/kernel/events/core.c
-| index 685ce46..c958be1 100644
-| --- a/kernel/events/core.c
-| +++ b/kernel/events/core.c
-| @@ -1702,6 +1702,16 @@ retry:
-|  	 */
-|  	if (ctx->is_active) {
-|  		raw_spin_unlock_irq(&ctx->lock);
-| +		/*
-| +		 * Reload the task pointer, it might have been changed by
-| +		 * a concurrent perf_event_context_sched_out().
-| +		 */
-| +		task = ctx->task;
-| +		/*
-| +		 * Reload the task pointer, it might have been changed by
-| +		 * a concurrent perf_event_context_sched_out().
-| +		 */
-| +		task = ctx->task;
+On 12/01/2014 10:49 AM, Lars-Peter Clausen wrote:
+> The driver creates the mapping by calling irq_of_parse_and_map(), so it
+> also has to dispose the mapping.
 
-Something wrong in the way the patch was applied ?
-The lines are identical...
+I agree with Markus, this does seem weird.  It sounds like you're saying 
+that irq_of_parse_and_map() and devm_request_irq() are incompatible.  A 
+quick grep shows the following drivers that call both functions:
 
-The original commit, 3577af70, has the change applied in two
-places: perf_event_disable() and perf_remove_from_context().
-
-|  		goto retry;
-|  	}
-| 
-| -- 
-| 1.9.1
-| 
-| --
-| To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-| the body of a message to majordomo@vger.kernel.org
-| More majordomo info at  http://vger.kernel.org/majordomo-info.html
-| Please read the FAQ at  http://www.tux.org/lkml/
+ata/pata_mpc52xx.c
+built-in.o
+cpufreq/exynos5440-cpufreq.c
+crypto/omap-sham.c
+dma/moxart-dma.c
+edac/mpc85xx_edac.c
+hsi/clients/nokia-modem.c
+i2c/busses/i2c-wmt.c
+input/serio/apbps2.c
+mmc/host/omap_hsmmc.c
+mmc/host/moxart-mmc.c
+mtd/nand/mpc5121_nfc.c
+net/ethernet/arc/emac_main.c
+net/ethernet/moxa/moxart_ether.c
+pci/host/pcie-rcar.c
+pinctrl/samsung/pinctrl-exynos5440.c
+pinctrl/samsung/pinctrl-exynos.c
+pinctrl/pinctrl-bcm2835.c
+spi/spi-bcm2835.c
+spi/spi-mpc512x-psc.c
+staging/xillybus/xillybus_of.c
+thermal/samsung/exynos_tmu.c
 
