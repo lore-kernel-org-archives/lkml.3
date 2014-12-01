@@ -1,197 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723AbaLAOHF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 09:07:05 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:54681 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753631AbaLAOHD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 09:07:03 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: akpm@linux-foundation.org, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] mm/thp: Allocate transparent hugepages on local node
-In-Reply-To: <20141201113340.GA545@node.dhcp.inet.fi>
-References: <1417412803-27234-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20141201113340.GA545@node.dhcp.inet.fi>
-User-Agent: Notmuch/0.19+2~g32855b9 (http://notmuchmail.org) Emacs/25.0.50.1 (x86_64-pc-linux-gnu)
-Date: Mon, 01 Dec 2014 19:36:50 +0530
-Message-ID: <87vblvh3b9.fsf@linux.vnet.ibm.com>
+	id S1753824AbaLAOHe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 09:07:34 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:53973 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753767AbaLAOHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 09:07:31 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Jianqun Xu <jay.xu@rock-chips.com>
+Cc: linux@arm.linux.org.uk, grant.likely@linaro.org, robh+dt@kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 2/2] rockchip: efuse: add efuse driver for rk3288 efuse
+Date: Mon, 01 Dec 2014 15:10:26 +0100
+Message-ID: <1529852.GW1hFGtilD@diego>
+User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <1417419281-9243-3-git-send-email-jay.xu@rock-chips.com>
+References: <1417419281-9243-1-git-send-email-jay.xu@rock-chips.com> <1417419281-9243-3-git-send-email-jay.xu@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120114-0005-0000-0000-0000028596AB
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Kirill A. Shutemov" <kirill@shutemov.name> writes:
+Hi Jianqun,
 
-> On Mon, Dec 01, 2014 at 11:16:43AM +0530, Aneesh Kumar K.V wrote:
->> This make sure that we try to allocate hugepages from local node if
->> allowed by mempolicy. If we can't, we fallback to small page allocation
->> based on mempolicy. This is based on the observation that allocating pages
->> on local node is more beneficial that allocating hugepages on remote node.
->> 
->> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
->> ---
->>  include/linux/gfp.h |  4 ++++
->>  mm/huge_memory.c    | 24 +++++++++---------------
->>  mm/mempolicy.c      | 40 ++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 53 insertions(+), 15 deletions(-)
->> 
->> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
->> index 41b30fd4d041..fcbd017b4fb4 100644
->> --- a/include/linux/gfp.h
->> +++ b/include/linux/gfp.h
->> @@ -338,11 +338,15 @@ alloc_pages(gfp_t gfp_mask, unsigned int order)
->>  extern struct page *alloc_pages_vma(gfp_t gfp_mask, int order,
->>  			struct vm_area_struct *vma, unsigned long addr,
->>  			int node);
->> +extern struct page *alloc_hugepage_vma(gfp_t gfp, struct vm_area_struct *vma,
->> +				       unsigned long addr, int order);
->>  #else
->>  #define alloc_pages(gfp_mask, order) \
->>  		alloc_pages_node(numa_node_id(), gfp_mask, order)
->>  #define alloc_pages_vma(gfp_mask, order, vma, addr, node)	\
->>  	alloc_pages(gfp_mask, order)
->> +#define alloc_hugepage_vma(gfp_mask, vma, addr, order)	\
->> +	alloc_pages(gfp_mask, order)
->>  #endif
->>  #define alloc_page(gfp_mask) alloc_pages(gfp_mask, 0)
->>  #define alloc_page_vma(gfp_mask, vma, addr)			\
->> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
->> index de984159cf0b..7903eb995b7f 100644
->> --- a/mm/huge_memory.c
->> +++ b/mm/huge_memory.c
->> @@ -766,15 +766,6 @@ static inline gfp_t alloc_hugepage_gfpmask(int defrag, gfp_t extra_gfp)
->>  	return (GFP_TRANSHUGE & ~(defrag ? 0 : __GFP_WAIT)) | extra_gfp;
->>  }
->>  
->> -static inline struct page *alloc_hugepage_vma(int defrag,
->> -					      struct vm_area_struct *vma,
->> -					      unsigned long haddr, int nd,
->> -					      gfp_t extra_gfp)
->> -{
->> -	return alloc_pages_vma(alloc_hugepage_gfpmask(defrag, extra_gfp),
->> -			       HPAGE_PMD_ORDER, vma, haddr, nd);
->> -}
->> -
->>  /* Caller must hold page table lock. */
->>  static bool set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
->>  		struct vm_area_struct *vma, unsigned long haddr, pmd_t *pmd,
->> @@ -796,6 +787,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
->>  			       unsigned long address, pmd_t *pmd,
->>  			       unsigned int flags)
->>  {
->> +	gfp_t gfp;
->>  	struct page *page;
->>  	unsigned long haddr = address & HPAGE_PMD_MASK;
->>  
->> @@ -830,8 +822,8 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
->>  		}
->>  		return 0;
->>  	}
->> -	page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
->> -			vma, haddr, numa_node_id(), 0);
->> +	gfp = alloc_hugepage_gfpmask(transparent_hugepage_defrag(vma), 0);
->> +	page = alloc_hugepage_vma(gfp, vma, haddr, HPAGE_PMD_ORDER);
->>  	if (unlikely(!page)) {
->>  		count_vm_event(THP_FAULT_FALLBACK);
->>  		return VM_FAULT_FALLBACK;
->> @@ -1119,10 +1111,12 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
->>  	spin_unlock(ptl);
->>  alloc:
->>  	if (transparent_hugepage_enabled(vma) &&
->> -	    !transparent_hugepage_debug_cow())
->> -		new_page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
->> -					      vma, haddr, numa_node_id(), 0);
->> -	else
->> +	    !transparent_hugepage_debug_cow()) {
->> +		gfp_t gfp;
->> +
->> +		gfp = alloc_hugepage_gfpmask(transparent_hugepage_defrag(vma), 0);
->> +		new_page = alloc_hugepage_vma(gfp, vma, haddr, HPAGE_PMD_ORDER);
->
-> Should node of page we're handling wp-fault for be part of decision?
+Am Montag, 1. Dezember 2014, 15:34:41 schrieb Jianqun Xu:
+> Add driver for efuse found on rk3288 board based on rk3288 SoC.
+> Driver will read fuse information of chip at the boot stage of
+> kernel, this information new is for further usage.
+> 
+> Signed-off-by: Jianqun Xu <jay.xu@rock-chips.com>
+
+General question would be, what is the purpose of this driver?
+I don't see any publically usable functions and the only thing happening is 
+the
+	dev_info(efuse->dev, "leakage (%d %d %d)\n",...
+output that emits some information from the efuse to the kernel log?
 
 
-We are doing that in alloc_hugepage_vma by using numa_node_id(), I am
-not sure whether it really matters w.r.t to the task getting preempted
-and running on another node ? Even if we make it same as the node on
-which the page fault happened, we could end up running on another
-node. That situation is no worse than what we have today. 
+In the dt-binding doc you write:
+> The 32x32 eFuse can only be accessed by APB bus when IO_SECURITYsel is high.
+
+While the TRM also says this, IO_SECURITY is not mentioned anywhere else in 
+the document. Is this a pin or a bit somewhere in the GRF - i.e. something 
+whichs state is readable?
 
 
+Some more comments inline.
 
->
->> +	} else
->>  		new_page = NULL;
->>  
->>  	if (unlikely(!new_page)) {
->> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
->> index e58725aff7e9..fa96af5b31f7 100644
->> --- a/mm/mempolicy.c
->> +++ b/mm/mempolicy.c
->> @@ -2041,6 +2041,46 @@ retry_cpuset:
->>  	return page;
->>  }
->>  
->> +struct page *alloc_hugepage_vma(gfp_t gfp, struct vm_area_struct *vma,
->> +				unsigned long addr, int order)
->> +{
->> +	struct page *page;
->> +	nodemask_t *nmask;
->> +	struct mempolicy *pol;
->> +	int node = numa_node_id();
->
-> Hm. What if the code will be preempted and scheduled on different node?
-> I'm not really familiar with mempolicy details and not sure if we should
-> care. Probably not.
->
->> +	unsigned int cpuset_mems_cookie;
->> +
->> +retry_cpuset:
->> +	pol = get_vma_policy(vma, addr);
->> +	cpuset_mems_cookie = read_mems_allowed_begin();
->> +
->> +	if (pol->mode != MPOL_INTERLEAVE) {
->> +		/*
->> +		 * For interleave policy, we don't worry about
->> +		 * current node. Otherwise if current node is
->> +		 * in nodemask, try to allocate hugepage from
->> +		 * current node. Don't fall back to other nodes
->> +		 * for THP.
->> +		 */
->
-> The comment probably should be above "if ()", not below.
+> ---
+>  arch/arm/mach-rockchip/efuse.c | 165
+> +++++++++++++++++++++++++++++++++++++++++ arch/arm/mach-rockchip/efuse.h | 
+> 15 ++++
+>  2 files changed, 180 insertions(+)
+>  create mode 100644 arch/arm/mach-rockchip/efuse.c
+>  create mode 100644 arch/arm/mach-rockchip/efuse.h
+> 
+> diff --git a/arch/arm/mach-rockchip/efuse.c b/arch/arm/mach-rockchip/efuse.c
+> new file mode 100644
+> index 0000000..326d81e
+> --- /dev/null
+> +++ b/arch/arm/mach-rockchip/efuse.c
 
-ok
+a driver like this should probably live in something like 
+drivers/soc/rockchip.
 
->
->> +		nmask = policy_nodemask(gfp, pol);
->> +		if (!nmask || node_isset(node, *nmask)) {
->> +			mpol_cond_put(pol);
->> +			page = alloc_pages_exact_node(node, gfp, order);
->> +			if (unlikely(!page &&
->> +				     read_mems_allowed_retry(cpuset_mems_cookie)))
->> +				goto retry_cpuset;
->> +			return page;
->> +		}
->> +	}
->> +	mpol_cond_put(pol);
->> +	/*
->> +	 * if current node is not part of node mask, try
->> +	 * the allocation from any node, and we can do retry
->> +	 * in that case.
->> +	 */
->> +	return alloc_pages_vma(gfp, order, vma, addr, node);
->> +}
->> +
->>  /**
->>   * 	alloc_pages_current - Allocate pages.
->>   *
 
--aneesh
+> @@ -0,0 +1,165 @@
+> +/* mach-rockchip/efuse.c
+> + *
+> + * Copyright (c) 2014 Rockchip Electronics Co. Ltd.
+> + * Author: Jianqun Xu <jay.xu@rock-chips.com>
+> + *
+> + * Tmis program is free software; you can redistribute it and/or modify it
+> + * under the terms of version 2 of the GNU General Public License as
+> + * published by the Free Software Foundation.
+> + *
+> + * Tmis program is distributed in the hope that it will be useful, but
+
+type Tmis -> This
+
+
+> WITHOUT + * ANY WARRANTY; without even the implied warranty of
+> MERCHANTABILITY or + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> General Public License for + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along
+> with + * tmis program; if not, write to the Free Software Foundation, Inc.,
+> + * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
+> + *
+> + * Tme full GNU General Public License is included in this distribution in
+> the + * file called LICENSE.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/device.h>
+> +#include <linux/delay.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/of_address.h>
+> +#include <linux/io.h>
+> +
+> +#include "efuse.h"
+> +
+> +#define EFUSE_BUF_SIZE	(32)
+> +#define EFUSE_BUF_LKG_CPU	(23)
+> +#define EFUSE_BUF_LKG_GPU	(24)
+> +#define EFUSE_BUF_LKG_LOG	(25)
+
+no braces needed for those numbers
+
+
+> +
+> +struct rk_efuse_info {
+> +	/* Platform device */
+> +	struct device *dev;
+> +
+> +	/* Hardware resources */
+> +	void __iomem *regs;
+> +
+> +	/* buffer to store registers' values */
+> +	unsigned int buf[EFUSE_BUF_SIZE];
+> +};
+> +
+> +static void efuse_writel(struct rk_efuse_info *efuse,
+> +			 unsigned int value,
+> +			 unsigned int offset)
+> +{
+> +	writel_relaxed(value, efuse->regs + offset);
+> +}
+> +
+> +static unsigned int efuse_readl(struct rk_efuse_info *efuse,
+> +				unsigned int offset)
+> +{
+> +	return readl_relaxed(efuse->regs + offset);
+> +}
+
+why these indirections for readl and writel? They don't seem to provide any 
+additional benefit over calling writel_relaxed/readl_relaxed directly below.
+
+
+> +
+> +static unsigned int rockchip_efuse_leakage(struct rk_efuse_info *efuse,
+> +					 int channel)
+> +{
+> +	switch (channel) {
+> +	case EFUSE_BUF_LKG_CPU:
+> +	case EFUSE_BUF_LKG_GPU:
+> +	case EFUSE_BUF_LKG_LOG:
+> +		return efuse->buf[channel];
+> +	default:
+> +		dev_err(efuse->dev, "unknown channel\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void rockchip_efuse_info(struct rk_efuse_info *efuse)
+> +{
+> +	dev_info(efuse->dev, "leakage (%d %d %d)\n",
+> +		 rockchip_efuse_leakage(efuse, EFUSE_BUF_LKG_CPU),
+> +		 rockchip_efuse_leakage(efuse, EFUSE_BUF_LKG_GPU),
+> +		 rockchip_efuse_leakage(efuse, EFUSE_BUF_LKG_LOG));
+> +}
+> +
+> +static int rockchip_efuse_init(struct rk_efuse_info *efuse)
+> +{
+> +	int start = 0;
+> +	int ret = 0;
+> +
+> +	efuse_writel(efuse, EFUSE_CSB, REG_EFUSE_CTRL);
+> +	efuse_writel(efuse, EFUSE_LOAD | EFUSE_PGENB, REG_EFUSE_CTRL);
+> +	udelay(2);
+> +
+> +	for (start = 0; start <= EFUSE_BUF_SIZE; start++) {
+> +		efuse_writel(efuse, efuse_readl(efuse, REG_EFUSE_CTRL) &
+> +			     (~(EFUSE_A_MASK << EFUSE_A_SHIFT)),
+> +			     REG_EFUSE_CTRL);
+> +		efuse_writel(efuse, efuse_readl(efuse, REG_EFUSE_CTRL) |
+> +			     ((start & EFUSE_A_MASK) << EFUSE_A_SHIFT),
+> +			     REG_EFUSE_CTRL);
+> +		udelay(2);
+> +		efuse_writel(efuse, efuse_readl(efuse, REG_EFUSE_CTRL) |
+> +			     EFUSE_STROBE, REG_EFUSE_CTRL);
+> +		udelay(2);
+> +
+> +		efuse->buf[start] = efuse_readl(efuse, REG_EFUSE_DOUT);
+> +
+> +		efuse_writel(efuse, efuse_readl(efuse, REG_EFUSE_CTRL) &
+> +			     (~EFUSE_STROBE), REG_EFUSE_CTRL);
+> +		udelay(2);
+> +	}
+> +
+> +	udelay(2);
+> +	efuse_writel(efuse, efuse_readl(efuse, REG_EFUSE_CTRL) |
+> +		     EFUSE_CSB, REG_EFUSE_CTRL);
+> +	udelay(2);
+> +
+> +	return ret;
+> +}
+> +
+> +static int rockchip_efuse_probe(struct platform_device *pdev)
+> +{
+> +	struct rk_efuse_info *efuse;
+> +	struct resource *mem;
+> +	int ret = 0;
+> +
+> +	efuse = devm_kzalloc(&pdev->dev, sizeof(*efuse), GFP_KERNEL);
+> +	if (!efuse)
+> +		return -ENOMEM;
+> +
+> +	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	efuse->regs = devm_ioremap_resource(&pdev->dev, mem);
+> +	if (IS_ERR(efuse->regs))
+> +		return PTR_ERR(efuse->regs);
+> +
+> +	platform_set_drvdata(pdev, efuse);
+> +	efuse->dev = &pdev->dev;
+> +
+> +	ret = rockchip_efuse_init(efuse);
+> +	if (!ret)
+> +		rockchip_efuse_info(efuse);
+> +
+> +	return ret;
+> +}
+> +
+> +static const struct of_device_id rockchip_efuse_match[] = {
+> +	{ .compatible = "rockchip,rk3288-efuse", },
+
+what about other Rockchip SoCs? At least the rk3188 seems to contain an efuse 
+[though the TRM I have only directs to a RK3188 eFuse.pdf without describing 
+the component. So I don't know if it's the same type.
+
+
+> +	{},
+> +};
+> +
+> +static struct platform_driver rockchip_efuse_driver = {
+> +	.probe = rockchip_efuse_probe,
+> +	.driver = {
+> +		.name = "rk3288-efuse",
+> +		.owner = THIS_MODULE,
+
+.owner gets already set through module_platform_driver
+
+
+> +		.of_match_table = of_match_ptr(rockchip_efuse_match),
+> +	},
+> +};
+> +
+> +module_platform_driver(rockchip_efuse_driver);
+> +
+> +MODULE_DESCRIPTION("Rockchip eFuse Driver");
+> +MODULE_AUTHOR("Jianqun Xu <jay.xu@rock-chips.com>");
+> +MODULE_LICENSE("GPL v2");
+> diff --git a/arch/arm/mach-rockchip/efuse.h b/arch/arm/mach-rockchip/efuse.h
+> new file mode 100644
+> index 0000000..3fdcf6d
+> --- /dev/null
+> +++ b/arch/arm/mach-rockchip/efuse.h
+
+why does this need to be a separate header? The stuff below could very well 
+simply live inside the fuse.c
+
+
+> @@ -0,0 +1,15 @@
+> +#ifndef _ARCH_ROCKCHIP_EFUSE_H_
+> +#define _ARCH_ROCKCHIP_EFUSE_H_
+> +
+> +/* Rockchip eFuse controller register */
+> +#define EFUSE_A_SHIFT		(6)
+> +#define EFUSE_A_MASK		(0x3FF)
+> +#define EFUSE_PGENB		(1 << 3)
+
+please use BIT(3) instead of (1 << 3)
+Same for the bits below.
+
+
+> +#define EFUSE_LOAD		(1 << 2)
+> +#define EFUSE_STROBE		(1 << 1)
+> +#define EFUSE_CSB		(1 << 0)
+> +
+> +#define REG_EFUSE_CTRL		(0x0000)
+> +#define REG_EFUSE_DOUT		(0x0004)
+
+no braces necessary for basic numerals
+
+
+> +
+> +#endif /* _ARCH_ROCKCHIP_EFUSE_H_ */
 
