@@ -1,92 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932173AbaLAS46 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 13:56:58 -0500
-Received: from mga11.intel.com ([192.55.52.93]:20514 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754034AbaLAS44 convert rfc822-to-8bit (ORCPT
+	id S1754132AbaLAS7j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 13:59:39 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:33334 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753310AbaLAS7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 13:56:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="423666549"
-From: "Fujinaka, Todd" <todd.fujinaka@intel.com>
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-CC: Linux NICS <Linux-nics@isotope.jf.intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        Hisashi T Fujinaka <htodd@twofifty.com>,
-        "Vick, Matthew" <matthew.vick@intel.com>,
-        "Greg@isotope.jf.intel.com" <Greg@isotope.jf.intel.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        "John@isotope.jf.intel.com" <John@isotope.jf.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [linux-nics] [PATCH] e1000: remove unused variables
-Thread-Topic: [linux-nics] [PATCH] e1000: remove unused variables
-Thread-Index: AQHQDSMdIHw65NF/BkSlcmAo5eu6OZx7Fidw
-Date: Mon, 1 Dec 2014 18:56:46 +0000
-Message-ID: <9B4A1B1917080E46B64F07F2989DADD653454C69@ORSMSX114.amr.corp.intel.com>
-References: <1417065728-5592-1-git-send-email-sudipm.mukherjee@gmail.com>
-	<alpine.NEB.2.11.1411262157110.1481@chris.i8u.org>
-	<1417311913.7215.111.camel@decadent.org.uk> <20141201045446.GA3277@sudip-PC>
-In-Reply-To: <20141201045446.GA3277@sudip-PC>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 1 Dec 2014 13:59:38 -0500
+Date: Mon, 1 Dec 2014 10:59:34 -0800
+From: Shaohua Li <shli@kernel.org>
+To: Jens Axboe <axboe@fb.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] blk-mq: don't use rw_is_sync() to determine sync request
+Message-ID: <20141201185934.GA52328@kernel.org>
+References: <4f327fd4f830a3fceab3694cdd7621c37f780809.1417391999.git.shli@kernel.org>
+ <547BC5CF.7080904@fb.com>
+ <20141201035712.GA8443@kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141201035712.GA8443@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After discussing this locally, I'd like to NAK it because this could cause regressions to parts that are still in use but we don't have access to. Also, the assignment was necessary in the past for some versions of gcc and since this may be used in embedded systems using older compilers, we should leave it be.
-
-Thanks.
-
-Todd Fujinaka
-Software Application Engineer
-Networking Division (ND)
-Intel Corporation
-todd.fujinaka@intel.com
-(503) 712-4565
-
------Original Message-----
-From: linux-nics-bounces@isotope.jf.intel.com [mailto:linux-nics-bounces@isotope.jf.intel.com] On Behalf Of Sudip Mukherjee
-Sent: Sunday, November 30, 2014 8:55 PM
-To: Ben Hutchings
-Cc: Linux NICS; e1000-devel@lists.sourceforge.net; Hisashi T Fujinaka; Vick, Matthew; Greg@isotope.jf.intel.com; Kirsher, Jeffrey T; netdev@vger.kernel.org; Wyborny, Carolyn; John@isotope.jf.intel.com; linux-kernel@vger.kernel.org
-Subject: Re: [linux-nics] [PATCH] e1000: remove unused variables
-
-On Sun, Nov 30, 2014 at 01:45:13AM +0000, Ben Hutchings wrote:
-> On Wed, 2014-11-26 at 21:59 -0800, Hisashi T Fujinaka wrote:
-> > I'm pretty sure those double reads are there for a reason, so most 
-> > of this I'm going to have to check on Monday. We have a long holiday 
-> > weekend here in the US.
-> [...]
+On Sun, Nov 30, 2014 at 07:57:12PM -0800, Shaohua Li wrote:
+> On Sun, Nov 30, 2014 at 06:35:11PM -0700, Jens Axboe wrote:
+> > On 11/30/2014 05:01 PM, Shaohua Li wrote:
+> > >Buffer read is counted as sync in rw_is_sync(). If we use it,
+> > >blk_sq_make_request() will not do per-process plug any more.
+> > >
+> > >I haven't changed blk_mq_make_request() yet. It makes sense to dispatch
+> > >REQ_SYNC request immediately. But for buffer read, it's weird not to do
+> > >per-process plug, as buffer read doesn't need low latency.
+> > >blk_mq_merge_queue_io() isn't very helpful, as we don't have delay mechanism
+> > >there, the queue is immediately flushed, which makes the merge very
+> > >superficial.
+> > 
+> > A read is sync, buffered or not. A buffered read is every bit as
+> > latency sensitive as an O_DIRECT read. I think it'd be fine to
+> > modify rw_is_sync() to disregard REQ_AHEAD as sync (and ensure it's
+> > carried forward in the request flags, too). At least to the extent
+> > that we process plug and get the merging, since for streamed reads
+> > we'd soon be waiting on them anyway.
 > 
-> If there were double register reads being replaced with single 
-> register reads, I'd agree this was likely to introduce a regression.  
-> But all I see is var = er32(REG) being changed to er32(REG).
+> A quick search shows nobody uses REQ_AHEAD. For stream reads, only first several
+> reads are waited I suppose, later reads are read ahead. Maybe only counts
+> REQ_META read as sync?
 
-no, double register reads are not modified. only the unused variables are removed.
+Changing rw_is_sync() sounds risky, as it will change behavior of other parts,
+like CFQ. REQ_META/REQ_PRIO isn't an option, metadata does readahead too.
+And nobody uses REQ_AHEAD. explictly checking REQ_SYNC in blk_sq_make_request()
+sounds better, which is just for pluging and we use it for ages in
+blk_queue_bio().
 
-thanks
-sudip
-
-> 
-> Ben.
-> 
-> --
-> Ben Hutchings
-> The world is coming to an end.	Please log off.
-
-
-_______________________________________________
-Linux-nics mailing list
-Linux-nics@intel.com
+-Shaohua
