@@ -1,92 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932208AbaLAQTM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 11:19:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45087 "EHLO mx2.suse.de"
+	id S1754115AbaLAQUI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 11:20:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57824 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753199AbaLAQTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 11:19:08 -0500
-Date: Mon, 1 Dec 2014 17:19:05 +0100
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Juergen Gross <jgross@suse.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        boris.ostrovsky@oracle.com, xen-devel@lists.xenproject.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, kvm@vger.kernel.org, Davidlohr Bueso <dbueso@suse.de>,
-        Joerg Roedel <jroedel@suse.de>, Borislav Petkov <bp@suse.de>,
-        Jan Beulich <JBeulich@suse.com>, Olaf Hering <ohering@suse.de>
-Subject: Re: [PATCH] xen: privcmd: schedule() after private hypercall when
-	non CONFIG_PREEMPT
-Message-ID: <20141201161905.GH25677@wotan.suse.de>
-References: <1417040805-15857-1-git-send-email-mcgrof@do-not-panic.com> <5476C66F.5040308@suse.com> <20141127183616.GV25677@wotan.suse.de> <547C4CEF.1010603@citrix.com> <20141201150546.GC25677@wotan.suse.de> <547C86BF.2040705@citrix.com> <CAB=NE6WPvCJnAfdbZqcw5pJtZrfxo0zQu6J2gpXp69G-UTtiUg@mail.gmail.com> <547C8F30.1010306@citrix.com>
+	id S1753255AbaLAQUG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 11:20:06 -0500
+Date: Mon, 1 Dec 2014 18:06:12 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        Jason Wang <jasowang@redhat.com>, Vlad Yasevich <vyasevich@gmail.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Tom Herbert <therbert@google.com>, Ben Hutchings <ben@decadent.org.uk>,
+        netdev@vger.kernel.org
+Subject: [PATCH v8 41/50] macvtap: TUN_VNET_LE support
+Message-ID: <1417449619-24896-42-git-send-email-mst@redhat.com>
+References: <1417449619-24896-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <547C8F30.1010306@citrix.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1417449619-24896-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 03:54:24PM +0000, David Vrabel wrote:
-> On 01/12/14 15:44, Luis R. Rodriguez wrote:
-> > On Mon, Dec 1, 2014 at 10:18 AM, David Vrabel <david.vrabel@citrix.com> wrote:
-> >> On 01/12/14 15:05, Luis R. Rodriguez wrote:
-> >>> On Mon, Dec 01, 2014 at 11:11:43AM +0000, David Vrabel wrote:
-> >>>> On 27/11/14 18:36, Luis R. Rodriguez wrote:
-> >>>>> On Thu, Nov 27, 2014 at 07:36:31AM +0100, Juergen Gross wrote:
-> >>>>>> On 11/26/2014 11:26 PM, Luis R. Rodriguez wrote:
-> >>>>>>> From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> >>>>>>>
-> >>>>>>> Some folks had reported that some xen hypercalls take a long time
-> >>>>>>> to complete when issued from the userspace private ioctl mechanism,
-> >>>>>>> this can happen for instance with some hypercalls that have many
-> >>>>>>> sub-operations, this can happen for instance on hypercalls that use
-> >>>> [...]
-> >>>>>>> --- a/drivers/xen/privcmd.c
-> >>>>>>> +++ b/drivers/xen/privcmd.c
-> >>>>>>> @@ -60,6 +60,9 @@ static long privcmd_ioctl_hypercall(void __user *udata)
-> >>>>>>>                              hypercall.arg[0], hypercall.arg[1],
-> >>>>>>>                              hypercall.arg[2], hypercall.arg[3],
-> >>>>>>>                              hypercall.arg[4]);
-> >>>>>>> +#ifndef CONFIG_PREEMPT
-> >>>>>>> + schedule();
-> >>>>>>> +#endif
-> >>>>
-> >>>> As Juergen points out, this does nothing.  You need to schedule while in
-> >>>> the middle of the hypercall.
-> >>>>
-> >>>> Remember that Xen's hypercall preemption only preempts the hypercall to
-> >>>> run interrupts in the guest.
-> >>>
-> >>> How is it ensured that when the kernel preempts on this code path on
-> >>> CONFIG_PREEMPT=n kernel that only interrupts in the guest are run?
-> >>
-> >> Sorry, I really didn't describe this very well.
-> >>
-> >> If a hypercall needs a continuation, Xen returns to the guest with the
-> >> IP set to the hypercall instruction, and on the way back to the guest
-> >> Xen may schedule a different VCPU or it will do any upcalls (as per normal).
-> >>
-> >> The guest is free to return from the upcall to the original task
-> >> (continuing the hypercall) or to a different one.
-> > 
-> > OK so that addresses what Xen will do when using continuation and
-> > hypercall preemption, my concern here was that using
-> > preempt_schedule_irq() on CONFIG_PREEMPT=n kernels in the middle of a
-> > hypercall on the return from an interrupt (e.g., the timer interrupt)
-> > would still let the kernel preempt to tasks other than those related
-> > to Xen.
-> 
-> Um.  Why would that be a problem?  We do want to switch to any task the
-> Linux scheduler thinks is best.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Reviewed-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/macvtap.c | 68 ++++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 43 insertions(+), 25 deletions(-)
 
-Its safe but -- it technically is doing kernel preemption, unless we want
-to adjust the definition of CONFIG_PREEMPT=n to exclude hypercalls. This
-was my original concern with the use of preempt_schedule_irq() to do this.
-I am afraid of setting precedents without being clear or wider review and
-acceptance.
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index 880cc09..af90ab5 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -45,6 +45,18 @@ struct macvtap_queue {
+ 	struct list_head next;
+ };
+ 
++#define MACVTAP_FEATURES (IFF_VNET_HDR | IFF_VNET_LE | IFF_MULTI_QUEUE)
++
++static inline u16 macvtap16_to_cpu(struct macvtap_queue *q, __virtio16 val)
++{
++	return __virtio16_to_cpu(q->flags & IFF_VNET_LE, val);
++}
++
++static inline __virtio16 cpu_to_macvtap16(struct macvtap_queue *q, u16 val)
++{
++	return __cpu_to_virtio16(q->flags & IFF_VNET_LE, val);
++}
++
+ static struct proto macvtap_proto = {
+ 	.name = "macvtap",
+ 	.owner = THIS_MODULE,
+@@ -557,7 +569,8 @@ static inline struct sk_buff *macvtap_alloc_skb(struct sock *sk, size_t prepad,
+  * macvtap_skb_from_vnet_hdr and macvtap_skb_to_vnet_hdr should
+  * be shared with the tun/tap driver.
+  */
+-static int macvtap_skb_from_vnet_hdr(struct sk_buff *skb,
++static int macvtap_skb_from_vnet_hdr(struct macvtap_queue *q,
++				     struct sk_buff *skb,
+ 				     struct virtio_net_hdr *vnet_hdr)
+ {
+ 	unsigned short gso_type = 0;
+@@ -588,13 +601,13 @@ static int macvtap_skb_from_vnet_hdr(struct sk_buff *skb,
+ 	}
+ 
+ 	if (vnet_hdr->flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) {
+-		if (!skb_partial_csum_set(skb, vnet_hdr->csum_start,
+-					  vnet_hdr->csum_offset))
++		if (!skb_partial_csum_set(skb, macvtap16_to_cpu(q, vnet_hdr->csum_start),
++					  macvtap16_to_cpu(q, vnet_hdr->csum_offset)))
+ 			return -EINVAL;
+ 	}
+ 
+ 	if (vnet_hdr->gso_type != VIRTIO_NET_HDR_GSO_NONE) {
+-		skb_shinfo(skb)->gso_size = vnet_hdr->gso_size;
++		skb_shinfo(skb)->gso_size = macvtap16_to_cpu(q, vnet_hdr->gso_size);
+ 		skb_shinfo(skb)->gso_type = gso_type;
+ 
+ 		/* Header must be checked, and gso_segs computed. */
+@@ -604,8 +617,9 @@ static int macvtap_skb_from_vnet_hdr(struct sk_buff *skb,
+ 	return 0;
+ }
+ 
+-static void macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
+-				   struct virtio_net_hdr *vnet_hdr)
++static void macvtap_skb_to_vnet_hdr(struct macvtap_queue *q,
++				    const struct sk_buff *skb,
++				    struct virtio_net_hdr *vnet_hdr)
+ {
+ 	memset(vnet_hdr, 0, sizeof(*vnet_hdr));
+ 
+@@ -613,8 +627,8 @@ static void macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
+ 		struct skb_shared_info *sinfo = skb_shinfo(skb);
+ 
+ 		/* This is a hint as to how much should be linear. */
+-		vnet_hdr->hdr_len = skb_headlen(skb);
+-		vnet_hdr->gso_size = sinfo->gso_size;
++		vnet_hdr->hdr_len = cpu_to_macvtap16(q, skb_headlen(skb));
++		vnet_hdr->gso_size = cpu_to_macvtap16(q, sinfo->gso_size);
+ 		if (sinfo->gso_type & SKB_GSO_TCPV4)
+ 			vnet_hdr->gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
+ 		else if (sinfo->gso_type & SKB_GSO_TCPV6)
+@@ -628,10 +642,13 @@ static void macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
+ 
+ 	if (skb->ip_summed == CHECKSUM_PARTIAL) {
+ 		vnet_hdr->flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
+-		vnet_hdr->csum_start = skb_checksum_start_offset(skb);
+ 		if (vlan_tx_tag_present(skb))
+-			vnet_hdr->csum_start += VLAN_HLEN;
+-		vnet_hdr->csum_offset = skb->csum_offset;
++			vnet_hdr->csum_start = cpu_to_macvtap16(q,
++				skb_checksum_start_offset(skb) + VLAN_HLEN);
++		else
++			vnet_hdr->csum_start = cpu_to_macvtap16(q,
++				skb_checksum_start_offset(skb));
++		vnet_hdr->csum_offset = cpu_to_macvtap16(q, skb->csum_offset);
+ 	} else if (skb->ip_summed == CHECKSUM_UNNECESSARY) {
+ 		vnet_hdr->flags = VIRTIO_NET_HDR_F_DATA_VALID;
+ 	} /* else everything is zero */
+@@ -666,12 +683,14 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+ 		if (err < 0)
+ 			goto err;
+ 		if ((vnet_hdr.flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) &&
+-		     vnet_hdr.csum_start + vnet_hdr.csum_offset + 2 >
+-							vnet_hdr.hdr_len)
+-			vnet_hdr.hdr_len = vnet_hdr.csum_start +
+-						vnet_hdr.csum_offset + 2;
++		     macvtap16_to_cpu(q, vnet_hdr.csum_start) +
++		     macvtap16_to_cpu(q, vnet_hdr.csum_offset) + 2 >
++			     macvtap16_to_cpu(q, vnet_hdr.hdr_len))
++			vnet_hdr.hdr_len = cpu_to_macvtap16(q,
++				 macvtap16_to_cpu(q, vnet_hdr.csum_start) +
++				 macvtap16_to_cpu(q, vnet_hdr.csum_offset) + 2);
+ 		err = -EINVAL;
+-		if (vnet_hdr.hdr_len > len)
++		if (macvtap16_to_cpu(q, vnet_hdr.hdr_len) > len)
+ 			goto err;
+ 	}
+ 
+@@ -684,7 +703,8 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+ 		goto err;
+ 
+ 	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
+-		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
++		copylen = vnet_hdr.hdr_len ?
++			macvtap16_to_cpu(q, vnet_hdr.hdr_len) : GOODCOPY_LEN;
+ 		if (copylen > good_linear)
+ 			copylen = good_linear;
+ 		linear = copylen;
+@@ -695,10 +715,10 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+ 
+ 	if (!zerocopy) {
+ 		copylen = len;
+-		if (vnet_hdr.hdr_len > good_linear)
++		if (macvtap16_to_cpu(q, vnet_hdr.hdr_len) > good_linear)
+ 			linear = good_linear;
+ 		else
+-			linear = vnet_hdr.hdr_len;
++			linear = macvtap16_to_cpu(q, vnet_hdr.hdr_len);
+ 	}
+ 
+ 	skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, copylen,
+@@ -725,7 +745,7 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+ 	skb->protocol = eth_hdr(skb)->h_proto;
+ 
+ 	if (vnet_hdr_len) {
+-		err = macvtap_skb_from_vnet_hdr(skb, &vnet_hdr);
++		err = macvtap_skb_from_vnet_hdr(q, skb, &vnet_hdr);
+ 		if (err)
+ 			goto err_kfree;
+ 	}
+@@ -791,7 +811,7 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+ 		if ((len -= vnet_hdr_len) < 0)
+ 			return -EINVAL;
+ 
+-		macvtap_skb_to_vnet_hdr(skb, &vnet_hdr);
++		macvtap_skb_to_vnet_hdr(q, skb, &vnet_hdr);
+ 
+ 		if (memcpy_toiovecend(iv, (void *)&vnet_hdr, 0, sizeof(vnet_hdr)))
+ 			return -EFAULT;
+@@ -1003,8 +1023,7 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
+ 			return -EFAULT;
+ 
+ 		ret = 0;
+-		if ((u & ~(IFF_VNET_HDR | IFF_MULTI_QUEUE)) !=
+-		    (IFF_NO_PI | IFF_TAP))
++		if ((u & ~MACVTAP_FEATURES) != (IFF_NO_PI | IFF_TAP))
+ 			ret = -EINVAL;
+ 		else
+ 			q->flags = u;
+@@ -1036,8 +1055,7 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
+ 		return ret;
+ 
+ 	case TUNGETFEATURES:
+-		if (put_user(IFF_TAP | IFF_NO_PI | IFF_VNET_HDR |
+-			     IFF_MULTI_QUEUE, up))
++		if (put_user(IFF_TAP | IFF_NO_PI | MACVTAP_FEATURES, up))
+ 			return -EFAULT;
+ 		return 0;
+ 
+-- 
+MST
 
-  Luis
