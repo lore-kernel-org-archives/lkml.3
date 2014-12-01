@@ -1,62 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219AbaLALMF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 06:12:05 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:65395 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152AbaLALMA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 06:12:00 -0500
-From: Andrey Skvortsov <andrej.skvortzov@gmail.com>
-X-Google-Original-From: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
-Date: Mon, 1 Dec 2014 14:11:25 +0300
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / WAKEUP : enable wakeup power for physical child
- devices
-Message-ID: <20141201111125.GA11974@localhost.localdomain>
-Mail-Followup-To: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>,
-	"Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-acpi@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1416139801-6537-1-git-send-email-Andrej.Skvortzov@gmail.com>
- <2396976.mWgWcINWd3@vostro.rjw.lan>
- <20141130172401.GC5215@crion89>
- <1446027.JMxKZRkq7f@vostro.rjw.lan>
+	id S1753261AbaLALMY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 06:12:24 -0500
+Received: from mout.web.de ([212.227.15.4]:60750 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752795AbaLALMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 06:12:22 -0500
+Message-ID: <547C4D11.1050206@users.sourceforge.net>
+Date: Mon, 01 Dec 2014 12:12:17 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: kernel-janitors@vger.kernel.org
+CC: Coccinelle <cocci@systeme.lip6.fr>, LKML <linux-kernel@vger.kernel.org>
+Subject: Determination for the number of named function parameters (with SmPL)
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1446027.JMxKZRkq7f@vostro.rjw.lan>
-X-PGP-Key: fp="21AF 2E6F 04EC 7E11 21C6  E399 2236 2F26 57A3 AEAD";
- id="0x57A3AEAD";
- get=<hkp://pgp.mit.edu/pks/lookup?search=0x22362F2657A3AEAD&op=get>;
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:T1B72DPCmBPn5x+NM/LPkndjY9VxiiiWaS1EKYX6KYVfCeNTRyU
+ NURmIjUCSjeCbtH+e60v92Focs1s+1wy3cvvum1l4lKBHxBsC+u4ImCAR+hgsUgZjpOuvaE
+ oymkeM/XkEvR3wPpUymPAbo3Hkubek6CgHVpKC1z3bZIhyjclsJbV4G/zSTgdU9zQqeXBo/
+ 43u/e9hIgB1KxBr5C4A3g==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 02:15:36AM +0100, Rafael J. Wysocki wrote:
+Hello,
 
-> > > 
-> > > -> dev->wakeup.prepare_count here shold be different from 0 at this point.
-> > 
-> > Thank you very much for the tip. I checked prepare_count, it was 0.
-> > I tried fix that and patched ssb and b44 drivers, that are used for my Ethernet card.
-> > The code is below. Is this a better way to solve this problem? 
-> 
-> Having a cursory look at the changes only, I think so.
+Would you like to know how many named function parameters are used in the source files?
 
-Thank you, then I will format the patch in a proper way and submit it.
+How do you think about to try the following semantic query approach out a bit more?
 
-> > diff --git a/drivers/net/ethernet/broadcom/b44.c b/drivers/net/ethernet/broadcom/b44.c
-> > index 416620f..ebac411 100644
-> > --- a/drivers/net/ethernet/broadcom/b44.c
-> > +++ b/drivers/net/ethernet/broadcom/b44.c
-> > @@ -2103,7 +2103,9 @@ static int b44_set_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
-> >  	else
-> >  		bp->flags &= ~B44_FLAG_WOL_ENABLE;
+@initialize:python@
+@@
+import sys
+import sqlite3 as SQLite
+connection = SQLite.connect(":memory:")
+c = connection.cursor()
+c.execute("""create table numbers (number integer)""")
+delimiter = "|"
 
--- 
-Best regards,
-Andrey Skvortsov
+def store_number(count):
+    """Add an integer to an internal list."""
+    c.execute("""insert into numbers (number) values (?)""",
+              (count, )
+             )
 
-PGP Key ID: 0x57A3AEAD
+@counting_parameters@
+identifier work;
+parameter list[number] pl;
+type return_type;
+@@
+ return_type work(pl)
+ {
+  ...
+ }
+
+@script:python collection@
+count << counting_parameters.number;
+@@
+store_number(count)
+
+@finalize:python@
+@@
+c.execute("""select count(*) nr from numbers""")
+result = c.fetchone()
+
+if result[0] > 0:
+   c.execute("""create index x on numbers (number)""")
+   c.execute("select number, count(*) nr from numbers group by number")
+   sys.stdout.write(delimiter.join( ("number", "counter") ))
+   sys.stdout.write("\r\n")
+   for result in c:
+      sys.stdout.write(delimiter.join((str(result[0]),
+                                       str(result[1])
+                                      )))
+      sys.stdout.write("\r\n")
+else:
+   sys.stderr.write("No result for this analysis!\n")
+
+connection.close()
+
+
+
+elfring@Sonne:~/Projekte/Coccinelle/Probe> XX=$(date) && spatch.opt -timeout 12 -sp-file list_parameter_numbers1.cocci -dir /usr/src/linux-stable > list_parameter_numbers1.txt 2> list_parameter_numbers1-errors.txt ; YY=$(date) && echo "$XX * $YY"
+...
+elfring@Sonne:~/Projekte/Coccinelle/Probe> cat list_parameter_numbers1.txt
+number|counter
+0|29
+1|18261
+2|15374
+3|12237
+4|8159
+5|4339
+6|2701
+7|1183
+8|518
+9|260
+10|146
+11|83
+12|42
+13|21
+14|9
+15|7
+16|2
+17|4
+18|1
+21|1
+22|1
+
+
+Do you find such an analysis result from the source files for Linux 3.17.4
+interesting for further considerations?
+
+Regards,
+Markus
