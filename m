@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690AbaLAMx4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 07:53:56 -0500
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:48967 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382AbaLAMxy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 07:53:54 -0500
-Date: Mon, 1 Dec 2014 12:53:47 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
-        rpurdie@rpsys.net, sakari.ailus@iki.fi, s.nawrocki@samsung.com,
-        Andrzej Hajda <a.hajda@samsung.com>,
-        SangYoung Son <hello.son@smasung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH/RFC v8 09/14] mfd: max77693: adjust
- max77693_led_platform_data
-Message-ID: <20141201125347.GC12068@x1>
-References: <1417166286-27685-1-git-send-email-j.anaszewski@samsung.com>
- <1417166286-27685-10-git-send-email-j.anaszewski@samsung.com>
- <20141201113430.GC15845@x1>
- <547C63F4.4060203@samsung.com>
+	id S1753726AbaLAMyS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 07:54:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38876 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752835AbaLAMyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 07:54:16 -0500
+Message-ID: <547C64F3.9050005@suse.com>
+Date: Mon, 01 Dec 2014 13:54:11 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <547C63F4.4060203@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        boris.ostrovsky@oracle.com, x86@kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, andrew.cooper3@citrix.com
+Subject: Re: [PATCH V4 00/10] xen: Switch to virtual mapped linear p2m list
+References: <1417172039-8627-1-git-send-email-jgross@suse.com> <547C51AD.8070904@citrix.com>
+In-Reply-To: <547C51AD.8070904@citrix.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 01 Dec 2014, Jacek Anaszewski wrote:
-> On 12/01/2014 12:34 PM, Lee Jones wrote:
-> >On Fri, 28 Nov 2014, Jacek Anaszewski wrote:
-> >
-> >I'm guessing this will effect the other patches in the set?
-> >
-> 
-> max77692 flash driver depends on it and it has to be
-> in synch with the related DT bindings patch.
+On 12/01/2014 12:31 PM, David Vrabel wrote:
+> On 28/11/14 10:53, Juergen Gross wrote:
+>> Paravirtualized kernels running on Xen use a three level tree for
+>> translation of guest specific physical addresses to machine global
+>> addresses. This p2m tree is used for construction of page table
+>> entries, so the p2m tree walk is performance critical.
+>>
+>> By using a linear virtual mapped p2m list accesses to p2m elements
+>> can be sped up while even simplifying code. To achieve this goal
+>> some p2m related initializations have to be performed later in the
+>> boot process, as the final p2m list can be set up only after basic
+>> memory management functions are available.
+>
+> What are the results of the testing I asked for?
 
-Very well.  Providing you address the commitlog issues:
+You asked for those replying to the patch introducing the linear
+mapping. So I added the description of the tested scenarios in the
+patch description of that patch.
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+> If Konrad or Boris are happy with this series I think it can go into 3.19.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Great, thanks!
+
+
+Juergen
+
