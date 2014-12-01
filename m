@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897AbaLAJ4r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 04:56:47 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:52310 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662AbaLAJ4p (ORCPT
+	id S1753056AbaLAJ5o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 04:57:44 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53237 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810AbaLAJ5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 04:56:45 -0500
-Date: Mon, 1 Dec 2014 10:56:33 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        Anup Patel <anup.patel@linaro.org>,
-        Sakari Ailus <sakari.ailus@linux.intel.com>,
-        David Drysdale <drysdale@google.com>,
-        stephen hemminger <stephen@networkplumber.org>,
-        Bjarke Istrup Pedersen <gurligebis@gentoo.org>,
-        Andy Grover <agrover@redhat.com>,
-        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v7 08/46] virtio: memory access APIs
-Message-ID: <20141201105633.63ddff73.cornelia.huck@de.ibm.com>
-In-Reply-To: <1417359787-10138-9-git-send-email-mst@redhat.com>
-References: <1417359787-10138-1-git-send-email-mst@redhat.com>
-	<1417359787-10138-9-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120109-0025-0000-0000-000002AA158B
+	Mon, 1 Dec 2014 04:57:43 -0500
+Date: Mon, 1 Dec 2014 01:57:30 -0800
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-02ecc41abcea4ff9291d548f6f846b29b354ddd2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
+        hpa@zytor.com, bp@suse.de
+Reply-To: hpa@zytor.com, bp@suse.de, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+In-Reply-To: <1417353999-32236-1-git-send-email-bp@alien8.de>
+References: <1417353999-32236-1-git-send-email-bp@alien8.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, microcode:
+  Limit the microcode reloading to 64-bit for now
+Git-Commit-ID: 02ecc41abcea4ff9291d548f6f846b29b354ddd2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 30 Nov 2014 17:09:50 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+Commit-ID:  02ecc41abcea4ff9291d548f6f846b29b354ddd2
+Gitweb:     http://git.kernel.org/tip/02ecc41abcea4ff9291d548f6f846b29b354ddd2
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Sun, 30 Nov 2014 14:26:39 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 1 Dec 2014 10:55:08 +0100
 
-> virtio 1.0 makes all memory structures LE, so
-> we need APIs to conditionally do a byteswap on BE
-> architectures.
-> 
-> To make it easier to check code statically,
-> add virtio specific types for multi-byte integers
-> in memory.
-> 
-> Add low level wrappers that do a byteswap conditionally, these will be
-> useful e.g. for vhost.  Add high level wrappers that
-> query device endian-ness and act accordingly.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  include/linux/virtio_byteorder.h  | 59 +++++++++++++++++++++++++++++++++++++++
->  include/linux/virtio_config.h     | 32 +++++++++++++++++++++
->  include/uapi/linux/virtio_ring.h  | 45 ++++++++++++++---------------
->  include/uapi/linux/virtio_types.h | 46 ++++++++++++++++++++++++++++++
->  include/uapi/linux/Kbuild         |  1 +
->  5 files changed, 161 insertions(+), 22 deletions(-)
->  create mode 100644 include/linux/virtio_byteorder.h
->  create mode 100644 include/uapi/linux/virtio_types.h
+x86, microcode: Limit the microcode reloading to 64-bit for now
 
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+First, there was this: https://bugzilla.kernel.org/show_bug.cgi?id=88001
 
+The problem there was that microcode patches are not being reapplied
+after suspend-to-ram. It was important to reapply them, though, because
+of for example Haswell's TSX erratum which disabled TSX instructions
+with a microcode patch.
+
+A simple fix was fb86b97300d9 ("x86, microcode: Update BSPs microcode
+on resume") but, as it is often the case, simple fixes are too
+simple. This one causes 32-bit resume to fail:
+
+https://bugzilla.kernel.org/show_bug.cgi?id=88391
+
+Properly fixing this would require more involved changes for which it
+is too late now, right before the merge window. Thus, limit this to
+64-bit only temporarily.
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1417353999-32236-1-git-send-email-bp@alien8.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/cpu/microcode/core.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/x86/kernel/cpu/microcode/core.c b/arch/x86/kernel/cpu/microcode/core.c
+index 2ce9051..08fe6e8 100644
+--- a/arch/x86/kernel/cpu/microcode/core.c
++++ b/arch/x86/kernel/cpu/microcode/core.c
+@@ -465,6 +465,7 @@ static void mc_bp_resume(void)
+ 
+ 	if (uci->valid && uci->mc)
+ 		microcode_ops->apply_microcode(cpu);
++#ifdef CONFIG_X86_64
+ 	else if (!uci->mc)
+ 		/*
+ 		 * We might resume and not have applied late microcode but still
+@@ -473,6 +474,7 @@ static void mc_bp_resume(void)
+ 		 * applying patches early on the APs.
+ 		 */
+ 		load_ucode_ap();
++#endif
+ }
+ 
+ static struct syscore_ops mc_syscore_ops = {
