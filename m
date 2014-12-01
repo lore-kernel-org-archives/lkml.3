@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165AbaLATe0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 14:34:26 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45368 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753856AbaLATeY (ORCPT
+	id S932174AbaLATjt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 14:39:49 -0500
+Received: from smtp-out-249.synserver.de ([212.40.185.249]:1032 "EHLO
+	smtp-out-249.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932094AbaLATjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 14:34:24 -0500
-Date: Mon, 1 Dec 2014 19:33:57 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Romain Perier <romain.perier@gmail.com>
-Cc: heiko@sntech.de, johan@kernel.org, lee.jones@linaro.org,
-        grant.likely@linaro.org, robh@kernel.org, devicetree@vger.kernel.org,
-        lgirdwood@gmail.com, mark.rutland@arm.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        balbi@ti.com
-Message-ID: <20141201193357.GO7712@sirena.org.uk>
-References: <1416918506-9366-1-git-send-email-romain.perier@gmail.com>
+	Mon, 1 Dec 2014 14:39:48 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 13987
+Message-ID: <547CC407.30308@metafoo.de>
+Date: Mon, 01 Dec 2014 20:39:51 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0vZOSZtHto+Zdlc0"
-Content-Disposition: inline
-In-Reply-To: <1416918506-9366-1-git-send-email-romain.perier@gmail.com>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v5 0/2] poweroff-source DT property renaming
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Timur Tabi <timur@tabi.org>, Markus Pargmann <mpa@pengutronix.de>,
+        Jiada Wang <jiada_wang@mentor.com>
+CC: alsa-devel@alsa-project.org, lgirdwood@gmail.com, tiwai@suse.de,
+        Li.Xiubo@freescale.com, nicoleotsuka@gmail.com, broonie@kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH] ASoC: fsl_ssi: free irq before irq_dispose_mapping()
+References: <1417402251-6596-1-git-send-email-jiada_wang@mentor.com> <20141201065046.GB27289@pengutronix.de> <547C9C34.9080602@metafoo.de> <547CB817.10806@tabi.org>
+In-Reply-To: <547CB817.10806@tabi.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/01/2014 07:48 PM, Timur Tabi wrote:
+> On 12/01/2014 10:49 AM, Lars-Peter Clausen wrote:
+>> The driver creates the mapping by calling irq_of_parse_and_map(), so it
+>> also has to dispose the mapping.
+>
+> I agree with Markus, this does seem weird.  It sounds like you're saying
+> that irq_of_parse_and_map() and devm_request_irq() are incompatible.
 
---0vZOSZtHto+Zdlc0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+They probably are. You have to create the mapping before you request the IRQ 
+and if devm_request_irq() is used the IRQ is only freed again after the 
+remove function of the driver been called. Yet if a driver creates a mapping 
+in its probe function it should also dispose it in its remove function. So 
+you are stuck with either freeing the mapping before freeing the IRQ or 
+leaking the mapping.
 
-On Tue, Nov 25, 2014 at 12:28:24PM +0000, Romain Perier wrote:
-> The goal of this serie is to rename the property "poweroff-source" to
-> "system-power-controller". After discussions, it makes more sense to rename back
-> to the old established property name. This patches serie reverts
-> commit a4b4e0461ec5 ("of: Add standard property for poweroff capability").
+My opinion on this is that devices should not create mappings and should 
+leave that to the core. This quite easily solves the dilemma.
 
-> Changes since v4:
->   - Renamed the helper function to of_device_is_system_power_controller
+> A quick grep shows the following drivers that call both functions:
+>
 
-Applied both, thanks.
+Most of these drivers will probably work fine without irq_of_parse_and_map().
 
---0vZOSZtHto+Zdlc0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> ata/pata_mpc52xx.c
+> built-in.o
+> cpufreq/exynos5440-cpufreq.c
+> crypto/omap-sham.c
+> dma/moxart-dma.c
+> edac/mpc85xx_edac.c
+> hsi/clients/nokia-modem.c
+> i2c/busses/i2c-wmt.c
+> input/serio/apbps2.c
+> mmc/host/omap_hsmmc.c
+> mmc/host/moxart-mmc.c
+> mtd/nand/mpc5121_nfc.c
+> net/ethernet/arc/emac_main.c
+> net/ethernet/moxa/moxart_ether.c
+> pci/host/pcie-rcar.c
+> pinctrl/samsung/pinctrl-exynos5440.c
+> pinctrl/samsung/pinctrl-exynos.c
+> pinctrl/pinctrl-bcm2835.c
+> spi/spi-bcm2835.c
+> spi/spi-mpc512x-psc.c
+> staging/xillybus/xillybus_of.c
+> thermal/samsung/exynos_tmu.c
+>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUfMKkAAoJECTWi3JdVIfQSJIH+wSNcmiYnzlZRt4VuDHTomaW
-0VXUzfmD25BkY3HfzYObobws7UTVDdIVJuhhHxrt1v54n7gR9IvvzNmE5OZLs+yl
-1tmLMGfx4Dv/I40967XtBUpPNNSV/sA2yyV90GqoKA3sd2S0ulJR3y6CKV+vJi6p
-iuVttSQNiJeiOpuDbYoSSqoCGP9YiWortLGdf5YgVLK+g/P5Ryqg0StkBipao6w5
-FhJkOUdSzuVNrBeGUpfPeIIaGGQZ6zIyS8WPqZyk+1STRMKVG15+vq9Rztz2Ew81
-Xc3HVdhyw2L+H9041W7gNRJydIoHbg6p05HiF0Rsgg+IcEkbmJYW6PrhWuoflvc=
-=daGv
------END PGP SIGNATURE-----
-
---0vZOSZtHto+Zdlc0--
