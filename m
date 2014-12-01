@@ -1,165 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721AbaLAHF2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 02:05:28 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53323 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752426AbaLAHF1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 02:05:27 -0500
-Date: Mon, 1 Dec 2014 08:04:37 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Flora Fu <flora.fu@mediatek.com>
-Cc: Rob Herring <robh+dt@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-arm-kernel@lists.infradead.org, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sandeep Nair <sandeep_n@ti.com>, Andy Gross <agross@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <treding@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        "Joe.C" <yingjoe.chen@mediatek.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, srv_heupstream@mediatek.com,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Dongdong Cheng <dongdong.cheng@mediatek.com>
-Subject: Re: [PATCH v2 0/8] Add Support for MediaTek PMIC MT6397 MFD Core and
- Regulator
-Message-ID: <20141201070437.GQ14482@pengutronix.de>
-References: <1417146874-5232-1-git-send-email-flora.fu@mediatek.com>
+	id S1752657AbaLAHTs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 02:19:48 -0500
+Received: from ozlabs.org ([103.22.144.67]:33141 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751336AbaLAHTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 02:19:46 -0500
+Date: Mon, 1 Dec 2014 18:19:33 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>, "John W. Linville" <linville@tuxdriver.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arend van Spriel <arend@broadcom.com>, Felix Fietkau <nbd@openwrt.org>,
+        Ben Greear <greearb@candelatech.com>
+Subject: linux-next: manual merge of the driver-core tree with the net-next
+ tree
+Message-ID: <20141201181933.6dfaad66@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417146874-5232-1-git-send-email-flora.fu@mediatek.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 07:52:43 up 46 days, 18:06, 44 users,  load average: 0.05, 0.09,
- 0.07
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/ZwIM_HxR9btgh8Y.dkN8p=k"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Flora,
+--Sig_/ZwIM_HxR9btgh8Y.dkN8p=k
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Your Cc list is huge. You should limit it to the lists and to the
-individuals you know are interested in this series, like maintainers,
-people who work on Mediatek SoCs, people who commented on previous
-series.
+Hi Greg,
 
-Sascha
+Today's linux-next merge of the driver-core tree got a conflict in
+drivers/net/wireless/ath/ath9k/debug.c between commits 70e535ed0029
+("ath9k: clean up debugfs print of reset causes"), 7b8aaead958e
+("ath9k: restart hardware after noise floor calibration failure") and
+325e18817668 ("ath9k: fix misc debugfs when not using chan context")
+from the net-next tree and commit 631bee257bd5 ("ath: use seq_file api
+for ath9k debugfs files") from the driver-core tree.
 
-On Fri, Nov 28, 2014 at 11:54:26AM +0800, Flora Fu wrote:
-> 
-> The patch sets add support for MediaTek PMIC MT6397 MFD core and its regulator driver.
-> This is hardware layout for access PMIC MT6397 from AP SoC MT8135.
-> Between PMIC MT6397 and MT8135, the physical signal channel is SPI bus.
-> A specific hardware called PMIC Wrapper or PWRAP to handle access protocols in both PMIC and AP side.
-> 
-> +-----------------+           +---------------+
-> |                 |           |               |
-> | Mediatek AP SoC |           |               |
-> | (ex. MT8135)    |           |    MT6397     |
-> |                 |           |               |
-> |      +--------+ | (SPI bus) | +--------+    |
-> |      |        | |-----------| |        |    |
-> |      |  PMIC  | |-----------| |  PMIC  |    |
-> |      | Wrapper| |-----------| | Wrapper|    |
-> |      |        | |-----------| |        |    |
-> |      +--------+ |           | +--------+    |
-> |                 |           |               |
-> +-----------------+           +---------------+
-> 
-> Changes since v1
-> ================
-> (1) Patch 1/8: Add MT8135 PMIC wrapper driver for SoC's proprietary hardware.
-> (2) Patch 2/8: Update patch of MT6397 MFD driver to contain only MFD related codes and fix defeat of coding styles.
-> (3) Patch 3/8: Update MT6397 regulator driver
-> 	- use helpers and standard ways for specifying data in regulator description.
-> 	- add more comments to explaining why the driver implement its own regulator_ops for ".is_enabled", ".set_voltage_sel" and ".get_voltage_sel".
-> 	- update driver implement for coding styles.
-> (4) Patch 4/8: Add document for MT8135 PMIC wrapper.
-> (5) Patch 5/8: Update document for MT6397 MFD.
-> (6) Patch 6/8: Update document for MT6397 regulators.
-> (7) Patch 7/8: Add device tree for MT6397 MFD in mt8135.dtsi.
-> (8) Patch 8/8: Update device tree for MT6397 regulators in mt8135.dtsi.
-> 
-> Initial version (v1):
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/302984.html
-> 
-> This driver is based on 3.18-rc1.
-> 
-> Flora Fu (8):
->   soc: mediatek: Add PMIC wrapper for MT8135 and MT6397 SoC
->   mfd: MT6397: Add support for PMIC MT6397 MFD
->   regulator: MT6397: Add support for MT6397 regulator
->   dt-bindings:: Add document for MT8135 PMIC Wrapper
->   dt-bindings: Add document for MT6397 MFD
->   dt-bindings: Add document for MT6397 regulator
->   ARM: dts: mt8135: Add support for PMIC MT6397 MFD
->   ARM: dts: mt8135: Add support for MT6397 regulator
-> 
->  Documentation/devicetree/bindings/mfd/mt6397.txt   |  73 ++
->  .../bindings/regulator/mt6397-regulator.txt        |  32 +
->  .../soc/mediatek/mediatek,mt8135-pwrap.txt         |  79 ++
->  arch/arm/boot/dts/mt8135.dtsi                      | 211 ++++++
->  drivers/mfd/Kconfig                                |  10 +
->  drivers/mfd/Makefile                               |   1 +
->  drivers/mfd/mt6397-core.c                          |  84 ++
->  drivers/regulator/Kconfig                          |   9 +
->  drivers/regulator/Makefile                         |   2 +-
->  drivers/regulator/mt6397-regulator.c               | 369 +++++++++
->  drivers/soc/Kconfig                                |   1 +
->  drivers/soc/Makefile                               |   1 +
->  drivers/soc/mediatek/Kconfig                       |  11 +
->  drivers/soc/mediatek/Makefile                      |   1 +
->  drivers/soc/mediatek/mt8135-pmic-wrap.c            | 844 +++++++++++++++++++++
->  drivers/soc/mediatek/mt8135-pmic-wrap.h            | 138 ++++
->  include/linux/mfd/mt6397/core.h                    |  23 +
->  include/linux/mfd/mt6397/registers.h               | 362 +++++++++
->  include/linux/regulator/mt6397-regulator.h         |  49 ++
->  include/linux/soc/mediatek/mtk-pmic-wrap.h         |  25 +
->  20 files changed, 2324 insertions(+), 1 deletion(-)
->  create mode 100644 Documentation/devicetree/bindings/mfd/mt6397.txt
->  create mode 100644 Documentation/devicetree/bindings/regulator/mt6397-regulator.txt
->  create mode 100644 Documentation/devicetree/bindings/soc/mediatek/mediatek,mt8135-pwrap.txt
->  create mode 100644 drivers/mfd/mt6397-core.c
->  create mode 100644 drivers/regulator/mt6397-regulator.c
->  create mode 100644 drivers/soc/mediatek/Kconfig
->  create mode 100644 drivers/soc/mediatek/Makefile
->  create mode 100644 drivers/soc/mediatek/mt8135-pmic-wrap.c
->  create mode 100644 drivers/soc/mediatek/mt8135-pmic-wrap.h
->  create mode 100644 include/linux/mfd/mt6397/core.h
->  create mode 100644 include/linux/mfd/mt6397/registers.h
->  create mode 100644 include/linux/regulator/mt6397-regulator.h
->  create mode 100644 include/linux/soc/mediatek/mtk-pmic-wrap.h
-> 
-> --
-> 1.8.1.1.dirty
-> 
-> 
-> 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Greg, I am not sure why those 2 commits are even in your tree.  Do they
+depend on something else in your tree?
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/net/wireless/ath/ath9k/debug.c
+index 696e3d5309c6,a1f1614a05c2..000000000000
+--- a/drivers/net/wireless/ath/ath9k/debug.c
++++ b/drivers/net/wireless/ath/ath9k/debug.c
+@@@ -832,57 -731,42 +731,46 @@@ static int read_file_misc(struct seq_fi
+  			continue;
+  		ath9k_calculate_iter_data(sc, ctx, &iter_data);
+ =20
+- 		len +=3D scnprintf(buf + len, sizeof(buf) - len,
+- 			"VIFS: CTX %i(%i) AP: %i STA: %i MESH: %i WDS: %i",
+- 			i++, (int)(ctx->assigned), iter_data.naps,
+- 			iter_data.nstations,
+- 			iter_data.nmeshes, iter_data.nwds);
+- 		len +=3D scnprintf(buf + len, sizeof(buf) - len,
+- 			" ADHOC: %i TOTAL: %hi BEACON-VIF: %hi\n",
+- 			iter_data.nadhocs, sc->cur_chan->nvifs, sc->nbcnvifs);
++ 		seq_printf(file,
+ -			   "VIF-COUNTS: CTX %i AP: %i STA: %i MESH: %i WDS: %i",
+ -			   i++, iter_data.naps, iter_data.nstations,
+++			   "VIFS: CTX %i(%i) AP: %i STA: %i MESH: %i WDS: %i",
+++			   i++, (int)(ctx->assigned), iter_data.naps,
+++			   iter_data.nstations,
++ 			   iter_data.nmeshes, iter_data.nwds);
++ 		seq_printf(file, " ADHOC: %i TOTAL: %hi BEACON-VIF: %hi\n",
++ 			   iter_data.nadhocs, sc->cur_chan->nvifs,
++ 			   sc->nbcnvifs);
+  	}
+ =20
+- 	if (len > sizeof(buf))
+- 		len =3D sizeof(buf);
+-=20
+- 	retval =3D simple_read_from_buffer(user_buf, count, ppos, buf, len);
+- 	return retval;
++ 	return 0;
+  }
+ =20
+- static ssize_t read_file_reset(struct file *file, char __user *user_buf,
+- 			       size_t count, loff_t *ppos)
++ static int read_file_reset(struct seq_file *file, void *data)
+  {
+- 	struct ath_softc *sc =3D file->private_data;
++ 	struct ath_softc *sc =3D dev_get_drvdata(file->private);
+ +	static const char * const reset_cause[__RESET_TYPE_MAX] =3D {
+ +		[RESET_TYPE_BB_HANG] =3D "Baseband Hang",
+ +		[RESET_TYPE_BB_WATCHDOG] =3D "Baseband Watchdog",
+ +		[RESET_TYPE_FATAL_INT] =3D "Fatal HW Error",
+ +		[RESET_TYPE_TX_ERROR] =3D "TX HW error",
+ +		[RESET_TYPE_TX_GTT] =3D "Transmit timeout",
+ +		[RESET_TYPE_TX_HANG] =3D "TX Path Hang",
+ +		[RESET_TYPE_PLL_HANG] =3D "PLL RX Hang",
+ +		[RESET_TYPE_MAC_HANG] =3D "MAC Hang",
+ +		[RESET_TYPE_BEACON_STUCK] =3D "Stuck Beacon",
+ +		[RESET_TYPE_MCI] =3D "MCI Reset",
+ +		[RESET_TYPE_CALIBRATION] =3D "Calibration error",
+ +	};
+- 	char buf[512];
+- 	unsigned int len =3D 0;
+ +	int i;
+ =20
+ -	seq_printf(file, "%17s: %2d\n", "Baseband Hang",
+ -		   sc->debug.stats.reset[RESET_TYPE_BB_HANG]);
+ -	seq_printf(file, "%17s: %2d\n", "Baseband Watchdog",
+ -		   sc->debug.stats.reset[RESET_TYPE_BB_WATCHDOG]);
+ -	seq_printf(file, "%17s: %2d\n", "Fatal HW Error",
+ -		   sc->debug.stats.reset[RESET_TYPE_FATAL_INT]);
+ -	seq_printf(file, "%17s: %2d\n", "TX HW error",
+ -		   sc->debug.stats.reset[RESET_TYPE_TX_ERROR]);
+ -	seq_printf(file, "%17s: %2d\n", "TX Path Hang",
+ -		   sc->debug.stats.reset[RESET_TYPE_TX_HANG]);
+ -	seq_printf(file, "%17s: %2d\n", "PLL RX Hang",
+ -		   sc->debug.stats.reset[RESET_TYPE_PLL_HANG]);
+ -	seq_printf(file, "%17s: %2d\n", "MAC Hang",
+ -		   sc->debug.stats.reset[RESET_TYPE_MAC_HANG]);
+ -	seq_printf(file, "%17s: %2d\n", "Stuck Beacon",
+ -		   sc->debug.stats.reset[RESET_TYPE_BEACON_STUCK]);
+ -	seq_printf(file, "%17s: %2d\n", "MCI Reset",
+ -		   sc->debug.stats.reset[RESET_TYPE_MCI]);
+ +	for (i =3D 0; i < ARRAY_SIZE(reset_cause); i++) {
+ +		if (!reset_cause[i])
+ +		    continue;
+ +
+- 		len +=3D scnprintf(buf + len, sizeof(buf) - len,
+- 				 "%17s: %2d\n", reset_cause[i],
+- 				 sc->debug.stats.reset[i]);
+++		seq_printf(file, "%17s: %2d\n", reset_cause[i],
+++			   sc->debug.stats.reset[i]);
+ +	}
+ =20
+- 	if (len > sizeof(buf))
+- 		len =3D sizeof(buf);
+-=20
+- 	return simple_read_from_buffer(user_buf, count, ppos, buf, len);
++ 	return 0;
+  }
+ =20
+  void ath_debug_stat_tx(struct ath_softc *sc, struct ath_buf *bf,
+@@@ -1331,16 -1175,16 +1179,16 @@@ int ath9k_init_debug(struct ath_hw *ah
+ =20
+  	ath9k_dfs_init_debug(sc);
+  	ath9k_tx99_init_debug(sc);
+ -	ath9k_spectral_init_debug(sc);
+ +	ath9k_cmn_spectral_init_debug(&sc->spec_priv, sc->debug.debugfs_phy);
+ =20
+- 	debugfs_create_file("dma", S_IRUSR, sc->debug.debugfs_phy, sc,
+- 			    &fops_dma);
+- 	debugfs_create_file("interrupt", S_IRUSR, sc->debug.debugfs_phy, sc,
+- 			    &fops_interrupt);
+- 	debugfs_create_file("xmit", S_IRUSR, sc->debug.debugfs_phy, sc,
+- 			    &fops_xmit);
+- 	debugfs_create_file("queues", S_IRUSR, sc->debug.debugfs_phy, sc,
+- 			    &fops_queues);
++ 	debugfs_create_devm_seqfile(sc->dev, "dma", sc->debug.debugfs_phy,
++ 				    read_file_dma);
++ 	debugfs_create_devm_seqfile(sc->dev, "interrupt", sc->debug.debugfs_phy,
++ 				    read_file_interrupt);
++ 	debugfs_create_devm_seqfile(sc->dev, "xmit", sc->debug.debugfs_phy,
++ 				    read_file_xmit);
++ 	debugfs_create_devm_seqfile(sc->dev, "queues", sc->debug.debugfs_phy,
++ 				    read_file_queues);
+  	debugfs_create_u32("qlen_bk", S_IRUSR | S_IWUSR, sc->debug.debugfs_phy,
+  			   &sc->tx.txq_max_pending[IEEE80211_AC_BK]);
+  	debugfs_create_u32("qlen_be", S_IRUSR | S_IWUSR, sc->debug.debugfs_phy,
+
+--Sig_/ZwIM_HxR9btgh8Y.dkN8p=k
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUfBaNAAoJEMDTa8Ir7ZwV+mwP/1TwtGHV4iZ8T1Js+Qj7oL2l
+T5Kyt8LBeGOeDi3GNK/tTxIoIzV7ymjqrjZV7Tr+F5cPgyZhRXR7EauWs3oo6x7h
+Dh5eVT38h82e3bEnM8QjORz8OIlr9XI2ATaNMTqFz5H8ThWNI7OzYjJNu9jI3td1
+/2i4IrFB0snuD71KKfz/G36MRJn/Dfibqu/Into6FVlJxKBZGt7pIke5zu4KUSlw
+K3imU/F47E16UYH9sfA4GDCG9Cr4vJpidkOWngj4W15l+YhzBNcOvRlVygRaEm2g
+n3TklMwuouxC1ENQWmrGLYmP3fIaJqi26EdZuv23ZjUfDzqBEZi8wi67V1c09+Pz
+QnkzLaSRxR5JnGhNCXDw9XopUDHP4hqaQxLWX0bOT/OsbFIHSwCmm45NF/wnaTXx
+v5BzsqoMolWOixnAluNZVHpVpUj/s22C13q4MBjBsLkeRD7tUGdxF4rrP9N/sP6M
+FLdP/6mL6OFLujzllbzk7hyJKzVROkSKa4PpW009Zpdp6zYdGlVmJsA72RHSoYkh
+Q2nQf3/4ugADaZt4C8BpwqR2zrzsoEbQn4V6m5Qzf05F4T3F5GqzMsGe/s3fTz0Q
+gzVpvl9R2KNGaCoSix4YF+FN2g/wIsbDz+vYzmyOhjbP8quxCSiTjXEgd13gI1WE
+tK9fmcZKXd15bsqzFFR8
+=Z4CR
+-----END PGP SIGNATURE-----
+
+--Sig_/ZwIM_HxR9btgh8Y.dkN8p=k--
