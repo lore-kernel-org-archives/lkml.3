@@ -1,105 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932634AbaLAWIh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 17:08:37 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:25968 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753934AbaLAWId (ORCPT
+	id S932653AbaLAWIn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 17:08:43 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:42951 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932636AbaLAWIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 17:08:33 -0500
-Date: Mon, 1 Dec 2014 10:33:36 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [PATCH 3/3] x86_64,vsyscall: Make vsyscall emulation configurable
-Message-ID: <20141201153336.GB3180@laptop.dumpdata.com>
-References: <cover.1414516558.git.luto@amacapital.net>
- <6b0c9b0fc128de68634c730a5b1a80e1d085ad02.1414516558.git.luto@amacapital.net>
- <20141028174629.GA2150@jtriplet-mobl1>
- <CALCETrUihPeKODJqi3tMYwyWYhML1Z=gr4wrVK5VnaFo=KGVJA@mail.gmail.com>
- <20141029200016.GK3424@laptop.dumpdata.com>
- <CALCETrW+f8S9fNrui_J34q3Ve4jwA=neGe-tYZ_Lbp+ML3LiRw@mail.gmail.com>
+	Mon, 1 Dec 2014 17:08:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrW+f8S9fNrui_J34q3Ve4jwA=neGe-tYZ_Lbp+ML3LiRw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <7htx1f409k.fsf@deeprootsystems.com>
+References: <1417423940-1669-1-git-send-email-zyw@rock-chips.com>
+	<7htx1f409k.fsf@deeprootsystems.com>
+Date: Mon, 1 Dec 2014 14:08:38 -0800
+X-Google-Sender-Auth: Rv2OwldyI-3Y0XExuS5SiDr13-U
+Message-ID: <CAD=FV=V2go5BMFbiFKu73_aVz5ck949W-kJQ6WLkAQRPJbjPVA@mail.gmail.com>
+Subject: Re: [PATCH v10 0/4] This suspend patch is only support cut off the
+ power of cpu and some external
+From: Doug Anderson <dianders@chromium.org>
+To: Kevin Hilman <khilman@kernel.org>
+Cc: Chris Zhong <zyw@rock-chips.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Mike Turquette <mturquette@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Tony Xie <xxx@rock-chips.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 02:30:29PM -0700, Andy Lutomirski wrote:
-> On Oct 29, 2014 1:00 PM, "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com> wrote:
-> >
-> > On Tue, Oct 28, 2014 at 11:09:53AM -0700, Andy Lutomirski wrote:
-> > > On Tue, Oct 28, 2014 at 10:57 AM, Josh Triplett <josh@joshtriplett.org> wrote:
-> > > > On Tue, Oct 28, 2014 at 10:22:28AM -0700, Andy Lutomirski wrote:
-> > > >> This adds CONFIG_X86_VSYSCALL_EMULATION, guarded by CONFIG_EXPERT.
-> > > >> Turning it off completely disables vsyscall emulation, saving ~3.5k
-> > > >> for vsyscall_64.c, 4k for vsyscall_emu_64.S (the fake vsyscall
-> > > >> page), some tiny amount of core mm code that supports a gate area,
-> > > >> and possibly 4k for a wasted pagetable.  The latter is because the
-> > > >> vsyscall addresses are misaligned and fit poorly in the fixmap.
-> > > >>
-> > > >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> > > >
-> > > > One minor nit below, but with or without that change,
-> > > > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> > > >
-> > > >> --- a/arch/x86/xen/mmu.c
-> > > >> +++ b/arch/x86/xen/mmu.c
-> > > >> @@ -1456,11 +1456,13 @@ static int xen_pgd_alloc(struct mm_struct *mm)
-> > > >>               user_pgd = (pgd_t *)__get_free_page(GFP_KERNEL | __GFP_ZERO);
-> > > >>               page->private = (unsigned long)user_pgd;
-> > > >>
-> > > >> +#ifdef CONFIG_X86_VSYSCALL_EMULATION
-> > > >>               if (user_pgd != NULL) {
-> > > >>                       user_pgd[pgd_index(VSYSCALL_ADDR)] =
-> > > >>                               __pgd(__pa(level3_user_vsyscall) | _PAGE_TABLE);
-> > > >>                       ret = 0;
-> > > >>               }
-> > > >> +#endif
-> > > >
-> > > > Could you instead make the if use IS_ENABLED?
-> > > >
-> > > >                 if (IS_ENABLED(CONFIG_X86_VSYSCALL_EMULATION) && user_pgd != NULL)
-> > > >
-> > > > That has the advantage of ensuring that the code continues to compile.
-> > > > (Given that you haven't removed level3_user_vsyscall, that should work.)
-> > >
-> > > I need the ret = 0, I think, so I'll resend.
-> > >
-> > > I think I'd rather use #ifdef here, since I think it would be great if
-> > > the Xen people could clean this up further.  With this change, under
-> > > some configurations, there should be no user-accessible kernel
-> > > addresses at all.  (Also, is there some PV mechanism
+Hi,
 
-What about the vsyscall time stamp (aka kvm-clock). That is not
-really VSYSCALL emulation based but normal code?
+On Mon, Dec 1, 2014 at 11:51 AM, Kevin Hilman <khilman@kernel.org> wrote:
+> Chris Zhong <zyw@rock-chips.com> writes:
+>
+>> devices, since we still lack power_domain driver, so the other power rail
+>> of rk3288 need keep power on.
+>> I have tested it on rk3288-evb board, atop next-20141112. goto suspend by type
+>> "echo mem > /sys/power/state", vdd_cpu is about 0mv by measuring, so it can be
+>> determined in sleep mode, then press power button to wakeup it.
+>
+> I tested this on top of today's linux-next (next-20141201) and it
+> suspends, but doesn't wake up from any of the button presses.  What
+> wakeup sources are configured for the rk3288-evb-rk808?
 
-> > > that I'm not thinking of that will break with this change?  I know
-> > > I've tripped over Xen pagetable and fixmap oddities before.)
-> >
-> > Not that I know of. The vsyscall is the only one that I know of that
-> > does this.
-> 
-> There's kvm-clock, too, but that may never co-exist with Xen.
+Just to close the loop (I talked with Kevin over IM about this, too):
 
-It will eventually.
-> 
-> I tagged v2 here:
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/tag/?id=optional-vsyscall-emulation-v2
-> 
-> and I'll send it out in a bit.
-> 
-> --Andy
-> 
-> >
-> > Do you have a full patchset somewhere for testing?
-> > >
-> > > --Andy
+I have a huge description of how I tested this as part of my patch at
+<https://patchwork.kernel.org/patch/5414941/>.  Chris:  I think Kevin
+has asked you several times to include information like this in your
+cover letter.  Please, please, please can you try to remember to do
+this?
+
+For those that don't want to click on my link, I'll include the
+relevant bits here:
+
+---
+
+Total patches atop that version of Linux were:
+
+1. https://patchwork.kernel.org/patch/5051881/ - clocksource:
+   arch_timer: Allow the device tree to specify uninitialized timer
+   registers
+
+2. https://patchwork.kernel.org/patch/5363671/ - clocksource:
+   arch_timer: Fix code to use physical timers when requested
+
+3. https://patchwork.kernel.org/patch/5382141/ - ARM: dts: rk3288: add
+   arm,cpu-registers-not-fw-configured
+
+4. Revert (b77d439 ARM: dts: rockchip: temporarily disable smp on
+   rk3288)
+
+5. https://patchwork.kernel.org/patch/5325111/ - usb: dwc2: resume
+   root hub when device detect with suspend state
+
+6. https://patchwork.kernel.org/patch/5410611/ - ARM: rockchip: add
+   suspend and resume for RK3288
+
+7. https://patchwork.kernel.org/patch/5410621/ - ARM: rockchip: Add
+   pmu-sram binding
+
+8. https://patchwork.kernel.org/patch/5410631/ - ARM: dts: add RK3288
+   suspend support
+
+9. https://patchwork.kernel.org/patch/5410641/ - ARM: dts: rockchip:
+   add suspend settings for rk3288-evb-rk808
+
+It looks like my pinctrl patches might be dropped due to cross
+dependency problems, so tomorrow's linux-next will probably also need
+(https://patchwork.kernel.org/patch/5344551/ - pinctrl: rockchip:
+Handle wakeup pins).
+
+I've also got a local hack to the Rockchip "pm.c" to replace the usage
+of "PMU_ARMINT_WAKEUP_EN" with 0x0e.  There seems to be some sort of
+ARM Interrupt waking us up all the time right when we go to sleep and
+the above will hack it so that only GPIOs + SDMMC Card Detect can wake
+us up.  Someone should track down what's going on there, but for now
+I've used the hack to prove that the basic code actually works.
