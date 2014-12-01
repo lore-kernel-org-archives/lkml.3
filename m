@@ -1,114 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932384AbaLAUkx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 15:40:53 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:41368 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932158AbaLAUkw (ORCPT
+	id S932436AbaLAUl2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 15:41:28 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:46320 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932158AbaLAUlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 15:40:52 -0500
+	Mon, 1 Dec 2014 15:41:25 -0500
+Message-ID: <547CD2E7.7030100@gmail.com>
+Date: Tue, 02 Dec 2014 04:43:19 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <547CCFF7.2000205@metafoo.de>
-References: <1417402251-6596-1-git-send-email-jiada_wang@mentor.com>
-	<2547588.Qc4F2IfZke@wuerfel>
-	<547CC89F.1030205@tabi.org>
-	<3401240.VsRpsiV8WN@wuerfel>
-	<547CCB78.5090007@tabi.org>
-	<547CCFF7.2000205@metafoo.de>
-Date: Mon, 1 Dec 2014 18:40:51 -0200
-Message-ID: <CAOMZO5B7MxLSaETUW0QyajdHMMX2nLg=t=5dVCNRePb6UzizRQ@mail.gmail.com>
-Subject: Re: [alsa-devel] [PATCH] ASoC: fsl_ssi: free irq before irq_dispose_mapping()
-From: Fabio Estevam <festevam@gmail.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Timur Tabi <timur@tabi.org>, Arnd Bergmann <arnd@arndb.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Jiada Wang <jiada_wang@mentor.com>, Xiubo Li <Li.Xiubo@freescale.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Nicolin Chen <nicoleotsuka@gmail.com>, Takashi Iwai <tiwai@suse.de>,
-        Mark Brown <broonie@kernel.org>, Markus Pargmann <mpa@pengutronix.de>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Content-Type: text/plain; charset=UTF-8
+To: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        minchan@kernel.org, "rth@twiddle.net" <rth@twiddle.net>,
+        "ink@jurassic.park.msu.ru" <ink@jurassic.park.msu.ru>,
+        "mattst88@gmail.com" <mattst88@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "jejb@parisc-linux.org" <jejb@parisc-linux.org>,
+        "deller@gmx.de" <deller@gmx.de>, "chris@zankel.net" <chris@zankel.net>,
+        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>
+CC: "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
+        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arch: uapi: asm: mman.h: Support MADV_FREE for madvise()
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 1, 2014 at 6:30 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
-> On 12/01/2014 09:11 PM, Timur Tabi wrote:
->>
->> On 12/01/2014 02:01 PM, Arnd Bergmann wrote:
->>>>
->>>> >Does this mean that fsl_ssi.c should not be calling
->>>> >irq_of_parse_and_map?  How else should it get the IRQ?
->>>
->>> platform_get_irq()
->>
->>
->> Ok, but that function also calls irq_create_of_mapping().  So it still
->> appears that the only way to get the IRQ is to map it, but then we can't
->> use
->> devm_request_irq().
->>
->
-> Hm... that's new. But it's not really a driver issue anymore if it is done
-> in the core. So I guess for now just use platform_get_irq() and ignore the
-> other issue.
+At present, kernel supports madvise(MADV_FREE), so can benefit to all
+related architectures (can grep MADV_WILLNEED or MADV_REMOVE in "arch/"
+to know about all related architectures).
 
-With the suggested changes below, the removal of the driver works fine on a mx6:
+The related git commit: "4fb10ba mm: support madvise(MADV_FREE)".
 
-root@freescale /$ modprobe   snd-soc-fsl-ssi
-root@freescale /$ modprobe snd-soc-imx-wm8962
-[  319.517679] input: WM8962 Beep Generator as
-/devices/soc0/soc/2100000.aips-bus/21a0000.i2c/i2c-0/0-001a/input/input7
-[  319.543225] imx-wm8962 sound: wm8962 <-> 202c000.ssi mapping ok
-root@freescale /$ rmmod  snd-soc-imx-wm8962
-root@freescale /$ rmmod   snd-soc-fsl-ssi
+The related error (with allmodconfig under parisc):
 
- sound/soc/fsl/fsl_ssi.c | 11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
+    CC      mm/madvise.o
+  mm/madvise.c: In function 'madvise_need_mmap_write':
+  mm/madvise.c:42:7: error: 'MADV_FREE' undeclared (first use in this function)
+    case MADV_FREE:
+       ^
+  mm/madvise.c:42:7: note: each undeclared identifier is reported only once for each function it appears in
+  mm/madvise.c: In function 'madvise_vma':
+  mm/madvise.c:534:7: error: 'MADV_FREE' undeclared (first use in this function)
+    case MADV_FREE:
+       ^
+  mm/madvise.c: In function 'madvise_behavior_valid':
+  mm/madvise.c:561:7: error: 'MADV_FREE' undeclared (first use in this function)
+    case MADV_FREE:
+       ^
+  make[1]: *** [mm/madvise.o] Error 1
+  make: *** [mm] Error 2
 
-diff --git a/sound/soc/fsl/fsl_ssi.c b/sound/soc/fsl/fsl_ssi.c
-index 32a31d9..c528f16 100644
---- a/sound/soc/fsl/fsl_ssi.c
-+++ b/sound/soc/fsl/fsl_ssi.c
-@@ -1361,7 +1361,7 @@ static int fsl_ssi_probe(struct platform_device *pdev)
-         return PTR_ERR(ssi_private->regs);
-     }
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ arch/alpha/include/uapi/asm/mman.h  | 1 +
+ arch/mips/include/uapi/asm/mman.h   | 1 +
+ arch/parisc/include/uapi/asm/mman.h | 1 +
+ arch/xtensa/include/uapi/asm/mman.h | 1 +
+ 4 files changed, 4 insertions(+)
 
--    ssi_private->irq = irq_of_parse_and_map(np, 0);
-+    ssi_private->irq = platform_get_irq(pdev, 0);
-     if (!ssi_private->irq) {
-         dev_err(&pdev->dev, "no irq for node %s\n", np->full_name);
-         return -ENXIO;
-@@ -1387,7 +1387,7 @@ static int fsl_ssi_probe(struct platform_device *pdev)
-     if (ssi_private->soc->imx) {
-         ret = fsl_ssi_imx_probe(pdev, ssi_private, iomem);
-         if (ret)
--            goto error_irqmap;
-+            return ret;
-     }
-
-     ret = snd_soc_register_component(&pdev->dev, &fsl_ssi_component,
-@@ -1458,10 +1458,6 @@ error_asoc_register:
-     if (ssi_private->soc->imx)
-         fsl_ssi_imx_clean(pdev, ssi_private);
-
--error_irqmap:
--    if (ssi_private->use_dma)
--        irq_dispose_mapping(ssi_private->irq);
--
-     return ret;
- }
-
-@@ -1478,9 +1474,6 @@ static int fsl_ssi_remove(struct platform_device *pdev)
-     if (ssi_private->soc->imx)
-         fsl_ssi_imx_clean(pdev, ssi_private);
-
--    if (ssi_private->use_dma)
--        irq_dispose_mapping(ssi_private->irq);
--
-     return 0;
- }
-
+diff --git a/arch/alpha/include/uapi/asm/mman.h b/arch/alpha/include/uapi/asm/mman.h
+index 0086b47..836fbd4 100644
+--- a/arch/alpha/include/uapi/asm/mman.h
++++ b/arch/alpha/include/uapi/asm/mman.h
+@@ -44,6 +44,7 @@
+ #define MADV_WILLNEED	3		/* will need these pages */
+ #define	MADV_SPACEAVAIL	5		/* ensure resources are available */
+ #define MADV_DONTNEED	6		/* don't need these pages */
++#define MADV_FREE	7		/* free pages only if memory pressure */
+ 
+ /* common/generic parameters */
+ #define MADV_REMOVE	9		/* remove these pages & resources */
+diff --git a/arch/mips/include/uapi/asm/mman.h b/arch/mips/include/uapi/asm/mman.h
+index cfcb876..106e741 100644
+--- a/arch/mips/include/uapi/asm/mman.h
++++ b/arch/mips/include/uapi/asm/mman.h
+@@ -67,6 +67,7 @@
+ #define MADV_SEQUENTIAL 2		/* expect sequential page references */
+ #define MADV_WILLNEED	3		/* will need these pages */
+ #define MADV_DONTNEED	4		/* don't need these pages */
++#define MADV_FREE	5		/* free pages only if memory pressure */
+ 
+ /* common parameters: try to keep these consistent across architectures */
+ #define MADV_REMOVE	9		/* remove these pages & resources */
+diff --git a/arch/parisc/include/uapi/asm/mman.h b/arch/parisc/include/uapi/asm/mman.h
+index 294d251..6cb8db7 100644
+--- a/arch/parisc/include/uapi/asm/mman.h
++++ b/arch/parisc/include/uapi/asm/mman.h
+@@ -40,6 +40,7 @@
+ #define MADV_SPACEAVAIL 5               /* insure that resources are reserved */
+ #define MADV_VPS_PURGE  6               /* Purge pages from VM page cache */
+ #define MADV_VPS_INHERIT 7              /* Inherit parents page size */
++#define MADV_FREE	8		/* free pages only if memory pressure */
+ 
+ /* common/generic parameters */
+ #define MADV_REMOVE	9		/* remove these pages & resources */
+diff --git a/arch/xtensa/include/uapi/asm/mman.h b/arch/xtensa/include/uapi/asm/mman.h
+index 201aec0..1b19f25 100644
+--- a/arch/xtensa/include/uapi/asm/mman.h
++++ b/arch/xtensa/include/uapi/asm/mman.h
+@@ -80,6 +80,7 @@
+ #define MADV_SEQUENTIAL	2		/* expect sequential page references */
+ #define MADV_WILLNEED	3		/* will need these pages */
+ #define MADV_DONTNEED	4		/* don't need these pages */
++#define MADV_FREE	5		/* free pages only if memory pressure */
+ 
+ /* common parameters: try to keep these consistent across architectures */
+ #define MADV_REMOVE	9		/* remove these pages & resources */
 -- 
-1.9.1
+1.9.3
