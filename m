@@ -1,177 +1,335 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815AbaLAJrF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 04:47:05 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53147 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039AbaLAJrC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 04:47:02 -0500
-Date: Mon, 1 Dec 2014 01:45:52 -0800
-From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-eda7516e1d428caf3cfc88e4292f2a1357a2e569@git.kernel.org>
-Cc: matthias.bgg@gmail.com, hpa@zytor.com, benh@kernel.crashing.org,
-        grant.likely@linaro.org, bp@suse.de, mingo@kernel.org,
-        wangyijing@huawei.com, tony.luck@intel.com, bhelgaas@google.com,
-        marc.zyngier@arm.com, joro@8bytes.org, jiang.liu@linux.intel.com,
-        linux-kernel@vger.kernel.org, yingjoe.chen@mediatek.com,
-        tglx@linutronix.de
-Reply-To: jiang.liu@linux.intel.com, tglx@linutronix.de,
-        yingjoe.chen@mediatek.com, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, marc.zyngier@arm.com, joro@8bytes.org,
-        tony.luck@intel.com, mingo@kernel.org, wangyijing@huawei.com,
-        bp@suse.de, hpa@zytor.com, benh@kernel.crashing.org,
-        grant.likely@linaro.org, matthias.bgg@gmail.com
-In-Reply-To: <1417351063-19039-1-git-send-email-bp@alien8.de>
-References: <20141129125319.GA6491@pd.tnic>
-	<1417351063-19039-1-git-send-email-bp@alien8.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] irqdomain:
-  Correct early allocation of irq domains with IRQs off
-Git-Commit-ID: eda7516e1d428caf3cfc88e4292f2a1357a2e569
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1752850AbaLAJsI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 04:48:08 -0500
+Received: from mail-by2on0101.outbound.protection.outlook.com ([207.46.100.101]:26347
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752039AbaLAJsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 04:48:06 -0500
+From: Dexuan Cui <decui@microsoft.com>
+To: Jason Wang <jasowang@redhat.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        "vkuznets@redhat.com" <vkuznets@redhat.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH v3] hv: hv_fcopy: drop the obsolete message on transfer
+ failure
+Thread-Topic: [PATCH v3] hv: hv_fcopy: drop the obsolete message on transfer
+ failure
+Thread-Index: AQHQDT/6Tepp2fiJgUel+58IpcrHxpx6efaA
+Date: Mon, 1 Dec 2014 09:47:14 +0000
+Message-ID: <F792CF86EFE20D4AB8064279AFBA51C613E691B8@HKNPRD3002MB017.064d.mgd.msft.net>
+References: <1417093747-21073-1-git-send-email-decui@microsoft.com>
+	<1417157243.3268.1@smtp.corp.redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C613E66566@HKNPRD3002MB017.064d.mgd.msft.net>
+	<1417169573.5822.12@smtp.corp.redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C613E66AAA@HKNPRD3002MB017.064d.mgd.msft.net>
+ <1417422163.877.1@smtp.corp.redhat.com>
+In-Reply-To: <1417422163.877.1@smtp.corp.redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [141.251.55.133]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 131.107.125.37)
+ smtp.mailfrom=decui@microsoft.com; 
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(51704005)(189002)(199003)(377454003)(24454002)(164054003)(13464003)(95666004)(86146001)(86612001)(23676002)(120916001)(15975445006)(99396003)(19580395003)(44976005)(69596002)(19580405001)(6806004)(68736004)(97736003)(84676001)(77096004)(106116001)(106466001)(81156004)(33656002)(87936001)(110136001)(26826002)(107046002)(551934003)(86362001)(2656002)(46102003)(92566001)(92726001)(50466002)(4396001)(31966008)(16796002)(217423001)(76176999)(54356999)(50986999)(93886004)(21056001)(77156002)(55846006)(62966003)(47776003)(20776003)(64706001)(66066001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY1PR0301MB1207;H:mail.microsoft.com;FPR:;SPF:Pass;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1207;
+X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1207;
+X-Forefront-PRVS: 0412A98A59
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1207;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1223;
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sB19mF57007892
 
-Commit-ID:  eda7516e1d428caf3cfc88e4292f2a1357a2e569
-Gitweb:     http://git.kernel.org/tip/eda7516e1d428caf3cfc88e4292f2a1357a2e569
-Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Sun, 30 Nov 2014 13:37:43 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 1 Dec 2014 10:38:30 +0100
+> -----Original Message-----
+> From: Jason Wang [mailto:jasowang@redhat.com]
+> Sent: Monday, December 1, 2014 16:23 PM
+> To: Dexuan Cui
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; driverdev-
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com; KY
+> Srinivasan; vkuznets@redhat.com; Haiyang Zhang
+> Subject: RE: [PATCH v3] hv: hv_fcopy: drop the obsolete message on transfer
+> failure
+> On Fri, Nov 28, 2014 at 7:54 PM, Dexuan Cui <decui@microsoft.com> wrote:
+> >>  -----Original Message-----
+> >>  From: Jason Wang [mailto:jasowang@redhat.com]
+> >>  Sent: Friday, November 28, 2014 18:13 PM
+> >>  To: Dexuan Cui
+> >>  Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> >> driverdev-
+> >>  devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com; KY
+> >>  Srinivasan; vkuznets@redhat.com; Haiyang Zhang
+> >>  Subject: RE: [PATCH v3] hv: hv_fcopy: drop the obsolete message on
+> >> transfer
+> >>  failure
+> >>  On Fri, Nov 28, 2014 at 4:36 PM, Dexuan Cui <decui@microsoft.com>
+> >> wrote:
+> >>  >>  -----Original Message-----
+> >>  >>  From: Jason Wang [mailto:jasowang@redhat.com]
+> >>  >>  Sent: Friday, November 28, 2014 14:47 PM
+> >>  >>  To: Dexuan Cui
+> >>  >>  Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> >>  >> driverdev-
+> >>  >>  devel@linuxdriverproject.org; olaf@aepfle.de;
+> >> apw@canonical.com; KY
+> >>  >>  Srinivasan; vkuznets@redhat.com; Haiyang Zhang
+> >>  >>  Subject: Re: [PATCH v3] hv: hv_fcopy: drop the obsolete message
+> >> on
+> >>  >> transfer
+> >>  >>  failure
+> >>  >>  On Thu, Nov 27, 2014 at 9:09 PM, Dexuan Cui
+> >> <decui@microsoft.com>
+> >>  >> wrote:
+> >>  >>  > In the case the user-space daemon crashes, hangs or is
+> >> killed, we
+> >>  >>  > need to down the semaphore, otherwise, after the daemon starts
+> >>  >> next
+> >>  >>  > time, the obsolete data in fcopy_transaction.message or
+> >>  >>  > fcopy_transaction.fcopy_msg will be used immediately.
+> >>  >>  >
+> >>  >>  > Cc: Jason Wang <jasowang@redhat.com>
+> >>  >>  > Cc: Vitaly Kuznetsov <vkuznets@redhat.com>
+> >>  >>  > Cc: K. Y. Srinivasan <kys@microsoft.com>
+> >>  >>  > Signed-off-by: Dexuan Cui <decui@microsoft.com>
+> >>  >>  > ---
+> >>  >>  >
+> >>  >>  > v2: I removed the "FCP" prefix as Greg asked.
+> >>  >>  >
+> >>  >>  >     I also updated the output message a little:
+> >>  >>  >     "FCP: failed to acquire the semaphore" -->
+> >>  >>  >     "can not acquire the semaphore: it is benign"
+> >>  >>  >
+> >>  >>  > v3: I added the code in fcopy_release() as Jason Wang
+> >> suggested.
+> >>  >>  >     I removed the pr_debug (it isn't so meaningful)and added a
+> >>  >>  > comment instead.
+> >>  >>  >
+> >>  >>  >  drivers/hv/hv_fcopy.c | 19 +++++++++++++++++++
+> >>  >>  >  1 file changed, 19 insertions(+)
+> >>  >>  >
+> >>  >>  > diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c
+> >>  >>  > index 23b2ce2..faa6ba6 100644
+> >>  >>  > --- a/drivers/hv/hv_fcopy.c
+> >>  >>  > +++ b/drivers/hv/hv_fcopy.c
+> >>  >>  > @@ -86,6 +86,18 @@ static void fcopy_work_func(struct
+> >> work_struct
+> >>  >>  > *dummy)
+> >>  >>  >  	 * process the pending transaction.
+> >>  >>  >  	 */
+> >>  >>  >  	fcopy_respond_to_host(HV_E_FAIL);
+> >>  >>  > +
+> >>  >>  > +	/* In the case the user-space daemon crashes, hangs or is
+> >>  >> killed, we
+> >>  >>  > +	 * need to down the semaphore, otherwise, after the daemon
+> >>  >> starts
+> >>  >>  > next
+> >>  >>  > +	 * time, the obsolete data in fcopy_transaction.message or
+> >>  >>  > +	 * fcopy_transaction.fcopy_msg will be used immediately.
+> >>  >>  > +	 *
+> >>  >>  > +	 * NOTE: fcopy_read() happens to get the semaphore (very
+> >> rare)?
+> >>  >>  > We're
+> >>  >>  > +	 * still OK, because we've reported the failure to the host.
+> >>  >>  > +	 */
+> >>  >>  > +	if (down_trylock(&fcopy_transaction.read_sema))
+> >>  >>  > +		;
+> >>  >>
+> >>  >>  Sorry, I'm not quite understand how if () ; can help here.
+> >>  >>
+> >>  >>  Btw, a question not relate to this patch.
+> >>  >>
+> >>  >>  What happens if a daemon is resume from SIGSTOP and expires the
+> >>  >> check
+> >>  >>  here?
+> >>  > Hi Jason,
+> >>  > My idea is: here we need down_trylock(), but in case we can't get
+> >> the
+> >>  > semaphore, it's OK anyway:
+> >>  >
+> >>  > Scenario 1):
+> >>  > 1.1: when the daemon is blocked on the pread(), the daemon
+> >> receives
+> >>  > SIGSTOP;
+> >>  > 1.2: the host user runs the PowerShell Copy-VMFile command;
+> >>  > 1.3.1: the driver reports the failure to the host user in 5s and
+> >>  > 1.3.2: the driver down()-es the semaphore;
+> >>  > 1.4: the daemon receives SIGCONT and it will be still blocked on
+> >> the
+> >>  > pread().
+> >>  > Without the down_trylock(), in 1.4, the daemon can receive an
+> >>  > obsolete message.
+> >>  > NOTE: in this scenario, the daemon is not killed.
+> >>  >
+> >>  > Scenario 2):
+> >>  > In senario 1), if the daemon receives SIGCONT between 1.3.1 and
+> >> 1.3.2
+> >>  > and
+> >>  > do down() in fcopy_read(), it will receive the message but: the
+> >>  > driver has
+> >>  > reported the failure to the host user and the driver's 1.3.2 can't
+> >>  > get the
+> >>  > semaphore -- IMO this is acceptably OK, though in the VM, an
+> >>  > incomplete
+> >>  > file will be left there.
+> >>  > BTW, I think in the daemon's hv_start_fcopy() we should add a
+> >>  > close(target_fd) before open()-ing a new one.
+> >>
+> >>  Right, but how about the case when resuming from SIGSTOP but no
+> >> timeout?
+> > Sorry, I don't understand this:
+> > if no timeout, fcopy_read() will get the semaphore and fcopy_write()
+> > will try to cancel fcopy_work.
+> 
+> Yes.
+> >
+> >
+> >>  Looks like in this case userspace() may wait in down_interruptible()
+> >>  until timeout. We probably need something like this:
+> >>
+> >>          if (down_interruptible(&fcopy_transaction.read_sema)) {
+> >>                  up(&fcopy_transaction.read_sema);
+> >>                  return -EINTR;
+> >>          }
+> > until "timeout"?
+> > if the daemon can't get the semaphore, it can only be wake by a
+> > signal(the
+> > daemon doesn't install handler, so by default most signals will kill
+> > the daemon).
+> > In case a signal waking up the daemon doesn't kill the daemon, why
+> > should
+> > we do up()?
+> 
+> True, no need since we do down_trylock() in release().
+> 
+> Btw, there's no EINTR handling in handling pread() return value,
+> may add such one which should be useful for something like debugging.
+> 
+> >
+> >
+> >>
+> >>  This should synchronize with the timeout work for sure.
+> >>  But how about only schedule it after this?
+> >>  It does not may sense to start the timer during interrupt
+> >>  since the file may not even opened and it may take time
+> >>  to handle signals?
+> >>
+> >>  >
+> >>  >>  >
+> >>  >>  > +
+> >>  >>  >  }
+> >>  >>  >
+> >>  >>  >  static int fcopy_handle_handshake(u32 version)
+> >>  >>  > @@ -351,6 +363,13 @@ static int fcopy_release(struct inode
+> >> *inode,
+> >>  >>  > struct file *f)
+> >>  >>  >  	 */
+> >>  >>  >  	in_hand_shake = true;
+> >>  >>  >  	opened = false;
+> >>  >>  > +
+> >>  >>  > +	if (cancel_delayed_work_sync(&fcopy_work)) {
+> >>  >>  > +		/* We haven't up()-ed the semaphore(very rare)? */
+> >>  >>  > +		if (down_trylock(&fcopy_transaction.read_sema))
+> >>  >>  > +			;
+> >>  >>
+> >>  >>  And this.
+> >>  >
+> >>  > Scenario 3):
+> >>  > When the daemon exits(e.g., SIGKILL received), if there is a
+> >>  > fcopy_work
+> >>  > pending (scheduled but not start to run yet), we should cancel the
+> >>  > work (as you suggested) and down() the semaphore, otherwise, the
+> >>  > obsolete message will be received by the next instance of the
+> >> daemon.
+> >>
+> >>  Yes
+> >>  >
+> >>  >
+> >>  > Scenario 4):  in the driver's hv_fcopy_onchannelcallback():
+> >>  >         schedule_delayed_work(&fcopy_work, 5*HZ);
+> >>  >         ----> if fcopy_release() is running on another vcpu, just
+> >>  > before the next line?
+> >>  >         fcopy_send_data();
+> >>  >
+> >>  > In this case, fcopy_release() can cancel fcopy_work, but
+> >>  > can't get the semaphore since it hasn't been up()-ed.
+> >>  > Hmm, in this case,   fcopy_send_data() will do up()  later, and
+> >> we'll
+> >>  > buffer an obsolete message in the driver, and the message will be
+> >>  > fetched by the next instance of the daemon...
+> >>  >
+> >>  > Looks we need a spinlock here?
+> >>
+> >>  Unless fcopy_release() can wait for all data for current transation
+> >>  to be received. Spinlock won't help.
+> >>
+> >>  But an idea is let the daemon the handle such cases. E.g make sure
+> >> the
+> >>  processing begins with START_COPY and end with
+> COMPLETE/CANCEL_COPY.
+> >>  Drop all requests that does not start with START_COPY.
+> >>
+> >>  Thought?
+> > Good idea.
+> > I also think we should reinforce the concept of state machine in the
+> > daemon code.
+> 
+> Yes, it needs.
+I agree.
+Obviously we can do something to make the daemon/driver work better
+in the corner cases.
 
-irqdomain: Correct early allocation of irq domains with IRQs off
+> >
+> > The daemon/driver communication has so many corner cases...
+> 
+> Looks so, let's first address the issue mentioned in this patch.
+OK.
 
-I'm seeing the following lockdep splat on an x2APIC machine with
-interrupts remapping. The problem is that enable_IR_x2apic() disables
-interrupts before doing any further initialization. However, after
-having moved to irq domains, domain allocation cannot happen with
-interrupts disabled (GFP_KERNEL).
+> I don't have any more comments other than changing
+> 
+>  if(down_trylock(&fcopy_transaction.read_sema))
+>      ;
+> 
+> to
+> 
+> down_trylock(&fcopy_transaction.read_sema);
+Hi Jason,
+This is to address Vitaly's comment in the bugzilla:
+https://bugzilla.redhat.com/show_bug.cgi?id=1162100#c5
 
-A proper fix would be to move that initialization to the early irq setup
-path, which is something for another day. It is more involved work too.
+down_trylock(&fcopy_transaction.read_sema) will
 
-So do a temporary fix which should not encourage the behaviour of even
-assuming the irq domains code should be called with interrupts disabled.
-Make it x86-only too.
+"
+produces the following compile warning:
+drivers/hv/hv_fcopy.c: In function ‚Äòfcopy_work_func‚Äô:
+drivers/hv/hv_fcopy.c:95:2: warning: ignoring return value of ‚Äòdown_trylock‚Äô, declared with attribute warn_unused_result [-Wunused-result]
+  (void)down_trylock(&fcopy_transaction.read_sema);
+"
 
-...
-dmar: Host address width 36
-dmar: DRHD base: 0x000000fed90000 flags: 0x0
-dmar: IOMMU 0: reg_base_addr fed90000 ver 1:0 cap c0000020e60262 ecap f0101a
-dmar: DRHD base: 0x000000fed91000 flags: 0x1
-dmar: IOMMU 1: reg_base_addr fed91000 ver 1:0 cap c9008020660262 ecap f0105a
-dmar: RMRR base: 0x000000da2ba000 end: 0x000000da2d0fff
-dmar: RMRR base: 0x000000db800000 end: 0x000000df9fffff
-IOAPIC id 2 under DRHD base  0xfed91000 IOMMU 1
-HPET id 0 under DRHD base 0xfed91000
-Queued invalidation will be enabled to support x2apic and Intr-remapping.
-------------[ cut here ]------------
-WARNING: CPU: 0 PID: 1 at kernel/locking/lockdep.c:2744 lockdep_trace_alloc+0xd4/0xe0()
-DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags))
-Modules linked in:
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.18.0-rc6+ #1
-Hardware name: LENOVO 2320CTO/2320CTO, BIOS G2ET86WW (2.06 ) 11/13/2012
- 0000000000000009 ffff880213d07b58 ffffffff816502d7 0000000000000000
- ffff880213d07ba8 ffff880213d07b98 ffffffff81059790 0000000000000001
- 0000000000000092 0000000000000000 00000000000080d0 0000000000000000
-Call Trace:
- dump_stack
- warn_slowpath_common
- warn_slowpath_fmt
- lockdep_trace_alloc
- __alloc_pages_nodemask
- ? get_page_from_freelist
- ? trace_hardirqs_off_caller
- alloc_kmem_pages_node
- kmalloc_large_node
- __kmalloc_node
- ? __dmar_enable_qi
- __irq_domain_add
- irq_domain_add_hierarchy
- intel_setup_irq_remapping.part.4
- intel_enable_irq_remapping
- irq_remapping_enable
- enable_IR
- enable_IR_x2apic
- default_setup_apic_routing
- native_smp_prepare_cpus
- kernel_init_freeable
- ? ret_from_fork
- ? rest_init
- kernel_init
- ret_from_fork
- ? rest_init
----[ end trace fac50e785fc22942 ]---
-Enabled IRQ remapping in x2apic mode
-Enabling x2apic
-Enabled x2apic
-Switched APIC routing to cluster x2apic.
-..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
-...
+Actually I personally don't care about the warning, because we only
+see it when we run some kind of code checker program.  :-)
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Yijing Wang <wangyijing@huawei.com>
-Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Matthias Brugger <matthias.bgg@gmail.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Link: http://lkml.kernel.org/r/20141129125319.GA6491@pd.tnic
-Link: http://lkml.kernel.org/r/1417351063-19039-1-git-send-email-bp@alien8.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/irq/irqdomain.c | 21 +++++++++++++++++++--
- 1 file changed, 19 insertions(+), 2 deletions(-)
+I can change my v3  to the "normal" style you prefer, if
+there is no strong objection from Vitaly?
 
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 7fac311..3395d89 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -46,14 +46,31 @@ struct irq_domain *__irq_domain_add(struct device_node *of_node, int size,
- 				    void *host_data)
- {
- 	struct irq_domain *domain;
-+	gfp_t gfp_flags = GFP_KERNEL;
-+
-+#ifdef CONFIG_X86
-+	/*
-+	 * BIG FAT COMMENT: Early initialization paths like enable_IR_x2apic(),
-+	 * for example, call into here with interrupts disabled but then we do
-+	 * allocate memory and can sleep so no-no. A proper fix would be to do
-+	 * x2APIC IR setup in the early irq setup path but it is too late for
-+	 * fixing it this way now, shortly before the merge window.
-+	 *
-+	 * So we do this little brown paper bag, which is temporary! Do not even
-+	 * think of calling irq domain setup code with IRQs disabled. You will
-+	 * get frozen-sharked!
-+	 */
-+	if (irqs_disabled())
-+		gfp_flags = GFP_NOFS;
-+#endif
- 
- 	domain = kzalloc_node(sizeof(*domain) + (sizeof(unsigned int) * size),
--			      GFP_KERNEL, of_node_to_nid(of_node));
-+			      gfp_flags, of_node_to_nid(of_node));
- 	if (WARN_ON(!domain))
- 		return NULL;
- 
- 	/* Fill structure */
--	INIT_RADIX_TREE(&domain->revmap_tree, GFP_KERNEL);
-+	INIT_RADIX_TREE(&domain->revmap_tree, gfp_flags);
- 	domain->ops = ops;
- 	domain->host_data = host_data;
- 	domain->of_node = of_node_get(of_node);
+Thanks,
+-- Dexuan
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
