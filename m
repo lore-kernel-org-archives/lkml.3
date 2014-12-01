@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641AbaLACwM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 21:52:12 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:38901 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752304AbaLACwJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 21:52:09 -0500
-Date: Sun, 30 Nov 2014 18:52:05 -0800
-From: Omar Sandoval <osandov@osandov.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        Joe Perches <joe@perches.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 3/3] btrfs: refactor btrfs_device->name updates
-Message-ID: <20141201025205.GA14040@mew>
-References: <cover.1417335583.git.osandov@osandov.com>
- <8881abdb8836e2d70f705baacc0fe491e75d66d4.1417335583.git.osandov@osandov.com>
- <CAJhHMCDNtQi0y8iYBXVJGwUAyK_sT74KmoZ-RwV_J0JPV3SgAA@mail.gmail.com>
+	id S1752669AbaLACwu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 21:52:50 -0500
+Received: from ozlabs.org ([103.22.144.67]:32948 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752562AbaLACwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 21:52:49 -0500
+Date: Mon, 1 Dec 2014 13:52:41 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sebastian Reichel <sre@kernel.org>, Tony Lindgren <tony@atomide.com>
+Subject: linux-next: manual merge of the v4l-dvb tree with the arm-soc tree
+Message-ID: <20141201135241.435ecb37@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJhHMCDNtQi0y8iYBXVJGwUAyK_sT74KmoZ-RwV_J0JPV3SgAA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/UU+c4Ww2.eAE=OEG+gqaQSV"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 30, 2014 at 10:26:43AM -0500, Pranith Kumar wrote:
-> On Sun, Nov 30, 2014 at 3:26 AM, Omar Sandoval <osandov@osandov.com> wrote:
-> > The rcu_string API introduced some new sparse errors but also revealed existing
-> > ones. First of all, the name in struct btrfs_device should be annotated as
-> > __rcu to prevent unsafe reads. Additionally, updates should go through
-> > rcu_dereference_protected to make it clear what's going on. This introduces
-> > some helper functions that factor out this functionality.
-> >
-> > Signed-off-by: Omar Sandoval <osandov@osandov.com>
-> > diff --git a/fs/btrfs/volumes.h b/fs/btrfs/volumes.h
-> > index 6e04f27..2298a70 100644
-> > --- a/fs/btrfs/volumes.h
-> > +++ b/fs/btrfs/volumes.h
-> > @@ -54,7 +54,7 @@ struct btrfs_device {
-> >
-> >         struct btrfs_root *dev_root;
-> >
-> > -       struct rcu_string *name;
-> > +       struct rcu_string __rcu *name;
-> >
-> >         u64 generation;
-> >
-> 
-> Since rcu_strings are rcu specific, why not annotate the char pointer
-> in 'struct rcu_string' with __rcu annotation? That should catch all
-> error-prone users of rcu_string.
-> 
-Because the whole structure is RCU'd, not just the str part of it. If str is
-annotated as __rcu, when we (correctly) rcu_dereference an rcu_string and then
-access the str member, we'll still get sparse warnings.
+--Sig_/UU+c4Ww2.eAE=OEG+gqaQSV
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-In any case, the above code does what I want it to do. See the following
-(non-sense but illustrative) example:
+Hi Mauro,
 
-#include <linux/rcustring.h>
+Today's linux-next merge of the v4l-dvb tree got a conflict in
+arch/arm/mach-omap2/board-rx51-peripherals.c between commit
+e639cd5bfc03 ("ARM: OMAP2+: Prepare to move GPMC to drivers by platform
+data header") from the arm-soc tree and commit 68a3c0433077 ("[media]
+ARM: OMAP2: RX-51: update si4713 platform data") from the v4l-dvb tree.
 
-static void example_func(void)
-{
-	struct rcu_string __rcu *example;
-	char *str;
-	str = example->str;
-}
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-  CHECK   /home/osandov/linux/example/example.c
-/home/osandov/linux/example/example.c:7:13: warning: incorrect type in assignment (different address spaces)
-/home/osandov/linux/example/example.c:7:13:    expected char *str
-/home/osandov/linux/example/example.c:7:13:    got char [noderef] <asn:4>*<noident>
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- 
-Omar
+diff --cc arch/arm/mach-omap2/board-rx51-peripherals.c
+index e2ad48b5d9c0,ec2e4101988b..000000000000
+--- a/arch/arm/mach-omap2/board-rx51-peripherals.c
++++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
+@@@ -23,7 -23,7 +23,8 @@@
+  #include <linux/regulator/machine.h>
+  #include <linux/gpio.h>
+  #include <linux/gpio_keys.h>
++ #include <linux/gpio/machine.h>
+ +#include <linux/omap-gpmc.h>
+  #include <linux/mmc/host.h>
+  #include <linux/power/isp1704_charger.h>
+  #include <linux/platform_data/spi-omap2-mcspi.h>
+
+--Sig_/UU+c4Ww2.eAE=OEG+gqaQSV
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUe9f+AAoJEMDTa8Ir7ZwV0TsP/RkjeAWxRk5NZYhAeikseo4l
+LtsYTU9HlBkJvfQ+dJZpwwnieXEu2VtWBL6BoG16eJnEyowCZQUh7xvk2wzjkhiH
+0Z/axKaKLcW5buTra6FYeOwrqHvd2BQHAak3T5CqUWPy8GLXt3BZ9XYmJY4WU4m/
+vQllAULjFbDvz+41NU+Ij7i6lz3BI9vLtxuJP+YbOaq8DC7Jbh+n0fENGqISQW1T
+QznI8nZfWFrd9y1ELWXzOMdlYEuzzzOx8ddVSPmLjP0R4qfwaYhL3X4NlSPs3+fA
+JsHUDA6QwqN3nJ+q80s1AABMVg4lAF5fd/WmMHfO/ct+9VJudoSB4yjd+KbdtsBQ
+kxHH3gwS4gHReVrtwCTTQ3Wii1UloOIjNeiCMly98im7f9izmp47AIp0EJcSSQXV
+5SMdQJOVraLmb7cgwY5dXHiZbjAy5T/j6ofXRcWJagTC72qnA93jez2J5qYeIYLp
+fju3k0hpkzY2kgG1rZSQf+0vv/ZA4zAcPaVAkNbNu1hCSaU41qrU2WXTL7SIs+2j
+o7APpur7v0xMPiWbqzeu59S6L4OfomHMGg3bFh6kKfaIq6Y3yNPaAGNxs+Zrupj2
+oN2vquOM2UfksgBhFCXushNLdzH+RD+0I/zWPBZ5RmGl9Hnnv6pr6y/GzzlwuxzJ
+e0KncSsXSRKoL+MuziW9
+=jb+I
+-----END PGP SIGNATURE-----
+
+--Sig_/UU+c4Ww2.eAE=OEG+gqaQSV--
