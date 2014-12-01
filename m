@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056AbaLAJ5o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 04:57:44 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53237 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810AbaLAJ5n (ORCPT
+	id S1753103AbaLAJ57 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 04:57:59 -0500
+Received: from smtp81.iad3a.emailsrvr.com ([173.203.187.81]:35734 "EHLO
+	smtp81.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753080AbaLAJ56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 04:57:43 -0500
-Date: Mon, 1 Dec 2014 01:57:30 -0800
-From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-02ecc41abcea4ff9291d548f6f846b29b354ddd2@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
-        hpa@zytor.com, bp@suse.de
-Reply-To: hpa@zytor.com, bp@suse.de, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-In-Reply-To: <1417353999-32236-1-git-send-email-bp@alien8.de>
-References: <1417353999-32236-1-git-send-email-bp@alien8.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, microcode:
-  Limit the microcode reloading to 64-bit for now
-Git-Commit-ID: 02ecc41abcea4ff9291d548f6f846b29b354ddd2
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 1 Dec 2014 04:57:58 -0500
+X-Sender-Id: abbotti@mev.co.uk
+Message-ID: <547C3B9D.7080002@mev.co.uk>
+Date: Mon, 01 Dec 2014 09:57:49 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Jeremiah Mahler <jmmahler@gmail.com>,
+        Chase Southwood <chase.southwood@gmail.com>,
+        gregkh@linuxfoundation.org, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: comedi: change some printk calls to pr_err
+References: <1417410356-25504-1-git-send-email-chase.southwood@gmail.com> <20141201084735.GA2705@hudson.localdomain>
+In-Reply-To: <20141201084735.GA2705@hudson.localdomain>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  02ecc41abcea4ff9291d548f6f846b29b354ddd2
-Gitweb:     http://git.kernel.org/tip/02ecc41abcea4ff9291d548f6f846b29b354ddd2
-Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Sun, 30 Nov 2014 14:26:39 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 1 Dec 2014 10:55:08 +0100
+On 01/12/14 08:47, Jeremiah Mahler wrote:
+> Chase,
+>
+> On Sun, Nov 30, 2014 at 11:05:56PM -0600, Chase Southwood wrote:
+>> There are a handful of calls to printk in ni_stc.h without specified log
+>> levels, as well as one in ni_mio_common.c.  This patch converts these
+>> calls to pr_err() instead, so that they are now explicitly log level
+>> ERR.
+>>
+>> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+>> ---
+>> I tacked the change to ni_mio_common.c on to this patch since it's the same
+>> exact change and it's just one line, so I think a single patch is justified
+>> here.
+>>   drivers/staging/comedi/drivers/ni_mio_common.c |  2 +-
+>>   drivers/staging/comedi/drivers/ni_stc.h        | 14 +++++++-------
+>>   2 files changed, 8 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
+>> index 353c17b..11e7017 100644
+>> --- a/drivers/staging/comedi/drivers/ni_mio_common.c
+>> +++ b/drivers/staging/comedi/drivers/ni_mio_common.c
+>> @@ -3945,7 +3945,7 @@ static unsigned ni_gpct_to_stc_register(enum ni_gpct_register reg)
+>>   		stc_register = Interrupt_B_Enable_Register;
+>>   		break;
+>>   	default:
+>> -		printk("%s: unhandled register 0x%x in switch.\n",
+>> +		pr_err("%s: unhandled register 0x%x in switch.\n",
+>>   		       __func__, reg);
+>>   		BUG();
+>>   		return 0;
+> [...]
+>
+> On my system the default log level is 4 which corresponds to
+> KERN_WARNING.  So switching to pr_err() would change the log level
+> of these messages.  Using pr_warn() might be a better choice.
 
-x86, microcode: Limit the microcode reloading to 64-bit for now
+I wouldn't worry about the log level in this case as those printks would 
+only be reached due to driver bugs.
 
-First, there was this: https://bugzilla.kernel.org/show_bug.cgi?id=88001
-
-The problem there was that microcode patches are not being reapplied
-after suspend-to-ram. It was important to reapply them, though, because
-of for example Haswell's TSX erratum which disabled TSX instructions
-with a microcode patch.
-
-A simple fix was fb86b97300d9 ("x86, microcode: Update BSPs microcode
-on resume") but, as it is often the case, simple fixes are too
-simple. This one causes 32-bit resume to fail:
-
-https://bugzilla.kernel.org/show_bug.cgi?id=88391
-
-Properly fixing this would require more involved changes for which it
-is too late now, right before the merge window. Thus, limit this to
-64-bit only temporarily.
-
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1417353999-32236-1-git-send-email-bp@alien8.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/cpu/microcode/core.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/arch/x86/kernel/cpu/microcode/core.c b/arch/x86/kernel/cpu/microcode/core.c
-index 2ce9051..08fe6e8 100644
---- a/arch/x86/kernel/cpu/microcode/core.c
-+++ b/arch/x86/kernel/cpu/microcode/core.c
-@@ -465,6 +465,7 @@ static void mc_bp_resume(void)
- 
- 	if (uci->valid && uci->mc)
- 		microcode_ops->apply_microcode(cpu);
-+#ifdef CONFIG_X86_64
- 	else if (!uci->mc)
- 		/*
- 		 * We might resume and not have applied late microcode but still
-@@ -473,6 +474,7 @@ static void mc_bp_resume(void)
- 		 * applying patches early on the APs.
- 		 */
- 		load_ucode_ap();
-+#endif
- }
- 
- static struct syscore_ops mc_syscore_ops = {
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
+-=(                          Web: http://www.mev.co.uk/  )=-
