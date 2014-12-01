@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932474AbaLAUSU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 15:18:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44852 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932196AbaLAUST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 15:18:19 -0500
-Date: Mon, 1 Dec 2014 21:18:13 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: "Liang, Kan" <kan.liang@intel.com>
-Cc: "acme@kernel.org" <acme@kernel.org>,
-        "namhyung@kernel.org" <namhyung@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: Re: [PATCH V6 1/3] perf tool: Add sort key symoff for perf diff
-Message-ID: <20141201201813.GA9165@krava.brq.redhat.com>
-References: <1417444812-22063-1-git-send-email-kan.liang@intel.com>
- <20141201195345.GA13302@krava.brq.redhat.com>
- <37D7C6CF3E00A74B8858931C1DB2F07701677D8E@SHSMSX103.ccr.corp.intel.com>
+	id S932546AbaLAUSY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 15:18:24 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:55308 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932196AbaLAUSW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 15:18:22 -0500
+Date: Mon, 1 Dec 2014 21:18:18 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        Huang Shijie <shijie8@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
+Subject: Re: [PATCH] mtd: gpmi: properly handle bitflips in erased pages
+Message-ID: <20141201211818.4e97f2e2@bbrezillon>
+In-Reply-To: <20141201194139.GI21347@ld-irv-0074>
+References: <1417461159-2972-1-git-send-email-boris.brezillon@free-electrons.com>
+	<20141201194139.GI21347@ld-irv-0074>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F07701677D8E@SHSMSX103.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 08:05:48PM +0000, Liang, Kan wrote:
+Hi Brian,
 
-SNIP
+On Mon, 1 Dec 2014 11:41:39 -0800
+Brian Norris <computersforpeace@gmail.com> wrote:
 
-> >      0.05%           main+0x14c
-> >      1.40%   -0.26%  main+0x155
-> >      0.07%           main+0x158
-> >      0.74%   -0.03%  main+0x15b
-> >      1.06%   -0.17%  main+0x160
-> >      0.31%   +0.30%  main+0x1a8
-> >      1.82%   -0.51%  main+0x1af
-> >      0.09%   +0.07%  main+0x1b1
-> >      0.05%           main+0x1b4
-> > 
-> > could we add something like '-s symstr' to do only symbol string
-> > comparison, so the previous output would gather in single line like:
-> > 
-> >      5.09%   +2.07%  main
+> Hi Boris,
 > 
-> Yes, we have a patch to do that.
-> https://lkml.org/lkml/2014/11/21/367
-> The default sort key "symbol" do symbols names comparison.
+> On Mon, Dec 01, 2014 at 08:12:39PM +0100, Boris Brezillon wrote:
+> > Brian, I really like the idea of having a generic implementation for this
+> > feature (using read_page_raw) as you suggested here [1], but this implies
+> > having a temporary buffer to store the page read in raw mode and keep the page
+> > read in normal (HW ECC engine eanbled) mode, and I'm not sure we want to
+> > allocate more buffers than we already have.
 > 
-> The symoff here is an extension in case anyone want to do deeper analysis.
+> Why does this require an additional buffer? If we've already noticed an
+> ECC error, we're expected to return raw data anyway, so what's the
+> problem with clobbering the original data with a raw version of the
+> data?
 
-cool, I just acked it
+Well in the GPMI particular case (and more generally all NAND
+controllers which do not support subpage write) this is true, but if you
+can do subpage write, then you might have a bit flip in a specific
+chunk which is still empty, while other chunks are written and are
+expecting standard ECC correction.
+In this case you want to keep the 3 chunks with  standard ECC correction
+and only one in raw mode with 'erased page bitflips' fixed.
 
-thanks,
-jirka
+> 
+> I really *really* do not want to merge another one-off attempt at
+> "solving" this problem in the low-level driver, if at all possible.
+
+We're definitely on the same page, this is why I asked some feedback. 
+
+> 
+> Brian
+> 
+> P.S. Sorry for not following up on my last attempt of a generic
+> solution. I don't think I got enough constructive feedback, other than
+> "this does not work for me", so I didn't pursue it further. If we have
+> the attention of more than one driver developer here (i.e., at least you
+> and me), then I'd really like to finish this off for good (?).
+
+No problem, I can help you achieve this goal ;-).
+
+Regards,
+
+Boris
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
