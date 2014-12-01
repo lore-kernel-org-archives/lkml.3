@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932834AbaLAXAt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 18:00:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55009 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932637AbaLAXAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 18:00:47 -0500
-Date: Mon, 1 Dec 2014 18:00:38 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Milan Broz <gmazyland@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, Julia Lawall <Julia.Lawall@lip6.fr>,
-        dm-devel@redhat.com, Alasdair Kergon <agk@redhat.com>
-Subject: Re: [PATCH 5/8 v2] dm: replace memset by memzero_explicit
-Message-ID: <20141201230037.GA9761@redhat.com>
-References: <1417367029-32762-1-git-send-email-Julia.Lawall@lip6.fr>
- <1417367029-32762-6-git-send-email-Julia.Lawall@lip6.fr>
- <547CD7B9.5030000@gmail.com>
+	id S932702AbaLAXFD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 18:05:03 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:58817 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932582AbaLAXFA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 18:05:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <547CD7B9.5030000@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141201225057.GA11285@n2100.arm.linux.org.uk>
+References: <1417461694-5129-1-git-send-email-dianders@chromium.org>
+	<20141201225057.GA11285@n2100.arm.linux.org.uk>
+Date: Mon, 1 Dec 2014 15:04:59 -0800
+X-Google-Sender-Auth: pq2_z3Plzafnib0N9jqPV6tnRKk
+Message-ID: <CAD=FV=VT7gr504-ZgWPfha+40XDX5eShkzZ36bg=-4Oub1S27w@mail.gmail.com>
+Subject: Re: [PATCH] ARM: rockchip: Convert resume code to C
+From: Doug Anderson <dianders@chromium.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Heiko Stuebner <heiko@sntech.de>, Chris Zhong <zyw@rock-chips.com>,
+        Kevin Hilman <khilman@linaro.org>, Sonny Rao <sonnyrao@chromium.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        russ.dill@gmail.com, Olof Johansson <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01 2014 at  4:03pm -0500,
-Milan Broz <gmazyland@gmail.com> wrote:
+Russel,
 
-> On 11/30/2014 06:03 PM, Julia Lawall wrote:
-> > From: Julia Lawall <Julia.Lawall@lip6.fr>
-> > 
-> > Memset on a local variable may be removed when it is called just before the
-> > variable goes out of scope.  Using memzero_explicit defeats this
-> > optimization.  A simplified version of the semantic patch that makes this
-> > change is as follows: (http://coccinelle.lip6.fr/)
-> 
-> Ack, but I submitted the same patch a week ago....
-> 
-> https://www.redhat.com/archives/dm-devel/2014-November/msg00084.html
-> 
-> Mike, please could you add this to linux-next tree or you want this
-> to go through Herbert's tree?
-> (I do not think it is good idea for DM patches.)
+On Mon, Dec 1, 2014 at 2:50 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> What I see here is a load of complexity which achieves very little.
+> The result doesn't get rid of much assembly, but it does make stuff
+> more complicated.  And the diffstat speaks volumes about this:
+>
+>  10 files changed, 275 insertions(+), 94 deletions(-)
+>
+> There's a lot of words in the description, but it's missing the most
+> important bit: why do we want to take this approach - what benefits
+> does it bring?
 
-I staged it in linux-next for 3.19 inclusion, see:
-https://git.kernel.org/cgit/linux/kernel/git/device-mapper/linux-dm.git/commit/?h=dm-for-3.19&id=a722201f9075b28be140bc13f8ec07bf6a42edd4
+Sure.  I guess the most important words in the description are:
+
+> We convert the existing assembly resume code into C as proof that this
+> works and to prepare for linking in SDRAM reinit code.
+
+I can't say that the SDRAM reinit code is ready for prime time yet,
+but you can get a preview of what it could look like at:
+
+https://chromium-review.googlesource.com/#/c/227366/25/arch/arm/mach-rockchip/embedded/rk3288_ddr_resume.c
+
+Adding that code in assembly seems like a very, very bad idea.
+Certainly my patch could wait until the DDR code is ready to be posted
+upstream if that made sense.  One advantage of waiting is that it's
+possible that the DDR code might end up moving elsewhere if it made
+sense to have it part of a memory controller driver or something like
+that.
+
+-Doug
