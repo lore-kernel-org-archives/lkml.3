@@ -1,391 +1,810 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617AbaLACVx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 21:21:53 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:50741 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752390AbaLACVu (ORCPT
+	id S1752421AbaLAC2i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 21:28:38 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:34088 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752178AbaLAC2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 21:21:50 -0500
-X-AuditID: cbfee68f-f791c6d000004834-05-547bd0bbc8ba
-Message-id: <547BD0BA.7080809@samsung.com>
-Date: Mon, 01 Dec 2014 11:21:46 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "arnd@arndb.de" <arnd@arndb.de>, "olof@lixom.net" <olof@lixom.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "s.nawrocki@samsung.com" <s.nawrocki@samsung.com>,
-        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "inki.dae@samsung.com" <inki.dae@samsung.com>,
-        "chanho61.park@samsung.com" <chanho61.park@samsung.com>,
-        "geunsik.lim@samsung.com" <geunsik.lim@samsung.com>,
-        "sw0312.kim@samsung.com" <sw0312.kim@samsung.com>,
-        "jh80.chung@samsung.com" <jh80.chung@samsung.com>,
-        "a.kesavan@samsung.com" <a.kesavan@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>
-Subject: Re: [PATCH 16/19] arm64: dts: exynos: Add dts files for 64-bit
- Exynos5433 SoC
-References: <1417073716-22997-1-git-send-email-cw00.choi@samsung.com>
- <1417073716-22997-17-git-send-email-cw00.choi@samsung.com>
- <20141127111834.GB857@leverpostej> <54787621.4000503@samsung.com>
- <20141128140059.GH25883@leverpostej>
-In-reply-to: <20141128140059.GH25883@leverpostej>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHIsWRmVeSWpSXmKPExsWyRsSkUHf3heoQg187+C0er1nMZPF30jF2
-	i/fLehgtLu/Xtph/5ByrxZ8JrWwWk+5PYLG48auN1aJ3wVU2i7NNb9gtpvxZzmSx6fE1VovL
-	u+awWcw4vw+o/84/Noul1y8yWZy6/pnN4vCbdlaLGZNfslkcm7GE0WLVrj+MFi8/nmBxEPNY
-	M28No8fvX5MYPXbOusvucefaHjaPzUvqPa6caGL16NuyitHj8ya5AI4oLpuU1JzMstQifbsE
-	rowF1z8zFcyLr5j+/DFbA+NT+y5GTg4JAROJw2/3M0HYYhIX7q1n62Lk4hASWMooMe/3NCaY
-	oj8/zjBBJBYxSrz6vQrKec0o8f/YL1aQKl4BLYmDaw+xg9gsAqoSPy98ZQSx2YDi+1/cYAOx
-	RQXCJFZOv8ICUS8o8WPyPTBbREBdomfXFxaQocwCDzkkjh85DzZIWCBCYu/eu1Db3jJKzFyz
-	lBkkwSlgKPF41yqwbmYBHYn9rdPYIGx5ic1r3jKDNEgIXOCQ2NaxiA3iJAGJb5MPATVwACVk
-	JTYdYIb4TVLi4IobLBMYxWYhOWoWkrGzkIxdwMi8ilE0tSC5oDgpvchYrzgxt7g0L10vOT93
-	EyMwWZz+96x/B+PdA9aHGAU4GJV4eCXmV4cIsSaWFVfmHmI0BbpiIrOUaHI+MCXllcQbGpsZ
-	WZiamBobmVuaKYnzLpT6GSwkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBUV21MXrVW7F3u+dW
-	HrKL1FnpFcdc2Txlr9XVlKMdy+e2lQdJL+L0XJG65EefVMTm3jBzrypjyY8MJ3ukfk+8ECfN
-	c7Nq/pbM67PWn/N09PT5KJTc1cTSuHHz4rpf+ncv7rDIbDgiEjn1lMKGH6HqrQl8bYwXjQ6W
-	znlyvPhRTaWn8oUVZg15SizFGYmGWsxFxYkAqz3Z9hEDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBKsWRmVeSWpSXmKPExsVy+t9jAd3dF6pDDPa+ZrJ4vGYxk8XfScfY
-	Ld4v62G0uLxf22L+kXOsFn8mtLJZTLo/gcXixq82VoveBVfZLM42vWG3mPJnOZPFpsfXWC0u
-	75rDZjHj/D6g/jv/2CyWXr/IZHHq+mc2i8Nv2lktZkx+yWZxbMYSRotVu/4wWrz8eILFQcxj
-	zbw1jB6/f01i9Ng56y67x51re9g8Ni+p97hyoonVo2/LKkaPz5vkAjiiGhhtMlITU1KLFFLz
-	kvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4D+U1IoS8wpBQoFJBYXK+nb
-	YZoQGuKmawHTGKHrGxIE12NkgAYS1jBmLLj+malgXnzF9OeP2RoYn9p3MXJySAiYSPz5cYYJ
-	whaTuHBvPVsXIxeHkMAiRolXv1cxQTivGSX+H/vFClLFK6AlcXDtIXYQm0VAVeLnha+MIDYb
-	UHz/ixtsILaoQJjEyulXWCDqBSV+TL4HZosIqEv07PrCAjKUWeAhh8TxI+fBBgkLREjs3XsX
-	attbRomZa5YygyQ4BQwlHu9aBdbNLKAjsb91GhuELS+xec1b5gmMArOQLJmFpGwWkrIFjMyr
-	GEVTC5ILipPScw31ihNzi0vz0vWS83M3MYJT0TOpHYwrGywOMQpwMCrx8B6cUx0ixJpYVlyZ
-	e4hRgoNZSYT3nAdQiDclsbIqtSg/vqg0J7X4EKMpMAwmMkuJJucD02ReSbyhsYmZkaWRuaGF
-	kbG5kjjvjZu5IUIC6YklqdmpqQWpRTB9TBycUg2MxX9Wrv0h2ldv9+D5Ru4u5psn2Cd/auqZ
-	XsJd8IyN7S/j+Qedp+qmmUpIyIY+TzisXnEkTrlVpPb6SymnRl+x+rzWSw3B3gIqu/K0jU4t
-	u2+yQGb75tB3jzOLLolbRLDqhISkuR5cd9aGr2VfcJzoz7X6kn97pEWjJQ6IffM+mPeuJ3Jz
-	zV0lluKMREMt5qLiRAC/TzhpWwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 30 Nov 2014 21:28:36 -0500
+From: John McMaster <johndmcmaster@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-media@vger.kernel.org, m.chehab@samsung.com, hdegoede@redhat.com,
+        John McMaster <johndmcmaster@gmail.com>
+Subject: [PATCH] [media] gspca_touptek: Add support for ToupTek UCMOS series USB cameras
+Date: Sun, 30 Nov 2014 18:27:53 -0800
+Message-Id: <1417400873-31709-1-git-send-email-johndmcmaster@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Mark,
+Adds support for AmScope MU800 / ToupTek UCMOS08000KPB USB microscope camera.
 
-On 11/28/2014 11:00 PM, Mark Rutland wrote:
-> On Fri, Nov 28, 2014 at 01:18:25PM +0000, Chanwoo Choi wrote:
->> Dear Mark,
->>
->> On 11/27/2014 08:18 PM, Mark Rutland wrote:
->>> On Thu, Nov 27, 2014 at 07:35:13AM +0000, Chanwoo Choi wrote:
->>>> This patch adds new Exynos5433 dtsi to support 64-bit Exynos5433 SoC
->>>> based on Octal core CPUs (quad Cortex-A57 and quad Cortex-A53).
->>>>
->>>> Cc: Kukjin Kim <kgene.kim@samsung.com>
->>>> Cc: Mark Rutland <mark.rutland@arm.com>
->>>> Cc: Arnd Bergmann <arnd@arndb.de>
->>>> Cc: Olof Johansson <olof@lixom.net>
->>>> Cc: Catalin Marinas <catalin.marinas@arm.com>
->>>> Cc: Will Deacon <will.deacon@arm.com>
->>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->>>> Acked-by: Inki Dae <inki.dae@samsung.com>
->>>> Acked-by: Geunsik Lim <geunsik.lim@samsung.com>
->>>> ---
->>>>  arch/arm64/boot/dts/exynos/exynos5433-pinctrl.dtsi | 698 +++++++++++++++++++++
->>>>  arch/arm64/boot/dts/exynos/exynos5433.dtsi         | 523 +++++++++++++++
->>>>  2 files changed, 1221 insertions(+)
->>>>  create mode 100644 arch/arm64/boot/dts/exynos/exynos5433-pinctrl.dtsi
->>>>  create mode 100644 arch/arm64/boot/dts/exynos/exynos5433.dtsi
->>>
-> 
-> [...]
-> 
->>>> +       cpus {
->>>> +               #address-cells = <2>;
->>>> +               #size-cells = <0>;
->>>> +
->>>> +               cpu0: cpu@100 {
->>>> +                       device_type = "cpu";
->>>> +                       compatible = "arm,cortex-a53", "arm,armv8";
->>>> +                       enable-method = "psci";
->>>
->>> While the CPU nodes have enable-methods, I didn't spot a PSCI node
->>> anywhere, so this dts cannot possibly have been used to bring up an SMP
->>> system.
->>>
->>> How has this dts been tested?
->>>
->>> What PSCI revision have you implemented? Have have you tested it?
->>
->> My mistake,
->> Exynos5433 supports PSCI v0.1. I'll add following PSCI nodes:
->> I tested the boot of secondary cpu.
->>
->>         psci {
->>                 compatible = "arm,psci";
->>                 method = "smc";
->>                 cpu_off = <0x84000002>;
->>                 cpu_on = <0xC4000003>;
->>         };
-> 
-> Ok. I take it _any_ CPU may be hotplugged (including CPU0), given that
-> you don't have MIGRATE_INFO_TYPE from PSCI 0.2 to tell you that this is
-> not possible? If not, attempting to hotplug CPU0 will result in a BUG()
-> and the kernel will explode.
-> 
-> Has that been tested? 
+Signed-off-by: John McMaster <johndmcmaster@gmail.com>
+---
+ drivers/media/usb/gspca/Kconfig   |   10 +
+ drivers/media/usb/gspca/Makefile  |    2 +
+ drivers/media/usb/gspca/touptek.c |  729 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 741 insertions(+)
+ create mode 100644 drivers/media/usb/gspca/touptek.c
 
-I just tested secondary CPU on during kernel booting after added 'psci' dt node.
-So, I got the ON state of Octa CPUs.
-
-Maybe I need more time to implement CPU0 and secondary cpu hotplugged dynamically on runtime.
-
-> 
-> Do all CPUs enter the kernel at EL2?
-
-I didn't consider EL2 for hypervisor mode.
-First role of this job, I'll implement CPU on/off and suspend by using PSCI.
-
-> 
->>>> +       soc: soc {
->>>> +               compatible = "simple-bus";
->>>> +               #address-cells = <1>;
->>>> +               #size-cells = <1>;
->>>> +               ranges;
->>>> +
->>>> +               fixed-rate-clocks {
->>>> +                       #address-cells = <1>;
->>>> +                       #size-cells = <0>;
->>>> +
->>>> +                       xusbxti: clock@0 {
->>>> +                               compatible = "fixed-clock";
->>>> +                               clock-output-names = "xusbxti";
->>>> +                               #clock-cells = <0>;
->>>> +                       };
->>>> +               };
->>>
->>> Get rid of the fixed-rate-clocks container node. It's pointless and
->>> messy. Given you only have one there's no need for the bogus
->>> unit-address either.
->>
->> OK, I'll remove unneeded code and will add following dt node for fin_pll.
->>
->>         fin_pll: xxti {
->>                 compatible = "fixed-clock";
->>                 clock-output-names = "fin_pll";
->>                 #clock-cells = <0>;
->>         };
-> 
-> That looks fine to me.
-> 
-> [...]
-> 
->>>> +               mct@101c0000 {
->>>> +                       compatible = "samsung,exynos4210-mct";
->>>> +                       reg = <0x101c0000 0x800>;
->>>> +                       interrupts = <0 102 0>, <0 103 0>, <0 104 0>, <0 105 0>,
->>>> +                               <0 106 0>, <0 107 0>, <0 108 0>, <0 109>,
->>>> +                               <0 110 0>, <0 111 0>, <0 112 0>, <0 113 0>;
->>>> +                       clocks = <&cmu_top CLK_FIN_PLL>, <&cmu_peris CLK_PCLK_MCT>;
->>>> +                       clock-names = "fin_pll", "mct";
->>>> +               };
->>>
->>> Hase this block had no changes whatsoever since its use in Exynos4210?
->>> Do we not need a "samsung,exynos5433-mct" comaptible string too?
->>
->> The type of Exynos5433's MCT(Multi-Core Timer) IP is the same with the type of Exynos4210 MCT.
->> Just Exynos5433 have eight local timer for Octa cores.
-> 
-> So "samsung,exynos4210-mct" should appear in the list. I'm just
-> wondering if it's worth having:
-> 
-> 	compatible = "samsung,exynos5433-mct", "samsung,exynos4210-mct";
-> 
-> Just in case we need to special-case the 5433 MCT for some reason later.
-
-OK, I'll add "samsung,exynos5433-mct" compatible string in exynos5433.dtsi
-according to your comment.
-
-> 
->>
->>            CPU0       CPU1       CPU2       CPU3       CPU4       CPU5       CPU6       CPU7
->> 134:          0          0          0          0          0          0          0          0       GIC 134  mct_comp_irq
->> 138:       3189          0          0          0          0          0          0          0       GIC 138  mct_tick0
->> 139:          0       2670          0          0          0          0          0          0       GIC 139  mct_tick1
->> 140:          0          0       2763          0          0          0          0          0       GIC 140  mct_tick2
->> 141:          0          0          0       2732          0          0          0          0       GIC 141  mct_tick3
->> 142:          0          0          0          0       2998          0          0          0       GIC 142  mct_tick4
->> 143:          0          0          0          0          0       2664          0          0       GIC 143  mct_tick5
->> 144:          0          0          0          0          0          0       2485          0       GIC 144  mct_tick6
->> 145:          0          0          0          0          0          0          0       2681       GIC 145  mct_tick7
->>
->> But, existing exynos-mct.c driver(drivers/clocksource/exynos-mct.c) used
->> 'register_current_timer_delay()' function which is supported on arm 32bit.
->> I fix it as following diff and then I'll send it to support 64-bit Exynos SoC on exynos-mct.c.
->>
->>  drivers/clocksource/Kconfig      | 1 -
->>  drivers/clocksource/exynos_mct.c | 4 ++++
->>  2 files changed, 4 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
->> index 9042060..27ef3fa 100644
->> --- a/drivers/clocksource/Kconfig
->> +++ b/drivers/clocksource/Kconfig
->> @@ -134,7 +134,6 @@ config CLKSRC_METAG_GENERIC
->>
->>  config CLKSRC_EXYNOS_MCT
->>         def_bool y if ARCH_EXYNOS
->> -       depends on !ARM64
->>         help
->>           Support for Multi Core Timer controller on Exynos SoCs.
->>
->> diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
->> index 9403061..d9c7dbb 100644
->> --- a/drivers/clocksource/exynos_mct.c
->> +++ b/drivers/clocksource/exynos_mct.c
->> @@ -223,6 +223,7 @@ static u64 notrace exynos4_read_sched_clock(void)
->>         return exynos4_read_count_32();
->>  }
->>
->> +#if !defined(CONFIG_ARM64)
->>  static struct delay_timer exynos4_delay_timer;
->>
->>  static cycles_t exynos4_read_current_timer(void)
->> @@ -231,14 +232,17 @@ static cycles_t exynos4_read_current_timer(void)
->>                          "cycles_t needs to move to 32-bit for ARM64 usage");
->>         return exynos4_read_count_32();
->>  }
->> +#endif
->>
->>  static void __init exynos4_clocksource_init(void)
->>  {
->>         exynos4_mct_frc_start();
->>
->> +#if !defined(CONFIG_ARM64)
->>         exynos4_delay_timer.read_current_timer = &exynos4_read_current_timer;
->>         exynos4_delay_timer.freq = clk_rate;
->>         register_current_timer_delay(&exynos4_delay_timer);
->> +#endif
-> 
-> Why not make both of these depend on CONFIG_ARM, rather than
-> !CONFIG_ARM64? We care about the presence of the delay_timer struct and
-> functions, which (from grepping around) exist in arch/arm and nowhere
-> else.
-
-You're right.
-I'll fix it by using CONFIG_ARM instead of !CONFIG_ARM64.
-
-> 
->>>> +               gic:interrupt-controller@11001000 {
->>>> +                       compatible = "arm,cortex-a15-gic";
->>>
->>> Given this is multi-cluster, surely this is an external GIC-400, for
->>> which we have a supported compatible string?
->>>
->>> So this should at least be:
->>>
->>>       compatible = "arm,gic-400", "arm,cortex-a15-gic";
->>
->> Exynos5433 used GIC-400. I'll modify it as following:
->>
->>         compatible = "arm,gic-400";
-> 
-> Ok. The former variant (with "arm,cortex-a15-gic" later in the list) has
-> the benefit of working with KVM today (which doesn't currently look for
-> "arm,gic-400").
-> 
->>>> +                       #interrupt-cells = <3>;
->>>> +                       interrupt-controller;
->>>> +                       reg =   <0x11001000 0x1000>,
->>>> +                               <0x11002000 0x1000>,
->>>> +                               <0x11004000 0x2000>,
->>>> +                               <0x11006000 0x2000>;
->>>
->>> As far as I am aware, the GICC size is 8KiB. Regardless of whether we
->>> currently use the second page of registers, they should be described.
->>
->> The GICC (CPU Interface Register) register of Exynos5433 is range of 0x1100_2000 ~ 0x1100_2100.
-> 
-> That does not sound right. Per the GICv2 architecture, GICC is at least
-> 0x1004 bytes long (as GICC_DIR lives at offset 0x1000).
-
-You're right. I replied it on below .
-
-> 
->> But, I'll modify GICC size from 4KiB to 8KiB as following according to your comment:
->>         <0x11002000 0x1000> -> <0x11002000 0x2000>
-> 
-> To clarify: is GICC_DIR accessible in Exynos5433 systems, or is
-> everything past offset 0x100 not physically mapped?
-> 
-
-I checked the base address of GICC_DIR on Exynos3250/Exynos5433/Exynos7 using gic-400.
-
-GICC_DIR is 1048_3000 on Exynos3250.
-GICC_DIR is 1100_2100 on Exynos5433.
-GICC_DIR is 1100_2100 on Exynos7.
-
-I think that TRM includes incorrect base address of GICC_DIR on Exynos5433/Exynos7.
-GICC_DIR of Exynos3250 is GICC_DIR is 1048_2000 + 0x1000 offset as you commented.
-
-Thanks for your review.
-
-Best Regards,
-Chanwoo Choi
-
-
->>>> +                       interrupts = <1 9 0xf04>;
->>>> +               };
->>>> +
->>>> +               serial_0: serial@14C10000 {
->>>
->>> Nit: Please be consistent with capitalisation of hex. IMO it's better
->>> to leave it all lower-case.
->>
->> I'll use the lower-case for all base address.
-> 
-> Thanks.
-> 
->>
->>>
->>> [...]
->>>
->>>> +               timer {
->>>> +                       compatible = "arm,armv8-timer";
->>>> +                       interrupts = <1 13 0xff01>,
->>>> +                                    <1 14 0xff01>,
->>>> +                                    <1 11 0xff01>,
->>>> +                                    <1 10 0xff01>;
->>>> +                       clock-frequency = <24000000>;
->>>> +                       use-clocksource-only;
->>>> +                       use-physical-timer;
->>>
->>> As Marc said, NAK for these last three properties.
->>>
->>> There is no excuse for not setting CNTFRQ_EL0, especially given a PSCI
->>> implementation. The last two properties have never been supported in
->>> mainline, and shouldn't be necessary regardless.
->>
->> OK, I'll remove last three properties.
-> 
-> Thanks.
-> 
-> Mark.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+diff --git a/drivers/media/usb/gspca/Kconfig b/drivers/media/usb/gspca/Kconfig
+index eed10d7..60af3b1 100644
+--- a/drivers/media/usb/gspca/Kconfig
++++ b/drivers/media/usb/gspca/Kconfig
+@@ -395,6 +395,16 @@ config USB_GSPCA_TOPRO
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called gspca_topro.
+ 
++config USB_GSPCA_TOUPTEK
++	tristate "Touptek USB Camera Driver"
++	depends on VIDEO_V4L2 && USB_GSPCA
++	help
++	  Say Y here if you want support for cameras based on the ToupTek UCMOS
++	  / AmScope MU series camera.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called gspca_touptek.
++
+ config USB_GSPCA_TV8532
+ 	tristate "TV8532 USB Camera Driver"
+ 	depends on VIDEO_V4L2 && USB_GSPCA
+diff --git a/drivers/media/usb/gspca/Makefile b/drivers/media/usb/gspca/Makefile
+index f46975e..9f5ccec 100644
+--- a/drivers/media/usb/gspca/Makefile
++++ b/drivers/media/usb/gspca/Makefile
+@@ -39,6 +39,7 @@ obj-$(CONFIG_USB_GSPCA_STK1135)  += gspca_stk1135.o
+ obj-$(CONFIG_USB_GSPCA_STV0680)  += gspca_stv0680.o
+ obj-$(CONFIG_USB_GSPCA_T613)     += gspca_t613.o
+ obj-$(CONFIG_USB_GSPCA_TOPRO)    += gspca_topro.o
++obj-$(CONFIG_USB_GSPCA_TOUPTEK)  += gspca_touptek.o
+ obj-$(CONFIG_USB_GSPCA_TV8532)   += gspca_tv8532.o
+ obj-$(CONFIG_USB_GSPCA_VC032X)   += gspca_vc032x.o
+ obj-$(CONFIG_USB_GSPCA_VICAM)    += gspca_vicam.o
+@@ -86,6 +87,7 @@ gspca_stv0680-objs  := stv0680.o
+ gspca_sunplus-objs  := sunplus.o
+ gspca_t613-objs     := t613.o
+ gspca_topro-objs    := topro.o
++gspca_touptek-objs  := touptek.o
+ gspca_tv8532-objs   := tv8532.o
+ gspca_vc032x-objs   := vc032x.o
+ gspca_vicam-objs    := vicam.o
+diff --git a/drivers/media/usb/gspca/touptek.c b/drivers/media/usb/gspca/touptek.c
+new file mode 100644
+index 0000000..2fd876c
+--- /dev/null
++++ b/drivers/media/usb/gspca/touptek.c
+@@ -0,0 +1,729 @@
++/*
++ * ToupTek UCMOS / AmScope MU series camera driver
++ * TODO: contrast with ScopeTek / AmScope MDC cameras
++ *
++ * Copyright (C) 2012-2014 John McMaster <JohnDMcMaster@gmail.com>
++ *
++ * Special thanks to Bushing for helping with the decrypt algorithm and
++ * Sean O'Sullivan / the Rensselaer Center for Open Source
++ * Software (RCOS) for helping me learn kernel development
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++
++#include "gspca.h"
++
++#define MODULE_NAME "touptek"
++
++MODULE_AUTHOR("John McMaster");
++MODULE_DESCRIPTION("ToupTek UCMOS / Amscope MU microscope camera driver");
++MODULE_LICENSE("GPL");
++
++/*
++Exposure reg is linear with exposure time
++Exposure (sec), E (reg)
++0.000400, 0x0002
++0.001000, 0x0005
++0.005000, 0x0019
++0.020000, 0x0064
++0.080000, 0x0190
++0.400000, 0x07D0
++1.000000, 0x1388
++2.000000, 0x2710
++
++Three gain stages
++0x1000: master channel enable bit
++0x007F: low gain bits
++0x0080: medium gain bit
++0x0100: high gain bit
++gain = enable * (1 + regH) * (1 + regM) * z * regL
++
++Gain implementation
++Want to do something similar to mt9v011.c's set_balance
++
++Gain does not vary with resolution (checked 640x480 vs 1600x1200)
++
++Constant derivation:
++
++Raw data:
++Gain,   GTOP,   B,	  R,	  GBOT
++1.00,   0x105C, 0x1068, 0x10C8, 0x105C
++1.20,   0x106E, 0x107E, 0x10D6, 0x106E
++1.40,   0x10C0, 0x10CA, 0x10E5, 0x10C0
++1.60,   0x10C9, 0x10D4, 0x10F3, 0x10C9
++1.80,   0x10D2, 0x10DE, 0x11C1, 0x10D2
++2.00,   0x10DC, 0x10E9, 0x11C8, 0x10DC
++2.20,   0x10E5, 0x10F3, 0x11CF, 0x10E5
++2.40,   0x10EE, 0x10FE, 0x11D7, 0x10EE
++2.60,   0x10F7, 0x11C4, 0x11DE, 0x10F7
++2.80,   0x11C0, 0x11CA, 0x11E5, 0x11C0
++3.00,   0x11C5, 0x11CF, 0x11ED, 0x11C5
++
++zR = 0.0069605943152454778
++	about 3/431 = 0.0069605568445475635
++zB = 0.0095695970695970703
++	about 6/627 = 0.0095693779904306216
++zG = 0.010889328063241107
++	about 6/551 = 0.010889292196007259
++about 10 bits for constant + 7 bits for value => at least 17 bit intermediate
++with 32 bit ints should be fine for overflow etc
++Essentially gains are in range 0-0x001FF
++
++However, V4L expects a main gain channel + R and B balance
++To keep things simple for now saturate the values of balance is too high/low
++This isn't really ideal but easy way to fit the Linux model
++
++Converted using gain model turns out to be quite linear:
++Gain, GTOP, B, R, GBOT
++1.00, 92, 104, 144, 92
++1.20, 110, 126, 172, 110
++1.40, 128, 148, 202, 128
++1.60, 146, 168, 230, 146
++1.80, 164, 188, 260, 164
++2.00, 184, 210, 288, 184
++2.20, 202, 230, 316, 202
++2.40, 220, 252, 348, 220
++2.60, 238, 272, 376, 238
++2.80, 256, 296, 404, 256
++3.00, 276, 316, 436, 276
++
++Maximum gain is 0x7FF * 2 * 2 => 0x1FFC (8188)
++or about 13 effective bits of gain
++The highest the commercial driver goes in my setup 436
++However, because could *maybe* damage circuits
++limit the gain until have a reason to go higher
++Solution: gain clipped and warning emitted
++*/
++#define GAIN_MAX		511
++
++/* Frame sync is a short read */
++#define BULK_SIZE		0x4000
++
++/* MT9E001 reg names to give a rough approximation */
++#define REG_COARSE_INTEGRATION_TIME_	0x3012
++#define REG_GROUPED_PARAMETER_HOLD_	0x3022
++#define REG_MODE_SELECT			0x0100
++#define REG_OP_SYS_CLK_DIV		0x030A
++#define REG_VT_SYS_CLK_DIV		0x0302
++#define REG_PRE_PLL_CLK_DIV		0x0304
++#define REG_VT_PIX_CLK_DIV		0x0300
++#define REG_OP_PIX_CLK_DIV		0x0308
++#define REG_PLL_MULTIPLIER		0x0306
++#define REG_COARSE_INTEGRATION_TIME_	0x3012
++#define REG_FRAME_LENGTH_LINES		0x0340
++#define REG_FRAME_LENGTH_LINES_		0x300A
++#define REG_GREEN1_GAIN			0x3056
++#define REG_GREEN2_GAIN			0x305C
++#define REG_GROUPED_PARAMETER_HOLD	0x0104
++#define REG_LINE_LENGTH_PCK_		0x300C
++#define REG_MODE_SELECT			0x0100
++#define REG_PLL_MULTIPLIER		0x0306
++#define REG_READ_MODE			0x3040
++#define REG_BLUE_GAIN			0x3058
++#define REG_RED_GAIN			0x305A
++#define REG_RESET_REGISTER		0x301A
++#define REG_SCALE_M			0x0404
++#define REG_SCALING_MODE		0x0400
++#define REG_SOFTWARE_RESET		0x0103
++#define REG_X_ADDR_END			0x0348
++#define REG_X_ADDR_START		0x0344
++#define REG_X_ADDR_START		0x0344
++#define REG_X_OUTPUT_SIZE		0x034C
++#define REG_Y_ADDR_END			0x034A
++#define REG_Y_ADDR_START		0x0346
++#define REG_Y_OUTPUT_SIZE		0x034E
++
++
++/* specific webcam descriptor */
++struct sd {
++	struct gspca_dev gspca_dev;	/* !! must be the first item */
++	/* How many bytes this frame */
++	unsigned int this_f;
++
++	/*
++	Device has separate gains for each Bayer quadrant
++	V4L supports master gain which is referenced to G1/G2 and supplies
++	individual balance controls for R/B
++	*/
++	struct v4l2_ctrl *blue;
++	struct v4l2_ctrl *red;
++};
++
++/* Used to simplify reg write error handling */
++struct cmd {
++	u16 value;
++	u16 index;
++};
++
++static const struct v4l2_pix_format vga_mode[] = {
++	{800, 600,
++		V4L2_PIX_FMT_SGRBG8,
++		V4L2_FIELD_NONE,
++		.bytesperline = 800,
++		.sizeimage = 800 * 600,
++		.colorspace = V4L2_COLORSPACE_SRGB},
++	{1600, 1200,
++		V4L2_PIX_FMT_SGRBG8,
++		V4L2_FIELD_NONE,
++		.bytesperline = 1600,
++		.sizeimage = 1600 * 1200,
++		.colorspace = V4L2_COLORSPACE_SRGB},
++	{3264, 2448,
++		V4L2_PIX_FMT_SGRBG8,
++		V4L2_FIELD_NONE,
++		.bytesperline = 3264,
++		.sizeimage = 3264 * 2448,
++		.colorspace = V4L2_COLORSPACE_SRGB},
++};
++
++/*
++As theres no known frame sync, the only way to keep synced is to try hard
++to never miss any packets
++*/
++#if MAX_NURBS < 4
++#error "Not enough URBs in the gspca table"
++#endif
++
++static int val_reply(struct gspca_dev *gspca_dev, const char *reply, int rc)
++{
++	if (rc < 0) {
++		PERR("reply has error %d", rc);
++		return -EIO;
++	}
++	if (rc != 1) {
++		PERR("Bad reply size %d", rc);
++		return -EIO;
++	}
++	if (reply[0] != 0x08) {
++		PERR("Bad reply 0x%02X", reply[0]);
++		return -EIO;
++	}
++	return 0;
++}
++
++static void reg_w(struct gspca_dev *gspca_dev, u16 value, u16 index)
++{
++	char buff[1];
++	int rc;
++
++	PDEBUG(D_USBO, "reg_w bReq=0x0B, bReqT=0xC0, wVal=0x%04X, wInd=0x%04X\n",
++		value, index);
++	rc = usb_control_msg(gspca_dev->dev, usb_rcvctrlpipe(gspca_dev->dev, 0),
++		0x0B, 0xC0, value, index, buff, 1, 500);
++	PDEBUG(D_USBO, "rc=%d, ret={0x%02X}", rc, buff[0]);
++	if (rc < 0) {
++		PERR("Failed reg_w(0x0B, 0xC0, 0x%04X, 0x%04X) w/ rc %d\n",
++			value, index, rc);
++		gspca_dev->usb_err = rc;
++		return;
++	}
++	if (val_reply(gspca_dev, buff, rc)) {
++		PERR("Bad reply to reg_w(0x0B, 0xC0, 0x%04X, 0x%04X\n",
++			value, index);
++		gspca_dev->usb_err = -EIO;
++	}
++}
++
++static void reg_w_buf(struct gspca_dev *gspca_dev,
++		const struct cmd *p, int l)
++{
++	do {
++		reg_w(gspca_dev, p->value, p->index);
++		p++;
++	} while (--l > 0);
++}
++
++static void setexposure(struct gspca_dev *gspca_dev, s32 val)
++{
++	u16 value;
++	unsigned int w = gspca_dev->pixfmt.width;
++
++	if (w == 800)
++		value = val * 5;
++	else if (w == 1600)
++		value = val * 3;
++	else if (w == 3264)
++		value = val * 3 / 2;
++	else {
++		PERR("Invalid width %u\n", w);
++		gspca_dev->usb_err = -EINVAL;
++		return;
++	}
++	PDEBUG(D_STREAM, "exposure: 0x%04X ms\n", value);
++	/* Wonder if theres a good reason for sending it twice */
++	/* probably not but leave it in because...why not */
++	reg_w(gspca_dev, value, REG_COARSE_INTEGRATION_TIME_);
++	reg_w(gspca_dev, value, REG_COARSE_INTEGRATION_TIME_);
++}
++
++static int gainify(int in)
++{
++	/*
++	TODO: check if there are any issues with corner cases
++	0x000 (0):0x07F (127): regL
++	0x080 (128) - 0x0FF (255): regM, regL
++	0x100 (256) - max: regH, regM, regL
++	*/
++	if (in <= 0x7F)
++		return 0x1000 | in;
++	else if (in <= 0xFF)
++		return 0x1080 | in / 2;
++	else
++		return 0x1180 | in / 4;
++}
++
++static void setggain(struct gspca_dev *gspca_dev, u16 global_gain)
++{
++	u16 normalized;
++
++	normalized = gainify(global_gain);
++	PDEBUG(D_STREAM, "gain G1/G2 (0x%04X): 0x%04X (src 0x%04X)\n",
++		 REG_GREEN1_GAIN,
++		 normalized, global_gain);
++
++	reg_w(gspca_dev, normalized, REG_GREEN1_GAIN);
++	reg_w(gspca_dev, normalized, REG_GREEN2_GAIN);
++}
++
++static void setbgain(struct gspca_dev *gspca_dev,
++		u16 gain, u16 global_gain)
++{
++	u16 normalized;
++
++	normalized = global_gain +
++		((u32)global_gain) * gain / GAIN_MAX;
++	if (normalized > GAIN_MAX) {
++		PDEBUG(D_STREAM, "Truncating blue 0x%04X w/ value 0x%04X\n",
++			 GAIN_MAX, normalized);
++		normalized = GAIN_MAX;
++	}
++	normalized = gainify(normalized);
++	PDEBUG(D_STREAM, "gain B (0x%04X): 0x%04X w/ source 0x%04X\n",
++		 REG_BLUE_GAIN, normalized, gain);
++
++	reg_w(gspca_dev, normalized, REG_BLUE_GAIN);
++}
++
++static void setrgain(struct gspca_dev *gspca_dev,
++		u16 gain, u16 global_gain)
++{
++	u16 normalized;
++
++	normalized = global_gain +
++		((u32)global_gain) * gain / GAIN_MAX;
++	if (normalized > GAIN_MAX) {
++		PDEBUG(D_STREAM, "Truncating gain 0x%04X w/ value 0x%04X\n",
++			 GAIN_MAX, normalized);
++		normalized = GAIN_MAX;
++	}
++	normalized = gainify(normalized);
++	PDEBUG(D_STREAM, "gain R (0x%04X): 0x%04X w / source 0x%04X\n",
++		 REG_RED_GAIN, normalized, gain);
++
++	reg_w(gspca_dev, normalized, REG_RED_GAIN);
++}
++
++static void configure_wh(struct gspca_dev *gspca_dev)
++{
++	unsigned int w = gspca_dev->pixfmt.width;
++
++	PDEBUG(D_STREAM, "configure_wh\n");
++
++	if (w == 800) {
++		static const struct cmd reg_init_res[] = {
++			{0x0060, REG_X_ADDR_START},
++			{0x0CD9, REG_X_ADDR_END},
++			{0x0036, REG_Y_ADDR_START},
++			{0x098F, REG_Y_ADDR_END},
++			{0x07C7, REG_READ_MODE},
++		};
++
++		reg_w_buf(gspca_dev,
++			       reg_init_res, ARRAY_SIZE(reg_init_res));
++	} else if (w == 1600) {
++		static const struct cmd reg_init_res[] = {
++			{0x009C, REG_X_ADDR_START},
++			{0x0D19, REG_X_ADDR_END},
++			{0x0068, REG_Y_ADDR_START},
++			{0x09C5, REG_Y_ADDR_END},
++			{0x06C3, REG_READ_MODE},
++		};
++
++		reg_w_buf(gspca_dev,
++			       reg_init_res, ARRAY_SIZE(reg_init_res));
++	} else if (w == 3264) {
++		static const struct cmd reg_init_res[] = {
++			{0x00E8, REG_X_ADDR_START},
++			{0x0DA7, REG_X_ADDR_END},
++			{0x009E, REG_Y_ADDR_START},
++			{0x0A2D, REG_Y_ADDR_END},
++			{0x0241, REG_READ_MODE},
++		};
++
++		reg_w_buf(gspca_dev,
++			       reg_init_res, ARRAY_SIZE(reg_init_res));
++	} else {
++		PERR("bad width %u\n", w);
++		gspca_dev->usb_err = -EINVAL;
++		return;
++	}
++
++	reg_w(gspca_dev, 0x0000, REG_SCALING_MODE);
++	reg_w(gspca_dev, 0x0010, REG_SCALE_M);
++	reg_w(gspca_dev, w, REG_X_OUTPUT_SIZE);
++	reg_w(gspca_dev, gspca_dev->pixfmt.height, REG_Y_OUTPUT_SIZE);
++
++	if (w == 800) {
++		reg_w(gspca_dev, 0x0384, REG_FRAME_LENGTH_LINES_);
++		reg_w(gspca_dev, 0x0960, REG_LINE_LENGTH_PCK_);
++	} else if (w == 1600) {
++		reg_w(gspca_dev, 0x0640, REG_FRAME_LENGTH_LINES_);
++		reg_w(gspca_dev, 0x0FA0, REG_LINE_LENGTH_PCK_);
++	} else if (w == 3264) {
++		reg_w(gspca_dev, 0x0B4B, REG_FRAME_LENGTH_LINES_);
++		reg_w(gspca_dev, 0x1F40, REG_LINE_LENGTH_PCK_);
++	} else {
++		PERR("bad width %u\n", w);
++		gspca_dev->usb_err = -EINVAL;
++		return;
++	}
++}
++
++/* Packets that were encrypted, no idea if the grouping is significant */
++static void configure_encrypted(struct gspca_dev *gspca_dev)
++{
++	static const struct cmd reg_init_begin[] = {
++		{0x0100, REG_SOFTWARE_RESET},
++		{0x0000, REG_MODE_SELECT},
++		{0x0100, REG_GROUPED_PARAMETER_HOLD},
++		{0x0004, REG_VT_PIX_CLK_DIV},
++		{0x0001, REG_VT_SYS_CLK_DIV},
++		{0x0008, REG_OP_PIX_CLK_DIV},
++		{0x0001, REG_OP_SYS_CLK_DIV},
++		{0x0004, REG_PRE_PLL_CLK_DIV},
++		{0x0040, REG_PLL_MULTIPLIER},
++		{0x0000, REG_GROUPED_PARAMETER_HOLD},
++		{0x0100, REG_GROUPED_PARAMETER_HOLD},
++	};
++	static const struct cmd reg_init_end[] = {
++		{0x0000, REG_GROUPED_PARAMETER_HOLD},
++		{0x0301, 0x31AE},
++		{0x0805, 0x3064},
++		{0x0071, 0x3170},
++		{0x10DE, REG_RESET_REGISTER},
++		{0x0000, REG_MODE_SELECT},
++		{0x0010, REG_PLL_MULTIPLIER},
++		{0x0100, REG_MODE_SELECT},
++	};
++
++	PDEBUG(D_STREAM, "Encrypted begin, w = %u\n", gspca_dev->pixfmt.width);
++	reg_w_buf(gspca_dev, reg_init_begin, ARRAY_SIZE(reg_init_begin));
++	configure_wh(gspca_dev);
++	reg_w_buf(gspca_dev, reg_init_end, ARRAY_SIZE(reg_init_end));
++	reg_w(gspca_dev, 0x0100, REG_GROUPED_PARAMETER_HOLD);
++	reg_w(gspca_dev, 0x0000, REG_GROUPED_PARAMETER_HOLD);
++
++	PDEBUG(D_STREAM, "Encrypted end\n");
++}
++
++static int configure(struct gspca_dev *gspca_dev)
++{
++	int rc;
++	uint8_t buff[4];
++
++	PDEBUG(D_STREAM, "configure()\n");
++
++	/*
++	First driver sets a sort of encryption key
++	A number of futur requests of this type have wValue and wIndex encrypted
++	as follows:
++	-Compute key = this wValue rotate left by 4 bits
++		(decrypt.py rotates right because we are decrypting)
++	-Later packets encrypt packets by XOR'ing with key
++		XOR encrypt/decrypt is symmetrical
++		wValue, and wIndex are encrypted
++		bRequest is not and bRequestType is always 0xC0
++			This allows resyncing if key is unknown?
++	By setting 0 we XOR with 0 and the shifting and XOR drops out
++	*/
++	rc = usb_control_msg(gspca_dev->dev, usb_rcvctrlpipe(gspca_dev->dev, 0),
++			     0x16, 0xC0, 0x0000, 0x0000, buff, 2, 500);
++	if (val_reply(gspca_dev, buff, rc)) {
++		PERR("failed key req");
++		return -EIO;
++	}
++
++	/*
++	Next does some sort of 2 packet challenge / response
++	evidence suggests its an Atmel I2C crypto part but nobody cares to look
++	(to make sure its not cloned hardware?)
++	Ignore: I want to work with their hardware, not clone it
++	16 bytes out challenge, requestType: 0x40
++	16 bytes in response, requestType: 0xC0
++	*/
++
++	rc = usb_control_msg(gspca_dev->dev, usb_sndctrlpipe(gspca_dev->dev, 0),
++			     0x01, 0x40, 0x0001, 0x000F, NULL, 0, 500);
++	if (rc < 0) {
++		PERR("failed to replay packet 176 w/ rc %d\n", rc);
++		return rc;
++	}
++
++	rc = usb_control_msg(gspca_dev->dev, usb_sndctrlpipe(gspca_dev->dev, 0),
++			     0x01, 0x40, 0x0000, 0x000F, NULL, 0, 500);
++	if (rc < 0) {
++		PERR("failed to replay packet 178 w/ rc %d\n", rc);
++		return rc;
++	}
++
++	rc = usb_control_msg(gspca_dev->dev, usb_sndctrlpipe(gspca_dev->dev, 0),
++			     0x01, 0x40, 0x0001, 0x000F, NULL, 0, 500);
++	if (rc < 0) {
++		PERR("failed to replay packet 180 w/ rc %d\n", rc);
++		return rc;
++	}
++
++	/*
++	Serial number?  Doesn't seem to be required
++	cam1: \xE6\x0D\x00\x00, cam2: \x70\x19\x00\x00 
++	rc = usb_control_msg(gspca_dev->dev, usb_rcvctrlpipe(gspca_dev->dev, 0),
++			     0x20, 0xC0, 0x0000, 0x0000, buff, 4, 500);
++	*/
++
++	/* Large (EEPROM?) read, skip it since no idea what to do with it */
++	gspca_dev->usb_err = 0;
++	configure_encrypted(gspca_dev);
++	if (gspca_dev->usb_err)
++		return gspca_dev->usb_err;
++
++	/* Omitted this by accident, does not work without it */
++	rc = usb_control_msg(gspca_dev->dev, usb_sndctrlpipe(gspca_dev->dev, 0),
++			     0x01, 0x40, 0x0003, 0x000F, NULL, 0, 500);
++
++	PDEBUG(D_STREAM, "Configure complete\n");
++	return 0;
++}
++
++static int sd_config(struct gspca_dev *gspca_dev,
++		     const struct usb_device_id *id)
++{
++	gspca_dev->cam.cam_mode = vga_mode;
++	gspca_dev->cam.nmodes = ARRAY_SIZE(vga_mode);
++
++	/* Yes we want URBs and we want them now! */
++	gspca_dev->cam.no_urb_create = 0;
++	gspca_dev->cam.bulk_nurbs = 4;
++	/* Largest size the windows driver uses */
++	gspca_dev->cam.bulk_size = BULK_SIZE;
++	/* Def need to use bulk transfers */
++	gspca_dev->cam.bulk = 1;
++
++	return 0;
++}
++
++static int sd_start(struct gspca_dev *gspca_dev)
++{
++	struct sd *sd = (struct sd *) gspca_dev;
++	int rc;
++
++	sd->this_f = 0;
++
++	rc = configure(gspca_dev);
++	if (rc < 0) {
++		PERR("Failed configure");
++		return rc;
++	}
++	/* First two frames have messed up gains
++	Drop them to avoid special cases in user apps? */
++	return 0;
++}
++
++static void sd_pkt_scan(struct gspca_dev *gspca_dev,
++			u8 *data,	/* isoc packet */
++			int len)	/* iso packet length */
++{
++	struct sd *sd = (struct sd *) gspca_dev;
++
++	if (len != BULK_SIZE) {
++		/* can we finish a frame? */
++		if (sd->this_f + len == gspca_dev->pixfmt.sizeimage) {
++			gspca_frame_add(gspca_dev, LAST_PACKET, data, len);
++			PDEBUG(D_FRAM, "finish frame sz %u/%u w/ len %u\n",
++				 sd->this_f, gspca_dev->pixfmt.sizeimage, len);
++		/* lost some data, discard the frame */
++		} else {
++			gspca_frame_add(gspca_dev, DISCARD_PACKET, NULL, 0);
++			PDEBUG(D_FRAM, "abort frame sz %u/%u w/ len %u\n",
++				 sd->this_f, gspca_dev->pixfmt.sizeimage, len);
++		}
++		sd->this_f = 0;
++	} else {
++		if (sd->this_f == 0)
++			gspca_frame_add(gspca_dev, FIRST_PACKET, data, len);
++		else
++			gspca_frame_add(gspca_dev, INTER_PACKET, data, len);
++		sd->this_f += len;
++	}
++}
++
++static int sd_init(struct gspca_dev *gspca_dev)
++{
++	return 0;
++}
++
++static int sd_s_ctrl(struct v4l2_ctrl *ctrl)
++{
++	struct gspca_dev *gspca_dev =
++		container_of(ctrl->handler, struct gspca_dev, ctrl_handler);
++	struct sd *sd = (struct sd *) gspca_dev;
++
++	gspca_dev->usb_err = 0;
++
++	if (!gspca_dev->streaming)
++		return 0;
++
++	switch (ctrl->id) {
++	case V4L2_CID_EXPOSURE:
++		setexposure(gspca_dev, ctrl->val);
++		break;
++	case V4L2_CID_GAIN:
++		/* gspca_dev->gain automatically updated */
++		setggain(gspca_dev, gspca_dev->gain->val);
++		break;
++	case V4L2_CID_BLUE_BALANCE:
++		sd->blue->val = ctrl->val;
++		setbgain(gspca_dev, sd->blue->val, gspca_dev->gain->val);
++		break;
++	case V4L2_CID_RED_BALANCE:
++		sd->red->val = ctrl->val;
++		setrgain(gspca_dev, sd->red->val, gspca_dev->gain->val);
++		break;
++	}
++	return gspca_dev->usb_err;
++}
++
++static const struct v4l2_ctrl_ops sd_ctrl_ops = {
++	.s_ctrl = sd_s_ctrl,
++};
++
++static int sd_init_controls(struct gspca_dev *gspca_dev)
++{
++	struct sd *sd = (struct sd *) gspca_dev;
++	struct v4l2_ctrl_handler *hdl = &gspca_dev->ctrl_handler;
++
++	gspca_dev->vdev.ctrl_handler = hdl;
++	v4l2_ctrl_handler_init(hdl, 4);
++
++	gspca_dev->exposure = v4l2_ctrl_new_std(hdl, &sd_ctrl_ops,
++	/* Mostly limited by URB timeouts */
++	/* XXX: make dynamic based on frame rate? */
++		V4L2_CID_EXPOSURE, 0, 800, 1, 350);
++	gspca_dev->gain = v4l2_ctrl_new_std(hdl, &sd_ctrl_ops,
++			V4L2_CID_GAIN, 0, 511, 1, 128);
++	sd->blue = v4l2_ctrl_new_std(hdl, &sd_ctrl_ops,
++			V4L2_CID_BLUE_BALANCE, 0, 1023, 1, 80);
++	sd->red = v4l2_ctrl_new_std(hdl, &sd_ctrl_ops,
++			V4L2_CID_RED_BALANCE, 0, 1023, 1, 295);
++
++	if (hdl->error) {
++		PERR("Could not initialize controls\n");
++		return hdl->error;
++	}
++	return 0;
++}
++
++/* sub-driver description */
++static const struct sd_desc sd_desc = {
++	.name = MODULE_NAME,
++	.config = sd_config,
++	.init = sd_init,
++	.init_controls = sd_init_controls,
++	.start = sd_start,
++	.pkt_scan = sd_pkt_scan,
++};
++
++/* Table of supported USB devices */
++static const struct usb_device_id device_table[] = {
++	/* Commented out devices should be related */
++	/* AS: AmScope, TT: ToupTek */
++	/* { USB_DEVICE(0x0547, 0x6035) },  TT UCMOS00350KPA */
++	/* { USB_DEVICE(0x0547, 0x6130) },  TT UCMOS01300KPA */
++	/* { USB_DEVICE(0x0547, 0x6200) },  TT UCMOS02000KPA */
++	/* { USB_DEVICE(0x0547, 0x6310) },  TT UCMOS03100KPA */
++	/* { USB_DEVICE(0x0547, 0x6510) },  TT UCMOS05100KPA */
++	/* { USB_DEVICE(0x0547, 0x6800) },  TT UCMOS08000KPA */
++	/* { USB_DEVICE(0x0547, 0x6801) },  TT UCMOS08000KPB */
++	{ USB_DEVICE(0x0547, 0x6801) }, /* TT UCMOS08000KPB, AS MU800 */
++	/* { USB_DEVICE(0x0547, 0x6900) },  TT UCMOS09000KPA */
++	/* { USB_DEVICE(0x0547, 0x6901) },  TT UCMOS09000KPB */
++	/* { USB_DEVICE(0x0547, 0x6010) },  TT UCMOS10000KPA */
++	/* { USB_DEVICE(0x0547, 0x6014) },  TT UCMOS14000KPA */
++	/* { USB_DEVICE(0x0547, 0x6131) },  TT UCMOS01300KMA */
++	/* { USB_DEVICE(0x0547, 0x6511) },  TT UCMOS05100KMA */
++	/* { USB_DEVICE(0x0547, 0x8080) },  TT UHCCD00800KPA */
++	/* { USB_DEVICE(0x0547, 0x8140) },  TT UHCCD01400KPA */
++	/* { USB_DEVICE(0x0547, 0x8141) },  TT EXCCD01400KPA */
++	/* { USB_DEVICE(0x0547, 0x8200) },  TT UHCCD02000KPA */
++	/* { USB_DEVICE(0x0547, 0x8201) },  TT UHCCD02000KPB */
++	/* { USB_DEVICE(0x0547, 0x8310) },  TT UHCCD03100KPA */
++	/* { USB_DEVICE(0x0547, 0x8500) },  TT UHCCD05000KPA */
++	/* { USB_DEVICE(0x0547, 0x8510) },  TT UHCCD05100KPA */
++	/* { USB_DEVICE(0x0547, 0x8600) },  TT UHCCD06000KPA */
++	/* { USB_DEVICE(0x0547, 0x8800) },  TT UHCCD08000KPA */
++	/* { USB_DEVICE(0x0547, 0x8315) },  TT UHCCD03150KPA */
++	/* { USB_DEVICE(0x0547, 0x7800) },  TT UHCCD00800KMA */
++	/* { USB_DEVICE(0x0547, 0x7140) },  TT UHCCD01400KMA */
++	/* { USB_DEVICE(0x0547, 0x7141) },  TT UHCCD01400KMB */
++	/* { USB_DEVICE(0x0547, 0x7200) },  TT UHCCD02000KMA */
++	/* { USB_DEVICE(0x0547, 0x7315) },  TT UHCCD03150KMA */
++	{ }
++};
++MODULE_DEVICE_TABLE(usb, device_table);
++
++static int sd_probe(struct usb_interface *intf,
++		    const struct usb_device_id *id)
++{
++	return gspca_dev_probe(intf, id, &sd_desc, sizeof(struct sd),
++			     THIS_MODULE);
++}
++
++static struct usb_driver sd_driver = {
++	.name = MODULE_NAME,
++	.id_table = device_table,
++	.probe = sd_probe,
++	.disconnect = gspca_disconnect,
++#ifdef CONFIG_PM
++	.suspend = gspca_suspend,
++	.resume = gspca_resume,
++#endif
++};
++
++static int __init sd_mod_init(void)
++{
++	int ret;
++
++	ret = usb_register(&sd_driver);
++	if (ret < 0)
++		return ret;
++	return 0;
++}
++static void __exit sd_mod_exit(void)
++{
++	usb_deregister(&sd_driver);
++}
++
++module_init(sd_mod_init);
++module_exit(sd_mod_exit);
++
+-- 
+1.7.9.5
 
