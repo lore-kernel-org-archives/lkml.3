@@ -1,122 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932317AbaLATQL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 14:16:11 -0500
-Received: from numascale.com ([213.162.240.84]:38210 "EHLO numascale.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753411AbaLATQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 14:16:09 -0500
-Message-ID: <547CBE68.1040704@numascale.com>
-Date: Mon, 01 Dec 2014 14:15:52 -0500
-From: Daniel J Blueman <daniel@numascale.com>
-Organization: Numascale AS
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932240AbaLATRk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 14:17:40 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:46766 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932094AbaLATRi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 14:17:38 -0500
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@linux.intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Jonathan Corbet <corbet@lwn.net>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [Patch Part3 v4 38/38] x86, irq: Add kernel parameter vector_alloc
- to set CPU vector allocation policy
-References: <1416901802-24211-1-git-send-email-jiang.liu@linux.intel.com> <1416901802-24211-39-git-send-email-jiang.liu@linux.intel.com> <CAErSpo7-GezRLKe4hTAm=KhYHUw6zggi+4LRXjh25K-f+_hAng@mail.gmail.com>
-In-Reply-To: <CAErSpo7-GezRLKe4hTAm=KhYHUw6zggi+4LRXjh25K-f+_hAng@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <547CBE0D.8010501@redhat.com>
+References: <CAP145pgZ2rbALf-Ce=uGc72DBCNXBvkrEPG43VUkSqkpiLuKsA@mail.gmail.com>
+	<547CA719.6060101@redhat.com>
+	<CAP145pggcEUKz3QhDEGdzWZDusPfwJsZ8juqjbRr+8g6RxuJfA@mail.gmail.com>
+	<547CAEA3.3090906@redhat.com>
+	<CAP145pici-xNuvyhdyRdSok_p_1KXvuNKeceMcdaWdEw8VOBuQ@mail.gmail.com>
+	<547CBE0D.8010501@redhat.com>
+Date: Mon, 1 Dec 2014 20:17:36 +0100
+Message-ID: <CAP145picqMB1HTB2A8mf1f_EB-PjSQYKjxM9LC8mOfj0CNmQ7Q@mail.gmail.com>
+Subject: Re: panic in skb_push via sctp
+From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: linux-sctp@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vladislav Yasevich <vyasevich@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2014 01:49 PM, Bjorn Helgaas wrote:
-> On Tue, Nov 25, 2014 at 12:50 AM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
->> Parameter vector_alloc should be set to an integer with:
->> bit 0:  enable allocating CPU vector from CPUs on device local node.
->>          That's to allocate from cpumask_of_node(irq_data->node).
->> bit 1: enable the default policy, which is to allocate from
->>         apic->target_cpus().
->>
->> When allocating vectors, it tries all enabled policies from lower bit
->> position to higher bit position.
->>
->> This option could be use to optimize interrupt distribution on large
->> system such as NumaChip etc.
+>> Not sure, but I run it inside a pid/ipc/uts/etc/user-namespaces where
+>> it operates with a full set of capabilities, so most of the SOCK_RAW
+>> and tunnel-like-creating calls succeed, so maybe..
 >
-> Why can't we figure this out automatically?  Having a kernel parameter
-> is a pain in the neck for users.
+>
+> Ok thanks, can you post your .config?
 
-For the Numachip case, it would be sufficient to add a call to 
-set_vector_alloc_policy in the APIC driver, as this will always be 
-preferred for local MSI handling.
+Hi,
 
-I'll follow up with a patch in the next day or so; further support for 
-other systems can be added later as and when tested.
+http://alt.swiecki.net/.ksan/.config-sctp
 
->> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
->> Cc: Daniel J Blueman <daniel@numascale.com>
->> ---
->>   Documentation/kernel-parameters.txt |    6 ++++++
->>   arch/x86/kernel/apic/vector.c       |   11 +++++++++++
->>   2 files changed, 17 insertions(+)
->>
->> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->> index 4c81a860cc2b..a175c5016954 100644
->> --- a/Documentation/kernel-parameters.txt
->> +++ b/Documentation/kernel-parameters.txt
->> @@ -3709,6 +3709,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>          vector=         [IA-64,SMP]
->>                          vector=percpu: enable percpu vector domain
->>
->> +       vector_alloc=   [x86,SMP]
->> +                       vector_alloc=policy: policy is a bitmap, bit 0
->> +                       for allocating CPU vector from CPUs on device local
->> +                       node; bit 1 for the default policy to allocating from
->> +                       apic->target_cpus(). All higher bits are reserved.
->> +
->>          video=          [FB] Frame buffer configuration
->>                          See Documentation/fb/modedb.txt.
->>
->> diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
->> index 16de8906ee1e..1158843551c7 100644
->> --- a/arch/x86/kernel/apic/vector.c
->> +++ b/arch/x86/kernel/apic/vector.c
->> @@ -79,6 +79,17 @@ void set_vector_alloc_policy(unsigned int policy)
->>                  x86_vector_alloc_policy = policy | X86_VECTOR_POL_CALLER;
->>   }
->>
->> +static int __init apic_parse_vector_policy(char *str)
->> +{
->> +       int policy;
->> +
->> +       if (get_option(&str, &policy) == 1)
->> +               set_vector_alloc_policy(policy);
->> +
->> +       return 1;
->> +}
->> +__setup("vector_alloc=", apic_parse_vector_policy);
->> +
->>   static struct apic_chip_data *alloc_apic_chip_data(int node)
->>   {
->>          struct apic_chip_data *data;
 -- 
-Daniel J Blueman
-Principal Software Engineer, Numascale
+Robert Święcki
