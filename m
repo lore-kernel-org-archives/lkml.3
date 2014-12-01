@@ -1,430 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249AbaLAKSJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 05:18:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51981 "EHLO mx1.redhat.com"
+	id S1753257AbaLAKSp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 05:18:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56188 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753191AbaLAKRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 05:17:33 -0500
+	id S1753033AbaLAKSn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 05:18:43 -0500
+Date: Mon, 01 Dec 2014 10:26:24 +0008
 From: Jason Wang <jasowang@redhat.com>
-To: mst@redhat.com, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        davem@davemloft.net
-Cc: pagupta@redhat.com, Jason Wang <jasowang@redhat.com>
-Subject: [PATCH RFC v4 net-next 5/5] vhost_net: interrupt coalescing support
-Date: Mon,  1 Dec 2014 18:17:08 +0800
-Message-Id: <1417429028-11971-6-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1417429028-11971-1-git-send-email-jasowang@redhat.com>
-References: <1417429028-11971-1-git-send-email-jasowang@redhat.com>
+Subject: RE: [PATCH v3] hv: hv_fcopy: drop the obsolete message on transfer
+ failure
+To: Dexuan Cui <decui@microsoft.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        "vkuznets@redhat.com" <vkuznets@redhat.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Message-Id: <1417429104.4907.0@smtp.corp.redhat.com>
+In-Reply-To: <F792CF86EFE20D4AB8064279AFBA51C613E691B8@HKNPRD3002MB017.064d.mgd.msft.net
+	>
+References: <1417093747-21073-1-git-send-email-decui@microsoft.com>
+	<1417157243.3268.1@smtp.corp.redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C613E66566@HKNPRD3002MB017.064d.mgd.msft.net>
+	<1417169573.5822.12@smtp.corp.redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C613E66AAA@HKNPRD3002MB017.064d.mgd.msft.net>
+	<1417422163.877.1@smtp.corp.redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C613E691B8@HKNPRD3002MB017.064d.mgd.msft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements interrupt coalescing support for vhost_net. And provides
-ioctl()s for userspace to get and set coalescing parameters. Two kinds of
-parameters were allowed to be set:
 
-- max_coalesced_frames: which is the maximum numbers of packets were allowed
-  before issuing an irq.
-- coalesced_usecs: which is the maximum number of micro seconds were allowed
-  before issuing an irq if at least one packet were pending.
 
-A per virtqueue hrtimer were used for coalesced_usecs.
+On Mon, Dec 1, 2014 at 5:47 PM, Dexuan Cui <decui@microsoft.com> wrote:
+>>  -----Original Message-----
+>>  From: Jason Wang [mailto:jasowang@redhat.com]
+>>  Sent: Monday, December 1, 2014 16:23 PM
+>>  To: Dexuan Cui
+>>  Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; 
+>> driverdev-
+>>  devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com; KY
+>>  Srinivasan; vkuznets@redhat.com; Haiyang Zhang
+>>  Subject: RE: [PATCH v3] hv: hv_fcopy: drop the obsolete message on 
+>> transfer
+>>  failure
+>>  On Fri, Nov 28, 2014 at 7:54 PM, Dexuan Cui <decui@microsoft.com> 
+>> wrote:
+>>  >>  -----Original Message-----
+>>  >>  From: Jason Wang [mailto:jasowang@redhat.com]
+>>  >>  Sent: Friday, November 28, 2014 18:13 PM
+>>  >>  To: Dexuan Cui
+>>  >>  Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+>>  >> driverdev-
+>>  >>  devel@linuxdriverproject.org; olaf@aepfle.de; 
+>> apw@canonical.com; KY
+>>  >>  Srinivasan; vkuznets@redhat.com; Haiyang Zhang
+>>  >>  Subject: RE: [PATCH v3] hv: hv_fcopy: drop the obsolete message 
+>> on
+>>  >> transfer
+>>  >>  failure
+>>  >>  On Fri, Nov 28, 2014 at 4:36 PM, Dexuan Cui 
+>> <decui@microsoft.com>
+>>  >> wrote:
+>>  >>  >>  -----Original Message-----
+>>  >>  >>  From: Jason Wang [mailto:jasowang@redhat.com]
+>>  >>  >>  Sent: Friday, November 28, 2014 14:47 PM
+>>  >>  >>  To: Dexuan Cui
+>>  >>  >>  Cc: gregkh@linuxfoundation.org; 
+>> linux-kernel@vger.kernel.org;
+>>  >>  >> driverdev-
+>>  >>  >>  devel@linuxdriverproject.org; olaf@aepfle.de;
+>>  >> apw@canonical.com; KY
+>>  >>  >>  Srinivasan; vkuznets@redhat.com; Haiyang Zhang
+>>  >>  >>  Subject: Re: [PATCH v3] hv: hv_fcopy: drop the obsolete 
+>> message
+>>  >> on
+>>  >>  >> transfer
+>>  >>  >>  failure
+>>  >>  >>  On Thu, Nov 27, 2014 at 9:09 PM, Dexuan Cui
+>>  >> <decui@microsoft.com>
+>>  >>  >> wrote:
+>>  >>  >>  > In the case the user-space daemon crashes, hangs or is
+>>  >> killed, we
+>>  >>  >>  > need to down the semaphore, otherwise, after the daemon 
+>> starts
+>>  >>  >> next
+>>  >>  >>  > time, the obsolete data in fcopy_transaction.message or
+>>  >>  >>  > fcopy_transaction.fcopy_msg will be used immediately.
+>>  >>  >>  >
+>>  >>  >>  > Cc: Jason Wang <jasowang@redhat.com>
+>>  >>  >>  > Cc: Vitaly Kuznetsov <vkuznets@redhat.com>
+>>  >>  >>  > Cc: K. Y. Srinivasan <kys@microsoft.com>
+>>  >>  >>  > Signed-off-by: Dexuan Cui <decui@microsoft.com>
+>>  >>  >>  > ---
+>>  >>  >>  >
+>>  >>  >>  > v2: I removed the "FCP" prefix as Greg asked.
+>>  >>  >>  >
+>>  >>  >>  >     I also updated the output message a little:
+>>  >>  >>  >     "FCP: failed to acquire the semaphore" -->
+>>  >>  >>  >     "can not acquire the semaphore: it is benign"
+>>  >>  >>  >
+>>  >>  >>  > v3: I added the code in fcopy_release() as Jason Wang
+>>  >> suggested.
+>>  >>  >>  >     I removed the pr_debug (it isn't so meaningful)and 
+>> added a
+>>  >>  >>  > comment instead.
+>>  >>  >>  >
+>>  >>  >>  >  drivers/hv/hv_fcopy.c | 19 +++++++++++++++++++
+>>  >>  >>  >  1 file changed, 19 insertions(+)
+>>  >>  >>  >
+>>  >>  >>  > diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c
+>>  >>  >>  > index 23b2ce2..faa6ba6 100644
+>>  >>  >>  > --- a/drivers/hv/hv_fcopy.c
+>>  >>  >>  > +++ b/drivers/hv/hv_fcopy.c
+>>  >>  >>  > @@ -86,6 +86,18 @@ static void fcopy_work_func(struct
+>>  >> work_struct
+>>  >>  >>  > *dummy)
+>>  >>  >>  >  	 * process the pending transaction.
+>>  >>  >>  >  	 */
+>>  >>  >>  >  	fcopy_respond_to_host(HV_E_FAIL);
+>>  >>  >>  > +
+>>  >>  >>  > +	/* In the case the user-space daemon crashes, hangs or 
+>> is
+>>  >>  >> killed, we
+>>  >>  >>  > +	 * need to down the semaphore, otherwise, after the 
+>> daemon
+>>  >>  >> starts
+>>  >>  >>  > next
+>>  >>  >>  > +	 * time, the obsolete data in fcopy_transaction.message 
+>> or
+>>  >>  >>  > +	 * fcopy_transaction.fcopy_msg will be used immediately.
+>>  >>  >>  > +	 *
+>>  >>  >>  > +	 * NOTE: fcopy_read() happens to get the semaphore (very
+>>  >> rare)?
+>>  >>  >>  > We're
+>>  >>  >>  > +	 * still OK, because we've reported the failure to the 
+>> host.
+>>  >>  >>  > +	 */
+>>  >>  >>  > +	if (down_trylock(&fcopy_transaction.read_sema))
+>>  >>  >>  > +		;
+>>  >>  >>
+>>  >>  >>  Sorry, I'm not quite understand how if () ; can help here.
+>>  >>  >>
+>>  >>  >>  Btw, a question not relate to this patch.
+>>  >>  >>
+>>  >>  >>  What happens if a daemon is resume from SIGSTOP and expires 
+>> the
+>>  >>  >> check
+>>  >>  >>  here?
+>>  >>  > Hi Jason,
+>>  >>  > My idea is: here we need down_trylock(), but in case we can't 
+>> get
+>>  >> the
+>>  >>  > semaphore, it's OK anyway:
+>>  >>  >
+>>  >>  > Scenario 1):
+>>  >>  > 1.1: when the daemon is blocked on the pread(), the daemon
+>>  >> receives
+>>  >>  > SIGSTOP;
+>>  >>  > 1.2: the host user runs the PowerShell Copy-VMFile command;
+>>  >>  > 1.3.1: the driver reports the failure to the host user in 5s 
+>> and
+>>  >>  > 1.3.2: the driver down()-es the semaphore;
+>>  >>  > 1.4: the daemon receives SIGCONT and it will be still blocked 
+>> on
+>>  >> the
+>>  >>  > pread().
+>>  >>  > Without the down_trylock(), in 1.4, the daemon can receive an
+>>  >>  > obsolete message.
+>>  >>  > NOTE: in this scenario, the daemon is not killed.
+>>  >>  >
+>>  >>  > Scenario 2):
+>>  >>  > In senario 1), if the daemon receives SIGCONT between 1.3.1 
+>> and
+>>  >> 1.3.2
+>>  >>  > and
+>>  >>  > do down() in fcopy_read(), it will receive the message but: 
+>> the
+>>  >>  > driver has
+>>  >>  > reported the failure to the host user and the driver's 1.3.2 
+>> can't
+>>  >>  > get the
+>>  >>  > semaphore -- IMO this is acceptably OK, though in the VM, an
+>>  >>  > incomplete
+>>  >>  > file will be left there.
+>>  >>  > BTW, I think in the daemon's hv_start_fcopy() we should add a
+>>  >>  > close(target_fd) before open()-ing a new one.
+>>  >>
+>>  >>  Right, but how about the case when resuming from SIGSTOP but no
+>>  >> timeout?
+>>  > Sorry, I don't understand this:
+>>  > if no timeout, fcopy_read() will get the semaphore and 
+>> fcopy_write()
+>>  > will try to cancel fcopy_work.
+>>  
+>>  Yes.
+>>  >
+>>  >
+>>  >>  Looks like in this case userspace() may wait in 
+>> down_interruptible()
+>>  >>  until timeout. We probably need something like this:
+>>  >>
+>>  >>          if (down_interruptible(&fcopy_transaction.read_sema)) {
+>>  >>                  up(&fcopy_transaction.read_sema);
+>>  >>                  return -EINTR;
+>>  >>          }
+>>  > until "timeout"?
+>>  > if the daemon can't get the semaphore, it can only be wake by a
+>>  > signal(the
+>>  > daemon doesn't install handler, so by default most signals will 
+>> kill
+>>  > the daemon).
+>>  > In case a signal waking up the daemon doesn't kill the daemon, why
+>>  > should
+>>  > we do up()?
+>>  
+>>  True, no need since we do down_trylock() in release().
+>>  
+>>  Btw, there's no EINTR handling in handling pread() return value,
+>>  may add such one which should be useful for something like 
+>> debugging.
+>>  
+>>  >
+>>  >
+>>  >>
+>>  >>  This should synchronize with the timeout work for sure.
+>>  >>  But how about only schedule it after this?
+>>  >>  It does not may sense to start the timer during interrupt
+>>  >>  since the file may not even opened and it may take time
+>>  >>  to handle signals?
+>>  >>
+>>  >>  >
+>>  >>  >>  >
+>>  >>  >>  > +
+>>  >>  >>  >  }
+>>  >>  >>  >
+>>  >>  >>  >  static int fcopy_handle_handshake(u32 version)
+>>  >>  >>  > @@ -351,6 +363,13 @@ static int fcopy_release(struct inode
+>>  >> *inode,
+>>  >>  >>  > struct file *f)
+>>  >>  >>  >  	 */
+>>  >>  >>  >  	in_hand_shake = true;
+>>  >>  >>  >  	opened = false;
+>>  >>  >>  > +
+>>  >>  >>  > +	if (cancel_delayed_work_sync(&fcopy_work)) {
+>>  >>  >>  > +		/* We haven't up()-ed the semaphore(very rare)? */
+>>  >>  >>  > +		if (down_trylock(&fcopy_transaction.read_sema))
+>>  >>  >>  > +			;
+>>  >>  >>
+>>  >>  >>  And this.
+>>  >>  >
+>>  >>  > Scenario 3):
+>>  >>  > When the daemon exits(e.g., SIGKILL received), if there is a
+>>  >>  > fcopy_work
+>>  >>  > pending (scheduled but not start to run yet), we should 
+>> cancel the
+>>  >>  > work (as you suggested) and down() the semaphore, otherwise, 
+>> the
+>>  >>  > obsolete message will be received by the next instance of the
+>>  >> daemon.
+>>  >>
+>>  >>  Yes
+>>  >>  >
+>>  >>  >
+>>  >>  > Scenario 4):  in the driver's hv_fcopy_onchannelcallback():
+>>  >>  >         schedule_delayed_work(&fcopy_work, 5*HZ);
+>>  >>  >         ----> if fcopy_release() is running on another vcpu, 
+>> just
+>>  >>  > before the next line?
+>>  >>  >         fcopy_send_data();
+>>  >>  >
+>>  >>  > In this case, fcopy_release() can cancel fcopy_work, but
+>>  >>  > can't get the semaphore since it hasn't been up()-ed.
+>>  >>  > Hmm, in this case,   fcopy_send_data() will do up()  later, 
+>> and
+>>  >> we'll
+>>  >>  > buffer an obsolete message in the driver, and the message 
+>> will be
+>>  >>  > fetched by the next instance of the daemon...
+>>  >>  >
+>>  >>  > Looks we need a spinlock here?
+>>  >>
+>>  >>  Unless fcopy_release() can wait for all data for current 
+>> transation
+>>  >>  to be received. Spinlock won't help.
+>>  >>
+>>  >>  But an idea is let the daemon the handle such cases. E.g make 
+>> sure
+>>  >> the
+>>  >>  processing begins with START_COPY and end with
+>>  COMPLETE/CANCEL_COPY.
+>>  >>  Drop all requests that does not start with START_COPY.
+>>  >>
+>>  >>  Thought?
+>>  > Good idea.
+>>  > I also think we should reinforce the concept of state machine in 
+>> the
+>>  > daemon code.
+>>  
+>>  Yes, it needs.
+> I agree.
+> Obviously we can do something to make the daemon/driver work better
+> in the corner cases.
+> 
+>>  >
+>>  > The daemon/driver communication has so many corner cases...
+>>  
+>>  Looks so, let's first address the issue mentioned in this patch.
+> OK.
+> 
+>>  I don't have any more comments other than changing
+>>  
+>>   if(down_trylock(&fcopy_transaction.read_sema))
+>>       ;
+>>  
+>>  to
+>>  
+>>  down_trylock(&fcopy_transaction.read_sema);
+> Hi Jason,
+> This is to address Vitaly's comment in the bugzilla:
+> https://bugzilla.redhat.com/show_bug.cgi?id=1162100#c5
+> 
+> down_trylock(&fcopy_transaction.read_sema) will
+> 
+> "
+> produces the following compile warning:
+> drivers/hv/hv_fcopy.c: In function ‘fcopy_work_func’:
+> drivers/hv/hv_fcopy.c:95:2: warning: ignoring return value of 
+> ‘down_trylock’, declared with attribute warn_unused_result 
+> [-Wunused-result]
+>   (void)down_trylock(&fcopy_transaction.read_sema);
+> "
+> 
+> Actually I personally don't care about the warning, because we only
+> see it when we run some kind of code checker program.  :-)
+> 
+> I can change my v3  to the "normal" style you prefer, if
+> there is no strong objection from Vitaly?
 
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/vhost/net.c        | 200 +++++++++++++++++++++++++++++++++++++++++++--
- include/uapi/linux/vhost.h |  12 +++
- 2 files changed, 203 insertions(+), 9 deletions(-)
+Ah, I see the point. Then no objection for this patch.
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 8dae2f7..c416aa7 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -18,6 +18,7 @@
- #include <linux/file.h>
- #include <linux/slab.h>
- #include <linux/vmalloc.h>
-+#include <linux/timer.h>
- 
- #include <linux/net.h>
- #include <linux/if_packet.h>
-@@ -61,7 +62,8 @@ MODULE_PARM_DESC(experimental_zcopytx, "Enable Zero Copy TX;"
- enum {
- 	VHOST_NET_FEATURES = VHOST_FEATURES |
- 			 (1ULL << VHOST_NET_F_VIRTIO_NET_HDR) |
--			 (1ULL << VIRTIO_NET_F_MRG_RXBUF),
-+			 (1ULL << VIRTIO_NET_F_MRG_RXBUF) |
-+			 (1ULL << VIRTIO_NET_F_CTRL_COALESCE)
- };
- 
- enum {
-@@ -99,6 +101,15 @@ struct vhost_net_virtqueue {
- 	/* Reference counting for outstanding ubufs.
- 	 * Protected by vq mutex. Writers must also take device mutex. */
- 	struct vhost_net_ubuf_ref *ubufs;
-+	/* Microseconds after at least 1 paket is processed before
-+	 * generating an interrupt.
-+	 */
-+	__u32 coalesce_usecs;
-+	/* Packets are processed before genearting an interrupt. */
-+	__u32 max_coalesced_frames;
-+	__u32 coalesced;
-+	ktime_t last_signal;
-+	struct hrtimer c_timer;
- };
- 
- struct vhost_net {
-@@ -196,11 +207,16 @@ static void vhost_net_vq_reset(struct vhost_net *n)
- 	vhost_net_clear_ubuf_info(n);
- 
- 	for (i = 0; i < VHOST_NET_VQ_MAX; i++) {
-+		hrtimer_cancel(&n->vqs[i].c_timer);
- 		n->vqs[i].done_idx = 0;
- 		n->vqs[i].upend_idx = 0;
- 		n->vqs[i].ubufs = NULL;
- 		n->vqs[i].vhost_hlen = 0;
- 		n->vqs[i].sock_hlen = 0;
-+		n->vqs[i].max_coalesced_frames = 0;
-+		n->vqs[i].coalesce_usecs = 0;
-+		n->vqs[i].last_signal = ktime_get();
-+		n->vqs[i].coalesced = 0;
- 	}
- 
- }
-@@ -272,6 +288,56 @@ static void copy_iovec_hdr(const struct iovec *from, struct iovec *to,
- 	}
- }
- 
-+static int vhost_net_check_coalesce_and_signal(struct vhost_dev *dev,
-+					       struct vhost_net_virtqueue *nvq)
-+{
-+	struct vhost_virtqueue *vq = &nvq->vq;
-+	int left = 0;
-+	ktime_t now;
-+
-+	if (nvq->coalesced) {
-+		now = ktime_get();
-+		left = nvq->coalesce_usecs -
-+		       ktime_to_us(ktime_sub(now, nvq->last_signal));
-+		if (left <= 0) {
-+			vhost_signal(dev, vq);
-+			nvq->last_signal = now;
-+			nvq->coalesced = 0;
-+		}
-+	}
-+
-+	return left;
-+}
-+
-+static bool vhost_net_add_used_and_signal_n(struct vhost_dev *dev,
-+					    struct vhost_net_virtqueue *nvq,
-+					    struct vring_used_elem *heads,
-+					    unsigned count)
-+{
-+	struct vhost_virtqueue *vq = &nvq->vq;
-+	bool can_coalesce = nvq->max_coalesced_frames && nvq->coalesce_usecs;
-+	bool ret = false;
-+
-+	vhost_add_used_n(vq, heads, count);
-+
-+	if (can_coalesce) {
-+		ktime_t now = ktime_get();
-+
-+		nvq->coalesced += count;
-+		if ((nvq->coalesced >= nvq->max_coalesced_frames) ||
-+		    (ktime_to_us(ktime_sub(now, nvq->last_signal)) >=
-+		     nvq->coalesce_usecs)) {
-+			vhost_signal(dev, vq);
-+			nvq->coalesced = 0;
-+			nvq->last_signal = now;
-+			ret = true;
-+		}
-+	} else {
-+		vhost_signal(dev, vq);
-+	}
-+	return ret;
-+}
-+
- /* In case of DMA done not in order in lower device driver for some reason.
-  * upend_idx is used to track end of used idx, done_idx is used to track head
-  * of used idx. Once lower device DMA done contiguously, we will signal KVM
-@@ -296,8 +362,8 @@ static void vhost_zerocopy_signal_used(struct vhost_net *net,
- 	}
- 	while (j) {
- 		add = min(UIO_MAXIOV - nvq->done_idx, j);
--		vhost_add_used_and_signal_n(vq->dev, vq,
--					    &vq->heads[nvq->done_idx], add);
-+		vhost_net_add_used_and_signal_n(vq->dev, nvq,
-+						&vq->heads[nvq->done_idx], add);
- 		nvq->done_idx = (nvq->done_idx + add) % UIO_MAXIOV;
- 		j -= add;
- 	}
-@@ -351,6 +417,7 @@ static void handle_tx(struct vhost_net *net)
- 	struct socket *sock;
- 	struct vhost_net_ubuf_ref *uninitialized_var(ubufs);
- 	bool zcopy, zcopy_used;
-+	int left;
- 
- 	mutex_lock(&vq->mutex);
- 	sock = vq->private_data;
-@@ -362,6 +429,8 @@ static void handle_tx(struct vhost_net *net)
- 	hdr_size = nvq->vhost_hlen;
- 	zcopy = nvq->ubufs;
- 
-+	vhost_net_check_coalesce_and_signal(&net->dev, nvq);
-+
- 	for (;;) {
- 		/* Release DMAs done buffers first */
- 		if (zcopy)
-@@ -444,10 +513,15 @@ static void handle_tx(struct vhost_net *net)
- 		if (err != len)
- 			pr_debug("Truncated TX packet: "
- 				 " len %d != %zd\n", err, len);
--		if (!zcopy_used)
--			vhost_add_used_and_signal(&net->dev, vq, head, 0);
--		else
-+
-+		if (!zcopy_used) {
-+			struct vring_used_elem heads = { head, 0 };
-+
-+			vhost_net_add_used_and_signal_n(&net->dev,
-+							nvq, &heads, 1);
-+		} else {
- 			vhost_zerocopy_signal_used(net, vq);
-+		}
- 		total_len += len;
- 		vhost_net_tx_packet(net);
- 		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
-@@ -455,6 +529,12 @@ static void handle_tx(struct vhost_net *net)
- 			break;
- 		}
- 	}
-+
-+	left = vhost_net_check_coalesce_and_signal(&net->dev, nvq);
-+	if (left > 0)
-+		hrtimer_start(&nvq->c_timer, ms_to_ktime(left),
-+			      HRTIMER_MODE_REL);
-+
- out:
- 	mutex_unlock(&vq->mutex);
- }
-@@ -570,7 +650,7 @@ static void handle_rx(struct vhost_net *net)
- 		.hdr.gso_type = VIRTIO_NET_HDR_GSO_NONE
- 	};
- 	size_t total_len = 0;
--	int err, mergeable;
-+	int err, mergeable, left;
- 	s16 headcount;
- 	size_t vhost_hlen, sock_hlen;
- 	size_t vhost_len, sock_len;
-@@ -589,6 +669,8 @@ static void handle_rx(struct vhost_net *net)
- 		vq->log : NULL;
- 	mergeable = vhost_has_feature(vq, VIRTIO_NET_F_MRG_RXBUF);
- 
-+	vhost_net_check_coalesce_and_signal(&net->dev, nvq);
-+
- 	while ((sock_len = peek_head_len(sock->sk))) {
- 		sock_len += sock_hlen;
- 		vhost_len = sock_len + vhost_hlen;
-@@ -654,8 +736,10 @@ static void handle_rx(struct vhost_net *net)
- 			vhost_discard_vq_desc(vq, headcount);
- 			break;
- 		}
--		vhost_add_used_and_signal_n(&net->dev, vq, vq->heads,
--					    headcount);
-+
-+		vhost_net_add_used_and_signal_n(&net->dev, nvq,
-+						vq->heads, headcount);
-+
- 		if (unlikely(vq_log))
- 			vhost_log_write(vq, vq_log, log, vhost_len);
- 		total_len += vhost_len;
-@@ -664,6 +748,12 @@ static void handle_rx(struct vhost_net *net)
- 			break;
- 		}
- 	}
-+
-+	left = vhost_net_check_coalesce_and_signal(&net->dev, nvq);
-+	if (left > 0)
-+		hrtimer_start(&nvq->c_timer, ms_to_ktime(left),
-+			HRTIMER_MODE_REL);
-+
- out:
- 	mutex_unlock(&vq->mutex);
- }
-@@ -700,6 +790,18 @@ static void handle_rx_net(struct vhost_work *work)
- 	handle_rx(net);
- }
- 
-+static enum hrtimer_restart vhost_net_timer_handler(struct hrtimer *timer)
-+{
-+	struct vhost_net_virtqueue *nvq = container_of(timer,
-+						struct vhost_net_virtqueue,
-+						c_timer);
-+	struct vhost_virtqueue *vq = &nvq->vq;
-+
-+	vhost_poll_queue(&vq->poll);
-+
-+	return HRTIMER_NORESTART;
-+}
-+
- static int vhost_net_open(struct inode *inode, struct file *f)
- {
- 	struct vhost_net *n;
-@@ -731,6 +833,13 @@ static int vhost_net_open(struct inode *inode, struct file *f)
- 		n->vqs[i].done_idx = 0;
- 		n->vqs[i].vhost_hlen = 0;
- 		n->vqs[i].sock_hlen = 0;
-+		n->vqs[i].max_coalesced_frames = 0;
-+		n->vqs[i].coalesce_usecs = 0;
-+		n->vqs[i].last_signal = ktime_get();
-+		n->vqs[i].coalesced = 0;
-+		hrtimer_init(&n->vqs[i].c_timer, CLOCK_MONOTONIC,
-+			     HRTIMER_MODE_REL);
-+		n->vqs[i].c_timer.function = vhost_net_timer_handler;
- 	}
- 	vhost_dev_init(dev, vqs, VHOST_NET_VQ_MAX);
- 
-@@ -907,6 +1016,7 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
- 	struct vhost_virtqueue *vq;
- 	struct vhost_net_virtqueue *nvq;
- 	struct vhost_net_ubuf_ref *ubufs, *oldubufs = NULL;
-+	unsigned int coalesced;
- 	int r;
- 
- 	mutex_lock(&n->dev.mutex);
-@@ -935,6 +1045,7 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
- 
- 	/* start polling new socket */
- 	oldsock = vq->private_data;
-+	coalesced = nvq->coalesced;
- 	if (sock != oldsock) {
- 		ubufs = vhost_net_ubuf_alloc(vq,
- 					     sock && vhost_sock_zcopy(sock));
-@@ -969,6 +1080,12 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
- 		mutex_unlock(&vq->mutex);
- 	}
- 
-+	if (coalesced) {
-+		mutex_lock(&vq->mutex);
-+		vhost_signal(&n->dev, vq);
-+		mutex_unlock(&vq->mutex);
-+	}
-+
- 	if (oldsock) {
- 		vhost_net_flush_vq(n, index);
- 		sockfd_put(oldsock);
-@@ -1075,6 +1192,67 @@ out:
- 	return r;
- }
- 
-+static long vhost_net_set_vring_coalesce(struct vhost_dev *d, void __user *argp)
-+{
-+	u32 __user *idxp = argp;
-+	u32 idx;
-+	int r;
-+	struct vhost_virtqueue *vq;
-+	struct vhost_net_vring_coalesce c;
-+	struct vhost_net_virtqueue *nvq;
-+
-+	r = get_user(idx, idxp);
-+	if (r < 0)
-+		return r;
-+	if (idx >= d->nvqs)
-+		return -ENOBUFS;
-+
-+	vq = d->vqs[idx];
-+	nvq = container_of(vq, struct vhost_net_virtqueue, vq);
-+
-+	r = copy_from_user(&c, argp, sizeof(c));
-+	if (r < 0)
-+		return r;
-+
-+	mutex_lock(&vq->mutex);
-+	nvq->coalesce_usecs = c.coalesce_usecs;
-+	nvq->max_coalesced_frames = c.max_coalesced_frames;
-+	mutex_unlock(&vq->mutex);
-+
-+	return 0;
-+}
-+
-+static long vhost_net_get_vring_coalesce(struct vhost_dev *d, void __user *argp)
-+{
-+	u32 __user *idxp = argp;
-+	u32 idx;
-+	int r;
-+	struct vhost_virtqueue *vq;
-+	struct vhost_net_vring_coalesce c;
-+	struct vhost_net_virtqueue *nvq;
-+
-+	r = get_user(idx, idxp);
-+	if (r < 0)
-+		return r;
-+	if (idx >= d->nvqs)
-+		return -ENOBUFS;
-+
-+	vq = d->vqs[idx];
-+	nvq = container_of(vq, struct vhost_net_virtqueue, vq);
-+
-+	mutex_lock(&vq->mutex);
-+	c.index = idx;
-+	c.coalesce_usecs = nvq->coalesce_usecs;
-+	c.max_coalesced_frames = nvq->max_coalesced_frames;
-+	mutex_unlock(&vq->mutex);
-+
-+	r = copy_to_user(argp, &c, sizeof(c));
-+	if (r < 0)
-+		return r;
-+
-+	return 0;
-+}
-+
- static long vhost_net_ioctl(struct file *f, unsigned int ioctl,
- 			    unsigned long arg)
- {
-@@ -1105,6 +1283,10 @@ static long vhost_net_ioctl(struct file *f, unsigned int ioctl,
- 		return vhost_net_reset_owner(n);
- 	case VHOST_SET_OWNER:
- 		return vhost_net_set_owner(n);
-+	case VHOST_NET_SET_VRING_COALESCE:
-+		return vhost_net_set_vring_coalesce(&n->dev, argp);
-+	case VHOST_NET_GET_VRING_COALESCE:
-+		return vhost_net_get_vring_coalesce(&n->dev, argp);
- 	default:
- 		mutex_lock(&n->dev.mutex);
- 		r = vhost_dev_ioctl(&n->dev, ioctl, argp);
-diff --git a/include/uapi/linux/vhost.h b/include/uapi/linux/vhost.h
-index bb6a5b4..6799cc1 100644
---- a/include/uapi/linux/vhost.h
-+++ b/include/uapi/linux/vhost.h
-@@ -27,6 +27,12 @@ struct vhost_vring_file {
- 
- };
- 
-+struct vhost_net_vring_coalesce {
-+	unsigned int index;
-+	__u32 coalesce_usecs;
-+	__u32 max_coalesced_frames;
-+};
-+
- struct vhost_vring_addr {
- 	unsigned int index;
- 	/* Option flags. */
-@@ -121,6 +127,12 @@ struct vhost_memory {
-  * device.  This can be used to stop the ring (e.g. for migration). */
- #define VHOST_NET_SET_BACKEND _IOW(VHOST_VIRTIO, 0x30, struct vhost_vring_file)
- 
-+/* Setting interrupt coalescing parameters. */
-+#define VHOST_NET_SET_VRING_COALESCE \
-+	_IOW(VHOST_VIRTIO, 0x31, struct vhost_net_vring_coalesce)
-+/* Getting interrupt coalescing parameters. */
-+#define VHOST_NET_GET_VRING_COALESCE \
-+	_IOW(VHOST_VIRTIO, 0x32, struct vhost_net_vring_coalesce)
- /* Feature bits */
- /* Log all write descriptors. Can be changed while device is active. */
- #define VHOST_F_LOG_ALL 26
--- 
-1.8.3.1
+Since Vitaly said he does not has objection.
+
+Acked-by: Jason Wang <jasowang@redhat.com>
 
