@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888AbaLAOVO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 09:21:14 -0500
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:36200 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753795AbaLAOVM (ORCPT
+	id S1753929AbaLAOV4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 09:21:56 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:48044 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753448AbaLAOVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 09:21:12 -0500
-Date: Mon, 1 Dec 2014 15:21:03 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v7 36/46] vhost/net: suppress compiler warning
-Message-ID: <20141201152103.0f375544.cornelia.huck@de.ibm.com>
-In-Reply-To: <20141201134839.GB18305@redhat.com>
-References: <1417359787-10138-1-git-send-email-mst@redhat.com>
-	<1417359787-10138-37-git-send-email-mst@redhat.com>
-	<20141201133740.56d7d6d8.cornelia.huck@de.ibm.com>
-	<20141201134839.GB18305@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120114-0017-0000-0000-0000020ABC5D
+	Mon, 1 Dec 2014 09:21:54 -0500
+MIME-Version: 1.0
+In-Reply-To: <CACRpkdY8sEJMr-cxzrUEW1sqP3bGLH=Q2hDP1NBQ5m9A+RhP5Q@mail.gmail.com>
+References: <CAFp+6iF-N63YSsdv2a6=MYp_mD=eQY_Oi8=9JVNU5dG0BA7YGQ@mail.gmail.com>
+	<1416834177-11170-1-git-send-email-gautam.vivek@samsung.com>
+	<CAGOxZ51P30BY2sOhUeMRK64CGF1fNcc-63RCXiAqZ6Rgpv3K7Q@mail.gmail.com>
+	<CAFp+6iFcMGTBQDcdK0cbcu0s9a3022nogaUvbPA2ZsCN80hRSA@mail.gmail.com>
+	<CAFp+6iFaf_RMprLCLXK=o=KGSTQuVL3geKx5yfevTuvFdjYLNg@mail.gmail.com>
+	<CACRpkdY8sEJMr-cxzrUEW1sqP3bGLH=Q2hDP1NBQ5m9A+RhP5Q@mail.gmail.com>
+Date: Mon, 1 Dec 2014 19:51:53 +0530
+Message-ID: <CAFp+6iHiC9mouT-v_yGHm5adDerCpT-s7EeWwwwYi-NzdLBnrA@mail.gmail.com>
+Subject: Re: [PATCH V2 1/2] pinctrl: exynos: Add BUS1 pin controller for exynos7
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>, Alim Akhtar <alim.akhtar@gmail.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        "robh+dt" <robh+dt@kernel.org>, kgene <kgene@kernel.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Dec 2014 15:48:39 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+On Fri, Nov 28, 2014 at 9:15 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Fri, Nov 28, 2014 at 4:39 AM, Vivek Gautam <gautamvivek1987@gmail.com> wrote:
+>> On Fri, Nov 28, 2014 at 9:05 AM, Vivek Gautam <gautamvivek1987@gmail.com> wrote:
+>
+>>>> On Mon, Nov 24, 2014 at 6:32 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+>>>>> USB and Power regulator on Exynos7 require gpios available
+>>>>> in BUS1 pin controller block.
+>>>>> So adding the BUS1 pinctrl support.
+>>>>>
+>>>>> Signed-off-by: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+>>>>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>>>>> Cc: Linus Walleij <linus.walleij@linaro.org>
+>>
+>> If the change looks good, will it be possible to pick it fo 3.19-rc1 ?
+>> That will really help enabling USB IP on exynos7.
+>
+> As you know the Exynos driver has a maintainer, Tomasz Figa, I will not
+> merge patches without his ACK.
+>
+> Apart from that, there are *again* a lot of Exynos patches flying around and
+> I start to loose track of them. If they do not apply together and start to
+> conflict I will just ask Tomasz to stack them and provide a pull request
+> again.
 
-> On Mon, Dec 01, 2014 at 01:37:40PM +0100, Cornelia Huck wrote:
-> > On Sun, 30 Nov 2014 17:12:13 +0200
-> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > 
-> > > len is always initialized since function is called with size > 0.
-> > > 
-> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > ---
-> > >  drivers/vhost/net.c | 2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> > > index 984242e..54ffbb0 100644
-> > > --- a/drivers/vhost/net.c
-> > > +++ b/drivers/vhost/net.c
-> > > @@ -501,7 +501,7 @@ static int get_rx_bufs(struct vhost_virtqueue *vq,
-> > >  	int headcount = 0;
-> > >  	unsigned d;
-> > >  	int r, nlogs = 0;
-> > > -	u32 len;
-> > > +	u32 uninitialized_var(len);
-> > > 
-> > >  	while (datalen > 0 && headcount < quota) {
-> > >  		if (unlikely(seg >= UIO_MAXIOV)) {
-> > 
-> > Want to merge this with the patch introducing the variable and add a
-> > comment there?
-> 
-> Not really. Warnings in bisect are fine  I think.
+True, this merge cycle has surely got number of exynos7 related
+patches in flight,
+which are difficult to keep track of.
+Thanks for asking Tomasz.
 
-I'm not sure what a separate patch buys us, though, as it should be
-trivial to merge.
 
+
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
