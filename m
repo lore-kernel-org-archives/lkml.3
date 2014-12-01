@@ -1,174 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932077AbaLANu6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 08:50:58 -0500
-Received: from svenfoo.org ([82.94.215.22]:46640 "EHLO mail.zonque.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753365AbaLANu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 08:50:56 -0500
-Message-ID: <547C723C.6020305@zonque.org>
-Date: Mon, 01 Dec 2014 14:50:52 +0100
-From: Daniel Mack <daniel@zonque.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932101AbaLANvU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 08:51:20 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:44489 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932083AbaLANvR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 08:51:17 -0500
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, arnd@arndb.de,
-        ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk, teg@jklm.no,
-        jkosina@suse.cz, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: dh.herrmann@gmail.com, tixxdz@opendz.org
-Subject: Re: kdbus: add code to gather metadata
-References: <1416546149-24799-1-git-send-email-gregkh@linuxfoundation.org> <1416546149-24799-8-git-send-email-gregkh@linuxfoundation.org> <546F977B.7040500@amacapital.net>
-In-Reply-To: <546F977B.7040500@amacapital.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1417192911-16719-1-git-send-email-muth@cypress.com>
+References: <1417192911-16719-1-git-send-email-muth@cypress.com>
+Date: Mon, 1 Dec 2014 14:51:16 +0100
+Message-ID: <CACRpkdYbbheP5KTuj7f+2cJXrOjjkRZjR0-bth1DF3kCig6n5A@mail.gmail.com>
+Subject: Re: [PATCH v4 3/3] gpio: add support for Cypress CYUSBS234 USB-GPIO adapter
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Muthu Mani <muth@cypress.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Alexandre Courbot <gnurou@gmail.com>,
+        Johan Hovold <johan@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Rajaram Regupathy <rera@cypress.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+On Fri, Nov 28, 2014 at 5:41 PM, Muthu Mani <muth@cypress.com> wrote:
 
-Sorry for the late response.
+> Adds support for USB-GPIO interface of Cypress Semiconductor
+> CYUSBS234 USB-Serial Bridge controller.
+>
+> The GPIO get/set can be done through vendor command on control endpoint
+> for the configured gpios.
+>
+> Details about the device can be found at:
+> http://www.cypress.com/?rID=84126
+>
+> Signed-off-by: Muthu Mani <muth@cypress.com>
+> Signed-off-by: Rajaram Regupathy <rera@cypress.com>
+> ---
+> Changes since v3:
 
-On 11/21/2014 08:50 PM, Andy Lutomirski wrote:
->> +static int kdbus_meta_append_cred(struct kdbus_meta *meta,
->> +				  const struct kdbus_domain *domain)
->> +{
->> +	struct kdbus_creds creds = {
->> +		.uid = from_kuid_munged(domain->user_namespace, current_uid()),
->> +		.gid = from_kgid_munged(domain->user_namespace, current_gid()),
->> +		.pid = task_pid_nr_ns(current, domain->pid_namespace),
->> +		.tid = task_tgid_nr_ns(current, domain->pid_namespace),
-> 
-> This is better than before -- at least it gets translation right part of
-> the way.  But it's still wrong if the receiver's namespace doesn't match
-> the domain.
+(..)
+> +config GPIO_CYUSBS23X
+> +       tristate "CYUSBS23x GPIO support"
+> +       depends on MFD_CYUSBS23X && USB
 
-Alright. The code now translates the items into each receiver's
-namespaces individually, so we can also take possible chroot()
-environments into account to do path translations.
+Doesn't MFD_CYUSV23X already depend on USB?
 
-> Also, please move pid and tgid into their own item.  They suck for
-> reasons that have been beaten to death.  Let's make it possible to
-> deprecate them separately in the future.
+> +#include <linux/kernel.h>
+> +#include <linux/errno.h>
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/types.h>
+> +#include <linux/mutex.h>
+> +#include <linux/platform_device.h>
+> +
+> +#include <linux/usb.h>
+> +#include <linux/gpio.h>
+> +
+> +#include <linux/mfd/cyusbs23x.h>
 
-Ok, done now. As mentioned in the highpid thread, we can easily add
-another item once we have a better source of information.
+Why this arbitrary newlines? Add this
 
->> +static int kdbus_meta_append_caps(struct kdbus_meta *meta)
->> +{
->> +	struct caps {
->> +		u32 last_cap;
->> +		struct {
->> +			u32 caps[_KERNEL_CAPABILITY_U32S];
->> +		} set[4];
->> +	} caps;
->> +	unsigned int i;
->> +	const struct cred *cred = current_cred();
->> +
->> +	caps.last_cap = CAP_LAST_CAP;
->> +
->> +	for (i = 0; i < _KERNEL_CAPABILITY_U32S; i++) {
->> +		caps.set[0].caps[i] = cred->cap_inheritable.cap[i];
->> +		caps.set[1].caps[i] = cred->cap_permitted.cap[i];
->> +		caps.set[2].caps[i] = cred->cap_effective.cap[i];
->> +		caps.set[3].caps[i] = cred->cap_bset.cap[i];
->> +	}
-> 
-> Please leave this in so that I can root every single kdbus-using system.
->  It'll be lots of fun.
-> 
-> Snark aside, the correct fix is IMO to delete this function entirely.
-> Even if you could find a way to implement it safely (which will be
-> distinctly nontrivial), it seems like a bad idea to begin with.
+#include <linus/bitops.h>
 
-Yes, we currently have no way of translating caps from one user
-namespace to another, which means we cannot allow such an item to cross
-user namespaces. We can add this functionality later once we have the
-neccessary APIs.
+> +struct cyusbs_gpio {
+> +       struct gpio_chip gpio;
+> +       struct cyusbs23x *cyusbs;
+> +       u32 out_gpio;
+> +       u32 out_value;
+> +       u32 in_gpio;
+> +};
 
->> +#ifdef CONFIG_CGROUPS
->> +static int kdbus_meta_append_cgroup(struct kdbus_meta *meta)
->> +{
->> +	char *buf, *path;
->> +	int ret;
->> +
->> +	buf = (char *)__get_free_page(GFP_TEMPORARY | __GFP_ZERO);
->> +	if (!buf)
->> +		return -ENOMEM;
->> +
->> +	path = task_cgroup_path(current, buf, PAGE_SIZE);
-> 
-> This may have strange interactions with cgroupns.  It's fixable, though,
-> but only once you implement translation at receive time, and I think
-> you'll have to do that to get any of this to work right.
+Add kerneldoc to this struct so we know what the out/in etc are.
 
-Yes, agreed. We'll add translation to this item once cgroup namespaces
-are in place. Until then, we'll expose the same information as other
-parts of the Linux API already do.
+> +static int cy_gpio_get(struct gpio_chip *chip,
+> +                       unsigned offset)
+> +{
+> +       int ret;
+> +       char *buf;
+> +       u16 wIndex, wValue;
+> +       struct cyusbs_gpio *gpio = to_cyusbs_gpio(chip);
+> +       struct cyusbs23x *cyusbs = gpio->cyusbs;
+> +
+> +       if (gpio->out_gpio & (1 << offset))
+> +               return gpio->out_value & (1 << offset);
 
->> +#ifdef CONFIG_AUDITSYSCALL
->> +static int kdbus_meta_append_audit(struct kdbus_meta *meta,
->> +				   const struct kdbus_domain *domain)
->> +{
->> +	struct kdbus_audit audit;
->> +
->> +	audit.loginuid = from_kuid_munged(domain->user_namespace,
->> +					  audit_get_loginuid(current));
->> +	audit.sessionid = audit_get_sessionid(current);
->> +
->> +	return kdbus_meta_append_data(meta, KDBUS_ITEM_AUDIT,
->> +				      &audit, sizeof(audit));
-> 
-> So *that's* what audit means.  Please document this and consider
-> renaming it to something like AUDIT_LOGINUID_AND_SESSIONID.
+Rewrite like this:
 
-The documentation was indeed bogus and is fixed now, along with man
-other details. Thanks for spotting this!
+if (gpio->out_gpio & BIT(offset))
+             return !!(gpio->out_value & BIT(offset));
 
->> +#ifdef CONFIG_SECURITY
->> +static int kdbus_meta_append_seclabel(struct kdbus_meta *meta)
->> +{
->> +	u32 len, sid;
->> +	char *label;
->> +	int ret;
->> +
->> +	security_task_getsecid(current, &sid);
->> +	ret = security_secid_to_secctx(sid, &label, &len);
->> +	if (ret == -EOPNOTSUPP)
->> +		return 0;
->> +	if (ret < 0)
->> +		return ret;
->> +
->> +	if (label && len > 0)
->> +		ret = kdbus_meta_append_data(meta, KDBUS_ITEM_SECLABEL,
->> +					     label, len);
-> 
-> This thing needs a clear, valid use case.  I think that the use case
-> should document how non-enforcing mode is supposed to work, too.
+(!! will clamp  to [0,1])
 
-kdbus just passes the seclabel along, if people want to use this for
-security checks, then they need to call into libselinux, and should do
-that by taking the enforcing mode into consideration. This is already
-done in a lot of software that way.
+> +       wValue = offset;
+> +       wIndex = 0;
+> +       buf = kmalloc(CY_GPIO_GET_LEN, GFP_KERNEL);
+> +       if (buf == NULL)
+> +               return -ENOMEM;
+> +
+> +       ret = usb_control_msg(cyusbs->usb_dev,
+> +                       usb_rcvctrlpipe(cyusbs->usb_dev, 0),
+> +                       CY_GPIO_GET_VALUE_CMD,
+> +                       USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
+> +                       wValue, wIndex, buf, CY_GPIO_GET_LEN,
+> +                       CY_USBS_CTRL_XFER_TIMEOUT);
+> +       if (ret == CY_GPIO_GET_LEN) {
+> +               dev_dbg(chip->dev, "%s: offset=%d %02X %02X\n",
+> +                       __func__, offset, buf[0], buf[1]);
+> +               if (buf[0] == 0)
+> +                       ret = buf[1];
 
-> Also, there should be a justification for why the LSM hooks by
-> themselves aren't good enough to remove the need for this.
+ret = !!buf[1];
 
-SELinux and other MACs might want to do additional per-service security
-checks. For example, a service manager might want to check the security
-label of a service file against the security label of the client process
-using the SELinux database before allow access. For this, we need to be
-able to pass the client's security label race-free to libselinux so that
-it can make its decision.
+> +               else
+> +                       ret = -EIO;
+> +       } else {
+> +               dev_err(chip->dev, "%s: offset=%d %d\n", __func__, offset, ret);
+> +               ret = -EIO;
+> +       }
+> +
+> +       kfree(buf);
+> +       return ret;
+> +}
+> +
+> +static void cy_gpio_set(struct gpio_chip *chip,
+> +                       unsigned offset, int value)
+> +{
+> +       int ret;
+> +       u16 wIndex, wValue;
+> +       struct cyusbs_gpio *gpio = to_cyusbs_gpio(chip);
+> +       struct cyusbs23x *cyusbs = gpio->cyusbs;
+> +
+> +       wValue = offset;
+> +       wIndex = value;
+> +
+> +       ret = usb_control_msg(cyusbs->usb_dev,
+> +                       usb_sndctrlpipe(cyusbs->usb_dev, 0),
+> +                       CY_GPIO_SET_VALUE_CMD,
+> +                       USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
+> +                       wValue, wIndex, NULL, 0, CY_USBS_CTRL_XFER_TIMEOUT);
+> +       if (ret < 0)
+> +               dev_err(chip->dev, "error setting gpio %d: %d\n", offset, ret);
+> +       else {
+> +               if (value)
+> +                       gpio->out_value |= (1 << offset);
+> +               else
+> +                       gpio->out_value &= ~(1 << offset);
 
-I've added the above to the documentation now.
+Use the BIT(offset) pattern here and everywhere else in the file.
 
+> +static int cy_get_device_config(struct cyusbs23x *cyusbs, u8 *buf)
+> +{
+> +       int ret;
+> +
+> +       ret = usb_control_msg(cyusbs->usb_dev,
+> +                       usb_sndctrlpipe(cyusbs->usb_dev, 0),
+> +                       CY_DEV_ENABLE_CONFIG_READ_CMD,
+> +                       USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
+> +                       0xA6BC, 0xB1B0, NULL, 0,
 
+Aren't these 16bit numbers #defined somewhere?
 
-Thanks for your review again - much appreciated!
+#define CYUSB_VID 0xA6BC and use that?
 
-Daniel
+> +static int cy_gpio_retrieve_gpio_details(struct cyusbs_gpio *gpio)
+> +{
+> +       int ret;
+> +       u32 drive0, drive1;
+> +       u8 *buf;
+> +       struct cyusbs23x *cyusbs = gpio->cyusbs;
+> +
+> +       buf = kzalloc(CY_DEVICE_CONFIG_SIZE, GFP_KERNEL);
+> +       if (buf == NULL)
+> +               return -ENOMEM;
+> +
+> +       ret = cy_get_device_config(cyusbs, buf);
+> +       if (ret) {
+> +               dev_err(&cyusbs->usb_dev->dev,
+> +                       "could not retrieve device configuration\n");
+> +               goto error;
+> +       }
+> +
+> +       /* Retrieve the GPIO configuration details */
+> +       drive0 = *((u32 *)&buf[436]);
+> +       drive1 = *((u32 *)&buf[440]);
+> +       gpio->out_gpio = drive0 | drive1;
+> +       gpio->out_value = drive1;
+> +       gpio->in_gpio = *((u32 *)&buf[444]);
 
+These offsets seem horribly arbitrary. Is there a spec of the packet
+format to reference in that comment?
 
-
+Yours,
+Linus Walleij
