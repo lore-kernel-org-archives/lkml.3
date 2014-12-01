@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504AbaLAL1l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 06:27:41 -0500
-Received: from lucky1.263xmail.com ([211.157.147.131]:51394 "EHLO
+	id S1753255AbaLAL2j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 06:28:39 -0500
+Received: from lucky1.263xmail.com ([211.157.147.133]:40247 "EHLO
 	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753017AbaLAL1k (ORCPT
+	with ESMTP id S1752795AbaLAL2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 06:27:40 -0500
+	Mon, 1 Dec 2014 06:28:38 -0500
 X-263anti-spam: KSV:0;
 X-MAIL-GRAY: 1
 X-MAIL-DELIVERY: 0
@@ -16,7 +16,7 @@ X-RL-SENDER: andy.yan@rock-chips.com
 X-FST-TO: airlied@linux.ie
 X-SENDER-IP: 127.0.0.1
 X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <ba19c55d3172710e2bf5371cd5fe18ab>
+X-UNIQUE-TAG: <15b117bcfa2670c0a3b4578af66c943f>
 X-ATTACHMENT-NUM: 0
 X-DNS-TYPE: 0
 From: Andy Yan <andy.yan@rock-chips.com>
@@ -36,9 +36,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>, Andy Yan <andy.yan@rock-chips.com>
-Subject: [PATCH v14 09/12] drm: bridge/dw_hdmi: clear i2cmphy_stat0 reg in hdmi_phy_wait_i2c_done
-Date: Mon,  1 Dec 2014 19:27:12 +0800
-Message-Id: <1417433232-13161-1-git-send-email-andy.yan@rock-chips.com>
+Subject: [PATCH v14 10/12] drm: bridge/dw_hdmi: add function dw_hdmi_phy_enable_spare
+Date: Mon,  1 Dec 2014 19:28:10 +0800
+Message-Id: <1417433290-13208-1-git-send-email-andy.yan@rock-chips.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417432770-12719-1-git-send-email-andy.yan@rock-chips.com>
 References: <1417432770-12719-1-git-send-email-andy.yan@rock-chips.com>
@@ -46,12 +46,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HDMI_IH_I2CMPHY_STAT0 is a clear on write register, which indicates i2cm
-operation status(i2c transfer done or error), every hdmi phy register
-configuration must check this register to make sure the configuration
-has complete. But the indication bit should be cleared after check, otherwise
-the corresponding bit will hold on forever, this may give a wrong signal for
-next check.
+RK3288 HDMI will not work without the spare bit of
+HDMI_PHY_CONF0 enable
 
 Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
 ---
@@ -69,30 +65,42 @@ Changes in v5: None
 Changes in v4: None
 Changes in v3: None
 
- drivers/gpu/drm/bridge/dw_hdmi.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/bridge/dw_hdmi.c | 7 +++++++
+ drivers/gpu/drm/bridge/dw_hdmi.h | 3 ++-
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
-index a95a553..5be643c 100644
+index 5be643c..df52347 100644
 --- a/drivers/gpu/drm/bridge/dw_hdmi.c
 +++ b/drivers/gpu/drm/bridge/dw_hdmi.c
-@@ -668,11 +668,15 @@ static inline void hdmi_phy_test_dout(struct dw_hdmi *hdmi,
- 
- static bool hdmi_phy_wait_i2c_done(struct dw_hdmi *hdmi, int msec)
- {
--	while ((hdmi_readb(hdmi, HDMI_IH_I2CMPHY_STAT0) & 0x3) == 0) {
-+	u32 val;
-+
-+	while ((val = hdmi_readb(hdmi, HDMI_IH_I2CMPHY_STAT0) & 0x3) == 0) {
- 		if (msec-- == 0)
- 			return false;
- 		udelay(1000);
- 	}
-+	hdmi_writeb(hdmi, val, HDMI_IH_I2CMPHY_STAT0);
-+
- 	return true;
+@@ -715,6 +715,13 @@ static void dw_hdmi_phy_enable_tmds(struct dw_hdmi *hdmi, u8 enable)
+ 			 HDMI_PHY_CONF0_ENTMDS_MASK);
  }
  
++static void dw_hdmi_phy_enable_spare(struct dw_hdmi *hdmi, u8 enable)
++{
++	hdmi_mask_writeb(hdmi, enable, HDMI_PHY_CONF0,
++			 HDMI_PHY_CONF0_SPARECTRL_OFFSET,
++			 HDMI_PHY_CONF0_SPARECTRL_MASK);
++}
++
+ static void dw_hdmi_phy_gen2_pddq(struct dw_hdmi *hdmi, u8 enable)
+ {
+ 	hdmi_mask_writeb(hdmi, enable, HDMI_PHY_CONF0,
+diff --git a/drivers/gpu/drm/bridge/dw_hdmi.h b/drivers/gpu/drm/bridge/dw_hdmi.h
+index baa7849..175dbc8 100644
+--- a/drivers/gpu/drm/bridge/dw_hdmi.h
++++ b/drivers/gpu/drm/bridge/dw_hdmi.h
+@@ -837,7 +837,8 @@ enum {
+ 	HDMI_PHY_CONF0_PDZ_OFFSET = 7,
+ 	HDMI_PHY_CONF0_ENTMDS_MASK = 0x40,
+ 	HDMI_PHY_CONF0_ENTMDS_OFFSET = 6,
+-	HDMI_PHY_CONF0_SPARECTRL = 0x20,
++	HDMI_PHY_CONF0_SPARECTRL_MASK = 0x20,
++	HDMI_PHY_CONF0_SPARECTRL_OFFSET = 5,
+ 	HDMI_PHY_CONF0_GEN2_PDDQ_MASK = 0x10,
+ 	HDMI_PHY_CONF0_GEN2_PDDQ_OFFSET = 4,
+ 	HDMI_PHY_CONF0_GEN2_TXPWRON_MASK = 0x8,
 -- 
 1.9.1
 
