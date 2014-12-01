@@ -1,72 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753662AbaLAMnB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 07:43:01 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:50694 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753596AbaLAMm7 (ORCPT
+	id S1753474AbaLAMpw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 07:45:52 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:37424 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753269AbaLAMpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 07:42:59 -0500
-Date: Mon, 1 Dec 2014 13:42:47 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v7 31/46] vhost: virtio 1.0 endian-ness support
-Message-ID: <20141201134247.55e68161.cornelia.huck@de.ibm.com>
-In-Reply-To: <20141201123701.GB17958@redhat.com>
-References: <1417359787-10138-1-git-send-email-mst@redhat.com>
-	<1417359787-10138-32-git-send-email-mst@redhat.com>
-	<20141201133353.0bbaa2e1.cornelia.huck@de.ibm.com>
-	<20141201123701.GB17958@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120112-0041-0000-0000-000002510635
+	Mon, 1 Dec 2014 07:45:51 -0500
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Russell King <linux@arm.linux.org.uk>, Rob Herring <robh+dt@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>
+Cc: devicetree@vger.kernel.org, Marc Zyngier <Marc.Zyngier@arm.com>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3] irqchip: gic: Allow interrupt level to be set for PPIs.
+Date: Mon,  1 Dec 2014 12:45:09 +0000
+Message-Id: <1417437909-20923-1-git-send-email-Liviu.Dudau@arm.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Dec 2014 14:37:01 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+During a recent cleanup of the arm64 DTs it has become clear that
+the handling of PPIs in xxxx_set_type() is incorrect. The ARM TRMs
+for GICv2 and later allow for "implementation defined" support for
+setting the edge or level type of the PPI interrupts and don't restrict
+the activation level of the signal. Current ARM implementations
+do restrict the PPI level type to IRQ_TYPE_LEVEL_LOW, but licensees
+of the IP can decide to shoot themselves in the foot at any time.
 
-> On Mon, Dec 01, 2014 at 01:33:53PM +0100, Cornelia Huck wrote:
-> > On Sun, 30 Nov 2014 17:11:49 +0200
-> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > 
-> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > ---
-> > >  drivers/vhost/vhost.c | 93 +++++++++++++++++++++++++++++++--------------------
-> > >  1 file changed, 56 insertions(+), 37 deletions(-)
-> > > 
-> > 
-> > > @@ -1113,18 +1120,19 @@ static int get_indirect(struct vhost_virtqueue *vq,
-> > >  {
-> > >  	struct vring_desc desc;
-> > >  	unsigned int i = 0, count, found = 0;
-> > > +	u32 len = vhost32_to_cpu(vq, indirect->len);
-> > >  	int ret;
-> > > 
-> > >  	/* Sanity check */
-> > > -	if (unlikely(indirect->len % sizeof desc)) {
-> > > +	if (unlikely(len % sizeof desc)) {
-> > >  		vq_err(vq, "Invalid length in indirect descriptor: "
-> > >  		       "len 0x%llx not multiple of 0x%zx\n",
-> > > -		       (unsigned long long)indirect->len,
-> > > +		       (unsigned long long)vhost32_to_cpu(vq, indirect->len),
-> > 
-> > Can't you use len here?
-> 
-> Not if I want error message to be readable.
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+---
 
-Huh? Both have the same value.
+Made a stupid mistake in v2 and got my bit test confused with logical test.
+
+ Documentation/devicetree/bindings/arm/gic.txt |  8 ++++++--
+ drivers/irqchip/irq-gic-common.c              | 21 +++++++++++++--------
+ drivers/irqchip/irq-gic-common.h              |  2 +-
+ drivers/irqchip/irq-gic-v3.c                  |  8 ++++----
+ drivers/irqchip/irq-gic.c                     |  9 ++++++---
+ drivers/irqchip/irq-hip04.c                   |  9 ++++++---
+ 6 files changed, 36 insertions(+), 21 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
+index 8112d0c..c97484b 100644
+--- a/Documentation/devicetree/bindings/arm/gic.txt
++++ b/Documentation/devicetree/bindings/arm/gic.txt
+@@ -32,12 +32,16 @@ Main node required properties:
+   The 3rd cell is the flags, encoded as follows:
+ 	bits[3:0] trigger type and level flags.
+ 		1 = low-to-high edge triggered
+-		2 = high-to-low edge triggered
++		2 = high-to-low edge triggered (invalid for SPIs)
+ 		4 = active high level-sensitive
+-		8 = active low level-sensitive
++		8 = active low level-sensitive (invalid for SPIs).
+ 	bits[15:8] PPI interrupt cpu mask.  Each bit corresponds to each of
+ 	the 8 possible cpus attached to the GIC.  A bit set to '1' indicated
+ 	the interrupt is wired to that CPU.  Only valid for PPI interrupts.
++	Also note that the configurability of PPI interrupts is IMPLEMENTATION
++	DEFINED and as such not guaranteed to be present (most SoC available
++	in 2014 seem to ignore the setting of this flag and use the hardware
++	default value).
+ 
+ - reg : Specifies base physical address(s) and size of the GIC registers. The
+   first region is the GIC distributor register base and size. The 2nd region is
+diff --git a/drivers/irqchip/irq-gic-common.c b/drivers/irqchip/irq-gic-common.c
+index 61541ff..ffee521 100644
+--- a/drivers/irqchip/irq-gic-common.c
++++ b/drivers/irqchip/irq-gic-common.c
+@@ -21,7 +21,7 @@
+ 
+ #include "irq-gic-common.h"
+ 
+-void gic_configure_irq(unsigned int irq, unsigned int type,
++int gic_configure_irq(unsigned int irq, unsigned int type,
+ 		       void __iomem *base, void (*sync_access)(void))
+ {
+ 	u32 enablemask = 1 << (irq % 32);
+@@ -29,16 +29,17 @@ void gic_configure_irq(unsigned int irq, unsigned int type,
+ 	u32 confmask = 0x2 << ((irq % 16) * 2);
+ 	u32 confoff = (irq / 16) * 4;
+ 	bool enabled = false;
+-	u32 val;
++	u32 val, oldval;
++	int ret = 0;
+ 
+ 	/*
+ 	 * Read current configuration register, and insert the config
+ 	 * for "irq", depending on "type".
+ 	 */
+-	val = readl_relaxed(base + GIC_DIST_CONFIG + confoff);
+-	if (type == IRQ_TYPE_LEVEL_HIGH)
++	val = oldval = readl_relaxed(base + GIC_DIST_CONFIG + confoff);
++	if (type & IRQ_TYPE_LEVEL_MASK)
+ 		val &= ~confmask;
+-	else if (type == IRQ_TYPE_EDGE_RISING)
++	else if (type & IRQ_TYPE_EDGE_BOTH)
+ 		val |= confmask;
+ 
+ 	/*
+@@ -54,15 +55,19 @@ void gic_configure_irq(unsigned int irq, unsigned int type,
+ 
+ 	/*
+ 	 * Write back the new configuration, and possibly re-enable
+-	 * the interrupt.
++	 * the interrupt. If we tried to write a new configuration and failed,
++	 * return an error.
+ 	 */
+ 	writel_relaxed(val, base + GIC_DIST_CONFIG + confoff);
+-
+-	if (enabled)
++	if (readl_relaxed(base + GIC_DIST_CONFIG + confoff) != val && val != oldval)
++		ret = -EINVAL;
++	else if (enabled)
+ 		writel_relaxed(enablemask, base + GIC_DIST_ENABLE_SET + enableoff);
+ 
+ 	if (sync_access)
+ 		sync_access();
++
++	return ret;
+ }
+ 
+ void __init gic_dist_config(void __iomem *base, int gic_irqs,
+diff --git a/drivers/irqchip/irq-gic-common.h b/drivers/irqchip/irq-gic-common.h
+index b41f024..35a9884 100644
+--- a/drivers/irqchip/irq-gic-common.h
++++ b/drivers/irqchip/irq-gic-common.h
+@@ -20,7 +20,7 @@
+ #include <linux/of.h>
+ #include <linux/irqdomain.h>
+ 
+-void gic_configure_irq(unsigned int irq, unsigned int type,
++int gic_configure_irq(unsigned int irq, unsigned int type,
+                        void __iomem *base, void (*sync_access)(void));
+ void gic_dist_config(void __iomem *base, int gic_irqs,
+ 		     void (*sync_access)(void));
+diff --git a/drivers/irqchip/irq-gic-v3.c b/drivers/irqchip/irq-gic-v3.c
+index 1a146cc..6e50803 100644
+--- a/drivers/irqchip/irq-gic-v3.c
++++ b/drivers/irqchip/irq-gic-v3.c
+@@ -238,7 +238,9 @@ static int gic_set_type(struct irq_data *d, unsigned int type)
+ 	if (irq < 16)
+ 		return -EINVAL;
+ 
+-	if (type != IRQ_TYPE_LEVEL_HIGH && type != IRQ_TYPE_EDGE_RISING)
++	/* SPIs have restrictions on the supported types */
++	if (irq >= 32 && type != IRQ_TYPE_LEVEL_HIGH &&
++			 type != IRQ_TYPE_EDGE_RISING)
+ 		return -EINVAL;
+ 
+ 	if (gic_irq_in_rdist(d)) {
+@@ -249,9 +251,7 @@ static int gic_set_type(struct irq_data *d, unsigned int type)
+ 		rwp_wait = gic_dist_wait_for_rwp;
+ 	}
+ 
+-	gic_configure_irq(irq, type, base, rwp_wait);
+-
+-	return 0;
++	return gic_configure_irq(irq, type, base, rwp_wait);
+ }
+ 
+ static u64 gic_mpidr_to_affinity(u64 mpidr)
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index d617ee5..4634cf7 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -188,12 +188,15 @@ static int gic_set_type(struct irq_data *d, unsigned int type)
+ {
+ 	void __iomem *base = gic_dist_base(d);
+ 	unsigned int gicirq = gic_irq(d);
++	int ret;
+ 
+ 	/* Interrupt configuration for SGIs can't be changed */
+ 	if (gicirq < 16)
+ 		return -EINVAL;
+ 
+-	if (type != IRQ_TYPE_LEVEL_HIGH && type != IRQ_TYPE_EDGE_RISING)
++	/* SPIs have restrictions on the supported types */
++	if (gicirq >= 32 && type != IRQ_TYPE_LEVEL_HIGH &&
++			    type != IRQ_TYPE_EDGE_RISING)
+ 		return -EINVAL;
+ 
+ 	raw_spin_lock(&irq_controller_lock);
+@@ -201,11 +204,11 @@ static int gic_set_type(struct irq_data *d, unsigned int type)
+ 	if (gic_arch_extn.irq_set_type)
+ 		gic_arch_extn.irq_set_type(d, type);
+ 
+-	gic_configure_irq(gicirq, type, base, NULL);
++	ret = gic_configure_irq(gicirq, type, base, NULL);
+ 
+ 	raw_spin_unlock(&irq_controller_lock);
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static int gic_retrigger(struct irq_data *d)
+diff --git a/drivers/irqchip/irq-hip04.c b/drivers/irqchip/irq-hip04.c
+index 29b8f21..d059e66 100644
+--- a/drivers/irqchip/irq-hip04.c
++++ b/drivers/irqchip/irq-hip04.c
+@@ -120,21 +120,24 @@ static int hip04_irq_set_type(struct irq_data *d, unsigned int type)
+ {
+ 	void __iomem *base = hip04_dist_base(d);
+ 	unsigned int irq = hip04_irq(d);
++	int ret;
+ 
+ 	/* Interrupt configuration for SGIs can't be changed */
+ 	if (irq < 16)
+ 		return -EINVAL;
+ 
+-	if (type != IRQ_TYPE_LEVEL_HIGH && type != IRQ_TYPE_EDGE_RISING)
++	/* SPIs have restrictions on the supported types */
++	if (irq >= 32 && type != IRQ_TYPE_LEVEL_HIGH &&
++			 type != IRQ_TYPE_EDGE_RISING)
+ 		return -EINVAL;
+ 
+ 	raw_spin_lock(&irq_controller_lock);
+ 
+-	gic_configure_irq(irq, type, base, NULL);
++	ret = gic_configure_irq(irq, type, base, NULL);
+ 
+ 	raw_spin_unlock(&irq_controller_lock);
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ #ifdef CONFIG_SMP
+-- 
+2.1.3
 
