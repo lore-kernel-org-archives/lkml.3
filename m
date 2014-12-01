@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359AbaLAKae (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 05:30:34 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:33395 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752869AbaLAKa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 05:30:29 -0500
-Message-ID: <547C42FF.5010700@ti.com>
-Date: Mon, 1 Dec 2014 15:59:19 +0530
-From: Vignesh R <vigneshr@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+	id S1753374AbaLAKbD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 05:31:03 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:50385 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752767AbaLAK1d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 05:27:33 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        <richardcochran@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
-        Brad Griffis <bgriffis@ti.com>,
-        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jan Kardell <jan.kardell@telliq.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-iio@vger.kernel.org>,
-        <linux-input@vger.kernel.org>
-Subject: Re: [PATCH v4 0/6] Touchscreen performance related fixes
-References: <1415941651-28962-1-git-send-email-vigneshr@ti.com> <20141124115116.GA14997@linutronix.de> <547C3A95.30605@ti.com> <547C3C19.5090501@linutronix.de>
-In-Reply-To: <547C3C19.5090501@linutronix.de>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v3 02/11] mfd: syscon: Add Atmel Matrix bus DT binding documentation
+Date: Mon,  1 Dec 2014 11:27:18 +0100
+Message-Id: <1417429647-3419-3-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The Matrix registers are provided to configure internal bus behavior on
+at91 SoCs.
+Some registers might be access by several drivers (e.g. to configure
+external memory bus timings), hence we declare this register set as a
+syscon device.
 
-Hi,
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+---
+ .../devicetree/bindings/mfd/atmel-matrix.txt       | 24 ++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/atmel-matrix.txt
 
-On Monday 01 December 2014 03:29 PM, Sebastian Andrzej Siewior wrote:
-> On 12/01/2014 10:53 AM, Vignesh R wrote:
->> Hi Sebastian,
-> 
-> Hi Vignesh,
-> 
->> I fixed the issue that was triggering the WARN_ON(). I think it would be
->> better if you tested these patches, before I posted them on the
->> mainline. I don't want to clutter the list with too main versions. Here
->> is the link to the tree with latest changes:
-> 
-> awesome, thank you.
-> 
->>
->> git clone -b tsc-devel git://git.ti.com/kernel/tsc-adc.git
->> (tsc-devel branch)
-> 
-> I will and let you know.
-> 
->> Please test the above tree and let me know the results.
->> I will post new version(v5) if there are no issues wrt IIO and TSC
->> working at the same time.
-> 
-> Cool. Were you able to get in touch with someone who has a 5-wire touch?
+diff --git a/Documentation/devicetree/bindings/mfd/atmel-matrix.txt b/Documentation/devicetree/bindings/mfd/atmel-matrix.txt
+new file mode 100644
+index 0000000..e56e27a
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/atmel-matrix.txt
+@@ -0,0 +1,24 @@
++* Device tree bindings for Atmel Bus Matrix
++
++The Bus Matrix registers are used to configure Atmel SoCs internal bus
++behavior (master/slave priorities, undefined burst length type, ...)
++
++Required properties:
++- compatible:		Should be one of the following
++			"atmel,at91sam9260-matrix", "syscon"
++			"atmel,at91sam9261-matrix", "syscon"
++			"atmel,at91sam9263-matrix", "syscon"
++			"atmel,at91sam9263-matrix", "syscon"
++			"atmel,at91sam9g45-matrix", "syscon"
++			"atmel,at91sam9n12-matrix", "syscon"
++			"atmel,at91sam9x5-matrix", "syscon"
++			"atmel,sama5d3-matrix", "syscon"
++- reg:			Contains offset/length value of the Bus Matrix
++			memory region.
++
++Example:
++
++matrix: matrix@ffffec00 {
++	compatible = "atmel,sama5d3-matrix", "syscon";
++	reg = <0xffffec00 0x200>;
++};
+-- 
+1.9.1
 
-I have asked Jeff Lance to verify 5-wire touch.
-
-Regards
-Vignesh
