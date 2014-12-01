@@ -1,110 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665AbaLAHrH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 02:47:07 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43267 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204AbaLAHrG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 02:47:06 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <547C1CC9.7080100@jp.fujitsu.com>
-Date: Mon, 1 Dec 2014 16:46:17 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752708AbaLAHtq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 02:49:46 -0500
+Received: from ozlabs.org ([103.22.144.67]:54552 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752367AbaLAHtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 02:49:45 -0500
+Date: Mon, 1 Dec 2014 18:49:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the driver-core tree
+Message-ID: <20141201184939.69c44428@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <dave@stgolabs.net>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: unmapped page migration avoid unmap+remap overhead
-References: <alpine.LSU.2.11.1411302046420.5335@eggly.anvils> <547C0E4E.4020605@jp.fujitsu.com> <alpine.LSU.2.11.1411302302280.6613@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.11.1411302302280.6613@eggly.anvils>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/bSFSZ+AZryAMRNci/fHXRzU"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/12/01 16:28), Hugh Dickins wrote:
-> On Mon, 1 Dec 2014, Yasuaki Ishimatsu wrote:
->> (2014/12/01 13:52), Hugh Dickins wrote:
->>> @@ -798,7 +798,7 @@ static int __unmap_and_move(struct page
->>>    				int force, enum migrate_mode mode)
->>>    {
->>>    	int rc = -EAGAIN;
->>> -	int remap_swapcache = 1;
->>> +	int page_was_mapped = 0;
->>>    	struct anon_vma *anon_vma = NULL;
->>>
->>>    	if (!trylock_page(page)) {
->>> @@ -870,7 +870,6 @@ static int __unmap_and_move(struct page
->>>    			 * migrated but are not remapped when migration
->>>    			 * completes
->>>    			 */
->>> -			remap_swapcache = 0;
->>>    		} else {
->>>    			goto out_unlock;
->>>    		}
->>> @@ -910,13 +909,17 @@ static int __unmap_and_move(struct page
->>>    	}
->>>
->>>    	/* Establish migration ptes or remove ptes */
->>
->>> -	try_to_unmap(page, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
->>> +	if (page_mapped(page)) {
->>> +		try_to_unmap(page,
->>> +			TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
->>> +		page_was_mapped = 1;
->>> +	}
->>
->> Is there no possibility that page is swap cache? If page is swap cache,
->> this code changes behavior of move_to_new_page(). Is it O.K.?
->
-> Certainly the page may be swap cache, but I don't see how the behavior
-> of move_to_new_page() is changed.
->
-> Do you mean how I removed that "remap_swapcache = 0;" line above, so that
-> it now looks as if move_to_new_page() may be called with page_was_mapped
-> 1, where before it was called with remap_swapcache 0?
+--Sig_/bSFSZ+AZryAMRNci/fHXRzU
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yes. I pointed it.
+Hi Greg,
 
->
-> No: although it cannot be seen from the patch context, that reset
-> of remap_swapcache was in a block where we have a PageAnon page, but
-> page_get_anon_vma() failed to "get" the anon_vma for it: that means
-> that the page was not mapped, so page_was_mapped will be 0 too.
->
-> (I was going to add that the page might be faulted back in again by
-> the time we reach the page_mapped() test above try_to_unmap(), and
-> that yes I'd would be making a change in that case, but it does not
-> matter at all to diverge in racy cases.  But actually even that cannot
-> happen, since faulting back swap needs page lock which we hold here.)
->
-> There is an argument that move_to_new_page() behavior should be
-> changed in the case of swap cache: since try_to_unmap() then uses
-> the ordinary swap instead of a migration entry, there's not much
-> point in going to remove swap entries afterwards; though it would
-> be good to make those pages present again.  But I didn't try to
-> change that in this patch: this was just a lock contention thing.
+After merging the driver-core tree, today's linux-next build (arm
+multi_v7_defconfig) failed like this:
 
-Thank you for the explanation.
-I understood it.
+fs/debugfs/file.c:797:16: error: conflicting types for 'debugfs_create_devm=
+_seqfile'
+ struct dentry *debugfs_create_devm_seqfile(struct device *dev, const char =
+*name,
+                ^
+In file included from fs/debugfs/file.c:21:0:
+include/linux/debugfs.h:102:16: note: previous declaration of 'debugfs_crea=
+te_devm_seqfile' was here
+ struct dentry *debugfs_create_devm_seqfile(struct device *dev, const char =
+*name,
+                ^
 
-Thanks,
-Yasuaki Ishimatsu
+Caused by commit 98210b7f73f1 ("debugfs: add helper function to create
+device related seq_file") but I am not sure how ... it seems to be
+related to the warning I reported earlier as the following patch fixes
+it (and the warnings).
 
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 1 Dec 2014 18:42:52 +1100
+Subject: [PATCH] debugfs: predeclare struct device
 
->
-> Hugh
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ include/linux/debugfs.h | 1 +
+ 1 file changed, 1 insertion(+)
 
+diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
+index d145287c0e44..37b17d95d648 100644
+--- a/include/linux/debugfs.h
++++ b/include/linux/debugfs.h
+@@ -21,6 +21,7 @@
+ #include <linux/types.h>
+=20
+ struct file_operations;
++struct device;
+=20
+ struct debugfs_blob_wrapper {
+ 	void *data;
+--=20
+2.1.3
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/bSFSZ+AZryAMRNci/fHXRzU
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUfB2XAAoJEMDTa8Ir7ZwVHHEP/2P9+oTZnSDC9tuMqHbw+BN4
+NO4g1xSddDWKDLEDOM9Vut5n43UNX13bN6xQObPjl6oxPS9dIKKWduq16VZ9vnL4
+KoITY86chfIWuTCD7NPFPSTED0Zyv04goaEWSpaWEZipMYafeIdql82x36/1IEsV
+wq+DNc/B+8peVvmLiL+qbXbb6eO+v9rBOy4w6OcnU3tzchP1Sk3IHHEEJ4Sm5DOw
+J8COeJ6WqRkhIEpSio3KBh5cyMFZ2Y4D9/ZzoMQCTf5ddQekCZWfKwdWbwSH43Yb
+9NdHR89ztz0YhXKTR6xLtFUzw4f+SKzbvkslODVf0u0SlwjOwdv65wpyRhq9nxmV
+dlCMuXuBzxs3X1cvxq8gAuueiLhDZ2ErboDDmQfR1OMSRjxean3L7gG7KA0F6tBb
+bm8+F9NlPClvXMJGEbeZGasoFcgOyrNCpse0kF1yQFwDfpberTceQJwyGDCVrz/O
+sn6atHpyX8ktMV0ixR699UuaX/QjmhKLl779BefPuKZdzn1ZiUfuR9MLzlBFFOkj
+onQpCPA8VI4+7w3O4HA3jsfdAlB6bw1RhTqv8QB/opjfQVJBF1OrMIdkh5SS7qGl
+R9T6c5UW/UIQgWDn0HM2xNYclyZERlNQ/V+Gg6dcTrG5xqz3SgE13yafjwd6nYhA
+naPLE2m55r0B8E4V93by
+=yMV8
+-----END PGP SIGNATURE-----
+
+--Sig_/bSFSZ+AZryAMRNci/fHXRzU--
