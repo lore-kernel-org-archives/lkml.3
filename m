@@ -1,207 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130AbaLAP5y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 10:57:54 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:48305 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932074AbaLAP5x (ORCPT
+	id S1753998AbaLAQBe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 11:01:34 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:35657 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753738AbaLAQBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 10:57:53 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <lgirdwood@gmail.com>, <broonie@kernel.org>,
-        <alsa-devel@alsa-project.org>
-CC: <pebolle@tiscali.nl>, <slapin@ossfans.org>, Bo Shen <voice.shen@atmel.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] ASoC: snd-soc-afeb9260: delete driver as board has just been removed
-Date: Mon, 1 Dec 2014 16:57:52 +0100
-Message-ID: <1417449472-13498-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 2.1.3
+	Mon, 1 Dec 2014 11:01:33 -0500
+Date: Mon, 1 Dec 2014 17:01:26 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH 1/1] GPU-DRM-MSM-Adreno: Deletion of unnecessary checks
+ before the function call "release_firmware"
+Message-ID: <20141201160123.GF11943@ulmo.nvidia.com>
+References: <530C5E18.1020800@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251014170.2080@hadrien>
+ <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien>
+ <530CF8FF.8080600@users.sourceforge.net>
+ <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+ <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net>
+ <54747B11.9070104@users.sourceforge.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QNDPHrPUIc00TOLW"
+Content-Disposition: inline
+In-Reply-To: <54747B11.9070104@users.sourceforge.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During the removal of all AT91 !DT boards, we removed the AFEB9260. This driver
-is !DT and was only used by this board, so we delete it as well.
 
-Reported-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- sound/soc/atmel/Makefile           |   1 -
- sound/soc/atmel/snd-soc-afeb9260.c | 151 -------------------------------------
- 2 files changed, 152 deletions(-)
- delete mode 100644 sound/soc/atmel/snd-soc-afeb9260.c
+--QNDPHrPUIc00TOLW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/sound/soc/atmel/Makefile b/sound/soc/atmel/Makefile
-index 5baabc8bde3a..466a821da98c 100644
---- a/sound/soc/atmel/Makefile
-+++ b/sound/soc/atmel/Makefile
-@@ -17,4 +17,3 @@ snd-soc-sam9x5-wm8731-objs := sam9x5_wm8731.o
- obj-$(CONFIG_SND_AT91_SOC_SAM9G20_WM8731) += snd-soc-sam9g20-wm8731.o
- obj-$(CONFIG_SND_ATMEL_SOC_WM8904) += snd-atmel-soc-wm8904.o
- obj-$(CONFIG_SND_AT91_SOC_SAM9X5_WM8731) += snd-soc-sam9x5-wm8731.o
--obj-$(CONFIG_SND_AT91_SOC_AFEB9260) += snd-soc-afeb9260.o
-diff --git a/sound/soc/atmel/snd-soc-afeb9260.c b/sound/soc/atmel/snd-soc-afeb9260.c
-deleted file mode 100644
-index 9579799ace54..000000000000
---- a/sound/soc/atmel/snd-soc-afeb9260.c
-+++ /dev/null
-@@ -1,151 +0,0 @@
--/*
-- * afeb9260.c  --  SoC audio for AFEB9260
-- *
-- * Copyright (C) 2009 Sergey Lapin <slapin@ossfans.org>
-- *
-- * This program is free software; you can redistribute it and/or
-- * modify it under the terms of the GNU General Public License
-- * version 2 as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful, but
-- * WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-- * General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-- * 02110-1301 USA
-- *
-- */
--
--#include <linux/module.h>
--#include <linux/moduleparam.h>
--#include <linux/kernel.h>
--#include <linux/clk.h>
--#include <linux/platform_device.h>
--
--#include <linux/atmel-ssc.h>
--#include <sound/core.h>
--#include <sound/pcm.h>
--#include <sound/pcm_params.h>
--#include <sound/soc.h>
--
--#include <asm/mach-types.h>
--#include <mach/hardware.h>
--#include <linux/gpio.h>
--
--#include "../codecs/tlv320aic23.h"
--#include "atmel-pcm.h"
--#include "atmel_ssc_dai.h"
--
--#define CODEC_CLOCK 	12000000
--
--static int afeb9260_hw_params(struct snd_pcm_substream *substream,
--			 struct snd_pcm_hw_params *params)
--{
--	struct snd_soc_pcm_runtime *rtd = substream->private_data;
--	struct snd_soc_dai *codec_dai = rtd->codec_dai;
--	int err;
--
--	/* Set the codec system clock for DAC and ADC */
--	err =
--	    snd_soc_dai_set_sysclk(codec_dai, 0, CODEC_CLOCK, SND_SOC_CLOCK_IN);
--
--	if (err < 0) {
--		printk(KERN_ERR "can't set codec system clock\n");
--		return err;
--	}
--
--	return err;
--}
--
--static struct snd_soc_ops afeb9260_ops = {
--	.hw_params = afeb9260_hw_params,
--};
--
--static const struct snd_soc_dapm_widget tlv320aic23_dapm_widgets[] = {
--	SND_SOC_DAPM_HP("Headphone Jack", NULL),
--	SND_SOC_DAPM_LINE("Line In", NULL),
--	SND_SOC_DAPM_MIC("Mic Jack", NULL),
--};
--
--static const struct snd_soc_dapm_route afeb9260_audio_map[] = {
--	{"Headphone Jack", NULL, "LHPOUT"},
--	{"Headphone Jack", NULL, "RHPOUT"},
--
--	{"LLINEIN", NULL, "Line In"},
--	{"RLINEIN", NULL, "Line In"},
--
--	{"MICIN", NULL, "Mic Jack"},
--};
--
--
--/* Digital audio interface glue - connects codec <--> CPU */
--static struct snd_soc_dai_link afeb9260_dai = {
--	.name = "TLV320AIC23",
--	.stream_name = "AIC23",
--	.cpu_dai_name = "atmel-ssc-dai.0",
--	.codec_dai_name = "tlv320aic23-hifi",
--	.platform_name = "atmel_pcm-audio",
--	.codec_name = "tlv320aic23-codec.0-001a",
--	.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_IF |
--		   SND_SOC_DAIFMT_CBM_CFM,
--	.ops = &afeb9260_ops,
--};
--
--/* Audio machine driver */
--static struct snd_soc_card snd_soc_machine_afeb9260 = {
--	.name = "AFEB9260",
--	.owner = THIS_MODULE,
--	.dai_link = &afeb9260_dai,
--	.num_links = 1,
--
--	.dapm_widgets = tlv320aic23_dapm_widgets,
--	.num_dapm_widgets = ARRAY_SIZE(tlv320aic23_dapm_widgets),
--	.dapm_routes = afeb9260_audio_map,
--	.num_dapm_routes = ARRAY_SIZE(afeb9260_audio_map),
--};
--
--static struct platform_device *afeb9260_snd_device;
--
--static int __init afeb9260_soc_init(void)
--{
--	int err;
--	struct device *dev;
--
--	if (!(machine_is_afeb9260()))
--		return -ENODEV;
--
--
--	afeb9260_snd_device = platform_device_alloc("soc-audio", -1);
--	if (!afeb9260_snd_device) {
--		printk(KERN_ERR "ASoC: Platform device allocation failed\n");
--		return -ENOMEM;
--	}
--
--	platform_set_drvdata(afeb9260_snd_device, &snd_soc_machine_afeb9260);
--	err = platform_device_add(afeb9260_snd_device);
--	if (err)
--		goto err1;
--
--	dev = &afeb9260_snd_device->dev;
--
--	return 0;
--err1:
--	platform_device_put(afeb9260_snd_device);
--	return err;
--}
--
--static void __exit afeb9260_soc_exit(void)
--{
--	platform_device_unregister(afeb9260_snd_device);
--}
--
--module_init(afeb9260_soc_init);
--module_exit(afeb9260_soc_exit);
--
--MODULE_AUTHOR("Sergey Lapin <slapin@ossfans.org>");
--MODULE_DESCRIPTION("ALSA SoC for AFEB9260");
--MODULE_LICENSE("GPL");
--
--- 
-2.1.3
+On Tue, Nov 25, 2014 at 01:50:25PM +0100, SF Markus Elfring wrote:
+> From: Markus Elfring <elfring@users.sourceforge.net>
 
+You can probably get rid of this if you configure your emailer properly.
+
+> Date: Tue, 25 Nov 2014 13:44:20 +0100
+
+This is odd. I've never seen git send-email generate these.
+
+I didn't notice with your earlier patches, but the subject prefix is
+wrong. Please use something more consistent with existing patches, in
+this case: "drm/msm: ..." or "drm/msm/adreno: ..."
+
+> The release_firmware() function tests whether its argument is NULL
+> and then returns immediately. Thus the test around the call is not needed.
+>=20
+> This issue was detected by using the Coccinelle software.
+>=20
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+> ---
+>  drivers/gpu/drm/msm/adreno/adreno_gpu.c | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+>=20
+> diff --git a/drivers/gpu/drm/msm/adreno/adreno_gpu.c b/drivers/gpu/drm/ms=
+m/adreno/adreno_gpu.c
+> index 655ce5b..757052c 100644
+> --- a/drivers/gpu/drm/msm/adreno/adreno_gpu.c
+> +++ b/drivers/gpu/drm/msm/adreno/adreno_gpu.c
+> @@ -404,9 +404,7 @@ void adreno_gpu_cleanup(struct adreno_gpu *gpu)
+>  			msm_gem_put_iova(gpu->memptrs_bo, gpu->base.id);
+>  		drm_gem_object_unreference(gpu->memptrs_bo);
+>  	}
+> -	if (gpu->pm4)
+> -		release_firmware(gpu->pm4);
+> -	if (gpu->pfp)
+> -		release_firmware(gpu->pfp);
+> +	release_firmware(gpu->pm4);
+> +	release_firmware(gpu->pfp);
+>  	msm_gpu_cleanup(&gpu->base);
+>  }
+
+Besides the subject prefix,
+
+Reviewed-by: Thierry Reding <treding@nvidia.com>
+
+--QNDPHrPUIc00TOLW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUfJDTAAoJEN0jrNd/PrOhJpwQALGxMfJdXJBBBWY42M9Q2749
+D/WTe5gSLtRxxSF1Qc8cjQf06M+RbvXl+ZZOheEBC1IdSbNmPFqVj4uEanh0AXB2
+3v2yTA5ig/A/hu2Sv7+iCJ0tvhU/J/GmW12nNIadZNcnV3U6YMu/QKNxspFjL5U6
+HmGHHpVPzb57Sohcis0r/TO5twZZuSY6PM7Z8Ztt/6rpxN4HHpOlew8fbsVQDcJx
+Cu9zGKouWaTRXCLv/NoMFxcZL2k6yjPJIWVfkknbgweo+/I9UH3XhLIs/keNutH/
+Qnz22bgZrQwnFjy02S6DQKneYcYLn+3IMoWpsss4xE5586Pw8zR9BNtxufOSbFL3
+qwSjP74tGtke+MOrLEg2R8Ar9J4Ywnx204UF3qOFWynumpg8GH7O1DTolqWEbGy5
+iAK0s+SB86xM6ZC5lsUkQznw22w0nT/C8dqouYIIYODeIxC5Sj475vAZfZhSlNMQ
+5WZvXC50vcVLJU4nR+z9IUK9pXv8IIYzoUnfZ3sVeUHNCEXNTkRRtW+vOdfFed6D
+C26ZZWJec3BifbbGZdNip+0BXVxVEcKI8Gditdj7LIdXxD/KFRfVqNY3l2QxvG0I
+9wQu+iwiv/1avl7SetaVVAwm7s6JiJ+99JUKDDj3+s0B3I8uUPNm2OiJnbkvKKqE
+CITy27kWJObkVmypEDMp
+=dCpw
+-----END PGP SIGNATURE-----
+
+--QNDPHrPUIc00TOLW--
