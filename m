@@ -1,85 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932606AbaLAUtG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 15:49:06 -0500
-Received: from mail-by2on0062.outbound.protection.outlook.com ([207.46.100.62]:23713
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932318AbaLAUtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 15:49:04 -0500
-Message-ID: <547CD3ED.1080804@opensource.altera.com>
-Date: Mon, 1 Dec 2014 14:47:41 -0600
-From: Thor Thayer <tthayer@opensource.altera.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: <bp@alien8.de>, <dougthompson@xmission.com>, <m.chehab@samsung.com>,
-        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <linux@arm.linux.org.uk>, <dinguyen@opensource.altera.com>,
-        <grant.likely@linaro.org>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>
-Subject: Re: [RESEND PATCHv5 5/5] arm: dts: Add Altera L2 Cache and OCRAM
- EDAC
-References: <1415751263-1830-1-git-send-email-tthayer@opensource.altera.com> <1415751263-1830-6-git-send-email-tthayer@opensource.altera.com> <546BB27A.20405@opensource.altera.com>
-In-Reply-To: <546BB27A.20405@opensource.altera.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BLUPR05CA0057.namprd05.prod.outlook.com (10.141.20.27) To
- BY2PR03MB127.namprd03.prod.outlook.com (10.242.36.27)
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB127;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB127;
-X-Forefront-PRVS: 0412A98A59
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(6049001)(51704005)(189002)(199003)(377454003)(479174003)(53754006)(24454002)(164054003)(95666004)(23746002)(15975445006)(99396003)(40100003)(19580395003)(80316001)(120916001)(122386002)(97736003)(83506001)(107046002)(101416001)(106356001)(77096004)(68736005)(105586002)(87976001)(102836001)(86362001)(33656002)(15202345003)(46102003)(92566001)(2201001)(92726001)(42186005)(4396001)(31966008)(76176999)(54356999)(50986999)(65816999)(87266999)(21056001)(77156002)(64126003)(62966003)(19580405001)(47776003)(20776003)(65806001)(19300405004)(64706001)(66066001)(921003)(1121003)(562404015);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB127;H:[137.57.160.203];FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB127;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB074;
-X-OriginatorOrg: opensource.altera.com
+	id S932426AbaLAUvd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 15:51:33 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:36257 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932080AbaLAUvc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 15:51:32 -0500
+From: Jilai Wang <jilaiw@codeaurora.org>
+To: dri-devel@lists.freedesktop.org
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        robdclark@gmail.com, Jilai Wang <jilaiw@codeaurora.org>
+Subject: [PATCH 1/2] drm/msm/hdmi: add register description for HDMI HDCP support
+Date: Mon,  1 Dec 2014 15:51:24 -0500
+Message-Id: <1417467084-4579-1-git-send-email-jilaiw@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+Add HDCP related register description.
 
-On 11/18/2014 02:56 PM, Thor Thayer wrote:
-> Hi all,
->
-> On 11/11/2014 06:14 PM, tthayer@opensource.altera.com wrote:
->> From: Thor Thayer<tthayer@opensource.altera.com>
->>
->> Adding the device tree entries and bindings needed to support
->> the Altera L2 cache and On-Chip RAM EDAC. This patch relies upon
->> an earlier patch to declare and setup On-chip RAM properly.
->> http://www.spinics.net/lists/devicetree/msg51117.html
->
-> Any comments on these devicetree additions?
->
-> Thanks,
-> Thor
->> Signed-off-by: Thor Thayer<tthayer@opensource.altera.com>
->> ---
->> v2: Remove OCRAM declaration and reference prior patch.
->>
->> v3-5: No Change
->> ---
+Signed-off-by: Jiali Wang <jilaiw@codeaurora.org>
+---
+ drivers/gpu/drm/msm/hdmi/hdmi.xml.h | 76 +++++++++++++++++++++++++++++--------
+ 1 file changed, 60 insertions(+), 16 deletions(-)
 
-I originally submitted this series on November 11, 2014.
-
-I haven't received any comments or ACKs on the device tree patch portion 
-(patch 5 of 5). According to 
-Documentation/devicetree/bindings/submitting-patches.txt, if the patch 
-hasn't been Acked after a couple of weeks, the maintainer can pull the 
-changes if they are comfortable with those changes.
-
-Dinh checked for merge conflicts in the DTS files in his November 7 
-email (queued patches for 3.19).
-
-Dinh acked patches 1 & 2 on November 12.
-
-Thanks,
-
-Thor
+diff --git a/drivers/gpu/drm/msm/hdmi/hdmi.xml.h b/drivers/gpu/drm/msm/hdmi/hdmi.xml.h
+index 76fd0cf..6dd6168 100644
+--- a/drivers/gpu/drm/msm/hdmi/hdmi.xml.h
++++ b/drivers/gpu/drm/msm/hdmi/hdmi.xml.h
+@@ -8,16 +8,8 @@ http://github.com/freedreno/envytools/
+ git clone https://github.com/freedreno/envytools.git
+ 
+ The rules-ng-ng source files this header was generated from are:
+-- /home/robclark/src/freedreno/envytools/rnndb/msm.xml                 (    647 bytes, from 2013-11-30 14:45:35)
+-- /home/robclark/src/freedreno/envytools/rnndb/freedreno_copyright.xml (   1453 bytes, from 2013-03-31 16:51:27)
+-- /home/robclark/src/freedreno/envytools/rnndb/mdp/mdp4.xml            (  20457 bytes, from 2014-08-01 12:22:48)
+-- /home/robclark/src/freedreno/envytools/rnndb/mdp/mdp_common.xml      (   1615 bytes, from 2014-07-17 15:34:33)
+-- /home/robclark/src/freedreno/envytools/rnndb/mdp/mdp5.xml            (  22517 bytes, from 2014-07-17 15:34:33)
+-- /home/robclark/src/freedreno/envytools/rnndb/dsi/dsi.xml             (  11712 bytes, from 2013-08-17 17:13:43)
+-- /home/robclark/src/freedreno/envytools/rnndb/dsi/sfpb.xml            (    344 bytes, from 2013-08-11 19:26:32)
+-- /home/robclark/src/freedreno/envytools/rnndb/dsi/mmss_cc.xml         (   1686 bytes, from 2014-08-01 12:23:53)
+-- /home/robclark/src/freedreno/envytools/rnndb/hdmi/qfprom.xml         (    600 bytes, from 2013-07-05 19:21:12)
+-- /home/robclark/src/freedreno/envytools/rnndb/hdmi/hdmi.xml           (  23613 bytes, from 2014-07-17 15:33:30)
++- /local/mnt2/workspace2/jilaiw/chromeos/envytools/envytools/rnndb/hdmi/hdmi.xml           (  25125 bytes, from 2014-11-24 23:30:39)
++- /local/mnt2/workspace2/jilaiw/chromeos/envytools/envytools/rnndb/freedreno_copyright.xml (   1453 bytes, from 2014-11-24 22:27:21)
+ 
+ Copyright (C) 2013-2014 by the following authors:
+ - Rob Clark <robdclark@gmail.com> (robclark)
+@@ -45,12 +37,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ 
+ 
+ enum hdmi_hdcp_key_state {
+-	NO_KEYS = 0,
+-	NOT_CHECKED = 1,
+-	CHECKING = 2,
+-	KEYS_VALID = 3,
+-	AKSV_INVALID = 4,
+-	CHECKSUM_MISMATCH = 5,
++	HDCP_KEYS_STATE_NO_KEYS = 0,
++	HDCP_KEYS_STATE_NOT_CHECKED = 1,
++	HDCP_KEYS_STATE_CHECKING = 2,
++	HDCP_KEYS_STATE_VALID = 3,
++	HDCP_KEYS_STATE_AKSV_NOT_VALID = 4,
++	HDCP_KEYS_STATE_CHKSUM_MISMATCH = 5,
++	HDCP_KEYS_STATE_PROD_AKSV = 6,
++	HDCP_KEYS_STATE_RESERVED = 7,
+ };
+ 
+ enum hdmi_ddc_read_write {
+@@ -199,6 +193,8 @@ static inline uint32_t HDMI_AUDIO_INFO1_LSV(uint32_t val)
+ #define HDMI_HDCP_CTRL_ENABLE					0x00000001
+ #define HDMI_HDCP_CTRL_ENCRYPTION_ENABLE			0x00000100
+ 
++#define REG_HDMI_HDCP_DEBUG_CTRL				0x00000114
++
+ #define REG_HDMI_HDCP_INT_CTRL					0x00000118
+ 
+ #define REG_HDMI_HDCP_LINK0_STATUS				0x0000011c
+@@ -211,9 +207,47 @@ static inline uint32_t HDMI_HDCP_LINK0_STATUS_KEY_STATE(enum hdmi_hdcp_key_state
+ 	return ((val) << HDMI_HDCP_LINK0_STATUS_KEY_STATE__SHIFT) & HDMI_HDCP_LINK0_STATUS_KEY_STATE__MASK;
+ }
+ 
++#define REG_HDMI_HDCP_DDC_CTRL_0				0x00000120
++
++#define REG_HDMI_HDCP_DDC_CTRL_1				0x00000124
++
++#define REG_HDMI_HDCP_DDC_STATUS				0x00000128
++
++#define REG_HDMI_HDCP_ENTROPY_CTRL0				0x0000012c
++
++#define REG_HDMI_HDCP_ENTROPY_CTRL1				0x0000025c
++
+ #define REG_HDMI_HDCP_RESET					0x00000130
+ #define HDMI_HDCP_RESET_LINK0_DEAUTHENTICATE			0x00000001
+ 
++#define REG_HDMI_HDCP_RCVPORT_DATA0				0x00000134
++
++#define REG_HDMI_HDCP_RCVPORT_DATA1				0x00000138
++
++#define REG_HDMI_HDCP_RCVPORT_DATA2_0				0x0000013c
++
++#define REG_HDMI_HDCP_RCVPORT_DATA2_1				0x00000140
++
++#define REG_HDMI_HDCP_RCVPORT_DATA3				0x00000144
++
++#define REG_HDMI_HDCP_RCVPORT_DATA4				0x00000148
++
++#define REG_HDMI_HDCP_RCVPORT_DATA5				0x0000014c
++
++#define REG_HDMI_HDCP_RCVPORT_DATA6				0x00000150
++
++#define REG_HDMI_HDCP_RCVPORT_DATA7				0x00000154
++
++#define REG_HDMI_HDCP_RCVPORT_DATA8				0x00000158
++
++#define REG_HDMI_HDCP_RCVPORT_DATA9				0x0000015c
++
++#define REG_HDMI_HDCP_RCVPORT_DATA10				0x00000160
++
++#define REG_HDMI_HDCP_RCVPORT_DATA11				0x00000164
++
++#define REG_HDMI_HDCP_RCVPORT_DATA12				0x00000168
++
+ #define REG_HDMI_VENSPEC_INFO0					0x0000016c
+ 
+ #define REG_HDMI_VENSPEC_INFO1					0x00000170
+@@ -329,6 +363,12 @@ static inline uint32_t HDMI_DDC_DATA_INDEX(uint32_t val)
+ }
+ #define HDMI_DDC_DATA_INDEX_WRITE				0x80000000
+ 
++#define REG_HDMI_HDCP_SHA_CTRL					0x0000023c
++
++#define REG_HDMI_HDCP_SHA_STATUS				0x00000240
++
++#define REG_HDMI_HDCP_SHA_DATA					0x00000244
++
+ #define REG_HDMI_HPD_INT_STATUS					0x00000250
+ #define HDMI_HPD_INT_STATUS_INT					0x00000001
+ #define HDMI_HPD_INT_STATUS_CABLE_DETECTED			0x00000002
+@@ -359,6 +399,10 @@ static inline uint32_t HDMI_DDC_REF_REFTIMER(uint32_t val)
+ 	return ((val) << HDMI_DDC_REF_REFTIMER__SHIFT) & HDMI_DDC_REF_REFTIMER__MASK;
+ }
+ 
++#define REG_HDMI_HDCP_SW_UPPER_AKSV				0x00000284
++
++#define REG_HDMI_HDCP_SW_LOWER_AKSV				0x00000288
++
+ #define REG_HDMI_CEC_STATUS					0x00000298
+ 
+ #define REG_HDMI_CEC_INT					0x0000029c
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
 
