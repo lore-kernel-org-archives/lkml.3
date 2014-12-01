@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669AbaLACwu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 21:52:50 -0500
-Received: from ozlabs.org ([103.22.144.67]:32948 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752562AbaLACwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 21:52:49 -0500
-Date: Mon, 1 Dec 2014 13:52:41 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sebastian Reichel <sre@kernel.org>, Tony Lindgren <tony@atomide.com>
-Subject: linux-next: manual merge of the v4l-dvb tree with the arm-soc tree
-Message-ID: <20141201135241.435ecb37@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1752678AbaLACzC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 21:55:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47872 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326AbaLACzA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 21:55:00 -0500
+Date: Sun, 30 Nov 2014 18:53:36 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        USB development list <linux-usb@vger.kernel.org>
+Subject: Re: [Update 2x][PATCH] USB / PM: Drop CONFIG_PM_RUNTIME from the USB
+ core
+Message-ID: <20141201025336.GB4331@kroah.com>
+References: <Pine.LNX.4.44L0.1411301045010.10461-100000@netrider.rowland.org>
+ <22502474.I00WlQ6xeB@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/UU+c4Ww2.eAE=OEG+gqaQSV"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <22502474.I00WlQ6xeB@vostro.rjw.lan>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/UU+c4Ww2.eAE=OEG+gqaQSV
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, Dec 01, 2014 at 02:12:51AM +0100, Rafael J. Wysocki wrote:
+> On Sunday, November 30, 2014 10:45:39 AM Alan Stern wrote:
+> > On Sat, 29 Nov 2014, Rafael J. Wysocki wrote:
+> > 
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > 
+> > > After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+> > > selected) PM_RUNTIME is always set if PM is set, so quite a few
+> > > #ifdef blocks depending on CONFIG_PM_RUNTIME may now be changed to
+> > > depend on CONFIG_PM (or even dropped in some cases).
+> > > 
+> > > Replace CONFIG_PM_RUNTIME with CONFIG_PM in the USB core code
+> > > and documentation.
+> > > 
+> > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > ---
+> > > 
+> > > Added the Documentation/usb/power-management.txt changes.
+> > > 
+> > > Of course, this depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME
+> > > if PM_SLEEP is selected) which is in linux-next only (via linux-pm) at the
+> > > moment.
+> > 
+> > Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> 
+> Thanks!
+> 
+> Greg, would there be any problems if I took this into the linux-pm tree?
 
-Hi Mauro,
+No problems at all:
 
-Today's linux-next merge of the v4l-dvb tree got a conflict in
-arch/arm/mach-omap2/board-rx51-peripherals.c between commit
-e639cd5bfc03 ("ARM: OMAP2+: Prepare to move GPMC to drivers by platform
-data header") from the arm-soc tree and commit 68a3c0433077 ("[media]
-ARM: OMAP2: RX-51: update si4713 platform data") from the v4l-dvb tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-omap2/board-rx51-peripherals.c
-index e2ad48b5d9c0,ec2e4101988b..000000000000
---- a/arch/arm/mach-omap2/board-rx51-peripherals.c
-+++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
-@@@ -23,7 -23,7 +23,8 @@@
-  #include <linux/regulator/machine.h>
-  #include <linux/gpio.h>
-  #include <linux/gpio_keys.h>
-+ #include <linux/gpio/machine.h>
- +#include <linux/omap-gpmc.h>
-  #include <linux/mmc/host.h>
-  #include <linux/power/isp1704_charger.h>
-  #include <linux/platform_data/spi-omap2-mcspi.h>
-
---Sig_/UU+c4Ww2.eAE=OEG+gqaQSV
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUe9f+AAoJEMDTa8Ir7ZwV0TsP/RkjeAWxRk5NZYhAeikseo4l
-LtsYTU9HlBkJvfQ+dJZpwwnieXEu2VtWBL6BoG16eJnEyowCZQUh7xvk2wzjkhiH
-0Z/axKaKLcW5buTra6FYeOwrqHvd2BQHAak3T5CqUWPy8GLXt3BZ9XYmJY4WU4m/
-vQllAULjFbDvz+41NU+Ij7i6lz3BI9vLtxuJP+YbOaq8DC7Jbh+n0fENGqISQW1T
-QznI8nZfWFrd9y1ELWXzOMdlYEuzzzOx8ddVSPmLjP0R4qfwaYhL3X4NlSPs3+fA
-JsHUDA6QwqN3nJ+q80s1AABMVg4lAF5fd/WmMHfO/ct+9VJudoSB4yjd+KbdtsBQ
-kxHH3gwS4gHReVrtwCTTQ3Wii1UloOIjNeiCMly98im7f9izmp47AIp0EJcSSQXV
-5SMdQJOVraLmb7cgwY5dXHiZbjAy5T/j6ofXRcWJagTC72qnA93jez2J5qYeIYLp
-fju3k0hpkzY2kgG1rZSQf+0vv/ZA4zAcPaVAkNbNu1hCSaU41qrU2WXTL7SIs+2j
-o7APpur7v0xMPiWbqzeu59S6L4OfomHMGg3bFh6kKfaIq6Y3yNPaAGNxs+Zrupj2
-oN2vquOM2UfksgBhFCXushNLdzH+RD+0I/zWPBZ5RmGl9Hnnv6pr6y/GzzlwuxzJ
-e0KncSsXSRKoL+MuziW9
-=jb+I
------END PGP SIGNATURE-----
-
---Sig_/UU+c4Ww2.eAE=OEG+gqaQSV--
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
