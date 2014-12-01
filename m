@@ -1,119 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173AbaLARw2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 12:52:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46904 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753099AbaLARw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 12:52:27 -0500
-Date: Mon, 1 Dec 2014 18:52:24 +0100
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Juergen Gross <jgross@suse.com>
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        boris.ostrovsky@oracle.com, xen-devel@lists.xenproject.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, kvm@vger.kernel.org, Davidlohr Bueso <dbueso@suse.de>,
-        Joerg Roedel <jroedel@suse.de>, Borislav Petkov <bp@suse.de>,
-        Jan Beulich <JBeulich@suse.com>, Olaf Hering <ohering@suse.de>
-Subject: Re: [PATCH] xen: privcmd: schedule() after private hypercall when
-	non CONFIG_PREEMPT
-Message-ID: <20141201175224.GJ25677@wotan.suse.de>
-References: <1417040805-15857-1-git-send-email-mcgrof@do-not-panic.com> <5476C66F.5040308@suse.com> <20141127183616.GV25677@wotan.suse.de> <547C4CEF.1010603@citrix.com> <20141201150546.GC25677@wotan.suse.de> <547C86BF.2040705@citrix.com> <CAB=NE6WPvCJnAfdbZqcw5pJtZrfxo0zQu6J2gpXp69G-UTtiUg@mail.gmail.com> <547C8F30.1010306@citrix.com> <20141201161905.GH25677@wotan.suse.de> <547CA064.5080106@suse.com>
+	id S1754202AbaLARwx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 12:52:53 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:59678 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753048AbaLARww (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 12:52:52 -0500
+Date: Mon, 1 Dec 2014 09:51:34 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Stefan Agner <stefan@agner.ch>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "arnd@arndb.de" <arnd@arndb.de>, "sre@kernel.org" <sre@kernel.org>,
+        "fkan@apm.com" <fkan@apm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] power: reset: read priority from device tree
+Message-ID: <20141201175134.GC24692@roeck-us.net>
+References: <1417453389-1588-1-git-send-email-stefan@agner.ch>
+ <1417453389-1588-2-git-send-email-stefan@agner.ch>
+ <20141201171126.GB22708@leverpostej>
+ <e5c5a44c84b95c4e48ed01c4dcffd35a@agner.ch>
+ <20141201174100.GC22708@leverpostej>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <547CA064.5080106@suse.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20141201174100.GC22708@leverpostej>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020208.547CAAF4.008A,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 14
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 06:07:48PM +0100, Juergen Gross wrote:
-> On 12/01/2014 05:19 PM, Luis R. Rodriguez wrote:
->> On Mon, Dec 01, 2014 at 03:54:24PM +0000, David Vrabel wrote:
->>> On 01/12/14 15:44, Luis R. Rodriguez wrote:
->>>> On Mon, Dec 1, 2014 at 10:18 AM, David Vrabel <david.vrabel@citrix.com> wrote:
->>>>> On 01/12/14 15:05, Luis R. Rodriguez wrote:
->>>>>> On Mon, Dec 01, 2014 at 11:11:43AM +0000, David Vrabel wrote:
->>>>>>> On 27/11/14 18:36, Luis R. Rodriguez wrote:
->>>>>>>> On Thu, Nov 27, 2014 at 07:36:31AM +0100, Juergen Gross wrote:
->>>>>>>>> On 11/26/2014 11:26 PM, Luis R. Rodriguez wrote:
->>>>>>>>>> From: "Luis R. Rodriguez" <mcgrof@suse.com>
->>>>>>>>>>
->>>>>>>>>> Some folks had reported that some xen hypercalls take a long time
->>>>>>>>>> to complete when issued from the userspace private ioctl mechanism,
->>>>>>>>>> this can happen for instance with some hypercalls that have many
->>>>>>>>>> sub-operations, this can happen for instance on hypercalls that use
->>>>>>> [...]
->>>>>>>>>> --- a/drivers/xen/privcmd.c
->>>>>>>>>> +++ b/drivers/xen/privcmd.c
->>>>>>>>>> @@ -60,6 +60,9 @@ static long privcmd_ioctl_hypercall(void __user *udata)
->>>>>>>>>>                               hypercall.arg[0], hypercall.arg[1],
->>>>>>>>>>                               hypercall.arg[2], hypercall.arg[3],
->>>>>>>>>>                               hypercall.arg[4]);
->>>>>>>>>> +#ifndef CONFIG_PREEMPT
->>>>>>>>>> + schedule();
->>>>>>>>>> +#endif
->>>>>>>
->>>>>>> As Juergen points out, this does nothing.  You need to schedule while in
->>>>>>> the middle of the hypercall.
->>>>>>>
->>>>>>> Remember that Xen's hypercall preemption only preempts the hypercall to
->>>>>>> run interrupts in the guest.
->>>>>>
->>>>>> How is it ensured that when the kernel preempts on this code path on
->>>>>> CONFIG_PREEMPT=n kernel that only interrupts in the guest are run?
->>>>>
->>>>> Sorry, I really didn't describe this very well.
->>>>>
->>>>> If a hypercall needs a continuation, Xen returns to the guest with the
->>>>> IP set to the hypercall instruction, and on the way back to the guest
->>>>> Xen may schedule a different VCPU or it will do any upcalls (as per normal).
->>>>>
->>>>> The guest is free to return from the upcall to the original task
->>>>> (continuing the hypercall) or to a different one.
->>>>
->>>> OK so that addresses what Xen will do when using continuation and
->>>> hypercall preemption, my concern here was that using
->>>> preempt_schedule_irq() on CONFIG_PREEMPT=n kernels in the middle of a
->>>> hypercall on the return from an interrupt (e.g., the timer interrupt)
->>>> would still let the kernel preempt to tasks other than those related
->>>> to Xen.
->>>
->>> Um.  Why would that be a problem?  We do want to switch to any task the
->>> Linux scheduler thinks is best.
->>
->> Its safe but -- it technically is doing kernel preemption, unless we want
->> to adjust the definition of CONFIG_PREEMPT=n to exclude hypercalls. This
->> was my original concern with the use of preempt_schedule_irq() to do this.
->> I am afraid of setting precedents without being clear or wider review and
->> acceptance.
->
-> I wonder whether it would be more acceptable to add (or completely
-> switch to) another preemption model: PREEMPT_SWITCHABLE. This would be
-> similar to CONFIG_PREEMPT, but the "normal" value of __preempt_count
-> would be settable via kernel parameter (default 2):
->
-> 0: preempt
-> 1: preempt_voluntary
-> 2: preempt_none
->
-> The kernel would run with preemption enabled. cond_sched() would
-> reschedule if __preempt_count <= 1. And in case of long running kernel
-> activities (like the hypercall case or other stuff requiring schedule()
-> calls to avoid hangups) we would just set __preempt_count to 0 during
-> these periods and restore the old value afterwards.
->
-> This would be a rather intrusive but clean change IMO.
->
-> Any thoughts?
+On Mon, Dec 01, 2014 at 05:41:00PM +0000, Mark Rutland wrote:
+> On Mon, Dec 01, 2014 at 05:24:37PM +0000, Stefan Agner wrote:
+> > On 2014-12-01 18:11, Mark Rutland wrote:
+> > > On Mon, Dec 01, 2014 at 05:03:07PM +0000, Stefan Agner wrote:
+> > >> This patch adds an optional property which allows to specify the
+> > >> reset source priority. This priority is used by the kernel restart
+> > >> handler call chain to sort out the proper reset/restart method.
+> > >> Depending on the power design of a board or other machine/board
+> > >> specific peculiarity, it is not possible to pick a generic priority.
+> > >>
+> > >> Signed-off-by: Stefan Agner <stefan@agner.ch>
+> > >> ---
+> > >>  Documentation/devicetree/bindings/power/reset/syscon-reboot.txt | 3 +++
+> > >>  drivers/power/reset/syscon-reboot.c                             | 5 ++++-
+> > >>  2 files changed, 7 insertions(+), 1 deletion(-)
+> > >>
+> > >> diff --git a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+> > >> index 1190631..ee41d9c 100644
+> > >> --- a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+> > >> +++ b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+> > >> @@ -11,6 +11,9 @@ Required properties:
+> > >>  - offset: offset in the register map for the reboot register (in bytes)
+> > >>  - mask: the reset value written to the reboot register (32 bit access)
+> > >>
+> > >> +Optional properties:
+> > >> +- priority: define the priority of the reset (0-255, defaults to 128)
+> > >> +
+> > > 
+> > > NAK. This is a leak of Linux-internal details.
+> > > 
+> > > What is this necessary for?
+> > > 
+> > > Mark.
+> > 
+> > Hi Mark,
+> > 
+> > In my case, it is necessary to be called ahead of the watchdog, which
+> > has a priority of 128. This syscon-reboot driver currently has a default
+> > priority of 128 too. I could live with a higher default priority for the
+> > syscon-reboot driver, in fact I proposed that in the discussion of v1 of
+> > that patch:
+> > https://lkml.org/lkml/2014/11/28/484
+> 
+> Thanks for the link.
+> 
+> > IMHO, this priority might make sense for most cases, I guess that
+> > dedicated "syscon" capabilities are usually better suited as a reboot
+> > source than watchdog.
+> 
+> I would think likewise.
+> 
+> > If dt, then the question which arises: If there are different
+> > capabilities to reset/reboot a whole system, how do we reflect which is
+> > the best suited one in dt?
+> 
+> I'm not sure, but I don't think that exposing a priority variable in
+> this way is the best, because it implicitly relies on what the kernel
+> may have selected for other devices and/or FW interfaces, which may not
+> have been described in DT.
+> 
+> So if we can get away with a fixed priority for now, then I would prefer
+> that.
+> 
+> Otherwise, I would imagine that most systems have a single preferred
+> mechanism with some possible fallback(s), for which a single
+> preferred-poweroff property might suffice, and has better interaction
+> w.r.t. priority (in that it should _always_ be tried first). Even that's
+> difficult to reconcile with FW bindings though, especially EFI (which we
+> sometimes must use in preference for variable storage and capsule
+> updates).
+> 
+Hi mark,
 
-I like the idea of dynamically changing at run time the preemption model and
-personally find this reasonable, however I am not certain if this would
-introduce a series of issues hard to address. Thoughts by others who linger
-deep in the cold lonely scheduler caves ?
+reboot, not poweroff, but I like that idea; it is system independent,
+and I agree that there should be only one "preferred-reboot" mechanism.
+If we need more we can always add something like "fallback-reboot".
 
-  Luis
+Not sure I understand the reference to EFI. Does EFI install a means
+to restart the system ? Also, doesn't the proprity question apply even
+if there is no dt property to establish the preference ?
+
+Thanks,
+Guenter
