@@ -1,97 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445AbaLARLc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 12:11:32 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51914 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753263AbaLARLa (ORCPT
+	id S1753677AbaLARL6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 12:11:58 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:59565 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752783AbaLARLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 12:11:30 -0500
-Date: Mon, 1 Dec 2014 17:11:26 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stefan Agner <stefan@agner.ch>
-Cc: "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "arnd@arndb.de" <arnd@arndb.de>, "sre@kernel.org" <sre@kernel.org>,
-        "fkan@apm.com" <fkan@apm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] power: reset: read priority from device tree
-Message-ID: <20141201171126.GB22708@leverpostej>
-References: <1417453389-1588-1-git-send-email-stefan@agner.ch>
- <1417453389-1588-2-git-send-email-stefan@agner.ch>
+	Mon, 1 Dec 2014 12:11:55 -0500
+Message-ID: <547CA157.1080401@cogentembedded.com>
+Date: Mon, 01 Dec 2014 20:11:51 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417453389-1588-2-git-send-email-stefan@agner.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: SF Markus Elfring <elfring@users.sourceforge.net>,
+        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
+        netdev@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH 1/3] net-PPP: Deletion of unnecessary checks before the
+ function call "kfree"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <547B4886.4080406@users.sourceforge.net> <547B496E.604@users.sourceforge.net> <547C5CBC.6060607@cogentembedded.com> <547C82A6.2030808@users.sourceforge.net>
+In-Reply-To: <547C82A6.2030808@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 05:03:07PM +0000, Stefan Agner wrote:
-> This patch adds an optional property which allows to specify the
-> reset source priority. This priority is used by the kernel restart
-> handler call chain to sort out the proper reset/restart method.
-> Depending on the power design of a board or other machine/board
-> specific peculiarity, it is not possible to pick a generic priority.
-> 
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
-> ---
->  Documentation/devicetree/bindings/power/reset/syscon-reboot.txt | 3 +++
->  drivers/power/reset/syscon-reboot.c                             | 5 ++++-
->  2 files changed, 7 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
-> index 1190631..ee41d9c 100644
-> --- a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
-> +++ b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
-> @@ -11,6 +11,9 @@ Required properties:
->  - offset: offset in the register map for the reboot register (in bytes)
->  - mask: the reset value written to the reboot register (32 bit access)
->  
-> +Optional properties:
-> +- priority: define the priority of the reset (0-255, defaults to 128)
-> +
+On 12/01/2014 06:00 PM, SF Markus Elfring wrote:
 
-NAK. This is a leak of Linux-internal details.
+>>> diff --git a/drivers/net/ppp/ppp_mppe.c b/drivers/net/ppp/ppp_mppe.c
+>>> index 911b216..7e44212 100644
+>>> --- a/drivers/net/ppp/ppp_mppe.c
+>>> +++ b/drivers/net/ppp/ppp_mppe.c
+>>> @@ -238,8 +238,7 @@ static void *mppe_alloc(unsigned char *options, int optlen)
+>>>        return (void *)state;
+>>>
+>>>        out_free:
+>>> -        if (state->sha1_digest)
+>>> -        kfree(state->sha1_digest);
+>>> +    kfree(state->sha1_digest);
 
-What is this necessary for?
+>>     Please keep this line aligned to the others.
 
-Mark.
+> Can it be that the previous source code contained unwanted space
+> characters at this place?
 
->  Default will be little endian mode, 32 bit access only.
->  
->  Examples:
-> diff --git a/drivers/power/reset/syscon-reboot.c b/drivers/power/reset/syscon-reboot.c
-> index 815b901..3060d6b 100644
-> --- a/drivers/power/reset/syscon-reboot.c
-> +++ b/drivers/power/reset/syscon-reboot.c
-> @@ -67,8 +67,11 @@ static int syscon_reboot_probe(struct platform_device *pdev)
->  	if (of_property_read_u32(pdev->dev.of_node, "mask", &ctx->mask))
->  		return -EINVAL;
->  
-> -	ctx->restart_handler.notifier_call = syscon_restart_handle;
->  	ctx->restart_handler.priority = 128;
-> +	of_property_read_u32(pdev->dev.of_node, "priority",
-> +			     &ctx->restart_handler.priority);
-> +
-> +	ctx->restart_handler.notifier_call = syscon_restart_handle;
->  	err = register_restart_handler(&ctx->restart_handler);
->  	if (err)
->  		dev_err(dev, "can't register restart notifier (err=%d)\n", err);
-> -- 
-> 2.1.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+    Yes, it seems so.
+
+> Do you want indentation fixes as a separate update step?
+
+    Yes, that would be better to keep it separate.
+
+> Regards,
+> Markus
+
+WBR, Sergei
+
