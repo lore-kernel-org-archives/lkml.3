@@ -1,146 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932398AbaLAUHL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 15:07:11 -0500
-Received: from mga01.intel.com ([192.55.52.88]:26947 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932101AbaLAUHJ convert rfc822-to-8bit (ORCPT
+	id S932417AbaLAUKU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 15:10:20 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:33249 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932277AbaLAUKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 15:07:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="423690930"
-From: "Liang, Kan" <kan.liang@intel.com>
-To: Jiri Olsa <jolsa@redhat.com>
-CC: "acme@kernel.org" <acme@kernel.org>,
-        "namhyung@kernel.org" <namhyung@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: RE: [PATCH V6 1/3] perf tool: Add sort key symoff for perf diff
-Thread-Topic: [PATCH V6 1/3] perf tool: Add sort key symoff for perf diff
-Thread-Index: AQHQDXd2X8Mmnu1wKEOKtRcAXI3AlZx6n/yAgACGcOA=
-Date: Mon, 1 Dec 2014 20:05:48 +0000
-Message-ID: <37D7C6CF3E00A74B8858931C1DB2F07701677D8E@SHSMSX103.ccr.corp.intel.com>
-References: <1417444812-22063-1-git-send-email-kan.liang@intel.com>
- <20141201195345.GA13302@krava.brq.redhat.com>
-In-Reply-To: <20141201195345.GA13302@krava.brq.redhat.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 1 Dec 2014 15:10:17 -0500
+From: Jilai Wang <jilaiw@codeaurora.org>
+To: dri-devel@lists.freedesktop.org
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        robdclark@gmail.com, Jilai Wang <jilaiw@codeaurora.org>
+Subject: [PATCH 1/4] drm/msm/hdmi: use HPD interrupt to track connector status change
+Date: Mon,  1 Dec 2014 15:09:40 -0500
+Message-Id: <1417464580-29411-1-git-send-email-jilaiw@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+HPD interrupt can be tracked for each connector, so don't need
+to poll the connector status for state change.
 
+Signed-off-by: Jilai Wang <jilaiw@codeaurora.org>
+---
+ drivers/gpu/drm/msm/hdmi/hdmi_connector.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-> On Mon, Dec 01, 2014 at 09:40:10AM -0500, Kan Liang wrote:
-> 
-> SNIP
-> 
-> > +static int64_t
-> > +sort__symoff_collapse(struct hist_entry *left, struct hist_entry
-> > +*right) {
-> > +	struct symbol *sym_l = left->ms.sym;
-> > +	struct symbol *sym_r = right->ms.sym;
-> > +	u64 symoff_l, symoff_r;
-> > +	int64_t ret;
-> > +
-> > +	if (!sym_l || !sym_r)
-> > +		return cmp_null(sym_l, sym_r);
-> > +
-> > +	ret = strcmp(sym_r->name, sym_l->name);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +
-> > +	symoff_l = left->ip - sym_l->start;
-> > +	symoff_r = right->ip - sym_r->start;
-> > +
-> > +	return (int64_t)(symoff_r - symoff_l); }
-> > +
-> > +static int hist_entry__symoff_snprintf(struct hist_entry *he, char *bf,
-> > +				    size_t size, unsigned int width) {
-> > +	struct map *map = he->ms.map;
-> > +	struct symbol *sym = he->ms.sym;
-> > +	size_t ret = 0;
-> > +
-> > +	if (sym) {
-> > +		ret += repsep_snprintf(bf + ret, size - ret, "%s", sym-
-> >name);
-> > +		ret += repsep_snprintf(bf + ret, size - ret, "+0x%llx",
-> > +				       he->ip - sym->start);
-> > +
-> > +	} else {
-> > +		size_t len = BITS_PER_LONG / 4;
-> > +
-> > +		ret += repsep_snprintf(bf + ret, size - ret, "%-#.*llx", len,
-> > +				       map ? map->unmap_ip(map, he->ip) :
-> he->ip);
-> > +	}
-> > +
-> > +	ret += repsep_snprintf(bf + ret, size - ret, "%-*s",
-> > +			       width - ret, "");
-> > +	return ret;
-> > +}
-> > +
-> > +struct sort_entry sort_symoff = {
-> > +	.se_header	= "Symbol + Offset",
-> > +	.se_cmp		= sort__symoff_cmp,
-> > +	.se_snprintf	= hist_entry__symoff_snprintf,
-> > +	.se_width_idx	= HISTC_SYMOFF,
-> > +};
-> 
-> I might have missed this in previous discussions, but do we also want just
-> pure string comparison?
-> 
-> now I get:
->      0.30%   +0.42%  main+0x110
->      1.80%   -0.45%  main+0x115
->      0.05%   -0.04%  main+0x118
->      0.34%   +0.49%  main+0x11c
->      2.15%   -0.22%  main+0x120
->      0.41%   +0.22%  main+0x123
->      1.86%   +0.04%  main+0x12f
->      3.86%   -0.69%  main+0x133
->      0.02%           main+0x137
->      3.80%   -1.19%  main+0x13d
->      0.26%   +0.45%  main+0x141
->      2.26%   +1.41%  main+0x145
->      8.78%   -1.59%  main+0x148
->      0.05%           main+0x14c
->      1.40%   -0.26%  main+0x155
->      0.07%           main+0x158
->      0.74%   -0.03%  main+0x15b
->      1.06%   -0.17%  main+0x160
->      0.31%   +0.30%  main+0x1a8
->      1.82%   -0.51%  main+0x1af
->      0.09%   +0.07%  main+0x1b1
->      0.05%           main+0x1b4
-> 
-> could we add something like '-s symstr' to do only symbol string
-> comparison, so the previous output would gather in single line like:
-> 
->      5.09%   +2.07%  main
+diff --git a/drivers/gpu/drm/msm/hdmi/hdmi_connector.c b/drivers/gpu/drm/msm/hdmi/hdmi_connector.c
+index 4aca2a3..92fddd8 100644
+--- a/drivers/gpu/drm/msm/hdmi/hdmi_connector.c
++++ b/drivers/gpu/drm/msm/hdmi/hdmi_connector.c
+@@ -242,7 +242,7 @@ hotplug_work(struct work_struct *work)
+ 	struct hdmi_connector *hdmi_connector =
+ 		container_of(work, struct hdmi_connector, hpd_work);
+ 	struct drm_connector *connector = &hdmi_connector->base;
+-	drm_helper_hpd_irq_event(connector->dev);
++	drm_kms_helper_hotplug_event(connector->dev);
+ }
+ 
+ void hdmi_connector_irq(struct drm_connector *connector)
+@@ -431,9 +431,6 @@ struct drm_connector *hdmi_connector_init(struct hdmi *hdmi)
+ 			DRM_MODE_CONNECTOR_HDMIA);
+ 	drm_connector_helper_add(connector, &hdmi_connector_helper_funcs);
+ 
+-	connector->polled = DRM_CONNECTOR_POLL_CONNECT |
+-			DRM_CONNECTOR_POLL_DISCONNECT;
+-
+ 	connector->interlace_allowed = 1;
+ 	connector->doublescan_allowed = 0;
+ 
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
 
-Yes, we have a patch to do that.
-https://lkml.org/lkml/2014/11/21/367
-The default sort key "symbol" do symbols names comparison.
-
-The symoff here is an extension in case anyone want to do deeper analysis.
-
-Thanks,
-Kan
-
-> 
-> 
-> otherwise the patchset looks ok to me:
->   Acked-by: Jiri Olsa <jolsa@kernel.org>
-> 
-> 
-> thanks,
-> jirka
