@@ -1,126 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095AbaLARnZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 12:43:25 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:58226 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753220AbaLARnY (ORCPT
+	id S1754149AbaLARvi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 12:51:38 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45267 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753631AbaLARvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 12:43:24 -0500
-Date: Mon, 1 Dec 2014 09:42:15 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Feng Kan <fkan@apm.com>
-Cc: Stefan Agner <stefan@agner.ch>, shawn.guo@linaro.org,
-        kernel@pengutronix.de, Arnd Bergmann <arnd@arndb.de>, sre@kernel.org,
-        grant.likely@linaro.org, robh+dt@kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] power: reset: read priority from device tree
-Message-ID: <20141201174215.GB24692@roeck-us.net>
-References: <1417453389-1588-1-git-send-email-stefan@agner.ch>
- <1417453389-1588-2-git-send-email-stefan@agner.ch>
- <CAL85gmBq30pWxP0buKbM8so6QqsJq2YojiSK1EWtMPsH_7foeg@mail.gmail.com>
- <ea4f7a2bfdb9bea45cab9418c211083b@agner.ch>
- <CAL85gmBNE7oDbE+LX+V=AFJO61Ta0Gekoq6sDb8TkEnoPsNFVA@mail.gmail.com>
+	Mon, 1 Dec 2014 12:51:36 -0500
+Date: Mon, 1 Dec 2014 17:51:00 +0000
+From: Mark Brown <broonie@kernel.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Ben Zhang <benzh@chromium.org>,
+        alsa-devel <alsa-devel@alsa-project.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Bard Liao <bardliao@realtek.com>,
+        Oder Chiou <oder_chiou@realtek.com>,
+        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
+        flove@realtek.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <20141201175100.GH7712@sirena.org.uk>
+References: <1416034608-24238-1-git-send-email-benzh@chromium.org>
+ <2127240.rWRTDu6LHQ@vostro.rjw.lan>
+ <20141129115209.GD7712@sirena.org.uk>
+ <1820241.GUleD5gbzs@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MRL9B5bOucwGAkwp"
 Content-Disposition: inline
-In-Reply-To: <CAL85gmBNE7oDbE+LX+V=AFJO61Ta0Gekoq6sDb8TkEnoPsNFVA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020208.547CA8BC.0024,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 13
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <1820241.GUleD5gbzs@vostro.rjw.lan>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] ASoC: rt5677: Add ACPI device probing
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 09:38:09AM -0800, Feng Kan wrote:
-> On Mon, Dec 1, 2014 at 9:29 AM, Stefan Agner <stefan@agner.ch> wrote:
-> > On 2014-12-01 18:15, Feng Kan wrote:
-> >> On Mon, Dec 1, 2014 at 9:03 AM, Stefan Agner <stefan@agner.ch> wrote:
-> >>> This patch adds an optional property which allows to specify the
-> >>> reset source priority. This priority is used by the kernel restart
-> >>> handler call chain to sort out the proper reset/restart method.
-> >>> Depending on the power design of a board or other machine/board
-> >>> specific peculiarity, it is not possible to pick a generic priority.
-> >>>
-> >>> Signed-off-by: Stefan Agner <stefan@agner.ch>
-> >>> ---
-> >>>  Documentation/devicetree/bindings/power/reset/syscon-reboot.txt | 3 +++
-> >>>  drivers/power/reset/syscon-reboot.c                             | 5 ++++-
-> >>>  2 files changed, 7 insertions(+), 1 deletion(-)
-> >>>
-> >>> diff --git a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
-> >>> index 1190631..ee41d9c 100644
-> >>> --- a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
-> >>> +++ b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
-> >>> @@ -11,6 +11,9 @@ Required properties:
-> >>>  - offset: offset in the register map for the reboot register (in bytes)
-> >>>  - mask: the reset value written to the reboot register (32 bit access)
-> >>>
-> >>> +Optional properties:
-> >>> +- priority: define the priority of the reset (0-255, defaults to 128)
-> >>> +
-> >>>  Default will be little endian mode, 32 bit access only.
-> >>>
-> >>>  Examples:
-> >>> diff --git a/drivers/power/reset/syscon-reboot.c b/drivers/power/reset/syscon-reboot.c
-> >>> index 815b901..3060d6b 100644
-> >>> --- a/drivers/power/reset/syscon-reboot.c
-> >>> +++ b/drivers/power/reset/syscon-reboot.c
-> >>> @@ -67,8 +67,11 @@ static int syscon_reboot_probe(struct platform_device *pdev)
-> >>>         if (of_property_read_u32(pdev->dev.of_node, "mask", &ctx->mask))
-> >>>                 return -EINVAL;
-> >>>
-> >>> -       ctx->restart_handler.notifier_call = syscon_restart_handle;
-> >>>         ctx->restart_handler.priority = 128;
-> >>> +       of_property_read_u32(pdev->dev.of_node, "priority",
-> >>> +                            &ctx->restart_handler.priority);
-> >>
-> >> What is this for?
-> >
-> > What do you mean? The moved line "ctx->restart_handler.notifier_call =
-> > syscon_restart_handle;"? When one reads the diff, it looks like that
-> > line was moved, in fact I tried to keep the of_property_read function
-> > calls together. But I had to move the assignation of the default
-> > priority in front of restart_handler.priority. That's what is the
-> > outcome...
-> 
-> I believe Guenter explained above already. Actually this help to solve one of
-> my problem. Thanks.
 
-Since Mark doesn't seem to be happy with the idea of making the priority
-dt-configurable, the alternative might be to just set a higher priority for
-syscon triggered resets, as suggested by Stefan. Not as flexible, but it
-should be ok for most use cases.
+--MRL9B5bOucwGAkwp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Guenter
+On Sat, Nov 29, 2014 at 11:27:52PM +0100, Rafael J. Wysocki wrote:
+> On Saturday, November 29, 2014 11:52:09 AM Mark Brown wrote:
+
+> > > There's the PRP0001 ID that can be use to in combination with the
+> > > "compatible" property which then works the same way as for DT.
+
+> > > That should be sufficient if the properties are going to be the
+> > > same for ACPI (_DSD) and DT.
+
+> > We've got people making BIOSs right now for systems you can actually buy=20
+> > that are intended to run Windows which we need to support; right now the
+> > pressing problem I'm seeing is that we've got BIOS vendors not using
+> > properties at all and we're going to be ending up with configuration
+> > coming from big DMI tables instead which is miserable, Windows is
+> > perfectly happy to have custom drivers installed per machine.  Do we
+> > know if Windows supports PRP0001 as it currently stands?
+
+> No, it doesn't.
+
+> Separate device IDs are necessary for Windows compatibility AFAICS.
+
+OK, then PRP0001 is a complete non-starter for the applications I'm
+looking at.
+
+> But that also means any device ID registered by us won't be suitable in that
+> case, because Windows won't use it.
+
+The dream here is that people working on building systems, people
+working on Windows drivers and people working on Linux drivers will at
+some point be able to collaborate.  If we're going to go off and do our
+own thing for Linux without talking to anyone that's not really
+addressing the issue.
+
+> There are two different problems here, though.  The first one is a way to
+> provide the existing Linux drivers with the information expected by them via
+> ACPI and that's what _DSD (plus PRP0001 optionally) is.  The second one is
+> to be able to handle systems with ACPI tables from a random vendor who only
+> cares about Windows and that's more difficult to address, because our
+> ecosystem is different from theirs.
+
+> There basically are two ways around that.  The first one is to have all
+> knowledge related to device IDs in drivers (which effectively is what
+> Windows does and which implies "board files" of sorts) and the second one is
+> to make it possible to use overlays on top of the existing ACPI tables that
+> will allow people to provide the properties expected by a more generic driver
+> (this way, if the vendor didn't care to provide _DSD, for example, in the
+> original ACPI tables, the system integrator would be able to use an overlay
+> in an initramfs or boot partition to amend them).
+
+There's also the option that Windows drivers start using _DSD themselves
+which is, I understand, the goal towards which the people working on at
+least audio are heading.
+
+> There is a plan to do the latter, but that is going to take some time to
+> complete.
+
+Like I keep saying we have people trying to ship systems now, you can
+buy affected systems already and there's going to be more coming and I'm
+not convinced it's going to be fun for system integrators (distros?) to
+have to quirk every system that comes out.
+
+> > This is a reasonable idea but we do need it to be compatible with
+> > Windows and we still need to make sure we have a process in place that
+> > BIOS authors and driver authors focused on Windows can reasonably be
+> > expected to work with.  That's not something we have right now for DT
+> > (our DT process involves contributing to Linux) so the problem remains
+> > effectively the same.
+
+> We can't make Windows use our stuff and they have a different model
+> (a custom driver per device ID vs a common driver per IP block possibly
+> matching multiple device IDs).
+
+The hardware already doesn't match the Windows model well here, it's
+causing them some problems too (and it's making life miserable for the
+CODEC vendors who want to ship both Windows and Linux drivers too).  We
+should at least try to pull things together so we get something that
+works for everyone; in Linux we have quite a bit of experience with this
+sort of system which we can hopefully share with the Windows people to
+help make everyone's lives better.
+
+One of the things that would help this would be if we were able to give
+people a way to write their ACPI tables in a way that is likely to both
+work well for us and avoid lots of make work for the Windows people.
+
+Note that all this discussion is pretty much about drivers for single
+devices which can be wired into the system in a flexible manner, even in
+a Windows world you won't vary the device ID.  At present we're quirking
+on DMI.
+
+> > We also need a way of getting the word out to people that they should be
+> > doing this (also a problem no matter if we use PRP0001 or something UEFI
+> > specific).
+
+> What do you mean by "something UEFI specific"?
+
+Sorry, I mean ACPI specific (UEFI forum).
+
+> > > Otherwise, a new device ID needs to be allocated for the device and _HID
+> > > should return that ID.  Also, if the device is compatible with another
+> > > device with an already allocated ID (for _HID), _CID may return the devic=
+> > e ID
+> > > of the compatible device.  [Of course, it's better if _HID is the same for
+> > > identical devices.]
+
+> > I honestly don't see BIOS authors as being likely to care about adding
+> > things to the CID if their systems are working (I'm assuming that HID is
+> > the primary device ID and CID are further backup compatible IDs).
+
+> They will if they care to be compatible with old (binary) OSes that didn't
+> know about the new device ID, but shipped drivers that could handle the
+> device (although possibly in a "crippled" way).
+
+It's not just the device IDs you need, it's the properties too.
+
+--MRL9B5bOucwGAkwp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUfKqDAAoJECTWi3JdVIfQcKwH/05riiu24ZTOgoDUj5bCbF+q
+oG07cTC2XFb0Si8pg1Bz2gYiykw3DCWA+Fx47rjZP+2EKuR5sFWXmurtDVJv4/Hh
+HwjKa9dvGiSx3KfLm6YRdAxXc3zM0JMhAANs2Jdz22Wr1WWIZAebHkAdlJNq1niT
+D81usZzcsso/rKMdOQ7yBf31YW0hHWoXaPxizLAQTkZ/VGxSuZ/n1pLkxp1Eftir
+uTHjlDQhNi4Fgq6z8h8aqjhXg9h8q3nOpt+JNKsKBIrlbW+ztu2gLRIMv3gMZgwb
+ga9BSia+vHXWCQ3l/wSkf6SPtDfeO8l4MIwgj48jNJWLeyuBG06VIR04NSu6Jzc=
+=7/my
+-----END PGP SIGNATURE-----
+
+--MRL9B5bOucwGAkwp--
