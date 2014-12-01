@@ -1,129 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932513AbaLAVW5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 16:22:57 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:55618 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932080AbaLAVW4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 16:22:56 -0500
-Date: Mon, 1 Dec 2014 22:22:38 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>
-Subject: Re: [PATCH v4 1/3] drm: add bus_formats and num_bus_formats fields
- to drm_display_info
-Message-ID: <20141201222238.40e9ff86@bbrezillon>
-In-Reply-To: <20141201154257.GD11943@ulmo.nvidia.com>
-References: <1417422061-10384-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1417422061-10384-6-git-send-email-boris.brezillon@free-electrons.com>
-	<20141201154257.GD11943@ulmo.nvidia.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S932551AbaLAVXI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 16:23:08 -0500
+Received: from mout.web.de ([212.227.17.12]:64887 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932080AbaLAVXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 16:23:05 -0500
+Message-ID: <547CDC1E.7020404@users.sourceforge.net>
+Date: Mon, 01 Dec 2014 22:22:38 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Julia Lawall <julia.lawall@lip6.fr>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, trivial@kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: [PATCH v2] fs-fat: Less function calls in fat_fill_super() after
+ error detection
+References: <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <5467B12C.4010602@users.sourceforge.net> <alpine.DEB.2.02.1411152117540.2225@localhost6.localdomain6> <54796B5E.5040707@users.sourceforge.net> <87sih22sn8.fsf@devron.myhome.or.jp> <alpine.DEB.2.10.1411291338530.2378@hadrien> <87lhmu2jl8.fsf@devron.myhome.or.jp> <20141201065221.GA4994@mwanda> <547C89A4.40002@users.sourceforge.net> <20141201191723.GG4994@mwanda>
+In-Reply-To: <20141201191723.GG4994@mwanda>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:BugOfKqyRDNORrpHyrVdovi+EYPyhxRTLwLz6Xwh8j5IliwNCyI
+ Pk0gbaIbmtFF1SIktIrNToyTBsJPuccr0n1olKsFE7wSOAC3glvdjCFJnZZ8MipFBsdnwsy
+ Srxyt0s2aXSGBmur4cGRPtOqc5hwDCpxSRsWFvuHrsZQtBOXq7IDfczcuRL8EU736BpYfs8
+ qUr466mr/X0qp3fKQ2zdg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
-
-On Mon, 1 Dec 2014 16:42:58 +0100
-Thierry Reding <thierry.reding@gmail.com> wrote:
-
-> On Mon, Dec 01, 2014 at 09:20:59AM +0100, Boris Brezillon wrote:
-> > Add bus_formats and num_bus_formats fields and
-> > drm_display_info_set_bus_formats helper function to specify the bus
-> > formats supported by a given display.
-> > 
-> > This information can be used by display controller drivers to configure
-> > the output interface appropriately (i.e. RGB565, RGB666 or RGB888 on raw
-> > RGB or LVDS busses).
-> > 
-> > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> > ---
-> >  drivers/gpu/drm/drm_crtc.c | 32 ++++++++++++++++++++++++++++++++
-> >  include/drm/drm_crtc.h     |  7 +++++++
-> >  2 files changed, 39 insertions(+)
-> > 
-> > diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-> > index e79c8d3..d3b7ed0 100644
-> > --- a/drivers/gpu/drm/drm_crtc.c
-> > +++ b/drivers/gpu/drm/drm_crtc.c
-> > @@ -763,6 +763,38 @@ static void drm_mode_remove(struct drm_connector *connector,
-> >  	drm_mode_destroy(connector->dev, mode);
-> >  }
-> >  
-> > +/*
+>> Which names would be better acceptable for you?
 > 
-> This needs a /** marker to make it a valid kerneldoc comment.
+> You named it after the goto location but the label name should be based
+> on the label location to say what the goto does.
 
-Yep, I'll fix that.
+I find it easier occasionally to name a label similarly to the jump target.
+It seems that there are a few variations used for the affected identifiers.
 
-> 
-> > + * drm_display_info_set_bus_formats - set the supported bus formats
-> > + * @info: display info to store bus formats in
-> > + * @fmts: array containing the supported bus formats
-> > + * @nfmts: the number of entries in the fmts array
-> > + *
-> > + * Store the suppported bus formats in display info structure.
-> > + * See MEDIA_BUS_FMT_* definitions in include/uapi/linux/media-bus-format.h for
-> > + * a full list of available formats.
-> > + */
-> > +int drm_display_info_set_bus_formats(struct drm_display_info *info, const u32 *fmts,
-> 
-> This one still exceeds 80-characters per line, but perhaps I'm reviewing
-> the wrong patch? Also I think fmts should be formats here.
-> 
-> > +				     unsigned int num_fmts)
-> 
-> And this should be num_formats, for consistency. Also make sure to keep
-> this consistent with the kerneldoc.
-> 
-> > +{
-> > +	u32 *formats = NULL;
-> 
-> If you name the parameter formats, maybe bus_formats would be a good
-> alternative for this local variable. Or fmts here. I think it's most
-> important that the public API gets the more idiomatic name.
 
-Okay, I'll rework the argument and variable names.
+> Something like "err_put_fsinfo", "err_put_fat", and "err_unload" or like that.
 
-> 
-> > +
-> > +	if (!fmts && num_fmts)
-> > +		return -EINVAL;
-> > +
-> > +	if (fmts && num_fmts) {
-> > +		formats = kmemdup(fmts, sizeof(*fmts) * num_fmts, GFP_KERNEL);
-> > +		if (!formats)
-> > +			return -ENOMEM;
-> > +	}
-> > +
-> > +	kfree(info->bus_formats);
-> > +	info->bus_formats = formats;
-> > +	info->num_bus_formats = num_fmts;
-> > +
-> > +	return 0;
-> > +}
-> > +EXPORT_SYMBOL(drm_display_info_set_bus_formats);
-> 
-> I think you'll want to call kfree() on the bus_formats array from
-> drm_connector_cleanup() as well to make sure you don't leak this on
-> driver unload.
+How do you think about to provide a patch with your preferred names
+if my chances are lower to suggest the pleasing ones directly in my
+first tries?
 
-Indeed, I'll fix that memory leak.
-
-Thanks,
-
-Boris
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Regards,
+Markus
