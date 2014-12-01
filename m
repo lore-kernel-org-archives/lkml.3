@@ -1,98 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309AbaLALWh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 06:22:37 -0500
-Received: from lucky1.263xmail.com ([211.157.147.133]:59513 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967AbaLALWf (ORCPT
+	id S1753329AbaLALXQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 06:23:16 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:41804 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035AbaLALXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 06:22:35 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <786dcafd5c48462530228e795c98f2af>
-X-DNS-TYPE: 0
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
-        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
+	Mon, 1 Dec 2014 06:23:15 -0500
+Date: Mon, 1 Dec 2014 11:23:02 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Andy Yan <andy.yan@rock-chips.com>
-Subject: [PATCH v14 02/12] drm: imx: imx-hdmi: return defer if can't get ddc i2c adapter
-Date: Mon,  1 Dec 2014 19:22:08 +0800
-Message-Id: <1417432928-12819-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417432770-12719-1-git-send-email-andy.yan@rock-chips.com>
-References: <1417432770-12719-1-git-send-email-andy.yan@rock-chips.com>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] irqchip: gic: Allow interrupt level to be set for PPIs.
+Message-ID: <20141201112302.GC3836@n2100.arm.linux.org.uk>
+References: <1417197340-27298-1-git-send-email-Liviu.Dudau@arm.com>
+ <20141201104145.GY3836@n2100.arm.linux.org.uk>
+ <20141201104612.GM828@e106497-lin.cambridge.arm.com>
+ <20141201110358.GA3836@n2100.arm.linux.org.uk>
+ <547C4ECD.20802@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <547C4ECD.20802@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drm driver may probe before the i2c bus, so the driver should
-defer probing until it is available
+On Mon, Dec 01, 2014 at 11:19:41AM +0000, Marc Zyngier wrote:
+> Hi Russell,
+> 
+> On 01/12/14 11:03, Russell King - ARM Linux wrote:
+> > If all you want to do is to bypass the following check, what's wrong
+> > with actually doing that:
+> > 
+> > -	if (type != IRQ_TYPE_LEVEL_HIGH && type != IRQ_TYPE_EDGE_RISING)
+> > +	if (gicirq >= 32 && type != IRQ_TYPE_LEVEL_HIGH &&
+> > +	    type != IRQ_TYPE_EDGE_RISING)
+> > 		return -EINVAL;
+> > 
+> 
+> I think that will require some additional changes to gic_configure_irq
+> (in irq-gic-common.c).
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
-Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
+I don't think so - gic_configure_irq() will treat it as a no-op as far
+as trying to configure the IRQ settings.
 
----
-
-Changes in v14: None
-Changes in v13: None
-Changes in v12:
-- refactor of_node_put(ddc_node)
-
-Changes in v11: None
-Changes in v10: None
-Changes in v9: None
-Changes in v8: None
-Changes in v7: None
-Changes in v6: None
-Changes in v5: None
-Changes in v4:
-- defer probe ddc i2c adapter
-
-Changes in v3: None
-
- drivers/gpu/drm/imx/imx-hdmi.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpu/drm/imx/imx-hdmi.c b/drivers/gpu/drm/imx/imx-hdmi.c
-index 79daec4..8029a07 100644
---- a/drivers/gpu/drm/imx/imx-hdmi.c
-+++ b/drivers/gpu/drm/imx/imx-hdmi.c
-@@ -1611,10 +1611,12 @@ static int imx_hdmi_bind(struct device *dev, struct device *master, void *data)
- 	ddc_node = of_parse_phandle(np, "ddc-i2c-bus", 0);
- 	if (ddc_node) {
- 		hdmi->ddc = of_find_i2c_adapter_by_node(ddc_node);
--		if (!hdmi->ddc)
-+		of_node_put(ddc_node);
-+		if (!hdmi->ddc) {
- 			dev_dbg(hdmi->dev, "failed to read ddc node\n");
-+			return -EPROBE_DEFER;
-+		}
- 
--		of_node_put(ddc_node);
- 	} else {
- 		dev_dbg(hdmi->dev, "no ddc property found\n");
- 	}
 -- 
-1.9.1
-
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
