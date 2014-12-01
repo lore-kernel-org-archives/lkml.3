@@ -1,317 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaLALwk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 06:52:40 -0500
-Received: from static.88-198-71-155.clients.your-server.de ([88.198.71.155]:59327
-	"EHLO socrates.bennee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753013AbaLALwi (ORCPT
+	id S1753413AbaLALw7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 06:52:59 -0500
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:62218 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753381AbaLALw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 06:52:38 -0500
-References: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org> <1416931805-23223-7-git-send-email-alex.bennee@linaro.org> <20141130102546.GI23653@cbox>
-From: Alex =?utf-8?Q?Benn=C3=A9e?= <alex.bennee@linaro.org>
-To: Christoffer Dall <christoffer.dall@linaro.org>
-Cc: kvm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kvmarm@lists.cs.columbia.edu, marc.zyngier@arm.com,
-        peter.maydell@linaro.org, agraf@suse.de, jan.kiszka@siemens.com,
-        dahi@linux.vnet.ibm.com, r65777@freescale.com, bp@suse.de,
-        pbonzini@redhat.com, Gleb Natapov <gleb@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/7] KVM: arm64: re-factor hyp.S debug register code
-In-reply-to: <20141130102546.GI23653@cbox>
-Date: Mon, 01 Dec 2014 11:52:44 +0000
-Message-ID: <87ppc31t9v.fsf@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 127.0.0.1
-X-SA-Exim-Mail-From: alex.bennee@linaro.org
-X-SA-Exim-Scanned: No (on socrates.bennee.com); SAEximRunCond expanded to false
+	Mon, 1 Dec 2014 06:52:58 -0500
+Message-ID: <1417434775.30245.29.camel@x220>
+Subject: Re: [PATCH 1/4] ARM: at91: remove at91sam9263 legacy board support
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Date: Mon, 01 Dec 2014 12:52:55 +0100
+In-Reply-To: <cf26d39a4a251662dbc363092b319b788d223a7b.1416392687.git.nicolas.ferre@atmel.com>
+References: <cover.1416392687.git.nicolas.ferre@atmel.com>
+	 <cf26d39a4a251662dbc363092b319b788d223a7b.1416392687.git.nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 01 Dec 2014 11:52:55.0179 (UTC) FILETIME=[57E995B0:01D00D5D]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2014-11-19 at 11:31 +0100, Nicolas Ferre wrote:
+> Remove legacy support for at91sam9rl boards.
+> This include board files removal plus all legacy code for non DT boards
+> support.
+> Use the Device Tree for running this board with newer kernels.
+> 
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
 
-Christoffer Dall <christoffer.dall@linaro.org> writes:
+There's some further cleanup possible after this patch. I noticed that
+when it landed in today's linux-next (ie, next-20141201) as commit
+4403ac46edcd ("ARM: at91: remove at91sam9263 legacy board support").
 
-> On Tue, Nov 25, 2014 at 04:10:04PM +0000, Alex Bennée wrote:
->> This is a pre-cursor to sharing the code with the guest debug support.
->> This replaces the big macro that fishes data out of a fixed location
->> with a more general helper macro to restore a set of debug registers. It
->> uses macro substitution so it can be re-used for debug control and value
->> registers. It does however rely on the debug registers being 64 bit
->> aligned (as they happen to be in the hyp ABI).
->
-> can you enforce that somewhere?
+>  arch/arm/configs/at91sam9263_defconfig   |  151 ---
+>  arch/arm/mach-at91/Kconfig.non_dt        |   21 -
+>  arch/arm/mach-at91/Makefile              |    4 -
+>  arch/arm/mach-at91/at91sam9263.c         |  399 --------
+>  arch/arm/mach-at91/at91sam9263_devices.c | 1538 ------------------------------
+>  arch/arm/mach-at91/board-sam9263ek.c     |  493 ----------
+>  6 files changed, 2606 deletions(-)
+>  delete mode 100644 arch/arm/configs/at91sam9263_defconfig
+>  delete mode 100644 arch/arm/mach-at91/at91sam9263_devices.c
+>  delete mode 100644 arch/arm/mach-at91/board-sam9263ek.c
+> 
+>[...]
+> diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
+> deleted file mode 100644
+> index cef0e2f57068..000000000000
+> --- a/arch/arm/mach-at91/at91sam9263_devices.c
+> +++ /dev/null
+>[...]
+> -/* --------------------------------------------------------------------
+> - *  RTT
+> - * -------------------------------------------------------------------- */
+> -
+> -static struct resource rtt0_resources[] = {
+> -	{
+> -		.start	= AT91SAM9263_BASE_RTT0,
+> -		.end	= AT91SAM9263_BASE_RTT0 + SZ_16 - 1,
+> -		.flags	= IORESOURCE_MEM,
+> -	}, {
+> -		.flags	= IORESOURCE_MEM,
+> -	}, {
+> -		.flags  = IORESOURCE_IRQ,
+> -	}
+> -};
+> -
+> -static struct platform_device at91sam9263_rtt0_device = {
+> -	.name		= "at91_rtt",
+> -	.id		= 0,
+> -	.resource	= rtt0_resources,
+> -};
+> -
+> -static struct resource rtt1_resources[] = {
+> -	{
+> -		.start	= AT91SAM9263_BASE_RTT1,
+> -		.end	= AT91SAM9263_BASE_RTT1 + SZ_16 - 1,
+> -		.flags	= IORESOURCE_MEM,
+> -	}, {
+> -		.flags	= IORESOURCE_MEM,
+> -	}, {
+> -		.flags  = IORESOURCE_IRQ,
+> -	}
+> -};
+> -
+> -static struct platform_device at91sam9263_rtt1_device = {
+> -	.name		= "at91_rtt",
+> -	.id		= 1,
+> -	.resource	= rtt1_resources,
+> -};
+> -
+> -#if IS_ENABLED(CONFIG_RTC_DRV_AT91SAM9)
+> -static void __init at91_add_device_rtt_rtc(void)
+> -{
+> -	struct platform_device *pdev;
+> -	struct resource *r;
+> -
+> -	switch (CONFIG_RTC_DRV_AT91SAM9_RTT) {
 
-There is a comment in kvm_asm.h:
+This and...
 
-/*
- * 0 is reserved as an invalid value.
- * Order *must* be kept in sync with the hyp switch code.
- */
+> -	case 0:
+> -		/*
+> -		 * The second resource is needed only for the chosen RTT:
+> -		 * GPBR will serve as the storage for RTC time offset
+> -		 */
+> -		at91sam9263_rtt0_device.num_resources = 3;
+> -		at91sam9263_rtt1_device.num_resources = 1;
+> -		pdev = &at91sam9263_rtt0_device;
+> -		r = rtt0_resources;
+> -		break;
+> -	case 1:
+> -		at91sam9263_rtt0_device.num_resources = 1;
+> -		at91sam9263_rtt1_device.num_resources = 3;
+> -		pdev = &at91sam9263_rtt1_device;
+> -		r = rtt1_resources;
+> -		break;
+> -	default:
+> -		pr_err("at91sam9263: only supports 2 RTT (%d)\n",
+> -		       CONFIG_RTC_DRV_AT91SAM9_RTT);
 
-But I'm not sure how to enforce it in assembly. Is there a #pragma or
-something I can use?
+this are the only places were the Kconfig symbol RTC_DRV_AT91SAM9_RTT
+was used. It is useless now. That matches its help text, that reads:
+    This option is only relevant for legacy board support and
+    won't be used when booting a DT board.
 
->
->> 
->> Signed-off-by: Alex Bennée <alex.bennee@linaro.org>
->> 
->> diff --git a/arch/arm64/kvm/hyp.S b/arch/arm64/kvm/hyp.S
->> index c0bc218..b38ce3d 100644
->> --- a/arch/arm64/kvm/hyp.S
->> +++ b/arch/arm64/kvm/hyp.S
->> @@ -490,65 +490,12 @@
->>  	msr	mdscr_el1,	x25
->>  .endm
->>  
->> -.macro restore_debug
->> -	// x2: base address for cpu context
->> -	// x3: tmp register
->> -
->> -	mrs	x26, id_aa64dfr0_el1
->> -	ubfx	x24, x26, #12, #4	// Extract BRPs
->> -	ubfx	x25, x26, #20, #4	// Extract WRPs
->> -	mov	w26, #15
->> -	sub	w24, w26, w24		// How many BPs to skip
->> -	sub	w25, w26, w25		// How many WPs to skip
->> -
->> -	add	x3, x2, #CPU_SYSREG_OFFSET(DBGBCR0_EL1)
->> -
->> -	adr	x26, 1f
->> -	add	x26, x26, x24, lsl #2
->> -	br	x26
->> -1:
->> -	ldr	x20, [x3, #(15 * 8)]
->> -	ldr	x19, [x3, #(14 * 8)]
->> -	ldr	x18, [x3, #(13 * 8)]
->> -	ldr	x17, [x3, #(12 * 8)]
->> -	ldr	x16, [x3, #(11 * 8)]
->> -	ldr	x15, [x3, #(10 * 8)]
->> -	ldr	x14, [x3, #(9 * 8)]
->> -	ldr	x13, [x3, #(8 * 8)]
->> -	ldr	x12, [x3, #(7 * 8)]
->> -	ldr	x11, [x3, #(6 * 8)]
->> -	ldr	x10, [x3, #(5 * 8)]
->> -	ldr	x9, [x3, #(4 * 8)]
->> -	ldr	x8, [x3, #(3 * 8)]
->> -	ldr	x7, [x3, #(2 * 8)]
->> -	ldr	x6, [x3, #(1 * 8)]
->> -	ldr	x5, [x3, #(0 * 8)]
->> -
->> +.macro setup_debug_registers type
->> +        // x3: pointer to register set
->> +        // x4: number of registers to copy
->> +        // x5..x20/x26 trashed
->
-> does this mean x5 through x20, and x26, get trashed or that potentially
-> x5 thgough x26 get trashed?  I'm assuming the first, so replace the
-> slash with 'and' would be more clear.
->
->>  	adr	x26, 1f
->> -	add	x26, x26, x24, lsl #2
->> -	br	x26
->> -1:
->> -	msr	dbgbcr15_el1, x20
->> -	msr	dbgbcr14_el1, x19
->> -	msr	dbgbcr13_el1, x18
->> -	msr	dbgbcr12_el1, x17
->> -	msr	dbgbcr11_el1, x16
->> -	msr	dbgbcr10_el1, x15
->> -	msr	dbgbcr9_el1, x14
->> -	msr	dbgbcr8_el1, x13
->> -	msr	dbgbcr7_el1, x12
->> -	msr	dbgbcr6_el1, x11
->> -	msr	dbgbcr5_el1, x10
->> -	msr	dbgbcr4_el1, x9
->> -	msr	dbgbcr3_el1, x8
->> -	msr	dbgbcr2_el1, x7
->> -	msr	dbgbcr1_el1, x6
->> -	msr	dbgbcr0_el1, x5
->> -
->> -	add	x3, x2, #CPU_SYSREG_OFFSET(DBGBVR0_EL1)
->> -
->> -	adr	x26, 1f
->> -	add	x26, x26, x24, lsl #2
->> +	add	x26, x26, x4, lsl #2
->>  	br	x26
->>  1:
->>  	ldr	x20, [x3, #(15 * 8)]
->> @@ -569,116 +516,25 @@
->>  	ldr	x5, [x3, #(0 * 8)]
->>  
->>  	adr	x26, 1f
->> -	add	x26, x26, x24, lsl #2
->> -	br	x26
->> -1:
->> -	msr	dbgbvr15_el1, x20
->> -	msr	dbgbvr14_el1, x19
->> -	msr	dbgbvr13_el1, x18
->> -	msr	dbgbvr12_el1, x17
->> -	msr	dbgbvr11_el1, x16
->> -	msr	dbgbvr10_el1, x15
->> -	msr	dbgbvr9_el1, x14
->> -	msr	dbgbvr8_el1, x13
->> -	msr	dbgbvr7_el1, x12
->> -	msr	dbgbvr6_el1, x11
->> -	msr	dbgbvr5_el1, x10
->> -	msr	dbgbvr4_el1, x9
->> -	msr	dbgbvr3_el1, x8
->> -	msr	dbgbvr2_el1, x7
->> -	msr	dbgbvr1_el1, x6
->> -	msr	dbgbvr0_el1, x5
->> -
->> -	add	x3, x2, #CPU_SYSREG_OFFSET(DBGWCR0_EL1)
->> -
->> -	adr	x26, 1f
->> -	add	x26, x26, x25, lsl #2
->> +	add	x26, x26, x4, lsl #2
->>  	br	x26
->>  1:
->> -	ldr	x20, [x3, #(15 * 8)]
->> -	ldr	x19, [x3, #(14 * 8)]
->> -	ldr	x18, [x3, #(13 * 8)]
->> -	ldr	x17, [x3, #(12 * 8)]
->> -	ldr	x16, [x3, #(11 * 8)]
->> -	ldr	x15, [x3, #(10 * 8)]
->> -	ldr	x14, [x3, #(9 * 8)]
->> -	ldr	x13, [x3, #(8 * 8)]
->> -	ldr	x12, [x3, #(7 * 8)]
->> -	ldr	x11, [x3, #(6 * 8)]
->> -	ldr	x10, [x3, #(5 * 8)]
->> -	ldr	x9, [x3, #(4 * 8)]
->> -	ldr	x8, [x3, #(3 * 8)]
->> -	ldr	x7, [x3, #(2 * 8)]
->> -	ldr	x6, [x3, #(1 * 8)]
->> -	ldr	x5, [x3, #(0 * 8)]
->> -
->> -	adr	x26, 1f
->> -	add	x26, x26, x25, lsl #2
->> -	br	x26
->> -1:
->> -	msr	dbgwcr15_el1, x20
->> -	msr	dbgwcr14_el1, x19
->> -	msr	dbgwcr13_el1, x18
->> -	msr	dbgwcr12_el1, x17
->> -	msr	dbgwcr11_el1, x16
->> -	msr	dbgwcr10_el1, x15
->> -	msr	dbgwcr9_el1, x14
->> -	msr	dbgwcr8_el1, x13
->> -	msr	dbgwcr7_el1, x12
->> -	msr	dbgwcr6_el1, x11
->> -	msr	dbgwcr5_el1, x10
->> -	msr	dbgwcr4_el1, x9
->> -	msr	dbgwcr3_el1, x8
->> -	msr	dbgwcr2_el1, x7
->> -	msr	dbgwcr1_el1, x6
->> -	msr	dbgwcr0_el1, x5
->> -
->> -	add	x3, x2, #CPU_SYSREG_OFFSET(DBGWVR0_EL1)
->> -
->> -	adr	x26, 1f
->> -	add	x26, x26, x25, lsl #2
->> -	br	x26
->> -1:
->> -	ldr	x20, [x3, #(15 * 8)]
->> -	ldr	x19, [x3, #(14 * 8)]
->> -	ldr	x18, [x3, #(13 * 8)]
->> -	ldr	x17, [x3, #(12 * 8)]
->> -	ldr	x16, [x3, #(11 * 8)]
->> -	ldr	x15, [x3, #(10 * 8)]
->> -	ldr	x14, [x3, #(9 * 8)]
->> -	ldr	x13, [x3, #(8 * 8)]
->> -	ldr	x12, [x3, #(7 * 8)]
->> -	ldr	x11, [x3, #(6 * 8)]
->> -	ldr	x10, [x3, #(5 * 8)]
->> -	ldr	x9, [x3, #(4 * 8)]
->> -	ldr	x8, [x3, #(3 * 8)]
->> -	ldr	x7, [x3, #(2 * 8)]
->> -	ldr	x6, [x3, #(1 * 8)]
->> -	ldr	x5, [x3, #(0 * 8)]
->> -
->> -	adr	x26, 1f
->> -	add	x26, x26, x25, lsl #2
->> -	br	x26
->> -1:
->> -	msr	dbgwvr15_el1, x20
->> -	msr	dbgwvr14_el1, x19
->> -	msr	dbgwvr13_el1, x18
->> -	msr	dbgwvr12_el1, x17
->> -	msr	dbgwvr11_el1, x16
->> -	msr	dbgwvr10_el1, x15
->> -	msr	dbgwvr9_el1, x14
->> -	msr	dbgwvr8_el1, x13
->> -	msr	dbgwvr7_el1, x12
->> -	msr	dbgwvr6_el1, x11
->> -	msr	dbgwvr5_el1, x10
->> -	msr	dbgwvr4_el1, x9
->> -	msr	dbgwvr3_el1, x8
->> -	msr	dbgwvr2_el1, x7
->> -	msr	dbgwvr1_el1, x6
->> -	msr	dbgwvr0_el1, x5
->> -
->> -	ldr	x21, [x2, #CPU_SYSREG_OFFSET(MDCCINT_EL1)]
->> -	msr	mdccint_el1, x21
->> +	msr	\type\()15_el1, x20
->> +	msr	\type\()14_el1, x19
->> +	msr	\type\()13_el1, x18
->> +	msr	\type\()12_el1, x17
->> +	msr	\type\()11_el1, x16
->> +	msr	\type\()10_el1, x15
->> +	msr	\type\()9_el1, x14
->> +	msr	\type\()8_el1, x13
->> +	msr	\type\()7_el1, x12
->> +	msr	\type\()6_el1, x11
->> +	msr	\type\()5_el1, x10
->> +	msr	\type\()4_el1, x9
->> +	msr	\type\()3_el1, x8
->> +	msr	\type\()2_el1, x7
->> +	msr	\type\()1_el1, x6
->> +	msr	\type\()0_el1, x5
->>  .endm
->>  
->>  .macro skip_32bit_state tmp, target
->> @@ -929,8 +785,34 @@ __save_debug:
->>  	save_debug
->>  	ret
->>  
->> +/* Restore saved guest debug state */
->>  __restore_debug:
->> -	restore_debug
->> +	// x2: base address for cpu context
->> +	// x3: ptr to guest registers passed to setup_debug_registers
->> +	// x5..x20/x26: trashed
->> +
->> +	mrs	x26, id_aa64dfr0_el1
->> +	ubfx	x24, x26, #12, #4	// Extract BRPs
->> +	ubfx	x25, x26, #20, #4	// Extract WRPs
->> +	mov	w26, #15
->> +	sub	w24, w26, w24		// How many BPs to skip
->> +	sub	w25, w26, w25		// How many WPs to skip
->> +
->> +	mov     x4, x24
->> +	add	x3, x2, #CPU_SYSREG_OFFSET(DBGBCR0_EL1)
->> +	setup_debug_registers dbgbcr
->> +	add	x3, x2, #CPU_SYSREG_OFFSET(DBGBVR0_EL1)
->> +	setup_debug_registers dbgbvr
->> +
->> +	mov     x4, x25
->> +	add	x3, x2, #CPU_SYSREG_OFFSET(DBGWCR0_EL1)
->> +	setup_debug_registers dbgwcr
->> +	add	x3, x2, #CPU_SYSREG_OFFSET(DBGWVR0_EL1)
->> +	setup_debug_registers dbgwvr
->> +
->> +	ldr	x21, [x2, #CPU_SYSREG_OFFSET(MDCCINT_EL1)]
->> +	msr	mdccint_el1, x21
->> +
->>  	ret
->>  
->>  __save_fpsimd:
->> -- 
->> 2.1.3
->> 
+> -		return;
+> -	}
+> -
+> -	pdev->name = "rtc-at91sam9";
+> -	r[1].start = AT91SAM9263_BASE_GPBR + 4 * CONFIG_RTC_DRV_AT91SAM9_GPBR;
+> -	r[1].end = r[1].start + 3;
+> -	r[2].start = NR_IRQS_LEGACY + AT91_ID_SYS;
+> -	r[2].end = NR_IRQS_LEGACY + AT91_ID_SYS;
+> -}
+> -#else
+> -static void __init at91_add_device_rtt_rtc(void)
+> -{
+> -	/* Only one resource is needed: RTT not used as RTC */
+> -	at91sam9263_rtt0_device.num_resources = 1;
+> -	at91sam9263_rtt1_device.num_resources = 1;
+> -}
+> -#endif
+> -
+> -static void __init at91_add_device_rtt(void)
+> -{
+> -	at91_add_device_rtt_rtc();
+> -	platform_device_register(&at91sam9263_rtt0_device);
+> -	platform_device_register(&at91sam9263_rtt1_device);
+> -}
 
--- 
-Alex Bennée
+Is a patch to remove that symbol from drivers/rtc/Kconfig queued
+somewhere?
+
+
+Paul Bolle
+
