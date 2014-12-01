@@ -1,55 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932596AbaLAWGX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 17:06:23 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:54447 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932349AbaLAWGV (ORCPT
+	id S932569AbaLAWI1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 17:08:27 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:25898 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753061AbaLAWI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 17:06:21 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] x86 / PM: Replace CONFIG_PM_RUNTIME in io_apic.c
-Date: Mon, 01 Dec 2014 23:27:44 +0100
-Message-ID: <7023353.kvFs3YG3uq@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.11.1412011101150.3961@nanos>
-References: <5062650.1vTULtXiIc@vostro.rjw.lan> <alpine.DEB.2.11.1412011101150.3961@nanos>
+	Mon, 1 Dec 2014 17:08:26 -0500
+Date: Mon, 1 Dec 2014 16:59:27 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, bhelgaas@google.com, linux@eikelenboom.it
+Subject: Re: [Xen-devel] [PATCH v4 7/7] xen/pciback: Restore configuration
+ space when detaching from a guest.
+Message-ID: <20141201215927.GH24289@laptop.dumpdata.com>
+References: <1416608271-18931-1-git-send-email-konrad.wilk@oracle.com>
+ <1416608271-18931-8-git-send-email-konrad.wilk@oracle.com>
+ <547C77E0.5060607@citrix.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <547C77E0.5060607@citrix.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 01, 2014 11:04:47 AM Thomas Gleixner wrote:
-> On Sat, 29 Nov 2014, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Mon, Dec 01, 2014 at 02:14:56PM +0000, David Vrabel wrote:
+> On 21/11/14 22:17, Konrad Rzeszutek Wilk wrote:
+> > The commit "xen/pciback: Don't deadlock when unbinding." was using
+> > the version of pci_reset_function which would lock the device lock.
+> > That is no good as we can dead-lock. As such we swapped to using
+> > the lock-less version and requiring that the callers
+> > of 'pcistub_put_pci_dev' take the device lock. And as such
+> > this bug got exposed.
 > > 
-> > After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-> > selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-> > depending on CONFIG_PM_RUNTIME may now be changed to depend on
-> > CONFIG_PM.
+> > Using the lock-less version is  OK, except that we tried to
+> > use 'pci_restore_state' after the lock-less version of
+> > __pci_reset_function_locked - which won't work as 'state_saved'
+> > is set to false. Said 'state_saved' is a toggle boolean that
+> > is to be used by the sequence of a) pci_save_state/pci_restore_state
+> > or b) pci_load_and_free_saved_state/pci_restore_state. We don't
+> > want to use a) as the guest might have messed up the PCI
+> > configuration space and we want it to revert to the state
+> > when the PCI device was binded to us. Therefore we pick
+> > b) to restore the configuration space.
 > > 
-> > Replace CONFIG_PM_RUNTIME with CONFIG_PM in x86/kernel/apic/io_apic.c.
+> > We restore from our 'golden' version of PCI configuration space, when an:
+> >  - Device is unbinded from pciback
+> >  - Device is detached from a guest.
 > > 
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > Reported-by:  Sander Eikelenboom <linux@eikelenboom.it>
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > > ---
+> >  drivers/xen/xen-pciback/pci_stub.c | 20 ++++++++++++++++----
+> >  1 file changed, 16 insertions(+), 4 deletions(-)
 > > 
-> > This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP
-> > is selected) which currently is only in linux-next (via linux-pm).
+> > diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
+> > index 843a2ba..eb8b58e 100644
+> > --- a/drivers/xen/xen-pciback/pci_stub.c
+> > +++ b/drivers/xen/xen-pciback/pci_stub.c
+> > @@ -105,7 +105,7 @@ static void pcistub_device_release(struct kref *kref)
+> >  	 */
+> >  	__pci_reset_function_locked(dev);
+> >  	if (pci_load_and_free_saved_state(dev, &dev_data->pci_saved_state))
+> > -		dev_dbg(&dev->dev, "Could not reload PCI state\n");
+> > +		dev_info(&dev->dev, "Could not reload PCI state\n");
 > 
-> The function below is moving in linux-next to a different place
-> .... So it has to wait until everything has hit linus tree.
+> Why dev_info when...
 > 
-> Feel free to send the cleanups directly to Linus after linux-pm and
-> x86 has been merged.
+> > @@ -279,9 +281,19 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+> >  	 * (so it's ready for the next domain)
+> >  	 */
+> >  	device_lock_assert(&dev->dev);
+> > -	__pci_reset_function_locked(dev);
+> > -	pci_restore_state(dev);
+> > -
+> > +	dev_data = pci_get_drvdata(dev);
+> > +	ret = pci_load_saved_state(dev, dev_data->pci_saved_state);
+> > +	if (ret < 0)
+> > +		dev_warn(&dev->dev, "Could not reload PCI state\n");
+> 
+> ... this one is dev_warn?
 
-OK, I will.  Thanks!
+Should be the same, dev_info I think?
+> 
+> > +	else {
+> > +		__pci_reset_function_locked(dev);
+> 
+> I think the reset should always be attempted regardless of whether the
+> correct state was loaded or not.
 
-Rafael
-
+/me nods. Will redo it as such.
+> 
+> David
