@@ -1,47 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704AbaLAMg7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 07:36:59 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:41636 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753682AbaLAMg4 (ORCPT
+	id S1753725AbaLAMhD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 07:37:03 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:45837 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753705AbaLAMhA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 07:36:56 -0500
-From: Athira Sharikkal <athirasnamby@gmail.com>
-To: dmitry.torokhov@gmail.com
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Athira Sharikkal <athirasnamby@gmail.com>
-Subject: [PATCH v2] Drivers: input: mousedev.c: Fixed trailing statement on the next line
-Date: Mon,  1 Dec 2014 18:06:42 +0530
-Message-Id: <1417437402-3365-1-git-send-email-athirasnamby@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 1 Dec 2014 07:37:00 -0500
+Date: Mon, 1 Dec 2014 12:36:56 +0000
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Marc Zyngier <Marc.Zyngier@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] irqchip: gic: Allow interrupt level to be set for PPIs.
+Message-ID: <20141201123656.GQ828@e106497-lin.cambridge.arm.com>
+References: <1417197340-27298-1-git-send-email-Liviu.Dudau@arm.com>
+ <20141201104145.GY3836@n2100.arm.linux.org.uk>
+ <20141201104612.GM828@e106497-lin.cambridge.arm.com>
+ <20141201110358.GA3836@n2100.arm.linux.org.uk>
+ <547C4ECD.20802@arm.com>
+ <20141201112302.GC3836@n2100.arm.linux.org.uk>
+ <547C5179.5020505@arm.com>
+ <20141201115400.GD3836@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+In-Reply-To: <20141201115400.GD3836@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 01 Dec 2014 12:36:57.0884 (UTC) FILETIME=[7F165DC0:01D00D63]
+X-MC-Unique: 114120112365801601
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed checkpatch error:
-trailing statements should be on next line
+On Mon, Dec 01, 2014 at 11:54:00AM +0000, Russell King - ARM Linux wrote:
+> On Mon, Dec 01, 2014 at 11:31:05AM +0000, Marc Zyngier wrote:
+> > On 01/12/14 11:23, Russell King - ARM Linux wrote:
+> > > On Mon, Dec 01, 2014 at 11:19:41AM +0000, Marc Zyngier wrote:
+> > >> Hi Russell,
+> > >>
+> > >> On 01/12/14 11:03, Russell King - ARM Linux wrote:
+> > >>> If all you want to do is to bypass the following check, what's wrong
+> > >>> with actually doing that:
+> > >>>
+> > >>> -	if (type != IRQ_TYPE_LEVEL_HIGH && type != IRQ_TYPE_EDGE_RISING)
+> > >>> +	if (gicirq >= 32 && type != IRQ_TYPE_LEVEL_HIGH &&
+> > >>> +	    type != IRQ_TYPE_EDGE_RISING)
+> > >>> 		return -EINVAL;
+> > >>>
+> > >>
+> > >> I think that will require some additional changes to gic_configure_irq
+> > >> (in irq-gic-common.c).
+> > > 
+> > > I don't think so - gic_configure_irq() will treat it as a no-op as far
+> > > as trying to configure the IRQ settings.
+> > 
+> > I agree. But that's following ARM's tradition of making PPIs
+> > non-configurable. I seem to remember that there is at least one
+> > occurrence of a GIC with configurable PPIs (Qualcomm, IIRC).
+> > 
+> > With this use case in mind, Liviu's patch allows an active-low interrupt
+> > to be correctly configured as level, for example.
+> 
+> Liviu's patch is nothing more than a hack.  It changes (eg) the active
+> low level to be an active high level with the explicitly stated reason to
+> bypass a test, and then hopes that the remaining functions do the right
+> thing.
 
-Signed-off-by: Athira Sharikkal <athirasnamby@gmail.com>
----
-v2: corrected indentation
- drivers/input/mousedev.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+I was trying to make the smallest amount of changes possible. Given that
+ARM's GICs don't distinguish between high/low or raising/falling all I wanted
+was to get the level vs edge type being sticky.
 
-diff --git a/drivers/input/mousedev.c b/drivers/input/mousedev.c
-index b604564..28988f5 100644
---- a/drivers/input/mousedev.c
-+++ b/drivers/input/mousedev.c
-@@ -248,7 +248,8 @@ static void mousedev_key_event(struct mousedev *mousedev,
- 	case BTN_4:
- 	case BTN_EXTRA:		index = 4; break;
- 
--	default:		return;
-+	default:	
-+				return;
- 	}
- 
- 	if (value) {
+> 
+> It would be better to explicitly bypass the test, and then explicitly
+> handle other cases in gic_configure_irq().
+> 
+> It would be even better to make the code reflect reality right the way
+> through.  If PPIs are non-configurable, then we should return -EINVAL if
+> trying to set them to a setting which is not supported.  For example,
+> pass through all states to gic_configure_irq(), and have gic_configure_irq()
+> return whether the state is valid.
+> 
+> Then, gic_configure_irq() can read back the register after trying to set
+> the appropriate value, and see whether it was taken.  If the bits remain
+> unchanged, then it can decide that the requested mode is not supported,
+> and return -EINVAL.
+> 
+> In any case, let's not hack the code in the way that Liviu is trying to
+> do.
+
+OK, I will send a v2 patch, doing the right thing.
+
+Best regards,
+Liviu
+
+> 
+> -- 
+> FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+> according to speedtest.net.
+> 
+
 -- 
-1.9.1
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
