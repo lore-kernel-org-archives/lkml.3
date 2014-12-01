@@ -1,41 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932728AbaLAWby (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 17:31:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52015 "EHLO mx2.suse.de"
+	id S932660AbaLAWeJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 17:34:09 -0500
+Received: from tex.lwn.net ([70.33.254.29]:57550 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751975AbaLAWbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 17:31:52 -0500
-Date: Mon, 1 Dec 2014 23:31:47 +0100
-From: Borislav Petkov <bp@suse.de>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>, gleb@kernel.org,
-        kvm@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, david.vrabel@citrix.com
-Subject: Re: [PATCH] x86, microcode: Don't initialize microcode code on
- paravirt
-Message-ID: <20141201223147.GE4730@pd.tnic>
-References: <1417469264-31470-1-git-send-email-boris.ostrovsky@oracle.com>
- <20141201215725.GG24289@laptop.dumpdata.com>
- <547CE7D6.4030601@redhat.com>
+	id S932512AbaLAWeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 17:34:07 -0500
+Date: Mon, 1 Dec 2014 17:34:05 -0500
+From: Jonathan Corbet <corbet@lwn.net>
+To: Richard Leitner <dev@g0hl1n.net>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation/email-clients.txt: add info about Claws
+ Mail
+Message-ID: <20141201173405.0a291ecb@lwn.net>
+In-Reply-To: <20141201230208.4567b6cc@frodo>
+References: <20141201230208.4567b6cc@frodo>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <547CE7D6.4030601@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 11:12:38PM +0100, Paolo Bonzini wrote:
-> We also do not want to load microcode. :)  Thanks for the heads-up.
+On Mon, 1 Dec 2014 23:02:08 +0100
+Richard Leitner <dev@g0hl1n.net> wrote:
 
-You don't need to :P
+> Claws Mail GUI client works when "Auto wrapping" is disabled.
 
--- 
-Regards/Gruss,
-    Boris.
+Interesting, I've sent an awful lot of patches with claws and I have
+wrapping (a useful feature) enabled.  I can't see it being a problem
+unless you're writing the patch itself in the claws composition
+window...and that would lead to other problems...?
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+jon
