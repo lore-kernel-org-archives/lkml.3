@@ -1,98 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731AbaLAJq3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 04:46:29 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:40261 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752154AbaLAJq1 (ORCPT
+	id S1752815AbaLAJrF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 04:47:05 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53147 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039AbaLAJrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 04:46:27 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-9f-547c38f0d8ef
-Message-id: <547C38EF.7030303@samsung.com>
-Date: Mon, 01 Dec 2014 10:46:23 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101
- Thunderbird/31.2.0
-MIME-version: 1.0
-To: SF Markus Elfring <elfring@users.sourceforge.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Pawel Osciak <pawel@osciak.com>, linux-media@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH 1/1] [media] V4L2: Deletion of an unnecessary check before
- the function call "vb2_put_vma"
-References: <5307CAA2.8060406@users.sourceforge.net>
- <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
- <530A086E.8010901@users.sourceforge.net>
- <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
- <530A72AA.3000601@users.sourceforge.net>
- <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
- <530B5FB6.6010207@users.sourceforge.net>
- <alpine.DEB.2.10.1402241710370.2074@hadrien>
- <530C5E18.1020800@users.sourceforge.net>
- <alpine.DEB.2.10.1402251014170.2080@hadrien>
- <530CD2C4.4050903@users.sourceforge.net>
- <alpine.DEB.2.10.1402251840450.7035@hadrien>
- <530CF8FF.8080600@users.sourceforge.net>
- <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
- <530DD06F.4090703@users.sourceforge.net>
- <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net> <547B98D5.8000909@users.sourceforge.net>
-In-reply-to: <547B98D5.8000909@users.sourceforge.net>
-Content-type: text/plain; charset=utf-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t/xq7ofLGpCDG5Ok7Y437mc2WLZg9OM
-	FltvSVucbXrDbnF51xw2i54NW1ktVj+rsJjy9ie7A4fH3i1ZHo9/vWTz2NJ/l92jb8sqRo+m
-	U+2sHp83yQWwRXHZpKTmZJalFunbJXBl9B26zlSwlLNi2t7zrA2M59i7GDk5JARMJCaev8sI
-	YYtJXLi3nq2LkYtDSGApo8Sn/r/MIAkhgU+MEosnVoHYvAJaEjMnbQCLswioSlx6ep0FxGYT
-	MJToetvFBmKLCsRI3N+5mg2iXlDix+R7YDUiAlcZJV4sdQSxmQXyJd7M6GLtYuTgEBYokGg4
-	6wKx9zubxLWZX5lAajgFTCX+rfrGBFFvJvHl5WFWCFteYvOat8wTGAVmIVkxC0nZLCRlCxiZ
-	VzGKppYmFxQnpeca6RUn5haX5qXrJefnbmKEhPzXHYxLj1kdYhTgYFTi4dVcWx0ixJpYVlyZ
-	e4hRgoNZSYR3ukFNiBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbGNNecdrMIr1/J8sxa8z0WBErt
-	+WyQaBo3qcHxStkT7tRkkVerhWbLzPt45Prm7aeTLu9YKf1Ecd0VU++m1TFNyy833tjOK7w+
-	6bWOVGPJ9NpXkyzkBf1FxC7OeVsi/snc7HHuNJXNGj8djiuLZTZObI2MrmwrXy8RzJB/QMen
-	SPF8XUvGgn9KLMUZiYZazEXFiQC5O/lBVwIAAA==
+	Mon, 1 Dec 2014 04:47:02 -0500
+Date: Mon, 1 Dec 2014 01:45:52 -0800
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-eda7516e1d428caf3cfc88e4292f2a1357a2e569@git.kernel.org>
+Cc: matthias.bgg@gmail.com, hpa@zytor.com, benh@kernel.crashing.org,
+        grant.likely@linaro.org, bp@suse.de, mingo@kernel.org,
+        wangyijing@huawei.com, tony.luck@intel.com, bhelgaas@google.com,
+        marc.zyngier@arm.com, joro@8bytes.org, jiang.liu@linux.intel.com,
+        linux-kernel@vger.kernel.org, yingjoe.chen@mediatek.com,
+        tglx@linutronix.de
+Reply-To: jiang.liu@linux.intel.com, tglx@linutronix.de,
+        yingjoe.chen@mediatek.com, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, marc.zyngier@arm.com, joro@8bytes.org,
+        tony.luck@intel.com, mingo@kernel.org, wangyijing@huawei.com,
+        bp@suse.de, hpa@zytor.com, benh@kernel.crashing.org,
+        grant.likely@linaro.org, matthias.bgg@gmail.com
+In-Reply-To: <1417351063-19039-1-git-send-email-bp@alien8.de>
+References: <20141129125319.GA6491@pd.tnic>
+	<1417351063-19039-1-git-send-email-bp@alien8.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] irqdomain:
+  Correct early allocation of irq domains with IRQs off
+Git-Commit-ID: eda7516e1d428caf3cfc88e4292f2a1357a2e569
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Commit-ID:  eda7516e1d428caf3cfc88e4292f2a1357a2e569
+Gitweb:     http://git.kernel.org/tip/eda7516e1d428caf3cfc88e4292f2a1357a2e569
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Sun, 30 Nov 2014 13:37:43 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 1 Dec 2014 10:38:30 +0100
 
-On 2014-11-30 23:23, SF Markus Elfring wrote:
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Sun, 30 Nov 2014 23:10:51 +0100
->
-> The vb2_put_vma() function tests whether its argument is NULL and then
-> returns immediately. Thus the test around the call is not needed.
->
-> This issue was detected by using the Coccinelle software.
->
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+irqdomain: Correct early allocation of irq domains with IRQs off
 
-Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
+I'm seeing the following lockdep splat on an x2APIC machine with
+interrupts remapping. The problem is that enable_IR_x2apic() disables
+interrupts before doing any further initialization. However, after
+having moved to irq domains, domain allocation cannot happen with
+interrupts disabled (GFP_KERNEL).
 
-> ---
->   drivers/media/v4l2-core/videobuf2-vmalloc.c | 3 +--
->   1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/drivers/media/v4l2-core/videobuf2-vmalloc.c b/drivers/media/v4l2-core/videobuf2-vmalloc.c
-> index 3966b12..fba944e 100644
-> --- a/drivers/media/v4l2-core/videobuf2-vmalloc.c
-> +++ b/drivers/media/v4l2-core/videobuf2-vmalloc.c
-> @@ -154,8 +154,7 @@ static void vb2_vmalloc_put_userptr(void *buf_priv)
->   		}
->   		kfree(buf->pages);
->   	} else {
-> -		if (buf->vma)
-> -			vb2_put_vma(buf->vma);
-> +		vb2_put_vma(buf->vma);
->   		iounmap(buf->vaddr);
->   	}
->   	kfree(buf);
+A proper fix would be to move that initialization to the early irq setup
+path, which is something for another day. It is more involved work too.
 
-Best regards
--- 
-Marek Szyprowski, PhD
-Samsung R&D Institute Poland
+So do a temporary fix which should not encourage the behaviour of even
+assuming the irq domains code should be called with interrupts disabled.
+Make it x86-only too.
 
+...
+dmar: Host address width 36
+dmar: DRHD base: 0x000000fed90000 flags: 0x0
+dmar: IOMMU 0: reg_base_addr fed90000 ver 1:0 cap c0000020e60262 ecap f0101a
+dmar: DRHD base: 0x000000fed91000 flags: 0x1
+dmar: IOMMU 1: reg_base_addr fed91000 ver 1:0 cap c9008020660262 ecap f0105a
+dmar: RMRR base: 0x000000da2ba000 end: 0x000000da2d0fff
+dmar: RMRR base: 0x000000db800000 end: 0x000000df9fffff
+IOAPIC id 2 under DRHD base  0xfed91000 IOMMU 1
+HPET id 0 under DRHD base 0xfed91000
+Queued invalidation will be enabled to support x2apic and Intr-remapping.
+------------[ cut here ]------------
+WARNING: CPU: 0 PID: 1 at kernel/locking/lockdep.c:2744 lockdep_trace_alloc+0xd4/0xe0()
+DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags))
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.18.0-rc6+ #1
+Hardware name: LENOVO 2320CTO/2320CTO, BIOS G2ET86WW (2.06 ) 11/13/2012
+ 0000000000000009 ffff880213d07b58 ffffffff816502d7 0000000000000000
+ ffff880213d07ba8 ffff880213d07b98 ffffffff81059790 0000000000000001
+ 0000000000000092 0000000000000000 00000000000080d0 0000000000000000
+Call Trace:
+ dump_stack
+ warn_slowpath_common
+ warn_slowpath_fmt
+ lockdep_trace_alloc
+ __alloc_pages_nodemask
+ ? get_page_from_freelist
+ ? trace_hardirqs_off_caller
+ alloc_kmem_pages_node
+ kmalloc_large_node
+ __kmalloc_node
+ ? __dmar_enable_qi
+ __irq_domain_add
+ irq_domain_add_hierarchy
+ intel_setup_irq_remapping.part.4
+ intel_enable_irq_remapping
+ irq_remapping_enable
+ enable_IR
+ enable_IR_x2apic
+ default_setup_apic_routing
+ native_smp_prepare_cpus
+ kernel_init_freeable
+ ? ret_from_fork
+ ? rest_init
+ kernel_init
+ ret_from_fork
+ ? rest_init
+---[ end trace fac50e785fc22942 ]---
+Enabled IRQ remapping in x2apic mode
+Enabling x2apic
+Enabled x2apic
+Switched APIC routing to cluster x2apic.
+..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+...
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Yijing Wang <wangyijing@huawei.com>
+Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Matthias Brugger <matthias.bgg@gmail.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Link: http://lkml.kernel.org/r/20141129125319.GA6491@pd.tnic
+Link: http://lkml.kernel.org/r/1417351063-19039-1-git-send-email-bp@alien8.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/irq/irqdomain.c | 21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index 7fac311..3395d89 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -46,14 +46,31 @@ struct irq_domain *__irq_domain_add(struct device_node *of_node, int size,
+ 				    void *host_data)
+ {
+ 	struct irq_domain *domain;
++	gfp_t gfp_flags = GFP_KERNEL;
++
++#ifdef CONFIG_X86
++	/*
++	 * BIG FAT COMMENT: Early initialization paths like enable_IR_x2apic(),
++	 * for example, call into here with interrupts disabled but then we do
++	 * allocate memory and can sleep so no-no. A proper fix would be to do
++	 * x2APIC IR setup in the early irq setup path but it is too late for
++	 * fixing it this way now, shortly before the merge window.
++	 *
++	 * So we do this little brown paper bag, which is temporary! Do not even
++	 * think of calling irq domain setup code with IRQs disabled. You will
++	 * get frozen-sharked!
++	 */
++	if (irqs_disabled())
++		gfp_flags = GFP_NOFS;
++#endif
+ 
+ 	domain = kzalloc_node(sizeof(*domain) + (sizeof(unsigned int) * size),
+-			      GFP_KERNEL, of_node_to_nid(of_node));
++			      gfp_flags, of_node_to_nid(of_node));
+ 	if (WARN_ON(!domain))
+ 		return NULL;
+ 
+ 	/* Fill structure */
+-	INIT_RADIX_TREE(&domain->revmap_tree, GFP_KERNEL);
++	INIT_RADIX_TREE(&domain->revmap_tree, gfp_flags);
+ 	domain->ops = ops;
+ 	domain->host_data = host_data;
+ 	domain->of_node = of_node_get(of_node);
