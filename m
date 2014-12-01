@@ -1,68 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990AbaLAS4T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 13:56:19 -0500
-Received: from mout.web.de ([212.227.15.14]:49667 "EHLO mout.web.de"
+	id S932173AbaLAS46 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 13:56:58 -0500
+Received: from mga11.intel.com ([192.55.52.93]:20514 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752854AbaLAS4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 13:56:18 -0500
-Message-ID: <547CB9BD.5050101@users.sourceforge.net>
-Date: Mon, 01 Dec 2014 19:55:57 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754034AbaLAS44 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 13:56:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="423666549"
+From: "Fujinaka, Todd" <todd.fujinaka@intel.com>
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+CC: Linux NICS <Linux-nics@isotope.jf.intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        Hisashi T Fujinaka <htodd@twofifty.com>,
+        "Vick, Matthew" <matthew.vick@intel.com>,
+        "Greg@isotope.jf.intel.com" <Greg@isotope.jf.intel.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+        "John@isotope.jf.intel.com" <John@isotope.jf.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [linux-nics] [PATCH] e1000: remove unused variables
+Thread-Topic: [linux-nics] [PATCH] e1000: remove unused variables
+Thread-Index: AQHQDSMdIHw65NF/BkSlcmAo5eu6OZx7Fidw
+Date: Mon, 1 Dec 2014 18:56:46 +0000
+Message-ID: <9B4A1B1917080E46B64F07F2989DADD653454C69@ORSMSX114.amr.corp.intel.com>
+References: <1417065728-5592-1-git-send-email-sudipm.mukherjee@gmail.com>
+	<alpine.NEB.2.11.1411262157110.1481@chris.i8u.org>
+	<1417311913.7215.111.camel@decadent.org.uk> <20141201045446.GA3277@sudip-PC>
+In-Reply-To: <20141201045446.GA3277@sudip-PC>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jarod Wilson <jarod@wilsonet.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] [media] lirc_zilog: Deletion of unnecessary checks before
- the function call "vfree"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:mwZElN0T5sQgeoK6CSToFdJsOFeFWDPhL2I+HD+v4N2RC+gNQsB
- p4c+VDDoUr1OHO3WyNuT4w+eifRN+OaMrFyOkNs7AaQJl/qf8y1yFsb4cAWi4uNUOpV2S+U
- nVfpj5tlK6ghYC7VpIaUtdW5tRGZeXp/xzjfmZbjz0EiboVvTRO6/w4dNN2jlGkdSCGq3Ll
- FIO2sP2bLXrK6ff91xnTA==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Mon, 1 Dec 2014 19:49:39 +0100
+After discussing this locally, I'd like to NAK it because this could cause regressions to parts that are still in use but we don't have access to. Also, the assignment was necessary in the past for some versions of gcc and since this may be used in embedded systems using older compilers, we should leave it be.
 
-The vfree() function performs also input parameter validation. Thus the test
-around the call is not needed.
+Thanks.
 
-This issue was detected by using the Coccinelle software.
+Todd Fujinaka
+Software Application Engineer
+Networking Division (ND)
+Intel Corporation
+todd.fujinaka@intel.com
+(503) 712-4565
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/staging/media/lirc/lirc_zilog.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+-----Original Message-----
+From: linux-nics-bounces@isotope.jf.intel.com [mailto:linux-nics-bounces@isotope.jf.intel.com] On Behalf Of Sudip Mukherjee
+Sent: Sunday, November 30, 2014 8:55 PM
+To: Ben Hutchings
+Cc: Linux NICS; e1000-devel@lists.sourceforge.net; Hisashi T Fujinaka; Vick, Matthew; Greg@isotope.jf.intel.com; Kirsher, Jeffrey T; netdev@vger.kernel.org; Wyborny, Carolyn; John@isotope.jf.intel.com; linux-kernel@vger.kernel.org
+Subject: Re: [linux-nics] [PATCH] e1000: remove unused variables
 
-diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
-index 3259aac..50b255a 100644
---- a/drivers/staging/media/lirc/lirc_zilog.c
-+++ b/drivers/staging/media/lirc/lirc_zilog.c
-@@ -729,11 +729,9 @@ static int send_boot_data(struct IR_tx *tx)
- static void fw_unload_locked(void)
- {
- 	if (tx_data) {
--		if (tx_data->code_sets)
--			vfree(tx_data->code_sets);
-+		vfree(tx_data->code_sets);
- 
--		if (tx_data->datap)
--			vfree(tx_data->datap);
-+		vfree(tx_data->datap);
- 
- 		vfree(tx_data);
- 		tx_data = NULL;
--- 
-2.1.3
+On Sun, Nov 30, 2014 at 01:45:13AM +0000, Ben Hutchings wrote:
+> On Wed, 2014-11-26 at 21:59 -0800, Hisashi T Fujinaka wrote:
+> > I'm pretty sure those double reads are there for a reason, so most 
+> > of this I'm going to have to check on Monday. We have a long holiday 
+> > weekend here in the US.
+> [...]
+> 
+> If there were double register reads being replaced with single 
+> register reads, I'd agree this was likely to introduce a regression.  
+> But all I see is var = er32(REG) being changed to er32(REG).
 
+no, double register reads are not modified. only the unused variables are removed.
+
+thanks
+sudip
+
+> 
+> Ben.
+> 
+> --
+> Ben Hutchings
+> The world is coming to an end.	Please log off.
+
+
+_______________________________________________
+Linux-nics mailing list
+Linux-nics@intel.com
