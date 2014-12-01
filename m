@@ -1,72 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453AbaLALZv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 06:25:51 -0500
-Received: from stargate.chelsio.com ([67.207.112.58]:28489 "EHLO
-	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753038AbaLALZs (ORCPT
+	id S1753439AbaLALZu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 06:25:50 -0500
+Received: from lucky1.263xmail.com ([211.157.147.130]:34118 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752975AbaLALZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Dec 2014 06:25:48 -0500
-Date: Mon, 1 Dec 2014 16:58:05 +0530
-From: Hariprasad S <hariprasad@chelsio.com>
-To: <ben@decadent.org.uk>, <dwmw2@infradead.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: pull request: linux-firmware: update cxgb4 firmware
-Message-ID: <20141201112803.GA17578@hariprasad-pc>
-References: <20141017183329.GA5275@hariprasad-pc>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20141017183329.GA5275@hariprasad-pc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [10.193.190.82]
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <10fed19eab2c2f3a25d5520e9e04d7ce>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Andy Yan <andy.yan@rock-chips.com>
+To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
+        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Andy Yan <andy.yan@rock-chips.com>
+Subject: [PATCH v14 06/12] dt-bindings: add document for dw_hdmi
+Date: Mon,  1 Dec 2014 19:25:21 +0800
+Message-Id: <1417433121-13011-1-git-send-email-andy.yan@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417432770-12719-1-git-send-email-andy.yan@rock-chips.com>
+References: <1417432770-12719-1-git-send-email-andy.yan@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 18, 2014 at 00:03:29 +0530, Hariprasad S wrote:
-> Hi,
-> 
-> Can you please pull from the following URL?
-> 
-> The following changes since commit 0e5f63771d0df6d7859f7c4100a74d737c62ac88:
->     git://git.chelsio.net/pub/git/linux-firmware.git for-upstream
-> 
-> Thanks
-> 
->   linux-firmware: Add firmware patch for Intel Bluetooth 7265 ROM-spin(D0) (2014-10-09 11:59:44 -0400)
-> 
-> are available in the git repository at:
-> 
->   git://git.chelsio.net/pub/git/linux-firmware.git for-upstream
-> 
-> for you to fetch changes up to 7831ff2b2a129e8a70f4c7b7a1d0c8ad9e241ffe:
-> 
->   cxgb4: Update firmware to revision 1.12.25.0 (2014-10-17 11:13:37 -0700)
-> 
-> ----------------------------------------------------------------
-> Hariprasad Shenai (1):
->       cxgb4: Update firmware to revision 1.12.25.0
-> 
->  WHENCE                   |   8 ++++----
->  cxgb4/t4fw-1.11.27.0.bin | Bin 512512 -> 0 bytes
->  cxgb4/t4fw-1.12.25.0.bin | Bin 0 -> 518656 bytes
->  cxgb4/t4fw.bin           |   2 +-
->  cxgb4/t5fw-1.11.27.0.bin | Bin 513024 -> 0 bytes
->  cxgb4/t5fw-1.12.25.0.bin | Bin 0 -> 521216 bytes
->  cxgb4/t5fw.bin           |   2 +-
->  7 files changed, 6 insertions(+), 6 deletions(-)
->  delete mode 100644 cxgb4/t4fw-1.11.27.0.bin
->  create mode 100644 cxgb4/t4fw-1.12.25.0.bin
->  delete mode 100644 cxgb4/t5fw-1.11.27.0.bin
->  create mode 100644 cxgb4/t5fw-1.12.25.0.bin
+Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
 
-Hi,
+---
 
-My bad. We had a power-surge issue yesterday in our office, due to which the git server was down.
-We apologies for the inconvenience caused. 
+Changes in v14: None
+Changes in v13: None
+Changes in v12: None
+Changes in v11: None
+Changes in v10: None
+Changes in v9: None
+Changes in v8:
+- correct some spelling mistake
+- modify ddc-i2c-bus and interrupt description
 
-Can you please pull it.
+Changes in v7: None
+Changes in v6: None
+Changes in v5: None
+Changes in v4: None
+Changes in v3: None
 
-Thanks,
-Hari
+ .../devicetree/bindings/drm/bridge/dw_hdmi.txt     | 40 ++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+
+diff --git a/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+new file mode 100644
+index 0000000..107c1ca
+--- /dev/null
++++ b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+@@ -0,0 +1,40 @@
++DesignWare HDMI bridge bindings
++
++Required properities:
++- compatible: platform specific such as:
++   * "fsl,imx6q-hdmi"
++   * "fsl,imx6dl-hdmi"
++   * "rockchip,rk3288-dw-hdmi"
++- reg: Physical base address and length of the controller's registers.
++- ddc-i2c-bus: phandle of an I2C controller used for DDC EDID probing
++- interrupts: The HDMI interrupt number
++
++Optional properties
++- reg-io-width: the width of the reg:1,4, default set to 1 if not present
++
++Example:
++	hdmi: hdmi@0120000 {
++		compatible = "fsl,imx6q-hdmi";
++		reg = <0x00120000 0x9000>;
++		interrupts = <0 115 0x04>;
++		gpr = <&gpr>;
++		clocks = <&clks 123>, <&clks 124>;
++		clock-names = "iahb", "isfr";
++		ddc-i2c-bus = <&i2c2>;
++
++		port@0 {
++			reg = <0>;
++
++			hdmi_mux_0: endpoint {
++				remote-endpoint = <&ipu1_di0_hdmi>;
++			};
++		};
++
++		port@1 {
++			reg = <1>;
++
++			hdmi_mux_1: endpoint {
++				remote-endpoint = <&ipu1_di1_hdmi>;
++			};
++		};
++	};
+-- 
+1.9.1
+
+
