@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293AbaLAK2u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 05:28:50 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:50453 "EHLO
+	id S1753310AbaLAK3m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 05:29:42 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:50412 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753132AbaLAK1m (ORCPT
+	with ESMTP id S1752596AbaLAK1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 05:27:42 -0500
+	Mon, 1 Dec 2014 05:27:35 -0500
 From: Boris Brezillon <boris.brezillon@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -21,9 +21,9 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Arnd Bergmann <arnd@arndb.de>,
         Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
         Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v3 07/11] ARM: at91: select ATMEL_EBI when compiling a kernel for at91sam9 or sama5d3
-Date: Mon,  1 Dec 2014 11:27:23 +0100
-Message-Id: <1417429647-3419-8-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v3 04/11] mfd: syscon: Add Atmel SMC binding doc
+Date: Mon,  1 Dec 2014 11:27:20 +0100
+Message-Id: <1417429647-3419-5-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -31,34 +31,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-at91sam9* and sama5d* SoCs have an EBI (External Bus Interface).
-Select the ATMEL_EBI driver when support for these SoCs is selected.
+The SMC registers are used to configure Atmel EBI (External Bus Interface)
+to interface with standard memory devices (NAND, NOR, SRAM or specialized
+devices like FPGAs).
+
+Declare this memory region as a syscon, so that different drivers can
+configure the SMC interface (mostly timing configuration) according to
+their need.
 
 Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-at91/Kconfig | 2 ++
- 1 file changed, 2 insertions(+)
+ Documentation/devicetree/bindings/mfd/atmel-smc.txt | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/atmel-smc.txt
 
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index 0e6d548..a72402a 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -49,6 +49,7 @@ config SOC_AT91SAM9
- 	select GENERIC_CLOCKEVENTS
- 	select MEMORY if USE_OF
- 	select ATMEL_SDRAMC if USE_OF
-+	select ATMEL_EBI if USE_OF
- 
- config SOC_SAMA5
- 	bool
-@@ -58,6 +59,7 @@ config SOC_SAMA5
- 	select USE_OF
- 	select MEMORY
- 	select ATMEL_SDRAMC
-+	select ATMEL_EBI
- 
- menu "Atmel AT91 System-on-Chip"
- 
+diff --git a/Documentation/devicetree/bindings/mfd/atmel-smc.txt b/Documentation/devicetree/bindings/mfd/atmel-smc.txt
+new file mode 100644
+index 0000000..26eeed3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/atmel-smc.txt
+@@ -0,0 +1,19 @@
++* Device tree bindings for Atmel SMC (Static Memory Controller)
++
++The SMC registers are used to configure Atmel EBI (External Bus Interface)
++to interface with standard memory devices (NAND, NOR, SRAM or specialized
++devices like FPGAs).
++
++Required properties:
++- compatible:		Should be one of the following
++			"atmel,at91sam9260-smc", "syscon"
++			"atmel,sama5d3-smc", "syscon"
++- reg:			Contains offset/length value of the SMC memory
++			region.
++
++Example:
++
++smc: smc@ffffc000 {
++	compatible = "atmel,sama5d3-smc", "syscon";
++	reg = <0xffffc000 0x1000>;
++};
 -- 
 1.9.1
 
