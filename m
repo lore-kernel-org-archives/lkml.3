@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202AbaLAK1s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 05:27:48 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:50483 "EHLO
+	id S1753179AbaLAK1q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 05:27:46 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:50491 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753131AbaLAK1m (ORCPT
+	with ESMTP id S1753133AbaLAK1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Dec 2014 05:27:42 -0500
 From: Boris Brezillon <boris.brezillon@free-electrons.com>
@@ -21,9 +21,9 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Arnd Bergmann <arnd@arndb.de>,
         Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
         Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v3 10/11] ARM: at91/dt: add EBI (External Bus Interface) node in sama5d3 dtsi
-Date: Mon,  1 Dec 2014 11:27:26 +0100
-Message-Id: <1417429647-3419-11-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v3 11/11] ARM: at91/dt: add NOR definition in sama5d3xcm dtsi
+Date: Mon,  1 Dec 2014 11:27:27 +0100
+Message-Id: <1417429647-3419-12-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -31,114 +31,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add EBI node and EBI pin muxing.
+The sama5d3 evaluation kit embeds a NOR chip which is connected through
+the EBI.
+Define this NOR chip in the CPU module dtsi.
 
 Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 ---
- arch/arm/boot/dts/sama5d3.dtsi | 83 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 83 insertions(+)
+ arch/arm/boot/dts/sama5d3xcm.dtsi | 34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
 
-diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
-index d49dab7..d011ade 100644
---- a/arch/arm/boot/dts/sama5d3.dtsi
-+++ b/arch/arm/boot/dts/sama5d3.dtsi
-@@ -530,6 +530,63 @@
- 					};
- 				};
- 
-+				ebi {
-+					pinctrl_ebi_addr: ebi-addr-0 {
-+						atmel,pins =
-+							<AT91_PIOE 0 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 1 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 2 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 3 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 4 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 5 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 6 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 7 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 8 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 9 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 10 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 11 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 12 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 13 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 14 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 15 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 16 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 17 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 18 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 19 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 20 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 21 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 22 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 23 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 24 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOE 25 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+
-+					pinctrl_ebi_cs0: ebi-cs0-0 {
-+						atmel,pins =
-+							<AT91_PIOE 26 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+
-+					pinctrl_ebi_cs1: ebi-cs1-0 {
-+						atmel,pins =
-+							<AT91_PIOE 27 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+
-+					pinctrl_ebi_cs2: ebi-cs2-0 {
-+						atmel,pins =
-+							<AT91_PIOE 28 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+
-+					pinctrl_ebi_nwr1_nbs1: ebi-nwr1-nbs1-0 {
-+						atmel,pins =
-+							<AT91_PIOE 29 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+
-+					pinctrl_ebi_nwait: ebi-nwait-0 {
-+						atmel,pins =
-+							<AT91_PIOE 30 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+				};
-+
- 				i2c0 {
- 					pinctrl_i2c0: i2c0-0 {
- 						atmel,pins =
-@@ -1407,6 +1464,32 @@
- 			status = "disabled";
+diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi b/arch/arm/boot/dts/sama5d3xcm.dtsi
+index cfcd200..92be776 100644
+--- a/arch/arm/boot/dts/sama5d3xcm.dtsi
++++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
+@@ -75,6 +75,40 @@
+ 			};
  		};
  
-+		ebi: ebi@10000000 {
-+			compatible = "atmel,sama5d3-ebi", "simple-bus";
-+			#address-cells = <2>;
-+			#size-cells = <1>;
-+			atmel,smc = <&hsmc>;
-+			atmel,matrix = <&matrix>;
-+			reg = <0x10000000 0x10000000
-+			       0x40000000 0x30000000>;
-+			ranges = <0x0 0x0 0x10000000 0x10000000
-+				  0x1 0x0 0x40000000 0x10000000
-+				  0x2 0x0 0x50000000 0x10000000
-+				  0x3 0x0 0x60000000 0x10000000>;
-+			clocks = <&mck>;
++		ebi@10000000 {
++			pinctrl-0 = <&pinctrl_ebi_addr &pinctrl_ebi_cs0>;
 +
-+			/*
-+			 * TODO: EBI pins should be referenced here, but they
-+			 * conflict with NAND pins, which should actually be a
-+			 * sub device of the EBI bus and thus should not
-+			 * request it's own set of pins as they are shared
-+			 * with other devices connected on the EBI bus.
-+			 *
-+			 * pinctrl-names = "default";
-+			 * pinctrl-0 = <&pinctrl_ebi_addr>;
-+			 */
++			cs@0 {
++				#address-cells = <2>;
++				#size-cells = <1>;
++				ranges;
++				atmel,generic-dev;
++				atmel,read-mode = "nrd";
++				atmel,write-mode = "nwe";
++				atmel,bus-width = <16>;
++				atmel,ncs-rd-setup-ns = <0>;
++				atmel,ncs-wr-setup-ns = <0>;
++				atmel,nwe-setup-ns = <8>;
++				atmel,nrd-setup-ns = <16>;
++				atmel,ncs-rd-pulse-ns = <84>;
++				atmel,ncs-wr-pulse-ns = <84>;
++				atmel,nrd-pulse-ns = <76>;
++				atmel,nwe-pulse-ns = <76>;
++				atmel,nrd-cycle-ns = <107>;
++				atmel,nwe-cycle-ns = <84>;
++				atmel,tdf-ns = <16>;
++
++				nor: flash@0,0 {
++					compatible = "cfi-flash";
++					linux,mtd-name = "physmap-flash.0";
++					#address-cells = <1>;
++					#size-cells = <1>;
++					reg = <0x0 0x0 0x1000000>;
++					bank-width = <2>;
++				};
++			};
 +		};
 +
  		nand0: nand@60000000 {
- 			compatible = "atmel,at91rm9200-nand";
- 			#address-cells = <1>;
+ 			nand-bus-width = <8>;
+ 			nand-ecc-mode = "hw";
 -- 
 1.9.1
 
