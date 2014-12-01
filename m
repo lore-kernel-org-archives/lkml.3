@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366AbaLAQHL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 11:07:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52951 "EHLO mx1.redhat.com"
+	id S932405AbaLAQHS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 11:07:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52368 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932300AbaLAQHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 11:07:08 -0500
-Date: Mon, 1 Dec 2014 18:06:50 +0200
+	id S932368AbaLAQHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 11:07:12 -0500
+Date: Mon, 1 Dec 2014 18:06:45 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
         thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        Amit Shah <amit.shah@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH v8 48/50] virtio_balloon: add legacy_only flag
-Message-ID: <1417449619-24896-49-git-send-email-mst@redhat.com>
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: [PATCH v8 47/50] virtio_console: virtio 1.0 support
+Message-ID: <1417449619-24896-48-git-send-email-mst@redhat.com>
 References: <1417449619-24896-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -26,49 +28,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have no plans to support virtio 1.0 in balloon driver.  Add an
-explicit flag to mark it legacy only.
-
-This will be used by follow-up patches.
+Pretty straight-forward, just use accessors for all fields.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- include/linux/virtio.h          | 2 ++
- drivers/virtio/virtio_balloon.c | 1 +
- 2 files changed, 3 insertions(+)
+ include/uapi/linux/virtio_console.h |  7 ++++---
+ drivers/char/virtio_console.c       | 29 +++++++++++++++++------------
+ 2 files changed, 21 insertions(+), 15 deletions(-)
 
-diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-index f70411e..2bbf626 100644
---- a/include/linux/virtio.h
-+++ b/include/linux/virtio.h
-@@ -132,6 +132,7 @@ int virtio_device_restore(struct virtio_device *dev);
-  * @feature_table_size: number of entries in the feature table array.
-  * @feature_table_legacy: same as feature_table but when working in legacy mode.
-  * @feature_table_size_legacy: number of entries in feature table legacy array.
-+ * @legacy_only: driver does not support virtio 1.0.
-  * @probe: the function to call when a device is found.  Returns 0 or -errno.
-  * @remove: the function to call when a device is removed.
-  * @config_changed: optional function to call when the device configuration
-@@ -144,6 +145,7 @@ struct virtio_driver {
- 	unsigned int feature_table_size;
- 	const unsigned int *feature_table_legacy;
- 	unsigned int feature_table_size_legacy;
-+	bool legacy_only;
- 	int (*probe)(struct virtio_device *dev);
- 	void (*scan)(struct virtio_device *dev);
- 	void (*remove)(struct virtio_device *dev);
-diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-index c9703d4..4497def 100644
---- a/drivers/virtio/virtio_balloon.c
-+++ b/drivers/virtio/virtio_balloon.c
-@@ -518,6 +518,7 @@ static unsigned int features[] = {
+diff --git a/include/uapi/linux/virtio_console.h b/include/uapi/linux/virtio_console.h
+index ba260dd..b7fb108 100644
+--- a/include/uapi/linux/virtio_console.h
++++ b/include/uapi/linux/virtio_console.h
+@@ -32,6 +32,7 @@
+ #ifndef _UAPI_LINUX_VIRTIO_CONSOLE_H
+ #define _UAPI_LINUX_VIRTIO_CONSOLE_H
+ #include <linux/types.h>
++#include <linux/virtio_types.h>
+ #include <linux/virtio_ids.h>
+ #include <linux/virtio_config.h>
+ 
+@@ -58,9 +59,9 @@ struct virtio_console_config {
+  * particular port.
+  */
+ struct virtio_console_control {
+-	__u32 id;		/* Port number */
+-	__u16 event;		/* The kind of control event (see below) */
+-	__u16 value;		/* Extra information for the key */
++	__virtio32 id;		/* Port number */
++	__virtio16 event;	/* The kind of control event (see below) */
++	__virtio16 value;	/* Extra information for the key */
  };
  
- static struct virtio_driver virtio_balloon_driver = {
-+	.legacy_only = true,
- 	.feature_table = features,
- 	.feature_table_size = ARRAY_SIZE(features),
- 	.driver.name =	KBUILD_MODNAME,
+ /* Some events for control messages */
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index 8d00aa7..775c898 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -566,9 +566,9 @@ static ssize_t __send_control_msg(struct ports_device *portdev, u32 port_id,
+ 	if (!use_multiport(portdev))
+ 		return 0;
+ 
+-	cpkt.id = port_id;
+-	cpkt.event = event;
+-	cpkt.value = value;
++	cpkt.id = cpu_to_virtio32(portdev->vdev, port_id);
++	cpkt.event = cpu_to_virtio16(portdev->vdev, event);
++	cpkt.value = cpu_to_virtio16(portdev->vdev, value);
+ 
+ 	vq = portdev->c_ovq;
+ 
+@@ -1602,7 +1602,8 @@ static void unplug_port(struct port *port)
+ }
+ 
+ /* Any private messages that the Host and Guest want to share */
+-static void handle_control_message(struct ports_device *portdev,
++static void handle_control_message(struct virtio_device *vdev,
++				   struct ports_device *portdev,
+ 				   struct port_buffer *buf)
+ {
+ 	struct virtio_console_control *cpkt;
+@@ -1612,15 +1613,16 @@ static void handle_control_message(struct ports_device *portdev,
+ 
+ 	cpkt = (struct virtio_console_control *)(buf->buf + buf->offset);
+ 
+-	port = find_port_by_id(portdev, cpkt->id);
+-	if (!port && cpkt->event != VIRTIO_CONSOLE_PORT_ADD) {
++	port = find_port_by_id(portdev, virtio32_to_cpu(vdev, cpkt->id));
++	if (!port &&
++	    cpkt->event != cpu_to_virtio16(vdev, VIRTIO_CONSOLE_PORT_ADD)) {
+ 		/* No valid header at start of buffer.  Drop it. */
+ 		dev_dbg(&portdev->vdev->dev,
+ 			"Invalid index %u in control packet\n", cpkt->id);
+ 		return;
+ 	}
+ 
+-	switch (cpkt->event) {
++	switch (virtio16_to_cpu(vdev, cpkt->event)) {
+ 	case VIRTIO_CONSOLE_PORT_ADD:
+ 		if (port) {
+ 			dev_dbg(&portdev->vdev->dev,
+@@ -1628,13 +1630,15 @@ static void handle_control_message(struct ports_device *portdev,
+ 			send_control_msg(port, VIRTIO_CONSOLE_PORT_READY, 1);
+ 			break;
+ 		}
+-		if (cpkt->id >= portdev->config.max_nr_ports) {
++		if (virtio32_to_cpu(vdev, cpkt->id) >=
++		    portdev->config.max_nr_ports) {
+ 			dev_warn(&portdev->vdev->dev,
+-				"Request for adding port with out-of-bound id %u, max. supported id: %u\n",
++				"Request for adding port with "
++				"out-of-bound id %u, max. supported id: %u\n",
+ 				cpkt->id, portdev->config.max_nr_ports - 1);
+ 			break;
+ 		}
+-		add_port(portdev, cpkt->id);
++		add_port(portdev, virtio32_to_cpu(vdev, cpkt->id));
+ 		break;
+ 	case VIRTIO_CONSOLE_PORT_REMOVE:
+ 		unplug_port(port);
+@@ -1670,7 +1674,7 @@ static void handle_control_message(struct ports_device *portdev,
+ 		break;
+ 	}
+ 	case VIRTIO_CONSOLE_PORT_OPEN:
+-		port->host_connected = cpkt->value;
++		port->host_connected = virtio16_to_cpu(vdev, cpkt->value);
+ 		wake_up_interruptible(&port->waitqueue);
+ 		/*
+ 		 * If the host port got closed and the host had any
+@@ -1752,7 +1756,7 @@ static void control_work_handler(struct work_struct *work)
+ 		buf->len = len;
+ 		buf->offset = 0;
+ 
+-		handle_control_message(portdev, buf);
++		handle_control_message(vq->vdev, portdev, buf);
+ 
+ 		spin_lock(&portdev->c_ivq_lock);
+ 		if (add_inbuf(portdev->c_ivq, buf) < 0) {
+@@ -2126,6 +2130,7 @@ static struct virtio_device_id id_table[] = {
+ static unsigned int features[] = {
+ 	VIRTIO_CONSOLE_F_SIZE,
+ 	VIRTIO_CONSOLE_F_MULTIPORT,
++	VIRTIO_F_VERSION_1,
+ };
+ 
+ static struct virtio_device_id rproc_serial_id_table[] = {
 -- 
 MST
 
