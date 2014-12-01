@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932616AbaLAVfA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 16:35:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48868 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932459AbaLAVe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 16:34:59 -0500
-Date: Mon, 1 Dec 2014 22:34:17 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@redhat.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Waiman Long <Waiman.Long@hp.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] x86, ticketlock: spin_unlock_wait() can livelock
-Message-ID: <20141201213417.GA5842@redhat.com>
-References: <20141201213357.GA5834@redhat.com>
+	id S932632AbaLAVfo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 16:35:44 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:61003 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932421AbaLAVfm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 16:35:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141201213357.GA5834@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAMo8BfKg=eb7wA2O+cKO+oLDDERh2CKBS7dyAvfqvCESEHWYEg@mail.gmail.com>
+References: <547CD304.20407@gmail.com>
+	<CAMo8BfKg=eb7wA2O+cKO+oLDDERh2CKBS7dyAvfqvCESEHWYEg@mail.gmail.com>
+Date: Mon, 1 Dec 2014 22:35:40 +0100
+X-Google-Sender-Auth: 6VXdUw5xZXDfZMZhVlK_VZQ8NFY
+Message-ID: <CAMuHMdXHAZFujShNnAHY8BRv85ncrtcRvRgPS0Br0T9gSxZ+1A@mail.gmail.com>
+Subject: Re: [PATCH] arch: uapi: asm: mman.h: Support MADV_FREE for madvise()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Max Filippov <jcmvbkbc@gmail.com>
+Cc: Chen Gang <gang.chen.5i5j@gmail.com>, Minchan Kim <minchan@kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "rth@twiddle.net" <rth@twiddle.net>,
+        "ink@jurassic.park.msu.ru" <ink@jurassic.park.msu.ru>,
+        "mattst88@gmail.com" <mattst88@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "jejb@parisc-linux.org" <jejb@parisc-linux.org>,
+        "deller@gmx.de" <deller@gmx.de>, "chris@zankel.net" <chris@zankel.net>,
+        "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
+        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-arch_spin_unlock_wait() looks very suboptimal, to the point I think
-this is just wrong and can lead to livelock: if the lock is heavily
-contended we can never see head == tail.
+On Mon, Dec 1, 2014 at 9:52 PM, Max Filippov <jcmvbkbc@gmail.com> wrote:
+> On Mon, Dec 1, 2014 at 11:43 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+>> At present, kernel supports madvise(MADV_FREE), so can benefit to all
+>> related architectures (can grep MADV_WILLNEED or MADV_REMOVE in "arch/"
+>> to know about all related architectures).
+>
+> A similar patch has been posted a while ago:
+>
+> http://www.spinics.net/lists/linux-mm/msg81538.html
 
-But we do not need to wait for arch_spin_is_locked() == F. If it is
-locked we only need to wait until the current owner drops this lock.
-So we could simply spin until old_head != lock->tickets.head in this
-case, but .head can overflow and thus we can't check "unlocked" only
-once before the main loop.
+Would it be possible to use the same number everywhere?
 
-Also, the "unlocked" check can ignore TICKET_SLOWPATH_FLAG bit.
+Gr{oetje,eeting}s,
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/include/asm/spinlock.h |   14 +++++++++++++-
- 1 files changed, 13 insertions(+), 1 deletions(-)
+                        Geert
 
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 9295016..a4efe47 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -183,8 +183,20 @@ static __always_inline void arch_spin_lock_flags(arch_spinlock_t *lock,
- 
- static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
- {
--	while (arch_spin_is_locked(lock))
-+	__ticket_t head = ACCESS_ONCE(lock->tickets.head);
-+
-+	for (;;) {
-+		struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
-+		/*
-+		 * We need to check "unlocked" in a loop, tmp.head == head
-+		 * can be false positive because of overflow.
-+		 */
-+		if (tmp.head == (tmp.tail & ~TICKET_SLOWPATH_FLAG) ||
-+		    tmp.head != head)
-+			break;
-+
- 		cpu_relax();
-+	}
- }
- 
- /*
--- 
-1.5.5.1
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
