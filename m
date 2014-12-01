@@ -1,142 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428AbaLALyG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 06:54:06 -0500
-Received: from lucky1.263xmail.com ([211.157.147.133]:36008 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753013AbaLALyE (ORCPT
+	id S1753449AbaLALyV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 06:54:21 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:41894 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051AbaLALyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 06:54:04 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: l.stach@pengutronix.de
-X-SENDER-IP: 121.15.173.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <4d9529808b8b167af6f177870c9b4a57>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <547C56D2.5030302@rock-chips.com>
-Date: Mon, 01 Dec 2014 19:53:54 +0800
-From: Andy Yan <andy.yan@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>
-CC: Mark Rutland <mark.rutland@arm.com>, heiko@sntech.de, airlied@linux.ie,
-        dri-devel@lists.freedesktop.org, ykk@rock-chips.com,
-        devel@driverdev.osuosl.org, Pawel Moll <pawel.moll@arm.com>,
-        linux-rockchip@lists.infradead.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Dave Airlie <airlied@redhat.com>, jay.xu@rock-chips.com,
-        devicetree@vger.kernel.org, Zubair.Kakakhel@imgtec.com,
-        Arnd Bergmann <arnd@arndb.de>,
+	Mon, 1 Dec 2014 06:54:18 -0500
+Date: Mon, 1 Dec 2014 11:54:00 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Inki Dae <inki.dae@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Sean Paul <seanpaul@chromium.org>, rmk+kernel@arm.linux.org.uk,
-        mark.yao@rock-chips.com, fabio.estevam@freescale.com,
-        Josh Boyer <jwboyer@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, djkurtz@google.com,
-        Kumar Gala <galak@codeaurora.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Lucas Stach <l.stach@pengutronix.de>
-Subject: Re: [PATCH v14 05/12] drm: imx: imx-hdmi: move imx-hdmi to bridge/dw_hdmi
-References: <1417432770-12719-1-git-send-email-andy.yan@rock-chips.com> <1417433086-12964-1-git-send-email-andy.yan@rock-chips.com> <1417434133.4624.9.camel@pengutronix.de>
-In-Reply-To: <1417434133.4624.9.camel@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] irqchip: gic: Allow interrupt level to be set for PPIs.
+Message-ID: <20141201115400.GD3836@n2100.arm.linux.org.uk>
+References: <1417197340-27298-1-git-send-email-Liviu.Dudau@arm.com>
+ <20141201104145.GY3836@n2100.arm.linux.org.uk>
+ <20141201104612.GM828@e106497-lin.cambridge.arm.com>
+ <20141201110358.GA3836@n2100.arm.linux.org.uk>
+ <547C4ECD.20802@arm.com>
+ <20141201112302.GC3836@n2100.arm.linux.org.uk>
+ <547C5179.5020505@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <547C5179.5020505@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp:
+On Mon, Dec 01, 2014 at 11:31:05AM +0000, Marc Zyngier wrote:
+> On 01/12/14 11:23, Russell King - ARM Linux wrote:
+> > On Mon, Dec 01, 2014 at 11:19:41AM +0000, Marc Zyngier wrote:
+> >> Hi Russell,
+> >>
+> >> On 01/12/14 11:03, Russell King - ARM Linux wrote:
+> >>> If all you want to do is to bypass the following check, what's wrong
+> >>> with actually doing that:
+> >>>
+> >>> -	if (type != IRQ_TYPE_LEVEL_HIGH && type != IRQ_TYPE_EDGE_RISING)
+> >>> +	if (gicirq >= 32 && type != IRQ_TYPE_LEVEL_HIGH &&
+> >>> +	    type != IRQ_TYPE_EDGE_RISING)
+> >>> 		return -EINVAL;
+> >>>
+> >>
+> >> I think that will require some additional changes to gic_configure_irq
+> >> (in irq-gic-common.c).
+> > 
+> > I don't think so - gic_configure_irq() will treat it as a no-op as far
+> > as trying to configure the IRQ settings.
+> 
+> I agree. But that's following ARM's tradition of making PPIs
+> non-configurable. I seem to remember that there is at least one
+> occurrence of a GIC with configurable PPIs (Qualcomm, IIRC).
+> 
+> With this use case in mind, Liviu's patch allows an active-low interrupt
+> to be correctly configured as level, for example.
 
-On 2014年12月01日 19:42, Philipp Zabel wrote:
-> Hi Andy,
->
-> Am Montag, den 01.12.2014, 19:24 +0800 schrieb Andy Yan:
-> [...]
->> diff --git a/include/drm/bridge/dw_hdmi.h b/include/drm/bridge/dw_hdmi.h
->> new file mode 100644
->> index 0000000..1bbf3ca
->> --- /dev/null
->> +++ b/include/drm/bridge/dw_hdmi.h
->> @@ -0,0 +1,57 @@
->> +/*
->> + * Copyright (C) 2011 Freescale Semiconductor, Inc.
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License as published by
->> + * the Free Software Foundation; either version 2 of the License, or
->> + * (at your option) any later version.
->> + */
->> +
->> +#ifndef __DW_HDMI__
->> +#define __DW_HDMI__
->> +
->> +#include <drm/drmP.h>
->> +
->> +enum {
->> +	RES_8,
->> +	RES_10,
->> +	RES_12,
->> +	RES_MAX,
->> +};
->> +
->> +enum dw_hdmi_devtype {
->> +	IMX6Q_HDMI,
->> +	IMX6DL_HDMI,
->> +};
->> +
->> +struct mpll_config {
->> +	unsigned long mpixelclock;
->> +	struct {
->> +		u16 cpce;
->> +		u16 gmp;
->> +	} res[RES_MAX];
->> +};
->> +
->> +struct curr_ctrl {
->> +	unsigned long mpixelclock;
->> +	u16 curr[RES_MAX];
->> +};
->> +
->> +struct sym_term {
->> +	unsigned long mpixelclock;
->> +	u16 sym_ctr;    /*clock symbol and transmitter control*/
->> +	u16 term;       /*transmission termination value*/
->> +};
-> since this is going to be used by multiple drivers, the enums and
-> structs should all be properly namespaced. How about DW_HDMI_RES_x,
-> struct dw_hdmi_mpll_config, struct dw_hdmi_curr_ctrl, and struct
-> dw_hdmi_sym_term?
+Liviu's patch is nothing more than a hack.  It changes (eg) the active
+low level to be an active high level with the explicitly stated reason to
+bypass a test, and then hopes that the remaining functions do the right
+thing.
 
-   That sounds good, I will take your advice in PATCH V15.
-   Thanks
->> +struct dw_hdmi_plat_data {
->> +	enum dw_hdmi_devtype dev_type;
->> +	const struct mpll_config *mpll_cfg;
->> +	const struct curr_ctrl *cur_ctr;
->> +	const struct sym_term *sym_term;
->> +};
->> +
->> +void dw_hdmi_unbind(struct device *dev, struct device *master, void *data);
->> +int dw_hdmi_bind(struct device *dev, struct device *master,
->> +		 void *data, struct drm_encoder *encoder,
->> +		 const struct dw_hdmi_plat_data *plat_data);
->> +#endif /* __IMX_HDMI_H__ */
-> regards
-> Philipp
->
->
-> _______________________________________________
-> Linux-rockchip mailing list
-> Linux-rockchip@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-rockchip
->
->
->
+It would be better to explicitly bypass the test, and then explicitly
+handle other cases in gic_configure_irq().
 
+It would be even better to make the code reflect reality right the way
+through.  If PPIs are non-configurable, then we should return -EINVAL if
+trying to set them to a setting which is not supported.  For example,
+pass through all states to gic_configure_irq(), and have gic_configure_irq()
+return whether the state is valid.
 
+Then, gic_configure_irq() can read back the register after trying to set
+the appropriate value, and see whether it was taken.  If the bits remain
+unchanged, then it can decide that the requested mode is not supported,
+and return -EINVAL.
+
+In any case, let's not hack the code in the way that Liviu is trying to
+do.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
