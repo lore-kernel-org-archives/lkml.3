@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808AbaLARAF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 12:00:05 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:38754 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753612AbaLARAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 12:00:03 -0500
-Message-ID: <547C9E92.8010606@osg.samsung.com>
-Date: Mon, 01 Dec 2014 10:00:02 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753842AbaLARAZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 12:00:25 -0500
+Received: from smtp-out-248.synserver.de ([212.40.185.248]:1072 "EHLO
+	smtp-out-248.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752936AbaLARAV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 12:00:21 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 27508
+Message-ID: <547C9E5A.8040307@metafoo.de>
+Date: Mon, 01 Dec 2014 17:59:06 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>, linux-kernel@vger.kernel.org
-CC: linux-api@vger.kernel.org, Andrew Morton <akpm@osdl.org>,
-        gorcunov@openvz.org, Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: [PATCH 1/3] kcmp: Move kcmp.h into uapi
-References: <1414040834-30209-1-git-send-email-mpe@ellerman.id.au> <1417141122.6694.5.camel@concordia>
-In-Reply-To: <1417141122.6694.5.camel@concordia>
-Content-Type: text/plain; charset=utf-8
+To: Timur Tabi <timur@tabi.org>, Markus Pargmann <mpa@pengutronix.de>,
+        Jiada Wang <jiada_wang@mentor.com>
+CC: alsa-devel@alsa-project.org, lgirdwood@gmail.com, tiwai@suse.de,
+        Li.Xiubo@freescale.com, nicoleotsuka@gmail.com, broonie@kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH] ASoC: fsl_ssi: free irq before irq_dispose_mapping()
+References: <1417402251-6596-1-git-send-email-jiada_wang@mentor.com> <20141201065046.GB27289@pengutronix.de> <547C9C34.9080602@metafoo.de> <547C9CAD.1000008@tabi.org>
+In-Reply-To: <547C9CAD.1000008@tabi.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2014 07:18 PM, Michael Ellerman wrote:
-> On Thu, 2014-10-23 at 16:07 +1100, Michael Ellerman wrote:
->> kcmp.h appears to be part of the API, it's documented in kcmp(2), and
->> the selftests/kcmp code uses it. So move it to uapi so it's actually
->> exported.
-> 
-> Looks like this series fell through the cracks?
-> 
-> It still applies on rc6. Should I resend?
-> 
-> cheers
-> 
->> Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+On 12/01/2014 05:51 PM, Timur Tabi wrote:
+> On 12/01/2014 10:49 AM, Lars-Peter Clausen wrote:
+>
+>> The driver creates the mapping by calling irq_of_parse_and_map(), so it
+>> also has to dispose the mapping. But the easy way out is to simply use
+>> platform_get_irq() instead of irq_of_parse_map(). In this case the
+>> mapping is not managed by the device but by the of core, so the device
+>> has not to dispose the mapping.
+>
+> Is this a problem unique to the SSI driver?  Maybe devm_free_irq() should
+> also dispose of the mapping?
+>
 
-I am expecting a patch v2 for the series based on the comments
-on the series. Please see my responses to the individual patch
-threads.
-
-thanks,
--- Shuah
-
-
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+If the mapping was not created by the device, the device shouldn't dispose 
+it. Mapping and requesting the interrupt are two independent operations.
