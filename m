@@ -1,73 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932224AbaLATmV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 14:42:21 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45385 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753643AbaLATmU (ORCPT
+	id S932246AbaLAToX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 14:44:23 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:56986 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932119AbaLAToV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 14:42:20 -0500
-Date: Mon, 1 Dec 2014 19:41:47 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Timur Tabi <timur@tabi.org>, Markus Pargmann <mpa@pengutronix.de>,
-        Jiada Wang <jiada_wang@mentor.com>, alsa-devel@alsa-project.org,
-        lgirdwood@gmail.com, tiwai@suse.de, Li.Xiubo@freescale.com,
-        nicoleotsuka@gmail.com, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20141201194147.GP7712@sirena.org.uk>
-References: <1417402251-6596-1-git-send-email-jiada_wang@mentor.com>
- <20141201065046.GB27289@pengutronix.de>
- <547C9C34.9080602@metafoo.de>
- <547CB817.10806@tabi.org>
- <547CC407.30308@metafoo.de>
+	Mon, 1 Dec 2014 14:44:21 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v3 05/11] memory: add Atmel EBI (External Bus Interface) driver
+Date: Mon, 01 Dec 2014 20:43:31 +0100
+Message-ID: <2476626.8iiXDzb2Te@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141201192923.6a85e52b@bbrezillon>
+References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com> <4214030.Z2iCEM6hVA@wuerfel> <20141201192923.6a85e52b@bbrezillon>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="A4pi7p1avD4z6Uqy"
-Content-Disposition: inline
-In-Reply-To: <547CC407.30308@metafoo.de>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH] ASoC: fsl_ssi: free irq before
- irq_dispose_mapping()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:hWtdWL4J9AVuwNyeMBu4/lCwx51tIxhDdxaB4hLfL6p
+ 3Oo13Q7QjDt0kmFRhTdsWrfbzrAHfA8co6x0FjgB19YVkZC8EH
+ 1PxsvTUqMeZUgq+P+Mg4ldbyQ1HNp+NLzadbK4sp+5WlvSEWA3
+ 3VtECY3mY6KzHBqbFbN0G9wzQskddn62Rbws66dqoJ/fahIKs5
+ RQojceR3so7dqhOP5F0/Q/UrSoiCu2Iy3CplOLZaXfhQYI1iT/
+ rONwX3Dxit0UdTFkJwlOzGLsZ18azXqxXq5aFfzfPX/QsYyyO3
+ ql8abpFUlTtscdXVri9/mPD4NAFeG94RYysgc/8pHYJDR1+Qnu
+ dxvunmL77UnQr0vSAdpg=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 01 December 2014 19:29:23 Boris Brezillon wrote:
+> Hi Arnd,
+> 
+> On Mon, 01 Dec 2014 17:26:27 +0100
+> Arnd Bergmann <arnd@arndb.de> wrote:
+> 
+> > On Monday 01 December 2014 11:27:21 Boris Brezillon wrote:
+> > > The EBI (External Bus Interface) is used to access external peripherals
+> > > (NOR, SRAM, NAND, and other specific devices like ethernet controllers).
+> > > Each device is assigned a CS line and an address range and can have its
+> > > own configuration (timings, access mode, bus width, ...).
+> > > This driver provides a generic DT binding to configure a device according
+> > > to its requirements.
+> > > For specific device controllers (like the NAND one) the SMC timings
+> > > should be configured by the controller driver through the matrix and
+> > > smc syscon regmaps.
+> > 
+> > Nice!
+> > 
+> > > +
+> > > +#define AT91_EBICSA_REGFIELD(soc)			\
+> > > +	REG_FIELD(soc ## _MATRIX_EBICSA_OFF, 0,		\
+> > > +		  AT91_MATRIX_EBI_NUM_CS - 1)
+> > > +
+> > > +#define AT91_MULTI_EBICSA_REGFIELD(soc, n)		\
+> > > +	REG_FIELD(soc ## _MATRIX_EBI ## n ## CSA_OFF,	\
+> > > +		  0, AT91_MATRIX_EBI_NUM_CS - 1)
+> > 
+> > I don't like the use macros that concatenate symbol names like
+> > this. Why not do either
+> > 
+> > - open-code the macro contents in the few uses, to allow
+> >   grepping for them, or
+> 
+> I'm not sure to get this one, are you suggesting to do something like
+> this:
+> 
+> #define AT91_EBICSA_REGFIELD(off)			\
+> 	REG_FIELD(ebicsa_off, AT91_MATRIX_EBI_NUM_CS - 1)
+> 
 
---A4pi7p1avD4z6Uqy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+That would be acceptable too, but what I really meant is one step further:
 
-On Mon, Dec 01, 2014 at 08:39:51PM +0100, Lars-Peter Clausen wrote:
-> On 12/01/2014 07:48 PM, Timur Tabi wrote:
+static const struct reg_field at91sam9260_ebi_csa = 
+	REG_FIELD(AT91SAM9260_MATRIX_EBICSA_OFF, 0, AT91_MATRIX_EBI_NUM_CS - 1);
 
-> >A quick grep shows the following drivers that call both functions:
+> > - put the register number in the syscon reference and look it
+> >   up from there (this would be slightly more complicated for the
+> >   second macro)
+> 
+> I've told several times not to encode register offsets or register ids
+> in the DT :-) (and if I'm not mistaken that's what you're suggesting
+> here).
 
-> Most of these drivers will probably work fine without irq_of_parse_and_map().
+I think it's actually fine for syscon references, although in general
+I would agree with that. The difference in my opinion is that syscon
+by nature is a set of registers.
 
-I'd also note that quite a few of these drivers look pretty legacy - a
-very large proportion are for old PowerPC hardware, though by no means
-all.
-
---A4pi7p1avD4z6Uqy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUfMR7AAoJECTWi3JdVIfQxC4H/Rw91cGM/GoVnm+lMlkCjMT8
-b0OZH4hfeGQfs5roSNkjab0foHUwXfKEmOcUnh4eHUiO3OJdAuLA2s4LWWKwf7Tp
-I8+oYR268oi/uf4bhiREBOzrbj3+I8gqZmE7C9lXi3VVqjJm+/CgsoK+C+ntcf0N
-LSJMaOMPQtu5CAAQNlSJCsaGbCdAdhEKOBTRyxaPHrR9HVnBI3nwXqthtqhntZDw
-JMIlHh/v5rJsFW4oWuX6ym/g0VHQ2jvdmJJ9doJrrHdODdJrW16CYAU8ATY9iIY1
-D+MMxQqoPYYfATRC7i6IkD+pKXxRm9PEg6efhPR89m0sndwXDTrCvzNBQRvdbgs=
-=DYcS
------END PGP SIGNATURE-----
-
---A4pi7p1avD4z6Uqy--
+	Arnd
