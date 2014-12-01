@@ -1,58 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027AbaLASs6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 13:48:58 -0500
-Received: from muin.pair.com ([209.68.1.55]:62380 "EHLO muin.pair.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752862AbaLASs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 13:48:57 -0500
-Message-ID: <547CB817.10806@tabi.org>
-Date: Mon, 01 Dec 2014 12:48:55 -0600
-From: Timur Tabi <timur@tabi.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932132AbaLAStf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 13:49:35 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:63011 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753934AbaLAStc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 13:49:32 -0500
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>, Markus Pargmann <mpa@pengutronix.de>,
-        Jiada Wang <jiada_wang@mentor.com>
-CC: alsa-devel@alsa-project.org, lgirdwood@gmail.com, tiwai@suse.de,
-        Li.Xiubo@freescale.com, nicoleotsuka@gmail.com, broonie@kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH] ASoC: fsl_ssi: free irq before irq_dispose_mapping()
-References: <1417402251-6596-1-git-send-email-jiada_wang@mentor.com> <20141201065046.GB27289@pengutronix.de> <547C9C34.9080602@metafoo.de>
-In-Reply-To: <547C9C34.9080602@metafoo.de>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1416901802-24211-39-git-send-email-jiang.liu@linux.intel.com>
+References: <1416901802-24211-1-git-send-email-jiang.liu@linux.intel.com> <1416901802-24211-39-git-send-email-jiang.liu@linux.intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 1 Dec 2014 11:49:11 -0700
+Message-ID: <CAErSpo7-GezRLKe4hTAm=KhYHUw6zggi+4LRXjh25K-f+_hAng@mail.gmail.com>
+Subject: Re: [Patch Part3 v4 38/38] x86, irq: Add kernel parameter
+ vector_alloc to set CPU vector allocation policy
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Jonathan Corbet <corbet@lwn.net>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Daniel J Blueman <daniel@numascale.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2014 10:49 AM, Lars-Peter Clausen wrote:
-> The driver creates the mapping by calling irq_of_parse_and_map(), so it
-> also has to dispose the mapping.
+On Tue, Nov 25, 2014 at 12:50 AM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
+> Parameter vector_alloc should be set to an integer with:
+> bit 0:  enable allocating CPU vector from CPUs on device local node.
+>         That's to allocate from cpumask_of_node(irq_data->node).
+> bit 1: enable the default policy, which is to allocate from
+>        apic->target_cpus().
+>
+> When allocating vectors, it tries all enabled policies from lower bit
+> position to higher bit position.
+>
+> This option could be use to optimize interrupt distribution on large
+> system such as NumaChip etc.
 
-I agree with Markus, this does seem weird.  It sounds like you're saying 
-that irq_of_parse_and_map() and devm_request_irq() are incompatible.  A 
-quick grep shows the following drivers that call both functions:
+Why can't we figure this out automatically?  Having a kernel parameter
+is a pain in the neck for users.
 
-ata/pata_mpc52xx.c
-built-in.o
-cpufreq/exynos5440-cpufreq.c
-crypto/omap-sham.c
-dma/moxart-dma.c
-edac/mpc85xx_edac.c
-hsi/clients/nokia-modem.c
-i2c/busses/i2c-wmt.c
-input/serio/apbps2.c
-mmc/host/omap_hsmmc.c
-mmc/host/moxart-mmc.c
-mtd/nand/mpc5121_nfc.c
-net/ethernet/arc/emac_main.c
-net/ethernet/moxa/moxart_ether.c
-pci/host/pcie-rcar.c
-pinctrl/samsung/pinctrl-exynos5440.c
-pinctrl/samsung/pinctrl-exynos.c
-pinctrl/pinctrl-bcm2835.c
-spi/spi-bcm2835.c
-spi/spi-mpc512x-psc.c
-staging/xillybus/xillybus_of.c
-thermal/samsung/exynos_tmu.c
-
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> Cc: Daniel J Blueman <daniel@numascale.com>
+> ---
+>  Documentation/kernel-parameters.txt |    6 ++++++
+>  arch/x86/kernel/apic/vector.c       |   11 +++++++++++
+>  2 files changed, 17 insertions(+)
+>
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 4c81a860cc2b..a175c5016954 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -3709,6 +3709,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>         vector=         [IA-64,SMP]
+>                         vector=percpu: enable percpu vector domain
+>
+> +       vector_alloc=   [x86,SMP]
+> +                       vector_alloc=policy: policy is a bitmap, bit 0
+> +                       for allocating CPU vector from CPUs on device local
+> +                       node; bit 1 for the default policy to allocating from
+> +                       apic->target_cpus(). All higher bits are reserved.
+> +
+>         video=          [FB] Frame buffer configuration
+>                         See Documentation/fb/modedb.txt.
+>
+> diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
+> index 16de8906ee1e..1158843551c7 100644
+> --- a/arch/x86/kernel/apic/vector.c
+> +++ b/arch/x86/kernel/apic/vector.c
+> @@ -79,6 +79,17 @@ void set_vector_alloc_policy(unsigned int policy)
+>                 x86_vector_alloc_policy = policy | X86_VECTOR_POL_CALLER;
+>  }
+>
+> +static int __init apic_parse_vector_policy(char *str)
+> +{
+> +       int policy;
+> +
+> +       if (get_option(&str, &policy) == 1)
+> +               set_vector_alloc_policy(policy);
+> +
+> +       return 1;
+> +}
+> +__setup("vector_alloc=", apic_parse_vector_policy);
+> +
+>  static struct apic_chip_data *alloc_apic_chip_data(int node)
+>  {
+>         struct apic_chip_data *data;
+> --
+> 1.7.10.4
+>
