@@ -1,270 +1,350 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634AbaLARZx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 12:25:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44712 "EHLO mx1.redhat.com"
+	id S1753765AbaLAR1D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 12:27:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45171 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752897AbaLARZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 12:25:51 -0500
-Date: Mon, 1 Dec 2014 18:02:42 +0200
+	id S1752817AbaLAR1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 12:27:00 -0500
+Date: Mon, 1 Dec 2014 18:03:27 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
         rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com
-Subject: [PATCH v8 00/50] linux: towards virtio-1 guest support
-Message-ID: <1417449619-24896-1-git-send-email-mst@redhat.com>
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Bjarke Istrup Pedersen <gurligebis@gentoo.org>,
+        stephen hemminger <stephen@networkplumber.org>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        David Drysdale <drysdale@google.com>,
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: [PATCH v8 08/50] virtio: memory access APIs
+Message-ID: <1417449619-24896-9-git-send-email-mst@redhat.com>
+References: <1417449619-24896-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1417449619-24896-1-git-send-email-mst@redhat.com>
 X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David, assuming patches are acceptable, I'd like them all to be merged through
-virtio or vhost trees to avoid dependency headaches.  Could you please ack
-doing that for net related patches, especially these:
-	  tun: move internal flag defines out of uapi
-	  tun: drop most type defines
-	  tun: add VNET_LE flag
-	  tun: TUN_VNET_LE support, fix sparse warnings for virtio headers
-	  macvtap: TUN_VNET_HDR support
-	  vhost/scsi: partial virtio 1.0 support
-	  af_packet: virtio 1.0 stubs
+virtio 1.0 makes all memory structures LE, so
+we need APIs to conditionally do a byteswap on BE
+architectures.
 
-Alternatively, I can prepare a tree with virtio changes and merge
-that into your net-next - if Rusty approves, or keeps
-silence :)
+To make it easier to check code statically,
+add virtio specific types for multi-byte integers
+in memory.
 
-Could you comment on this please?
+Add low level wrappers that do a byteswap conditionally, these will be
+useful e.g. for vhost.  Add high level wrappers that
+query device endian-ness and act accordingly.
 
-Up to half a hundred patches now. This is getting ridiculous.
-
-Based on patches by Cornelia and others, but with an API that should allow
-better static checking of code, slightly more concervative changes in vring and
-drivers, and compatibility for existing drivers so that this series can be
-applied gradually.
-At the end of series, all drivers are converted, and compatibility flags are
-dropped.
-
-All drivers have been converted now, with the exception
-of the balloon driver which we plan to rewrite
-rather than convert.
-All drivers now pass sparse without warnings.
-
-net and blk patches have been tested on s390.
-Other patches pass sparse so they are most likely
-ok too, but haven't been through testing yet -
-they can be dropped from patchset if necessary.
-
-Please review, and consider for 3.19
-
-changes since v7:
-	all drivers have been converted now.
-	new patches:
-	  virtio_console: virtio 1.0 support
-	  virtio_balloon: add legacy_only flag
-	  virtio: make VIRTIO_F_VERSION_1 a transport bit
-	  virtio: drop VIRTIO_F_VERSION_1 from drivers
-	vhost: make features 64 bit
-		fix bug noted by Sergei Shtylyov,
-		bugfix suggested by Ben Hutchings
-	virtio_net: disable mac write for virtio 1.0
-		moved earlier in the series
-	vhost/net: force len for TX to host endian
-		commit log reworded
-	vhost: virtio 1.0 endian-ness support
-		simplify error printing code sligthly
-	vhost/net: suppress compiler warning
-		smashed into code introducing the warning,
-		added a comment
-
-
-changes since v6:
-	tun: move internal flag defines out of uapi
-		document reasons for patch split
-	macvtap: TUN_VNET_LE support
-		fix patch subject
-	virtio: add low-level APIs for feature bits
-		fix comment in code s/set/clear/
-		document reasons for names selected
-	KVM: s390: enable virtio-ccw revision 1
-		fix up comment
-	virtio: use u32, not bitmap for features
-		fix whitespace
-	virtio_ccw: add support for 64 bit features
-		tweak comment in code
-
-	included reviewed-by tags by Cornelia David and Jason
-
-Changes since v5:
-	rewritten feature bit handling, based on suggestion by David:
-	changes are now smaller and easier to review.
-	new patch:
-	  virtio: add low-level APIs for feature bits
-	rewritten patches:
-	  virtio: use u32, not bitmap for features
-	  virtio: add support for 64 bit features.
-	
-Changes since v4:
-	I have dropped 64 bit feature negotiation from
-	most transports (except ccw).
-	For symmetry, I split out ccw bits:
-		  virtio: add support for 64 bit features.
-			adds core and device support for 64 bit features
-		  virtio_ccw: add support for 64 bit features.
-			actually enables 64 bit features in ccw.
-	detail below.
-
-	this is still really a cosmetic change: just reordering/splitting
-	patches, and dropping code changes that aren't needed.
-
-	new patches:
-	  mic_virtio: robust feature array size calculation
-	  virtio: assert 32 bit features in transports
-
-	addressed comments by Cornelia:
-		      virtio: disable virtio 1.0 in transports:
-			patch dropped
-		      virtio: memory access APIs
-			tweaked comments as suggested by Cornelia
-		      virtio_config: endian conversion for v1.0
-			dropped reviewed-by tags -
-				they applied to a very old version of patch
-		      virtio: set FEATURES_OK
-			replaced printk by dev_err
-		      virtio: add legacy feature table support
-			comment changes suggested by Cornelia
-		      virtio_blk: v1.0 support
-			dropped reviewed-by tags -
-				they applied to a very old version of patch
-		      virtio_net: enable v1.0 support
-			only write mac for legacy devices
-		      vhost: add memory access wrappers
-			move chunk to vhost: make features 64 bit
-			better patch description
-		      vhost: make features 64 bit
-			moved this patch earlier in series
-		      vhost/net: force len for TX to host endian
-			better patch description
-		      virtio_scsi: v1.0 support
-			fix bug: use high level, not low level wrappers
-			
-
-	included reviewed-by tags for patches:
-		KVM: s390 allow virtio_ccw status writes to fail
-				added reviewed-by tag by Cornelia
-		virtio_scsi: v1.0 support
-		virtio_scsi: move to uapi
-		virtio_scsi: export to userspace
-		vhost/scsi: partial virtio 1.0 support
-				added reviewed-by tag by Paolo
-
-Changes since v3:
-	- move virtio 1.0 feature bit out of transport bits:
-	  for now it's managed by drivers
-	- disable virtio 1.0 feature bit explicitly - for transports
-	  that don't support it
-
-Cornelia Huck (3):
-  virtio: allow transports to get avail/used addresses
-  KVM: s390: virtio-ccw revision 1 SET_VQ
-  KVM: s390: enable virtio-ccw revision 1
-
-Michael S. Tsirkin (46):
-  virtio: add low-level APIs for feature bits
-  virtio: use u32, not bitmap for features
-  mic_virtio: robust feature array size calculation
-  virtio: add support for 64 bit features.
-  virtio: assert 32 bit features in transports
-  virtio_ccw: add support for 64 bit features.
-  virtio: add virtio 1.0 feature bit
-  virtio: memory access APIs
-  virtio_ring: switch to new memory access APIs
-  virtio_config: endian conversion for v1.0
-  virtio: set FEATURES_OK
-  virtio: simplify feature bit handling
-  virtio: add legacy feature table support
-  virtio_net: v1.0 endianness
-  virtio_blk: v1.0 support
-  KVM: s390 allow virtio_ccw status writes to fail
-  virtio_blk: make serial attribute static
-  virtio_blk: fix race at module removal
-  virtio_net: pass vi around
-  virtio_net: get rid of virtio_net_hdr/skb_vnet_hdr
-  virtio_net: stricter short buffer length checks
-  virtio_net: bigger header when VERSION_1 is set
-  virtio_net: disable mac write for virtio 1.0
-  virtio_net: enable v1.0 support
-  vhost: make features 64 bit
-  vhost: add memory access wrappers
-  vhost/net: force len for TX to host endian
-  vhost: switch to __get/__put_user exclusively
-  vhost: virtio 1.0 endian-ness support
-  vhost/net: virtio 1.0 byte swap
-  vhost/net: larger header for virtio 1.0
-  vhost/net: enable virtio 1.0
-  tun: move internal flag defines out of uapi
-  tun: drop most type defines
-  tun: add VNET_LE flag
-  tun: TUN_VNET_LE support, fix sparse warnings for virtio headers
-  macvtap: TUN_VNET_LE support
-  virtio_scsi: v1.0 support
-  virtio_scsi: move to uapi
-  virtio_scsi: export to userspace
-  vhost/scsi: partial virtio 1.0 support
-  af_packet: virtio 1.0 stubs
-  virtio_console: virtio 1.0 support
-  virtio_balloon: add legacy_only flag
-  virtio: make VIRTIO_F_VERSION_1 a transport bit
-  virtio: drop VIRTIO_F_VERSION_1 from drivers
-
-Thomas Huth (1):
-  KVM: s390: Set virtio-ccw transport revision
-
- drivers/vhost/vhost.h                  |  37 ++++++-
- include/linux/virtio.h                 |  12 ++-
- include/linux/virtio_byteorder.h       |  59 +++++++++++
- include/linux/virtio_config.h          | 100 +++++++++++++++++--
- include/uapi/linux/if_tun.h            |  17 +---
- include/uapi/linux/virtio_blk.h        |  15 +--
- include/uapi/linux/virtio_config.h     |   9 +-
- include/uapi/linux/virtio_console.h    |   7 +-
- include/uapi/linux/virtio_net.h        |  15 +--
- include/uapi/linux/virtio_ring.h       |  45 ++++-----
- include/{ => uapi}/linux/virtio_scsi.h | 106 ++++++++++----------
- include/uapi/linux/virtio_types.h      |  46 +++++++++
- tools/virtio/linux/virtio.h            |  22 +----
- tools/virtio/linux/virtio_config.h     |   2 +-
- drivers/block/virtio_blk.c             |  74 ++++++++------
- drivers/char/virtio_console.c          |  30 +++---
- drivers/lguest/lguest_device.c         |  13 ++-
- drivers/misc/mic/card/mic_virtio.c     |  10 +-
- drivers/net/macvtap.c                  |  68 ++++++++-----
- drivers/net/tun.c                      | 168 ++++++++++++++------------------
- drivers/net/virtio_net.c               | 161 +++++++++++++++---------------
- drivers/remoteproc/remoteproc_virtio.c |   7 +-
- drivers/s390/kvm/kvm_virtio.c          |   7 +-
- drivers/s390/kvm/virtio_ccw.c          | 172 +++++++++++++++++++++++++++------
- drivers/scsi/virtio_scsi.c             |  50 ++++++----
- drivers/vhost/net.c                    |  31 +++---
- drivers/vhost/scsi.c                   |  22 +++--
- drivers/vhost/vhost.c                  |  93 +++++++++++-------
- drivers/virtio/virtio.c                |  78 +++++++++++----
- drivers/virtio/virtio_balloon.c        |   1 +
- drivers/virtio/virtio_mmio.c           |  13 ++-
- drivers/virtio/virtio_pci.c            |   8 +-
- drivers/virtio/virtio_ring.c           | 109 ++++++++++++---------
- net/packet/af_packet.c                 |  35 ++++---
- tools/virtio/virtio_test.c             |   5 +-
- tools/virtio/vringh_test.c             |  16 +--
- include/uapi/linux/Kbuild              |   2 +
- 37 files changed, 1061 insertions(+), 604 deletions(-)
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+---
+ include/linux/virtio_byteorder.h  | 59 +++++++++++++++++++++++++++++++++++++++
+ include/linux/virtio_config.h     | 32 +++++++++++++++++++++
+ include/uapi/linux/virtio_ring.h  | 45 ++++++++++++++---------------
+ include/uapi/linux/virtio_types.h | 46 ++++++++++++++++++++++++++++++
+ include/uapi/linux/Kbuild         |  1 +
+ 5 files changed, 161 insertions(+), 22 deletions(-)
  create mode 100644 include/linux/virtio_byteorder.h
- rename include/{ => uapi}/linux/virtio_scsi.h (73%)
  create mode 100644 include/uapi/linux/virtio_types.h
 
+diff --git a/include/linux/virtio_byteorder.h b/include/linux/virtio_byteorder.h
+new file mode 100644
+index 0000000..51865d0
+--- /dev/null
++++ b/include/linux/virtio_byteorder.h
+@@ -0,0 +1,59 @@
++#ifndef _LINUX_VIRTIO_BYTEORDER_H
++#define _LINUX_VIRTIO_BYTEORDER_H
++#include <linux/types.h>
++#include <uapi/linux/virtio_types.h>
++
++/*
++ * Low-level memory accessors for handling virtio in modern little endian and in
++ * compatibility native endian format.
++ */
++
++static inline u16 __virtio16_to_cpu(bool little_endian, __virtio16 val)
++{
++	if (little_endian)
++		return le16_to_cpu((__force __le16)val);
++	else
++		return (__force u16)val;
++}
++
++static inline __virtio16 __cpu_to_virtio16(bool little_endian, u16 val)
++{
++	if (little_endian)
++		return (__force __virtio16)cpu_to_le16(val);
++	else
++		return (__force __virtio16)val;
++}
++
++static inline u32 __virtio32_to_cpu(bool little_endian, __virtio32 val)
++{
++	if (little_endian)
++		return le32_to_cpu((__force __le32)val);
++	else
++		return (__force u32)val;
++}
++
++static inline __virtio32 __cpu_to_virtio32(bool little_endian, u32 val)
++{
++	if (little_endian)
++		return (__force __virtio32)cpu_to_le32(val);
++	else
++		return (__force __virtio32)val;
++}
++
++static inline u64 __virtio64_to_cpu(bool little_endian, __virtio64 val)
++{
++	if (little_endian)
++		return le64_to_cpu((__force __le64)val);
++	else
++		return (__force u64)val;
++}
++
++static inline __virtio64 __cpu_to_virtio64(bool little_endian, u64 val)
++{
++	if (little_endian)
++		return (__force __virtio64)cpu_to_le64(val);
++	else
++		return (__force __virtio64)val;
++}
++
++#endif /* _LINUX_VIRTIO_BYTEORDER */
+diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
+index f517884..02f0acb 100644
+--- a/include/linux/virtio_config.h
++++ b/include/linux/virtio_config.h
+@@ -4,6 +4,7 @@
+ #include <linux/err.h>
+ #include <linux/bug.h>
+ #include <linux/virtio.h>
++#include <linux/virtio_byteorder.h>
+ #include <uapi/linux/virtio_config.h>
+ 
+ /**
+@@ -199,6 +200,37 @@ int virtqueue_set_affinity(struct virtqueue *vq, int cpu)
+ 	return 0;
+ }
+ 
++/* Memory accessors */
++static inline u16 virtio16_to_cpu(struct virtio_device *vdev, __virtio16 val)
++{
++	return __virtio16_to_cpu(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val);
++}
++
++static inline __virtio16 cpu_to_virtio16(struct virtio_device *vdev, u16 val)
++{
++	return __cpu_to_virtio16(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val);
++}
++
++static inline u32 virtio32_to_cpu(struct virtio_device *vdev, __virtio32 val)
++{
++	return __virtio32_to_cpu(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val);
++}
++
++static inline __virtio32 cpu_to_virtio32(struct virtio_device *vdev, u32 val)
++{
++	return __cpu_to_virtio32(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val);
++}
++
++static inline u64 virtio64_to_cpu(struct virtio_device *vdev, __virtio64 val)
++{
++	return __virtio64_to_cpu(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val);
++}
++
++static inline __virtio64 cpu_to_virtio64(struct virtio_device *vdev, u64 val)
++{
++	return __cpu_to_virtio64(virtio_has_feature(vdev, VIRTIO_F_VERSION_1), val);
++}
++
+ /* Config space accessors. */
+ #define virtio_cread(vdev, structname, member, ptr)			\
+ 	do {								\
+diff --git a/include/uapi/linux/virtio_ring.h b/include/uapi/linux/virtio_ring.h
+index a99f9b7..61c818a 100644
+--- a/include/uapi/linux/virtio_ring.h
++++ b/include/uapi/linux/virtio_ring.h
+@@ -32,6 +32,7 @@
+  *
+  * Copyright Rusty Russell IBM Corporation 2007. */
+ #include <linux/types.h>
++#include <linux/virtio_types.h>
+ 
+ /* This marks a buffer as continuing via the next field. */
+ #define VRING_DESC_F_NEXT	1
+@@ -61,32 +62,32 @@
+ /* Virtio ring descriptors: 16 bytes.  These can chain together via "next". */
+ struct vring_desc {
+ 	/* Address (guest-physical). */
+-	__u64 addr;
++	__virtio64 addr;
+ 	/* Length. */
+-	__u32 len;
++	__virtio32 len;
+ 	/* The flags as indicated above. */
+-	__u16 flags;
++	__virtio16 flags;
+ 	/* We chain unused descriptors via this, too */
+-	__u16 next;
++	__virtio16 next;
+ };
+ 
+ struct vring_avail {
+-	__u16 flags;
+-	__u16 idx;
+-	__u16 ring[];
++	__virtio16 flags;
++	__virtio16 idx;
++	__virtio16 ring[];
+ };
+ 
+ /* u32 is used here for ids for padding reasons. */
+ struct vring_used_elem {
+ 	/* Index of start of used descriptor chain. */
+-	__u32 id;
++	__virtio32 id;
+ 	/* Total length of the descriptor chain which was used (written to) */
+-	__u32 len;
++	__virtio32 len;
+ };
+ 
+ struct vring_used {
+-	__u16 flags;
+-	__u16 idx;
++	__virtio16 flags;
++	__virtio16 idx;
+ 	struct vring_used_elem ring[];
+ };
+ 
+@@ -109,25 +110,25 @@ struct vring {
+  *	struct vring_desc desc[num];
+  *
+  *	// A ring of available descriptor heads with free-running index.
+- *	__u16 avail_flags;
+- *	__u16 avail_idx;
+- *	__u16 available[num];
+- *	__u16 used_event_idx;
++ *	__virtio16 avail_flags;
++ *	__virtio16 avail_idx;
++ *	__virtio16 available[num];
++ *	__virtio16 used_event_idx;
+  *
+  *	// Padding to the next align boundary.
+  *	char pad[];
+  *
+  *	// A ring of used descriptor heads with free-running index.
+- *	__u16 used_flags;
+- *	__u16 used_idx;
++ *	__virtio16 used_flags;
++ *	__virtio16 used_idx;
+  *	struct vring_used_elem used[num];
+- *	__u16 avail_event_idx;
++ *	__virtio16 avail_event_idx;
+  * };
+  */
+ /* We publish the used event index at the end of the available ring, and vice
+  * versa. They are at the end for backwards compatibility. */
+ #define vring_used_event(vr) ((vr)->avail->ring[(vr)->num])
+-#define vring_avail_event(vr) (*(__u16 *)&(vr)->used->ring[(vr)->num])
++#define vring_avail_event(vr) (*(__virtio16 *)&(vr)->used->ring[(vr)->num])
+ 
+ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
+ 			      unsigned long align)
+@@ -135,15 +136,15 @@ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
+ 	vr->num = num;
+ 	vr->desc = p;
+ 	vr->avail = p + num*sizeof(struct vring_desc);
+-	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + sizeof(__u16)
++	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + sizeof(__virtio16)
+ 		+ align-1) & ~(align - 1));
+ }
+ 
+ static inline unsigned vring_size(unsigned int num, unsigned long align)
+ {
+-	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (3 + num)
++	return ((sizeof(struct vring_desc) * num + sizeof(__virtio16) * (3 + num)
+ 		 + align - 1) & ~(align - 1))
+-		+ sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
++		+ sizeof(__virtio16) * 3 + sizeof(struct vring_used_elem) * num;
+ }
+ 
+ /* The following is used with USED_EVENT_IDX and AVAIL_EVENT_IDX */
+diff --git a/include/uapi/linux/virtio_types.h b/include/uapi/linux/virtio_types.h
+new file mode 100644
+index 0000000..e845e8c
+--- /dev/null
++++ b/include/uapi/linux/virtio_types.h
+@@ -0,0 +1,46 @@
++#ifndef _UAPI_LINUX_VIRTIO_TYPES_H
++#define _UAPI_LINUX_VIRTIO_TYPES_H
++/* Type definitions for virtio implementations.
++ *
++ * This header is BSD licensed so anyone can use the definitions to implement
++ * compatible drivers/servers.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in the
++ *    documentation and/or other materials provided with the distribution.
++ * 3. Neither the name of IBM nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS'' AND
++ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED.  IN NO EVENT SHALL IBM OR CONTRIBUTORS BE LIABLE
++ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
++ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
++ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
++ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
++ * SUCH DAMAGE.
++ *
++ * Copyright (C) 2014 Red Hat, Inc.
++ * Author: Michael S. Tsirkin <mst@redhat.com>
++ */
++#include <linux/types.h>
++
++/*
++ * __virtio{16,32,64} have the following meaning:
++ * - __u{16,32,64} for virtio devices in legacy mode, accessed in native endian
++ * - __le{16,32,64} for standard-compliant virtio devices
++ */
++
++typedef __u16 __bitwise__ __virtio16;
++typedef __u32 __bitwise__ __virtio32;
++typedef __u64 __bitwise__ __virtio64;
++
++#endif /* _UAPI_LINUX_VIRTIO_TYPES_H */
+diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
+index 4c94f31..44a5581 100644
+--- a/include/uapi/linux/Kbuild
++++ b/include/uapi/linux/Kbuild
+@@ -423,6 +423,7 @@ header-y += virtio_blk.h
+ header-y += virtio_config.h
+ header-y += virtio_console.h
+ header-y += virtio_ids.h
++header-y += virtio_types.h
+ header-y += virtio_net.h
+ header-y += virtio_pci.h
+ header-y += virtio_ring.h
 -- 
 MST
 
