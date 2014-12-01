@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932436AbaLAUl2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 15:41:28 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:46320 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932158AbaLAUlZ (ORCPT
+	id S932482AbaLAUl5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 15:41:57 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:52637 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932158AbaLAUlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 15:41:25 -0500
-Message-ID: <547CD2E7.7030100@gmail.com>
-Date: Tue, 02 Dec 2014 04:43:19 +0800
+	Mon, 1 Dec 2014 15:41:55 -0500
+Message-ID: <547CD304.20407@gmail.com>
+Date: Tue, 02 Dec 2014 04:43:48 +0800
 From: Chen Gang <gang.chen.5i5j@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
@@ -24,7 +24,9 @@ CC: "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
         "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
         "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
         "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
 Subject: [PATCH] arch: uapi: asm: mman.h: Support MADV_FREE for madvise()
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
