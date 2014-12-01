@@ -1,120 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725AbaLAMhD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 07:37:03 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:45837 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753705AbaLAMhA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 07:37:00 -0500
-Date: Mon, 1 Dec 2014 12:36:56 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Marc Zyngier <Marc.Zyngier@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] irqchip: gic: Allow interrupt level to be set for PPIs.
-Message-ID: <20141201123656.GQ828@e106497-lin.cambridge.arm.com>
-References: <1417197340-27298-1-git-send-email-Liviu.Dudau@arm.com>
- <20141201104145.GY3836@n2100.arm.linux.org.uk>
- <20141201104612.GM828@e106497-lin.cambridge.arm.com>
- <20141201110358.GA3836@n2100.arm.linux.org.uk>
- <547C4ECD.20802@arm.com>
- <20141201112302.GC3836@n2100.arm.linux.org.uk>
- <547C5179.5020505@arm.com>
- <20141201115400.GD3836@n2100.arm.linux.org.uk>
+	id S1753758AbaLAMhX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 07:37:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57126 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753683AbaLAMhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 07:37:19 -0500
+Date: Mon, 1 Dec 2014 14:37:01 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v7 31/46] vhost: virtio 1.0 endian-ness support
+Message-ID: <20141201123701.GB17958@redhat.com>
+References: <1417359787-10138-1-git-send-email-mst@redhat.com>
+ <1417359787-10138-32-git-send-email-mst@redhat.com>
+ <20141201133353.0bbaa2e1.cornelia.huck@de.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20141201115400.GD3836@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 01 Dec 2014 12:36:57.0884 (UTC) FILETIME=[7F165DC0:01D00D63]
-X-MC-Unique: 114120112365801601
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20141201133353.0bbaa2e1.cornelia.huck@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 11:54:00AM +0000, Russell King - ARM Linux wrote:
-> On Mon, Dec 01, 2014 at 11:31:05AM +0000, Marc Zyngier wrote:
-> > On 01/12/14 11:23, Russell King - ARM Linux wrote:
-> > > On Mon, Dec 01, 2014 at 11:19:41AM +0000, Marc Zyngier wrote:
-> > >> Hi Russell,
-> > >>
-> > >> On 01/12/14 11:03, Russell King - ARM Linux wrote:
-> > >>> If all you want to do is to bypass the following check, what's wrong
-> > >>> with actually doing that:
-> > >>>
-> > >>> -	if (type != IRQ_TYPE_LEVEL_HIGH && type != IRQ_TYPE_EDGE_RISING)
-> > >>> +	if (gicirq >= 32 && type != IRQ_TYPE_LEVEL_HIGH &&
-> > >>> +	    type != IRQ_TYPE_EDGE_RISING)
-> > >>> 		return -EINVAL;
-> > >>>
-> > >>
-> > >> I think that will require some additional changes to gic_configure_irq
-> > >> (in irq-gic-common.c).
-> > > 
-> > > I don't think so - gic_configure_irq() will treat it as a no-op as far
-> > > as trying to configure the IRQ settings.
+On Mon, Dec 01, 2014 at 01:33:53PM +0100, Cornelia Huck wrote:
+> On Sun, 30 Nov 2014 17:11:49 +0200
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  drivers/vhost/vhost.c | 93 +++++++++++++++++++++++++++++++--------------------
+> >  1 file changed, 56 insertions(+), 37 deletions(-)
 > > 
-> > I agree. But that's following ARM's tradition of making PPIs
-> > non-configurable. I seem to remember that there is at least one
-> > occurrence of a GIC with configurable PPIs (Qualcomm, IIRC).
+> 
+> > @@ -1113,18 +1120,19 @@ static int get_indirect(struct vhost_virtqueue *vq,
+> >  {
+> >  	struct vring_desc desc;
+> >  	unsigned int i = 0, count, found = 0;
+> > +	u32 len = vhost32_to_cpu(vq, indirect->len);
+> >  	int ret;
 > > 
-> > With this use case in mind, Liviu's patch allows an active-low interrupt
-> > to be correctly configured as level, for example.
+> >  	/* Sanity check */
+> > -	if (unlikely(indirect->len % sizeof desc)) {
+> > +	if (unlikely(len % sizeof desc)) {
+> >  		vq_err(vq, "Invalid length in indirect descriptor: "
+> >  		       "len 0x%llx not multiple of 0x%zx\n",
+> > -		       (unsigned long long)indirect->len,
+> > +		       (unsigned long long)vhost32_to_cpu(vq, indirect->len),
 > 
-> Liviu's patch is nothing more than a hack.  It changes (eg) the active
-> low level to be an active high level with the explicitly stated reason to
-> bypass a test, and then hopes that the remaining functions do the right
-> thing.
+> Can't you use len here?
 
-I was trying to make the smallest amount of changes possible. Given that
-ARM's GICs don't distinguish between high/low or raising/falling all I wanted
-was to get the level vs edge type being sticky.
+Not if I want error message to be readable.
+
+> >  		       sizeof desc);
+> >  		return -EINVAL;
+> >  	}
+> > 
+> > -	ret = translate_desc(vq, indirect->addr, indirect->len, vq->indirect,
+> > +	ret = translate_desc(vq, vhost64_to_cpu(vq, indirect->addr), len, vq->indirect,
+> >  			     UIO_MAXIOV);
+> >  	if (unlikely(ret < 0)) {
+> >  		vq_err(vq, "Translation failure %d in indirect.\n", ret);
+> 
+> 
+> > @@ -1404,7 +1422,7 @@ int vhost_add_used_n(struct vhost_virtqueue *vq, struct vring_used_elem *heads,
+> > 
+> >  	/* Make sure buffer is written before we update index. */
+> >  	smp_wmb();
+> > -	if (put_user(vq->last_used_idx, &vq->used->idx)) {
+> > +	if (__put_user(cpu_to_vhost16(vq, vq->last_used_idx), &vq->used->idx)) {
+> 
+> Why s/put_user/__put_user/ - I don't see how endianness conversions
+> should have an influence there?
+
+We should generally to __ variants since addresses are pre-validated.
+But I agree - should be a separate patch.
 
 > 
-> It would be better to explicitly bypass the test, and then explicitly
-> handle other cases in gic_configure_irq().
+> >  		vq_err(vq, "Failed to increment used idx");
+> >  		return -EFAULT;
+> >  	}
 > 
-> It would be even better to make the code reflect reality right the way
-> through.  If PPIs are non-configurable, then we should return -EINVAL if
-> trying to set them to a setting which is not supported.  For example,
-> pass through all states to gic_configure_irq(), and have gic_configure_irq()
-> return whether the state is valid.
+> > @@ -1449,11 +1468,11 @@ static bool vhost_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+> >  	if (unlikely(!v))
+> >  		return true;
+> > 
+> > -	if (get_user(event, vhost_used_event(vq))) {
+> > +	if (__get_user(event, vhost_used_event(vq))) {
 > 
-> Then, gic_configure_irq() can read back the register after trying to set
-> the appropriate value, and see whether it was taken.  If the bits remain
-> unchanged, then it can decide that the requested mode is not supported,
-> and return -EINVAL.
-> 
-> In any case, let's not hack the code in the way that Liviu is trying to
-> do.
+> Dito: why the change?
 
-OK, I will send a v2 patch, doing the right thing.
+Same. Will split this out, it's unrelated to virtio 1.0.
 
-Best regards,
-Liviu
-
-> 
-> -- 
-> FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-> according to speedtest.net.
-> 
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+> >  		vq_err(vq, "Failed to get used event idx");
+> >  		return true;
+> >  	}
+> > -	return vring_need_event(event, new, old);
+> > +	return vring_need_event(vhost16_to_cpu(vq, event), new, old);
+> >  }
+> > 
+> >  /* This actually signals the guest, using eventfd. */
