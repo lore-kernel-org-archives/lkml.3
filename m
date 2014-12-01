@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932543AbaLAV3Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 16:29:24 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:60305 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932378AbaLAV3W (ORCPT
+	id S932545AbaLAVbb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 16:31:31 -0500
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:63253 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932378AbaLAVb3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 16:29:22 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v3 05/11] memory: add Atmel EBI (External Bus Interface) driver
-Date: Mon, 01 Dec 2014 22:28:39 +0100
-Message-ID: <2153824.ln4mvSCK1X@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141201212820.6a7fc4b0@bbrezillon>
-References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com> <2476626.8iiXDzb2Te@wuerfel> <20141201212820.6a7fc4b0@bbrezillon>
+	Mon, 1 Dec 2014 16:31:29 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:SfAjEecnh8b6HsxtsU5wTQvp+IKQNFPMw/mu7Y3wD7Q
- g6bJQIy3nP9CZwPXbuDeWzqXfYHmV4pVy4z+OhKJPP9xvqaz1f
- kU4JC1AaIDWVMkxzy4yUQOJofIdFPHR8PrZVASkWN9+b1nPlGF
- H6Kp28yHVdPmly2KfNllmhKW4a2b9VN/Y7vYmNX1fKFXUGIZiL
- cAoAAqDQ6j0qFAAMCYVV9kflnWmMEHSpiR/ZX5snzwvlRGSQ/V
- lCpXelnN6aCJmE5y+mPRwdHQxNWAzN/KIgCPJ6JZUFKWsv8xNG
- 8to6WymG1CWPQgt6R8hbkkzLfKgYa3GO5wVipLw4qSVzvH89DG
- 73ELgCzhyxdK3/E3P6QE=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <1417466640.1771.576.camel@triegel.csb>
+References: <1417098455.1771.338.camel@triegel.csb>
+	<CA+55aFxBpLik53Q+Nwpcztox_4ZeEGqr2stiU5qzz1SGdfLGOw@mail.gmail.com>
+	<1417435546.1771.400.camel@triegel.csb>
+	<CA+55aFxiPbr9CJt_+G03zzYvkrr0ENNHFKNU08AjZh-j=PzUig@mail.gmail.com>
+	<1417466640.1771.576.camel@triegel.csb>
+Date: Mon, 1 Dec 2014 13:31:29 -0800
+X-Google-Sender-Auth: o1E35TJ_FqGspe4ASO18ZW8yp8U
+Message-ID: <CA+55aFxgDALOqxzaFC6bNNmyHQ+FEPQ7x5C1vF6S5oY49gKKnw@mail.gmail.com>
+Subject: Re: POSIX mutex destruction requirements vs. futexes
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Torvald Riegel <triegel@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 01 December 2014 21:28:20 Boris Brezillon wrote:
-> > On Monday 01 December 2014 19:29:23 Boris Brezillon wrote:
-> > > On Mon, 01 Dec 2014 17:26:27 +0100 Arnd Bergmann <arnd@arndb.de> wrote:
-> > > 
-> > > #define AT91_EBICSA_REGFIELD(off)                   \
-> > >     REG_FIELD(ebicsa_off, AT91_MATRIX_EBI_NUM_CS - 1)
-> > > 
-> > 
-> > That would be acceptable too, but what I really meant is one step further:
-> > 
-> > static const struct reg_field at91sam9260_ebi_csa = 
-> >       REG_FIELD(AT91SAM9260_MATRIX_EBICSA_OFF, 0, AT91_MATRIX_EBI_NUM_CS - 1);
-> 
-> That's what I did in the first place (in a version I didn't submitted),
-> and I guess I'll go for that one unless you really prefer the
-> alternative (I ran into a lot of trouble with DT bindings ABI
-> stability, and I'd prefer to keep DT bindings as simple as
-> possible).
+On Mon, Dec 1, 2014 at 12:44 PM, Torvald Riegel <triegel@redhat.com> wrote:
+>
+> User space could introduce a wrapper (e.g., glibc could provide a futex
+> wrapper that allows spurious wakeup on return of 0) -- but glibc can't
+> prevent users from not using futexes directly and not through the
+> wrapper.  Or should it try to intercept direct, non-wrapper uses of the
+> futex syscall in some way?
 
-Ok, that's good then.
+So I don't think we even need to worry about direct users of the futex
+system call. They had better know what they are doing.
 
-	Arnd
+> I agree, and that's why I mentioned that it may seem odd to fix this on
+> the level of the kernel interface.  However, it just seems the best
+> approach when considering practice in kernel and user space, the
+> by-design futex properties, and the realities of what POSIX requires.
+
+Sure. That said, I think there really are very few cases we need to worry about:
+
+ - the ptreads_mutex implementation itself.
+
+   This is, after all, what 99% of all applications will use. And
+here, the only worry is to make sure that glibc (or whatever other
+libc) is aware of its own reuse of allocations, and basically know
+that it can get into the situation where a reused mutex memory
+allocation can effectively see "stale" wakeups. That is, of course,
+assuming that the library implementation is the expected racy one.
+There *are* ways to avoid the races, although they are generally not
+really even worth the bother - just calling futex_wait() in a loop is
+the RightThing(tm) to do.
+
+ - other random direct futex users
+
+   Quite frankly, these are few. There are valid and real use cases
+(the CLONE_CHILD_CLEARTID interface, for example, expects the user to
+use a raw futex), but they tend to be low-level enough that they'd
+really better know about this. And again, it should be easy enough to
+just loop around FUTEX_WAIT and just reading the value if somebody is
+worried about this.
+
+Making the documentation talk about the issue, and making the strong
+suggestion to make any FUTEX_WAIT style use just always loop and check
+the actual value for simplicity and robustness is probably the right
+approach.
+
+               Linus
