@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842AbaLAJvu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 04:51:50 -0500
-Received: from mail-bl2on0116.outbound.protection.outlook.com ([65.55.169.116]:19872
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752039AbaLAJvs convert rfc822-to-8bit (ORCPT
+	id S1752894AbaLAJxo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 04:53:44 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:22311 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752039AbaLAJxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 04:51:48 -0500
-X-Greylist: delayed 25144 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Dec 2014 04:51:48 EST
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>
-Subject: RE: [PATCH v2 0/3] pwm: ftm: add Power Management support
-Thread-Topic: [PATCH v2 0/3] pwm: ftm: add Power Management support
-Thread-Index: AQHP6Df/Ewkv3RMNekymn6py5vm4o5x6XAxwgABr1YCAAAArYA==
-Date: Mon, 1 Dec 2014 09:51:45 +0000
-Message-ID: <BY2PR0301MB0613FF0C485076DC362831E79B7D0@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1413350495-40980-1-git-send-email-Li.Xiubo@freescale.com>
- <BY2PR0301MB06135ED75E8DCEC04E442E0B9B7D0@BY2PR0301MB0613.namprd03.prod.outlook.com>
- <20141201094953.GA20174@ulmo>
-In-Reply-To: <20141201094953.GA20174@ulmo>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.53]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0615;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0615;
-x-forefront-prvs: 0412A98A59
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(24454002)(51704005)(189002)(199003)(120916001)(21056001)(31966008)(4396001)(19580405001)(99396003)(19580395003)(107046002)(77096004)(97736003)(86362001)(54206007)(110136001)(77156002)(62966003)(64706001)(76176999)(74316001)(50986999)(66066001)(101416001)(54606007)(92566001)(92726001)(54356999)(106116001)(76576001)(106356001)(40100003)(46102003)(105586002)(558084003)(33656002)(99286002)(95666004)(87936001)(2656002)(20776003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0615;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 1 Dec 2014 04:53:43 -0500
+Message-ID: <547C3A9B.4060407@marvell.com>
+Date: Mon, 1 Dec 2014 10:53:31 +0100
+From: Mirko Lindner <mlindner@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+CC: <stephen@networkplumber.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] skge: Unmask interrupts in case of spurious interrupts
+References: <1417348291-1302-1-git-send-email-LinoSanfilippo@gmx.de>
+In-Reply-To: <1417348291-1302-1-git-send-email-LinoSanfilippo@gmx.de>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-01_01:2014-11-28,2014-11-30,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1412010098
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject: Re: [PATCH v2 0/3] pwm: ftm: add Power Management support
+On 30/11/14 12:51, Lino Sanfilippo wrote:
+> In case of a spurious interrupt dont forget to reenable the interrupts that
+> have been masked by reading the interrupt source register.
 > 
-> On Mon, Dec 01, 2014 at 03:25:02AM +0000, Li.Xiubo@freescale.com wrote:
-> > Ping :) .
-> >
-> > Thanks very much.
+> Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+> ---
+>  drivers/net/ethernet/marvell/skge.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 > 
-> Applied with a few whitespace cleanups.
+> diff --git a/drivers/net/ethernet/marvell/skge.c b/drivers/net/ethernet/marvell/skge.c
+> index 264eab7..7173836 100644
+> --- a/drivers/net/ethernet/marvell/skge.c
+> +++ b/drivers/net/ethernet/marvell/skge.c
+> @@ -3433,10 +3433,9 @@ static irqreturn_t skge_intr(int irq, void *dev_id)
+>  
+>  	if (status & IS_HW_ERR)
+>  		skge_error_irq(hw);
+> -
+> +out:
+>  	skge_write32(hw, B0_IMSK, hw->intr_mask);
+>  	skge_read32(hw, B0_IMSK);
+> -out:
+>  	spin_unlock(&hw->hw_lock);
+>  
+>  	return IRQ_RETVAL(handled);
 > 
-Hi Thierry,
 
-Thanks verrry much.
+Looks OK.
 
-BRs
-Xiubo
+Acked-by: Mirko Lindner <mlindner@marvell.com>
