@@ -1,62 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752344AbaLAEup (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 23:50:45 -0500
-Received: from mout.web.de ([212.227.15.3]:58013 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752039AbaLAEun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 23:50:43 -0500
-Message-ID: <547BF398.8010407@users.sourceforge.net>
-Date: Mon, 01 Dec 2014 05:50:32 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752589AbaLAEwM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 23:52:12 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:33820 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752472AbaLAEwK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 23:52:10 -0500
+Date: Sun, 30 Nov 2014 20:52:01 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Davidlohr Bueso <dave@stgolabs.net>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mm: unmapped page migration avoid unmap+remap overhead
+Message-ID: <alpine.LSU.2.11.1411302046420.5335@eggly.anvils>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-To: Eduardo Valentin <edubezval@gmail.com>, Zhang Rui <rui.zhang@intel.com>,
-        linux-pm@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] thermal: int3403: Delete a check before thermal_zone_device_unregister()
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:dh205Xqkr0l+fdruVsdAI/rhDcJZ2s6ONwSmlntGlzF2yDb1//v
- 9iCogSig33PPx8aXd6/af1YpdpiMxhnnna11MdKo0QTR2nz7lxP0sYyyPw1DebY/ZMHDAEc
- LIUAfowfsP6nVqgf8BQ6sfMYf4RohfxDpXkhht7myTk/oKp5pM13O9RHcMoObmKKPVKn4Fq
- +9MTiGDds3gZRl+9fmOJA==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Mon, 1 Dec 2014 05:45:42 +0100
+Page migration's __unmap_and_move(), and rmap's try_to_unmap(),
+were created for use on pages almost certainly mapped into userspace.
+But nowadays compaction often applies them to unmapped page cache pages:
+which may exacerbate contention on i_mmap_rwsem quite unnecessarily,
+since try_to_unmap_file() makes no preliminary page_mapped() check.
 
-The thermal_zone_device_unregister() function tests whether its argument
-is NULL and then returns immediately. Thus the test around the call
-is not needed.
+Now check page_mapped() in __unmap_and_move(); and avoid repeating the
+same overhead in rmap_walk_file() - don't remove_migration_ptes() when
+we never inserted any.
 
-This issue was detected by using the Coccinelle software.
+(The PageAnon(page) comment blocks now look even sillier than before,
+but clean that up on some other occasion.  And note in passing that
+try_to_unmap_one() does not use a migration entry when PageSwapCache,
+so remove_migration_ptes() will then not update that swap entry to
+newpage pte: not a big deal, but something else to clean up later.)
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Davidlohr remarked in "mm,fs: introduce helpers around the i_mmap_mutex"
+conversion to i_mmap_rwsem, that "The biggest winner of these changes
+is migration": a part of the reason might be all of that unnecessary
+taking of i_mmap_mutex in page migration; and it's rather a shame that
+I didn't get around to sending this patch in before his - this one is
+much less useful after Davidlohr's conversion to rwsem, but still good.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
 ---
- drivers/thermal/int340x_thermal/int3403_thermal.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/thermal/int340x_thermal/int3403_thermal.c b/drivers/thermal/int340x_thermal/int3403_thermal.c
-index 6e9fb62..790b8f6 100644
---- a/drivers/thermal/int340x_thermal/int3403_thermal.c
-+++ b/drivers/thermal/int340x_thermal/int3403_thermal.c
-@@ -293,8 +293,7 @@ static int int3403_sensor_add(struct int3403_priv *priv)
- 	return 0;
- 
-  err_free_obj:
--	if (obj->tzone)
--		thermal_zone_device_unregister(obj->tzone);
-+	thermal_zone_device_unregister(obj->tzone);
- 	return result;
- }
- 
--- 
-2.1.3
+ mm/migrate.c |   28 ++++++++++++++++++----------
+ 1 file changed, 18 insertions(+), 10 deletions(-)
 
+--- 3.18-rc7/mm/migrate.c	2014-10-19 22:12:56.809625067 -0700
++++ linux/mm/migrate.c	2014-11-30 20:17:51.205187663 -0800
+@@ -746,7 +746,7 @@ static int fallback_migrate_page(struct
+  *  MIGRATEPAGE_SUCCESS - success
+  */
+ static int move_to_new_page(struct page *newpage, struct page *page,
+-				int remap_swapcache, enum migrate_mode mode)
++				int page_was_mapped, enum migrate_mode mode)
+ {
+ 	struct address_space *mapping;
+ 	int rc;
+@@ -784,7 +784,7 @@ static int move_to_new_page(struct page
+ 		newpage->mapping = NULL;
+ 	} else {
+ 		mem_cgroup_migrate(page, newpage, false);
+-		if (remap_swapcache)
++		if (page_was_mapped)
+ 			remove_migration_ptes(page, newpage);
+ 		page->mapping = NULL;
+ 	}
+@@ -798,7 +798,7 @@ static int __unmap_and_move(struct page
+ 				int force, enum migrate_mode mode)
+ {
+ 	int rc = -EAGAIN;
+-	int remap_swapcache = 1;
++	int page_was_mapped = 0;
+ 	struct anon_vma *anon_vma = NULL;
+ 
+ 	if (!trylock_page(page)) {
+@@ -870,7 +870,6 @@ static int __unmap_and_move(struct page
+ 			 * migrated but are not remapped when migration
+ 			 * completes
+ 			 */
+-			remap_swapcache = 0;
+ 		} else {
+ 			goto out_unlock;
+ 		}
+@@ -910,13 +909,17 @@ static int __unmap_and_move(struct page
+ 	}
+ 
+ 	/* Establish migration ptes or remove ptes */
+-	try_to_unmap(page, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
++	if (page_mapped(page)) {
++		try_to_unmap(page,
++			TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
++		page_was_mapped = 1;
++	}
+ 
+ skip_unmap:
+ 	if (!page_mapped(page))
+-		rc = move_to_new_page(newpage, page, remap_swapcache, mode);
++		rc = move_to_new_page(newpage, page, page_was_mapped, mode);
+ 
+-	if (rc && remap_swapcache)
++	if (rc && page_was_mapped)
+ 		remove_migration_ptes(page, page);
+ 
+ 	/* Drop an anon_vma reference if we took one */
+@@ -1017,6 +1020,7 @@ static int unmap_and_move_huge_page(new_
+ {
+ 	int rc = 0;
+ 	int *result = NULL;
++	int page_was_mapped = 0;
+ 	struct page *new_hpage;
+ 	struct anon_vma *anon_vma = NULL;
+ 
+@@ -1047,12 +1051,16 @@ static int unmap_and_move_huge_page(new_
+ 	if (PageAnon(hpage))
+ 		anon_vma = page_get_anon_vma(hpage);
+ 
+-	try_to_unmap(hpage, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
++	if (page_mapped(hpage)) {
++		try_to_unmap(hpage,
++			TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
++		page_was_mapped = 1;
++	}
+ 
+ 	if (!page_mapped(hpage))
+-		rc = move_to_new_page(new_hpage, hpage, 1, mode);
++		rc = move_to_new_page(new_hpage, hpage, page_was_mapped, mode);
+ 
+-	if (rc != MIGRATEPAGE_SUCCESS)
++	if (rc != MIGRATEPAGE_SUCCESS && page_was_mapped)
+ 		remove_migration_ptes(hpage, hpage);
+ 
+ 	if (anon_vma)
