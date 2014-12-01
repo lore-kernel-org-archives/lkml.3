@@ -1,61 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071AbaLAS2L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 13:28:11 -0500
-Received: from mta-out1.inet.fi ([62.71.2.195]:56765 "EHLO kirsi1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751914AbaLAS2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 13:28:10 -0500
-Date: Mon, 1 Dec 2014 20:25:19 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Will Deacon <will.deacon@arm.com>, Tejun Heo <tj@kernel.org>,
-        Dave Jones <davej@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
-        Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141201182519.GA16749@node.dhcp.inet.fi>
-References: <20141119021902.GA14216@redhat.com>
- <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
- <20141119145902.GA13387@redhat.com>
- <546D0530.8040800@mit.edu>
- <20141120152509.GA5412@redhat.com>
- <20141125122217.GA15280@arm.com>
- <20141201114854.GB18466@arm.com>
- <CA+55aFyhB5LBVadA5TfuX8+TrZZWTHwT-2NCYRLat8Fp6eBjgw@mail.gmail.com>
- <20141201171036.GH18466@arm.com>
- <CA+55aFwooh31=GMVUoriev+t92=roye_ck+czqr48M1sQ3UOMg@mail.gmail.com>
+	id S932164AbaLAS3a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 13:29:30 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:54718 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932075AbaLAS32 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 13:29:28 -0500
+Date: Mon, 1 Dec 2014 19:29:23 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v3 05/11] memory: add Atmel EBI (External Bus Interface)
+ driver
+Message-ID: <20141201192923.6a85e52b@bbrezillon>
+In-Reply-To: <4214030.Z2iCEM6hVA@wuerfel>
+References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1417429647-3419-6-git-send-email-boris.brezillon@free-electrons.com>
+	<4214030.Z2iCEM6hVA@wuerfel>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwooh31=GMVUoriev+t92=roye_ck+czqr48M1sQ3UOMg@mail.gmail.com>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 09:53:16AM -0800, Linus Torvalds wrote:
-> On Mon, Dec 1, 2014 at 9:10 AM, Will Deacon <will.deacon@arm.com> wrote:
-> >
-> > So I don't even have binfmt-misc compiled in. The two handlers I have are
-> > BINFMT_ELF and BINFMT_SCRIPT, but they both check for headers that we won't
-> > get back from oom_score afaict.
+Hi Arnd,
+
+On Mon, 01 Dec 2014 17:26:27 +0100
+Arnd Bergmann <arnd@arndb.de> wrote:
+
+> On Monday 01 December 2014 11:27:21 Boris Brezillon wrote:
+> > The EBI (External Bus Interface) is used to access external peripherals
+> > (NOR, SRAM, NAND, and other specific devices like ethernet controllers).
+> > Each device is assigned a CS line and an address range and can have its
+> > own configuration (timings, access mode, bus width, ...).
+> > This driver provides a generic DT binding to configure a device according
+> > to its requirements.
+> > For specific device controllers (like the NAND one) the SMC timings
+> > should be configured by the controller driver through the matrix and
+> > smc syscon regmaps.
 > 
-> Hmm. So I can't even get that "oom_score" file to be executable in the
-> first place, which should mean that execve() should terminate very
-> quickly with an EACCES error.
+> Nice!
+> 
+> > +
+> > +#define AT91_EBICSA_REGFIELD(soc)			\
+> > +	REG_FIELD(soc ## _MATRIX_EBICSA_OFF, 0,		\
+> > +		  AT91_MATRIX_EBI_NUM_CS - 1)
+> > +
+> > +#define AT91_MULTI_EBICSA_REGFIELD(soc, n)		\
+> > +	REG_FIELD(soc ## _MATRIX_EBI ## n ## CSA_OFF,	\
+> > +		  0, AT91_MATRIX_EBI_NUM_CS - 1)
+> 
+> I don't like the use macros that concatenate symbol names like
+> this. Why not do either
+> 
+> - open-code the macro contents in the few uses, to allow
+>   grepping for them, or
 
-No idea about oom_score, but kernel happily accepts chmod on any file
-under /proc/PID/net/. It caused issues before[1].
+I'm not sure to get this one, are you suggesting to do something like
+this:
 
-Why do we allow this?
+#define AT91_EBICSA_REGFIELD(off)			\
+	REG_FIELD(ebicsa_off, AT91_MATRIX_EBI_NUM_CS - 1)
 
-I've asked before, but no answer so far.
+> 
+> - put the register number in the syscon reference and look it
+>   up from there (this would be slightly more complicated for the
+>   second macro)
 
+I've told several times not to encode register offsets or register ids
+in the DT :-) (and if I'm not mistaken that's what you're suggesting
+here).
 
-[1] https://lkml.org/lkml/2014/8/2/103
+> 
+> > +
+> > +	np = of_parse_phandle(pdev->dev.of_node, "atmel,smc", 0);
+> > +	if (!np)
+> > +		return -EINVAL;
+> > +
+> > +	ebi->smc = syscon_node_to_regmap(np);
+> > +	if (IS_ERR(ebi->smc))
+> > +		return PTR_ERR(ebi->smc);
+> 
+> I think this and the second instance of it can be shortened to
+> 
+> 	ebi->smc = syscon_regmap_lookup_by_phandle(pdev->dev.of_node, "atmel,smc");
+
+Sure.
+
+Regards,
+
+Boris
+
 
 -- 
- Kirill A. Shutemov
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
