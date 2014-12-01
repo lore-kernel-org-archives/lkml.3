@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488AbaLALgf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 06:36:35 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:60773 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021AbaLALge (ORCPT
+	id S1753230AbaLALjJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 06:39:09 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:20346 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752945AbaLALjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 06:36:34 -0500
-Date: Mon, 1 Dec 2014 12:36:21 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH v7 22/46] virtio_blk: fix race at module removal
-Message-ID: <20141201123621.22be329d.cornelia.huck@de.ibm.com>
-In-Reply-To: <1417359787-10138-23-git-send-email-mst@redhat.com>
-References: <1417359787-10138-1-git-send-email-mst@redhat.com>
-	<1417359787-10138-23-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120111-0029-0000-0000-000001F4EA69
+	Mon, 1 Dec 2014 06:39:08 -0500
+Date: Mon, 1 Dec 2014 14:38:15 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: tytso@mit.edu, zatimend@hotmail.co.uk, linux-kernel@vger.kernel.org,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Kees Cook <keescook@chromium.org>, Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH] random: add and use memzero_explicit() for clearing data
+Message-ID: <20141201113815.GD5048@mwanda>
+References: <1408996899-4892-1-git-send-email-dborkman@redhat.com>
+ <20141201102529.GA9666@mwanda>
+ <547C4B59.1000807@redhat.com>
+ <20141201112957.GC5048@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141201112957.GC5048@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 30 Nov 2014 17:11:06 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
-
-> If a device appears while module is being removed,
-> driver will get a callback after we've given up
-> on the major number.
+On Mon, Dec 01, 2014 at 02:29:57PM +0300, Dan Carpenter wrote:
+> On Mon, Dec 01, 2014 at 12:04:57PM +0100, Daniel Borkmann wrote:
+> > Well, BSD has helpers such as bzero_explicit() for such cases to work
+> > around this, which memzero_explicit() similarly does; see also [1].
+> > 
+> >   [1] https://gcc.gnu.org/ml/gcc-help/2014-10/msg00059.html
 > 
-> In theory this means this major number can get reused
-> by something else, resulting in a conflict.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  drivers/block/virtio_blk.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> We should make memset() a define and call a custom function internally.
+>
 
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Or we could specify -fno-builtin-memset like the GCC people suggest.
+
+regards,
+dan carpenter
 
