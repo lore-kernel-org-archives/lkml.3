@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499AbaLACLv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 21:11:51 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:46152 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227AbaLACLr (ORCPT
+	id S1752425AbaLACLt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 21:11:49 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:14134 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752201AbaLACLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 21:11:47 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-3b-547bce60e7cd
+	Sun, 30 Nov 2014 21:11:46 -0500
+X-AuditID: cbfee68f-f791c6d000004834-bc-547bce60b337
 From: Jaewon Kim <jaewon02.kim@samsung.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Kukjin Kim <kgene.kim@samsung.com>
 Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-input@vger.kernel.org, Jaewon Kim <jaewon02.kim@samsung.com>,
-        Hyunhee Kim <hyunhee.kim@samsung.com>
-Subject: [PATCH v4 1/2] Input: add regulator haptic driver
-Date: Mon, 01 Dec 2014 11:11:12 +0900
-Message-id: <1417399873-19575-2-git-send-email-jaewon02.kim@samsung.com>
+        linux-input@vger.kernel.org, Jaewon Kim <jaewon02.kim@samsung.com>
+Subject: [PATCH v4 0/2] Add regulator-haptic driver
+Date: Mon, 01 Dec 2014 11:11:11 +0900
+Message-id: <1417399873-19575-1-git-send-email-jaewon02.kim@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1417399873-19575-1-git-send-email-jaewon02.kim@samsung.com>
-References: <1417399873-19575-1-git-send-email-jaewon02.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsWyRsSkRDfhXHWIweoODYvDi14wWnz+0MJu
-	saPhCKtF74KrbBY3P31jtbi8aw6bxYzz+5gc2D12zrrL7tG3ZRWjx+dNcgHMUVw2Kak5mWWp
-	Rfp2CVwZC/fcZi34FlnxsCGwgbHdu4uRk0NCwERizbtzjBC2mMSFe+vZuhi5OIQEljJKXP9y
-	kRWm6PH2Z6wQiemMEn0//jODJIQE2pgkVs80ArHZBLQlvq9fDNYgIhAq8fnCLLAaZoFNjBIv
-	GgRAbGEBK4nXp2+xg9gsAqoS7fdPs4HYvAIeEvdmLQTq5QBapiAxZ5INSJhTwFNi68TvLBCr
-	PCSWtm1mArlBQqCbXWLZhdWsEHMEJL5NPsQC0SsrsekAM8TNkhIHV9xgmcAovICRYRWjaGpB
-	ckFxUnqRiV5xYm5xaV66XnJ+7iZGYDif/vdswg7GewesDzEKcDAq8fAemFMdIsSaWFZcmXuI
-	0RRow0RmKdHkfGDU5JXEGxqbGVmYmpgaG5lbmimJ876W+hksJJCeWJKanZpakFoUX1Sak1p8
-	iJGJg1OqgdHn+74PSxYpnrtTesAyKXEm3zutszrfT2SWbbyWnHD/6qSvUaY+V9luHvmXVNB1
-	g+n45gcXP92KM/oZE+nddjXxyLwrLo+PTONerC3Ryred68dk/9Wf0tOcBCR/iXNZ3lgv8/h/
-	ayyHo3vFhPqn6etmRkfILJhez/2sZaFY50teCc5yzVWZZ+yVWIozEg21mIuKEwFqz6uIYgIA	AA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJIsWRmVeSWpSXmKPExsVy+t9jQd2Ec9UhBhPeyFocXvSC0eLzhxZ2
-	ix0NR1gtehdcZbO4+ekbq8XlXXPYLGac38fkwO6xc9Zddo++LasYPT5vkgtgjmpgtMlITUxJ
-	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
-	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxhzFi45zZrwbfIiocNgQ2M7d5djJwcEgImEo+3
-	P2OFsMUkLtxbz9bFyMUhJDCdUaLvx39mkISQQBuTxOqZRiA2m4C2xPf1i8EaRARCJT5fmAVW
-	wyywiVHiRYMAiC0sYCXx+vQtdhCbRUBVov3+aTYQm1fAQ+LerIVAvRxAyxQk5kyyAQlzCnhK
-	bJ34nQVilYfE0rbNTBMYeRcwMqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECI6WZ1I7GFc2
-	WBxiFOBgVOLhPTinOkSINbGsuDL3EKMEB7OSCO85D6AQb0piZVVqUX58UWlOavEhRlOgoyYy
-	S4km5wMjOa8k3tDYxMzI0sjc0MLI2FxJnPfGzdwQIYH0xJLU7NTUgtQimD4mDk4pYETGfZa8
-	kNiauOTz/l1uV27G22euM5fxMA7Qays5XLvTP07h/pm555defn194U8m183xF5q/XH5WWOM3
-	a775JNeqU4vbGf7vOtMT9VrNxvNa2fnct6VXZ6YxyLh937XkT/CGMymr9Z7MtDy4btnySzLW
-	5offlv3bFWSsr7l7N7vjRnabTJ6piz8psRRnJBpqMRcVJwIAZYStfKwCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsWyRsSkSDfhXHWIwZxzshaHF71gtNjRcITV
+	onfBVTaLm5++sVpc3jWHzWLG+X1MDmweO2fdZffo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSu
+	jDdtnawFLzgrjp5/x9bAeJK9i5GTQ0LAROLMlG8sELaYxIV769lAbCGBpYwSD65xw9RsmbGL
+	tYuRCyg+nVHiY+MGqKI2JonVM41AbDYBbYnv6xezgtgiAqESny/MYgZpYBboZJQ4e/UeE0hC
+	WMBY4ltTC9hmFgFViV+d/8BsXgEPiQMznwE1cwBtU5CYM8kGpFdC4DWbxPdXN6HqBSS+TT7E
+	AlEjK7HpADPEcZISB1fcYJnAKLiAkWEVo2hqQXJBcVJ6kbFecWJucWleul5yfu4mRmBYnv73
+	rH8H490D1ocYBTgYlXh4JeZXhwixJpYVV+YeYjQF2jCRWUo0OR8Y/Hkl8YbGZkYWpiamxkbm
+	lmZK4rwLpX4GCwmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamBkeab+/KvTlOAap9lxE2zP1Drx
+	xPXsW2z3uGHVetMtRxKM9lUHmaplPD4xQ0fS120754Ue7QaPgLq1jn9lCsqmfZHPfcxbs73S
+	2yp1eUoEm6e88x5Lv3v3PNVjmnfPC5OsCNpoqla+PEX5WF9N0PrZTw3rfnotljsXXN4uuc/l
+	8UzOhZ9ezlJiKc5INNRiLipOBACwo03SRgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsVy+t9jQd2Ec9UhBrMOiVkcXvSC0WJHwxFW
+	i94FV9ksbn76xmpxedccNosZ5/cxObB57Jx1l92jb8sqRo/Pm+QCmKMaGG0yUhNTUosUUvOS
+	81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgBYrKZQl5pQChQISi4uV9O0w
+	TQgNcdO1gGmM0PUNCYLrMTJAAwlrGDPetHWyFrzgrDh6/h1bA+NJ9i5GTg4JAROJLTN2sULY
+	YhIX7q1n62Lk4hASmM4o8bFxAxtIQkigjUli9UwjEJtNQFvi+/rFYA0iAqESny/MYgZpYBbo
+	ZJQ4e/UeE0hCWMBY4ltTC9gGFgFViV+d/8BsXgEPiQMznwE1cwBtU5CYM8lmAiP3AkaGVYyi
+	qQXJBcVJ6bmGesWJucWleel6yfm5mxjBYf9MagfjygaLQ4wCHIxKPLwH51SHCLEmlhVX5h5i
+	lOBgVhLhPecBFOJNSaysSi3Kjy8qzUktPsRoCrR8IrOUaHI+MCbzSuINjU3MjCyNzA0tjIzN
+	lcR5b9zMDRESSE8sSc1OTS1ILYLpY+LglGpgPHZmx9yjh/YXha+Uz7sQE1K8/HxiqwNHn5xV
+	6/tWL2WD1U9enX9dGF4e99tp8uSvnlXnJr6/9CZegfmW/LYva+4eduFUc5n3L3Tnwzec/Z/z
+	z12ebNcjO/3u6QjHVhETydP9ZzlPdujmX/B1XbpN6Y5g3r5ZmStazFrau58kM1kf/yX5v+S2
+	uBJLcUaioRZzUXEiALbPjr6RAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -50,378 +47,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for haptic driver controlled by
-voltage of regulator. And this driver support for
-Force Feedback interface from input framework
+This patch series adds regulator-haptic driver.
+The regulator-haptic has haptic motor and it is controlled by
+voltage of regulator via force feedback framework.
 
-Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
-Signed-off-by: Hyunhee Kim <hyunhee.kim@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Tested-by: Chanwoo Choi <cw00.choi@samsung.com>
-Reviewed-by: Chanwoo Choi <cw00.choi@samsung.com>
-Reviewed-by: Pankaj Dubey <pankaj.dubey@samsung.com>
----
+Changes in v4:
+ - _regulator_get() -> _regulator_get_exclusive()
+
+Changes in v3:
+ - fix typo in Documentation
+ - add define in header file
+
+Changes in v2:
+ - remove driver owner
+ - merge enable/disable function
+ - support platform data
+ - fix wrong suspends_state check in regulator_haptic_resume()
+
+
+Jaewon Kim (2):
+  Input: add regulator haptic driver
+  ARM: dts: Add regulator-haptic device node for exynos3250-rinato
+
  .../devicetree/bindings/input/regulator-haptic.txt |   21 ++
+ arch/arm/boot/dts/exynos3250-rinato.dts            |    7 +
  drivers/input/misc/Kconfig                         |   11 +
  drivers/input/misc/Makefile                        |    1 +
  drivers/input/misc/regulator-haptic.c              |  247 ++++++++++++++++++++
  include/linux/input/regulator-haptic.h             |   31 +++
- 5 files changed, 311 insertions(+)
+ 6 files changed, 318 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/input/regulator-haptic.txt
  create mode 100644 drivers/input/misc/regulator-haptic.c
  create mode 100644 include/linux/input/regulator-haptic.h
 
-diff --git a/Documentation/devicetree/bindings/input/regulator-haptic.txt b/Documentation/devicetree/bindings/input/regulator-haptic.txt
-new file mode 100644
-index 0000000..3ed1c7e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/input/regulator-haptic.txt
-@@ -0,0 +1,21 @@
-+* Regulator Haptic Device Tree Bindings
-+
-+Required Properties:
-+ - compatible : Should be "regulator-haptic"
-+ - haptic-supply : Power supply to the haptic motor.
-+	[*] refer Documentation/devicetree/bindings/regulator/regulator.txt
-+
-+ - max-microvolt : The maximum voltage value supplied to the haptic motor.
-+		[The unit of the voltage is a micro]
-+
-+ - min-microvolt : The minimum voltage value supplied to the haptic motor.
-+		[The unit of the voltage is a micro]
-+
-+Example:
-+
-+	haptics {
-+		compatible = "regulator-haptic";
-+		haptic-supply = <&motor_regulator>;
-+		max-microvolt = <2700000>;
-+		min-microvolt = <1100000>;
-+	};
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index 23297ab..e5e556d 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -394,6 +394,17 @@ config INPUT_CM109
- 	  To compile this driver as a module, choose M here: the module will be
- 	  called cm109.
- 
-+config INPUT_REGULATOR_HAPTIC
-+	tristate "regulator haptics support"
-+	select INPUT_FF_MEMLESS
-+	help
-+	  This option enables device driver support for the haptic controlled
-+	  by regulator. This driver supports ff-memless interface
-+	  from input framework.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called regulator-haptic.
-+
- config INPUT_RETU_PWRBUTTON
- 	tristate "Retu Power button Driver"
- 	depends on MFD_RETU
-diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
-index 19c7603..1f135af 100644
---- a/drivers/input/misc/Makefile
-+++ b/drivers/input/misc/Makefile
-@@ -53,6 +53,7 @@ obj-$(CONFIG_INPUT_PMIC8XXX_PWRKEY)	+= pmic8xxx-pwrkey.o
- obj-$(CONFIG_INPUT_POWERMATE)		+= powermate.o
- obj-$(CONFIG_INPUT_PWM_BEEPER)		+= pwm-beeper.o
- obj-$(CONFIG_INPUT_RB532_BUTTON)	+= rb532_button.o
-+obj-$(CONFIG_INPUT_REGULATOR_HAPTIC)	+= regulator-haptic.o
- obj-$(CONFIG_INPUT_RETU_PWRBUTTON)	+= retu-pwrbutton.o
- obj-$(CONFIG_INPUT_GPIO_ROTARY_ENCODER)	+= rotary_encoder.o
- obj-$(CONFIG_INPUT_SGI_BTNS)		+= sgi_btns.o
-diff --git a/drivers/input/misc/regulator-haptic.c b/drivers/input/misc/regulator-haptic.c
-new file mode 100644
-index 0000000..6bc8e45
---- /dev/null
-+++ b/drivers/input/misc/regulator-haptic.c
-@@ -0,0 +1,247 @@
-+/*
-+ * Regulator haptic driver
-+ *
-+ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-+ * Author: Jaewon Kim <jaewon02.kim@samsung.com>
-+ * Author: Hyunhee Kim <hyunhee.kim@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/input.h>
-+#include <linux/input/regulator-haptic.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/slab.h>
-+
-+#define MAX_MAGNITUDE_SHIFT	16
-+
-+struct regulator_haptic {
-+	struct device *dev;
-+	struct input_dev *input_dev;
-+	struct regulator *regulator;
-+	struct work_struct work;
-+
-+	bool enabled;
-+	bool suspend_state;
-+	unsigned int max_volt;
-+	unsigned int min_volt;
-+	unsigned int intensity;
-+	unsigned int magnitude;
-+};
-+
-+static void regulator_haptic_enable(struct regulator_haptic *haptic, bool state)
-+{
-+	int error;
-+
-+	if (haptic->enabled == state)
-+		return;
-+
-+	if (state)
-+		error = regulator_enable(haptic->regulator);
-+	else
-+		error = regulator_disable(haptic->regulator);
-+	if (error) {
-+		dev_err(haptic->dev, "cannot enable regulator\n");
-+		return;
-+	}
-+
-+	haptic->enabled = state;
-+}
-+
-+static void regulator_haptic_work(struct work_struct *work)
-+{
-+	struct regulator_haptic *haptic = container_of(work,
-+					struct regulator_haptic, work);
-+	int error;
-+
-+	error = regulator_set_voltage(haptic->regulator,
-+			haptic->intensity + haptic->min_volt, haptic->max_volt);
-+	if (error) {
-+		dev_err(haptic->dev, "cannot set regulator voltage\n");
-+		return;
-+	}
-+
-+	if (haptic->magnitude)
-+		regulator_haptic_enable(haptic, true);
-+	else
-+		regulator_haptic_enable(haptic, false);
-+}
-+
-+static int regulator_haptic_play_effect(struct input_dev *input, void *data,
-+					struct ff_effect *effect)
-+{
-+	struct regulator_haptic *haptic = input_get_drvdata(input);
-+	u64 volt_mag_multi;
-+
-+	haptic->magnitude = effect->u.rumble.strong_magnitude;
-+	if (!haptic->magnitude)
-+		haptic->magnitude = effect->u.rumble.weak_magnitude;
-+
-+
-+	volt_mag_multi = (u64)(haptic->max_volt - haptic->min_volt) *
-+					haptic->magnitude;
-+	haptic->intensity = (unsigned int)(volt_mag_multi >>
-+					MAX_MAGNITUDE_SHIFT);
-+
-+	schedule_work(&haptic->work);
-+
-+	return 0;
-+}
-+
-+static void regulator_haptic_close(struct input_dev *input)
-+{
-+	struct regulator_haptic *haptic = input_get_drvdata(input);
-+
-+	cancel_work_sync(&haptic->work);
-+	regulator_haptic_enable(haptic, false);
-+}
-+
-+#ifdef CONFIG_OF
-+static int regulator_haptic_parse_dt(struct regulator_haptic *haptic)
-+{
-+	struct device_node *node = haptic->dev->of_node;
-+	int error;
-+
-+	error = of_property_read_u32(node, "max-microvolt", &haptic->max_volt);
-+	if (error) {
-+		dev_err(haptic->dev, "cannot parse max-microvolt\n");
-+		return error;
-+	}
-+
-+	error = of_property_read_u32(node, "min-microvolt", &haptic->min_volt);
-+	if (error) {
-+		dev_err(haptic->dev, "cannot parse min-microvolt\n");
-+		return error;
-+	}
-+
-+	return 0;
-+}
-+#else
-+static int regulator_haptic_parse_dt(struct regulator_haptic *haptic)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_OF */
-+
-+static int regulator_haptic_probe(struct platform_device *pdev)
-+{
-+	struct regulator_haptic *haptic;
-+	struct regulator_haptic_data *data;
-+	struct input_dev *input_dev;
-+	int error;
-+
-+	haptic = devm_kzalloc(&pdev->dev, sizeof(*haptic), GFP_KERNEL);
-+	if (!haptic)
-+		return -ENOMEM;
-+
-+	haptic->dev = &pdev->dev;
-+	haptic->enabled = false;
-+	haptic->suspend_state = false;
-+	INIT_WORK(&haptic->work, regulator_haptic_work);
-+
-+	if (pdev->dev.of_node) {
-+		error = regulator_haptic_parse_dt(haptic);
-+		if (error) {
-+			dev_err(&pdev->dev, "failed to parse device tree\n");
-+			return error;
-+		}
-+	} else {
-+		data = dev_get_platdata(&pdev->dev);
-+		if (data) {
-+			dev_err(&pdev->dev, "failed to get platdata\n");
-+			return -EINVAL;
-+		}
-+
-+		haptic->regulator = data->regulator;
-+		haptic->max_volt = data->max_volt;
-+		haptic->min_volt = data->min_volt;
-+	}
-+
-+	haptic->regulator = devm_regulator_get_exclusive(&pdev->dev, "haptic");
-+	if (IS_ERR(haptic->regulator)) {
-+		dev_err(&pdev->dev, "failed to get regulator\n");
-+		return PTR_ERR(haptic->regulator);
-+	}
-+
-+	input_dev = devm_input_allocate_device(&pdev->dev);
-+	if (!input_dev)
-+		return  -ENOMEM;
-+
-+	haptic->input_dev = input_dev;
-+	haptic->input_dev->name = "regulator-haptic";
-+	haptic->input_dev->dev.parent = &pdev->dev;
-+	haptic->input_dev->close = regulator_haptic_close;
-+	input_set_drvdata(haptic->input_dev, haptic);
-+	input_set_capability(haptic->input_dev, EV_FF, FF_RUMBLE);
-+
-+	error = input_ff_create_memless(input_dev, NULL,
-+			      regulator_haptic_play_effect);
-+	if (error) {
-+		dev_err(&pdev->dev, "failed to create force-feedback\n");
-+		return error;
-+	}
-+
-+	error = input_register_device(haptic->input_dev);
-+	if (error) {
-+		dev_err(&pdev->dev, "failed to register input device\n");
-+		return error;
-+	}
-+
-+	platform_set_drvdata(pdev, haptic);
-+
-+	return 0;
-+}
-+
-+static int __maybe_unused regulator_haptic_suspend(struct device *dev)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct regulator_haptic *haptic = platform_get_drvdata(pdev);
-+
-+	if (haptic->enabled) {
-+		regulator_haptic_enable(haptic, false);
-+		haptic->suspend_state = true;
-+	}
-+
-+	return 0;
-+}
-+
-+static int __maybe_unused regulator_haptic_resume(struct device *dev)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct regulator_haptic *haptic = platform_get_drvdata(pdev);
-+
-+	if (haptic->suspend_state) {
-+		regulator_haptic_enable(haptic, true);
-+		haptic->suspend_state = false;
-+	}
-+
-+	return 0;
-+}
-+
-+static SIMPLE_DEV_PM_OPS(regulator_haptic_pm_ops,
-+		regulator_haptic_suspend, regulator_haptic_resume);
-+
-+static struct of_device_id regulator_haptic_dt_match[] = {
-+	{ .compatible = "regulator-haptic" },
-+	{ /* sentinel */ },
-+};
-+
-+static struct platform_driver regulator_haptic_driver = {
-+	.probe		= regulator_haptic_probe,
-+	.driver		= {
-+		.name		= "regulator-haptic",
-+		.of_match_table = regulator_haptic_dt_match,
-+		.pm		= &regulator_haptic_pm_ops,
-+	},
-+};
-+module_platform_driver(regulator_haptic_driver);
-+
-+MODULE_AUTHOR("Jaewon Kim <jaewon02.kim@samsung.com>");
-+MODULE_AUTHOR("Hyunhee Kim <hyunhee.kim@samsung.com>");
-+MODULE_DESCRIPTION("Regulator haptic driver");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/input/regulator-haptic.h b/include/linux/input/regulator-haptic.h
-new file mode 100644
-index 0000000..05ae038
---- /dev/null
-+++ b/include/linux/input/regulator-haptic.h
-@@ -0,0 +1,31 @@
-+/*
-+ * Regulator Haptic Platform Data
-+ *
-+ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-+ * Author: Jaewon Kim <jaewon02.kim@samsung.com>
-+ * Author: Hyunhee Kim <hyunhee.kim@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef _REGULATOR_HAPTIC_H
-+#define _REGULATOR_HAPTIC_H
-+
-+/*
-+ * struct regulator_haptic_data - Platform device data
-+ *
-+ * @regulator: Power supply to the haptic motor
-+ * @max_volt: maximum voltage value supplied to the haptic motor.
-+ * 		<The unit of the voltage is a micro>
-+ * @min_volt: minimum voltage value supplied to the haptic motor.
-+ * 		<The unit of the voltage is a micro>
-+ */
-+struct regulator_haptic_data {
-+	struct regulator *regulator;
-+	unsigned int max_volt;
-+	unsigned int min_volt;
-+};
-+
-+#endif /* _REGULATOR_HAPTIC_H */
 -- 
 1.7.9.5
 
