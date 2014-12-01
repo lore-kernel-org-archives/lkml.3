@@ -1,104 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932757AbaLAXow (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 18:44:52 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:35897 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932408AbaLAXov (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 18:44:51 -0500
-Date: Mon, 1 Dec 2014 18:44:40 -0500
-From: Chris Mason <clm@fb.com>
-Subject: Re: frequent lockups in 3.18rc4
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        =?iso-8859-1?q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Dave Jones <davej@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <1417477480.21136.0@mail.thefacebook.com>
-In-Reply-To: <CA+55aFxOKsK-E438QEOd5Tq2dUZjO8sOnQtpTtPmpBKngmgpkg@mail.gmail.com>
-References: <CA+55aFz-JUX6CU-aO+cwLHYtH7BA+dgyUnEGoy8T4S62gEDFpA@mail.gmail.com>
-	<20141127225637.GA24019@redhat.com> <m5dart$co$1@ger.gmane.org>
-	<CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
-	<547b8a45.6e608c0a.20f9.1002@mx.google.com>
-	<CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
-	<547bbe36.48548c0a.105c.779c@mx.google.com>
-	<20141201191431.GA17385@linux.vnet.ibm.com>
-	<547ccf74.a5198c0a.25de.26d9@mx.google.com>
-	<CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
-	<20141201230339.GA20487@ret.masoncoding.com>
-	<CA+55aFxOKsK-E438QEOd5Tq2dUZjO8sOnQtpTtPmpBKngmgpkg@mail.gmail.com>
-X-Mailer: geary/0.8.2
+	id S932767AbaLAXpo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 18:45:44 -0500
+Received: from mga11.intel.com ([192.55.52.93]:58940 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751634AbaLAXpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 18:45:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,497,1413270000"; 
+   d="scan'208";a="631047379"
+Message-ID: <547CFD93.5000702@linux.intel.com>
+Date: Tue, 02 Dec 2014 07:45:23 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; format=flowed
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-02_01:2014-12-01,2014-12-01,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=82.9551594286039
- compositescore=0.140620555742602 urlsuspect_oldscore=0.140620555742602
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=2524143
- rbsscore=0.140620555742602 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1412010223
-X-FB-Internal: deliver
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Jonathan Corbet <corbet@lwn.net>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Daniel J Blueman <daniel@numascale.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [Patch Part3 v4 38/38] x86, irq: Add kernel parameter vector_alloc
+ to set CPU vector allocation policy
+References: <1416901802-24211-1-git-send-email-jiang.liu@linux.intel.com> <1416901802-24211-39-git-send-email-jiang.liu@linux.intel.com> <CAErSpo7-GezRLKe4hTAm=KhYHUw6zggi+4LRXjh25K-f+_hAng@mail.gmail.com>
+In-Reply-To: <CAErSpo7-GezRLKe4hTAm=KhYHUw6zggi+4LRXjh25K-f+_hAng@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On Mon, Dec 1, 2014 at 6:25 PM, Linus Torvalds 
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Dec 1, 2014 at 3:08 PM, Chris Mason <clm@fb.com> wrote:
->>  I'm not sure if this is related, but running trinity here, I 
->> noticed it
->>  was stuck at 100% system time on every CPU.  perf report tells me 
->> we are
->>  spending all of our time in spin_lock under the sync system call.
->> 
->>  I think it's coming from contention in the bdi_queue_work() call 
->> from
->>  inside sync_inodes_sb, which is spin_lock_bh().
+On 2014/12/2 2:49, Bjorn Helgaas wrote:
+> On Tue, Nov 25, 2014 at 12:50 AM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
+>> Parameter vector_alloc should be set to an integer with:
+>> bit 0:  enable allocating CPU vector from CPUs on device local node.
+>>         That's to allocate from cpumask_of_node(irq_data->node).
+>> bit 1: enable the default policy, which is to allocate from
+>>        apic->target_cpus().
+>>
+>> When allocating vectors, it tries all enabled policies from lower bit
+>> position to higher bit position.
+>>
+>> This option could be use to optimize interrupt distribution on large
+>> system such as NumaChip etc.
 > 
-> Please do a perf run with -g to get the call chain to make sure..
+> Why can't we figure this out automatically?  Having a kernel parameter
+> is a pain in the neck for users.
+Hi Bjorn,
+	I'm thinking of automatically turning on local vector
+allocation if any host bridge has an assigned(valid) NUMA node id.
+By this way, user doesn't need to specify the kernel parameter for most
+cases. How about this solution?
+Thanks!
+Gerry
 
-The call chain goes something like this:
-
-               --- _raw_spin_lock
-                   |
-                   |--99.72%-- sync_inodes_sb
-                   |          sync_inodes_one_sb
-                   |          iterate_supers
-                   |          sys_sync
-                   |          |
-                   |          |--79.66%-- system_call_fastpath
-                   |          |          syscall
-                   |          |
-                   |           --20.34%-- ia32_sysret
-                   |                     __do_syscall
-                    --0.28%-- [...]
-
-(the 64bit call variation is similar)  Adding -v doesn't really help, 
-because it isn't giving me the address inside sync_inodes_sb()
-
-I first read this and guessed it must be leaving out the call to 
-bdi_queue_work, hoping the spin_lock_bh and lock debugging were teaming 
-up to stall the box.
-
-But looking harder it's probably inside wait_sb_inodes:
-
-        spin_lock(&inode_sb_list_lock);
-
-Which is a little harder to blame.  Maaaaaybe with lock debugging, but 
-its enough of a stretch that I wouldn't have emailed at all if I hadn't 
-fixated on the bdi code.
-
--chris
-
-
-
+> 
+>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+>> Cc: Daniel J Blueman <daniel@numascale.com>
+>> ---
+>>  Documentation/kernel-parameters.txt |    6 ++++++
+>>  arch/x86/kernel/apic/vector.c       |   11 +++++++++++
+>>  2 files changed, 17 insertions(+)
+>>
+>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>> index 4c81a860cc2b..a175c5016954 100644
+>> --- a/Documentation/kernel-parameters.txt
+>> +++ b/Documentation/kernel-parameters.txt
+>> @@ -3709,6 +3709,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>>         vector=         [IA-64,SMP]
+>>                         vector=percpu: enable percpu vector domain
+>>
+>> +       vector_alloc=   [x86,SMP]
+>> +                       vector_alloc=policy: policy is a bitmap, bit 0
+>> +                       for allocating CPU vector from CPUs on device local
+>> +                       node; bit 1 for the default policy to allocating from
+>> +                       apic->target_cpus(). All higher bits are reserved.
+>> +
+>>         video=          [FB] Frame buffer configuration
+>>                         See Documentation/fb/modedb.txt.
+>>
+>> diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
+>> index 16de8906ee1e..1158843551c7 100644
+>> --- a/arch/x86/kernel/apic/vector.c
+>> +++ b/arch/x86/kernel/apic/vector.c
+>> @@ -79,6 +79,17 @@ void set_vector_alloc_policy(unsigned int policy)
+>>                 x86_vector_alloc_policy = policy | X86_VECTOR_POL_CALLER;
+>>  }
+>>
+>> +static int __init apic_parse_vector_policy(char *str)
+>> +{
+>> +       int policy;
+>> +
+>> +       if (get_option(&str, &policy) == 1)
+>> +               set_vector_alloc_policy(policy);
+>> +
+>> +       return 1;
+>> +}
+>> +__setup("vector_alloc=", apic_parse_vector_policy);
+>> +
+>>  static struct apic_chip_data *alloc_apic_chip_data(int node)
+>>  {
+>>         struct apic_chip_data *data;
+>> --
+>> 1.7.10.4
+>>
