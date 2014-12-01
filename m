@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562AbaLALek (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 06:34:40 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:51061 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172AbaLALeh (ORCPT
+	id S1753581AbaLALfI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 06:35:08 -0500
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:44225 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753413AbaLALfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 06:34:37 -0500
-Date: Mon, 1 Dec 2014 11:34:30 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
-        rpurdie@rpsys.net, sakari.ailus@iki.fi, s.nawrocki@samsung.com,
-        Andrzej Hajda <a.hajda@samsung.com>,
-        SangYoung Son <hello.son@smasung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH/RFC v8 09/14] mfd: max77693: adjust
- max77693_led_platform_data
-Message-ID: <20141201113430.GC15845@x1>
-References: <1417166286-27685-1-git-send-email-j.anaszewski@samsung.com>
- <1417166286-27685-10-git-send-email-j.anaszewski@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1417166286-27685-10-git-send-email-j.anaszewski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 1 Dec 2014 06:35:05 -0500
+Date: Mon, 1 Dec 2014 12:34:28 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH v7 21/46] virtio_blk: make serial attribute static
+Message-ID: <20141201123428.089d4ee5.cornelia.huck@de.ibm.com>
+In-Reply-To: <1417359787-10138-22-git-send-email-mst@redhat.com>
+References: <1417359787-10138-1-git-send-email-mst@redhat.com>
+	<1417359787-10138-22-git-send-email-mst@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120111-0025-0000-0000-000002AAABAC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Nov 2014, Jacek Anaszewski wrote:
+On Sun, 30 Nov 2014 17:11:01 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-> Add "label" array for Device Tree strings with
-> the name of a LED device and make flash_timeout
-> a two element array, for caching the sub-led
-> related flash timeout.
-
-<------------------------------------------------------------------------->
-
-Please use all of the 75 char buffer.
-
-> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Cc: SangYoung Son <hello.son@smasung.com>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> ---
->  include/linux/mfd/max77693.h |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+> It's never declared so no need to make it extern.
 > 
-> diff --git a/include/linux/mfd/max77693.h b/include/linux/mfd/max77693.h
-> index f0b6585..30fa19ea 100644
-> --- a/include/linux/mfd/max77693.h
-> +++ b/include/linux/mfd/max77693.h
-> @@ -88,14 +88,15 @@ enum max77693_led_boost_mode {
->  };
->  
->  struct max77693_led_platform_data {
-> +	const char *label[2];
->  	u32 fleds[2];
->  	u32 iout_torch[2];
->  	u32 iout_flash[2];
->  	u32 trigger[2];
->  	u32 trigger_type[2];
-> +	u32 flash_timeout[2];
->  	u32 num_leds;
->  	u32 boost_mode;
-> -	u32 flash_timeout;
->  	u32 boost_vout;
->  	u32 low_vsys;
->  };
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  drivers/block/virtio_blk.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 
-I'm guessing this will effect the other patches in the set?
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
