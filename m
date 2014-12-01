@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897AbaLAOgr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 09:36:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42300 "EHLO mx2.suse.de"
+	id S1753821AbaLAOjf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 09:39:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41742 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753664AbaLAOgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 09:36:46 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: JBottomley@parallels.com
-Cc: anil.gurumurthy@qlogic.com, sudarsana.kalluru@qlogic.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 1/1] bfs: bfad_worker cleanup
-Date: Mon,  1 Dec 2014 15:36:43 +0100
-Message-Id: <1417444603-7195-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.3
+	id S1753548AbaLAOje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 09:39:34 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Thomas Renninger <trenn@suse.de>,
+        linux-pm@vger.kernel.org
+Subject: [PATCH] tools, cpupower, fix return checks for sysfs_get_idlestate_count()
+Date: Mon,  1 Dec 2014 09:39:22 -0500
+Message-Id: <1417444762-26450-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This kthread is not loop at all due to break at the end of the loop.
-Make that function linear, with no while loop.
+Red Hat and Fedora use a bug reporting tool that gathers data about
+"broken" systems called sosreport.  Among other things, it includes the
+output of 'cpupower idle-info'.  Executing 'cpupower idle-info' on a
+system that has cpuidle disabled via 'cpuidle.off=1' results in a 300
+second hang in the cpupower application.
 
-And remove an unnecessary cast.
+ie)
+[root@intel-brickland-05]# cpupower idle-info
+Could not determine cpuidle driver
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Analyzing CPU 0:
+Number of idle states: -19
+[hang]
+
+The problem is that the cpupower code only checks for a zero return from
+sysfs_get_idlestate_count().  The function can return -ENODEV (-19) as
+above.  This patch fixes callers to sysfs_get_idlestate_count() to check
+the right return values.
+
+Cc: Thomas Renninger <trenn@suse.de>
+Cc: linux-pm@vger.kernel.org
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 ---
- drivers/scsi/bfa/bfad.c | 22 +++++++++-------------
- 1 file changed, 9 insertions(+), 13 deletions(-)
+ tools/power/cpupower/utils/cpuidle-info.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/scsi/bfa/bfad.c b/drivers/scsi/bfa/bfad.c
-index e90a3742f09d..cc3b9d3d6d40 100644
---- a/drivers/scsi/bfa/bfad.c
-+++ b/drivers/scsi/bfa/bfad.c
-@@ -1079,22 +1079,18 @@ bfad_start_ops(struct bfad_s *bfad) {
- int
- bfad_worker(void *ptr)
+diff --git a/tools/power/cpupower/utils/cpuidle-info.c b/tools/power/cpupower/utils/cpuidle-info.c
+index 75e66de..458d69b 100644
+--- a/tools/power/cpupower/utils/cpuidle-info.c
++++ b/tools/power/cpupower/utils/cpuidle-info.c
+@@ -22,13 +22,13 @@
+ 
+ static void cpuidle_cpu_output(unsigned int cpu, int verbose)
  {
--	struct bfad_s *bfad;
--	unsigned long   flags;
--
--	bfad = (struct bfad_s *)ptr;
--
--	while (!kthread_should_stop()) {
-+	struct bfad_s *bfad = ptr;
-+	unsigned long flags;
+-	unsigned int idlestates, idlestate;
++	int idlestates, idlestate;
+ 	char *tmp;
  
--		/* Send event BFAD_E_INIT_SUCCESS */
--		bfa_sm_send_event(bfad, BFAD_E_INIT_SUCCESS);
-+	if (kthread_should_stop())
-+		return 0;
+ 	printf(_ ("Analyzing CPU %d:\n"), cpu);
  
--		spin_lock_irqsave(&bfad->bfad_lock, flags);
--		bfad->bfad_tsk = NULL;
--		spin_unlock_irqrestore(&bfad->bfad_lock, flags);
-+	/* Send event BFAD_E_INIT_SUCCESS */
-+	bfa_sm_send_event(bfad, BFAD_E_INIT_SUCCESS);
+ 	idlestates = sysfs_get_idlestate_count(cpu);
+-	if (idlestates == 0) {
++	if (idlestates < 1) {
+ 		printf(_("CPU %u: No idle states\n"), cpu);
+ 		return;
+ 	}
+@@ -100,10 +100,10 @@ static void cpuidle_general_output(void)
+ static void proc_cpuidle_cpu_output(unsigned int cpu)
+ {
+ 	long max_allowed_cstate = 2000000000;
+-	unsigned int cstate, cstates;
++	int cstate, cstates;
  
--		break;
--	}
-+	spin_lock_irqsave(&bfad->bfad_lock, flags);
-+	bfad->bfad_tsk = NULL;
-+	spin_unlock_irqrestore(&bfad->bfad_lock, flags);
- 
- 	return 0;
- }
+ 	cstates = sysfs_get_idlestate_count(cpu);
+-	if (cstates == 0) {
++	if (cstates < 1) {
+ 		printf(_("CPU %u: No C-states info\n"), cpu);
+ 		return;
+ 	}
 -- 
-2.1.3
+1.7.9.3
 
