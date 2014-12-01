@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455AbaLAFMa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 00:12:30 -0500
-Received: from mout.web.de ([212.227.17.12]:64736 "EHLO mout.web.de"
+	id S1752284AbaLAFZL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 00:25:11 -0500
+Received: from ozlabs.org ([103.22.144.67]:48025 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751003AbaLAFM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 00:12:29 -0500
-Message-ID: <547BF8B5.309@users.sourceforge.net>
-Date: Mon, 01 Dec 2014 06:12:21 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751013AbaLAFZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 00:25:10 -0500
+Date: Mon, 1 Dec 2014 16:24:48 +1100
+From: Paul Mackerras <paulus@samba.org>
+To: Michael Ellerman <mpe@ellerman.id.au>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        linuxppc-dev@ozlabs.org, David Rientjes <rientjes@google.com>,
+        Christoph Lameter <cl@linux.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH v2] slab: Fix nodeid bounds check for non-contiguous node
+ IDs
+Message-ID: <20141201052448.GC11234@drongo>
+References: <20141201042844.GB11234@drongo>
+ <1417410134.16178.2.camel@concordia>
 MIME-Version: 1.0
-To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        dmaengine@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] DMA: Delete a check before free_percpu()
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:jsrl7snAqSR+f0q0wROjCtMH4cLeFJPOyymOPvsUY7iKbYF+e+r
- 32ahMDqQMoRC2elHmw3KrVfwFxL7cTNw7R/a6PtrUJQ4SpPd1DoSLB6bhyh8/GfndwV6vOZ
- YXz+n/PcV3wuCaQvAwYfh9uk0XNvwVn+OP+vSTbKk8PKo1hmVAelJtCxPFxlih4xzKz8jg2
- 6Fxn7iAqoXqxHcfyVLXKg==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417410134.16178.2.camel@concordia>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Mon, 1 Dec 2014 06:06:57 +0100
+On Mon, Dec 01, 2014 at 04:02:14PM +1100, Michael Ellerman wrote:
+> On Mon, 2014-12-01 at 15:28 +1100, Paul Mackerras wrote:
+> > The bounds check for nodeid in ____cache_alloc_node gives false
+> > positives on machines where the node IDs are not contiguous, leading
+> > to a panic at boot time.  For example, on a POWER8 machine the node
+> > IDs are typically 0, 1, 16 and 17.  This means that num_online_nodes()
+> > returns 4, so when ____cache_alloc_node is called with nodeid = 16 the
+> > VM_BUG_ON triggers, like this:
+> ...
+> > 
+> > To fix this, we instead compare the nodeid with MAX_NUMNODES, and
+> > additionally make sure it isn't negative (since nodeid is an int).
+> > The check is there mainly to protect the array dereference in the
+> > get_node() call in the next line, and the array being dereferenced is
+> > of size MAX_NUMNODES.  If the nodeid is in range but invalid (for
+> > example if the node is off-line), the BUG_ON in the next line will
+> > catch that.
+> 
+> When did this break? How come we only just noticed?
 
-The free_percpu() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+Commit 14e50c6a9bc2, which went into 3.10-rc1.
 
-This issue was detected by using the Coccinelle software.
+You'll only notice if you have CONFIG_SLAB=y and CONFIG_DEBUG_VM=y
+and you're running on a machine with discontiguous node IDs.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/dma/dmaengine.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+> Also needs:
+> 
+> Cc: stable@vger.kernel.org
 
-diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-index 24bfaf0..e057935 100644
---- a/drivers/dma/dmaengine.c
-+++ b/drivers/dma/dmaengine.c
-@@ -330,8 +330,7 @@ static int __init dma_channel_table_init(void)
- 	if (err) {
- 		pr_err("initialization failure\n");
- 		for_each_dma_cap_mask(cap, dma_cap_mask_all)
--			if (channel_table[cap])
--				free_percpu(channel_table[cap]);
-+			free_percpu(channel_table[cap]);
- 	}
- 
- 	return err;
--- 
-2.1.3
+It does.  I remembered that a minute after I sent the patch.
 
+Paul.
