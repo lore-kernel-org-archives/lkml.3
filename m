@@ -1,125 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008AbaLAPNu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 10:13:50 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:53202 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753102AbaLAPNs (ORCPT
+	id S1753992AbaLAPSY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 10:18:24 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:54468 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753102AbaLAPSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 10:13:48 -0500
-Date: Mon, 1 Dec 2014 16:13:45 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>
-Subject: Re: [PATCH v4 1/3] drm: add bus_formats and num_bus_formats fields
- to drm_display_info
-Message-ID: <20141201161345.43137393@bbrezillon>
-In-Reply-To: <1417446386.4624.17.camel@pengutronix.de>
-References: <1417422061-10384-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1417422061-10384-2-git-send-email-boris.brezillon@free-electrons.com>
-	<1417446386.4624.17.camel@pengutronix.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
+	Mon, 1 Dec 2014 10:18:22 -0500
+Date: Mon, 1 Dec 2014 16:18:13 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v7 36/46] vhost/net: suppress compiler warning
+Message-ID: <20141201161813.7d0820c7.cornelia.huck@de.ibm.com>
+In-Reply-To: <20141201151208.GA18919@redhat.com>
+References: <1417359787-10138-1-git-send-email-mst@redhat.com>
+	<1417359787-10138-37-git-send-email-mst@redhat.com>
+	<20141201133740.56d7d6d8.cornelia.huck@de.ibm.com>
+	<20141201134839.GB18305@redhat.com>
+	<20141201152103.0f375544.cornelia.huck@de.ibm.com>
+	<20141201151208.GA18919@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120115-0041-0000-0000-00000251BEB2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp,
+On Mon, 1 Dec 2014 17:12:08 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-On Mon, 01 Dec 2014 16:06:26 +0100
-Philipp Zabel <p.zabel@pengutronix.de> wrote:
-
-> Am Montag, den 01.12.2014, 09:20 +0100 schrieb Boris Brezillon:
-> > Add bus_formats and num_bus_formats fields and
-> > drm_display_info_set_bus_formats helper function to specify the bus
-> > formats supported by a given display.
+> On Mon, Dec 01, 2014 at 03:21:03PM +0100, Cornelia Huck wrote:
+> > On Mon, 1 Dec 2014 15:48:39 +0200
+> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
 > > 
-> > This information can be used by display controller drivers to configure
-> > the output interface appropriately (i.e. RGB565, RGB666 or RGB888 on raw
-> > RGB or LVDS busses).
+> > > On Mon, Dec 01, 2014 at 01:37:40PM +0100, Cornelia Huck wrote:
+> > > > On Sun, 30 Nov 2014 17:12:13 +0200
+> > > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > > 
+> > > > > len is always initialized since function is called with size > 0.
+> > > > > 
+> > > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > > > ---
+> > > > >  drivers/vhost/net.c | 2 +-
+> > > > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > > > 
+> > > > > diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> > > > > index 984242e..54ffbb0 100644
+> > > > > --- a/drivers/vhost/net.c
+> > > > > +++ b/drivers/vhost/net.c
+> > > > > @@ -501,7 +501,7 @@ static int get_rx_bufs(struct vhost_virtqueue *vq,
+> > > > >  	int headcount = 0;
+> > > > >  	unsigned d;
+> > > > >  	int r, nlogs = 0;
+> > > > > -	u32 len;
+> > > > > +	u32 uninitialized_var(len);
+> > > > > 
+> > > > >  	while (datalen > 0 && headcount < quota) {
+> > > > >  		if (unlikely(seg >= UIO_MAXIOV)) {
+> > > > 
+> > > > Want to merge this with the patch introducing the variable and add a
+> > > > comment there?
+> > > 
+> > > Not really. Warnings in bisect are fine  I think.
 > > 
-> > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> > ---
-> >  drivers/gpu/drm/drm_crtc.c | 32 ++++++++++++++++++++++++++++++++
-> >  include/drm/drm_crtc.h     |  7 +++++++
-> >  2 files changed, 39 insertions(+)
-> > 
-> > diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-> > index e79c8d3..d3b7ed0 100644
-> > --- a/drivers/gpu/drm/drm_crtc.c
-> > +++ b/drivers/gpu/drm/drm_crtc.c
-> > @@ -763,6 +763,38 @@ static void drm_mode_remove(struct drm_connector *connector,
-> >  	drm_mode_destroy(connector->dev, mode);
-> >  }
-> >  
-> > +/*
-> > + * drm_display_info_set_bus_formats - set the supported bus formats
-> > + * @info: display info to store bus formats in
-> > + * @fmts: array containing the supported bus formats
-> > + * @nfmts: the number of entries in the fmts array
-> > + *
-> > + * Store the suppported bus formats in display info structure.
-> > + * See MEDIA_BUS_FMT_* definitions in include/uapi/linux/media-bus-format.h for
-> > + * a full list of available formats.
-> > + */
-> > +int drm_display_info_set_bus_formats(struct drm_display_info *info, const u32 *fmts,
-> > +				     unsigned int num_fmts)
-> > +{
-> > +	u32 *formats = NULL;
-> > +
-> > +	if (!fmts && num_fmts)
-> > +		return -EINVAL;
-> > +
-> > +	if (fmts && num_fmts) {
-> > +		formats = kmemdup(fmts, sizeof(*fmts) * num_fmts, GFP_KERNEL);
-> > +		if (!formats)
-> > +			return -ENOMEM;
-> > +	}
-> > +
-> > +	kfree(info->bus_formats);
-> > +	info->bus_formats = formats;
-> > +	info->num_bus_formats = num_fmts;
-> > +
-> > +	return 0;
-> > +}
-> > +EXPORT_SYMBOL(drm_display_info_set_bus_formats);
-> > +
-> >  /**
-> >   * drm_connector_get_cmdline_mode - reads the user's cmdline mode
-> >   * @connector: connector to quwery
-> > diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
-> > index c40070a..a35844f 100644
-> > --- a/include/drm/drm_crtc.h
-> > +++ b/include/drm/drm_crtc.h
-> > @@ -31,6 +31,7 @@
-> >  #include <linux/idr.h>
-> >  #include <linux/fb.h>
-> >  #include <linux/hdmi.h>
-> > +#include <linux/media-bus-format.h>
+> > I'm not sure what a separate patch buys us, though, as it should be
+> > trivial to merge.
 > 
-> Nothing in drm_crtc.h uses MEDIA_BUS_FMT_*, is media-bus-format.h
-> included here for the convenience of the user of
-> drm_display_info_set_bus_formats?
+> Easier to document the reason if it's split out.
+> 
 
-Yes it is. Actually in the first versions MEDIA_BUS_FMT_* values were
-part of an enum.
-Still, I think keeping this include will help people finding where
-those MEDIA_BUS_FMT_* macros are defined.
+That's why I suggested a comment ;)
 
-Regards,
-
-Boris
-
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
