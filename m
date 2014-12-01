@@ -1,177 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850AbaLAJMJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 04:12:09 -0500
-Received: from mail-bn1bon0140.outbound.protection.outlook.com ([157.56.111.140]:62827
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752671AbaLAJMC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 04:12:02 -0500
-From: "Zhuoyu.Zhang@freescale.com" <Zhuoyu.Zhang@freescale.com>
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "LeoLi@freescale.com" <LeoLi@freescale.com>,
-        "Jason.Jin@freescale.com" <Jason.Jin@freescale.com>,
-        "chenhui.zhao@freescale.com" <chenhui.zhao@freescale.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: RE: [PATCH v2 1/2] arm: ls1: add CPU hotplug platform support
-Thread-Topic: [PATCH v2 1/2] arm: ls1: add CPU hotplug platform support
-Thread-Index: AQHQB6egCSA+D8+6nk621VAjg987gJx13hIAgASWf/A=
-Date: Mon, 1 Dec 2014 08:40:05 +0000
-Message-ID: <CY1PR0301MB0668558136F0EAF9A2D2A717897D0@CY1PR0301MB0668.namprd03.prod.outlook.com>
-References: <1416806890-26920-1-git-send-email-Zhuoyu.Zhang@freescale.com>
- <20141128103304.GA25883@leverpostej>
-In-Reply-To: <20141128103304.GA25883@leverpostej>
-Accept-Language: en-US, zh-CN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.158.211]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0729;UriScan:;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0729;
-x-forefront-prvs: 0412A98A59
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(189002)(199003)(377454003)(24454002)(13464003)(95666004)(120916001)(99396003)(19580395003)(19580405001)(97736003)(99286002)(40100003)(77096004)(106116001)(33656002)(106356001)(87936001)(110136001)(105586002)(101416001)(107046002)(86362001)(2656002)(46102003)(92566001)(92726001)(4396001)(31966008)(76176999)(54356999)(50986999)(21056001)(54206007)(77156002)(62966003)(74316001)(20776003)(76576001)(54606007)(64706001)(66066001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0729;H:CY1PR0301MB0668.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0602;
-X-OriginatorOrg: freescale.com
+	id S1752771AbaLAJNH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 04:13:07 -0500
+Received: from mga09.intel.com ([134.134.136.24]:63371 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752716AbaLAJNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 04:13:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,492,1413270000"; 
+   d="scan'208";a="616519909"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-spi@vger.kernel.org
+Cc: Mark Brown <broonie@kernel.org>, Daniel Mack <daniel@zonque.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Martin Oldfield <m@mjoldfield.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] spi/pxa2xx: Clear cur_chip pointer before starting next message
+Date: Mon,  1 Dec 2014 11:12:46 +0200
+Message-Id: <1417425166-150374-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Once the current message is finished, the driver notifies SPI core about
+this by calling spi_finalize_current_message(). This function queues next
+message to be transferred. If there are more messages in the queue, it is
+possible that the driver is asked to transfer the next message at this
+point.
 
+When spi_finalize_current_message() returns the driver clears the
+drv_data->cur_chip pointer to NULL. The problem is that if the driver
+already started the next message clearing drv_data->cur_chip will cause
+NULL pointer dereference which crashes the kernel like:
 
-> -----Original Message-----
-> From: Mark Rutland [mailto:mark.rutland@arm.com]
-> Sent: Friday, November 28, 2014 6:33 PM
-> To: Zhang Zhuoyu-B46552
-> Cc: linux-kernel@vger.kernel.org; kernel@pengutronix.de; linux-arm-
-> kernel@lists.infradead.org; Li Yang-Leo-R58472; linuxppc-
-> release@linux.freescale.net; Jin Zhengxiong-R64188; Zhao Chenhui-B35336;
-> linux@arm.linux.org.uk
-> Subject: Re: [PATCH v2 1/2] arm: ls1: add CPU hotplug platform support
-> 
-> On Mon, Nov 24, 2014 at 05:28:09AM +0000, Zhuoyu Zhang wrote:
-> > From: Zhang Zhuoyu <Zhuoyu.Zhang@freescale.com>
-> >
-> > This implements CPU hotplug for ls1. When cpu is down, it will be put
-> > in WFI state. When cpu is up, it will always soft reset and boots up
-> > the same path as a cold boot.
-> >
-> > Signed-off-by: Zhang Zhuoyu <Zhuoyu.Zhang@freescale.com>
-> > ---
-> >  arch/arm/mach-imx/common.h  |   4 ++
-> >  arch/arm/mach-imx/hotplug.c |  25 +++++++++
-> > arch/arm/mach-imx/platsmp.c | 132
-> +++++++++++++++++++++++++++++++++++++++-----
-> >  arch/arm/mach-imx/src.c     |  21 +++++++
-> >  4 files changed, 169 insertions(+), 13 deletions(-)
-> >
-> 
-> [...]
-> 
-> > +
-> > +/*
-> > + * For LS102x platforms, shutdowning a CPU is not supported by hardware.
-> > + * So we just put the offline CPU into lower-power state here.
-> > + */
-> > +void __ref ls1021a_cpu_die(unsigned int cpu) {
-> > +       v7_exit_coherency_flush(louis);
-> > +
-> > +       /* LS1021a platform can't really power down a CPU, so we
-> > +        * just put it into WFI state here.
-> > +        */
-> > +       wfi();
-> > +}
-> > +
-> > +int ls1021a_cpu_kill(unsigned int cpu) {
-> > +       unsigned long timeout = jiffies + msecs_to_jiffies(50);
-> > +
-> > +       while (!ls1_get_cpu_arg(cpu))
-> > +               if (time_after(jiffies, timeout))
-> > +                       return 0;
-> > +       return 1;
-> > +}
-> 
-> While simpler than the last posting [1], this is still no better, and Russell's
-> comments [2] still apply, so this is still unacceptable.
-> 
-> If the CPU does not leave the kernel entirely, it is not CPU hotplug.
-> As this stands, this is completely incompatible with kexec and suspend.
-> 
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000048
+ IP: [<ffffffffa0022bc8>] cs_deassert+0x18/0x70 [spi_pxa2xx_platform]
+ PGD 78bb8067 PUD 37712067 PMD 0
+ Oops: 0000 [#1] SMP
+ Modules linked in:
+ CPU: 1 PID: 11 Comm: ksoftirqd/1 Tainted: G           O   3.18.0-rc4-mjo #5
+ Hardware name: Intel Corp. VALLEYVIEW B3 PLATFORM/NOTEBOOK, BIOS MNW2CRB1.X64.0071.R30.1408131301 08/13/2014
+ task: ffff880077f9f290 ti: ffff88007a820000 task.ti: ffff88007a820000
+ RIP: 0010:[<ffffffffa0022bc8>]  [<ffffffffa0022bc8>] cs_deassert+0x18/0x70 [spi_pxa2xx_platform]
+ RSP: 0018:ffff88007a823d08  EFLAGS: 00010202
+ RAX: 0000000000000008 RBX: ffff8800379a4430 RCX: 0000000000000026
+ RDX: 0000000000000000 RSI: 0000000000000246 RDI: ffff8800379a4430
+ RBP: ffff88007a823d18 R08: 00000000ffffffff R09: 000000007a9bc65a
+ R10: 000000000000028f R11: 0000000000000005 R12: ffff880070123e98
+ R13: ffff880070123de8 R14: 0000000000000100 R15: ffffc90004888000
+ FS:  0000000000000000(0000) GS:ffff880079a80000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: 0000000000000048 CR3: 000000007029b000 CR4: 00000000001007e0
+ Stack:
+  ffff88007a823d58 ffff8800379a4430 ffff88007a823d48 ffffffffa0022c89
+  0000000000000000 ffff8800379a4430 0000000000000000 0000000000000006
+  ffff88007a823da8 ffffffffa0023be0 ffff88007a823dd8 ffffffff81076204
+ Call Trace:
+  [<ffffffffa0022c89>] giveback+0x69/0xa0 [spi_pxa2xx_platform]
+  [<ffffffffa0023be0>] pump_transfers+0x710/0x740 [spi_pxa2xx_platform]
+  [<ffffffff81076204>] ? pick_next_task_fair+0x744/0x830
+  [<ffffffff81049679>] tasklet_action+0xa9/0xe0
+  [<ffffffff81049a0e>] __do_softirq+0xee/0x280
+  [<ffffffff81049bc0>] run_ksoftirqd+0x20/0x40
+  [<ffffffff810646df>] smpboot_thread_fn+0xff/0x1b0
+  [<ffffffff810645e0>] ? SyS_setgroups+0x150/0x150
+  [<ffffffff81060f9d>] kthread+0xcd/0xf0
+  [<ffffffff81060ed0>] ? kthread_create_on_node+0x180/0x180
+  [<ffffffff8187a82c>] ret_from_fork+0x7c/0xb0
 
-There are some hardware limitations for ls1 platform, core cannot power down, so the only thing we can do here is to put it into low-power state when CPU offline. 
+Fix this by clearing drv_data->cur_chip before we call spi_finalize_current_message().
 
-For suspend compatibility, I quote Leo's comments in last posting, "I don't think it breaks the system suspend case as tasks and interrupts have been moved out of the non-booting CPU." 
+Reported-by: Martin Oldfield <m@mjoldfield.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/spi/spi-pxa2xx.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-For kexec compatibility, it means we should always reset core and boots up the same path as a cold boot when CPU re-online. That's exactly what we are doing in ls1021a_reset_secondary(). I will explain it in detail below.
+diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
+index 9e9e0f971e6c..d95656d05eb6 100644
+--- a/drivers/spi/spi-pxa2xx.c
++++ b/drivers/spi/spi-pxa2xx.c
+@@ -402,8 +402,8 @@ static void giveback(struct driver_data *drv_data)
+ 			cs_deassert(drv_data);
+ 	}
+ 
+-	spi_finalize_current_message(drv_data->master);
+ 	drv_data->cur_chip = NULL;
++	spi_finalize_current_message(drv_data->master);
+ }
+ 
+ static void reset_sccr1(struct driver_data *drv_data)
+-- 
+2.1.3
 
-> [...]
-> 
-> > +static int ls1021a_reset_secondary(unsigned int cpu) {
-> > +       u32 tmp;
-> > +
-> > +       if (!scfg_base || !dcfg_base)
-> > +               return -ENOMEM;
-> > +
-> > +       writel_relaxed(secondary_pre_boot_entry,
-> > +                       dcfg_base + DCFG_CCSR_SCRATCHRW1);
-> > +
-> > +       /* Apply LS1021A specific to write to the BE SCFG space */
-> > +       tmp = ioread32be(scfg_base + SCFG_REVCR);
-> > +       iowrite32be(0xffffffff, scfg_base + SCFG_REVCR);
-> > +
-> > +       /* Soft reset secondary core */
-> > +       iowrite32be(0x80000000, scfg_base + SCFG_CORESRENCR);
-> > +       iowrite32be(0x80000000, scfg_base +
-> > +                               SCFG_CORE0_SFT_RST + STRIDE_4B * cpu);
-> > +
-> > +       /* Release secondary core */
-> > +       iowrite32be(1 << cpu, dcfg_base + DCFG_CCSR_BRR);
-> > +
-> > +       ls1021a_set_secondary_entry();
-> > +
-> > +       /* Disable core soft reset register */
-> > +       iowrite32be(0x0, scfg_base + SCFG_CORESRENCR);
-> > +
-> > +       /* Revert back to the default */
-> > +       iowrite32be(tmp, scfg_base + SCFG_REVCR);
-> > +
-> > +       return 0;
-> > +}
-> > +
-> > +static int ls1021a_boot_secondary(unsigned int cpu, struct
-> > +task_struct *idle) {
-> > +       int ret = 0;
-> > +
-> > +       if (system_state == SYSTEM_RUNNING)
-> > +               ret = ls1021a_reset_secondary(cpu);
-> > +
-> > +       udelay(1);
-> > +
-> > +       arch_send_wakeup_ipi_mask(cpumask_of(cpu));
-> > +
-> > +       return ret;
-> > +}
-> 
-> How does this interact with the pseudo-hotplug above?
-> 
-> Mark.
-
-When CPU come online, secondary core reset and boots up the same path as a cold boot:
-
-1) Write 1 to core soft reset register SCFG_CORE1_SFT_RST will reset the secondary core. 
-Resetting means a totally new start to secondary core, it will re-initialization(TLB, Caches, MMU) just like a cold boot.
-
-2) The reentry address of secondary core is determined by the  DCFG_CCSR_SCRATCHRW1 register.
-Writing the secondary core reentry physic address to this register to make sure secondary core restart executing a new code section after reset. This can make sure it is compatible with kexec.
-
-3) Set the corresponding bit of DCFG_CCSR_BRR to release secondary core to re-initialize itself again. 
-
-Zhuoyu
