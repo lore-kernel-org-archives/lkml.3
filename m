@@ -1,102 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932303AbaLATZs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 14:25:48 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:45513 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753138AbaLATXJ (ORCPT
+	id S932309AbaLATZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 14:25:59 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45351 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932174AbaLATZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 14:23:09 -0500
-Message-Id: <20141201192306.726148907@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Mon, 01 Dec 2014 14:22:26 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [for-next][PATCH 1/9] ftrace/x86: Have static tracing also use ftrace_caller_setup
-References: <20141201192225.548178029@goodmis.org>
+	Mon, 1 Dec 2014 14:25:56 -0500
+Date: Mon, 1 Dec 2014 19:25:40 +0000
+From: Mark Brown <broonie@kernel.org>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: linux-spi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Message-ID: <20141201192540.GM7712@sirena.org.uk>
+References: <530C5E18.1020800@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251014170.2080@hadrien>
+ <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien>
+ <530CF8FF.8080600@users.sourceforge.net>
+ <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+ <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net>
+ <547A050C.5040906@users.sourceforge.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0001-ftrace-x86-Have-static-tracing-also-use-ftrace_calle.patch
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3dMOQFbIPOCGfYdm"
+Content-Disposition: inline
+In-Reply-To: <547A050C.5040906@users.sourceforge.net>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/1] SPI-txx9: Deletion of an unnecessary check before
+ the function call "clk_disable"
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Linus pointed out that there were locations that did the hard coded
-update of the parent and rip parameters. One of them was the static tracer
-which could also use the ftrace_caller_setup to do that work. In fact,
-because it did not use it, it is prone to bugs, and since the static
-tracer is hardly ever used (who wants function tracing code always being
-called?) it doesn't get tested very often. I only run a few "does it still
-work" tests on it. But I do not run stress tests on that code. Although,
-since it is never turned off, just having it on should be stressful enough.
-(especially for the performance folks)
+--3dMOQFbIPOCGfYdm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-There's no reason that the static tracer can't also use ftrace_caller_setup.
-Have it do so.
+On Sat, Nov 29, 2014 at 06:40:28PM +0100, SF Markus Elfring wrote:
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Sat, 29 Nov 2014 18:34:20 +0100
+>=20
+> The clk_disable() function tests whether its argument is NULL and then
+> returns immediately. Thus the test around the call is not needed.
 
-Link: http://lkml.kernel.org/r/CA+55aFwF+qCGSKdGaEgW4p6N65GZ5_XTV=1NbtWDvxnd5yYLiw@mail.gmail.com
-Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1411262304010.3961@nanos
+Applied, but please do try to use subject lines matching the style for
+the subsystem.
 
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/x86/kernel/mcount_64.S | 22 +++++++---------------
- 1 file changed, 7 insertions(+), 15 deletions(-)
+--3dMOQFbIPOCGfYdm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/arch/x86/kernel/mcount_64.S b/arch/x86/kernel/mcount_64.S
-index 6dc134b8dc70..24842c701660 100644
---- a/arch/x86/kernel/mcount_64.S
-+++ b/arch/x86/kernel/mcount_64.S
-@@ -21,12 +21,6 @@
- # define function_hook	mcount
- #endif
- 
--#ifdef CONFIG_DYNAMIC_FTRACE
--
--ENTRY(function_hook)
--	retq
--END(function_hook)
--
- /* skip is set if stack has been adjusted */
- .macro ftrace_caller_setup trace_label skip=0
- 	MCOUNT_SAVE_FRAME \skip
-@@ -47,6 +41,12 @@ GLOBAL(\trace_label)
- #endif
- .endm
- 
-+#ifdef CONFIG_DYNAMIC_FTRACE
-+
-+ENTRY(function_hook)
-+	retq
-+END(function_hook)
-+
- #ifdef CONFIG_FRAME_POINTER
- /*
-  * Stack traces will stop at the ftrace trampoline if the frame pointer
-@@ -207,15 +207,7 @@ GLOBAL(ftrace_stub)
- 	retq
- 
- trace:
--	MCOUNT_SAVE_FRAME
--
--	movq RIP(%rsp), %rdi
--#ifdef CC_USING_FENTRY
--	movq SS+16(%rsp), %rsi
--#else
--	movq 8(%rbp), %rsi
--#endif
--	subq $MCOUNT_INSN_SIZE, %rdi
-+	ftrace_caller_setup ftrace_caller_op_ptr
- 
- 	call   *ftrace_trace_function
- 
--- 
-2.1.3
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQEcBAEBAgAGBQJUfMCzAAoJECTWi3JdVIfQ0T4H/0xhWZpQIq2arup2m4KilsRg
+zwchhHnOwmPcomLlJMa/6evEBP2drBpJkpzPs5vwpPI+0/ctiNFuxyq9f4OWlGJ8
+hrnCL0N/Qz6B9Y5GnJDSQL+sZwr1GFkM5T0nba72dc32HTuibwqvjPwhbZsekw2A
++ekjRnL0qk0jfS2VNHNFzR+0WN8TX0B2GfVWNRhpLlGIsN7z5+ociFKLZvC57vsN
+BKebhg2bzf1nWepTcSa9NIJEXG7TB8X8F1z7WBuJmot8NxP3o0yWdIhyicP1H2tk
+3eXMIy17TM192FNyPv1fbeIeYjYZ3zM6XOylZlZPtsw0NRUId+miywL7Vb8/jgM=
+=wFaD
+-----END PGP SIGNATURE-----
 
+--3dMOQFbIPOCGfYdm--
