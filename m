@@ -1,91 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932663AbaLAWae (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 17:30:34 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:36886 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932423AbaLAWac (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 17:30:32 -0500
-Message-ID: <547CEC5C.9070201@oracle.com>
-Date: Mon, 01 Dec 2014 17:31:56 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S932705AbaLAWa5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 17:30:57 -0500
+Received: from mout.web.de ([212.227.17.11]:63099 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932423AbaLAWay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 17:30:54 -0500
+Message-ID: <547CEBF5.4040004@users.sourceforge.net>
+Date: Mon, 01 Dec 2014 23:30:13 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Borislav Petkov <bp@suse.de>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        david.vrabel@citrix.com, konrad.wilk@oracle.com, pbonzini@redhat.com,
-        gleb@kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH] x86, microcode: Don't initialize microcode code on paravirt
-References: <1417469264-31470-1-git-send-email-boris.ostrovsky@oracle.com> <20141201220057.GC4730@pd.tnic>
-In-Reply-To: <20141201220057.GC4730@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Antti Palosaari <crope@iki.fi>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+        devel@driverdev.osuosl.org, linux-media@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 0/2] [media] mn88473: Delete an unnecessary check
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Provags-ID: V03:K0:d+lTDORBidZh1MoR3jV1z+3WT+Nog2LiLG9Y1G5gb/GsYOOFHTw
+ IGU/Z8hRlgQrKkpmyBzcFjh2lQfD1wcXnRCRpqIwVUzyTAw1BEjCwi0zzK9vY3Zr8X6CP7b
+ 4LKPmdTXbaTNGh3KiSY7MRLVjy16VK81Z/MlY5Vrfp4byPoNihch1zFtOOWMT+29QGhALhf
+ ryrEbE/52HK54UY9/4Gzw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2014 05:00 PM, Borislav Petkov wrote:
-> On Mon, Dec 01, 2014 at 04:27:44PM -0500, Boris Ostrovsky wrote:
->> Paravirtual guests are not expected to load microcode into processors
->> and therefore it is not necessary to initialize microcode loading
->> logic.
->>
->> In fact, under certain circumstances initializing this logic may cause
->> the guest to crash. Specifically, 32-bit kernels use __pa_nodebug()
->> macro which does not work in Xen (the code path that leads to this macro
->> happens during resume when we call mc_bp_resume()->load_ucode_ap()
->> ->check_loader_disabled_ap())
->>
->> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
->> ---
->>   arch/x86/kernel/cpu/microcode/core.c |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/kernel/cpu/microcode/core.c b/arch/x86/kernel/cpu/microcode/core.c
->> index 2ce9051..ebd232d 100644
->> --- a/arch/x86/kernel/cpu/microcode/core.c
->> +++ b/arch/x86/kernel/cpu/microcode/core.c
->> @@ -557,7 +557,7 @@ static int __init microcode_init(void)
->>   	struct cpuinfo_x86 *c = &cpu_data(0);
->>   	int error;
->>   
->> -	if (dis_ucode_ldr)
->> +	if (paravirt_enabled() || dis_ucode_ldr)
-> Ok, let me make sure I understand this correctly: The early path doesn't
-> get executed on paravirt, i.e. the path along load_ucode_intel_ap()?
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 1 Dec 2014 23:16:34 +0100
 
-(+KVM folks here as well)
+Another update suggestion was taken into account after a patch was applied
+from static source code analysis.
 
-Xen PV doesn't start with startup_32()/startup_32_smp() so for Xen this 
-is true. Don't know about KVM (or lguest).
+Markus Elfring (2):
+  Deletion of an unnecessary check before the function call "release_firmware"
+  One function call less in mn88473_init() after error detection
 
->
-> And you want to avoid loading of the microcode driver because the only
-> path we come to load_ucode_ap() on paravirt is the hotplug notifier?
+ drivers/staging/media/mn88473/mn88473.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-That's my understanding, yes.
-
->
-> Btw, we've applied another fix today for 3.18 final which limits the
-> microcode reloading to 64-bit only:
->
-> http://git.kernel.org/tip/02ecc41abcea4ff9291d548f6f846b29b354ddd2
->
-> which should accidentally fix the paravirt issue too, no?
-
-I think so. The problem we have now is __pa() macro that we only use on 
-32-bit. I'll queue this for overnight tests to make sure and if it 
-indeed works then 3.19 should be fine.
-
-Thanks.
--boris
-
->
-> Because if so, I'd like to delay your patch for the 3.19 merge window
-> unless absolutely necessary.
->
-> Thanks.
->
+-- 
+2.1.3
 
