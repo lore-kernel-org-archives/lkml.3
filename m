@@ -1,158 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093AbaLASO4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 13:14:56 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:33707 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753330AbaLASOy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 13:14:54 -0500
-Date: Mon, 1 Dec 2014 10:14:49 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Zhou Wang <wangzhou.bry@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        devicetree@vger.kernel.org, mark.rutland@arm.com, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, robh+dt@kernel.org,
-        galak@codeaurora.org, caizhiyong@huawei.com, haojian.zhuang@gmail.com,
-        xuwei5@hisilicon.com, wangzhou1@hisilicon.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 1/2] mtd: hisilicon: add a new NAND controller driver
- for hisilicon hip04 Soc
-Message-ID: <20141201181449.GG21347@ld-irv-0074>
-References: <1415105221-7732-1-git-send-email-wangzhou.bry@gmail.com>
- <1415105221-7732-2-git-send-email-wangzhou.bry@gmail.com>
- <20141130093529.GH3608@norris-Latitude-E6410>
- <547C685A.3090804@gmail.com>
+	id S932138AbaLASQg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 13:16:36 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:1343 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932066AbaLASQe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 13:16:34 -0500
+X-IronPort-AV: E=Sophos;i="5.07,495,1413244800"; 
+   d="scan'208";a="198507072"
+Message-ID: <547CB07C.1050507@citrix.com>
+Date: Mon, 1 Dec 2014 18:16:28 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: "Luis R. Rodriguez" <mcgrof@suse.com>,
+        David Vrabel <david.vrabel@citrix.com>
+CC: Juergen Gross <jgross@suse.com>, Joerg Roedel <jroedel@suse.de>,
+        <kvm@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        <x86@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <dbueso@suse.de>, Jan Beulich <JBeulich@suse.com>,
+        <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>,
+        Borislav Petkov <bp@suse.de>, Olaf Hering <ohering@suse.de>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen: privcmd: schedule() after private hypercall
+ when	non CONFIG_PREEMPT
+References: <1417040805-15857-1-git-send-email-mcgrof@do-not-panic.com>	<5476C66F.5040308@suse.com> <20141127183616.GV25677@wotan.suse.de>	<547C4CEF.1010603@citrix.com>	<20141201150546.GC25677@wotan.suse.de>	<547C86BF.2040705@citrix.com>	<CAB=NE6WPvCJnAfdbZqcw5pJtZrfxo0zQu6J2gpXp69G-UTtiUg@mail.gmail.com>	<547C8F30.1010306@citrix.com> <20141201161905.GH25677@wotan.suse.de>
+In-Reply-To: <20141201161905.GH25677@wotan.suse.de>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <547C685A.3090804@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 09:08:42PM +0800, Zhou Wang wrote:
-> On 2014年11月30日 17:35, Brian Norris wrote:
-> >On Tue, Nov 04, 2014 at 08:47:00PM +0800, Zhou Wang wrote:
-> >>Signed-off-by: Zhou Wang <wangzhou.bry@gmail.com>
-[...]
-> >>+static void hisi_nfc_dma_transfer(struct hinfc_host *host, int todev)
-> >>+{
-> >>+	struct mtd_info	*mtd = &host->mtd;
-> >>+	struct nand_chip *chip = mtd->priv;
-> >>+	unsigned long val;
-> >>+	int ret;
-> >>+
-> >>+	hinfc_write(host, host->dma_buffer, HINFC504_DMA_ADDR_DATA);
-> >>+	hinfc_write(host, host->dma_oob, HINFC504_DMA_ADDR_OOB);
-> >>+
-> >>+	if (chip->ecc.mode == NAND_ECC_NONE) {
-> >>+		hinfc_write(host, ((mtd->oobsize & HINFC504_DMA_LEN_OOB_MASK)
-> >>+			<< HINFC504_DMA_LEN_OOB_SHIFT), HINFC504_DMA_LEN);
-> >>+
-> >>+		hinfc_write(host, HINFC504_DMA_PARA_DATA_RW_EN
-> >>+			| HINFC504_DMA_PARA_OOB_RW_EN, HINFC504_DMA_PARA);
-> >>+	} else {
-> >>+		hinfc_write(host, HINFC504_DMA_PARA_DATA_RW_EN
-> >>+		| HINFC504_DMA_PARA_OOB_RW_EN | HINFC504_DMA_PARA_DATA_EDC_EN
-> >>+		| HINFC504_DMA_PARA_OOB_EDC_EN | HINFC504_DMA_PARA_DATA_ECC_EN
-> >>+		| HINFC504_DMA_PARA_OOB_ECC_EN, HINFC504_DMA_PARA);
-> >>+	}
-> >>+
-> >>+	val = (HINFC504_DMA_CTRL_DMA_START | HINFC504_DMA_CTRL_BURST4_EN
-> >>+		| HINFC504_DMA_CTRL_BURST8_EN | HINFC504_DMA_CTRL_BURST16_EN
-> >>+		| HINFC504_DMA_CTRL_DATA_AREA_EN | HINFC504_DMA_CTRL_OOB_AREA_EN
-> >>+		| ((host->addr_cycle == 4 ? 1 : 0)
-> >>+			<< HINFC504_DMA_CTRL_ADDR_NUM_SHIFT)
-> >>+		| ((host->chipselect & HINFC504_DMA_CTRL_CS_MASK)
-> >>+			<< HINFC504_DMA_CTRL_CS_SHIFT));
-> >>+
-> >>+	if (todev)
-> >>+		val |= HINFC504_DMA_CTRL_WE;
-> >>+
-> >>+	hinfc_write(host, val, HINFC504_DMA_CTRL);
-> >>+
-> >>+	init_completion(&host->cmd_complete);
-> >
-> >You need to run init_completion() *before* you kick off your I/O.
-> >Otherwise, your interrupt handler is racing with this function.
-> >
+On 01/12/14 16:19, Luis R. Rodriguez wrote:
+> On Mon, Dec 01, 2014 at 03:54:24PM +0000, David Vrabel wrote:
+>> On 01/12/14 15:44, Luis R. Rodriguez wrote:
+>>> On Mon, Dec 1, 2014 at 10:18 AM, David Vrabel <david.vrabel@citrix.com> wrote:
+>>>> On 01/12/14 15:05, Luis R. Rodriguez wrote:
+>>>>> On Mon, Dec 01, 2014 at 11:11:43AM +0000, David Vrabel wrote:
+>>>>>> On 27/11/14 18:36, Luis R. Rodriguez wrote:
+>>>>>>> On Thu, Nov 27, 2014 at 07:36:31AM +0100, Juergen Gross wrote:
+>>>>>>>> On 11/26/2014 11:26 PM, Luis R. Rodriguez wrote:
+>>>>>>>>> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>>>>>>>>>
+>>>>>>>>> Some folks had reported that some xen hypercalls take a long time
+>>>>>>>>> to complete when issued from the userspace private ioctl mechanism,
+>>>>>>>>> this can happen for instance with some hypercalls that have many
+>>>>>>>>> sub-operations, this can happen for instance on hypercalls that use
+>>>>>> [...]
+>>>>>>>>> --- a/drivers/xen/privcmd.c
+>>>>>>>>> +++ b/drivers/xen/privcmd.c
+>>>>>>>>> @@ -60,6 +60,9 @@ static long privcmd_ioctl_hypercall(void __user *udata)
+>>>>>>>>>                              hypercall.arg[0], hypercall.arg[1],
+>>>>>>>>>                              hypercall.arg[2], hypercall.arg[3],
+>>>>>>>>>                              hypercall.arg[4]);
+>>>>>>>>> +#ifndef CONFIG_PREEMPT
+>>>>>>>>> + schedule();
+>>>>>>>>> +#endif
+>>>>>>
+>>>>>> As Juergen points out, this does nothing.  You need to schedule while in
+>>>>>> the middle of the hypercall.
+>>>>>>
+>>>>>> Remember that Xen's hypercall preemption only preempts the hypercall to
+>>>>>> run interrupts in the guest.
+>>>>>
+>>>>> How is it ensured that when the kernel preempts on this code path on
+>>>>> CONFIG_PREEMPT=n kernel that only interrupts in the guest are run?
+>>>>
+>>>> Sorry, I really didn't describe this very well.
+>>>>
+>>>> If a hypercall needs a continuation, Xen returns to the guest with the
+>>>> IP set to the hypercall instruction, and on the way back to the guest
+>>>> Xen may schedule a different VCPU or it will do any upcalls (as per normal).
+>>>>
+>>>> The guest is free to return from the upcall to the original task
+>>>> (continuing the hypercall) or to a different one.
+>>>
+>>> OK so that addresses what Xen will do when using continuation and
+>>> hypercall preemption, my concern here was that using
+>>> preempt_schedule_irq() on CONFIG_PREEMPT=n kernels in the middle of a
+>>> hypercall on the return from an interrupt (e.g., the timer interrupt)
+>>> would still let the kernel preempt to tasks other than those related
+>>> to Xen.
+>>
+>> Um.  Why would that be a problem?  We do want to switch to any task the
+>> Linux scheduler thinks is best.
 > 
-> Do you mean that it needs put init_completion() before hinfc_write()?
-> If not so, interrupt handler maybe execute before init_completion()
-> which will cause something wrong.
+> Its safe but -- it technically is doing kernel preemption, unless we want
+> to adjust the definition of CONFIG_PREEMPT=n to exclude hypercalls. This
+> was my original concern with the use of preempt_schedule_irq() to do this.
+> I am afraid of setting precedents without being clear or wider review and
+> acceptance.
 
-Yes.
+It's voluntary preemption at a well defined point.  It's no different to
+a cond_resched() call.
 
-	init_completion(&host->cmd_complete);
+Note that we're not trying to fix this for the non-voluntary-preempt
+kernels.
 
-should come sometime before
-
-	hinfc_write(host, val, HINFC504_DMA_CTRL);
-
-> >>+	ret = wait_for_completion_timeout(&host->cmd_complete,
-> >>+			HINFC504_NFC_DMA_TIMEOUT);
-
-[...]
-
-> >>+static void set_addr(struct mtd_info *mtd, int column, int page_addr)
-> >>+{
-> >>+	struct nand_chip *chip = mtd->priv;
-> >>+	struct hinfc_host *host = chip->priv;
-> >>+
-> >>+	host->addr_cycle    = 0;
-> >>+	host->addr_value[0] = 0;
-> >>+	host->addr_value[1] = 0;
-> >>+
-> >>+	/* Serially input address */
-> >>+	if (column != -1) {
-> >>+		/* Adjust columns for 16 bit buswidth */
-> >>+		if (chip->options & NAND_BUSWIDTH_16)
-> >>+			column >>= 1;
-> >
-> >It doesn't look like you're supporting ONFI parameter pages yet, but you
-> >might consider checking for !nand_opcode_8bits(opcode) before adjusting the
-> >address. We had to fix some other drivers for this recently.
-> >
-> 
-> sorry, could you give me more clue about this?  Do you mean that we
-> should first make sure it is not 8 bits bus width?
-
-Look for use of nand_opcode_8bits() in nand_base.c.
-
-I'm suggesting that you don't necessarily want to "adjust the column"
-for all commands; there are some opcodes that take their address only on
-the lower x8 bits, even if the flash has an x16 buswidth.
-
-> >>+
-> >>+		host->addr_value[0] = column & 0xffff;
-> >>+		host->addr_cycle    = 2;
-> >>+	}
-
-[...]
-
-> >>+	switch (mtd->writesize) {
-> >>+	case 2048:
-> >>+		flag |= (0x001 << HINFC504_CON_PAGEISZE_SHIFT);
-> >>+	/* add more pagesize support
-> >>+	 * default pagesize has been set in hisi_nfc_host_init
-> >>+	 */
-> >
-> >Does this mean you can't handle any other page size? You might want to
-> >put the words 'TODO' or 'FIXME' in the comment, and you might want to
-> >print an error and exit if you see some other value for mtd->writesize.
-> >
-> 
-> Yes, this NAND controller can handle not only 2048 page size. But
-> the NAND controller on hip04-d01 board which I used to test this
-> driver connects with a NAND flash chip which is just 2048 page size.
-> So here I
-> just listed 'case 2048', Maybe I need indicate this by 'TODO:...'?
-
-Not just a TODO; make sure to also error out, so that users don't get
-unexplained failures if they find themselves with a non-2KB page size
-NAND.
-
-Brian
+David
