@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165AbaLASvp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 13:51:45 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:55892 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752771AbaLASvo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 13:51:44 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Stefan Agner <stefan@agner.ch>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "sre@kernel.org" <sre@kernel.org>, "fkan@apm.com" <fkan@apm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] power: reset: read priority from device tree
-Date: Mon, 01 Dec 2014 19:50:40 +0100
-Message-ID: <3594295.ivTLMMcK6I@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141201174100.GC22708@leverpostej>
-References: <1417453389-1588-1-git-send-email-stefan@agner.ch> <e5c5a44c84b95c4e48ed01c4dcffd35a@agner.ch> <20141201174100.GC22708@leverpostej>
+	id S1753990AbaLAS4T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 13:56:19 -0500
+Received: from mout.web.de ([212.227.15.14]:49667 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752854AbaLAS4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 13:56:18 -0500
+Message-ID: <547CB9BD.5050101@users.sourceforge.net>
+Date: Mon, 01 Dec 2014 19:55:57 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:me9OByuvrgEdVjfq92Y3NCVfH/LUa13QjkXLjQvYo6R
- B2z7vzCkpuKAbQWBgDgSMQ2MQR0KiqaWFMK1olwtqbmboDNPfR
- HIeY+8A+wfOBGWiUk8TnAk2A15pJZWjrIcVzcEouaLuiFUHXlG
- LrwhepP0kZNlWbZNOo/3DzNwRln8MIf2gMAlcFG7ARw35N+5fA
- 1aPG/si9ifDmZ3DZab3M2YhGdegTQ90yjv2+peHuThC4inP8Ql
- LQMGe55zG827MEoVvsUWVKAIoucak8P4zhBI5pRUydzFBfvP/5
- ePsRhFmXsi5dLMu1c8XMbGLbIxiav+dHmJ4l1lHX4+pGHw2LfV
- Q2KCNcEx9lzze00FIdmI=
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jarod Wilson <jarod@wilsonet.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org, devel@driverdev.osuosl.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] [media] lirc_zilog: Deletion of unnecessary checks before
+ the function call "vfree"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:mwZElN0T5sQgeoK6CSToFdJsOFeFWDPhL2I+HD+v4N2RC+gNQsB
+ p4c+VDDoUr1OHO3WyNuT4w+eifRN+OaMrFyOkNs7AaQJl/qf8y1yFsb4cAWi4uNUOpV2S+U
+ nVfpj5tlK6ghYC7VpIaUtdW5tRGZeXp/xzjfmZbjz0EiboVvTRO6/w4dNN2jlGkdSCGq3Ll
+ FIO2sP2bLXrK6ff91xnTA==
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 01 December 2014 17:41:00 Mark Rutland wrote:
-> Otherwise, I would imagine that most systems have a single preferred
-> mechanism with some possible fallback(s), for which a single
-> preferred-poweroff property might suffice, and has better interaction
-> w.r.t. priority (in that it should _always_ be tried first). Even that's
-> difficult to reconcile with FW bindings though, especially EFI (which we
-> sometimes must use in preference for variable storage and capsule
-> updates).
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 1 Dec 2014 19:49:39 +0100
 
-The preferred-poweroff property sounds better to me, too. I can see
-two ways of doing that though, and I'm not sure which one you mean.
-Would you put that as a bool property into the device that does the reboot,
-or would you put it as reference into the /chosen or /aliases node?
+The vfree() function performs also input parameter validation. Thus the test
+around the call is not needed.
 
-I think the latter would be better as it avoids any ambiguity, but
-either way would work.
+This issue was detected by using the Coccinelle software.
 
-	Arnd
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/staging/media/lirc/lirc_zilog.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
+index 3259aac..50b255a 100644
+--- a/drivers/staging/media/lirc/lirc_zilog.c
++++ b/drivers/staging/media/lirc/lirc_zilog.c
+@@ -729,11 +729,9 @@ static int send_boot_data(struct IR_tx *tx)
+ static void fw_unload_locked(void)
+ {
+ 	if (tx_data) {
+-		if (tx_data->code_sets)
+-			vfree(tx_data->code_sets);
++		vfree(tx_data->code_sets);
+ 
+-		if (tx_data->datap)
+-			vfree(tx_data->datap);
++		vfree(tx_data->datap);
+ 
+ 		vfree(tx_data);
+ 		tx_data = NULL;
+-- 
+2.1.3
+
