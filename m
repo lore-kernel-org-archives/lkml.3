@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932434AbaLAUe7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 15:34:59 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:10499 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932112AbaLAUet (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 15:34:49 -0500
-X-IronPort-AV: E=Sophos;i="5.07,495,1413237600"; 
-   d="scan'208";a="110560512"
-Date: Mon, 1 Dec 2014 21:34:45 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Johannes Berg <johannes@sipsolutions.net>
-cc: SF Markus Elfring <elfring@users.sourceforge.net>,
-        Lino Sanfilippo <LinoSanfilippo@gmx.de>,
-        Olof Johansson <olof@lixom.net>, netdev@vger.kernel.org,
-        backports@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: Re: net-PA Semi: Deletion of unnecessary checks before the function
- call "pci_dev_put"
-In-Reply-To: <1417465745.28610.0.camel@sipsolutions.net>
-Message-ID: <alpine.DEB.2.02.1412012134290.2076@localhost6.localdomain6>
-References: <5307CAA2.8060406@users.sourceforge.net>  <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>  <530A086E.8010901@users.sourceforge.net>  <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>  <530A72AA.3000601@users.sourceforge.net>
-  <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>  <530B5FB6.6010207@users.sourceforge.net>  <alpine.DEB.2.10.1402241710370.2074@hadrien>  <530C5E18.1020800@users.sourceforge.net>  <alpine.DEB.2.10.1402251014170.2080@hadrien> 
- <530CD2C4.4050903@users.sourceforge.net>  <alpine.DEB.2.10.1402251840450.7035@hadrien>  <530CF8FF.8080600@users.sourceforge.net>  <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>  <530DD06F.4090703@users.sourceforge.net> 
- <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>  <5317A59D.4@users.sourceforge.net> <547BC5AD.6090500@users.sourceforge.net>  (sfid-20141201_023451_153915_6CFB474F) <1417465745.28610.0.camel@sipsolutions.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S932470AbaLAUfx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 15:35:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50249 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932373AbaLAUfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 15:35:51 -0500
+Date: Mon, 1 Dec 2014 21:36:05 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Mathieu Magnaudet <mathieu.magnaudet@gmail.com>
+cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hid: export hid_report_len as an inline function in
+ hid.h
+In-Reply-To: <1417100556-7096-1-git-send-email-mathieu.magnaudet@enac.fr>
+Message-ID: <alpine.LNX.2.00.1412012134240.2524@pobox.suse.cz>
+References: <1417100556-7096-1-git-send-email-mathieu.magnaudet@enac.fr>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 27 Nov 2014, Mathieu Magnaudet wrote:
 
-
-On Mon, 1 Dec 2014, Johannes Berg wrote:
-
-> On Mon, 2014-12-01 at 02:34 +0100, SF Markus Elfring wrote:
+> in several hid drivers it is necessary to calculate the length
+> of an hid_report. This patch exports the existing static function
+> hid_report_len of hid-core.c as an inline function in hid.h
 > 
-> > > Some of those NULL pointer checks on input parameters may have been
-> > > added subsequently to functions. So there may be older kernel versions
-> > > out there in which those checks dont exists in some cases. If some of
-> > > the now "cleaned up" code is backported to such a kernel chances are
-> > > good that those missing checks are overseen. And then neither caller nor
-> > > callee is doing the NULL pointer check.
-> 
-> > I assume that a few backporters can tell you more about their corresponding
-> > software development experiences.
-> > http://www.do-not-panic.com/2014/04/automatic-linux-kernel-backporting-with-coccinelle.html
-> 
-> In such cases we just provide an appropriate wrapper and replace callers
-> of the original function by callers of the wrapper, typically with a
-> #define.
-> 
-> So this kind of evolution is no problem for the (automated) backports
-> using the backports project - although it can be difficult to detect
-> such a thing is needed.
+> Signed-off-by: Mathieu Magnaudet <mathieu.magnaudet@enac.fr>
 
-That is exactly the problem...
+Applied, thanks.
 
-julia
+[ ... snip ... ]
+> diff --git a/include/linux/hid.h b/include/linux/hid.h
+> index d585d02..06c4607 100644
+> --- a/include/linux/hid.h
+> +++ b/include/linux/hid.h
+> @@ -1087,6 +1087,17 @@ static inline void hid_hw_wait(struct hid_device *hdev)
+>  		hdev->ll_driver->wait(hdev);
+>  }
+>  
+> +/**
+> + * hid_report_len - calculate the report length
+> + *
+> + * @report: the report we want to know the length
+> + */
+> +static inline int hid_report_len(struct hid_report *report)
+> +{
+> +	/* equivalent to DIV_ROUND_UP(report->size, 8) + !!(report->id > 0) */
+> +	return ((report->size - 1) >> 3) + 1 + (report->id > 0);
+
+BTW this makes me -- being the person resposible for that ugly calculation 
+-- wonder whether we shouldn't, in the name of readability, just drop the 
+comment and make the code look that way instead.
+
+-- 
+Jiri Kosina
+SUSE Labs
