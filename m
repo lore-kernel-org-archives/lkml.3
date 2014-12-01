@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222AbaLAABh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 19:01:37 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:50468 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751920AbaLAABf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 19:01:35 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "moderated list:ARM/Rockchip SoC..." 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: dts: rockchip: set FIFO size for SDMMC, SDIO and EMMC
-Date: Mon, 01 Dec 2014 01:05:16 +0100
-Message-ID: <3674430.hGHycMC0Vo@diego>
-User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <1417170254-13615-1-git-send-email-julien.chauveau@neo-technologies.fr>
-References: <1417170254-13615-1-git-send-email-julien.chauveau@neo-technologies.fr>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1752327AbaLAABu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 19:01:50 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:51298 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752250AbaLAABs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Nov 2014 19:01:48 -0500
+From: Shaohua Li <shli@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: axboe@fb.com
+Subject: [PATCH] blk-mq: don't use rw_is_sync() to determine sync request
+Date: Sun, 30 Nov 2014 16:01:39 -0800
+Message-Id: <4f327fd4f830a3fceab3694cdd7621c37f780809.1417391999.git.shli@kernel.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 28. November 2014, 11:24:14 schrieb Julien CHAUVEAU:
-> The SDMMC, SDIO and EMMC controllers use an external FIFO whose size is
-> 256x32bit. This patch set the corresponding fifo-depth properties for both
-> RK3066 and RK3188.
-> 
-> Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+Buffer read is counted as sync in rw_is_sync(). If we use it,
+blk_sq_make_request() will not do per-process plug any more.
 
-applied to my dts branch
+I haven't changed blk_mq_make_request() yet. It makes sense to dispatch
+REQ_SYNC request immediately. But for buffer read, it's weird not to do
+per-process plug, as buffer read doesn't need low latency.
+blk_mq_merge_queue_io() isn't very helpful, as we don't have delay mechanism
+there, the queue is immediately flushed, which makes the merge very
+superficial.
+
+Signed-off-by: Shaohua Li <shli@fb.com>
+---
+ block/blk-mq.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index d5b4643..0ccbfac 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -1106,7 +1106,7 @@ static struct request *blk_mq_map_request(struct request_queue *q,
+ 	ctx = blk_mq_get_ctx(q);
+ 	hctx = q->mq_ops->map_queue(q, ctx->cpu);
+ 
+-	if (rw_is_sync(bio->bi_rw))
++	if (bio->bi_rw & REQ_SYNC)
+ 		rw |= REQ_SYNC;
+ 
+ 	trace_block_getrq(q, bio, rw);
+@@ -1206,7 +1206,7 @@ static void blk_mq_make_request(struct request_queue *q, struct bio *bio)
+  */
+ static void blk_sq_make_request(struct request_queue *q, struct bio *bio)
+ {
+-	const int is_sync = rw_is_sync(bio->bi_rw);
++	const int is_sync = !!(bio->bi_rw & REQ_SYNC);
+ 	const int is_flush_fua = bio->bi_rw & (REQ_FLUSH | REQ_FUA);
+ 	unsigned int use_plug, request_count = 0;
+ 	struct blk_map_ctx data;
+-- 
+1.8.3.2
+
