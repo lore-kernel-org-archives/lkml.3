@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822AbaLANrn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 08:47:43 -0500
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:51344 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753407AbaLANrl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 08:47:41 -0500
-Date: Mon, 1 Dec 2014 14:47:30 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [RFC PATCH 05/30] s390: Translate cputime magic constants to
- macros
-Message-ID: <20141201134730.GG4074@osiris>
-References: <1417199040-21044-1-git-send-email-fweisbec@gmail.com>
- <1417199040-21044-6-git-send-email-fweisbec@gmail.com>
+	id S1753892AbaLANs7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 08:48:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55149 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753399AbaLANs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 08:48:57 -0500
+Date: Mon, 1 Dec 2014 15:48:39 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v7 36/46] vhost/net: suppress compiler warning
+Message-ID: <20141201134839.GB18305@redhat.com>
+References: <1417359787-10138-1-git-send-email-mst@redhat.com>
+ <1417359787-10138-37-git-send-email-mst@redhat.com>
+ <20141201133740.56d7d6d8.cornelia.huck@de.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1417199040-21044-6-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120113-0017-0000-0000-0000020A934C
+In-Reply-To: <20141201133740.56d7d6d8.cornelia.huck@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 28, 2014 at 07:23:35PM +0100, Frederic Weisbecker wrote:
-> Make the code more self-explanatory by naming magic constants.
+On Mon, Dec 01, 2014 at 01:37:40PM +0100, Cornelia Huck wrote:
+> On Sun, 30 Nov 2014 17:12:13 +0200
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
 > 
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Tony Luck <tony.luck@intel.com>
-> Cc: Wu Fengguang <fengguang.wu@intel.com>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  arch/s390/include/asm/cputime.h | 47 +++++++++++++++++++++--------------------
->  1 file changed, 24 insertions(+), 23 deletions(-)
+> > len is always initialized since function is called with size > 0.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  drivers/vhost/net.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> > index 984242e..54ffbb0 100644
+> > --- a/drivers/vhost/net.c
+> > +++ b/drivers/vhost/net.c
+> > @@ -501,7 +501,7 @@ static int get_rx_bufs(struct vhost_virtqueue *vq,
+> >  	int headcount = 0;
+> >  	unsigned d;
+> >  	int r, nlogs = 0;
+> > -	u32 len;
+> > +	u32 uninitialized_var(len);
+> > 
+> >  	while (datalen > 0 && headcount < quota) {
+> >  		if (unlikely(seg >= UIO_MAXIOV)) {
+> 
+> Want to merge this with the patch introducing the variable and add a
+> comment there?
 
-Same here, nice cleanup and will be applied to the s390 tree.
+Not really. Warnings in bisect are fine  I think.
 
-Thanks,
-Heiko
-
+-- 
+MST
