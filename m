@@ -1,66 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202AbaLARKj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 12:10:39 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:42662 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817AbaLARKi (ORCPT
+	id S1753445AbaLARLc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 12:11:32 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51914 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753263AbaLARLa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 12:10:38 -0500
-Date: Mon, 1 Dec 2014 17:10:37 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
-        Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141201171036.GH18466@arm.com>
-References: <alpine.DEB.2.11.1411181914020.3909@nanos>
- <20141118215540.GD35311@redhat.com>
- <20141119021902.GA14216@redhat.com>
- <CA+55aFw13opSu6ETXgVo1tjrP+1PLkbsiKewEqRgdBKyBKALWA@mail.gmail.com>
- <20141119145902.GA13387@redhat.com>
- <546D0530.8040800@mit.edu>
- <20141120152509.GA5412@redhat.com>
- <20141125122217.GA15280@arm.com>
- <20141201114854.GB18466@arm.com>
- <CA+55aFyhB5LBVadA5TfuX8+TrZZWTHwT-2NCYRLat8Fp6eBjgw@mail.gmail.com>
+	Mon, 1 Dec 2014 12:11:30 -0500
+Date: Mon, 1 Dec 2014 17:11:26 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Stefan Agner <stefan@agner.ch>
+Cc: "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "linux@roeck-us.net" <linux@roeck-us.net>,
+        "arnd@arndb.de" <arnd@arndb.de>, "sre@kernel.org" <sre@kernel.org>,
+        "fkan@apm.com" <fkan@apm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] power: reset: read priority from device tree
+Message-ID: <20141201171126.GB22708@leverpostej>
+References: <1417453389-1588-1-git-send-email-stefan@agner.ch>
+ <1417453389-1588-2-git-send-email-stefan@agner.ch>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFyhB5LBVadA5TfuX8+TrZZWTHwT-2NCYRLat8Fp6eBjgw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1417453389-1588-2-git-send-email-stefan@agner.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 05:05:06PM +0000, Linus Torvalds wrote:
-> On Mon, Dec 1, 2014 at 3:48 AM, Will Deacon <will.deacon@arm.com> wrote:
-> > so for some bizarre reason, child1 (27912) managed to execve oom_score
-> > from /proc.
+On Mon, Dec 01, 2014 at 05:03:07PM +0000, Stefan Agner wrote:
+> This patch adds an optional property which allows to specify the
+> reset source priority. This priority is used by the kernel restart
+> handler call chain to sort out the proper reset/restart method.
+> Depending on the power design of a board or other machine/board
+> specific peculiarity, it is not possible to pick a generic priority.
 > 
-> That sounds like you have a binfmt that accepts crap. Possibly
-> ARM-specific, although more likely it's just a misc script.
+> Signed-off-by: Stefan Agner <stefan@agner.ch>
+> ---
+>  Documentation/devicetree/bindings/power/reset/syscon-reboot.txt | 3 +++
+>  drivers/power/reset/syscon-reboot.c                             | 5 ++++-
+>  2 files changed, 7 insertions(+), 1 deletion(-)
 > 
-> > We can see the child that did the execve has somehow gained its own
-> > child process (27921) that we're unable to backtrace. I can't see any
-> > clone/fork syscalls in the log for 27912.
+> diff --git a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+> index 1190631..ee41d9c 100644
+> --- a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+> +++ b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+> @@ -11,6 +11,9 @@ Required properties:
+>  - offset: offset in the register map for the reboot register (in bytes)
+>  - mask: the reset value written to the reboot register (32 bit access)
+>  
+> +Optional properties:
+> +- priority: define the priority of the reset (0-255, defaults to 128)
+> +
+
+NAK. This is a leak of Linux-internal details.
+
+What is this necessary for?
+
+Mark.
+
+>  Default will be little endian mode, 32 bit access only.
+>  
+>  Examples:
+> diff --git a/drivers/power/reset/syscon-reboot.c b/drivers/power/reset/syscon-reboot.c
+> index 815b901..3060d6b 100644
+> --- a/drivers/power/reset/syscon-reboot.c
+> +++ b/drivers/power/reset/syscon-reboot.c
+> @@ -67,8 +67,11 @@ static int syscon_reboot_probe(struct platform_device *pdev)
+>  	if (of_property_read_u32(pdev->dev.of_node, "mask", &ctx->mask))
+>  		return -EINVAL;
+>  
+> -	ctx->restart_handler.notifier_call = syscon_restart_handle;
+>  	ctx->restart_handler.priority = 128;
+> +	of_property_read_u32(pdev->dev.of_node, "priority",
+> +			     &ctx->restart_handler.priority);
+> +
+> +	ctx->restart_handler.notifier_call = syscon_restart_handle;
+>  	err = register_restart_handler(&ctx->restart_handler);
+>  	if (err)
+>  		dev_err(dev, "can't register restart notifier (err=%d)\n", err);
+> -- 
+> 2.1.3
 > 
-> Well, it wouldn't be trinity any more, it would likely be some execve
-> script (think "/bin/sh", except likely through binfmt_misc).
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> Do you have anything in /proc/sys/fs/binfmt_misc? I don't see anything
-> else that would trigger it.
-
-So I don't even have binfmt-misc compiled in. The two handlers I have are
-BINFMT_ELF and BINFMT_SCRIPT, but they both check for headers that we won't
-get back from oom_score afaict.
-
-> This doesn't really look anything like DaveJ's issue, but who knows..
-
-It's the only lockup I'm seeing on arm64 with trinity, but I agree that it's
-not very helpful.
-
-Will
