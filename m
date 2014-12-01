@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233AbaLALAA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 06:00:00 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753168AbaLAK76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 05:59:58 -0500
-Message-ID: <547C4A26.3070108@nod.at>
-Date: Mon, 01 Dec 2014 11:59:50 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1753240AbaLALBN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 06:01:13 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:57197 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752863AbaLALBM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 06:01:12 -0500
 MIME-Version: 1.0
-To: Harald Geyer <harald@ccbib.org>
-CC: linus.walleij@linaro.org, linux-gpio@vger.kernel.org,
-        javier.martinez@collabora.co.uk, acourbot@nvidia.com,
-        swarren@nvidia.com, jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de,
-        pmeerw@pmeerw.net, linux-iio@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: iio: dht11 broken
-References: <547B4464.9090300@nod.at> <E1XvOXs-00014Z-6F@stardust.g4.wien.funkfeuer.at>
-In-Reply-To: <E1XvOXs-00014Z-6F@stardust.g4.wien.funkfeuer.at>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1417431336-2012-1-git-send-email-geert@linux-m68k.org>
+References: <1417431336-2012-1-git-send-email-geert@linux-m68k.org>
+Date: Mon, 1 Dec 2014 12:01:10 +0100
+X-Google-Sender-Auth: JM2tAstaW6M8uY5F-eQb86vFC_0
+Message-ID: <CAMuHMdXPoOe3srvZp1nQQ1O6CcuROyUzAy2wNukSqwDjobZCdQ@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.18-rc7
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Mon, Dec 1, 2014 at 11:55 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> JFYI, when comparing v3.18-rc7[1]  to v3.18-rc6[3], the summaries are:
+>   - build errors: +2/-10
 
-Am 01.12.2014 um 11:49 schrieb Harald Geyer:
-> Hi Richard!
-> 
-> Richard Weinberger writes:
->> Staring with 3.12 gpiolib refuses to set an GPIO used as IRQ into output mode.
->> see commit d468bf9e (gpio: add API to be strict about GPIO IRQ usage)
->> The dht driver does this and is therefore not functional.
->> As the dht11 driver got merged in 3.13 there is a high chance that it
->> never worked.
-> 
-> Well, I'm developing on mxs and there it works on 3.13 and 3.14 at least.
-> (I have it in production using 3.14.18 ATM.)
->  
->> Harald, are you aware of this issue?
-> 
-> I got one report about this issue, but couldn't reproduce it yet and
-> the reporter didn't agree to quoting his messages to kernel mailing lists,
-> so this has been rather low priority on my todo list. Next plan is to
-> see if I can reproduce the issue on sunxi (A10).
+Nothing interesting, just a known powerpc-randconfig issue and one more
+truncated relocation in powerpc-allyesconfig[*].
 
-Not all gpio drivers use the new IRQ lock stuff.
+> [1] http://kisskb.ellerman.id.au/kisskb/head/8143/ (262 out of 119 configs)
+> [3] http://kisskb.ellerman.id.au/kisskb/head/8117/ (120 out of 119 configs)
 
-> However anybody able to reproduce this and willing to test patches, would
-> of course push this up on my todo list.
-> 
-> Any input from gpiolib people about what the proper fix would be in
-> their opinion, of course is appreciated. I don't think the dht11 driver
-> is doing anything unreasonable per se, so maybe they can clarify how
-> the API is intended to be used?
+[*] Just wondering: Recently m68k had to fix a kernel size limitation (cfr.
+    commit 486df8bc4627bdfc ("m68k: Increase initial mapping to 8 or 16 MiB
+    if possible"), as multi_defconfig was no longer bootable. How long
+    before PPC is forced to fix the toolchain due to kernel bloat ;-)
 
-Your driver sets up a GPIO as IRQ and then you switch the mode to output
-to enable the DHT sensor.
-This is not an API issue, it is an design issue.
-I'm not a hardware expert but AFAIK setting an IRQ pin into output mode can
-lead to undefined behavior.
+Gr{oetje,eeting}s,
 
-Thanks,
-//richard
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
