@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483AbaLAMTP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 07:19:15 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:60547 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753447AbaLAMTN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 07:19:13 -0500
-Message-ID: <547C5CBC.6060607@cogentembedded.com>
-Date: Mon, 01 Dec 2014 15:19:08 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753502AbaLAMUQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 07:20:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52260 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753365AbaLAMUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 07:20:13 -0500
+Date: Mon, 1 Dec 2014 14:19:53 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: David Hildenbrand <dahi@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>, rusty@au1.ibm.com,
+        nab@linux-iscsi.org, pbonzini@redhat.com, thuth@linux.vnet.ibm.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v7 16/46] virtio_blk: v1.0 support
+Message-ID: <20141201121953.GA17830@redhat.com>
+References: <1417359787-10138-1-git-send-email-mst@redhat.com>
+ <1417359787-10138-17-git-send-email-mst@redhat.com>
+ <20141201091641.3085e682@thinkpad-w530>
+ <20141201092658.GC15607@redhat.com>
+ <20141201123315.1b95d06f.cornelia.huck@de.ibm.com>
+ <20141201114645.GA17505@redhat.com>
+ <20141201130258.6f01c1e3.cornelia.huck@de.ibm.com>
 MIME-Version: 1.0
-To: SF Markus Elfring <elfring@users.sourceforge.net>,
-        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH 1/3] net-PPP: Deletion of unnecessary checks before the
- function call "kfree"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <547B4886.4080406@users.sourceforge.net> <547B496E.604@users.sourceforge.net>
-In-Reply-To: <547B496E.604@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141201130258.6f01c1e3.cornelia.huck@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Mon, Dec 01, 2014 at 01:02:58PM +0100, Cornelia Huck wrote:
+> On Mon, 1 Dec 2014 13:46:45 +0200
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> 
+> > On Mon, Dec 01, 2014 at 12:33:15PM +0100, Cornelia Huck wrote:
+> > > On Mon, 1 Dec 2014 11:26:58 +0200
+> > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > 
+> > > > For some places on data path, it might be worth it
+> > > > to cache the correct value e.g. as part of device
+> > > > structure. This replaces a branch with a memory load,
+> > > > so the gain would have to be measured, best done
+> > > > separately?
+> > > 
+> > > I think we'll want to do some measuring once the basic structure is
+> > > in place anyway.
+> > 
+> > What's meant by in place here?
+> 
+> That this patchset is ready :)
+> 
+> > 
+> > > We should make sure that e.g. s390 only takes minor
+> > > hit due to all that swapping that is needed for standard-compliant
+> > > devices. Caching the value might certainly help in some paths.
+> > 
+> > Well, this is queued in linux-next for 3.19, so
+> > now's the time to do it :)
+> 
+> So much to do, so little time...
+> 
+> I'm still feeling a bit uncomfortable with some of the changes
+> (virtio-scsi etc.) as I have not been able to test them yet (as there's
+> no converted qemu for these yet). The virtio-net and virtio-blk changes
+> seem sane, though, and virtio-ccw should be fine as well.
+> 
+> OTOH, it's not like we're introducing new external interfaces, so later
+> rework should be fine.
 
-On 11/30/2014 7:44 PM, SF Markus Elfring wrote:
-
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Sun, 30 Nov 2014 17:02:07 +0100
-
-> The kfree() function tests whether its argument is NULL and then
-> returns immediately. Thus the test around the call is not needed.
-
-> This issue was detected by using the Coccinelle software.
-
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
-> ---
->   drivers/net/ppp/ppp_mppe.c | 14 ++++++--------
->   1 file changed, 6 insertions(+), 8 deletions(-)
-
-> diff --git a/drivers/net/ppp/ppp_mppe.c b/drivers/net/ppp/ppp_mppe.c
-> index 911b216..7e44212 100644
-> --- a/drivers/net/ppp/ppp_mppe.c
-> +++ b/drivers/net/ppp/ppp_mppe.c
-> @@ -238,8 +238,7 @@ static void *mppe_alloc(unsigned char *options, int optlen)
->   	return (void *)state;
->
->   	out_free:
-> -	    if (state->sha1_digest)
-> -		kfree(state->sha1_digest);
-> +	kfree(state->sha1_digest);
-
-    Please keep this line aligned to the others.
-
->   	    if (state->sha1)
->   		crypto_free_hash(state->sha1);
->   	    if (state->arc4)
-
-[...]
-
-WBR, Sergei
-
+Right. I'll send a revision with virtio console and the rest of devices
+shortly.
