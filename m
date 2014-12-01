@@ -1,39 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175AbaLAWjQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 17:39:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51845 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026AbaLAWjO (ORCPT
+	id S932613AbaLAWp2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 17:45:28 -0500
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:56215 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754026AbaLAWp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 17:39:14 -0500
-Date: Mon, 1 Dec 2014 14:39:13 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Aaron Tomlin <atomlin@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Sterling Alexander <stalexan@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] exit: pidns: fix/update the comments in
- zap_pid_ns_processes()
-Message-Id: <20141201143913.8780d386f9ad3ef87aeadd17@linux-foundation.org>
-In-Reply-To: <20141126235437.GA386@redhat.com>
-References: <20141126235416.GA32688@redhat.com>
-	<20141126235437.GA386@redhat.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Dec 2014 17:45:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAE8gLhn9wFBLvdxTonD5m8Q_wYG_eg_TQOuZnEFPEVXstHdbvw@mail.gmail.com>
+References: <CAE8gLhn9wFBLvdxTonD5m8Q_wYG_eg_TQOuZnEFPEVXstHdbvw@mail.gmail.com>
+Date: Mon, 1 Dec 2014 23:45:26 +0100
+Message-ID: <CAE8gLhkBUWrXsRxBDTpj1sNVKZLe7aVeqMuJArW2ACOkvpR-OQ@mail.gmail.com>
+Subject: Re: PROBLEM: [Launchpad #1396889] [Lenovo ThinkPad T400] kexec reboot fails
+From: MegaBrutal <megabrutal@gmail.com>
+To: Linux kernel <linux-kernel@vger.kernel.org>
+Cc: Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Nov 2014 00:54:37 +0100 Oleg Nesterov <oleg@redhat.com> wrote:
+2014-12-01 7:32 GMT+01:00 MegaBrutal <megabrutal@gmail.com>:
+> [X.] Other notes, patches, fixes, workarounds:
+> Downstream report (Ubuntu Launchpad):
+> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1396889
+>
+> With kernel bisection, I've found, the first bad commit is
+> 8ab3820fd5b2896d66da7bb2a906bc382e63e7bc x86, kaslr: Return location
+> from decompress_kernel
+> which introduces KASLR.
+> http://lkml.kernel.org/r/1381450698-28710-3-git-send-email-keescook@chromium.org
+>
+> The problem only presents itself when CONFIG_RANDOMIZE_BASE=y.
+>
+> For workaround, there is a "nokaslr" kernel parameter to disable the
+> feature, even if the kernel was compiled with CONFIG_RANDOMIZE_BASE.
 
-> The comments in zap_pid_ns_processes() are not clear, we need to
-> explain how this code actually works.
+Need to add: as I tested today, unfortunately the "nokaslr" kernel
+option doesn't work around the bug. If a kernel was compiled with
+CONFIG_RANDOMIZE_BASE, it won't properly kexec on my ThinkPad T400,
+even if the "nokaslr" kernel option is provided!
 
-Could we please get some documentation for PIDNS_HASH_ADDING?  What it
-does, what is the protocol for handling it, etc?  I was trying to
-review your [1/2] but this little mystery has me somewhat stumped.
+This could actually help to find the bug, as whatever bad happens must
+happen before the kernel checks for the presence of the "nokaslr"
+kernel parameter.
