@@ -1,73 +1,352 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932468AbaLAVIu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 16:08:50 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:45417 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932112AbaLAVIt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 16:08:49 -0500
-Date: Mon, 1 Dec 2014 13:08:46 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Lukasz Pawelczyk <l.pawelczyk@samsung.com>
-cc: Lukasz Pawelczyk <havner@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        Sameer Nanda <snanda@chromium.org>,
-        Guillaume Morin <guillaume@morinfr.org>, Li Zefan <lizefan@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel/exit.c: make sure current's nsproxy != NULL while
- checking caps
-In-Reply-To: <1417086070.1805.9.camel@samsung.com>
-Message-ID: <alpine.DEB.2.10.1412011307450.16984@chino.kir.corp.google.com>
-References: <1417011661-19230-1-git-send-email-l.pawelczyk@samsung.com> <alpine.DEB.2.10.1411261326170.32216@chino.kir.corp.google.com> <1417086070.1805.9.camel@samsung.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S932480AbaLAVLA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 16:11:00 -0500
+Received: from bues.ch ([80.190.117.144]:48209 "EHLO bues.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932112AbaLAVK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 16:10:58 -0500
+Date: Mon, 1 Dec 2014 22:10:23 +0100
+From: Michael =?UTF-8?B?QsO8c2No?= <m@bues.ch>
+To: Andrey Skvortsov <andrej.skvortzov@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Gary Zambrano <zambrano@broadcom.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, b43-dev <b43-dev@lists.infradead.org>,
+        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: [PATCH] SSB / B44: fix WOL for BCM4401
+Message-ID: <20141201221023.79ffb40d@wiggum>
+In-Reply-To: <1417466798-15735-1-git-send-email-Andrej.Skvortzov@gmail.com>
+References: <20141201111125.GA11974@localhost.localdomain>
+ <1417466798-15735-1-git-send-email-Andrej.Skvortzov@gmail.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-1485123074-1417468127=:16984"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/05kibT8D9YkPZAXOo9_36Hi"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+--Sig_/05kibT8D9YkPZAXOo9_36Hi
+Content-Type: multipart/mixed; boundary="MP_/dXdEufUqr_gri=O3pJ2Y_5H"
 
---531381512-1485123074-1417468127=:16984
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+--MP_/dXdEufUqr_gri=O3pJ2Y_5H
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: inline
 
-On Thu, 27 Nov 2014, Lukasz Pawelczyk wrote:
+On Mon,  1 Dec 2014 23:46:38 +0300
+Andrey Skvortsov <andrej.skvortzov@gmail.com> wrote:
 
-> On śro, 2014-11-26 at 13:32 -0800, David Rientjes wrote:
-> > On Wed, 26 Nov 2014, Lukasz Pawelczyk wrote:
-> > > 
-> > > LSM task_kill() hook is triggered and current->nsproxy within is NULL.
-> > > 
-> > > This happens during an exit() syscall because exit_task_namespaces() is
-> > > called before the exit_notify(). This patch changes their order.
-> > > 
-> > 
-> > This is a classic case of a patch being proposed for a problem that only 
-> > occurs on kernels that include other patches that are not upstream.  The 
-> > order that things are deconstructed in the exit path is complex and 
-> > carefully choreographed, changing it comes at significant risk.  That risk 
-> > would be justified if a patch were being proposed for upstream that fixes 
-> > an upstream problem.  It becomes too much of a maintenance nightmare to 
-> > try to address problems and keep issues from arising for non-upstream 
-> > patches.  Thus, I don't think this is something that we want.
-> 
-> This is a problem for the change I'm working on and I will be
-> upstreaming it too at some point. Please see my other reply for more
-> details:
-> 
-> http://www.spinics.net/lists/kernel/msg1877152.html
-> 
-> The only thing I can do then is to post this patch together with the
-> other patches when the time comes. But since this issue is rather
-> separate I've decided to try to push it earlier.
-> 
+> Wake On Lan was not working on laptop DELL Vostro 1500.
+> If WOL was turned on, BCM4401 was powered up in suspend mode. LEDs blinke=
+d.
+> But the laptop could not be woken up with the Magic Packet. The reason for
+> that was that PCIE was not enabled as a system wakeup source and
+> therefore the host PCI bridge was not powered up in suspend mode.
+> PCIE was not enabled in suspend by PM because no child devices were
+> registered as wakeup source during suspend process.
+> On laptop BCM4401 is connected through the SSB bus, that is connected to =
+the
+> PCI-Express bus. SSB and B44 did not use standard PM wakeup functions
+> and did not forward wakeup settings to their parents.
+> To fix that B44 driver enables PM wakeup and registers new wakeup source
+> using device_set_wakeup_enable(). Wakeup is automatically reported to the=
+ parent SSB
+> bus via power.wakeup_path. SSB bus enables wakeup for the parent PCI brid=
+ge, if there is any
+> child devices with enabled wakeup functionality. All other steps are
+> done by PM core code.
 
-Yeah, it would be best to fold this into a series that needs 
-current->nsproxy to be valid at a sequence point in the exit path as part 
-of the same patch that requires it.
---531381512-1485123074-1417468127=:16984--
+Thanks, this looks good.
+I assume you tested this (I currently don't have a device to test this).
+
+Larry, Rafa=C5=82, any other b43 user:
+Can you please test whether this doesn't cause regressions for suspend/resu=
+me on b43?
+(Patch is attached as reference)
+
+
+> Signed-off-by: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
+> ---
+>  drivers/net/ethernet/broadcom/b44.c |    2 ++
+>  drivers/ssb/pcihost_wrapper.c       |   33 ++++++++++++++++++++++-------=
+----
+>  2 files changed, 24 insertions(+), 11 deletions(-)
+>=20
+> diff --git a/drivers/net/ethernet/broadcom/b44.c b/drivers/net/ethernet/b=
+roadcom/b44.c
+> index 416620f..ffeaf47 100644
+> --- a/drivers/net/ethernet/broadcom/b44.c
+> +++ b/drivers/net/ethernet/broadcom/b44.c
+> @@ -2104,6 +2104,7 @@ static int b44_set_wol(struct net_device *dev, stru=
+ct ethtool_wolinfo *wol)
+>  		bp->flags &=3D ~B44_FLAG_WOL_ENABLE;
+>  	spin_unlock_irq(&bp->lock);
+> =20
+> +	device_set_wakeup_enable(bp->sdev->dev, wol->wolopts & WAKE_MAGIC);
+>  	return 0;
+>  }
+> =20
+> @@ -2452,6 +2453,7 @@ static int b44_init_one(struct ssb_device *sdev,
+>  		}
+>  	}
+> =20
+> +	device_set_wakeup_capable(sdev->dev, true);
+>  	netdev_info(dev, "%s %pM\n", DRV_DESCRIPTION, dev->dev_addr);
+> =20
+>  	return 0;
+> diff --git a/drivers/ssb/pcihost_wrapper.c b/drivers/ssb/pcihost_wrapper.c
+> index 69161bb..410215c 100644
+> --- a/drivers/ssb/pcihost_wrapper.c
+> +++ b/drivers/ssb/pcihost_wrapper.c
+> @@ -11,15 +11,17 @@
+>   * Licensed under the GNU/GPL. See COPYING for details.
+>   */
+> =20
+> +#include <linux/pm.h>
+>  #include <linux/pci.h>
+>  #include <linux/export.h>
+>  #include <linux/slab.h>
+>  #include <linux/ssb/ssb.h>
+> =20
+> =20
+> -#ifdef CONFIG_PM
+> -static int ssb_pcihost_suspend(struct pci_dev *dev, pm_message_t state)
+> +#ifdef CONFIG_PM_SLEEP
+> +static int ssb_pcihost_suspend(struct device *d)
+>  {
+> +	struct pci_dev *dev =3D to_pci_dev(d);
+>  	struct ssb_bus *ssb =3D pci_get_drvdata(dev);
+>  	int err;
+> =20
+> @@ -28,17 +30,23 @@ static int ssb_pcihost_suspend(struct pci_dev *dev, p=
+m_message_t state)
+>  		return err;
+>  	pci_save_state(dev);
+>  	pci_disable_device(dev);
+> -	pci_set_power_state(dev, pci_choose_state(dev, state));
+> +
+> +	/* if there is a wakeup enabled child device on ssb bus,
+> +	   enable pci wakeup posibility. */
+> +	device_set_wakeup_enable(d, d->power.wakeup_path);
+> +
+> +	pci_prepare_to_sleep(dev);
+> =20
+>  	return 0;
+>  }
+> =20
+> -static int ssb_pcihost_resume(struct pci_dev *dev)
+> +static int ssb_pcihost_resume(struct device *d)
+>  {
+> +	struct pci_dev *dev =3D to_pci_dev(d);
+>  	struct ssb_bus *ssb =3D pci_get_drvdata(dev);
+>  	int err;
+> =20
+> -	pci_set_power_state(dev, PCI_D0);
+> +	pci_back_from_sleep(dev);
+>  	err =3D pci_enable_device(dev);
+>  	if (err)
+>  		return err;
+> @@ -49,10 +57,12 @@ static int ssb_pcihost_resume(struct pci_dev *dev)
+> =20
+>  	return 0;
+>  }
+> -#else /* CONFIG_PM */
+> -# define ssb_pcihost_suspend	NULL
+> -# define ssb_pcihost_resume	NULL
+> -#endif /* CONFIG_PM */
+> +
+> +static const struct dev_pm_ops ssb_pcihost_pm_ops =3D {
+> +	SET_SYSTEM_SLEEP_PM_OPS(ssb_pcihost_suspend, ssb_pcihost_resume)
+> +};
+> +
+> +#endif /* CONFIG_PM_SLEEP */
+> =20
+>  static int ssb_pcihost_probe(struct pci_dev *dev,
+>  			     const struct pci_device_id *id)
+> @@ -115,8 +125,9 @@ int ssb_pcihost_register(struct pci_driver *driver)
+>  {
+>  	driver->probe =3D ssb_pcihost_probe;
+>  	driver->remove =3D ssb_pcihost_remove;
+> -	driver->suspend =3D ssb_pcihost_suspend;
+> -	driver->resume =3D ssb_pcihost_resume;
+> +#ifdef CONFIG_PM_SLEEP
+> +	driver->driver.pm =3D &ssb_pcihost_pm_ops;
+> +#endif
+> =20
+>  	return pci_register_driver(driver);
+>  }
+
+
+
+
+--=20
+Michael
+
+--MP_/dXdEufUqr_gri=O3pJ2Y_5H
+Content-Type: text/x-patch
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment; filename=b44_wol.patch
+
+From: Andrey Skvortsov <andrej.skvortzov@gmail.com>
+Subject: [PATCH] SSB / B44: fix WOL for BCM4401
+
+Wake On Lan was not working on laptop DELL Vostro 1500.
+If WOL was turned on, BCM4401 was powered up in suspend mode. LEDs blinked.
+But the laptop could not be woken up with the Magic Packet. The reason for
+that was that PCIE was not enabled as a system wakeup source and
+therefore the host PCI bridge was not powered up in suspend mode.
+PCIE was not enabled in suspend by PM because no child devices were
+registered as wakeup source during suspend process.
+On laptop BCM4401 is connected through the SSB bus, that is connected to the
+PCI-Express bus. SSB and B44 did not use standard PM wakeup functions
+and did not forward wakeup settings to their parents.
+To fix that B44 driver enables PM wakeup and registers new wakeup source
+using device_set_wakeup_enable(). Wakeup is automatically reported to the p=
+arent SSB
+bus via power.wakeup_path. SSB bus enables wakeup for the parent PCI bridge=
+, if there is any
+child devices with enabled wakeup functionality. All other steps are
+done by PM core code.
+
+Signed-off-by: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
+---
+ drivers/net/ethernet/broadcom/b44.c |    2 ++
+ drivers/ssb/pcihost_wrapper.c       |   33 ++++++++++++++++++++++---------=
+--
+ 2 files changed, 24 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/net/ethernet/broadcom/b44.c b/drivers/net/ethernet/bro=
+adcom/b44.c
+index 416620f..ffeaf47 100644
+--- a/drivers/net/ethernet/broadcom/b44.c
++++ b/drivers/net/ethernet/broadcom/b44.c
+@@ -2104,6 +2104,7 @@ static int b44_set_wol(struct net_device *dev, struct=
+ ethtool_wolinfo *wol)
+ 		bp->flags &=3D ~B44_FLAG_WOL_ENABLE;
+ 	spin_unlock_irq(&bp->lock);
+=20
++	device_set_wakeup_enable(bp->sdev->dev, wol->wolopts & WAKE_MAGIC);
+ 	return 0;
+ }
+=20
+@@ -2452,6 +2453,7 @@ static int b44_init_one(struct ssb_device *sdev,
+ 		}
+ 	}
+=20
++	device_set_wakeup_capable(sdev->dev, true);
+ 	netdev_info(dev, "%s %pM\n", DRV_DESCRIPTION, dev->dev_addr);
+=20
+ 	return 0;
+diff --git a/drivers/ssb/pcihost_wrapper.c b/drivers/ssb/pcihost_wrapper.c
+index 69161bb..410215c 100644
+--- a/drivers/ssb/pcihost_wrapper.c
++++ b/drivers/ssb/pcihost_wrapper.c
+@@ -11,15 +11,17 @@
+  * Licensed under the GNU/GPL. See COPYING for details.
+  */
+=20
++#include <linux/pm.h>
+ #include <linux/pci.h>
+ #include <linux/export.h>
+ #include <linux/slab.h>
+ #include <linux/ssb/ssb.h>
+=20
+=20
+-#ifdef CONFIG_PM
+-static int ssb_pcihost_suspend(struct pci_dev *dev, pm_message_t state)
++#ifdef CONFIG_PM_SLEEP
++static int ssb_pcihost_suspend(struct device *d)
+ {
++	struct pci_dev *dev =3D to_pci_dev(d);
+ 	struct ssb_bus *ssb =3D pci_get_drvdata(dev);
+ 	int err;
+=20
+@@ -28,17 +30,23 @@ static int ssb_pcihost_suspend(struct pci_dev *dev, pm_=
+message_t state)
+ 		return err;
+ 	pci_save_state(dev);
+ 	pci_disable_device(dev);
+-	pci_set_power_state(dev, pci_choose_state(dev, state));
++
++	/* if there is a wakeup enabled child device on ssb bus,
++	   enable pci wakeup posibility. */
++	device_set_wakeup_enable(d, d->power.wakeup_path);
++
++	pci_prepare_to_sleep(dev);
+=20
+ 	return 0;
+ }
+=20
+-static int ssb_pcihost_resume(struct pci_dev *dev)
++static int ssb_pcihost_resume(struct device *d)
+ {
++	struct pci_dev *dev =3D to_pci_dev(d);
+ 	struct ssb_bus *ssb =3D pci_get_drvdata(dev);
+ 	int err;
+=20
+-	pci_set_power_state(dev, PCI_D0);
++	pci_back_from_sleep(dev);
+ 	err =3D pci_enable_device(dev);
+ 	if (err)
+ 		return err;
+@@ -49,10 +57,12 @@ static int ssb_pcihost_resume(struct pci_dev *dev)
+=20
+ 	return 0;
+ }
+-#else /* CONFIG_PM */
+-# define ssb_pcihost_suspend	NULL
+-# define ssb_pcihost_resume	NULL
+-#endif /* CONFIG_PM */
++
++static const struct dev_pm_ops ssb_pcihost_pm_ops =3D {
++	SET_SYSTEM_SLEEP_PM_OPS(ssb_pcihost_suspend, ssb_pcihost_resume)
++};
++
++#endif /* CONFIG_PM_SLEEP */
+=20
+ static int ssb_pcihost_probe(struct pci_dev *dev,
+ 			     const struct pci_device_id *id)
+@@ -115,8 +125,9 @@ int ssb_pcihost_register(struct pci_driver *driver)
+ {
+ 	driver->probe =3D ssb_pcihost_probe;
+ 	driver->remove =3D ssb_pcihost_remove;
+-	driver->suspend =3D ssb_pcihost_suspend;
+-	driver->resume =3D ssb_pcihost_resume;
++#ifdef CONFIG_PM_SLEEP
++	driver->driver.pm =3D &ssb_pcihost_pm_ops;
++#endif
+=20
+ 	return pci_register_driver(driver);
+ }
+--=20
+1.7.2.5
+
+
+
+--MP_/dXdEufUqr_gri=O3pJ2Y_5H--
+
+--Sig_/05kibT8D9YkPZAXOo9_36Hi
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUfNk/AAoJEPUyvh2QjYsObEgQAL/O0yBdZCOsVTJgTcevSD/j
+7L6NiE546W7SNmqK1RmIBPE6nijIxJzZ4YlSUnb5ppiRV7UIVte5Zfdv/oJJ6GjQ
+ov1FvRPy15fk0qanoJP+r5ebV1fsgyPUgVatbNKmWx+FLcK1nYCNTao85eS9AgcH
+xjXO07jzHtSFLxhLWqScOCeGuIkS4VUvHHlp1Ne/UR9O81G5USR2CNLyS9QsMMn2
+6yQU3ITyzLHfY1fGFOgwN1JGmBU8ovVglby5Ixpeac03oM2ZM2UELWtLQoxShXfl
+lHBX+jwPicoPcNVXBBqcI8ocEJmYcQChBHHB/0eYK84xR4O37k0l9I5apP9O9oIS
+RehHlr/SiJCTfRc7MkevgChViGJjXvVfyrSKxoOVyxlfBUdb6xMEUo64Os/fpVMf
+31ClOObdBiPvrSzLGEYzrFcrzsO8MUeILwhK96M3JuK+8cs6oehgNUi+0dqonc/0
+qBjXIEcp38eAgeEYToHOJnaJw1IZfkdtMKdcsEOhZSRwcPGr2nwB3sJB2RTOwmTk
+vykdR6loAGiHvAewNP5qDT4krEpHvjKASOf7sThKETMDFlozdbsOmnAi1recND4Q
+MKQa1roZf0TLB0tsliLcjaXN+1cBTjzzU/kSJ1z+YttqfI2NsLkoyWM+CZhlcKMP
+gRIdjL7dKMU8KQNGjE3V
+=neWB
+-----END PGP SIGNATURE-----
+
+--Sig_/05kibT8D9YkPZAXOo9_36Hi--
