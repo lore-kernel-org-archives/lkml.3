@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932174AbaLATjt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 14:39:49 -0500
-Received: from smtp-out-249.synserver.de ([212.40.185.249]:1032 "EHLO
-	smtp-out-249.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932094AbaLATjs (ORCPT
+	id S932204AbaLATlp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 14:41:45 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:54682 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932182AbaLATlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 14:39:48 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 13987
-Message-ID: <547CC407.30308@metafoo.de>
-Date: Mon, 01 Dec 2014 20:39:51 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Mon, 1 Dec 2014 14:41:44 -0500
+Date: Mon, 1 Dec 2014 11:41:39 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        Huang Shijie <shijie8@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
+Subject: Re: [PATCH] mtd: gpmi: properly handle bitflips in erased pages
+Message-ID: <20141201194139.GI21347@ld-irv-0074>
+References: <1417461159-2972-1-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
-To: Timur Tabi <timur@tabi.org>, Markus Pargmann <mpa@pengutronix.de>,
-        Jiada Wang <jiada_wang@mentor.com>
-CC: alsa-devel@alsa-project.org, lgirdwood@gmail.com, tiwai@suse.de,
-        Li.Xiubo@freescale.com, nicoleotsuka@gmail.com, broonie@kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH] ASoC: fsl_ssi: free irq before irq_dispose_mapping()
-References: <1417402251-6596-1-git-send-email-jiada_wang@mentor.com> <20141201065046.GB27289@pengutronix.de> <547C9C34.9080602@metafoo.de> <547CB817.10806@tabi.org>
-In-Reply-To: <547CB817.10806@tabi.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417461159-2972-1-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2014 07:48 PM, Timur Tabi wrote:
-> On 12/01/2014 10:49 AM, Lars-Peter Clausen wrote:
->> The driver creates the mapping by calling irq_of_parse_and_map(), so it
->> also has to dispose the mapping.
->
-> I agree with Markus, this does seem weird.  It sounds like you're saying
-> that irq_of_parse_and_map() and devm_request_irq() are incompatible.
+Hi Boris,
 
-They probably are. You have to create the mapping before you request the IRQ 
-and if devm_request_irq() is used the IRQ is only freed again after the 
-remove function of the driver been called. Yet if a driver creates a mapping 
-in its probe function it should also dispose it in its remove function. So 
-you are stuck with either freeing the mapping before freeing the IRQ or 
-leaking the mapping.
+On Mon, Dec 01, 2014 at 08:12:39PM +0100, Boris Brezillon wrote:
+> Brian, I really like the idea of having a generic implementation for this
+> feature (using read_page_raw) as you suggested here [1], but this implies
+> having a temporary buffer to store the page read in raw mode and keep the page
+> read in normal (HW ECC engine eanbled) mode, and I'm not sure we want to
+> allocate more buffers than we already have.
 
-My opinion on this is that devices should not create mappings and should 
-leave that to the core. This quite easily solves the dilemma.
+Why does this require an additional buffer? If we've already noticed an
+ECC error, we're expected to return raw data anyway, so what's the
+problem with clobbering the original data with a raw version of the
+data?
 
-> A quick grep shows the following drivers that call both functions:
->
+I really *really* do not want to merge another one-off attempt at
+"solving" this problem in the low-level driver, if at all possible.
 
-Most of these drivers will probably work fine without irq_of_parse_and_map().
+Brian
 
-> ata/pata_mpc52xx.c
-> built-in.o
-> cpufreq/exynos5440-cpufreq.c
-> crypto/omap-sham.c
-> dma/moxart-dma.c
-> edac/mpc85xx_edac.c
-> hsi/clients/nokia-modem.c
-> i2c/busses/i2c-wmt.c
-> input/serio/apbps2.c
-> mmc/host/omap_hsmmc.c
-> mmc/host/moxart-mmc.c
-> mtd/nand/mpc5121_nfc.c
-> net/ethernet/arc/emac_main.c
-> net/ethernet/moxa/moxart_ether.c
-> pci/host/pcie-rcar.c
-> pinctrl/samsung/pinctrl-exynos5440.c
-> pinctrl/samsung/pinctrl-exynos.c
-> pinctrl/pinctrl-bcm2835.c
-> spi/spi-bcm2835.c
-> spi/spi-mpc512x-psc.c
-> staging/xillybus/xillybus_of.c
-> thermal/samsung/exynos_tmu.c
->
-
+P.S. Sorry for not following up on my last attempt of a generic
+solution. I don't think I got enough constructive feedback, other than
+"this does not work for me", so I didn't pursue it further. If we have
+the attention of more than one driver developer here (i.e., at least you
+and me), then I'd really like to finish this off for good (?).
