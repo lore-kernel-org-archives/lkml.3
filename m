@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514AbaLAMml (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 07:42:41 -0500
-Received: from gardel.0pointer.net ([85.214.157.71]:45132 "EHLO
-	gardel.0pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753254AbaLAMmk (ORCPT
+	id S1753662AbaLAMnB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 07:43:01 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:50694 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753596AbaLAMm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 07:42:40 -0500
-Date: Mon, 1 Dec 2014 13:42:37 +0100
-From: Lennart Poettering <mzxreary@0pointer.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Richard Weinberger <richard@nod.at>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org,
-        "systemd-devel@lists.freedesktop.org" 
-	<systemd-devel@lists.freedesktop.org>
-Subject: Re: [PATCH] x86: defconfig: Enable CONFIG_FHANDLE
-Message-ID: <20141201124237.GA18839@gardel-login>
-References: <1416958612-7448-1-git-send-email-richard@nod.at>
- <20141130205430.GD16151@dastard>
- <547B8731.90305@nod.at>
- <20141201001849.GJ9561@dastard>
- <547BB929.3020805@nod.at>
- <20141201010343.GB18495@gardel-login>
- <20141201035426.GK9561@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141201035426.GK9561@dastard>
+	Mon, 1 Dec 2014 07:42:59 -0500
+Date: Mon, 1 Dec 2014 13:42:47 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
+        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v7 31/46] vhost: virtio 1.0 endian-ness support
+Message-ID: <20141201134247.55e68161.cornelia.huck@de.ibm.com>
+In-Reply-To: <20141201123701.GB17958@redhat.com>
+References: <1417359787-10138-1-git-send-email-mst@redhat.com>
+	<1417359787-10138-32-git-send-email-mst@redhat.com>
+	<20141201133353.0bbaa2e1.cornelia.huck@de.ibm.com>
+	<20141201123701.GB17958@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120112-0041-0000-0000-000002510635
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 01.12.14 14:54, Dave Chinner (david@fromorbit.com) wrote:
+On Mon, 1 Dec 2014 14:37:01 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-> On Mon, Dec 01, 2014 at 02:03:43AM +0100, Lennart Poettering wrote:
-> > On Mon, 01.12.14 01:41, Richard Weinberger (richard@nod.at) wrote:
+> On Mon, Dec 01, 2014 at 01:33:53PM +0100, Cornelia Huck wrote:
+> > On Sun, 30 Nov 2014 17:11:49 +0200
+> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
 > > 
-> > > CC'ing systemd folks.
+> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > ---
+> > >  drivers/vhost/vhost.c | 93 +++++++++++++++++++++++++++++++--------------------
+> > >  1 file changed, 56 insertions(+), 37 deletions(-)
 > > > 
-> > > Lennart, can you please explain why you need CONFIG_FHANDLE for systemd?
-> > > Maybe I'm reading the source horrible wrong.
 > > 
-> > For two usecases:
+> > > @@ -1113,18 +1120,19 @@ static int get_indirect(struct vhost_virtqueue *vq,
+> > >  {
+> > >  	struct vring_desc desc;
+> > >  	unsigned int i = 0, count, found = 0;
+> > > +	u32 len = vhost32_to_cpu(vq, indirect->len);
+> > >  	int ret;
+> > > 
+> > >  	/* Sanity check */
+> > > -	if (unlikely(indirect->len % sizeof desc)) {
+> > > +	if (unlikely(len % sizeof desc)) {
+> > >  		vq_err(vq, "Invalid length in indirect descriptor: "
+> > >  		       "len 0x%llx not multiple of 0x%zx\n",
+> > > -		       (unsigned long long)indirect->len,
+> > > +		       (unsigned long long)vhost32_to_cpu(vq, indirect->len),
 > > 
-> > a) Being able to detect if something is a mount point. The traditional
-> >    way to do this is by stat()ing the dir in question and its parent
-> >    and comparing st_dev. That logic is not able to detect bind mounts
-> >    however, if destination and the place the mount is at are actually
-> >    on the same file system... Thus we check the mount id too, if we
-> >    can get our hands on it.
+> > Can't you use len here?
 > 
-> So what you really want in the mount id in st_buf.st_dev, not the
-> underlying device number. i.e. fstatat(dirfd, path, buf,
-> AT_MOUNTID)?
+> Not if I want error message to be readable.
 
-Well, I am not a fan of overloading things, and there might be reasons
-why one would want to know both the mount id and the device id at the
-same time with one atomic call, but ultimately I don't really care,
-and fstatat(AT_MOUNT_ID) would certainly be at least as useful as
-name_to_handle_at() is. 
+Huh? Both have the same value.
 
-Lennart
