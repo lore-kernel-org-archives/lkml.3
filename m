@@ -1,91 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290AbaLALoi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 06:44:38 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:56137 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077AbaLALog convert rfc822-to-8bit (ORCPT
+	id S1753356AbaLALp2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 06:45:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:37688 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753205AbaLALp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 06:44:36 -0500
-Date: Mon, 1 Dec 2014 11:44:32 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Marc Zyngier <Marc.Zyngier@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] irqchip: gic: Allow interrupt level to be set for PPIs.
-Message-ID: <20141201114432.GP828@e106497-lin.cambridge.arm.com>
-References: <1417197340-27298-1-git-send-email-Liviu.Dudau@arm.com>
- <20141201104145.GY3836@n2100.arm.linux.org.uk>
- <20141201104612.GM828@e106497-lin.cambridge.arm.com>
- <20141201110358.GA3836@n2100.arm.linux.org.uk>
- <547C4ECD.20802@arm.com>
- <20141201112302.GC3836@n2100.arm.linux.org.uk>
+	Mon, 1 Dec 2014 06:45:27 -0500
+Date: Mon, 1 Dec 2014 11:45:22 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [ 22/48] net: sendmsg: fix NULL pointer dereference
+Message-ID: <20141201114522.GC6874@hercules>
+References: <28c765bc23bd4bae1611534e510f49f8@local>
+ <20141116215329.569150542@1wt.eu>
 MIME-Version: 1.0
-In-Reply-To: <20141201112302.GC3836@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 01 Dec 2014 11:44:33.0888 (UTC) FILETIME=[2D1EA600:01D00D5C]
-X-MC-Unique: 114120111443401701
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141116215329.569150542@1wt.eu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 11:23:02AM +0000, Russell King - ARM Linux wrote:
-> On Mon, Dec 01, 2014 at 11:19:41AM +0000, Marc Zyngier wrote:
-> > Hi Russell,
-> > 
-> > On 01/12/14 11:03, Russell King - ARM Linux wrote:
-> > > If all you want to do is to bypass the following check, what's wrong
-> > > with actually doing that:
-> > > 
-> > > -	if (type != IRQ_TYPE_LEVEL_HIGH && type != IRQ_TYPE_EDGE_RISING)
-> > > +	if (gicirq >= 32 && type != IRQ_TYPE_LEVEL_HIGH &&
-> > > +	    type != IRQ_TYPE_EDGE_RISING)
-> > > 		return -EINVAL;
-> > > 
-> > 
-> > I think that will require some additional changes to gic_configure_irq
-> > (in irq-gic-common.c).
+On Sun, Nov 16, 2014 at 10:53:50PM +0100, Willy Tarreau wrote:
+> 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 > 
-> I don't think so - gic_configure_irq() will treat it as a no-op as far
-> as trying to configure the IRQ settings.
-
-Doesn't that assume then that reset value is correct for the type that
-we are trying to program the PPIs?
-
-This is all very academic, as I don't have any real example of a GIC doing
-this, but ...
-
- - if the PPI is set at reset value to be level triggered
- - and we want to set PPIx to be level LOW triggered
-
-with your proposed patch the change will not happen, right?
-
-Best regards,
-Liviu
-
+> ------------------
 > 
+> From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+> 
+> [ Upstream commit 40eea803c6b2cfaab092f053248cbeab3f368412 ]
+> 
+> Sasha's report:
+> 	> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> 	> kernel with the KASAN patchset, I've stumbled on the following spew:
+> 	>
+> 	> [ 4448.949424] ==================================================================
+> 	> [ 4448.951737] AddressSanitizer: user-memory-access on address 0
+> 	> [ 4448.952988] Read of size 2 by thread T19638:
+> 	> [ 4448.954510] CPU: 28 PID: 19638 Comm: trinity-c76 Not tainted 3.16.0-rc4-next-20140711-sasha-00046-g07d3099-dirty #813
+> 	> [ 4448.956823]  ffff88046d86ca40 0000000000000000 ffff880082f37e78 ffff880082f37a40
+> 	> [ 4448.958233]  ffffffffb6e47068 ffff880082f37a68 ffff880082f37a58 ffffffffb242708d
+> 	> [ 4448.959552]  0000000000000000 ffff880082f37a88 ffffffffb24255b1 0000000000000000
+> 	> [ 4448.961266] Call Trace:
+> 	> [ 4448.963158] dump_stack (lib/dump_stack.c:52)
+> 	> [ 4448.964244] kasan_report_user_access (mm/kasan/report.c:184)
+> 	> [ 4448.965507] __asan_load2 (mm/kasan/kasan.c:352)
+> 	> [ 4448.966482] ? netlink_sendmsg (net/netlink/af_netlink.c:2339)
+> 	> [ 4448.967541] netlink_sendmsg (net/netlink/af_netlink.c:2339)
+> 	> [ 4448.968537] ? get_parent_ip (kernel/sched/core.c:2555)
+> 	> [ 4448.970103] sock_sendmsg (net/socket.c:654)
+> 	> [ 4448.971584] ? might_fault (mm/memory.c:3741)
+> 	> [ 4448.972526] ? might_fault (./arch/x86/include/asm/current.h:14 mm/memory.c:3740)
+> 	> [ 4448.973596] ? verify_iovec (net/core/iovec.c:64)
+> 	> [ 4448.974522] ___sys_sendmsg (net/socket.c:2096)
+> 	> [ 4448.975797] ? put_lock_stats.isra.13 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
+> 	> [ 4448.977030] ? lock_release_holdtime (kernel/locking/lockdep.c:273)
+> 	> [ 4448.978197] ? lock_release_non_nested (kernel/locking/lockdep.c:3434 (discriminator 1))
+> 	> [ 4448.979346] ? check_chain_key (kernel/locking/lockdep.c:2188)
+> 	> [ 4448.980535] __sys_sendmmsg (net/socket.c:2181)
+> 	> [ 4448.981592] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
+> 	> [ 4448.982773] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
+> 	> [ 4448.984458] ? syscall_trace_enter (arch/x86/kernel/ptrace.c:1500 (discriminator 2))
+> 	> [ 4448.985621] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
+> 	> [ 4448.986754] SyS_sendmmsg (net/socket.c:2201)
+> 	> [ 4448.987708] tracesys (arch/x86/kernel/entry_64.S:542)
+> 	> [ 4448.988929] ==================================================================
+> 
+> This reports means that we've come to netlink_sendmsg() with msg->msg_name == NULL and msg->msg_namelen > 0.
+> 
+> After this report there was no usual "Unable to handle kernel NULL pointer dereference"
+> and this gave me a clue that address 0 is mapped and contains valid socket address structure in it.
+> 
+> This bug was introduced in f3d3342602f8bcbf37d7c46641cb9bca7618eb1c
+> (net: rework recvmsg handler msg_name and msg_namelen logic).
+> Commit message states that:
+> 	"Set msg->msg_name = NULL if user specified a NULL in msg_name but had a
+> 	 non-null msg_namelen in verify_iovec/verify_compat_iovec. This doesn't
+> 	 affect sendto as it would bail out earlier while trying to copy-in the
+> 	 address."
+> But in fact this affects sendto when address 0 is mapped and contains
+> socket address structure in it. In such case copy-in address will succeed,
+> verify_iovec() function will successfully exit with msg->msg_namelen > 0
+> and msg->msg_name == NULL.
+> 
+> This patch fixes it by setting msg_namelen to 0 if msg_name == NULL.
+> 
+> Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+> Cc: Eric Dumazet <edumazet@google.com>
+> Cc: <stable@vger.kernel.org>
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+> Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+> Signed-off-by: Willy Tarreau <w@1wt.eu>
+> ---
+>  net/compat.c     | 9 +++++----
+>  net/core/iovec.c | 6 +++---
+>  2 files changed, 8 insertions(+), 7 deletions(-)
+> 
+> diff --git a/net/compat.c b/net/compat.c
+> index e9672c8..71ed839 100644
+> --- a/net/compat.c
+> +++ b/net/compat.c
+> @@ -83,7 +83,7 @@ int verify_compat_iovec(struct msghdr *kern_msg, struct iovec *kern_iov,
+>  {
+>  	int tot_len;
+>  
+> -	if (kern_msg->msg_namelen) {
+> +	if (kern_msg->msg_namelen && kern_msg->msg_namelen) {
+
+I know my review is already too late for the release, but the above
+line isn't correct -- it's checking msg_namelen twice, instead of
+checking msg_name as well:
+
+	if (kern_msg->msg_name && kern_msg->msg_namelen)
+
+Cheers,
+--
+Lu�s
+
+>  		if (mode==VERIFY_READ) {
+>  			int err = move_addr_to_kernel(kern_msg->msg_name,
+>  						      kern_msg->msg_namelen,
+> @@ -91,10 +91,11 @@ int verify_compat_iovec(struct msghdr *kern_msg, struct iovec *kern_iov,
+>  			if (err < 0)
+>  				return err;
+>  		}
+> -		if (kern_msg->msg_name)
+> -			kern_msg->msg_name = kern_address;
+> -	} else
+> +		kern_msg->msg_name = kern_address;
+> +	} else {
+>  		kern_msg->msg_name = NULL;
+> +		kern_msg->msg_namelen = 0;
+> +	}
+>  
+>  	tot_len = iov_from_user_compat_to_kern(kern_iov,
+>  					  (struct compat_iovec __user *)kern_msg->msg_iov,
+> diff --git a/net/core/iovec.c b/net/core/iovec.c
+> index 39369e9..3face24 100644
+> --- a/net/core/iovec.c
+> +++ b/net/core/iovec.c
+> @@ -40,17 +40,17 @@ int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address,
+>  {
+>  	int size, ct, err;
+>  
+> -	if (m->msg_namelen) {
+> +	if (m->msg_name && m->msg_namelen) {
+>  		if (mode == VERIFY_READ) {
+>  			err = move_addr_to_kernel(m->msg_name, m->msg_namelen,
+>  						  address);
+>  			if (err < 0)
+>  				return err;
+>  		}
+> -		if (m->msg_name)
+> -			m->msg_name = address;
+> +		m->msg_name = address;
+>  	} else {
+>  		m->msg_name = NULL;
+> +		m->msg_namelen = 0;
+>  	}
+>  
+>  	size = m->msg_iovlen * sizeof(struct iovec);
 > -- 
-> FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-> according to speedtest.net.
+> 1.7.12.2.21.g234cd45.dirty
 > 
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
