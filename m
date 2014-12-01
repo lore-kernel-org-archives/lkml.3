@@ -1,168 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625AbaLAECs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Nov 2014 23:02:48 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:51542 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752294AbaLAECq (ORCPT
+	id S1752645AbaLAEJx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Nov 2014 23:09:53 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33805 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752326AbaLAEJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Nov 2014 23:02:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <1417103841-22739-1-git-send-email-pmladek@suse.cz>
-References: <1417103841-22739-1-git-send-email-pmladek@suse.cz>
-Date: Sun, 30 Nov 2014 23:02:45 -0500
-Message-ID: <CADnq5_N9AY+Ep=ybk1Okmq-xm9BSZ8jjKbcnZo+qThD-YbH3CQ@mail.gmail.com>
-Subject: Re: [PATCH] drm/radeon: kernel panic in drm_calc_vbltimestamp_from_scanoutpos
- with 3.18.0-rc6
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Christian Konig <christian.koenig@amd.com>,
-        David Airlie <airlied@linux.ie>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Helge Deller <deller@gmx.de>, LKML <linux-kernel@vger.kernel.org>,
-        Maling list - DRI developers 
-	<dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 30 Nov 2014 23:09:51 -0500
+Message-ID: <1417406976.7215.126.camel@decadent.org.uk>
+Subject: Re: [PATCH] ioc3: fix incorrect use of htons/ntohs
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Cc: ralf@linux-mips.org, linux-mips@linux-mips.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 01 Dec 2014 04:09:36 +0000
+In-Reply-To: <1417344054-4374-1-git-send-email-LinoSanfilippo@gmx.de>
+References: <1417344054-4374-1-git-send-email-LinoSanfilippo@gmx.de>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-UGX2vLT14XDID0ifDBcC"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:1079:d8f7:d09f:54f7
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 10:57 AM, Petr Mladek <pmladek@suse.cz> wrote:
-> I was unable too boot 3.18.0-rc6 because of the following kernel
-> panic in drm_calc_vbltimestamp_from_scanoutpos():
->
->     [drm] Initialized drm 1.1.0 20060810
->     [drm] radeon kernel modesetting enabled.
->     [drm] initializing kernel modesetting (RV100 0x1002:0x515E 0x15D9:0x8080).
->     [drm] register mmio base: 0xC8400000
->     [drm] register mmio size: 65536
->     radeon 0000:0b:01.0: VRAM: 128M 0x00000000D0000000 - 0x00000000D7FFFFFF (16M used)
->     radeon 0000:0b:01.0: GTT: 512M 0x00000000B0000000 - 0x00000000CFFFFFFF
->     [drm] Detected VRAM RAM=128M, BAR=128M
->     [drm] RAM width 16bits DDR
->     [TTM] Zone  kernel: Available graphics memory: 3829346 kiB
->     [TTM] Zone   dma32: Available graphics memory: 2097152 kiB
->     [TTM] Initializing pool allocator
->     [TTM] Initializing DMA pool allocator
->     [drm] radeon: 16M of VRAM memory ready
->     [drm] radeon: 512M of GTT memory ready.
->     [drm] GART: num cpu pages 131072, num gpu pages 131072
->     [drm] PCI GART of 512M enabled (table at 0x0000000037880000).
->     radeon 0000:0b:01.0: WB disabled
->     radeon 0000:0b:01.0: fence driver on ring 0 use gpu addr 0x00000000b0000000 and cpu addr 0xffff8800bbbfa000
->     [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
->     [drm] Driver supports precise vblank timestamp query.
->     [drm] radeon: irq initialized.
->     [drm] Loading R100 Microcode
->     radeon 0000:0b:01.0: Direct firmware load for radeon/R100_cp.bin failed with error -2
->     radeon_cp: Failed to load firmware "radeon/R100_cp.bin"
->     [drm:r100_cp_init] *ERROR* Failed to load firmware!
->     radeon 0000:0b:01.0: failed initializing CP (-2).
->     radeon 0000:0b:01.0: Disabling GPU acceleration
->     [drm] radeon: cp finalized
->     BUG: unable to handle kernel NULL pointer dereference at 000000000000025c
->     IP: [<ffffffff8150423b>] drm_calc_vbltimestamp_from_scanoutpos+0x4b/0x320
->     PGD 0
->     Oops: 0000 [#1] SMP
->     Modules linked in:
->     CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.18.0-rc6-4-default #2649
->     Hardware name: Supermicro X7DB8/X7DB8, BIOS 6.00 07/26/2006
->     task: ffff880234da2010 ti: ffff880234da4000 task.ti: ffff880234da4000
->     RIP: 0010:[<ffffffff8150423b>]  [<ffffffff8150423b>] drm_calc_vbltimestamp_from_scanoutpos+0x4b/0x320
->     RSP: 0000:ffff880234da7918  EFLAGS: 00010086
->     RAX: ffffffff81557890 RBX: 0000000000000000 RCX: ffff880234da7a48
->     RDX: ffff880234da79f4 RSI: 0000000000000000 RDI: ffff880232e15000
->     RBP: ffff880234da79b8 R08: 0000000000000000 R09: 0000000000000000
->     R10: 000000000000000a R11: 0000000000000001 R12: ffff880232dda1c0
->     R13: ffff880232e1518c R14: 0000000000000292 R15: ffff880232e15000
->     FS:  0000000000000000(0000) GS:ffff88023fc40000(0000) knlGS:0000000000000000
->     CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->     CR2: 000000000000025c CR3: 0000000002014000 CR4: 00000000000007e0
->     Stack:
->      ffff880234da79d8 0000000000000286 ffff880232dcbc00 0000000000002480
->      ffff880234da7958 0000000000000296 ffff880234da7998 ffffffff8151b51d
->      ffff880234da7a48 0000000032dcbeb0 ffff880232dcbc00 ffff880232dcbc58
->     Call Trace:
->      [<ffffffff8151b51d>] ? drm_vma_offset_remove+0x1d/0x110
->      [<ffffffff8152dc98>] radeon_get_vblank_timestamp_kms+0x38/0x60
->      [<ffffffff8152076a>] ? ttm_bo_release_list+0xba/0x180
->      [<ffffffff81503751>] drm_get_last_vbltimestamp+0x41/0x70
->      [<ffffffff81503933>] vblank_disable_and_save+0x73/0x1d0
->      [<ffffffff81106b2f>] ? try_to_del_timer_sync+0x4f/0x70
->      [<ffffffff81505245>] drm_vblank_cleanup+0x65/0xa0
->      [<ffffffff815604fa>] radeon_irq_kms_fini+0x1a/0x70
->      [<ffffffff8156c07e>] r100_init+0x26e/0x410
->      [<ffffffff8152ae3e>] radeon_device_init+0x7ae/0xb50
->      [<ffffffff8152d57f>] radeon_driver_load_kms+0x8f/0x210
->      [<ffffffff81506965>] drm_dev_register+0xb5/0x110
->      [<ffffffff8150998f>] drm_get_pci_dev+0x8f/0x200
->      [<ffffffff815291cd>] radeon_pci_probe+0xad/0xe0
->      [<ffffffff8141a365>] local_pci_probe+0x45/0xa0
->      [<ffffffff8141b741>] pci_device_probe+0xd1/0x130
->      [<ffffffff81633dad>] driver_probe_device+0x12d/0x3e0
->      [<ffffffff8163413b>] __driver_attach+0x9b/0xa0
->      [<ffffffff816340a0>] ? __device_attach+0x40/0x40
->      [<ffffffff81631cd3>] bus_for_each_dev+0x63/0xa0
->      [<ffffffff8163378e>] driver_attach+0x1e/0x20
->      [<ffffffff81633390>] bus_add_driver+0x180/0x240
->      [<ffffffff81634914>] driver_register+0x64/0xf0
->      [<ffffffff81419cac>] __pci_register_driver+0x4c/0x50
->      [<ffffffff81509bf5>] drm_pci_init+0xf5/0x120
->      [<ffffffff821dc871>] ? ttm_init+0x6a/0x6a
->      [<ffffffff821dc908>] radeon_init+0x97/0xb5
->      [<ffffffff810002fc>] do_one_initcall+0xbc/0x1f0
->      [<ffffffff810e3278>] ? __wake_up+0x48/0x60
->      [<ffffffff8218e256>] kernel_init_freeable+0x18a/0x215
->      [<ffffffff8218d983>] ? initcall_blacklist+0xc0/0xc0
->      [<ffffffff818a78f0>] ? rest_init+0x80/0x80
->      [<ffffffff818a78fe>] kernel_init+0xe/0xf0
->      [<ffffffff818c0c3c>] ret_from_fork+0x7c/0xb0
->      [<ffffffff818a78f0>] ? rest_init+0x80/0x80
->     Code: 45 ac 0f 88 a8 01 00 00 3b b7 d0 01 00 00 49 89 ff 0f 83 99 01 00 00 48 8b 47 20 48 8b 80 88 00 00 00 48 85 c0 0f 84 cd 01 00 00 <41> 8b b1 5c 02 00 00 41 8b 89 58 02 00 00 89 75 98 41 8b b1 60
->     RIP  [<ffffffff8150423b>] drm_calc_vbltimestamp_from_scanoutpos+0x4b/0x320
->      RSP <ffff880234da7918>
->     CR2: 000000000000025c
->     ---[ end trace ad2c0aadf48e2032 ]---
->     Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000009
->
-> It has helped me to add a NULL pointer check that was suggested at
-> http://lists.freedesktop.org/archives/dri-devel/2014-October/070663.html
->
-> I am not familiar with the code. But the change looks sane
-> and we need something fast at this stage of 3.18 development.
->
-> Suggested-by: Helge Deller <deller@gmx.de>
-> Signed-off-by: Petr Mladek <pmladek@suse.cz>
-> Tested-by: Petr Mladek <pmladek@suse.cz>
 
-Applied to my -fixes tree.
+--=-UGX2vLT14XDID0ifDBcC
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-
-Alex
-
+On Sun, 2014-11-30 at 11:40 +0100, Lino Sanfilippo wrote:
+> The protocol type in the ip header struct is a single byte variable. So t=
+here
+> is no need to swap bytes depending on host endianness.
+>=20
+> Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
 > ---
->  drivers/gpu/drm/radeon/radeon_kms.c | 2 ++
->  1 file changed, 2 insertions(+)
+>=20
+> Please note that I could not test this, since I dont have access to the
+> concerning hardware.
+>=20
+>  drivers/net/ethernet/sgi/ioc3-eth.c | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+>=20
+> diff --git a/drivers/net/ethernet/sgi/ioc3-eth.c b/drivers/net/ethernet/s=
+gi/ioc3-eth.c
+> index 7a254da..0bb303d 100644
+> --- a/drivers/net/ethernet/sgi/ioc3-eth.c
+> +++ b/drivers/net/ethernet/sgi/ioc3-eth.c
+> @@ -540,8 +540,7 @@ static void ioc3_tcpudp_checksum(struct sk_buff *skb,=
+ uint32_t hwsum, int len)
+> =20
+>  	/* Same as tx - compute csum of pseudo header  */
+>  	csum =3D hwsum +
+> -	       (ih->tot_len - (ih->ihl << 2)) +
+> -	       htons((uint16_t)ih->protocol) +
+> +	       (ih->tot_len - (ih->ihl << 2)) + ih->protocol +
+>  	       (ih->saddr >> 16) + (ih->saddr & 0xffff) +
+>  	       (ih->daddr >> 16) + (ih->daddr & 0xffff);
 >
-> diff --git a/drivers/gpu/drm/radeon/radeon_kms.c b/drivers/gpu/drm/radeon/radeon_kms.c
-> index 8309b11e674d..03586763ee86 100644
-> --- a/drivers/gpu/drm/radeon/radeon_kms.c
-> +++ b/drivers/gpu/drm/radeon/radeon_kms.c
-> @@ -795,6 +795,8 @@ int radeon_get_vblank_timestamp_kms(struct drm_device *dev, int crtc,
->
->         /* Get associated drm_crtc: */
->         drmcrtc = &rdev->mode_info.crtcs[crtc]->base;
-> +       if (!drmcrtc)
-> +               return -EINVAL;
->
->         /* Helper routine in DRM core does all the work: */
->         return drm_calc_vbltimestamp_from_scanoutpos(dev, crtc, max_error,
-> --
-> 1.8.5.2
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+
+The pseudo-header is specified as:
+
+                     +--------+--------+--------+--------+
+                     |           Source Address          |
+                     +--------+--------+--------+--------+
+                     |         Destination Address       |
+                     +--------+--------+--------+--------+
+                     |  zero  |  PTCL  |    TCP Length   |
+                     +--------+--------+--------+--------+
+
+The current code zero-extends the protocol number to produce the 5th
+16-bit word of the pseudo-header, then uses htons() to put it in
+big-endian order, consistent with the other fields.  (Yes, it's doing
+addition on big-endian words; this works even on little-endian machines
+due to the way the checksum is specified.)
+
+The driver should not be doing this at all, though.  It should set
+skb->csum =3D hwsum; skb->ip_summed =3D CHECKSUM_COMPLETE; and let the
+network stack adjust the hardware checksum.
+
+> @@ -1417,7 +1416,7 @@ static int ioc3_start_xmit(struct sk_buff *skb, str=
+uct net_device *dev)
+>  	 */
+>  	if (skb->ip_summed =3D=3D CHECKSUM_PARTIAL) {
+>  		const struct iphdr *ih =3D ip_hdr(skb);
+> -		const int proto =3D ntohs(ih->protocol);
+> +		const int proto =3D ih->protocol;
+>  		unsigned int csoff;
+>  		uint32_t csum, ehsum;
+>  		uint16_t *eh;
+
+This should logically be __be16 proto =3D htons(ih->protocol), but the
+current version should work in practice.
+
+However, the driver should really use skb->csum_start and
+skb->csum_offset to work out where the checksum belongs and which bytes
+to cancel out.
+
+Ben.
+
+--=20
+Ben Hutchings
+The first rule of tautology club is the first rule of tautology club.
+
+--=-UGX2vLT14XDID0ifDBcC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUAVHvqBee/yOyVhhEJAQq7CBAAxe1OoSuOlTy6Asn0VtQjYwo1jRxplsw1
+gEvf4s8Ggh2BTiAs0wNltIX/xvdb2XzMW2u6J3BuHJeaCMl29jo+9y60g3ArhhLF
+szj/QzEq3+tPZm97K8ZoEZKcYKILseUz/1Bv4+Uf4u0QnNpcVwINdmp1x5QGKHPX
+MWNFWsxulR5aTvX78ytFmb7VHEyXtHZQUsHLaye/1fsn4YChTNvb+GkIE7dvm5N+
+/HjEgjtg3XhRVBiZPhQQfGBa+hqYjf0FE9Ey869XTXenNGP9AYbwTZqW9D1qKNWS
+1XZxtHcn1ciERL8tPChDXymMMHmn/kOKRP+LnoZJPx4avd5yfMW9jJSxfrfEbXVS
+BLKCStrFxQvSJcco+pPnYtmgOGlKTVH270TnfJ/VjjNem1x/5HhxJfUHAk3zQRHy
+F2VDndqmamW8Eqk3XGEQuDApGaUnzA1SEtlf1g9nshKFf5Cvi3GLlUHvb/U8aJ2z
+4dM1qL7qDz9RZcIjwJzA7pCPX/o9oSJIT4rXaG57rYR+58mENrDJNnHghBVIymIU
+o6THjUf4g1raDU6Hf7WhK/ktcgjDTRICGdVBS8XPeccp6YfZd2ENm4TxbUJWhZUu
+4jFe2oIYBpZgwoMP8BFMNFksGX1RaigLAveaQuFcKunA6qM7mz+gMY9CRjDX+oam
+x9btSGEYL+c=
+=Q8ry
+-----END PGP SIGNATURE-----
+
+--=-UGX2vLT14XDID0ifDBcC--
