@@ -1,89 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932489AbaLAQIo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 11:08:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44370 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932397AbaLAQHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 11:07:17 -0500
-Date: Mon, 1 Dec 2014 18:06:55 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Miller <davem@davemloft.net>, cornelia.huck@de.ibm.com,
-        rusty@au1.ibm.com, nab@linux-iscsi.org, pbonzini@redhat.com,
-        thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
-Subject: [PATCH v8 49/50] virtio: make VIRTIO_F_VERSION_1 a transport bit
-Message-ID: <1417449619-24896-50-git-send-email-mst@redhat.com>
-References: <1417449619-24896-1-git-send-email-mst@redhat.com>
+	id S932388AbaLAQHQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 11:07:16 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:35419 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932300AbaLAQHM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 11:07:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417449619-24896-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+In-Reply-To: <1416834177-11170-1-git-send-email-gautam.vivek@samsung.com>
+References: <CAFp+6iF-N63YSsdv2a6=MYp_mD=eQY_Oi8=9JVNU5dG0BA7YGQ@mail.gmail.com>
+	<1416834177-11170-1-git-send-email-gautam.vivek@samsung.com>
+Date: Tue, 2 Dec 2014 01:07:11 +0900
+Message-ID: <CA+Ln22GHVinmpJccYYxNjYeApj3miy_zGMnWd8e5AOt0PCjh9g@mail.gmail.com>
+Subject: Re: [PATCH V2 1/2] pinctrl: exynos: Add BUS1 pin controller for exynos7
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Kukjin Kim <kgene@kernel.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Activate VIRTIO_F_VERSION_1 automatically unless legacy_only
-is set.
+Hi Vivek,
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- include/uapi/linux/virtio_config.h | 4 ++--
- drivers/virtio/virtio.c            | 6 +++++-
- drivers/virtio/virtio_ring.c       | 2 ++
- 3 files changed, 9 insertions(+), 3 deletions(-)
+Please see my comments below.
 
-diff --git a/include/uapi/linux/virtio_config.h b/include/uapi/linux/virtio_config.h
-index 4d05671..a6d0cde 100644
---- a/include/uapi/linux/virtio_config.h
-+++ b/include/uapi/linux/virtio_config.h
-@@ -43,11 +43,11 @@
- /* We've given up on this device. */
- #define VIRTIO_CONFIG_S_FAILED		0x80
- 
--/* Some virtio feature bits (currently bits 28 through 31) are reserved for the
-+/* Some virtio feature bits (currently bits 28 through 32) are reserved for the
-  * transport being used (eg. virtio_ring), the rest are per-device feature
-  * bits. */
- #define VIRTIO_TRANSPORT_F_START	28
--#define VIRTIO_TRANSPORT_F_END		32
-+#define VIRTIO_TRANSPORT_F_END		33
- 
- /* Do we get callbacks when the ring is completely used, even if we've
-  * suppressed them? */
-diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
-index f9ad99c..fa6b75d 100644
---- a/drivers/virtio/virtio.c
-+++ b/drivers/virtio/virtio.c
-@@ -197,7 +197,11 @@ static int virtio_dev_probe(struct device *_d)
- 		driver_features_legacy = driver_features;
- 	}
- 
--	if (driver_features & device_features & (1ULL << VIRTIO_F_VERSION_1))
-+	/* Detect legacy-only drivers and disable VIRTIO_F_VERSION_1. */
-+	if (drv->legacy_only)
-+		device_features &= ~(1ULL << VIRTIO_F_VERSION_1);
-+
-+	if (device_features & (1ULL << VIRTIO_F_VERSION_1))
- 		dev->features = driver_features & device_features;
- 	else
- 		dev->features = driver_features_legacy & device_features;
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index 55532a4..00ec6b3 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -780,6 +780,8 @@ void vring_transport_features(struct virtio_device *vdev)
- 			break;
- 		case VIRTIO_RING_F_EVENT_IDX:
- 			break;
-+		case VIRTIO_F_VERSION_1:
-+			break;
- 		default:
- 			/* We don't understand this bit. */
- 			__virtio_clear_bit(vdev, i);
--- 
-MST
+2014-11-24 22:02 GMT+09:00 Vivek Gautam <gautam.vivek@samsung.com>:
+> USB and Power regulator on Exynos7 require gpios available
+> in BUS1 pin controller block.
+> So adding the BUS1 pinctrl support.
+>
+> Signed-off-by: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>
+> This patch was part of series:
+> "[PATCH 00/11] Exynos7: Adding USB 3.0 support"
+>  https://lkml.org/lkml/2014/11/21/247
+>
+> Changes since V1:
+>  - Added support for all pin banks which are part of BUS1 pin controller.
+>
+>  drivers/pinctrl/samsung/pinctrl-exynos.c |   19 +++++++++++++++++++
+>  1 file changed, 19 insertions(+)
 
+I have missed this with previous patch, but DT bindings documentation
+should list all aliases for all supported compatible strings, because
+they are required for correct operation. There is a small section
+about aliases in [1] already, so please add there information about
+aliases for Exynos7 pin controllers along with their names, e.g.
+
+Aliases for controllers compatible with "samsung,exynos7-pinctrl":
+ - pinctrl0: pin controller of ALIVE block,
+ - pinctrl1: pin controller of BUS0 block,
+ [...]
+ - pinctrl8: pin controller of BUS1 block.
+
+[1] Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt
+
+I guess you can do this in separate patch or respin this one with this added.
+
+Best regards,
+Tomasz
