@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013AbaLAPAI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 10:00:08 -0500
-Received: from mga01.intel.com ([192.55.52.88]:48570 "EHLO mga01.intel.com"
+	id S1754043AbaLAPBI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 10:01:08 -0500
+Received: from mout.web.de ([212.227.17.12]:57047 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753795AbaLAO7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 09:59:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,494,1413270000"; 
-   d="scan'208";a="640742608"
-From: Kan Liang <kan.liang@intel.com>
-To: acme@kernel.org, jolsa@redhat.com, namhyung@kernel.org
-Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com,
-        Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V6 2/3] perf tool: new function to compare common part of build-ids
-Date: Mon,  1 Dec 2014 09:40:11 -0500
-Message-Id: <1417444812-22063-2-git-send-email-kan.liang@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1417444812-22063-1-git-send-email-kan.liang@intel.com>
-References: <1417444812-22063-1-git-send-email-kan.liang@intel.com>
+	id S1753618AbaLAPBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 10:01:06 -0500
+Message-ID: <547C82A6.2030808@users.sourceforge.net>
+Date: Mon, 01 Dec 2014 16:00:54 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
+        netdev@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH 1/3] net-PPP: Deletion of unnecessary checks before the
+ function call "kfree"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <547B4886.4080406@users.sourceforge.net> <547B496E.604@users.sourceforge.net> <547C5CBC.6060607@cogentembedded.com>
+In-Reply-To: <547C5CBC.6060607@cogentembedded.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:ib/pZ9LwBY8emsSLd3hAuO+CweSNCGkFfeD+wwM3r3xBxDUchnr
+ dVbLR3wQ/lro4Pv5hYdexVJoT2QUZm9TbB7GoWeUdrBgNhVa2RTxgW+MXTc+FfOp1XZDVNh
+ ZGb5W8/shHWoaW9IkFZw3BkP/E6B98KF6Pplr3++sU+n7Ic3siFhC5yPT4lWa/t4Crn5Ukn
+ RqSt3TQVzW1AA2WJXt1vA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kan Liang <kan.liang@intel.com>
+>> diff --git a/drivers/net/ppp/ppp_mppe.c b/drivers/net/ppp/ppp_mppe.c
+>> index 911b216..7e44212 100644
+>> --- a/drivers/net/ppp/ppp_mppe.c
+>> +++ b/drivers/net/ppp/ppp_mppe.c
+>> @@ -238,8 +238,7 @@ static void *mppe_alloc(unsigned char *options, int optlen)
+>>       return (void *)state;
+>>
+>>       out_free:
+>> -        if (state->sha1_digest)
+>> -        kfree(state->sha1_digest);
+>> +    kfree(state->sha1_digest);
+> 
+>    Please keep this line aligned to the others.
 
-New function to compare the build_ids between different DSOs
-This function is only interested in the common part of build_ids.
-For example, dsos_a includes DSO A and DSO B. dsos_b includes DSO B and
-DSO C. Only DSO B's build_id will be compared.
+Can it be that the previous source code contained unwanted space
+characters at this place?
+Do you want indentation fixes as a separate update step?
 
-Signed-off-by: Kan Liang <kan.liang@intel.com>
----
-
-Changes since V5:
- - Replace Arnaldo's dsos__build_ids_equal by bool dsos__build_ids_common_equal
- - Only compare the common part of build-ids
-
- tools/perf/util/dso.c | 20 ++++++++++++++++++++
- tools/perf/util/dso.h |  2 ++
- 2 files changed, 22 insertions(+)
-
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 45be944..04416b9 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -1087,3 +1087,23 @@ enum dso_type dso__type(struct dso *dso, struct machine *machine)
- 
- 	return dso__type_fd(fd);
- }
-+
-+bool dsos__build_ids_common_equal(struct dsos *dsos_a, struct dsos *dsos_b)
-+{
-+	struct dso *dso_a, *dso_b;
-+
-+	list_for_each_entry(dso_a, &dsos_a->head, node) {
-+		dso_b = dsos__find(dsos_b, dso_a->short_name, true);
-+		if (dso_b == NULL)
-+			continue;
-+		/*
-+		 * Only compare the common part of dsos.
-+		 */
-+		if (dso_a->has_build_id && dso_b->has_build_id) {
-+			if (memcmp(dso_a->build_id, dso_b->build_id, sizeof(dso_a->build_id)))
-+				return false;
-+		}
-+	}
-+
-+	return true;
-+}
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index 3782c82..e92217c 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -278,4 +278,6 @@ void dso__free_a2l(struct dso *dso);
- 
- enum dso_type dso__type(struct dso *dso, struct machine *machine);
- 
-+bool dsos__build_ids_common_equal(struct dsos *dsos_a, struct dsos *dsos_b);
-+
- #endif /* __PERF_DSO */
--- 
-1.8.3.2
-
+Regards,
+Markus
