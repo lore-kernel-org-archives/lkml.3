@@ -1,116 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085AbaLAQwz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 11:52:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32922 "EHLO mx1.redhat.com"
+	id S932114AbaLAQxK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 11:53:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47611 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753754AbaLAQww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 11:52:52 -0500
+	id S1753502AbaLAQwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 11:52:54 -0500
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Jason Gerecke <killertofu@gmail.com>, Ping Cheng <pinglinux@gmail.com>,
         Hans Spath <inbox-546@hans-spath.de>
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] HID: wacom: fix freeze on open when autosuspend is on
-Date: Mon,  1 Dec 2014 11:52:40 -0500
-Message-Id: <1417452760-2763-2-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1417452760-2763-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1417452760-2763-1-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH 1/2] HID: wacom: re-add accidentally dropped Lenovo PID
+Date: Mon,  1 Dec 2014 11:52:39 -0500
+Message-Id: <1417452760-2763-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the conversion from USB to HID (in v3.17), some people reported a
-freeze on boot with the wacom driver. Hans managed to get a stacktrace:
+Dropped in the following commit:
 
-[  240.272331] Call Trace:
-[  240.272338]  [<ffffffff813de7b9>] ? usb_hcd_submit_urb+0xa9/0xb10
-[  240.272347]  [<ffffffff81555579>] schedule+0x29/0x70
-[  240.272355]  [<ffffffff815559e6>] schedule_preempt_disabled+0x16/0x20
-[  240.272363]  [<ffffffff81557365>] __mutex_lock_slowpath+0xe5/0x230
-[  240.272372]  [<ffffffff815574c7>] mutex_lock+0x17/0x30
-[  240.272380]  [<ffffffffa063c1d2>] wacom_resume+0x22/0x50 [wacom]
-[  240.272396]  [<ffffffffa01aea8a>] hid_resume_common+0xba/0x110 [usbhid]
-[  240.272404]  [<ffffffff813e5890>] ? usb_runtime_suspend+0x80/0x80
-[  240.272417]  [<ffffffffa01aeb1d>] hid_resume+0x3d/0x70 [usbhid]
-[  240.272425]  [<ffffffff813e44a6>] usb_resume_interface.isra.6+0xb6/0x120
-[  240.272432]  [<ffffffff813e4774>] usb_resume_both+0x74/0x140
-[  240.272439]  [<ffffffff813e58aa>] usb_runtime_resume+0x1a/0x20
-[  240.272446]  [<ffffffff813b1912>] __rpm_callback+0x32/0x70
-[  240.272453]  [<ffffffff813b1976>] rpm_callback+0x26/0xa0
-[  240.272460]  [<ffffffff813b2d71>] rpm_resume+0x4b1/0x690
-[  240.272468]  [<ffffffff812ab992>] ? radix_tree_lookup_slot+0x22/0x50
-[  240.272475]  [<ffffffff813b2c1a>] rpm_resume+0x35a/0x690
-[  240.272482]  [<ffffffff8116e9c9>] ? zone_statistics+0x89/0xa0
-[  240.272489]  [<ffffffff813b2f90>] __pm_runtime_resume+0x40/0x60
-[  240.272497]  [<ffffffff813e4272>] usb_autopm_get_interface+0x22/0x60
-[  240.272509]  [<ffffffffa01ae8d9>] usbhid_open+0x59/0xe0 [usbhid]
-[  240.272517]  [<ffffffffa063ac85>] wacom_open+0x35/0x50 [wacom]
-[  240.272525]  [<ffffffff813f37b9>] input_open_device+0x79/0xa0
-[  240.272534]  [<ffffffffa048d1c1>] evdev_open+0x1b1/0x200 [evdev]
-[  240.272543]  [<ffffffff811c899e>] chrdev_open+0xae/0x1f0
-[  240.272549]  [<ffffffff811c88f0>] ? cdev_put+0x30/0x30
-[  240.272556]  [<ffffffff811c17e2>] do_dentry_open+0x1d2/0x320
-[  240.272562]  [<ffffffff811c1cd1>] finish_open+0x31/0x50
-[  240.272571]  [<ffffffff811d2202>] do_last.isra.36+0x652/0xe50
-[  240.272579]  [<ffffffff811d2ac7>] path_openat+0xc7/0x6f0
-[  240.272586]  [<ffffffff811cf012>] ? final_putname+0x22/0x50
-[  240.272594]  [<ffffffff811d42d2>] ? user_path_at_empty+0x72/0xd0
-[  240.272602]  [<ffffffff811d43fd>] do_filp_open+0x4d/0xc0
-[...]
+commit a3e6f6543d19 ("Input: wacom - keep wacom_ids ordered")
+ drivers/input/tablet/wacom_wac.c | 79 +++++++++++++++++++++++++++++++++++++++----------------------------------------
+ 1 file changed, 39 insertions(+), 40 deletions(-)
 
-So here, wacom_open is called, and then wacom_resume is called by the
-PM system. However, wacom_open already took the lock when wacom_resume
-tries to get it. Freeze.
-
-A little bit of history shows that this already happened in the past
-- commit f6cd378372bf ("Input: wacom - fix runtime PM related deadlock"),
-and the solution was to call first the PM function before taking the lock.
-
-The lock was introduced in commit commit e722409445fb ("Input: wacom -
-implement suspend and autosuspend") when the autosuspend feature has
-been added. Given that usbhid already takes care of this very same
-locking between suspend/resume, I think we can simply kill the lock
-in open/close.
-
-The lock is now used also with LEDs, so we can not remove it completely.
+> -    { USB_DEVICE_LENOVO(0x6004) },
 
 Reported-by: Hans Spath <inbox-546@hans-spath.de>
-Tested-by: Hans Spath <inbox-546@hans-spath.de>
-CC: stable@vger.kernel.org # v3.17+
+CC: stable@vger.kernel.org    # v3.17+
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
- drivers/hid/wacom_sys.c | 9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
+ drivers/hid/wacom_wac.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
-index eb55316..17bf52b 100644
---- a/drivers/hid/wacom_sys.c
-+++ b/drivers/hid/wacom_sys.c
-@@ -70,22 +70,15 @@ static int wacom_raw_event(struct hid_device *hdev, struct hid_report *report,
- static int wacom_open(struct input_dev *dev)
- {
- 	struct wacom *wacom = input_get_drvdata(dev);
--	int retval;
--
--	mutex_lock(&wacom->lock);
--	retval = hid_hw_open(wacom->hdev);
--	mutex_unlock(&wacom->lock);
+diff --git a/drivers/hid/wacom_wac.c b/drivers/hid/wacom_wac.c
+index 1468f00..2b8d1f8 100644
+--- a/drivers/hid/wacom_wac.c
++++ b/drivers/hid/wacom_wac.c
+@@ -3046,6 +3046,7 @@ const struct hid_device_id wacom_ids[] = {
+ 	{ USB_DEVICE_WACOM(0x4004) },
+ 	{ USB_DEVICE_WACOM(0x5000) },
+ 	{ USB_DEVICE_WACOM(0x5002) },
++	{ USB_DEVICE_LENOVO(0x6004) },
  
--	return retval;
-+	return hid_hw_open(wacom->hdev);
- }
- 
- static void wacom_close(struct input_dev *dev)
- {
- 	struct wacom *wacom = input_get_drvdata(dev);
- 
--	mutex_lock(&wacom->lock);
- 	hid_hw_close(wacom->hdev);
--	mutex_unlock(&wacom->lock);
- }
- 
- /*
+ 	{ USB_DEVICE_WACOM(HID_ANY_ID) },
+ 	{ }
 -- 
 2.1.0
 
