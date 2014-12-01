@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948AbaLAJV7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 04:21:59 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:45254 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752719AbaLAJV4 (ORCPT
+	id S1753004AbaLAJWc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 04:22:32 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60717 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752834AbaLAJWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 04:21:56 -0500
+	Mon, 1 Dec 2014 04:22:30 -0500
+X-Sasl-enc: RK1iTn3L36zvPahrePqLx76KtGhvIZHj7ZGygHPnTNsD 1417425749
+Message-ID: <547C3353.9030502@iki.fi>
+Date: Mon, 01 Dec 2014 11:22:27 +0200
+From: Pekka Enberg <penberg@iki.fi>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <4088467.A4Xd3YfMSv@vostro.rjw.lan>
-References: <4088467.A4Xd3YfMSv@vostro.rjw.lan>
-Date: Mon, 1 Dec 2014 10:21:54 +0100
-X-Google-Sender-Auth: BdkSZgM5z_GElMNOekklifmCTKo
-Message-ID: <CAMuHMdU-PH=L4L-Jt8BVCvcFwJJY6PhEEBPWtO3wLhh2ndyA6g@mail.gmail.com>
-Subject: Re: [PATCH] PM / Kconfig: Do not select PM directly from Kconfig files
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Kevin Hilman <khilman@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2] slab: Fix nodeid bounds check for non-contiguous node
+ IDs
+References: <20141201042844.GB11234@drongo>
+In-Reply-To: <20141201042844.GB11234@drongo>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 29, 2014 at 2:03 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->
-> It is not valid to select CONFIG_PM directly without selecting
-> CONFIG_PM_SLEEP or CONFIG_PM_RUNTIME too, because that breaks
-> dependencies (ia64 does that) and it is not necessary to select
-> CONFIG_PM directly if CONFIG_PM_SLEEP or CONFIG_PM_RUNTIME is
-> set, because it will be set automatically then (sh does that).
->
-> Fix those mistakes.
->
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On 12/1/14 6:28 AM, Paul Mackerras wrote:
 > ---
->  arch/ia64/Kconfig |    1 -
->  arch/sh/Kconfig   |    1 -
+> v2: include the oops message in the patch description
+>
+>   mm/slab.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/mm/slab.c b/mm/slab.c
+> index eb2b2ea..f34e053 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -3076,7 +3076,7 @@ static void *____cache_alloc_node(struct kmem_cache *cachep, gfp_t flags,
+>   	void *obj;
+>   	int x;
+>   
+> -	VM_BUG_ON(nodeid > num_online_nodes());
+> +	VM_BUG_ON(nodeid < 0 || nodeid >= MAX_NUMNODES);
+>   	n = get_node(cachep, nodeid);
+>   	BUG_ON(!n);
 
-For the sh part:
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
 
-Acked-by: Geert Uytterhoeven <geert+renesas@glider.be>
-
-Note that sh is orphaned, so you should resend your patch to Andrew Morton,
-or queue it yourself.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
