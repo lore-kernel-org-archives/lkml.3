@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932979AbaLAXZt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 18:25:49 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:34527 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932830AbaLAXUs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754120AbaLAXUs (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 1 Dec 2014 18:20:48 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:45720 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932690AbaLAXUn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 18:20:43 -0500
 From: James Hogan <james.hogan@imgtec.com>
 To: Mike Turquette <mturquette@linaro.org>, linux-metag@vger.kernel.org,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
 Cc: Heiko Stuebner <heiko@sntech.de>, James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH v2 04/16] clk: tz1090: add deleter clock driver
-Date: Mon,  1 Dec 2014 23:19:54 +0000
-Message-Id: <1417476006-10407-5-git-send-email-james.hogan@imgtec.com>
+Subject: [PATCH v2 02/16] clk: tz1090: add gate bank clock driver
+Date: Mon,  1 Dec 2014 23:19:52 +0000
+Message-Id: <1417476006-10407-3-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1417476006-10407-1-git-send-email-james.hogan@imgtec.com>
 References: <1417476006-10407-1-git-send-email-james.hogan@imgtec.com>
@@ -21,228 +21,266 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a clock driver for clock deleters in the TZ1090 SoC, which delete up
-to 1023 out of every 1024 clock pulses. There are 4 of these in TZ1090,
-for the system clock, the Meta core clock, and one for each UCC.
+Add a clock driver for banks of clock gates in the TZ1090 SoC. A single
+32 bit register controls up to 32 separate clock gates. The generic
+clock gate clock operations are wrapped in order to acquire and release
+the Meta global exclusive lock (__global_lock2) to ensure atomicity with
+other non-Linux cores and threads which may need to control some of the
+clocks.
 
-The tz1090_clk_register_deleters() helper function can be used to
-register a set of deleters from static initialisation data. A DEL()
-macro is provided in tz1090/clk.h to aid the creation of this data, for
-example:
+The tz1090_clk_register_gate_bank() helper function can be used to
+register a gate bank from static initialisation data. Macros are
+provided in tz1090/clk.h to aid the creation of this data, for example:
 
-static const struct tz1090_clk_deleter deleters[] __initconst = {
-	DEL(CLK_TOP_SYS, "sys_undeleted", "sys", TOP_CLKDELETE),
-	...
-};
+GATE_BANK(tz1090_perip_clken, 0, PERIP_CLKEN,
+        /*   bit in      out */
+        GATE( 0, "@sys", "sys_scb0")
+        GATE( 1, "@sys", "sys_scb1")
+        GATE( 2, "@sys", "sys_scb2")
+        ...
+);
 ...
-tz1090_clk_register_deleters(p, deleters, ARRAY_SIZE(deleters));
+clk_register_gate_bank(p, &tz1090_perip_clken);
 
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
 Cc: Mike Turquette <mturquette@linaro.org>
 Cc: linux-metag@vger.kernel.org
 ---
-Changes since v1 (patch 10):
+Changes since v1 (patch 6):
 - Renamed function prefixes from clk_tz1090_ to tz1090_clk_ for
   consistency with the rest.
 - Drop DT binding as it will be instantiated directly from a provider.
-- Add tz1090_clk_register_deleters() to conveniently register a set of
-  deleters in a clock provider from static initilisation data.
+- Add tz1090_clk_register_gate_bank() to conveniently register a bank of
+  gates in a clock provider from static initilisation data.
 - Extend tz1090/clk.h interface for easy static initialisation with
   macros.
 ---
- drivers/clk/tz1090/Makefile             |   1 +
- drivers/clk/tz1090/clk-tz1090-deleter.c | 132 ++++++++++++++++++++++++++++++++
- drivers/clk/tz1090/clk.h                |  31 ++++++++
- 3 files changed, 164 insertions(+)
- create mode 100644 drivers/clk/tz1090/clk-tz1090-deleter.c
+ drivers/clk/tz1090/Makefile               |   2 +
+ drivers/clk/tz1090/clk-tz1090-gate-bank.c | 149 ++++++++++++++++++++++++++++++
+ drivers/clk/tz1090/clk.h                  |  49 ++++++++++
+ 3 files changed, 200 insertions(+)
+ create mode 100644 drivers/clk/tz1090/clk-tz1090-gate-bank.c
 
 diff --git a/drivers/clk/tz1090/Makefile b/drivers/clk/tz1090/Makefile
-index d44acac..39c29ac 100644
+index a2ace14..ab88f53 100644
 --- a/drivers/clk/tz1090/Makefile
 +++ b/drivers/clk/tz1090/Makefile
-@@ -1,5 +1,6 @@
+@@ -1,2 +1,4 @@
  # Makefile for TZ1090-specific clocks
  obj-y		+= clk.o
- 
-+obj-y		+= clk-tz1090-deleter.o
- obj-y		+= clk-tz1090-gate-bank.o
- obj-y		+= clk-tz1090-mux-bank.o
-diff --git a/drivers/clk/tz1090/clk-tz1090-deleter.c b/drivers/clk/tz1090/clk-tz1090-deleter.c
++
++obj-y		+= clk-tz1090-gate-bank.o
+diff --git a/drivers/clk/tz1090/clk-tz1090-gate-bank.c b/drivers/clk/tz1090/clk-tz1090-gate-bank.c
 new file mode 100644
-index 0000000..9ec604d
+index 0000000..5834afd
 --- /dev/null
-+++ b/drivers/clk/tz1090/clk-tz1090-deleter.c
-@@ -0,0 +1,132 @@
++++ b/drivers/clk/tz1090/clk-tz1090-gate-bank.c
+@@ -0,0 +1,149 @@
 +/*
-+ * Copyright (C) 2012-2014 Imagination Technologies Ltd.
++ * Copyright (C) 2013-2014 Imagination Technologies Ltd.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * This program is free software; you can redistribute it and/or modify it under
++ * the terms of the GNU General Public License version 2 as published by the
++ * Free Software Foundation.
 + *
-+ * Clock deleter in TZ1090
++ * TZ1090 Clock gate bank
 + */
 +
-+#include <linux/bitops.h>
 +#include <linux/clk-provider.h>
 +#include <linux/err.h>
 +#include <linux/io.h>
++#include <linux/module.h>
 +#include <linux/of.h>
 +#include <linux/of_address.h>
 +#include <linux/slab.h>
++#include <asm/global_lock.h>
 +
 +#include "clk.h"
 +
 +/**
-+ * struct tz1090_clk_deleter_priv - Clock deleter
++ * struct tz1090_clk_gate_priv - tz1090 gating clock
 + *
-+ * @hw:		handle between common and hardware-specific interfaces
-+ * @reg:	delete register
-+ * @period:	cycle period
-+ * @mask:	bit mask of delete field
-+ * @shift:	start bit of delete field
++ * @mux:	the parent class
++ * @ops:	pointer to clk_ops of parent class
 + *
-+ * Deleter in TZ1090, allowing up to period-1 out of each period cycles to be
-+ * deleted.
++ * Clock which can gate its output. Extends basic mux by using a global
++ * exclusive lock when read-modify-writing the mux field so that multiple
++ * threads/cores can use different fields in the same register.
 + */
-+struct tz1090_clk_deleter_priv {
-+	struct clk_hw	hw;
-+	void __iomem	*reg;
-+	u32		period;
-+	u32		mask;
-+	u8		shift;
++struct tz1090_clk_gate_priv {
++	struct clk_gate		gate;
++	const struct clk_ops	*ops;
 +};
 +
-+#define to_tz1090_clk_deleter(_hw) \
-+	container_of(_hw, struct tz1090_clk_deleter_priv, hw)
-+
-+static unsigned long tz1090_clk_deleter_recalc_rate(struct clk_hw *hw,
-+						    unsigned long parent_rate)
++static inline struct tz1090_clk_gate_priv *to_tz1090_clk_gate(struct clk_hw *hw)
 +{
-+	struct tz1090_clk_deleter_priv *deleter = to_tz1090_clk_deleter(hw);
-+	u32 delete;
-+	u64 rate;
++	struct clk_gate *gate = container_of(hw, struct clk_gate, hw);
 +
-+	delete = (readl(deleter->reg) & deleter->mask) >> deleter->shift;
-+	rate = (u64)parent_rate * (deleter->period - delete);
-+	do_div(rate, deleter->period);
-+	return rate;
++	return container_of(gate, struct tz1090_clk_gate_priv, gate);
 +}
 +
-+static const struct clk_ops tz1090_clk_deleter_ops = {
-+	.recalc_rate = tz1090_clk_deleter_recalc_rate,
++/* Acquire exclusive lock since other cores may access the same register */
++static int tz1090_clk_gate_enable(struct clk_hw *hw)
++{
++	struct tz1090_clk_gate_priv *gate = to_tz1090_clk_gate(hw);
++	int ret;
++	unsigned long flags;
++
++	__global_lock2(flags);
++	ret = gate->ops->enable(&gate->gate.hw);
++	__global_unlock2(flags);
++
++	return ret;
++}
++
++/* Acquire exclusive lock since other cores may access the same register */
++static void tz1090_clk_gate_disable(struct clk_hw *hw)
++{
++	struct tz1090_clk_gate_priv *gate = to_tz1090_clk_gate(hw);
++	unsigned long flags;
++
++	__global_lock2(flags);
++	gate->ops->disable(&gate->gate.hw);
++	__global_unlock2(flags);
++}
++
++static int tz1090_clk_gate_is_enabled(struct clk_hw *hw)
++{
++	struct tz1090_clk_gate_priv *gate = to_tz1090_clk_gate(hw);
++
++	return gate->ops->is_enabled(&gate->gate.hw);
++}
++
++static const struct clk_ops tz1090_clk_gate_ops = {
++	.enable = tz1090_clk_gate_enable,
++	.disable = tz1090_clk_gate_disable,
++	.is_enabled = tz1090_clk_gate_is_enabled,
 +};
 +
 +/**
-+ * __register_deleter() - register a clock deleter
-+ * @name:		name of this clock
-+ * @parent_name:	name of clock's parent
-+ * @flags:		framework-specific flags
-+ * @reg:		register address to adjust deleter
-+ * @period:		delete cycle period
-+ * @mask:		mask of delete field
-+ * @shift:		start bit of delete field
-+ *
-+ * Register a TZ1090 clock deleter with the clock framework.
++ * __register_gate() - register a TZ1090 gate clock with clock framework.
++ * @name: name of this clock
++ * @parent_name: name of this clock's parent
++ * @flags: framework-specific flags for this clock
++ * @reg: register address to control gating of this clock
++ * @bit_idx: which bit in the register controls gating of this clock
++ * @clk_gate_flags: gate-specific flags for this clock
 + */
-+static struct clk *__init __register_deleter(const char *name,
-+					     const char *parent_name,
-+					     unsigned long flags,
-+					     void __iomem *reg,
-+					     u32 period,
-+					     u32 mask,
-+					     u8 shift)
++static struct clk *__init __register_gate(const char *name,
++					  const char *parent_name,
++					  unsigned long flags,
++					  void __iomem *reg,
++					  u8 bit_idx,
++					  u8 clk_gate_flags)
 +{
-+	struct tz1090_clk_deleter_priv *deleter;
++	struct tz1090_clk_gate_priv *gate;
 +	struct clk *clk;
 +	struct clk_init_data init;
 +
-+	/* allocate the deleter */
-+	deleter = kzalloc(sizeof(struct tz1090_clk_deleter_priv), GFP_KERNEL);
-+	if (!deleter)
++	/* allocate the gate */
++	gate = kzalloc(sizeof(struct tz1090_clk_gate_priv), GFP_KERNEL);
++	if (!gate)
 +		return ERR_PTR(-ENOMEM);
 +
 +	init.name = name;
-+	init.ops = &tz1090_clk_deleter_ops;
++	init.ops = &tz1090_clk_gate_ops;
 +	init.flags = flags | CLK_IS_BASIC;
 +	init.parent_names = (parent_name ? &parent_name : NULL);
 +	init.num_parents = (parent_name ? 1 : 0);
 +
-+	/* struct tz1090_clk_deleter_priv assignments */
-+	deleter->reg = reg;
-+	deleter->period = period;
-+	deleter->mask = mask;
-+	deleter->shift = shift;
-+	deleter->hw.init = &init;
++	/* struct clk_gate assignments */
++	gate->gate.reg = reg;
++	gate->gate.bit_idx = bit_idx;
++	gate->gate.flags = clk_gate_flags;
++	gate->gate.hw.init = &init;
 +
-+	/* register the clock */
-+	clk = clk_register(NULL, &deleter->hw);
++	/* struct tz1090_clk_gate_priv assignments */
++	gate->ops = &clk_gate_ops;
++
++	clk = clk_register(NULL, &gate->gate.hw);
 +
 +	if (IS_ERR(clk))
-+		kfree(deleter);
++		kfree(gate);
 +
 +	return clk;
 +}
 +
 +/**
-+ * tz1090_clk_register_deleters() - Register set of deleters with a provider.
++ * tz1090_clk_register_gate_bank() - Register bank of gates with a provider.
 + * @p:		TZ1090 clock provider.
-+ * @deleters:	Array of deleter descriptions.
-+ * @count	Number of deleters described in the array.
++ * @bank:	Data describing gate bank.
 + */
-+void __init tz1090_clk_register_deleters(struct tz1090_clk_provider *p,
-+				const struct tz1090_clk_deleter *deleters,
-+				unsigned int count)
++void __init tz1090_clk_register_gate_bank(struct tz1090_clk_provider *p,
++					const struct tz1090_clk_gate_bank *bank)
 +{
-+	const struct tz1090_clk_deleter *del;
++	const struct tz1090_clk_gate *gate;
 +	struct clk *clk;
-+	unsigned int i;
++	unsigned int id = bank->id_base;
 +
-+	for (del = deleters, i = 0; i < count; ++del, ++i) {
-+		clk = __register_deleter(tz1090_clk_xlate(p, del->name),
-+					 tz1090_clk_xlate(p, del->parent), 0,
-+					 p->base + del->reg, 1024, 0x3ff, 0);
-+		p->clk_data.clks[del->id] = clk;
++	for (gate = bank->gates; gate->name; ++gate, ++id) {
++		clk = __register_gate(tz1090_clk_xlate(p, gate->name),
++				      tz1090_clk_xlate(p, gate->parent),
++				      CLK_IGNORE_UNUSED | CLK_SET_RATE_PARENT,
++				      p->base + bank->reg_base, gate->shift, 0);
++		p->clk_data.clks[id] = clk;
 +	}
 +}
 diff --git a/drivers/clk/tz1090/clk.h b/drivers/clk/tz1090/clk.h
-index c9fe6ca..8f90908 100644
+index c20e7b4..06274b7 100644
 --- a/drivers/clk/tz1090/clk.h
 +++ b/drivers/clk/tz1090/clk.h
-@@ -135,4 +135,35 @@ struct tz1090_clk_mux_bank {
- void tz1090_clk_register_mux_bank(struct tz1090_clk_provider *p,
- 				  const struct tz1090_clk_mux_bank *bank);
+@@ -34,4 +34,53 @@ const char *tz1090_clk_xlate(struct tz1090_clk_provider *p,
+ 			     const char *clk_name);
+ void tz1090_clk_register_provider(struct tz1090_clk_provider *p);
  
 +
-+/* Deleters */
++/* Clock gate banks */
 +
 +/**
-+ * struct tz1090_clk_deleter - Describes a clock deleter.
-+ * @id:		Id of output clock in provider.
-+ * @reg:	Offset of deleter register in the MMIO region.
-+ * @name:	Name of deleted clock to provide.
-+ * @parent:	Name of parent/source clocks.
-+ *
-+ * The deleter is assumed to have a period of 1024.
++ * struct tz1090_clk_gate - Describes an individual gate in a bank.
++ * @shift:	Shift of bit controlling gate within the bank control register.
++ * @name:	Name of gated clock to provide.
++ * @parent:	Name of parent/source clock.
 + */
-+struct tz1090_clk_deleter {
-+	unsigned int		id;
-+	unsigned long		reg;
-+	const char		*name;
-+	const char		*parent;
++struct tz1090_clk_gate {
++	unsigned int	shift;
++	const char	*name;
++	const char	*parent;
 +};
 +
-+#define DEL(_id, _parent, _name, _reg)		\
-+	{					\
-+		.id		= (_id),	\
-+		.reg		= (_reg),	\
-+		.name		= (_name),	\
-+		.parent		= (_parent),	\
++/**
++ * struct tz1090_clk_gate_bank - Describes a gate bank.
++ * @id_base:	Base id of bank in provider.
++ *		Individual gates get the id id_base + index in gates array.
++ * @reg_base:	Offset of gate bank register in the MMIO region.
++ * @gates:	Pointer to array of gates in the bank, terminated by one with a
++ *		NULL name field.
++ */
++struct tz1090_clk_gate_bank {
++	unsigned int			id_base;
++	unsigned long			reg_base;
++	const struct tz1090_clk_gate	*gates;
++};
++
++#define GATE(_shift, _parent, _name)					\
++	{								\
++		.shift		= (_shift),				\
++		.name		= (_name),				\
++		.parent		= (_parent),				\
++	},
++
++#define GATE_BANK(_name, _id, _reg, _gates)				\
++	static const struct tz1090_clk_gate_bank _name __initconst = {	\
++		.id_base	= (_id),				\
++		.reg_base	= (_reg),				\
++		.gates		= (const struct tz1090_clk_gate[]) {	\
++			_gates						\
++			{ .name	= NULL }				\
++		},							\
 +	}
 +
-+void tz1090_clk_register_deleters(struct tz1090_clk_provider *p,
-+				  const struct tz1090_clk_deleter *deleters,
-+				  unsigned int count);
++void tz1090_clk_register_gate_bank(struct tz1090_clk_provider *p,
++				   const struct tz1090_clk_gate_bank *bank);
 +
  #endif
 -- 
