@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529AbaLALtF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 06:49:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44204 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753081AbaLALtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 06:49:02 -0500
-Message-ID: <547C558A.2040401@redhat.com>
-Date: Mon, 01 Dec 2014 12:48:26 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753541AbaLALtZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 06:49:25 -0500
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:50510 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013AbaLALtW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 06:49:22 -0500
+Date: Mon, 1 Dec 2014 12:49:13 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [GIT PULL] s390 last minute patch for 3.18
+Message-ID: <20141201124913.351d8590@mschwide>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: tytso@mit.edu, zatimend@hotmail.co.uk, linux-kernel@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Kees Cook <keescook@chromium.org>, Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH] random: add and use memzero_explicit() for clearing data
-References: <1408996899-4892-1-git-send-email-dborkman@redhat.com> <20141201102529.GA9666@mwanda> <547C4B59.1000807@redhat.com> <20141201112957.GC5048@mwanda>
-In-Reply-To: <20141201112957.GC5048@mwanda>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120111-0025-0000-0000-000002AABF31
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2014 12:29 PM, Dan Carpenter wrote:
-> On Mon, Dec 01, 2014 at 12:04:57PM +0100, Daniel Borkmann wrote:
->> Well, BSD has helpers such as bzero_explicit() for such cases to work
->> around this, which memzero_explicit() similarly does; see also [1].
->>
->>    [1] https://gcc.gnu.org/ml/gcc-help/2014-10/msg00059.html
->
-> We should make memset() a define and call a custom function internally.
->
-> Otherwise there are thousands of calls to memset() which we would need
-> to audit.  We could do some of this automatically but it's going to be a
-> mess.
+Hi Linus,
 
-Sort of, yeah; for now random driver and crypto subsystem, which I consider
-the main candidates, have been converted and with Julia's latest patch set
-from today (via coccinelle) also remaining arch-specific crypto drivers.
+please pull from the 'for-linus' branch of
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
+
+to receive the following updates:
+
+A single but important fix for the machine check handling. The big
+per-cpu cleanup from Christoph causes the code to do nothing after
+receiving a machine check condition.
+
+Sebastian Ott (1):
+      s390: fix machine check handling
+
+ arch/s390/kernel/nmi.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/arch/s390/kernel/nmi.c b/arch/s390/kernel/nmi.c
+index dd1c24c..3f51cf4 100644
+--- a/arch/s390/kernel/nmi.c
++++ b/arch/s390/kernel/nmi.c
+@@ -54,12 +54,8 @@ void s390_handle_mcck(void)
+ 	 */
+ 	local_irq_save(flags);
+ 	local_mcck_disable();
+-	/*
+-	 * Ummm... Does this make sense at all? Copying the percpu struct
+-	 * and then zapping it one statement later?
+-	 */
+-	memcpy(&mcck, this_cpu_ptr(&cpu_mcck), sizeof(mcck));
+-	memset(&mcck, 0, sizeof(struct mcck_struct));
++	mcck = *this_cpu_ptr(&cpu_mcck);
++	memset(this_cpu_ptr(&cpu_mcck), 0, sizeof(mcck));
+ 	clear_cpu_flag(CIF_MCCK_PENDING);
+ 	local_mcck_enable();
+ 	local_irq_restore(flags);
+
