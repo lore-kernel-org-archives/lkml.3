@@ -1,89 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933134AbaLBMNs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 07:13:48 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:62626 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932257AbaLBMNr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 07:13:47 -0500
+	id S933174AbaLBMO3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 07:14:29 -0500
+Received: from h1.radempa.de ([176.9.142.194]:44378 "EHLO mail.cosmopool.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933149AbaLBMO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 07:14:26 -0500
+From: Harald Geyer <harald@ccbib.org>
+To: Richard Weinberger <richard@nod.at>
+cc: jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
+        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] iio: dht11: Add locking
+In-reply-to: <547D99DE.6030309@nod.at>
+References: <1417465651-16036-1-git-send-email-richard@nod.at> <E1XvkMu-000137-KP@stardust.g4.wien.funkfeuer.at> <547D99DE.6030309@nod.at>
+Comments: In-reply-to Richard Weinberger <richard@nod.at>
+   message dated "Tue, 02 Dec 2014 11:52:14 +0100."
 MIME-Version: 1.0
-In-Reply-To: <20141202111907.GC23671@leverpostej>
-References: <1417514749-24319-1-git-send-email-harinik@xilinx.com>
-	<1417514749-24319-4-git-send-email-harinik@xilinx.com>
-	<20141202111907.GC23671@leverpostej>
-Date: Tue, 2 Dec 2014 17:43:44 +0530
-Message-ID: <CAFcVECLtPx6shBXJbg9Uf_8fnhkMoO1zpoxGcdda7PSA7z_2rA@mail.gmail.com>
-Subject: Re: [PATCH 3/4] devicetree: bindings: Add defeature-repeated-start
- property for Cadence I2C
-From: Harini Katakam <harinikatakamlinux@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "michal.simek@xilinx.com" <michal.simek@xilinx.com>,
-        "soren.brinkmann@xilinx.com" <soren.brinkmann@xilinx.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "vishnum@xilinx.com" <vishnum@xilinx.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <4553.1417522442.1@stardust.g4.wien.funkfeuer.at>
+Date: Tue, 02 Dec 2014 13:14:02 +0100
+Message-Id: <E1XvmLC-0001BT-F3@stardust.g4.wien.funkfeuer.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+Richard Weinberger writes:
+> Harald,
+> 
+> Am 02.12.2014 um 11:07 schrieb Harald Geyer:
+> > Hi Richard,
+> > 
+> > thanks for the patch. Comments inline.
+> > 
+> > Richard Weinberger writes:
+> >> Protect the read function from concurrent reads.
+> >>
+> >> Signed-off-by: Richard Weinberger <richard@nod.at>
+> >> ---
+> >>  drivers/iio/humidity/dht11.c | 19 ++++++++++++++-----
+> >>  1 file changed, 14 insertions(+), 5 deletions(-)
+> >>
+> >> diff --git a/drivers/iio/humidity/dht11.c b/drivers/iio/humidity/dht11.c
+> >> index 623c145..7636e66 100644
+> >> --- a/drivers/iio/humidity/dht11.c
+> >> +++ b/drivers/iio/humidity/dht11.c
+> > 
+> > #include <linux/mutex.h>
+> > 
+> >> @@ -57,6 +57,7 @@ struct dht11 {
+> >>  	int				irq;
+> >>  
+> >>  	struct completion		completion;
+> >> +	struct mutex			lock;
+> >>  
+> >>  	s64				timestamp;
+> >>  	int				temperature;
+> >> @@ -146,16 +147,17 @@ static int dht11_read_raw(struct iio_dev *iio_dev,
+> >>  	int ret;
+> >>  
+> >>  	if (dht11->timestamp + DHT11_DATA_VALID_TIME < iio_get_time_ns()) {
+> >> +		mutex_lock(&dht11->lock);
+> > 
+> > Move the locking out of the if statement.
+> 
+> Care to explain why?
 
-On Tue, Dec 2, 2014 at 4:49 PM, Mark Rutland <mark.rutland@arm.com> wrote:
-> On Tue, Dec 02, 2014 at 10:05:48AM +0000, Harini Katakam wrote:
->> From: Vishnu Motghare <vishnum@xilinx.com>
->>
->> This patch adds "defeature-repeated-start" property in i2c-cadence.txt.
->>
->> Signed-off-by: Vishnu Motghare <vishnum@xilinx.com>
->> Signed-off-by: Harini Katakam <harinik@xilinx.com>
->> ---
->>  .../devicetree/bindings/i2c/i2c-cadence.txt        |   11 +++++++++++
->>  1 file changed, 11 insertions(+)
->>
->> diff --git a/Documentation/devicetree/bindings/i2c/i2c-cadence.txt b/Documentation/devicetree/bindings/i2c/i2c-cadence.txt
->> index 7cb0b56..9d417a7 100644
->> --- a/Documentation/devicetree/bindings/i2c/i2c-cadence.txt
->> +++ b/Documentation/devicetree/bindings/i2c/i2c-cadence.txt
->> @@ -11,6 +11,17 @@ Required properties:
->>  Optional properties:
->>    - clock-frequency: Desired operating frequency, in Hz, of the bus.
->>    - clock-names: Input clock name, should be 'pclk'.
->> +  - defeature-repeated-start: Include this property to defeature repeated start
->> +                           This defeature is due to a few bugs in the
->> +                           I2C controller.
->> +                           Completion interrupt after a read/receive
->> +                           operation is NOT obtained if HOLD bit is set
->> +                           at that time. Because of this bug, repeated start
->> +                           will only work if there are no transfers following
->> +                           a read/receive transfer.
->> +                           If HOLD is held for long without a transfer,
->> +                           invalid read transactions are generated by the
->> +                           controller due to a HW timeout related bug.
->
-> I'm not keen on the name; it sounds like we're disabling a feature
-> rather than describing the problem (and "defeature" is not a common
-> term in this sense, "disable" would be better).
->
-> It sounds like there are two issues with staying in the HOLD state? Lost
-> completion IRQs and a separate HW timeout bug? Or are the two related?
->
+The purpose of the if statement is to limit the number of data
+transmissions if values are requested multiple times in short
+succession. (Ie an application reading both sensor values.)
 
-Yes, there are two issues here and they are not related.
-But a combination of both is leading to not using repeated start.
-The intention was to defeature except that it works in some scenarios
-(such as a typical write+read in that order with repeated start)
-and there are people who already use the driver with slaves that need this.
+If we have concurrent reads, then the later one will wait in the
+mutex_lock() while the former will update the timestamp. If the
+later one resumes, it won't check the timestamp and cause an
+unnecessary data transmission.
+ 
+> But I found another issue in my patch.
+> The "dht11->num_edges = -1;" before "return ret" needs to go into the locked area.
+> Will send an updated version soon.
+> 
+> > BTW, it seems that there is already locking around read_raw() in the
+> > in-kernel consumer interface but not in the sysfs interface. Is there
+> > any reason for this difference?
+> 
+> Dunno. :-)
 
-Regards,
-Harini
+If locking is actually necessary, then this would be a bug in the
+current version of the driver, which wasn't caught by at least three
+people doing reviews, so maybe let's find out if it really is necessary
+or if I'm missing something ...
+
+Harald
