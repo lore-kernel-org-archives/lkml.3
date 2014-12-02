@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933355AbaLBXCk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 18:02:40 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:58730 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933149AbaLBXCi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 18:02:38 -0500
+	id S933378AbaLBXFO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 18:05:14 -0500
+Received: from mout.gmx.net ([212.227.17.20]:54987 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932722AbaLBXFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 18:05:12 -0500
+From: Peter =?iso-8859-15?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Subject: Re: [PATCH v8 7/8] tpm: TPM 2.0 CRB Interface
+Date: Wed, 3 Dec 2014 00:10:33 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-rc6-dirty; KDE/4.12.5; x86_64; ; )
+Cc: Ashley Lai <ashley@ashleylai.com>, Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        josh.triplett@intel.com, christophe.ricard@gmail.com,
+        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
+        trousers-tech@lists.sourceforge.net
+References: <1417559480-13757-1-git-send-email-jarkko.sakkinen@linux.intel.com> <1417559480-13757-8-git-send-email-jarkko.sakkinen@linux.intel.com>
+In-Reply-To: <1417559480-13757-8-git-send-email-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1415261514-4051-1-git-send-email-addy.ke@rock-chips.com>
-References: <1415261514-4051-1-git-send-email-addy.ke@rock-chips.com>
-Date: Tue, 2 Dec 2014 15:02:37 -0800
-X-Google-Sender-Auth: zKpdu8Rw_Ci_aopOXFGqQD6dzrg
-Message-ID: <CAD=FV=WN3Tuzby0fVOyxJ14iroBcgEpWHaz7Rh7EyfrHijhV0A@mail.gmail.com>
-Subject: Re: [PATCH] i2c: rk3x: fix bug that cause measured high_ns doesn't
- meet I2C spec
-From: Doug Anderson <dianders@chromium.org>
-To: Addy Ke <addy.ke@rock-chips.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Max Schwarz <max.schwarz@online.de>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>, Chris <zyw@rock-chips.com>,
-        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        Lin Huang <hl@rock-chips.com>,
-        =?UTF-8?B?5pmT6IW+546L?= <caesar.wang@rock-chips.com>,
-        Shunqian Zheng <zhengsq@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201412030010.33869.PeterHuewe@gmx.de>
+X-Provags-ID: V03:K0:NwHoHj5F9ogKvSzLMOPHnhj+5KJM0hsE6TLDtId316GKOwVVV32
+ E0hV7mWuKoteMXeEKIczvGxxk1tWyUQGocMQT1S5lrWSxItEPxWs6RupL0yD8E9LrWvGy5T
+ NNGoVU8ekcl8nf8lfI0ymcUqy8fIFGYT0w3Nfc9w5fV8qMFgqgAfuUJsiqgErW9oMh/2ixd
+ kbgGnVO1+tOScMIQBeWvQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Addy,
+Am Dienstag, 2. Dezember 2014, 23:31:19 schrieb Jarkko Sakkinen:
+> tpm_crb is a driver for TPM 2.0 Command Response Buffer (CRB) Interface
+> as defined in PC Client Platform TPM Profile (PTP) Specification.
+> 
+> Only polling and single locality is supported as these are the limitations
+> of the available hardware, Platform Trust Techonlogy (PTT) in Haswell
+> CPUs.
+> 
+> The driver always applies CRB with ACPI start because PTT reports using
+> only ACPI start as start method but as a result of my testing it requires
+> also CRB start.
+> 
+> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> ---
 
-On Thu, Nov 6, 2014 at 12:11 AM, Addy Ke <addy.ke@rock-chips.com> wrote:
-> high_ns calculated from the low division of CLKDIV register is the sum of
-> actual measured high_ns and rise_ns. The rise time which related to
-> external pull-up resistor can be up to the maximum rise time in I2C spec.
->
-> In my test, if external pull-up resistor is 4.7K, rise_ns is about 700ns.
-> So the actual measured high_ns is about 3900ns, which is less than 4000ns
-> (the minimum high_ns in I2C spec).
+If I apply it on top of security/next or linux-3.18-rc6 I get the following 
+compile error:
 
-It's a little unfortunate to have to make the assumption that the rise
-time for a board is going to be the maximum the spec allows.  I think
-this is something that's better to let a board specify in the device
-tree.  Allowing us to specify it also gives us a little extra slop and
-makes it easier to specify a "fall time" without affecting the
-resulting frequency.  Right now your code assumes that the fall time
-is 0.
+drivers/char/tpm/tpm_crb.c: In function 'crb_acpi_add':
+drivers/char/tpm/tpm_crb.c:271:6: error: too many arguments to function 
+'acpi_device_hid'
+In file included from include/linux/acpi.h:43:0,
+                 from drivers/char/tpm/tpm_crb.c:18:
+include/acpi/acpi_bus.h:253:13: note: declared here
+drivers/char/tpm/tpm_crb.c:271:6: error: too few arguments to function 
+'strcmp'
+scripts/Makefile.build:263: recipe for target 'drivers/char/tpm/tpm_crb.o' 
+failed
+make[3]: *** [drivers/char/tpm/tpm_crb.o] Error 1
+scripts/Makefile.build:402: recipe for target 'drivers/char/tpm' failed
+make[2]: *** [drivers/char/tpm] Error 2
+scripts/Makefile.build:402: recipe for target 'drivers/char' failed
+make[1]: *** [drivers/char] Error 2
+Makefile:937: recipe for target 'drivers' failed
 
-I've prototyped what things could look like if the rise and fall times
-were specified in the device tree.  You can see my patch (atop yours)
-at:
 
-https://chromium-review.googlesource.com/#/c/232774/
+Please compile test your stuff.
 
-...perhaps you could squash that into your patch and post up v2?
+;-(
+Peter
 
--Doug
+
