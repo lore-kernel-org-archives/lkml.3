@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933412AbaLBXFf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 18:05:35 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:59869 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932722AbaLBXFd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 18:05:33 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Benoit Taine <benoit.taine@lip6.fr>,
-        Bjorn Helgaas <bhelgaas@google.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] sound: pci: azt3328.c:  Cleaning up function that are not used anywhere
-Date: Wed,  3 Dec 2014 00:08:09 +0100
-Message-Id: <1417561690-27471-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	id S933434AbaLBXFr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 18:05:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54093 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932722AbaLBXFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 18:05:45 -0500
+Date: Wed, 3 Dec 2014 00:05:37 +0100
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: Re: [PATCH] KVM: cpuid: mask more bits in leaf 0xd and subleaves
+Message-ID: <20141202230536.GA12980@potion.redhat.com>
+References: <1417525770-16485-1-git-send-email-pbonzini@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1417525770-16485-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove function snd_azf3328_codec_outl() that is not used anywhere.
+2014-12-02 14:09+0100, Paolo Bonzini:
+> - EAX=0Dh, ECX=1: output registers EBX/ECX/EDX are reserved.
 
-This was partially found by using a static code analysis program called cppcheck.
+(As good as reserved without XSAVES/IA32_XSS.)
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- sound/pci/azt3328.c |    9 ---------
- 1 file changed, 9 deletions(-)
+> - EAX=0Dh, ECX>1: output register ECX is zero for all the CPUID leaves
+> we support, because variable "supported" comes from XCR0 and not XSS.
+> However, only bits above 0 are reserved.  Output register EDX is reserved.
 
-diff --git a/sound/pci/azt3328.c b/sound/pci/azt3328.c
-index 5a69e26..82da7b9 100644
---- a/sound/pci/azt3328.c
-+++ b/sound/pci/azt3328.c
-@@ -379,15 +379,6 @@ snd_azf3328_codec_inw(const struct snd_azf3328_codec_data *codec, unsigned reg)
- }
- 
- static inline void
--snd_azf3328_codec_outl(const struct snd_azf3328_codec_data *codec,
--		       unsigned reg,
--		       u32 value
--)
--{
--	outl(value, codec->io_base + reg);
--}
--
--static inline void
- snd_azf3328_codec_outl_multi(const struct snd_azf3328_codec_data *codec,
- 			     unsigned reg, const void *buffer, int count
- )
--- 
-1.7.10.4
+(Yes.  Well, EDX is 0 when the sub-leaf is invalid.)
 
+> Source: Intel Architecture Instruction Set Extensions Programming
+> Reference, ref. number 319433-022
+> 
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> --
+>  arch/x86/kvm/cpuid.c | 13 ++++++++++---
+>  1 file changed, 10 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+> index 0d919bc33b02..b1366743a728 100644
+> --- a/arch/x86/kvm/cpuid.c
+> +++ b/arch/x86/kvm/cpuid.c
+> @@ -470,10 +470,17 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+>  				goto out;
+>  
+>  			do_cpuid_1_ent(&entry[i], function, idx);
+> -			if (idx == 1)
+> +			if (idx == 1) {
+>  				entry[i].eax &= kvm_supported_word10_x86_features;
+> -			else if (entry[i].eax == 0 || !(supported & mask))
+> -				continue;
+> +				entry[i].ebx = 0;
+> +				entry[i].ecx = 0;
+> +			} else {
+> +				if (entry[i].eax == 0 || !(supported & mask))
+> +					continue;
+> +				WARN_ON_ONCE(entry[i].ecx & 1);
+> +				entry[i].ecx &= 1;
+
+ ECX  Bit 0 is set if the sub-leaf index, n, maps to a valid bit in the
+      IA32_XSS MSR and bit 0 is clear if n maps to a valid bit in XCR0.
+
+ECX should be set to 0 instead, we definitely don't map to a valid bit
+in IA32_XSS now.
+(Having only one part of cpuid ready for it is weird ...)
+
+> +			}
+> +			entry[i].edx = 0;
+>  			entry[i].flags |=
+>  			       KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
+
+(Unrelated, I have yet to understand how this flag translates
+ * If ECX contains an invalid sub-leaf index, EAX/EBX/ECX/EDX return 0.)
+
+>  			++*nent;
+
+Forcing a change of the XSAVES implementation is a likely purpose of
+this patch and it is correct after changing the ecx handling, so then,
+
+Reviewed-by: Radim Krčmář <rkrcmar@redhat.com>
