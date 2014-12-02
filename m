@@ -1,284 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933447AbaLBXJj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 18:09:39 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:34898 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933071AbaLBXJd (ORCPT
+	id S933468AbaLBXKT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 18:10:19 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:38145 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933071AbaLBXKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 18:09:33 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-man <linux-man@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Richard Weinberger <richard@nod.at>,
-        Kenton Varda <kenton@sandstorm.io>, stable <stable@vger.kernel.org>
-References: <52e0643bd47b1e5c65921d6e00aea1f724bb510a.1417281801.git.luto@amacapital.net>
-	<87h9xez20g.fsf@x220.int.ebiederm.org>
-	<CALCETrXOz4C7Tu8mggBtR=k47ZmkuAhinVUxWJSFyS1Ep0HvRw@mail.gmail.com>
-	<87mw75ygwp.fsf@x220.int.ebiederm.org>
-	<CALCETrVfO4sBdZcQiZXsofPZMj7pqKeVbX+4g3dAj6WjUca+1w@mail.gmail.com>
-	<87fvcxyf28.fsf_-_@x220.int.ebiederm.org>
-	<874mtdyexp.fsf_-_@x220.int.ebiederm.org>
-	<CALCETrXyC7XPaqj6oe-TmyypOVc_CkZbF6UAAx8YfkyD=gEMOQ@mail.gmail.com>
-	<87a935u3nj.fsf@x220.int.ebiederm.org>
-	<CALCETrXkEOiyzpvqtXtk1f4sL+M1Q-Y6rV=K91ez3yv2nb4Y0Q@mail.gmail.com>
-Date: Tue, 02 Dec 2014 17:07:20 -0600
-In-Reply-To: <CALCETrXkEOiyzpvqtXtk1f4sL+M1Q-Y6rV=K91ez3yv2nb4Y0Q@mail.gmail.com>
-	(Andy Lutomirski's message of "Tue, 2 Dec 2014 14:17:17 -0800")
-Message-ID: <87388xodlj.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Tue, 2 Dec 2014 18:10:17 -0500
+Message-ID: <547E4736.5000303@oracle.com>
+Date: Tue, 02 Dec 2014 18:11:50 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19WXLC8M7/pBmP4JwzL3E31NS2JoZePakg=
-X-SA-Exim-Connect-IP: 97.121.92.161
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 TVD_RCVD_IP Message was received from an IP address
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.5000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  1.0 XMSubMetaSx_00 1+ Sexy Words
-	*  1.2 XMSubMetaSSx_00 1+ SortaSexy Words + 1 Sexy Word
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ******;Andy Lutomirski <luto@amacapital.net>
-X-Spam-Relay-Country: 
-X-Spam-Timing: total 650 ms - load_scoreonly_sql: 0.04 (0.0%),
-	signal_user_changed: 3.3 (0.5%), b_tie_ro: 2.4 (0.4%), parse: 1.69 (0.3%),
-	extract_message_metadata: 20 (3.1%), get_uri_detail_list: 4.6 (0.7%),
-	tests_pri_-1000: 9 (1.4%), tests_pri_-950: 1.43 (0.2%), tests_pri_-900: 1.20
-	(0.2%), tests_pri_-400: 37 (5.7%), check_bayes: 36 (5.5%), b_tokenize: 13
-	(1.9%), b_tok_get_all: 14 (2.1%), b_comp_prob: 4.1 (0.6%), b_tok_touch_all:
-	2.7 (0.4%), b_finish: 0.71 (0.1%), tests_pri_0: 564 (86.8%), tests_pri_500: 6
-	(1.0%), rewrite_mail: 0.00 (0.0%)
-Subject: Re: [CFT][PATCH 2/3] userns: Add a knob to disable setgroups on a per user namespace basis
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, bhelgaas@google.com, linux@eikelenboom.it
+Subject: Re: [Xen-devel] [PATCH v4 7/7] xen/pciback: Restore configuration
+ space when detaching from a guest.
+References: <1416608271-18931-1-git-send-email-konrad.wilk@oracle.com> <1416608271-18931-8-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1416608271-18931-8-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Lutomirski <luto@amacapital.net> writes:
+On 11/21/2014 05:17 PM, Konrad Rzeszutek Wilk wrote:
+> The commit "xen/pciback: Don't deadlock when unbinding." was using
+> the version of pci_reset_function which would lock the device lock.
+> That is no good as we can dead-lock. As such we swapped to using
+> the lock-less version and requiring that the callers
+> of 'pcistub_put_pci_dev' take the device lock. And as such
+> this bug got exposed.
+>
+> Using the lock-less version is  OK, except that we tried to
+> use 'pci_restore_state' after the lock-less version of
+> __pci_reset_function_locked - which won't work as 'state_saved'
+> is set to false. Said 'state_saved' is a toggle boolean that
+> is to be used by the sequence of a) pci_save_state/pci_restore_state
+> or b) pci_load_and_free_saved_state/pci_restore_state. We don't
+> want to use a) as the guest might have messed up the PCI
+> configuration space and we want it to revert to the state
+> when the PCI device was binded to us. Therefore we pick
+> b) to restore the configuration space.
 
-> On Tue, Dec 2, 2014 at 1:45 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->> Andy Lutomirski <luto@amacapital.net> writes:
->>
->>> On Tue, Dec 2, 2014 at 12:28 PM, Eric W. Biederman
->>> <ebiederm@xmission.com> wrote:
->>>>
->>>> - Expose the knob to user space through a proc file /proc/<pid>/setgroups
->>>
->>> Can you rename this to something clearer, e.g. userns_setgroups_mode?
->>
->> I am not certain that is any clearer.  That just reads as wordier.
->>
->> The userns bit is definitely confusing and wrong.  Why should we need to
->> spell out the scope?
->
-> Because it's a property of the process' userns, not a property of the process.
->
-> userns_setgroups would be okay.  (Arguably it should've been
-> userns_uid_map, too, but at least uid_map sounds obviously
-> namespace-related.)
->
->>
->>>>   A value of 0 means the setgroups system call is disabled in the
->>>>   current processes user namespace and can not be enabled in the
->>>>   future in this user namespace.
->>>>
->>>>   A value of 1 means the segtoups system call is enabled.
->>>
->>> Would it make more sense to put strings like "allow" and "deny" in
->>> here?  That way, future extensions could add additional values.
->>
->> If the implementation of the write side isn't too bad.  I would love
->> to see precedent elsewhere in the kernel.    What I don't expect to do
->> is have any values except setgroups are enabled and setgroups are
->> disabled.
->
-> current_clocksource?  I think there are lots of things like that.
->
->>
->> I am fine with allowing for the possibility (that is just good
->> engineering) but I don't intend to seriously considering or
->> implementing other possibilities.
->
-> I can imagine a mode where there's a fixed set of groups that are
-> forced set but other groups can be added and dropped.  It would be
-> complicated to set up right, but someone might want it some day.
 
-Yeah.  I am defintiely not designing for that.
+Doesn't this all mean that patch 1/7 broke pcistub_put_pci_dev()?
 
->>>> diff --git a/arch/s390/kernel/compat_linux.c b/arch/s390/kernel/compat_linux.c
->>>> index 21c91feeca2d..6d0ee1b089fb 100644
->>>> --- a/arch/s390/kernel/compat_linux.c
->>>> +++ b/arch/s390/kernel/compat_linux.c
->>>> @@ -252,6 +252,7 @@ COMPAT_SYSCALL_DEFINE2(s390_setgroups16, int, gidsetsize, u16 __user *, grouplis
->>>>         int retval;
->>>>
->>>>         if (!gid_mapping_possible(user_ns) ||
->>>> +           !atomic_read(&user_ns->setgroups_allowed) ||
->>>>             !capable(CAP_SETGID))
->>>>                 return -EPERM;
->>>
->>> This is now incomprehensible because of the gid_mapping_possible
->>> thing.  If you renamed gid_mapping_possible to
->>> userns_setgroup_allowed, then this could be added to the
->>> implementation, and this would all make sense (not to mention avoiding
->>> duplicating this thing).
->>>
->>>> @@ -826,6 +827,11 @@ static bool new_idmap_permitted(const struct file *file,
->>>>                         kuid_t uid = make_kuid(ns->parent, id);
->>>>                         if (uid_eq(uid, cred->euid))
->>>>                                 return true;
->>>> +               } else if (cap_setid == CAP_SETGID) {
->>>> +                       kgid_t gid = make_kgid(ns->parent, id);
->>>> +                       if (!atomic_read(&ns->setgroups_allowed) &&
->>>> +                           gid_eq(gid, cred->egid))
->>>> +                               return true;
->>>
->>> I still don't see why egid is any better than fsgid here.
->>
->> Answered in my earlier response fsgid was a goof.
->> I can set any gid to my egid with my existing permissions.
->> Show me how I can do that with fsgid or fsuid and I will be happy to use
->> those.
+-boris
+
+
 >
-> You can use your fsgid to make a setgid file, I think.  But yes, point
-> taken, although as mentioned in the other thread, I think it would be
-> a lot clearer if it were a separate patch.
-
-Agreed.
-
->>>> +ssize_t proc_setgroups_write(struct file *file, const char __user *buf,
->>>> +                            size_t count, loff_t *ppos)
->>>> +{
->>>> +       struct seq_file *seq = file->private_data;
->>>> +       struct user_namespace *ns = seq->private;
->>>> +       char kbuf[3];
->>>> +       int setgroups_allowed;
->>>> +       ssize_t ret;
->>>> +
->>>> +       ret = -EPERM;
->>>> +       if (!file_ns_capable(file, ns, CAP_SETGID))
->>>> +               goto out;
->>>
->>> CAP_SYS_ADMIN?  This isn't setting a gid in the namespace; it's
->>> reconfiguring the namespace.
->>
->> Hmm.  Maybe.  It is an activity that is normally controlled by
->> CAP_SETGID.
->>
->> Frankly I think the entire split up of the capability model is almost
->> totally broken.  But I think CAP_SETGID is a close approximation of the
->> right thing here.
+> We restore from our 'golden' version of PCI configuration space, when an:
+>   - Device is unbinded from pciback
+>   - Device is detached from a guest.
 >
-> I agree that the cap model is screwy.  But we use CAP_SYS_ADMIN for
-> everything else that changes the overall behavior of a namespace.
+> Reported-by:  Sander Eikelenboom <linux@eikelenboom.it>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>   drivers/xen/xen-pciback/pci_stub.c | 20 ++++++++++++++++----
+>   1 file changed, 16 insertions(+), 4 deletions(-)
 >
-> In any event, the only way it matters is for a non-ns owner in the
-> parent ns with CAP_SETGID set but not CAP_SYS_ADMIN.  I'd argue that
-> CAP_SETGID should not be usable to make unrelated process' syscalls
-> fail.
+> diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
+> index 843a2ba..eb8b58e 100644
+> --- a/drivers/xen/xen-pciback/pci_stub.c
+> +++ b/drivers/xen/xen-pciback/pci_stub.c
+> @@ -105,7 +105,7 @@ static void pcistub_device_release(struct kref *kref)
+>   	 */
+>   	__pci_reset_function_locked(dev);
+>   	if (pci_load_and_free_saved_state(dev, &dev_data->pci_saved_state))
+> -		dev_dbg(&dev->dev, "Could not reload PCI state\n");
+> +		dev_info(&dev->dev, "Could not reload PCI state\n");
+>   	else
+>   		pci_restore_state(dev);
+>   
+> @@ -257,6 +257,8 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+>   {
+>   	struct pcistub_device *psdev, *found_psdev = NULL;
+>   	unsigned long flags;
+> +	struct xen_pcibk_dev_data *dev_data;
+> +	int ret;
+>   
+>   	spin_lock_irqsave(&pcistub_devices_lock, flags);
+>   
+> @@ -279,9 +281,19 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+>   	 * (so it's ready for the next domain)
+>   	 */
+>   	device_lock_assert(&dev->dev);
+> -	__pci_reset_function_locked(dev);
+> -	pci_restore_state(dev);
+> -
+> +	dev_data = pci_get_drvdata(dev);
+> +	ret = pci_load_saved_state(dev, dev_data->pci_saved_state);
+> +	if (ret < 0)
+> +		dev_warn(&dev->dev, "Could not reload PCI state\n");
+> +	else {
+> +		__pci_reset_function_locked(dev);
+> +		/*
+> +		 * The usual sequence is pci_save_state & pci_restore_state
+> +		 * but the guest might have messed the configuration space up.
+> +		 * Use the initial version (when device was bound to us).
+> +		 */
+> +		pci_restore_state(dev);
+> +	}
+>   	/* This disables the device. */
+>   	xen_pcibk_reset_device(dev);
+>   
 
-That is a pretty decent argument.    I will take a good stare at this
-issue as I refresh these patches and see how close to perfection I can
-make them.
-
->>>> +       /* Only allow a very narrow range of strings to be written */
->>>> +       ret = -EINVAL;
->>>> +       if ((*ppos != 0) || (count >= sizeof(kbuf)) || (count < 1))
->>>> +               goto out;
->>>> +
->>>> +       /* What was written? */
->>>> +       ret = -EFAULT;
->>>> +       if (copy_from_user(kbuf, buf, count))
->>>> +               goto out;
->>>> +       kbuf[count] = '\0';
->>>> +
->>>> +       /* What is being requested? */
->>>> +       ret = -EINVAL;
->>>> +       if (kbuf[0] == '0')
->>>> +               setgroups_allowed = 0;
->>>> +       else if (kbuf[0] == '1')
->>>> +               setgroups_allowed = 1;
->>>> +       else
->>>> +               goto out;
->>>> +
->>>> +       /* Allow a trailing newline */
->>>> +       ret = -EINVAL;
->>>> +       if ((count == 2) && (kbuf[1] != '\n'))
->>>> +               goto out;
->>>> +
->>>> +
->>>> +       if (setgroups_allowed) {
->>>> +               ret = -EINVAL;
->>>> +               if (atomic_read(&ns->setgroups_allowed) == 0)
->>>> +                       goto out;
->>>> +       } else {
->>>
->>> I would disallow this if gid_map has been written in the interest of
->>> sanity.
->>
->> Not a chance.  That is part of making this an independent knob.  If
->> there is another reason for disabling setgroups you can flip this
->> knob even after mappings are established.
->
-> Then you really want CAP_SYS_ADMIN, I think.
->
->>
->>>> +               atomic_set(&ns->setgroups_allowed, 0);
->>>> +               /* sigh memory barriers! */
->>>
->>> I don't think that any barriers are needed.  If you ever observe
->>> setgroups_allowed == 0, it will stay that way forever.
->>
->> Likely.   In practice the code works today.
->>
->> But I need to review things closely to understand if there are barriers
->> needed.  But especially since it is a write once knob we can get away
->> with a lot.
->>
->
-> Yeah.
->
-> For long-term use, I kind of like the flags approach I added in the
-> other patch.  It makes it easy to add more flags in the future.
-
-I thought a dedicated word might be easier.  I don't know that it makes
-much of a difference at this point.
-
-> In any event, I think the only barrier that's needed is when writing gid_map:
->
-> atomic_read / test_bit to determine whether unpriv mappings are okay;
-> smp_mb() or whatever the current _after_atomic thing is these days;
-> write mapping;
->
-> Although I'm not sure whether Linux supports any architectures that
-> can violate causality in the way that barrier is there to prevent.
-
-The DEC Alpha at least used to be able to violate causality in ways
-weird enough to confuse anyone, and the alpha still seems to be in the
-tree.  What keyed me in was the part in atomic_ops.txt that says these
-things don't have barriers and you will probably need them, and I
-remember spin locks tend to take care of all those issues for you. 
-
-Anyway thanks for your barrier pointer.
-
-Eric
