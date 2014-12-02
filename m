@@ -1,102 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560AbaLBJAY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 04:00:24 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:45021 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483AbaLBJAW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 04:00:22 -0500
-Date: Tue, 2 Dec 2014 11:59:50 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        SF Markus Elfring <elfring@users.sourceforge.net>,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: [patch] CodingStyle: add some more error handling guidelines
-Message-ID: <20141202085950.GA13434@mwanda>
+	id S1752677AbaLBJCV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 04:02:21 -0500
+Received: from mga02.intel.com ([134.134.136.20]:27014 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750927AbaLBJCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 04:02:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,499,1413270000"; 
+   d="scan'208";a="646740967"
+Date: Tue, 2 Dec 2014 16:41:55 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] kvm: x86: revert mask out xsaves
+Message-ID: <20141202084155.GA19635@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1417500894-7604-1-git-send-email-wanpeng.li@linux.intel.com>
+ <547D7E6D.6090000@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1412020836040.1984@localhost6.localdomain6>
+In-Reply-To: <547D7E6D.6090000@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I added a paragraph on choosing label names, and updated the example
-code to use a better label name.  I also cleaned up the example code to
-more modern style by moving the allocation out of the initializer and
-changing the NULL check.
+On Tue, Dec 02, 2014 at 09:55:09AM +0100, Paolo Bonzini wrote:
+>
+>
+>On 02/12/2014 07:14, Wanpeng Li wrote:
+>> xsaves will be exported to guest in the next patch, so revert the
+>> mask out xsaves patch.
+>> 
+>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>> ---
+>>  arch/x86/kvm/cpuid.c | 10 +---------
+>>  1 file changed, 1 insertion(+), 9 deletions(-)
+>> 
+>> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+>> index a4f5ac4..7af07571 100644
+>> --- a/arch/x86/kvm/cpuid.c
+>> +++ b/arch/x86/kvm/cpuid.c
+>> @@ -320,10 +320,6 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+>>  		F(ADX) | F(SMAP) | F(AVX512F) | F(AVX512PF) | F(AVX512ER) |
+>>  		F(AVX512CD);
+>>  
+>> -	/* cpuid 0xD.1.eax */
+>> -	const u32 kvm_supported_word10_x86_features =
+>> -		F(XSAVEOPT) | F(XSAVEC) | F(XGETBV1);
+>
+>Every single bit needs to be whitelisted independently of the others, so
+>a full revert is not possible.  We need to be careful about post-Skylake
+>processors introducing new bits in this cpuid leaf.
+>
+>Also, you cannot just add F(XSAVES) here; you must only do it if XSAVES
+>is actually supported.  This makes sure that nested virtualization will
+>_not_ present XSAVES to the guests until specific support is introduced
+>for XSAVES and XRSTORS exits (including the XSS exit bitmap).
+>
+>In order to do this, you have to introduce a new member in kvm_x86_ops,
+>modeling what was done for MPX.  The second patch can then implement
+>this new member.
 
-Perhaps the most common type of error handling bug in the kernel is "one
-err bugs".  CodingStyle already says that we should "avoid nesting" by
-using error labels and one err style error handling tends to have
-multiple indent levels, so this was already bad style.  But I've added a
-new paragraph explaining how to avoid one err bugs by using multiple
-error labels which is, hopefully, more clear.
+Will do, thanks for your review.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Regards,
+Wanpeng Li 
 
-diff --git a/Documentation/CodingStyle b/Documentation/CodingStyle
-index 9f28b14..9c8a234 100644
---- a/Documentation/CodingStyle
-+++ b/Documentation/CodingStyle
-@@ -392,7 +392,12 @@ The goto statement comes in handy when a function exits from multiple
- locations and some common work such as cleanup has to be done.  If there is no
- cleanup needed then just return directly.
- 
--The rationale is:
-+Choose label names which say what the goto does or why the goto exists.  An
-+example of a good name could be "out_buffer:" if the goto frees "buffer".  Avoid
-+using GW-BASIC names like "err1:" and "err2:".  Also don't name them after the
-+goto location like "err_kmalloc_failed:"
-+
-+The rationale for using gotos is:
- 
- - unconditional statements are easier to understand and follow
- - nesting is reduced
-@@ -403,9 +408,10 @@ The rationale is:
- int fun(int a)
- {
- 	int result = 0;
--	char *buffer = kmalloc(SIZE);
-+	char *buffer;
- 
--	if (buffer == NULL)
-+	buffer = kmalloc(SIZE);
-+	if (!buffer)
- 		return -ENOMEM;
- 
- 	if (condition1) {
-@@ -413,14 +419,25 @@ int fun(int a)
- 			...
- 		}
- 		result = 1;
--		goto out;
-+		goto out_buffer;
- 	}
- 	...
--out:
-+out_buffer:
- 	kfree(buffer);
- 	return result;
- }
- 
-+A common type of bug to be aware of it "one err bugs" which look like this:
-+
-+err:
-+	kfree(foo->bar);
-+	kfree(foo);
-+	return ret;
-+
-+The bug in this code is that on some exit paths "foo" is NULL.  Normally the
-+fix for this is to split it up into two error labels "err_bar:" and "err_foo:".
-+
-+
- 		Chapter 8: Commenting
- 
- Comments are good, but there is also a danger of over-commenting.  NEVER
+>
+>Thanks,
+>
+>Paolo
+>
+>>  	/* all calls to cpuid_count() should be made on the same cpu */
+>>  	get_cpu();
+>>  
+>> @@ -460,8 +456,6 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+>>  		entry->eax &= supported;
+>>  		entry->edx &= supported >> 32;
+>>  		entry->flags |= KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
+>> -		if (!supported)
+>> -			break;
+>>  
+>>  		for (idx = 1, i = 1; idx < 64; ++idx) {
+>>  			u64 mask = ((u64)1 << idx);
+>> @@ -469,9 +463,7 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+>>  				goto out;
+>>  
+>>  			do_cpuid_1_ent(&entry[i], function, idx);
+>> -			if (idx == 1)
+>> -				entry[i].eax &= kvm_supported_word10_x86_features;
+>> -			else if (entry[i].eax == 0 || !(supported & mask))
+>> +			if (entry[i].eax == 0 || !(supported & mask))
+>>  				continue;
+>>  			entry[i].flags |=
+>>  			       KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
+>> 
