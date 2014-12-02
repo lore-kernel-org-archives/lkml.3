@@ -1,78 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303AbaLBE7Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 23:59:16 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:34406 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752717AbaLBE7P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 23:59:15 -0500
-Message-ID: <547D471B.2070908@hitachi.com>
-Date: Tue, 02 Dec 2014 13:59:07 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S932237AbaLBFEO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 00:04:14 -0500
+Received: from imap.thunk.org ([74.207.234.97]:33559 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751060AbaLBFEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 00:04:12 -0500
+Date: Tue, 2 Dec 2014 00:04:06 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Checking to see if a bit is _not_ set in a ftrace event filter
+Message-ID: <20141202050406.GC953@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Alexei Starovoitov <ast@plumgrid.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20141202021912.GA29096@thunk.org>
+ <20141201214104.32d3f10d@gandalf.local.home>
+ <CAMEtUuzEg39N9ZALuq-u4X+oaNJGqL6G05UABSHYpejQ78Cp3Q@mail.gmail.com>
 MIME-Version: 1.0
-To: Wang Nan <wangnan0@huawei.com>
-Cc: tixy@linaro.org, linux@arm.linux.org.uk, lizefan@huawei.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v11 1/7] ARM: probes: move all probe code to dedicate
- directory
-References: <1417423513-47161-1-git-send-email-wangnan0@huawei.com> <1417423695-47521-1-git-send-email-wangnan0@huawei.com>
-In-Reply-To: <1417423695-47521-1-git-send-email-wangnan0@huawei.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMEtUuzEg39N9ZALuq-u4X+oaNJGqL6G05UABSHYpejQ78Cp3Q@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/12/01 17:48), Wang Nan wrote:
-> In discussion on LKML (https://lkml.org/lkml/2014/11/28/158), Russell
-> King suggest to move all probe related code to arch/arm/probes. This
-> patch do the work. Due to dependency on 'arch/arm/kernel/patch.h', this
-> patch also move patch.h to 'arch/arm/include/asm/patch.h', and related
-> '#include' directive are also midified to '#include <asm/patch.h>'.
+On Mon, Dec 01, 2014 at 07:52:11PM -0800, Alexei Starovoitov wrote:
+> Ted, I don't see 'writeback_mark_inode_dirty' event
+> in the tree. Some new stuff?
 
-Moving is good to me, but renaming files are also required I think.
+Yep, see:
 
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> ---
->  arch/arm/Makefile                                |  1 +
->  arch/arm/{kernel => include/asm}/patch.h         |  0
->  arch/arm/kernel/Makefile                         | 16 ++--------------
->  arch/arm/kernel/jump_label.c                     |  2 +-
->  arch/arm/kernel/patch.c                          |  3 +--
->  arch/arm/probes/Makefile                         | 15 +++++++++++++++
->  arch/arm/{kernel => probes}/kprobes-arm.c        |  0
->  arch/arm/{kernel => probes}/kprobes-common.c     |  0
->  arch/arm/{kernel => probes}/kprobes-test-arm.c   |  0
->  arch/arm/{kernel => probes}/kprobes-test-thumb.c |  0
->  arch/arm/{kernel => probes}/kprobes-test.c       |  0
->  arch/arm/{kernel => probes}/kprobes-test.h       |  0
->  arch/arm/{kernel => probes}/kprobes-thumb.c      |  0
->  arch/arm/{kernel => probes}/kprobes.c            |  2 +-
->  arch/arm/{kernel => probes}/kprobes.h            |  0
->  arch/arm/{kernel => probes}/probes-arm.c         |  0
->  arch/arm/{kernel => probes}/probes-arm.h         |  0
->  arch/arm/{kernel => probes}/probes-thumb.c       |  0
->  arch/arm/{kernel => probes}/probes-thumb.h       |  0
->  arch/arm/{kernel => probes}/probes.c             |  0
->  arch/arm/{kernel => probes}/probes.h             |  0
->  arch/arm/{kernel => probes}/uprobes-arm.c        |  0
->  arch/arm/{kernel => probes}/uprobes.c            |  0
->  arch/arm/{kernel => probes}/uprobes.h            |  0
+http://thread.gmane.org/gmane.comp.file-systems.ext4/47092
 
-As I did on x86, these would be better renamed as expressing what they do.
-I guess most of the files may have emulate-*.c or decode-*.c :)
+Except instead of the mini-script which I gave in the above URL, I
+wanted to do additional filtering.  The current hack which I am using
+instead of:
 
-Thank you,
+echo "flags == 2048" > events/writeback/writeback_mark_inode_dirty/filter
 
+is:
 
+echo "(flags == 2048) && (state < 2048)" > events/writeback/writeback_mark_inode_dirty/filter
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+... but this relies on the fact that all of the i_state bits that I
+care about are at positions 1 << 10 and below.  i.e., it's a terrible
+hack.
 
+> What kind of post-filtering are you doing with this event?
+> Just visually checking that trace is sane or the trace output
+> is fed into other tools? Are you trying to aggregate or
+> correlate multiple events (may be based on 'ino') ?
 
+I plan to write some tools that agregate based on 'ino', but I haven't
+yet.
+
+> It will change the workflow for folks who use 'echo expr > filter'
+> directly. trace-cmd -e -f can be made to work transparently
+> with new features.
+
+This will break a bunch of **really** useful scripts found at:
+
+	https://github.com/brendangregg/perf-tools.git
+
+OTOH, Brendan will probably will be able to rewrite them to take
+advantage of the new interfaces, and I'm sure he'll appreciate the
+power of being able to use eBPF.  :-)
+
+> One of the goals for eBPF+tracing is to minimize
+> additions of new tracepoints. Right now we already
+> have a ton of them. events/ext4.h is ~2500 lines.
+> Some of them look like hooks for in-production
+> debugging of a function at a time. Sort of like poor's man
+> kprobe/kretprobe.
+
+Well, except that kprobe and kretprobe can't give me the arguments
+passed into the function (unless you compile with full -g debugging
+info enabled and bloat the object files and compilation time by a
+factor of 10 --- which I can't stand and why I use ftrace instead of
+systemtap :-)
+
+> With eBPF we should be able to avoid adding
+> trace_func_enter(), trace_func_exit() to so many func.
+
+If eBPF can solve the ability to be able to get at the critical
+function variables without making the compiled kernel take 10x the
+disk space and time to compile (mostly due to the time to write out
+the !@#!@?! bloated object files), that would be great.  My
+understanding though is that this fundamentally requires improved
+DWARF compression and structure information deduping, which the
+systemtap folks promised would be coming in improved compiler
+toolchains many years ago, but as far as I know has never
+materialized.  :-(
+
+But that's why I have the trace_func_enter() and trace_func_exit()
+calls; I need to be able to get do various run-time debugging without
+needing to recompile the kernel and without forcing all of my
+development builds to have full debug info.
+
+					- Ted
