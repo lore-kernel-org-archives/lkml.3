@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086AbaLBItN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 03:49:13 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:38375 "EHLO
+	id S1752533AbaLBItV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 03:49:21 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:38376 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737AbaLBItL (ORCPT
+	with ESMTP id S1751303AbaLBItT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 03:49:11 -0500
+	Tue, 2 Dec 2014 03:49:19 -0500
 Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sB28n7Y4001827, This message is accepted by code: ctloc85258
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sB28nGFV001834, This message is accepted by code: ctloc85258
 From: Chunhao Lin <hau@realtek.com>
 To: <netdev@vger.kernel.org>
 CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
         Chunhao Lin <hau@realtek.com>
-Subject: [PATCH net-next 1/2] r8169:prevent enable hardware tx/rx too early
-Date: Tue, 2 Dec 2014 16:48:30 +0800
-Message-ID: <1417510111-3568-2-git-send-email-hau@realtek.com>
+Subject: [PATCH net-next 2/2] r8169:disable rtl8168ep cmac engine
+Date: Tue, 2 Dec 2014 16:48:31 +0800
+Message-ID: <1417510111-3568-3-git-send-email-hau@realtek.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417510111-3568-1-git-send-email-hau@realtek.com>
 References: <1417510111-3568-1-git-send-email-hau@realtek.com>
@@ -26,45 +26,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For RTL8168G/GU/H/EP and RTL8411B remove enable tx/rx from its own hw_start
-function. This will prevent enable tx/rx before complete hardware tx/rx
-setting.
-
-Tx/Rx will be enabled in the end of function rtl_hw_start_8168.
+Cmac engine is the bridge between driver and dash firmware.
+Other os may not disable cmac when leave. And r8169 did not allocate any
+resources for cmac engine. Disable it to prevent abnormal system behavior.
 
 Signed-off-by: Chunhao Lin <hau@realtek.com>
 ---
- drivers/net/ethernet/realtek/r8169.c | 3 ---
- 1 file changed, 3 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c | 30 ++++++++++++++++++++++--------
+ 1 file changed, 22 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index cf154f7..7f4515f 100644
+index 7f4515f..56280c1 100644
 --- a/drivers/net/ethernet/realtek/r8169.c
 +++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -5934,7 +5934,6 @@ static void rtl_hw_start_8168g_1(struct rtl8169_private *tp)
- 	rtl_w0w1_eri(tp, 0xdc, ERIAR_MASK_0001, 0x01, 0x00, ERIAR_EXGMAC);
- 	rtl_eri_write(tp, 0x2f8, ERIAR_MASK_0011, 0x1d8f, ERIAR_EXGMAC);
+@@ -1377,6 +1377,16 @@ DECLARE_RTL_COND(rtl_ocp_tx_cond)
+ 	return RTL_R8(IBISR0) & 0x02;
+ }
  
--	RTL_W8(ChipCmd, CmdTxEnb | CmdRxEnb);
- 	RTL_W32(MISC, RTL_R32(MISC) & ~RXDV_GATED_EN);
- 	RTL_W8(MaxTxPacketSize, EarlySize);
++static void rtl8168ep_stop_cmac(struct rtl8169_private *tp)
++{
++	void __iomem *ioaddr = tp->mmio_addr;
++
++	RTL_W8(IBCR2, RTL_R8(IBCR2) & ~0x01);
++	rtl_msleep_loop_wait_low(tp, &rtl_ocp_tx_cond, 50, 2000);
++	RTL_W8(IBISR0, RTL_R8(IBISR0) | 0x20);
++	RTL_W8(IBCR0, RTL_R8(IBCR0) & ~0x01);
++}
++
+ static void rtl8168dp_driver_start(struct rtl8169_private *tp)
+ {
+ 	rtl8168_oob_notify(tp, OOB_CMD_DRIVER_START);
+@@ -1417,12 +1427,7 @@ static void rtl8168dp_driver_stop(struct rtl8169_private *tp)
  
-@@ -6027,7 +6026,6 @@ static void rtl_hw_start_8168h_1(struct rtl8169_private *tp)
+ static void rtl8168ep_driver_stop(struct rtl8169_private *tp)
+ {
+-	void __iomem *ioaddr = tp->mmio_addr;
+-
+-	RTL_W8(IBCR2, RTL_R8(IBCR2) & ~0x01);
+-	rtl_msleep_loop_wait_low(tp, &rtl_ocp_tx_cond, 50, 2000);
+-	RTL_W8(IBISR0, RTL_R8(IBISR0) | 0x20);
+-	RTL_W8(IBCR0, RTL_R8(IBCR0) & ~0x01);
++	rtl8168ep_stop_cmac(tp);
+ 	ocp_write(tp, 0x01, 0x180, OOB_CMD_DRIVER_STOP);
+ 	ocp_write(tp, 0x01, 0x30, ocp_read(tp, 0x01, 0x30) | 0x01);
+ 	rtl_msleep_loop_wait_low(tp, &rtl_ep_ocp_read_cond, 10, 10);
+@@ -6089,6 +6094,8 @@ static void rtl_hw_start_8168ep(struct rtl8169_private *tp)
+ 	void __iomem *ioaddr = tp->mmio_addr;
+ 	struct pci_dev *pdev = tp->pci_dev;
  
- 	rtl_eri_write(tp, 0x5f0, ERIAR_MASK_0011, 0x4f87, ERIAR_EXGMAC);
++	rtl8168ep_stop_cmac(tp);
++
+ 	RTL_W32(TxConfig, RTL_R32(TxConfig) | TXCFG_AUTO_FIFO);
  
--	RTL_W8(ChipCmd, CmdTxEnb | CmdRxEnb);
- 	RTL_W32(MISC, RTL_R32(MISC) & ~RXDV_GATED_EN);
- 	RTL_W8(MaxTxPacketSize, EarlySize);
+ 	rtl_eri_write(tp, 0xc8, ERIAR_MASK_0101, 0x00080002, ERIAR_EXGMAC);
+@@ -8002,6 +8009,12 @@ static void rtl_hw_init_8168g(struct rtl8169_private *tp)
+ 		return;
+ }
  
-@@ -6109,7 +6107,6 @@ static void rtl_hw_start_8168ep(struct rtl8169_private *tp)
- 
- 	rtl_eri_write(tp, 0x5f0, ERIAR_MASK_0011, 0x4f87, ERIAR_EXGMAC);
- 
--	RTL_W8(ChipCmd, CmdTxEnb | CmdRxEnb);
- 	RTL_W32(MISC, RTL_R32(MISC) & ~RXDV_GATED_EN);
- 	RTL_W8(MaxTxPacketSize, EarlySize);
- 
++static void rtl_hw_init_8168ep(struct rtl8169_private *tp)
++{
++	rtl8168ep_stop_cmac(tp);
++	rtl_hw_init_8168g(tp);
++}
++
+ static void rtl_hw_initialize(struct rtl8169_private *tp)
+ {
+ 	switch (tp->mac_version) {
+@@ -8014,12 +8027,13 @@ static void rtl_hw_initialize(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_46:
+ 	case RTL_GIGA_MAC_VER_47:
+ 	case RTL_GIGA_MAC_VER_48:
++		rtl_hw_init_8168g(tp);
++		break;
+ 	case RTL_GIGA_MAC_VER_49:
+ 	case RTL_GIGA_MAC_VER_50:
+ 	case RTL_GIGA_MAC_VER_51:
+-		rtl_hw_init_8168g(tp);
++		rtl_hw_init_8168ep(tp);
+ 		break;
+-
+ 	default:
+ 		break;
+ 	}
 -- 
 1.9.1
 
