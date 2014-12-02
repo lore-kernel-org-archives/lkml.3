@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932297AbaLBOaH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 09:30:07 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:48316 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667AbaLBOaF (ORCPT
+	id S1753687AbaLBOb6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 09:31:58 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:47317 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529AbaLBOb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 09:30:05 -0500
+	Tue, 2 Dec 2014 09:31:57 -0500
 MIME-Version: 1.0
-In-Reply-To: <1417529705-1515-1-git-send-email-acourbot@nvidia.com>
-References: <1417527724-24960-1-git-send-email-acourbot@nvidia.com>
-	<1417529705-1515-1-git-send-email-acourbot@nvidia.com>
-Date: Tue, 2 Dec 2014 15:30:02 +0100
-X-Google-Sender-Auth: AEkn8lQHrTNxSIjd_2tRHFtj3cw
-Message-ID: <CAMuHMdVfmJvaQkKv4gOPu=60gzb40=A56iq+p8dYhrTLcTPOyw@mail.gmail.com>
-Subject: Re: [PATCH v2] gpio: fix deferred probe detection for legacy API
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+In-Reply-To: <547DA592.7090900@monstr.eu>
+References: <1417494919-4577-1-git-send-email-oakad@yahoo.com>
+	<1417494919-4577-3-git-send-email-oakad@yahoo.com>
+	<CAMuHMdWWnO7m8f+NnM8Xahexc+3ELeAgTDv67CzWWEZENqztEA@mail.gmail.com>
+	<547DA592.7090900@monstr.eu>
+Date: Wed, 3 Dec 2014 01:31:56 +1100
+Message-ID: <CAPs88r_6V_O_j8SrXAdkRZgLn=0BfZksK3e9=9xQGsjrqSZ+Zw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] fs: Wire up sendfd() syscall (all architectures)
+From: Alex Dubov <alex.dubov@gmail.com>
+To: monstr@monstr.eu
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
+        Alex Dubov <oakad@yahoo.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexander,
+On Tue, Dec 2, 2014 at 10:42 PM, Michal Simek <monstr@monstr.eu> wrote:
+> On 12/02/2014 09:01 AM, Geert Uytterhoeven wrote:
+>> This really needs a CC to linux-arch (added).
+>>
+>> On Tue, Dec 2, 2014 at 5:35 AM, Alex Dubov <alex.dubov@gmail.com> wrote:
+>>> Signed-off-by: Alex Dubov <oakad@yahoo.com>
+>>> ---
 
-On Tue, Dec 2, 2014 at 3:15 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> Commit 14e85c0e69d5 ("gpio: remove gpio_descs global array") changed
-> gpio_to_desc()'s behavior to return NULL not only for GPIOs numbers
-> not in the valid range, but also for all GPIOs whose controller has not
-> been probed yet. Although this behavior is more correct (nothing hints
-> that these GPIO numbers will be populated later), this affects
-> gpio_request() and gpio_request_one() which call gpiod_request() with a
-> NULL descriptor, causing it to return -EINVAL instead of the expected
-> -EPROBE_DEFER for a non-probed GPIO.
 >
-> gpiod_request() is only called with a descriptor obtained from
-> gpio_to_desc() from these two functions, so address the issue there.
+> The same for microblaze here
+> arch/microblaze/include/asm/unistd.h
 >
-> Other ways to obtain GPIOs rely on well-defined mappings and can thus
-> return -EPROBE_DEFER only for relevant GPIOs, and are thus not affected
-> by this issue.
->
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
-> v2:
-> - Add Geert's Tested-by
-> - Only display scary warning on gpio_to_desc() is the GPIO is outside
->   the valid range (pre gpio_desc array removal behavior)
 
-Thanks, the scary warnings are gone, together with a few superfluous
-"gpio-0 (?): gpiod_request: status -517" messages.
-
-Have a good night!
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+This invites the question as to why the __NR_syscalls macro is not
+defined in uapi/asm/unistd.h on those architectures, where it will be
+easier to spot? After all, asm/unistd.h includes uapi/asm/unistd.h
+unconditionally.
