@@ -1,71 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948AbaLBIba (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 03:31:30 -0500
-Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:56588 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470AbaLBIaZ convert rfc822-to-8bit (ORCPT
+	id S1752751AbaLBIb2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 03:31:28 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:45403 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752230AbaLBIb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 03:30:25 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>
-CC: David Rientjes <rientjes@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: [PATCH v5 6/8] mm/hugetlb: add migration entry check in
- __unmap_hugepage_range
-Thread-Topic: [PATCH v5 6/8] mm/hugetlb: add migration entry check in
- __unmap_hugepage_range
-Thread-Index: AQHQDgmyWX9LdxUYO0GN83rAOJq3vw==
-Date: Tue, 2 Dec 2014 08:26:40 +0000
-Message-ID: <1417508759-10848-7-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1417508759-10848-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1417508759-10848-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.128.101.13]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Tue, 2 Dec 2014 03:31:26 -0500
 MIME-Version: 1.0
+In-Reply-To: <CAMuHMdWWnO7m8f+NnM8Xahexc+3ELeAgTDv67CzWWEZENqztEA@mail.gmail.com>
+References: <1417494919-4577-1-git-send-email-oakad@yahoo.com>
+	<1417494919-4577-3-git-send-email-oakad@yahoo.com>
+	<CAMuHMdWWnO7m8f+NnM8Xahexc+3ELeAgTDv67CzWWEZENqztEA@mail.gmail.com>
+Date: Tue, 2 Dec 2014 19:31:26 +1100
+Message-ID: <CAPs88r-pzz86GJLv-QPEAc7AsBZLDwffrD-J633_xqR5cHVUTA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] fs: Wire up sendfd() syscall (all architectures)
+From: Alex Dubov <alex.dubov@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alex Dubov <oakad@yahoo.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If __unmap_hugepage_range() tries to unmap the address range over which
-hugepage migration is on the way, we get the wrong page because pte_page()
-doesn't work for migration entries. This patch simply clears the pte for
-migration entries as we do for hwpoison entries.
+On Tue, Dec 2, 2014 at 7:01 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> This really needs a CC to linux-arch (added).
+>
+>
+> You forgot to update NR_syscalls in arch/m68k/include/asm/unistd.h.
+>
 
-Fixes: 290408d4a2 ("hugetlb: hugepage migration core")
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: <stable@vger.kernel.org>  # [2.6.36+]
----
-ChangeLog v4:
-- check hwpoisoned hugepage and migrating hugepage with the same check
-  instead of doing separately
----
- mm/hugetlb.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Noted. I would assume that other architectures may have similar
+problems (I only tested
+my submission on x86_64).
 
-diff --git mmotm-2014-11-26-15-45.orig/mm/hugetlb.c mmotm-2014-11-26-15-45/mm/hugetlb.c
-index 2807be3f260d..a2bfd02e289f 100644
---- mmotm-2014-11-26-15-45.orig/mm/hugetlb.c
-+++ mmotm-2014-11-26-15-45/mm/hugetlb.c
-@@ -2657,9 +2657,10 @@ void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 			goto unlock;
- 
- 		/*
--		 * HWPoisoned hugepage is already unmapped and dropped reference
-+		 * Migrating hugepage or HWPoisoned hugepage is already
-+		 * unmapped and its refcount is dropped, so just clear pte here.
- 		 */
--		if (unlikely(is_hugetlb_entry_hwpoisoned(pte))) {
-+		if (unlikely(!pte_present(pte))) {
- 			huge_pte_clear(mm, address, ptep);
- 			goto unlock;
- 		}
--- 
-2.2.0.rc0.2.gf745acb
+Will try to fix those when/if there's progress toward accepting the
+proposed feature.
