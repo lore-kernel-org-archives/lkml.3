@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932706AbaLBSrJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 13:47:09 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:40401 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932606AbaLBSrH (ORCPT
+	id S932763AbaLBSri (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 13:47:38 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:42807 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932356AbaLBSrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 13:47:07 -0500
-Date: Tue, 2 Dec 2014 13:46:48 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Joerg Roedel <jroedel@suse.de>
-Cc: Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] x86, swiotlb: Try coherent allocations with
- __GFP_NOWARN
-Message-ID: <20141202184648.GB32622@laptop.dumpdata.com>
-References: <1417174149-31210-1-git-send-email-joro@8bytes.org>
- <1417174149-31210-3-git-send-email-joro@8bytes.org>
- <20141201202854.GD21626@laptop.dumpdata.com>
- <20141202144551.GJ3156@suse.de>
+	Tue, 2 Dec 2014 13:47:37 -0500
+Message-ID: <547e0947.c332e00a.23bf.ffffa8bd@mx.google.com>
+Date: Tue, 2 Dec 2014 16:47:31 -0200
+From: =?UTF-8?B?RMOibmllbA==?= Fraga <fragabr@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+In-Reply-To: <20141202184202.GM25340@linux.vnet.ibm.com>
+References: <CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
+	<547b8a45.6e608c0a.20f9.1002@mx.google.com>
+	<CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
+	<547bbe36.48548c0a.105c.779c@mx.google.com>
+	<20141201191431.GA17385@linux.vnet.ibm.com>
+	<547ccf74.a5198c0a.25de.26d9@mx.google.com>
+	<20141201230813.GE25340@linux.vnet.ibm.com>
+	<547dec29.c71f8c0a.33d1.11d9@mx.google.com>
+	<20141202170407.GK25340@linux.vnet.ibm.com>
+	<547df364.236a8c0a.7b2d.ffffac67@mx.google.com>
+	<20141202184202.GM25340@linux.vnet.ibm.com>
+Organization: http://www.youtube.com/DanielFragaBR
+X-Mailer: Claws Mail 3.11.1-9-g1f531c (GTK+ 2.24.25; x86_64-unknown-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141202144551.GJ3156@suse.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 03:45:51PM +0100, Joerg Roedel wrote:
-> On Mon, Dec 01, 2014 at 03:28:54PM -0500, Konrad Rzeszutek Wilk wrote:
-> > On Fri, Nov 28, 2014 at 12:29:08PM +0100, Joerg Roedel wrote:
-> > > diff --git a/arch/x86/kernel/pci-swiotlb.c b/arch/x86/kernel/pci-swiotlb.c
-> > > index 77dd0ad..79b2291 100644
-> > > --- a/arch/x86/kernel/pci-swiotlb.c
-> > > +++ b/arch/x86/kernel/pci-swiotlb.c
-> > > @@ -20,6 +20,14 @@ void *x86_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
-> > >  {
-> > >  	void *vaddr;
-> > >  
-> > > +	/*
-> > > +	 * When booting a kdump kernel in high memory these allocations are very
-> > > +	 * likely to fail, as there are by default only 8MB of low memory to
-> > > +	 * allocate from. So disable the warnings from the allocator when this
-> > > +	 * happens.  SWIOTLB also implements fall-backs for failed allocations.
-> > > +	 */
-> > > +	flags |= __GFP_NOWARN;
-> > 
-> > Should this perhaps then have 'if (kdump_kernel)' around it since
-> > the use-case seems to be kdump related?
-> 
-> Hmm, I don't think this is entirely kdump specific. It can also be
-> triggered on a non-kdump kernel, it is just much more unlikely. But
-> maybe I should change the comment to something like:
-> 
-> 	/*
-> 	 * Don't print a warning when the first allocation attempt
-> 	 * fails. The swiotlb_alloc_coherent() function will print a
-> 	 * warning when the allocation of DMA memory ultimatly failed.
-> 	 */
+On Tue, 2 Dec 2014 10:42:02 -0800
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
-Much better. Thank you.
+> I was actually suggesting something a bit different.  Instead of bisecting
+> by release, bisect by code.  The procedure is as follows:
 > 
-> This takes the kdump-specifics out of this change (in the end
-> kdump-kernel loaded high is just a case where this failure is much more
-> likely).
+> 1.	I figure out some reliable way of making RCU allow preemption to
+> 	be disabled for some RCU read-side critical sections, but not for
+> 	others.  I send you the patch, which has rcu_read_lock_test()
+> 	as well as rcu_read_lock().
+> 
+> 2.	You build a kernel without my Kconfig hack, with my patch from
+> 	#1 above, and build a kernel with CONFIG_PREEMPT=y (which of
+> 	course implies CONFIG_TREE_PREEMPT_RCU=y, given that you are
+> 	building without my Kconfig hack).
+> 
+> 3.	You make a list of all the rcu_read_lock() uses in the kernel
+> 	(or ask me to provide it).  You change the rcu_read_lock()
+> 	calls in the first half of this list to rcu_read_lock_test().
+> 
+> 	If the kernel locks up as easily with this change as it did
+> 	in a stock CONFIG_PREEMPT=y CONFIG_TREE_PREEMPT_RCU=y kernel,
+> 	change half of the remaining rcu_read_lock() calls to
+> 	rcu_read_lock_test().  If the kernel is much more resistant
+> 	to lockup, change half of the rcu_read_lock_test() calls
+> 	back to rcu_read_lock().
 
-<nods>
-> 
-> 
-> 	Joerg
-> 
+	Ok Paul, I want to do everything I can to help you debug this.
+
+	So can you provide me the list you mentioned at point 3 (or
+tell me how can I get it)? If you guide me through this, I can do
+whatever you need. Thanks!
+
+-- 
+Linux 3.17.0-rc6-00235-gb94d525: Shuffling Zombie Juror
+http://www.youtube.com/DanielFragaBR
+http://exchangewar.info
+Bitcoin: 12H6661yoLDUZaYPdah6urZS5WiXwTAUgL
