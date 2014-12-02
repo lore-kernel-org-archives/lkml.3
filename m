@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933082AbaLBHxe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 02:53:34 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:54054 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932829AbaLBHxc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 02:53:32 -0500
+	id S1754386AbaLBHzZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 02:55:25 -0500
+Received: from tundra.namei.org ([65.99.196.166]:51372 "EHLO namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751843AbaLBHzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 02:55:25 -0500
+Date: Tue, 2 Dec 2014 18:55:15 +1100 (AEDT)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Keyrings / NFS fixes
+Message-ID: <alpine.LRH.2.11.1412021853310.22195@namei.org>
+User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
 MIME-Version: 1.0
-From: Dmitry Vyukov <dvyukov@google.com>
-Date: Tue, 2 Dec 2014 11:53:09 +0400
-Message-ID: <CACT4Y+bZu5UHu90F8wWqckcE13D5H2LDexna6vVEMBy+X4RiZw@mail.gmail.com>
-Subject: Out-of-bounds access in nfnetlink_bind
-To: pablo@netfilter.org, kaber@trash.net, kadlec@blackhole.kfki.hu,
-        David Miller <davem@davemloft.net>, netfilter-devel@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        kasan-dev <kasan-dev@googlegroups.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Kostya Serebryany <kcc@google.com>,
-        Andrey Konovalov <andreyknvl@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+>From David Howells, please pull for 3.18.
 
-I am working on Kernel AddressSanitizer, a fast memory error detector
-for kernel:
-https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
+The first one fixes the handling of maximum buffer size for key 
+descriptions, fixing the size at 4095 + NUL char rather than whatever 
+PAGE_SIZE happens to be and permits you to read back the full description 
+without it getting clipped because some extra information got prepended.
 
-Here is an error report that I got while running trinity:
+The second and third fix a bug in NFS idmapper handling whereby a key
+representing a mapping between an id and a name expires and causing
+EKEYEXPIRED to be seen internally in NFS (which prevents the mapping from
+happening) rather than re-looking up the mapping.
 
-==================================================================
-BUG: AddressSanitizer: out of bounds access in
-nfnetlink_bind+0xbf/0xe0 at addr ffffffff82eef710
-Read of size 4 by task trinity-main/2533
-Out-of-bounds access to the global variable 'nfnl_group2type'
-[ffffffff82eef6e0-ffffffff82eef704) defined at
-net/netfilter/nfnetlink.c:43:18
-CPU: 0 PID: 2533 Comm: trinity-main Not tainted 3.18.0-rc1+ #44
-Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
- ffffffff835173e8 ffff8800b989fd18 ffffffff82a3d66f 0000000000000007
- ffff8800b989fdc0 ffff8800b989fda8 ffffffff813a3826 0000000000000012
- 0000000000000000 0000000100000018 0000000000000296 ffff8800b989fd88
-Call Trace:
- [<ffffffff813a39c1>] __asan_report_load4_noabort+0x41/0x50
-mm/kasan/report.c:236
- [<ffffffff824769cf>] nfnetlink_bind+0xbf/0xe0 net/netfilter/nfnetlink.c:467
- [<ffffffff82469b71>] netlink_bind+0x221/0x7e0 net/netlink/af_netlink.c:1472
- [<ffffffff8238bf77>] SYSC_bind+0x117/0x170 net/socket.c:1541
- [<ffffffff8238dc29>] SyS_bind+0x9/0x10 net/socket.c:1527
- [<ffffffff82a522a9>] system_call_fastpath+0x12/0x17
-arch/x86/kernel/entry_64.S:422
-Memory state around the buggy address:
- ffffffff82eef480: 00 00 00 00 00 00 00 00 00 00 00 00 00 f8 f8 f8
- ffffffff82eef500: f8 f8 f8 f8 00 00 00 00 f8 f8 f8 f8 00 00 00 01
- ffffffff82eef580: f8 f8 f8 f8 00 00 00 00 05 f8 f8 f8 f8 f8 f8 f8
- ffffffff82eef600: 00 00 04 f8 f8 f8 f8 f8 00 00 f8 f8 f8 f8 f8 f8
- ffffffff82eef680: 00 00 00 00 07 f8 f8 f8 f8 f8 f8 f8 00 00 00 00
->ffffffff82eef700: 04 f8 f8 f8 f8 f8 f8 f8 00 06 f8 f8 f8 f8 f8 f8
-                         ^
- ffffffff82eef780: 00 00 00 05 f8 f8 f8 f8 00 00 00 00 00 f8 f8 f8
- ffffffff82eef800: f8 f8 f8 f8 00 00 00 00 02 f8 f8 f8 f8 f8 f8 f8
- ffffffff82eef880: 00 00 00 00 06 f8 f8 f8 f8 f8 f8 f8 00 00 00 04
- ffffffff82eef900: f8 f8 f8 f8 00 00 00 00 00 04 f8 f8 f8 f8 f8 f8
- ffffffff82eef980: 00 00 00 07 f8 f8 f8 f8 00 00 00 06 f8 f8 f8 f8
-==================================================================
+The following changes since commit 3a18ca061311f2f1ee9c44012f89c7436d392117:
 
-My source is on revision f114040e3ea6e07372334ade75d1ee0
+  Merge tag 'ext4_for_linus_urgent' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2014-12-01 20:11:49 -0800)
 
-As far as I see netlink_bind just calls nfnetlink_bind with whatever
-groups user has requested; nfnetlink_bind in turn do not do any checks
-before indexing the global nfnl_group2type array with the group.
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
+
+David Howells (3):
+      KEYS: Fix the size of the key description passed to/from userspace
+      KEYS: Simplify KEYRING_SEARCH_{NO,DO}_STATE_CHECK flags
+      KEYS: request_key() should reget expired keys rather than give EKEYEXPIRED
+
+James Morris (1):
+      Merge tag 'keys-fixes-20141201' of git://git.kernel.org/.../dhowells/linux-fs into for-linus
+
+ security/keys/internal.h         |    1 +
+ security/keys/keyctl.c           |   56 +++++++++++++++++--------------------
+ security/keys/keyring.c          |   10 ++++---
+ security/keys/request_key.c      |    2 +
+ security/keys/request_key_auth.c |    1 +
+ 5 files changed, 36 insertions(+), 34 deletions(-)
