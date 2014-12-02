@@ -1,81 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792AbaLBS1S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 13:27:18 -0500
-Received: from na6sys009bog005.obsmtp.com ([74.125.150.50]:48114 "HELO
-	na6sys009bog005.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754392AbaLBS0x (ORCPT
+	id S1754802AbaLBS1k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 13:27:40 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:54503 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754752AbaLBSYk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 13:26:53 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+mtBx9RwkJ9b84d_OkCtOunFBsuqw276=5E+Qhoqq75utCR4w@mail.gmail.com>
-References: <1416525081-27779-1-git-send-email-joestringer@nicira.com>
- <CAEP_g=-VEWi2Qo6gcJGr2+NXWEhkuMyu7BiAke6H=x+PTLcNcg@mail.gmail.com>
- <CANr6G5zrA6NUtcyhX1cwEO1Hiq9jnarB36P6m5eoHUFqWWc26Q@mail.gmail.com>
- <CANr6G5xRbG=UnJEdBEN_5ZRjNikCjuUseb1VbQmjjfb36jDP0g@mail.gmail.com>
- <CA+mtBx-Q=Ebrx_8NVB5mWURj-oWB3gdNs5fSAL=Frr9sOmyvHw@mail.gmail.com>
- <CAEP_g=979u0baWXGmCxo61a-KYEUwkruqBNof_zQpsvJxRFqSA@mail.gmail.com> <CA+mtBx9RwkJ9b84d_OkCtOunFBsuqw276=5E+Qhoqq75utCR4w@mail.gmail.com>
-From: Jesse Gross <jesse@nicira.com>
-Date: Tue, 2 Dec 2014 10:26:31 -0800
-Message-ID: <CAEP_g=9Yg-pZf9-Wb4qrZhAMSB=edqDxBXSRskWCturt-nnxTg@mail.gmail.com>
-Subject: Re: [PATCHv2 net] i40e: Implement ndo_gso_check()
-To: Tom Herbert <therbert@google.com>
-Cc: Joe Stringer <joestringer@nicira.com>, netdev <netdev@vger.kernel.org>,
-        Shannon Nelson <shannon.nelson@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "linux.nics" <linux.nics@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 2 Dec 2014 13:24:40 -0500
+From: Jeff Layton <jlayton@primarydata.com>
+To: linux-nfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [RFC PATCH 07/14] sunrpc: factor svc_rqst allocation and freeing from sv_nrthreads refcounting
+Date: Tue,  2 Dec 2014 13:24:16 -0500
+Message-Id: <1417544663-13299-8-git-send-email-jlayton@primarydata.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
+References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 1, 2014 at 4:09 PM, Tom Herbert <therbert@google.com> wrote:
-> On Mon, Dec 1, 2014 at 3:53 PM, Jesse Gross <jesse@nicira.com> wrote:
->> On Mon, Dec 1, 2014 at 3:47 PM, Tom Herbert <therbert@google.com> wrote:
->>> On Mon, Dec 1, 2014 at 3:35 PM, Joe Stringer <joestringer@nicira.com> wrote:
->>>> On 21 November 2014 at 09:59, Joe Stringer <joestringer@nicira.com> wrote:
->>>>> On 20 November 2014 16:19, Jesse Gross <jesse@nicira.com> wrote:
->>>>>> I don't know if we need to have the check at all for IPIP though -
->>>>>> after all the driver doesn't expose support for it all (actually it
->>>>>> doesn't expose GRE either). This raises kind of an interesting
->>>>>> question about the checks though - it's pretty easy to add support to
->>>>>> the driver for a new GSO type (and I imagine that people will be
->>>>>> adding GRE soon) and forget to update the check.
->>>>>
->>>>> If the check is more conservative, then testing would show that it's
->>>>> not working and lead people to figure out why (and update the check).
->>>>
->>>> More concretely, one suggestion would be something like following at
->>>> the start of each gso_check():
->>>>
->>>> +       const int supported = SKB_GSO_TCPV4 | SKB_GSO_TCPV6 | SKB_GSO_FCOE |
->>>> +                             SKB_GSO_UDP | SKB_GSO_UDP_TUNNEL;
->>>> +
->>>> +       if (skb_shinfo(skb)->gso_type & ~supported)
->>>> +               return false;
->>>
->>> This should already be handled by net_gso_ok.
->>
->> My original point wasn't so much that this isn't handled at the moment
->> but that it's easy to add a supported GSO type but then forget to
->> update this check - i.e. if a driver already supports UDP_TUNNEL and
->> adds support for GRE with the same constraints. It seems not entirely
->> ideal that this function is acting as a blacklist rather than a
->> whitelist.
->
-> Agreed, it would be nice to have all the checking logic in one place.
-> If all the drivers end up implementing ndo_gso_check then we could
-> potentially get rid of the GSO types as features. This probably
-> wouldn't be a bad thing since we already know that the features
-> mechanism doesn't scale (for instance there's no way to indicate that
-> certain combinations of GSO types are supported by a device).
+In later patches, we'll want to be able to allocate and free svc_rqst
+structures without monkeying with the serv->sv_nrthreads refcount.
 
-This crossed my mind and I agree that it's pretty clear that the
-features mechanism isn't scaling very well. Presumably, the logical
-extension of this is that each driver would have a function that looks
-at a packet and returns a set of offload operations that it can
-support rather than exposing a set of protocols. However, it seems
-like it would probably result in a bunch of duplicate code in each
-driver.
+Factor those pieces out of their respective functions.
+
+Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+---
+ include/linux/sunrpc/svc.h |  3 +++
+ net/sunrpc/svc.c           | 58 ++++++++++++++++++++++++++++++----------------
+ 2 files changed, 41 insertions(+), 20 deletions(-)
+
+diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
+index 28e5f5716a87..3d2113222dda 100644
+--- a/include/linux/sunrpc/svc.h
++++ b/include/linux/sunrpc/svc.h
+@@ -458,8 +458,11 @@ void svc_rpcb_cleanup(struct svc_serv *serv, struct net *net);
+ int svc_bind(struct svc_serv *serv, struct net *net);
+ struct svc_serv *svc_create(struct svc_program *, unsigned int,
+ 			    struct svc_serv_ops *);
++struct svc_rqst *svc_rqst_alloc(struct svc_serv *serv,
++					struct svc_pool *pool, int node);
+ struct svc_rqst *svc_prepare_thread(struct svc_serv *serv,
+ 					struct svc_pool *pool, int node);
++void		   svc_rqst_free(struct svc_rqst *);
+ void		   svc_exit_thread(struct svc_rqst *);
+ unsigned int	   svc_pool_map_get(void);
+ void		   svc_pool_map_put(void);
+diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+index 04c083a53121..165fa1803a0a 100644
+--- a/net/sunrpc/svc.c
++++ b/net/sunrpc/svc.c
+@@ -583,40 +583,52 @@ svc_release_buffer(struct svc_rqst *rqstp)
+ }
+ 
+ struct svc_rqst *
+-svc_prepare_thread(struct svc_serv *serv, struct svc_pool *pool, int node)
++svc_rqst_alloc(struct svc_serv *serv, struct svc_pool *pool, int node)
+ {
+ 	struct svc_rqst	*rqstp;
+ 
+ 	rqstp = kzalloc_node(sizeof(*rqstp), GFP_KERNEL, node);
+ 	if (!rqstp)
+-		goto out_enomem;
++		return rqstp;
+ 
+-	serv->sv_nrthreads++;
+ 	__set_bit(RQ_BUSY, &rqstp->rq_flags);
+ 	spin_lock_init(&rqstp->rq_lock);
+ 	rqstp->rq_server = serv;
+ 	rqstp->rq_pool = pool;
+-	spin_lock_bh(&pool->sp_lock);
+-	pool->sp_nrthreads++;
+-	list_add_rcu(&rqstp->rq_all, &pool->sp_all_threads);
+-	spin_unlock_bh(&pool->sp_lock);
+ 
+ 	rqstp->rq_argp = kmalloc_node(serv->sv_xdrsize, GFP_KERNEL, node);
+ 	if (!rqstp->rq_argp)
+-		goto out_thread;
++		goto out_enomem;
+ 
+ 	rqstp->rq_resp = kmalloc_node(serv->sv_xdrsize, GFP_KERNEL, node);
+ 	if (!rqstp->rq_resp)
+-		goto out_thread;
++		goto out_enomem;
+ 
+ 	if (!svc_init_buffer(rqstp, serv->sv_max_mesg, node))
+-		goto out_thread;
++		goto out_enomem;
+ 
+ 	return rqstp;
+-out_thread:
+-	svc_exit_thread(rqstp);
+ out_enomem:
+-	return ERR_PTR(-ENOMEM);
++	svc_rqst_free(rqstp);
++	return NULL;
++}
++EXPORT_SYMBOL_GPL(svc_rqst_alloc);
++
++struct svc_rqst *
++svc_prepare_thread(struct svc_serv *serv, struct svc_pool *pool, int node)
++{
++	struct svc_rqst	*rqstp;
++
++	rqstp = svc_rqst_alloc(serv, pool, node);
++	if (!rqstp)
++		return ERR_PTR(-ENOMEM);
++
++	serv->sv_nrthreads++;
++	spin_lock_bh(&pool->sp_lock);
++	pool->sp_nrthreads++;
++	list_add_rcu(&rqstp->rq_all, &pool->sp_all_threads);
++	spin_unlock_bh(&pool->sp_lock);
++	return rqstp;
+ }
+ EXPORT_SYMBOL_GPL(svc_prepare_thread);
+ 
+@@ -747,19 +759,25 @@ svc_set_num_threads(struct svc_serv *serv, struct svc_pool *pool, int nrservs)
+ EXPORT_SYMBOL_GPL(svc_set_num_threads);
+ 
+ /*
+- * Called from a server thread as it's exiting. Caller must hold the BKL or
+- * the "service mutex", whichever is appropriate for the service.
++ * Called from a server thread as it's exiting. Caller must hold the service's
++ * mutex.
+  */
+ void
+-svc_exit_thread(struct svc_rqst *rqstp)
++svc_rqst_free(struct svc_rqst *rqstp)
+ {
+-	struct svc_serv	*serv = rqstp->rq_server;
+-	struct svc_pool	*pool = rqstp->rq_pool;
+-
+ 	svc_release_buffer(rqstp);
+ 	kfree(rqstp->rq_resp);
+ 	kfree(rqstp->rq_argp);
+ 	kfree(rqstp->rq_auth_data);
++	kfree_rcu(rqstp, rq_rcu_head);
++}
++EXPORT_SYMBOL_GPL(svc_rqst_free);
++
++void
++svc_exit_thread(struct svc_rqst *rqstp)
++{
++	struct svc_serv	*serv = rqstp->rq_server;
++	struct svc_pool	*pool = rqstp->rq_pool;
+ 
+ 	spin_lock_bh(&pool->sp_lock);
+ 	pool->sp_nrthreads--;
+@@ -767,7 +785,7 @@ svc_exit_thread(struct svc_rqst *rqstp)
+ 		list_del_rcu(&rqstp->rq_all);
+ 	spin_unlock_bh(&pool->sp_lock);
+ 
+-	kfree_rcu(rqstp, rq_rcu_head);
++	svc_rqst_free(rqstp);
+ 
+ 	/* Release the server */
+ 	if (serv)
+-- 
+2.1.0
+
