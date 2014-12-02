@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114AbaLBOlf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 09:41:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37406 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752896AbaLBOld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 09:41:33 -0500
-Date: Tue, 2 Dec 2014 15:41:22 +0100
-From: Joerg Roedel <jroedel@suse.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] swiotlb: Warn on allocation failure in
- swiotlb_alloc_coherent
-Message-ID: <20141202144122.GI3156@suse.de>
-References: <1417174149-31210-1-git-send-email-joro@8bytes.org>
- <1417174149-31210-2-git-send-email-joro@8bytes.org>
- <20141201202802.GC21626@laptop.dumpdata.com>
+	id S1753471AbaLBOoU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 09:44:20 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:46675 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424AbaLBOoT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 09:44:19 -0500
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs: make generic_block_fiemap sig-tolerant PING...
+In-Reply-To: <1413552269-32203-1-git-send-email-dmonakhov@openvz.org>
+References: <1413552269-32203-1-git-send-email-dmonakhov@openvz.org>
+User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.4.1 (x86_64-pc-linux-gnu)
+CC: Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 02 Dec 2014 17:43:51 +0300
+Message-ID: <871toikt7c.fsf@openvz.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141201202802.GC21626@laptop.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha512; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 03:28:03PM -0500, Konrad Rzeszutek Wilk wrote:
-> On Fri, Nov 28, 2014 at 12:29:07PM +0100, Joerg Roedel wrote:
-> > From: Joerg Roedel <jroedel@suse.de>
-> > 
-> > Print a warning when all allocation tries have been failed
-> > and the function is about to return NULL. This prepares for
-> > calling the function with __GFP_NOWARN to suppress
-> > allocation failure warnings before all fall-backs have
-> > failed.
-> 
-> This can be quite noisy. Especially the dump-stack.
+--=-=-=
+Content-Type: text/plain
+Content-Transfer-Encoding: quoted-printable
 
-Well, this is as noisy as the dump_stack()s from the page-allocator when
-the first allocation try fails. The goal of the first two patches in
-this series is to only print a warning (with stack-trace) when
-alloc_coherent failed, and not when only an intermediate step failed
-that has a fall-back anyway (and might thus be no real problem).
+Andrew can you please get this patch. IMHO it is simple and clean.
+BTW: W/o patch unprivileged may abuse system resources simply by spawning
+wast number of unkilable busyloops (works on ext2/ext3):
 
+truncate --size 1T test
+for ((i=3D0;i<1024;i++))
+do
+        filefrag test > /dev/null &
+done
 
-	Joerg
+> __generic_block_fiemap may spin very long time for large sparse files.
+>
+> Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+> ---
+>  fs/ioctl.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+>
+> diff --git a/fs/ioctl.c b/fs/ioctl.c
+> index 8ac3fad..6fbeb68 100644
+> --- a/fs/ioctl.c
+> +++ b/fs/ioctl.c
+> @@ -379,6 +379,11 @@ int __generic_block_fiemap(struct inode *inode,
+>  				past_eof =3D true;
+>  		}
+>  		cond_resched();
+> +		if (fatal_signal_pending(current)) {
+> +			ret =3D -EINTR;
+> +			break;
+> +		}
+> +
+>  	} while (1);
+>=20=20
+>  	/* If ret is 1 then we just hit the end of the extent array */
+> --=20
+> 1.7.1
 
+--=-=-=
+Content-Type: application/pgp-signature; name="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBCgAGBQJUfdAnAAoJELhyPTmIL6kBgUgH/j8OIu0ick+M6qP6RikzYn17
+Hj9xrPhoLrSOqwxN0gF+KnjR2CZ6W+b1UP8F0v1CiQLZ58bcX0wuuueVwFleCkJS
+61bcOYhfxR+8N7OoZSFtJNLD8xDCbPi5bU4ryvClB5P9YAT7hx3O7i5YptVDEWei
+CkkeJ+WHvwjcXRsrdHZRCCNKqNYWBGm+Y+MjkqGixD35e+NBieXxYAYjD5bpCSs3
+/eLV0CeevoBwgeNoPGWci4NHovR4ApT9nhDJeziHS2I3pt9224uStK8op3gYt7zE
+j3hZa4YTpD8wO6JpSyMIi/nXShNccetTVtlbh7t3QtvPrmvWiTktzDiv++BBo4k=
+=FSg/
+-----END PGP SIGNATURE-----
+--=-=-=--
