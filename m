@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802AbaLBS1k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 13:27:40 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:54503 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754752AbaLBSYk (ORCPT
+	id S1754813AbaLBS2A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 13:28:00 -0500
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:45252 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754733AbaLBSYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 13:24:40 -0500
+	Tue, 2 Dec 2014 13:24:36 -0500
 From: Jeff Layton <jlayton@primarydata.com>
 To: linux-nfs@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
         Al Viro <viro@zeniv.linux.org.uk>
-Subject: [RFC PATCH 07/14] sunrpc: factor svc_rqst allocation and freeing from sv_nrthreads refcounting
-Date: Tue,  2 Dec 2014 13:24:16 -0500
-Message-Id: <1417544663-13299-8-git-send-email-jlayton@primarydata.com>
+Subject: [RFC PATCH 05/14] sunrpc: abstract out svc_set_num_threads to sv_ops
+Date: Tue,  2 Dec 2014 13:24:14 -0500
+Message-Id: <1417544663-13299-6-git-send-email-jlayton@primarydata.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
 References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
@@ -21,144 +21,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In later patches, we'll want to be able to allocate and free svc_rqst
-structures without monkeying with the serv->sv_nrthreads refcount.
-
-Factor those pieces out of their respective functions.
+Add an operation that will do setup of the service. In the case of a
+classic thread-based service that means starting up threads. In the case
+of a workqueue-based service, the setup will do something different.
 
 Signed-off-by: Jeff Layton <jlayton@primarydata.com>
 ---
- include/linux/sunrpc/svc.h |  3 +++
- net/sunrpc/svc.c           | 58 ++++++++++++++++++++++++++++++----------------
- 2 files changed, 41 insertions(+), 20 deletions(-)
+ fs/nfsd/nfssvc.c           | 8 +++++---
+ include/linux/sunrpc/svc.h | 3 +++
+ 2 files changed, 8 insertions(+), 3 deletions(-)
 
+diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+index 5904c06cfd32..71e7b180c0d9 100644
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -394,6 +394,7 @@ static struct svc_serv_ops nfsd_thread_sv_ops = {
+ 	.svo_shutdown		= nfsd_last_thread,
+ 	.svo_function		= nfsd,
+ 	.svo_enqueue_xprt	= svc_xprt_do_enqueue,
++	.svo_setup		= svc_set_num_threads,
+ 	.svo_module		= THIS_MODULE,
+ };
+ 
+@@ -506,8 +507,8 @@ int nfsd_set_nrthreads(int n, int *nthreads, struct net *net)
+ 	/* apply the new numbers */
+ 	svc_get(nn->nfsd_serv);
+ 	for (i = 0; i < n; i++) {
+-		err = svc_set_num_threads(nn->nfsd_serv, &nn->nfsd_serv->sv_pools[i],
+-				    	  nthreads[i]);
++		err = nn->nfsd_serv->sv_ops->svo_setup(nn->nfsd_serv,
++				&nn->nfsd_serv->sv_pools[i], nthreads[i]);
+ 		if (err)
+ 			break;
+ 	}
+@@ -546,7 +547,8 @@ nfsd_svc(int nrservs, struct net *net)
+ 	error = nfsd_startup_net(nrservs, net);
+ 	if (error)
+ 		goto out_destroy;
+-	error = svc_set_num_threads(nn->nfsd_serv, NULL, nrservs);
++	error = nn->nfsd_serv->sv_ops->svo_setup(nn->nfsd_serv,
++			NULL, nrservs);
+ 	if (error)
+ 		goto out_shutdown;
+ 	/* We are holding a reference to nn->nfsd_serv which
 diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
-index 28e5f5716a87..3d2113222dda 100644
+index 7429cdcb48b5..5e172c8329f8 100644
 --- a/include/linux/sunrpc/svc.h
 +++ b/include/linux/sunrpc/svc.h
-@@ -458,8 +458,11 @@ void svc_rpcb_cleanup(struct svc_serv *serv, struct net *net);
- int svc_bind(struct svc_serv *serv, struct net *net);
- struct svc_serv *svc_create(struct svc_program *, unsigned int,
- 			    struct svc_serv_ops *);
-+struct svc_rqst *svc_rqst_alloc(struct svc_serv *serv,
-+					struct svc_pool *pool, int node);
- struct svc_rqst *svc_prepare_thread(struct svc_serv *serv,
- 					struct svc_pool *pool, int node);
-+void		   svc_rqst_free(struct svc_rqst *);
- void		   svc_exit_thread(struct svc_rqst *);
- unsigned int	   svc_pool_map_get(void);
- void		   svc_pool_map_put(void);
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index 04c083a53121..165fa1803a0a 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -583,40 +583,52 @@ svc_release_buffer(struct svc_rqst *rqstp)
- }
+@@ -61,6 +61,9 @@ struct svc_serv_ops {
+ 	/* queue up a transport for servicing */
+ 	void		(*svo_enqueue_xprt)(struct svc_xprt *);
  
- struct svc_rqst *
--svc_prepare_thread(struct svc_serv *serv, struct svc_pool *pool, int node)
-+svc_rqst_alloc(struct svc_serv *serv, struct svc_pool *pool, int node)
- {
- 	struct svc_rqst	*rqstp;
- 
- 	rqstp = kzalloc_node(sizeof(*rqstp), GFP_KERNEL, node);
- 	if (!rqstp)
--		goto out_enomem;
-+		return rqstp;
- 
--	serv->sv_nrthreads++;
- 	__set_bit(RQ_BUSY, &rqstp->rq_flags);
- 	spin_lock_init(&rqstp->rq_lock);
- 	rqstp->rq_server = serv;
- 	rqstp->rq_pool = pool;
--	spin_lock_bh(&pool->sp_lock);
--	pool->sp_nrthreads++;
--	list_add_rcu(&rqstp->rq_all, &pool->sp_all_threads);
--	spin_unlock_bh(&pool->sp_lock);
- 
- 	rqstp->rq_argp = kmalloc_node(serv->sv_xdrsize, GFP_KERNEL, node);
- 	if (!rqstp->rq_argp)
--		goto out_thread;
-+		goto out_enomem;
- 
- 	rqstp->rq_resp = kmalloc_node(serv->sv_xdrsize, GFP_KERNEL, node);
- 	if (!rqstp->rq_resp)
--		goto out_thread;
-+		goto out_enomem;
- 
- 	if (!svc_init_buffer(rqstp, serv->sv_max_mesg, node))
--		goto out_thread;
-+		goto out_enomem;
- 
- 	return rqstp;
--out_thread:
--	svc_exit_thread(rqstp);
- out_enomem:
--	return ERR_PTR(-ENOMEM);
-+	svc_rqst_free(rqstp);
-+	return NULL;
-+}
-+EXPORT_SYMBOL_GPL(svc_rqst_alloc);
++	/* set up thread (or whatever) execution context */
++	int		(*svo_setup)(struct svc_serv *, struct svc_pool *, int);
 +
-+struct svc_rqst *
-+svc_prepare_thread(struct svc_serv *serv, struct svc_pool *pool, int node)
-+{
-+	struct svc_rqst	*rqstp;
-+
-+	rqstp = svc_rqst_alloc(serv, pool, node);
-+	if (!rqstp)
-+		return ERR_PTR(-ENOMEM);
-+
-+	serv->sv_nrthreads++;
-+	spin_lock_bh(&pool->sp_lock);
-+	pool->sp_nrthreads++;
-+	list_add_rcu(&rqstp->rq_all, &pool->sp_all_threads);
-+	spin_unlock_bh(&pool->sp_lock);
-+	return rqstp;
- }
- EXPORT_SYMBOL_GPL(svc_prepare_thread);
- 
-@@ -747,19 +759,25 @@ svc_set_num_threads(struct svc_serv *serv, struct svc_pool *pool, int nrservs)
- EXPORT_SYMBOL_GPL(svc_set_num_threads);
- 
- /*
-- * Called from a server thread as it's exiting. Caller must hold the BKL or
-- * the "service mutex", whichever is appropriate for the service.
-+ * Called from a server thread as it's exiting. Caller must hold the service's
-+ * mutex.
-  */
- void
--svc_exit_thread(struct svc_rqst *rqstp)
-+svc_rqst_free(struct svc_rqst *rqstp)
- {
--	struct svc_serv	*serv = rqstp->rq_server;
--	struct svc_pool	*pool = rqstp->rq_pool;
--
- 	svc_release_buffer(rqstp);
- 	kfree(rqstp->rq_resp);
- 	kfree(rqstp->rq_argp);
- 	kfree(rqstp->rq_auth_data);
-+	kfree_rcu(rqstp, rq_rcu_head);
-+}
-+EXPORT_SYMBOL_GPL(svc_rqst_free);
-+
-+void
-+svc_exit_thread(struct svc_rqst *rqstp)
-+{
-+	struct svc_serv	*serv = rqstp->rq_server;
-+	struct svc_pool	*pool = rqstp->rq_pool;
- 
- 	spin_lock_bh(&pool->sp_lock);
- 	pool->sp_nrthreads--;
-@@ -767,7 +785,7 @@ svc_exit_thread(struct svc_rqst *rqstp)
- 		list_del_rcu(&rqstp->rq_all);
- 	spin_unlock_bh(&pool->sp_lock);
- 
--	kfree_rcu(rqstp, rq_rcu_head);
-+	svc_rqst_free(rqstp);
- 
- 	/* Release the server */
- 	if (serv)
+ 	/* optional module to count when adding threads (pooled svcs only) */
+ 	struct module	*svo_module;
+ };
 -- 
 2.1.0
 
