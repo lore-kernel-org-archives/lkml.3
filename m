@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932771AbaLBABq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 19:01:46 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:54771 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932216AbaLBABo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 19:01:44 -0500
+	id S932765AbaLBAGP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 19:06:15 -0500
+Received: from mga01.intel.com ([192.55.52.88]:33468 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751634AbaLBAGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 19:06:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,497,1413270000"; 
+   d="scan'208";a="631057933"
+Message-ID: <547D0271.4040009@linux.intel.com>
+Date: Tue, 02 Dec 2014 08:06:09 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <5479E693.3010200@users.sourceforge.net>
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
- <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
- <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
- <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien>
- <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien>
- <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien>
- <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
- <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net> <5479E693.3010200@users.sourceforge.net>
-From: Mahesh Bandewar <maheshb@google.com>
-Date: Mon, 1 Dec 2014 16:01:23 -0800
-Message-ID: <CAF2d9ji2FRX0hdh-R-PQZoNG59s+74Tff=BeAHfhTtLo590-rw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] net-ipvlan: Deletion of an unnecessary check before
- the function call "free_percpu"
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: linux-netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joerg Roedel <joro@8bytes.org>
+CC: David Woodhouse <dwmw2@infradead.org>, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] iommu/vt-d: Fix an off-by-one bug in __domain_mapping()
+References: <1416966130-866-1-git-send-email-jiang.liu@linux.intel.com> <20141201162740.GK3762@8bytes.org>
+In-Reply-To: <20141201162740.GK3762@8bytes.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 29, 2014 at 7:30 AM, SF Markus Elfring
-<elfring@users.sourceforge.net> wrote:
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Sat, 29 Nov 2014 16:23:20 +0100
->
-> The free_percpu() function tests whether its argument is NULL and then
-> returns immediately. Thus the test around the call is not needed.
->
-> This issue was detected by using the Coccinelle software.
->
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
-Acked-by: Mahesh Bandewar <maheshb@google.com>
-> ---
->  drivers/net/ipvlan/ipvlan_main.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/drivers/net/ipvlan/ipvlan_main.c b/drivers/net/ipvlan/ipvlan_main.c
-> index 96b71b0..feb1853 100644
-> --- a/drivers/net/ipvlan/ipvlan_main.c
-> +++ b/drivers/net/ipvlan/ipvlan_main.c
-> @@ -125,8 +125,7 @@ static void ipvlan_uninit(struct net_device *dev)
->         struct ipvl_dev *ipvlan = netdev_priv(dev);
->         struct ipvl_port *port = ipvlan->port;
->
-> -       if (ipvlan->pcpu_stats)
-> -               free_percpu(ipvlan->pcpu_stats);
-> +       free_percpu(ipvlan->pcpu_stats);
->
->         port->count -= 1;
->         if (!port->count)
-> --
-> 2.1.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+On 2014/12/2 0:27, Joerg Roedel wrote:
+> On Wed, Nov 26, 2014 at 09:42:10AM +0800, Jiang Liu wrote:
+>> There's an off-by-one bug in function __domain_mapping(), which may
+>> trigger the BUG_ON(nr_pages < lvl_pages) when
+>> 	(nr_pages + 1) & superpage_mask == 0
+> 
+> What is the superpage_mask?
+Hi Joerg,
+	Sorry for the confusion. The really story is:
+1) sg_res is set to nr_pages + 1 at the beginning of __domain_mapping()
+2) then sg_res is used to choose super page by function
+   hardware_largepage_caps(domain, iov_pfn, phys_pfn, sg_res).
+The condition to trigger the issue is:
+__domain_mapping is called by domain_pfn_mapping() with nr_pages
+of 511, so sg_res is 512 and hardware_largepage_caps() will
+choose a wrong super page size of 2M, which then trigger
+BUG_ON(sg_res < lvl_pages).
+
+So it's not only a BUG_ON() issue, but also causes incorrect super page
+selection.
+Thanks!
+Gerry
+
+> 
+>> The issue was introduced by commit 9051aa0268dc "intel-iommu: Combine
+>> domain_pfn_mapping() and domain_sg_mapping()", which sets sg_res to
+>> "nr_pages + 1" to avoid some of the 'sg_res==0' code paths.
+>>
+>> It's safe to remove extra "+1" because sg_res is only used to calculate
+>> page size now.
+> 
+> From your description and the (hard to read) code in __domain_mapping I
+> don't really understand the issue yet. Can you please elaborate on this
+> issue can be triggered?
+> 
+> Is the BUG_ON the only issue and, if yes, can that be fixed by just
+> changing the BUG_ON condition?
+> 
+>> 	This issue was introduced in v2.6.31, but intel-iommu.c has
+>> been moved into drivers/iommu in v3.1. So what's the preferred way
+>> to deal with stable kernels between v2.6.31 and v3.1?
+> 
+> Just remove the kernel version marker from the stable tag. The stable
+> kernel maintainers for kernels >3.1 will ask you to backport the patch
+> or just backport it by themselfes.
+> 
+> 
+> 	Joerg
+> 
