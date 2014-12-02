@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932897AbaLBCuP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 21:50:15 -0500
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:53092 "EHLO
+	id S932869AbaLBCuO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 21:50:14 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:53088 "EHLO
 	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932289AbaLBCuK (ORCPT
+	with ESMTP id S932273AbaLBCuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Dec 2014 21:50:10 -0500
 X-Original-SENDERIP: 10.177.220.156
@@ -18,58 +18,56 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Luigi Semenzato <semenzato@google.com>,
         Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
         seungho1.park@lge.com, Minchan Kim <minchan@kernel.org>
-Subject: [RFC 1/6] zsmalloc: expand size class to support sizeof(unsigned long)
-Date: Tue,  2 Dec 2014 11:49:42 +0900
-Message-Id: <1417488587-28609-2-git-send-email-minchan@kernel.org>
+Subject: [RFC 0/6] zsmalloc support compaction
+Date: Tue,  2 Dec 2014 11:49:41 +0900
+Message-Id: <1417488587-28609-1-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1417488587-28609-1-git-send-email-minchan@kernel.org>
-References: <1417488587-28609-1-git-send-email-minchan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For compaction of zsmalloc, we need to decouple handle and
-obj position binding. For that, we need another memory to
-keep handle and I want to reuse existing functions of zsmalloc
-to implement indirect layer.
+Recently, there was issue about zsmalloc fragmentation and
+I got a report from Juno that new fork failed although there
+are plenty of free pages in the system.
+His investigation revealed zram is one of the culprit to make
+heavy fragmentation so there was no more contiguous 16K page
+for pgd to fork in the ARM.
 
-For that, we need to support new size class(ie, sizeof(unsigned
-long)) so this patch does it.
+This patchset implement *basic* zsmalloc compaction support
+and zram utilizes it so admin can do
+	"echo 1 > /sys/block/zram0/compact"
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- mm/zsmalloc.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+Actually, ideal is that mm migrate code is aware of zram pages and
+migrate them out automatically without admin's manual opeartion
+when system is out of contiguous page. Howver, we need more thinking
+before adding more hooks to migrate.c. Even though we implement it,
+we need manual trigger mode, too so I hope we could enhance
+zram migration stuff based on this primitive functions in future.
 
-diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-index 2021df5eb891..a806d714924c 100644
---- a/mm/zsmalloc.c
-+++ b/mm/zsmalloc.c
-@@ -100,7 +100,8 @@
-  * span more than 1 page which avoids complex case of mapping 2 pages simply
-  * to restore link_free pointer values.
-  */
--#define ZS_ALIGN		8
-+#define ZS_ALIGN		(sizeof(struct link_free))
-+#define ZS_HANDLE_SIZE		(sizeof(unsigned long))
- 
- /*
-  * A single 'zspage' is composed of up to 2^N discontiguous 0-order (single)
-@@ -138,11 +139,11 @@
- #define MAX(a, b) ((a) >= (b) ? (a) : (b))
- /* ZS_MIN_ALLOC_SIZE must be multiple of ZS_ALIGN */
- #define ZS_MIN_ALLOC_SIZE \
--	MAX(32, (ZS_MAX_PAGES_PER_ZSPAGE << PAGE_SHIFT >> OBJ_INDEX_BITS))
--#define ZS_MAX_ALLOC_SIZE	PAGE_SIZE
-+	MAX(ZS_ALIGN, (ZS_MAX_PAGES_PER_ZSPAGE << PAGE_SHIFT >> OBJ_INDEX_BITS))
-+#define ZS_MAX_ALLOC_SIZE	(PAGE_SIZE + ZS_HANDLE_SIZE)
- 
- /*
-- * On systems with 4K page size, this gives 255 size classes! There is a
-+ * On systems with 4K page size, this gives 257 size classes! There is a
-  * trader-off here:
-  *  - Large number of size classes is potentially wasteful as free page are
-  *    spread across these classes
+I just tested it on only x86 so need more testing on other arches.
+Additionally, I should have a number for zsmalloc regression
+caused by indirect layering. Unfortunately, I don't have any
+ARM test machine on my desk. I will get it soon and test it.
+Anyway, before further work, I'd like to hear opinion.
+
+Pathset is based on v3.18-rc6-mmotm-2014-11-26-15-45.
+
+Thanks.
+
+Minchan Kim (6):
+  zsmalloc: expand size class to support sizeof(unsigned long)
+  zsmalloc: add indrection layer to decouple handle from object
+  zsmalloc: implement reverse mapping
+  zsmalloc: encode alloced mark in handle object
+  zsmalloc: support compaction
+  zram: support compaction
+
+ drivers/block/zram/zram_drv.c |  24 ++
+ drivers/block/zram/zram_drv.h |   1 +
+ include/linux/zsmalloc.h      |   1 +
+ mm/zsmalloc.c                 | 596 +++++++++++++++++++++++++++++++++++++-----
+ 4 files changed, 552 insertions(+), 70 deletions(-)
+
 -- 
 2.0.0
 
