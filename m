@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932651AbaLBQxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 11:53:38 -0500
-Received: from s3.sipsolutions.net ([5.9.151.49]:36541 "EHLO sipsolutions.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932228AbaLBQxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 11:53:36 -0500
-Message-ID: <1417539208.1841.1.camel@sipsolutions.net>
-Subject: Re: net-PA Semi: Deletion of unnecessary checks before the function
- call "pci_dev_put"
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: SF Markus Elfring <elfring@users.sourceforge.net>,
-        Lino Sanfilippo <LinoSanfilippo@gmx.de>,
-        Olof Johansson <olof@lixom.net>, netdev@vger.kernel.org,
-        backports@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@suse.com>
-Date: Tue, 02 Dec 2014 17:53:28 +0100
-In-Reply-To: <alpine.DEB.2.02.1412012134290.2076@localhost6.localdomain6>
-References: <5307CAA2.8060406@users.sourceforge.net>
-	  <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
-	  <530A086E.8010901@users.sourceforge.net>
-	  <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
-	  <530A72AA.3000601@users.sourceforge.net>
-	 <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
-	  <530B5FB6.6010207@users.sourceforge.net>
-	  <alpine.DEB.2.10.1402241710370.2074@hadrien>
-	  <530C5E18.1020800@users.sourceforge.net>
-	  <alpine.DEB.2.10.1402251014170.2080@hadrien>
-	  <530CD2C4.4050903@users.sourceforge.net>
-	  <alpine.DEB.2.10.1402251840450.7035@hadrien>
-	  <530CF8FF.8080600@users.sourceforge.net>
-	  <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
-	  <530DD06F.4090703@users.sourceforge.net>
-	  <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
-	  <5317A59D.4@users.sourceforge.net>
-	 <547BC5AD.6090500@users.sourceforge.net>
-	  (sfid-20141201_023451_153915_6CFB474F) <1417465745.28610.0.camel@sipsolutions.net>
-	 <alpine.DEB.2.02.1412012134290.2076@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932700AbaLBQyQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 11:54:16 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:50022 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932356AbaLBQyO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 11:54:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141202163506.GG18921@nuc-i3427.alporthouse.com>
+References: <1417533733-2289-1-git-send-email-daniel.vetter@ffwll.ch>
+	<1417534582-2977-1-git-send-email-daniel.vetter@ffwll.ch>
+	<20141202163506.GG18921@nuc-i3427.alporthouse.com>
+Date: Tue, 2 Dec 2014 08:54:13 -0800
+Message-ID: <CALAqxLUCD7zxyNrZJnKUE3wbORyZez-bDvScGLXyTjVvvZdinA@mail.gmail.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: compute wait_ioctl timeout correctly
+From: John Stultz <john.stultz@linaro.org>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Daniel Vetter <daniel.vetter@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-12-01 at 21:34 +0100, Julia Lawall wrote:
+On Tue, Dec 2, 2014 at 8:35 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> On Tue, Dec 02, 2014 at 04:36:22PM +0100, Daniel Vetter wrote:
+>> +static inline unsigned long nsecs_to_jiffies_timeout(const u64 m)
+>> +{
+>> +     u64 usecs = div_u64(m + 999, 1000);
+>> +     unsigned long j = usecs_to_jiffies(usecs);
+>> +
+>> +     return min_t(unsigned long, MAX_JIFFY_OFFSET, j + 1);
+>
+> Or more concisely and review friendly:
+>
+> static inline unsigned long nsecs_to_jiffies_timeout(const u64 n)
+> {
+>         return min_t(u64, MAX_JIFFY_OFFSET, nsecs_to_jiffies64(n) + 1);
+> }
 
-> > So this kind of evolution is no problem for the (automated) backports
-> > using the backports project - although it can be difficult to detect
-> > such a thing is needed.
-> 
-> That is exactly the problem...
+Yea. This looks much nicer. Seems generic enough it might be better
+added next to nsec_to_jiffies64() in kernel/time/time.c or jiffies.h
+rather then in a driver header.
 
-I'm not convinced though that it should stop such progress in mainline.
+And clearly the header comment in nsec_to_jiffies() warning its only
+for the scheduler and not for use for drivers (for exactly the reason
+of this patch) are not obvious/memorable enough for me and Thomas
+makes me wonder if we should change its name to be more clear that its
+a sched only function.
 
-johannes
-
-
+thanks
+-john
