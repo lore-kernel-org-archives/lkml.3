@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933450AbaLBTYr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:24:47 -0500
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:55994 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932569AbaLBTYo (ORCPT
+	id S933463AbaLBTYx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:24:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46763 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932569AbaLBTYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:24:44 -0500
-Message-ID: <547e11fa.8778e00a.3439.ffffa88c@mx.google.com>
-Date: Tue, 2 Dec 2014 17:24:39 -0200
-From: =?UTF-8?B?RMOibmllbA==?= Fraga <fragabr@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-In-Reply-To: <20141202191143.GN25340@linux.vnet.ibm.com>
-References: <CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
-	<547bbe36.48548c0a.105c.779c@mx.google.com>
-	<20141201191431.GA17385@linux.vnet.ibm.com>
-	<547ccf74.a5198c0a.25de.26d9@mx.google.com>
-	<20141201230813.GE25340@linux.vnet.ibm.com>
-	<547dec29.c71f8c0a.33d1.11d9@mx.google.com>
-	<20141202170407.GK25340@linux.vnet.ibm.com>
-	<547df364.236a8c0a.7b2d.ffffac67@mx.google.com>
-	<20141202184202.GM25340@linux.vnet.ibm.com>
-	<547e0947.c332e00a.23bf.ffffa8bd@mx.google.com>
-	<20141202191143.GN25340@linux.vnet.ibm.com>
-Organization: http://www.youtube.com/DanielFragaBR
-X-Mailer: Claws Mail 3.11.1-9-g1f531c (GTK+ 2.24.25; x86_64-unknown-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	Tue, 2 Dec 2014 14:24:50 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Dave Hansen <dave.hansen@linux.intel.com>, Dave Hansen <dave@sr71.net>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 105/121] x86: Require exact match for 'noxsave' command line option
+Date: Tue,  2 Dec 2014 11:19:44 -0800
+Message-Id: <1417548000-1794-106-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Dec 2014 11:11:43 -0800
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+3.13.11-ckt12 -stable review patch.  If anyone has any objections, please let me know.
 
-> OK.  I need to know exactly what version of the Linux kernel you are
-> using.  3.18-rc7?  (I am not too worried about exactly which version
-> you are using as long as I know which version it is.)
+------------------
 
-	Ok, I stopped bisecting and went back to 3.17.0 stock kernel.
-I'm testing with 3.17.0 kernel because this one is the first to show
-problems. If you want me to go to 3.18-rc7, just ask I can checkout
-through git.
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-	Ps: my signature will reflect the kernel I'm using now ;)
+commit 2cd3949f702692cf4c5d05b463f19cd706a92dd3 upstream.
 
+We have some very similarly named command-line options:
+
+arch/x86/kernel/cpu/common.c:__setup("noxsave", x86_xsave_setup);
+arch/x86/kernel/cpu/common.c:__setup("noxsaveopt", x86_xsaveopt_setup);
+arch/x86/kernel/cpu/common.c:__setup("noxsaves", x86_xsaves_setup);
+
+__setup() is designed to match options that take arguments, like
+"foo=bar" where you would have:
+
+	__setup("foo", x86_foo_func...);
+
+The problem is that "noxsave" actually _matches_ "noxsaves" in
+the same way that "foo" matches "foo=bar".  If you boot an old
+kernel that does not know about "noxsaves" with "noxsaves" on the
+command line, it will interpret the argument as "noxsave", which
+is not what you want at all.
+
+This makes the "noxsave" handler only return success when it finds
+an *exact* match.
+
+[ tglx: We really need to make __setup() more robust. ]
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Dave Hansen <dave@sr71.net>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/20141111220133.FE053984@viggo.jf.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ arch/x86/kernel/cpu/common.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 78ecb5e..37c4f31 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -144,6 +144,8 @@ EXPORT_PER_CPU_SYMBOL_GPL(gdt_page);
+ 
+ static int __init x86_xsave_setup(char *s)
+ {
++	if (strlen(s))
++		return 0;
+ 	setup_clear_cpu_cap(X86_FEATURE_XSAVE);
+ 	setup_clear_cpu_cap(X86_FEATURE_XSAVEOPT);
+ 	setup_clear_cpu_cap(X86_FEATURE_AVX);
 -- 
-Linux 3.17.0: Shuffling Zombie Juror
-http://www.youtube.com/DanielFragaBR
-http://exchangewar.info
-Bitcoin: 12H6661yoLDUZaYPdah6urZS5WiXwTAUgL
+1.9.1
+
