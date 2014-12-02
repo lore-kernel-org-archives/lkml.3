@@ -1,59 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933797AbaLBT0t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:26:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46989 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933765AbaLBT0q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:26:46 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Max Filippov <jcmvbkbc@gmail.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 046/121] xtensa: re-wire umount syscall to sys_oldumount
-Date: Tue,  2 Dec 2014 11:18:45 -0800
-Message-Id: <1417548000-1794-47-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
-References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S933580AbaLBTcR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:32:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35003 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932967AbaLBTcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 14:32:13 -0500
+Date: Tue, 2 Dec 2014 14:31:59 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141202193159.GA17595@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	=?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+	Sasha Levin <sasha.levin@oracle.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <CA+55aFz-JUX6CU-aO+cwLHYtH7BA+dgyUnEGoy8T4S62gEDFpA@mail.gmail.com>
+ <20141127225637.GA24019@redhat.com>
+ <m5dart$co$1@ger.gmane.org>
+ <CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
+ <547b8a45.6e608c0a.20f9.1002@mx.google.com>
+ <CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
+ <547bbe36.48548c0a.105c.779c@mx.google.com>
+ <20141201191431.GA17385@linux.vnet.ibm.com>
+ <547ccf74.a5198c0a.25de.26d9@mx.google.com>
+ <CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11-ckt12 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, Dec 01, 2014 at 12:36:34PM -0800, Linus Torvalds wrote:
+ > On Mon, Dec 1, 2014 at 12:28 PM, Dâniel Fraga <fragabr@gmail.com> wrote:
+ > >
+ > >         Hi Paul. Please, I'd like the patch, because without
+ > > preemption, I'm unable to trigger this bug.
+ > 
+ > Ok, that's already interesting information. And yes, it would probably
+ > be interesting to see if CONFIG_PREEMPT=y but !CONFIG_TREE_PREEMPT_RCU
+ > then solves it too, to narrow it down to one but not the other..
+ > 
+ > DaveJ - what about your situation? The standard Fedora kernels use
+ > CONFIG_PREEMPT_VOLUNTARY, do you have CONFIG_PREEMPT and
+ > CONFIG_TREE_PREEMPT_RCU enabled?
 
-------------------
+I periodically switch PREEMPT options, just to see if anything new falls
+out, though I've been on CONFIG_PREEMPT for quite a while.
+So right now I'm testing the TREE_PREEMPT_RCU case.
 
-From: Max Filippov <jcmvbkbc@gmail.com>
+I'm in the process of bisecting 3.16 -> 3.17 (currently on -rc1)
+Thanksgiving kind of screwed up my flow, but 3.16 got a real
+pounding for over 3 days with no problems.
+I can give a !PREEMPT_RCU build a try, in case that turns out to
+point to something quicker than a bisect is going to.
 
-commit 2651cc6974d47fc43bef1cd8cd26966e4f5ba306 upstream.
+ > I think you and Sasha both saw some RCU oddities too, no?
 
-Userspace actually passes single parameter (path name) to the umount
-syscall, so new umount just fails. Fix it by requesting old umount
-syscall implementation and re-wiring umount to it.
+I don't recall a kernel where I didn't see RCU oddities of some
+description, but in recent times, not so much, though a few releases
+back I did change some of the RCU related CONFIG options while
+Paul & co were chasing down some bugs.
 
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- arch/xtensa/include/uapi/asm/unistd.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+These days I've been running with..
 
-diff --git a/arch/xtensa/include/uapi/asm/unistd.h b/arch/xtensa/include/uapi/asm/unistd.h
-index 51940fe..513effd 100644
---- a/arch/xtensa/include/uapi/asm/unistd.h
-+++ b/arch/xtensa/include/uapi/asm/unistd.h
-@@ -384,7 +384,8 @@ __SYSCALL(174, sys_chroot, 1)
- #define __NR_pivot_root 			175
- __SYSCALL(175, sys_pivot_root, 2)
- #define __NR_umount 				176
--__SYSCALL(176, sys_umount, 2)
-+__SYSCALL(176, sys_oldumount, 1)
-+#define __ARCH_WANT_SYS_OLDUMOUNT
- #define __NR_swapoff 				177
- __SYSCALL(177, sys_swapoff, 1)
- #define __NR_sync 				178
--- 
-1.9.1
+# RCU Subsystem
+CONFIG_TREE_PREEMPT_RCU=y
+CONFIG_PREEMPT_RCU=y
+# CONFIG_TASKS_RCU is not set
+CONFIG_RCU_STALL_COMMON=y
+# CONFIG_RCU_USER_QS is not set
+CONFIG_RCU_FANOUT=64
+CONFIG_RCU_FANOUT_LEAF=16
+# CONFIG_RCU_FANOUT_EXACT is not set
+CONFIG_TREE_RCU_TRACE=y
+CONFIG_RCU_BOOST=y
+CONFIG_RCU_BOOST_PRIO=1
+CONFIG_RCU_BOOST_DELAY=500
+CONFIG_RCU_NOCB_CPU=y
+# CONFIG_RCU_NOCB_CPU_NONE is not set
+# CONFIG_RCU_NOCB_CPU_ZERO is not set
+CONFIG_RCU_NOCB_CPU_ALL=y
+CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
+# RCU Debugging
+CONFIG_SPARSE_RCU_POINTER=y
+# CONFIG_RCU_TORTURE_TEST is not set
+CONFIG_RCU_CPU_STALL_TIMEOUT=60
+CONFIG_RCU_CPU_STALL_VERBOSE=y
+CONFIG_RCU_CPU_STALL_INFO=y
+CONFIG_RCU_TRACE=y
+
+	Dave
 
