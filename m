@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933712AbaLBT0e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:26:34 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:55012 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933662AbaLBT0a (ORCPT
+	id S933761AbaLBT0n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:26:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46970 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933730AbaLBT0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:26:30 -0500
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Tue, 2 Dec 2014 14:26:27 -0500
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a
- workqueue-based nfsd
-Message-ID: <20141202142627.6f59f693@tlielax.poochiereds.net>
-In-Reply-To: <20141202191814.GK10918@htj.dyndns.org>
-References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
-	<20141202191814.GK10918@htj.dyndns.org>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Dec 2014 14:26:39 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Johan Hovold <johan@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 021/121] USB: kobil_sct: fix non-atomic allocation in write path
+Date: Tue,  2 Dec 2014 11:18:20 -0800
+Message-Id: <1417548000-1794-22-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Dec 2014 14:18:14 -0500
-Tejun Heo <tj@kernel.org> wrote:
+3.13.11-ckt12 -stable review patch.  If anyone has any objections, please let me know.
 
-> Hello, Jeff.
-> 
-> On Tue, Dec 02, 2014 at 01:24:09PM -0500, Jeff Layton wrote:
-> > 2) get some insight about the latency from those with a better
-> > understanding of the CMWQ code. Any thoughts as to why we might be
-> > seeing such high latency here? Any ideas of what we can do about it?
-> 
-> The latency is prolly from concurrency management.  Work items which
-> participate in concurrency management (the ones on per-cpu workqueues
-> w/o WQ_CPU_INTENSIVE set) tend to get penalized on latency side quite
-> a bit as the "run" durations for all such work items end up being
-> serialized on the cpu.  Setting WQ_CPU_INTENSIVE on the workqueue
-> disables concurrency management and so does making the workqueue
-> unbound.  If strict cpu locality is likely to be beneficial and each
-> work item isn't likely to consume huge amount of cpu cycles,
-> WQ_CPU_INTENSIVE would fit better; otherwise, WQ_UNBOUND to let the
-> scheduler do its thing.
-> 
-> Thanks.
-> 
+------------------
 
-Thanks Tejun,
+From: Johan Hovold <johan@kernel.org>
 
-I'm already using WQ_UNBOUND workqueues. If that exempts this code from
-the concurrency management, then that's probably not the problem. The
-jobs here aren't terribly CPU intensive, but they can sleep for a long
-time while waiting on I/O, etc...
+commit 191252837626fca0de694c18bb2aa64c118eda89 upstream.
 
-I don't think we necessarily need CPU locality (though that's nice to
-have of course), but NUMA affinity will likely be important. It looked
-like you had done some work a year or so ago to make unbound workqueues
-prefer to queue work on the same NUMA node which meshes nicely with
-what I think we want for this.
+Write may be called from interrupt context so make sure to use
+GFP_ATOMIC for all allocations in write.
 
-I'll keep looking at it -- let me know if you have any other thoughts
-on the latency...
+Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/usb/serial/kobil_sct.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Cheers!
+diff --git a/drivers/usb/serial/kobil_sct.c b/drivers/usb/serial/kobil_sct.c
+index 78b48c3..efa75b4 100644
+--- a/drivers/usb/serial/kobil_sct.c
++++ b/drivers/usb/serial/kobil_sct.c
+@@ -336,7 +336,8 @@ static int kobil_write(struct tty_struct *tty, struct usb_serial_port *port,
+ 			port->interrupt_out_urb->transfer_buffer_length = length;
+ 
+ 			priv->cur_pos = priv->cur_pos + length;
+-			result = usb_submit_urb(port->interrupt_out_urb, GFP_NOIO);
++			result = usb_submit_urb(port->interrupt_out_urb,
++					GFP_ATOMIC);
+ 			dev_dbg(&port->dev, "%s - Send write URB returns: %i\n", __func__, result);
+ 			todo = priv->filled - priv->cur_pos;
+ 
+@@ -351,7 +352,7 @@ static int kobil_write(struct tty_struct *tty, struct usb_serial_port *port,
+ 		if (priv->device_type == KOBIL_ADAPTER_B_PRODUCT_ID ||
+ 			priv->device_type == KOBIL_ADAPTER_K_PRODUCT_ID) {
+ 			result = usb_submit_urb(port->interrupt_in_urb,
+-								GFP_NOIO);
++					GFP_ATOMIC);
+ 			dev_dbg(&port->dev, "%s - Send read URB returns: %i\n", __func__, result);
+ 		}
+ 	}
 -- 
-Jeff Layton <jlayton@primarydata.com>
+1.9.1
+
