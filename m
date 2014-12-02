@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490AbaLBKu3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 05:50:29 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:49714 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021AbaLBKu0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 05:50:26 -0500
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Benjamin Romer <benjamin.romer@unisys.com>,
-        David Kershner <david.kershner@unisys.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, sparmaintainer@unisys.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Jeremiah Mahler <jmmahler@gmail.com>
-Subject: [PATCH v2] staging: unisys: remove duplicate header
-Date: Tue,  2 Dec 2014 16:20:14 +0530
-Message-Id: <1417517414-11817-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1754556AbaLBKwf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 05:52:35 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752939AbaLBKwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 05:52:22 -0500
+Message-ID: <547D99DE.6030309@nod.at>
+Date: Tue, 02 Dec 2014 11:52:14 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: Harald Geyer <harald@ccbib.org>
+CC: jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
+        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] iio: dht11: Add locking
+References: <1417465651-16036-1-git-send-email-richard@nod.at> <E1XvkMu-000137-KP@stardust.g4.wien.funkfeuer.at>
+In-Reply-To: <E1XvkMu-000137-KP@stardust.g4.wien.funkfeuer.at>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-these header files were included multiple times
+Harald,
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
----
+Am 02.12.2014 um 11:07 schrieb Harald Geyer:
+> Hi Richard,
+> 
+> thanks for the patch. Comments inline.
+> 
+> Richard Weinberger writes:
+>> Protect the read function from concurrent reads.
+>>
+>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>> ---
+>>  drivers/iio/humidity/dht11.c | 19 ++++++++++++++-----
+>>  1 file changed, 14 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/iio/humidity/dht11.c b/drivers/iio/humidity/dht11.c
+>> index 623c145..7636e66 100644
+>> --- a/drivers/iio/humidity/dht11.c
+>> +++ b/drivers/iio/humidity/dht11.c
+> 
+> #include <linux/mutex.h>
+> 
+>> @@ -57,6 +57,7 @@ struct dht11 {
+>>  	int				irq;
+>>  
+>>  	struct completion		completion;
+>> +	struct mutex			lock;
+>>  
+>>  	s64				timestamp;
+>>  	int				temperature;
+>> @@ -146,16 +147,17 @@ static int dht11_read_raw(struct iio_dev *iio_dev,
+>>  	int ret;
+>>  
+>>  	if (dht11->timestamp + DHT11_DATA_VALID_TIME < iio_get_time_ns()) {
+>> +		mutex_lock(&dht11->lock);
+> 
+> Move the locking out of the if statement.
 
-change in v2: missed seeing that linux/uuid.h is included 3 times
+Care to explain why?
 
- drivers/staging/unisys/include/timskmod.h | 1 -
- drivers/staging/unisys/uislib/uisutils.c  | 2 --
- 2 files changed, 3 deletions(-)
+But I found another issue in my patch.
+The "dht11->num_edges = -1;" before "return ret" needs to go into the locked area.
+Will send an updated version soon.
 
-diff --git a/drivers/staging/unisys/include/timskmod.h b/drivers/staging/unisys/include/timskmod.h
-index de11f44..cff7983 100644
---- a/drivers/staging/unisys/include/timskmod.h
-+++ b/drivers/staging/unisys/include/timskmod.h
-@@ -31,7 +31,6 @@
- #include <linux/slab.h>
- #include <linux/errno.h>
- #include <linux/interrupt.h>
--#include <linux/sched.h>
- #include <linux/wait.h>
- #include <linux/vmalloc.h>
- #include <linux/proc_fs.h>
-diff --git a/drivers/staging/unisys/uislib/uisutils.c b/drivers/staging/unisys/uislib/uisutils.c
-index a8466e3..4a5b867 100644
---- a/drivers/staging/unisys/uislib/uisutils.c
-+++ b/drivers/staging/unisys/uislib/uisutils.c
-@@ -25,9 +25,7 @@
- #include "uisutils.h"
- #include "version.h"
- #include "vbushelper.h"
--#include <linux/uuid.h>
- #include <linux/skbuff.h>
--#include <linux/uuid.h>
- #ifdef CONFIG_HIGHMEM
- #include <linux/highmem.h>
- #endif
--- 
-1.8.1.2
+> BTW, it seems that there is already locking around read_raw() in the
+> in-kernel consumer interface but not in the sysfs interface. Is there
+> any reason for this difference?
 
+Dunno. :-)
+
+Thanks,
+//richard
