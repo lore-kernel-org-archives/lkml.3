@@ -1,44 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933387AbaLBWjR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 17:39:17 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:12058 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932984AbaLBWjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 17:39:15 -0500
-Message-ID: <547E3F90.50600@bergerie>
-Date: Tue, 02 Dec 2014 23:39:12 +0100
-From: =?UTF-8?B?VmluY2VudCBTdGVobMOp?= <vincent.stehle@laposte.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S933341AbaLBWlQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 17:41:16 -0500
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:34062 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932984AbaLBWlP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 17:41:15 -0500
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: Alex Thorlton <athorlton@sgi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: James Smart <james.smart@emulex.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [BUG] kzalloc overflow in lpfc driver on 6k core system
+Thread-Topic: [BUG] kzalloc overflow in lpfc driver on 6k core system
+Thread-Index: AQHQDnsS8SnA4dxJE0WSH6ZYVZUNbZx84GDg
+Date: Tue, 2 Dec 2014 22:39:40 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B4029593EFC9E@G4W3202.americas.hpqcorp.net>
+References: <20141202215810.GT4720@sgi.com>
+In-Reply-To: <20141202215810.GT4720@sgi.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Fabio Estevam <festevam@gmail.com>
-CC: Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Linux next: boot on Wandboard broken by gic related change
-References: <547D00CE.4050705@bergerie> <CAOMZO5B=9B_RuPjWQ1B5ONyHVY29fRc1=ag4A4RqKGLKw81sJA@mail.gmail.com>
-In-Reply-To: <CAOMZO5B=9B_RuPjWQ1B5ONyHVY29fRc1=ag4A4RqKGLKw81sJA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2014 01:11 AM, Fabio Estevam wrote:
-(..)
-> Marc fixed this problem with these patches:
-> http://www.spinics.net/lists/arm-kernel/msg382778.html
-> and
-> http://www.spinics.net/lists/arm-kernel/msg382802.html
 
-Ah! Thanks for pointing that out.
 
-You are right, those two patches repair next-20141201 for me.
+> -----Original Message-----
+> From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
+> owner@vger.kernel.org] On Behalf Of Alex Thorlton
+> Sent: Tuesday, 02 December, 2014 3:58 PM
+...
+> We've recently upgraded our big machine up to 6144 cores, and we're
+> shaking out a number of bugs related to booting at that large core
+> count.  Last night I tripped a warning from the lpfc driver that appears
+> to be related to a kzalloc that uses the number of cores as part of it's
+> size calculation.  Here's the backtrace from the warning:
+...
+> For a little bit more information on exactly what's going wrong, we're
+> tripping the warning from lpfc_pci_probe_one_s4 (as you can see from the
+> trace).  That function calls down to lpfc_sli4_driver_resource_setup,
+> which contains the failing kzalloc here:
+> 
+> phba->sli4_hba.cpu_map = kzalloc((sizeof(struct lpfc_vector_map_info) *
+>                                  phba->sli4_hba.num_present_cpu),
+>                                  GFP_KERNEL);
+> 
+> As mentioned, it looks like we're multiplying the number available cpus
+> by that struct size to get an allocation size, which ends up being
+> greater than KMALLOC_MAX_SIZE.
+> 
+> Does anyone have any ideas on what could be done to break that
+> allocation up into smaller pieces, or to make it in a different way so
+> that we avoid this warning?
+> 
+> Any help is greatly appreciated.  Thanks!
+> 
 
-Best regards,
+That structure includes an NR_CPU-based maskbits field, which is
+probably too big.
 
-V.
+include/cpumask.h:
+typedef struct cpumask { DECLARE_BITMAP(bits, NR_CPUS); } cpumask_t;
+
+drivers/scsi/lpfc/lpfc_sli4.h:
+struct lpfc_vector_map_info {
+        uint16_t        phys_id;
+        uint16_t        core_id;
+        uint16_t        irq;
+        uint16_t        channel_id;
+        struct cpumask  maskbits;
+};
+
+maskbits appears to only be used for setting IRQ affinity hints in
+drivers/scsi/lpfc_init.c:
+        for (idx = 0; idx < vectors; idx++) {
+                cpup = phba->sli4_hba.cpu_map;
+                cpu = lpfc_find_next_cpu(phba, phys_id);
+                ...
+                mask = &cpup->maskbits;
+                cpumask_clear(mask);
+                cpumask_set_cpu(cpu, mask);
+                i = irq_set_affinity_hint(phba->sli4_hba.msix_entries[idx].
+                                          vector, mask);
+
+In similar code, mpt3sas and lockless hpsa just call get_cpu_mask()
+inside the loop:
+        cpu = cpumask_first(cpu_online_mask);
+        for (i = 0; i < h->msix_vector; i++) {
+                rc = irq_set_affinity_hint(h->intr[i], get_cpu_mask(cpu));
+                cpu = cpumask_next(cpu, cpu_online_mask);
+        }
+
+get_cpu_mask() uses the global cpu_bit_bitmap array, which is declared
+in kernel/cpu.c:
+extern const unsigned long
+        cpu_bit_bitmap[BITS_PER_LONG+1][BITS_TO_LONGS(NR_CPUS)];
+
+That approach should work for lpfc.
+
+---
+Rob Elliott    HP Server Storage
+
+
 
