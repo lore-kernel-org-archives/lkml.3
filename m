@@ -1,105 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209AbaLBOKN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 09:10:13 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:39709 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896AbaLBOG7 (ORCPT
+	id S1754148AbaLBOKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 09:10:33 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:52214 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753660AbaLBOK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 09:06:59 -0500
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: peterz@infradead.org, mingo@redhat.com
-Cc: dietmar.eggemann@arm.com, vincent.guittot@linaro.org, pjt@google.com,
-        bsegall@google.com, mturquette@linaro.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Jon Medhurst <tixy@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [RFC PATCH 05/10] ARM: vexpress: Add CPU clock-frequencies to TC2 device-tree
-Date: Tue,  2 Dec 2014 14:06:27 +0000
-Message-Id: <1417529192-11579-6-git-send-email-morten.rasmussen@arm.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417529192-11579-1-git-send-email-morten.rasmussen@arm.com>
-References: <1417529192-11579-1-git-send-email-morten.rasmussen@arm.com>
-X-OriginalArrivalTime: 02 Dec 2014 14:06:56.0994 (UTC) FILETIME=[3B9EEC20:01D00E39]
-X-MC-Unique: 114120214065801601
-Content-Type: text/plain; charset=WINDOWS-1252
+	Tue, 2 Dec 2014 09:10:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141202002244.GB24551@ti.com>
+References: <1416527684-19017-1-git-send-email-bparrot@ti.com>
+ <1416527684-19017-2-git-send-email-bparrot@ti.com> <CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com>
+ <20141202002244.GB24551@ti.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 2 Dec 2014 23:10:07 +0900
+Message-ID: <CAAVeFuJWPvdmO_KPXP2LrkAy4SQDZ+f7pvE6U8r7gPH+jE3Lrw@mail.gmail.com>
+Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
+To: Benoit Parrot <bparrot@ti.com>
+Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id sB2EALDe017010
 
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+On Tue, Dec 2, 2014 at 9:22 AM, Benoit Parrot <bparrot@ti.com> wrote:
+>> > +       }
+>> > +
+>> > +       if (tmp > MAX_PHANDLE_ARGS) {
+>> > +               desc = ERR_PTR(-EINVAL);
+>> > +               goto out;
+>> > +       }
+>> > +
+>> > +       gg_data.gpiospec.args_count = tmp;
+>> > +       gg_data.gpiospec.np = chip_np;
+>> > +       for (i = 0; i < tmp; i++) {
+>> > +               ret = of_property_read_u32(np, "gpios",
+>> > +                                          &gg_data.gpiospec.args[i]);
+>> > +               if (ret) {
+>> > +                       desc = ERR_PTR(ret);
+>> > +                       goto out;
+>> > +               }
+>> > +       }
+>> > +
+>> > +       gpiochip_find(&gg_data, of_gpiochip_find_and_xlate);
+>>
+>> This seems to work but only supports one GPIO per hog node. It would
+>> be nice to be able to specify several GPIOs to which the same settings
+>> need to be applied.
+>
+> This is on purpose following Linus Walleij's comment.
 
-To enable the parsing of clock frequency and cpu efficiency values inside
-parse_dt_topology [arch/arm/kernel/topology.c] to scale the relative
-capacity of the cpus, this property has to be provided within the cpu
-nodes of the dts file.
+Could you point me to his comment? My bad for not remembering what he
+said, but I'd like to understand why.
 
-The patch is a copy of 'ARM: vexpress: Add CPU clock-frequencies to TC2
-device-tree' (commit 8f15973ef8c3) taken from Linaro Stable Kernel (LSK)
-massaged into mainline.
+>> Using this function means that a GPIO chip module cannot be unloaded
+>> if it uses GPIO hogs. Is it the intended behavior? If not, please use
+>> gpiochip_request_own_desc() instead, and make sure to call
+>> gpiochip_free_own_desc() for each hog when the driver is unloaded.
+>
+> So I guess we could add a undo_gpio_hog() function and hook it up under of_gpiochip_remove().
+> Now instead of maintaining a seperate structure just to keep track of hogged descriptor,
+> would it be acceptable to add a new "gpio_desc.flags" value in gpiolib.h says:
+>
+>    #define FLAG_GPIO_IS_HOGGED 10
+>
+> And key on that at removal time instead of creating a list and having to maintain that?
 
-Cc: Jon Medhurst <tixy@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
----
- arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts | 5 +++++
- 1 file changed, 5 insertions(+)
+Definitely, that would be even better I think.
 
-diff --git a/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts b/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts
-index 322fd15..62f89e2 100644
---- a/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts
-+++ b/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts
-@@ -39,6 +39,7 @@
- 			reg = <0>;
- 			cci-control-port = <&cci_control1>;
- 			cpu-idle-states = <&CLUSTER_SLEEP_BIG>;
-+			clock-frequency = <1000000000>;
- 		};
- 
- 		cpu1: cpu@1 {
-@@ -47,6 +48,7 @@
- 			reg = <1>;
- 			cci-control-port = <&cci_control1>;
- 			cpu-idle-states = <&CLUSTER_SLEEP_BIG>;
-+			clock-frequency = <1000000000>;
- 		};
- 
- 		cpu2: cpu@2 {
-@@ -55,6 +57,7 @@
- 			reg = <0x100>;
- 			cci-control-port = <&cci_control2>;
- 			cpu-idle-states = <&CLUSTER_SLEEP_LITTLE>;
-+			clock-frequency = <800000000>;
- 		};
- 
- 		cpu3: cpu@3 {
-@@ -63,6 +66,7 @@
- 			reg = <0x101>;
- 			cci-control-port = <&cci_control2>;
- 			cpu-idle-states = <&CLUSTER_SLEEP_LITTLE>;
-+			clock-frequency = <800000000>;
- 		};
- 
- 		cpu4: cpu@4 {
-@@ -71,6 +75,7 @@
- 			reg = <0x102>;
- 			cci-control-port = <&cci_control2>;
- 			cpu-idle-states = <&CLUSTER_SLEEP_LITTLE>;
-+			clock-frequency = <800000000>;
- 		};
- 
- 		idle-states {
--- 
-1.9.1
+>> I would suggest to factorize this code that is similar to the one
+>> found in __gpiod_get_index(). Do all the DT parsing in a function that
+>> just returns a descriptor and the
+>
+> I would tend to agree.
+> But as Linus suggested I was trying to contain the changes to gpiolib_of.c only.
 
-
+If we add a FLAG_GPIO_IS_HOGGED and undo the hogs when the chip is
+unloaded, I would say that this becomes a gpiolib feature. Moving it
+here would also allow non-DT GPIO providers to implement hogs (it
+should be particularly easy to implement for platform data). Linus, do
+you agree?
