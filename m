@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932488AbaLBSzQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 13:55:16 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:45622 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087AbaLBSzO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 13:55:14 -0500
-Date: Tue, 2 Dec 2014 13:54:46 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Juergen Gross <jgross@suse.com>
-Cc: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, boris.ostrovsky@oracle.com,
-        x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        andrew.cooper3@citrix.com
-Subject: Re: [PATCH V4 00/10] xen: Switch to virtual mapped linear p2m list
-Message-ID: <20141202185446.GD32622@laptop.dumpdata.com>
-References: <1417172039-8627-1-git-send-email-jgross@suse.com>
- <547C51AD.8070904@citrix.com>
- <547C64F3.9050005@suse.com>
+	id S932509AbaLBTEP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:04:15 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:38964 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932155AbaLBTEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 14:04:14 -0500
+Date: Tue, 2 Dec 2014 17:04:08 -0200
+From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: Tony Luck <tony.luck@intel.com>, Doug Thompson <dougthompson@xmission.com>,
+        Borislav Petkov <bp@alien8.de>, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sb_edac: Fix typo computing number of banks
+Message-ID: <20141202170408.4f2afa35@recife.lan>
+In-Reply-To: <20141202181757.GE21208@redhat.com>
+References: <088380@agluck-desk.sc.intel.com>
+	<20141202181757.GE21208@redhat.com>
+Organization: Samsung
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <547C64F3.9050005@suse.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 01:54:11PM +0100, Juergen Gross wrote:
-> On 12/01/2014 12:31 PM, David Vrabel wrote:
-> >On 28/11/14 10:53, Juergen Gross wrote:
-> >>Paravirtualized kernels running on Xen use a three level tree for
-> >>translation of guest specific physical addresses to machine global
-> >>addresses. This p2m tree is used for construction of page table
-> >>entries, so the p2m tree walk is performance critical.
-> >>
-> >>By using a linear virtual mapped p2m list accesses to p2m elements
-> >>can be sped up while even simplifying code. To achieve this goal
-> >>some p2m related initializations have to be performed later in the
-> >>boot process, as the final p2m list can be set up only after basic
-> >>memory management functions are available.
-> >
-> >What are the results of the testing I asked for?
-> 
-> You asked for those replying to the patch introducing the linear
-> mapping. So I added the description of the tested scenarios in the
-> patch description of that patch.
-> 
-> >If Konrad or Boris are happy with this series I think it can go into 3.19.
-> 
-> Great, thanks!
+Em Tue, 2 Dec 2014 13:17:58 -0500
+Aristeu Rozanski <aris@redhat.com> escreveu:
 
-I am happy.
+> On Tue, Dec 02, 2014 at 09:41:58AM -0800, Tony Luck wrote:
+> > Code will always think there are 16 banks because of a typo
+> > 
+> > Reported-by: Misha
+> > Signed-off-by: Tony Luck <tony.luck@intel.com>
 
+Applied, thanks!
+
+> > ---
+> > 
+> > Not sure if Misha is shy, or just busy. But my attempt to get
+> > them to post their own patch didn't work
+> > 
+> >  drivers/edac/sb_edac.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
+> > index 993e8b61c4b2..63aa6730e89e 100644
+> > --- a/drivers/edac/sb_edac.c
+> > +++ b/drivers/edac/sb_edac.c
+> > @@ -901,7 +901,7 @@ static int get_dimm_config(struct mem_ctl_info *mci)
+> >  	else
+> >  		edac_dbg(0, "Memory is unregistered\n");
+> >  
+> > -	if (mtype == MEM_DDR4 || MEM_RDDR4)
+> > +	if (mtype == MEM_DDR4 || mtype == MEM_RDDR4)
+> >  		banks = 16;
+> >  	else
+> >  		banks = 8;
 > 
-> 
-> Juergen
+> ACK
 > 
