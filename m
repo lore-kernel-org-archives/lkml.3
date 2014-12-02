@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933775AbaLBTqu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:46:50 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:47084 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933695AbaLBTqr (ORCPT
+	id S933832AbaLBTra (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:47:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46688 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753102AbaLBTXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:46:47 -0500
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Tue, 2 Dec 2014 14:46:44 -0500
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a
- workqueue-based nfsd
-Message-ID: <20141202144644.7900c4c9@tlielax.poochiereds.net>
-In-Reply-To: <20141202192655.GL10918@htj.dyndns.org>
-References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
-	<20141202191814.GK10918@htj.dyndns.org>
-	<20141202192655.GL10918@htj.dyndns.org>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Dec 2014 14:23:31 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Weijie Yang <weijie.yang@samsung.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Dan Streetman <ddstreet@ieee.org>, Nitin Gupta <ngupta@vflare.org>,
+        Weijie Yang <weijie.yang.kh@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 084/121] zram: avoid kunmap_atomic() of a NULL pointer
+Date: Tue,  2 Dec 2014 11:19:23 -0800
+Message-Id: <1417548000-1794-85-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Dec 2014 14:26:55 -0500
-Tejun Heo <tj@kernel.org> wrote:
+3.13.11-ckt12 -stable review patch.  If anyone has any objections, please let me know.
 
-> On Tue, Dec 02, 2014 at 02:18:14PM -0500, Tejun Heo wrote:
-> ...
-> > unbound.  If strict cpu locality is likely to be beneficial and each
-> > work item isn't likely to consume huge amount of cpu cycles,
-> > WQ_CPU_INTENSIVE would fit better; otherwise, WQ_UNBOUND to let the
-> > scheduler do its thing.
-> 
-> Hmmm... but you're already using WQ_UNBOUND.  Concurrency management
-> doesn't matter for unbound workqueues.  They really just behave as
-> shared worker thread pools.  Does turning on WQ_HIGHPRI change
-> anything?  Workqueue always prefers hot workers which can lead to the
-> hot ones being penalized for consuming too much CPU time.
-> 
-> Thanks.
-> 
+------------------
 
-WQ_HIGHPRI doesn't seem to help. FWIW, here's the fio status line from
-that test:
+From: Weijie Yang <weijie.yang@samsung.com>
 
-threaded nfsd:
-  WRITE: io=12628KB, aggrb=210KB/s, minb=52KB/s, maxb=52KB/s, mint=60064msec, maxt=60107msec
+commit c406515239376fc93a30d5d03192182160cbd3fb upstream.
 
-workqueue nfsd:
-  WRITE: io=7464KB, aggrb=124KB/s, minb=30KB/s, maxb=31KB/s, mint=60066msec, maxt=60133msec
+zram could kunmap_atomic() a NULL pointer in a rare situation: a zram
+page becomes a full-zeroed page after a partial write io.  The current
+code doesn't handle this case and performs kunmap_atomic() on a NULL
+pointer, which panics the kernel.
 
-...and the workqueue numbers didn't change much from the case without
-WQ_HIGHPRI. I didn't gather significant queueing latency numbers for
-that run but I can get those together tomorrow.
+This patch fixes this issue.
 
-My fio test config follows for anyone who's interested (it's
-tiobench-example.fio without the read tests):
+Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Dan Streetman <ddstreet@ieee.org>
+Cc: Nitin Gupta <ngupta@vflare.org>
+Cc: Weijie Yang <weijie.yang.kh@gmail.com>
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/staging/zram/zram_drv.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
--------------------------[snip]--------------------------
-[global]
-direct=1
-size=128m
-bsrange=4k-4k
-timeout=60
-numjobs=4	; 4 simultaneous threads for each job
-
-[f1]
-rw=write
--------------------------[snip]--------------------------
-
-... the server in this case is an older quad core AMD Phenom CPU, with
-a 5400rpm SATA disk under it on a 3Gbps SATA interface. The client is
-mounting it using NFSv3 and I'm only running a single client here.
-
-The only difference between the two tests above is that whether nfsd is
-running with the sunrpc.ko pool_mode set to "global" or "workqueue".
-
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index e2f0add..63c2a5b 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -430,7 +430,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 	}
+ 
+ 	if (page_zero_filled(uncmem)) {
+-		kunmap_atomic(user_mem);
++		if (user_mem)
++			kunmap_atomic(user_mem);
+ 		/* Free memory associated with this sector now. */
+ 		zram_free_page(zram, index);
+ 
 -- 
-Jeff Layton <jlayton@primarydata.com>
+1.9.1
+
