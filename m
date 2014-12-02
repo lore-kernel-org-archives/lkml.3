@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933042AbaLBLo0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 06:44:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43893 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932724AbaLBLoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 06:44:24 -0500
-Date: Tue, 2 Dec 2014 13:44:08 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        David Hildenbrand <dahi@linux.vnet.ibm.com>
-Subject: [PATCH RFC 2/2] virtio_balloon: drop legacy_only
-Message-ID: <1417520617-2135-2-git-send-email-mst@redhat.com>
-References: <1417520617-2135-1-git-send-email-mst@redhat.com>
+	id S1754583AbaLBLsd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 06:48:33 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:52137 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133AbaLBLsb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 06:48:31 -0500
+Date: Tue, 2 Dec 2014 12:48:27 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Michele Curti <michele.curti@gmail.com>
+Cc: hannes@cmpxchg.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/memcontrol: fix defined but not used compiler warning
+Message-ID: <20141202114827.GE27014@dhcp22.suse.cz>
+References: <20141202110752.GA11327@powerline.azcom-win.it>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1417520617-2135-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+In-Reply-To: <20141202110752.GA11327@powerline.azcom-win.it>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-balloon is the only driver using legacy_only ATM.
-It turns out, it's easier to just make balloon support virtio 1.0
-endian-ness and drop the flag from core.
+On Tue 02-12-14 12:07:52, Michele Curti wrote:
+> test_mem_cgroup_node_reclaimable is used only when MAX_NUMNODES > 1,
+> so move it into the compiler if statement
+> 
+> Signed-off-by: Michele Curti <michele.curti@gmail.com>
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- include/linux/virtio.h          | 2 --
- drivers/virtio/virtio.c         | 4 ----
- drivers/virtio/virtio_balloon.c | 1 -
- 3 files changed, 7 deletions(-)
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-index 2bbf626..f70411e 100644
---- a/include/linux/virtio.h
-+++ b/include/linux/virtio.h
-@@ -132,7 +132,6 @@ int virtio_device_restore(struct virtio_device *dev);
-  * @feature_table_size: number of entries in the feature table array.
-  * @feature_table_legacy: same as feature_table but when working in legacy mode.
-  * @feature_table_size_legacy: number of entries in feature table legacy array.
-- * @legacy_only: driver does not support virtio 1.0.
-  * @probe: the function to call when a device is found.  Returns 0 or -errno.
-  * @remove: the function to call when a device is removed.
-  * @config_changed: optional function to call when the device configuration
-@@ -145,7 +144,6 @@ struct virtio_driver {
- 	unsigned int feature_table_size;
- 	const unsigned int *feature_table_legacy;
- 	unsigned int feature_table_size_legacy;
--	bool legacy_only;
- 	int (*probe)(struct virtio_device *dev);
- 	void (*scan)(struct virtio_device *dev);
- 	void (*remove)(struct virtio_device *dev);
-diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
-index fa6b75d..2e836d8 100644
---- a/drivers/virtio/virtio.c
-+++ b/drivers/virtio/virtio.c
-@@ -197,10 +197,6 @@ static int virtio_dev_probe(struct device *_d)
- 		driver_features_legacy = driver_features;
- 	}
- 
--	/* Detect legacy-only drivers and disable VIRTIO_F_VERSION_1. */
--	if (drv->legacy_only)
--		device_features &= ~(1ULL << VIRTIO_F_VERSION_1);
--
- 	if (device_features & (1ULL << VIRTIO_F_VERSION_1))
- 		dev->features = driver_features & device_features;
- 	else
-diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-index 721e32f..fed3709 100644
---- a/drivers/virtio/virtio_balloon.c
-+++ b/drivers/virtio/virtio_balloon.c
-@@ -518,7 +518,6 @@ static unsigned int features[] = {
- };
- 
- static struct virtio_driver virtio_balloon_driver = {
--	.legacy_only = true,
- 	.feature_table = features,
- 	.feature_table_size = ARRAY_SIZE(features),
- 	.driver.name =	KBUILD_MODNAME,
+> ---
+>  mm/memcontrol.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index c6ac50e..84531a9 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1615,6 +1615,7 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>  	oom_kill_process(chosen, gfp_mask, order, points, totalpages, memcg,
+>  			 NULL, "Memory cgroup out of memory");
+>  }
+> +#if MAX_NUMNODES > 1
+>  
+>  /**
+>   * test_mem_cgroup_node_reclaimable
+> @@ -1638,7 +1639,6 @@ static bool test_mem_cgroup_node_reclaimable(struct mem_cgroup *memcg,
+>  	return false;
+>  
+>  }
+> -#if MAX_NUMNODES > 1
+>  
+>  /*
+>   * Always updating the nodemask is not very good - even if we have an empty
+> -- 
+> 2.1.3
+> 
+
 -- 
-MST
-
+Michal Hocko
+SUSE Labs
