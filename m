@@ -1,66 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659AbaLBMX1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 07:23:27 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:46075 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751666AbaLBMXQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 07:23:16 -0500
-Date: Tue, 2 Dec 2014 12:22:48 +0000
-From: Mark Brown <broonie@kernel.org>
-To: gyungoh@gmail.com
-Cc: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
-        cooloney@gmail.com, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
-        treding@nvidia.com, florian.vaussard@epfl.ch, trivial@kernel.org,
-        linux@roeck-us.net, andrew@lunn.ch, jic23@kernel.org
-Message-ID: <20141202122248.GT7712@sirena.org.uk>
-References: <1417507529-13654-1-git-send-email-jack.yoo@skyworksinc.com>
- <1417507529-13654-8-git-send-email-jack.yoo@skyworksinc.com>
+	id S933028AbaLBMXz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 07:23:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34646 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932556AbaLBMXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 07:23:54 -0500
+Date: Tue, 2 Dec 2014 13:24:07 +0100 (CET)
+From: Miroslav Benes <mbenes@suse.cz>
+To: Josh Poimboeuf <jpoimboe@redhat.com>
+cc: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Petr Mladek <pmladek@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 2/3] kernel: add support for live patching
+In-Reply-To: <20141201170718.GA12633@treble.redhat.com>
+Message-ID: <alpine.LNX.2.00.1412021140290.28820@pobox.suse.cz>
+References: <1416935709-404-1-git-send-email-sjenning@redhat.com> <1416935709-404-3-git-send-email-sjenning@redhat.com> <alpine.LNX.2.00.1411261451570.10866@pobox.suse.cz> <20141126154042.GB29079@treble.hsd1.ky.comcast.net> <alpine.LNX.2.00.1412011416110.23443@pobox.suse.cz>
+ <20141201170718.GA12633@treble.redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kTUQj81Hp12rwe5j"
-Content-Disposition: inline
-In-Reply-To: <1417507529-13654-8-git-send-email-jack.yoo@skyworksinc.com>
-X-Cookie: Celebrity voices impersonated.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v9 7/8] regulator: sky81452: Modify Device Tree structure
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 1 Dec 2014, Josh Poimboeuf wrote:
 
---kTUQj81Hp12rwe5j
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Mon, Dec 01, 2014 at 02:31:35PM +0100, Miroslav Benes wrote:
+> > On Wed, 26 Nov 2014, Josh Poimboeuf wrote:
+> > 
+> > > Hi Miroslav,
+> > > 
+> > > Just addressing one of your comments below.  I'll let Seth respond to
+> > > the others :-)
+> > > 
+> > > On Wed, Nov 26, 2014 at 03:19:17PM +0100, Miroslav Benes wrote:
+> > > > > +/**
+> > > > > + * struct klp_func - function structure for live patching
+> > > > > + * @old_name:	name of the function to be patched
+> > > > > + * @new_func:	pointer to the patched function code
+> > > > > + * @old_addr:	a hint conveying at what address the old function
+> > > > > + *		can be found (optional, vmlinux patches only)
+> > > > > + */
+> > > > > +struct klp_func {
+> > > > > +	/* external */
+> > > > > +	const char *old_name;
+> > > > > +	void *new_func;
+> > > > > +	/*
+> > > > > +	 * The old_addr field is optional and can be used to resolve
+> > > > > +	 * duplicate symbol names in the vmlinux object.  If this
+> > > > > +	 * information is not present, the symbol is located by name
+> > > > > +	 * with kallsyms. If the name is not unique and old_addr is
+> > > > > +	 * not provided, the patch application fails as there is no
+> > > > > +	 * way to resolve the ambiguity.
+> > > > > +	 */
+> > > > > +	unsigned long old_addr;
+> > > > 
+> > > > I wonder if we really need old_addr as an external field. I assume that 
+> > > > userspace tool in kpatch use it as a "hint" for kernel part and thus 
+> > > > kallsyms is not needed there (and it solves ambiguity problem as well). 
+> > > > But I am not sure if it is gonna be the same in upstream. When kernel is 
+> > > > randomized (CONFIG_RANDOMIZE_BASE is set to 'y', though default is 'n') 
+> > > > old_addr is not usable (and we throw it away in the code). Without 
+> > > > old_addr being set by the user we could spare some of code (calls to 
+> > > > klp_verify_vmlinux_symbol and such). 
+> > > 
+> > > Even with CONFIG_RANDOMIZE_BASE, the function offsets will be the same
+> > > regardless of the base address.  So we could still use old_addr to
+> > > determine the offset.
+> > > 
+> > > > So the question is whether future userspace tool in upstream would need it 
+> > > > and would use it. Please note that I do not mean it as a kpatch or kgraft 
+> > > > way to do things, I'm just not sure about old_addr being "public" and want 
+> > > > do discuss the options.
+> > > > 
+> > > > The ambiguity of symbols was discussed in some other thread in lkml in 
+> > > > october (I guess) with no conclusion IIRC...
+> > > 
+> > > We need to resolve ambiguity somehow, and old_addr is a way to do that.
+> > > Do you have any other ideas?
+> > 
+> > Unfortunately I don't.
+> > 
+> > But similarly we don't deal with ambiguity in modules either. And it is 
+> > (at least theoretically) possible. Two static functions of the same name 
+> > in two different .c files which the final module is linked from. You have 
+> > to use kallsyms and it would get confused. Maybe this sounds odd but it 
+> > could happen. 
+> 
+> True, this is a remote possibility, but we haven't run into this issue
+> yet.  If it becomes a problem, we can try to come up with another way to
+> resolve duplicates.
+>
+> Here's one idea: since the symbols are always listed in the same order
+> in kallsyms (per-object), instead of old_addr we could have sym_idx.  A
+> sym_idx of 2 could mean "I want the 2nd occurence of foo in the object's
+> kallsyms list".
 
-On Tue, Dec 02, 2014 at 05:05:28PM +0900, gyungoh@gmail.com wrote:
-> From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+This sounds crazy and I hope we won't be forced to implement it after all 
+:)
+ 
+> However I'd rather keep our current old_addr scheme for now, since it's
+> what we have implemented already.  And there are plenty of more
+> important things we need to do first.
 
-Applied, thanks.
+Agreed
 
---kTUQj81Hp12rwe5j
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> > Thus the old_addr value is not general protection (as modules are still 
+> > affected) and it is questionable whether the user should use it.
+> 
+> It's not really protection, since even if you don't specify old_addr and
+> you rely on kallsyms, klp_find_symbol will return an error if there are
+> any duplicates.
+> 
+> It's really just a way to increase the size of the set of functions
+> which can be patched (duplicately named functions).
+> 
+> We also rely on something similar for relocations: klp_reloc.src.  It's
+> even more important there, since duplicately named static objects are
+> more common than duplicately named functions.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+I understand. So let's settle for leaving it as it is. 
 
-iQEcBAEBAgAGBQJUfa8XAAoJECTWi3JdVIfQdXoH/iw+eYrYUYkiujAPha2Jg6kt
-7pK2VFLhoUP7OMjExpYVbXdB7hwIZcEB9oyy/GcMjE1rwPOZXJ+eaT7X73bQbFlI
-LaUngXUVfC871Esahrh7pTP614Mps+bENyCi0QiqGfpv6s+DvUJmLCRJE4FgqOiC
-fVzR68Afuth/QYZBxzJ9LR7qZUeZPaD4zxL6nkdBiJl68OZY9tKt39qYrx5A2blD
-mqQYAD7JhN6Jd1AerCrn5hkSnwkl2Jv6i74/C0+zOHt9WtFB+MDKfcZ/ryxNi28Q
-5R0U5jK7GN2rQCNLqVSpeYpeO5xI/HeEoE+HIVFdR3xEADukCDpyATnJknmV5Vw=
-=r8yW
------END PGP SIGNATURE-----
+Thanks
+Mira
 
---kTUQj81Hp12rwe5j--
+> > I do not have strong opinion on this and if no one else shares my 
+> > thoughts, I am not against.
+> > 
+> > Mira
+> 
+> -- 
+> Josh
+> 
+
+--
+Miroslav Benes
+SUSE Labs
