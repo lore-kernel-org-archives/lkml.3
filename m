@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933140AbaLBNX0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 08:23:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35906 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932724AbaLBNXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 08:23:25 -0500
-Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
-From: Jean Delvare <jdelvare@suse.de>
-To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
-        Steven Honeyman <stevenhoneyman@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>
-In-Reply-To: <201411291904.07644@pali>
-References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com>
-	 <201411291849.44032@pali> <20141129175152.GA32510@kroah.com>
-	 <201411291904.07644@pali>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Suse Linux
-Date: Tue, 02 Dec 2014 14:23:19 +0100
-Message-ID: <1417526599.15239.7.camel@chaos.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+	id S933166AbaLBNYV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 08:24:21 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:54010 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754532AbaLBNYT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 08:24:19 -0500
+Message-ID: <547DBD7E.1070402@redhat.com>
+Date: Tue, 02 Dec 2014 14:24:14 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Igor Mammedov <imammedo@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Gleb Natapov <gleb@kernel.org>
+Subject: Re: [PATCH 0/5] kvm: memslots lookup optimization
+References: <1417454967-4465-1-git-send-email-imammedo@redhat.com>	<547CA79A.10206@redhat.com> <20141202085721.2c328a40@nial.usersys.redhat.com>
+In-Reply-To: <20141202085721.2c328a40@nial.usersys.redhat.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pali, hi Greg,
 
-Le Saturday 29 November 2014 à 19:04 +0100, Pali Rohár a écrit :
-> On Saturday 29 November 2014 18:51:52 Greg Kroah-Hartman wrote:
-> > On Sat, Nov 29, 2014 at 06:49:43PM +0100, Pali Rohár wrote:
-> > > On Saturday 29 November 2014 18:43:15 Greg Kroah-Hartman wrote:
-> > > > No Documentation/ABI/ entry for your new sysfs file?
-> > > 
-> > > It is standard hwmon sysfs entry which is used by other
-> > > hwmon drivers... It is not i8k.ko driver specific.
-> > 
-> > Ok, then why is this driver not in a "hwmon-standard" location
-> > in the kernel tree?
-> > 
-> > greg k-h
-> 
-> This is question not for me but for maintainers of hwmon and char 
-> trees... I just contributed patch for existing driver.
-> 
-> But my idea is that because this driver exported temperature data 
-> for a long time only via /proc/i8k character file (since 2.4? or 
-> earlier?) and only 3 years ago was added standard hwmon interface 
-> to existing code (949a9d70020defd7c241607ab3ed037ea88f551c).
-> 
-> So now there are both interfaces. Standard hwmon and old /proc/.
-> 
-> CCing Jean Delvare (author of hwmon i8k code)
 
-Yes, that's for historical reasons. Also the i8k driver does more than
-just hardware monitoring, it handles function keys and power status too.
-And it is heavily platform-specific. So while I agree that drivers/char
-isn't necessarily the best place for this driver, I'd rather move it to
-drivers/platform/x86 together with other laptop vendor-specific drivers,
-than to drivers/hwmon.
+On 02/12/2014 08:57, Igor Mammedov wrote:
+>> On 01/12/2014 18:29, Igor Mammedov wrote:
+>>> Series speed-ups GFN to memslot lookup time by:
+>>>  * introducing LRU cache, which improves looukup time for
+>>>    same slot workload (typically boot time of Windows and Linux guest)
+>>>  * switching to binary search for GFN to memslot lookup,
+>>>    improving lookup time with large amount of memory slots
+>>>
+>>> Igor Mammedov (5):
+>>>   kvm: update_memslots: drop not needed check for the same number of
+>>>     pages
+>>>   kvm: update_memslots: drop not needed check for the same slot
+>>>   kvm: search_memslots: add simple LRU memslot caching
+>>>   kvm: change memslot sorting rule from size to GFN
+>>>   kvm: optimize GFN to memslot lookup with large slots amount
+>>>
+>>>  include/linux/kvm_host.h | 28 +++++++++++++++++++++++-----
+>>>  virt/kvm/kvm_main.c      | 46 ++++++++++++++++++++++++++--------------------
+>>>  2 files changed, 49 insertions(+), 25 deletions(-)
+>>>
+>>
+>> Applied patches 1-3 for now, I'm not in the mood for proving that the
+>> binary search is correct. :)
 
-Ultimately /proc/i8k should be killed altogether and every function
-should use the appropriate standard interface. But I don't have any Dell
-laptop around so I won't go into that myself.
+Looks good, thanks.  Gleb, any objections?
 
--- 
-Jean Delvare
-SUSE L3 Support
-
+Paolo
