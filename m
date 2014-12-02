@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175AbaLBR0P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 12:26:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37184 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaLBR0N (ORCPT
+	id S1754264AbaLBR1a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 12:27:30 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:22493 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaLBR13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 12:26:13 -0500
-Date: Tue, 2 Dec 2014 09:26:12 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Richard Yao <ryao@gentoo.org>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: Why not make kdbus use CUSE?
-Message-ID: <20141202172612.GA8958@kroah.com>
-References: <20141129063416.GE32286@woodpecker.gentoo.org>
- <20141129175947.GB32510@kroah.com>
- <547D50B9.9040909@gentoo.org>
- <20141202054850.GA17043@kroah.com>
- <547D7159.2040900@gentoo.org>
- <547DAEF3.1090106@gentoo.org>
+	Tue, 2 Dec 2014 12:27:29 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, <arm@kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 1/8] ARM: at91/Kconfig: select board files automatically
+Date: Tue, 2 Dec 2014 18:27:21 +0100
+Message-ID: <e093d7cf37ec9ff24b0631b0a2e405a7cf7574db.1417541118.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <201411282152.08438.arnd@arndb.de>
+References: <201411282152.08438.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <547DAEF3.1090106@gentoo.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 07:22:11AM -0500, Richard Yao wrote:
-> Assuming that this dance succeeds, the FUSE process could then make a
-> readonly file in itself, open it read only, unlink it, put the data into
-> the file and send the file descriptor via UNIX domain socket while
-> refusing further writes. If it has its own user/group, the file should
-> be safe from prying eyes.
-> 
-> This is not as good as a memfd and also suffers from the race that
-> O_TMPFILE was meant to close, but it should be able to function as a
-> decent fallback.
+From: Arnd Bergmann <arnd@arndb.de>
 
-We can't knowingly create and advocate for broken code, sorry.
+An explicit selection option is not needed for board files so now we select the
+board from SoC option.
 
-> This would preserve portability across not only
-> different versions of Linux, but also other POSIX systems.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+[nicolas.ferre@atmel.com: remove option's comments; split patch]
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/mach-at91/Kconfig | 14 ++------------
+ 1 file changed, 2 insertions(+), 12 deletions(-)
 
-I honestly do not care about any other system than Linux, so I don't see
-why this would ever be an issue.
+diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+index 231893d71658..2395c68b3e32 100644
+--- a/arch/arm/mach-at91/Kconfig
++++ b/arch/arm/mach-at91/Kconfig
+@@ -174,21 +174,11 @@ config SOC_AT91SAM9N12
+ # ----------------------------------------------------------
+ endif # SOC_SAM_V4_V5
+ 
+-comment "Generic Board Type"
+-
+ config MACH_AT91RM9200_DT
+-	bool "Atmel AT91RM9200 Evaluation Kits with device-tree support"
+-	depends on SOC_AT91RM9200
+-	help
+-	  Select this if you want to experiment device-tree with
+-	  an Atmel RM9200 Evaluation Kit.
++	def_bool SOC_AT91RM9200
+ 
+ config MACH_AT91SAM9_DT
+-	bool "Atmel AT91SAM Evaluation Kits with device-tree support"
+-	depends on SOC_AT91SAM9
+-	help
+-	  Select this if you want to experiment device-tree with
+-	  an Atmel Evaluation Kit.
++	def_bool SOC_AT91SAM9
+ 
+ # ----------------------------------------------------------
+ 
+-- 
+2.1.3
 
-> Keeping the code in userspace would allow us to apply SELinux policies
-> to it, which is something that we would lose if it were go to into the
-> kernel.
-
-On the contrary, the kdbusfs implementation gives you better security
-model support than before, it ties directly into the LSM hooks, see the
-add-on patches from some other developers that bring full support of LSM
-to the codebase.
-
-> That said, it is still not clear to me that dbus must be inside the
-> kernel to be able to perform multicast and zero copy using memfd.
-
-It seems you have yet to read my introductory email for the patch
-series.
-
-greg k-h
