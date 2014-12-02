@@ -1,111 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442AbaLBJjq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 04:39:46 -0500
-Received: from regular1.263xmail.com ([211.150.99.140]:56147 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111AbaLBJjm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 04:39:42 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: mark.yao@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: mark.yao@rock-chips.com
-X-UNIQUE-TAG: <b91851bf4f3e0a638c4e694b8ebdd6d1>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <547D88D7.5080005@rock-chips.com>
-Date: Tue, 02 Dec 2014 17:39:35 +0800
-From: Mark yao <mark.yao@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752896AbaLBJks (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 04:40:48 -0500
+Received: from mail-bn1on0081.outbound.protection.outlook.com ([157.56.110.81]:1451
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751362AbaLBJkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 04:40:45 -0500
+Date: Tue, 2 Dec 2014 10:40:28 +0100
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>
-CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
-        olof@lixom.net, djkurtz@chromium.org, cf@rock-chips.com,
-        xxm@rock-chips.com, huangtao@rock-chips.com, kever.yang@rock-chips.com,
-        yxj@rock-chips.com, xw@rock-chips.com,
-        Mark Yao <mark.yao@rock-chips.com>
-Subject: [GIT PULL] core drm support for Rockchip SoCs v15
-References: <1417511600-7054-1-git-send-email-mark.yao@rock-chips.com>
-In-Reply-To: <1417511600-7054-1-git-send-email-mark.yao@rock-chips.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Michal Simek <michal.simek@xilinx.com>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        =?windows-1252?Q?Andreas_F=E4rber?= <afaerber@suse.de>
+Subject: Re: [PATCH v2] ARM: zynq: DT: Add USB to device tree
+References: <1417509978-19060-1-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1417509978-19060-1-git-send-email-soren.brinkmann@xilinx.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21144.006
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <63f1ea2ffb3f49f29ec46183f3009817@BN1AFFO11FD032.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(164054003)(51704005)(479174003)(377454003)(199003)(189002)(24454002)(20776003)(47776003)(62966003)(54356999)(21056001)(19580395003)(19580405001)(46102003)(77156002)(6806004)(44976005)(23746002)(50986999)(107046002)(86362001)(106466001)(102836001)(83506001)(33646002)(76176999)(65956001)(64126003)(87936001)(4396001)(95666004)(50466002)(31966008)(99396003)(74316001)(120916001)(92566001)(104016003)(108616004)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB015;H:xir-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB015;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB015;
+X-Forefront-PRVS: 0413C9F1ED
+Authentication-Results: spf=pass (sender IP is 62.221.5.235)
+ smtp.mailfrom=michal.simek@xilinx.com; 
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB015;
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave
+On 12/02/2014 09:46 AM, Soren Brinkmann wrote:
+> Add USB nodes to zc702, zc706 and zed device trees.
+> 
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+> v2:
+>  - remove '@0' from phy node name
+>  - don't add bogus space
+> ---
+>  arch/arm/boot/dts/zynq-7000.dtsi | 20 ++++++++++++++++++++
+>  arch/arm/boot/dts/zynq-zc702.dts | 11 +++++++++++
+>  arch/arm/boot/dts/zynq-zc706.dts | 10 ++++++++++
+>  arch/arm/boot/dts/zynq-zed.dts   | 10 ++++++++++
+>  4 files changed, 51 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
+> index ce2ef5bec4f2..68096bb027db 100644
+> --- a/arch/arm/boot/dts/zynq-7000.dtsi
+> +++ b/arch/arm/boot/dts/zynq-7000.dtsi
+> @@ -315,6 +315,26 @@
+>  			clocks = <&clkc 4>;
+>  		};
+>  
+> +		usb0: usb@e0002000 {
+> +			compatible = "xlnx,zynq-usb-2.20a", "chipidea,usb2";
+> +			status = "disabled";
+> +			clocks = <&clkc 28>;
+> +			interrupt-parent = <&intc>;
+> +			interrupts = <0 21 4>;
+> +			reg = <0xe0002000 0x1000>;
+> +			phy_type = "ulpi";
+> +		};
+> +
+> +		usb1: usb@e0003000 {
+> +			compatible = "xlnx,zynq-usb-2.20a", "chipidea,usb2";
+> +			status = "disabled";
+> +			clocks = <&clkc 29>;
+> +			interrupt-parent = <&intc>;
+> +			interrupts = <0 44 4>;
+> +			reg = <0xe0003000 0x1000>;
+> +			phy_type = "ulpi";
+> +		};
+> +
+>  		watchdog0: watchdog@f8005000 {
+>  			clocks = <&clkc 45>;
+>  			compatible = "xlnx,zynq-wdt-r1p2";
+> diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
+> index 94e2cda6f9b6..f80c6e65f6e8 100644
+> --- a/arch/arm/boot/dts/zynq-zc702.dts
+> +++ b/arch/arm/boot/dts/zynq-zc702.dts
+> @@ -36,6 +36,11 @@
+>  			linux,default-trigger = "heartbeat";
+>  		};
+>  	};
+> +
+> +	usb_phy0: usb-phy {
+> +		compatible = "usb-nop-xceiv";
+> +		#phy-cells = <0>;
+> +	};
+>  };
+>  
+>  &can0 {
+> @@ -135,3 +140,9 @@
+>  &uart1 {
+>  	status = "okay";
+>  };
+> +
+> +&usb0 {
+> +	status = "okay";
+> +	dr_mode = "host";
+> +	usb-phy = <&usb_phy0>;
+> +};
+> diff --git a/arch/arm/boot/dts/zynq-zc706.dts b/arch/arm/boot/dts/zynq-zc706.dts
+> index a8bbdfbc7093..bece52e47cfe 100644
+> --- a/arch/arm/boot/dts/zynq-zc706.dts
+> +++ b/arch/arm/boot/dts/zynq-zc706.dts
+> @@ -27,6 +27,10 @@
+>  		bootargs = "console=ttyPS0,115200 earlyprintk";
+>  	};
+>  
+> +	usb_phy0: usb-phy {
+> +		compatible = "usb-nop-xceiv";
+> +		#phy-cells = <0>;
+> +	};
+>  };
+>  
+>  &gem0 {
+> @@ -114,3 +118,9 @@
+>  &uart1 {
+>  	status = "okay";
+>  };
+> +
+> +&usb0 {
+> +	status = "okay";
+> +	dr_mode = "host";
+> +	usb-phy = <&usb_phy0>;
+> +};
+> diff --git a/arch/arm/boot/dts/zynq-zed.dts b/arch/arm/boot/dts/zynq-zed.dts
+> index 697779a353ed..efecb2379832 100644
+> --- a/arch/arm/boot/dts/zynq-zed.dts
+> +++ b/arch/arm/boot/dts/zynq-zed.dts
+> @@ -27,6 +27,10 @@
+>  		bootargs = "console=ttyPS0,115200 earlyprintk";
+>  	};
+>  
+> +	usb_phy0: usb-phy {
+> +		compatible = "usb-nop-xceiv";
+> +		#phy-cells = <0>;
+> +	};
+>  };
+>  
+>  &gem0 {
+> @@ -46,3 +50,9 @@
+>  &uart1 {
+>  	status = "okay";
+>  };
+> +
+> +&usb0 {
+> +	status = "okay";
+> +	dr_mode = "host";
+> +	usb-phy = <&usb_phy0>;
+> +};
+> 
 
-The following changes since commit 656d7077d8ffd1c2492d4a0a354367ab2e545059:
+Based on Arnd comment please fix it and rebase it on the top of zynq/dt branch.
 
-   dt-bindings: iommu: Add documentation for rockchip iommu (2014-11-03 
-17:29:09 +0100)
-
-are available in the git repository at:
-
-   https://github.com/markyzq/kernel-drm-rockchip.git drm_iommu_v15
-
-for you to fetch changes up to 5ac4837b12f533de5d9f8f66b45494c58e805536:
-
-   dt-bindings: video: Add documentation for rockchip vop (2014-12-02 
-17:29:33 +0800)
-
-----------------------------------------------------------------
-Mark Yao (3):
-       drm: rockchip: Add basic drm driver
-       dt-bindings: video: Add for rockchip display subsytem
-       dt-bindings: video: Add documentation for rockchip vop
-
-  .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
-  .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
-  drivers/gpu/drm/Kconfig                            |    2 +
-  drivers/gpu/drm/Makefile                           |    1 +
-  drivers/gpu/drm/rockchip/Kconfig                   |   17 +
-  drivers/gpu/drm/rockchip/Makefile                  |    8 +
-  drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  551 ++++++++
-  drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   68 +
-  drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  201 +++
-  drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
-  drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  210 +++
-  drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   21 +
-  drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  294 ++++
-  drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   54 +
-  drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1455 
-++++++++++++++++++++
-  drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  201 +++
-  16 files changed, 3188 insertions(+)
-  create mode 100644 
-Documentation/devicetree/bindings/video/rockchip-drm.txt
-  create mode 100644 
-Documentation/devicetree/bindings/video/rockchip-vop.txt
-  create mode 100644 drivers/gpu/drm/rockchip/Kconfig
-  create mode 100644 drivers/gpu/drm/rockchip/Makefile
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.h
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.h
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.h
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.c
-  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.h
+Thanks,
+Michal
 
