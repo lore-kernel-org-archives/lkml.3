@@ -1,86 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932751AbaLBA2J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 19:28:09 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45957 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752934AbaLBA2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 19:28:06 -0500
-Date: Mon, 1 Dec 2014 18:27:59 -0600
-From: Benoit Parrot <bparrot@ti.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Alexandre Courbot <gnurou@gmail.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Jiri Prchal <jiri.prchal@aksignal.cz>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
-Message-ID: <20141202002758.GC24551@ti.com>
-References: <1416527684-19017-1-git-send-email-bparrot@ti.com>
- <1416527684-19017-2-git-send-email-bparrot@ti.com>
- <CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com>
- <20141201163639.GI25249@lukather>
+	id S932749AbaLBAjs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 19:39:48 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:43112 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754137AbaLBAjr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 19:39:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20141201163639.GI25249@lukather>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1417477480.21136.0@mail.thefacebook.com>
+References: <CA+55aFz-JUX6CU-aO+cwLHYtH7BA+dgyUnEGoy8T4S62gEDFpA@mail.gmail.com>
+	<20141127225637.GA24019@redhat.com>
+	<m5dart$co$1@ger.gmane.org>
+	<CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
+	<547b8a45.6e608c0a.20f9.1002@mx.google.com>
+	<CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
+	<547bbe36.48548c0a.105c.779c@mx.google.com>
+	<20141201191431.GA17385@linux.vnet.ibm.com>
+	<547ccf74.a5198c0a.25de.26d9@mx.google.com>
+	<CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
+	<20141201230339.GA20487@ret.masoncoding.com>
+	<CA+55aFxOKsK-E438QEOd5Tq2dUZjO8sOnQtpTtPmpBKngmgpkg@mail.gmail.com>
+	<1417477480.21136.0@mail.thefacebook.com>
+Date: Mon, 1 Dec 2014 16:39:45 -0800
+X-Google-Sender-Auth: KJ_qhHDKvWVwMNy7xVbfAHfH4So
+Message-ID: <CA+55aFzjUd90WFnQWyMErQG-CBvdipoi1qQexBJpWh7UKKeFkg@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Chris Mason <clm@fb.com>
+Cc: =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
+        Dave Jones <davej@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maxime Ripard <maxime.ripard@free-electrons.com> wrote on Mon [2014-Dec-01 17:36:39 +0100]:
-> Hi,
-> 
-> On Fri, Nov 28, 2014 at 04:30:01PM +0900, Alexandre Courbot wrote:
-> > > +/**
-> > > + * do_gpio_hog - Given node is a GPIO hog configuration, handle it
-> > > + * @np:                device node to get GPIO from
-> > > + *
-> > > + * This is only used by of_gpiochip_add to request/set GPIO initial
-> > > + * configuration.
-> > > + */
-> > > +static int do_gpio_hog(struct device_node *np)
-> > > +{
-> > > +       struct gpio_desc *desc = NULL;
-> > > +       int err;
-> > > +       const char *name;
-> > > +       enum gpio_lookup_flags lflags;
-> > > +       enum gpiod_flags dflags;
-> > > +
-> > > +       desc = of_get_gpio_hog(np, &name, &lflags, &dflags);
-> > > +       if (!desc)
-> > > +               return -ENOTSUPP;
-> > > +       else if (IS_ERR(desc))
-> > > +               return PTR_ERR(desc);
-> > > +
-> > > +       err = gpiod_request(desc, name);
-> > 
-> > Using this function means that a GPIO chip module cannot be unloaded
-> > if it uses GPIO hogs. Is it the intended behavior? If not, please use
-> > gpiochip_request_own_desc() instead, and make sure to call
-> > gpiochip_free_own_desc() for each hog when the driver is unloaded.
-> 
-> The only thing I'd like to have would be that the request here would
-> be non-exclusive, so that a later driver would still be allowed later
-> on to request that GPIO later on and manage it itself (ideally using
-> the usual gpiod_request function).
+On Mon, Dec 1, 2014 at 3:44 PM, Chris Mason <clm@fb.com> wrote:
+>
+> But looking harder it's probably inside wait_sb_inodes:
+>
+>        spin_lock(&inode_sb_list_lock);
 
-I'll let Linus chime in on this.
-But the premise for the hogging mechanism is to have a mechanism to set GPIOs
-which do not need to be requested by any other entity.
-If a driver needs access to a specific GPIO then it should use the existing
-gpiolib API to request it and set it up.
+Yeah, that's a known pain-point for sync(), although nobody has really
+cared enough, since performance of parallel sync() calls is usually
+not very high on anybody's list of things to care about except when it
+occasionally shows up on some old Unix benchmark (maybe AIM, I
+forget).
 
-> 
-> Maxime
-> 
-> -- 
-> Maxime Ripard, Free Electrons
-> Embedded Linux, Kernel and Android engineering
-> http://free-electrons.com
+Anyway, lock debugging will make what is usually not noticeable into a
+"whee, that's horrible", because the lock debugging overhead is often
+many *many* times higher than the cost of the code inside the lock..
 
-Regards,
-Benoit
+                  Linus
