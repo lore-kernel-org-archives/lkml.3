@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933907AbaLBToQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:44:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46790 "EHLO
+	id S934014AbaLBTop (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:44:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46779 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933485AbaLBTZA (ORCPT
+	with ESMTP id S933465AbaLBTY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:25:00 -0500
+	Tue, 2 Dec 2014 14:24:56 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 085/121] Input: alps - ignore bad data on Dell Latitudes E6440 and E7440
-Date: Tue,  2 Dec 2014 11:19:24 -0800
-Message-Id: <1417548000-1794-86-git-send-email-kamal@canonical.com>
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 107/121] ASoC: wm_adsp: Avoid attempt to free buffers that might still be in use
+Date: Tue,  2 Dec 2014 11:19:46 -0800
+Message-Id: <1417548000-1794-108-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,67 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit a7ef82aee91f26da79b981b9f5bca43b8817d3e4 upstream.
+commit 9da7a5a9fdeeb76b2243f6b473363a7e6147ab6f upstream.
 
-Sometimes on Dell Latitude laptops psmouse/alps driver receive invalid ALPS
-protocol V3 packets with bit7 set in last byte. More often it can be
-reproduced on Dell Latitude E6440 or E7440 with closed lid and pushing
-cover above touchpad.
+We should not free any buffers associated with writing out coefficients
+to the DSP until all the async writes have completed. This patch updates
+the out of memory path when allocating a new buffer to include a call to
+regmap_async_complete.
 
-If bit7 in last packet byte is set then it is not valid ALPS packet. I was
-told that ALPS devices never send these packets. It is not know yet who
-send those packets, it could be Dell EC, bug in BIOS and also bug in
-touchpad firmware...
-
-With this patch alps driver does not process those invalid packets, but
-instead of reporting PSMOUSE_BAD_DATA, getting into out of sync state,
-getting back in sync with the next byte and spam dmesg we return
-PSMOUSE_FULL_PACKET. If driver is truly out of sync we'll fail the checks
-on the next byte and report PSMOUSE_BAD_DATA then.
-
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-Tested-by: Pali Rohár <pali.rohar@gmail.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Reported-by: JS Park <aitdark.park@samsung.com>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/input/mouse/alps.c | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ sound/soc/codecs/wm_adsp.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/input/mouse/alps.c b/drivers/input/mouse/alps.c
-index 00544a6..b1385f0 100644
---- a/drivers/input/mouse/alps.c
-+++ b/drivers/input/mouse/alps.c
-@@ -993,12 +993,27 @@ static psmouse_ret_t alps_process_byte(struct psmouse *psmouse)
- 	}
+diff --git a/sound/soc/codecs/wm_adsp.c b/sound/soc/codecs/wm_adsp.c
+index 07c99e8..c9524db 100644
+--- a/sound/soc/codecs/wm_adsp.c
++++ b/sound/soc/codecs/wm_adsp.c
+@@ -1340,6 +1340,7 @@ static int wm_adsp_load_coeff(struct wm_adsp *dsp)
+ 			  file, blocks, pos - firmware->size);
  
- 	/* Bytes 2 - pktsize should have 0 in the highest bit */
--	if ((priv->proto_version < ALPS_PROTO_V5) &&
-+	if (priv->proto_version < ALPS_PROTO_V5 &&
- 	    psmouse->pktcnt >= 2 && psmouse->pktcnt <= psmouse->pktsize &&
- 	    (psmouse->packet[psmouse->pktcnt - 1] & 0x80)) {
- 		psmouse_dbg(psmouse, "refusing packet[%i] = %x\n",
- 			    psmouse->pktcnt - 1,
- 			    psmouse->packet[psmouse->pktcnt - 1]);
-+
-+		if (priv->proto_version == ALPS_PROTO_V3 &&
-+		    psmouse->pktcnt == psmouse->pktsize) {
-+			/*
-+			 * Some Dell boxes, such as Latitude E6440 or E7440
-+			 * with closed lid, quite often smash last byte of
-+			 * otherwise valid packet with 0xff. Given that the
-+			 * next packet is very likely to be valid let's
-+			 * report PSMOUSE_FULL_PACKET but not process data,
-+			 * rather than reporting PSMOUSE_BAD_DATA and
-+			 * filling the logs.
-+			 */
-+			return PSMOUSE_FULL_PACKET;
-+		}
-+
- 		return PSMOUSE_BAD_DATA;
- 	}
- 
+ out_fw:
++	regmap_async_complete(regmap);
+ 	release_firmware(firmware);
+ 	wm_adsp_buf_free(&buf_list);
+ out:
 -- 
 1.9.1
 
