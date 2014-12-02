@@ -1,85 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933098AbaLBMZl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 07:25:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60869 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932079AbaLBMZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 07:25:38 -0500
-Date: Tue, 2 Dec 2014 13:25:18 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 0/8] perf buildid-cache: Add clean command
-Message-ID: <20141202122518.GA7744@krava.brq.redhat.com>
-References: <1417460789-13874-1-git-send-email-jolsa@kernel.org>
- <20141201222919.GC6774@redhat.com>
+	id S1754591AbaLBMfH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 07:35:07 -0500
+Received: from lucky1.263xmail.com ([211.157.147.133]:53340 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753521AbaLBMfF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 07:35:05 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: andy.yan@rock-chips.com
+X-FST-TO: galak@codeaurora.org
+X-SENDER-IP: 121.15.173.1
+X-LOGIN-NAME: andy.yan@rock-chips.com
+X-UNIQUE-TAG: <13c9f04857cbc013cce59ba0d42de7ce>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <547DB1ED.7000409@rock-chips.com>
+Date: Tue, 02 Dec 2014 20:34:53 +0800
+From: Andy Yan <andy.yan@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141201222919.GC6774@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Philipp Zabel <p.zabel@pengutronix.de>
+CC: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>, vladimir_zapolskiy@mentor.com,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v15 12/12] drm: bridge/dw_hdmi: add rockchip rk3288 support
+References: <1417505778-18341-1-git-send-email-andy.yan@rock-chips.com>	 <1417506327-18908-1-git-send-email-andy.yan@rock-chips.com> <1417515882.3411.8.camel@pengutronix.de>
+In-Reply-To: <1417515882.3411.8.camel@pengutronix.de>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 08:29:19PM -0200, Arnaldo Carvalho de Melo wrote:
+Hi Philipp:
+On 2014年12月02日 18:24, Philipp Zabel wrote:
+> Hi Andy,
+>
+> Am Dienstag, den 02.12.2014, 15:45 +0800 schrieb Andy Yan:
+> [...]
+>> +static int dw_hdmi_rockchip_bind(struct device *dev, struct device *master,
+>> +				 void *data)
+>> +{
+>> +	struct platform_device *pdev = to_platform_device(dev);
+>> +	const struct dw_hdmi_plat_data *plat_data;
+>> +	const struct of_device_id *match;
+>> +	struct drm_device *drm = data;
+>> +	struct drm_encoder *encoder;
+>> +	struct rockchip_hdmi *hdmi;
+>> +	int ret;
+>> +
+>> +	if (!pdev->dev.of_node)
+>> +		return -ENODEV;
+>> +
+>> +	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
+>> +	if (!hdmi)
+>> +		return -ENOMEM;
+>> +
+>> +	match = of_match_node(dw_hdmi_rockchip_ids, pdev->dev.of_node);
+>> +	plat_data = match->data;
+>> +	hdmi->dev = &pdev->dev;
+>> +	encoder = &hdmi->encoder;
+>> +	platform_set_drvdata(pdev, hdmi);
+>> +
+>> +	ret = rockchip_hdmi_parse_dt(hdmi);
+>> +	if (ret) {
+>> +		dev_err(hdmi->dev, "Unable to parse OF data\n");
+>> +		return ret;
+>> +	}
+>> +
+>> +	ret = clk_prepare_enable(hdmi->clk);
+>> +	if (ret) {
+>> +		dev_err(hdmi->dev, "Cannot enable HDMI clock: %d\n", ret);
+>> +		return ret;
+>> +	}
+>> +
+>> +	ret = clk_prepare_enable(hdmi->hdcp_clk);
+>> +	if (ret) {
+>> +		dev_err(hdmi->dev, "Cannot enable HDMI hdcp clock: %d\n", ret);
+>> +		return ret;
+>> +	}
+> Could we have a look at the clocks again? Basically the Rockchip clock
+> handling is exactly the same, except the clocks are called by other
+> names.
+>
+> On i.MX6, according to the reference manual, the HDMI TX module has four
+> clock inputs: "iahbclk" (bus clock), "icecclk" (32 kHz CEC clock),
+> "ihclk" (module clock), and "isfrclk" (27 MHz internal SFR clock).
+> The "iahbclk" and "ihclk" are both sourced from the SoC AHB root clock,
+> the 32 kHz reference input can't be gated, and the "isfrclk" has its own
+> gate.
+>
+> Does the HDMI TX implementation on Rockchip still have the separate
+> external sfr bus and module clock inputs? I assume that your "clk" input
+> is a single gate bit for bus and module clocks at the same time?
+> If possible, I'd prefer to find a common binding for the clocks with
+> some of the clocks being optional, but for that we need to know the
+> actual clock inputs to the HDMI TX module.
+>
+> regards
+> Philipp
+>
+     There are three  individual clock inputs on Rockchip RK3288 HDMI: 
+"hdmi_ctrl_clk",
+     "hdmi_cec_clk", "hdmi_hdcp_clk", the three clocks are responsible 
+for different
+      functions as their name described, and have their own private gate 
+bit. That is
+      to say, the cec_clk and hdcp_clk can all be disabled if we don't 
+need hdcp and cec
+      function.
+      So I think it's better to make the clk control platform independent.
 
-SNIP
+     Heiko, do you have any suggestions?
+>
+>
 
-> [acme@sandy wb]$ 
-> 
-> If we keep the way it is, I think it would be clearer to add a -l/--list
-> command and that would:
-> 
->   perf buildid-cache --list  # list all the files in the cache
->   perf buildid-cache --list 3d  # list 3 days old files
->   perf buildid-cache --list +3d  # list files 3 days or more older
->   perf buildid-cache --list -3d  # list files up to 3 days old
 
-ok, I was up to old files (and big files) removal only.. not sure
-the other way will be actually needed.. but it's easy enought to
-add
-
-> 
-> And all these would print the sum of the matching files, i.e. the space
-> those files use in the filesystem.
->  
-> > Remove cache files older than 3 days:
-> >   $ perf buildid-cache clean 3d -r
-> 
->   perf buildid-cache --remove [-+]Nd # Same semantics as above
-> 
-> >     
-> > Total cache removal:
-> >   $ perf buildid-cache clean -r
-> 
->  perf buildid-cache --remove '*'
-
-hum, maybe '--removal all' might be better
-
->  
-> > Remove and display items bigger than 200M
-> >   $ perf buildid-cache clean -r -a 200M
-> 
-> But yeah, perhaps we could switch to having subcommands and add:
-> 
->   perf buildid-cache [add|remove|update|list]
-> 
-> What do you think?
-
-yep, those commands seem nicer.. 
-
-let's see of there're other comments and I'll come up with
-new interface after..
-
-thanks,
-jirka
