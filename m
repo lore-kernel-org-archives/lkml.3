@@ -1,118 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751330AbaLBJMS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 04:12:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58272 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750963AbaLBJMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 04:12:15 -0500
-Date: Tue, 2 Dec 2014 10:12:12 +0100
-From: Jan Kara <jack@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
-        Jan Kara <jack@suse.cz>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/3] mm: protect set_page_dirty() from ongoing truncation
-Message-ID: <20141202091212.GB9092@quack.suse.cz>
-References: <1417474682-29326-1-git-send-email-hannes@cmpxchg.org>
+	id S1751396AbaLBJOI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 04:14:08 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:56125 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964AbaLBJOF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 04:14:05 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: =?ISO-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Michal Simek <michal.simek@xilinx.com>, devicetree@vger.kernel.org,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        linux-kernel@vger.kernel.org,
+        Andreas =?ISO-8859-1?Q?F=E4rber?= <afaerber@suse.de>
+Subject: Re: [PATCH] ARM: zynq: DT: Add USB to device tree
+Date: Tue, 02 Dec 2014 10:13:30 +0100
+Message-ID: <2598972.HWjIWPLUn8@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <71b9e172438946a5ba74efb430d1418c@BN1AFFO11FD060.protection.gbl>
+References: <1417459352-23401-1-git-send-email-soren.brinkmann@xilinx.com> <7088901.UGmPabvHQ0@wuerfel> <71b9e172438946a5ba74efb430d1418c@BN1AFFO11FD060.protection.gbl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417474682-29326-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
+X-Provags-ID: V02:K0:ODrfMN3GBw5RM/tVN5pL/RlZqMVg8jqUb0jr42y6WaL
+ 5SaYDZo0qeTeAv2HPFoSNiANJJR7FrVbbXjZWgcJEJS3QWhjxW
+ DcmkrWK4Vwl9MVyHdwX3fxYDYw2QW5gBeOHMLjpCp0km2fAunt
+ Edjx3QHOUF+QiEYatVYr4MEfjPGE56iKQ1QYed+/dAAf9ukAnU
+ xazGC2Hk+qvUZMQYFHzbGMF76Up4M5EWERI9tEcDobfnLXS/0H
+ +PybSQQkE5Qy4SAXLlXIVlhbwaKHVCWSIxV7qXMEskkB6+pokD
+ IgrvcbPBydDgy5cdrGgYvNA0LJdjHiDMYDRRZRztv3dqorFIIv
+ EDHuPVK60IiuyzEPXJWM=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 01-12-14 17:58:00, Johannes Weiner wrote:
-> Tejun, while reviewing the code, spotted the following race condition
-> between the dirtying and truncation of a page:
+On Monday 01 December 2014 13:51:26 Sören Brinkmann wrote:
+> Hi Arnd,
 > 
-> __set_page_dirty_nobuffers()       __delete_from_page_cache()
->   if (TestSetPageDirty(page))
->                                      page->mapping = NULL
-> 				     if (PageDirty())
-> 				       dec_zone_page_state(page, NR_FILE_DIRTY);
-> 				       dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
->     if (page->mapping)
->       account_page_dirtied(page)
->         __inc_zone_page_state(page, NR_FILE_DIRTY);
-> 	__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+> On Mon, 2014-12-01 at 10:26PM +0100, Arnd Bergmann wrote:
+> > On Monday 01 December 2014 10:42:32 Soren Brinkmann wrote:
+> > > +       usb_phy0: usb-phy@0 {
+> > > +               compatible = "usb-nop-xceiv";
+> > > +               #phy-cells = <0>;
+> > > +       };
+> > >  };
+> > 
+> > As discussed in an unrelated thread today, please drop the "@0" in the
+> > node name, since the device has no 'reg' property.
 > 
-> which results in an imbalance of NR_FILE_DIRTY and BDI_RECLAIMABLE.
+> What is the best practice for naming such nodes then? On these boards
+> it's not the case, but Zynq has two USB cores. So, there may be DTs that
+> will have two phys in there. Would we just do 'usb-phy-0'?
 > 
-> Dirtiers usually lock out truncation, either by holding the page lock
-> directly, or in case of zap_pte_range(), by pinning the mapcount with
-> the page table lock held.  The notable exception to this rule, though,
-> is do_wp_page(), for which this race exists.  However, do_wp_page()
-> already waits for a locked page to unlock before setting the dirty
-> bit, in order to prevent a race where clear_page_dirty() misses the
-> page bit in the presence of dirty ptes.  Upgrade that wait to a fully
-> locked set_page_dirty() to also cover the situation explained above.
 > 
-> Afterwards, the code in set_page_dirty() dealing with a truncation
-> race is no longer needed.  Remove it.
-> 
-> Reported-by: Tejun Heo <tj@kernel.org>
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: <stable@vger.kernel.org>
-> ---
->  include/linux/writeback.h |  1 -
->  mm/memory.c               | 26 ++++++++++++++++----------
->  mm/page-writeback.c       | 43 ++++++++++++-------------------------------
->  3 files changed, 28 insertions(+), 42 deletions(-)
-> 
-> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-> index a219be961c0a..00048339c23e 100644
-> --- a/include/linux/writeback.h
-> +++ b/include/linux/writeback.h
-> @@ -177,7 +177,6 @@ int write_cache_pages(struct address_space *mapping,
->  		      struct writeback_control *wbc, writepage_t writepage,
->  		      void *data);
->  int do_writepages(struct address_space *mapping, struct writeback_control *wbc);
-> -void set_page_dirty_balance(struct page *page);
->  void writeback_set_ratelimit(void);
->  void tag_pages_for_writeback(struct address_space *mapping,
->  			     pgoff_t start, pgoff_t end);
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 3e503831e042..73220eb6e9e3 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -2150,17 +2150,23 @@ reuse:
->  		if (!dirty_page)
->  			return ret;
->  
-> -		/*
-> -		 * Yes, Virginia, this is actually required to prevent a race
-> -		 * with clear_page_dirty_for_io() from clearing the page dirty
-> -		 * bit after it clear all dirty ptes, but before a racing
-> -		 * do_wp_page installs a dirty pte.
-> -		 *
-> -		 * do_shared_fault is protected similarly.
-> -		 */
->  		if (!page_mkwrite) {
-> -			wait_on_page_locked(dirty_page);
-> -			set_page_dirty_balance(dirty_page);
-> +			struct address_space *mapping;
-> +			int dirtied;
-> +
-> +			lock_page(dirty_page);
-> +			dirtied = set_page_dirty(dirty_page);
-> +			mapping = dirty_page->mapping;
-> +			unlock_page(dirty_page);
-> +
-> +			if (dirtied && mapping) {
-> +				/*
-> +				 * Some device drivers do not set page.mapping
-> +				 * but still dirty their pages
-> +				 */
-  The comment doesn't make sense to me here. Is it meant to explain why we
-check 'mapping' in the above condition? I always thought truncate is the
-main reason.
 
-								Honza
+Grant recommended naming them "phy0" and "phy1" in this case.
+The recommended node name for a phy is "phy", not "usb-phy" (I didn't
+notice that earlier, but it makes sense to change both), and
+I would not use a dash for the number there.
 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+	Arnd
