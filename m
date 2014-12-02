@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849AbaLBOqh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 09:46:37 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39145 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752091AbaLBOqg (ORCPT
+	id S932190AbaLBOrQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 09:47:16 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:38912 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753888AbaLBOrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 09:46:36 -0500
-Date: Tue, 2 Dec 2014 15:46:15 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Volker Armin Hemmann <volkerarmin@googlemail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Regression: suspend to ram completely broken since at least
- 3.13-rc5, works with 3.12.
-Message-ID: <20141202144615.GA3178@xo-6d-61-c0.localdomain>
-References: <54624E40.30802@googlemail.com>
+	Tue, 2 Dec 2014 09:47:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54624E40.30802@googlemail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1417524607.5303.45.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1417494919-4577-1-git-send-email-oakad@yahoo.com>
+	<1417494919-4577-2-git-send-email-oakad@yahoo.com>
+	<1417524607.5303.45.camel@edumazet-glaptop2.roam.corp.google.com>
+Date: Wed, 3 Dec 2014 01:47:13 +1100
+Message-ID: <CAPs88r_Dz+UqwhqAcKwXuLZGz4n=NocD-0FuOZug5UGH64p_8w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] fs: introduce sendfd() syscall
+From: Alex Dubov <alex.dubov@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alex Dubov <oakad@yahoo.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+> User A can send fd(s) to processes belonging to user B, even if user B
+> does (probably) not want this to happen ?
 
-> with kernel 3.12.X with X tested up to .23 suspend to ram works
-> flawlessly. My machine suspends quickly and wakes up reliably, giving me
-> uptimes measured in weeks.
-> 
-> Every kernel I tried between 3.13.0-rc5 and 3.16.7 on the other hand
-> shows this behaviour:
-> 
-> IF suspend works it takes ages. Video blanks quickly, harddisks are
-> turned off, then it is stuck for a long time (more minute than tens of
-> seconds), and at some point suspends.
-> 
-> Afterwards there is a 50% chance it will wake up. In that case: nothing
-> in dmesg.
-> If it does not wake up on pressing any button, I have to press power
-> button for a nice cold boot.
-> 
-> Even if it does suspend and resume successfully, it will NOT suspend the
-> next time. Never.
-> 
-> The much more likely failure mode looks like this:
-> It will blank video and turn of harddisks and then nothing happens. usb
-> dead, ps2 keyboard dead, no harddisk activity, fans are spinning,
-> mainboard is powered - and nothing happens. I can turn off or hit reset
-> button.
-> 
-> Of course, after a reboot nothing will show up in the logs.
-> 
-> So this is a severe regression. Box worked, it stopped working.
+1. Process A must have sufficient permissions to signal process B.
+This will only happen if process A belongs to the same user as process
+B or has elevated capabilities, which can not appear by themselves
+(and if root on some machine can not be trusted, then all is lost
+anyway).
 
-Any chance to do a bisect? Any chance to try with minimum drivers?
+2. If process B has not specified explicitly how it wants the
+particular signal to be handled, it will be killed by the default
+handler. End of story, nothing else is going to happen.
 
-								Pavel
+I suppose, I can add an extra permissions check prior to creating the
+new file descriptor in the first place.
+
+> Also, relying on signals seems quite old fashion these days. How about
+> multi-threaded programs wanting separate channels to receive fds ?
+
+Most multi-threaded programs share the same file table between all
+threads (unless some fancy clone() magic is involved), so the issue is
+rather mundane. At any rate, each thread has its own pid and the usual
+signal routing applies.
+
+At a more generic level Posix real-time signals are anything, but
+old-fashioned. sigqueue()/signalfd() pair provides a very convenient,
+low overhead micro-messaging facility with ordered, reliably delivery.
+I fail to see what's wrong with making a worthy use of it.
