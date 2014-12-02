@@ -1,124 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933545AbaLBUBj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 15:01:39 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:53027 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396AbaLBUBh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 15:01:37 -0500
-From: Andrey Skvortsov <andrej.skvortzov@gmail.com>
-X-Google-Original-From: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
-Date: Tue, 2 Dec 2014 23:01:29 +0300
-To: Michael =?utf-8?B?QsO8c2No?= <m@bues.ch>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Gary.Zambrano@qlogic.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        b43-dev <b43-dev@lists.infradead.org>,
-        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [PATCH] SSB / B44: fix WOL for BCM4401
-Message-ID: <20141202200129.GA4580@crion89>
-Mail-Followup-To: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>,
-	Michael =?utf-8?B?QsO8c2No?= <m@bues.ch>,
-	"Rafael J. Wysocki" <rjw@rjwysocki.net>, Gary.Zambrano@qlogic.com,
-	netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-	b43-dev <b43-dev@lists.infradead.org>,
-	=?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-	Larry Finger <Larry.Finger@lwfinger.net>
-References: <20141201111125.GA11974@localhost.localdomain>
- <1417466798-15735-1-git-send-email-Andrej.Skvortzov@gmail.com>
- <20141201221023.79ffb40d@wiggum>
+	id S934008AbaLBUBp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 15:01:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59290 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933506AbaLBUBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 15:01:43 -0500
+Message-ID: <547E1A73.6000805@redhat.com>
+Date: Tue, 02 Dec 2014 15:00:51 -0500
+From: William Cohen <wcohen@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="DocE+STaALJfprDB"
-Content-Disposition: inline
-In-Reply-To: <20141201221023.79ffb40d@wiggum>
-X-PGP-Key: fp="21AF 2E6F 04EC 7E11 21C6  E399 2236 2F26 57A3 AEAD";
- id="0x57A3AEAD";
- get=<hkp://pgp.mit.edu/pks/lookup?search=0x22362F2657A3AEAD&op=get>;
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steve Capper <steve.capper@linaro.org>,
+        David Long <dave.long@linaro.org>
+CC: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        David Miller <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/5] ARM64: Add kernel probes(Kprobes) support
+References: <1416292375-29560-1-git-send-email-dave.long@linaro.org> <20141120135851.GA32528@linaro.org> <54759041.9080105@hitachi.com> <20141126100325.GA9157@linaro.org> <5476120D.9030703@linaro.org> <CAPvkgC3eVOZEn79C9PC9c7TqC_-yCtDhw5LL6ZWUJxr+oQFaow@mail.gmail.com> <5476BFB4.2020705@hitachi.com> <CAPvkgC0ELPPWfa-8kQ4H_e_O5G1ER4KEKuSWLxh_u-VZgh7W6A@mail.gmail.com> <547C36DB.7060903@hitachi.com> <547E129C.1090308@redhat.com>
+In-Reply-To: <547E129C.1090308@redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/02/2014 02:27 PM, William Cohen wrote:
 
---DocE+STaALJfprDB
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Hi Masami and Dave,
+> 
+> I have applied the suggested patch above to my local kernel. However, I have noticed systemtap testsuite consistently getting panics when running both before AND after applying that patch to the kernel.  Any thoughts on why "perf stat" would cause that? Below is an example output
+> 
+> -Will
 
-On Mon, Dec 01, 2014 at 10:10:23PM +0100, Michael B=C3=BCsch wrote:
-> On Mon,  1 Dec 2014 23:46:38 +0300
-> Andrey Skvortsov <andrej.skvortzov@gmail.com> wrote:
->=20
-> > Wake On Lan was not working on laptop DELL Vostro 1500.
-> > If WOL was turned on, BCM4401 was powered up in suspend mode. LEDs blin=
-ked.
-> > But the laptop could not be woken up with the Magic Packet. The reason =
-for
-> > that was that PCIE was not enabled as a system wakeup source and
-> > therefore the host PCI bridge was not powered up in suspend mode.
-> > PCIE was not enabled in suspend by PM because no child devices were
-> > registered as wakeup source during suspend process.
-> > On laptop BCM4401 is connected through the SSB bus, that is connected t=
-o the
-> > PCI-Express bus. SSB and B44 did not use standard PM wakeup functions
-> > and did not forward wakeup settings to their parents.
-> > To fix that B44 driver enables PM wakeup and registers new wakeup source
-> > using device_set_wakeup_enable(). Wakeup is automatically reported to t=
-he parent SSB
-> > bus via power.wakeup_path. SSB bus enables wakeup for the parent PCI br=
-idge, if there is any
-> > child devices with enabled wakeup functionality. All other steps are
-> > done by PM core code.
->=20
-> Thanks, this looks good.
-> I assume you tested this (I currently don't have a device to test this).
+This problem doesn't look like it is related to the kprobes support.  It can be triggered without running kprobes related code such as a "perf stat make" on a user-space build. It's failure looks similar to:
 
-Sure, I've tested it. WOL from suspend is working and after resume from hib=
-ernate Ethernet is working too.
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/265814.html
 
-> Larry, Rafa=C5=82, any other b43 user:
-> Can you please test whether this doesn't cause regressions for suspend/re=
-sume on b43?
-> (Patch is attached as reference)
->=20
->=20
-> > Signed-off-by: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
-> > ---
-> >  drivers/net/ethernet/broadcom/b44.c |    2 ++
-> >  drivers/ssb/pcihost_wrapper.c       |   33 ++++++++++++++++++++++-----=
-------
-> >  2 files changed, 24 insertions(+), 11 deletions(-)
+-Will
+> 
+> # perf stat make install
+> 
+> ...
+> 
+> Running ./systemtap/notest.exp ...
+> Running ./systemtap.apps/java.exp ...
+> [ 6734.986063] Bad mode in FIQ handler detected, code 0x56000000
+> [ 6734.991788] CPU: 0 PID: 3968 Comm: stap Tainted: G            E  3.18.0-rc5kp3+ #3
+> [ 6734.999317] Hardware name: APM X-Gene Mustang board (DT)
+> [ 6735.004602] task: fffffe0016c25a00 ti: fffffe03d8aa8000 task.ti: fffffe03d8aa8000
+> [ 6735.012052] PC is at 0x3ff7fc0d1fc
+> [ 6735.015434] LR is at 0x3ff7fc31838
+> [ 6735.018815] pc : [<000003ff7fc0d1fc>] lr : [<000003ff7fc31838>] pstate: 00000000
+> [ 6735.026172] sp : fffffe03d8aabff0
+> [ 6735.029467] x29: 000003fffe4f6460 x28: 000003ff7fb23640 
+> [ 6735.034772] x27: 000003ff7fb23578 x26: 000000000059a420 
+> [ 6735.040074] x25: 000000000000005f x24: 000003ff7fb3f000 
+> [ 6735.045375] x23: 000000004178ee40 x22: 0000000000000006 
+> [ 6735.050680] x21: 0000000000000001 x20: 0000000000008000 
+> [ 6735.055980] x19: 000000004178ee40 x18: 000003fffe4f64a0 
+> [ 6735.061282] x17: 000003ff7fc0d1fc x16: 000003ff7fd00008 
+> [ 6735.066585] x15: 00000013cd9f3df0 x14: 0000000051c4a1f8 
+> [ 6735.071886] x13: 0000000001519f64 x12: 000000000000000e 
+> [ 6735.077187] x11: 646f6d2f62696c2f x10: 6174732f706d742f 
+> [ 6735.082488] x9 : 312e332f73656c75 x8 : 0000000000000038 
+> [ 6735.087790] x7 : 5f34366372617073 x6 : 000000000000007c 
+> [ 6735.093094] x5 : 0000000000000000 x4 : 0000000000000001 
+> [ 6735.098397] x3 : 0000000000000000 x2 : 0000000000000000 
+> [ 6735.103697] x1 : 0000000000000001 x0 : 0000000000008030 
+> [ 6735.108999] 
+> [ 6735.110483] Bad mode in Synchronous Abort handler detected, code 0x8600000f
+> [ 6735.117408] CPU: 0 PID: 3968 Comm: stap Tainted: G            E  3.18.0-rc5kp3+ #3
+> [ 6735.124936] Hardware name: APM X-Gene Mustang board (DT)
+> [ 6735.130220] task: fffffe0016c25a00 ti: fffffe03d8aa8000 task.ti: fffffe03d8aa8000
+> [ 6735.137662] PC is at 0x3ff7fc31838
+> [ 6735.141044] LR is at 0x3ff7fc31838
+> [ 6735.144426] pc : [<000003ff7fc31838>] lr : [<000003ff7fc31838>] pstate: 600003c5
+> [ 6735.151782] sp : fffffe03d8aabed0
+> [ 6735.155077] x29: 000003fffe4f6460 x28: 000003ff7fb23640 
+> [ 6735.160380] x27: 000003ff7fb23578 x26: 000000000059a420 
+> [ 6735.165681] x25: 000000000000005f x24: 000003ff7fb3f000 
+> [ 6735.170983] x23: 0000000000000000 x22: 000003ff7fc0d1fc 
+> [ 6735.176285] x21: fffffe03d8aabff0 x20: 0000000000008000 
+> [ 6735.181587] x19: 000000004178ee40 x18: 000003fffe4f64a0 
+> [ 6735.186888] x17: 000003ff7fc0d1fc x16: 000003ff7fd00008 
+> [ 6735.192189] x15: 00000013cd9f3df0 x14: 30303030203a6574 
+> [ 6735.197490] x13: fffffe00008eda38 x12: cb88537fdc8cb000 
+> [ 6735.202792] x11: fffffe03d8aabb70 x10: fffffe03d8aabb70 
+> [ 6735.208094] x9 : 000000000000015f x8 : 0000000000000000 
+> [ 6735.213395] x7 : 0000000000000200 x6 : fffffe0000095cd4 
+> [ 6735.218698] x5 : fffffe0300030001 x4 : 0000000000000000 
+> [ 6735.224001] x3 : fffffe03d8aabc80 x2 : 000000000000027e 
+> [ 6735.229304] x1 : cb88537fdc8cb000 x0 : cb88537fdc8cb000 
 
+<snip>
 
---=20
-Best regards,
-Andrey Skvortsov
-
-PGP Key ID: 0x57A3AEAD
-
---DocE+STaALJfprDB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBCgAGBQJUfhqZAAoJEAF8y6L1SLCtkkAP/icnHi9LdVrEGNQHoL31hF0a
-mh8SKYT7bAE+B2FrklNLEIVnQi2nZqhDr8bbMp6ZRO22C4C5RdwcLRTxGKELID4v
-JVOKpTlDaQN3BJqSmD5yWwW+Fn4bTOqhkcyFzYVe4EoGRq6Se2J7yqFdtcHoKFJ7
-g3TPpAaXflyiViCWF9zlnoHXDjZpqVOqoyQVoEdv/57wa3emGKu6iBfSPyiePhRr
-46ozDOHwAJ4GYa70vEv06I7ftLTgeRS342QZEgih965/Cde6v4nMtk+ySVVFuOuP
-GrWm/C5FXViTIlRCABn/7SIM8Hclydklzu0R7RQpGjlkvx2syhtCPXRqJc6MmkR3
-cCcnZcJ13XP6qvTQ/ZuWb3i+ZjN75TL/CIqckdF49Wjy6wcUVFSVBajEBHx/xWoA
-+BR1iuSTEsv9lbrqO8IQ6/rU+rrgxDzRDhJfyZU62I66sAwJNW+K8lzgET3OBd/u
-/p2GL3vNdLg2srw+zhIwuPM0yQdscHieN2FaEpt3PMXcO91rKuL/w3Hzaf8hWBF1
-fYCNM0RhI/olYeASJvFUkzYAJkbbtwHH9+kmljOjJRFYqj24nkWiS3xJDDQHt4qi
-rZDYvLXHnD19ExmwjY8oFipLRB2Sk0xhmKp+RsvJDas/D/j+wwrKNzpzklFAPdUe
-dIemJlPfad33CZH3Mkb3
-=ganE
------END PGP SIGNATURE-----
-
---DocE+STaALJfprDB--
