@@ -1,93 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933261AbaLBWIr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 17:08:47 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:43702 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932980AbaLBWIq (ORCPT
+	id S933295AbaLBWJk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 17:09:40 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:50296 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933194AbaLBWJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 17:08:46 -0500
+	Tue, 2 Dec 2014 17:09:35 -0500
 MIME-Version: 1.0
-In-Reply-To: <fbe03529d720e75aa8663f8b521af5b11b33d52f.1417553967.git.rgb@redhat.com>
-References: <fbe03529d720e75aa8663f8b521af5b11b33d52f.1417553967.git.rgb@redhat.com>
+In-Reply-To: <87bnnlvj43.fsf@x220.int.ebiederm.org>
+References: <52e0643bd47b1e5c65921d6e00aea1f724bb510a.1417281801.git.luto@amacapital.net>
+ <87h9xez20g.fsf@x220.int.ebiederm.org> <CALCETrXOz4C7Tu8mggBtR=k47ZmkuAhinVUxWJSFyS1Ep0HvRw@mail.gmail.com>
+ <87mw75ygwp.fsf@x220.int.ebiederm.org> <CALCETrVfO4sBdZcQiZXsofPZMj7pqKeVbX+4g3dAj6WjUca+1w@mail.gmail.com>
+ <87fvcxyf28.fsf_-_@x220.int.ebiederm.org> <CALCETrXsQbCeQBUo_FrXNVS42mBEFXz1jku9TicVbFhxTmNGmA@mail.gmail.com>
+ <87bnnlvj43.fsf@x220.int.ebiederm.org>
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 2 Dec 2014 14:08:24 -0800
-Message-ID: <CALCETrX_9zg_ZYZCSpB5Fu6xrC8vtHdSAs=2afZ=jeoek8dz6A@mail.gmail.com>
-Subject: Re: [PATCH] powerpc: add little endian flag to syscall_get_arch()
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com,
+Date: Tue, 2 Dec 2014 14:09:13 -0800
+Message-ID: <CALCETrUJ9Qk553YSsYkjaeE-Qw0u_Pt1eoODUPX-udsO8kf14w@mail.gmail.com>
+Subject: Re: [CFT][PATCH 1/3] userns: Avoid problems with negative groups
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linuxppc-dev@lists.ozlabs.org, Linux API <linux-api@vger.kernel.org>,
-        Steve Grubb <sgrubb@redhat.com>, Eric Paris <eparis@parisplace.org>,
-        Paul Moore <pmoore@redhat.com>, Tony Jones <tonyj@suse.de>
+        LSM <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Richard Weinberger <richard@nod.at>,
+        Kenton Varda <kenton@sandstorm.io>, stable <stable@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 2, 2014 at 1:27 PM, Richard Guy Briggs <rgb@redhat.com> wrote:
-> Since both ppc and ppc64 have LE variants which are now reported by uname, add
-> that flag (__AUDIT_ARCH_LE) to syscall_get_arch() and add AUDIT_ARCH_PPC*LE
-> variants.
+On Tue, Dec 2, 2014 at 1:26 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
 >
-> Without this,  perf trace and auditctl fail.
+>> On Tue, Dec 2, 2014 at 12:25 PM, Eric W. Biederman
+>> <ebiederm@xmission.com> wrote:
+>>>
+>>> Classic unix permission checks have an interesting feature, the group
+>>> permissions for a file can be set to less than the other permissions
+>>> on a file.  Occassionally this is used deliberately to give a certain
+>>> group of users fewer permissions than the default.
+>>>
+>>> Overlooking negative groups has resulted in the permission checks for
+>>> setting up a group mapping in a user namespace to be too lax.  Tighten
+>>> the permission checks in new_idmap_permitted to ensure that mapping
+>>> uids and gids into user namespaces without privilege will not result
+>>> in new combinations of credentials being available to the users.
+>>>
+>>> When setting mappings without privilege only the creator of the user
+>>> namespace is interesting as all other users that have CAP_SETUID over
+>>> the user namespace will also have CAP_SETUID over the user namespaces
+>>> parent.  So the scope of the unprivileged check is reduced to just
+>>> the case where cred->euid is the namespace creator.
+>>>
+>>> For setting a uid mapping without privilege only euid is considered as
+>>> setresuid can set uid, suid and fsuid from euid without privielege
+>>> making any combination of uids possible with user namespaces already
+>>> possible without them.
+>>>
+>>> For now seeting a gid mapping without privilege is removed.  The only
+>>> possible set of credentials that would be safe without a gid mapping
+>>> (egid without any supplementary groups) just doesn't happen in practice
+>>> so would simply lead to unused untested code.
+>>>
+>>> setgroups is modified to fail not only when the group ids do not
+>>> map but also when there are no gid mappings at all, preventing
+>>> setgroups(0, NULL) from succeeding when gid mappings have not been
+>>> established.
+>>>
+>>> For a small class of applications this change breaks userspace
+>>> and removes useful functionality.  This small class of applications
+>>> includes tools/testing/selftests/mount/unprivileged-remount-test.c
+>>>
+>>> Most of the removed functionality will be added back with the
+>>> addition of a one way knob to disable setgroups.  Once setgroups
+>>> is disabled setting the gid_map becomes as safe as setting the uid_map.
+>>>
+>>> For more common applications that set the uid_map and the gid_map with
+>>> privilege this change will have no effect on them.
+>>>
+>>> This should fix CVE-2014-8989.
+>>>
+>>> Cc: stable@vger.kernel.org
+>>> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+>>> ---
+>>
+>>>
+>>> +static inline bool gid_mapping_possible(const struct user_namespace *ns)
+>>> +{
+>>> +       return ns->gid_map.nr_extents != 0;
+>>> +}
+>>> +
+>>
+>> Can you rename this to userns_may_setgroups or something like that?
+>> To me, gid_mapping_possible sounds like you're allowed to map gids,
+>> which sounds like the opposite condition, and it doesn't explain what
+>> the point is.
 >
-> Mainline kernel reports ppc64le (per a058801) but there is no matching
-> AUDIT_ARCH_PPC64LE.
+> gid_mapping_established?
 >
+> What I mean to be testing if is if from_kgid and make_kgid will work
+> because the gid mappings have been set.
 
-There's no seccomp filter support for powerpc, so there's no risk that
-this breaks it.
+But why do you care whether from_kgid and make_kgid will work?  If
+they fail, then they fail.  I think that the point is that you're
+checking whether allowing setgroups to drop groups is safe, and that's
+only barely the same condition.
+
+>
+> The userns knob for setgroups is a different test and is added
+> in the next patch.  And yes we really need both or the knob can
+> start out as on, and we need to provent setgroups(0, NULL)
+> before the user namespace is unshared.
+
+Do you mean before it's mapped?
+
+>
+> Although come to think about it probably makes sense to roll those two
+> test into one function and call that inline function from the setgroups
+> implementation.
+
+That's what I think, too.
+
+>
+> Anyway I will think about it and see what I can do to make it easily
+> comprehensible.
+>
+>>> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+>>> index aa312b0dc3ec..51d65b444951 100644
+>>> --- a/kernel/user_namespace.c
+>>> +++ b/kernel/user_namespace.c
+>>> @@ -812,16 +812,19 @@ static bool new_idmap_permitted(const struct file *file,
+>>>                                 struct user_namespace *ns, int cap_setid,
+>>>                                 struct uid_gid_map *new_map)
+>>>  {
+>>> -       /* Allow mapping to your own filesystem ids */
+>>> -       if ((new_map->nr_extents == 1) && (new_map->extent[0].count == 1)) {
+>>> +       const struct cred *cred = file->f_cred;
+>>> +
+>>> +       /* Allow a mapping without capabilities when allowing the root
+>>> +        * of the user namespace capabilities restricted to that id
+>>> +        * will not change the set of credentials available to that
+>>> +        * user.
+>>> +        */
+>>> +       if ((new_map->nr_extents == 1) && (new_map->extent[0].count == 1) &&
+>>> +           uid_eq(ns->owner, cred->euid)) {
+>>
+>> What's uid_eq(ns->owner, cred->euid)) for?  This should already be covered by:
+>
+> This means that the only user we attempt to set up unprivileged mappings
+> for is the owner of the user namespace.  Anyone else should already
+> have capabilities in the parent user namespace or shouldn't be able to
+> set the mapping at all.
+>
+> In practice it is a clarification to make it easier to think about the code.
+
+But why?  I don't see why this check is necessary or why it's relevant
+to the current issue.
+
+>
+>>     if (cap_valid(cap_setid) && !file_ns_capable(file, ns, CAP_SYS_ADMIN))
+>>         goto out;
+>>
+>> (except that I don't know why cap_valid(cap_setid) is checked -- this
+>> ought to be enforced for projid_map, too, right?)
+>
+> What to do with projid_map is entirely different discussion.  In
+> practice it is dead, and either XFS needs to be fixed to use it
+> or that code needs to be removed.  At the time I wrote it XFS
+> did not require any privileges to set project ids.
+>
+>>>                 u32 id = new_map->extent[0].lower_first;
+>>>                 if (cap_setid == CAP_SETUID) {
+>>>                         kuid_t uid = make_kuid(ns->parent, id);
+>>> -                       if (uid_eq(uid, file->f_cred->fsuid))
+>>> -                               return true;
+>>> -               } else if (cap_setid == CAP_SETGID) {
+>>> -                       kgid_t gid = make_kgid(ns->parent, id);
+>>> -                       if (gid_eq(gid, file->f_cred->fsgid))
+>>> +                       if (uid_eq(uid, cred->euid))
+>>
+>> Why'd you change this from fsuid to euid?
+>
+> Because strangely enough I can set euid to any other uid with
+> setresuid, but the same does not hold with fsuid.
+>
+> So strictly speaking fsuid was actually wrong before.  In practice
+> fsuid == euid so I don't think anyone will care.  But I want very much
+> to enforce the rule that user namespaces can't give you any credentials
+> you couldn't get otherwise.
+
+Fair enough.  Want to split that into a separate patch, then?
 
 --Andy
 
-> See:
->         https://www.redhat.com/archives/linux-audit/2014-August/msg00082.html
->         https://www.redhat.com/archives/linux-audit/2014-December/msg00004.html
 >
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> ---
->  arch/powerpc/include/asm/syscall.h |    6 +++++-
->  include/uapi/linux/audit.h         |    2 ++
->  2 files changed, 7 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/powerpc/include/asm/syscall.h b/arch/powerpc/include/asm/syscall.h
-> index 6fa2708..a58acab 100644
-> --- a/arch/powerpc/include/asm/syscall.h
-> +++ b/arch/powerpc/include/asm/syscall.h
-> @@ -90,6 +90,10 @@ static inline void syscall_set_arguments(struct task_struct *task,
->
->  static inline int syscall_get_arch(void)
->  {
-> -       return is_32bit_task() ? AUDIT_ARCH_PPC : AUDIT_ARCH_PPC64;
-> +       int arch = is_32bit_task() ? AUDIT_ARCH_PPC : AUDIT_ARCH_PPC64;
-> +#ifdef __LITTLE_ENDIAN__
-> +       arch |= __AUDIT_ARCH_LE
-> +#endif
-> +       return arch;
->  }
->  #endif /* _ASM_SYSCALL_H */
-> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
-> index 4d100c8..fe29a99 100644
-> --- a/include/uapi/linux/audit.h
-> +++ b/include/uapi/linux/audit.h
-> @@ -364,7 +364,9 @@ enum {
->  #define AUDIT_ARCH_PARISC      (EM_PARISC)
->  #define AUDIT_ARCH_PARISC64    (EM_PARISC|__AUDIT_ARCH_64BIT)
->  #define AUDIT_ARCH_PPC         (EM_PPC)
-> +#define AUDIT_ARCH_PPCLE       (EM_PPC|__AUDIT_ARCH_LE)
->  #define AUDIT_ARCH_PPC64       (EM_PPC64|__AUDIT_ARCH_64BIT)
-> +#define AUDIT_ARCH_PPC64LE     (EM_PPC64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
->  #define AUDIT_ARCH_S390                (EM_S390)
->  #define AUDIT_ARCH_S390X       (EM_S390|__AUDIT_ARCH_64BIT)
->  #define AUDIT_ARCH_SH          (EM_SH)
-> --
-> 1.7.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-api" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Eric
 
 
 
