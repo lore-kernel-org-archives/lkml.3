@@ -1,367 +1,933 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995AbaLBOtV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 09:49:21 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41406 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752086AbaLBOtT (ORCPT
+	id S932307AbaLBOtd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 09:49:33 -0500
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:51373 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754007AbaLBOt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 09:49:19 -0500
-Date: Tue, 2 Dec 2014 14:49:14 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Will Deacon <Will.Deacon@arm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Shawn Guo <shawn.guo@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lucas Stach <l.stach@pengutronix.de>
-Subject: Re: [PATCH] arm: perf: Directly handle SMP platforms with one SPI
-Message-ID: <20141202144914.GK23671@leverpostej>
-References: <1416581603-30557-1-git-send-email-daniel.thompson@linaro.org>
- <1417021147-20735-1-git-send-email-daniel.thompson@linaro.org>
+	Tue, 2 Dec 2014 09:49:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417021147-20735-1-git-send-email-daniel.thompson@linaro.org>
-Thread-Topic: [PATCH] arm: perf: Directly handle SMP platforms with one SPI
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAVeFuKQcstteVi2O2ZE9PWeH9XfCzf9V3jhNnxXn9+1bcW6yA@mail.gmail.com>
+References: <1416832111-367-1-git-send-email-tomeu.vizoso@collabora.com>
+ <1416832111-367-3-git-send-email-tomeu.vizoso@collabora.com> <CAAVeFuKQcstteVi2O2ZE9PWeH9XfCzf9V3jhNnxXn9+1bcW6yA@mail.gmail.com>
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Date: Tue, 2 Dec 2014 15:49:07 +0100
+X-Google-Sender-Auth: f1AfePtqSRz1uwxKgknWmtKzea0
+Message-ID: <CAAObsKB+o0r=wLr1F2kaiMv7oxVzC_ytJvkeoiCuc-2LqEGQSA@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] PM / devfreq: tegra: add devfreq driver for Tegra
+ Activity Monitor
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Arto Merilainen <amerilainen@nvidia.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On 26 November 2014 at 11:02, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Mon, Nov 24, 2014 at 9:28 PM, Tomeu Vizoso
+> <tomeu.vizoso@collabora.com> wrote:
+>> The ACTMON block can monitor several counters, providing averaging and firing
+>> interrupts based on watermarking configuration. This implementation monitors
+>> the MCALL and MCCPU counters to choose an appropriate frequency for the
+>> external memory clock.
+>>
+>> This patch is based on work by Alex Frid <afrid@nvidia.com> and Mikko
+>> Perttunen <mikko.perttunen@kapsi.fi>.
+>
+> Thanks for taking the time to adapt this driver to use devfreq.
+> Looking at it, I am more and more convinced that's the correct way to
+> do.
+>
+> I made some comments inline, but I'd like to bring Arto Merilainen
+> into this discussion. Arto thought (and might even have some code)
+> about adding watermarks support to devfreq's core and using a generic
+> "watermark" governor which I believe would greatly benefit this patch
+> set.
 
-On Wed, Nov 26, 2014 at 04:59:07PM +0000, Daniel Thompson wrote:
-> Some ARM platforms mux the PMU interrupt of every core into a single
-> SPI. On such platforms if the PMU of any core except 0 raises an interrupt
-> then it cannot be serviced and eventually, if you are lucky, the spurious
-> irq detection might forcefully disable the interrupt.
-> 
-> On these SoCs it is not possible to determine which core raised the
-> interrupt so workaround this issue by queuing irqwork on the other
-> cores whenever the primary interrupt handler is unable to service the
-> interrupt.
-> 
-> The u8500 platform has an alternative workaround that dynamically alters
-> the affinity of the PMU interrupt. This workaround logic is no longer
-> required so the original code is removed as is the hook it relied upon.
+Do you know of any other SoC family that would be able to use that code?
 
-I agree that the workaround for this design "feature" should live in the
-architectural perf code rather than in board files.
+> Arto, do you have some concrete code you could submit here? If
+> you lack the time for doing so, some guidance so we could implement
+> this support ourselves would be great.
+>
+>>
+>> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+>>
+>> ---
+>>
+>> v2:     * Use devfreq
+>> ---
+>>  drivers/devfreq/Kconfig         |  10 +
+>>  drivers/devfreq/Makefile        |   1 +
+>>  drivers/devfreq/tegra-devfreq.c | 718 ++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 729 insertions(+)
+>>  create mode 100644 drivers/devfreq/tegra-devfreq.c
+>>
+>> diff --git a/drivers/devfreq/Kconfig b/drivers/devfreq/Kconfig
+>> index faf4e70..4aab799 100644
+>> --- a/drivers/devfreq/Kconfig
+>> +++ b/drivers/devfreq/Kconfig
+>> @@ -87,4 +87,14 @@ config ARM_EXYNOS5_BUS_DEVFREQ
+>>           It reads PPMU counters of memory controllers and adjusts the
+>>           operating frequencies and voltages with OPP support.
+>>
+>> +config ARM_TEGRA_DEVFREQ
+>> +       tristate "Tegra DEVFREQ Driver"
+>> +       depends on ARCH_TEGRA_124_SOC
+>> +       select DEVFREQ_GOV_SIMPLE_ONDEMAND
+>> +       select PM_OPP
+>> +       help
+>> +         This adds the DEVFREQ driver for the Tegra family of SoCs.
+>> +         It reads ACTMON counters of memory controllers and adjusts the
+>> +         operating frequencies and voltages with OPP support.
+>> +
+>>  endif # PM_DEVFREQ
+>> diff --git a/drivers/devfreq/Makefile b/drivers/devfreq/Makefile
+>> index 16138c9..0ea991f 100644
+>> --- a/drivers/devfreq/Makefile
+>> +++ b/drivers/devfreq/Makefile
+>> @@ -7,3 +7,4 @@ obj-$(CONFIG_DEVFREQ_GOV_USERSPACE)     += governor_userspace.o
+>>  # DEVFREQ Drivers
+>>  obj-$(CONFIG_ARM_EXYNOS4_BUS_DEVFREQ)  += exynos/
+>>  obj-$(CONFIG_ARM_EXYNOS5_BUS_DEVFREQ)  += exynos/
+>> +obj-$(CONFIG_ARM_TEGRA_DEVFREQ)                += tegra-devfreq.o
+>> diff --git a/drivers/devfreq/tegra-devfreq.c b/drivers/devfreq/tegra-devfreq.c
+>> new file mode 100644
+>> index 0000000..3479096
+>> --- /dev/null
+>> +++ b/drivers/devfreq/tegra-devfreq.c
+>
+> This file should probably be named tegra-actmon-devfreq.c, for nothing
+> guarantees that we will not have more devfreq devices for Tegra in the
+> future.
 
-I had intended to implement that atop of my heterogeneous CPUs series
-[1] (so as to only target the subset of cores for a given PMU), but I
-only had an affinity bouncing implementation, and the general approach
-looks like it has the potential to be far better in terms of latency.
+Good point.
 
-Hwoever, I have some concerns with the implementation below.
+>> @@ -0,0 +1,718 @@
+>> +/*
+>> + * A devfreq driver for NVIDIA Tegra SoCs
+>> + *
+>> + * Copyright (c) 2014 NVIDIA CORPORATION. All rights reserved.
+>> + * Copyright (C) 2014 Google, Inc
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify it
+>> + * under the terms and conditions of the GNU General Public License,
+>> + * version 2, as published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope it will be useful, but WITHOUT
+>> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+>> + * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+>> + * more details.
+>> + *
+>> + * You should have received a copy of the GNU General Public License
+>> + * along with this program. If not, see <http://www.gnu.org/licenses/>.
+>> + *
+>> + */
+>> +
+>> +#include <linux/clk.h>
+>> +#include <linux/cpufreq.h>
+>> +#include <linux/devfreq.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/io.h>
+>> +#include <linux/module.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/pm_opp.h>
+>> +#include <linux/reset.h>
+>> +
+>> +#include "governor.h"
+>> +
+>> +#define ACTMON_GLB_STATUS                                      0x0
+>> +#define ACTMON_GLB_PERIOD_CTRL                                 0x4
+>> +
+>> +#define ACTMON_DEV_CTRL                                                0x0
+>> +#define ACTMON_DEV_CTRL_K_VAL_SHIFT                            10
+>> +#define ACTMON_DEV_CTRL_ENB_PERIODIC                           BIT(18)
+>> +#define ACTMON_DEV_CTRL_AVG_BELOW_WMARK_EN                     BIT(20)
+>> +#define ACTMON_DEV_CTRL_AVG_ABOVE_WMARK_EN                     BIT(21)
+>> +#define ACTMON_DEV_CTRL_CONSECUTIVE_BELOW_WMARK_NUM_SHIFT      23
+>> +#define ACTMON_DEV_CTRL_CONSECUTIVE_ABOVE_WMARK_NUM_SHIFT      26
+>> +#define ACTMON_DEV_CTRL_CONSECUTIVE_BELOW_WMARK_EN             BIT(29)
+>> +#define ACTMON_DEV_CTRL_CONSECUTIVE_ABOVE_WMARK_EN             BIT(30)
+>> +#define ACTMON_DEV_CTRL_ENB                                    BIT(31)
+>> +
+>> +#define ACTMON_DEV_UPPER_WMARK                                 0x4
+>> +#define ACTMON_DEV_LOWER_WMARK                                 0x8
+>> +#define ACTMON_DEV_INIT_AVG                                    0xc
+>> +#define ACTMON_DEV_AVG_UPPER_WMARK                             0x10
+>> +#define ACTMON_DEV_AVG_LOWER_WMARK                             0x14
+>> +#define ACTMON_DEV_COUNT_WEIGHT                                        0x18
+>> +#define ACTMON_DEV_AVG_COUNT                                   0x20
+>> +#define ACTMON_DEV_INTR_STATUS                                 0x24
+>> +
+>> +#define ACTMON_INTR_STATUS_CLEAR                               0xffffffff
+>> +
+>> +#define ACTMON_DEV_INTR_CONSECUTIVE_UPPER                      BIT(31)
+>> +#define ACTMON_DEV_INTR_CONSECUTIVE_LOWER                      BIT(30)
+>> +
+>> +#define ACTMON_ABOVE_WMARK_WINDOW                              1
+>> +#define ACTMON_BELOW_WMARK_WINDOW                              3
+>> +#define ACTMON_BOOST_FREQ_STEP                                 16000
+>> +
+>> +/* activity counter is incremented every 256 memory transactions, and each
+>> + * transaction takes 4 EMC clocks for Tegra124; So the COUNT_WEIGHT is
+>> + * 4 * 256 = 1024.
+>> + */
+>> +#define ACTMON_COUNT_WEIGHT                                    0x400
+>> +
+>> +/*
+>> + * ACTMON_AVERAGE_WINDOW_LOG2: default value for @DEV_CTRL_K_VAL, which
+>> + * translates to 2 ^ (K_VAL + 1). ex: 2 ^ (6 + 1) = 128
+>> + */
+>> +#define ACTMON_AVERAGE_WINDOW_LOG2                     6
+>> +#define ACTMON_SAMPLING_PERIOD                         12 /* ms */
+>> +#define ACTMON_DEFAULT_AVG_BAND                                6  /* 1/10 of % */
+>> +
+>> +#define KHZ                                                    1000
+>> +
+>> +/* Assume that the bus is saturated if the utilization is 25% */
+>> +#define BUS_SATURATION_RATIO                                   25
+>> +
+>> +/**
+>> + * struct tegra_devfreq_device_config - configuration specific to an ACTMON
+>> + * device
+>> + *
+>> + * Coefficients and thresholds are in %
+>
+> Short comments about what the members are for would be perfect (same
+> for other structures). It is not immediatly obvious what e.g.
+> avg_dependency_threshold is for.
 
-> 
-> Tested on imx6q (which has fours cores/PMUs all muxed to a single SPI).
-> 
-> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-> ---
-> 
-> Notes:
->     v2:
->      * Fixed build problems on systems without SMP.
-> 
->     v1:
->      * Thanks to Lucas Stach, Russell King and Thomas Gleixner for
->        critiquing an older, completely different way to tackle the
->        same problem.
-> 
-> 
->  arch/arm/include/asm/pmu.h       |  12 ++++
->  arch/arm/kernel/perf_event.c     |  13 ++--
->  arch/arm/kernel/perf_event_cpu.c | 126 +++++++++++++++++++++++++++++++++++++++
->  arch/arm/mach-ux500/cpu-db8500.c |  29 ---------
->  4 files changed, 143 insertions(+), 37 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/pmu.h b/arch/arm/include/asm/pmu.h
-> index 0b648c541293..771201ff0988 100644
-> --- a/arch/arm/include/asm/pmu.h
-> +++ b/arch/arm/include/asm/pmu.h
-> @@ -81,6 +81,12 @@ struct pmu_hw_events {
->         raw_spinlock_t          pmu_lock;
->  };
-> 
-> +struct arm_pmu_work {
-> +       struct irq_work work;
-> +       struct arm_pmu *arm_pmu;
-> +       atomic_t ret;
-> +};
-> +
->  struct arm_pmu {
->         struct pmu      pmu;
->         cpumask_t       active_irqs;
-> @@ -108,6 +114,12 @@ struct arm_pmu {
->         u64             max_period;
->         struct platform_device  *plat_device;
->         struct pmu_hw_events    *(*get_hw_events)(void);
-> +#ifdef CONFIG_SMP
-> +       irqreturn_t     (*handle_irq_none)(struct arm_pmu *);
+Fair enough.
 
-I don't think this needs to live on the struct arm_pmu; we're unlikely
-to need a different callback given this is already generic to CPUs, so
-we can just call it directly.
+>> + */
+>> +struct tegra_devfreq_device_config {
+>> +       u32             offset;
+>> +       u32             irq_mask;
+>> +
+>> +       unsigned int    boost_up_coeff;
+>> +       unsigned int    boost_down_coeff;
+>> +       unsigned int    boost_up_threshold;
+>> +       unsigned int    boost_down_threshold;
+>> +       u32             avg_dependency_threshold;
+>> +};
+>> +
+>> +enum tegra_actmon_device {
+>> +       MCALL = 0,
+>> +       MCCPU,
+>> +};
+>> +
+>> +static struct tegra_devfreq_device_config actmon_device_configs[] = {
+>> +       {
+>> +               /* MCALL */
+>> +               .offset = 0x1c0,
+>> +               .irq_mask = 1 << 26,
+>> +               .boost_up_coeff = 200,
+>> +               .boost_down_coeff = 50,
+>> +               .boost_up_threshold = 60,
+>> +               .boost_down_threshold = 40,
+>> +       },
+>> +       {
+>> +               /* MCCPU */
+>> +               .offset = 0x200,
+>> +               .irq_mask = 1 << 25,
+>> +               .boost_up_coeff = 800,
+>> +               .boost_down_coeff = 90,
+>> +               .boost_up_threshold = 27,
+>> +               .boost_down_threshold = 10,
+>> +               .avg_dependency_threshold = 50000,
+>
+> The boost_* and avg_dependency_threshold parameters are calling to be
+> exported through debugfs in some future patch. :)
+>
+> Just for my education, why do we need to monitor both MCALL and MCCPU,
+> since MCCPU accesses are included in MCALL? Do we want to boost things
+> differently in case of CPU activity?
 
-Once Will's arm-perf-3.19 tag hits mainline (with my perf cleanups
-series) the CCI will be decoupled [2] and the arm_pmu framework will
-only be used by CPU PMUs.
+Yeah, I started by using only MCALL and found that performance
+decreased substantially in scenarios with high CPU loads. Once I took
+into account CPU frequency and the MCCPU counters as per downstream,
+performance improved greatly.
 
-> +       int             single_irq;
+I cannot tell why MCALL isn't enough though, maybe you can find a
+fellow NVIDIAn that knows about it? Couldn't find anything in the
+public TRM about it.
 
-With my heterogeneous PMUs series you shouldn't need this, there will be
-an irq_map with a single entry instead.
+>> +       },
+>> +};
+>> +
+>> +/**
+>> + * struct tegra_devfreq_device - state specific to an ACTMON device
+>> + *
+>> + * Frequencies are in kHz.
+>> + */
+>> +struct tegra_devfreq_device {
+>> +       const struct tegra_devfreq_device_config *config;
+>> +
+>> +       void __iomem    *regs;
+>> +       u32             avg_band_freq;
+>> +       u32             avg_count;
+>> +
+>> +       unsigned long   target_freq;
+>> +       unsigned long   boost_freq;
+>> +};
+>> +
+>> +struct tegra_devfreq {
+>> +       struct devfreq          *devfreq;
+>> +
+>> +       struct platform_device  *pdev;
+>> +       struct reset_control    *reset;
+>> +       struct clk              *clock;
+>> +       void __iomem            *regs;
+>> +
+>> +       spinlock_t              lock;
+>> +
+>> +       struct clk              *emc_clock;
+>> +       unsigned long           max_freq;
+>> +       unsigned long           cur_freq;
+>> +       struct notifier_block   rate_change_nb;
+>> +
+>> +       struct tegra_devfreq_device devices[ARRAY_SIZE(actmon_device_configs)];
+>> +};
+>> +
+>> +struct tegra_actmon_emc_ratio {
+>> +       unsigned long cpu_freq;
+>> +       unsigned long emc_freq;
+>> +};
+>> +
+>> +static struct tegra_actmon_emc_ratio actmon_emc_ratios[] = {
+>> +       { 1400000, ULONG_MAX },
+>> +       { 1200000,    750000 },
+>> +       { 1100000,    600000 },
+>> +       { 1000000,    500000 },
+>> +       {  800000,    375000 },
+>> +       {  500000,    200000 },
+>> +       {  250000,    100000 },
+>
+> Aren't these numbers board-specific? Should they be moved to the DT maybe?
 
-> +       struct arm_pmu_work __percpu *work;
+I would expect it to be common to all boards with the same SoC.
 
-In my cleanups series I folded all the percpu data into the
-pmu_hw_events. It would be nice to fold this too if possible, so as to
-make allocation and freeing simpler. We already have a percpu_pmu
-pointer with my series applied, so we don't need the arm_pmu pointer.
+>> +};
+>> +
+>> +static unsigned long do_percent(unsigned long val, unsigned int pct)
+>> +{
+>> +       return val * pct / 100;
+>> +}
+>> +
+>> +static void tegra_devfreq_update_avg_wmark(struct tegra_devfreq_device *dev)
+>> +{
+>> +       u32 avg = dev->avg_count;
+>> +       u32 band = dev->avg_band_freq * ACTMON_SAMPLING_PERIOD;
+>> +
+>> +       writel(avg + band, dev->regs + ACTMON_DEV_AVG_UPPER_WMARK);
+>
+> Having actmon_readl() and actmon_writel() inline functions that make
+> the "dev->regs +" unnecessary would be nicer to read and less
+> error-prone IMHO.
 
-If it feels like we're straying too far from hw events data we can
-rename the structure to pmu_cpu_data or something like that.
+Will try that.
 
-> +       atomic_t        remaining_work;
-> +#endif
->  };
-> 
->  #define to_arm_pmu(p) (container_of(p, struct arm_pmu, pmu))
-> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-> index b50a770f8c99..ba67d6309e1e 100644
-> --- a/arch/arm/kernel/perf_event.c
-> +++ b/arch/arm/kernel/perf_event.c
-> @@ -306,22 +306,19 @@ validate_group(struct perf_event *event)
->  static irqreturn_t armpmu_dispatch_irq(int irq, void *dev)
->  {
->         struct arm_pmu *armpmu;
-> -       struct platform_device *plat_device;
-> -       struct arm_pmu_platdata *plat;
->         int ret;
->         u64 start_clock, finish_clock;
-> 
->         if (irq_is_percpu(irq))
->                 dev = *(void **)dev;
->         armpmu = dev;
-> -       plat_device = armpmu->plat_device;
-> -       plat = dev_get_platdata(&plat_device->dev);
-> 
->         start_clock = sched_clock();
-> -       if (plat && plat->handle_irq)
-> -               ret = plat->handle_irq(irq, dev, armpmu->handle_irq);
-> -       else
-> -               ret = armpmu->handle_irq(irq, dev);
-> +       ret = armpmu->handle_irq(irq, dev);
-> +#ifdef CONFIG_SMP
-> +       if (ret == IRQ_NONE && armpmu->handle_irq_none)
-> +               ret = armpmu->handle_irq_none(dev);
-> +#endif
->         finish_clock = sched_clock();
-> 
->         perf_sample_event_took(finish_clock - start_clock);
-> diff --git a/arch/arm/kernel/perf_event_cpu.c b/arch/arm/kernel/perf_event_cpu.c
-> index eb2c4d55666b..5605d4a4c01f 100644
-> --- a/arch/arm/kernel/perf_event_cpu.c
-> +++ b/arch/arm/kernel/perf_event_cpu.c
-> @@ -88,6 +88,120 @@ static void cpu_pmu_disable_percpu_irq(void *data)
->         disable_percpu_irq(irq);
->  }
-> 
-> +#ifdef CONFIG_SMP
-> +
-> +/*
-> + * Workaround logic that is distributed to all cores if the PMU has only
-> + * a single IRQ and the CPU receiving that IRQ cannot handle it. Its
-> + * job is to try to service the interrupt on the current CPU. It will
-> + * also enable the IRQ again if all the other CPUs have already tried to
-> + * service it.
-> + */
-> +static void cpu_pmu_do_percpu_work(struct irq_work *w)
-> +{
-> +       struct arm_pmu_work *work = container_of(w, struct arm_pmu_work, work);
-> +       struct arm_pmu *cpu_pmu = work->arm_pmu;
-> +
-> +       atomic_set(&work->ret,
-> +                  cpu_pmu->handle_irq(cpu_pmu->single_irq, cpu_pmu));
-> +
-> +       if (atomic_dec_and_test(&cpu_pmu->remaining_work))
-> +               enable_irq(cpu_pmu->single_irq);
-> +}
-> +
-> +/*
-> + * This callback, which is enabled only on SMP platforms that are
-> + * running with a single IRQ, is called when the PMU handler running in
-> + * the current CPU cannot service the interrupt.
-> + *
-> + * It will disable the interrupt and distribute irqwork to all other
-> + * processors in the system. Hopefully one of them will clear the
-> + * interrupt...
-> + */
-> +static irqreturn_t cpu_pmu_handle_irq_none(struct arm_pmu *cpu_pmu)
-> +{
-> +       int num_online = num_online_cpus();
-> +       irqreturn_t ret = IRQ_NONE;
-> +       int cpu, cret;
+>> +       avg = max(avg, band);
+>> +       writel(avg - band, dev->regs + ACTMON_DEV_AVG_LOWER_WMARK);
+>> +}
+>> +
+>> +static void tegra_devfreq_update_wmark(struct tegra_devfreq *tegra,
+>> +                                      struct tegra_devfreq_device *dev)
+>> +{
+>> +       u32 val = tegra->cur_freq * ACTMON_SAMPLING_PERIOD;
+>> +
+>> +       writel(do_percent(val, dev->config->boost_up_threshold),
+>> +              dev->regs + ACTMON_DEV_UPPER_WMARK);
+>> +
+>> +       writel(do_percent(val, dev->config->boost_down_threshold),
+>> +              dev->regs + ACTMON_DEV_LOWER_WMARK);
+>> +}
+>> +
+>> +static void actmon_write_barrier(struct tegra_devfreq *tegra)
+>> +{
+>> +       /* ensure the update has reached the ACTMON */
+>> +       wmb();
+>> +       readl(tegra->regs + ACTMON_GLB_STATUS);
+>> +}
+>> +
+>> +static irqreturn_t actmon_isr(int irq, void *data)
+>> +{
+>> +       struct tegra_devfreq *tegra = data;
+>> +       struct tegra_devfreq_device *dev = NULL;
+>> +       unsigned long flags;
+>> +       u32 val;
+>> +       unsigned int i;
+>> +
+>> +       val = readl(tegra->regs + ACTMON_GLB_STATUS);
+>> +
+>> +       for (i = 0; i < ARRAY_SIZE(tegra->devices); i++) {
+>> +               if (val & tegra->devices[i].config->irq_mask) {
+>> +                       dev = tegra->devices + i;
+>> +                       break;
+>> +               }
+>> +       }
+>> +
+>> +       if (!dev)
+>> +               return IRQ_NONE;
+>> +
+>> +       spin_lock_irqsave(&tegra->lock, flags);
+>> +
+>> +       dev->avg_count = readl(dev->regs + ACTMON_DEV_AVG_COUNT);
+>> +       tegra_devfreq_update_avg_wmark(dev);
+>> +
+>> +       val = readl(dev->regs + ACTMON_DEV_INTR_STATUS);
+>> +       if (val & ACTMON_DEV_INTR_CONSECUTIVE_UPPER) {
+>> +               val = readl(dev->regs + ACTMON_DEV_CTRL) |
+>> +                       ACTMON_DEV_CTRL_CONSECUTIVE_ABOVE_WMARK_EN |
+>> +                       ACTMON_DEV_CTRL_CONSECUTIVE_BELOW_WMARK_EN;
+>> +
+>> +               /*
+>> +                * new_boost = min(old_boost * up_coef + step, max_freq)
+>> +                */
+>> +               dev->boost_freq = do_percent(dev->boost_freq,
+>> +                                            dev->config->boost_up_coeff);
+>> +               dev->boost_freq += ACTMON_BOOST_FREQ_STEP;
+>> +               if (dev->boost_freq >= tegra->max_freq) {
+>> +                       dev->boost_freq = tegra->max_freq;
+>> +                       val &= ~ACTMON_DEV_CTRL_CONSECUTIVE_ABOVE_WMARK_EN;
+>
+> Instead of setting this flag to possibly remove it later, maybe set it
+> only if this condition is not met?
 
-s/cret/cpu_ret/ -- it's slightly more typing but easier to read IMO.
+That sounds better indeed, thanks.
 
-> +
-> +       if (num_online <= 1)
-> +               return IRQ_NONE;
+>> +               }
+>> +               writel(val, dev->regs + ACTMON_DEV_CTRL);
+>> +       } else if (val & ACTMON_DEV_INTR_CONSECUTIVE_LOWER) {
+>> +               val = readl(dev->regs + ACTMON_DEV_CTRL) |
+>> +                       ACTMON_DEV_CTRL_CONSECUTIVE_ABOVE_WMARK_EN |
+>> +                       ACTMON_DEV_CTRL_CONSECUTIVE_BELOW_WMARK_EN;
+>> +
+>> +               /*
+>> +                * new_boost = old_boost * down_coef
+>> +                * or 0 if (old_boost * down_coef < step / 2)
+>> +                */
+>> +               dev->boost_freq = do_percent(dev->boost_freq,
+>> +                                            dev->config->boost_down_coeff);
+>> +               if (dev->boost_freq < (ACTMON_BOOST_FREQ_STEP >> 1)) {
+>> +                       dev->boost_freq = 0;
+>> +                       val &= ~ACTMON_DEV_CTRL_CONSECUTIVE_BELOW_WMARK_EN;
+>
+> Same here.
+>
+>> +               }
+>> +               writel(val, dev->regs + ACTMON_DEV_CTRL);
+>> +       }
+>> +
+>> +       if (dev->config->avg_dependency_threshold) {
+>> +               val = readl(dev->regs + ACTMON_DEV_CTRL);
+>> +               if (dev->avg_count >= dev->config->avg_dependency_threshold)
+>> +                       val |= ACTMON_DEV_CTRL_CONSECUTIVE_BELOW_WMARK_EN;
+>> +               else if (dev->boost_freq == 0)
+>> +                       val &= ~ACTMON_DEV_CTRL_CONSECUTIVE_BELOW_WMARK_EN;
+>> +               writel(val, dev->regs + ACTMON_DEV_CTRL);
+>> +       }
+>> +
+>> +       writel(ACTMON_INTR_STATUS_CLEAR, dev->regs + ACTMON_DEV_INTR_STATUS);
+>> +
+>> +       actmon_write_barrier(tegra);
+>> +
+>> +       spin_unlock_irqrestore(&tegra->lock, flags);
+>> +
+>> +       return IRQ_WAKE_THREAD;
+>> +}
+>> +
+>> +static unsigned long actmon_cpu_to_emc_rate(struct tegra_devfreq *tegra,
+>> +                                           unsigned long cpu_freq)
+>> +{
+>> +       unsigned int i;
+>> +       struct tegra_actmon_emc_ratio *ratio = actmon_emc_ratios;
+>> +
+>> +       for (i = 0; i < ARRAY_SIZE(actmon_emc_ratios); i++, ratio++) {
+>> +               if (cpu_freq >= ratio->cpu_freq) {
+>> +                       if (ratio->emc_freq >= tegra->max_freq)
+>> +                               return tegra->max_freq;
+>> +                       else
+>> +                               return ratio->emc_freq;
+>> +               }
+>> +       }
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static void actmon_update_target(struct tegra_devfreq *tegra,
+>> +                                struct tegra_devfreq_device *dev)
+>> +{
+>> +       unsigned long cpu_freq = 0;
+>> +       unsigned long static_cpu_emc_freq = 0;
+>> +       unsigned int avg_sustain_coef;
+>> +       unsigned long flags;
+>> +
+>> +       if (dev->config->avg_dependency_threshold) {
+>> +               cpu_freq = cpufreq_get(0);
+>> +               static_cpu_emc_freq = actmon_cpu_to_emc_rate(tegra, cpu_freq);
+>> +       }
+>> +
+>> +       spin_lock_irqsave(&tegra->lock, flags);
+>> +
+>> +       dev->target_freq = dev->avg_count / ACTMON_SAMPLING_PERIOD;
+>> +       avg_sustain_coef = 100 * 100 / dev->config->boost_up_threshold;
+>> +       dev->target_freq = do_percent(dev->target_freq, avg_sustain_coef);
+>> +       dev->target_freq += dev->boost_freq;
+>> +
+>> +       if (dev->avg_count >= dev->config->avg_dependency_threshold)
+>> +               dev->target_freq = max(dev->target_freq, static_cpu_emc_freq);
+>> +
+>> +       spin_unlock_irqrestore(&tegra->lock, flags);
+>> +}
+>> +
+>> +static irqreturn_t actmon_thread_isr(int irq, void *data)
+>> +{
+>> +       struct tegra_devfreq *tegra = data;
+>> +
+>> +       mutex_lock(&tegra->devfreq->lock);
+>> +       update_devfreq(tegra->devfreq);
+>> +       mutex_unlock(&tegra->devfreq->lock);
+>> +
+>> +       return IRQ_HANDLED;
+>> +}
+>> +
+>> +static int tegra_actmon_rate_notify_cb(struct notifier_block *nb,
+>> +                                      unsigned long action, void *ptr)
+>> +{
+>> +       struct clk_notifier_data *data = ptr;
+>> +       struct tegra_devfreq *tegra = container_of(nb, struct tegra_devfreq,
+>> +                                                  rate_change_nb);
+>> +       unsigned int i;
+>> +       unsigned long flags;
+>> +
+>> +       spin_lock_irqsave(&tegra->lock, flags);
+>> +
+>> +       switch (action) {
+>> +       case POST_RATE_CHANGE:
+>> +               tegra->cur_freq = data->new_rate / KHZ;
+>> +
+>> +               for (i = 0; i < ARRAY_SIZE(tegra->devices); i++)
+>> +                       tegra_devfreq_update_wmark(tegra, tegra->devices + i);
+>> +
+>> +               actmon_write_barrier(tegra);
+>> +               break;
+>> +       case PRE_RATE_CHANGE:
+>> +               /* fall through */
+>> +       case ABORT_RATE_CHANGE:
+>
+> Can't you use "default:" here instead?
 
-Surely num_online can never be below one here?
+Yeah, this needs simplifying.
 
-We didn't get the online CPUs, so can't other CPUs may shut down between
-the call to num_online_cpus() and portions of the below code?
+>> +               break;
+>> +       };
+>> +
+>> +       spin_unlock_irqrestore(&tegra->lock, flags);
+>> +
+>> +       return NOTIFY_OK;
+>> +}
+>> +
+>> +static void tegra_actmon_configure_device(struct tegra_devfreq *tegra,
+>> +                                         struct tegra_devfreq_device *dev)
+>> +{
+>> +       u32 val;
+>> +
+>> +       dev->avg_band_freq = tegra->max_freq * ACTMON_DEFAULT_AVG_BAND / KHZ;
+>> +       dev->target_freq = tegra->cur_freq;
+>> +
+>> +       dev->avg_count = tegra->cur_freq * ACTMON_SAMPLING_PERIOD;
+>> +       writel(dev->avg_count, dev->regs + ACTMON_DEV_INIT_AVG);
+>> +
+>> +       tegra_devfreq_update_avg_wmark(dev);
+>> +       tegra_devfreq_update_wmark(tegra, dev);
+>> +
+>> +       writel(ACTMON_COUNT_WEIGHT, dev->regs + ACTMON_DEV_COUNT_WEIGHT);
+>> +       writel(ACTMON_INTR_STATUS_CLEAR, dev->regs + ACTMON_DEV_INTR_STATUS);
+>> +
+>> +       val = 0;
+>> +       val |= ACTMON_DEV_CTRL_ENB_PERIODIC |
+>> +              ACTMON_DEV_CTRL_AVG_ABOVE_WMARK_EN |
+>> +              ACTMON_DEV_CTRL_AVG_BELOW_WMARK_EN;
+>> +       val |= (ACTMON_AVERAGE_WINDOW_LOG2 - 1)
+>> +               << ACTMON_DEV_CTRL_K_VAL_SHIFT;
+>> +       val |= (ACTMON_BELOW_WMARK_WINDOW - 1)
+>> +               << ACTMON_DEV_CTRL_CONSECUTIVE_BELOW_WMARK_NUM_SHIFT;
+>> +       val |= (ACTMON_ABOVE_WMARK_WINDOW - 1)
+>> +               << ACTMON_DEV_CTRL_CONSECUTIVE_ABOVE_WMARK_NUM_SHIFT;
+>> +       val |= ACTMON_DEV_CTRL_CONSECUTIVE_BELOW_WMARK_EN |
+>> +              ACTMON_DEV_CTRL_CONSECUTIVE_ABOVE_WMARK_EN;
+>> +
+>> +       writel(val, dev->regs + ACTMON_DEV_CTRL);
+>> +
+>> +       actmon_write_barrier(tegra);
+>> +
+>> +       val = readl(dev->regs + ACTMON_DEV_CTRL);
+>> +       val |= ACTMON_DEV_CTRL_ENB;
+>> +       writel(val, dev->regs + ACTMON_DEV_CTRL);
+>> +
+>> +       actmon_write_barrier(tegra);
+>> +}
+>> +
+>> +static int tegra_devfreq_suspend(struct device *dev)
+>> +{
+>> +       struct platform_device *pdev;
+>> +       struct tegra_devfreq *tegra;
+>> +       struct tegra_devfreq_device *actmon_dev;
+>> +       unsigned int i;
+>> +       u32 val;
+>> +
+>> +       pdev = container_of(dev, struct platform_device, dev);
+>> +       tegra = platform_get_drvdata(pdev);
+>> +
+>> +       for (i = 0; i < ARRAY_SIZE(tegra->devices); i++) {
+>> +               actmon_dev = &tegra->devices[i];
+>> +
+>> +               val = readl(actmon_dev->regs + ACTMON_DEV_CTRL);
+>> +               val &= ~ACTMON_DEV_CTRL_ENB;
+>> +               writel(val, actmon_dev->regs + ACTMON_DEV_CTRL);
+>> +
+>> +               writel(ACTMON_INTR_STATUS_CLEAR,
+>> +                      actmon_dev->regs + ACTMON_DEV_INTR_STATUS);
+>> +
+>> +               actmon_write_barrier(tegra);
+>> +       }
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static int tegra_devfreq_resume(struct device *dev)
+>> +{
+>> +       struct platform_device *pdev;
+>> +       struct tegra_devfreq *tegra;
+>> +       struct tegra_devfreq_device *actmon_dev;
+>> +       unsigned int i;
+>> +
+>> +       pdev = container_of(dev, struct platform_device, dev);
+>> +       tegra = platform_get_drvdata(pdev);
+>> +
+>> +       for (i = 0; i < ARRAY_SIZE(tegra->devices); i++) {
+>> +               actmon_dev = &tegra->devices[i];
+>> +
+>> +               tegra_actmon_configure_device(tegra, actmon_dev);
+>> +       }
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static int tegra_devfreq_target(struct device *dev, unsigned long *freq,
+>> +                               u32 flags)
+>> +{
+>> +       struct platform_device *pdev;
+>> +       struct tegra_devfreq *tegra;
+>> +       struct dev_pm_opp *opp;
+>> +       unsigned long rate = *freq * KHZ;
+>> +
+>> +       pdev = container_of(dev, struct platform_device, dev);
+>> +       tegra = platform_get_drvdata(pdev);
+>> +
+>> +       rcu_read_lock();
+>> +       opp = devfreq_recommended_opp(dev, &rate, flags);
+>> +       if (IS_ERR(opp)) {
+>> +               rcu_read_unlock();
+>> +               dev_err(dev, "Failed to find opp for %lu KHz\n", *freq);
+>> +               return PTR_ERR(opp);
+>> +       }
+>> +       rate = dev_pm_opp_get_freq(opp);
+>> +       rcu_read_unlock();
+>> +
+>> +       /* TODO: Once we have per-user clk constraints, set a floor */
+>> +       clk_set_rate(tegra->emc_clock, rate);
+>> +
+>> +       /* TODO: Set voltage as well */
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static int tegra_devfreq_get_dev_status(struct device *dev,
+>> +                                       struct devfreq_dev_status *stat)
+>> +{
+>> +       struct platform_device *pdev;
+>> +       struct tegra_devfreq *tegra;
+>> +       struct tegra_devfreq_device *actmon_dev;
+>> +
+>> +       pdev = container_of(dev, struct platform_device, dev);
+>> +       tegra = platform_get_drvdata(pdev);
+>> +
+>> +       stat->current_frequency = tegra->cur_freq;
+>> +
+>> +       /* To be used by the tegra governor */
+>> +       stat->private_data = tegra;
+>> +
+>> +       /* The below are to be used by the other governors */
+>> +
+>> +       actmon_dev = &tegra->devices[MCALL];
+>> +
+>> +       /* Number of cycles spent on memory access */
+>> +       stat->busy_time = actmon_dev->avg_count;
+>> +
+>> +       /* The bus can be considered to be saturated way before 100% */
+>> +       stat->busy_time *= 100 / BUS_SATURATION_RATIO;
+>> +
+>> +       /* Number of cycles in a sampling period */
+>> +       stat->total_time = ACTMON_SAMPLING_PERIOD * tegra->cur_freq;
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static int tegra_devfreq_get_target(struct devfreq *devfreq,
+>> +                                   unsigned long *freq)
+>> +{
+>> +       struct devfreq_dev_status stat;
+>> +       struct tegra_devfreq *tegra;
+>> +       struct tegra_devfreq_device *dev;
+>> +       unsigned long target_freq = 0;
+>> +       unsigned int i;
+>> +       int err;
+>> +
+>> +       err = devfreq->profile->get_dev_status(devfreq->dev.parent, &stat);
+>> +       if (err)
+>> +               return err;
+>> +
+>> +       tegra = stat.private_data;
+>> +
+>> +       for (i = 0; i < ARRAY_SIZE(tegra->devices); i++) {
+>> +               dev = &tegra->devices[i];
+>> +
+>> +               actmon_update_target(tegra, dev);
+>> +
+>> +               target_freq = max(target_freq, dev->target_freq);
+>> +       }
+>
+> I *think* you should be able to remove the dependency on
+> tegra_devfreq_device from this function (ideally, governors should be
+> device-agnostic). Since you call get_dev_status() from this function
+> anyway, why not moving the actmon_update_target() calls into
+> tegra_devfreq_get_dev_status(), and write busy_time/total_time values
+> that will make tegra_devfreq_get_target() infer the right frequency?
+>
+>> +
+>> +       *freq = target_freq;
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static int tegra_devfreq_event_handler(struct devfreq *devfreq,
+>> +                                      unsigned int event, void *data)
+>> +{
+>> +       return 0;
+>> +}
+>
+> I think you will need an implementation of this. Upon
+> DEVFREQ_GOV_START/DEVFREQ_GOV_RESUME, enable actmon interrupts. On
+> DEVFREQ_GOV_STOP/DEVFREQ_GOV_SUSPEND, disable interrupts. I know you
+> are doing it somewhere, but it should be done here as this is what
+> devfreq expects (e.g. to correctly stop interrupts if you switch from
+> the "tegra" to the "performance" governor).
+>
+> Sadly, this adds the exact same dependency on tegra_devfreq that I
+> tried to remove from the previous function, which is unfortunate. This
+> is where watermarking support in devfreq would be useful - when
+> starting the governor, we could ask the device to monitor some low and
+> high marks through new hooks and handle all this nicely.
 
-Could that prevent us from re-enabling the interrupt? Or are we
-protected from that someehow?
+Wonder if the devfreq maintainers have an opinion on this.
 
-> +
-> +       disable_irq_nosync(cpu_pmu->single_irq);
-> +       atomic_add(num_online, &cpu_pmu->remaining_work);
-> +       smp_mb__after_atomic();
-> +
-> +       for_each_online_cpu(cpu) {
-> +               struct arm_pmu_work *work = per_cpu_ptr(cpu_pmu->work, cpu);
-> +
-> +               if (cpu == smp_processor_id())
-> +                       continue;
-> +
-> +               /*
-> +                * We can be extremely relaxed about memory ordering
-> +                * here. All we are doing is gathering information
-> +                * about the past to help us give a return value that
-> +                * will keep the spurious interrupt detector both happy
-> +                * *and* functional. We are not shared so we can
-> +                * tolerate the occasional spurious IRQ_HANDLED.
-> +                */
-> +               cret = atomic_read(&work->ret);
-> +               if (cret != IRQ_NONE)
-> +                       ret = cret;
+>> +
+>> +static struct devfreq_governor tegra_devfreq_governor = {
+>> +       .name = "tegra",
+>
+> This governor could certainly get a more specific name. :P
 
-I'm a little confused as to what's going on here. Why are we checking
-the return code for the work triggered by the _previous_ interrupt
-before queueing up the next work item?
+Fair.
 
-As far as I can tell, work_ret was never initialised, so what does this
-do for the first round?
+>> +       .get_target_freq = tegra_devfreq_get_target,
+>> +       .event_handler = tegra_devfreq_event_handler,
+>> +};
+>> +
+>> +static struct devfreq_dev_profile tegra_devfreq_profile = {
+>> +       .polling_ms     = 0,
+>> +       .target         = tegra_devfreq_target,
+>> +       .get_dev_status = tegra_devfreq_get_dev_status,
+>> +};
+>
+> Maybe move this declaration right after the declaration of
+> tegra_devfreq_get_dev_status() to make things easier to put together
+> in the reader's mind.
 
-> +
-> +               if (!irq_work_queue_on(&work->work, cpu))
-> +                       atomic_dec(&cpu_pmu->remaining_work);
+Agreed.
 
-What context does queued work run in? Will we sample the expected set of
-registers (e.g. can we sample userspace)?
+>> +
+>> +static int tegra_devfreq_probe(struct platform_device *pdev)
+>> +{
+>> +       struct tegra_devfreq *tegra;
+>> +       struct tegra_devfreq_device *dev;
+>> +       struct resource *res;
+>> +       unsigned long max_freq;
+>> +       unsigned int i;
+>> +       int irq;
+>> +       int err;
+>> +
+>> +       tegra = devm_kzalloc(&pdev->dev, sizeof(*tegra), GFP_KERNEL);
+>> +       if (!tegra)
+>> +               return -ENOMEM;
+>> +
+>> +       spin_lock_init(&tegra->lock);
+>> +
+>> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +       if (!res) {
+>> +               dev_err(&pdev->dev, "Failed to get regs resource\n");
+>> +               return -ENODEV;
+>> +       }
+>> +
+>> +       tegra->regs = devm_ioremap_resource(&pdev->dev, res);
+>> +       if (IS_ERR(tegra->regs)) {
+>> +               dev_err(&pdev->dev, "Failed to get IO memory\n");
+>> +               return PTR_ERR(tegra->regs);
+>> +       }
+>> +
+>> +       tegra->reset = devm_reset_control_get(&pdev->dev, "actmon");
+>> +       if (IS_ERR(tegra->reset)) {
+>> +               dev_err(&pdev->dev, "Failed to get reset\n");
+>> +               return PTR_ERR(tegra->reset);
+>> +       }
+>> +
+>> +       tegra->clock = devm_clk_get(&pdev->dev, "actmon");
+>> +       if (IS_ERR(tegra->clock)) {
+>> +               dev_err(&pdev->dev, "Failed to get actmon clock\n");
+>> +               return PTR_ERR(tegra->clock);
+>> +       }
+>> +
+>> +       tegra->emc_clock = devm_clk_get(&pdev->dev, "emc");
+>> +       if (IS_ERR(tegra->emc_clock)) {
+>> +               dev_err(&pdev->dev, "Failed to get emc clock\n");
+>> +               return PTR_ERR(tegra->emc_clock);
+>> +       }
+>> +
+>> +       err = of_init_opp_table(&pdev->dev);
+>> +       if (err) {
+>> +               dev_err(&pdev->dev, "Failed to init operating point table\n");
+>> +               return err;
+>> +       }
+>> +
+>> +       tegra->rate_change_nb.notifier_call = tegra_actmon_rate_notify_cb;
+>> +       err = clk_notifier_register(tegra->emc_clock, &tegra->rate_change_nb);
+>> +       if (err) {
+>> +               dev_err(&pdev->dev,
+>> +                       "Failed to register rate change notifier\n");
+>> +               return err;
+>> +       }
+>> +
+>> +       reset_control_assert(tegra->reset);
+>> +
+>> +       err = clk_prepare_enable(tegra->clock);
+>> +       if (err) {
+>> +               reset_control_deassert(tegra->reset);
+>> +               return err;
+>> +       }
+>> +
+>> +       reset_control_deassert(tegra->reset);
+>> +
+>> +       max_freq = clk_round_rate(tegra->emc_clock, ULONG_MAX);
+>> +       tegra->max_freq = max_freq / KHZ;
+>> +
+>> +       clk_set_rate(tegra->emc_clock, max_freq);
+>> +
+>> +       tegra->cur_freq = clk_get_rate(tegra->emc_clock) / KHZ;
+>> +
+>> +       writel(ACTMON_SAMPLING_PERIOD - 1,
+>> +              tegra->regs + ACTMON_GLB_PERIOD_CTRL);
+>> +
+>> +       for (i = 0; i < ARRAY_SIZE(actmon_device_configs); i++) {
+>> +               dev = tegra->devices + i;
+>> +               dev->config = actmon_device_configs + i;
+>> +               dev->regs = tegra->regs + dev->config->offset;
+>> +
+>> +               tegra_actmon_configure_device(tegra, tegra->devices + i);
+>> +       }
+>> +
+>> +       err = devfreq_add_governor(&tegra_devfreq_governor);
+>
+> This should probably be done in an initcall (that would be executed
+> before probe() is called). We can in theory have several instances of
+> ACTMON, but the governor should only be added once in all cases. I
+> understand that this is unlikely to happen in practice though.
 
-> +       }
-> +
-> +       if (atomic_dec_and_test(&cpu_pmu->remaining_work))
-> +               enable_irq(cpu_pmu->single_irq);
+Will look at this.
 
-If we initialise remaining work to the number of CPUs minus one, we can
-drop this last bit, and another CPU will always re-enable the interrupt.
+>> +       if (err) {
+>> +               dev_err(&pdev->dev, "Failed to add governor\n");
+>> +               return err;
+>> +       }
+>> +
+>> +       tegra_devfreq_profile.initial_freq = clk_get_rate(tegra->emc_clock);
+>> +       tegra->devfreq = devm_devfreq_add_device(&pdev->dev,
+>> +                                                &tegra_devfreq_profile,
+>> +                                                "tegra",
+>
+> I think "tegra_actmon" would look better here. :)
 
-> +
-> +       return ret;
-> +}
-> +
-> +static int cpu_pmu_single_irq_workaround_init(struct arm_pmu *cpu_pmu)
-> +{
-> +       struct platform_device *pmu_device = cpu_pmu->plat_device;
-> +       int cpu;
-> +
-> +       cpu_pmu->handle_irq_none = cpu_pmu_handle_irq_none;
-> +       cpu_pmu->single_irq = platform_get_irq(pmu_device, 0);
-> +
-> +       cpu_pmu->work = alloc_percpu(struct arm_pmu_work);
-> +       if (!cpu_pmu->work) {
-> +               pr_err("no memory for shared IRQ workaround\n");
-> +               return -ENOMEM;
-> +       }
-> +
-> +       for_each_possible_cpu(cpu) {
-> +               struct arm_pmu_work *w = per_cpu_ptr(cpu_pmu->work, cpu);
-> +
-> +               init_irq_work(&w->work, cpu_pmu_do_percpu_work);
-> +               w->arm_pmu = cpu_pmu;
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +static void cpu_pmu_single_irq_workaround_term(struct arm_pmu *cpu_pmu)
-> +{
-> +       cpu_pmu->handle_irq_none = cpu_pmu_handle_irq_none;
+Agreed.
 
-Huh? We set that up identically in cpu_pmu_single_irq_workaround_init.
+>> +                                                NULL);
+>> +
+>> +       irq = platform_get_irq(pdev, 0);
+>> +       err = devm_request_threaded_irq(&pdev->dev, irq, actmon_isr,
+>> +                                       actmon_thread_isr, IRQF_SHARED,
+>> +                                       "tegra-devfreq", tegra);
+>
+> You probably ought to do this *before* adding the devfreq device,
+> otherwise you are at risk of receiving interrupts nobody will handle.
 
-I think the handle_irq_none member should go.
+I don't get this one. The IRQ is requested as soon as everything is in
+place to handle it.
 
-> +       free_percpu(cpu_pmu->work);
-> +}
-> +
-> +#else /* CONFIG_SMP */
-> +
-> +static int cpu_pmu_single_irq_workaround_init(struct arm_pmu *cpu_pmu)
-> +{
-> +       return 0;
-> +}
-> +
-> +static void cpu_pmu_single_irq_workaround_term(struct arm_pmu *cpu_pmu)
-> +{
-> +}
-> +
-> +#endif /* CONFIG_SMP */
-> +
->  static void cpu_pmu_free_irq(struct arm_pmu *cpu_pmu)
->  {
->         int i, irq, irqs;
-> @@ -107,6 +221,8 @@ static void cpu_pmu_free_irq(struct arm_pmu *cpu_pmu)
->                         if (irq >= 0)
->                                 free_irq(irq, cpu_pmu);
->                 }
-> +
-> +               cpu_pmu_single_irq_workaround_term(cpu_pmu);
->         }
->  }
-> 
-> @@ -162,6 +278,16 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
-> 
->                         cpumask_set_cpu(i, &cpu_pmu->active_irqs);
->                 }
-> +
-> +               /*
-> +                * If we are running SMP and have only one interrupt source
-> +                * then get ready to share that single irq among the cores.
-> +                */
-> +               if (nr_cpu_ids > 1 && irqs == 1) {
-> +                       err = cpu_pmu_single_irq_workaround_init(cpu_pmu);
-> +                       if (err)
-> +                               return err;
-> +               }
+>> +       if (err) {
+>> +               dev_err(&pdev->dev, "Interrupt request failed\n");
+>> +               return err;
+>> +       }
+>> +
+>> +       platform_set_drvdata(pdev, tegra);
+>
+> This should also be done before the call to devfreq_add_device().
 
-What does this do for systems using PPIs, where there's a single percpu
-interrupt (e.g. Krait)?
+Shouldn't this be done between devfreq_add_device and
+devm_request_threaded_irq? Guess I'm missing something.
+
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static int tegra_devfreq_remove(struct platform_device *pdev)
+>> +{
+>> +       struct tegra_devfreq *tegra = platform_get_drvdata(pdev);
+>> +
+>> +       clk_notifier_unregister(tegra->emc_clock, &tegra->rate_change_nb);
+>> +
+>> +       clk_disable_unprepare(tegra->clock);
+>
+> There seems to be a lot missing in this function, like removing the
+> devfreq device?
+
+Those resources are managed, so devm should take care of releasing them.
 
 Thanks,
-Mark.
 
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/300748.html
-[2] https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/tag/?h=perf/updates&id=arm-perf-3.19
-[3] https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/commit/?h=perf/updates&id=c6f85cb4305bd80658d19f7b097a7c36ef9912e2
+Tomeu
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
