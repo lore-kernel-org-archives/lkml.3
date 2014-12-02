@@ -1,126 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932759AbaLBTQv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:16:51 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:59772 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073AbaLBTQt (ORCPT
+	id S932804AbaLBTST (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:18:19 -0500
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:62489 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073AbaLBTSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:16:49 -0500
+	Tue, 2 Dec 2014 14:18:17 -0500
+Date: Tue, 2 Dec 2014 14:18:14 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Jeff Layton <jlayton@primarydata.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a workqueue-based
+ nfsd
+Message-ID: <20141202191814.GK10918@htj.dyndns.org>
+References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
 MIME-Version: 1.0
-Reply-To: mparker@computer.org
-In-Reply-To: <547A64BC.3020303@landley.net>
-References: <CADBG5q8os3YNE__=7WQjuGTKErhw_bEa_JjyJsjaZqb8pQ16YQ@mail.gmail.com>
-	<547A64BC.3020303@landley.net>
-Date: Tue, 2 Dec 2014 12:16:48 -0700
-Message-ID: <CADBG5q_+RNbdk+Dygi2ietYfoyFG0WHDZvCDOGAXD0W-1p+XJA@mail.gmail.com>
-Subject: Re: broken links on https://www.kernel.org/doc/
-From: Matt Parker <parkerman@gmail.com>
-To: Rob Landley <rob@landley.net>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After reading the bugzilla comments, reading about the break-in, and
-reading https://www.kernel.org/category/signatures.html, I would have
-to say that what they're asking (set up trust keys, and use an
-authorized delivery mechanism) isn't at all unreasonable.
+Hello, Jeff.
 
-Them not replying to what you are proposing is surely irritating.
-Since I don't know them, I'm guessing, but it might be because your
-suggestions are circumventing the security process they're terribly
-serious about, and there isn't really room for compromise in their
-eyes. They may see it as you not respecting how important this is to
-them.
+On Tue, Dec 02, 2014 at 01:24:09PM -0500, Jeff Layton wrote:
+> 2) get some insight about the latency from those with a better
+> understanding of the CMWQ code. Any thoughts as to why we might be
+> seeing such high latency here? Any ideas of what we can do about it?
 
-I'm sure they appreciate your work, even if they don't outright say
-it--documentation is a thankless job. I'm sure the community
-appreciates your work. I appreciate your work. But it sounds like
-you've reached an impasse, which is unfortunate. I hope you can find
-some way forward.
+The latency is prolly from concurrency management.  Work items which
+participate in concurrency management (the ones on per-cpu workqueues
+w/o WQ_CPU_INTENSIVE set) tend to get penalized on latency side quite
+a bit as the "run" durations for all such work items end up being
+serialized on the cpu.  Setting WQ_CPU_INTENSIVE on the workqueue
+disables concurrency management and so does making the workqueue
+unbound.  If strict cpu locality is likely to be beneficial and each
+work item isn't likely to consume huge amount of cpu cycles,
+WQ_CPU_INTENSIVE would fit better; otherwise, WQ_UNBOUND to let the
+scheduler do its thing.
 
-Regards,
+Thanks.
 
--Matt
-
-On Sat, Nov 29, 2014 at 5:28 PM, Rob Landley <rob@landley.net> wrote:
->
-> On 11/29/14 16:27, Matt Parker wrote:
-> > Howdy Rob,
-> >
-> > I was following the links in "Videos worth watching" and found that the
-> > links for the videos on video.google.com <http://video.google.com> are
-> > broken, but I could find them on youtube.
->
-> Yeah, I know.
->
-> Updated links have been on http://landley.net/kdocs for years, but I
-> haven't been able to update kernel.org because the kernel guys took
-> rsync access away in the epic rounds of locking the barn door after the
-> horses escaped after kernel.org got broken into years ago.
->
-> There's a bugzilla thread on this, which boils down to "ever since the
-> Linux Foundation took over we've been paralyzed by bureaucracy", and I
-> got tired of fighting it.
->
-> https://bugzilla.kernel.org/show_bug.cgi?id=52721
->
-> The specific problem is they're convinced that git is the only tool you
-> can ever upload files to kernel.org with, just like it's the only tool
-> you can ever download files with. (After all, don't you watch those
-> youtube videos you mentioned through git? Just like every time you
-> compile a kernel all the intermediate object files are checked into git
-> so the linker can produce the executable.)
->
-> I pointed out that one of the things I wanted to upload again was the
-> 2.8 gigabyte driver writing tutorial Greg KH had in his home directory
-> before the breakin, and that having 3 gigs of space permanently stuck in
-> a git repo even though it might go away again (it's now available on
-> http://video.linux.com/videos/write-a-real-linux-driver-greg-kh-2008 but
-> wasn't at the time) was a bad thing. To me this was just one obvious
-> example of how git was the _wrong_tool_ for this job, so of course they
-> never replied to this objection.
->
-> The last entry of the above bugzilla thread is me pointing them towards
-> an ssh configuration that _only_ allows a given user to rsync into a
-> single directory (no shell access, no access outside that directory), to
-> which they never replied. Not replying when I raise a point they don't
-> like is kinda the kernel guys' way.
->
-> I'd do things like complain about being unable to upload a new
-> kernel.org/doc/Documentation directory with html indexes, and they'd
-> make it a raw git checkout with no html indexes. (When I pointed out I
-> had a 00-index to html index converter script, which I was also using to
-> list files that aren't in 00-index or 00-index entries with no
-> corresponding file, they'd ignore me and then start a linux-kernel
-> thread about "does anybody use 00-index files for anything? Why do we
-> even have them? They don't always match the files that are there...")
->
-> I similarly poked them about the "make htmldocs" output not being
-> updated and they put the htmldocs output there... except I used to have
-> the "one big html file" version as well as the much of little files
-> versions, and of course they didn't reproduce that, and ignored me when
-> I pointed out they hadn't.
->
-> Another example is when I poked them about
-> https://www.kernel.org/doc/menuconfig/ being years out of date (last I
-> checked I can still generate it with my python script, but since I can't
-> upload the results why bother). So they removed the link to it from the
-> top page: problem solved!
->
-> (I note that none of these involved emailing me _back_, it was all
-> "silently do things to the website I notice weeks later".)
->
-> And yet despite editing the kernel.org/doc page several times since I
-> lost access to it (several more than just those examples), they never
-> took my name off it. So I get emails every few months from well-meaning
-> people, and I explain that the kernel.org developers care so little
-> about documentation they could never be bothered to understand what I
-> actually _did_, let alone restore my ability to do it.
->
-> That's basically why I gave up on kernel Documentation work and handed
-> maintainership back to Randy. I got tired of talking to a brick wall.
->
-> Rob
+-- 
+tejun
