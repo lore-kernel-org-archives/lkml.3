@@ -1,66 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932302AbaLBOL3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 09:11:29 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:37888 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056AbaLBOLP (ORCPT
+	id S1754212AbaLBOLq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 09:11:46 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:39656 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753159AbaLBOG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 09:11:15 -0500
-MIME-Version: 1.0
-In-Reply-To: <1417527724-24960-1-git-send-email-acourbot@nvidia.com>
-References: <CAAVeFuJm_UXHioENBg6himgZkEmopr=T8iCbt0xD6-ds6AHyxA@mail.gmail.com>
-	<1417527724-24960-1-git-send-email-acourbot@nvidia.com>
-Date: Tue, 2 Dec 2014 15:11:13 +0100
-X-Google-Sender-Auth: B-WOLJNA_nsX9__y-MVbEvJYquY
-Message-ID: <CAMuHMdUVZ9st+UjTcfmncnBQjj_4tiNS3wFu-SpRUdGmg220Ug@mail.gmail.com>
-Subject: Re: [PATCH] gpio: fix deferred probe detection for legacy API
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Linux-sh list <linux-sh@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 2 Dec 2014 09:06:58 -0500
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: peterz@infradead.org, mingo@redhat.com
+Cc: dietmar.eggemann@arm.com, vincent.guittot@linaro.org, pjt@google.com,
+        bsegall@google.com, mturquette@linaro.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Morten Rasmussen <morten.rasmussen@arm.com>
+Subject: [RFC PATCH 04/10] arm: Frequency invariant scheduler load-tracking support
+Date: Tue,  2 Dec 2014 14:06:26 +0000
+Message-Id: <1417529192-11579-5-git-send-email-morten.rasmussen@arm.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417529192-11579-1-git-send-email-morten.rasmussen@arm.com>
+References: <1417529192-11579-1-git-send-email-morten.rasmussen@arm.com>
+X-OriginalArrivalTime: 02 Dec 2014 14:06:56.0213 (UTC) FILETIME=[3B27C050:01D00E39]
+X-MC-Unique: 114120214065710301
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id sB2EBtXj017036
 
-Hi Alexandre,
+From: Morten Rasmussen <Morten.Rasmussen@arm.com>
 
-On Tue, Dec 2, 2014 at 2:42 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> Commit 14e85c0e69d5 ("gpio: remove gpio_descs global array") changed
-> gpio_to_desc()'s behavior to return NULL not only for GPIOs numbers
-> not in the valid range, but also for all GPIOs whose controller has not
-> been probed yet. Although this behavior is more correct (nothing hints
-> that these GPIO numbers will be populated later), this affects
-> gpio_request() and gpio_request_one() which call gpiod_request() with a
-> NULL descriptor, causing it to return -EINVAL instead of the expected
-> -EPROBE_DEFER for a non-probed GPIO.
->
-> gpiod_request() is only called with a descriptor obtained from
-> gpio_to_desc() from these two functions, so address the issue there.
->
-> Other ways to obtain GPIOs rely on well-defined mappings and can thus
-> return -EPROBE_DEFER only for relevant GPIOs, and are thus not affected
-> by this issue.
->
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+Implements arch-specific function to provide the scheduler with a
+frequency scaling correction factor for more accurate load-tracking. The
+factor is:
 
-Thanks, this restored functionality. There's still a loud
-WARN(1, "invalid GPIO %d\n", gpio) in gpio_to_desc().
+	current_freq(cpu) * SCHED_CAPACITY_SCALE / max_freq(cpu)
 
-Tested-by: Geert Uytterhoeven <geert+renesas@glider.be>
+This implementation only provides frequency invariance. No
+micro-architecture invariance yet.
 
-Gr{oetje,eeting}s,
+Cc: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
+---
+ arch/arm/kernel/topology.c | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
-                        Geert
+diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+index 89cfdd6..73ef337 100644
+--- a/arch/arm/kernel/topology.c
++++ b/arch/arm/kernel/topology.c
+@@ -169,6 +169,39 @@ static void update_cpu_capacity(unsigned int cpu)
+ 		cpu, arch_scale_cpu_capacity(NULL, cpu));
+ }
+ 
++/*
++ * Scheduler load-tracking scale-invariance
++ *
++ * Provides the scheduler with a scale-invariance correction factor that
++ * compensates for frequency scaling.
++ */
++
++static DEFINE_PER_CPU(atomic_long_t, cpu_curr_freq);
++static DEFINE_PER_CPU(atomic_long_t, cpu_max_freq);
++
++/* cpufreq callback function setting current cpu frequency */
++void arch_scale_set_curr_freq(int cpu, unsigned long freq)
++{
++	atomic_long_set(&per_cpu(cpu_curr_freq, cpu), freq);
++}
++
++/* cpufreq callback function setting max cpu frequency */
++void arch_scale_set_max_freq(int cpu, unsigned long freq)
++{
++	atomic_long_set(&per_cpu(cpu_max_freq, cpu), freq);
++}
++
++unsigned long arch_scale_freq_capacity(struct sched_domain *sd, int cpu)
++{
++	unsigned long curr = atomic_long_read(&per_cpu(cpu_curr_freq, cpu));
++	unsigned long max = atomic_long_read(&per_cpu(cpu_max_freq, cpu));
++
++	if (!max)
++		return SCHED_CAPACITY_SCALE;
++
++	return (curr * SCHED_CAPACITY_SCALE) / max;
++}
++
+ #else
+ static inline void parse_dt_topology(void) {}
+ static inline void update_cpu_capacity(unsigned int cpuid) {}
+-- 
+1.9.1
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
