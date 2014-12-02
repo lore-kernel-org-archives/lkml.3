@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933761AbaLBT0n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:26:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46970 "EHLO
+	id S933814AbaLBT0v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:26:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46997 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933730AbaLBT0j (ORCPT
+	with ESMTP id S933782AbaLBT0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:26:39 -0500
+	Tue, 2 Dec 2014 14:26:48 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <johan@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 021/121] USB: kobil_sct: fix non-atomic allocation in write path
-Date: Tue,  2 Dec 2014 11:18:20 -0800
-Message-Id: <1417548000-1794-22-git-send-email-kamal@canonical.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Jonathan Cameron <jic23@kernel.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 034/121] staging:iio:ade7758: Remove "raw" from channel name
+Date: Tue,  2 Dec 2014 11:18:33 -0800
+Message-Id: <1417548000-1794-35-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
@@ -26,43 +27,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 191252837626fca0de694c18bb2aa64c118eda89 upstream.
+commit b598aacc29331e7e638cd509108600e916c6331b upstream.
 
-Write may be called from interrupt context so make sure to use
-GFP_ATOMIC for all allocations in write.
+"raw" is a property of a channel, but should not be part of the name of
+channel.
 
-Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/kobil_sct.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/staging/iio/meter/ade7758_core.c | 24 +++++++++---------------
+ 1 file changed, 9 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/usb/serial/kobil_sct.c b/drivers/usb/serial/kobil_sct.c
-index 78b48c3..efa75b4 100644
---- a/drivers/usb/serial/kobil_sct.c
-+++ b/drivers/usb/serial/kobil_sct.c
-@@ -336,7 +336,8 @@ static int kobil_write(struct tty_struct *tty, struct usb_serial_port *port,
- 			port->interrupt_out_urb->transfer_buffer_length = length;
- 
- 			priv->cur_pos = priv->cur_pos + length;
--			result = usb_submit_urb(port->interrupt_out_urb, GFP_NOIO);
-+			result = usb_submit_urb(port->interrupt_out_urb,
-+					GFP_ATOMIC);
- 			dev_dbg(&port->dev, "%s - Send write URB returns: %i\n", __func__, result);
- 			todo = priv->filled - priv->cur_pos;
- 
-@@ -351,7 +352,7 @@ static int kobil_write(struct tty_struct *tty, struct usb_serial_port *port,
- 		if (priv->device_type == KOBIL_ADAPTER_B_PRODUCT_ID ||
- 			priv->device_type == KOBIL_ADAPTER_K_PRODUCT_ID) {
- 			result = usb_submit_urb(port->interrupt_in_urb,
--								GFP_NOIO);
-+					GFP_ATOMIC);
- 			dev_dbg(&port->dev, "%s - Send read URB returns: %i\n", __func__, result);
- 		}
- 	}
+diff --git a/drivers/staging/iio/meter/ade7758_core.c b/drivers/staging/iio/meter/ade7758_core.c
+index 214b03e..94d9914 100644
+--- a/drivers/staging/iio/meter/ade7758_core.c
++++ b/drivers/staging/iio/meter/ade7758_core.c
+@@ -630,7 +630,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
+ 		.type = IIO_VOLTAGE,
+ 		.indexed = 1,
+ 		.channel = 0,
+-		.extend_name = "raw",
+ 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_VOLTAGE),
+ 		.scan_index = 0,
+ 		.scan_type = {
+@@ -642,7 +641,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
+ 		.type = IIO_CURRENT,
+ 		.indexed = 1,
+ 		.channel = 0,
+-		.extend_name = "raw",
+ 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_CURRENT),
+ 		.scan_index = 1,
+ 		.scan_type = {
+@@ -654,7 +652,7 @@ static const struct iio_chan_spec ade7758_channels[] = {
+ 		.type = IIO_POWER,
+ 		.indexed = 1,
+ 		.channel = 0,
+-		.extend_name = "apparent_raw",
++		.extend_name = "apparent",
+ 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_APP_PWR),
+ 		.scan_index = 2,
+ 		.scan_type = {
+@@ -666,7 +664,7 @@ static const struct iio_chan_spec ade7758_channels[] = {
+ 		.type = IIO_POWER,
+ 		.indexed = 1,
+ 		.channel = 0,
+-		.extend_name = "active_raw",
++		.extend_name = "active",
+ 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_ACT_PWR),
+ 		.scan_index = 3,
+ 		.scan_type = {
+@@ -678,7 +676,7 @@ static const struct iio_chan_spec ade7758_channels[] = {
+ 		.type = IIO_POWER,
+ 		.indexed = 1,
+ 		.channel = 0,
+-		.extend_name = "reactive_raw",
++		.extend_name = "reactive",
+ 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_REACT_PWR),
+ 		.scan_index = 4,
+ 		.scan_type = {
+@@ -690,7 +688,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
+ 		.type = IIO_VOLTAGE,
+ 		.indexed = 1,
+ 		.channel = 1,
+-		.extend_name = "raw",
+ 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_VOLTAGE),
+ 		.scan_index = 5,
+ 		.scan_type = {
+@@ -702,7 +699,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
+ 		.type = IIO_CURRENT,
+ 		.indexed = 1,
+ 		.channel = 1,
+-		.extend_name = "raw",
+ 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_CURRENT),
+ 		.scan_index = 6,
+ 		.scan_type = {
+@@ -714,7 +710,7 @@ static const struct iio_chan_spec ade7758_channels[] = {
+ 		.type = IIO_POWER,
+ 		.indexed = 1,
+ 		.channel = 1,
+-		.extend_name = "apparent_raw",
++		.extend_name = "apparent",
+ 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_APP_PWR),
+ 		.scan_index = 7,
+ 		.scan_type = {
+@@ -726,7 +722,7 @@ static const struct iio_chan_spec ade7758_channels[] = {
+ 		.type = IIO_POWER,
+ 		.indexed = 1,
+ 		.channel = 1,
+-		.extend_name = "active_raw",
++		.extend_name = "active",
+ 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_ACT_PWR),
+ 		.scan_index = 8,
+ 		.scan_type = {
+@@ -738,7 +734,7 @@ static const struct iio_chan_spec ade7758_channels[] = {
+ 		.type = IIO_POWER,
+ 		.indexed = 1,
+ 		.channel = 1,
+-		.extend_name = "reactive_raw",
++		.extend_name = "reactive",
+ 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_REACT_PWR),
+ 		.scan_index = 9,
+ 		.scan_type = {
+@@ -750,7 +746,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
+ 		.type = IIO_VOLTAGE,
+ 		.indexed = 1,
+ 		.channel = 2,
+-		.extend_name = "raw",
+ 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_VOLTAGE),
+ 		.scan_index = 10,
+ 		.scan_type = {
+@@ -762,7 +757,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
+ 		.type = IIO_CURRENT,
+ 		.indexed = 1,
+ 		.channel = 2,
+-		.extend_name = "raw",
+ 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_CURRENT),
+ 		.scan_index = 11,
+ 		.scan_type = {
+@@ -774,7 +768,7 @@ static const struct iio_chan_spec ade7758_channels[] = {
+ 		.type = IIO_POWER,
+ 		.indexed = 1,
+ 		.channel = 2,
+-		.extend_name = "apparent_raw",
++		.extend_name = "apparent",
+ 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_APP_PWR),
+ 		.scan_index = 12,
+ 		.scan_type = {
+@@ -786,7 +780,7 @@ static const struct iio_chan_spec ade7758_channels[] = {
+ 		.type = IIO_POWER,
+ 		.indexed = 1,
+ 		.channel = 2,
+-		.extend_name = "active_raw",
++		.extend_name = "active",
+ 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_ACT_PWR),
+ 		.scan_index = 13,
+ 		.scan_type = {
+@@ -798,7 +792,7 @@ static const struct iio_chan_spec ade7758_channels[] = {
+ 		.type = IIO_POWER,
+ 		.indexed = 1,
+ 		.channel = 2,
+-		.extend_name = "reactive_raw",
++		.extend_name = "reactive",
+ 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_REACT_PWR),
+ 		.scan_index = 14,
+ 		.scan_type = {
 -- 
 1.9.1
 
