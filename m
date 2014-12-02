@@ -1,96 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932450AbaLBSpv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 13:45:51 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:42161 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754560AbaLBSpt (ORCPT
+	id S932590AbaLBSqg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 13:46:36 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:40515 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026AbaLBSqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 13:45:49 -0500
+	Tue, 2 Dec 2014 13:46:34 -0500
+Date: Tue, 2 Dec 2014 13:46:15 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Joerg Roedel <jroedel@suse.de>
+Cc: Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] swiotlb: Warn on allocation failure in
+ swiotlb_alloc_coherent
+Message-ID: <20141202184615.GA32622@laptop.dumpdata.com>
+References: <1417174149-31210-1-git-send-email-joro@8bytes.org>
+ <1417174149-31210-2-git-send-email-joro@8bytes.org>
+ <20141201202802.GC21626@laptop.dumpdata.com>
+ <20141202144122.GI3156@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <1417539208.1841.1.camel@sipsolutions.net>
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
- <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
- <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
- <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien>
- <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien>
- <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien>
- <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
- <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net> <547BC5AD.6090500@users.sourceforge.net>
- <1417465745.28610.0.camel@sipsolutions.net> <alpine.DEB.2.02.1412012134290.2076@localhost6.localdomain6>
- <1417539208.1841.1.camel@sipsolutions.net>
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-Date: Tue, 2 Dec 2014 13:45:26 -0500
-X-Google-Sender-Auth: Puv3f03xZkAYNY5T4sd1g2Xjw58
-Message-ID: <CAB=NE6VUiWoiTe+uM=0NrhPx3fVDwXYaAKSZjzK3wT8sh7cazw@mail.gmail.com>
-Subject: Re: net-PA Semi: Deletion of unnecessary checks before the function
- call "pci_dev_put"
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Julia Lawall <julia.lawall@lip6.fr>,
-        SF Markus Elfring <elfring@users.sourceforge.net>,
-        Lino Sanfilippo <LinoSanfilippo@gmx.de>,
-        Olof Johansson <olof@lixom.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141202144122.GI3156@suse.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 2, 2014 at 11:53 AM, Johannes Berg
-<johannes@sipsolutions.net> wrote:
-> On Mon, 2014-12-01 at 21:34 +0100, Julia Lawall wrote:
->
->> > So this kind of evolution is no problem for the (automated) backports
->> > using the backports project - although it can be difficult to detect
->> > such a thing is needed.
->>
->> That is exactly the problem...
->
-> I'm not convinced though that it should stop such progress in mainline.
+On Tue, Dec 02, 2014 at 03:41:22PM +0100, Joerg Roedel wrote:
+> On Mon, Dec 01, 2014 at 03:28:03PM -0500, Konrad Rzeszutek Wilk wrote:
+> > On Fri, Nov 28, 2014 at 12:29:07PM +0100, Joerg Roedel wrote:
+> > > From: Joerg Roedel <jroedel@suse.de>
+> > > 
+> > > Print a warning when all allocation tries have been failed
+> > > and the function is about to return NULL. This prepares for
+> > > calling the function with __GFP_NOWARN to suppress
+> > > allocation failure warnings before all fall-backs have
+> > > failed.
+> > 
+> > This can be quite noisy. Especially the dump-stack.
+> 
+> Well, this is as noisy as the dump_stack()s from the page-allocator when
+> the first allocation try fails. The goal of the first two patches in
 
-I believe this case requires a bit more information explained as to
-why it was explained. The "form" of change this patch has is of the
-type that can crash systems if the NULL pointer check on the caller
-implementation was only added later. We might be able to grammatically
-check for this situation in the future if we had a white list / black
-list / kernel revision where the NULL check was added but for now we
-don't have that and as such care is just required on the developer in
-consideration for backports.
+Right, on the first allocation. Subsequent allocations won't be so noisy
+in the page-allocator (I think?). While this will be noisy on subsequent
+ones.
 
-It should be up to the maintainer to appreciate the gains of doing
-something differently to make it easier for backporting. I obviously
-think its a good thing to consider, its extra work though, so only if
-the maintainer has some appreciation for backporting would this make
-sense.
-
-In this particular case I've reviewed Julia's concern and I've
-determined that the patch is safe up to at least v2.6.12-rc2 (which is
-where our git history begins on Linus' tree), this is because the
-check for NULL has been there since then:
-
-git show 1da177e drivers/pci/pci-driver.c
-
-+void pci_dev_put(struct pci_dev *dev)
-+{
-+       if (dev)
-+               put_device(&dev->dev);
-+}
-
-So this type of wide collateral evolution should not cause panics.
-Because of this:
-
-Acked-by: Luis R. Rodriguez <mcgrof@suse.com>
-
-But note -- I still think its only good for us to vet these, if we
-can't why not? If the maintainer doesn't give a shit that's different,
-but if there are folks out there willing to help with vetting then
-well, why not :)
-
-PS. Including something like historical vetting as I did above on the
-commit log should help folks.
-
- Luis
+> this series is to only print a warning (with stack-trace) when
+> alloc_coherent failed, and not when only an intermediate step failed
+> that has a fall-back anyway (and might thus be no real problem).
+> 
+> 
+> 	Joerg
+> 
