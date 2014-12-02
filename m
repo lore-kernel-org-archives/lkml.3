@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294AbaLBJXl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 04:23:41 -0500
-Received: from hofr.at ([212.69.189.236]:53609 "EHLO mail.hofr.at"
+	id S1751714AbaLBJ1T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 04:27:19 -0500
+Received: from hofr.at ([212.69.189.236]:53661 "EHLO mail.hofr.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750991AbaLBJWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 04:22:18 -0500
-Date: Tue, 2 Dec 2014 10:15:59 +0100
+	id S1751309AbaLBJ1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 04:27:18 -0500
+Date: Tue, 2 Dec 2014 10:18:36 +0100
 From: Nicholas Mc Guire <der.herr@hofr.at>
 To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Michal Marek <mmarek@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/5] Description of offset header files handling
-Message-ID: <20141202091559.GD13909@opentech.at>
+Cc: Michal Marek <mmarek@suse.cz>, Joe Perches <joe@perches.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] additional external module symbol dependecy handling
+	options
+Message-ID: <20141202091836.GG13909@opentech.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,172 +23,41 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Description of offset header files handling
+additional external module symbol dependecy handling options
 
-This adds a section on offset header files handling in Kbuild.
+The use of KBUILD_EXTRA_SYMBOLS is clarified by an example and
+the additional option of using  KBUILD_EXTMOD is added as
+equivalent alternative.
 
 This patch is against linux 3.18.0-rc6
 
 Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
 ---
- Documentation/kbuild/makefiles.txt |  123 ++++++++++++++++++++++++++++++++++--
- 1 file changed, 117 insertions(+), 6 deletions(-)
+ Documentation/kbuild/modules.txt |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
-index df3a96a..46ff185 100644
---- a/Documentation/kbuild/makefiles.txt
-+++ b/Documentation/kbuild/makefiles.txt
-@@ -51,8 +51,9 @@ This document describes the Linux kernel Makefiles.
+diff --git a/Documentation/kbuild/modules.txt b/Documentation/kbuild/modules.txt
+index 3fb39e0..450af1f 100644
+--- a/Documentation/kbuild/modules.txt
++++ b/Documentation/kbuild/modules.txt
+@@ -517,6 +517,18 @@ build.
+ 		These files will be loaded by modpost during the
+ 		initialization of its symbol tables.
  
- 	=== 8 Kbuild Variables
- 	=== 9 Makefile language
--	=== 10 Credits
--	=== 11 TODO
-+	=== 10 Generating offset header files
-+	=== 11 Credits
-+	=== 12 TODO
++		Example:
++			$ make KBUILD_EXTRA_SYMBOLS=/PATH/TO/bar/Module.symvers \
++			  -C $KDIR M=$PWD modules
++
++	Use "make" variable KBUILD_EXTMOD
++		Alternatively to passing the Module.symvers files explicitly
++		one can also pass the directory containing the external module
++		that will satisfy the dependecies with KBUILD_EXTMOD and
++		Kbuild will pick up the Module.symvers found there.
++
++		Example:
++			$ make -C $KDIR M=$PWD KBUILD_EXTMOD=/PATH/TO/bar/ modules
  
- === 1 Overview
- 
-@@ -1033,7 +1034,7 @@ When kbuild executes, the following steps are followed (roughly):
- 
- 	In this example, the file target maketools will be processed
- 	before descending down in the subdirectories.
--	See also chapter XXX-TODO that describe how kbuild supports
-+	See also chapter 10 that describe how kbuild supports
- 	generating offset header files.
- 
- 
-@@ -1449,17 +1450,127 @@ time the left-hand side is used.
- There are some cases where "=" is appropriate.  Usually, though, ":="
- is the right choice.
- 
--=== 10 Credits
-+=== 10 Generating offset header files
-+
-+The problem: Given the following structure:
-+
-+	Example:
-+		typedef struct
-+		{
-+		     int a;
-+		     int b;
-+		} some_thing;
-+
-+ If an asm function is receiving a pointer of a some_thing structure
-+ then we have the problem, that the elements offset in the structure
-+ are not accessible in the assembler code.
-+
-+ If the pointer were passed in through r0 then access to the elements
-+ a and b would need to have the offsets hard coded like:
-+
-+	Example:
-+	   ldr      r1, [r0, #0] // read a
-+	   ldr      r2, [r0, #4] // read b
-+
-+ but you do not want to hard-code them in maintainable code so the
-+ offsets need to be deduced from the C-code and made available for use
-+ in the assembler code in some symbolic manner.
-+
-+	Example:
-+	   ldr      r1, [r0, #THING_A]
-+	   ldr      r2, [r0, #THING_B]
-+
-+ The Kbuild system provides methods to calculate the necessary offsets
-+ from the C and stores them in a generated header file as preprocessor
-+ constants which allows to write maintainable and readable assembler code.
-+
-+ The elements that are needed in assembler code are placed in a C-file
-+ arch/$(SRCARCH)/kernel/asm-offsets_{32,64}.c which is then processed into 
-+ a assembler file (by calling gcc -S) and from this Kbuild then extracts
-+ the defines and places them into the generated asm-offsets.h
-+
-+	Example:
-+		arch/x86/kernel/asm-offsets_64.c
-+		<snip>
-+		...
-+		#define ENTRY(entry) OFFSET(pt_regs_ ## entry, pt_regs, entry)
-+			ENTRY(bx);
-+		...
-+		<snip>
-+
-+ from this the pt_regs_bx offset is generated and stored in
-+ the asm-offsets.s as verbose asm from the top level Kbuild file
-+ (arch/$(SRCARCH)/kernel/asm-offsets.s: arch/$(SRCARCH)/kernel/asm-offsets.c)
-+
-+	 Example:
-+		->pt_regs_bx $40 offsetof(struct pt_regs, bx)   #
-+		# 0 "" 2
-+		# 51 "arch/x86/kernel/asm-offsets_64.c" 1
-+
-+ This intermediate assembler file is then processed by a somewhat brute-force
-+ (or elegant - depending on how much you like sed) sed script in the top
-+ level Kbuild file to generate the asm-offsets.h file
-+
-+ define sed-y
-+	"/^->/{s:->#\(.*\):/* \1 */:; \
-+	s:^->\([^ ]*\) [\$$#]*\([-0-9]*\) \(.*\):#define \1 \2 /* \3 */:; \
-+	s:^->\([^ ]*\) [\$$#]*\([^ ]*\) \(.*\):#define \1 \2 /* \3 */:; \
-+	s:->::; p;}"
-+ endef
-+
-+ The generated files include a header generated by the Kbuild file indicating
-+ that it is generated and should not be modified and then contains the
-+ set of #define and as documentation the C-structure element e.g.
-+
-+ #define pt_regs_bx 40 /* offsetof(struct pt_regs, bx)   # */
-+
-+	Example: arch/x86/power/hibernate_asm_64.S
-+		...
-+		#include <asm/asm-offsets.h>
-+		#include <asm/processor-flags.h>
-+
-+		ENTRY(swsusp_arch_suspend)
-+			movq    $saved_context, %rax
-+			movq    %rsp, pt_regs_sp(%rax)
-+		...
-+
-+ To now add a generated offset one needs to edit the C-file in
-+ arch/$(SRCARCH)/kernel/asm-offsets.c respectively if it is only
-+ for the 32 or 64 bit build in the asm-offsets_32/64.c and include
-+ the respective structure/element one needs access to.
-+
-+ The syntax for this is
-+ OFFSET(MACRONAME, STRUCTURE, ELEMENT);
-+
-+ Example:
-+	<snip>
-+	 ...
-+	#include <asm/thread_info.h>
-+	 ...
-+	void common(void) {
-+		BLANK();
-+		OFFSET(TI_flags, thread_info, flags);
-+	<snip>
-+
-+ The BLANK(); macro is used to make the generated header file more
-+ readable and as the name indicates will insert a blank line.
-+
-+ The dependency tracking is done through Kbuild so if a structure that
-+ is included in arch/ARCH/kernel/asm_offsets.c or in the 32/64 bit
-+ variants then asm_offsets.h is regenerated correctly.
-+
-+
-+=== 11 Credits
- 
- Original version made by Michael Elizabeth Chastain, <mailto:mec@shout.net>
- Updates by Kai Germaschewski <kai@tp1.ruhr-uni-bochum.de>
- Updates by Sam Ravnborg <sam@ravnborg.org>
- Language QA by Jan Engelhardt <jengelh@gmx.de>
- Kbuild support for shipped files Nicholas Mc Guire <der.herr@hofr.at>
-+Added description of offset header files Nicholas Mc Guire <der.herr@hofr.at>
- 
--=== 11 TODO
-+=== 12 TODO
- 
--- Generating offset header files.
- - Add more variables to section 7?
- 
+ === 7. Tips & Tricks
  
 -- 
 1.7.10.4
