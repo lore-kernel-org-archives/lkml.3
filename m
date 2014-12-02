@@ -1,83 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751191AbaLBIUI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 03:20:08 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:37314 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887AbaLBIUG (ORCPT
+	id S1751241AbaLBIVy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 03:21:54 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:58451 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750886AbaLBIVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 03:20:06 -0500
+	Tue, 2 Dec 2014 03:21:53 -0500
+Date: Tue, 2 Dec 2014 09:21:50 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Huang Shijie <shijie.huang@intel.com>
+Cc: Brian Norris <computersforpeace@gmail.com>,
+        Huang Shijie <shijie8@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, Roy Lee <roylee@paypal.com>,
+        Mike Voytovich <mvoytovich@paypal.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v6 0/3] mtd: nand: gpmi: add proper raw access support
+Message-ID: <20141202092150.738a53bb@bbrezillon>
+In-Reply-To: <20141202004743.GB11370@shldeISGChi005.sh.intel.com>
+References: <1417371030-24015-1-git-send-email-boris.brezillon@free-electrons.com>
+	<20141201084709.GI29070@brian-ubuntu>
+	<20141201095858.75ac3889@bbrezillon>
+	<20141202004743.GB11370@shldeISGChi005.sh.intel.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <CACT4Y+bZu5UHu90F8wWqckcE13D5H2LDexna6vVEMBy+X4RiZw@mail.gmail.com>
-References: <CACT4Y+bZu5UHu90F8wWqckcE13D5H2LDexna6vVEMBy+X4RiZw@mail.gmail.com>
-Date: Tue, 2 Dec 2014 12:20:05 +0400
-Message-ID: <CAPAsAGx4MMRC3qCkkO2frVJfvkeJ+t38+FuVq1g1qTsJ7pSWsQ@mail.gmail.com>
-Subject: Re: Out-of-bounds access in nfnetlink_bind
-From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-To: Dmitry Vyukov <dvyukov@google.com>
-Cc: pablo@netfilter.org, kaber@trash.net, kadlec@blackhole.kfki.hu,
-        David Miller <davem@davemloft.net>, netfilter-devel@vger.kernel.org,
-        coreteam@netfilter.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        kasan-dev <kasan-dev@googlegroups.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Kostya Serebryany <kcc@google.com>,
-        Andrey Konovalov <andreyknvl@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-12-02 10:53 GMT+03:00 Dmitry Vyukov <dvyukov@google.com>:
-> Hi,
->
-> I am working on Kernel AddressSanitizer, a fast memory error detector
-> for kernel:
-> https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
->
-> Here is an error report that I got while running trinity:
->
-> ==================================================================
-> BUG: AddressSanitizer: out of bounds access in
-> nfnetlink_bind+0xbf/0xe0 at addr ffffffff82eef710
-> Read of size 4 by task trinity-main/2533
-> Out-of-bounds access to the global variable 'nfnl_group2type'
-> [ffffffff82eef6e0-ffffffff82eef704) defined at
-> net/netfilter/nfnetlink.c:43:18
-> CPU: 0 PID: 2533 Comm: trinity-main Not tainted 3.18.0-rc1+ #44
-> Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
->  ffffffff835173e8 ffff8800b989fd18 ffffffff82a3d66f 0000000000000007
->  ffff8800b989fdc0 ffff8800b989fda8 ffffffff813a3826 0000000000000012
->  0000000000000000 0000000100000018 0000000000000296 ffff8800b989fd88
-> Call Trace:
->  [<ffffffff813a39c1>] __asan_report_load4_noabort+0x41/0x50
-> mm/kasan/report.c:236
->  [<ffffffff824769cf>] nfnetlink_bind+0xbf/0xe0 net/netfilter/nfnetlink.c:467
->  [<ffffffff82469b71>] netlink_bind+0x221/0x7e0 net/netlink/af_netlink.c:1472
->  [<ffffffff8238bf77>] SYSC_bind+0x117/0x170 net/socket.c:1541
->  [<ffffffff8238dc29>] SyS_bind+0x9/0x10 net/socket.c:1527
->  [<ffffffff82a522a9>] system_call_fastpath+0x12/0x17
-> arch/x86/kernel/entry_64.S:422
-> Memory state around the buggy address:
->  ffffffff82eef480: 00 00 00 00 00 00 00 00 00 00 00 00 00 f8 f8 f8
->  ffffffff82eef500: f8 f8 f8 f8 00 00 00 00 f8 f8 f8 f8 00 00 00 01
->  ffffffff82eef580: f8 f8 f8 f8 00 00 00 00 05 f8 f8 f8 f8 f8 f8 f8
->  ffffffff82eef600: 00 00 04 f8 f8 f8 f8 f8 00 00 f8 f8 f8 f8 f8 f8
->  ffffffff82eef680: 00 00 00 00 07 f8 f8 f8 f8 f8 f8 f8 00 00 00 00
->>ffffffff82eef700: 04 f8 f8 f8 f8 f8 f8 f8 00 06 f8 f8 f8 f8 f8 f8
->                          ^
->  ffffffff82eef780: 00 00 00 05 f8 f8 f8 f8 00 00 00 00 00 f8 f8 f8
->  ffffffff82eef800: f8 f8 f8 f8 00 00 00 00 02 f8 f8 f8 f8 f8 f8 f8
->  ffffffff82eef880: 00 00 00 00 06 f8 f8 f8 f8 f8 f8 f8 00 00 00 04
->  ffffffff82eef900: f8 f8 f8 f8 00 00 00 00 00 04 f8 f8 f8 f8 f8 f8
->  ffffffff82eef980: 00 00 00 07 f8 f8 f8 f8 00 00 00 06 f8 f8 f8 f8
-> ==================================================================
->
-> My source is on revision f114040e3ea6e07372334ade75d1ee0
->
-> As far as I see netlink_bind just calls nfnetlink_bind with whatever
-> groups user has requested; nfnetlink_bind in turn do not do any checks
-> before indexing the global nfnl_group2type array with the group.
+On Tue, 2 Dec 2014 08:47:43 +0800
+Huang Shijie <shijie.huang@intel.com> wrote:
 
-I've reported this few weeks ago: https://lkml.org/lkml/2014/11/13/65
+> On Mon, Dec 01, 2014 at 09:58:58AM +0100, Boris Brezillon wrote:
+> > Hi Brian,
+> > 
+> > On Mon, 1 Dec 2014 00:47:09 -0800
+> > Brian Norris <computersforpeace@gmail.com> wrote:
+> > 
+> > > On Sun, Nov 30, 2014 at 07:10:27PM +0100, Boris Brezillon wrote:
+> > > > Hello,
+> > > > 
+> > > > This series provides an implementation for raw accesses taking care of
+> > > > hidding the specific layout used by the GPMI controller.
+> > > > 
+> > > > Best Regards,
+> > > > 
+> > > > Boris
+> > > > 
+> > > > Changes since v5:
+> > > >  - rename gpmi_move_bits into gpmi_copy_bits
+> > > > 
+> > > > Changes since v4:
+> > > >  - fixed a few corner cases in gpmi_move_bits (tested it with:
+> > > >    https://github.com/bbrezillon/gpmi-move-bits-test/blob/master/gpmi-move-bits-test.c)
+> > > >  - add documentation and comments for the new gpmi functions
+> > > > 
+> > > > Changes since v3:
+> > > >  - add comments to the gpmi_move_bits function
+> > > >  - extend raw read/write documentation
+> > > >  - move last part of the raw_page_read function into a conditional block
+> > > > 
+> > > > Changes since v2:
+> > > >  - fixed a bug in gpmi_move_bits
+> > > >  - add a raw_buffer field to be used when using raw access methods
+> > > >    (experienced memory corruptions when directly using page_buffer_virt
+> > > >    buffer)
+> > > >  - add raw OOB access functions
+> > > 
+> > > Applied the series. Thanks!
+> > > 
+> > > Out of curiosity, what tests does gpmi-nand.c now pass/fail?
+> > 
+> > The oobtest is still failing. I started to debug it, but didn't have
+> > enough time to make it work.
+> > 
+> > The nandbiterrs test is working, though I didn't manage to make the
+> > incremental test fail (writing the same pattern 10000 times without
+> > erasing the block between each write does not generate any bit flips) on
+> > my SLC NAND: MT29F2G08ABAEAH4.
+> > Can someone with another SLC NAND chip try it ?
+> > 
+> > > 
+> > > Also, is it time to yank / fixup some of these comments from
+> > > gpmi-nand.c?
+> > 
+> > I was asking myself the same question...
+> > 
+> > > 
+> > >  ...
+> > >  * FIXME: The following paragraph is incorrect, now that there exist
+> > >  * ecc.read_oob_raw and ecc.write_oob_raw functions.
+> > >  *
+> > >  * Since MTD assumes the OOB is not covered by ECC, there is no pair of
+> > >  * ECC-based/raw functions for reading or or writing the OOB. The fact that the
+> > >  * caller wants an ECC-based or raw view of the page is not propagated down to
+> > >  * this driver.
+> > >  */
+> > 
+> > I guess we can remove them.
+> > Huang can you confirm that the raw access functions introduced in this
+> > series are covering what's described here ?
+> I think we can remove these comments now.
+
+Brian, do you want me to send this patch or are you taking care of it ?
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
