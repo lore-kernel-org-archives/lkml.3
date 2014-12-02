@@ -1,114 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605AbaLBMwT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 07:52:19 -0500
-Received: from sauhun.de ([89.238.76.85]:41649 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751211AbaLBMwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 07:52:17 -0500
-Date: Tue, 2 Dec 2014 13:52:03 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Harini Katakam <harinikatakamlinux@gmail.com>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "michal.simek@xilinx.com" <michal.simek@xilinx.com>,
-        "soren.brinkmann@xilinx.com" <soren.brinkmann@xilinx.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "vishnum@xilinx.com" <vishnum@xilinx.com>
-Subject: Re: [PATCH 3/4] devicetree: bindings: Add defeature-repeated-start
- property for Cadence I2C
-Message-ID: <20141202125203.GA4072@katana>
-References: <1417514749-24319-1-git-send-email-harinik@xilinx.com>
- <1417514749-24319-4-git-send-email-harinik@xilinx.com>
- <20141202111907.GC23671@leverpostej>
- <CAFcVECLtPx6shBXJbg9Uf_8fnhkMoO1zpoxGcdda7PSA7z_2rA@mail.gmail.com>
+	id S1754647AbaLBMyL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 07:54:11 -0500
+Received: from lb1-smtp-cloud6.xs4all.net ([194.109.24.24]:41876 "EHLO
+	lb1-smtp-cloud6.xs4all.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754571AbaLBMyJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 07:54:09 -0500
+Message-ID: <547DB631.3060309@xs4all.nl>
+Date: Tue, 02 Dec 2014 13:53:05 +0100
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
-Content-Disposition: inline
-In-Reply-To: <CAFcVECLtPx6shBXJbg9Uf_8fnhkMoO1zpoxGcdda7PSA7z_2rA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: linux-media <linux-media@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sakari Ailus <sakari.ailus@iki.fi>
+Subject: Re: [PATCH] media: v4l2-subdev.h: drop the guard CONFIG_VIDEO_V4L2_SUBDEV_API
+ for v4l2_subdev_get_try_*()
+References: <1416220913-5047-1-git-send-email-prabhakar.csengg@gmail.com> <1680188.7K1XCBdsCk@avalon> <CA+V-a8uaw2X_a3rfx0=avbuGnUdbqveMvJaU25hewzv9eAA8+Q@mail.gmail.com> <1429705.acTXlHE2TG@avalon> <547D6E20.7040406@xs4all.nl>
+In-Reply-To: <547D6E20.7040406@xs4all.nl>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/02/14 08:45, Hans Verkuil wrote:
+> On 12/02/2014 12:26 AM, Laurent Pinchart wrote:
+>> Hi Prabhakar,
+>>
+>> On Sunday 30 November 2014 21:30:35 Prabhakar Lad wrote:
+>>> On Sun, Nov 30, 2014 at 9:16 PM, Laurent Pinchart wrote:
+>>>> On Sunday 30 November 2014 21:05:50 Prabhakar Lad wrote:
+>>>>> On Sat, Nov 29, 2014 at 7:12 PM, Laurent Pinchart wrote:
+>>>>>> Hi Prabhakar,
+>>>>>
+>>>>> [Snip]
+>>>>>
+>>>>>>>> Sure. That's a better choice than removing the config option
+>>>>>>>> dependency of the fields struct v4l2_subdev.
+>>>>>>
+>>>>>> Decoupling CONFIG_VIDEO_V4L2_SUBDEV_API from the availability of the
+>>>>>> in-kernel pad format and selection rectangles helpers is definitely a
+>>>>>> good idea. I was thinking about decoupling the try format and
+>>>>>> rectangles from v4l2_subdev_fh by creating a kind of configuration store
+>>>>>> structure to store them, and embedding that structure in v4l2_subdev_fh.
+>>>>>> The pad-level operations would then take a pointer to the configuration
+>>>>>> store instead of the v4l2_subdev_fh. Bridge drivers that want to
+>>>>>> implement TRY_FMT based on pad-level operations would create a
+>>>>>> configuration store, use the pad-level operations, and destroy the
+>>>>>> configuration store. The userspace subdev API would use the
+>>>>>> configuration store from the file handle.
+>>>>>
+>>>>> are planning to work/post any time soon ? Or are you OK with suggestion
+>>>>> from Hans ?
+>>>>
+>>>> I have no plan to work on that myself now, I was hoping you could
+>>>> implement it ;-)
+>>>
+>>> OK will implement it.
+>>>
+>>> Can you please elaborate a more on this "The userspace subdev API would use
+>>> the configuration store from the file handle."
+>>
+>> Basically,
+>>
+>> 1. Create a subdev pad configuration store structure to store the formats and 
+>> selection rectangles for each pad.
+> 
+> I wouldn't call it a 'store'. Just call it fmt_config or pad_config something like
+> that.
+> 
+>>
+>> 2. Embed an instance of that structure in v4l2_subdev_fh.
+>>
+>> 3. Modify the subdev pad ops to take a configuration store pointer instead of 
+>> a file handle pointer.
+>>
+>> The userspace API implementation (v4l2-subdev.c) would then pass &fh->store to 
+>> the pad operations instead of fh.
+>>
+>> Bridge drivers that need to implement TRY_FMT on top of pad ops would create a 
+>> temporary store (or temporary stores when multiple subsdevs are involved), 
+>> call the pad ops with a pointer to the temporary store to propagate TRY 
+>> formats, destroy the store(s) and return the resulting format.
+> 
+> That will work. I think this is a good approach and it shouldn't be too difficult.
 
---RnlQjJ0d97Da+TV1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Laurent, just so I understand this correctly: does this mean that all occurrences
+of 'struct v4l2_subdev_fh *fh' will be replaced by 'struct v4l2_subdev_pad_config *cfg'?
 
-> >> +  - defeature-repeated-start: Include this property to defeature repe=
-ated start
-> >> +                           This defeature is due to a few bugs in the
-> >> +                           I2C controller.
-> >> +                           Completion interrupt after a read/receive
-> >> +                           operation is NOT obtained if HOLD bit is s=
-et
-> >> +                           at that time. Because of this bug, repeate=
-d start
-> >> +                           will only work if there are no transfers f=
-ollowing
-> >> +                           a read/receive transfer.
-> >> +                           If HOLD is held for long without a transfe=
-r,
-> >> +                           invalid read transactions are generated by=
- the
-> >> +                           controller due to a HW timeout related bug.
-> >
-> > I'm not keen on the name; it sounds like we're disabling a feature
-> > rather than describing the problem (and "defeature" is not a common
-> > term in this sense, "disable" would be better).
-> >
-> > It sounds like there are two issues with staying in the HOLD state? Lost
-> > completion IRQs and a separate HW timeout bug? Or are the two related?
-> >
->=20
-> Yes, there are two issues here and they are not related.
-> But a combination of both is leading to not using repeated start.
-> The intention was to defeature except that it works in some scenarios
-> (such as a typical write+read in that order with repeated start)
-> and there are people who already use the driver with slaves that need thi=
-s.
+Is there any reason why the 'fh' should still be passed on?
 
-That should not be handled using a binding. If you get a transfer (at
-runtime) with criteria you don't support, return with -EOPNOTSUPP from
-the master xfer routine.
+Personally I am in favor of this since the 'fh' always made it hard for bridge
+drivers to use these pad ops. So if we can replace it by something that can
+be used by bridge drivers as well, then that will make it easier to move all
+drivers over to the pad ops.
 
-That being said, the number of broken/not-fully-compliant I2C
-controllers has increased a lot recent times (why can't we just use the
-established old ones?). Maybe we will have core support for a subset of
-I2C (wr+rd) in the future, but that's still ahead...
+Regards,
 
-
---RnlQjJ0d97Da+TV1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUfbXzAAoJEBQN5MwUoCm2SVEQAKislH9uLpKzI/F6xVYHO86O
-wojbo5Mmrpx5sCZfFgfl2iK7emBL9zDUVrZbX1gelrCGuVmwP0f/n8LwLNweu9YZ
-B4hwRbnAusMaxxU95OdeHKDEYJN8NUY62bhmjhSFANZ1m03XK+YN+m+BUxvb8yfk
-hv2ORgRn+pXb9QMim7dAYaETRzNi6TRZ8orbRuckt9b8tYojzGUJcaDQRAB9xy35
-2kDVlxzPDodY9l/AZBt+yckhRUu0uJgUvcvO2NILqJDXAQwBtKMSKULaSMNVdJcc
-o8rVAjYXj57RAr2iNf+xNPgfFUGx13BK7gjxZJg1G/6wJtesz1sfa/MJ7ALFqrMt
-CnebxMTWOyMahU1AvZOZee4PDX4FU4pyh3kxKM51hgz2abNEaCb6Md9hrRy3Y0Z8
-isoyIds1RbluLkYMZLHFLJIZrU+bxECMnYsSPchZ4GFhB+yNKhkTLSE73vMcy1K2
-U/BIOLyaqHFmSK8GMYu1S6LoJMHG/enFcvaS9LHWBgLxXftx3qElgG+lK9NaaCfN
-MK2qz2hxmK+BE0a26wiDv6oA6aJs8Jj9bz3Hg1pEaNwN/dVZuHAjOwnbdHbaWl2J
-pIjS58EwjNyVDhHC5eQyWs2ZHxX7dYXkcpziy1uuPlB2j5sjrgIPfsgZupQ951CF
-NlZJ/ACPfhgk8lH33WGD
-=TJQZ
------END PGP SIGNATURE-----
-
---RnlQjJ0d97Da+TV1--
+	Hans
