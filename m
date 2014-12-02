@@ -1,154 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932428AbaLBPFl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 10:05:41 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:48105 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111AbaLBPFj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 10:05:39 -0500
-Date: Tue, 2 Dec 2014 10:05:14 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: linux@eikelenboom.it, bhelgaas@google.com, xen-devel@lists.xenproject.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH v4] Fixes for PCI backend for 3.19
-Message-ID: <20141202150514.GC27869@laptop.dumpdata.com>
-References: <1416608271-18931-1-git-send-email-konrad.wilk@oracle.com>
- <547D9E13020000780004C0B3@mail.emea.novell.com>
+	id S932351AbaLBPGf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 10:06:35 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:51283 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753535AbaLBPGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 10:06:33 -0500
+Date: Tue, 2 Dec 2014 10:06:23 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/3] mm: protect set_page_dirty() from ongoing truncation
+Message-ID: <20141202150623.GA8401@phnom.home.cmpxchg.org>
+References: <1417474682-29326-1-git-send-email-hannes@cmpxchg.org>
+ <20141202091212.GB9092@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <547D9E13020000780004C0B3@mail.emea.novell.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20141202091212.GB9092@quack.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 10:10:11AM +0000, Jan Beulich wrote:
-> >>> On 21.11.14 at 23:17, <konrad.wilk@oracle.com> wrote:
-> > Konrad Rzeszutek Wilk (7):
-> >       xen/pciback: Don't deadlock when unbinding.
-> >       driver core: Provide an wrapper around the mutex to do lockdep warnings
-> >       xen/pciback: Include the domain id if removing the device whilst still in use
-> >       xen/pciback: Print out the domain owning the device.
-> >       xen/pciback: Remove tons of dereferences
-> >       PCI: Expose pci_load_saved_state for public consumption.
-> >       xen/pciback: Restore configuration space when detaching from a guest.
-> 
-> So my "xen-pciback: drop SR-IOV VFs when PF driver unloads" isn't
-> among them, nor is there any alternative. What's the status of that
-> patch (or the problem that prompted its creation)?
+On Tue, Dec 02, 2014 at 10:12:12AM +0100, Jan Kara wrote:
+> On Mon 01-12-14 17:58:00, Johannes Weiner wrote:
+> > Tejun, while reviewing the code, spotted the following race condition
+> > between the dirtying and truncation of a page:
+> > 
+> > __set_page_dirty_nobuffers()       __delete_from_page_cache()
+> >   if (TestSetPageDirty(page))
+> >                                      page->mapping = NULL
+> > 				     if (PageDirty())
+> > 				       dec_zone_page_state(page, NR_FILE_DIRTY);
+> > 				       dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+> >     if (page->mapping)
+> >       account_page_dirtied(page)
+> >         __inc_zone_page_state(page, NR_FILE_DIRTY);
+> > 	__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+> > 
+> > which results in an imbalance of NR_FILE_DIRTY and BDI_RECLAIMABLE.
+> > 
+> > Dirtiers usually lock out truncation, either by holding the page lock
+> > directly, or in case of zap_pte_range(), by pinning the mapcount with
+> > the page table lock held.  The notable exception to this rule, though,
+> > is do_wp_page(), for which this race exists.  However, do_wp_page()
+> > already waits for a locked page to unlock before setting the dirty
+> > bit, in order to prevent a race where clear_page_dirty() misses the
+> > page bit in the presence of dirty ptes.  Upgrade that wait to a fully
+> > locked set_page_dirty() to also cover the situation explained above.
+> > 
+> > Afterwards, the code in set_page_dirty() dealing with a truncation
+> > race is no longer needed.  Remove it.
+> > 
+> > Reported-by: Tejun Heo <tj@kernel.org>
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > Cc: <stable@vger.kernel.org>
+> > ---
+> >  include/linux/writeback.h |  1 -
+> >  mm/memory.c               | 26 ++++++++++++++++----------
+> >  mm/page-writeback.c       | 43 ++++++++++++-------------------------------
+> >  3 files changed, 28 insertions(+), 42 deletions(-)
+> > 
+> > diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+> > index a219be961c0a..00048339c23e 100644
+> > --- a/include/linux/writeback.h
+> > +++ b/include/linux/writeback.h
+> > @@ -177,7 +177,6 @@ int write_cache_pages(struct address_space *mapping,
+> >  		      struct writeback_control *wbc, writepage_t writepage,
+> >  		      void *data);
+> >  int do_writepages(struct address_space *mapping, struct writeback_control *wbc);
+> > -void set_page_dirty_balance(struct page *page);
+> >  void writeback_set_ratelimit(void);
+> >  void tag_pages_for_writeback(struct address_space *mapping,
+> >  			     pgoff_t start, pgoff_t end);
+> > diff --git a/mm/memory.c b/mm/memory.c
+> > index 3e503831e042..73220eb6e9e3 100644
+> > --- a/mm/memory.c
+> > +++ b/mm/memory.c
+> > @@ -2150,17 +2150,23 @@ reuse:
+> >  		if (!dirty_page)
+> >  			return ret;
+> >  
+> > -		/*
+> > -		 * Yes, Virginia, this is actually required to prevent a race
+> > -		 * with clear_page_dirty_for_io() from clearing the page dirty
+> > -		 * bit after it clear all dirty ptes, but before a racing
+> > -		 * do_wp_page installs a dirty pte.
+> > -		 *
+> > -		 * do_shared_fault is protected similarly.
+> > -		 */
+> >  		if (!page_mkwrite) {
+> > -			wait_on_page_locked(dirty_page);
+> > -			set_page_dirty_balance(dirty_page);
+> > +			struct address_space *mapping;
+> > +			int dirtied;
+> > +
+> > +			lock_page(dirty_page);
+> > +			dirtied = set_page_dirty(dirty_page);
+> > +			mapping = dirty_page->mapping;
+> > +			unlock_page(dirty_page);
+> > +
+> > +			if (dirtied && mapping) {
+> > +				/*
+> > +				 * Some device drivers do not set page.mapping
+> > +				 * but still dirty their pages
+> > +				 */
+>   The comment doesn't make sense to me here. Is it meant to explain why we
+> check 'mapping' in the above condition? I always thought truncate is the
+> main reason.
 
-Oh, I've it in my queue. Um, here is what I did to it - I hadn't
-yet tested it - hence the reason it is not on that list.
-
-
->From 82ad7b4cc73f2f9a9cfd6805cff996fd5009a31f Mon Sep 17 00:00:00 2001
-From: Jan Beulich <JBeulich@suse.com>
-Date: Thu, 6 Nov 2014 15:05:51 +0000
-Subject: [PATCH 1/2] xen-pciback: drop SR-IOV VFs when PF driver unloads
-
-When a PF driver unloads, it may find it necessary to leave the VFs
-around simply because of pciback having marked them as assigned to a
-guest. Utilize a suitable notification to let go of the VFs, thus
-allowing the PF to go back into the state it was before its driver
-loaded (which in particular allows the driver to be loaded again with
-it being able to create the VFs anew, but which also allows to then
-pass through the PF instead of the VFs).
-
-Don't do this however for any VFs currently in active use by a guest.
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-[v2: Removed the switch statement, moved it about]
-[v3: Redid it a bit differently]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/xen/xen-pciback/pci_stub.c | 54 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 54 insertions(+)
-
-diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
-index eb8b58e..ff27efa 100644
---- a/drivers/xen/xen-pciback/pci_stub.c
-+++ b/drivers/xen/xen-pciback/pci_stub.c
-@@ -1518,6 +1518,53 @@ parse_error:
- fs_initcall(pcistub_init);
- #endif
- 
-+#ifdef CONFIG_PCI_IOV
-+static struct pcistub_device *find_vfs(const struct pci_dev *pdev)
-+{
-+	struct pcistub_device *psdev = NULL;
-+	unsigned long flags;
-+	bool found = false;
-+
-+	spin_lock_irqsave(&pcistub_devices_lock, flags);
-+	list_for_each_entry(psdev, &pcistub_devices, dev_list) {
-+		if (!psdev->pdev && psdev->dev != pdev
-+		    && pci_physfn(psdev->dev) == pdev) {
-+			found = true;
-+			break;
-+		}
-+	}
-+	spin_unlock_irqrestore(&pcistub_devices_lock, flags);
-+	if (found)
-+		return psdev;
-+	return NULL;
-+}
-+
-+static int pci_stub_notifier(struct notifier_block *nb,
-+			     unsigned long action, void *data)
-+{
-+	struct device *dev = data;
-+	const struct pci_dev *pdev = to_pci_dev(dev);
-+
-+	if (action != BUS_NOTIFY_UNBIND_DRIVER)
-+		return NOTIFY_DONE;
-+
-+	if (!pdev->is_physfn)
-+		return NOTIFY_DONE;
-+
-+	for (;;) {
-+		struct pcistub_device *psdev = find_vfs(pdev);
-+		if (!psdev)
-+			break;
-+		device_release_driver(&psdev->dev->dev);
-+	}
-+	return NOTIFY_DONE;
-+}
-+
-+static struct notifier_block pci_stub_nb = {
-+	.notifier_call = pci_stub_notifier,
-+};
-+#endif
-+
- static int __init xen_pcibk_init(void)
- {
- 	int err;
-@@ -1539,12 +1586,19 @@ static int __init xen_pcibk_init(void)
- 	err = xen_pcibk_xenbus_register();
- 	if (err)
- 		pcistub_exit();
-+#ifdef CONFIG_PCI_IOV
-+	else
-+		bus_register_notifier(&pci_bus_type, &pci_stub_nb);
-+#endif
- 
- 	return err;
- }
- 
- static void __exit xen_pcibk_cleanup(void)
- {
-+#ifdef CONFIG_PCI_IOV
-+	bus_unregister_notifier(&pci_bus_type, &pci_stub_nb);
-+#endif
- 	xen_pcibk_xenbus_unregister();
- 	pcistub_exit();
- }
--- 
-1.9.3
-
-> 
-> Jan
-> 
+Yes, I just copied it from the page_mkwrite case a few lines down, and
+there is another copy of it in do_shared_fault().  Truncate is also a
+possibility during a race, of course, but even without it we expect
+that the mapping can be NULL for certain device drivers.
