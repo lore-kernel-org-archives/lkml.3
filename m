@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696AbaLBRzV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 12:55:21 -0500
-Received: from mail-bn1on0094.outbound.protection.outlook.com ([157.56.110.94]:55900
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1754284AbaLBR4V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 12:56:21 -0500
+Received: from mail-bl2on0081.outbound.protection.outlook.com ([65.55.169.81]:3360
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932569AbaLBRzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 12:55:19 -0500
-Message-ID: <547DFCC1.3060805@opensource.altera.com>
-Date: Tue, 2 Dec 2014 11:54:09 -0600
+	id S1751916AbaLBR4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 12:56:19 -0500
+Message-ID: <547DFCF7.9000105@opensource.altera.com>
+Date: Tue, 2 Dec 2014 11:55:03 -0600
 From: Thor Thayer <tthayer@opensource.altera.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
@@ -30,21 +30,22 @@ CC: "bp@alien8.de" <bp@alien8.de>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "tthayer.linux@gmail.com" <tthayer.linux@gmail.com>
-Subject: Re: [PATCHv5 2/5] arm: socfpga: Enable OCRAM ECC on startup.
-References: <1415751263-1830-1-git-send-email-tthayer@opensource.altera.com> <1415751263-1830-3-git-send-email-tthayer@opensource.altera.com> <20141202151145.GN23671@leverpostej>
-In-Reply-To: <20141202151145.GN23671@leverpostej>
+Subject: Re: [PATCHv5 4/5] edac: altera: Add Altera L2 Cache and OCRAM EDAC
+ Support
+References: <1415751263-1830-1-git-send-email-tthayer@opensource.altera.com> <1415751263-1830-5-git-send-email-tthayer@opensource.altera.com> <20141202152507.GO23671@leverpostej>
+In-Reply-To: <20141202152507.GO23671@leverpostej>
 Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BLUPR08CA0035.namprd08.prod.outlook.com (10.141.200.15) To
- BN1PR03MB121.namprd03.prod.outlook.com (10.255.201.16)
+X-ClientProxiedBy: BLUPR08CA0058.namprd08.prod.outlook.com (10.141.200.38) To
+ BY2PR03MB128.namprd03.prod.outlook.com (10.242.36.28)
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR03MB121;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB128;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR03MB121;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB128;
 X-Forefront-PRVS: 0413C9F1ED
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6049001)(6009001)(189002)(479174003)(377454003)(24454002)(51704005)(164054003)(199003)(64706001)(110136001)(83506001)(54356999)(87266999)(19580395003)(40100003)(50986999)(65816999)(76176999)(47776003)(20776003)(122386002)(65956001)(66066001)(77156002)(62966003)(42186005)(68736005)(50466002)(102836001)(99396003)(31966008)(92726001)(106356001)(105586002)(92566001)(46102003)(95666004)(64126003)(107046002)(80316001)(21056001)(87976001)(59896002)(86362001)(33656002)(4396001)(23746002)(97736003)(120916001)(19580405001)(101416001)(77096005)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR03MB121;H:[137.57.160.203];FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR03MB121;
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(6049001)(51704005)(41574002)(24454002)(199003)(189002)(479174003)(377454003)(42186005)(106356001)(40100003)(105586002)(87976001)(122386002)(120916001)(99396003)(107046002)(62966003)(77156002)(64126003)(50466002)(68736005)(23746002)(77096005)(31966008)(95666004)(46102003)(102836001)(66066001)(4396001)(33656002)(65956001)(92566001)(92726001)(59896002)(86362001)(21056001)(76176999)(97736003)(87266999)(65816999)(54356999)(83506001)(101416001)(80316001)(20776003)(47776003)(64706001)(50986999)(110136001)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB128;H:[137.57.160.203];FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB128;
 X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -52,142 +53,147 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On 12/02/2014 09:11 AM, Mark Rutland wrote:
-> On Wed, Nov 12, 2014 at 12:14:20AM +0000, tthayer@opensource.altera.com wrote:
->> From: Thor Thayer <tthayer@opensource.altera.com>
->>
->> This patch enables the ECC for On-Chip RAM on machine
->> startup.  The ECC has to be enabled before data is
->> is stored in memory otherwise the ECC will fail on
->> reads.
->>
->> Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
->> ---
->> v2: Split OCRAM ECC portion separately. Addition of iounmap()
->> and reorganization of gen_pool_free. Remove defconfig from patch.
->>
->> v3/4: No change
->>
->> v5: Remove ocram.h, use io.h instead of clk-provider.h
->>      Check prop in correct place. Add ECC EN defines.
->> ---
-<snip>
+On 12/02/2014 09:25 AM, Mark Rutland wrote:
+> Hi,
+>
+>> +/* MPU L2 Register Defines */
+>> +#define ALTR_MPUL2_CONTROL_OFFSET       0x100
+>> +#define ALTR_MPUL2_CTL_CACHE_EN_MASK    BIT(0)
+>
+> These are just standard PL310 register definitions, no?
 
->> +
->> +void socfpga_init_ocram_ecc(void)
+Yes.
+
+> [...]
+>
+>> +static void *ocram_alloc_mem(size_t size, void **other)
 >> +{
->> +	struct device_node *np;
->> +	const __be32 *prop;
+>> +       struct device_node *np;
+>> +       struct gen_pool *gp;
+>> +       void *sram_addr;
+>> +
+>> +       np = of_find_compatible_node(NULL, NULL, "altr,ocram-edac");
+>> +       if (!np)
+>> +               return NULL;
 >
-> Please don't use accessors which return raw __be32s in drivers,
-> typically it's the wrong thing to do and leaves horrible bugs and/or
-> quirks that are painful to fix up.
-
-OK. Thanks.
-
->> +	u32 ocr_edac_addr, iram_addr, len;
->> +	void __iomem  *mapped_ocr_edac_addr;
->> +	size_t size;
->> +	struct gen_pool *gp;
->> +
->> +	np = of_find_compatible_node(NULL, NULL, "altr,ocram-edac");
->> +	if (!np) {
->> +		pr_err("SOCFPGA: Unable to find altr,ocram-edac in dtb\n");
->> +		return;
->> +	}
->> +
->> +	prop = of_get_property(np, "reg", &size);
->> +	if (!prop || size < sizeof(*prop)) {
->> +		pr_err("SOCFPGA: Unable to find OCRAM ECC mapping in dtb\n");
->> +		return;
->> +	}
->> +	ocr_edac_addr = be32_to_cpup(prop++);
->> +	len = be32_to_cpup(prop);
+> Don't you need to have a corresponding of_node_put?
 >
-> Use of_iomap(np, 0). You don't seem to pass the address around, so that
-> should be sufficient.
->
->> +
->> +	gp = of_get_named_gen_pool(np, "iram", 0);
->> +	if (!gp) {
->> +		pr_err("SOCFPGA: OCRAM cannot find gen pool\n");
->> +		return;
->> +	}
->> +
->> +	np = of_find_compatible_node(NULL, NULL, "mmio-sram");
->> +	if (!np) {
->> +		pr_err("SOCFPGA: Unable to find mmio-sram in dtb\n");
->> +		return;
->> +	}
->> +
->> +	/* Determine the OCRAM address and size */
->> +	prop = of_get_property(np, "reg", &size);
->> +	if (!prop || size < sizeof(*prop)) {
->> +		pr_err("SOCFPGA: Unable to find OCRAM mapping in dtb\n");
->> +		return;
->> +	}
->> +	iram_addr = be32_to_cpup(prop++);
->> +	len = be32_to_cpup(prop);
->
-> This address is overwritten below. What's going on?
+> Is this ever called before the code above has probed? Can't you keep
+> this information around rather than probing it every time?
 >
 
-Thanks, leftovers from debugging. I will look for a different way of 
-getting the information without the be32 stuff.
+This is only used for testing so it happens infrequently and always 
+after the probe has finished.
+
+These error injection functions will not be part of the standard 
+distribution for our board so it was cleaner to leave it out.
 
 >> +
->> +	iram_addr = gen_pool_alloc(gp, len);
->> +	if (iram_addr == 0) {
->> +		pr_err("SOCFPGA: cannot alloc from gen pool\n");
->> +		return;
->> +	}
+>> +       gp = of_get_named_gen_pool(np, "iram", 0);
+>> +       if (!gp)
+>> +               return NULL;
 >> +
->> +	memset((void *)iram_addr, 0, len);
+>> +       sram_addr = (void *)gen_pool_alloc(gp, size);
+>> +       if (!sram_addr)
+>> +               return NULL;
+>> +
+>> +       memset(sram_addr, 0, size);
 >
-> How is the iram mapped? Is memset to it safe (e.g. it unaligned accesses
-> are made)?
+> Is it safe to do a memset to the sram? How is it mapped?
 >
 
-I will need to look at this further - good points. The entire iram 
-should be used as a pool so I didn't expect anything unusual even though 
-I just realized allocations are not contiguous.
+I checked the gen_pool and the memory may not be contiguous. I will fix 
+this. Thanks!
+
+> [...]
+>
+>> +static void *l2_alloc_mem(size_t size, void **other)
+>> +{
+>> +       struct device *dev = *other;
+>> +       void *ptemp = devm_kzalloc(dev, size, GFP_KERNEL);
+>> +
+>> +       if (!ptemp)
+>> +               return NULL;
+>> +
+>> +       /* Make sure everything is written out */
+>> +       wmb();
+>> +       flush_cache_all();
+>
+> Doesn't this just flush out _to_ the L2 (and not beyond)? Even then I
+> don't think that's safe with the MMU enabled.
+>
+> Why is the flush necessary?
+>
+
+flush_cache_all() maps to flush_kern_all() which cleans all the cache 
+levels up to the level of coherency which includes L2 in it.
+
+This flush ensures the data is in a known state (zero) before I inject 
+the errors for testing L2 ECC.
+
+> [...]
+>
+>> +static int altr_l2_dependencies(struct platform_device *pdev,
+>> +                               void __iomem *base)
+>> +{
+>> +       u32 control;
+>> +       struct regmap *l2_vbase;
+>> +
+>> +       control = readl(base) & ALTR_L2_ECC_EN_MASK;
+>> +       if (!control) {
+>> +               edac_printk(KERN_ERR, EDAC_DEVICE,
+>> +                           "L2: No ECC present, or ECC disabled\n");
+>> +               return -ENODEV;
+>> +       }
+>> +
+>> +       l2_vbase = syscon_regmap_lookup_by_compatible("arm,pl310-cache");
+>> +       if (IS_ERR(l2_vbase)) {
+>> +               edac_printk(KERN_ERR, EDAC_DEVICE,
+>> +                           "L2:regmap for arm,pl310-cache lookup failed.\n");
+>> +               return -ENODEV;
+>> +       }
+>
+> I must NAK any use of the L2 as a syscon device. It's simply not a
+> register file that was intended to be shared. I appreciate that you only
+> want to check something very simple, but we should use a higher level
+> API for that (and we should add one if we do not already have one)
+>
+
+OK. I didn't know of a way to read that register otherwise. I will 
+rework this.
 
 >> +
->> +	gen_pool_free(gp, iram_addr, len);
+>> +       regmap_read(l2_vbase, ALTR_MPUL2_CONTROL_OFFSET, &control);
+>> +       if (!(control & ALTR_MPUL2_CTL_CACHE_EN_MASK)) {
+>> +               edac_printk(KERN_ERR, EDAC_DEVICE, "L2: Cache disabled\n");
+>> +               return -ENODEV;
+>> +       }
 >> +
->> +	mapped_ocr_edac_addr = ioremap(ocr_edac_addr, 4);
->> +	if (!mapped_ocr_edac_addr) {
->> +		pr_err("SOCFPGA: Unable to map OCRAM ecc regs.\n");
->> +		return;
->> +	}
->> +
->> +	/* Clear any pending OCRAM ECC interrupts, then enable ECC */
->> +	writel(ALTR_OCRAM_CLEAR_ECC, mapped_ocr_edac_addr);
->> +	writel(ALTR_OCRAM_ECC_EN, mapped_ocr_edac_addr);
->> +
->> +	iounmap(mapped_ocr_edac_addr);
->> +
->> +	pr_debug("SOCFPGA: Success Initializing OCRAM\n");
+>> +       return 0;
 >> +}
->> diff --git a/arch/arm/mach-socfpga/socfpga.c b/arch/arm/mach-socfpga/socfpga.c
->> index 0954011..065d80d 100644
->> --- a/arch/arm/mach-socfpga/socfpga.c
->> +++ b/arch/arm/mach-socfpga/socfpga.c
->> @@ -100,6 +100,14 @@ static void socfpga_cyclone5_restart(enum reboot_mode mode, const char *cmd)
->>   	writel(temp, rst_manager_base_addr + SOCFPGA_RSTMGR_CTRL);
->>   }
+>> +
+>> +const struct edac_device_prv_data l2ecc_data = {
+>> +       .setup = altr_l2_dependencies,
+>> +       .ce_clear_mask = 0,
+>> +       .ue_clear_mask = 0,
+>> +#ifdef CONFIG_EDAC_DEBUG
+>> +       .eccmgr_sysfs_attr = altr_l2_sysfs_attributes,
+>> +       .alloc_mem = l2_alloc_mem,
+>> +       .free_mem = l2_free_mem,
+>> +       .ecc_enable_mask = ALTR_L2_ECC_EN_MASK,
+>> +       .ce_set_mask = (ALTR_L2_ECC_EN_MASK | ALTR_L2_ECC_INJS_MASK),
+>> +       .ue_set_mask = (ALTR_L2_ECC_EN_MASK | ALTR_L2_ECC_INJD_MASK),
+>> +       .trig_alloc_sz = ALTR_TRIG_L2C_BYTE_SIZE,
+>> +#endif
+>> +};
+>> +
+>> +#endif /* #ifdef CONFIG_EDAC_ALTERA_L2C */
+>> +
+>>   MODULE_LICENSE("GPL v2");
+>>   MODULE_AUTHOR("Thor Thayer");
+>> -MODULE_DESCRIPTION("EDAC Driver for Altera SDRAM Controller");
+>> +MODULE_DESCRIPTION("EDAC Driver for Altera Memories");
+>> --
+>> 1.7.9.5
 >>
->> +static void __init socfpga_cyclone5_init(void)
->> +{
->> +	of_platform_populate(NULL, of_default_bus_match_table,
->> +			     NULL, NULL);
->> +	if (IS_ENABLED(CONFIG_EDAC_ALTERA_OCRAM))
->> +		socfpga_init_ocram_ecc();
->
-> If it's safe to do this after probing everything else, why can't this be
-> a normal device probe?
->
-> Thanks,
-> Mark.
-
-Good point. Thank you.
+>>
