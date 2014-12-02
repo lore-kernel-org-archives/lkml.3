@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902AbaLBJSW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 04:18:22 -0500
-Received: from regular1.263xmail.com ([211.150.99.134]:47359 "EHLO
+	id S1753239AbaLBJT3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 04:19:29 -0500
+Received: from regular1.263xmail.com ([211.150.99.138]:50867 "EHLO
 	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891AbaLBJST (ORCPT
+	with ESMTP id S1751091AbaLBJTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 04:18:19 -0500
+	Tue, 2 Dec 2014 04:19:25 -0500
 X-263anti-spam: KSV:0;
 X-MAIL-GRAY: 0
 X-MAIL-DELIVERY: 1
@@ -16,7 +16,7 @@ X-RL-SENDER: mark.yao@rock-chips.com
 X-FST-TO: heiko@sntech.de
 X-SENDER-IP: 127.0.0.1
 X-LOGIN-NAME: mark.yao@rock-chips.com
-X-UNIQUE-TAG: <29810f1e6bb8863eff951c9283f033a8>
+X-UNIQUE-TAG: <f544f7a4ec46797d386a7d6f6ba57fb2>
 X-ATTACHMENT-NUM: 0
 X-DNS-TYPE: 0
 From: Mark Yao <mark.yao@rock-chips.com>
@@ -39,9 +39,9 @@ Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         xxm@rock-chips.com, huangtao@rock-chips.com, kever.yang@rock-chips.com,
         yxj@rock-chips.com, xw@rock-chips.com,
         Mark Yao <mark.yao@rock-chips.com>
-Subject: [PATCH v15 2/3] dt-bindings: video: Add for rockchip display subsytem
-Date: Tue,  2 Dec 2014 17:16:55 +0800
-Message-Id: <1417511815-7182-1-git-send-email-mark.yao@rock-chips.com>
+Subject: [PATCH v15 3/3] dt-bindings: video: Add documentation for rockchip vop
+Date: Tue,  2 Dec 2014 17:18:11 +0800
+Message-Id: <1417511891-7232-1-git-send-email-mark.yao@rock-chips.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1417511600-7054-1-git-send-email-mark.yao@rock-chips.com>
 References: <1417511600-7054-1-git-send-email-mark.yao@rock-chips.com>
@@ -49,13 +49,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This add a display subsystem comprise the all display interface nodes.
+This adds binding documentation for Rockchip SoC VOP driver.
 
 Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
 ---
 Changes in v2:
-- add DRM master device node to list all display nodes that comprise
-  the graphics subsystem.
+- rename "lcdc" to "vop"
+- add vop reset
+- add iommu node
+- add port for display-subsystem
 
 Changes in v3: None
 
@@ -83,35 +85,74 @@ Changes in v14: None
 
 Changes in v15: None
 
- .../devicetree/bindings/video/rockchip-drm.txt     |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/video/rockchip-drm.txt
+ .../devicetree/bindings/video/rockchip-vop.txt     |   58 ++++++++++++++++++++
+ 1 file changed, 58 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/video/rockchip-vop.txt
 
-diff --git a/Documentation/devicetree/bindings/video/rockchip-drm.txt b/Documentation/devicetree/bindings/video/rockchip-drm.txt
+diff --git a/Documentation/devicetree/bindings/video/rockchip-vop.txt b/Documentation/devicetree/bindings/video/rockchip-vop.txt
 new file mode 100644
-index 0000000..7fff582
+index 0000000..d15351f
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/video/rockchip-drm.txt
-@@ -0,0 +1,19 @@
-+Rockchip DRM master device
-+================================
++++ b/Documentation/devicetree/bindings/video/rockchip-vop.txt
+@@ -0,0 +1,58 @@
++device-tree bindings for rockchip soc display controller (vop)
 +
-+The Rockchip DRM master device is a virtual device needed to list all
-+vop devices or other display interface nodes that comprise the
-+graphics subsystem.
++VOP (Visual Output Processor) is the Display Controller for the Rockchip
++series of SoCs which transfers the image data from a video memory
++buffer to an external LCD interface.
 +
 +Required properties:
-+- compatible: Should be "rockchip,display-subsystem"
-+- ports: Should contain a list of phandles pointing to display interface port
-+  of vop devices. vop definitions as defined in
-+  Documentation/devicetree/bindings/video/rockchip-vop.txt
++- compatible: value should be one of the following
++		"rockchip,rk3288-vop";
 +
-+example:
++- interrupts: should contain a list of all VOP IP block interrupts in the
++		 order: VSYNC, LCD_SYSTEM. The interrupt specifier
++		 format depends on the interrupt controller used.
 +
-+display-subsystem {
-+	compatible = "rockchip,display-subsystem";
-+	ports = <&vopl_out>, <&vopb_out>;
-+};
++- clocks: must include clock specifiers corresponding to entries in the
++		clock-names property.
++
++- clock-names: Must contain
++		aclk_vop: for ddr buffer transfer.
++		hclk_vop: for ahb bus to R/W the phy regs.
++		dclk_vop: pixel clock.
++
++- resets: Must contain an entry for each entry in reset-names.
++  See ../reset/reset.txt for details.
++- reset-names: Must include the following entries:
++  - axi
++  - ahb
++  - dclk
++
++- iommus: required a iommu node
++
++- port: A port node with endpoint definitions as defined in
++  Documentation/devicetree/bindings/media/video-interfaces.txt.
++
++Example:
++SoC specific DT entry:
++	vopb: vopb@ff930000 {
++		compatible = "rockchip,rk3288-vop";
++		reg = <0xff930000 0x19c>;
++		interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&cru ACLK_VOP0>, <&cru DCLK_VOP0>, <&cru HCLK_VOP0>;
++		clock-names = "aclk_vop", "dclk_vop", "hclk_vop";
++		resets = <&cru SRST_LCDC1_AXI>, <&cru SRST_LCDC1_AHB>, <&cru SRST_LCDC1_DCLK>;
++		reset-names = "axi", "ahb", "dclk";
++		iommus = <&vopb_mmu>;
++		vopb_out: port {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			vopb_out_edp: endpoint@0 {
++				reg = <0>;
++				remote-endpoint=<&edp_in_vopb>;
++			};
++			vopb_out_hdmi: endpoint@1 {
++				reg = <1>;
++				remote-endpoint=<&hdmi_in_vopb>;
++			};
++		};
++	};
 -- 
 1.7.9.5
 
