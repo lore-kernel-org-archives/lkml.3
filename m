@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950AbaLBPPt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 10:15:49 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:36960 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711AbaLBPPs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 10:15:48 -0500
-Message-ID: <547DD7A1.3040405@kernel.dk>
-Date: Tue, 02 Dec 2014 08:15:45 -0700
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754043AbaLBPSi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 10:18:38 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:51296 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752846AbaLBPSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 10:18:37 -0500
+Date: Tue, 2 Dec 2014 10:18:29 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/3] mm: memory: remove ->vm_file check on shared
+ writable vmas
+Message-ID: <20141202151829.GC8401@phnom.home.cmpxchg.org>
+References: <1417474682-29326-1-git-send-email-hannes@cmpxchg.org>
+ <1417474682-29326-2-git-send-email-hannes@cmpxchg.org>
+ <20141202085825.GA9092@quack.suse.cz>
 MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>
-CC: linux-kernel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v2] block: fix regression where bio_integrity_process
- uses wrong bio_vec iterator
-References: <20141126014025.GD10050@birch.djwong.org> <yq161e2sgnl.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq161e2sgnl.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141202085825.GA9092@quack.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2014 09:57 PM, Martin K. Petersen wrote:
->>>>>> "Darrick" == Darrick J Wong <darrick.wong@oracle.com> writes:
->
-> Darrick> Therefore, teach bio_integrity_process() to use
-> Darrick> bio_for_each_segment() to iterate the bio_vecs, since the
-> Darrick> per-bio iterator tracks which bio_vecs are associated with that
-> Darrick> particular bio.  The integrity handling code is effectively
-> Darrick> part of the "driver" (it's not the bio owner), so it must use
-> Darrick> the correct iterator function.
->
-> Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
+On Tue, Dec 02, 2014 at 09:58:25AM +0100, Jan Kara wrote:
+> On Mon 01-12-14 17:58:01, Johannes Weiner wrote:
+> > The only way a VMA can have shared and writable semantics is with a
+> > backing file.
+>   OK, one always learns :) After some digging I found that MAP_SHARED |
+> MAP_ANONYMOUS mappings are in fact mappings of a temporary file in tmpfs.
+> It would be worth to mention this in the changelog I believe. Otherwise
+> feel free to add:
+>   Reviewed-by: Jan Kara <jack@suse.cz>
 
-Applied for 3.18.
+Thanks, Jan.  I updated the changelog to read:
 
--- 
-Jens Axboe
-
+Shared anonymous mmaps are implemented with shmem files, so all VMAs
+with shared writable semantics also have an underlying backing file.
