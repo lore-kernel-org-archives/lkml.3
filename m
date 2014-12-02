@@ -1,120 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932857AbaLBDhD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 22:37:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43325 "EHLO mx1.redhat.com"
+	id S932886AbaLBDnY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 22:43:24 -0500
+Received: from imap.thunk.org ([74.207.234.97]:33462 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932304AbaLBDhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 22:37:01 -0500
-Date: Tue, 02 Dec 2014 03:44:55 +0008
-From: Jason Wang <jasowang@redhat.com>
-Subject: Re: [PATCH RFC v3 0/3] virtio_net: enabling tx interrupts
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Message-Id: <1417491415.4405.3@smtp.corp.redhat.com>
-In-Reply-To: <20141201104808.GA16661@redhat.com>
-References: <1413787824-16130-1-git-send-email-mst@redhat.com>
-	<547C3F8C.8000006@redhat.com> <20141201104808.GA16661@redhat.com>
+	id S932304AbaLBDnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 22:43:23 -0500
+Date: Mon, 1 Dec 2014 22:43:18 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: [GIT PULL] ext4 bug fixes for 3.18
+Message-ID: <20141202034318.GA13101@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+	linux-ext4@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
 
+  Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
 
-On Mon, Dec 1, 2014 at 6:48 PM, Michael S. Tsirkin <mst@redhat.com> 
-wrote:
-> On Mon, Dec 01, 2014 at 06:14:36PM +0800, Jason Wang wrote:
->>  
->>  
->>  On 10/20/2014 02:52 PM, Michael S. Tsirkin wrote:
->>  >RFC patches to enable tx interrupts.
->>  >This is to demonstrate how this can be done without
->>  >core virtio changes, and to make sure I understand
->>  >the new APIs correctly.
->>  >
->>  >Testing TBD, I was asked for a version for early testing.
->>  >
->>  >Applies on top of patch: "virtio_net: fix use after free"
->>  >that I recently sent.
->>  >
->>  >Changes from v3:
->>  >	clean up code, address issues raised by Jason
->>  >Changes from v1:
->>  >         address comments by Jason Wang, use delayed cb everywhere
->>  >         rebased Jason's patch on top of mine and include it (with 
->> some tweaks)
->>  >
->>  >Jason Wang (1):
->>  >   virtio-net: optimize free_old_xmit_skbs stats
->>  >
->>  >Michael S. Tsirkin (2):
->>  >   virtio_net: enable tx interrupt
->>  >   virtio_net: bql
->>  >
->>  >  drivers/net/virtio_net.c | 144 
->> +++++++++++++++++++++++++++++++++--------------
->>  >  1 file changed, 101 insertions(+), 43 deletions(-)
->>  >
->>  
->>  I've run a full tests on this series and see huge regression when 
->> zerocopy
->>  is disabled. Looks like the reason is zerocopy could coalescing tx
->>  completion which greatly reduce the number of tx interrupts.
-> 
-> I think you refer to this code:
-> 
->         /*
->          * Trigger polling thread if guest stopped submitting new
->          * buffers:
->          * in this case, the refcount after decrement will eventually
->          * reach 1.
->          * We also trigger polling periodically after each 16 packets
->          * (the value 16 here is more or less arbitrary, it's tuned to
->          * trigger
->          * less than 10% of times).
->          */
->         if (cnt <= 1 || !(cnt % 16))
->                 vhost_poll_queue(&vq->poll);
-> 
-> ?
-> This seems unrelated to interrupt coalescing.
+are available in the git repository at:
 
-Well, this in fact tries to coalesce 16 packets per tx irq.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus_urgent
 
-More important, zerocopy depends on host nics tx completion.
-This means, if host nic coalesces several packets per irq,
-zerocopy will probably also do this. vhost_zerocopy_signal_used()
-will try to coalesce the tx intrs.
-> 
-> We can easily enable something similar for all tx
-> packets, without need for guest configuration.
+for you to fetch changes up to 32f3869184d498850d36b7e6aa3b9f5260ea648a:
 
-We can, but we lose the an interface for user to tune for 
-their applications.
-> 
-> If it's not clear how to do this, let me know, I'll try to put out a
-> patch like this in a couple of days.
+  jbd2: fix regression where we fail to initialize checksum seed when loading (2014-12-01 21:57:06 -0500)
 
-We can just do this through harding coding the tx-frames to 16 
-through interrupt coalescing. I don't see obvious differences.
-And in my test of RFCv4, I just use tx-frames 16 to get the result.
+----------------------------------------------------------------
+Fix an ext4 metadata checksum regression introduced in v3.18-rc3.
 
-Without a timer for coalescing, I suspect how much this can help
-for e.g 1 session of TCP_RR. It just has at most 1 packet pending
-during the test. So in fact no tx completion could be coalesced 
-in this case.
-> 
-> 
->>  I will post RFC V4 shortly with interrupt coalescing support. In 
->> this
->>  version I remove the tx packet cleanup in ndo_start_xmit() since it 
->> may
->>  reduce the effects of interrupt coalescing.
-> 
-> Maybe split this in a separate patch?
+----------------------------------------------------------------
+Darrick J. Wong (1):
+      jbd2: fix regression where we fail to initialize checksum seed when loading
 
-I can, but since just two minor changes compared to V3. Maybe just
-document the differences is ok for you?
-
+ fs/jbd2/journal.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
