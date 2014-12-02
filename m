@@ -1,109 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932818AbaLBSZb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 13:25:31 -0500
-Received: from mga03.intel.com ([134.134.136.65]:18392 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932649AbaLBSZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 13:25:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,502,1413270000"; 
-   d="scan'208";a="617433251"
-Date: Tue, 2 Dec 2014 10:24:02 -0800
-From: Kristen Carlson Accardi <kristen@linux.intel.com>
-To: Ethan Zhao <ethan.zhao@oracle.com>
-Cc: <dirk.j.brandewie@intel.com>, <viresh.kumar@linaro.org>,
-        <rjw@rjwysocki.net>, <corbet@lwn.net>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <ethan.kernel@gmail.com>, <joe.jin@oracle.com>,
-        <brian.maly@oracle.com>
-Subject: Re: [PATCH 2/2 V6] intel_pstate: add kernel parameter to force
- loading on Sun X86 servers.
-Message-ID: <20141202102402.09ea6017@kcaccard-desk.amr.corp.intel.com>
-In-Reply-To: <1417145777-21897-4-git-send-email-ethan.zhao@oracle.com>
-References: <1417145777-21897-1-git-send-email-ethan.zhao@oracle.com>
-	<1417145777-21897-4-git-send-email-ethan.zhao@oracle.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932865AbaLBSZx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 13:25:53 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:38871 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932365AbaLBSYt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 13:24:49 -0500
+From: Jeff Layton <jlayton@primarydata.com>
+To: linux-nfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [RFC PATCH 13/14] sunrpc: add more tracepoints around svc_xprt handling
+Date: Tue,  2 Dec 2014 13:24:22 -0500
+Message-Id: <1417544663-13299-14-git-send-email-jlayton@primarydata.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
+References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Nov 2014 12:36:17 +0900
-Ethan Zhao <ethan.zhao@oracle.com> wrote:
+Turn the svc_xprt_dequeue tracepoint into an event class, and use it
+to add events for svc_xprt_received and svc_xprt_enqueue.
 
-> To force loading on Oracle Sun X86 servers, provide one kernel command line
-> parameter
-> 
->   intel_pstate = ora_force
-> 
-> For those who be aware of the risk of no power capping capabily working and
-> try to get better performance with this driver.
+Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+---
+ include/trace/events/sunrpc.h | 14 ++++++++++++--
+ net/sunrpc/svc_wq.c           |  1 +
+ net/sunrpc/svc_xprt.c         |  5 ++++-
+ 3 files changed, 17 insertions(+), 3 deletions(-)
 
-So, is this something you'd expect users to use on production systems,
-or is it just for debug?
-
-Thanks,
-Kristen
-
-> 
-> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
-> ---
->  v2: change to hardware vendor specific naming parameter.
->  v4: refine code and doc.
->  v5&v6: fix a typo in doc.
-> 
->  Documentation/kernel-parameters.txt | 5 +++++
->  drivers/cpufreq/intel_pstate.c      | 6 +++++-
->  2 files changed, 10 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 479f332..7d0983e 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -1446,6 +1446,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  		       disable
->  		         Do not enable intel_pstate as the default
->  		         scaling driver for the supported processors
-> +		       ora_force
-> +			 Force loading intel_pstate on Oracle Sun Servers(X86).
-> +			 only for those who be aware of the risk of no power capping
-> +			 capability working and try to get better performance with this
-> +			 driver.
->  
->  	intremap=	[X86-64, Intel-IOMMU]
->  			on	enable Interrupt Remapping (default)
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index 1bb62ca..2654e13 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -866,6 +866,7 @@ static struct cpufreq_driver intel_pstate_driver = {
->  };
->  
->  static int __initdata no_load;
-> +static unsigned int  ora_force;
->  
->  static int intel_pstate_msrs_not_valid(void)
->  {
-> @@ -1003,7 +1004,8 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
->  			case PSS:
->  				return intel_pstate_no_acpi_pss();
->  			case PCC:
-> -				return intel_pstate_has_acpi_ppc();
-> +				return intel_pstate_has_acpi_ppc() &&
-> +					(!ora_force);
->  			}
->  	}
->  
-> @@ -1078,6 +1080,8 @@ static int __init intel_pstate_setup(char *str)
->  
->  	if (!strcmp(str, "disable"))
->  		no_load = 1;
-> +	if (!strcmp(str, "ora_force"))
-> +		ora_force = 1;
->  	return 0;
->  }
->  early_param("intel_pstate", intel_pstate_setup);
+diff --git a/include/trace/events/sunrpc.h b/include/trace/events/sunrpc.h
+index b9c1dc6c825a..434b46e79053 100644
+--- a/include/trace/events/sunrpc.h
++++ b/include/trace/events/sunrpc.h
+@@ -496,7 +496,7 @@ DEFINE_EVENT(svc_rqst_status, svc_send,
+ 		{ (1UL << XPT_CACHE_AUTH),	"XPT_CACHE_AUTH"},	\
+ 		{ (1UL << XPT_LOCAL),		"XPT_LOCAL"})
+ 
+-TRACE_EVENT(svc_xprt_do_enqueue,
++TRACE_EVENT(svc_xprt_enqueue,
+ 	TP_PROTO(struct svc_xprt *xprt, struct svc_rqst *rqst),
+ 
+ 	TP_ARGS(xprt, rqst),
+@@ -517,7 +517,7 @@ TRACE_EVENT(svc_xprt_do_enqueue,
+ 		show_svc_xprt_flags(__entry->xprt->xpt_flags))
+ );
+ 
+-TRACE_EVENT(svc_xprt_dequeue,
++DECLARE_EVENT_CLASS(svc_xprt_event,
+ 	TP_PROTO(struct svc_xprt *xprt),
+ 
+ 	TP_ARGS(xprt),
+@@ -539,6 +539,15 @@ TRACE_EVENT(svc_xprt_dequeue,
+ 		show_svc_xprt_flags(__entry->flags))
+ );
+ 
++DEFINE_EVENT(svc_xprt_event, svc_xprt_dequeue,
++	TP_PROTO(struct svc_xprt *xprt), TP_ARGS(xprt));
++
++DEFINE_EVENT(svc_xprt_event, svc_xprt_received,
++	TP_PROTO(struct svc_xprt *xprt), TP_ARGS(xprt));
++
++DEFINE_EVENT(svc_xprt_event, svc_xprt_active,
++	TP_PROTO(struct svc_xprt *xprt), TP_ARGS(xprt));
++
+ TRACE_EVENT(svc_wake_up,
+ 	TP_PROTO(int pid),
+ 
+@@ -574,6 +583,7 @@ TRACE_EVENT(svc_handle_xprt,
+ 		(struct sockaddr *)&__entry->xprt->xpt_remote, __entry->len,
+ 		show_svc_xprt_flags(__entry->xprt->xpt_flags))
+ );
++
+ #endif /* _TRACE_SUNRPC_H */
+ 
+ #include <trace/define_trace.h>
+diff --git a/net/sunrpc/svc_wq.c b/net/sunrpc/svc_wq.c
+index e96bbf49c1a0..315a86c7ed10 100644
+--- a/net/sunrpc/svc_wq.c
++++ b/net/sunrpc/svc_wq.c
+@@ -275,6 +275,7 @@ svc_wq_enqueue_xprt(struct svc_xprt *xprt)
+ 	}
+ out:
+ 	svc_xprt_get(xprt);
++	trace_svc_xprt_enqueue(xprt, NULL);
+ 	queue_work(serv->sv_wq, &xprt->xpt_work);
+ }
+ EXPORT_SYMBOL_GPL(svc_wq_enqueue_xprt);
+diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
+index 30f9fdfbff0c..7dd08f16140f 100644
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -221,6 +221,7 @@ static struct svc_xprt *__svc_xpo_create(struct svc_xprt_class *xcl,
+  */
+ static void svc_xprt_received(struct svc_xprt *xprt)
+ {
++	trace_svc_xprt_received(xprt);
+ 	if (!test_bit(XPT_BUSY, &xprt->xpt_flags)) {
+ 		WARN_ONCE(1, "xprt=0x%p already busy!", xprt);
+ 		return;
+@@ -402,7 +403,7 @@ redo_search:
+ 	rqstp = NULL;
+ 	put_cpu();
+ out:
+-	trace_svc_xprt_do_enqueue(xprt, rqstp);
++	trace_svc_xprt_enqueue(xprt, rqstp);
+ }
+ EXPORT_SYMBOL_GPL(svc_xprt_do_enqueue);
+ 
+@@ -746,6 +747,8 @@ static int svc_handle_xprt(struct svc_rqst *rqstp, struct svc_xprt *xprt)
+ 	struct svc_serv *serv = rqstp->rq_server;
+ 	int len = 0;
+ 
++	trace_svc_xprt_active(xprt);
++
+ 	if (test_bit(XPT_CLOSE, &xprt->xpt_flags)) {
+ 		dprintk("svc_recv: found XPT_CLOSE\n");
+ 		svc_delete_xprt(xprt);
+-- 
+2.1.0
 
