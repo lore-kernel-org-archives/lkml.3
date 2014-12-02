@@ -1,211 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933465AbaLBXP5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 18:15:57 -0500
-Received: from mout.gmx.net ([212.227.15.15]:60688 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932722AbaLBXP4 convert rfc822-to-8bit (ORCPT
+	id S933462AbaLBXR6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 18:17:58 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:43525 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933192AbaLBXRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 18:15:56 -0500
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: tpmdd-devel@lists.sourceforge.net
-Subject: Re: [tpmdd-devel] [PATCH v8 0/8] TPM 2.0 support
-Date: Wed, 3 Dec 2014 00:21:07 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-rc6-dirty; KDE/4.12.5; x86_64; ; )
-Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
-        christophe.ricard@gmail.com, josh.triplett@intel.com,
-        linux-api@vger.kernel.org, Ashley Lai <ashley@ashleylai.com>,
-        linux-kernel@vger.kernel.org, jason.gunthorpe@obsidianresearch.com,
-        trousers-tech@lists.sourceforge.net
-References: <1417559480-13757-1-git-send-email-jarkko.sakkinen@linux.intel.com> <201412030016.20268.PeterHuewe@gmx.de>
-In-Reply-To: <201412030016.20268.PeterHuewe@gmx.de>
+	Tue, 2 Dec 2014 18:17:55 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201412030021.07882.PeterHuewe@gmx.de>
-X-Provags-ID: V03:K0:0XMBH+pjMovGQhO2pR7ay48NZNXuooz7DYcxAT+oMAXP/gh+46u
- 0l/IiosfhAJIOL+Y4DYZOhl8VOMCmjPcaP8SV4KWfjwd1uIolGaqIxtpcU6KPI5GUvq7DvR
- zg2RHtGBqLmoncqrQNgVmu6q4gSEC7TuYmLSi1/tED0UW3fZj8s8+dWG+MvJiLaQeBtCKnu
- 5E0WT11j8ofFYvMfcPryg==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <87388xodlj.fsf@x220.int.ebiederm.org>
+References: <52e0643bd47b1e5c65921d6e00aea1f724bb510a.1417281801.git.luto@amacapital.net>
+ <87h9xez20g.fsf@x220.int.ebiederm.org> <CALCETrXOz4C7Tu8mggBtR=k47ZmkuAhinVUxWJSFyS1Ep0HvRw@mail.gmail.com>
+ <87mw75ygwp.fsf@x220.int.ebiederm.org> <CALCETrVfO4sBdZcQiZXsofPZMj7pqKeVbX+4g3dAj6WjUca+1w@mail.gmail.com>
+ <87fvcxyf28.fsf_-_@x220.int.ebiederm.org> <874mtdyexp.fsf_-_@x220.int.ebiederm.org>
+ <CALCETrXyC7XPaqj6oe-TmyypOVc_CkZbF6UAAx8YfkyD=gEMOQ@mail.gmail.com>
+ <87a935u3nj.fsf@x220.int.ebiederm.org> <CALCETrXkEOiyzpvqtXtk1f4sL+M1Q-Y6rV=K91ez3yv2nb4Y0Q@mail.gmail.com>
+ <87388xodlj.fsf@x220.int.ebiederm.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 2 Dec 2014 15:17:32 -0800
+Message-ID: <CALCETrXWx2-ZejEHmOi7aSoF-qJMRGR5yseeMhuurZwJRrQbUg@mail.gmail.com>
+Subject: Re: [CFT][PATCH 2/3] userns: Add a knob to disable setgroups on a per
+ user namespace basis
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Richard Weinberger <richard@nod.at>,
+        Kenton Varda <kenton@sandstorm.io>, stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 3. Dezember 2014, 00:16:19 schrieb Peter Hüwe:
-> Am Dienstag, 2. Dezember 2014, 23:31:12 schrieb Jarkko Sakkinen:
-> > This patch set enables TPM2 protocol and provides drivers for FIFO and
-> > CRB interfaces. This patch set does not export any sysfs attributes for
-> > TPM 2.0 because existing sysfs attributes have three non-trivial issues:
-> > 
-> > - They are associated with the platform device instead of character
-> > 
-> >   device.
-> > 
-> > - They are are not trivial key-value pairs but contain text that is
-> > 
-> >   not easily parsed by a computer.
-> > 
-> > - Raciness as described in
-> > 
-> > http://kroah.com/log/blog/2013/06/26/how-to-create-a-sysfs-file-correctly
-> > /
-> > 
-> > This is too big effort to be included into this patch set and requires
-> > more discussion.
-> > 
-> > v2:
-> > - Improved struct tpm_chip life-cycle by taking advantage of devres
-> > 
-> >   API.
-> > 
-> > - Refined sysfs attributes as simple key-values thereby not repeating
-> > 
-> >   mistakes in TPM1 sysfs attributes.
-> > 
-> > - Documented functions in tpm-chip.c and tpm2-cmd.c.
-> > - Documented sysfs attributes.
-> > 
-> > v3:
-> > - Lots of fixes in calling order in device drivers (thanks to Jason
-> > 
-> >   Gunthorpe for pointing these out!).
-> > 
-> > - Attach sysfs attributes to the misc device because it represents
-> > 
-> >   TPM device to the user space.
-> > 
-> > v4:
-> > - Disable sysfs attibutes for TPM 2.0 for until we can sort out the
-> > 
-> >   best approach for them.
-> > 
-> > - Fixed all the style issues found with checkpatch.pl.
-> > 
-> > v5:
-> > - missing EXPORT_SYMBOL_GPL()
-> > - own class for TPM devices used for TPM 2.0 devices and onwards.
-> > 
-> > v6:
-> > - Non-racy initialization for sysfs attributes using struct device's
-> > 
-> >   groups field.
-> > 
-> > - The class 'tpm' is used now for all TPM devices. For the first device
-> > 
-> >   node major MISC_MAJOR and minor TPM_MINOR is used in order to retain
-> >   backwards compatability.
-> > 
-> > v7:
-> > - Release device number and free struct tpm_chip memory inside
-> > 
-> >   tpm_dev_release callback.
-> > 
-> > - Moved code from tpm-interface.c and tpm_dev.c to tpm-chip.c.
-> > 
-> > v8:
-> > - Cleaned up unneeded cast from tpm_transmit_cmd().
-> > - Cleaned up redundant PPI_VERSION_LEN constant from tpm_ppi.c.
-> > - Fixed tpm_tis to use tpm2_calc_ordinal_duration() for TPM2 devices.
-> > - tpm_crb: in crb_recv, check that count can hold the TPM header at
-> > 
-> >   minimum.
-> > 
-> > - tpm_crb: add enumerations for bit flags in start and cancel fields
-> > 
-> >   of the control area.
-> > 
-> > - tpm_crb: use ioremap() for command and response buffer because
-> > 
-> >   they might be anywhere.
-> > 
-> > - tpm_crb: use IO access functions for reading ioremapped buffers
-> > 
-> >   because using direct pointers is not portable.
-> > 
-> > - tpm_crb: only apply ACPI start if start method reported by the
-> > 
-> >   TPM2 ACPI table allows it.
-> > 
-> > - In tpm2_pcr_read() just calculate index and bit and get rid of
-> > 
-> >   hacky loop.
-> > 
-> > - Do not add sysfs attributes for TPM 2.0 devices.
-> > 
-> > Jarkko Sakkinen (7):
-> >   tpm: merge duplicate transmit_cmd() functions
-> >   tpm: two-phase chip management functions
-> >   tpm: fix raciness of PPI interface lookup
-> >   tpm: rename chip->dev to chip->pdev
-> >   tpm: device class for tpm
-> >   tpm: TPM 2.0 baseline support
-> >   tpm: TPM 2.0 CRB Interface
-> > 
-> > Will Arthur (1):
-> >   tpm: TPM 2.0 FIFO Interface
-> >  
-> >  drivers/char/tpm/Kconfig            |   9 +
-> >  drivers/char/tpm/Makefile           |   3 +-
-> >  drivers/char/tpm/tpm-chip.c         | 251 ++++++++++++++++
-> >  drivers/char/tpm/tpm-dev.c          |  42 +--
-> >  drivers/char/tpm/tpm-interface.c    | 261 ++++++----------
-> >  drivers/char/tpm/tpm-sysfs.c        |  29 +-
-> >  drivers/char/tpm/tpm.h              | 113 ++++++-
-> >  drivers/char/tpm/tpm2-cmd.c         | 571
-> > 
-> > ++++++++++++++++++++++++++++++++++++ drivers/char/tpm/tpm_atmel.c       
-> > |
-> > 
-> >  25 +-
-> >  drivers/char/tpm/tpm_crb.c          | 356 ++++++++++++++++++++++
-> >  drivers/char/tpm/tpm_i2c_atmel.c    |  49 ++--
-> >  drivers/char/tpm/tpm_i2c_infineon.c |  43 +--
-> >  drivers/char/tpm/tpm_i2c_nuvoton.c  |  68 ++---
-> 
-> When applying to linux-v3.18-rc6 I get this new coccinelle warning:
-> drivers/char/tpm/tpm_i2c_nuvoton.c:607:1-3: WARNING: end returns can be
-> simpified
-> 
-> 
-> make -C ../../../linux/ M=$(pwd) coccicheck
-> 
-Consider folding this patch to remove the warning
+On Tue, Dec 2, 2014 at 3:07 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
+>
+>> On Tue, Dec 2, 2014 at 1:45 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>>> Andy Lutomirski <luto@amacapital.net> writes:
+>>>
+>>>> On Tue, Dec 2, 2014 at 12:28 PM, Eric W. Biederman
+>>>> <ebiederm@xmission.com> wrote:
+>>>>>
+>>>>> - Expose the knob to user space through a proc file /proc/<pid>/setgroups
+>>>>
+>>>> Can you rename this to something clearer, e.g. userns_setgroups_mode?
+>>>
+>>> I am not certain that is any clearer.  That just reads as wordier.
+>>>
+>>> The userns bit is definitely confusing and wrong.  Why should we need to
+>>> spell out the scope?
+>>
+>> Because it's a property of the process' userns, not a property of the process.
+>>
+>> userns_setgroups would be okay.  (Arguably it should've been
+>> userns_uid_map, too, but at least uid_map sounds obviously
+>> namespace-related.)
+>>
+>>>
+>>>>>   A value of 0 means the setgroups system call is disabled in the
+>>>>>   current processes user namespace and can not be enabled in the
+>>>>>   future in this user namespace.
+>>>>>
+>>>>>   A value of 1 means the segtoups system call is enabled.
+>>>>
+>>>> Would it make more sense to put strings like "allow" and "deny" in
+>>>> here?  That way, future extensions could add additional values.
+>>>
+>>> If the implementation of the write side isn't too bad.  I would love
+>>> to see precedent elsewhere in the kernel.    What I don't expect to do
+>>> is have any values except setgroups are enabled and setgroups are
+>>> disabled.
+>>
+>> current_clocksource?  I think there are lots of things like that.
+>>
+>>>
+>>> I am fine with allowing for the possibility (that is just good
+>>> engineering) but I don't intend to seriously considering or
+>>> implementing other possibilities.
+>>
+>> I can imagine a mode where there's a fixed set of groups that are
+>> forced set but other groups can be added and dropped.  It would be
+>> complicated to set up right, but someone might want it some day.
+>
+> Yeah.  I am defintiely not designing for that.
+>
+>>>>> diff --git a/arch/s390/kernel/compat_linux.c b/arch/s390/kernel/compat_linux.c
+>>>>> index 21c91feeca2d..6d0ee1b089fb 100644
+>>>>> --- a/arch/s390/kernel/compat_linux.c
+>>>>> +++ b/arch/s390/kernel/compat_linux.c
+>>>>> @@ -252,6 +252,7 @@ COMPAT_SYSCALL_DEFINE2(s390_setgroups16, int, gidsetsize, u16 __user *, grouplis
+>>>>>         int retval;
+>>>>>
+>>>>>         if (!gid_mapping_possible(user_ns) ||
+>>>>> +           !atomic_read(&user_ns->setgroups_allowed) ||
+>>>>>             !capable(CAP_SETGID))
+>>>>>                 return -EPERM;
+>>>>
+>>>> This is now incomprehensible because of the gid_mapping_possible
+>>>> thing.  If you renamed gid_mapping_possible to
+>>>> userns_setgroup_allowed, then this could be added to the
+>>>> implementation, and this would all make sense (not to mention avoiding
+>>>> duplicating this thing).
+>>>>
+>>>>> @@ -826,6 +827,11 @@ static bool new_idmap_permitted(const struct file *file,
+>>>>>                         kuid_t uid = make_kuid(ns->parent, id);
+>>>>>                         if (uid_eq(uid, cred->euid))
+>>>>>                                 return true;
+>>>>> +               } else if (cap_setid == CAP_SETGID) {
+>>>>> +                       kgid_t gid = make_kgid(ns->parent, id);
+>>>>> +                       if (!atomic_read(&ns->setgroups_allowed) &&
+>>>>> +                           gid_eq(gid, cred->egid))
+>>>>> +                               return true;
+>>>>
+>>>> I still don't see why egid is any better than fsgid here.
+>>>
+>>> Answered in my earlier response fsgid was a goof.
+>>> I can set any gid to my egid with my existing permissions.
+>>> Show me how I can do that with fsgid or fsuid and I will be happy to use
+>>> those.
+>>
+>> You can use your fsgid to make a setgid file, I think.  But yes, point
+>> taken, although as mentioned in the other thread, I think it would be
+>> a lot clearer if it were a separate patch.
+>
+> Agreed.
+>
+>>>>> +ssize_t proc_setgroups_write(struct file *file, const char __user *buf,
+>>>>> +                            size_t count, loff_t *ppos)
+>>>>> +{
+>>>>> +       struct seq_file *seq = file->private_data;
+>>>>> +       struct user_namespace *ns = seq->private;
+>>>>> +       char kbuf[3];
+>>>>> +       int setgroups_allowed;
+>>>>> +       ssize_t ret;
+>>>>> +
+>>>>> +       ret = -EPERM;
+>>>>> +       if (!file_ns_capable(file, ns, CAP_SETGID))
+>>>>> +               goto out;
+>>>>
+>>>> CAP_SYS_ADMIN?  This isn't setting a gid in the namespace; it's
+>>>> reconfiguring the namespace.
+>>>
+>>> Hmm.  Maybe.  It is an activity that is normally controlled by
+>>> CAP_SETGID.
+>>>
+>>> Frankly I think the entire split up of the capability model is almost
+>>> totally broken.  But I think CAP_SETGID is a close approximation of the
+>>> right thing here.
+>>
+>> I agree that the cap model is screwy.  But we use CAP_SYS_ADMIN for
+>> everything else that changes the overall behavior of a namespace.
+>>
+>> In any event, the only way it matters is for a non-ns owner in the
+>> parent ns with CAP_SETGID set but not CAP_SYS_ADMIN.  I'd argue that
+>> CAP_SETGID should not be usable to make unrelated process' syscalls
+>> fail.
+>
+> That is a pretty decent argument.    I will take a good stare at this
+> issue as I refresh these patches and see how close to perfection I can
+> make them.
+>
+>>>>> +       /* Only allow a very narrow range of strings to be written */
+>>>>> +       ret = -EINVAL;
+>>>>> +       if ((*ppos != 0) || (count >= sizeof(kbuf)) || (count < 1))
+>>>>> +               goto out;
+>>>>> +
+>>>>> +       /* What was written? */
+>>>>> +       ret = -EFAULT;
+>>>>> +       if (copy_from_user(kbuf, buf, count))
+>>>>> +               goto out;
+>>>>> +       kbuf[count] = '\0';
+>>>>> +
+>>>>> +       /* What is being requested? */
+>>>>> +       ret = -EINVAL;
+>>>>> +       if (kbuf[0] == '0')
+>>>>> +               setgroups_allowed = 0;
+>>>>> +       else if (kbuf[0] == '1')
+>>>>> +               setgroups_allowed = 1;
+>>>>> +       else
+>>>>> +               goto out;
+>>>>> +
+>>>>> +       /* Allow a trailing newline */
+>>>>> +       ret = -EINVAL;
+>>>>> +       if ((count == 2) && (kbuf[1] != '\n'))
+>>>>> +               goto out;
+>>>>> +
+>>>>> +
+>>>>> +       if (setgroups_allowed) {
+>>>>> +               ret = -EINVAL;
+>>>>> +               if (atomic_read(&ns->setgroups_allowed) == 0)
+>>>>> +                       goto out;
+>>>>> +       } else {
+>>>>
+>>>> I would disallow this if gid_map has been written in the interest of
+>>>> sanity.
+>>>
+>>> Not a chance.  That is part of making this an independent knob.  If
+>>> there is another reason for disabling setgroups you can flip this
+>>> knob even after mappings are established.
+>>
+>> Then you really want CAP_SYS_ADMIN, I think.
+>>
+>>>
+>>>>> +               atomic_set(&ns->setgroups_allowed, 0);
+>>>>> +               /* sigh memory barriers! */
+>>>>
+>>>> I don't think that any barriers are needed.  If you ever observe
+>>>> setgroups_allowed == 0, it will stay that way forever.
+>>>
+>>> Likely.   In practice the code works today.
+>>>
+>>> But I need to review things closely to understand if there are barriers
+>>> needed.  But especially since it is a write once knob we can get away
+>>> with a lot.
+>>>
+>>
+>> Yeah.
+>>
+>> For long-term use, I kind of like the flags approach I added in the
+>> other patch.  It makes it easy to add more flags in the future.
+>
+> I thought a dedicated word might be easier.  I don't know that it makes
+> much of a difference at this point.
+>
+>> In any event, I think the only barrier that's needed is when writing gid_map:
+>>
+>> atomic_read / test_bit to determine whether unpriv mappings are okay;
+>> smp_mb() or whatever the current _after_atomic thing is these days;
+>> write mapping;
+>>
+>> Although I'm not sure whether Linux supports any architectures that
+>> can violate causality in the way that barrier is there to prevent.
+>
+> The DEC Alpha at least used to be able to violate causality in ways
+> weird enough to confuse anyone, and the alpha still seems to be in the
+> tree.  What keyed me in was the part in atomic_ops.txt that says these
+> things don't have barriers and you will probably need them, and I
+> remember spin locks tend to take care of all those issues for you.
+>
+> Anyway thanks for your barrier pointer.
+>
 
-----
+My pointer was a bit off.  Barriers synchronize with barriers; the
+check for whether setgroups is okay may need a barrier as well:
 
->From cb1b82859ba98f8573624905d2b3cc8d10f456b2 Mon Sep 17 00:00:00 2001
-From: Peter Huewe <peterhuewe@gmx.de>
-Date: Wed, 3 Dec 2014 00:18:52 +0100
-Subject: [PATCH] tpm:tpm_i2c_nuvoton: simpyl return statements
+static inline bool may_setgroups(whatever) {
+    if (no groups are mapped)
+      return false;
+    smp_rmb() (or _before_atomic, maybe -- I don't know whether that's
+okay for atomic_read);
+    if (setgroups is disallowed by option)
+      return false;
 
-if !rc evals to false it is 0
--> we can return rc in both cases
+    return true;
+}
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/char/tpm/tpm_i2c_nuvoton.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+It would be bad if there were a window in which we'd see a group
+mapped but not see that setgroups is disallowed.
 
-diff --git a/drivers/char/tpm/tpm_i2c_nuvoton.c b/drivers/char/tpm/tpm_i2c_nuvoton.c
-index 14246e2..79f4fef 100644
---- a/drivers/char/tpm/tpm_i2c_nuvoton.c
-+++ b/drivers/char/tpm/tpm_i2c_nuvoton.c
-@@ -605,10 +605,8 @@ static int i2c_nuvoton_probe(struct i2c_client *client,
- 		return -ENODEV;
- 
- 	rc = tpm_chip_register(chip);
--	if (rc)
--		return rc;
- 
--	return 0;
-+	return rc;
- }
- 
- static int i2c_nuvoton_remove(struct i2c_client *client)
--- 
-2.0.4
-
-
-
+--Andy
