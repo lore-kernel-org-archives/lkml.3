@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932982AbaLBM7G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 07:59:06 -0500
-Received: from h1.radempa.de ([176.9.142.194]:49627 "EHLO mail.cosmopool.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932909AbaLBM7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 07:59:03 -0500
-From: Harald Geyer <harald@ccbib.org>
-To: Richard Weinberger <richard@nod.at>
-cc: jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
-        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] iio: dht11: IRQ fixes
-In-reply-to: <547D9A6F.9010801@nod.at>
-References: <1417465651-16036-1-git-send-email-richard@nod.at> <1417465651-16036-2-git-send-email-richard@nod.at> <E1XvkYl-00013g-VO@stardust.g4.wien.funkfeuer.at> <547D9A6F.9010801@nod.at>
-Comments: In-reply-to Richard Weinberger <richard@nod.at>
-   message dated "Tue, 02 Dec 2014 11:54:39 +0100."
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <4603.1417525133.1@stardust.g4.wien.funkfeuer.at>
-Date: Tue, 02 Dec 2014 13:58:53 +0100
-Message-Id: <E1Xvn2b-0001CH-PM@stardust.g4.wien.funkfeuer.at>
+	id S933068AbaLBM7c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 07:59:32 -0500
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:37819 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932998AbaLBM73 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 07:59:29 -0500
+Subject: Re: [PATCH] misc: genwqe: check for error from
+ get_user_pages_fast()
+From: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Reply-To: haver@linux.vnet.ibm.com
+To: Ian Abbott <abbotti@mev.co.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Thadeu Lima De Souza Cascardo <thadeul@br.ibm.com>
+In-Reply-To: <1415291019-6178-1-git-send-email-abbotti@mev.co.uk>
+References: <1415291019-6178-1-git-send-email-abbotti@mev.co.uk>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Tue, 02 Dec 2014 13:59:20 +0100
+Message-ID: <1417525160.2010.4.camel@oc7383187364.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120212-0017-0000-0000-0000020E921F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Weinberger writes:
-> Harald,
+Hi Ian,
+
+thanks for reviewing our code and sorry for not answering immediately.
+
+Am Donnerstag, den 06.11.2014, 16:23 +0000 schrieb Ian Abbott:
+> `genwqe_user_vmap()` calls `get_user_pages_fast()` and if the return
+> value is less than the number of pages requested, it frees the pages and
+> returns an error (`-EFAULT`).  However, it fails to consider a negative
+> error return value from `get_user_pages_fast()`.  In that case, the test
+> `if (rc < m->nr_pages)` will be false (due to promotion of `rc` to a
+> large `unsigned int`) and the code will continue on to call
+> `genwqe_map_pages()` with an invalid list of page pointers.  Fix it by
+> bailing out if `get_user_pages_fast()` returns a negative error value.
+
+True. Did you find this by manual inspection of the code or did you use
+tools to figure it out?
+
 > 
-> Am 02.12.2014 um 11:19 schrieb Harald Geyer:
-> > Hi Richard,
-> > 
-> > thanks for the patch.
-> > 
-> > I think (haven't tried yet) that your patch changes the number of
-> > edges recorded per transmission. So probably the decoding function
-> > needs to be adapted too...
+> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+> Cc: <stable@vger.kernel.org> # 3.14.x # 3.15.x # 3.16.x # 3.17.x
+> ---
+>  drivers/misc/genwqe/card_utils.c | 2 ++
+>  1 file changed, 2 insertions(+)
 > 
-> Can you explain your thought?
-> I'll happily dig into that.
-
-Part of the reason to have the IRQ enabled during output was to
-get consistent timestamps (all timestamps would be taken via the
-same codepath). While this isn't essential, the current code expects
-that the start command we generate is in the list of edges. I think
-your changes will cause that start command not to be in the list of
-edges.
-
-Note: There have been issues with some sensors (DHT11s?) not to
-send proper start bits, so the driver tries to be liberal about
-what it expects and you probably haven't seen any decoding errors
-if your sample sensor works to specification. (Now that I come to
-think about it: Undefined behaviour of IRQs on output lines could
-have been involved too...)
-
-This is a bit of a mess and I'd rather clean this up than add more
-to it. Maybe I'm overly fussy about this, but it has bitten me in
-the past.
-
-Since it seems you have some interesst in working on these parts,
-let me mention an unrelated issue: The DHT22 stops sending data
-after a random time (think of days here) which AFAIK only can be
-worked around by power-cycling the sensor. I mean to add something
-for this to the driver but couln't make up my mind about what the
-proper ABI for this would be, so right now I'm using some userspace
-hack for this. (The issue was already discussed on the linux-iio
-mailing list a few month ago, if you want to look into this.
-Anyway: You have been warned ... ;)  
- 
-> > I won't be able to ACK this before testing on real HW. Of course
-> > confirmation that your changes work reliably on both DHT11 and DHT22
-> > will do as well. The debuging code present in the initial submission
-> > of the driver might be helpful to anybody trying to verify the
-> > timing.
+> diff --git a/drivers/misc/genwqe/card_utils.c b/drivers/misc/genwqe/card_utils.c
+> index 7cb3b7e..1ca94e6 100644
+> --- a/drivers/misc/genwqe/card_utils.c
+> +++ b/drivers/misc/genwqe/card_utils.c
+> @@ -590,6 +590,8 @@ int genwqe_user_vmap(struct genwqe_dev *cd, struct dma_mapping *m, void *uaddr,
+>  				 m->nr_pages,
+>  				 1,		/* write by caller */
+>  				 m->page_list);	/* ptrs to pages */
+> +	if (rc < 0)
+> +		goto fail_get_user_pages;
 > 
-> I have only DHT22 sensors. Of course I've tested the driver with these.
+>  	/* assumption: get_user_pages can be killed by signals. */
+>  	if (rc < m->nr_pages) {
 
-Ok, so I'll test DHT11 first. It would still be nice to confirm how
-many edges are recorded from DHT22 though.
+Regards
 
-Thanks,
-Harald
+Frank
+
+Acked-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
+
+
