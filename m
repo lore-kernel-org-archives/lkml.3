@@ -1,37 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933128AbaLBIC3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 03:02:29 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:61208 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754233AbaLBIC0 (ORCPT
+	id S1754484AbaLBIF4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 03:05:56 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:64218 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753039AbaLBIFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 03:02:26 -0500
-Date: Tue, 2 Dec 2014 13:32:14 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Willy Tarreau <willy@meta-x.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: staging: panel: suggestions needed
-Message-ID: <20141202080214.GA4762@sudip-PC>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 2 Dec 2014 03:05:54 -0500
+From: gyungoh@gmail.com
+X-Google-Original-From: jack.yoo@skyworksinc.com
+To: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
+        cooloney@gmail.com, broonie@kernel.org, lgirdwood@gmail.com
+Cc: jack.yoo@skyworksinc.com, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
+        treding@nvidia.com, florian.vaussard@epfl.ch, trivial@kernel.org,
+        linux@roeck-us.net, andrew@lunn.ch, jic23@kernel.org
+Subject: [PATCH v9 0/8] Add Skyworks SKY81452 device drivers
+Date: Tue,  2 Dec 2014 17:05:21 +0900
+Message-Id: <1417507529-13654-1-git-send-email-jack.yoo@skyworksinc.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I have been looking at your panel driver, and am attaching a 20x4 alphanueric lcd to it. Will start testing it in a few days as and when I get time. Looks like, it is receiving mostly checkpatch and sparse cleanups.
+From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 
-Just wanted your opinion on few things I was thinking:
-	1) Number of lines you have fixed to 2 and 40 char per line. since I am going to connect 20x4 , i need to remember that after displaying 20 character in 1st line, next char will come to 3rd line. instead why don't we make the option of number of line to 4 ?
-	2) The lcd commands you are writing to the lcd in an escape sequence while writing to the lcd. Instead of that why don't we use ioctl for lcd commands, and writing to the device will involve only sending data to lcd ?
-	3) You have given fixed minor number in your code. Any problem if we make it dynamic ?
-	4) For now I am only attaching a LCD, but I also want to attach a keypad to it. Can you please let me know about the schematic of the keypad connection? I can find out from the code, but I have not yet seen the keypad code.
+This patch set includes regulator and backlight driver for SKY81452.
+Also it includes documents for device tree and module.
+The initial version of sky81452-regulator was applied. Fo this, incremental
+patches are included.
 
-Waiting in anticipation of your reply.
+v9:
+Removed the change to remove MODULE_VERSION() for sky81452-regulator
 
-thanks
-sudip
+v8:
+Renamed property names for backlight with vendor prefix
+Modified gpio-enable property to generic property for GPIO
+Made up the example for backlight DT
+Changed the DT parsing of regulator using regulator_node and of_match
+
+v7:
+Modified licensing text to GPLv2
+Splitted Kconfig renaming from DT patch
+
+v6:
+Added new line character at the end of line of dev_err()
+
+v5:
+Changed DT for regulator : 'lout' node should be defined under 'regulator'
+Removed compatible string from sky81452-regulator driver
+Modified sky81452-regulator to return EINVAL when of_node is NULL
+Move sky81452-backlight.h to include/linux/platform_data
+
+v4:
+Removed MODULE_VERSION()
+Modified license to GPLv2
+Removed calling to backlight_device_unregister() in sky81452-backlight
+
+v3:
+Cleaned-up DBG messages
+Cleaned-up DT
+Fixed the backlight name from 'sky81452-bl' to 'sky81452-backlight'
+Assigned mfd_cell.of_compatible for binding device node
+Modified error messages
+Modified sky81452-regulator to return ENODATA when of_node is NULL
+
+v2:
+Split the patches for each sub-system
+Added 'reg' attribute for I2C address in device tree documents
+Added 'compatible' attribute in child drivers
+Renamed CONFIG_SKY81452 to CONFIG_MFD_SKY81452
+Changed the dependency from I2C=y to I2C, for CONFIG_MFD_SKY81452
+Added message for exception or errors.
+Added vendor prefix for Skyworks Solutions, Inc.
+Add SKY81452 to the Trivial Devices list
+
+
+Gyungoh Yoo (8):
+  mfd: Add support for Skyworks SKY81452 driver
+  backlight: Add support Skyworks SKY81452 backlight driver
+  devicetree: mfd: Add new SKY81452 mfd binding
+  devicetree: backlight: Add new SKY81452 backlight binding
+  devicetree: Add vendor prefix for Skyworks Solutions, Inc.
+  devicetree: i2c: Add SKY81452 to the Trivial Devices list
+  regulator: sky81452: Modify Device Tree structure
+  devicetree: regulator: sky81452: Modify Device Tree structure
+
+ .../devicetree/bindings/i2c/trivial-devices.txt    |   1 +
+ Documentation/devicetree/bindings/mfd/sky81452.txt |  36 +++
+ .../bindings/regulator/sky81452-regulator.txt      |  10 +-
+ .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+ .../video/backlight/sky81452-backlight.txt         |  29 ++
+ drivers/mfd/Kconfig                                |  12 +
+ drivers/mfd/Makefile                               |   1 +
+ drivers/mfd/sky81452.c                             | 108 +++++++
+ drivers/regulator/sky81452-regulator.c             |  45 +--
+ drivers/video/backlight/Kconfig                    |  10 +
+ drivers/video/backlight/Makefile                   |   1 +
+ drivers/video/backlight/sky81452-backlight.c       | 340 +++++++++++++++++++++
+ include/linux/mfd/sky81452.h                       |  31 ++
+ include/linux/platform_data/sky81452-backlight.h   |  46 +++
+ 14 files changed, 631 insertions(+), 40 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/sky81452.txt
+ create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+ create mode 100644 drivers/mfd/sky81452.c
+ create mode 100644 drivers/video/backlight/sky81452-backlight.c
+ create mode 100644 include/linux/mfd/sky81452.h
+ create mode 100644 include/linux/platform_data/sky81452-backlight.h
+
+-- 
+1.9.1
+
