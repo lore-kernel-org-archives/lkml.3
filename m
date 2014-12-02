@@ -1,281 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376AbaLBRfP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 12:35:15 -0500
-Received: from mga14.intel.com ([192.55.52.115]:31010 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754220AbaLBRfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 12:35:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,501,1413270000"; 
-   d="scan'208";a="631496293"
-From: Tony Luck <tony.luck@intel.com>
-Date: Tue, 2 Dec 2014 09:27:30 -0800
-Subject: [PATCHv2] sb_edac: Add support for Broadwell-DE processor
-In-Reply-To: <20141202120256.086e412e@recife.lan>
-To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Cc: Doug Thompson <dougthompson@xmission.com>, Borislav Petkov <bp@alien8.de>,
-        Aristeu Rozanski <aris@redhat.com>, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-Id: <086850@agluck-desk.sc.intel.com>
+	id S932710AbaLBRgF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 12:36:05 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:34426 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932468AbaLBRgB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 12:36:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <25485084.A6ydfR9Xle@wuerfel>
+References: <1417461694-5129-1-git-send-email-dianders@chromium.org>
+	<20141201225057.GA11285@n2100.arm.linux.org.uk>
+	<CAD=FV=VT7gr504-ZgWPfha+40XDX5eShkzZ36bg=-4Oub1S27w@mail.gmail.com>
+	<25485084.A6ydfR9Xle@wuerfel>
+Date: Tue, 2 Dec 2014 09:36:00 -0800
+X-Google-Sender-Auth: gtKgjHCb-hmeCOXxfo2zSoL9NNk
+Message-ID: <CAD=FV=UFWZEcbO2ty0m+qEGv4Xgq0N=Rs30wBgw=6+OGd5gSpg@mail.gmail.com>
+Subject: Re: [PATCH] ARM: rockchip: Convert resume code to C
+From: Doug Anderson <dianders@chromium.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kevin Hilman <khilman@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
+        russ.dill@gmail.com, Olof Johansson <olof@lixom.net>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Chris Zhong <zyw@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Broadwell-DE is the microserver version of next generation Xeon
-processors.  A whole bunch of new PCIe device ids, but otherwise
-pretty much the same as Haswell.
+Hi,
 
-Acked-by: Aristeu Rozanski <aris@redhat.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
----
+On Tue, Dec 2, 2014 at 1:33 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 01 December 2014 15:04:59 Doug Anderson wrote:
+>> Russel,
+>>
+>> On Mon, Dec 1, 2014 at 2:50 PM, Russell King - ARM Linux
+>> <linux@arm.linux.org.uk> wrote:
+>> > What I see here is a load of complexity which achieves very little.
+>> > The result doesn't get rid of much assembly, but it does make stuff
+>> > more complicated.  And the diffstat speaks volumes about this:
+>> >
+>> >  10 files changed, 275 insertions(+), 94 deletions(-)
+>> >
+>> > There's a lot of words in the description, but it's missing the most
+>> > important bit: why do we want to take this approach - what benefits
+>> > does it bring?
+>>
+>> Sure.  I guess the most important words in the description are:
+>>
+>> > We convert the existing assembly resume code into C as proof that this
+>> > works and to prepare for linking in SDRAM reinit code.
+>>
+>> I can't say that the SDRAM reinit code is ready for prime time yet,
+>> but you can get a preview of what it could look like at:
+>>
+>> https://chromium-review.googlesource.com/#/c/227366/25/arch/arm/mach-rockchip/embedded/rk3288_ddr_resume.c
+>>
+>> Adding that code in assembly seems like a very, very bad idea.
+>> Certainly my patch could wait until the DDR code is ready to be posted
+>> upstream if that made sense.  One advantage of waiting is that it's
+>> possible that the DDR code might end up moving elsewhere if it made
+>> sense to have it part of a memory controller driver or something like
+>> that.
+>
+> I recently looked at another vendor tree (quantenna wifi access point,
+> based on arch/arc), which was putting arbitrary functions into SRAM
+> for performance reasons, in their case the entire hot path for network
+> switching. Having at least the infrastructure to do this seems like
+> a great idea, even though it's very hard to do in a general-purpose
+> kernel, as you'd have a hard time squeezing as much code as possible
+> into the available SRAM.
 
-v2fixes:
-1) TAD2 abd TAD3 are not optional - Aristeu
-2) Fix multi-line comment to conform to style - Mauro
+I'm always a fan of seeing general infrastructure introduced, though
+we always need to make sure that the general infrastructure makes
+things easier and not harder.  There's always the danger of adding so
+much abstraction for a small thing that using it is like pulling
+teeth.  I'm not saying that's the case here, but it is always a
+danger.
 
- drivers/edac/sb_edac.c | 163 +++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 157 insertions(+), 6 deletions(-)
+Note: I will point out a critical differences between the "hotpath"
+problem and the one I'm solving here.  When you're just trying to
+speed up a hotpath, it's not the end of the world if there's a stray
+access to SDRAM.  If you happen to access a global variable in SDRAM,
+or use a libc function to do division, or have a WARN_ON, those things
+are OK.  It might also be OK if the stack was still in SDRAM.  When
+you're compiling code that has to run with no other kernel function
+present it's really nice to link them into a separate executable.
 
-diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-index ead0bf9a5d2d..993e8b61c4b2 100644
---- a/drivers/edac/sb_edac.c
-+++ b/drivers/edac/sb_edac.c
-@@ -262,6 +262,7 @@ enum type {
- 	SANDY_BRIDGE,
- 	IVY_BRIDGE,
- 	HASWELL,
-+	BROADWELL,
- };
- 
- struct sbridge_pvt;
-@@ -446,7 +447,7 @@ static const struct pci_id_table pci_dev_descr_ibridge_table[] = {
-  *	- each SMI channel interfaces with a scalable memory buffer
-  *	- each scalable memory buffer supports 4 DDR3/DDR4 channels, 3 DPC
-  */
--#define HASWELL_DDRCRCLKCONTROLS 0xa10
-+#define HASWELL_DDRCRCLKCONTROLS 0xa10 /* Ditto on Broadwell */
- #define HASWELL_HASYSDEFEATURE2 0x84
- #define PCI_DEVICE_ID_INTEL_HASWELL_IMC_VTD_MISC 0x2f28
- #define PCI_DEVICE_ID_INTEL_HASWELL_IMC_HA0	0x2fa0
-@@ -498,12 +499,53 @@ static const struct pci_id_table pci_dev_descr_haswell_table[] = {
- };
- 
- /*
-+ * Broadwell support
-+ *
-+ * DE processor:
-+ *	- 1 IMC
-+ *	- 2 DDR3 channels, 2 DPC per channel
-+ */
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_VTD_MISC 0x6f28
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0	0x6fa0
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TA	0x6fa8
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_THERMAL 0x6f71
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_CBO_SAD0 0x6ffc
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_CBO_SAD1 0x6ffd
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD0 0x6faa
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD1 0x6fab
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD2 0x6fac
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD3 0x6fad
-+#define PCI_DEVICE_ID_INTEL_BROADWELL_IMC_DDRIO0 0x6faf
-+
-+static const struct pci_id_descr pci_dev_descr_broadwell[] = {
-+	/* first item must be the HA */
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0, 0)		},
-+
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_CBO_SAD0, 0)	},
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_CBO_SAD1, 0)	},
-+
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TA, 0)	},
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_THERMAL, 0)	},
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD0, 0)	},
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD1, 0)	},
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD2, 0)	},
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD3, 0)	},
-+	{ PCI_DESCR(PCI_DEVICE_ID_INTEL_BROADWELL_IMC_DDRIO0, 1)	},
-+};
-+
-+static const struct pci_id_table pci_dev_descr_broadwell_table[] = {
-+	PCI_ID_TABLE_ENTRY(pci_dev_descr_broadwell),
-+	{0,}			/* 0 terminated list. */
-+};
-+
-+/*
-  *	pci_device_id	table for which devices we are looking for
-  */
- static const struct pci_device_id sbridge_pci_tbl[] = {
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_HA0)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TA)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_HASWELL_IMC_HA0)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0)},
- 	{0,}			/* 0 terminated list. */
- };
- 
-@@ -768,12 +810,22 @@ static int check_if_ecc_is_active(const u8 bus, enum type type)
- 	struct pci_dev *pdev = NULL;
- 	u32 mcmtr, id;
- 
--	if (type == IVY_BRIDGE)
-+	switch (type) {
-+	case IVY_BRIDGE:
- 		id = PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TA;
--	else if (type == HASWELL)
-+		break;
-+	case HASWELL:
- 		id = PCI_DEVICE_ID_INTEL_HASWELL_IMC_HA0_TA;
--	else
-+		break;
-+	case SANDY_BRIDGE:
- 		id = PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TA;
-+		break;
-+	case BROADWELL:
-+		id = PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TA;
-+		break;
-+	default:
-+		return -ENODEV;
-+	}
- 
- 	pdev = get_pdev_same_bus(bus, id);
- 	if (!pdev) {
-@@ -801,7 +853,7 @@ static int get_dimm_config(struct mem_ctl_info *mci)
- 	enum edac_type mode;
- 	enum mem_type mtype;
- 
--	if (pvt->info.type == HASWELL)
-+	if (pvt->info.type == HASWELL || pvt->info.type == BROADWELL)
- 		pci_read_config_dword(pvt->pci_sad1, SAD_TARGET, &reg);
- 	else
- 		pci_read_config_dword(pvt->pci_br0, SAD_TARGET, &reg);
-@@ -1182,7 +1234,7 @@ static int get_memory_error_data(struct mem_ctl_info *mci,
- 		*socket = sad_interleave[idx];
- 		edac_dbg(0, "SAD interleave index: %d (wayness %d) = CPU socket %d\n",
- 			 idx, sad_way, *socket);
--	} else if (pvt->info.type == HASWELL) {
-+	} else if (pvt->info.type == HASWELL || pvt->info.type == BROADWELL) {
- 		int bits, a7mode = A7MODE(dram_rule);
- 
- 		if (a7mode) {
-@@ -1831,6 +1883,82 @@ enodev:
- 	return -ENODEV;
- }
- 
-+static int broadwell_mci_bind_devs(struct mem_ctl_info *mci,
-+				 struct sbridge_dev *sbridge_dev)
-+{
-+	struct sbridge_pvt *pvt = mci->pvt_info;
-+	struct pci_dev *pdev;
-+	int i;
-+
-+	/* there's only one device per system; not tied to any bus */
-+	if (pvt->info.pci_vtd == NULL)
-+		/* result will be checked later */
-+		pvt->info.pci_vtd = pci_get_device(PCI_VENDOR_ID_INTEL,
-+						   PCI_DEVICE_ID_INTEL_BROADWELL_IMC_VTD_MISC,
-+						   NULL);
-+
-+	for (i = 0; i < sbridge_dev->n_devs; i++) {
-+		pdev = sbridge_dev->pdev[i];
-+		if (!pdev)
-+			continue;
-+
-+		switch (pdev->device) {
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_CBO_SAD0:
-+			pvt->pci_sad0 = pdev;
-+			break;
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_CBO_SAD1:
-+			pvt->pci_sad1 = pdev;
-+			break;
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0:
-+			pvt->pci_ha0 = pdev;
-+			break;
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TA:
-+			pvt->pci_ta = pdev;
-+			break;
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_THERMAL:
-+			pvt->pci_ras = pdev;
-+			break;
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD0:
-+			pvt->pci_tad[0] = pdev;
-+			break;
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD1:
-+			pvt->pci_tad[1] = pdev;
-+			break;
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD2:
-+			pvt->pci_tad[2] = pdev;
-+			break;
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0_TAD3:
-+			pvt->pci_tad[3] = pdev;
-+			break;
-+		case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_DDRIO0:
-+			pvt->pci_ddrio = pdev;
-+			break;
-+		default:
-+			break;
-+		}
-+
-+		edac_dbg(0, "Associated PCI %02x.%02d.%d with dev = %p\n",
-+			 sbridge_dev->bus,
-+			 PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn),
-+			 pdev);
-+	}
-+
-+	/* Check if everything were registered */
-+	if (!pvt->pci_sad0 || !pvt->pci_ha0 || !pvt->pci_sad1 ||
-+	    !pvt->pci_ras  || !pvt->pci_ta || !pvt->info.pci_vtd)
-+		goto enodev;
-+
-+	for (i = 0; i < NUM_CHANNELS; i++) {
-+		if (!pvt->pci_tad[i])
-+			goto enodev;
-+	}
-+	return 0;
-+
-+enodev:
-+	sbridge_printk(KERN_ERR, "Some needed devices are missing\n");
-+	return -ENODEV;
-+}
-+
- /****************************************************************************
- 			Error check routines
-  ****************************************************************************/
-@@ -2243,6 +2371,25 @@ static int sbridge_register_mci(struct sbridge_dev *sbridge_dev, enum type type)
- 		if (unlikely(rc < 0))
- 			goto fail0;
- 		break;
-+	case BROADWELL:
-+		/* rankcfgr isn't used */
-+		pvt->info.get_tolm = haswell_get_tolm;
-+		pvt->info.get_tohm = haswell_get_tohm;
-+		pvt->info.dram_rule = ibridge_dram_rule;
-+		pvt->info.get_memory_type = haswell_get_memory_type;
-+		pvt->info.get_node_id = haswell_get_node_id;
-+		pvt->info.rir_limit = haswell_rir_limit;
-+		pvt->info.max_sad = ARRAY_SIZE(ibridge_dram_rule);
-+		pvt->info.interleave_list = ibridge_interleave_list;
-+		pvt->info.max_interleave = ARRAY_SIZE(ibridge_interleave_list);
-+		pvt->info.interleave_pkg = ibridge_interleave_pkg;
-+		mci->ctl_name = kasprintf(GFP_KERNEL, "Broadwell Socket#%d", mci->mc_idx);
-+
-+		/* Store pci devices at mci for faster access */
-+		rc = broadwell_mci_bind_devs(mci, sbridge_dev);
-+		if (unlikely(rc < 0))
-+			goto fail0;
-+		break;
- 	}
- 
- 	/* Get dimm basic config and the memory layout */
-@@ -2308,6 +2455,10 @@ static int sbridge_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 		rc = sbridge_get_all_devices(&num_mc, pci_dev_descr_haswell_table);
- 		type = HASWELL;
- 		break;
-+	case PCI_DEVICE_ID_INTEL_BROADWELL_IMC_HA0:
-+		rc = sbridge_get_all_devices(&num_mc, pci_dev_descr_broadwell_table);
-+		type = BROADWELL;
-+		break;
- 	}
- 	if (unlikely(rc < 0))
- 		goto fail0;
--- 
-2.1.0
 
+> Unfortunately you already said that you're not that interested in
+> making it completely generic,
+
+Yes.  I felt like a jerk with my list of caveats, but at the same time
+I know that realistically I just don't have time.  It was either send
+it upstream with the caveats or don't send it.  To me it seemed better
+to send it.
+
+Thank you for providing a constructive review despite my caveats!  :)
+
+
+> and I also don't think I want to have
+> the infrastructure for it in mach-rockchip and would want to see that
+> at least shared across arch/arm if it's too hard to do
+> cross-architecture. If you were to include code from drivers/memory/
+> in the blob, you couldn't keep it in mach-rockchip anyway.
+
+I guess I was envisioning that if other places need similar
+functionality that they would copy the ideas here.  Some of the
+Makefile bits could possibly be shared through some type of Makefile
+library.  I know copying code / Makefiles is bad, but sometimes it's
+the cleanest way to do something.  If we start seeing a lot of
+duplication then we can make things common and we can truly evaluate
+whether the common solution is better than the duplication.
+
+
+> AFAICT, the quantenna implementation is similar to the itcm/dtcm
+> stuff we already have (but are not using upstream), so I wonder
+> why we can't use that here too, see Documentation/arm/tcm.txt
+
+I wasn't aware of the TCM stuff.  Thanks for the pointer!  It looks
+pretty neat...
+
+Ah, but the TCM stuff has a critical difference from my problem.  By
+the very definition of TCM you don't need to do relocation.
+
+TCM has the magical property that you can assign the physical address.
+That means that you instantly sidestep multiplatform problems of
+having SRAM at different physical addresses.  You can compile the code
+to assume it's at 0xfffe0000 and it will work on every single machine
+out there that needs TCM.  So if you've got a generic "udelay"
+function you could just mark it as a "tcmfunc" and it will work
+everywhere.  No relocation needed and the compiler knows exactly where
+things will be.
+
+Unfortunately, the rk3288 doesn't have TCM.  I tried enabling it and
+got these nice printouts at boot:
+
+    DTCM    : 0xfffe8000 - 0xfffe8000   (   0 kB)
+    ITCM    : 0xfffe0000 - 0xfffe0000   (   0 kB)
+
+Instead of TCM I'm using the "PMU SRAM" on the rk3288 which is
+designed to keep code and data across deep sleep.  Adding relocation
+to the existing TCM support gets back into the rats nest of issues
+that I was trying to avoid tackling.
+
+A few other TCM thoughts:
+
+1. It sure seems unlikely that the current TCM solution would scale to
+multiplatform.  Oh right, Linus W said this in his reply, too.  If
+you've got SoC_A, SoC_B, and SoC_C all marking their functions
+"tcmfunc" then they'll all be placed in the TCM section, right?
+There's no way to detect that you're on SoC_A and that you only need
+the SoC_A code.  Given the marching orders of multiplatform,
+multiplatform, multiplatform then I _think_ that means we shouldn't
+let anyone merge any code to mainline that uses TCM (unless TCM gets
+revamped).
+
+2. I haven't tried it, but it seems like the compiler still might not
+catch stray (accidental) accesses from the TCM section to the non-TCM
+section.  Again, this isn't a showstopper because you'd just track
+each one down, but it is a nice feature of adding a separate
+executable.
+
+
+As always, please correct me where I'm misunderstanding things.
+
+
+Unless any of the above has changed your minds, feel free to consider
+this patch abandoned and thus we part ways amicably.  :)  At least
+rk3288 looks like it can get _basic_ suspend/resume (without shutting
+off SDRAM) working without this...
+
+-Doug
