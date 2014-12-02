@@ -1,70 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933171AbaLBWQb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 17:16:31 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:35363 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932832AbaLBWQ3 (ORCPT
+	id S933245AbaLBWRm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 17:17:42 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:59401 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932871AbaLBWRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 17:16:29 -0500
-Message-ID: <547e3a3b.a45c8c0a.655b.0cbc@mx.google.com>
-Date: Tue, 2 Dec 2014 20:16:23 -0200
-From: =?UTF-8?B?RMOibmllbA==?= Fraga <fragabr@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-In-Reply-To: <CA+55aFxdZjJprk8t9NxcZmewAAQ5Gf1XQWV=5i+Vfc5uTSfWFg@mail.gmail.com>
-References: <20141201191431.GA17385@linux.vnet.ibm.com>
-	<547ccf74.a5198c0a.25de.26d9@mx.google.com>
-	<20141201230813.GE25340@linux.vnet.ibm.com>
-	<547dec29.c71f8c0a.33d1.11d9@mx.google.com>
-	<20141202170407.GK25340@linux.vnet.ibm.com>
-	<547df364.236a8c0a.7b2d.ffffac67@mx.google.com>
-	<20141202184202.GM25340@linux.vnet.ibm.com>
-	<547e0947.c332e00a.23bf.ffffa8bd@mx.google.com>
-	<20141202191143.GN25340@linux.vnet.ibm.com>
-	<547e11fa.8778e00a.3439.ffffa88c@mx.google.com>
-	<20141202205636.GQ25340@linux.vnet.ibm.com>
-	<547e36d1.c54ae00a.2571.fffffd13@mx.google.com>
-	<CA+55aFxdZjJprk8t9NxcZmewAAQ5Gf1XQWV=5i+Vfc5uTSfWFg@mail.gmail.com>
-Organization: http://www.youtube.com/DanielFragaBR
-X-Mailer: Claws Mail 3.11.1-9-g1f531c (GTK+ 2.24.25; x86_64-unknown-linux-gnu)
+	Tue, 2 Dec 2014 17:17:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <87a935u3nj.fsf@x220.int.ebiederm.org>
+References: <52e0643bd47b1e5c65921d6e00aea1f724bb510a.1417281801.git.luto@amacapital.net>
+ <87h9xez20g.fsf@x220.int.ebiederm.org> <CALCETrXOz4C7Tu8mggBtR=k47ZmkuAhinVUxWJSFyS1Ep0HvRw@mail.gmail.com>
+ <87mw75ygwp.fsf@x220.int.ebiederm.org> <CALCETrVfO4sBdZcQiZXsofPZMj7pqKeVbX+4g3dAj6WjUca+1w@mail.gmail.com>
+ <87fvcxyf28.fsf_-_@x220.int.ebiederm.org> <874mtdyexp.fsf_-_@x220.int.ebiederm.org>
+ <CALCETrXyC7XPaqj6oe-TmyypOVc_CkZbF6UAAx8YfkyD=gEMOQ@mail.gmail.com> <87a935u3nj.fsf@x220.int.ebiederm.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 2 Dec 2014 14:17:17 -0800
+Message-ID: <CALCETrXkEOiyzpvqtXtk1f4sL+M1Q-Y6rV=K91ez3yv2nb4Y0Q@mail.gmail.com>
+Subject: Re: [CFT][PATCH 2/3] userns: Add a knob to disable setgroups on a per
+ user namespace basis
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Richard Weinberger <richard@nod.at>,
+        Kenton Varda <kenton@sandstorm.io>, stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Dec 2014 14:10:33 -0800
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Tue, Dec 2, 2014 at 1:45 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
+>
+>> On Tue, Dec 2, 2014 at 12:28 PM, Eric W. Biederman
+>> <ebiederm@xmission.com> wrote:
+>>>
+>>> - Expose the knob to user space through a proc file /proc/<pid>/setgroups
+>>
+>> Can you rename this to something clearer, e.g. userns_setgroups_mode?
+>
+> I am not certain that is any clearer.  That just reads as wordier.
+>
+> The userns bit is definitely confusing and wrong.  Why should we need to
+> spell out the scope?
 
-> So it appears that you can recreate this much more quickly than DaveJ
-> can recreate his issue.
-> 
-> The two issues may be entirely unrelated, but the it is certainly
-> quite possible that they have some relation to each other, and the
-> timing is intriguing, in that 3.17 seems to be the first kernel
-> release this happened in.
-> 
-> So at this point I think I'd ask you to just go back to your bisection
-> that you apparently already started earlier. I take it 3.16 worked
-> fine, and that's what you used as the good base for your bisect?
-> 
-> Even if it's something else than what DaveJ sees (or perhaps
-> *particularly* if it's something else), bisecting when it started
-> would be very worthwhile.
-> 
-> There's 13k+ commits in between 3.16 and 3.17, so a full bisect should
-> be around 15 test-points. But judging by the timing of your emails,
-> you can generally reproduce this relatively quickly..
+Because it's a property of the process' userns, not a property of the process.
 
-	No problem Linus. I'll try the full bisect and I post here
-later with the final result.
+userns_setgroups would be okay.  (Arguably it should've been
+userns_uid_map, too, but at least uid_map sounds obviously
+namespace-related.)
 
--- 
-Linux 3.17.0-dirty: Shuffling Zombie Juror
-http://www.youtube.com/DanielFragaBR
-http://exchangewar.info
-Bitcoin: 12H6661yoLDUZaYPdah6urZS5WiXwTAUgL
+>
+>>>   A value of 0 means the setgroups system call is disabled in the
+>>>   current processes user namespace and can not be enabled in the
+>>>   future in this user namespace.
+>>>
+>>>   A value of 1 means the segtoups system call is enabled.
+>>
+>> Would it make more sense to put strings like "allow" and "deny" in
+>> here?  That way, future extensions could add additional values.
+>
+> If the implementation of the write side isn't too bad.  I would love
+> to see precedent elsewhere in the kernel.    What I don't expect to do
+> is have any values except setgroups are enabled and setgroups are
+> disabled.
+
+current_clocksource?  I think there are lots of things like that.
+
+>
+> I am fine with allowing for the possibility (that is just good
+> engineering) but I don't intend to seriously considering or
+> implementing other possibilities.
+
+I can imagine a mode where there's a fixed set of groups that are
+forced set but other groups can be added and dropped.  It would be
+complicated to set up right, but someone might want it some day.
+
+>
+>>> diff --git a/arch/s390/kernel/compat_linux.c b/arch/s390/kernel/compat_linux.c
+>>> index 21c91feeca2d..6d0ee1b089fb 100644
+>>> --- a/arch/s390/kernel/compat_linux.c
+>>> +++ b/arch/s390/kernel/compat_linux.c
+>>> @@ -252,6 +252,7 @@ COMPAT_SYSCALL_DEFINE2(s390_setgroups16, int, gidsetsize, u16 __user *, grouplis
+>>>         int retval;
+>>>
+>>>         if (!gid_mapping_possible(user_ns) ||
+>>> +           !atomic_read(&user_ns->setgroups_allowed) ||
+>>>             !capable(CAP_SETGID))
+>>>                 return -EPERM;
+>>
+>> This is now incomprehensible because of the gid_mapping_possible
+>> thing.  If you renamed gid_mapping_possible to
+>> userns_setgroup_allowed, then this could be added to the
+>> implementation, and this would all make sense (not to mention avoiding
+>> duplicating this thing).
+>>
+>>> @@ -826,6 +827,11 @@ static bool new_idmap_permitted(const struct file *file,
+>>>                         kuid_t uid = make_kuid(ns->parent, id);
+>>>                         if (uid_eq(uid, cred->euid))
+>>>                                 return true;
+>>> +               } else if (cap_setid == CAP_SETGID) {
+>>> +                       kgid_t gid = make_kgid(ns->parent, id);
+>>> +                       if (!atomic_read(&ns->setgroups_allowed) &&
+>>> +                           gid_eq(gid, cred->egid))
+>>> +                               return true;
+>>
+>> I still don't see why egid is any better than fsgid here.
+>
+> Answered in my earlier response fsgid was a goof.
+> I can set any gid to my egid with my existing permissions.
+> Show me how I can do that with fsgid or fsuid and I will be happy to use
+> those.
+
+You can use your fsgid to make a setgid file, I think.  But yes, point
+taken, although as mentioned in the other thread, I think it would be
+a lot clearer if it were a separate patch.
+
+
+>>> +
+>>> +ssize_t proc_setgroups_write(struct file *file, const char __user *buf,
+>>> +                            size_t count, loff_t *ppos)
+>>> +{
+>>> +       struct seq_file *seq = file->private_data;
+>>> +       struct user_namespace *ns = seq->private;
+>>> +       char kbuf[3];
+>>> +       int setgroups_allowed;
+>>> +       ssize_t ret;
+>>> +
+>>> +       ret = -EPERM;
+>>> +       if (!file_ns_capable(file, ns, CAP_SETGID))
+>>> +               goto out;
+>>
+>> CAP_SYS_ADMIN?  This isn't setting a gid in the namespace; it's
+>> reconfiguring the namespace.
+>
+> Hmm.  Maybe.  It is an activity that is normally controlled by
+> CAP_SETGID.
+>
+> Frankly I think the entire split up of the capability model is almost
+> totally broken.  But I think CAP_SETGID is a close approximation of the
+> right thing here.
+
+I agree that the cap model is screwy.  But we use CAP_SYS_ADMIN for
+everything else that changes the overall behavior of a namespace.
+
+In any event, the only way it matters is for a non-ns owner in the
+parent ns with CAP_SETGID set but not CAP_SYS_ADMIN.  I'd argue that
+CAP_SETGID should not be usable to make unrelated process' syscalls
+fail.
+
+>
+>>> +       /* Only allow a very narrow range of strings to be written */
+>>> +       ret = -EINVAL;
+>>> +       if ((*ppos != 0) || (count >= sizeof(kbuf)) || (count < 1))
+>>> +               goto out;
+>>> +
+>>> +       /* What was written? */
+>>> +       ret = -EFAULT;
+>>> +       if (copy_from_user(kbuf, buf, count))
+>>> +               goto out;
+>>> +       kbuf[count] = '\0';
+>>> +
+>>> +       /* What is being requested? */
+>>> +       ret = -EINVAL;
+>>> +       if (kbuf[0] == '0')
+>>> +               setgroups_allowed = 0;
+>>> +       else if (kbuf[0] == '1')
+>>> +               setgroups_allowed = 1;
+>>> +       else
+>>> +               goto out;
+>>> +
+>>> +       /* Allow a trailing newline */
+>>> +       ret = -EINVAL;
+>>> +       if ((count == 2) && (kbuf[1] != '\n'))
+>>> +               goto out;
+>>> +
+>>> +
+>>> +       if (setgroups_allowed) {
+>>> +               ret = -EINVAL;
+>>> +               if (atomic_read(&ns->setgroups_allowed) == 0)
+>>> +                       goto out;
+>>> +       } else {
+>>
+>> I would disallow this if gid_map has been written in the interest of
+>> sanity.
+>
+> Not a chance.  That is part of making this an independent knob.  If
+> there is another reason for disabling setgroups you can flip this
+> knob even after mappings are established.
+
+Then you really want CAP_SYS_ADMIN, I think.
+
+>
+>>> +               atomic_set(&ns->setgroups_allowed, 0);
+>>> +               /* sigh memory barriers! */
+>>
+>> I don't think that any barriers are needed.  If you ever observe
+>> setgroups_allowed == 0, it will stay that way forever.
+>
+> Likely.   In practice the code works today.
+>
+> But I need to review things closely to understand if there are barriers
+> needed.  But especially since it is a write once knob we can get away
+> with a lot.
+>
+
+Yeah.
+
+For long-term use, I kind of like the flags approach I added in the
+other patch.  It makes it easy to add more flags in the future.
+
+In any event, I think the only barrier that's needed is when writing gid_map:
+
+atomic_read / test_bit to determine whether unpriv mappings are okay;
+smp_mb() or whatever the current _after_atomic thing is these days;
+write mapping;
+
+Although I'm not sure whether Linux supports any architectures that
+can violate causality in the way that barrier is there to prevent.
+
+--Andy
