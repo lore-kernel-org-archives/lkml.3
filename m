@@ -1,217 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933994AbaLBTr7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:47:59 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:38339 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932765AbaLBTry (ORCPT
+	id S933741AbaLBTsk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:48:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46662 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933276AbaLBTXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:47:54 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-man <linux-man@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Richard Weinberger <richard@nod.at>,
-        Kenton Varda <kenton@sandstorm.io>, stable <stable@vger.kernel.org>
-References: <52e0643bd47b1e5c65921d6e00aea1f724bb510a.1417281801.git.luto@amacapital.net>
-	<87h9xez20g.fsf@x220.int.ebiederm.org>
-	<CALCETrXOz4C7Tu8mggBtR=k47ZmkuAhinVUxWJSFyS1Ep0HvRw@mail.gmail.com>
-Date: Tue, 02 Dec 2014 13:45:42 -0600
-In-Reply-To: <CALCETrXOz4C7Tu8mggBtR=k47ZmkuAhinVUxWJSFyS1Ep0HvRw@mail.gmail.com>
-	(Andy Lutomirski's message of "Tue, 2 Dec 2014 10:53:50 -0800")
-Message-ID: <87mw75ygwp.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19odjtrwVjPr0DyQ8Zl2NCnDKtWWTe19fs=
-X-SA-Exim-Connect-IP: 97.121.92.161
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 TVD_RCVD_IP Message was received from an IP address
-	*  3.0 XMDrug1234561 Drug references
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.5000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 T_XMDrugObfuBody_04 obfuscated drug references
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ****;Andy Lutomirski <luto@amacapital.net>
-X-Spam-Relay-Country: 
-X-Spam-Timing: total 476 ms - load_scoreonly_sql: 0.03 (0.0%),
-	signal_user_changed: 2.3 (0.5%), b_tie_ro: 1.64 (0.3%), parse: 0.81 (0.2%),
-	extract_message_metadata: 15 (3.1%), get_uri_detail_list: 3.8 (0.8%),
-	tests_pri_-1000: 7 (1.6%), tests_pri_-950: 1.01 (0.2%), tests_pri_-900: 0.87
-	(0.2%), tests_pri_-400: 39 (8.1%), check_bayes: 37 (7.9%), b_tokenize: 10
-	(2.2%), b_tok_get_all: 17 (3.5%), b_comp_prob: 4.3 (0.9%), b_tok_touch_all:
-	2.8 (0.6%), b_finish: 0.69 (0.1%), tests_pri_0: 400 (84.1%), tests_pri_500: 7
-	(1.5%), rewrite_mail: 0.00 (0.0%)
-Subject: Re: [PATCH v2] userns: Disallow setgroups unless the gid_map writer is privileged
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Tue, 2 Dec 2014 14:23:13 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 078/121] NFSv4: Fix races between nfs_remove_bad_delegation() and delegation return
+Date: Tue,  2 Dec 2014 11:19:17 -0800
+Message-Id: <1417548000-1794-79-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Lutomirski <luto@amacapital.net> writes:
+3.13.11-ckt12 -stable review patch.  If anyone has any objections, please let me know.
 
-> On Tue, Dec 2, 2014 at 4:09 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->> Andy Lutomirski <luto@amacapital.net> writes:
->>
->>> Classic unix permission checks have an interesting feature.  The
->>> group permissions for a file can be set to less than the other
->>> permissions on a file.  Occasionally this is used deliberately to
->>> give a certain group of users fewer permissions than the default.
->>>
->>> User namespaces break this usage.  Groups set in rgid or egid are
->>> unaffected because an unprivileged user namespace creator can only
->>> map a single group, so setresgid inside and outside the namespace
->>> have the same effect.  However, an unprivileged user namespace
->>> creator can currently use setgroups(2) to drop all supplementary
->>> groups, so, if a supplementary group denies access to some resource,
->>> user namespaces can be used to bypass that restriction.
->>>
->>> To fix this issue, this introduces a new user namespace flag
->>> USERNS_SETGROUPS_ALLOWED.  If that flag is not set, then
->>> setgroups(2) will fail regardless of the caller's capabilities.
->>>
->>> USERNS_SETGROUPS_ALLOWED is cleared in a new user namespace.  By
->>> default, if the writer of gid_map has CAP_SETGID in the parent
->>> userns and the parent userns has USERNS_SETGROUPS_ALLOWED, then the
->>> USERNS_SETGROUPS_ALLOWED will be set in the child.  If the writer is
->>> not so privileged, then writing to gid_map will fail unless the
->>> writer adds "setgroups deny" to gid_map, in which case the check is
->>> skipped but USERNS_SETGROUPS_ALLOWED will remain cleared.
->>>
->>> The full semantics are:
->>>
->>> If "setgroups allow" is present or no explicit "setgroups" setting
->>> is written to gid_map, then writing to gid_map will fail with -EPERM
->>> unless the opener and writer have CAP_SETGID in the parent namespace
->>> and the parent namespace has USERNS_SETGROUPS_ALLOWED.
->>>
->>> If "setgroups deny" is present, then writing gid_map will work as
->>> before, but USERNS_SETGROUPS_ALLOWED will remain cleared.  This will
->>> result in processes in the userns that have CAP_SETGID to be
->>> nontheless unable to use setgroups(2).  If this breaks something
->>> inside the userns, then this is okay -- the userns creator
->>> specifically requested this behavior.
->>
->> I think we need to do this but I also think setgroups allow/deny
->> should be a separate knob than the uid/gid mapping.
->
-> Yeah.  It should be readable, too.
->
->>
->> If for no other reason than you missed at least two implementations of
->> setgroups, in your implementation.
->
-> I clearly didn't grep hard enough.  Grr.
->
->>
->>> While it could be safe to set USERNS_SETGROUPS_ALLOWED if the user
->>> namespace creator has no supplementary groups, doing so could be
->>> surprising and could have unpleasant interactions with setns(2).
->>>
->>> Any application that uses newgidmap(1) should be unaffected by this
->>> fix, but unprivileged users that create user namespaces to
->>> manipulate mounts or sandbox themselves will break until they start
->>> using "setgroups deny".
->>>
->>> This should fix CVE-2014-8989.
->>>
->>> Cc: stable@vger.kernel.org
->>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->>> ---
->>>
->>> Unlike v1, this *will* break things like Sandstorm.  Fixing them will be
->>> easy.  I agree that this will result in better long-term semantics, but
->>> I'm not so happy about breaking working software.
->>
->> I know what you mean.   One of the pieces of software broken by all of
->> this is my test to verify the remount semantics.   Which makes all of
->> this very unfortunate.
->>
->>> If this is unpalatable, here's a different option: get rid of all these
->>> permission checks and just change setgroups.  Specifically, make it so
->>> that setgroups(2) in a userns will succeed but will silently refuse to
->>> remove unmapped groups.
->>
->> Nope silently refusing to remove unmapped groups is not enough.  I can
->> make any gid in my supplemental groups my egid, it takes a sgid helper
->> application but I don't need any special privileges to create that.
->> Once that group is my egid I can map it.  Which means I could drop
->> any one group of my choosing without privielges.  Which out and out
->> breaks negative groups :(
->
-> Whoops, right.  And you can, indeed, have egid match one of your
-> supplementary groups.
->
->>
->> I got to looking and I have a significant piece of code that all of this
->> breaks.
->>
->> tools/testing/selftests/mount/unprivileged-remount-test.c
->>
->> So I am extra motivated to figure out at find a way to preserve most of
->> the existing functionality.  My regression tests won't pass until I can
->> find something pallateable.
->>
->> It is very annoying that every option I have considered so far breaks
->> something useful.
->>
->> Having a write once setgroups disable, and the allowing unprivileged
->> mappings after that seems the most palatable option I have seen,
->> semantically.  Which means existing software that doesn't care about
->> setgroups can just add the disable code and then work otherwise
->> unmodified.
->>
->> The other option that I have played with is forcing a set of groups
->> in setgroups if your user namespace was created without privilege,
->> that winds up requiring that verify you don't have any other
->> supplementary groups, and is generally messy whichever way I look at it.
->
-> How bad would the automatic selection of setgroups behavior really be?
->
-> Suppose we have /proc/self/userns_setgroups_mode that can be "allow",
-> "deny", or "auto".  It starts out as "auto" (or "deny" if it's set to
-> "deny" in the parent).  Once any of the maps have been set,
-> userns_options becomes readonly.  If you try to write to gid_map when
-> setgroups == auto, then it switches to "allow" or "deny" depending on
-> whether the writer has privilege.
->
-> This is nasty magical behavior, but it should DTRT for existing users,
-> and everyone can be updated to set the value explicitly.
+------------------
 
-Rarely is everything updated unless there is a requirement for an
-update.
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-For my code that cares an update is necessary anyway as it contains
-a gratuitous setgroups(0, NULL). 
+commit 869f9dfa4d6d57b79e0afc3af14772c2a023eeb1 upstream.
 
-Since we have to break applications breaking them loud and clear and
-letting them set the flat to recover (if possible) seems the best we can
-do.  That at least allows someone to ask if they depend on setgroups or
-init_groups.
+Any attempt to call nfs_remove_bad_delegation() while a delegation is being
+returned is currently a no-op. This means that we can end up looping
+forever in nfs_end_delegation_return() if something causes the delegation
+to be revoked.
+This patch adds a mechanism whereby the state recovery code can communicate
+to the delegation return code that the delegation is no longer valid and
+that it should not be used when reclaiming state.
+It also changes the return value for nfs4_handle_delegation_recall_error()
+to ensure that nfs_end_delegation_return() does not reattempt the lock
+reclaim before state recovery is done.
 
-> FWIW, it might also make sense to move all of this stuff into
-> /proc/PID/userns.  There may be races in which a setuid or otherwise
-> privileged helper pokes at more than one userns file but actually
-> modifies different namespaces each time.  I don't know whether these
-> races matter.  uid_map, gid_map, and projid_map could be symlinks.
+http://lkml.kernel.org/r/CAN-5tyHwG=Cn2Q9KsHWadewjpTTy_K26ee+UnSvHvG4192p-Xw@mail.gmail.com
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ fs/nfs/delegation.c | 23 +++++++++++++++++++++--
+ fs/nfs/delegation.h |  1 +
+ fs/nfs/nfs4proc.c   |  2 +-
+ 3 files changed, 23 insertions(+), 3 deletions(-)
 
-I don't see how moving these files as removing any races.
-
-Eric
+diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
+index 5d8ccec..2897534 100644
+--- a/fs/nfs/delegation.c
++++ b/fs/nfs/delegation.c
+@@ -177,7 +177,11 @@ static int nfs_do_return_delegation(struct inode *inode, struct nfs_delegation *
+ {
+ 	int res = 0;
+ 
+-	res = nfs4_proc_delegreturn(inode, delegation->cred, &delegation->stateid, issync);
++	if (!test_bit(NFS_DELEGATION_REVOKED, &delegation->flags))
++		res = nfs4_proc_delegreturn(inode,
++				delegation->cred,
++				&delegation->stateid,
++				issync);
+ 	nfs_free_delegation(delegation);
+ 	return res;
+ }
+@@ -364,11 +368,13 @@ static int nfs_end_delegation_return(struct inode *inode, struct nfs_delegation
+ {
+ 	struct nfs_client *clp = NFS_SERVER(inode)->nfs_client;
+ 	struct nfs_inode *nfsi = NFS_I(inode);
+-	int err;
++	int err = 0;
+ 
+ 	if (delegation == NULL)
+ 		return 0;
+ 	do {
++		if (test_bit(NFS_DELEGATION_REVOKED, &delegation->flags))
++			break;
+ 		err = nfs_delegation_claim_opens(inode, &delegation->stateid);
+ 		if (!issync || err != -EAGAIN)
+ 			break;
+@@ -589,10 +595,23 @@ static void nfs_client_mark_return_unused_delegation_types(struct nfs_client *cl
+ 	rcu_read_unlock();
+ }
+ 
++static void nfs_revoke_delegation(struct inode *inode)
++{
++	struct nfs_delegation *delegation;
++	rcu_read_lock();
++	delegation = rcu_dereference(NFS_I(inode)->delegation);
++	if (delegation != NULL) {
++		set_bit(NFS_DELEGATION_REVOKED, &delegation->flags);
++		nfs_mark_return_delegation(NFS_SERVER(inode), delegation);
++	}
++	rcu_read_unlock();
++}
++
+ void nfs_remove_bad_delegation(struct inode *inode)
+ {
+ 	struct nfs_delegation *delegation;
+ 
++	nfs_revoke_delegation(inode);
+ 	delegation = nfs_inode_detach_delegation(inode);
+ 	if (delegation) {
+ 		nfs_inode_find_state_and_recover(inode, &delegation->stateid);
+diff --git a/fs/nfs/delegation.h b/fs/nfs/delegation.h
+index 9a79c7a..e02b090 100644
+--- a/fs/nfs/delegation.h
++++ b/fs/nfs/delegation.h
+@@ -31,6 +31,7 @@ enum {
+ 	NFS_DELEGATION_RETURN_IF_CLOSED,
+ 	NFS_DELEGATION_REFERENCED,
+ 	NFS_DELEGATION_RETURNING,
++	NFS_DELEGATION_REVOKED,
+ };
+ 
+ int nfs_inode_set_delegation(struct inode *inode, struct rpc_cred *cred, struct nfs_openres *res);
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index f81f845..322c416 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -1589,7 +1589,7 @@ static int nfs4_handle_delegation_recall_error(struct nfs_server *server, struct
+ 			nfs_inode_find_state_and_recover(state->inode,
+ 					stateid);
+ 			nfs4_schedule_stateid_recovery(server, state);
+-			return 0;
++			return -EAGAIN;
+ 		case -NFS4ERR_DELAY:
+ 		case -NFS4ERR_GRACE:
+ 			set_bit(NFS_DELEGATED_STATE, &state->flags);
+-- 
+1.9.1
 
