@@ -1,143 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932748AbaLBGFn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 01:05:43 -0500
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.216]:40512 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932141AbaLBGFm convert rfc822-to-8bit (ORCPT
+	id S932905AbaLBGMS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 01:12:18 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:56849 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932200AbaLBGMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 01:05:42 -0500
-X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat/gNPvz+GM
-X-RZG-CLASS-ID: mo00
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [Gta04-owner] [PATCH 1/2] mmc: core: allow a reset gpio to be configured.
-From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-In-Reply-To: <20141202125539.42f22074@notabene.brown>
-Date: Tue, 2 Dec 2014 07:05:24 +0100
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        Doug Anderson <dianders@chromium.org>, Chris Ball <chris@printf.net>,
-        Mark Brown <broonie@kernel.org>, Olof Johansson <olof@lixom.net>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C98E0E67-23ED-4A4F-A90C-9BEEC6921544@goldelico.com>
-References: <20141108000919.5629.55381.stgit@notabene.brown> <20141108001411.5629.25179.stgit@notabene.brown> <CAPDyKFrx98NspRU1nV3uJ6XwTuA4tZQkrYTfDoeXGR+f5htODQ@mail.gmail.com> <20141202125539.42f22074@notabene.brown>
-To: List for communicating with real GTA04 owners 
-	<gta04-owner@goldelico.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Tue, 2 Dec 2014 01:12:17 -0500
+Message-ID: <1417500716.11477.1.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH] iscsi-target: fix error path in
+ iscsi_target_init_module()
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Cc: sagig@mellanox.com, cvubrugier@yahoo.fr, joern@logfs.org,
+        steven.allen@purestorage.com, arshad.hussain@calsoftinc.com,
+        agrover@redhat.com, linux-scsi@vger.kernel.org,
+        target-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 01 Dec 2014 22:11:56 -0800
+In-Reply-To: <1417345211-5583-1-git-send-email-LinoSanfilippo@gmx.de>
+References: <1417345211-5583-1-git-send-email-LinoSanfilippo@gmx.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Neil,
+On Sun, 2014-11-30 at 12:00 +0100, Lino Sanfilippo wrote:
+> In iscsi_target_init_module() unwind transport protocol registration in case
+> that iscsit_load_discovery_tpg() failed.
+> 
+> Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+> ---
+>  drivers/target/iscsi/iscsi_target.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+> index 73e58d2..f8ec322 100644
+> --- a/drivers/target/iscsi/iscsi_target.c
+> +++ b/drivers/target/iscsi/iscsi_target.c
+> @@ -609,6 +609,7 @@ static int __init iscsi_target_init_module(void)
+>  
+>  	return ret;
+>  r2t_out:
+> +	iscsit_unregister_transport(&iscsi_target_transport);
+>  	kmem_cache_destroy(lio_r2t_cache);
+>  ooo_out:
+>  	kmem_cache_destroy(lio_ooo_cache);
 
-Am 02.12.2014 um 02:55 schrieb NeilBrown <neilb@suse.de>:
+Nice catch.  Applied to target-pending/for-next.
 
-> On Fri, 28 Nov 2014 12:56:33 +0100 Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> 
->> On 8 November 2014 at 01:14, NeilBrown <neilb@suse.de> wrote:
->>> If the regulator supplying an SDIO device is shared
->>> with another device, the turning the regulator 'on' and 'off'
->>> will not actually cycle power and so will not reset
->>> the device.
->>> 
->>> This is particularly a problem for some wi2si wireless modules which
->>> have a BT module on chip and can share power lines.
->>> Without the power-cycle, subsequent reset commands fail.
->>> 
->>> So allow a 'reset' gpio to be specified.  If provided, the
->>> line is asserted during power-up.
->> 
->> There have been several attempts to fix similar issues as this patch
->> does. The latest one I posted a few month ago, which wasn't accepted.
->> http://comments.gmane.org/gmane.linux.power-management.general/46635
-> 
-> Thanks for that link.
-> 
->> 
->> There has also been some off-list discussions on especially how we
->> should describe this in DT and there were actually some consensus made
->> around that. Still I haven't seen any patches on the mailing lists.
-> 
-> Wish I could have a link for those off-list discussions :-)
-> 
-> Based on what I read and my own thoughts about other devices that I'm having
-> trouble managing I wonder if the right approach might be to admit that these
-> buses are *not* 100% discoverable.
-> 
-> i.e. you can discover what is there once it is turned on, but you cannot
-> discover how to turn it on.
+Thanks Lino!
 
-Indeed.
-
-> 
-> So the *fix* is to allow attached devices to be explicitly listed.
-> In my case I would create a child node of the mmc1 node, which is
-> compatible=“libertas,wifi" (or whatever the proper name is).
-
-Sounds like a good idea to me.
-
-> 
-> Then when the mmc1 wants to power-up, it does:
-> 
->   device_for_each_child(mmc_dev, NULL, power_up)
-> 
-> where:
-> 
-> static int power_up(struct device *dev, void *data)
-> {
->       pm_runtime_get_sync(dev);
->       return 0;
-> }
-> 
-> Then I can put my reset-line management in the libertas driver instead of
-> trying to include some of it in the mmc driver.
-> 
-> This has the advantage of the devicetree actually describing the hardware
-> (there is a libertas wifi SDIO chip attached) rather than the behaviour
-> (please turn on this regulator and toggle this GPIO to initialise the device).
-> 
-> I want to do a very similar thing for UARTs (so my GPS and Bluetooth turn on
-> when /dev/ttyO? is opened), and I've been thinking about something similar
-> for USB - I have a USB attached GSM module, but it also has an Audio link and
-> some reset/interrupt lines that need to be configured.
-> If I could say to device tree "This USB port has this device attached", I
-> think it would be a step in the right direction.
-
-Thinking a little further, it could either be the core driver of the device/bus/protocol
-or a special driver that only does power management. Or audio.
-
-And we should consider using a list of strings in the compatible entry so that
-several drivers can be loaded if the subsystem structure shows that this is simpler.
-
-It could be one for power, one for audio. Or in the case of the libertas a separate
-power&reset driver for a specific chip that uses the libertas driver so that chip
-specific reset management is not introduced into the libertas core but separate.
-
-For the usb connected modem the subnode to be attached is likely the PHY
-where the self-powered device is connected to.
-
-> 
-> 
-> 
->> 
->> So to summarize, I am really concerned that we keep having these power
->> sequence issues for SDIO devices and right now the discussion has been
->> on hold. I am considering to hack on it myself, since I am tired of
->> waiting. :-)
-> 
-> Please Cc me if you do.  Meanwhile I'll try to hack together code supporting
-> my latest idea and let you know if I get anywhere.
-> 
->> 
->> Regarding this patch, I don't intent to apply it.
-> 
-> Fair enough, I’m starting to not like it so much anyway.
-> 
-
-BR,
-Nikolaus
+--nab
 
