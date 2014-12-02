@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932425AbaLBQk3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 11:40:29 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:52738 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753306AbaLBQk1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 11:40:27 -0500
-Date: Tue, 2 Dec 2014 11:40:24 -0500
-From: Tejun Heo <htejun@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Final per cpu consistency patch for -next or late in 3.19 merge
- period
-Message-ID: <20141202164024.GA10918@htj.dyndns.org>
-References: <alpine.DEB.2.11.1411281229350.11435@gentwo.org>
+	id S932543AbaLBQkf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 11:40:35 -0500
+Received: from mout.web.de ([212.227.17.12]:52990 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932443AbaLBQkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 11:40:32 -0500
+Message-ID: <547DEB6B.5000105@users.sourceforge.net>
+Date: Tue, 02 Dec 2014 17:40:11 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1411281229350.11435@gentwo.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jaroslav Kysela <perex@perex.cz>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] ASoC: mop500: Deletion of unnecessary checks before the
+ function call "of_node_put"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:W5hZGki7PvXiRl4+a5EYWXOm4TVBS/9fw+vDPQWpkz8uu+b4qmS
+ Kz52KLKaEfjmblTUtZYylVITQbW0UKU0ERNb9yu2JAtNHkBEdqRdi4neQWq8zTqs7r7dbXe
+ 0twYC79XNJ6CVvqh8nJg1+BNw6x3+Mk/KCVNO/qduiL3TWG1Soca+8AkkF4MRf46HxuZf9+
+ YyAJDg5keJf9R4qIwE3TQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Christoph.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Tue, 2 Dec 2014 17:15:11 +0100
 
-On Fri, Nov 28, 2014 at 12:31:22PM -0600, Christoph Lameter wrote:
-> This is the final patch to remove __get_cpu_var. I checked -next and there
-> are no remaining uses of __get_cpu_var. So either merge this to -next or
-> wait until 3.19 late.
-> 
-> However, if we wait till 3.19 then I may have to do another pass if
-> people add more uses of __get_cpu_var and submit another patch.
-> 
-> From: Christoph Lameter <cl@linux.com>
-> Date: Tue, 29 Jul 2014 16:09:54 -0500
-> Subject: [PATCH] Remove __get_cpu_var and __raw_get_cpu_var macros
-> 
-> No user is left in the kernel source tree. Therefore we can
-> drop the definitions.
-> 
-> This is the final merge of the transition away from __get_cpu_var.
-> After this patch the kernel will not build if anyone uses __get_cpu_var.
+The of_node_put() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
 
-Can you please update Documentation/local_ops.txt and comments which
-contain __get_cpu_var() and send the updated patch to Andrew?
+This issue was detected by using the Coccinelle software.
 
-Andrew, this is removal of the two deprecated per-cpu accessors.  All
-the existing users are gone from the devel branches and thus from -mm.
-Can you please route this once Christoph posts an updated version?
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ sound/soc/ux500/mop500.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-Thanks.
-
+diff --git a/sound/soc/ux500/mop500.c b/sound/soc/ux500/mop500.c
+index 7f7093b..4e0c0e5 100644
+--- a/sound/soc/ux500/mop500.c
++++ b/sound/soc/ux500/mop500.c
+@@ -63,10 +63,8 @@ static void mop500_of_node_put(void)
+ 	int i;
+ 
+ 	for (i = 0; i < 2; i++) {
+-		if (mop500_dai_links[i].cpu_of_node)
+-			of_node_put(mop500_dai_links[i].cpu_of_node);
+-		if (mop500_dai_links[i].codec_of_node)
+-			of_node_put(mop500_dai_links[i].codec_of_node);
++		of_node_put(mop500_dai_links[i].cpu_of_node);
++		of_node_put(mop500_dai_links[i].codec_of_node);
+ 	}
+ }
+ 
 -- 
-tejun
+2.1.3
+
