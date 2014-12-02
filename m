@@ -1,88 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148AbaLBOKd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 09:10:33 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:52214 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753660AbaLBOK3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 09:10:29 -0500
+	id S1754170AbaLBOKy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 09:10:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54553 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752101AbaLBOKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 09:10:52 -0500
+Date: Tue, 2 Dec 2014 12:10:28 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>, acme@kernel.org
+Subject: Re: [PATCH 0/8] perf buildid-cache: Add clean command
+Message-ID: <20141202141028.GD6774@redhat.com>
+References: <1417460789-13874-1-git-send-email-jolsa@kernel.org>
+ <20141201222919.GC6774@redhat.com>
+ <20141202122518.GA7744@krava.brq.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20141202002244.GB24551@ti.com>
-References: <1416527684-19017-1-git-send-email-bparrot@ti.com>
- <1416527684-19017-2-git-send-email-bparrot@ti.com> <CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com>
- <20141202002244.GB24551@ti.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 2 Dec 2014 23:10:07 +0900
-Message-ID: <CAAVeFuJWPvdmO_KPXP2LrkAy4SQDZ+f7pvE6U8r7gPH+jE3Lrw@mail.gmail.com>
-Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
-To: Benoit Parrot <bparrot@ti.com>
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Jiri Prchal <jiri.prchal@aksignal.cz>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141202122518.GA7744@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 2, 2014 at 9:22 AM, Benoit Parrot <bparrot@ti.com> wrote:
->> > +       }
->> > +
->> > +       if (tmp > MAX_PHANDLE_ARGS) {
->> > +               desc = ERR_PTR(-EINVAL);
->> > +               goto out;
->> > +       }
->> > +
->> > +       gg_data.gpiospec.args_count = tmp;
->> > +       gg_data.gpiospec.np = chip_np;
->> > +       for (i = 0; i < tmp; i++) {
->> > +               ret = of_property_read_u32(np, "gpios",
->> > +                                          &gg_data.gpiospec.args[i]);
->> > +               if (ret) {
->> > +                       desc = ERR_PTR(ret);
->> > +                       goto out;
->> > +               }
->> > +       }
->> > +
->> > +       gpiochip_find(&gg_data, of_gpiochip_find_and_xlate);
->>
->> This seems to work but only supports one GPIO per hog node. It would
->> be nice to be able to specify several GPIOs to which the same settings
->> need to be applied.
->
-> This is on purpose following Linus Walleij's comment.
+Em Tue, Dec 02, 2014 at 01:25:18PM +0100, Jiri Olsa escreveu:
+> On Mon, Dec 01, 2014 at 08:29:19PM -0200, Arnaldo Carvalho de Melo wrote:
+ 
+> SNIP
+ 
+> > [acme@sandy wb]$ 
 
-Could you point me to his comment? My bad for not remembering what he
-said, but I'd like to understand why.
+> > If we keep the way it is, I think it would be clearer to add a -l/--list
+> > command and that would:
 
->> Using this function means that a GPIO chip module cannot be unloaded
->> if it uses GPIO hogs. Is it the intended behavior? If not, please use
->> gpiochip_request_own_desc() instead, and make sure to call
->> gpiochip_free_own_desc() for each hog when the driver is unloaded.
->
-> So I guess we could add a undo_gpio_hog() function and hook it up under of_gpiochip_remove().
-> Now instead of maintaining a seperate structure just to keep track of hogged descriptor,
-> would it be acceptable to add a new "gpio_desc.flags" value in gpiolib.h says:
->
->    #define FLAG_GPIO_IS_HOGGED 10
->
-> And key on that at removal time instead of creating a list and having to maintain that?
+> >   perf buildid-cache --list  # list all the files in the cache
+> >   perf buildid-cache --list 3d  # list 3 days old files
+> >   perf buildid-cache --list +3d  # list files 3 days or more older
+> >   perf buildid-cache --list -3d  # list files up to 3 days old
+ 
+> ok, I was up to old files (and big files) removal only.. not sure
+> the other way will be actually needed.. but it's easy enought to
+> add
 
-Definitely, that would be even better I think.
+Right, I was thinking something along the lines of checking how much
+space would be needed if I wanted to keep X days of cache, not how much
+space I would free if I purged files older than Y days.
 
->> I would suggest to factorize this code that is similar to the one
->> found in __gpiod_get_index(). Do all the DT parsing in a function that
->> just returns a descriptor and the
->
-> I would tend to agree.
-> But as Linus suggested I was trying to contain the changes to gpiolib_of.c only.
+ 
+> > And all these would print the sum of the matching files, i.e. the space
+> > those files use in the filesystem.
 
-If we add a FLAG_GPIO_IS_HOGGED and undo the hogs when the chip is
-unloaded, I would say that this becomes a gpiolib feature. Moving it
-here would also allow non-DT GPIO providers to implement hogs (it
-should be particularly easy to implement for platform data). Linus, do
-you agree?
+> > > Remove cache files older than 3 days:
+> > >   $ perf buildid-cache clean 3d -r
+
+> >   perf buildid-cache --remove [-+]Nd # Same semantics as above
+
+> > >     
+> > > Total cache removal:
+> > >   $ perf buildid-cache clean -r
+
+> >  perf buildid-cache --remove '*'
+> 
+> hum, maybe '--removal all' might be better
+
+Humm, lemme see how ccache does this operation... That would be an
+existing cache management workflow that we could reuse:
+
+
+[acme@zoo linux]$ ccache --help
+Usage:
+  ccache [options]
+  ccache compiler [compiler options]
+  compiler [compiler options]          (via symbolic link)
+
+Options:
+    -c, --cleanup        delete old files and recalculate size counters
+                         (normally not needed as this is done automatically)
+    -C, --clear          clear the cache completely
+    -F, --max-files=N    set maximum number of files in cache to N (use 0 for
+                         no limit)
+    -M, --max-size=SIZE  set maximum size of cache to SIZE (use 0 for no
+                         limit; available suffixes: G, M and K; default
+                         suffix: G)
+    -s, --show-stats     show statistics summary
+    -z, --zero-stats     zero statistics counters
+
+    -h, --help           print this help text
+    -V, --version        print version and copyright information
+
+  See also <http://ccache.samba.org>.
+  [acme@zoo linux]$ 
+
+So, there you go, the 'clear' keywoard being used for doing what you
+called 'removeall' and I called --remove '*'. Perhaps asking if the user
+really wants to do that while, just like with the time limited 'remove'
+operations showing how much space it will release (albeit that could
+take some time to calculate...)?
+ 
+> >  
+> > > Remove and display items bigger than 200M
+> > >   $ perf buildid-cache clean -r -a 200M
+
+> > But yeah, perhaps we could switch to having subcommands and add:
+
+> >   perf buildid-cache [add|remove|update|list]
+ 
+> > What do you think?
+ 
+> yep, those commands seem nicer.. 
+ 
+> let's see of there're other comments and I'll come up with
+> new interface after..
+
+Ok!
+
+- Arnaldo
