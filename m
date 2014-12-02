@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933814AbaLBT0v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:26:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46997 "EHLO
+	id S933830AbaLBT0z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:26:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47007 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933782AbaLBT0s (ORCPT
+	with ESMTP id S933810AbaLBT0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:26:48 -0500
+	Tue, 2 Dec 2014 14:26:51 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Jonathan Cameron <jic23@kernel.org>,
+Cc: Yijing Wang <wangyijing@huawei.com>,
+        Weng Meiling <wengmeiling.weng@huawei.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 034/121] staging:iio:ade7758: Remove "raw" from channel name
-Date: Tue,  2 Dec 2014 11:18:33 -0800
-Message-Id: <1417548000-1794-35-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 041/121] sysfs: driver core: Fix glue dir race condition by gdp_mutex
+Date: Tue,  2 Dec 2014 11:18:40 -0800
+Message-Id: <1417548000-1794-42-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
@@ -27,153 +29,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Yijing Wang <wangyijing@huawei.com>
 
-commit b598aacc29331e7e638cd509108600e916c6331b upstream.
+commit e4a60d139060975eb956717e4f63ae348d4d8cc5 upstream.
 
-"raw" is a property of a channel, but should not be part of the name of
-channel.
+There is a race condition when removing glue directory.
+It can be reproduced in following test:
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+path 1: Add first child device
+device_add()
+    get_device_parent()
+            /*find parent from glue_dirs.list*/
+            list_for_each_entry(k, &dev->class->p->glue_dirs.list, entry)
+                    if (k->parent == parent_kobj) {
+                            kobj = kobject_get(k);
+                            break;
+                    }
+            ....
+            class_dir_create_and_add()
+
+path2: Remove last child device under glue dir
+device_del()
+    cleanup_device_parent()
+            cleanup_glue_dir()
+                    kobject_put(glue_dir);
+
+If path2 has been called cleanup_glue_dir(), but not
+call kobject_put(glue_dir), the glue dir is still
+in parent's kset list. Meanwhile, path1 find the glue
+dir from the glue_dirs.list. Path2 may release glue dir
+before path1 call kobject_get(). So kernel will report
+the warning and bug_on.
+
+This is a "classic" problem we have of a kref in a list
+that can be found while the last instance could be removed
+at the same time.
+
+This patch reuse gdp_mutex to fix this race condition.
+
+The following calltrace is captured in kernel 3.4, but
+the latest kernel still has this bug.
+
+-----------------------------------------------------
+<4>[ 3965.441471] WARNING: at ...include/linux/kref.h:41 kobject_get+0x33/0x40()
+<4>[ 3965.441474] Hardware name: Romley
+<4>[ 3965.441475] Modules linked in: isd_iop(O) isd_xda(O)...
+...
+<4>[ 3965.441605] Call Trace:
+<4>[ 3965.441611]  [<ffffffff8103717a>] warn_slowpath_common+0x7a/0xb0
+<4>[ 3965.441615]  [<ffffffff810371c5>] warn_slowpath_null+0x15/0x20
+<4>[ 3965.441618]  [<ffffffff81215963>] kobject_get+0x33/0x40
+<4>[ 3965.441624]  [<ffffffff812d1e45>] get_device_parent.isra.11+0x135/0x1f0
+<4>[ 3965.441627]  [<ffffffff812d22d4>] device_add+0xd4/0x6d0
+<4>[ 3965.441631]  [<ffffffff812d0dbc>] ? dev_set_name+0x3c/0x40
+....
+<2>[ 3965.441912] kernel BUG at ..../fs/sysfs/group.c:65!
+<4>[ 3965.441915] invalid opcode: 0000 [#1] SMP
+...
+<4>[ 3965.686743]  [<ffffffff811a677e>] sysfs_create_group+0xe/0x10
+<4>[ 3965.686748]  [<ffffffff810cfb04>] blk_trace_init_sysfs+0x14/0x20
+<4>[ 3965.686753]  [<ffffffff811fcabb>] blk_register_queue+0x3b/0x120
+<4>[ 3965.686756]  [<ffffffff812030bc>] add_disk+0x1cc/0x490
+....
+-------------------------------------------------------
+
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/iio/meter/ade7758_core.c | 24 +++++++++---------------
- 1 file changed, 9 insertions(+), 15 deletions(-)
+ drivers/base/core.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/iio/meter/ade7758_core.c b/drivers/staging/iio/meter/ade7758_core.c
-index 214b03e..94d9914 100644
---- a/drivers/staging/iio/meter/ade7758_core.c
-+++ b/drivers/staging/iio/meter/ade7758_core.c
-@@ -630,7 +630,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.type = IIO_VOLTAGE,
- 		.indexed = 1,
- 		.channel = 0,
--		.extend_name = "raw",
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_VOLTAGE),
- 		.scan_index = 0,
- 		.scan_type = {
-@@ -642,7 +641,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.type = IIO_CURRENT,
- 		.indexed = 1,
- 		.channel = 0,
--		.extend_name = "raw",
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_CURRENT),
- 		.scan_index = 1,
- 		.scan_type = {
-@@ -654,7 +652,7 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.type = IIO_POWER,
- 		.indexed = 1,
- 		.channel = 0,
--		.extend_name = "apparent_raw",
-+		.extend_name = "apparent",
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_APP_PWR),
- 		.scan_index = 2,
- 		.scan_type = {
-@@ -666,7 +664,7 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.type = IIO_POWER,
- 		.indexed = 1,
- 		.channel = 0,
--		.extend_name = "active_raw",
-+		.extend_name = "active",
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_ACT_PWR),
- 		.scan_index = 3,
- 		.scan_type = {
-@@ -678,7 +676,7 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.type = IIO_POWER,
- 		.indexed = 1,
- 		.channel = 0,
--		.extend_name = "reactive_raw",
-+		.extend_name = "reactive",
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_REACT_PWR),
- 		.scan_index = 4,
- 		.scan_type = {
-@@ -690,7 +688,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.type = IIO_VOLTAGE,
- 		.indexed = 1,
- 		.channel = 1,
--		.extend_name = "raw",
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_VOLTAGE),
- 		.scan_index = 5,
- 		.scan_type = {
-@@ -702,7 +699,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.type = IIO_CURRENT,
- 		.indexed = 1,
- 		.channel = 1,
--		.extend_name = "raw",
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_CURRENT),
- 		.scan_index = 6,
- 		.scan_type = {
-@@ -714,7 +710,7 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.type = IIO_POWER,
- 		.indexed = 1,
- 		.channel = 1,
--		.extend_name = "apparent_raw",
-+		.extend_name = "apparent",
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_APP_PWR),
- 		.scan_index = 7,
- 		.scan_type = {
-@@ -726,7 +722,7 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.type = IIO_POWER,
- 		.indexed = 1,
- 		.channel = 1,
--		.extend_name = "active_raw",
-+		.extend_name = "active",
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_ACT_PWR),
- 		.scan_index = 8,
- 		.scan_type = {
-@@ -738,7 +734,7 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.type = IIO_POWER,
- 		.indexed = 1,
- 		.channel = 1,
--		.extend_name = "reactive_raw",
-+		.extend_name = "reactive",
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_REACT_PWR),
- 		.scan_index = 9,
- 		.scan_type = {
-@@ -750,7 +746,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.type = IIO_VOLTAGE,
- 		.indexed = 1,
- 		.channel = 2,
--		.extend_name = "raw",
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_VOLTAGE),
- 		.scan_index = 10,
- 		.scan_type = {
-@@ -762,7 +757,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.type = IIO_CURRENT,
- 		.indexed = 1,
- 		.channel = 2,
--		.extend_name = "raw",
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_CURRENT),
- 		.scan_index = 11,
- 		.scan_type = {
-@@ -774,7 +768,7 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.type = IIO_POWER,
- 		.indexed = 1,
- 		.channel = 2,
--		.extend_name = "apparent_raw",
-+		.extend_name = "apparent",
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_APP_PWR),
- 		.scan_index = 12,
- 		.scan_type = {
-@@ -786,7 +780,7 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.type = IIO_POWER,
- 		.indexed = 1,
- 		.channel = 2,
--		.extend_name = "active_raw",
-+		.extend_name = "active",
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_ACT_PWR),
- 		.scan_index = 13,
- 		.scan_type = {
-@@ -798,7 +792,7 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.type = IIO_POWER,
- 		.indexed = 1,
- 		.channel = 2,
--		.extend_name = "reactive_raw",
-+		.extend_name = "reactive",
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_REACT_PWR),
- 		.scan_index = 14,
- 		.scan_type = {
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 67b180d..9d94c61 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -739,12 +739,12 @@ class_dir_create_and_add(struct class *class, struct kobject *parent_kobj)
+ 	return &dir->kobj;
+ }
+ 
++static DEFINE_MUTEX(gdp_mutex);
+ 
+ static struct kobject *get_device_parent(struct device *dev,
+ 					 struct device *parent)
+ {
+ 	if (dev->class) {
+-		static DEFINE_MUTEX(gdp_mutex);
+ 		struct kobject *kobj = NULL;
+ 		struct kobject *parent_kobj;
+ 		struct kobject *k;
+@@ -808,7 +808,9 @@ static void cleanup_glue_dir(struct device *dev, struct kobject *glue_dir)
+ 	    glue_dir->kset != &dev->class->p->glue_dirs)
+ 		return;
+ 
++	mutex_lock(&gdp_mutex);
+ 	kobject_put(glue_dir);
++	mutex_unlock(&gdp_mutex);
+ }
+ 
+ static void cleanup_device_parent(struct device *dev)
 -- 
 1.9.1
 
