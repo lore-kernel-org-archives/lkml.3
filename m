@@ -1,75 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288AbaLBONy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 09:13:54 -0500
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:36641 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169AbaLBONw (ORCPT
+	id S1754227AbaLBOOm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 09:14:42 -0500
+Received: from exprod7og104.obsmtp.com ([64.18.2.161]:52277 "EHLO
+	exprod7og104.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753725AbaLBOOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 09:13:52 -0500
+	Tue, 2 Dec 2014 09:14:40 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141201163639.GI25249@lukather>
-References: <1416527684-19017-1-git-send-email-bparrot@ti.com>
- <1416527684-19017-2-git-send-email-bparrot@ti.com> <CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com>
- <20141201163639.GI25249@lukather>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 2 Dec 2014 23:13:31 +0900
-Message-ID: <CAAVeFuLTupDenZdSi8KO+dYsf-ekcqjsDaQ2GEzYpBG34oF7Zw@mail.gmail.com>
-Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Benoit Parrot <bparrot@ti.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Jiri Prchal <jiri.prchal@aksignal.cz>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+In-Reply-To: <547DC792.6070506@redhat.com>
+References: <1375351291-27107-1-git-send-email-jvesely@redhat.com>
+	<57e91c7f7bc1d3e0cd511f828ec8140b@mail.gmail.com>
+	<547DC792.6070506@redhat.com>
+Date: Tue, 2 Dec 2014 19:44:18 +0530
+Message-ID: <CAK=zhgo=DYfgEK1rMS2cWcqGBS7tcgUd5QqHax7pwogBoY5boA@mail.gmail.com>
+Subject: Re: [PATCH 0/2] mpt{2,3}sas remove disconnected phys on topology change
+From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+To: Tomas Henzl <thenzl@redhat.com>
+Cc: Jan Vesely <jvesely@redhat.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Christoph Hellwig <hch@infradead.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 2, 2014 at 1:36 AM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> Hi,
->
-> On Fri, Nov 28, 2014 at 04:30:01PM +0900, Alexandre Courbot wrote:
->> > +/**
->> > + * do_gpio_hog - Given node is a GPIO hog configuration, handle it
->> > + * @np:                device node to get GPIO from
->> > + *
->> > + * This is only used by of_gpiochip_add to request/set GPIO initial
->> > + * configuration.
->> > + */
->> > +static int do_gpio_hog(struct device_node *np)
->> > +{
->> > +       struct gpio_desc *desc = NULL;
->> > +       int err;
->> > +       const char *name;
->> > +       enum gpio_lookup_flags lflags;
->> > +       enum gpiod_flags dflags;
->> > +
->> > +       desc = of_get_gpio_hog(np, &name, &lflags, &dflags);
->> > +       if (!desc)
->> > +               return -ENOTSUPP;
->> > +       else if (IS_ERR(desc))
->> > +               return PTR_ERR(desc);
->> > +
->> > +       err = gpiod_request(desc, name);
->>
->> Using this function means that a GPIO chip module cannot be unloaded
->> if it uses GPIO hogs. Is it the intended behavior? If not, please use
->> gpiochip_request_own_desc() instead, and make sure to call
->> gpiochip_free_own_desc() for each hog when the driver is unloaded.
->
-> The only thing I'd like to have would be that the request here would
-> be non-exclusive, so that a later driver would still be allowed later
-> on to request that GPIO later on and manage it itself (ideally using
-> the usual gpiod_request function).
+Ok. Thanks Tomas, I will follow the same and will send the revert
+patch to Upstream.
 
-Actually we have a plan (and I have some code too) to allow multiple
-consumers per GPIO. Although like Benoit I wonder why you would want
-to hog a GPIO and then request it properly later. Also, that probably
-means we should abandon the hog since it actively drives the line and
-would interfere with the late requested. How to do that correctly is
-not really clear to me.
+Thanks,
+Sreekanth.
+
+On Tue, Dec 2, 2014 at 7:37 PM, Tomas Henzl <thenzl@redhat.com> wrote:
+> Hi Sreekanth,
+>
+> I think this should be handled as any other change with an usual
+> patch sent to the list, 'git revert 3520f9c779' and 'git revert 963ba22b90'
+> will create the patches for you.
+>
+> Cheers,
+> Tomas
+>
+> On 12/02/2014 02:18 PM, Sreekanth Reddy wrote:
+>> Hi James/Chris
+>>
+>> We are observing below issue due to this patch set code changes
+>>
+>> Issue Description:
+>>      Drives connected Enclosure/Expander won't be visible to the OS if any
+>> one remove and add expander cable with in DMD (Device Missing Delay) time
+>> period (also if any power-off and power-on the Enclosure with in the DMD
+>> period).
+>>
+>> i.e.
+>> Due to this code changes; driver will unregister the Enclosure port or
+>> target PHY with SCSI transport layer, whenever driver receives "SAS
+>> TOPOLOGY CHANGE LIST EVENT" with reason code set to "PHY link status
+>> change" and phy link rate is Zero. Firmware usually send this type of "SAS
+>> TOPOLOGY CHANGE LIST EVENT" event whenever drive is missing. but still
+>> here DMD timer has not yet expired so normally driver should not
+>> unregister the target with the SCSI transport layer instead it will move
+>> the state of the  drive to blocked state (so it won't receive any IOs from
+>> SML for this drive).
+>>
+>> Normally, Driver should only unregister the target with SCSI transport
+>> layer only when driver receives "SAS TOPOLOGY CHANGE LIST EVENT" with
+>> reason code set to "Target Remove". Firmware will send this event when the
+>> DMD timer expires for the missing drive. If drive comes back with in the
+>> DMD period then firmware won't send this target remove event and so driver
+>> won't unregister the target drive with the SCSI transport layer. Driver
+>> will just unblock the target drive to start IOs to this drive.
+>>
+>> So, can you please revert this patch set changes back in the latest
+>> upstream kernel and if possible on stable kernels.
+>> I checked with the Redhat team and there are fine to revert back these
+>> patch set changes.
+>>
+>> Regards,
+>> Sreekanth
+>>
+>>> -----Original Message-----
+>>> From: Jan Vesely [mailto:jvesely@redhat.com]
+>>> Sent: Thursday, August 01, 2013 3:31 PM
+>>> To: linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org
+>>> Cc: Jan Vesely; Nandigama, Nagalakshmi; Reddy, Sreekanth; Tomas Henzl
+>>> Subject: [PATCH 0/2] mpt{2,3}sas remove disconnected phys on topology
+>>> change
+>>>
+>>> From: Jan Vesely <jvesely@redhat.com>
+>>>
+>>> These two patches add phy removal on link loss. This change keeps sysfs
+>>> up- to-date with actually connected phys. Without these patches,
+>>> disconnected phys remain listed under their former ports.
+>>>
+>>> tested on both mpt2sas and mpt3sas hw.
+>>>
+>>> CC: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>
+>>> CC: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+>>> CC: Tomas Henzl <thenzl@redhat.com>
+>>> Signed-off-by: Jan Vesely <jvesely@redhat.com>
+>>>
+>>> Jan Vesely (2):
+>>>  mpt2sas: Remove phys on topology change.
+>>>  mpt3sas: Remove phys on topology change
+>>>
+>>> drivers/scsi/mpt2sas/mpt2sas_transport.c |    5 ++++-
+>>> drivers/scsi/mpt3sas/mpt3sas_transport.c |    5 ++++-
+>>> 2 files changed, 8 insertions(+), 2 deletions(-)
+>>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
