@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933166AbaLBNYV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 08:24:21 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:54010 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754532AbaLBNYT (ORCPT
+	id S933182AbaLBNZj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 08:25:39 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:40408 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932821AbaLBNZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 08:24:19 -0500
-Message-ID: <547DBD7E.1070402@redhat.com>
-Date: Tue, 02 Dec 2014 14:24:14 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 2 Dec 2014 08:25:37 -0500
 MIME-Version: 1.0
-To: Igor Mammedov <imammedo@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Gleb Natapov <gleb@kernel.org>
-Subject: Re: [PATCH 0/5] kvm: memslots lookup optimization
-References: <1417454967-4465-1-git-send-email-imammedo@redhat.com>	<547CA79A.10206@redhat.com> <20141202085721.2c328a40@nial.usersys.redhat.com>
-In-Reply-To: <20141202085721.2c328a40@nial.usersys.redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMuHMdUQ+rPasUWuGCc0AnV-g6J9zf9HbozuodHaYpy36Khcpg@mail.gmail.com>
+References: <1416383487-15993-1-git-send-email-acourbot@nvidia.com>
+ <CACRpkdZV-nQPXDnxiBgPTZTpyQ2eiKNL8qJY9jRq=A5foc-xmw@mail.gmail.com> <CAMuHMdUQ+rPasUWuGCc0AnV-g6J9zf9HbozuodHaYpy36Khcpg@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 2 Dec 2014 22:25:16 +0900
+Message-ID: <CAAVeFuJm_UXHioENBg6himgZkEmopr=T8iCbt0xD6-ds6AHyxA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: remove gpio_descs global array
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 02/12/2014 08:57, Igor Mammedov wrote:
->> On 01/12/2014 18:29, Igor Mammedov wrote:
->>> Series speed-ups GFN to memslot lookup time by:
->>>  * introducing LRU cache, which improves looukup time for
->>>    same slot workload (typically boot time of Windows and Linux guest)
->>>  * switching to binary search for GFN to memslot lookup,
->>>    improving lookup time with large amount of memory slots
+On Tue, Dec 2, 2014 at 7:32 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> Hi Linus, Alexandre,
+>
+> On Fri, Nov 28, 2014 at 11:29 AM, Linus Walleij
+> <linus.walleij@linaro.org> wrote:
+>> On Wed, Nov 19, 2014 at 8:51 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>>> Replace the ARCH_NR_GPIOS-sized static array of GPIO descriptors by
+>>> dynamically-allocated arrays for each GPIO chip.
 >>>
->>> Igor Mammedov (5):
->>>   kvm: update_memslots: drop not needed check for the same number of
->>>     pages
->>>   kvm: update_memslots: drop not needed check for the same slot
->>>   kvm: search_memslots: add simple LRU memslot caching
->>>   kvm: change memslot sorting rule from size to GFN
->>>   kvm: optimize GFN to memslot lookup with large slots amount
+>>> This change makes gpio_to_desc() perform in O(n) (where n is the number
+>>> of GPIO chips registered) instead of O(1), however since n is rarely
+>>> bigger than 1 or 2 no noticeable performance issue is expected.
+>>> Besides this provides more incentive for GPIO consumers to move to the
+>>> gpiod interface. One could use a O(log(n)) structure to link the GPIO
+>>> chips together, but considering the low limit of n the hypothetical
+>>> performance benefit is probably not worth the added complexity.
 >>>
->>>  include/linux/kvm_host.h | 28 +++++++++++++++++++++++-----
->>>  virt/kvm/kvm_main.c      | 46 ++++++++++++++++++++++++++--------------------
->>>  2 files changed, 49 insertions(+), 25 deletions(-)
+>>> This patch uses kcalloc() in gpiochip_add(), which removes the ability
+>>> to add a chip before kcalloc() can operate. I am not aware of such
+>>> cases, but if someone bisects up to this patch then I will be proven
+>>> wrong...
 >>>
+>>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 >>
->> Applied patches 1-3 for now, I'm not in the mood for proving that the
->> binary search is correct. :)
+>> OK patch applied. Let's see if the world explodes.
+>
+> This patch changes a return value from -EPROBE_DEFER to -EINVAL in
+> regulator-gpio when a GPIO cannot be found yet, causing probe failures
+> on r8a7791/koelsch:
 
-Looks good, thanks.  Gleb, any objections?
+Hi Geert,
 
-Paolo
+Thanks for signaling this. I think I understand what is going wrong
+and will send a fixup patch in a few minutes.
+
+Cheers,
+Alex.
