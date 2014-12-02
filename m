@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276AbaLBBty (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 20:49:54 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:46310 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077AbaLBBtw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 20:49:52 -0500
-Message-ID: <547D1C42.1010502@gmail.com>
-Date: Tue, 02 Dec 2014 09:56:18 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932689AbaLBBwL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 20:52:11 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:52118 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753424AbaLBBwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 20:52:10 -0500
+Date: Mon, 1 Dec 2014 19:51:18 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+CC: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        <linux-serial@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, Sekhar Nori <nsekhar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, <uwe@kleine-koenig.org>
+Subject: Re: [PATCH] tty: serial: serial-omap: depend on !8250_omap
+Message-ID: <20141202015118.GA1891@saruman>
+Reply-To: <balbi@ti.com>
+References: <1417039306-2384-1-git-send-email-bigeasy@linutronix.de>
+ <20141129094823.GA10840@linutronix.de>
+ <20141129173418.GY2817@atomide.com>
+ <20141201140914.728aaa46@lxorguk.ukuu.org.uk>
+ <20141201231338.GA14524@fuloong-minipc.musicnaut.iki.fi>
 MIME-Version: 1.0
-To: "Carlos O'Donell" <carlos@systemhalted.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Max Filippov <jcmvbkbc@gmail.com>, Minchan Kim <minchan@kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "rth@twiddle.net" <rth@twiddle.net>,
-        "ink@jurassic.park.msu.ru" <ink@jurassic.park.msu.ru>,
-        "mattst88@gmail.com" <mattst88@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "jejb@parisc-linux.org" <jejb@parisc-linux.org>,
-        "deller@gmx.de" <deller@gmx.de>, "chris@zankel.net" <chris@zankel.net>,
-        "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] arch: uapi: asm: mman.h: Support MADV_FREE for madvise()
-References: <547CD304.20407@gmail.com>	<CAMo8BfKg=eb7wA2O+cKO+oLDDERh2CKBS7dyAvfqvCESEHWYEg@mail.gmail.com>	<CAMuHMdXHAZFujShNnAHY8BRv85ncrtcRvRgPS0Br0T9gSxZ+1A@mail.gmail.com> <CAE2sS1hDXqLvF9yY5-3d4pmDPiQy8aQ1fYov3_+BKM8uQ3ZSwA@mail.gmail.com>
-In-Reply-To: <CAE2sS1hDXqLvF9yY5-3d4pmDPiQy8aQ1fYov3_+BKM8uQ3ZSwA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0OAP2g/MAC+5xKAE"
+Content-Disposition: inline
+In-Reply-To: <20141201231338.GA14524@fuloong-minipc.musicnaut.iki.fi>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/2/14 06:01, Carlos O'Donell wrote:
-> On Mon, Dec 1, 2014 at 4:35 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->> On Mon, Dec 1, 2014 at 9:52 PM, Max Filippov <jcmvbkbc@gmail.com> wrote:
->>> On Mon, Dec 1, 2014 at 11:43 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
->>>> At present, kernel supports madvise(MADV_FREE), so can benefit to all
->>>> related architectures (can grep MADV_WILLNEED or MADV_REMOVE in "arch/"
->>>> to know about all related architectures).
->>>
->>> A similar patch has been posted a while ago:
->>>
->>> http://www.spinics.net/lists/linux-mm/msg81538.html
->>
+--0OAP2g/MAC+5xKAE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-OK, thanks.
+On Tue, Dec 02, 2014 at 01:13:38AM +0200, Aaro Koskinen wrote:
+> Hi,
+>=20
+> On Mon, Dec 01, 2014 at 02:09:14PM +0000, One Thousand Gnomes wrote:
+> > > Well the nightmare userspace switch from ttyS to ttyO few years ago is
+> > > something we want to avoid.. I think the best solution would be to ma=
+ke
+> > > serial-omap.c transparently provide support for ttyO using the new 82=
+50
+> > > code so both ttyS and ttyO devices would just work. Otherwise it will
+> > > be years of "my serial port stopped working" questions again.
+> >=20
+> > Thata a udev problem not a kernel one surely.
+>=20
+> People also use serial console to observe the early kernel boot before
+> the userspace is started.
 
+right, we need a way to tell the kernel that ttyO%d and ttyS%d are the
+exact same device so that console=3DttyO0 and console=3DttyS0 mean the same
+thing. That maintains backwards compatibility and lets people move on
 
->> Would it be possible to use the same number everywhere?
-> 
+--=20
+balbi
 
-For current patch, I guess, we can use '8' for it, since MADV_FREE in
-asm-generic is merged just a few days ago (which is not used by user
-mode), and parisc has to use '8'.
+--0OAP2g/MAC+5xKAE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-And welcome the related member's ideas.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIcBAEBAgAGBQJUfRsWAAoJEIaOsuA1yqRErUsQAJA0mMvj/k5W7dCe5rAQ6FjD
+wcFKbU52iQvQVwT5M798eW1egOzt9IKPQ2ykIE5Da6ozkAKCH/CHfU8jwC2DkLvP
+SkzfhyOk/U+lQNimBZBLnoW6GggMx45OzumABuiJR+Ak3kfixAHQNedPvTHl10mg
+yN318m4QPf9Bt50Hp236H7uT7sd1Y6z4mtMS34Nu6LPJqKsJVvIvobl46PDCLRua
+kzxa1dyv4SL1YI/6WnN6SDigf01WKLaTabkPQGd8Q2Cmdxv3kshDQQ2maXPndl4b
+NSegaR6S7YAPa39VTB9Nwa1Z/MXyrZoVsifzWR8dM5+QG3skIr12l7gominRcn8e
+uGdrKTpIEXYBULeodjIma5MtqTbdQCgPrx2/lK2ecAeiXLantaB5A08an2cwt4Xv
+BkVJYWFzFQiwvw/RrhgofmOZNy0F9E7ee20efUwYhfWADs6dS9HTabkdz7+wHBRZ
+pWaOk2zMPpvBWeTYTsDJW9uXZQ6L98gs6H7C0tACZZ7Ri9syG8HFVwH94T70jyvF
+zVRF85ZOp340W8JhrtYW0huHT4h/5+SwAo/ONODBAKnNAI0hAuMrfjLRJg4xnhGy
+ZqPrnVlcRYgBfuW+a78Q+4jV6UtMrJ5FuDxppC+Kq52gIzD9K/mu4KJp1WbEWI8s
+1ohZeS2I4WqpFz8yr6In
+=VBGz
+-----END PGP SIGNATURE-----
 
-> Yes please. It's ridiculous that we still need patches like this.
-> 
-> I proposed unifying all this two years ago, but didn't follow up.
-> 
-> From glibc's perspective it would be simpler if we started using the
-> same number everywhere.
-> 
-> http://www.spinics.net/lists/linux-api/msg02064.html
-> 
-
-For me, we can divide it into 2 steps:
-
- - Let MADV_FREE has the same value (about current patch).
-
- - Let all shared MADV_* to "asm-generic" (about next patch, although I
-   am not quite sure whether it is executable).
-
-
-Thanks.
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+--0OAP2g/MAC+5xKAE--
