@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932893AbaLBS0W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 13:26:22 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:52530 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932381AbaLBSYq (ORCPT
+	id S1754546AbaLBS04 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 13:26:56 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:57605 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754758AbaLBSYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 13:24:46 -0500
+	Tue, 2 Dec 2014 13:24:42 -0500
 From: Jeff Layton <jlayton@primarydata.com>
 To: linux-nfs@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
         Al Viro <viro@zeniv.linux.org.uk>
-Subject: [RFC PATCH 11/14] nfsd: add support for workqueue based service processing
-Date: Tue,  2 Dec 2014 13:24:20 -0500
-Message-Id: <1417544663-13299-12-git-send-email-jlayton@primarydata.com>
+Subject: [RFC PATCH 08/14] sunrpc: set up workqueue function in svc_xprt
+Date: Tue,  2 Dec 2014 13:24:17 -0500
+Message-Id: <1417544663-13299-9-git-send-email-jlayton@primarydata.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
 References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
@@ -21,162 +21,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow nfsd to create a workqueue based nfsd service if the sunrpc
-pool_mode is set to "workqueue".
+For workqueue-based services we'll want to queue a workqueue job
+whenever a xprt needs to be serviced. Add a work_struct to svc_xprt
+and initialize it from a new work_func_t field in the svc_serv_ops.
 
 Signed-off-by: Jeff Layton <jlayton@primarydata.com>
 ---
- fs/fs_struct.c            |  3 +-
- fs/nfsd/nfssvc.c          | 77 +++++++++++++++++++++++++++++++++++++++++++++--
- include/linux/fs_struct.h |  1 +
- 3 files changed, 78 insertions(+), 3 deletions(-)
+ include/linux/sunrpc/svc.h      | 3 +++
+ include/linux/sunrpc/svc_xprt.h | 1 +
+ net/sunrpc/svc.c                | 2 +-
+ net/sunrpc/svc_xprt.c           | 2 ++
+ 4 files changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/fs/fs_struct.c b/fs/fs_struct.c
-index 9bc08ea2f433..68985c76cd75 100644
---- a/fs/fs_struct.c
-+++ b/fs/fs_struct.c
-@@ -130,7 +130,7 @@ struct fs_struct *copy_fs_struct(struct fs_struct *old)
- EXPORT_SYMBOL_GPL(copy_fs_struct);
+diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
+index 3d2113222dda..8bd53f723485 100644
+--- a/include/linux/sunrpc/svc.h
++++ b/include/linux/sunrpc/svc.h
+@@ -58,6 +58,9 @@ struct svc_serv_ops {
+ 	/* function for service threads to run */
+ 	int		(*svo_function)(void *);
  
- /* Replace current fs struct with one given. Return a pointer to old one. */
--static struct fs_struct *
-+struct fs_struct *
- swap_fs_struct(struct fs_struct *new_fs)
- {
- 	struct fs_struct *old_fs;
-@@ -142,6 +142,7 @@ swap_fs_struct(struct fs_struct *new_fs)
++	/* xprt work function */
++	work_func_t	svo_xprt_work;
++
+ 	/* queue up a transport for servicing */
+ 	void		(*svo_enqueue_xprt)(struct svc_xprt *);
  
- 	return old_fs;
- }
-+EXPORT_SYMBOL_GPL(swap_fs_struct);
+diff --git a/include/linux/sunrpc/svc_xprt.h b/include/linux/sunrpc/svc_xprt.h
+index 78512cfe1fe6..096937871cda 100644
+--- a/include/linux/sunrpc/svc_xprt.h
++++ b/include/linux/sunrpc/svc_xprt.h
+@@ -53,6 +53,7 @@ struct svc_xprt {
+ 	struct kref		xpt_ref;
+ 	struct list_head	xpt_list;
+ 	struct list_head	xpt_ready;
++	struct work_struct	xpt_work;
+ 	unsigned long		xpt_flags;
+ #define	XPT_BUSY	0		/* enqueued/receiving */
+ #define	XPT_CONN	1		/* conn pending */
+diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+index 165fa1803a0a..135ffbe9d983 100644
+--- a/net/sunrpc/svc.c
++++ b/net/sunrpc/svc.c
+@@ -34,7 +34,7 @@
  
- /* Put a reference to a fs_struct. */
- void put_fs_struct(struct fs_struct *fs)
-diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index f37bd7db2176..2c7ebced0311 100644
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -28,6 +28,10 @@
- extern struct svc_program	nfsd_program;
- static int			nfsd(void *vrqstp);
+ static void svc_unregister(const struct svc_serv *serv, struct net *net);
  
-+#if IS_ENABLED(CONFIG_SUNRPC_SVC_WORKQUEUE)
-+static struct svc_serv_ops	nfsd_wq_sv_ops;
-+#endif
-+
- /*
-  * nfsd_mutex protects nn->nfsd_serv -- both the pointer itself and the members
-  * of the svc_serv struct. In particular, ->sv_nrthreads but also to some
-@@ -398,10 +402,27 @@ static struct svc_serv_ops nfsd_thread_sv_ops = {
- 	.svo_module		= THIS_MODULE,
- };
+-#define svc_serv_is_pooled(serv)    ((serv)->sv_ops->svo_function)
++#define svc_serv_is_pooled(serv)    ((serv)->sv_ops->svo_function || (serv)->sv_ops->svo_xprt_work)
  
-+#if IS_ENABLED(CONFIG_SUNRPC_SVC_WORKQUEUE)
-+static struct svc_serv_ops *
-+select_svc_serv_ops(void)
-+{
-+	if (svc_pool_map.mode == SVC_POOL_WORKQUEUE)
-+		return &nfsd_wq_sv_ops;
-+	return &nfsd_thread_sv_ops;
-+}
-+#else
-+static struct svc_serv_ops *
-+select_svc_serv_ops(void)
-+{
-+	return &nfsd_thread_sv_ops;
-+}
-+#endif
-+
- int nfsd_create_serv(struct net *net)
- {
- 	int error;
- 	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
-+	struct svc_serv_ops *ops;
+ #define SVC_POOL_DEFAULT	SVC_POOL_GLOBAL
  
- 	WARN_ON(!mutex_is_locked(&nfsd_mutex));
- 	if (nn->nfsd_serv) {
-@@ -411,8 +432,11 @@ int nfsd_create_serv(struct net *net)
- 	if (nfsd_max_blksize == 0)
- 		nfsd_max_blksize = nfsd_get_default_max_blksize();
- 	nfsd_reset_versions();
--	nn->nfsd_serv = svc_create_pooled(&nfsd_program, nfsd_max_blksize,
--						&nfsd_thread_sv_ops);
-+
-+	svc_pool_map_get();
-+	ops = select_svc_serv_ops();
-+	nn->nfsd_serv = svc_create_pooled(&nfsd_program, nfsd_max_blksize, ops);
-+	svc_pool_map_put();
- 	if (nn->nfsd_serv == NULL)
- 		return -ENOMEM;
- 
-@@ -643,6 +667,55 @@ nfsd(void *vrqstp)
- 	return 0;
- }
- 
-+#if IS_ENABLED(CONFIG_SUNRPC_SVC_WORKQUEUE)
-+/* work function for workqueue-based nfsd */
-+static void
-+nfsd_work(struct work_struct *work)
-+{
-+	int node = numa_node_id();
-+	struct svc_xprt *xprt = container_of(work, struct svc_xprt, xpt_work);
-+	struct net *net = xprt->xpt_net;
-+	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
-+	struct svc_serv *serv = xprt->xpt_server;
-+	struct svc_rqst *rqstp;
-+	struct fs_struct *saved_fs;
-+	int err;
-+
-+	rqstp = svc_rqst_alloc(serv, &serv->sv_pools[node], node);
-+	if (!rqstp) {
-+		/* Alloc failure. Give up for now, and requeue the work */
-+		queue_work(serv->sv_wq, &xprt->xpt_work);
-+		return;
-+	}
-+
-+	rqstp->rq_xprt = xprt;
-+
-+	get_fs_struct(rqstp->rq_fs);
-+	saved_fs = swap_fs_struct(rqstp->rq_fs);
-+
-+	rqstp->rq_server->sv_maxconn = nn->max_connections;
-+	err = svc_wq_recv(rqstp);
-+	if (err >= 0) {
-+		validate_process_creds();
-+		svc_process(rqstp);
-+		validate_process_creds();
-+	}
-+
-+	saved_fs = swap_fs_struct(saved_fs);
-+	put_fs_struct(saved_fs);
-+
-+	svc_rqst_free(rqstp);
-+}
-+
-+static struct svc_serv_ops nfsd_wq_sv_ops = {
-+	.svo_shutdown		= nfsd_last_thread,
-+	.svo_enqueue_xprt	= svc_wq_enqueue_xprt,
-+	.svo_xprt_work		= nfsd_work,
-+	.svo_setup		= svc_wq_setup,
-+	.svo_module		= THIS_MODULE,
-+};
-+#endif
-+
- static __be32 map_new_errors(u32 vers, __be32 nfserr)
- {
- 	if (nfserr == nfserr_jukebox && vers == 2)
-diff --git a/include/linux/fs_struct.h b/include/linux/fs_struct.h
-index d2b7a1942790..671c49f13396 100644
---- a/include/linux/fs_struct.h
-+++ b/include/linux/fs_struct.h
-@@ -20,6 +20,7 @@ extern void exit_fs(struct task_struct *);
- extern void set_fs_root(struct fs_struct *, const struct path *);
- extern void set_fs_pwd(struct fs_struct *, const struct path *);
- extern struct fs_struct *copy_fs_struct(struct fs_struct *);
-+extern struct fs_struct *swap_fs_struct(struct fs_struct *);
- extern void free_fs_struct(struct fs_struct *);
- extern void replace_fs_struct(struct fs_struct *);
- extern int unshare_fs_struct(void);
+diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
+index 4954339315b7..63b42a8578c0 100644
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -157,6 +157,8 @@ void svc_xprt_init(struct net *net, struct svc_xprt_class *xcl,
+ 	xprt->xpt_ops = xcl->xcl_ops;
+ 	kref_init(&xprt->xpt_ref);
+ 	xprt->xpt_server = serv;
++	if (serv->sv_ops->svo_xprt_work)
++		INIT_WORK(&xprt->xpt_work, serv->sv_ops->svo_xprt_work);
+ 	INIT_LIST_HEAD(&xprt->xpt_list);
+ 	INIT_LIST_HEAD(&xprt->xpt_ready);
+ 	INIT_LIST_HEAD(&xprt->xpt_deferred);
 -- 
 2.1.0
 
