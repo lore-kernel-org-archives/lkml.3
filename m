@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933463AbaLBTYx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:24:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46763 "EHLO
+	id S933481AbaLBTY6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:24:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46769 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932569AbaLBTYu (ORCPT
+	with ESMTP id S932569AbaLBTYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:24:50 -0500
+	Tue, 2 Dec 2014 14:24:54 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Hansen <dave.hansen@linux.intel.com>, Dave Hansen <dave@sr71.net>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 105/121] x86: Require exact match for 'noxsave' command line option
-Date: Tue,  2 Dec 2014 11:19:44 -0800
-Message-Id: <1417548000-1794-106-git-send-email-kamal@canonical.com>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>,
+        Mark Brown <broonie@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 102/121] ASoC: sgtl5000: Fix SMALL_POP bit definition
+Date: Tue,  2 Dec 2014 11:19:41 -0800
+Message-Id: <1417548000-1794-103-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
@@ -29,55 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-commit 2cd3949f702692cf4c5d05b463f19cd706a92dd3 upstream.
+commit c251ea7bd7a04f1f2575467e0de76e803cf59149 upstream.
 
-We have some very similarly named command-line options:
+On a mx28evk with a sgtl5000 codec we notice a loud 'click' sound  to happen
+5 seconds after the end of a playback.
 
-arch/x86/kernel/cpu/common.c:__setup("noxsave", x86_xsave_setup);
-arch/x86/kernel/cpu/common.c:__setup("noxsaveopt", x86_xsaveopt_setup);
-arch/x86/kernel/cpu/common.c:__setup("noxsaves", x86_xsaves_setup);
+The SMALL_POP bit should fix this, but its definition is incorrect:
+according to the sgtl5000 manual it is bit 0 of CHIP_REF_CTRL register, not
+bit 1.
 
-__setup() is designed to match options that take arguments, like
-"foo=bar" where you would have:
+Fix the definition accordingly and enable the bit as intended per the code
+comment.
 
-	__setup("foo", x86_foo_func...);
+After applying this change, no loud 'click' sound is heard after playback
 
-The problem is that "noxsave" actually _matches_ "noxsaves" in
-the same way that "foo" matches "foo=bar".  If you boot an old
-kernel that does not know about "noxsaves" with "noxsaves" on the
-command line, it will interpret the argument as "noxsave", which
-is not what you want at all.
-
-This makes the "noxsave" handler only return success when it finds
-an *exact* match.
-
-[ tglx: We really need to make __setup() more robust. ]
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Dave Hansen <dave@sr71.net>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/20141111220133.FE053984@viggo.jf.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kernel/cpu/common.c | 2 ++
- 1 file changed, 2 insertions(+)
+ sound/soc/codecs/sgtl5000.c | 3 +--
+ sound/soc/codecs/sgtl5000.h | 2 +-
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 78ecb5e..37c4f31 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -144,6 +144,8 @@ EXPORT_PER_CPU_SYMBOL_GPL(gdt_page);
+diff --git a/sound/soc/codecs/sgtl5000.c b/sound/soc/codecs/sgtl5000.c
+index 1f4093f..b76c6b6 100644
+--- a/sound/soc/codecs/sgtl5000.c
++++ b/sound/soc/codecs/sgtl5000.c
+@@ -1398,8 +1398,7 @@ static int sgtl5000_probe(struct snd_soc_codec *codec)
  
- static int __init x86_xsave_setup(char *s)
- {
-+	if (strlen(s))
-+		return 0;
- 	setup_clear_cpu_cap(X86_FEATURE_XSAVE);
- 	setup_clear_cpu_cap(X86_FEATURE_XSAVEOPT);
- 	setup_clear_cpu_cap(X86_FEATURE_AVX);
+ 	/* enable small pop, introduce 400ms delay in turning off */
+ 	snd_soc_update_bits(codec, SGTL5000_CHIP_REF_CTRL,
+-				SGTL5000_SMALL_POP,
+-				SGTL5000_SMALL_POP);
++				SGTL5000_SMALL_POP, 1);
+ 
+ 	/* disable short cut detector */
+ 	snd_soc_write(codec, SGTL5000_CHIP_SHORT_CTRL, 0);
+diff --git a/sound/soc/codecs/sgtl5000.h b/sound/soc/codecs/sgtl5000.h
+index 2f8c889..bd7a344 100644
+--- a/sound/soc/codecs/sgtl5000.h
++++ b/sound/soc/codecs/sgtl5000.h
+@@ -275,7 +275,7 @@
+ #define SGTL5000_BIAS_CTRL_MASK			0x000e
+ #define SGTL5000_BIAS_CTRL_SHIFT		1
+ #define SGTL5000_BIAS_CTRL_WIDTH		3
+-#define SGTL5000_SMALL_POP			0x0001
++#define SGTL5000_SMALL_POP			0
+ 
+ /*
+  * SGTL5000_CHIP_MIC_CTRL
 -- 
 1.9.1
 
