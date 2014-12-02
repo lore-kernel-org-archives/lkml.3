@@ -1,96 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751227AbaLBIga (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 03:36:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57273 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750991AbaLBIg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 03:36:29 -0500
-Date: Tue, 2 Dec 2014 19:36:18 +1100
-From: NeilBrown <neilb@suse.de>
-To: zhangxiao <xiao.zhang@windriver.com>
-Cc: <linux-raid@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        dm-devel@redhat.com
-Subject: Re: The DM_BUFIO_HASH_BITS is defined as 20, any plan to make it
- flexible?
-Message-ID: <20141202193618.6d3adb22@notabene.brown>
-In-Reply-To: <547D790E.3070803@windriver.com>
-References: <547D790E.3070803@windriver.com>
-X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.25; x86_64-suse-linux-gnu)
+	id S1751508AbaLBIg5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 03:36:57 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:49973 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751288AbaLBIg4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 03:36:56 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="44338314"
+Message-ID: <547D7B05.6080403@cn.fujitsu.com>
+Date: Tue, 2 Dec 2014 16:40:37 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/iqrv+YBv2YSq+gkIP4eRvf."; protocol="application/pgp-signature"
+To: <paulmck@linux.vnet.ibm.com>
+CC: =?UTF-8?B?RMOibmllbCBGcmFnYQ==?= <fragabr@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+References: <CA+55aFy9c2FY2gDw14VU537QJoLHAbf+q_75VUwU33_HLz+F0w@mail.gmail.com> <20141126024032.GA13246@redhat.com> <20141126225745.GA30346@redhat.com> <CA+55aFz-JUX6CU-aO+cwLHYtH7BA+dgyUnEGoy8T4S62gEDFpA@mail.gmail.com> <20141127225637.GA24019@redhat.com> <m5dart$co$1@ger.gmane.org> <CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com> <547b8a45.6e608c0a.20f9.1002@mx.google.com> <CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com> <547bbe36.48548c0a.105c.779c@mx.google.com> <20141201191431.GA17385@linux.vnet.ibm.com>
+In-Reply-To: <20141201191431.GA17385@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/iqrv+YBv2YSq+gkIP4eRvf.
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 12/02/2014 03:14 AM, Paul E. McKenney wrote:
+> On Sun, Nov 30, 2014 at 11:02:43PM -0200, Dâniel Fraga wrote:
+>> On Sun, 30 Nov 2014 16:21:19 -0800
+>> Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>>
+>>> Maybe you'll have to turn off RCU_CPU_STALL_VERBOSE first.
+>>>
+>>> Although I think you should be able to just edit the .config file,
+>>> delete the like that says
+>>>
+>>>     CONFIG_TREE_PREEMPT_RCU=y
+>>>
+>>> and then just do a "make oldconfig", and then verify that
+>>> TREE_PREEMPT_RCU hasn't been re-enabled by some dependency. But it
+>>> shouldn't have, and that "make oldconfig" should get rid of anything
+>>> that depends on TREE_PREEMPT_RCU.
+>> 	
+>> 	Ok, I did exactly that, but CONFIG_TREE_PREEMPT_RCU is
+>> re-enabled. I talked with Pranith Kumar and he suggested I could just
+>> disable preemption (No Forced Preemption (Server)) and that's the only
+>> way to disable CONFIG_TREE_PREEMPT_RCU.
+> 
+> If it would help to have !CONFIG_TREE_PREEMPT_RCU with CONFIG_PREEMPT=y,
 
-On Tue, 2 Dec 2014 16:32:14 +0800 zhangxiao <xiao.zhang@windriver.com> wrot=
-e:
+It is needed at lest for testing.
 
-> Hi NeilBrown,
->=20
-> See drivers/md/dm-bufio.c as below:
->    50 /*
->    51  * Buffer hash
->    52  */
->    53 #define DM_BUFIO_HASH_BITS      20
->    54 #define DM_BUFIO_HASH(block) \
->    55         ((((block) >> DM_BUFIO_HASH_BITS) ^ (block)) & \
->    56          ((1 << DM_BUFIO_HASH_BITS) - 1))
-> "drivers/md/dm-bufio.c" 1854L, 45375C=20
->=20
->=20
-> DM_BUFIO_HASH_BITS was defined as 20 and it maybe not fit for some
-> use case with limited resources. Do we have any plan to make it more
-> flexible? Like module parameter or something else?
->=20
+CONFIG_TREE_PREEMPT_RCU=y with CONFIG_PREEMPT=n is needed for testing too.
 
-Thanks, but this question should be address to:
+Please enable them (or enable them under CONFIG_RCU_TRACE=y)
 
-DEVICE-MAPPER  (LVM)
-M:	Alasdair Kergon <agk@redhat.com>
-M:	Mike Snitzer <snitzer@redhat.com>
-M:	dm-devel@redhat.com
-L:	dm-devel@redhat.com
-W:	http://sources.redhat.com/dm
-Q:	http://patchwork.kernel.org/project/dm-devel/list/
-T:	git git://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-dm=
-.git
-T:	quilt http://people.redhat.com/agk/patches/linux/editing/
-S:	Maintained
-F:	Documentation/device-mapper/
-F:	drivers/md/dm*
-F:	drivers/md/persistent-data/
-F:	include/linux/device-mapper.h
-F:	include/linux/dm-*.h
-F:	include/uapi/linux/dm-*.h
+> please let me know and I will create a patch that forces this.
+> (Not mainline material, but if it helps with debug...)
+> 
+> 							Thanx, Paul
+> 
+>> 	Now I'll try to make the system freeze, then I'll send
+>> you the Call trace.
+>>
+>> 	Thanks.
+>>
+>> -- 
+>> Linux 3.17.0: Shuffling Zombie Juror
+>> http://www.youtube.com/DanielFragaBR
+>> http://exchangewar.info
+>> Bitcoin: 12H6661yoLDUZaYPdah6urZS5WiXwTAUgL
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-NeilBrown
-
---Sig_/iqrv+YBv2YSq+gkIP4eRvf.
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUBVH16Ajnsnt1WYoG5AQLYrQ/9GmB7gctdLEMnnmeWEW3xrG0zdylEqsXl
-bETJLu3sS2NHwY5t0hiYBpTZBy6G1OlpNpVN5Xx47OTYYx76ALCXAgxwDjImEhKo
-Gm6fJo0M35iMha4CwOttqzvdGVyNPDIC8V1sqICjuwT1UHgbH8vhuV5G8hGy2gRw
-2ldHR5pyITyExkLyE/h6OVfjzzSvEx8VVE+q5pWrpVU3pVfj7FYVlvELSxbBEvlW
-F5bRfYpoIgz7cgz/uL33EJDBlK4j6HnYzPPCJ18N01XYM/Y6c0S15ly+4P0mx3a/
-OJQfCECn7uVP6KlFBV7VQnVS2/KbZdbuneDHUKLRBi9ol+8/7oErThAFsanDUZRP
-3Y5Ywdsvv3/h109XeV3B3+UuTppzX91vS6ZKA7tIvSSWzuLVGiGEICgCkBdYeRIN
-6lwqSn1tWUq/QYIUi72+0lgxqw/uJ/xUVkGfNaVexEho1wfvQ1YauHopyIR6C2St
-k5CPhJWQTA3F4QxN5gbyLaplV4LdPszsHdq4BOn3ovJzloekquHMaQWaJako/+3X
-5za5/7bFfSEDF0wQAvA3iS5UgQBAG6PE9o7J4XIZlgDe84GZ6XzzYrwD9G1cMOPm
-g1piV8baixvsGUb1EJcYKzkiEhBH6aiyJWQSaYAsCGf+eqSPSujn1FzNjsWTM4wi
-slvLd7ZEAnw=
-=Mt2m
------END PGP SIGNATURE-----
-
---Sig_/iqrv+YBv2YSq+gkIP4eRvf.--
