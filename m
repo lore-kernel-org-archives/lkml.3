@@ -1,196 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932905AbaLBVFc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 16:05:32 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:36374 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031AbaLBVF3 (ORCPT
+	id S933021AbaLBVHv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 16:07:51 -0500
+Received: from smtprelay0188.hostedemail.com ([216.40.44.188]:47943 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932365AbaLBVHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 16:05:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <874mtdyexp.fsf_-_@x220.int.ebiederm.org>
-References: <52e0643bd47b1e5c65921d6e00aea1f724bb510a.1417281801.git.luto@amacapital.net>
- <87h9xez20g.fsf@x220.int.ebiederm.org> <CALCETrXOz4C7Tu8mggBtR=k47ZmkuAhinVUxWJSFyS1Ep0HvRw@mail.gmail.com>
- <87mw75ygwp.fsf@x220.int.ebiederm.org> <CALCETrVfO4sBdZcQiZXsofPZMj7pqKeVbX+4g3dAj6WjUca+1w@mail.gmail.com>
- <87fvcxyf28.fsf_-_@x220.int.ebiederm.org> <874mtdyexp.fsf_-_@x220.int.ebiederm.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 2 Dec 2014 13:05:07 -0800
-Message-ID: <CALCETrXyC7XPaqj6oe-TmyypOVc_CkZbF6UAAx8YfkyD=gEMOQ@mail.gmail.com>
-Subject: Re: [CFT][PATCH 2/3] userns: Add a knob to disable setgroups on a per
- user namespace basis
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-man <linux-man@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Richard Weinberger <richard@nod.at>,
-        Kenton Varda <kenton@sandstorm.io>, stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 2 Dec 2014 16:07:49 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:69:355:379:541:599:960:965:966:973:988:989:1042:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3868:3871:4321:4385:4390:4395:5007:6261:7576:7903:8660:9592:10004:10400:10848:10967:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12683:12740:13148:13230:13255:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: fall57_43b8a8403661e
+X-Filterd-Recvd-Size: 4440
+Message-ID: <1417554464.2902.4.camel@perches.com>
+Subject: Re: [PATCH 1/2] ALSA: ctxfi: Deletion of an unnecessary check
+ before the function call "kfree"
+From: Joe Perches <joe@perches.com>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Date: Tue, 02 Dec 2014 13:07:44 -0800
+In-Reply-To: <547E2738.1090708@users.sourceforge.net>
+References: <5307CAA2.8060406@users.sourceforge.net>
+	 <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
+	 <530A086E.8010901@users.sourceforge.net>
+	 <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
+	 <530A72AA.3000601@users.sourceforge.net>
+	 <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
+	 <530B5FB6.6010207@users.sourceforge.net>
+	 <alpine.DEB.2.10.1402241710370.2074@hadrien>
+	 <530C5E18.1020800@users.sourceforge.net>
+	 <alpine.DEB.2.10.1402251014170.2080@hadrien>
+	 <530CD2C4.4050903@users.sourceforge.net>
+	 <alpine.DEB.2.10.1402251840450.7035@hadrien>
+	 <530CF8FF.8080600@users.sourceforge.net>
+	 <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+	 <530DD06F.4090703@users.sourceforge.net>
+	 <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+	 <5317A59D.4@users.sourceforge.net> <547E2612.6010304@users.sourceforge.net>
+	 <547E2738.1090708@users.sourceforge.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 2, 2014 at 12:28 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
->
-> - Expose the knob to user space through a proc file /proc/<pid>/setgroups
+On Tue, 2014-12-02 at 21:55 +0100, SF Markus Elfring wrote:
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Tue, 2 Dec 2014 20:00:33 +0100
+> 
+> The kfree() function performs also input parameter validation.
+> Thus the test around the call is not needed.
+> 
+> This issue was detected by using the Coccinelle software.
+> 
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+> ---
+>  sound/pci/ctxfi/ctdaio.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/sound/pci/ctxfi/ctdaio.c b/sound/pci/ctxfi/ctdaio.c
+> index c1c3f88..1712332 100644
+> --- a/sound/pci/ctxfi/ctdaio.c
+> +++ b/sound/pci/ctxfi/ctdaio.c
+> @@ -577,7 +577,7 @@ static int get_daio_rsc(struct daio_mgr *mgr,
+>  error:
+>  	if (dao)
+>  		kfree(dao);
+> -	else if (dai)
+> +	else
+>  		kfree(dai);
+>  
+>  	spin_lock_irqsave(&mgr->mgr_lock, flags);
 
-Can you rename this to something clearer, e.g. userns_setgroups_mode?
+I think this not nice and would prefer something like:
 
->
->   A value of 0 means the setgroups system call is disabled in the
->   current processes user namespace and can not be enabled in the
->   future in this user namespace.
->
->   A value of 1 means the segtoups system call is enabled.
+---
+ sound/pci/ctxfi/ctdaio.c | 30 +++++++++++++-----------------
+ 1 file changed, 13 insertions(+), 17 deletions(-)
 
-Would it make more sense to put strings like "allow" and "deny" in
-here?  That way, future extensions could add additional values.
+diff --git a/sound/pci/ctxfi/ctdaio.c b/sound/pci/ctxfi/ctdaio.c
+index c1c3f88..9b87dd2 100644
+--- a/sound/pci/ctxfi/ctdaio.c
++++ b/sound/pci/ctxfi/ctdaio.c
+@@ -528,8 +528,6 @@ static int get_daio_rsc(struct daio_mgr *mgr,
+ 			struct daio **rdaio)
+ {
+ 	int err;
+-	struct dai *dai = NULL;
+-	struct dao *dao = NULL;
+ 	unsigned long flags;
+ 
+ 	*rdaio = NULL;
+@@ -544,27 +542,30 @@ static int get_daio_rsc(struct daio_mgr *mgr,
+ 		return err;
+ 	}
+ 
++	err = -ENOMEM;
+ 	/* Allocate mem for daio resource */
+ 	if (desc->type <= DAIO_OUT_MAX) {
+-		dao = kzalloc(sizeof(*dao), GFP_KERNEL);
+-		if (!dao) {
+-			err = -ENOMEM;
++		struct dao *dao = kzalloc(sizeof(*dao), GFP_KERNEL);
++		if (!dao)
+ 			goto error;
+-		}
++
+ 		err = dao_rsc_init(dao, desc, mgr);
+-		if (err)
++		if (err) {
++			kfree(dao);
+ 			goto error;
++		}
+ 
+ 		*rdaio = &dao->daio;
+ 	} else {
+-		dai = kzalloc(sizeof(*dai), GFP_KERNEL);
+-		if (!dai) {
+-			err = -ENOMEM;
++		struct dai *dai = kzalloc(sizeof(*dai), GFP_KERNEL);
++		if (!dai)
+ 			goto error;
+-		}
++
+ 		err = dai_rsc_init(dai, desc, mgr);
+-		if (err)
++		if (err) {
++			kfree(dai);
+ 			goto error;
++		}
+ 
+ 		*rdaio = &dai->daio;
+ 	}
+@@ -575,11 +576,6 @@ static int get_daio_rsc(struct daio_mgr *mgr,
+ 	return 0;
+ 
+ error:
+-	if (dao)
+-		kfree(dao);
+-	else if (dai)
+-		kfree(dai);
+-
+ 	spin_lock_irqsave(&mgr->mgr_lock, flags);
+ 	daio_mgr_put_rsc(&mgr->mgr, desc->type);
+ 	spin_unlock_irqrestore(&mgr->mgr_lock, flags);
 
-> diff --git a/arch/s390/kernel/compat_linux.c b/arch/s390/kernel/compat_linux.c
-> index 21c91feeca2d..6d0ee1b089fb 100644
-> --- a/arch/s390/kernel/compat_linux.c
-> +++ b/arch/s390/kernel/compat_linux.c
-> @@ -252,6 +252,7 @@ COMPAT_SYSCALL_DEFINE2(s390_setgroups16, int, gidsetsize, u16 __user *, grouplis
->         int retval;
->
->         if (!gid_mapping_possible(user_ns) ||
-> +           !atomic_read(&user_ns->setgroups_allowed) ||
->             !capable(CAP_SETGID))
->                 return -EPERM;
 
-This is now incomprehensible because of the gid_mapping_possible
-thing.  If you renamed gid_mapping_possible to
-userns_setgroup_allowed, then this could be added to the
-implementation, and this would all make sense (not to mention avoiding
-duplicating this thing).
-
-> @@ -826,6 +827,11 @@ static bool new_idmap_permitted(const struct file *file,
->                         kuid_t uid = make_kuid(ns->parent, id);
->                         if (uid_eq(uid, cred->euid))
->                                 return true;
-> +               } else if (cap_setid == CAP_SETGID) {
-> +                       kgid_t gid = make_kgid(ns->parent, id);
-> +                       if (!atomic_read(&ns->setgroups_allowed) &&
-> +                           gid_eq(gid, cred->egid))
-> +                               return true;
-
-I still don't see why egid is any better than fsgid here.
-
->                 }
->         }
->
-> @@ -844,6 +850,93 @@ static bool new_idmap_permitted(const struct file *file,
->         return false;
->  }
->
-> +static void *setgroups_m_start(struct seq_file *seq, loff_t *ppos)
-> +{
-> +       struct user_namespace *ns = seq->private;
-> +
-> +       return (*ppos == 0) ?  ns : NULL;
-> +}
-> +
-> +static void *setgroups_m_next(struct seq_file *seq, void *v, loff_t *ppos)
-> +{
-> +       ++*ppos;
-> +       return NULL;
-> +}
-> +
-> +static void setgroups_m_stop(struct seq_file *seq, void *v)
-> +{
-> +}
-> +
-> +static int setgroups_m_show(struct seq_file *seq, void *v)
-> +{
-> +       struct user_namespace *ns = seq->private;
-> +
-> +       seq_printf(seq, "%u\n", atomic_read(&ns->setgroups_allowed));
-> +       return 0;
-> +}
-> +
-> +const struct seq_operations proc_setgroups_seq_operations = {
-> +       .start  = setgroups_m_start,
-> +       .stop = setgroups_m_stop,
-> +       .next = setgroups_m_next,
-> +       .show = setgroups_m_show,
-> +};
-> +
-> +ssize_t proc_setgroups_write(struct file *file, const char __user *buf,
-> +                            size_t count, loff_t *ppos)
-> +{
-> +       struct seq_file *seq = file->private_data;
-> +       struct user_namespace *ns = seq->private;
-> +       char kbuf[3];
-> +       int setgroups_allowed;
-> +       ssize_t ret;
-> +
-> +       ret = -EPERM;
-> +       if (!file_ns_capable(file, ns, CAP_SETGID))
-> +               goto out;
-
-CAP_SYS_ADMIN?  This isn't setting a gid in the namespace; it's
-reconfiguring the namespace.
-
-> +
-> +       /* Only allow a very narrow range of strings to be written */
-> +       ret = -EINVAL;
-> +       if ((*ppos != 0) || (count >= sizeof(kbuf)) || (count < 1))
-> +               goto out;
-> +
-> +       /* What was written? */
-> +       ret = -EFAULT;
-> +       if (copy_from_user(kbuf, buf, count))
-> +               goto out;
-> +       kbuf[count] = '\0';
-> +
-> +       /* What is being requested? */
-> +       ret = -EINVAL;
-> +       if (kbuf[0] == '0')
-> +               setgroups_allowed = 0;
-> +       else if (kbuf[0] == '1')
-> +               setgroups_allowed = 1;
-> +       else
-> +               goto out;
-> +
-> +       /* Allow a trailing newline */
-> +       ret = -EINVAL;
-> +       if ((count == 2) && (kbuf[1] != '\n'))
-> +               goto out;
-> +
-> +
-> +       if (setgroups_allowed) {
-> +               ret = -EINVAL;
-> +               if (atomic_read(&ns->setgroups_allowed) == 0)
-> +                       goto out;
-> +       } else {
-
-I would disallow this if gid_map has been written in the interest of sanity.
-
-> +               atomic_set(&ns->setgroups_allowed, 0);
-> +               /* sigh memory barriers! */
-
-I don't think that any barriers are needed.  If you ever observe
-setgroups_allowed == 0, it will stay that way forever.
-
-> +       }
-> +
-> +       /* Report a successful write */
-> +       *ppos = count;
-> +       ret = count;
-> +out:
-> +       return ret;
-> +}
-> +
->  static void *userns_get(struct task_struct *task)
->  {
->         struct user_namespace *user_ns;
-
---Andy
