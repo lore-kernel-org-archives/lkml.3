@@ -1,134 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933045AbaLBHur (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 02:50:47 -0500
-Received: from regular1.263xmail.com ([211.150.99.137]:59321 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932908AbaLBHun (ORCPT
+	id S933048AbaLBHwB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 02:52:01 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:36062 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932259AbaLBHv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 02:50:43 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: dianders@chromium.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <f6868829d0c25d700fd224f45e2b81e3>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <547D6F36.50103@rock-chips.com>
-Date: Tue, 02 Dec 2014 15:50:14 +0800
-From: addy ke <addy.ke@rock-chips.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 2 Dec 2014 02:51:59 -0500
 MIME-Version: 1.0
-To: dianders@chromium.org
-CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, tgih.jun@samsung.com, jh80.chung@samsung.com,
-        chris@printf.net, ulf.hansson@linaro.org, dinguyen@altera.com,
-        heiko@sntech.de, olof@lixom.net, sonnyrao@chromium.org,
-        amstan@chromium.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, zhenfu.fang@rock-chips.com,
-        cf@rock-chips.com, lintao@rock-chips.com, chenfen@rock-chips.com,
-        zyf@rock-chips.com, xjq@rock-chips.com, huangtao@rock-chips.com,
-        zyw@rock-chips.com, yzq@rock-chips.com, hj@rock-chips.com,
-        kever.yang@rock-chips.com, zhangqing@rock-chips.com, hl@rock-chips.com
-Subject: Re: [PATCH v2] mmc: dw_mmc: add quirk for broken data transfer over
- scheme
-References: <1415970338-2637-1-git-send-email-addy.ke@rock-chips.com>	<1416903008-4160-1-git-send-email-addy.ke@rock-chips.com> <CAD=FV=UmG1okxJ5JV-1cuRRQJi7EEPXc7Q90sWjfMWBqb7VSMw@mail.gmail.com>
-In-Reply-To: <CAD=FV=UmG1okxJ5JV-1cuRRQJi7EEPXc7Q90sWjfMWBqb7VSMw@mail.gmail.com>
+In-Reply-To: <1429705.acTXlHE2TG@avalon>
+References: <1416220913-5047-1-git-send-email-prabhakar.csengg@gmail.com>
+ <1680188.7K1XCBdsCk@avalon> <CA+V-a8uaw2X_a3rfx0=avbuGnUdbqveMvJaU25hewzv9eAA8+Q@mail.gmail.com>
+ <1429705.acTXlHE2TG@avalon>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Tue, 2 Dec 2014 07:51:27 +0000
+Message-ID: <CA+V-a8tyOMA=k2dyJ83uM5SXav+5dTzt1pyTXVUg31L33kRCPw@mail.gmail.com>
+Subject: Re: [PATCH] media: v4l2-subdev.h: drop the guard CONFIG_VIDEO_V4L2_SUBDEV_API
+ for v4l2_subdev_get_try_*()
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>,
+        linux-media <linux-media@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sakari Ailus <sakari.ailus@iki.fi>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-On 2014/11/27 06:46, Doug Anderson wrote:
-> Hi,
-> 
-> On Tue, Nov 25, 2014 at 12:10 AM, Addy Ke <addy.ke@rock-chips.com> wrote:
->> This patch add a new quirk to add a s/w timer to notify the driver
->> to terminate current transfer and report a data timeout to the core,
->> if DTO interrupt does NOT come within the given time.
+Hi Hans,
+
+On Mon, Dec 1, 2014 at 11:26 PM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> Hi Prabhakar,
+>
+> On Sunday 30 November 2014 21:30:35 Prabhakar Lad wrote:
+>> On Sun, Nov 30, 2014 at 9:16 PM, Laurent Pinchart wrote:
+>> > On Sunday 30 November 2014 21:05:50 Prabhakar Lad wrote:
+>> >> On Sat, Nov 29, 2014 at 7:12 PM, Laurent Pinchart wrote:
+>> >> > Hi Prabhakar,
+>> >>
+>> >> [Snip]
+>> >>
+>> >>>>> Sure. That's a better choice than removing the config option
+>> >>>>> dependency of the fields struct v4l2_subdev.
+>> >>>
+>> >>> Decoupling CONFIG_VIDEO_V4L2_SUBDEV_API from the availability of the
+>> >>> in-kernel pad format and selection rectangles helpers is definitely a
+>> >>> good idea. I was thinking about decoupling the try format and
+>> >>> rectangles from v4l2_subdev_fh by creating a kind of configuration store
+>> >>> structure to store them, and embedding that structure in v4l2_subdev_fh.
+>> >>> The pad-level operations would then take a pointer to the configuration
+>> >>> store instead of the v4l2_subdev_fh. Bridge drivers that want to
+>> >>> implement TRY_FMT based on pad-level operations would create a
+>> >>> configuration store, use the pad-level operations, and destroy the
+>> >>> configuration store. The userspace subdev API would use the
+>> >>> configuration store from the file handle.
+>> >>
+>> >> are planning to work/post any time soon ? Or are you OK with suggestion
+>> >> from Hans ?
+>> >
+>> > I have no plan to work on that myself now, I was hoping you could
+>> > implement it ;-)
 >>
->> dw_mmc call mmc_request_done func to finish transfer depends on
->> DTO interrupt. If DTO interrupt does not come in sending data state,
->> the current transfer will be blocked.
+>> OK will implement it.
 >>
->> But this case really exists, when driver reads tuning data from
->> card on RK3288-pink2 board. I measured waveforms by oscilloscope
->> and found that card clock was always on and data lines were always
->> holded high level in sending data state.
->>
->> We got the reply from synopsys:
->> There are two counters but both use the same value of [31:8] bits.
->> Data timeout counter doesn't wait for stop clock and you should get
->> DRTO even when the clock is not stopped.
->> Host Starvation timeout counter is triggered with stop clock condition.
->>
->> This means that host should get DRTO and DTO interrupt.
->>
->> But we really don't get any data-related interrupt in RK3X SoCs.
->> And driver can't get data transfer state, it can do nothing but wait for.
-> 
-> Have you asked someone on your IC team to confirm this is an SoC
-> errata on your SoC?  ...or is there something else we could be doing
-> wrong (overclocking?  jitter in the clock?  bad dividers?) that could
-> be causing this problem?
-> 
-> 
->>  #ifdef CONFIG_OF
->>  static struct dw_mci_of_quirks {
->>         char *quirk;
->> @@ -2513,6 +2549,9 @@ static struct dw_mci_of_quirks {
->>         }, {
->>                 .quirk  = "disable-wp",
->>                 .id     = DW_MCI_QUIRK_NO_WRITE_PROTECT,
->> +       }, {
->> +               .quirk  = "broken-dto",
->> +               .id     = DW_MCI_QUIRK_BROKEN_DTO,
-> 
-> You're adding a device tree property without any binding.  If you need
-> to add this please send a patch before this one modifying the device
-> tree bindings.
-> 
-> ...but that brings up the question: do you _really_ need to add a
-> property?  You already know that all rk3288 SoCs need this and you
-> already know that you're an rk3288 SoC.  Just add this quirk in the
-> rk3288 code always and be done with it.  ...and if this is also needed
-> on other Rockchip parts, add it there too.
-> 
-> -Doug
+>> Can you please elaborate a more on this "The userspace subdev API would use
+>> the configuration store from the file handle."
+>
+> Basically,
+>
+> 1. Create a subdev pad configuration store structure to store the formats and
+> selection rectangles for each pad.
+>
+> 2. Embed an instance of that structure in v4l2_subdev_fh.
+>
+> 3. Modify the subdev pad ops to take a configuration store pointer instead of
+> a file handle pointer.
+>
+> The userspace API implementation (v4l2-subdev.c) would then pass &fh->store to
+> the pad operations instead of fh.
+>
+> Bridge drivers that need to implement TRY_FMT on top of pad ops would create a
+> temporary store (or temporary stores when multiple subsdevs are involved),
+> call the pad ops with a pointer to the temporary store to propagate TRY
+> formats, destroy the store(s) and return the resulting format.
+>
+> Is that clear ?
+>
+Yes thank you, I'll soon shoot a RFC version.
 
-We don't know why we have this problem,
-but this problem is really exist, and we need patch to fix this problem now.
-I will post a follow up change when we find the root cause.
-
-And there is a little probability of this problem on RK SoC, such as RK3188, RK3066,
-when worse card inserted in.
-Maybe the other SoCs have the similar problem.
-
-So I will add this quirk in rockchip code(dw_mmc-rockchip.c) as follows:
-static int dw_mci_rockchip_parse_dt(struct dw_mci *host)
-{
-	host->quirk |= DW_MCI_QUIRK_BROKEN_DTO;
-
-	return 0;
-}
-
-......
-	.parse_dt = dw_mci_rockchip_parse_dt,
-......
-
-is right?
-
-> 
-> 
-> 
-
+Regards,
+--Prabhakar Lad
