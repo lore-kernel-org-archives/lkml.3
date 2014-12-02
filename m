@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679AbaLBCBO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 21:01:14 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:61080 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077AbaLBCBL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 21:01:11 -0500
-Message-ID: <547D1EE5.5060409@gmail.com>
-Date: Tue, 02 Dec 2014 10:07:33 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754291AbaLBCDv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 21:03:51 -0500
+Received: from mout.gmx.net ([212.227.17.20]:55769 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752495AbaLBCDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 21:03:50 -0500
+Message-ID: <547D1E01.90900@gmx.de>
+Date: Tue, 02 Dec 2014 03:03:45 +0100
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        "Carlos O'Donell" <carlos@systemhalted.org>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Max Filippov <jcmvbkbc@gmail.com>, Minchan Kim <minchan@kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "rth@twiddle.net" <rth@twiddle.net>,
-        "ink@jurassic.park.msu.ru" <ink@jurassic.park.msu.ru>,
-        "mattst88@gmail.com" <mattst88@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "jejb@parisc-linux.org" <jejb@parisc-linux.org>,
-        "deller@gmx.de" <deller@gmx.de>, "chris@zankel.net" <chris@zankel.net>,
-        "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] arch: uapi: asm: mman.h: Support MADV_FREE for madvise()
-References: <547CD304.20407@gmail.com>	 <CAMo8BfKg=eb7wA2O+cKO+oLDDERh2CKBS7dyAvfqvCESEHWYEg@mail.gmail.com>	 <CAMuHMdXHAZFujShNnAHY8BRv85ncrtcRvRgPS0Br0T9gSxZ+1A@mail.gmail.com>	 <CAE2sS1hDXqLvF9yY5-3d4pmDPiQy8aQ1fYov3_+BKM8uQ3ZSwA@mail.gmail.com> <1417485331.2585.26.camel@HansenPartnership.com>
-In-Reply-To: <1417485331.2585.26.camel@HansenPartnership.com>
-Content-Type: text/plain; charset=utf-8
+To: Jan Kara <jack@suse.cz>
+CC: eparis@redhat.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 3/3] fanotify: fix inconsistent behaviour regarding flag
+ FAN_ONDIR
+References: <1417304258-16838-1-git-send-email-LinoSanfilippo@gmx.de> <1417304258-16838-3-git-send-email-LinoSanfilippo@gmx.de> <20141201100547.GD16185@quack.suse.cz>
+In-Reply-To: <20141201100547.GD16185@quack.suse.cz>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:2phX7URBiBBJcsjC8Swu1Oh4edfXzgeldMmoiUG5/Ba+4TjpDnf
+ w2OJc60Nk5/OZMuXdSZ560rzh7EJneCxezw44hgBB9ECMwWLlS6b91a3CQcJuFXeCafit5y
+ QhLIsyD1MoN2vQKEwzrVzvOKbKo3B6DT59lvsO3tdxizJt+CCF+jKWo+2x/TzcZ8eCYtkpv
+ dx7QbDU1S3zesZJTMCL3Q==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/2/14 09:55, James Bottomley wrote:
-> On Mon, 2014-12-01 at 17:01 -0500, Carlos O'Donell wrote:
->> On Mon, Dec 1, 2014 at 4:35 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->>> On Mon, Dec 1, 2014 at 9:52 PM, Max Filippov <jcmvbkbc@gmail.com> wrote:
->>>> On Mon, Dec 1, 2014 at 11:43 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
->>>>> At present, kernel supports madvise(MADV_FREE), so can benefit to all
->>>>> related architectures (can grep MADV_WILLNEED or MADV_REMOVE in "arch/"
->>>>> to know about all related architectures).
->>>>
->>>> A similar patch has been posted a while ago:
->>>>
->>>> http://www.spinics.net/lists/linux-mm/msg81538.html
->>>
->>> Would it be possible to use the same number everywhere?
->>
->> Yes please. It's ridiculous that we still need patches like this.
->>
->> I proposed unifying all this two years ago, but didn't follow up.
->>
->> From glibc's perspective it would be simpler if we started using the
->> same number everywhere.
->>
->> http://www.spinics.net/lists/linux-api/msg02064.html
+Hi,
+
+On 01.12.2014 11:05, Jan Kara wrote:
+> On Sun 30-11-14 00:37:38, Lino Sanfilippo wrote:
+>> Before flag FAN_ONDIR was implicitly set in a marks ignored mask. This led to
+>> some inconsistent behaviour:
+>> 
+>> 1. It was not possible to remove the flag from the ignored mask, once it was set
+>> (implicitly) with a call like
+>> 
+>> fanotify_mark(fd, FAN_MARK_ADD, FAN_OPEN, AT_FDCWD, "dir");
+>> 
+>> This was since the needed flag FAN_MARK_ONDIR was only honored when setting a
+>> marks mask, but not when removing it. Now FAN_ONDIR is only set when explicitly
+>> passed in the masks parameter. It now is also possible to remove it again:
+>> 
+>> fanotify_mark(fd, FAN_MARK_ADD, FAN_OPEN | FAN_ONDIR , AT_FDCWD, "dir");
+>> fanotify_mark(fd, FAN_MARK_REMOVE, FAN_ONDIR , AT_FDCWD, "dir");
+>> 
+>> 2. Subsequent calls to fanotify_mark for a mark that had FAN_ONDIR already set
+>> in its mask removed the flag, if it was not specified in the mask parameter
+>> again. Thus
+>> 
+>> fanotify_mark(fd, FAN_MARK_ADD, FAN_OPEN | FAN_ONDIR , AT_FDCWD, "dir");
+>> fanotify_mark(fd, FAN_MARK_ADD, FAN_CLOSE, AT_FDCWD, "dir");
+>> 
+>> set FAN_ONDIR in the first call on the marks mask but also on the ignored
+>> mask in the second call. So the first request for DIR events was overwritten.
+>> Since the flag is now not set implicitly any longer this cant happen any more.
+>   Ugh, I have to say I don't understand the changelog. From the code I
+> think I understood that instead of always adding FAN_ONDIR to ignore mask
+> you require FAN_ONDIR to be set in the normal mask. That makes sense to me
+> but please make the changelog more comprehensible.
+
+Hm. My intention was to describe at least two cases of strange behaviour
+when setting the FAN_ONDIR flag. But maybe the description has indeed
+become a little bit too complicated. I will adjust that and resend the
+patch.
+
+ Also please add a
+> testcase to LTP fanotify() coverage for FAN_ONDIR behavior so that we can
+> easily see how userspace visible behavior changed / didn't change. Thanks!
 > 
-> Please co-ordinate with Andrew then because he's intent on merging this
-> patch:
-> 
-> http://marc.info/?l=linux-mm-commits&m=141747572930808
-> 
 
-For me, we can let MADV_FREE to 8 based on the Andrew's mm tree. Since
-it is about uapi, we need try our best to let it perfect.
+Ok, i can do that (it may take a few days until i find the time for it
+though). Thank you for review!
 
-
-Thanks.
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+Regards,
+Lino
