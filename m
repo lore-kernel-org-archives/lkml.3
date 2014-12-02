@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933938AbaLBT3F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:29:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47046 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933865AbaLBT1H (ORCPT
+	id S933951AbaLBT30 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:29:26 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:62174 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932962AbaLBT3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:27:07 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <johan@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 022/121] USB: opticon: fix non-atomic allocation in write path
-Date: Tue,  2 Dec 2014 11:18:21 -0800
-Message-Id: <1417548000-1794-23-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
-References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 2 Dec 2014 14:29:24 -0500
+Date: Tue, 2 Dec 2014 14:29:20 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Jeff Layton <jeff.layton@primarydata.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a workqueue-based
+ nfsd
+Message-ID: <20141202192920.GM10918@htj.dyndns.org>
+References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
+ <20141202191814.GK10918@htj.dyndns.org>
+ <20141202142627.6f59f693@tlielax.poochiereds.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141202142627.6f59f693@tlielax.poochiereds.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11-ckt12 -stable review patch.  If anyone has any objections, please let me know.
+Hello, Jeff.
 
-------------------
+On Tue, Dec 02, 2014 at 02:26:27PM -0500, Jeff Layton wrote:
+> I'm already using WQ_UNBOUND workqueues. If that exempts this code from
+> the concurrency management, then that's probably not the problem. The
+> jobs here aren't terribly CPU intensive, but they can sleep for a long
+> time while waiting on I/O, etc...
 
-From: Johan Hovold <johan@kernel.org>
+Yeap, noticed that.  Replied in another message.
 
-commit e681286de221af78fc85db9222b6a203148c005a upstream.
+> I don't think we necessarily need CPU locality (though that's nice to
+> have of course), but NUMA affinity will likely be important. It looked
+> like you had done some work a year or so ago to make unbound workqueues
+> prefer to queue work on the same NUMA node which meshes nicely with
+> what I think we want for this.
 
-Write may be called from interrupt context so make sure to use
-GFP_ATOMIC for all allocations in write.
+Yeap, unbound workqueues are NUMA-affine by default.
 
-Fixes: 0d930e51cfe6 ("USB: opticon: Add Opticon OPN2001 write support")
-Signed-off-by: Johan Hovold <johan@kernel.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/usb/serial/opticon.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks.
 
-diff --git a/drivers/usb/serial/opticon.c b/drivers/usb/serial/opticon.c
-index cbe779f..df495ea 100644
---- a/drivers/usb/serial/opticon.c
-+++ b/drivers/usb/serial/opticon.c
-@@ -219,7 +219,7 @@ static int opticon_write(struct tty_struct *tty, struct usb_serial_port *port,
- 
- 	/* The conncected devices do not have a bulk write endpoint,
- 	 * to transmit data to de barcode device the control endpoint is used */
--	dr = kmalloc(sizeof(struct usb_ctrlrequest), GFP_NOIO);
-+	dr = kmalloc(sizeof(struct usb_ctrlrequest), GFP_ATOMIC);
- 	if (!dr) {
- 		dev_err(&port->dev, "out of memory\n");
- 		count = -ENOMEM;
 -- 
-1.9.1
-
+tejun
