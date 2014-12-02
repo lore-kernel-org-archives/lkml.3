@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933930AbaLBT2t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:28:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47051 "EHLO
+	id S933938AbaLBT3F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:29:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47046 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933866AbaLBT1I (ORCPT
+	with ESMTP id S933865AbaLBT1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:27:08 -0500
+	Tue, 2 Dec 2014 14:27:07 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wolfram Sang <wsa@the-dreams.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 042/121] i2c: at91: don't account as iowait
-Date: Tue,  2 Dec 2014 11:18:41 -0800
-Message-Id: <1417548000-1794-43-git-send-email-kamal@canonical.com>
+Cc: Johan Hovold <johan@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 022/121] USB: opticon: fix non-atomic allocation in write path
+Date: Tue,  2 Dec 2014 11:18:21 -0800
+Message-Id: <1417548000-1794-23-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
@@ -26,34 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <wsa@the-dreams.de>
+From: Johan Hovold <johan@kernel.org>
 
-commit 11cfbfb098b22d3e57f1f2be217cad20e2d48463 upstream.
+commit e681286de221af78fc85db9222b6a203148c005a upstream.
 
-iowait is for blkio [1]. I2C shouldn't use it.
+Write may be called from interrupt context so make sure to use
+GFP_ATOMIC for all allocations in write.
 
-[1] https://lkml.org/lkml/2014/11/3/317
-
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Fixes: 0d930e51cfe6 ("USB: opticon: Add Opticon OPN2001 write support")
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/i2c/busses/i2c-at91.c | 2 +-
+ drivers/usb/serial/opticon.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
-index a10632e..50fea6c 100644
---- a/drivers/i2c/busses/i2c-at91.c
-+++ b/drivers/i2c/busses/i2c-at91.c
-@@ -434,7 +434,7 @@ static int at91_do_twi_transfer(struct at91_twi_dev *dev)
- 		}
- 	}
+diff --git a/drivers/usb/serial/opticon.c b/drivers/usb/serial/opticon.c
+index cbe779f..df495ea 100644
+--- a/drivers/usb/serial/opticon.c
++++ b/drivers/usb/serial/opticon.c
+@@ -219,7 +219,7 @@ static int opticon_write(struct tty_struct *tty, struct usb_serial_port *port,
  
--	ret = wait_for_completion_io_timeout(&dev->cmd_complete,
-+	ret = wait_for_completion_timeout(&dev->cmd_complete,
- 					     dev->adapter.timeout);
- 	if (ret == 0) {
- 		dev_err(dev->dev, "controller timed out\n");
+ 	/* The conncected devices do not have a bulk write endpoint,
+ 	 * to transmit data to de barcode device the control endpoint is used */
+-	dr = kmalloc(sizeof(struct usb_ctrlrequest), GFP_NOIO);
++	dr = kmalloc(sizeof(struct usb_ctrlrequest), GFP_ATOMIC);
+ 	if (!dr) {
+ 		dev_err(&port->dev, "out of memory\n");
+ 		count = -ENOMEM;
 -- 
 1.9.1
 
