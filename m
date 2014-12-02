@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178AbaLBJm7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 04:42:59 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:53328 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309AbaLBJmz (ORCPT
+	id S1753451AbaLBJn0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 04:43:26 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:65503 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557AbaLBJnX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 04:42:55 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alexander Stein <alexander.stein@systec-electronic.com>
-Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: Re: [PATCH v3 05/11] memory: add Atmel EBI (External Bus Interface) driver
-Date: Tue, 02 Dec 2014 10:41:57 +0100
-Message-ID: <3316464.yrAZ5QMKbg@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1724175.Jqk8gQW3pz@ws-stein>
-References: <1417429647-3419-1-git-send-email-boris.brezillon@free-electrons.com> <2417519.MDE3mu6n7n@wuerfel> <1724175.Jqk8gQW3pz@ws-stein>
+	Tue, 2 Dec 2014 04:43:23 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:WA2KuRto5UVyvZ1br1ykhmHa5lW/avtM72lYgVIUeID
- W6MnTWJVRrFgQo3EyP3j1b1n6zphQ5zZbJ/oYB5bUYZSP4hDci
- 8PGKBYo4RY/JsapSL9v018RLUpqX07myzcLhpeMVGZmlUg2HKK
- G0hyyDuo4t1IgsdRMDlFNdtCs5MhWPOx6TWkAyuo+BcBchHzUU
- GgJ1BSVvnesO07mOxiLJIo4YeB591wj0jW/SjAIaBZECier2ZF
- j+WtUxSIzh4SMryQH+S9na8J4cBsTNhckA51yM58Z6Or6JI1jR
- 66Iv+UhW5TZjNnWwx/DWTO+8/zhRusuF7ZA3Pp7nwBmijpnatc
- rV9un49u1WQ2gxO/zZts=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <522b42cef4da41d48e81d99bc8e447a8@BL2FFO11FD047.protection.gbl>
+References: <2e3f47e730975654f9b6c888a07db6c3f886b892.1417438852.git.michal.simek@xilinx.com>
+ <CA+V-a8vw2d8H=Qx99M4oXqUatt5wmePVW82ARdMcWLEVLXbZJw@mail.gmail.com> <522b42cef4da41d48e81d99bc8e447a8@BL2FFO11FD047.protection.gbl>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Tue, 2 Dec 2014 09:42:51 +0000
+Message-ID: <CA+V-a8voyQAmKEO3G26GxDOYWSijfron=OO4RKNdo1OM_pecXA@mail.gmail.com>
+Subject: Re: [PATCH v1] lib/genalloc.c: Export devm_gen_pool_create for modules
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, monstr <monstr@monstr.eu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Laura Abbott <lauraa@codeaurora.org>, Olof Johansson <olof@lixom.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 02 December 2014 10:18:45 Alexander Stein wrote:
-> On Monday 01 December 2014 17:17:30, Arnd Bergmann wrote:
-> > On Monday 01 December 2014 11:50:06 Boris Brezillon wrote:
-> > > 
-> > > I don't have a strong opinion regarding where this driver should
-> > > live (I even considered putting it in drivers/bus) :-).
-> > > But note that there are other "external memory interface" drivers
-> > > in drivers/memory too: TI AEMIF and Marvell DEVBUS  ;-).
-> > > 
-> > > Does anyone else think this driver should go in drivers/bus ?
-> > > 
-> > 
-> > I think drivers/memory is better.
-> 
-> I don't mind if it's drivers/bus or drivers/memory. But I'm 
-> wondering: When is a driver a bus driver when it is a memory
-> driver? See imx-weim and atmel-ebi. Apparently both add support
-> for devices attached on a bus which can be accessed through memory
-> addresses.
+Hi Michal,
 
-I think drivers/memory should be used for external buses with an
-SRAM or DRAM interface that need to configure the timings.
+On Tue, Dec 2, 2014 at 9:36 AM, Michal Simek <michal.simek@xilinx.com> wrote:
+> On 12/02/2014 10:31 AM, Prabhakar Lad wrote:
+>> Hi Michal,
+>>
+>> Thanks for the patch.
+>>
+>> On Mon, Dec 1, 2014 at 1:00 PM, Michal Simek <michal.simek@xilinx.com> wrote:
+>>> Modules can use this function for creating pool.
+>>>
+>>> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+>>> ---
+>>>
+>>> I am pushing Zynq OCMC driver which is using this function.
+>>>
+>>> ---
+>>>  lib/genalloc.c | 1 +
+>>>  1 file changed, 1 insertion(+)
+>>>
+>> don’t you need to add an entry in include/linux/genalloc.h ?
+>
+> Not sure what exactly you mean. declaration is there.
+> include/linux/genalloc.h:120:extern struct gen_pool *devm_gen_pool_create(struct device *dev,
+>
+> And all EXPORT_SYMBOL() are out of headers directly below function
+> which you want to export.
+>
+> Can you please clarify what you did mean by that?
+>
+Oops missed it, since it was a exported function I was expecting a entry
+in a header file, but yes the entry  exists already so,
 
-drivers/bus is more a collection for random other buses, usually
-internal to a chip, but it's less well-defined.
+Acked-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-	Arnd
-
+Thanks,
+--Prabhakar Lad
