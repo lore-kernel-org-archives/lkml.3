@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933239AbaLBVyx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 16:54:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44978 "EHLO mx2.suse.de"
+	id S933248AbaLBV4O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 16:56:14 -0500
+Received: from mout.web.de ([212.227.15.14]:60194 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932814AbaLBVyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 16:54:52 -0500
-Message-ID: <547E3508.2080500@suse.de>
-Date: Tue, 02 Dec 2014 13:54:16 -0800
-From: Tony Jones <tonyj@suse.de>
+	id S1751289AbaLBV4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 16:56:13 -0500
+Message-ID: <547E356D.9050609@users.sourceforge.net>
+Date: Tue, 02 Dec 2014 22:55:57 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-api@vger.kernel.org
-CC: sgrubb@redhat.com, eparis@parisplace.org, pmoore@redhat.com
-Subject: Re: [PATCH] powerpc: add little endian flag to syscall_get_arch()
-References: <fbe03529d720e75aa8663f8b521af5b11b33d52f.1417553967.git.rgb@redhat.com>
-In-Reply-To: <fbe03529d720e75aa8663f8b521af5b11b33d52f.1417553967.git.rgb@redhat.com>
+To: Jaroslav Kysela <perex@perex.cz>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linuxppc-dev@lists.ozlabs.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH] ALSA: i2sbus: Deletion of unnecessary checks before the function
+ call "release_and_free_resource"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:V1+5DNS/FUAfj8RizgIx8AUGiVZofcaOReULh1u77jez4+xHoyn
+ bAc2x9ky9GSZ2fRlLRZt87rKFcNuuRGGZ/YoJ4Z/+s/TjkckzGBDgtpru98yPlLqo9607D4
+ 9aHeVlAUuWadJ9dhLn3AWVFCJ2d7Q4HhRJUUxCtL7n7LWDcPVTZAH2PAE3TilygMCyoJ1wz
+ YRlKKXWu2x2tj4h2rVnUQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2014 01:27 PM, Richard Guy Briggs wrote:
-> Since both ppc and ppc64 have LE variants which are now reported by uname, add
-> that flag (__AUDIT_ARCH_LE) to syscall_get_arch() and add AUDIT_ARCH_PPC*LE
-> variants.
-> 
-> Without this,  perf trace and auditctl fail.
-> 
-> Mainline kernel reports ppc64le (per a058801) but there is no matching
-> AUDIT_ARCH_PPC64LE.
-> 
-> See:
-> 	https://www.redhat.com/archives/linux-audit/2014-August/msg00082.html
-> 	https://www.redhat.com/archives/linux-audit/2014-December/msg00004.html
-> 
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> ---
->  arch/powerpc/include/asm/syscall.h |    6 +++++-
->  include/uapi/linux/audit.h         |    2 ++
->  2 files changed, 7 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/powerpc/include/asm/syscall.h b/arch/powerpc/include/asm/syscall.h
-> index 6fa2708..a58acab 100644
-> --- a/arch/powerpc/include/asm/syscall.h
-> +++ b/arch/powerpc/include/asm/syscall.h
-> @@ -90,6 +90,10 @@ static inline void syscall_set_arguments(struct task_struct *task,
->  
->  static inline int syscall_get_arch(void)
->  {
-> -	return is_32bit_task() ? AUDIT_ARCH_PPC : AUDIT_ARCH_PPC64;
-> +	int arch = is_32bit_task() ? AUDIT_ARCH_PPC : AUDIT_ARCH_PPC64;
-> +#ifdef __LITTLE_ENDIAN__
-> +	arch |= __AUDIT_ARCH_LE
-> +#endif
-> +	return arch;
->  }
->  #endif	/* _ASM_SYSCALL_H */
-> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
-> index 4d100c8..fe29a99 100644
-> --- a/include/uapi/linux/audit.h
-> +++ b/include/uapi/linux/audit.h
-> @@ -364,7 +364,9 @@ enum {
->  #define AUDIT_ARCH_PARISC	(EM_PARISC)
->  #define AUDIT_ARCH_PARISC64	(EM_PARISC|__AUDIT_ARCH_64BIT)
->  #define AUDIT_ARCH_PPC		(EM_PPC)
-> +#define AUDIT_ARCH_PPCLE	(EM_PPC|__AUDIT_ARCH_LE)
->  #define AUDIT_ARCH_PPC64	(EM_PPC64|__AUDIT_ARCH_64BIT)
-> +#define AUDIT_ARCH_PPC64LE	(EM_PPC64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
->  #define AUDIT_ARCH_S390		(EM_S390)
->  #define AUDIT_ARCH_S390X	(EM_S390|__AUDIT_ARCH_64BIT)
->  #define AUDIT_ARCH_SH		(EM_SH)
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Tue, 2 Dec 2014 22:50:24 +0100
 
-IBM would know for certain but I wasn't aware there was a PPCLE (32bit compat).
+The release_and_free_resource() function tests whether its argument is NULL
+and then returns immediately. Thus the test around the call is not needed.
+
+This issue was detected by using the Coccinelle software.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ sound/aoa/soundbus/i2sbus/core.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/sound/aoa/soundbus/i2sbus/core.c b/sound/aoa/soundbus/i2sbus/core.c
+index a80d5ea..4e2b4fb 100644
+--- a/sound/aoa/soundbus/i2sbus/core.c
++++ b/sound/aoa/soundbus/i2sbus/core.c
+@@ -79,8 +79,7 @@ static void i2sbus_release_dev(struct device *dev)
+  	if (i2sdev->out.dbdma) iounmap(i2sdev->out.dbdma);
+  	if (i2sdev->in.dbdma) iounmap(i2sdev->in.dbdma);
+ 	for (i = aoa_resource_i2smmio; i <= aoa_resource_rxdbdma; i++)
+-		if (i2sdev->allocated_resource[i])
+-			release_and_free_resource(i2sdev->allocated_resource[i]);
++		release_and_free_resource(i2sdev->allocated_resource[i]);
+ 	free_dbdma_descriptor_ring(i2sdev, &i2sdev->out.dbdma_ring);
+ 	free_dbdma_descriptor_ring(i2sdev, &i2sdev->in.dbdma_ring);
+ 	for (i = aoa_resource_i2smmio; i <= aoa_resource_rxdbdma; i++)
+@@ -323,8 +322,7 @@ static int i2sbus_add_dev(struct macio_dev *macio,
+ 	if (dev->out.dbdma) iounmap(dev->out.dbdma);
+ 	if (dev->in.dbdma) iounmap(dev->in.dbdma);
+ 	for (i=0;i<3;i++)
+-		if (dev->allocated_resource[i])
+-			release_and_free_resource(dev->allocated_resource[i]);
++		release_and_free_resource(dev->allocated_resource[i]);
+ 	mutex_destroy(&dev->lock);
+ 	kfree(dev);
+ 	return 0;
+-- 
+2.1.3
 
