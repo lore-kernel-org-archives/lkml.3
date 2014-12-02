@@ -1,84 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933130AbaLBNAc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 08:00:32 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:52374 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933105AbaLBNA3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 08:00:29 -0500
-Message-ID: <547DB7E8.8030601@redhat.com>
-Date: Tue, 02 Dec 2014 14:00:24 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
+	id S933217AbaLBNBE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 08:01:04 -0500
+Received: from mout.web.de ([212.227.15.14]:51756 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933183AbaLBNBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 08:01:00 -0500
+Message-ID: <547DB803.1080406@users.sourceforge.net>
+Date: Tue, 02 Dec 2014 14:00:51 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/3] kvm: vmx: enable xsaves for kvm
-References: <1417518900-42446-1-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1417518900-42446-1-git-send-email-wanpeng.li@linux.intel.com>
+To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        devicetree@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/1] of-unittest: Deletion of an unnecessary check before
+ the function call "of_node_put"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
 Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:ciyhSYHWHnwOpG8Z61TdGpy/3sY78dkktP0R9lZiZfzoDEMMsqr
+ rSi7WFD60PI5XK4d0k59EXsz0l71nAqoc8tkLkSrozaWrCYC0HAjTrC0IHPG/4cxzEhnkDC
+ 8yklzoArHijvZarwBOk1uZNnDUG+ShaAgmolqiE7HEK7iWwx4ewsyPfWLW5HLjZyCCeOzxQ
+ Urrys2k1ZB38EnN5blfHw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Tue, 2 Dec 2014 13:54:00 +0100
 
+The of_node_put() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
 
-On 02/12/2014 12:14, Wanpeng Li wrote:
-> This patchset is to enable xsaves for kvm part, the patch for 
-> qemu part will be sent out later. 
-> 
-> The patchset is tested on skylake-client.
-> 
-> v2 -> v3:
->  * add kvm_get/set for ia32_xss
->  * fix the type XSS_EXIT_BITMAP
->  * load host_xss just once in setup_vmcs_config
->  * add/clear atuo switch ia32_xss msr in kvm_get/clear
->  * add VMX_XSS_EXIT_BITMAP macro
->  * add WARN() in handle_xsaves/xrstors
->  * export xsaves if related vmcs field is set 
-> 
-> v1 -> v2: 
->  * auto switch ia32_xss msr just if this msr is present 
-> 
-> Wanpeng Li (3):
->   kvm: x86: Intel XSAVES vmx and msr handle
->   kvm: vmx: add kvm_get/set logic to xsaves
->   kvm: x86: Enable Intel XSAVES for guest
-> 
->  arch/x86/include/asm/kvm_host.h |  2 ++
->  arch/x86/include/asm/vmx.h      |  3 +++
->  arch/x86/include/uapi/asm/vmx.h |  6 ++++-
->  arch/x86/kvm/cpuid.c            |  3 ++-
->  arch/x86/kvm/vmx.c              | 51 ++++++++++++++++++++++++++++++++++++++++-
->  5 files changed, 62 insertions(+), 3 deletions(-)
-> 
+This issue was detected by using the Coccinelle software.
 
-We need to return false from an svm_xsaves_supported function too, and 
-we need to prevent setting MSR_IA32_XSS to any non-zero value because 
-we do not support getting/setting a guest's Trace Packet Configuration 
-State.
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/of/unittest.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-I will squash this hunk in, and send a new patch to return zero for
-CPUID(0xd,i).ECX and CPUID(0xd,i).EDX.
+diff --git a/drivers/of/unittest.c b/drivers/of/unittest.c
+index cc0c5ec..06ebe9d 100644
+--- a/drivers/of/unittest.c
++++ b/drivers/of/unittest.c
+@@ -486,8 +486,7 @@ static void __init of_selftest_changeset(void)
+ 	/* Make sure node names are constructed correctly */
+ 	selftest((np = of_find_node_by_path("/testcase-data/changeset/n2/n21")),
+ 		 "'%s' not added\n", n21->full_name);
+-	if (np)
+-		of_node_put(np);
++	of_node_put(np);
+ 
+ 	mutex_lock(&of_mutex);
+ 	selftest(!of_changeset_revert(&chgset), "revert failed\n");
+-- 
+2.1.3
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 66d1e3d0195e..6e3a4486749c 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -2671,6 +2671,11 @@ static int vmx_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
- 	case MSR_IA32_XSS:
- 		if (!vmx_xsaves_supported())
- 			return 1;
-+		/* The only supported bit as of Skylake is bit 8, but
-+		 * it is not supported on KVM.
-+		 */
-+		if (data != 0)
-+			return 1;
- 		vcpu->arch.ia32_xss = data;
- 		if (vcpu->arch.ia32_xss != host_xss)
- 			add_atomic_switch_msr(vmx, MSR_IA32_XSS,
-
-Paolo
