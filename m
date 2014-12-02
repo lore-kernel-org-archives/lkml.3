@@ -1,77 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933492AbaLBXsk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 18:48:40 -0500
-Received: from smtprelay0085.hostedemail.com ([216.40.44.85]:33380 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932722AbaLBXsj (ORCPT
+	id S933485AbaLBXvx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 18:51:53 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:37958 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933271AbaLBXvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 18:48:39 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3870:3871:4321:5007:6119:6120:6261:7901:7903:10004:10400:10848:11026:11232:11658:11914:12043:12517:12519:12740:13069:13161:13229:13311:13357:13894:13972:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: heart34_10f085953ac01
-X-Filterd-Recvd-Size: 2174
-Message-ID: <1417564115.2902.8.camel@perches.com>
-Subject: Re: [tpmdd-devel] [PATCH v8 0/8] TPM 2.0 support
-From: Joe Perches <joe@perches.com>
-To: Peter =?ISO-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, tpmdd-devel@lists.sourceforge.net,
-        Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
-        christophe.ricard@gmail.com, josh.triplett@intel.com,
-        linux-api@vger.kernel.org, Ashley Lai <ashley@ashleylai.com>,
-        linux-kernel@vger.kernel.org, jason.gunthorpe@obsidianresearch.com,
-        trousers-tech@lists.sourceforge.net
-Date: Tue, 02 Dec 2014 15:48:35 -0800
-In-Reply-To: <201412030033.56705.PeterHuewe@gmx.de>
-References: <1417559480-13757-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-	 <201412030021.07882.PeterHuewe@gmx.de>
-	 <20141202232442.GB14524@fuloong-minipc.musicnaut.iki.fi>
-	 <201412030033.56705.PeterHuewe@gmx.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Tue, 2 Dec 2014 18:51:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <1417561975-27627-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1417561975-27627-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 2 Dec 2014 16:51:30 -0700
+Message-ID: <CAErSpo5kFRHjUtNghkL_Db2BaKFOG5vM-rnUOTZAsvFPDd8ebw@mail.gmail.com>
+Subject: Re: [PATCH] sound: pci: cmipci.c: Cleaning up function that are not
+ used anywhere
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Benoit Taine <benoit.taine@lip6.fr>,
+        alsa-devel <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-03 at 00:33 +0100, Peter Hüwe wrote:
-> Am Mittwoch, 3. Dezember 2014, 00:24:43 schrieb Aaro Koskinen:
-> > On Wed, Dec 03, 2014 at 12:21:07AM +0100, Peter Hüwe wrote:
-> > > --- a/drivers/char/tpm/tpm_i2c_nuvoton.c
-> > > +++ b/drivers/char/tpm/tpm_i2c_nuvoton.c
-> > > @@ -605,10 +605,8 @@ static int i2c_nuvoton_probe(struct i2c_client
-> > > *client,
-> > > 
-> > >  		return -ENODEV;
-> > >  	
-> > >  	rc = tpm_chip_register(chip);
-> > > 
-> > > -	if (rc)
-> > > -		return rc;
-> > > 
-> > > -	return 0;
-> > > +	return rc;
-> > 
-> > Maybe just return tpm_chip_register(chip)?
-> 
-> Even better.
+Hi Rickard,
 
-The pattern:
+Thanks a lot for fixing cruft like this.  It makes life better for everybody.
 
-	foo = bar();
-	if (foo)
-		return foo;
+I'll let the maintainer of this driver take care of this patch, but
+I'll just point out that your subject ("Cleaning up function ...") is
+slightly ambiguous because sometimes "cleanup" means simplification,
+not removal.  My personal preference would be "Remove unused
+snd_cmipci_pll_rmn()" because it is unambiguous, shorter, and contains
+a little more information.  That makes "git log --oneline" output more
+ useful.
 
-	return 0;
+Bjorn
 
-is fairly common.
-
-There are a few hundred in the kernel.
-
-$ grep-2.5.4 -nrP --include=*.[ch] "\b(\w+)\s*=\s*[^;]*;\s*if\s*\(\s*\1\s*\)\s*return\s*\1\s*;\s*return\s*0;" * | \
-  grep -oP '^.+:\d+:' | \
-  wc -l
-308
-
-
+On Tue, Dec 2, 2014 at 4:12 PM, Rickard Strandqvist
+<rickard_strandqvist@spectrumdigital.se> wrote:
+> Remove function snd_cmipci_pll_rmn() that is not used anywhere.
+>
+> This was partially found by using a static code analysis program called cppcheck.
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  sound/pci/cmipci.c |   41 -----------------------------------------
+>  1 file changed, 41 deletions(-)
+>
+> diff --git a/sound/pci/cmipci.c b/sound/pci/cmipci.c
+> index 85ed403..e33edae 100644
+> --- a/sound/pci/cmipci.c
+> +++ b/sound/pci/cmipci.c
+> @@ -615,47 +615,6 @@ static unsigned int snd_cmipci_rate_freq(unsigned int rate)
+>
+>  #ifdef USE_VAR48KRATE
+>  /*
+> - * Determine PLL values for frequency setup, maybe the CMI8338 (CMI8738???)
+> - * does it this way .. maybe not.  Never get any information from C-Media about
+> - * that <werner@suse.de>.
+> - */
+> -static int snd_cmipci_pll_rmn(unsigned int rate, unsigned int adcmult, int *r, int *m, int *n)
+> -{
+> -       unsigned int delta, tolerance;
+> -       int xm, xn, xr;
+> -
+> -       for (*r = 0; rate < CM_MAXIMUM_RATE/adcmult; *r += (1<<5))
+> -               rate <<= 1;
+> -       *n = -1;
+> -       if (*r > 0xff)
+> -               goto out;
+> -       tolerance = rate*CM_TOLERANCE_RATE;
+> -
+> -       for (xn = (1+2); xn < (0x1f+2); xn++) {
+> -               for (xm = (1+2); xm < (0xff+2); xm++) {
+> -                       xr = ((CM_REFFREQ_XIN/adcmult) * xm) / xn;
+> -
+> -                       if (xr < rate)
+> -                               delta = rate - xr;
+> -                       else
+> -                               delta = xr - rate;
+> -
+> -                       /*
+> -                        * If we found one, remember this,
+> -                        * and try to find a closer one
+> -                        */
+> -                       if (delta < tolerance) {
+> -                               tolerance = delta;
+> -                               *m = xm - 2;
+> -                               *n = xn - 2;
+> -                       }
+> -               }
+> -       }
+> -out:
+> -       return (*n > -1);
+> -}
+> -
+> -/*
+>   * Program pll register bits, I assume that the 8 registers 0xf8 up to 0xff
+>   * are mapped onto the 8 ADC/DAC sampling frequency which can be chosen
+>   * at the register CM_REG_FUNCTRL1 (0x04).
+> --
+> 1.7.10.4
+>
