@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933395AbaLBTX6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:23:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46720 "EHLO
+	id S933407AbaLBTYV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:24:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46713 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932659AbaLBTXy (ORCPT
+	with ESMTP id S933364AbaLBTXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:23:54 -0500
+	Tue, 2 Dec 2014 14:23:50 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bart Van Assche <bvanassche@acm.org>, Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 092/121] srp-target: Retry when QP creation fails with ENOMEM
-Date: Tue,  2 Dec 2014 11:19:31 -0800
-Message-Id: <1417548000-1794-93-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 077/121] NFSv4.1: nfs41_clear_delegation_stateid shouldn't trust NFS_DELEGATED_STATE
+Date: Tue,  2 Dec 2014 11:19:16 -0800
+Message-Id: <1417548000-1794-78-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
@@ -28,50 +27,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit ab477c1ff5e0a744c072404bf7db51bfe1f05b6e upstream.
+commit 0c116cadd94b16b30b1dd90d38b2784d9b39b01a upstream.
 
-It is not guaranteed to that srp_sq_size is supported
-by the HCA. So if we failed to create the QP with ENOMEM,
-try with a smaller srp_sq_size. Keep it up until we hit
-MIN_SRPT_SQ_SIZE, then fail the connection.
+This patch removes the assumption made previously, that we only need to
+check the delegation stateid when it matches the stateid on a cached
+open.
 
-Reported-by: Mark Lehrer <lehrer@gmail.com>
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+If we believe that we hold a delegation for this file, then we must assume
+that its stateid may have been revoked or expired too. If we don't test it
+then our state recovery process may end up caching open/lock state in a
+situation where it should not.
+We therefore rename the function nfs41_clear_delegation_stateid as
+nfs41_check_delegation_stateid, and change it to always run through the
+delegation stateid test and recovery process as outlined in RFC5661.
+
+http://lkml.kernel.org/r/CAN-5tyHwG=Cn2Q9KsHWadewjpTTy_K26ee+UnSvHvG4192p-Xw@mail.gmail.com
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/infiniband/ulp/srpt/ib_srpt.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ fs/nfs/nfs4proc.c | 42 +++++++++++++++++-------------------------
+ 1 file changed, 17 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.c b/drivers/infiniband/ulp/srpt/ib_srpt.c
-index b4884ae..97309e4 100644
---- a/drivers/infiniband/ulp/srpt/ib_srpt.c
-+++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
-@@ -2091,6 +2091,7 @@ static int srpt_create_ch_ib(struct srpt_rdma_ch *ch)
- 	if (!qp_init)
- 		goto out;
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 33f76f9..f81f845 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -2059,45 +2059,37 @@ static int nfs40_open_expired(struct nfs4_state_owner *sp, struct nfs4_state *st
+ }
  
-+retry:
- 	ch->cq = ib_create_cq(sdev->device, srpt_completion, NULL, ch,
- 			      ch->rq_size + srp_sq_size, 0);
- 	if (IS_ERR(ch->cq)) {
-@@ -2114,6 +2115,13 @@ static int srpt_create_ch_ib(struct srpt_rdma_ch *ch)
- 	ch->qp = ib_create_qp(sdev->pd, qp_init);
- 	if (IS_ERR(ch->qp)) {
- 		ret = PTR_ERR(ch->qp);
-+		if (ret == -ENOMEM) {
-+			srp_sq_size /= 2;
-+			if (srp_sq_size >= MIN_SRPT_SQ_SIZE) {
-+				ib_destroy_cq(ch->cq);
-+				goto retry;
-+			}
-+		}
- 		printk(KERN_ERR "failed to create_qp ret= %d\n", ret);
- 		goto err_destroy_cq;
+ #if defined(CONFIG_NFS_V4_1)
+-static void nfs41_clear_delegation_stateid(struct nfs4_state *state)
++static void nfs41_check_delegation_stateid(struct nfs4_state *state)
+ {
+ 	struct nfs_server *server = NFS_SERVER(state->inode);
+-	nfs4_stateid *stateid = &state->stateid;
++	nfs4_stateid stateid;
+ 	struct nfs_delegation *delegation;
+-	struct rpc_cred *cred = NULL;
+-	int status = -NFS4ERR_BAD_STATEID;
+-
+-	/* If a state reset has been done, test_stateid is unneeded */
+-	if (test_bit(NFS_DELEGATED_STATE, &state->flags) == 0)
+-		return;
++	struct rpc_cred *cred;
++	int status;
+ 
+ 	/* Get the delegation credential for use by test/free_stateid */
+ 	rcu_read_lock();
+ 	delegation = rcu_dereference(NFS_I(state->inode)->delegation);
+-	if (delegation != NULL &&
+-	    nfs4_stateid_match(&delegation->stateid, stateid)) {
+-		cred = get_rpccred(delegation->cred);
+-		rcu_read_unlock();
+-		status = nfs41_test_stateid(server, stateid, cred);
+-		trace_nfs4_test_delegation_stateid(state, NULL, status);
+-	} else
++	if (delegation == NULL) {
+ 		rcu_read_unlock();
++		return;
++	}
++
++	nfs4_stateid_copy(&stateid, &delegation->stateid);
++	cred = get_rpccred(delegation->cred);
++	rcu_read_unlock();
++	status = nfs41_test_stateid(server, &stateid, cred);
++	trace_nfs4_test_delegation_stateid(state, NULL, status);
+ 
+ 	if (status != NFS_OK) {
+ 		/* Free the stateid unless the server explicitly
+ 		 * informs us the stateid is unrecognized. */
+ 		if (status != -NFS4ERR_BAD_STATEID)
+-			nfs41_free_stateid(server, stateid, cred);
+-		nfs_remove_bad_delegation(state->inode);
+-
+-		write_seqlock(&state->seqlock);
+-		nfs4_stateid_copy(&state->stateid, &state->open_stateid);
+-		write_sequnlock(&state->seqlock);
+-		clear_bit(NFS_DELEGATED_STATE, &state->flags);
++			nfs41_free_stateid(server, &stateid, cred);
++		nfs_finish_clear_delegation_stateid(state);
  	}
+ 
+-	if (cred != NULL)
+-		put_rpccred(cred);
++	put_rpccred(cred);
+ }
+ 
+ /**
+@@ -2141,7 +2133,7 @@ static int nfs41_open_expired(struct nfs4_state_owner *sp, struct nfs4_state *st
+ {
+ 	int status;
+ 
+-	nfs41_clear_delegation_stateid(state);
++	nfs41_check_delegation_stateid(state);
+ 	status = nfs41_check_open_stateid(state);
+ 	if (status != NFS_OK)
+ 		status = nfs4_open_expired(sp, state);
 -- 
 1.9.1
 
