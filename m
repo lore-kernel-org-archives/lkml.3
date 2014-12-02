@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401AbaLBRMS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 12:12:18 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:60843 "EHLO
+	id S1754467AbaLBRMX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 12:12:23 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:60860 "EHLO
 	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754187AbaLBRMQ (ORCPT
+	with ESMTP id S1754187AbaLBRMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 12:12:16 -0500
+	Tue, 2 Dec 2014 12:12:18 -0500
 From: Stefan Agner <stefan@agner.ch>
 To: shawn.guo@linaro.org, kernel@pengutronix.de, linux@roeck-us.net,
         arnd@arndb.de, sre@kernel.org, fkan@apm.com, mark.rutland@arm.com
 Cc: dbaryshkov@gmail.com, dwmw2@infradead.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         stefan@agner.ch
-Subject: [PATCH v3 0/3] power: reset: vf610 system reset controller
-Date: Tue,  2 Dec 2014 18:11:57 +0100
-Message-Id: <1417540320-2385-1-git-send-email-stefan@agner.ch>
+Subject: [PATCH v3 2/3] ARM: dts: vf610: add system reset controller and syscon-reboot
+Date: Tue,  2 Dec 2014 18:11:59 +0100
+Message-Id: <1417540320-2385-3-git-send-email-stefan@agner.ch>
 X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1417540320-2385-1-git-send-email-stefan@agner.ch>
+References: <1417540320-2385-1-git-send-email-stefan@agner.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This third version does essentially the same as v1, but with a lot
-less code due to the usage of syscon and syscon-reboot driver. My
-earlier misgivings that it might be a problem for the suspend/resume
-implementation later on did not hold true: I tested my prelinear
-suspend code and in case the code really needs to access some
-registers form assembler, it is possible to map temporarly the
-relevant region again.
+Add the system reset controller (SRC) module and use syscon-reboot
+to register a restart handler which restarts the SoC using the
+SRC SW_RST bit.
 
-I refrained from adding POWER_RESET_SYSCON as a hard dependency for
-Vybrid (SOC_VF610): In its dual-core configuration, one might want
-have the Cortex-M4 in charge of the system reset... Hence the user
-should be able to build a kernel without the system reset (beside
-the option to create a board specific device tree with disabled
-SRC node).
+Signed-off-by: Stefan Agner <stefan@agner.ch>
+---
+ arch/arm/boot/dts/vf500.dtsi |  4 ++++
+ arch/arm/boot/dts/vfxxx.dtsi | 12 ++++++++++++
+ 2 files changed, 16 insertions(+)
 
-Shawn, the defconfig change is based on the latest (almost-merged?)
-defconfig patch.
-
-Changes since v2:
-- Drop priority property for syscon-reboot
-- Alter default priority of syscon-reboot, set it to 192
-
-Changes since v1:
-- Total rework using syscon/syscon-reboot capabilities
-- Enhance syscon-reboot with priority capabilities
-
-Stefan Agner (3):
-  power: reset: adjust priority of simple syscon reboot driver
-  ARM: dts: vf610: add system reset controller and syscon-reboot
-  ARM: imx_v6_v7_defconfig: add POWER_RESET_SYSCON
-
- arch/arm/boot/dts/vf500.dtsi         |  4 ++++
- arch/arm/boot/dts/vfxxx.dtsi         | 12 ++++++++++++
- arch/arm/configs/imx_v6_v7_defconfig |  8 ++++----
- drivers/power/reset/syscon-reboot.c  |  2 +-
- 4 files changed, 21 insertions(+), 5 deletions(-)
-
+diff --git a/arch/arm/boot/dts/vf500.dtsi b/arch/arm/boot/dts/vf500.dtsi
+index de67005..3f38f49 100644
+--- a/arch/arm/boot/dts/vf500.dtsi
++++ b/arch/arm/boot/dts/vf500.dtsi
+@@ -130,6 +130,10 @@
+ 	interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_HIGH>;
+ };
+ 
++&src {
++	interrupts = <GIC_SPI 96 IRQ_TYPE_LEVEL_HIGH>;
++};
++
+ &uart0 {
+ 	interrupts = <GIC_SPI 61 IRQ_TYPE_LEVEL_HIGH>;
+ };
+diff --git a/arch/arm/boot/dts/vfxxx.dtsi b/arch/arm/boot/dts/vfxxx.dtsi
+index 505969a..dddcd0c 100644
+--- a/arch/arm/boot/dts/vfxxx.dtsi
++++ b/arch/arm/boot/dts/vfxxx.dtsi
+@@ -43,6 +43,13 @@
+ 		clock-frequency = <32768>;
+ 	};
+ 
++	reboot: syscon-reboot {
++		compatible = "syscon-reboot";
++		regmap = <&src>;
++		offset = <0x0>;
++		mask = <0x1000>;
++	};
++
+ 	soc {
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
+@@ -318,6 +325,11 @@
+ 				clocks = <&clks VF610_CLK_USBC0>;
+ 				status = "disabled";
+ 			};
++
++			src: src@4006e000 {
++				compatible = "fsl,vf610-src", "syscon";
++				reg = <0x4006e000 0x1000>;
++			};
+ 		};
+ 
+ 		aips1: aips-bus@40080000 {
 -- 
 2.1.3
 
