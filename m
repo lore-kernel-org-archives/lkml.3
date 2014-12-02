@@ -1,99 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933256AbaLBUM3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 15:12:29 -0500
-Received: from bues.ch ([80.190.117.144]:48552 "EHLO bues.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932904AbaLBUM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 15:12:28 -0500
-Date: Tue, 2 Dec 2014 21:12:11 +0100
-From: Michael =?UTF-8?B?QsO8c2No?= <m@bues.ch>
-To: Andrey Skvortsov <andrej.skvortzov@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Gary.Zambrano@qlogic.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        b43-dev <b43-dev@lists.infradead.org>,
-        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [PATCH] SSB / B44: fix WOL for BCM4401
-Message-ID: <20141202211211.7e08b935@wiggum>
-In-Reply-To: <20141202200129.GA4580@crion89>
-References: <20141201111125.GA11974@localhost.localdomain>
-	<1417466798-15735-1-git-send-email-Andrej.Skvortzov@gmail.com>
-	<20141201221023.79ffb40d@wiggum>
-	<20141202200129.GA4580@crion89>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S933290AbaLBUMe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 15:12:34 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:65352 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932904AbaLBUMb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 15:12:31 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/KgW+yCt0KOyVeLsvDfBVbb3"; protocol="application/pgp-signature"
+In-Reply-To: <alpine.DEB.2.11.1412022044410.16275@nanos>
+References: <65CD3FC07F3BF942ABE211646D72D770356EACA5@IRSMSX110.ger.corp.intel.com>
+ <1417099205-13309-1-git-send-email-emmanuel.berthier@intel.com>
+ <alpine.DEB.2.11.1411271609510.3961@nanos> <CALCETrWKiTdzSQ6kKPaufHoW2aTjPtqkQy9cyq_YiBwoowe-+g@mail.gmail.com>
+ <65CD3FC07F3BF942ABE211646D72D770356EB2B2@IRSMSX110.ger.corp.intel.com>
+ <CALCETrWO5jVaXrvtMmxEtV0-9husbwFrm=FLWUvEJJev25KXmg@mail.gmail.com>
+ <65CD3FC07F3BF942ABE211646D72D770356EC658@IRSMSX110.ger.corp.intel.com>
+ <CALCETrWxXm_Cvu+3dakCFX1GSN2KcaoxC+qbTr8Z7ha2CtEEXw@mail.gmail.com> <alpine.DEB.2.11.1412022044410.16275@nanos>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 2 Dec 2014 12:12:09 -0800
+Message-ID: <CALCETrW1hsmUrrG9KzfAujFuGcF1g1b8m++hJkxSGxketobUHw@mail.gmail.com>
+Subject: Re: [PATCH v2] [LBR] Dump LBRs on Exception
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Berthier, Emmanuel" <emmanuel.berthier@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        "Jarzmik, Robert" <robert.jarzmik@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/KgW+yCt0KOyVeLsvDfBVbb3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Tue, Dec 2, 2014 at 11:56 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Tue, 2 Dec 2014, Andy Lutomirski wrote:
+>> TBH, I'm wondering whether this is actually a good idea.  It might be
+>> more valuable and less scary to try to make this work for BUG instead.
+>> To get the most impact, it might be worth allocating a new exception
+>> vector for BUG and using 'int 0xwhatever', and the prologue to that
+>> could read out all the MSRs without any branches.
+>
+> BUG is pretty uninteresting. We usually know how we got there. Now
+> where LBR might be useful is if you have stack corruption and branch
+> into nirvana or access random crap via a few hoops. There the LBR data
+> might help, because the corrupted stack does not tell anything.
+>
+> So yes, this is a corner case debugging scenario, but given the
+> complexity of coordination with perf and the possible intrusiveness in
+> the low level entry path, we really need to see a few real world
+> examples where this helps, aside of the constructed case.
+>
 
-On Tue, 2 Dec 2014 23:01:29 +0300
-Andrey Skvortsov <andrej.skvortzov@gmail.com> wrote:
+One option would be to treat this as the debugging feature that it is.
 
-> On Mon, Dec 01, 2014 at 10:10:23PM +0100, Michael B=C3=BCsch wrote:
-> > On Mon,  1 Dec 2014 23:46:38 +0300
-> > Andrey Skvortsov <andrej.skvortzov@gmail.com> wrote:
-> >=20
-> > > Wake On Lan was not working on laptop DELL Vostro 1500.
-> > > If WOL was turned on, BCM4401 was powered up in suspend mode. LEDs bl=
-inked.
-> > > But the laptop could not be woken up with the Magic Packet. The reaso=
-n for
-> > > that was that PCIE was not enabled as a system wakeup source and
-> > > therefore the host PCI bridge was not powered up in suspend mode.
-> > > PCIE was not enabled in suspend by PM because no child devices were
-> > > registered as wakeup source during suspend process.
-> > > On laptop BCM4401 is connected through the SSB bus, that is connected=
- to the
-> > > PCI-Express bus. SSB and B44 did not use standard PM wakeup functions
-> > > and did not forward wakeup settings to their parents.
-> > > To fix that B44 driver enables PM wakeup and registers new wakeup sou=
-rce
-> > > using device_set_wakeup_enable(). Wakeup is automatically reported to=
- the parent SSB
-> > > bus via power.wakeup_path. SSB bus enables wakeup for the parent PCI =
-bridge, if there is any
-> > > child devices with enabled wakeup functionality. All other steps are
-> > > done by PM core code.
-> >=20
-> > Thanks, this looks good.
-> > I assume you tested this (I currently don't have a device to test this).
->=20
-> Sure, I've tested it. WOL from suspend is working and after resume from h=
-ibernate Ethernet is working too.
+Don't change the exception entry code at all.  Instead add a run-time
+switch that will ask perf to set up the LBR stuff appropriately and
+will change the IDT entries to stubs that first use rdmsr to copy all
+the LBRs to some per-cpu, per-vector area and then jump to the real
+entry point.
 
-That sounds good, indeed.
-I'd still prefer, if someone with b43 (wireless) would test it, too.
+Yes, performance will suck, and there will be some artifacts if the
+exception nests inside itself before reporting the error (which can
+happen for page faults, I think), but this isn't the end of the world
+if it's an opt-in feature.
 
---=20
-Michael
+And the whole pile of rdmsrs can be generated at run-time to match the
+running CPU.
 
---Sig_/KgW+yCt0KOyVeLsvDfBVbb3
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+--Andy
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> Thanks,
+>
+>         tglx
 
-iQIcBAEBAgAGBQJUfh0hAAoJEPUyvh2QjYsOcnUP/3n1QQK1TWvMvKKpTZgU18hR
-eEyxRP+/jtSWnInzRwkXUM39rdNCTWkBdinpNlS67lAxoC3OoLJ+vYn+O38Owmva
-Kj49MAFj8MQ3Zfl8OO82/O54FZzW+Umv7yne6twRHm8M57I5F/oolrgWiHlSbQj6
-a38s1SQESH7JJhVMwzBwDXm/H6Z5upURfJ155XhGo1GsEV4hr00okPSt6EWLLQNX
-xPmU1C9Ev4UmwhwABsxmRb7wdZhkpb5JUCi5zAh2YAypEng95VDTwC/aRaSQRsNJ
-AcBMhP+PFJsZXJL9WcnhfcltOwx2u5bVXGyAm0E+Ca3ALNlR65TNeAeCz5k/vQex
-xiNOSZb7K/SjOB6YISyj6ngKY0aLS1oUEay9uX9P6F4A7sscdgg91ZVWxc3nZpJa
-HSUCkWtTGx5u1Ck4zSCgmrFAYZuzW6K9ES4CFknWuHYg/5WC0JVD41HhwK7D1Vy8
-iH18M5nk9YINAle8NxX0FkACLTP+fPnzHhZ2C02n5S6lbzFV3Y0c9U5gav4Uy9jp
-o1YbQonpX5WEnzWfdWD+uW+3YNatf3sP5Yl057InSMDnIaKAA5YxUgLHhvXNG0vc
-19sL7Bt4TJILb1RxjYoPelfuauWQCsRmuqLqB3n/fwaUdpP/TVaA/3rH0T3abPwR
-dEPyqbxyLcmgcRgGeQPv
-=DYTK
------END PGP SIGNATURE-----
 
---Sig_/KgW+yCt0KOyVeLsvDfBVbb3--
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
