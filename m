@@ -1,127 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170AbaLBOKy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 09:10:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54553 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752101AbaLBOKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 09:10:52 -0500
-Date: Tue, 2 Dec 2014 12:10:28 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>, acme@kernel.org
-Subject: Re: [PATCH 0/8] perf buildid-cache: Add clean command
-Message-ID: <20141202141028.GD6774@redhat.com>
-References: <1417460789-13874-1-git-send-email-jolsa@kernel.org>
- <20141201222919.GC6774@redhat.com>
- <20141202122518.GA7744@krava.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141202122518.GA7744@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S932259AbaLBOLQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 09:11:16 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:39672 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753353AbaLBOG7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 09:06:59 -0500
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: peterz@infradead.org, mingo@redhat.com
+Cc: dietmar.eggemann@arm.com, vincent.guittot@linaro.org, pjt@google.com,
+        bsegall@google.com, mturquette@linaro.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: [RFC PATCH 01/10] sched: Make load tracking frequency scale-invariant
+Date: Tue,  2 Dec 2014 14:06:23 +0000
+Message-Id: <1417529192-11579-2-git-send-email-morten.rasmussen@arm.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417529192-11579-1-git-send-email-morten.rasmussen@arm.com>
+References: <1417529192-11579-1-git-send-email-morten.rasmussen@arm.com>
+X-OriginalArrivalTime: 02 Dec 2014 14:06:54.0432 (UTC) FILETIME=[3A17FE00:01D00E39]
+X-MC-Unique: 114120214065708701
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id sB2EBLVI017028
 
-Em Tue, Dec 02, 2014 at 01:25:18PM +0100, Jiri Olsa escreveu:
-> On Mon, Dec 01, 2014 at 08:29:19PM -0200, Arnaldo Carvalho de Melo wrote:
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+
+Apply frequency scale-invariance correction factor to load tracking.
+Each segment of the sched_avg::runnable_avg_sum geometric series is now
+scaled by the current frequency so the sched_avg::load_avg_contrib of each
+entity will be invariant with frequency scaling. As a result,
+cfs_rq::runnable_load_avg which is the sum of sched_avg::load_avg_contrib,
+becomes invariant too. So the load level that is returned by
+weighted_cpuload, stays relative to the max frequency of the cpu.
+
+Then, we want the keep the load tracking values in a 32bits type, which
+implies that the max value of sched_avg::{runnable|running}_avg_sum must
+be lower than 2^32/88761=48388 (88761 is the max weight of a task). As
+LOAD_AVG_MAX = 47742, arch_scale_freq_capacity must return a value less
+than (48388/47742) << SCHED_CAPACITY_SHIFT = 1037 (SCHED_SCALE_CAPACITY =
+1024). So we define the range to [0..SCHED_SCALE_CAPACITY] in order to
+avoid overflow.
+
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
+---
+ kernel/sched/fair.c | 28 ++++++++++++++++------------
+ 1 file changed, 16 insertions(+), 12 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index ee76d52..b41f03d 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2507,9 +2507,9 @@ static __always_inline int __update_entity_runnable_avg(u64 now, int cpu,
+ 							int runnable,
+ 							int running)
+ {
+-	u64 delta, periods;
+-	u32 runnable_contrib;
+-	int delta_w, decayed = 0;
++	u64 delta, scaled_delta, periods;
++	u32 runnable_contrib, scaled_runnable_contrib;
++	int delta_w, scaled_delta_w, decayed = 0;
+ 	unsigned long scale_freq = arch_scale_freq_capacity(NULL, cpu);
  
-> SNIP
+ 	delta = now - sa->last_runnable_update;
+@@ -2543,11 +2543,12 @@ static __always_inline int __update_entity_runnable_avg(u64 now, int cpu,
+ 		 * period and accrue it.
+ 		 */
+ 		delta_w = 1024 - delta_w;
++		scaled_delta_w = (delta_w * scale_freq) >> SCHED_CAPACITY_SHIFT;
++
+ 		if (runnable)
+-			sa->runnable_avg_sum += delta_w;
++			sa->runnable_avg_sum += scaled_delta_w;
+ 		if (running)
+-			sa->running_avg_sum += delta_w * scale_freq
+-				>> SCHED_CAPACITY_SHIFT;
++			sa->running_avg_sum += scaled_delta_w;
+ 		sa->avg_period += delta_w;
  
-> > [acme@sandy wb]$ 
-
-> > If we keep the way it is, I think it would be clearer to add a -l/--list
-> > command and that would:
-
-> >   perf buildid-cache --list  # list all the files in the cache
-> >   perf buildid-cache --list 3d  # list 3 days old files
-> >   perf buildid-cache --list +3d  # list files 3 days or more older
-> >   perf buildid-cache --list -3d  # list files up to 3 days old
+ 		delta -= delta_w;
+@@ -2565,20 +2566,23 @@ static __always_inline int __update_entity_runnable_avg(u64 now, int cpu,
  
-> ok, I was up to old files (and big files) removal only.. not sure
-> the other way will be actually needed.. but it's easy enought to
-> add
-
-Right, I was thinking something along the lines of checking how much
-space would be needed if I wanted to keep X days of cache, not how much
-space I would free if I purged files older than Y days.
-
+ 		/* Efficiently calculate \sum (1..n_period) 1024*y^i */
+ 		runnable_contrib = __compute_runnable_contrib(periods);
++		scaled_runnable_contrib = (runnable_contrib * scale_freq)
++						>> SCHED_CAPACITY_SHIFT;
++
+ 		if (runnable)
+-			sa->runnable_avg_sum += runnable_contrib;
++			sa->runnable_avg_sum += scaled_runnable_contrib;
+ 		if (running)
+-			sa->running_avg_sum += runnable_contrib * scale_freq
+-				>> SCHED_CAPACITY_SHIFT;
++			sa->running_avg_sum += scaled_runnable_contrib;
+ 		sa->avg_period += runnable_contrib;
+ 	}
  
-> > And all these would print the sum of the matching files, i.e. the space
-> > those files use in the filesystem.
-
-> > > Remove cache files older than 3 days:
-> > >   $ perf buildid-cache clean 3d -r
-
-> >   perf buildid-cache --remove [-+]Nd # Same semantics as above
-
-> > >     
-> > > Total cache removal:
-> > >   $ perf buildid-cache clean -r
-
-> >  perf buildid-cache --remove '*'
-> 
-> hum, maybe '--removal all' might be better
-
-Humm, lemme see how ccache does this operation... That would be an
-existing cache management workflow that we could reuse:
-
-
-[acme@zoo linux]$ ccache --help
-Usage:
-  ccache [options]
-  ccache compiler [compiler options]
-  compiler [compiler options]          (via symbolic link)
-
-Options:
-    -c, --cleanup        delete old files and recalculate size counters
-                         (normally not needed as this is done automatically)
-    -C, --clear          clear the cache completely
-    -F, --max-files=N    set maximum number of files in cache to N (use 0 for
-                         no limit)
-    -M, --max-size=SIZE  set maximum size of cache to SIZE (use 0 for no
-                         limit; available suffixes: G, M and K; default
-                         suffix: G)
-    -s, --show-stats     show statistics summary
-    -z, --zero-stats     zero statistics counters
-
-    -h, --help           print this help text
-    -V, --version        print version and copyright information
-
-  See also <http://ccache.samba.org>.
-  [acme@zoo linux]$ 
-
-So, there you go, the 'clear' keywoard being used for doing what you
-called 'removeall' and I called --remove '*'. Perhaps asking if the user
-really wants to do that while, just like with the time limited 'remove'
-operations showing how much space it will release (albeit that could
-take some time to calculate...)?
+ 	/* Remainder of delta accrued against u_0` */
++	scaled_delta = (delta * scale_freq) >> SCHED_CAPACITY_SHIFT;
++
+ 	if (runnable)
+-		sa->runnable_avg_sum += delta;
++		sa->runnable_avg_sum += scaled_delta;
+ 	if (running)
+-		sa->running_avg_sum += delta * scale_freq
+-			>> SCHED_CAPACITY_SHIFT;
++		sa->running_avg_sum += scaled_delta;
+ 	sa->avg_period += delta;
  
-> >  
-> > > Remove and display items bigger than 200M
-> > >   $ perf buildid-cache clean -r -a 200M
+ 	return decayed;
+-- 
+1.9.1
 
-> > But yeah, perhaps we could switch to having subcommands and add:
 
-> >   perf buildid-cache [add|remove|update|list]
- 
-> > What do you think?
- 
-> yep, those commands seem nicer.. 
- 
-> let's see of there're other comments and I'll come up with
-> new interface after..
-
-Ok!
-
-- Arnaldo
