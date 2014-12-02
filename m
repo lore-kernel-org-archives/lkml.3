@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933183AbaLBTWH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:22:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46590 "EHLO
+	id S934011AbaLBTwD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:52:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46594 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754540AbaLBTWE (ORCPT
+	with ESMTP id S932551AbaLBTWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:22:04 -0500
+	Tue, 2 Dec 2014 14:22:05 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Cristian Stoica <cristian.stoica@freescale.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
+Cc: Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 059/121] crypto: caam - fix missing dma unmap on error path
-Date: Tue,  2 Dec 2014 11:18:58 -0800
-Message-Id: <1417548000-1794-60-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 053/121] mac80211: properly flush delayed scan work on interface removal
+Date: Tue,  2 Dec 2014 11:18:52 -0800
+Message-Id: <1417548000-1794-54-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
@@ -28,89 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cristian Stoica <cristian.stoica@freescale.com>
+From: Johannes Berg <johannes@sipsolutions.net>
 
-commit 738459e3f88538f2ece263424dafe5d91799e46b upstream.
+commit 46238845bd609a5c0fbe076e1b82b4c5b33360b2 upstream.
 
-If dma mapping for dma_addr_out fails, the descriptor memory is freed
-but the previous dma mapping for dma_addr_in remains.
-This patch resolves the missing dma unmap and groups resource
-allocations at function start.
+When an interface is deleted, an ongoing hardware scan is canceled and
+the driver must abort the scan, at the very least reporting completion
+while the interface is removed.
 
-Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+However, if it scheduled the work that might only run after everything
+is said and done, which leads to cfg80211 warning that the scan isn't
+reported as finished yet; this is no fault of the driver, it already
+did, but mac80211 hasn't processed it.
+
+To fix this situation, flush the delayed work when the interface being
+removed is the one that was executing the scan.
+
+Reported-by: Sujith Manoharan <sujith@msujith.org>
+Tested-by: Sujith Manoharan <sujith@msujith.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/crypto/caam/key_gen.c | 29 ++++++++++++++---------------
- 1 file changed, 14 insertions(+), 15 deletions(-)
+ net/mac80211/iface.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/crypto/caam/key_gen.c b/drivers/crypto/caam/key_gen.c
-index ea2e406..b872eed 100644
---- a/drivers/crypto/caam/key_gen.c
-+++ b/drivers/crypto/caam/key_gen.c
-@@ -51,23 +51,29 @@ int gen_split_key(struct device *jrdev, u8 *key_out, int split_key_len,
- 	u32 *desc;
- 	struct split_key_result result;
- 	dma_addr_t dma_addr_in, dma_addr_out;
--	int ret = 0;
-+	int ret = -ENOMEM;
+diff --git a/net/mac80211/iface.c b/net/mac80211/iface.c
+index 822d508..e6d592d 100644
+--- a/net/mac80211/iface.c
++++ b/net/mac80211/iface.c
+@@ -749,10 +749,12 @@ static void ieee80211_do_stop(struct ieee80211_sub_if_data *sdata,
+ 	u32 hw_reconf_flags = 0;
+ 	int i, flushed;
+ 	struct ps_data *ps;
++	bool cancel_scan;
  
- 	desc = kmalloc(CAAM_CMD_SZ * 6 + CAAM_PTR_SZ * 2, GFP_KERNEL | GFP_DMA);
- 	if (!desc) {
- 		dev_err(jrdev, "unable to allocate key input memory\n");
--		return -ENOMEM;
-+		return ret;
- 	}
+ 	clear_bit(SDATA_STATE_RUNNING, &sdata->state);
  
--	init_job_desc(desc, 0);
--
- 	dma_addr_in = dma_map_single(jrdev, (void *)key_in, keylen,
- 				     DMA_TO_DEVICE);
- 	if (dma_mapping_error(jrdev, dma_addr_in)) {
- 		dev_err(jrdev, "unable to map key input memory\n");
--		kfree(desc);
--		return -ENOMEM;
-+		goto out_free;
- 	}
+-	if (rcu_access_pointer(local->scan_sdata) == sdata)
++	cancel_scan = rcu_access_pointer(local->scan_sdata) == sdata;
++	if (cancel_scan)
+ 		ieee80211_scan_cancel(local);
+ 
+ 	/*
+@@ -963,6 +965,9 @@ static void ieee80211_do_stop(struct ieee80211_sub_if_data *sdata,
+ 
+ 	ieee80211_recalc_ps(local, -1);
+ 
++	if (cancel_scan)
++		flush_delayed_work(&local->scan_work);
 +
-+	dma_addr_out = dma_map_single(jrdev, key_out, split_key_pad_len,
-+				      DMA_FROM_DEVICE);
-+	if (dma_mapping_error(jrdev, dma_addr_out)) {
-+		dev_err(jrdev, "unable to map key output memory\n");
-+		goto out_unmap_in;
-+	}
-+
-+	init_job_desc(desc, 0);
- 	append_key(desc, dma_addr_in, keylen, CLASS_2 | KEY_DEST_CLASS_REG);
+ 	if (local->open_count == 0) {
+ 		ieee80211_stop_device(local);
  
- 	/* Sets MDHA up into an HMAC-INIT */
-@@ -84,13 +90,6 @@ int gen_split_key(struct device *jrdev, u8 *key_out, int split_key_len,
- 	 * FIFO_STORE with the explicit split-key content store
- 	 * (0x26 output type)
- 	 */
--	dma_addr_out = dma_map_single(jrdev, key_out, split_key_pad_len,
--				      DMA_FROM_DEVICE);
--	if (dma_mapping_error(jrdev, dma_addr_out)) {
--		dev_err(jrdev, "unable to map key output memory\n");
--		kfree(desc);
--		return -ENOMEM;
--	}
- 	append_fifo_store(desc, dma_addr_out, split_key_len,
- 			  LDST_CLASS_2_CCB | FIFOST_TYPE_SPLIT_KEK);
- 
-@@ -118,10 +117,10 @@ int gen_split_key(struct device *jrdev, u8 *key_out, int split_key_len,
- 
- 	dma_unmap_single(jrdev, dma_addr_out, split_key_pad_len,
- 			 DMA_FROM_DEVICE);
-+out_unmap_in:
- 	dma_unmap_single(jrdev, dma_addr_in, keylen, DMA_TO_DEVICE);
--
-+out_free:
- 	kfree(desc);
--
- 	return ret;
- }
- EXPORT_SYMBOL(gen_split_key);
 -- 
 1.9.1
 
