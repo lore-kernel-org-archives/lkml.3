@@ -1,51 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933314AbaLBWuV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 17:50:21 -0500
-Received: from mout.gmx.net ([212.227.15.15]:53542 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933086AbaLBWuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 17:50:18 -0500
-From: Peter =?iso-8859-15?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Subject: Re: [PATCH v8 0/8] TPM 2.0 support
-Date: Tue, 2 Dec 2014 23:55:34 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-rc6-dirty; KDE/4.12.5; x86_64; ; )
-Cc: Ashley Lai <ashley@ashleylai.com>, Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh.triplett@intel.com, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
-        trousers-tech@lists.sourceforge.net
-References: <1417559480-13757-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-In-Reply-To: <1417559480-13757-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+	id S933375AbaLBWvJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 17:51:09 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:53606 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933086AbaLBWvG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 17:51:06 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Richard Weinberger <richard@nod.at>,
+        Kenton Varda <kenton@sandstorm.io>, stable <stable@vger.kernel.org>
+References: <52e0643bd47b1e5c65921d6e00aea1f724bb510a.1417281801.git.luto@amacapital.net>
+	<87h9xez20g.fsf@x220.int.ebiederm.org>
+	<CALCETrXOz4C7Tu8mggBtR=k47ZmkuAhinVUxWJSFyS1Ep0HvRw@mail.gmail.com>
+	<87mw75ygwp.fsf@x220.int.ebiederm.org>
+	<CALCETrVfO4sBdZcQiZXsofPZMj7pqKeVbX+4g3dAj6WjUca+1w@mail.gmail.com>
+	<87fvcxyf28.fsf_-_@x220.int.ebiederm.org>
+	<CALCETrXsQbCeQBUo_FrXNVS42mBEFXz1jku9TicVbFhxTmNGmA@mail.gmail.com>
+	<87bnnlvj43.fsf@x220.int.ebiederm.org>
+	<CALCETrUJ9Qk553YSsYkjaeE-Qw0u_Pt1eoODUPX-udsO8kf14w@mail.gmail.com>
+Date: Tue, 02 Dec 2014 16:48:53 -0600
+In-Reply-To: <CALCETrUJ9Qk553YSsYkjaeE-Qw0u_Pt1eoODUPX-udsO8kf14w@mail.gmail.com>
+	(Andy Lutomirski's message of "Tue, 2 Dec 2014 14:09:13 -0800")
+Message-ID: <87wq69pt0q.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201412022355.34544.PeterHuewe@gmx.de>
-X-Provags-ID: V03:K0:xzb/0LwDtHQP06QTRItgOwELBGkP8vFZvS8EEVAE8hMbrPo67RN
- VRyXi3aVBw4xnWZf56AoHkIgwO/I7No9CMTFdvsG7b0AnsYa714GzV0/jffI0fFKKfhKc/S
- LL3YkJhAqTUaObLkliCUc4RFPlsIcxb0+hGW9wL8ED2SryI1y4aJfU+z63h2vDum5V4OQeV
- sgcD7KIVUnNcwC3vN3TDQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/oFQc/ggcWJw+03V8sNN0JxCWfjE3YM6U=
+X-SA-Exim-Connect-IP: 97.121.92.161
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 TVD_RCVD_IP Message was received from an IP address
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.5000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ****;Andy Lutomirski <luto@amacapital.net>
+X-Spam-Relay-Country: 
+X-Spam-Timing: total 699 ms - load_scoreonly_sql: 0.04 (0.0%),
+	signal_user_changed: 3.6 (0.5%), b_tie_ro: 2.6 (0.4%), parse: 1.33 (0.2%),
+	extract_message_metadata: 19 (2.7%), get_uri_detail_list: 5 (0.8%),
+	tests_pri_-1000: 8 (1.2%), tests_pri_-950: 1.30 (0.2%), tests_pri_-900: 1.12
+	(0.2%), tests_pri_-400: 39 (5.6%), check_bayes: 38 (5.4%), b_tokenize: 14
+	(2.0%), b_tok_get_all: 13 (1.8%), b_comp_prob: 4.8 (0.7%), b_tok_touch_all:
+	2.7 (0.4%), b_finish: 0.73 (0.1%), tests_pri_0: 616 (88.1%), tests_pri_500: 6
+	(0.8%), rewrite_mail: 0.00 (0.0%)
+Subject: Re: [CFT][PATCH 1/3] userns: Avoid problems with negative groups
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jarkko,
+Andy Lutomirski <luto@amacapital.net> writes:
 
+> On Tue, Dec 2, 2014 at 1:26 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>> Andy Lutomirski <luto@amacapital.net> writes:
+>>
+>>> On Tue, Dec 2, 2014 at 12:25 PM, Eric W. Biederman
+>>> <ebiederm@xmission.com> wrote:
+>>>>
+>>>> Classic unix permission checks have an interesting feature, the group
+>>>> permissions for a file can be set to less than the other permissions
+>>>> on a file.  Occassionally this is used deliberately to give a certain
+>>>> group of users fewer permissions than the default.
+>>>>
+>>>> Overlooking negative groups has resulted in the permission checks for
+>>>> setting up a group mapping in a user namespace to be too lax.  Tighten
+>>>> the permission checks in new_idmap_permitted to ensure that mapping
+>>>> uids and gids into user namespaces without privilege will not result
+>>>> in new combinations of credentials being available to the users.
+>>>>
+>>>> When setting mappings without privilege only the creator of the user
+>>>> namespace is interesting as all other users that have CAP_SETUID over
+>>>> the user namespace will also have CAP_SETUID over the user namespaces
+>>>> parent.  So the scope of the unprivileged check is reduced to just
+>>>> the case where cred->euid is the namespace creator.
+>>>>
+>>>> For setting a uid mapping without privilege only euid is considered as
+>>>> setresuid can set uid, suid and fsuid from euid without privielege
+>>>> making any combination of uids possible with user namespaces already
+>>>> possible without them.
+>>>>
+>>>> For now seeting a gid mapping without privilege is removed.  The only
+>>>> possible set of credentials that would be safe without a gid mapping
+>>>> (egid without any supplementary groups) just doesn't happen in practice
+>>>> so would simply lead to unused untested code.
+>>>>
+>>>> setgroups is modified to fail not only when the group ids do not
+>>>> map but also when there are no gid mappings at all, preventing
+>>>> setgroups(0, NULL) from succeeding when gid mappings have not been
+>>>> established.
+>>>>
+>>>> For a small class of applications this change breaks userspace
+>>>> and removes useful functionality.  This small class of applications
+>>>> includes tools/testing/selftests/mount/unprivileged-remount-test.c
+>>>>
+>>>> Most of the removed functionality will be added back with the
+>>>> addition of a one way knob to disable setgroups.  Once setgroups
+>>>> is disabled setting the gid_map becomes as safe as setting the uid_map.
+>>>>
+>>>> For more common applications that set the uid_map and the gid_map with
+>>>> privilege this change will have no effect on them.
+>>>>
+>>>> This should fix CVE-2014-8989.
+>>>>
+>>>> Cc: stable@vger.kernel.org
+>>>> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+>>>> ---
+>>>
+>>>>
+>>>> +static inline bool gid_mapping_possible(const struct user_namespace *ns)
+>>>> +{
+>>>> +       return ns->gid_map.nr_extents != 0;
+>>>> +}
+>>>> +
+>>>
+>>> Can you rename this to userns_may_setgroups or something like that?
+>>> To me, gid_mapping_possible sounds like you're allowed to map gids,
+>>> which sounds like the opposite condition, and it doesn't explain what
+>>> the point is.
+>>
+>> gid_mapping_established?
+>>
+>> What I mean to be testing if is if from_kgid and make_kgid will work
+>> because the gid mappings have been set.
+>
+> But why do you care whether from_kgid and make_kgid will work?  If
+> they fail, then they fail.  I think that the point is that you're
+> checking whether allowing setgroups to drop groups is safe, and that's
+> only barely the same condition.
 
-Am Dienstag, 2. Dezember 2014, 23:31:12 schrieb Jarkko Sakkinen:
-> This patch set enables TPM2 protocol and provides drivers for FIFO and
-> CRB interfaces. This patch set does not export any sysfs attributes for
-> TPM 2.0 because existing sysfs attributes have three non-trivial issues:
-> 
+For all of the system calls to set or change uids and gids except
+setgroups it happens to fall out that if there are no mappings set the
+system calls fail.  That is and was deliberate.  However setgroups is
+weird because it allows the case of 0 mappings and to maintain the
+constraint that it fails when there are no mapping set (just like
+everything else) that requires an additional test.
 
+>> The userns knob for setgroups is a different test and is added
+>> in the next patch.  And yes we really need both or the knob can
+>> start out as on, and we need to provent setgroups(0, NULL)
+>> before the user namespace is unshared.
+>
+> Do you mean before it's mapped?
 
-which tree are you basing your patches against?
-Can you use 
-https://github.com/PeterHuewe/linux-tpmdd for-james
- please?
+Right we need to prevent setgroups(0, NULL) before we set the gid
+mapping.
 
-Thanks,
-Peter
+>> Although come to think about it probably makes sense to roll those two
+>> test into one function and call that inline function from the setgroups
+>> implementation.
+>
+> That's what I think, too.
+>
+>>
+>> Anyway I will think about it and see what I can do to make it easily
+>> comprehensible.
+>>
+>>>> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+>>>> index aa312b0dc3ec..51d65b444951 100644
+>>>> --- a/kernel/user_namespace.c
+>>>> +++ b/kernel/user_namespace.c
+>>>> @@ -812,16 +812,19 @@ static bool new_idmap_permitted(const struct file *file,
+>>>>                                 struct user_namespace *ns, int cap_setid,
+>>>>                                 struct uid_gid_map *new_map)
+>>>>  {
+>>>> -       /* Allow mapping to your own filesystem ids */
+>>>> -       if ((new_map->nr_extents == 1) && (new_map->extent[0].count == 1)) {
+>>>> +       const struct cred *cred = file->f_cred;
+>>>> +
+>>>> +       /* Allow a mapping without capabilities when allowing the root
+>>>> +        * of the user namespace capabilities restricted to that id
+>>>> +        * will not change the set of credentials available to that
+>>>> +        * user.
+>>>> +        */
+>>>> +       if ((new_map->nr_extents == 1) && (new_map->extent[0].count == 1) &&
+>>>> +           uid_eq(ns->owner, cred->euid)) {
+>>>
+>>> What's uid_eq(ns->owner, cred->euid)) for?  This should already be covered by:
+>>
+>> This means that the only user we attempt to set up unprivileged mappings
+>> for is the owner of the user namespace.  Anyone else should already
+>> have capabilities in the parent user namespace or shouldn't be able to
+>> set the mapping at all.
+>>
+>> In practice it is a clarification to make it easier to think about the code.
+>
+> But why?  I don't see why this check is necessary or why it's relevant
+> to the current issue.
+
+My goal in this check is to guarantee that any combination of uids and
+gids in struct cred that you can obtain with mappings and a user
+namespace you can also obtain without privilege without a user
+namespace.
+
+What limiting euid to ns->owner does is it guarantees that when a user
+namespace is created without privilege root doesn't come along and set
+the mapping using the unprivileged path.  That is confusing to think
+about and it is not necessary to support.
+
+With ns->owner == euid I have the guarantee especially with the gids
+that they wind up paired with a uid in struct cred that came from the
+same user.  Either that or someone set one of the mappings with
+privilege.
+
+With ns->owner == euid I can verify all of these things pretty
+trivially.  Without that check I don't have a clue how to verify
+the pairing between uids and gids in the unprivileged mapping.
+
+Does that make things clearer?
+
+>>>     if (cap_valid(cap_setid) && !file_ns_capable(file, ns, CAP_SYS_ADMIN))
+>>>         goto out;
+>>>
+>>> (except that I don't know why cap_valid(cap_setid) is checked -- this
+>>> ought to be enforced for projid_map, too, right?)
+>>
+>> What to do with projid_map is entirely different discussion.  In
+>> practice it is dead, and either XFS needs to be fixed to use it
+>> or that code needs to be removed.  At the time I wrote it XFS
+>> did not require any privileges to set project ids.
+>>
+>>>>                 u32 id = new_map->extent[0].lower_first;
+>>>>                 if (cap_setid == CAP_SETUID) {
+>>>>                         kuid_t uid = make_kuid(ns->parent, id);
+>>>> -                       if (uid_eq(uid, file->f_cred->fsuid))
+>>>> -                               return true;
+>>>> -               } else if (cap_setid == CAP_SETGID) {
+>>>> -                       kgid_t gid = make_kgid(ns->parent, id);
+>>>> -                       if (gid_eq(gid, file->f_cred->fsgid))
+>>>> +                       if (uid_eq(uid, cred->euid))
+>>>
+>>> Why'd you change this from fsuid to euid?
+>>
+>> Because strangely enough I can set euid to any other uid with
+>> setresuid, but the same does not hold with fsuid.
+>>
+>> So strictly speaking fsuid was actually wrong before.  In practice
+>> fsuid == euid so I don't think anyone will care.  But I want very much
+>> to enforce the rule that user namespaces can't give you any credentials
+>> you couldn't get otherwise.
+>
+> Fair enough.  Want to split that into a separate patch, then?
+
+Strictly speaking it is part and parcel of the same thing but it
+probably makes sense to split it out and emphasise and explain the
+change.
+
+Eric
+
