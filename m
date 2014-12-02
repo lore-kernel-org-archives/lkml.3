@@ -1,125 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934034AbaLBTes (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:34:48 -0500
-Received: from lb1-smtp-cloud3.xs4all.net ([194.109.24.22]:45911 "EHLO
-	lb1-smtp-cloud3.xs4all.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933152AbaLBTeq (ORCPT
+	id S933728AbaLBT0h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:26:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46937 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933624AbaLBT00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:34:46 -0500
-Message-ID: <547E143E.5010902@xs4all.nl>
-Date: Tue, 02 Dec 2014 20:34:22 +0100
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        linux-media <linux-media@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Sakari Ailus <sakari.ailus@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sakari Ailus <sakari.ailus@iki.fi>
-Subject: Re: [PATCH] media: v4l2-subdev.h: drop the guard CONFIG_VIDEO_V4L2_SUBDEV_API
- for v4l2_subdev_get_try_*()
-References: <1416220913-5047-1-git-send-email-prabhakar.csengg@gmail.com> <547D6E20.7040406@xs4all.nl> <547DB631.3060309@xs4all.nl> <6626165.z9d655UICS@avalon>
-In-Reply-To: <6626165.z9d655UICS@avalon>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Dec 2014 14:26:26 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 025/121] usb: Do not allow usb_alloc_streams on unconfigured devices
+Date: Tue,  2 Dec 2014 11:18:24 -0800
+Message-Id: <1417548000-1794-26-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+3.13.11-ckt12 -stable review patch.  If anyone has any objections, please let me know.
 
-On 12/02/2014 01:59 PM, Laurent Pinchart wrote:
->>>> Basically,
->>>>
->>>> 1. Create a subdev pad configuration store structure to store the formats
->>>> and selection rectangles for each pad.
->>>
->>> I wouldn't call it a 'store'. Just call it fmt_config or pad_config
->>> something like that.
-> 
-> Sure, the name doesn't matter too much.
-> 
->>>> 2. Embed an instance of that structure in v4l2_subdev_fh.
->>>>
->>>> 3. Modify the subdev pad ops to take a configuration store pointer
->>>> instead of a file handle pointer.
->>>>
->>>> The userspace API implementation (v4l2-subdev.c) would then pass
->>>> &fh->store to the pad operations instead of fh.
->>>>
->>>> Bridge drivers that need to implement TRY_FMT on top of pad ops would
->>>> create a temporary store (or temporary stores when multiple subsdevs are
->>>> involved), call the pad ops with a pointer to the temporary store to
->>>> propagate TRY formats, destroy the store(s) and return the resulting
->>>> format.
->>>
->>> That will work. I think this is a good approach and it shouldn't be too
->>> difficult.
->>
->> Laurent, just so I understand this correctly: does this mean that all
->> occurrences of 'struct v4l2_subdev_fh *fh' will be replaced by 'struct
->> v4l2_subdev_pad_config *cfg'?
-> 
-> That's the plan, yes.
-> 
->> Is there any reason why the 'fh' should still be passed on?
-> 
-> We might find out reasons to still pass the fh, but in that case I think they 
-> should be addressed and the fh just dropped from the pad ops arguments.
-> 
->> Personally I am in favor of this since the 'fh' always made it hard for
->> bridge drivers to use these pad ops. So if we can replace it by something
->> that can be used by bridge drivers as well, then that will make it easier
->> to move all drivers over to the pad ops.
-> 
-> Good, looks like we have a plan for world domination :-)
-> 
+------------------
 
-OK, so I couldn't help myself and I did this conversion. The code is here:
+From: Hans de Goede <hdegoede@redhat.com>
 
-http://git.linuxtv.org/cgit.cgi/hverkuil/media_tree.git/log/?h=remcrop
+commit 90a646c770c50cc206ceba0d7b50453c46c13c36 upstream.
 
-And it introduces a new struct:
+This commit fixes the following oops:
 
-struct v4l2_subdev_pad_config {
-        struct v4l2_mbus_framefmt try_fmt;
-        struct v4l2_rect try_crop;
-        struct v4l2_rect try_compose;
-};
+[10238.622067] scsi host3: uas_eh_bus_reset_handler start
+[10240.766164] usb 3-4: reset SuperSpeed USB device number 3 using xhci_hcd
+[10245.779365] usb 3-4: device descriptor read/8, error -110
+[10245.883331] usb 3-4: reset SuperSpeed USB device number 3 using xhci_hcd
+[10250.897603] usb 3-4: device descriptor read/8, error -110
+[10251.058200] BUG: unable to handle kernel NULL pointer dereference at  0000000000000040
+[10251.058244] IP: [<ffffffff815ac6e1>] xhci_check_streams_endpoint+0x91/0x140
+<snip>
+[10251.059473] Call Trace:
+[10251.059487]  [<ffffffff815aca6c>] xhci_calculate_streams_and_bitmask+0xbc/0x130
+[10251.059520]  [<ffffffff815aeb5f>] xhci_alloc_streams+0x10f/0x5a0
+[10251.059548]  [<ffffffff810a4685>] ? check_preempt_curr+0x75/0xa0
+[10251.059575]  [<ffffffff810a46dc>] ? ttwu_do_wakeup+0x2c/0x100
+[10251.059601]  [<ffffffff810a49e6>] ? ttwu_do_activate.constprop.111+0x66/0x70
+[10251.059635]  [<ffffffff815779ab>] usb_alloc_streams+0xab/0xf0
+[10251.059662]  [<ffffffffc0616b48>] uas_configure_endpoints+0x128/0x150 [uas]
+[10251.059694]  [<ffffffffc0616bac>] uas_post_reset+0x3c/0xb0 [uas]
+[10251.059722]  [<ffffffff815727d9>] usb_reset_device+0x1b9/0x2a0
+[10251.059749]  [<ffffffffc0616f42>] uas_eh_bus_reset_handler+0xb2/0x190 [uas]
+[10251.059781]  [<ffffffff81514293>] scsi_try_bus_reset+0x53/0x110
+[10251.059808]  [<ffffffff815163b7>] scsi_eh_bus_reset+0xf7/0x270
+<snip>
 
-And subdev_fh now looks like this:
+The problem is the following call sequence (simplified):
 
-struct v4l2_subdev_fh {
-        struct v4l2_fh vfh;
-        struct v4l2_subdev_pad_config *pad;
-};
+1) usb_reset_device
+2)  usb_reset_and_verify_device
+2)   hub_port_init
+3)    hub_port_finish_reset
+3)     xhci_discover_or_reset_device
+        This frees xhci->devs[slot_id]->eps[ep_index].ring for all eps but 0
+4)    usb_get_device_descriptor
+       This fails
+5)   hub_port_init fails
+6)  usb_reset_and_verify_device fails, does not restore device config
+7)  uas_post_reset
+8)   xhci_alloc_streams
+      NULL deref on the free-ed ring
 
-But I realized that it could be simplified: right now we pass a pointer to
-the pad config array to the pad ops and the v4l2_subdev_get_try_* functions
-pick the right entry based on the pad index.
+This commit fixes this by not allowing usb_alloc_streams to continue if
+the device is not configured.
 
-Wouldn't it be easier to pass the right pad config directly?
+Note that we do allow usb_free_streams to continue after a (logical)
+disconnect, as it is necessary to explicitly free the streams at the xhci
+controller level.
 
-So instead of passing fh->pad in v4l2-subdev.c you pass e.g. 'fh->pad + sel->pad'.
-That way the pad_config pointer points straight to the configuration of the
-requested pad.
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/usb/core/hcd.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-This also simplifies things in a bridge driver: it doesn't need to allocate
-a pad config array, it only has to create pad config structs for those pads that
-it actually uses.
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index d39106c..4a4dae5 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -2056,6 +2056,8 @@ int usb_alloc_streams(struct usb_interface *interface,
+ 		return -EINVAL;
+ 	if (dev->speed != USB_SPEED_SUPER)
+ 		return -EINVAL;
++	if (dev->state < USB_STATE_CONFIGURED)
++		return -ENODEV;
+ 
+ 	/* Streams only apply to bulk endpoints. */
+ 	for (i = 0; i < num_eps; i++)
+-- 
+1.9.1
 
-And the v4l2_subdev_get_try_* functions can effectively be removed, since you
-would just access cfg->try_fmt directly. I never liked those helper functions,
-so I'm not sorry to see them go.
-
-The only reason why this would fail is if drivers need to access the pad_config
-of other pads than the one currently requested. I have not seen any code that
-does that, though. And I don't think that is something we want anyway since
-that would make things extremely complex.
-
-Let me know what you think,
-
-	Hans
