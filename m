@@ -1,93 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902AbaLBOYy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 09:24:54 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:49058 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424AbaLBOYw (ORCPT
+	id S1753663AbaLBOZj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 09:25:39 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:61931 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355AbaLBOZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 09:24:52 -0500
-Date: Tue, 2 Dec 2014 19:54:33 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: "Fujinaka, Todd" <todd.fujinaka@intel.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>,
-        Linux NICS <Linux-nics@isotope.jf.intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        Hisashi T Fujinaka <htodd@twofifty.com>,
-        "Vick, Matthew" <matthew.vick@intel.com>,
-        "Greg@isotope.jf.intel.com" <Greg@isotope.jf.intel.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        "John@isotope.jf.intel.com" <John@isotope.jf.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-nics] [PATCH] e1000: remove unused variables
-Message-ID: <20141202142433.GA14246@sudip-PC>
-References: <1417065728-5592-1-git-send-email-sudipm.mukherjee@gmail.com>
- <alpine.NEB.2.11.1411262157110.1481@chris.i8u.org>
- <1417311913.7215.111.camel@decadent.org.uk>
- <20141201045446.GA3277@sudip-PC>
- <9B4A1B1917080E46B64F07F2989DADD653454C69@ORSMSX114.amr.corp.intel.com>
+	Tue, 2 Dec 2014 09:25:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9B4A1B1917080E46B64F07F2989DADD653454C69@ORSMSX114.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141202002244.GB24551@ti.com>
+References: <1416527684-19017-1-git-send-email-bparrot@ti.com>
+	<1416527684-19017-2-git-send-email-bparrot@ti.com>
+	<CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com>
+	<20141202002244.GB24551@ti.com>
+Date: Tue, 2 Dec 2014 15:25:36 +0100
+Message-ID: <CACRpkdaVtkWXmf8ON=3Pa2CYZKWRw2am+ULfzsTBPmXjbP44PA@mail.gmail.com>
+Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Benoit Parrot <bparrot@ti.com>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 06:56:46PM +0000, Fujinaka, Todd wrote:
-> After discussing this locally, I'd like to NAK it because this could cause regressions to parts that are still in use but we don't have access to. Also, the assignment was necessary in the past for some versions of gcc and since this may be used in embedded systems using older compilers, we should leave it be.
-> 
-ok. i understand.
-just a thought:
-maybe you can put a comment in the file that these are there for a reason and should not be removed. else, you might receive the same type of patch again from someone else.
+On Tue, Dec 2, 2014 at 1:22 AM, Benoit Parrot <bparrot@ti.com> wrote:
+> Alexandre Courbot <gnurou@gmail.com> wrote on Fri [2014-Nov-28 16:30:01 +0900]:
+>> On Fri, Nov 21, 2014 at 8:54 AM, Benoit Parrot <bparrot@ti.com> wrote:
 
-thanks
-sudip
+>> > +       }
+>> > +
+>> > +       if (tmp > MAX_PHANDLE_ARGS) {
+>> > +               desc = ERR_PTR(-EINVAL);
+>> > +               goto out;
+>> > +       }
+>> > +
+>> > +       gg_data.gpiospec.args_count = tmp;
+>> > +       gg_data.gpiospec.np = chip_np;
+>> > +       for (i = 0; i < tmp; i++) {
+>> > +               ret = of_property_read_u32(np, "gpios",
+>> > +                                          &gg_data.gpiospec.args[i]);
+>> > +               if (ret) {
+>> > +                       desc = ERR_PTR(ret);
+>> > +                       goto out;
+>> > +               }
+>> > +       }
+>> > +
+>> > +       gpiochip_find(&gg_data, of_gpiochip_find_and_xlate);
+>>
+>> This seems to work but only supports one GPIO per hog node. It would
+>> be nice to be able to specify several GPIOs to which the same settings
+>> need to be applied.
+>
+> This is on purpose following Linus Walleij's comment.
 
-> Thanks.
-> 
-> Todd Fujinaka
-> Software Application Engineer
-> Networking Division (ND)
-> Intel Corporation
-> todd.fujinaka@intel.com
-> (503) 712-4565
-> 
-> -----Original Message-----
-> From: linux-nics-bounces@isotope.jf.intel.com [mailto:linux-nics-bounces@isotope.jf.intel.com] On Behalf Of Sudip Mukherjee
-> Sent: Sunday, November 30, 2014 8:55 PM
-> To: Ben Hutchings
-> Cc: Linux NICS; e1000-devel@lists.sourceforge.net; Hisashi T Fujinaka; Vick, Matthew; Greg@isotope.jf.intel.com; Kirsher, Jeffrey T; netdev@vger.kernel.org; Wyborny, Carolyn; John@isotope.jf.intel.com; linux-kernel@vger.kernel.org
-> Subject: Re: [linux-nics] [PATCH] e1000: remove unused variables
-> 
-> On Sun, Nov 30, 2014 at 01:45:13AM +0000, Ben Hutchings wrote:
-> > On Wed, 2014-11-26 at 21:59 -0800, Hisashi T Fujinaka wrote:
-> > > I'm pretty sure those double reads are there for a reason, so most 
-> > > of this I'm going to have to check on Monday. We have a long holiday 
-> > > weekend here in the US.
-> > [...]
-> > 
-> > If there were double register reads being replaced with single 
-> > register reads, I'd agree this was likely to introduce a regression.  
-> > But all I see is var = er32(REG) being changed to er32(REG).
-> 
-> no, double register reads are not modified. only the unused variables are removed.
-> 
-> thanks
-> sudip
-> 
-> > 
-> > Ben.
-> > 
-> > --
-> > Ben Hutchings
-> > The world is coming to an end.	Please log off.
-> 
-> 
-> _______________________________________________
-> Linux-nics mailing list
-> Linux-nics@intel.com
+Yes, I think either we have separate nodes for each hogged line *OR*
+we just put a list of hogs under the gpiochip, no special node at all.
+
+The one-node-per-hog pattern has the upside of being usable
+to also name the hogs. (Exporting them is dubious however!
+I would add a special type of node for that.)
+
+>> > +       if (err < 0)
+>> > +               return err;
+>> > +
+>> > +       if (lflags & GPIO_ACTIVE_LOW)
+>> > +               set_bit(FLAG_ACTIVE_LOW, &desc->flags);
+>> > +       if (lflags & GPIO_OPEN_DRAIN)
+>> > +               set_bit(FLAG_OPEN_DRAIN, &desc->flags);
+>> > +       if (lflags & GPIO_OPEN_SOURCE)
+>> > +               set_bit(FLAG_OPEN_SOURCE, &desc->flags);
+>> > +
+>> > +       /* No particular flag request, not really hogging then... */
+>> > +       if (!(dflags & GPIOD_FLAGS_BIT_DIR_SET)) {
+>> > +               pr_warn("%s: GPIO %s: no hogging direction specified, bailing out\n",
+>> > +                        __func__, name);
+>> > +               err = -EINVAL;
+>> > +               goto free_gpio;
+>> > +       }
+>> > +
+>> > +       /* Process flags */
+>> > +       if (dflags & GPIOD_FLAGS_BIT_DIR_OUT)
+>> > +               err = gpiod_direction_output(desc,
+>> > +                                            dflags & GPIOD_FLAGS_BIT_DIR_VAL);
+>> > +       else
+>> > +               err = gpiod_direction_input(desc);
+>> > +
+>> > +       if (err < 0) {
+>> > +               pr_warn("%s: GPIO %s setting direction/value failed\n",
+>> > +                        __func__, name);
+>> > +               goto free_gpio;
+>> > +       }
+>>
+>> I would suggest to factorize this code that is similar to the one
+>> found in __gpiod_get_index(). Do all the DT parsing in a function that
+>> just returns a descriptor and the
+>
+> I would tend to agree.
+> But as Linus suggested I was trying to contain the changes to gpiolib_of.c only.
+
+Yes I prefer we begin by supporting it in OF and then generalize it later
+if more users (board files, ACPI) appear.
+
+Not a big deal but I want to avoid big design up front unless it's
+easy and a few alterations.
+http://c2.com/cgi/wiki?BigDesignUpFront
+
+Yours,
+Linus Walleij
