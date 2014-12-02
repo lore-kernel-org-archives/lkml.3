@@ -1,67 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378AbaLBOHY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 09:07:24 -0500
-Received: from service88.mimecast.com ([195.130.217.12]:50892 "EHLO
-	service88.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752751AbaLBOHG (ORCPT
+	id S1754042AbaLBOHl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 09:07:41 -0500
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:64798 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753667AbaLBOHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 09:07:06 -0500
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: peterz@infradead.org, mingo@redhat.com
-Cc: dietmar.eggemann@arm.com, vincent.guittot@linaro.org, pjt@google.com,
-        bsegall@google.com, mturquette@linaro.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [RFC PATCH 07/10] sched: Get rid of scaling usage by cpu_capacity_orig
-Date: Tue,  2 Dec 2014 14:06:29 +0000
-Message-Id: <1417529192-11579-8-git-send-email-morten.rasmussen@arm.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417529192-11579-1-git-send-email-morten.rasmussen@arm.com>
-References: <1417529192-11579-1-git-send-email-morten.rasmussen@arm.com>
-X-OriginalArrivalTime: 02 Dec 2014 14:06:58.0322 (UTC) FILETIME=[3C698F20:01D00E39]
-X-MC-Unique: 114120214065823601
-Content-Type: text/plain; charset=WINDOWS-1252
+	Tue, 2 Dec 2014 09:07:36 -0500
+Date: Tue, 2 Dec 2014 14:07:27 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: gyungoh@gmail.com
+Cc: sameo@linux.intel.com, jg1.han@samsung.com, cooloney@gmail.com,
+        broonie@kernel.org, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
+        treding@nvidia.com, florian.vaussard@epfl.ch, trivial@kernel.org,
+        linux@roeck-us.net, andrew@lunn.ch, jic23@kernel.org
+Subject: Re: [PATCH v9 3/8] devicetree: mfd: Add new SKY81452 mfd binding
+Message-ID: <20141202140727.GD22522@x1>
+References: <1417507529-13654-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1417507529-13654-4-git-send-email-jack.yoo@skyworksinc.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1417507529-13654-4-git-send-email-jack.yoo@skyworksinc.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id sB2E7VYe016960
 
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+This requires a DT Ack.
 
-Since now we have besides frequency invariant also cpu (uarch plus max
-system frequency) invariant cfs_rq::utilization_load_avg both, frequency
-and cpu scaling happens as part of the load tracking.
-So cfs_rq::utilization_load_avg does not have to be scaled by the original
-capacity of the cpu again.
+> From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> 
+> Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> ---
+> Changes v9:
+> Nothing
+> 
+> Changes v8:
+> Made up the example for backlight DT
+> 
+> Changes v7:
+> Nothing
+> 
+> Changes v6:
+> Nothing
+> 
+> Changes v5:
+> Changed DT for regulator : 'lout' node should be defined under 'regulator'
+> Removed compatible string from sky81452-regulator driver
+> 
+> Changes v4:
+> Nothing
+> 
+> Changes v3:
+> Nothing
+> 
+> Changes v2:
+> Added reg attribute for I2C slave address
+> 
+>  Documentation/devicetree/bindings/mfd/sky81452.txt | 36 ++++++++++++++++++++++
+>  1 file changed, 36 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/sky81452.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/mfd/sky81452.txt b/Documentation/devicetree/bindings/mfd/sky81452.txt
+> new file mode 100644
+> index 0000000..ab71473
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/sky81452.txt
+> @@ -0,0 +1,36 @@
+> +SKY81452 bindings
+> +
+> +Required properties:
+> +- compatible	: Must be "skyworks,sky81452"
+> +- reg		: I2C slave address
+> +
+> +Required child nodes:
+> +- backlight	: container node for backlight following the binding
+> +		in video/backlight/sky81452-backlight.txt
+> +- regulator	: container node for regulators following the binding
+> +		in regulator/sky81452-regulator.txt
+> +
+> +Example:
+> +
+> +	sky81452@2c {
+> +		compatible = "skyworks,sky81452";
+> +		reg = <0x2c>;
+> +
+> +		backlight {
+> +			compatible = "skyworks,sky81452-backlight";
+> +			name = "pwm-backlight";
+> +			skyworks,en-channels = <0x3f>;
+> +			skyworks,ignore-pwm;
+> +			skyworks,phase-shift;
+> +			skyworks,ovp-level = <20>;
+> +			skyworks,current-limit = <2300>;
+> +		};
+> +
+> +		regulator {
+> +			lout {
+> +				regulator-name = "sky81452-lout";
+> +				regulator-min-microvolt = <4500000>;
+> +				regulator-max-microvolt = <8000000>;
+> +			};
+> +		};
+> +	};
 
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
----
- kernel/sched/fair.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 5c4c989..090223f 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4806,12 +4806,11 @@ static int select_idle_sibling(struct task_struct *p, int target)
- static int get_cpu_usage(int cpu)
- {
- 	unsigned long usage = cpu_rq(cpu)->cfs.utilization_load_avg;
--	unsigned long capacity = capacity_orig_of(cpu);
- 
- 	if (usage >= SCHED_LOAD_SCALE)
--		return capacity;
-+		return capacity_orig_of(cpu);
- 
--	return (usage * capacity) >> SCHED_LOAD_SHIFT;
-+	return usage;
- }
- 
- /*
 -- 
-1.9.1
-
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
