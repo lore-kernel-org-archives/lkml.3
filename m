@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933339AbaLBTXi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:23:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46692 "EHLO
+	id S933379AbaLBTXv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:23:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46709 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932659AbaLBTXe (ORCPT
+	with ESMTP id S932659AbaLBTXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:23:34 -0500
+	Tue, 2 Dec 2014 14:23:48 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 086/121] firewire: cdev: prevent kernel stack leaking into ioctl arguments
-Date: Tue,  2 Dec 2014 11:19:25 -0800
-Message-Id: <1417548000-1794-87-git-send-email-kamal@canonical.com>
+Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 087/121] md: Always set RECOVERY_NEEDED when clearing RECOVERY_FROZEN
+Date: Tue,  2 Dec 2014 11:19:26 -0800
+Message-Id: <1417548000-1794-88-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
@@ -27,62 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+From: NeilBrown <neilb@suse.de>
 
-commit eaca2d8e75e90a70a63a6695c9f61932609db212 upstream.
+commit 45eaf45dfa4850df16bc2e8e7903d89021137f40 upstream.
 
-Found by the UC-KLEE tool:  A user could supply less input to
-firewire-cdev ioctls than write- or write/read-type ioctl handlers
-expect.  The handlers used data from uninitialized kernel stack then.
+md_check_recovery will skip any recovery and also clear
+MD_RECOVERY_NEEDED if MD_RECOVERY_FROZEN is set.
+So when we clear _FROZEN, we must set _NEEDED and ensure that
+md_check_recovery gets run.
+Otherwise we could miss out on something that is needed.
 
-This could partially leak back to the user if the kernel subsequently
-generated fw_cdev_event_'s (to be read from the firewire-cdev fd)
-which notably would contain the _u64 closure field which many of the
-ioctl argument structures contain.
+In particular, this can make it impossible to remove a
+failed device from an array is the  'recovery-needed' processing
+didn't happen.
+Suitable for stable kernels since 3.13.
 
-The fact that the handlers would act on random garbage input is a
-lesser issue since all handlers must check their input anyway.
-
-The fix simply always null-initializes the entire ioctl argument buffer
-regardless of the actual length of expected user input.  That is, a
-runtime overhead of memset(..., 40) is added to each firewirew-cdev
-ioctl() call.  [Comment from Clemens Ladisch:  This part of the stack is
-most likely to be already in the cache.]
-
-Remarks:
-  - There was never any leak from kernel stack to the ioctl output
-    buffer itself.  IOW, it was not possible to read kernel stack by a
-    read-type or write/read-type ioctl alone; the leak could at most
-    happen in combination with read()ing subsequent event data.
-  - The actual expected minimum user input of each ioctl from
-    include/uapi/linux/firewire-cdev.h is, in bytes:
-    [0x00] = 32, [0x05] =  4, [0x0a] = 16, [0x0f] = 20, [0x14] = 16,
-    [0x01] = 36, [0x06] = 20, [0x0b] =  4, [0x10] = 20, [0x15] = 20,
-    [0x02] = 20, [0x07] =  4, [0x0c] =  0, [0x11] =  0, [0x16] =  8,
-    [0x03] =  4, [0x08] = 24, [0x0d] = 20, [0x12] = 36, [0x17] = 12,
-    [0x04] = 20, [0x09] = 24, [0x0e] =  4, [0x13] = 40, [0x18] =  4.
-
-Reported-by: David Ramos <daramos@stanford.edu>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Reported-and-tested-by: Joe Lawrence <joe.lawrence@stratus.com>
+Fixes: 30b8feb730f9b9b3c5de02580897da03f59b6b16
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/firewire/core-cdev.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/md/md.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/firewire/core-cdev.c b/drivers/firewire/core-cdev.c
-index d7d5c8a..6d44568 100644
---- a/drivers/firewire/core-cdev.c
-+++ b/drivers/firewire/core-cdev.c
-@@ -1637,8 +1637,7 @@ static int dispatch_ioctl(struct client *client,
- 	    _IOC_SIZE(cmd) > sizeof(buffer))
- 		return -ENOTTY;
- 
--	if (_IOC_DIR(cmd) == _IOC_READ)
--		memset(&buffer, 0, _IOC_SIZE(cmd));
-+	memset(&buffer, 0, sizeof(buffer));
- 
- 	if (_IOC_DIR(cmd) & _IOC_WRITE)
- 		if (copy_from_user(&buffer, arg, _IOC_SIZE(cmd)))
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 09377ba..2ee29a7 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -5321,6 +5321,7 @@ static int md_set_readonly(struct mddev *mddev, struct block_device *bdev)
+ 		printk("md: %s still in use.\n",mdname(mddev));
+ 		if (did_freeze) {
+ 			clear_bit(MD_RECOVERY_FROZEN, &mddev->recovery);
++			set_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
+ 			md_wakeup_thread(mddev->thread);
+ 		}
+ 		err = -EBUSY;
+@@ -5335,6 +5336,8 @@ static int md_set_readonly(struct mddev *mddev, struct block_device *bdev)
+ 		mddev->ro = 1;
+ 		set_disk_ro(mddev->gendisk, 1);
+ 		clear_bit(MD_RECOVERY_FROZEN, &mddev->recovery);
++		set_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
++		md_wakeup_thread(mddev->thread);
+ 		sysfs_notify_dirent_safe(mddev->sysfs_state);
+ 		err = 0;
+ 	}
+@@ -5378,6 +5381,7 @@ static int do_md_stop(struct mddev * mddev, int mode,
+ 		mutex_unlock(&mddev->open_mutex);
+ 		if (did_freeze) {
+ 			clear_bit(MD_RECOVERY_FROZEN, &mddev->recovery);
++			set_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
+ 			md_wakeup_thread(mddev->thread);
+ 		}
+ 		return -EBUSY;
 -- 
 1.9.1
 
