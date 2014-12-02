@@ -1,108 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120AbaLBREf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 12:04:35 -0500
-Received: from smtprelay0164.hostedemail.com ([216.40.44.164]:53612 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750831AbaLBREd (ORCPT
+	id S1754173AbaLBREs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 12:04:48 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:36484 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831AbaLBREr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 12:04:33 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::,RULES_HIT:41:355:379:541:800:960:967:973:988:989:1183:1260:1277:1311:1313:1314:1345:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2859:2898:2902:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3354:3865:3866:3867:3868:3871:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:5007:6261:8599:8603:8660:9025:10004:10400:10848:10913:11026:11473:11658:11914:12043:12296:12438:12517:12519:12555:12679:12696:12737:12783:13138:13148:13180:13229:13230:13231:13846:14394:21067:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: geese44_7ee2d3811c94c
-X-Filterd-Recvd-Size: 3017
-Date: Tue, 2 Dec 2014 12:04:30 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH] tracing: Add NOT to filtering logic
-Message-ID: <20141202120430.71979060@gandalf.local.home>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Tue, 2 Dec 2014 12:04:47 -0500
+Date: Tue, 2 Dec 2014 09:04:07 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141202170407.GK25340@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141127225637.GA24019@redhat.com>
+ <m5dart$co$1@ger.gmane.org>
+ <CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
+ <547b8a45.6e608c0a.20f9.1002@mx.google.com>
+ <CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
+ <547bbe36.48548c0a.105c.779c@mx.google.com>
+ <20141201191431.GA17385@linux.vnet.ibm.com>
+ <547ccf74.a5198c0a.25de.26d9@mx.google.com>
+ <20141201230813.GE25340@linux.vnet.ibm.com>
+ <547dec29.c71f8c0a.33d1.11d9@mx.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <547dec29.c71f8c0a.33d1.11d9@mx.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120217-0021-0000-0000-00000697D2C5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 02, 2014 at 02:43:17PM -0200, Dâniel Fraga wrote:
+> On Mon, 1 Dec 2014 15:08:13 -0800
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > Well, this turned out to be way simpler than I expected.  Passes
+> > light rcutorture testing.  Sometimes you get lucky...
+> 
+> 	Linus, Paul and others, I finally got a call trace with
+> only CONFIG_TREE_PREEMPT_RCU *disabled* using Paul's patch (to trigger 
+> it I compiled PHP with make -j8).
 
-Ted noticed that he could not filter on an event for a bit being cleared.
-That's because the filtering logic only tests event fields with a limited
-number of comparisons which, for bit logic, only include "&", which can
-test if a bit is set, but there's no good way to see if a bit is clear.
+Is it harder to reproduce with CONFIG_PREEMPT=y and CONFIG_TREE_PREEMPT_RCU=n?
 
-This adds a way to do: !(field & 2048)
+If it is a -lot- harder to reproduce, it might be worth bisecting among
+the RCU read-side critical sections.  If making a few of them be
+non-preemptible greatly reduces the probability of the bug occuring,
+that might provide a clue about root cause.
 
-Which returns true if the bit is not set, and false otherwise.
+On the other hand, if it is just a little harder to reproduce, this
+RCU read-side bisection would likely be an exercise in futility.
 
-Note, currently !(field1 == 10 && field2 == 15) is not supported.
-That is, the 'not' only works for direct comparisons, not for the
-AND and OR logic.
+							Thanx, Paul
 
-Link: http://lkml.kernel.org/r/20141202021912.GA29096@thunk.org
-
-Suggested-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_events_filter.c | 16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 7a8c1528e141..9ddbf0c05340 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -37,6 +37,7 @@ enum filter_op_ids
- {
- 	OP_OR,
- 	OP_AND,
-+	OP_NOT,
- 	OP_GLOB,
- 	OP_NE,
- 	OP_EQ,
-@@ -59,6 +60,7 @@ struct filter_op {
- static struct filter_op filter_ops[] = {
- 	{ OP_OR,	"||",		1 },
- 	{ OP_AND,	"&&",		2 },
-+	{ OP_NOT,	"!",		3 },
- 	{ OP_GLOB,	"~",		4 },
- 	{ OP_NE,	"!=",		4 },
- 	{ OP_EQ,	"==",		4 },
-@@ -166,7 +168,7 @@ static int filter_pred_##type(struct filter_pred *pred, void *event)	\
- 		break;							\
- 	}								\
- 									\
--	return match;							\
-+	return match == !pred->not;					\
- }
- 
- #define DEFINE_EQUALITY_PRED(size)					\
-@@ -1028,7 +1030,7 @@ static int init_pred(struct filter_parse_state *ps,
- 	}
- 
- 	if (pred->op == OP_NE)
--		pred->not = 1;
-+		pred->not ^= 1;
- 
- 	pred->fn = fn;
- 	return 0;
-@@ -1590,6 +1592,16 @@ static int replace_preds(struct ftrace_event_call *call,
- 			continue;
- 		}
- 
-+		if (elt->op == OP_NOT) {
-+			if (!n_preds) {
-+				err = -EINVAL;
-+				goto fail;
-+			}
-+			if (!dry_run)
-+				filter->preds[n_preds - 1].not ^= 1;
-+			continue;
-+		}
-+
- 		if (WARN_ON(n_preds++ == MAX_FILTER_PRED)) {
- 			parse_error(ps, FILT_ERR_TOO_MANY_PREDS, 0);
- 			err = -ENOSPC;
--- 
-1.8.1.4
+> Dec  2 14:24:39 tux kernel: [ 8475.941616] conftest[9730]: segfault at 0 ip 0000000000400640 sp 00007fffa67ab300 error 4 in conftest[400000+1000]
+> Dec  2 14:24:40 tux kernel: [ 8476.104725] conftest[9753]: segfault at 0 ip 00007f6863024906 sp 00007fff0e31cc48 error 4 in libc-2.19.so[7f6862efe000+1a1000]
+> Dec  2 14:25:54 tux kernel: [ 8550.791697] INFO: rcu_sched detected stalls on CPUs/tasks: { 4} (detected by 0, t=60002 jiffies, g=112854, c=112853, q=0)
+> Dec  2 14:25:54 tux kernel: [ 8550.791702] Task dump for CPU 4:
+> Dec  2 14:25:54 tux kernel: [ 8550.791703] cc1             R  running task        0 14344  14340 0x00080008
+> Dec  2 14:25:54 tux kernel: [ 8550.791706]  000000001bcebcd8 ffff880100000003 ffffffff810cb7f1 ffff88021f5f5c00
+> Dec  2 14:25:54 tux kernel: [ 8550.791708]  ffff88011bcebfd8 ffff88011bcebce8 ffffffff811fb970 ffff8802149a2a00
+> Dec  2 14:25:54 tux kernel: [ 8550.791710]  ffff8802149a2cc8 ffff88011bcebd28 ffffffff8103e979 ffff88020ed01398
+> Dec  2 14:25:54 tux kernel: [ 8550.791712] Call Trace:
+> Dec  2 14:25:54 tux kernel: [ 8550.791718]  [<ffffffff810cb7f1>] ? release_pages+0xa1/0x1e0
+> Dec  2 14:25:54 tux kernel: [ 8550.791722]  [<ffffffff811fb970>] ? cpumask_any_but+0x30/0x40
+> Dec  2 14:25:54 tux kernel: [ 8550.791725]  [<ffffffff8103e979>] ? flush_tlb_page+0x49/0xf0
+> Dec  2 14:25:54 tux kernel: [ 8550.791727]  [<ffffffff810cbe72>] ? lru_cache_add_active_or_unevictable+0x22/0x90
+> Dec  2 14:25:54 tux kernel: [ 8550.791731]  [<ffffffff810fc4c2>] ? alloc_pages_vma+0x72/0x130
+> Dec  2 14:25:54 tux kernel: [ 8550.791733]  [<ffffffff810cbe72>] ? lru_cache_add_active_or_unevictable+0x22/0x90
+> Dec  2 14:25:54 tux kernel: [ 8550.791735]  [<ffffffff810e5220>] ? handle_mm_fault+0x3a0/0xaf0
+> Dec  2 14:25:54 tux kernel: [ 8550.791737]  [<ffffffff81039074>] ? __do_page_fault+0x224/0x4c0
+> Dec  2 14:25:54 tux kernel: [ 8550.791740]  [<ffffffff8110d54c>] ? new_sync_write+0x7c/0xb0
+> Dec  2 14:25:55 tux kernel: [ 8550.791743]  [<ffffffff8114765c>] ? fsnotify+0x27c/0x350
+> Dec  2 14:25:55 tux kernel: [ 8550.791746]  [<ffffffff81087233>] ? rcu_eqs_enter+0x93/0xa0
+> Dec  2 14:25:55 tux kernel: [ 8550.791748]  [<ffffffff81087a5e>] ? rcu_user_enter+0xe/0x10
+> Dec  2 14:25:55 tux kernel: [ 8550.791749]  [<ffffffff8103938a>] ? do_page_fault+0x5a/0x70
+> Dec  2 14:25:55 tux kernel: [ 8550.791752]  [<ffffffff8139d9d2>] ? page_fault+0x22/0x30
+> 
+> 	If you need more info/testing, just ask.
+> 
+> -- 
+> Linux 3.17.0-dirty: Shuffling Zombie Juror
+> http://www.youtube.com/DanielFragaBR
+> http://exchangewar.info
+> Bitcoin: 12H6661yoLDUZaYPdah6urZS5WiXwTAUgL
+> 
 
