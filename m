@@ -1,43 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934047AbaLBTuC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:50:02 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:45463 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932688AbaLBTt7 (ORCPT
+	id S1754701AbaLBTWn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:22:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46621 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754631AbaLBTWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:49:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141202120430.71979060@gandalf.local.home>
-References: <20141202120430.71979060@gandalf.local.home>
-Date: Tue, 2 Dec 2014 11:49:58 -0800
-Message-ID: <CAMEtUuwejSGZSMyncPo9GRvy7vnC8Wam-dOdHU+iO0cJkRDeTg@mail.gmail.com>
-Subject: Re: [PATCH] tracing: Add NOT to filtering logic
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 2 Dec 2014 14:22:21 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: James Ralston <james.d.ralston@intel.com>, Takashi Iwai <tiwai@suse.de>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 065/121] ALSA: hda_intel: Add Device IDs for Intel Sunrise Point PCH
+Date: Tue,  2 Dec 2014 11:19:04 -0800
+Message-Id: <1417548000-1794-66-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 2, 2014 at 9:04 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->                                                                         \
-> -       return match;                                                   \
-> +       return match == !pred->not;                                     \
+3.13.11-ckt12 -stable review patch.  If anyone has any objections, please let me know.
 
-are you sure this one works for !(var & 2) ?
-'not' is either 0 or 1, so it works for other macro:
-(val == *addr) ^ pred->not
+------------------
 
-whereas here 'match' is 'int' and
-match = (*addr & val)
-will not be 0 or 1...
+From: James Ralston <james.d.ralston@intel.com>
 
-the patch is small, but delicate...
-In such cases I trust tests more than code review ;)
-Could you add few tests for this to
-CONFIG_FTRACE_STARTUP_TEST
-part of the file ?
+commit c8b00fd2f4c504a564adcad5b8bd6952ab850b02 upstream.
+
+This patch adds the HD Audio Device IDs for the Intel Sunrise Point PCH.
+
+[the item position rearranged by tiwai]
+
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ sound/pci/hda/hda_intel.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+index a7431d6..304fbbf 100644
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -170,6 +170,7 @@ MODULE_SUPPORTED_DEVICE("{{Intel, ICH6},"
+ 			 "{Intel, LPT},"
+ 			 "{Intel, LPT_LP},"
+ 			 "{Intel, WPT_LP},"
++			 "{Intel, SPT},"
+ 			 "{Intel, HPT},"
+ 			 "{Intel, PBG},"
+ 			 "{Intel, SCH},"
+@@ -4065,6 +4066,9 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids) = {
+ 	/* Wildcat Point-LP */
+ 	{ PCI_DEVICE(0x8086, 0x9ca0),
+ 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
++	/* Sunrise Point */
++	{ PCI_DEVICE(0x8086, 0xa170),
++	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
+ 	/* Haswell */
+ 	{ PCI_DEVICE(0x8086, 0x0a0c),
+ 	  .driver_data = AZX_DRIVER_HDMI | AZX_DCAPS_INTEL_HASWELL },
+-- 
+1.9.1
+
