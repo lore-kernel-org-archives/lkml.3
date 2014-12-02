@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933836AbaLBTmK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:42:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46849 "EHLO
+	id S934111AbaLBTmz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:42:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46828 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932979AbaLBTZr (ORCPT
+	with ESMTP id S933211AbaLBTZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:25:47 -0500
+	Tue, 2 Dec 2014 14:25:34 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: =?UTF-8?q?Thomas=20K=C3=B6rper?= <thomas.koerper@esd.eu>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 118/121] drm/radeon: fix endian swapping in vbios fetch for tdp table
-Date: Tue,  2 Dec 2014 11:19:57 -0800
-Message-Id: <1417548000-1794-119-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 108/121] can: dev: avoid calling kfree_skb() from interrupt context
+Date: Tue,  2 Dec 2014 11:19:47 -0800
+Message-Id: <1417548000-1794-109-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,31 +31,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: =?UTF-8?q?Thomas=20K=C3=B6rper?= <thomas.koerper@esd.eu>
 
-commit 28731d5818ae25b92d1fb82fe0ac196e97102c1b upstream.
+commit 5247a589c24022ab34e780039cc8000c48f2035e upstream.
 
-Value needs to be swapped on BE.
+ikfree_skb() is Called in can_free_echo_skb(), which might be called from (TX
+Error) interrupt, which triggers the folloing warning:
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[ 1153.360705] ------------[ cut here ]------------
+[ 1153.360715] WARNING: CPU: 0 PID: 31 at net/core/skbuff.c:563 skb_release_head_state+0xb9/0xd0()
+[ 1153.360772] Call Trace:
+[ 1153.360778]  [<c167906f>] dump_stack+0x41/0x52
+[ 1153.360782]  [<c105bb7e>] warn_slowpath_common+0x7e/0xa0
+[ 1153.360784]  [<c158b909>] ? skb_release_head_state+0xb9/0xd0
+[ 1153.360786]  [<c158b909>] ? skb_release_head_state+0xb9/0xd0
+[ 1153.360788]  [<c105bc42>] warn_slowpath_null+0x22/0x30
+[ 1153.360791]  [<c158b909>] skb_release_head_state+0xb9/0xd0
+[ 1153.360793]  [<c158be90>] skb_release_all+0x10/0x30
+[ 1153.360795]  [<c158bf06>] kfree_skb+0x36/0x80
+[ 1153.360799]  [<f8486938>] ? can_free_echo_skb+0x28/0x40 [can_dev]
+[ 1153.360802]  [<f8486938>] can_free_echo_skb+0x28/0x40 [can_dev]
+[ 1153.360805]  [<f849a12c>] esd_pci402_interrupt+0x34c/0x57a [esd402]
+[ 1153.360809]  [<c10a75b5>] handle_irq_event_percpu+0x35/0x180
+[ 1153.360811]  [<c10a7623>] ? handle_irq_event_percpu+0xa3/0x180
+[ 1153.360813]  [<c10a7731>] handle_irq_event+0x31/0x50
+[ 1153.360816]  [<c10a9c7f>] handle_fasteoi_irq+0x6f/0x120
+[ 1153.360818]  [<c10a9c10>] ? handle_edge_irq+0x110/0x110
+[ 1153.360822]  [<c1011b61>] handle_irq+0x71/0x90
+[ 1153.360823]  <IRQ>  [<c168152c>] do_IRQ+0x3c/0xd0
+[ 1153.360829]  [<c1680b6c>] common_interrupt+0x2c/0x34
+[ 1153.360834]  [<c107d277>] ? finish_task_switch+0x47/0xf0
+[ 1153.360836]  [<c167c27b>] __schedule+0x35b/0x7e0
+[ 1153.360839]  [<c10a5334>] ? console_unlock+0x2c4/0x4d0
+[ 1153.360842]  [<c13df500>] ? n_tty_receive_buf_common+0x890/0x890
+[ 1153.360845]  [<c10707b6>] ? process_one_work+0x196/0x370
+[ 1153.360847]  [<c167c723>] schedule+0x23/0x60
+[ 1153.360849]  [<c1070de1>] worker_thread+0x161/0x460
+[ 1153.360852]  [<c1090fcf>] ? __wake_up_locked+0x1f/0x30
+[ 1153.360854]  [<c1070c80>] ? rescuer_thread+0x2f0/0x2f0
+[ 1153.360856]  [<c1074f01>] kthread+0xa1/0xc0
+[ 1153.360859]  [<c1680401>] ret_from_kernel_thread+0x21/0x30
+[ 1153.360861]  [<c1074e60>] ? kthread_create_on_node+0x110/0x110
+[ 1153.360863] ---[ end trace 5ff83639cbb74b35 ]---
+
+This patch replaces the kfree_skb() by dev_kfree_skb_any().
+
+Signed-off-by: Thomas Körper <thomas.koerper@esd.eu>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/r600_dpm.c | 2 +-
+ drivers/net/can/dev.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/r600_dpm.c b/drivers/gpu/drm/radeon/r600_dpm.c
-index 2df683a..cc4258a 100644
---- a/drivers/gpu/drm/radeon/r600_dpm.c
-+++ b/drivers/gpu/drm/radeon/r600_dpm.c
-@@ -1193,7 +1193,7 @@ int r600_parse_extended_power_table(struct radeon_device *rdev)
- 					(mode_info->atom_context->bios + data_offset +
- 					 le16_to_cpu(ext_hdr->usPowerTuneTableOffset));
- 				rdev->pm.dpm.dyn_state.cac_tdp_table->maximum_power_delivery_limit =
--					ppt->usMaximumPowerDeliveryLimit;
-+					le16_to_cpu(ppt->usMaximumPowerDeliveryLimit);
- 				pt = &ppt->power_tune_table;
- 			} else {
- 				ATOM_PPLIB_POWERTUNE_Table *ppt = (ATOM_PPLIB_POWERTUNE_Table *)
+diff --git a/drivers/net/can/dev.c b/drivers/net/can/dev.c
+index bafd28e..98a3b2b 100644
+--- a/drivers/net/can/dev.c
++++ b/drivers/net/can/dev.c
+@@ -385,7 +385,7 @@ void can_free_echo_skb(struct net_device *dev, unsigned int idx)
+ 	BUG_ON(idx >= priv->echo_skb_max);
+ 
+ 	if (priv->echo_skb[idx]) {
+-		kfree_skb(priv->echo_skb[idx]);
++		dev_kfree_skb_any(priv->echo_skb[idx]);
+ 		priv->echo_skb[idx] = NULL;
+ 	}
+ }
 -- 
 1.9.1
 
