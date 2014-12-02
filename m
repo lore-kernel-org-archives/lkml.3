@@ -1,210 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633AbaLBR2z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 12:28:55 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:22918 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754607AbaLBR2x (ORCPT
+	id S1754678AbaLBR3M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 12:29:12 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:36412 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754392AbaLBR3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 12:28:53 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>, <arm@kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 7/8] pinctrl: at91: add registers definitions directly into driver
-Date: Tue, 2 Dec 2014 18:27:27 +0100
-Message-ID: <720f350230a76bb5df0beed7b9a1b7cfd01ab158.1417541118.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <e093d7cf37ec9ff24b0631b0a2e405a7cf7574db.1417541118.git.nicolas.ferre@atmel.com>
-References: <e093d7cf37ec9ff24b0631b0a2e405a7cf7574db.1417541118.git.nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 2 Dec 2014 12:29:09 -0500
+From: Eric Auger <eric.auger@linaro.org>
+To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
+        marc.zyngier@arm.com, linux-arm-kernel@lists.infradead.org,
+        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org,
+        alex.williamson@redhat.com, agraf@suse.de, gleb@kernel.org,
+        pbonzini@redhat.com
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org,
+        a.motakis@virtualopensystems.com
+Subject: [PATCH] KVM: arm/arm64: vgic: add init entry to VGIC KVM device
+Date: Tue,  2 Dec 2014 18:27:31 +0100
+Message-Id: <1417541251-20761-1-git-send-email-eric.auger@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the old gpio.c driver is gone, we can merge the registers definitions with
-the pinctrl driver.
-This also allows us to empty the AT91 include/mach directory.
+Since the advent of dynamic initialization of VGIC, this latter is
+initialized very late, on the first vcpu run. This initialization
+could be initiated much earlier by the user, as soon as it has
+provided the requested dimensioning parameters:
+- number of IRQs and number of vCPUs,
+- DIST and CPU interface base address.
 
-Reported-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+One motivation behind being able to initialize the VGIC sooner is
+related to the setup of IRQ injection in VFIO use case. The VFIO
+signaling, especially when used along with irqfd must be set *after*
+vgic initialization to prevent any virtual IRQ injection before
+VGIC initialization. If virtual IRQ injection occurs before the VGIC
+init, the IRQ cannot be injected and subsequent injection is blocked
+due to VFIO completion mechanism (unmask/mask or forward/unforward).
+
+This patch adds a new entry to the VGIC KVM device that allows
+the user to manually request the VGIC init:
+- a new KVM_DEV_ARM_VGIC_GRP_CTRL group is introduced.
+- Its first attribute is KVM_DEV_ARM_VGIC_CTRL_INIT
+
+The rationale behind introducing a group is to be able to add other
+controls later on, if needed.
+
+Obviously, as soon as the init is done, the dimensioning parameters
+cannot be changed.
+
+Signed-off-by: Eric Auger <eric.auger@linaro.org>
 ---
- arch/arm/mach-at91/include/mach/at91_pio.h | 80 ------------------------------
- drivers/pinctrl/pinctrl-at91.c             | 65 ++++++++++++++++++++++--
- 2 files changed, 62 insertions(+), 83 deletions(-)
- delete mode 100644 arch/arm/mach-at91/include/mach/at91_pio.h
+ Documentation/virtual/kvm/devices/arm-vgic.txt | 11 +++++++++++
+ arch/arm/include/uapi/asm/kvm.h                |  2 ++
+ arch/arm64/include/uapi/asm/kvm.h              |  2 ++
+ virt/kvm/arm/vgic.c                            | 14 +++++++++++++-
+ 4 files changed, 28 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-at91/include/mach/at91_pio.h b/arch/arm/mach-at91/include/mach/at91_pio.h
-deleted file mode 100644
-index 7b7366253ceb..000000000000
---- a/arch/arm/mach-at91/include/mach/at91_pio.h
-+++ /dev/null
-@@ -1,80 +0,0 @@
--/*
-- * arch/arm/mach-at91/include/mach/at91_pio.h
-- *
-- * Copyright (C) 2005 Ivan Kokshaysky
-- * Copyright (C) SAN People
-- *
-- * Parallel I/O Controller (PIO) - System peripherals registers.
-- * Based on AT91RM9200 datasheet revision E.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- */
--
--#ifndef AT91_PIO_H
--#define AT91_PIO_H
--
--#define PIO_PER		0x00	/* Enable Register */
--#define PIO_PDR		0x04	/* Disable Register */
--#define PIO_PSR		0x08	/* Status Register */
--#define PIO_OER		0x10	/* Output Enable Register */
--#define PIO_ODR		0x14	/* Output Disable Register */
--#define PIO_OSR		0x18	/* Output Status Register */
--#define PIO_IFER	0x20	/* Glitch Input Filter Enable */
--#define PIO_IFDR	0x24	/* Glitch Input Filter Disable */
--#define PIO_IFSR	0x28	/* Glitch Input Filter Status */
--#define PIO_SODR	0x30	/* Set Output Data Register */
--#define PIO_CODR	0x34	/* Clear Output Data Register */
--#define PIO_ODSR	0x38	/* Output Data Status Register */
--#define PIO_PDSR	0x3c	/* Pin Data Status Register */
--#define PIO_IER		0x40	/* Interrupt Enable Register */
--#define PIO_IDR		0x44	/* Interrupt Disable Register */
--#define PIO_IMR		0x48	/* Interrupt Mask Register */
--#define PIO_ISR		0x4c	/* Interrupt Status Register */
--#define PIO_MDER	0x50	/* Multi-driver Enable Register */
--#define PIO_MDDR	0x54	/* Multi-driver Disable Register */
--#define PIO_MDSR	0x58	/* Multi-driver Status Register */
--#define PIO_PUDR	0x60	/* Pull-up Disable Register */
--#define PIO_PUER	0x64	/* Pull-up Enable Register */
--#define PIO_PUSR	0x68	/* Pull-up Status Register */
--#define PIO_ASR		0x70	/* Peripheral A Select Register */
--#define PIO_ABCDSR1	0x70	/* Peripheral ABCD Select Register 1 [some sam9 only] */
--#define PIO_BSR		0x74	/* Peripheral B Select Register */
--#define PIO_ABCDSR2	0x74	/* Peripheral ABCD Select Register 2 [some sam9 only] */
--#define PIO_ABSR	0x78	/* AB Status Register */
--#define PIO_IFSCDR	0x80	/* Input Filter Slow Clock Disable Register */
--#define PIO_IFSCER	0x84	/* Input Filter Slow Clock Enable Register */
--#define PIO_IFSCSR	0x88	/* Input Filter Slow Clock Status Register */
--#define PIO_SCDR	0x8c	/* Slow Clock Divider Debouncing Register */
--#define		PIO_SCDR_DIV	(0x3fff <<  0)		/* Slow Clock Divider Mask */
--#define PIO_PPDDR	0x90	/* Pad Pull-down Disable Register */
--#define PIO_PPDER	0x94	/* Pad Pull-down Enable Register */
--#define PIO_PPDSR	0x98	/* Pad Pull-down Status Register */
--#define PIO_OWER	0xa0	/* Output Write Enable Register */
--#define PIO_OWDR	0xa4	/* Output Write Disable Register */
--#define PIO_OWSR	0xa8	/* Output Write Status Register */
--#define PIO_AIMER	0xb0	/* Additional Interrupt Modes Enable Register */
--#define PIO_AIMDR	0xb4	/* Additional Interrupt Modes Disable Register */
--#define PIO_AIMMR	0xb8	/* Additional Interrupt Modes Mask Register */
--#define PIO_ESR		0xc0	/* Edge Select Register */
--#define PIO_LSR		0xc4	/* Level Select Register */
--#define PIO_ELSR	0xc8	/* Edge/Level Status Register */
--#define PIO_FELLSR	0xd0	/* Falling Edge/Low Level Select Register */
--#define PIO_REHLSR	0xd4	/* Rising Edge/ High Level Select Register */
--#define PIO_FRLHSR	0xd8	/* Fall/Rise - Low/High Status Register */
--#define PIO_SCHMITT	0x100	/* Schmitt Trigger Register */
--
--#define ABCDSR_PERIPH_A	0x0
--#define ABCDSR_PERIPH_B	0x1
--#define ABCDSR_PERIPH_C	0x2
--#define ABCDSR_PERIPH_D	0x3
--
--#define SAMA5D3_PIO_DRIVER1		0x118  /*PIO Driver 1 register offset*/
--#define SAMA5D3_PIO_DRIVER2		0x11C  /*PIO Driver 2 register offset*/
--
--#define AT91SAM9X5_PIO_DRIVER1	0x114  /*PIO Driver 1 register offset*/
--#define AT91SAM9X5_PIO_DRIVER2	0x118  /*PIO Driver 2 register offset*/
--
--#endif
-diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
-index 354a81d40925..47d755861b5a 100644
---- a/drivers/pinctrl/pinctrl-at91.c
-+++ b/drivers/pinctrl/pinctrl-at91.c
-@@ -25,11 +25,70 @@
- /* Since we request GPIOs from ourself */
- #include <linux/pinctrl/consumer.h>
+diff --git a/Documentation/virtual/kvm/devices/arm-vgic.txt b/Documentation/virtual/kvm/devices/arm-vgic.txt
+index df8b0c7..80db43f 100644
+--- a/Documentation/virtual/kvm/devices/arm-vgic.txt
++++ b/Documentation/virtual/kvm/devices/arm-vgic.txt
+@@ -81,3 +81,14 @@ Groups:
+     -EINVAL: Value set is out of the expected range
+     -EBUSY: Value has already be set, or GIC has already been initialized
+             with default values.
++
++  KVM_DEV_ARM_VGIC_GRP_CTRL
++  Attributes:
++    KVM_DEV_ARM_VGIC_CTRL_INIT
++      request the initialization of the VGIC, no additional parameter in
++      kvm_device_attr.addr.
++  Errors:
++    -ENXIO: distributor or CPU interface base address were not set prior
++            to that call
++    -EINVAL: number of vcpus is not known
++    -ENOMEM: memory shortage when allocating vgic internal data
+diff --git a/arch/arm/include/uapi/asm/kvm.h b/arch/arm/include/uapi/asm/kvm.h
+index 77547bb..2499867 100644
+--- a/arch/arm/include/uapi/asm/kvm.h
++++ b/arch/arm/include/uapi/asm/kvm.h
+@@ -175,6 +175,8 @@ struct kvm_arch_memory_slot {
+ #define   KVM_DEV_ARM_VGIC_OFFSET_SHIFT	0
+ #define   KVM_DEV_ARM_VGIC_OFFSET_MASK	(0xffffffffULL << KVM_DEV_ARM_VGIC_OFFSET_SHIFT)
+ #define KVM_DEV_ARM_VGIC_GRP_NR_IRQS	3
++#define KVM_DEV_ARM_VGIC_GRP_CTRL       4
++#define   KVM_DEV_ARM_VGIC_CTRL_INIT    0
  
--#include <mach/hardware.h>
--#include <mach/at91_pio.h>
+ /* KVM_IRQ_LINE irq field index values */
+ #define KVM_ARM_IRQ_TYPE_SHIFT		24
+diff --git a/arch/arm64/include/uapi/asm/kvm.h b/arch/arm64/include/uapi/asm/kvm.h
+index 1ed4417..b35c95a 100644
+--- a/arch/arm64/include/uapi/asm/kvm.h
++++ b/arch/arm64/include/uapi/asm/kvm.h
+@@ -161,6 +161,8 @@ struct kvm_arch_memory_slot {
+ #define   KVM_DEV_ARM_VGIC_OFFSET_SHIFT	0
+ #define   KVM_DEV_ARM_VGIC_OFFSET_MASK	(0xffffffffULL << KVM_DEV_ARM_VGIC_OFFSET_SHIFT)
+ #define KVM_DEV_ARM_VGIC_GRP_NR_IRQS	3
++#define KVM_DEV_ARM_VGIC_GRP_CTRL	4
++#define   KVM_DEV_ARM_VGIC_CTRL_INIT	0
+ 
+ /* KVM_IRQ_LINE irq field index values */
+ #define KVM_ARM_IRQ_TYPE_SHIFT		24
+diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
+index b76c38c..2fe5bdb 100644
+--- a/virt/kvm/arm/vgic.c
++++ b/virt/kvm/arm/vgic.c
+@@ -2474,7 +2474,14 @@ static int vgic_set_attr(struct kvm_device *dev, struct kvm_device_attr *attr)
+ 
+ 		return ret;
+ 	}
 -
- #include "core.h"
++	case KVM_DEV_ARM_VGIC_GRP_CTRL: {
++		switch (attr->attr) {
++		case KVM_DEV_ARM_VGIC_CTRL_INIT:
++			r = kvm_vgic_init(dev->kvm);
++			return r;
++		}
++		break;
++	}
+ 	}
  
-+/* PIO register definitions */
-+#define PIO_PER		0x00	/* Enable Register */
-+#define PIO_PDR		0x04	/* Disable Register */
-+#define PIO_PSR		0x08	/* Status Register */
-+#define PIO_OER		0x10	/* Output Enable Register */
-+#define PIO_ODR		0x14	/* Output Disable Register */
-+#define PIO_OSR		0x18	/* Output Status Register */
-+#define PIO_IFER	0x20	/* Glitch Input Filter Enable */
-+#define PIO_IFDR	0x24	/* Glitch Input Filter Disable */
-+#define PIO_IFSR	0x28	/* Glitch Input Filter Status */
-+#define PIO_SODR	0x30	/* Set Output Data Register */
-+#define PIO_CODR	0x34	/* Clear Output Data Register */
-+#define PIO_ODSR	0x38	/* Output Data Status Register */
-+#define PIO_PDSR	0x3c	/* Pin Data Status Register */
-+#define PIO_IER		0x40	/* Interrupt Enable Register */
-+#define PIO_IDR		0x44	/* Interrupt Disable Register */
-+#define PIO_IMR		0x48	/* Interrupt Mask Register */
-+#define PIO_ISR		0x4c	/* Interrupt Status Register */
-+#define PIO_MDER	0x50	/* Multi-driver Enable Register */
-+#define PIO_MDDR	0x54	/* Multi-driver Disable Register */
-+#define PIO_MDSR	0x58	/* Multi-driver Status Register */
-+#define PIO_PUDR	0x60	/* Pull-up Disable Register */
-+#define PIO_PUER	0x64	/* Pull-up Enable Register */
-+#define PIO_PUSR	0x68	/* Pull-up Status Register */
-+#define PIO_ASR		0x70	/* Peripheral A Select Register */
-+#define PIO_ABCDSR1	0x70	/* Peripheral ABCD Select Register 1 [some SoCs only] */
-+#define PIO_BSR		0x74	/* Peripheral B Select Register */
-+#define PIO_ABCDSR2	0x74	/* Peripheral ABCD Select Register 2 [some SoCs only] */
-+#define PIO_ABSR	0x78	/* AB Status Register */
-+#define PIO_IFSCDR	0x80	/* Input Filter Slow Clock Disable Register */
-+#define PIO_IFSCER	0x84	/* Input Filter Slow Clock Enable Register */
-+#define PIO_IFSCSR	0x88	/* Input Filter Slow Clock Status Register */
-+#define PIO_SCDR	0x8c	/* Slow Clock Divider Debouncing Register */
-+#define		PIO_SCDR_DIV	(0x3fff <<  0)		/* Slow Clock Divider Mask */
-+#define PIO_PPDDR	0x90	/* Pad Pull-down Disable Register */
-+#define PIO_PPDER	0x94	/* Pad Pull-down Enable Register */
-+#define PIO_PPDSR	0x98	/* Pad Pull-down Status Register */
-+#define PIO_OWER	0xa0	/* Output Write Enable Register */
-+#define PIO_OWDR	0xa4	/* Output Write Disable Register */
-+#define PIO_OWSR	0xa8	/* Output Write Status Register */
-+#define PIO_AIMER	0xb0	/* Additional Interrupt Modes Enable Register */
-+#define PIO_AIMDR	0xb4	/* Additional Interrupt Modes Disable Register */
-+#define PIO_AIMMR	0xb8	/* Additional Interrupt Modes Mask Register */
-+#define PIO_ESR		0xc0	/* Edge Select Register */
-+#define PIO_LSR		0xc4	/* Level Select Register */
-+#define PIO_ELSR	0xc8	/* Edge/Level Status Register */
-+#define PIO_FELLSR	0xd0	/* Falling Edge/Low Level Select Register */
-+#define PIO_REHLSR	0xd4	/* Rising Edge/ High Level Select Register */
-+#define PIO_FRLHSR	0xd8	/* Fall/Rise - Low/High Status Register */
-+#define PIO_SCHMITT	0x100	/* Schmitt Trigger Register */
-+
-+#define ABCDSR_PERIPH_A	0x0
-+#define ABCDSR_PERIPH_B	0x1
-+#define ABCDSR_PERIPH_C	0x2
-+#define ABCDSR_PERIPH_D	0x3
-+
-+#define SAMA5D3_PIO_DRIVER1		0x118  /*PIO Driver 1 register offset*/
-+#define SAMA5D3_PIO_DRIVER2		0x11C  /*PIO Driver 2 register offset*/
-+
-+#define AT91SAM9X5_PIO_DRIVER1	0x114  /*PIO Driver 1 register offset*/
-+#define AT91SAM9X5_PIO_DRIVER2	0x118  /*PIO Driver 2 register offset*/
-+
- #define MAX_GPIO_BANKS		5
- #define MAX_NB_GPIO_PER_BANK	32
- 
+ 	return -ENXIO;
+@@ -2553,6 +2560,11 @@ static int vgic_has_attr(struct kvm_device *dev, struct kvm_device_attr *attr)
+ 		return vgic_has_attr_regs(vgic_cpu_ranges, offset);
+ 	case KVM_DEV_ARM_VGIC_GRP_NR_IRQS:
+ 		return 0;
++	case KVM_DEV_ARM_VGIC_GRP_CTRL:
++		switch (attr->attr) {
++		case KVM_DEV_ARM_VGIC_CTRL_INIT:
++			return 0;
++		}
+ 	}
+ 	return -ENXIO;
+ }
 -- 
-2.1.3
+1.9.1
 
