@@ -1,151 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932398AbaLBPLr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 10:11:47 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:44898 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508AbaLBPLq (ORCPT
+	id S932465AbaLBPMF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 10:12:05 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41864 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932413AbaLBPMB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 10:11:46 -0500
-From: Paul Hedman <paul@mybboard.net>
-X-Google-Original-From: Paul Hedman <paul@mybb.com>
-To: paul@mybb.com, greg@kroah.com
-Cc: marek.belisko@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: ft1000: fix spaces around comparisons in ft1000_debug.c
-Date: Tue,  2 Dec 2014 09:11:15 -0600
-Message-Id: <1417533075-687-1-git-send-email-paul@mybb.com>
-X-Mailer: git-send-email 2.1.0
+	Tue, 2 Dec 2014 10:12:01 -0500
+Date: Tue, 2 Dec 2014 15:11:45 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: "tthayer@opensource.altera.com" <tthayer@opensource.altera.com>
+Cc: "bp@alien8.de" <bp@alien8.de>,
+        "dougthompson@xmission.com" <dougthompson@xmission.com>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "tthayer.linux@gmail.com" <tthayer.linux@gmail.com>
+Subject: Re: [PATCHv5 2/5] arm: socfpga: Enable OCRAM ECC on startup.
+Message-ID: <20141202151145.GN23671@leverpostej>
+References: <1415751263-1830-1-git-send-email-tthayer@opensource.altera.com>
+ <1415751263-1830-3-git-send-email-tthayer@opensource.altera.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415751263-1830-3-git-send-email-tthayer@opensource.altera.com>
+Thread-Topic: [PATCHv5 2/5] arm: socfpga: Enable OCRAM ECC on startup.
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fix fixes spacing issues around operators, e.g. i=0 to i = 0, found by the checkpatch.pl tool.
+On Wed, Nov 12, 2014 at 12:14:20AM +0000, tthayer@opensource.altera.com wrote:
+> From: Thor Thayer <tthayer@opensource.altera.com>
+> 
+> This patch enables the ECC for On-Chip RAM on machine
+> startup.  The ECC has to be enabled before data is
+> is stored in memory otherwise the ECC will fail on
+> reads.
+> 
+> Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
+> ---
+> v2: Split OCRAM ECC portion separately. Addition of iounmap()
+> and reorganization of gen_pool_free. Remove defconfig from patch.
+> 
+> v3/4: No change
+> 
+> v5: Remove ocram.h, use io.h instead of clk-provider.h
+>     Check prop in correct place. Add ECC EN defines.
+> ---
+>  arch/arm/mach-socfpga/Makefile  |    1 +
+>  arch/arm/mach-socfpga/core.h    |    1 +
+>  arch/arm/mach-socfpga/ocram.c   |   90 +++++++++++++++++++++++++++++++++++++++
+>  arch/arm/mach-socfpga/socfpga.c |    9 ++++
+>  4 files changed, 101 insertions(+)
+>  create mode 100644 arch/arm/mach-socfpga/ocram.c
+> 
+> diff --git a/arch/arm/mach-socfpga/Makefile b/arch/arm/mach-socfpga/Makefile
+> index 142609e..1552ca5 100644
+> --- a/arch/arm/mach-socfpga/Makefile
+> +++ b/arch/arm/mach-socfpga/Makefile
+> @@ -5,3 +5,4 @@
+>  obj-y					:= socfpga.o
+>  obj-$(CONFIG_SMP)	+= headsmp.o platsmp.o
+>  obj-$(CONFIG_EDAC_ALTERA_L2C) += l2_cache.o
+> +obj-$(CONFIG_EDAC_ALTERA_OCRAM) += ocram.o
+> diff --git a/arch/arm/mach-socfpga/core.h b/arch/arm/mach-socfpga/core.h
+> index 385baba..f3eee32 100644
+> --- a/arch/arm/mach-socfpga/core.h
+> +++ b/arch/arm/mach-socfpga/core.h
+> @@ -45,5 +45,6 @@ extern unsigned long cpu1start_addr;
+>  #define SOCFPGA_SCU_VIRT_BASE   0xfffec000
+>  
+>  void socfpga_init_l2_ecc(void);
+> +void socfpga_init_ocram_ecc(void);
+>  
+>  #endif
+> diff --git a/arch/arm/mach-socfpga/ocram.c b/arch/arm/mach-socfpga/ocram.c
+> new file mode 100644
+> index 0000000..a83b34f
+> --- /dev/null
+> +++ b/arch/arm/mach-socfpga/ocram.c
+> @@ -0,0 +1,90 @@
+> +/*
+> + * Copyright Altera Corporation (C) 2014. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along with
+> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +#include <linux/io.h>
+> +#include <linux/genalloc.h>
+> +#include <linux/of_platform.h>
+> +
+> +#define ALTR_OCRAM_CLEAR_ECC          0x00000018
+> +#define ALTR_OCRAM_ECC_EN             0x00000019
+> +
+> +void socfpga_init_ocram_ecc(void)
+> +{
+> +	struct device_node *np;
+> +	const __be32 *prop;
 
-Signed-off-by: Paul Hedman <paul@mybb.com>
----
- drivers/staging/ft1000/ft1000-usb/ft1000_debug.c | 28 ++++++++++++------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
+Please don't use accessors which return raw __be32s in drivers,
+typically it's the wrong thing to do and leaves horrible bugs and/or
+quirks that are painful to fix up.
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c b/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c
-index 0f347ab..02bfb3e 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c
-@@ -193,7 +193,7 @@ int ft1000_create_dev(struct ft1000_usb *dev)
- 
-     /* initialize application information */
-     dev->appcnt = 0;
--    for (i=0; i<MAX_NUM_APP; i++) {
-+    for (i = 0; i < MAX_NUM_APP; i++) {
-         dev->app_info[i].nTxMsg = 0;
-         dev->app_info[i].nRxMsg = 0;
-         dev->app_info[i].nTxMsgReject = 0;
-@@ -260,7 +260,7 @@ void ft1000_destroy_dev(struct net_device *netdev)
- 					   dev->DeviceName);
- 
-         /* Make sure we free any memory reserve for slow Queue */
--        for (i=0; i<MAX_NUM_APP; i++) {
-+        for (i = 0; i < MAX_NUM_APP; i++) {
-             while (list_empty(&dev->app_info[i].app_sqlist) == 0) {
-                 pdpram_blk = list_entry(dev->app_info[i].app_sqlist.next, struct dpram_blk, list);
-                 list_del(&pdpram_blk->list);
-@@ -318,7 +318,7 @@ static int ft1000_open(struct inode *inode, struct file *file)
-     }
- 
-     /* Search for available application info block */
--    for (i=0; i<MAX_NUM_APP; i++) {
-+    for (i = 0; i < MAX_NUM_APP; i++) {
-         if ((dev->app_info[i].fileobject == NULL)) {
-             break;
-         }
-@@ -369,7 +369,7 @@ static unsigned int ft1000_poll_dev(struct file *file, poll_table *wait)
-     }
- 
-     /* Search for matching file object */
--    for (i=0; i<MAX_NUM_APP; i++) {
-+    for (i = 0; i < MAX_NUM_APP; i++) {
-         if (dev->app_info[i].fileobject == &file->f_owner) {
-             /* DEBUG("FT1000:ft1000_ioctl: Message is for AppId = %d\n", dev->app_info[i].app_id); */
-             break;
-@@ -411,7 +411,7 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
-     void __user *argp = (void __user *)argument;
- 	struct ft1000_info *info;
-     struct ft1000_usb *ft1000dev;
--    int result=0;
-+    int result = 0;
-     int cmd;
-     int i;
-     u16 tempword;
-@@ -426,8 +426,8 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
-                           0x00,0x00,0x02,0x37,0x00,0x00,0x00,0x08,0x00,0x00,0x00,0x01,0x00,0x01,0x7f,0x00,
-                           0x00,0x01,0x00,0x00};
- 
--    unsigned short ledStat=0;
--    unsigned short conStat=0;
-+    unsigned short ledStat = 0;
-+    unsigned short conStat = 0;
- 
-     /* DEBUG("ft1000_ioctl called\n"); */
- 
-@@ -454,7 +454,7 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
-             }
-             if (tempword == DSPBCMSGID) {
-                 /* Search for matching file object */
--                for (i=0; i<MAX_NUM_APP; i++) {
-+                for (i = 0; i < MAX_NUM_APP; i++) {
-                     if (ft1000dev->app_info[i].fileobject == &file->f_owner) {
-                         ft1000dev->app_info[i].DspBCMsgFlag = 1;
-                         DEBUG("FT1000:ft1000_ioctl:Registered for broadcast messages\n");
-@@ -581,12 +581,12 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
-                     result = -EFAULT;
-                 } else {
-                     /* Check if this message came from a registered application */
--                    for (i=0; i<MAX_NUM_APP; i++) {
-+                    for (i = 0; i < MAX_NUM_APP; i++) {
-                         if (ft1000dev->app_info[i].fileobject == &file->f_owner) {
-                             break;
-                         }
-                     }
--                    if (i==MAX_NUM_APP) {
-+                    if (i == MAX_NUM_APP) {
-                         DEBUG("FT1000:No matching application fileobject\n");
-                         result = -EINVAL;
- 			kfree(dpram_data);
-@@ -646,7 +646,7 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
-                             /* Calculate new checksum */
-                             ppseudo_hdr->checksum = *pmsg++;
-                             /* DEBUG("checksum = 0x%x\n", ppseudo_hdr->checksum); */
--                            for (i=1; i<7; i++) {
-+                            for (i = 1; i < 7; i++) {
-                                 ppseudo_hdr->checksum ^= *pmsg++;
-                                 /* DEBUG("checksum = 0x%x\n", ppseudo_hdr->checksum); */
-                             }
-@@ -682,7 +682,7 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
-             }
- 
-             /* Search for matching file object */
--            for (i=0; i<MAX_NUM_APP; i++) {
-+            for (i = 0; i < MAX_NUM_APP; i++) {
-                 if (ft1000dev->app_info[i].fileobject == &file->f_owner) {
-                     /*DEBUG("FT1000:ft1000_ioctl: Message is for AppId = %d\n", ft1000dev->app_info[i].app_id); */
-                     break;
-@@ -766,14 +766,14 @@ static int ft1000_release(struct inode *inode, struct file *file)
-     }
- 
-     /* Search for matching file object */
--    for (i=0; i<MAX_NUM_APP; i++) {
-+    for (i = 0; i < MAX_NUM_APP; i++) {
-         if (ft1000dev->app_info[i].fileobject == &file->f_owner) {
-             /* DEBUG("FT1000:ft1000_ioctl: Message is for AppId = %d\n", ft1000dev->app_info[i].app_id); */
-             break;
-         }
-     }
- 
--    if (i==MAX_NUM_APP)
-+    if (i == MAX_NUM_APP)
- 	    return 0;
- 
-     while (list_empty(&ft1000dev->app_info[i].app_sqlist) == 0) {
--- 
-2.1.0
+> +	u32 ocr_edac_addr, iram_addr, len;
+> +	void __iomem  *mapped_ocr_edac_addr;
+> +	size_t size;
+> +	struct gen_pool *gp;
+> +
+> +	np = of_find_compatible_node(NULL, NULL, "altr,ocram-edac");
+> +	if (!np) {
+> +		pr_err("SOCFPGA: Unable to find altr,ocram-edac in dtb\n");
+> +		return;
+> +	}
+> +
+> +	prop = of_get_property(np, "reg", &size);
+> +	if (!prop || size < sizeof(*prop)) {
+> +		pr_err("SOCFPGA: Unable to find OCRAM ECC mapping in dtb\n");
+> +		return;
+> +	}
+> +	ocr_edac_addr = be32_to_cpup(prop++);
+> +	len = be32_to_cpup(prop);
 
+Use of_iomap(np, 0). You don't seem to pass the address around, so that
+should be sufficient.
+
+> +
+> +	gp = of_get_named_gen_pool(np, "iram", 0);
+> +	if (!gp) {
+> +		pr_err("SOCFPGA: OCRAM cannot find gen pool\n");
+> +		return;
+> +	}
+> +
+> +	np = of_find_compatible_node(NULL, NULL, "mmio-sram");
+> +	if (!np) {
+> +		pr_err("SOCFPGA: Unable to find mmio-sram in dtb\n");
+> +		return;
+> +	}
+> +
+> +	/* Determine the OCRAM address and size */
+> +	prop = of_get_property(np, "reg", &size);
+> +	if (!prop || size < sizeof(*prop)) {
+> +		pr_err("SOCFPGA: Unable to find OCRAM mapping in dtb\n");
+> +		return;
+> +	}
+> +	iram_addr = be32_to_cpup(prop++);
+> +	len = be32_to_cpup(prop);
+
+This address is overwritten below. What's going on?
+
+> +
+> +	iram_addr = gen_pool_alloc(gp, len);
+> +	if (iram_addr == 0) {
+> +		pr_err("SOCFPGA: cannot alloc from gen pool\n");
+> +		return;
+> +	}
+> +
+> +	memset((void *)iram_addr, 0, len);
+
+How is the iram mapped? Is memset to it safe (e.g. it unaligned accesses
+are made)?
+
+> +
+> +	gen_pool_free(gp, iram_addr, len);
+> +
+> +	mapped_ocr_edac_addr = ioremap(ocr_edac_addr, 4);
+> +	if (!mapped_ocr_edac_addr) {
+> +		pr_err("SOCFPGA: Unable to map OCRAM ecc regs.\n");
+> +		return;
+> +	}
+> +
+> +	/* Clear any pending OCRAM ECC interrupts, then enable ECC */
+> +	writel(ALTR_OCRAM_CLEAR_ECC, mapped_ocr_edac_addr);
+> +	writel(ALTR_OCRAM_ECC_EN, mapped_ocr_edac_addr);
+> +
+> +	iounmap(mapped_ocr_edac_addr);
+> +
+> +	pr_debug("SOCFPGA: Success Initializing OCRAM\n");
+> +}
+> diff --git a/arch/arm/mach-socfpga/socfpga.c b/arch/arm/mach-socfpga/socfpga.c
+> index 0954011..065d80d 100644
+> --- a/arch/arm/mach-socfpga/socfpga.c
+> +++ b/arch/arm/mach-socfpga/socfpga.c
+> @@ -100,6 +100,14 @@ static void socfpga_cyclone5_restart(enum reboot_mode mode, const char *cmd)
+>  	writel(temp, rst_manager_base_addr + SOCFPGA_RSTMGR_CTRL);
+>  }
+>  
+> +static void __init socfpga_cyclone5_init(void)
+> +{
+> +	of_platform_populate(NULL, of_default_bus_match_table,
+> +			     NULL, NULL);
+> +	if (IS_ENABLED(CONFIG_EDAC_ALTERA_OCRAM))
+> +		socfpga_init_ocram_ecc();
+
+If it's safe to do this after probing everything else, why can't this be
+a normal device probe?
+
+Thanks,
+Mark.
