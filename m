@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933078AbaLBHwJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 02:52:09 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:55079 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932083AbaLBHwH (ORCPT
+	id S933082AbaLBHxe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 02:53:34 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:54054 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932829AbaLBHxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 02:52:07 -0500
-Date: Tue, 25 Nov 2014 15:01:43 -0800
-From: Darren Hart <dvhart@infradead.org>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libsmbios-devel@lists.us.dell.com,
-        Srinivas_G_Gowda@dell.com, Michael_E_Brown@dell.com,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Subject: Re: [PATCH v2] platform: x86: dell-laptop: Add support for keyboard
- backlight
-Message-ID: <20141125230143.GB32102@vmdeb7>
-References: <1415967813-7223-1-git-send-email-pali.rohar@gmail.com>
- <1416754245-15550-1-git-send-email-pali.rohar@gmail.com>
+	Tue, 2 Dec 2014 02:53:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1416754245-15550-1-git-send-email-pali.rohar@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+From: Dmitry Vyukov <dvyukov@google.com>
+Date: Tue, 2 Dec 2014 11:53:09 +0400
+Message-ID: <CACT4Y+bZu5UHu90F8wWqckcE13D5H2LDexna6vVEMBy+X4RiZw@mail.gmail.com>
+Subject: Out-of-bounds access in nfnetlink_bind
+To: pablo@netfilter.org, kaber@trash.net, kadlec@blackhole.kfki.hu,
+        David Miller <davem@davemloft.net>, netfilter-devel@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        kasan-dev <kasan-dev@googlegroups.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Kostya Serebryany <kcc@google.com>,
+        Andrey Konovalov <andreyknvl@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 23, 2014 at 03:50:45PM +0100, Pali Rohár wrote:
-> This patch adds support for configuring keyboard backlight settings on supported
-> Dell laptops. It exports kernel leds interface and uses Dell SMBIOS tokens or
-> keyboard class interface.
-> 
-> With this patch it is possible to set:
-> * keyboard backlight level
-> * timeout after which will be backlight automatically turned off
-> * input activity triggers (keyboard, touchpad, mouse) which enable backlight
-> * ambient light settings
-> 
-> Settings are exported via sysfs:
-> /sys/class/leds/dell::kbd_backlight/
-> 
-> Code is based on newly released documentation by Dell in libsmbios project.
-> 
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> Signed-off-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Hi,
 
-Queued in Testing branch, but still pending a more thorough final review from me
-as it is such a large patch.
+I am working on Kernel AddressSanitizer, a fast memory error detector
+for kernel:
+https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
 
--- 
-Darren Hart
-Intel Open Source Technology Center
+Here is an error report that I got while running trinity:
+
+==================================================================
+BUG: AddressSanitizer: out of bounds access in
+nfnetlink_bind+0xbf/0xe0 at addr ffffffff82eef710
+Read of size 4 by task trinity-main/2533
+Out-of-bounds access to the global variable 'nfnl_group2type'
+[ffffffff82eef6e0-ffffffff82eef704) defined at
+net/netfilter/nfnetlink.c:43:18
+CPU: 0 PID: 2533 Comm: trinity-main Not tainted 3.18.0-rc1+ #44
+Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
+ ffffffff835173e8 ffff8800b989fd18 ffffffff82a3d66f 0000000000000007
+ ffff8800b989fdc0 ffff8800b989fda8 ffffffff813a3826 0000000000000012
+ 0000000000000000 0000000100000018 0000000000000296 ffff8800b989fd88
+Call Trace:
+ [<ffffffff813a39c1>] __asan_report_load4_noabort+0x41/0x50
+mm/kasan/report.c:236
+ [<ffffffff824769cf>] nfnetlink_bind+0xbf/0xe0 net/netfilter/nfnetlink.c:467
+ [<ffffffff82469b71>] netlink_bind+0x221/0x7e0 net/netlink/af_netlink.c:1472
+ [<ffffffff8238bf77>] SYSC_bind+0x117/0x170 net/socket.c:1541
+ [<ffffffff8238dc29>] SyS_bind+0x9/0x10 net/socket.c:1527
+ [<ffffffff82a522a9>] system_call_fastpath+0x12/0x17
+arch/x86/kernel/entry_64.S:422
+Memory state around the buggy address:
+ ffffffff82eef480: 00 00 00 00 00 00 00 00 00 00 00 00 00 f8 f8 f8
+ ffffffff82eef500: f8 f8 f8 f8 00 00 00 00 f8 f8 f8 f8 00 00 00 01
+ ffffffff82eef580: f8 f8 f8 f8 00 00 00 00 05 f8 f8 f8 f8 f8 f8 f8
+ ffffffff82eef600: 00 00 04 f8 f8 f8 f8 f8 00 00 f8 f8 f8 f8 f8 f8
+ ffffffff82eef680: 00 00 00 00 07 f8 f8 f8 f8 f8 f8 f8 00 00 00 00
+>ffffffff82eef700: 04 f8 f8 f8 f8 f8 f8 f8 00 06 f8 f8 f8 f8 f8 f8
+                         ^
+ ffffffff82eef780: 00 00 00 05 f8 f8 f8 f8 00 00 00 00 00 f8 f8 f8
+ ffffffff82eef800: f8 f8 f8 f8 00 00 00 00 02 f8 f8 f8 f8 f8 f8 f8
+ ffffffff82eef880: 00 00 00 00 06 f8 f8 f8 f8 f8 f8 f8 00 00 00 04
+ ffffffff82eef900: f8 f8 f8 f8 00 00 00 00 00 04 f8 f8 f8 f8 f8 f8
+ ffffffff82eef980: 00 00 00 07 f8 f8 f8 f8 00 00 00 06 f8 f8 f8 f8
+==================================================================
+
+My source is on revision f114040e3ea6e07372334ade75d1ee0
+
+As far as I see netlink_bind just calls nfnetlink_bind with whatever
+groups user has requested; nfnetlink_bind in turn do not do any checks
+before indexing the global nfnl_group2type array with the group.
