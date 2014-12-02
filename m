@@ -1,71 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659AbaLBSX4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 13:23:56 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:44177 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754624AbaLBSXy (ORCPT
+	id S1754681AbaLBSYX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 13:24:23 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33295 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754365AbaLBSYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 13:23:54 -0500
-Date: Tue, 2 Dec 2014 19:23:51 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] oom: kill the insufficient and no longer needed
- PT_TRACE_EXIT check
-Message-ID: <20141202182351.GL27014@dhcp22.suse.cz>
-References: <20141127230349.GA25075@redhat.com>
- <20141127230408.GA25100@redhat.com>
- <20141202093530.GC27014@dhcp22.suse.cz>
- <20141202180529.GB20314@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141202180529.GB20314@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 2 Dec 2014 13:24:22 -0500
+Message-ID: <1417544629.3411.15.camel@pengutronix.de>
+Subject: Re: [PATCH v15 06/12] dt-bindings: add document for dw_hdmi
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Andy Yan <andy.yan@rock-chips.com>
+Cc: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>, vladimir_zapolskiy@mentor.com,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Date: Tue, 02 Dec 2014 19:23:49 +0100
+In-Reply-To: <1417506124-18626-1-git-send-email-andy.yan@rock-chips.com>
+References: <1417505778-18341-1-git-send-email-andy.yan@rock-chips.com>
+	 <1417506124-18626-1-git-send-email-andy.yan@rock-chips.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 02-12-14 19:05:29, Oleg Nesterov wrote:
-> On 12/02, Michal Hocko wrote:
-> >
-> > On Fri 28-11-14 00:04:08, Oleg Nesterov wrote:
-> > > After the previous patch we can remove the PT_TRACE_EXIT check in
-> > > oom_scan_process_thread(), it was added to handle the case when the
-> > > coredumping was "frozen" by ptrace, but it doesn't really work. If
-> > > nothing else, we would need to check all threads which could share
-> > > the same ->mm to make it more or less correct.
-> > >
-> > > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> >
-> > I still do not see why we do not need task->ptrace & PT_TRACE_EXIT check
-> > here. I do understand that the check on group_leader doesn't make much
-> > sense. ptrace_event would block until the tracer let the task run again
-> > which may be never AFAICS.
-> 
-> No, note that PT_TRACE_EXIT (the last ptrace event) is reported before
-> PF_EXITING is set.
+Hi Andy,
 
-OK, I managed to confuse myself by the PF_EXITING test before
-exit_signals in do_exit but now that I am looking closer it seems that
-this is not interesting from the OOM POV.
+Am Dienstag, den 02.12.2014, 15:42 +0800 schrieb Andy Yan:
+> diff --git a/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+> new file mode 100644
+> index 0000000..107c1ca
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
+> @@ -0,0 +1,40 @@
+> +DesignWare HDMI bridge bindings
+> +
+> +Required properities:
+> +- compatible: platform specific such as:
+> +   * "fsl,imx6q-hdmi"
+> +   * "fsl,imx6dl-hdmi"
+> +   * "rockchip,rk3288-dw-hdmi"
 
-Thanks for the clarification. This code is so subtle that I rather ask
-than miss something.
+I think we should add a common compatible value "snps,dw-hdmi-tx" here:
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+	compatible = "fsl,imx6q-hdmi", "snps,dw-hdmi-tx";
 
-> (just in case... we do have some problems with SIGKILL && ptrace, but
->  this is completely off-topic and has nothing to do with oom-kill.c)
-> 
-> Oleg.
-> 
+> +- reg: Physical base address and length of the controller's registers.
+> +- ddc-i2c-bus: phandle of an I2C controller used for DDC EDID probing
 
--- 
-Michal Hocko
-SUSE Labs
+Better make ddc-i2c-bus optional, see the other thread about the ddc i2c
+master.
+
+> +- interrupts: The HDMI interrupt number
+> +
+> +Optional properties
+> +- reg-io-width: the width of the reg:1,4, default set to 1 if not present
+> +
+> +Example:
+> +	hdmi: hdmi@0120000 {
+> +		compatible = "fsl,imx6q-hdmi";
+> +		reg = <0x00120000 0x9000>;
+> +		interrupts = <0 115 0x04>;
+> +		gpr = <&gpr>;
+> +		clocks = <&clks 123>, <&clks 124>;
+> +		clock-names = "iahb", "isfr";
+> +		ddc-i2c-bus = <&i2c2>;
+> +
+> +		port@0 {
+> +			reg = <0>;
+> +
+> +			hdmi_mux_0: endpoint {
+> +				remote-endpoint = <&ipu1_di0_hdmi>;
+> +			};
+> +		};
+> +
+> +		port@1 {
+> +			reg = <1>;
+> +
+> +			hdmi_mux_1: endpoint {
+> +				remote-endpoint = <&ipu1_di1_hdmi>;
+> +			};
+> +		};
+> +	};
+
+regards
+Philipp
+
