@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934171AbaLBT5x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:57:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46500 "EHLO
+	id S933971AbaLBT5v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:57:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46503 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754369AbaLBTU0 (ORCPT
+	with ESMTP id S1754387AbaLBTU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:20:26 -0500
+	Tue, 2 Dec 2014 14:20:27 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Daniel Borkmann <dborkman@redhat.com>, Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 016/121] acer-wmi: Add Aspire 5741 to video_vendor_dmi_table
-Date: Tue,  2 Dec 2014 11:18:15 -0800
-Message-Id: <1417548000-1794-17-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 010/121] net: sctp: fix NULL pointer dereference in af->from_addr_param on malformed packet
+Date: Tue,  2 Dec 2014 11:18:09 -0800
+Message-Id: <1417548000-1794-11-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
@@ -28,40 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 9404cd95507de0a61f2a000fbd76748a9cae33b4 upstream.
+commit e40607cbe270a9e8360907cb1e62ddf0736e4864 upstream.
 
-The Aspire 5741 has broken acpi-video backlight control, so add it to the
-quirk table.
+An SCTP server doing ASCONF will panic on malformed INIT ping-of-death
+in the form of:
 
-References: https://bugzilla.redhat.com/show_bug.cgi?id=1012674
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Reviewed-by: Lee, Chun-Yi <jlee@suse.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+  ------------ INIT[PARAM: SET_PRIMARY_IP] ------------>
+
+While the INIT chunk parameter verification dissects through many things
+in order to detect malformed input, it misses to actually check parameters
+inside of parameters. E.g. RFC5061, section 4.2.4 proposes a 'set primary
+IP address' parameter in ASCONF, which has as a subparameter an address
+parameter.
+
+So an attacker may send a parameter type other than SCTP_PARAM_IPV4_ADDRESS
+or SCTP_PARAM_IPV6_ADDRESS, param_type2af() will subsequently return 0
+and thus sctp_get_af_specific() returns NULL, too, which we then happily
+dereference unconditionally through af->from_addr_param().
+
+The trace for the log:
+
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000078
+IP: [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
+PGD 0
+Oops: 0000 [#1] SMP
+[...]
+Pid: 0, comm: swapper Not tainted 2.6.32-504.el6.x86_64 #1 Bochs Bochs
+RIP: 0010:[<ffffffffa01e9c62>]  [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
+[...]
+Call Trace:
+ <IRQ>
+ [<ffffffffa01f2add>] ? sctp_bind_addr_copy+0x5d/0xe0 [sctp]
+ [<ffffffffa01e1fcb>] sctp_sf_do_5_1B_init+0x21b/0x340 [sctp]
+ [<ffffffffa01e3751>] sctp_do_sm+0x71/0x1210 [sctp]
+ [<ffffffffa01e5c09>] ? sctp_endpoint_lookup_assoc+0xc9/0xf0 [sctp]
+ [<ffffffffa01e61f6>] sctp_endpoint_bh_rcv+0x116/0x230 [sctp]
+ [<ffffffffa01ee986>] sctp_inq_push+0x56/0x80 [sctp]
+ [<ffffffffa01fcc42>] sctp_rcv+0x982/0xa10 [sctp]
+ [<ffffffffa01d5123>] ? ipt_local_in_hook+0x23/0x28 [iptable_filter]
+ [<ffffffff8148bdc9>] ? nf_iterate+0x69/0xb0
+ [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
+ [<ffffffff8148bf86>] ? nf_hook_slow+0x76/0x120
+ [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
+[...]
+
+A minimal way to address this is to check for NULL as we do on all
+other such occasions where we know sctp_get_af_specific() could
+possibly return with NULL.
+
+Fixes: d6de3097592b ("[SCTP]: Add the handling of "Set Primary IP Address" parameter to INIT")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reference: CVE-2014-7841
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/platform/x86/acer-wmi.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ net/sctp/sm_make_chunk.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-index c9076bd..3990c79 100644
---- a/drivers/platform/x86/acer-wmi.c
-+++ b/drivers/platform/x86/acer-wmi.c
-@@ -572,6 +572,14 @@ static const struct dmi_system_id video_vendor_dmi_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5750"),
- 		},
- 	},
-+	{
-+		.callback = video_set_backlight_video_vendor,
-+		.ident = "Acer Aspire 5741",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "Acer"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5741"),
-+		},
-+	},
- 	{}
- };
+diff --git a/net/sctp/sm_make_chunk.c b/net/sctp/sm_make_chunk.c
+index e45212e..ca22389 100644
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -2609,6 +2609,9 @@ do_addr_param:
+ 		addr_param = param.v + sizeof(sctp_addip_param_t);
+ 
+ 		af = sctp_get_af_specific(param_type2af(param.p->type));
++		if (af == NULL)
++			break;
++
+ 		af->from_addr_param(&addr, addr_param,
+ 				    htons(asoc->peer.port), 0);
  
 -- 
 1.9.1
