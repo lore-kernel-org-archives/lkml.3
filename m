@@ -1,63 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933003AbaLBHzz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 02:55:55 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:55792 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932267AbaLBHzx (ORCPT
+	id S933073AbaLBH4E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 02:56:04 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:59200 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932267AbaLBHz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 02:55:53 -0500
-Date: Tue, 25 Nov 2014 15:05:28 -0800
-From: Darren Hart <dvhart@infradead.org>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Alex Hung <alex.hung@canonical.com>
-Subject: Re: [PATCH 0/3] Dell Airplane Mode Switch driver
-Message-ID: <20141125230527.GC32102@vmdeb7>
-References: <1416755361-17357-1-git-send-email-pali.rohar@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1416755361-17357-1-git-send-email-pali.rohar@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 2 Dec 2014 02:55:59 -0500
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: linux-kernel@vger.kernel.org
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Alex Elder <elder@linaro.org>, Bintian Wang <bintian.wang@huawei.com>,
+        Chao Xie <chao.xie@marvell.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        linux-mips@linux-mips.org, linux-omap@vger.kernel.org,
+        Manuel Lauss <manuel.lauss@gmail.com>,
+        Matt Porter <mporter@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Zhangfei Gao <zhangfei.gao@linaro.org>
+Subject: [PATCH v7 0/7] Per-user clock constraints
+Date: Tue,  2 Dec 2014 08:54:17 +0100
+Message-Id: <1417506933-8915-1-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 23, 2014 at 04:09:18PM +0100, Pali Rohár wrote:
-> This patch series add new acpi Dell Airplane Mode Switch driver (DELLABCE and
-> DELRBTN acpi devices). It provides radio HW switch events (together with current
-> state of radio devices) and export them via rfkill interface. These events are
-> also used in dell-laptop driver instead i8042 filter hook function (when acpi
-> device is available).
-> 
-> Pali Rohár (3):
->   platform: x86: dell-rbtn: Dell Airplane Mode Switch driver
->   platform: x86: dell-rbtn: Export notifier for other kernel modules
->   platform: x86: dell-laptop: Use dell-rbtn instead i8042 filter when
->     possible
-> 
->  drivers/platform/x86/Kconfig       |   14 ++
->  drivers/platform/x86/Makefile      |    1 +
->  drivers/platform/x86/dell-laptop.c |   67 +++++++++-
->  drivers/platform/x86/dell-rbtn.c   |  260 ++++++++++++++++++++++++++++++++++++
->  drivers/platform/x86/dell-rbtn.h   |   35 +++++
->  5 files changed, 372 insertions(+), 5 deletions(-)
->  create mode 100644 drivers/platform/x86/dell-rbtn.c
->  create mode 100644 drivers/platform/x86/dell-rbtn.h
+Hello,
 
-Alex, it is my understanding that this solution from Pali is a more complete
-solution to dealing with the variety of dell wireless buttons and rfkill
-mechanisms in the world today.
+this seventh version of the series has added just a few fixes for new
+implementations in linux-next of the determine_rate callback.
 
-I currently have:
-7c4d961 dell-wireless: new driver for dell wireless button for Windows 8
-queued in for-next. If I have read your responses on this correctly, are we all
-in agreement that I should drop the above patch, and apply these?
+A rough test module was used to test this:
+
+http://cgit.collabora.com/git/user/tomeu/linux.git/commit/?h=per-user-clk-constraints-v7&id=3d87d46d98f74b6f53eadf0d28785a3cd85c2178
+
+The first five patches are just cleanups that should be desirable on their own,
+and that should make easier to review the actual per-user clock patch.
+
+The sixth patch actually moves the per-clock data that was stored in struct
+clk to a new struct clk_core and adds references to it from both struct clk and
+struct clk_hw. struct clk is now ready to contain information that is specific
+to a given clk consumer.
+
+The seventh patch adds API for setting floor and ceiling constraints and stores
+that information on the per-user struct clk, which is iterable from struct
+clk_core.
+
+They are based on top of linux-next 20141201.
+
+http://cgit.collabora.com/git/user/tomeu/linux.git/log/?h=per-user-clk-constraints-v7
+
+Thanks,
+
+Tomeu
+
+Tomeu Vizoso (7):
+  clk: Remove unused function __clk_get_prepare_count
+  clk: Don't try to use a struct clk* after it could have been freed
+  clk: Don't expose __clk_get_accuracy
+  clk: change clk_debugfs_add_file to take a struct clk_hw
+  clk: Change clk_ops->determine_rate to return a clk_hw as the best
+    parent
+  clk: Make clk API return per-user struct clk instances
+  clk: Add floor and ceiling constraints to clock rates
+
+ Documentation/clk.txt                   |   4 +-
+ arch/arm/mach-omap2/cclock3xxx_data.c   | 108 +++--
+ arch/arm/mach-omap2/clock.h             |  11 +-
+ arch/arm/mach-omap2/clock_common_data.c |   5 +-
+ arch/arm/mach-omap2/dpll3xxx.c          |   8 +-
+ arch/arm/mach-omap2/dpll44xx.c          |   8 +-
+ arch/mips/alchemy/common/clock.c        |  18 +-
+ drivers/clk/at91/clk-programmable.c     |   6 +-
+ drivers/clk/bcm/clk-kona.c              |   6 +-
+ drivers/clk/clk-composite.c             |  18 +-
+ drivers/clk/clk.c                       | 807 +++++++++++++++++++++-----------
+ drivers/clk/clk.h                       |   5 +
+ drivers/clk/clkdev.c                    |  80 +++-
+ drivers/clk/hisilicon/clk-hi3620.c      |   4 +-
+ drivers/clk/mmp/clk-mix.c               |   6 +-
+ drivers/clk/qcom/clk-pll.c              |   3 +-
+ drivers/clk/qcom/clk-rcg.c              |  30 +-
+ drivers/clk/qcom/clk-rcg2.c             |  34 +-
+ drivers/clk/sunxi/clk-factors.c         |   6 +-
+ drivers/clk/sunxi/clk-sun6i-ar100.c     |   6 +-
+ include/linux/clk-private.h             |  41 +-
+ include/linux/clk-provider.h            |  26 +-
+ include/linux/clk.h                     |  28 ++
+ include/linux/clk/ti.h                  |   8 +-
+ 24 files changed, 873 insertions(+), 403 deletions(-)
 
 -- 
-Darren Hart
-Intel Open Source Technology Center
+1.9.3
+
