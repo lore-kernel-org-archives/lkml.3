@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687AbaLBOb6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 09:31:58 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:47317 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529AbaLBOb5 (ORCPT
+	id S1753648AbaLBOfP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 09:35:15 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:22481 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305AbaLBOfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 09:31:57 -0500
+	Tue, 2 Dec 2014 09:35:13 -0500
+Message-ID: <547DCE78.1020906@oracle.com>
+Date: Tue, 02 Dec 2014 09:36:40 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <547DA592.7090900@monstr.eu>
-References: <1417494919-4577-1-git-send-email-oakad@yahoo.com>
-	<1417494919-4577-3-git-send-email-oakad@yahoo.com>
-	<CAMuHMdWWnO7m8f+NnM8Xahexc+3ELeAgTDv67CzWWEZENqztEA@mail.gmail.com>
-	<547DA592.7090900@monstr.eu>
-Date: Wed, 3 Dec 2014 01:31:56 +1100
-Message-ID: <CAPs88r_6V_O_j8SrXAdkRZgLn=0BfZksK3e9=9xQGsjrqSZ+Zw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] fs: Wire up sendfd() syscall (all architectures)
-From: Alex Dubov <alex.dubov@gmail.com>
-To: monstr@monstr.eu
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alex Dubov <oakad@yahoo.com>
-Content-Type: text/plain; charset=UTF-8
+To: Borislav Petkov <bp@suse.de>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        david.vrabel@citrix.com, konrad.wilk@oracle.com, pbonzini@redhat.com,
+        gleb@kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] x86, microcode: Don't initialize microcode code on paravirt
+References: <1417469264-31470-1-git-send-email-boris.ostrovsky@oracle.com> <20141201220057.GC4730@pd.tnic> <547CEC5C.9070201@oracle.com> <20141201223708.GF4730@pd.tnic>
+In-Reply-To: <20141201223708.GF4730@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 2, 2014 at 10:42 PM, Michal Simek <monstr@monstr.eu> wrote:
-> On 12/02/2014 09:01 AM, Geert Uytterhoeven wrote:
->> This really needs a CC to linux-arch (added).
->>
->> On Tue, Dec 2, 2014 at 5:35 AM, Alex Dubov <alex.dubov@gmail.com> wrote:
->>> Signed-off-by: Alex Dubov <oakad@yahoo.com>
->>> ---
+On 12/01/2014 05:37 PM, Borislav Petkov wrote:
+> On Mon, Dec 01, 2014 at 05:31:56PM -0500, Boris Ostrovsky wrote:
+>> I think so. The problem we have now is __pa() macro that we only use
+>> on 32-bit. I'll queue this for overnight tests to make sure and if it
+>> indeed works then 3.19 should be fine.
+> Cool, thanks.
 
+All tests passed.
+
+> I'd still take your patch for 3.19 though because I'm fixing the 32-bit
+> reloading path properly and will remove the ifdef afterwards.
 >
-> The same for microblaze here
-> arch/microblaze/include/asm/unistd.h
+> And even then, I'd like to prevent loading the module on a paravirt
+> guest if it is totally unneeded there.
 >
 
-This invites the question as to why the __NR_syscalls macro is not
-defined in uapi/asm/unistd.h on those architectures, where it will be
-easier to spot? After all, asm/unistd.h includes uapi/asm/unistd.h
-unconditionally.
+I wonder whether we should prevent all guests (not just paravirt) from 
+loading microcode driver (and from doing early microcode loading).
+
+-boris
