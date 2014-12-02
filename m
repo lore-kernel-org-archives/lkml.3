@@ -1,86 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933434AbaLBXFr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 18:05:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54093 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932722AbaLBXFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 18:05:45 -0500
-Date: Wed, 3 Dec 2014 00:05:37 +0100
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: Re: [PATCH] KVM: cpuid: mask more bits in leaf 0xd and subleaves
-Message-ID: <20141202230536.GA12980@potion.redhat.com>
-References: <1417525770-16485-1-git-send-email-pbonzini@redhat.com>
+	id S933370AbaLBXJb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 18:09:31 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:42828 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933071AbaLBXJ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 18:09:29 -0500
+Message-ID: <547E4624.8060206@linux.vnet.ibm.com>
+Date: Tue, 02 Dec 2014 18:07:16 -0500
+From: Stefan Berger <stefanb@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1417525770-16485-1-git-send-email-pbonzini@redhat.com>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
+        Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>
+CC: christophe.ricard@gmail.com, josh.triplett@intel.com,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net,
+        jason.gunthorpe@obsidianresearch.com,
+        trousers-tech@lists.sourceforge.net
+Subject: Re: [tpmdd-devel] [PATCH v8 7/8] tpm: TPM 2.0 CRB Interface
+References: <1417559480-13757-1-git-send-email-jarkko.sakkinen@linux.intel.com> <1417559480-13757-8-git-send-email-jarkko.sakkinen@linux.intel.com>
+In-Reply-To: <1417559480-13757-8-git-send-email-jarkko.sakkinen@linux.intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120223-0033-0000-0000-000002DEC3F7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-12-02 14:09+0100, Paolo Bonzini:
-> - EAX=0Dh, ECX=1: output registers EBX/ECX/EDX are reserved.
+On 12/02/2014 05:31 PM, Jarkko Sakkinen wrote:
 
-(As good as reserved without XSAVES/IA32_XSS.)
 
-> - EAX=0Dh, ECX>1: output register ECX is zero for all the CPUID leaves
-> we support, because variable "supported" comes from XCR0 and not XSS.
-> However, only bits above 0 are reserved.  Output register EDX is reserved.
+> +struct acpi_tpm2 {
+> +	struct acpi_table_header hdr;
+> +	u16 platform_class;
+> +	u16 reserved;
+> +	u64 control_area_pa;
+> +	u32 start_method;
+> +} __packed;
+[...]
+> +	}
+> +
+> +	if (buf->hdr.length != sizeof(struct acpi_tpm2)) {
 
-(Yes.  Well, EDX is 0 when the sub-leaf is invalid.)
+This should be
 
-> Source: Intel Architecture Instruction Set Extensions Programming
-> Reference, ref. number 319433-022
-> 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> --
->  arch/x86/kvm/cpuid.c | 13 ++++++++++---
->  1 file changed, 10 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-> index 0d919bc33b02..b1366743a728 100644
-> --- a/arch/x86/kvm/cpuid.c
-> +++ b/arch/x86/kvm/cpuid.c
-> @@ -470,10 +470,17 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
->  				goto out;
->  
->  			do_cpuid_1_ent(&entry[i], function, idx);
-> -			if (idx == 1)
-> +			if (idx == 1) {
->  				entry[i].eax &= kvm_supported_word10_x86_features;
-> -			else if (entry[i].eax == 0 || !(supported & mask))
-> -				continue;
-> +				entry[i].ebx = 0;
-> +				entry[i].ecx = 0;
-> +			} else {
-> +				if (entry[i].eax == 0 || !(supported & mask))
-> +					continue;
-> +				WARN_ON_ONCE(entry[i].ecx & 1);
-> +				entry[i].ecx &= 1;
+if (buf->hdr.length < sizeof(struct acpi_tpm2)) {
 
- ECX  Bit 0 is set if the sub-leaf index, n, maps to a valid bit in the
-      IA32_XSS MSR and bit 0 is clear if n maps to a valid bit in XCR0.
+since the ACPI TPM2 table may have a variable number of 'Platform 
+Specific Parameters' beyond the 'Start Method Field'. What we don't want 
+to have is less, but more is fine.
 
-ECX should be set to 0 instead, we definitely don't map to a valid bit
-in IA32_XSS now.
-(Having only one part of cpuid ready for it is weird ...)
+    Stefan
 
-> +			}
-> +			entry[i].edx = 0;
->  			entry[i].flags |=
->  			       KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
-
-(Unrelated, I have yet to understand how this flag translates
- * If ECX contains an invalid sub-leaf index, EAX/EBX/ECX/EDX return 0.)
-
->  			++*nent;
-
-Forcing a change of the XSAVES implementation is a likely purpose of
-this patch and it is correct after changing the ecx handling, so then,
-
-Reviewed-by: Radim Krčmář <rkrcmar@redhat.com>
