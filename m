@@ -1,421 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844AbaLBKT7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 05:19:59 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:54224 "EHLO
+	id S1754016AbaLBKXd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 05:23:33 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:56033 "EHLO
 	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483AbaLBKT4 (ORCPT
+	with ESMTP id S1751021AbaLBKXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 05:19:56 -0500
+	Tue, 2 Dec 2014 05:23:31 -0500
+Message-ID: <547D9308.8080403@huawei.com>
+Date: Tue, 2 Dec 2014 18:23:04 +0800
 From: Wang Nan <wangnan0@huawei.com>
-To: <masami.hiramatsu.pt@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 CC: <tixy@linaro.org>, <linux@arm.linux.org.uk>, <lizefan@huawei.com>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH] ARM: probes: move all probe code to dedicate directory
-Date: Tue, 2 Dec 2014 18:16:23 +0800
-Message-ID: <1417515383-79890-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
+Subject: Re: [PATCH v11 1/7] ARM: probes: move all probe code to dedicate
+ directory
+References: <1417423513-47161-1-git-send-email-wangnan0@huawei.com> <1417423695-47521-1-git-send-email-wangnan0@huawei.com> <547D471B.2070908@hitachi.com>
 In-Reply-To: <547D471B.2070908@hitachi.com>
-References: <547D471B.2070908@hitachi.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
 X-CFilter-Loop: Reflected
 X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020205.547D924A.0077,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	refid=str=0001.0A020208.547D9322.0072,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
 	ip=0.0.0.0,
 	so=2013-05-26 15:14:31,
 	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: ffc95889af32d5cb488ac6c26cc00934
+X-Mirapoint-Loop-Id: 0572fd1f03bad724ccf0bdfe081d47d8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In discussion on LKML (https://lkml.org/lkml/2014/11/28/158), Russell
-King suggests to move all probe related code to arch/arm/probes. This
-patch does the work. Due to dependency on 'arch/arm/kernel/patch.h', this
-patch also moves patch.h to 'arch/arm/include/asm/patch.h', and related
-'#include' directives are also midified to '#include <asm/patch.h>'.
+On 2014/12/2 12:59, Masami Hiramatsu wrote:
+> (2014/12/01 17:48), Wang Nan wrote:
+>> In discussion on LKML (https://lkml.org/lkml/2014/11/28/158), Russell
+>> King suggest to move all probe related code to arch/arm/probes. This
+>> patch do the work. Due to dependency on 'arch/arm/kernel/patch.h', this
+>> patch also move patch.h to 'arch/arm/include/asm/patch.h', and related
+>> '#include' directive are also midified to '#include <asm/patch.h>'.
+> 
+> Moving is good to me, but renaming files are also required I think.
+> 
+>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+>> ---
+>>  arch/arm/Makefile                                |  1 +
+>>  arch/arm/{kernel => include/asm}/patch.h         |  0
+>>  arch/arm/kernel/Makefile                         | 16 ++--------------
+>>  arch/arm/kernel/jump_label.c                     |  2 +-
+>>  arch/arm/kernel/patch.c                          |  3 +--
+>>  arch/arm/probes/Makefile                         | 15 +++++++++++++++
+>>  arch/arm/{kernel => probes}/kprobes-arm.c        |  0
+>>  arch/arm/{kernel => probes}/kprobes-common.c     |  0
+>>  arch/arm/{kernel => probes}/kprobes-test-arm.c   |  0
+>>  arch/arm/{kernel => probes}/kprobes-test-thumb.c |  0
+>>  arch/arm/{kernel => probes}/kprobes-test.c       |  0
+>>  arch/arm/{kernel => probes}/kprobes-test.h       |  0
+>>  arch/arm/{kernel => probes}/kprobes-thumb.c      |  0
+>>  arch/arm/{kernel => probes}/kprobes.c            |  2 +-
+>>  arch/arm/{kernel => probes}/kprobes.h            |  0
+>>  arch/arm/{kernel => probes}/probes-arm.c         |  0
+>>  arch/arm/{kernel => probes}/probes-arm.h         |  0
+>>  arch/arm/{kernel => probes}/probes-thumb.c       |  0
+>>  arch/arm/{kernel => probes}/probes-thumb.h       |  0
+>>  arch/arm/{kernel => probes}/probes.c             |  0
+>>  arch/arm/{kernel => probes}/probes.h             |  0
+>>  arch/arm/{kernel => probes}/uprobes-arm.c        |  0
+>>  arch/arm/{kernel => probes}/uprobes.c            |  0
+>>  arch/arm/{kernel => probes}/uprobes.h            |  0
+> 
+> As I did on x86, these would be better renamed as expressing what they do.
+> I guess most of the files may have emulate-*.c or decode-*.c :)
+> 
+> Thank you,
+> 
 
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
+OK. I posted another patch in this thread. The directory tree is as follow:
 
----
+arch/arm/probes/
+|-- Makefile
+|-- decode-arm.c
+|-- decode-arm.h
+|-- decode-thumb.c
+|-- decode-thumb.h
+|-- decode.c
+|-- decode.h
+|-- kprobes
+|   |-- actions-arm.c
+|   |-- actions-common.c
+|   |-- actions-thumb.c
+|   |-- kprobes.c
+|   |-- kprobes.h
+|   |-- test-arm.c
+|   |-- test-core.c
+|   |-- test-core.h
+|   `-- test-thumb.c
+`-- uprobes
+    |-- actions-arm.c
+    |-- uprobes.c
+    `-- uprobes.h
 
-v1 -> v2:
- - Names of files are also changes to express their function.
----
- arch/arm/Makefile                                        |  1 +
- arch/arm/{kernel => include/asm}/patch.h                 |  0
- arch/arm/kernel/Makefile                                 | 16 ++--------------
- arch/arm/kernel/jump_label.c                             |  2 +-
- arch/arm/kernel/patch.c                                  |  3 +--
- arch/arm/probes/Makefile                                 | 15 +++++++++++++++
- arch/arm/{kernel/probes-arm.c => probes/decode-arm.c}    |  4 ++--
- arch/arm/{kernel/probes-arm.h => probes/decode-arm.h}    |  0
- .../arm/{kernel/probes-thumb.c => probes/decode-thumb.c} |  4 ++--
- .../arm/{kernel/probes-thumb.h => probes/decode-thumb.h} |  0
- arch/arm/{kernel/probes.c => probes/decode.c}            |  2 +-
- arch/arm/{kernel/probes.h => probes/decode.h}            |  0
- .../kprobes-arm.c => probes/kprobes/actions-arm.c}       |  2 +-
- .../kprobes-common.c => probes/kprobes/actions-common.c} |  0
- .../kprobes-thumb.c => probes/kprobes/actions-thumb.c}   |  2 +-
- arch/arm/{kernel => probes/kprobes}/kprobes.c            |  6 +++---
- arch/arm/{kernel => probes/kprobes}/kprobes.h            |  2 +-
- .../kprobes-test-arm.c => probes/kprobes/test-arm.c}     |  2 +-
- .../kprobes-test.c => probes/kprobes/test-core.c}        |  6 +++---
- .../kprobes-test.h => probes/kprobes/test-core.h}        |  0
- .../kprobes-test-thumb.c => probes/kprobes/test-thumb.c} |  2 +-
- .../uprobes-arm.c => probes/uprobes/actions-arm.c}       |  4 ++--
- arch/arm/{kernel => probes/uprobes}/uprobes.c            |  4 ++--
- arch/arm/{kernel => probes/uprobes}/uprobes.h            |  0
- 24 files changed, 40 insertions(+), 37 deletions(-)
- rename arch/arm/{kernel => include/asm}/patch.h (100%)
- create mode 100644 arch/arm/probes/Makefile
- rename arch/arm/{kernel/probes-arm.c => probes/decode-arm.c} (99%)
- rename arch/arm/{kernel/probes-arm.h => probes/decode-arm.h} (100%)
- rename arch/arm/{kernel/probes-thumb.c => probes/decode-thumb.c} (99%)
- rename arch/arm/{kernel/probes-thumb.h => probes/decode-thumb.h} (100%)
- rename arch/arm/{kernel/probes.c => probes/decode.c} (99%)
- rename arch/arm/{kernel/probes.h => probes/decode.h} (100%)
- rename arch/arm/{kernel/kprobes-arm.c => probes/kprobes/actions-arm.c} (99%)
- rename arch/arm/{kernel/kprobes-common.c => probes/kprobes/actions-common.c} (100%)
- rename arch/arm/{kernel/kprobes-thumb.c => probes/kprobes/actions-thumb.c} (99%)
- rename arch/arm/{kernel => probes/kprobes}/kprobes.c (99%)
- rename arch/arm/{kernel => probes/kprobes}/kprobes.h (98%)
- rename arch/arm/{kernel/kprobes-test-arm.c => probes/kprobes/test-arm.c} (99%)
- rename arch/arm/{kernel/kprobes-test.c => probes/kprobes/test-core.c} (99%)
- rename arch/arm/{kernel/kprobes-test.h => probes/kprobes/test-core.h} (100%)
- rename arch/arm/{kernel/kprobes-test-thumb.c => probes/kprobes/test-thumb.c} (99%)
- rename arch/arm/{kernel/uprobes-arm.c => probes/uprobes/actions-arm.c} (99%)
- rename arch/arm/{kernel => probes/uprobes}/uprobes.c (99%)
- rename arch/arm/{kernel => probes/uprobes}/uprobes.h (100%)
+2 directories, 19 files
 
-diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index 034a949..a57d9bb 100644
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -266,6 +266,7 @@ core-$(CONFIG_KVM_ARM_HOST) 	+= arch/arm/kvm/
- 
- # If we have a machine-specific directory, then include it in the build.
- core-y				+= arch/arm/kernel/ arch/arm/mm/ arch/arm/common/
-+core-y				+= arch/arm/probes/
- core-y				+= arch/arm/net/
- core-y				+= arch/arm/crypto/
- core-y				+= arch/arm/firmware/
-diff --git a/arch/arm/kernel/patch.h b/arch/arm/include/asm/patch.h
-similarity index 100%
-rename from arch/arm/kernel/patch.h
-rename to arch/arm/include/asm/patch.h
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 38ddd9f..40d3e00 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -51,20 +51,8 @@ obj-$(CONFIG_DYNAMIC_FTRACE)	+= ftrace.o insn.o
- obj-$(CONFIG_FUNCTION_GRAPH_TRACER)	+= ftrace.o insn.o
- obj-$(CONFIG_JUMP_LABEL)	+= jump_label.o insn.o patch.o
- obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel.o
--obj-$(CONFIG_UPROBES)		+= probes.o probes-arm.o uprobes.o uprobes-arm.o
--obj-$(CONFIG_KPROBES)		+= probes.o kprobes.o kprobes-common.o patch.o
--ifdef CONFIG_THUMB2_KERNEL
--obj-$(CONFIG_KPROBES)		+= kprobes-thumb.o probes-thumb.o
--else
--obj-$(CONFIG_KPROBES)		+= kprobes-arm.o probes-arm.o
--endif
--obj-$(CONFIG_ARM_KPROBES_TEST)	+= test-kprobes.o
--test-kprobes-objs		:= kprobes-test.o
--ifdef CONFIG_THUMB2_KERNEL
--test-kprobes-objs		+= kprobes-test-thumb.o
--else
--test-kprobes-objs		+= kprobes-test-arm.o
--endif
-+# Main staffs in KPROBES are in arch/arm/probes/ .
-+obj-$(CONFIG_KPROBES)		+= patch.o
- obj-$(CONFIG_OABI_COMPAT)	+= sys_oabi-compat.o
- obj-$(CONFIG_ARM_THUMBEE)	+= thumbee.o
- obj-$(CONFIG_KGDB)		+= kgdb.o
-diff --git a/arch/arm/kernel/jump_label.c b/arch/arm/kernel/jump_label.c
-index 4ce4f78..c6c73ed 100644
---- a/arch/arm/kernel/jump_label.c
-+++ b/arch/arm/kernel/jump_label.c
-@@ -1,8 +1,8 @@
- #include <linux/kernel.h>
- #include <linux/jump_label.h>
-+#include <asm/patch.h>
- 
- #include "insn.h"
--#include "patch.h"
- 
- #ifdef HAVE_JUMP_LABEL
- 
-diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
-index 07314af..08bcfa1 100644
---- a/arch/arm/kernel/patch.c
-+++ b/arch/arm/kernel/patch.c
-@@ -5,8 +5,7 @@
- #include <asm/cacheflush.h>
- #include <asm/smp_plat.h>
- #include <asm/opcodes.h>
--
--#include "patch.h"
-+#include <asm/patch.h>
- 
- struct patch {
- 	void *addr;
-diff --git a/arch/arm/probes/Makefile b/arch/arm/probes/Makefile
-new file mode 100644
-index 0000000..0b9bd28
---- /dev/null
-+++ b/arch/arm/probes/Makefile
-@@ -0,0 +1,15 @@
-+obj-$(CONFIG_UPROBES)		+= decode.o decode-arm.o uprobes/uprobes.o uprobes/actions-arm.o
-+obj-$(CONFIG_KPROBES)		+= decode.o kprobes/kprobes.o kprobes/actions-common.o
-+ifdef CONFIG_THUMB2_KERNEL
-+obj-$(CONFIG_KPROBES)		+= decode-thumb.o kprobes/actions-thumb.o
-+else
-+obj-$(CONFIG_KPROBES)		+= decode-arm.o kprobes/actions-arm.o
-+endif
-+obj-$(CONFIG_ARM_KPROBES_TEST)	+= test-kprobes.o
-+test-kprobes-objs		:= kprobes/test-core.o
-+ifdef CONFIG_THUMB2_KERNEL
-+test-kprobes-objs		+= kprobes/test-thumb.o
-+else
-+test-kprobes-objs		+= kprobes/test-arm.o
-+endif
-+
-diff --git a/arch/arm/kernel/probes-arm.c b/arch/arm/probes/decode-arm.c
-similarity index 99%
-rename from arch/arm/kernel/probes-arm.c
-rename to arch/arm/probes/decode-arm.c
-index 8eaef81..1fb81e7 100644
---- a/arch/arm/kernel/probes-arm.c
-+++ b/arch/arm/probes/decode-arm.c
-@@ -20,8 +20,8 @@
- #include <linux/stddef.h>
- #include <linux/ptrace.h>
- 
--#include "probes.h"
--#include "probes-arm.h"
-+#include "decode.h"
-+#include "decode-arm.h"
- 
- #define sign_extend(x, signbit) ((x) | (0 - ((x) & (1 << (signbit)))))
- 
-diff --git a/arch/arm/kernel/probes-arm.h b/arch/arm/probes/decode-arm.h
-similarity index 100%
-rename from arch/arm/kernel/probes-arm.h
-rename to arch/arm/probes/decode-arm.h
-diff --git a/arch/arm/kernel/probes-thumb.c b/arch/arm/probes/decode-thumb.c
-similarity index 99%
-rename from arch/arm/kernel/probes-thumb.c
-rename to arch/arm/probes/decode-thumb.c
-index 4131351..2cddd18 100644
---- a/arch/arm/kernel/probes-thumb.c
-+++ b/arch/arm/probes/decode-thumb.c
-@@ -12,8 +12,8 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- 
--#include "probes.h"
--#include "probes-thumb.h"
-+#include "decode.h"
-+#include "decode-thumb.h"
- 
- 
- static const union decode_item t32_table_1110_100x_x0xx[] = {
-diff --git a/arch/arm/kernel/probes-thumb.h b/arch/arm/probes/decode-thumb.h
-similarity index 100%
-rename from arch/arm/kernel/probes-thumb.h
-rename to arch/arm/probes/decode-thumb.h
-diff --git a/arch/arm/kernel/probes.c b/arch/arm/probes/decode.c
-similarity index 99%
-rename from arch/arm/kernel/probes.c
-rename to arch/arm/probes/decode.c
-index a8ab540..0141d70 100644
---- a/arch/arm/kernel/probes.c
-+++ b/arch/arm/probes/decode.c
-@@ -17,7 +17,7 @@
- #include <asm/ptrace.h>
- #include <linux/bug.h>
- 
--#include "probes.h"
-+#include "decode.h"
- 
- 
- #ifndef find_str_pc_offset
-diff --git a/arch/arm/kernel/probes.h b/arch/arm/probes/decode.h
-similarity index 100%
-rename from arch/arm/kernel/probes.h
-rename to arch/arm/probes/decode.h
-diff --git a/arch/arm/kernel/kprobes-arm.c b/arch/arm/probes/kprobes/actions-arm.c
-similarity index 99%
-rename from arch/arm/kernel/kprobes-arm.c
-rename to arch/arm/probes/kprobes/actions-arm.c
-index ac300c6..864feac 100644
---- a/arch/arm/kernel/kprobes-arm.c
-+++ b/arch/arm/probes/kprobes/actions-arm.c
-@@ -63,7 +63,7 @@
- #include <linux/ptrace.h>
- 
- #include "kprobes.h"
--#include "probes-arm.h"
-+#include "../decode-arm.h"
- 
- #if  __LINUX_ARM_ARCH__ >= 6
- #define BLX(reg)	"blx	"reg"		\n\t"
-diff --git a/arch/arm/kernel/kprobes-common.c b/arch/arm/probes/kprobes/actions-common.c
-similarity index 100%
-rename from arch/arm/kernel/kprobes-common.c
-rename to arch/arm/probes/kprobes/actions-common.c
-diff --git a/arch/arm/kernel/kprobes-thumb.c b/arch/arm/probes/kprobes/actions-thumb.c
-similarity index 99%
-rename from arch/arm/kernel/kprobes-thumb.c
-rename to arch/arm/probes/kprobes/actions-thumb.c
-index 9495d7f..35d6054 100644
---- a/arch/arm/kernel/kprobes-thumb.c
-+++ b/arch/arm/probes/kprobes/actions-thumb.c
-@@ -14,7 +14,7 @@
- #include <linux/kprobes.h>
- 
- #include "kprobes.h"
--#include "probes-thumb.h"
-+#include "decode-thumb.h"
- 
- /* These emulation encodings are functionally equivalent... */
- #define t32_emulate_rd8rn16rm0ra12_noflags \
-diff --git a/arch/arm/kernel/kprobes.c b/arch/arm/probes/kprobes/kprobes.c
-similarity index 99%
-rename from arch/arm/kernel/kprobes.c
-rename to arch/arm/probes/kprobes/kprobes.c
-index 6d64420..ea77d39 100644
---- a/arch/arm/kernel/kprobes.c
-+++ b/arch/arm/probes/kprobes/kprobes.c
-@@ -30,11 +30,11 @@
- #include <asm/cacheflush.h>
- #include <linux/percpu.h>
- #include <linux/bug.h>
-+#include <asm/patch.h>
- 
- #include "kprobes.h"
--#include "probes-arm.h"
--#include "probes-thumb.h"
--#include "patch.h"
-+#include "decode-arm.h"
-+#include "decode-thumb.h"
- 
- #define MIN_STACK_SIZE(addr) 				\
- 	min((unsigned long)MAX_STACK_SIZE,		\
-diff --git a/arch/arm/kernel/kprobes.h b/arch/arm/probes/kprobes/kprobes.h
-similarity index 98%
-rename from arch/arm/kernel/kprobes.h
-rename to arch/arm/probes/kprobes/kprobes.h
-index 9a2712e..7b58ecf 100644
---- a/arch/arm/kernel/kprobes.h
-+++ b/arch/arm/probes/kprobes/kprobes.h
-@@ -19,7 +19,7 @@
- #ifndef _ARM_KERNEL_KPROBES_H
- #define _ARM_KERNEL_KPROBES_H
- 
--#include "probes.h"
-+#include "../decode.h"
- 
- /*
-  * These undefined instructions must be unique and
-diff --git a/arch/arm/kernel/kprobes-test-arm.c b/arch/arm/probes/kprobes/test-arm.c
-similarity index 99%
-rename from arch/arm/kernel/kprobes-test-arm.c
-rename to arch/arm/probes/kprobes/test-arm.c
-index cb14242..d9a1255 100644
---- a/arch/arm/kernel/kprobes-test-arm.c
-+++ b/arch/arm/probes/kprobes/test-arm.c
-@@ -13,7 +13,7 @@
- #include <asm/system_info.h>
- #include <asm/opcodes.h>
- 
--#include "kprobes-test.h"
-+#include "test-core.h"
- 
- 
- #define TEST_ISA "32"
-diff --git a/arch/arm/kernel/kprobes-test.c b/arch/arm/probes/kprobes/test-core.c
-similarity index 99%
-rename from arch/arm/kernel/kprobes-test.c
-rename to arch/arm/probes/kprobes/test-core.c
-index b206d77..3dcfc58 100644
---- a/arch/arm/kernel/kprobes-test.c
-+++ b/arch/arm/probes/kprobes/test-core.c
-@@ -210,9 +210,9 @@
- #include <asm/opcodes.h>
- 
- #include "kprobes.h"
--#include "probes-arm.h"
--#include "probes-thumb.h"
--#include "kprobes-test.h"
-+#include "decode-arm.h"
-+#include "decode-thumb.h"
-+#include "test-core.h"
- 
- 
- #define BENCHMARKING	1
-diff --git a/arch/arm/kernel/kprobes-test.h b/arch/arm/probes/kprobes/test-core.h
-similarity index 100%
-rename from arch/arm/kernel/kprobes-test.h
-rename to arch/arm/probes/kprobes/test-core.h
-diff --git a/arch/arm/kernel/kprobes-test-thumb.c b/arch/arm/probes/kprobes/test-thumb.c
-similarity index 99%
-rename from arch/arm/kernel/kprobes-test-thumb.c
-rename to arch/arm/probes/kprobes/test-thumb.c
-index 844dd10..d58fa10 100644
---- a/arch/arm/kernel/kprobes-test-thumb.c
-+++ b/arch/arm/probes/kprobes/test-thumb.c
-@@ -12,7 +12,7 @@
- #include <linux/module.h>
- #include <asm/opcodes.h>
- 
--#include "kprobes-test.h"
-+#include "test-core.h"
- 
- 
- #define TEST_ISA "16"
-diff --git a/arch/arm/kernel/uprobes-arm.c b/arch/arm/probes/uprobes/actions-arm.c
-similarity index 99%
-rename from arch/arm/kernel/uprobes-arm.c
-rename to arch/arm/probes/uprobes/actions-arm.c
-index d3b655f..b98a0a8 100644
---- a/arch/arm/kernel/uprobes-arm.c
-+++ b/arch/arm/probes/uprobes/actions-arm.c
-@@ -13,8 +13,8 @@
- #include <linux/uprobes.h>
- #include <linux/module.h>
- 
--#include "probes.h"
--#include "probes-arm.h"
-+#include "../decode.h"
-+#include "../decode-arm.h"
- #include "uprobes.h"
- 
- static int uprobes_substitute_pc(unsigned long *pinsn, u32 oregs)
-diff --git a/arch/arm/kernel/uprobes.c b/arch/arm/probes/uprobes/uprobes.c
-similarity index 99%
-rename from arch/arm/kernel/uprobes.c
-rename to arch/arm/probes/uprobes/uprobes.c
-index 56adf9c..f611989 100644
---- a/arch/arm/kernel/uprobes.c
-+++ b/arch/arm/probes/uprobes/uprobes.c
-@@ -17,8 +17,8 @@
- #include <asm/opcodes.h>
- #include <asm/traps.h>
- 
--#include "probes.h"
--#include "probes-arm.h"
-+#include "../decode.h"
-+#include "../decode-arm.h"
- #include "uprobes.h"
- 
- #define UPROBE_TRAP_NR	UINT_MAX
-diff --git a/arch/arm/kernel/uprobes.h b/arch/arm/probes/uprobes/uprobes.h
-similarity index 100%
-rename from arch/arm/kernel/uprobes.h
-rename to arch/arm/probes/uprobes/uprobes.h
--- 
-1.8.4
+What do you think?
+
+> 
+> 
+
 
