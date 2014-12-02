@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933110AbaLBNW4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 08:22:56 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:57735 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754561AbaLBNWy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 08:22:54 -0500
-Date: Tue, 2 Dec 2014 14:23:37 +0100
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Alex =?iso-8859-1?Q?Benn=E9e?= <alex.bennee@linaro.org>
-Cc: kvm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kvmarm@lists.cs.columbia.edu, marc.zyngier@arm.com,
-        peter.maydell@linaro.org, agraf@suse.de, jan.kiszka@siemens.com,
-        dahi@linux.vnet.ibm.com, r65777@freescale.com, bp@suse.de,
-        pbonzini@redhat.com, Gleb Natapov <gleb@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/7] KVM: arm64: re-factor hyp.S debug register code
-Message-ID: <20141202132337.GD545@cbox>
-References: <1416931805-23223-1-git-send-email-alex.bennee@linaro.org>
- <1416931805-23223-7-git-send-email-alex.bennee@linaro.org>
- <20141130102546.GI23653@cbox>
- <87ppc31t9v.fsf@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+	id S933140AbaLBNX0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 08:23:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35906 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932724AbaLBNXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 08:23:25 -0500
+Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
+From: Jean Delvare <jdelvare@suse.de>
+To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>
+In-Reply-To: <201411291904.07644@pali>
+References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com>
+	 <201411291849.44032@pali> <20141129175152.GA32510@kroah.com>
+	 <201411291904.07644@pali>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Suse Linux
+Date: Tue, 02 Dec 2014 14:23:19 +0100
+Message-ID: <1417526599.15239.7.camel@chaos.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <87ppc31t9v.fsf@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 11:52:44AM +0000, Alex Benn�e wrote:
-> 
-> Christoffer Dall <christoffer.dall@linaro.org> writes:
-> 
-> > On Tue, Nov 25, 2014 at 04:10:04PM +0000, Alex Benn�e wrote:
-> >> This is a pre-cursor to sharing the code with the guest debug support.
-> >> This replaces the big macro that fishes data out of a fixed location
-> >> with a more general helper macro to restore a set of debug registers. It
-> >> uses macro substitution so it can be re-used for debug control and value
-> >> registers. It does however rely on the debug registers being 64 bit
-> >> aligned (as they happen to be in the hyp ABI).
-> >
-> > can you enforce that somewhere?
-> 
-> There is a comment in kvm_asm.h:
-> 
-> /*
->  * 0 is reserved as an invalid value.
->  * Order *must* be kept in sync with the hyp switch code.
->  */
-> 
-> But I'm not sure how to enforce it in assembly. Is there a #pragma or
-> something I can use?
-> 
+Hi Pali, hi Greg,
 
-You can add a BUG_ON somewhere at runtime, but I wouldn't bother, you
-can stick a note in that existing comment just so people don't change
-the declaration of the registers to be 32-bit aligned or something else.
+Le Saturday 29 November 2014 à 19:04 +0100, Pali Rohár a écrit :
+> On Saturday 29 November 2014 18:51:52 Greg Kroah-Hartman wrote:
+> > On Sat, Nov 29, 2014 at 06:49:43PM +0100, Pali Rohár wrote:
+> > > On Saturday 29 November 2014 18:43:15 Greg Kroah-Hartman wrote:
+> > > > No Documentation/ABI/ entry for your new sysfs file?
+> > > 
+> > > It is standard hwmon sysfs entry which is used by other
+> > > hwmon drivers... It is not i8k.ko driver specific.
+> > 
+> > Ok, then why is this driver not in a "hwmon-standard" location
+> > in the kernel tree?
+> > 
+> > greg k-h
+> 
+> This is question not for me but for maintainers of hwmon and char 
+> trees... I just contributed patch for existing driver.
+> 
+> But my idea is that because this driver exported temperature data 
+> for a long time only via /proc/i8k character file (since 2.4? or 
+> earlier?) and only 3 years ago was added standard hwmon interface 
+> to existing code (949a9d70020defd7c241607ab3ed037ea88f551c).
+> 
+> So now there are both interfaces. Standard hwmon and old /proc/.
+> 
+> CCing Jean Delvare (author of hwmon i8k code)
 
--Christoffer
+Yes, that's for historical reasons. Also the i8k driver does more than
+just hardware monitoring, it handles function keys and power status too.
+And it is heavily platform-specific. So while I agree that drivers/char
+isn't necessarily the best place for this driver, I'd rather move it to
+drivers/platform/x86 together with other laptop vendor-specific drivers,
+than to drivers/hwmon.
+
+Ultimately /proc/i8k should be killed altogether and every function
+should use the appropriate standard interface. But I don't have any Dell
+laptop around so I won't go into that myself.
+
+-- 
+Jean Delvare
+SUSE L3 Support
+
