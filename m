@@ -1,237 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679AbaLBQz7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 11:55:59 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:43313 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754102AbaLBQz5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 11:55:57 -0500
-Date: Tue, 2 Dec 2014 16:55:56 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Mitchel Humpherys <mitchelh@codeaurora.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Wagantall <mattw@codeaurora.org>
-Subject: Re: [PATCH RESEND v8] iopoll: Introduce memory-mapped IO polling
- macros
-Message-ID: <20141202165556.GH9917@arm.com>
-References: <1416860092-11620-1-git-send-email-mitchelh@codeaurora.org>
+	id S932752AbaLBQ4U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 11:56:20 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:51305 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753306AbaLBQ4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 11:56:16 -0500
+Date: Tue, 2 Dec 2014 11:56:07 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/3] mm: memory: merge shared-writable dirtying branches
+ in do_wp_page()
+Message-ID: <20141202165607.GD8401@phnom.home.cmpxchg.org>
+References: <1417474682-29326-1-git-send-email-hannes@cmpxchg.org>
+ <1417474682-29326-3-git-send-email-hannes@cmpxchg.org>
+ <20141202091939.GC9092@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1416860092-11620-1-git-send-email-mitchelh@codeaurora.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141202091939.GC9092@quack.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 24, 2014 at 08:14:52PM +0000, Mitchel Humpherys wrote:
-> From: Matt Wagantall <mattw@codeaurora.org>
-> 
-> It is sometimes necessary to poll a memory-mapped register until its value
-> satisfies some condition. Introduce a family of convenience macros that do
-> this. Tight-looping, sleeping, and timing out can all be accomplished using
-> these macros.
-> 
-> Cc: Thierry Reding <thierry.reding@gmail.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Matt Wagantall <mattw@codeaurora.org>
-> Signed-off-by: Mitchel Humpherys <mitchelh@codeaurora.org>
-> ---
-> This patch was originally part of a series [1] for adding support for IOMMU
-> address translations through an ARM SMMU hardware register.  The other
-> patch in the series (the one that actually uses these macros and implements
-> said hardware address translations) was Ack'd by the driver maintainer
-> there (Will Deacon) so I've pulled this patch out to avoid resending an
-> already Ack'd patch over and over again.
-> 
-> In short, please see [1] for previous discussion and the first user of
-> these macros.
-> 
-> This patch has been resent previously here [2], here [3], and here [4] on
-> 2014-10-30, 2014-11-06, and 2014-11-17, respectively.  It has not changed
-> since [2] and has not received any comments since [1] on 2014-10-19.
-> Thanks to everyone who has taken a look at this.
-> 
-> [1] http://thread.gmane.org/gmane.linux.kernel.iommu/7140
-> [2] http://thread.gmane.org/gmane.linux.kernel/1818213
-> [3] http://thread.gmane.org/gmane.linux.kernel/1823422
-> [4] http://thread.gmane.org/gmane.linux.kernel.iommu/7394
+On Tue, Dec 02, 2014 at 10:19:39AM +0100, Jan Kara wrote:
+> On Mon 01-12-14 17:58:02, Johannes Weiner wrote:
+> > Whether there is a vm_ops->page_mkwrite or not, the page dirtying is
+> > pretty much the same.  Make sure the page references are the same in
+> > both cases, then merge the two branches.
+> > 
+> > It's tempting to go even further and page-lock the !page_mkwrite case,
+> > to get it in line with everybody else setting the page table and thus
+> > further simplify the model.  But that's not quite compelling enough to
+> > justify dropping the pte lock, then relocking and verifying the entry
+> > for filesystems without ->page_mkwrite, which notably includes tmpfs.
+> > Leave it for now and lock the page late in the !page_mkwrite case.
+> > 
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > ---
+> >  mm/memory.c | 46 ++++++++++++++++------------------------------
+> >  1 file changed, 16 insertions(+), 30 deletions(-)
+> > 
+> > diff --git a/mm/memory.c b/mm/memory.c
+> > index 2a2e3648ed65..ff92abfa5303 100644
+> > --- a/mm/memory.c
+> > +++ b/mm/memory.c
+> ...
+> > @@ -2147,42 +2147,28 @@ reuse:
+> >  		pte_unmap_unlock(page_table, ptl);
+> >  		ret |= VM_FAULT_WRITE;
+> >  
+> > -		if (!dirty_page)
+> > -			return ret;
+> > -
+> > -		if (!page_mkwrite) {
+> > +		if (dirty_shared) {
+> >  			struct address_space *mapping;
+> >  			int dirtied;
+> >  
+> > -			lock_page(dirty_page);
+> > -			dirtied = set_page_dirty(dirty_page);
+> > -			mapping = dirty_page->mapping;
+> > -			unlock_page(dirty_page);
+> > +			if (!page_mkwrite)
+> > +				lock_page(old_page);
+> >  
+> > -			if (dirtied && mapping) {
+> > -				/*
+> > -				 * Some device drivers do not set page.mapping
+> > -				 * but still dirty their pages
+> > -				 */
+> > -				balance_dirty_pages_ratelimited(mapping);
+> > -			}
+> > +			dirtied = set_page_dirty(old_page);
+> > +			mapping = old_page->mapping;
+> > +			unlock_page(old_page);
+> > +			page_cache_release(old_page);
+> >  
+> > -			file_update_time(vma->vm_file);
+> > -		}
+> > -		put_page(dirty_page);
+> > -		if (page_mkwrite) {
+> > -			struct address_space *mapping = dirty_page->mapping;
+> > -
+> > -			set_page_dirty(dirty_page);
+> > -			unlock_page(dirty_page);
+> > -			page_cache_release(dirty_page);
+> > -			if (mapping)	{
+> > +			if ((dirtied || page_mkwrite) && mapping) {
+>   Why do we actually call balance_dirty_pages_ratelimited() even if we
+> didn't dirty the page when ->page_mkwrite() exists? Is it because
+> filesystem may dirty the page in ->page_mkwrite() and we don't want it to
+> deal with calling balance_dirty_pages_ratelimited()?
 
-Did this ever get queued? It would be pretty useful for a bunch of drivers
-that seem to copy-paste this sort of code.
+Yes, ->page_mkwrite() can dirty the page, but balance_dirty_pages(),
+as you noted, is not allowed under the page lock.  However, it also
+can't drop the page lock if that is the final set_page_dirty() as the
+pte isn't dirty yet, and clear_page_dirty_for_io() relies on the pte
+to be dirtied before the page outside the page lock.
 
-If it helps:
+That being said, the page lock semantics in there are strange.  It
+seems to me that page_mkwrite semantics inherited fault semantics,
+which don't allow the page lock to be dropped between verifying the
+page->mapping and installing the page table, to make sure we don't map
+a truncated page.  That's why when ->page_mkwrite() returns with the
+page unlocked, do_page_mkwrite() locks it and verifies page->mapping,
+only to hold the page lock until after the page table update is done.
 
-  Acked-by: Will Deacon <will.deacon@arm.com>
+However, unlike during a nopage fault, we fault against an existing
+read-only pte mapping of the page, and truncation needs to unmap it.
+Even if we dropped both the page lock and the pte lock, that
+pte_same() check after re-locking the page table would reliably tell
+us if somebody swooped in and truncated the page behind our backs.
 
-Will
+So AFAICS ->page_mkwrite() could safely return with the page unlocked
+in terms of correctness.  But OTOH if it locks the page anyway, it's
+cheaper to just keep it until we need it again for set_page_dirty().
+Either way, I think the truncation verification in do_page_mkwrite()
+is unnecessary.
 
-> Changes since v7:
->   - sorted helper macros by size (b, w, l, q)
->   - removed some of the more esoteric (or flat-out bogus) helper macros
-> ---
->  include/linux/iopoll.h | 140 +++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 140 insertions(+)
->  create mode 100644 include/linux/iopoll.h
-> 
-> diff --git a/include/linux/iopoll.h b/include/linux/iopoll.h
-> new file mode 100644
-> index 0000000000..bd161dae2d
-> --- /dev/null
-> +++ b/include/linux/iopoll.h
-> @@ -0,0 +1,140 @@
-> +/*
-> + * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + */
-> +
-> +#ifndef _LINUX_IOPOLL_H
-> +#define _LINUX_IOPOLL_H
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/types.h>
-> +#include <linux/hrtimer.h>
-> +#include <linux/delay.h>
-> +#include <linux/errno.h>
-> +#include <linux/io.h>
-> +
-> +/**
-> + * readx_poll_timeout - Periodically poll an address until a condition is met or a timeout occurs
-> + * @op: accessor function (takes @addr as its only argument)
-> + * @addr: Address to poll
-> + * @val: Variable to read the value into
-> + * @cond: Break condition (usually involving @val)
-> + * @sleep_us: Maximum time to sleep between reads in us (0 tight-loops)
-> + * @timeout_us: Timeout in us, 0 means never timeout
-> + *
-> + * Returns 0 on success and -ETIMEDOUT upon a timeout. In either
-> + * case, the last read value at @addr is stored in @val. Must not
-> + * be called from atomic context if sleep_us or timeout_us are used.
-> + *
-> + * When available, you'll probably want to use one of the specialized
-> + * macros defined below rather than this macro directly.
-> + */
-> +#define readx_poll_timeout(op, addr, val, cond, sleep_us, timeout_us)	\
-> +({ \
-> +	ktime_t timeout = ktime_add_us(ktime_get(), timeout_us); \
-> +	might_sleep_if(sleep_us); \
-> +	for (;;) { \
-> +		(val) = op(addr); \
-> +		if (cond) \
-> +			break; \
-> +		if (timeout_us && ktime_compare(ktime_get(), timeout) > 0) { \
-> +			(val) = op(addr); \
-> +			break; \
-> +		} \
-> +		if (sleep_us) \
-> +			usleep_range((sleep_us >> 2) + 1, sleep_us); \
-> +	} \
-> +	(cond) ? 0 : -ETIMEDOUT; \
-> +})
-> +
-> +/**
-> + * readx_poll_timeout_atomic - Periodically poll an address until a condition is met or a timeout occurs
-> + * @op: accessor function (takes @addr as its only argument)
-> + * @addr: Address to poll
-> + * @val: Variable to read the value into
-> + * @cond: Break condition (usually involving @val)
-> + * @delay_us: Time to udelay between reads in us (0 tight-loops)
-> + * @timeout_us: Timeout in us, 0 means never timeout
-> + *
-> + * Returns 0 on success and -ETIMEDOUT upon a timeout. In either
-> + * case, the last read value at @addr is stored in @val.
-> + *
-> + * When available, you'll probably want to use one of the specialized
-> + * macros defined below rather than this macro directly.
-> + */
-> +#define readx_poll_timeout_atomic(op, addr, val, cond, delay_us, timeout_us) \
-> +({ \
-> +	ktime_t timeout = ktime_add_us(ktime_get(), timeout_us); \
-> +	for (;;) { \
-> +		(val) = op(addr); \
-> +		if (cond) \
-> +			break; \
-> +		if (timeout_us && ktime_compare(ktime_get(), timeout) > 0) { \
-> +			(val) = op(addr); \
-> +			break; \
-> +		} \
-> +		if (delay_us) \
-> +			udelay(delay_us);	\
-> +	} \
-> +	(cond) ? 0 : -ETIMEDOUT; \
-> +})
-> +
-> +
-> +#define readb_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-> +	readx_poll_timeout(readb, addr, val, cond, delay_us, timeout_us)
-> +
-> +#define readb_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-> +	readx_poll_timeout_atomic(readb, addr, val, cond, delay_us, timeout_us)
-> +
-> +#define readw_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-> +	readx_poll_timeout(readw, addr, val, cond, delay_us, timeout_us)
-> +
-> +#define readw_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-> +	readx_poll_timeout_atomic(readw, addr, val, cond, delay_us, timeout_us)
-> +
-> +#define readl_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-> +	readx_poll_timeout(readl, addr, val, cond, delay_us, timeout_us)
-> +
-> +#define readl_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-> +	readx_poll_timeout_atomic(readl, addr, val, cond, delay_us, timeout_us)
-> +
-> +#define readq_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-> +	readx_poll_timeout(readq, addr, val, cond, delay_us, timeout_us)
-> +
-> +#define readq_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-> +	readx_poll_timeout_atomic(readq, addr, val, cond, delay_us, timeout_us)
-> +
-> +#define readb_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-> +	readx_poll_timeout(readb_relaxed, addr, val, cond, delay_us, timeout_us)
-> +
-> +#define readb_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-> +	readx_poll_timeout_atomic(readb_relaxed, addr, val, cond, delay_us, timeout_us)
-> +
-> +#define readw_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-> +	readx_poll_timeout(readw_relaxed, addr, val, cond, delay_us, timeout_us)
-> +
-> +#define readw_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-> +	readx_poll_timeout_atomic(readw_relaxed, addr, val, cond, delay_us, timeout_us)
-> +
-> +#define readl_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-> +	readx_poll_timeout(readl_relaxed, addr, val, cond, delay_us, timeout_us)
-> +
-> +#define readl_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-> +	readx_poll_timeout_atomic(readl_relaxed, addr, val, cond, delay_us, timeout_us)
-> +
-> +#define readq_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-> +	readx_poll_timeout(readq_relaxed, addr, val, cond, delay_us, timeout_us)
-> +
-> +#define readq_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-> +	readx_poll_timeout_atomic(readq_relaxed, addr, val, cond, delay_us, timeout_us)
-> +
-> +#endif /* _LINUX_IOPOLL_H */
-> -- 
-> Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> a Linux Foundation Collaborative Project
-> 
-> 
+> Otherwise the patch looks good to me.
+
+Thanks!
