@@ -1,123 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933865AbaLBUAe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 15:00:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46437 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753975AbaLBTUY (ORCPT
+	id S933545AbaLBUBj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 15:01:39 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:53027 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396AbaLBUBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:20:24 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Robert Jarzmik <robert.jarzmik@free.fr>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 014/121] ARM: pxa: fix hang on startup with DEBUG_LL
-Date: Tue,  2 Dec 2014 11:18:13 -0800
-Message-Id: <1417548000-1794-15-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
-References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 2 Dec 2014 15:01:37 -0500
+From: Andrey Skvortsov <andrej.skvortzov@gmail.com>
+X-Google-Original-From: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
+Date: Tue, 2 Dec 2014 23:01:29 +0300
+To: Michael =?utf-8?B?QsO8c2No?= <m@bues.ch>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Gary.Zambrano@qlogic.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        b43-dev <b43-dev@lists.infradead.org>,
+        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: [PATCH] SSB / B44: fix WOL for BCM4401
+Message-ID: <20141202200129.GA4580@crion89>
+Mail-Followup-To: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>,
+	Michael =?utf-8?B?QsO8c2No?= <m@bues.ch>,
+	"Rafael J. Wysocki" <rjw@rjwysocki.net>, Gary.Zambrano@qlogic.com,
+	netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+	b43-dev <b43-dev@lists.infradead.org>,
+	=?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+	Larry Finger <Larry.Finger@lwfinger.net>
+References: <20141201111125.GA11974@localhost.localdomain>
+ <1417466798-15735-1-git-send-email-Andrej.Skvortzov@gmail.com>
+ <20141201221023.79ffb40d@wiggum>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="DocE+STaALJfprDB"
+Content-Disposition: inline
+In-Reply-To: <20141201221023.79ffb40d@wiggum>
+X-PGP-Key: fp="21AF 2E6F 04EC 7E11 21C6  E399 2236 2F26 57A3 AEAD";
+ id="0x57A3AEAD";
+ get=<hkp://pgp.mit.edu/pks/lookup?search=0x22362F2657A3AEAD&op=get>;
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11-ckt12 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--DocE+STaALJfprDB
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: Robert Jarzmik <robert.jarzmik@free.fr>
+On Mon, Dec 01, 2014 at 10:10:23PM +0100, Michael B=C3=BCsch wrote:
+> On Mon,  1 Dec 2014 23:46:38 +0300
+> Andrey Skvortsov <andrej.skvortzov@gmail.com> wrote:
+>=20
+> > Wake On Lan was not working on laptop DELL Vostro 1500.
+> > If WOL was turned on, BCM4401 was powered up in suspend mode. LEDs blin=
+ked.
+> > But the laptop could not be woken up with the Magic Packet. The reason =
+for
+> > that was that PCIE was not enabled as a system wakeup source and
+> > therefore the host PCI bridge was not powered up in suspend mode.
+> > PCIE was not enabled in suspend by PM because no child devices were
+> > registered as wakeup source during suspend process.
+> > On laptop BCM4401 is connected through the SSB bus, that is connected t=
+o the
+> > PCI-Express bus. SSB and B44 did not use standard PM wakeup functions
+> > and did not forward wakeup settings to their parents.
+> > To fix that B44 driver enables PM wakeup and registers new wakeup source
+> > using device_set_wakeup_enable(). Wakeup is automatically reported to t=
+he parent SSB
+> > bus via power.wakeup_path. SSB bus enables wakeup for the parent PCI br=
+idge, if there is any
+> > child devices with enabled wakeup functionality. All other steps are
+> > done by PM core code.
+>=20
+> Thanks, this looks good.
+> I assume you tested this (I currently don't have a device to test this).
 
-commit cde7fc879969f933614b1256df2625d6ff637bab upstream.
+Sure, I've tested it. WOL from suspend is working and after resume from hib=
+ernate Ethernet is working too.
 
-The commit 2111667b4677 ("ARM: pxa: call debug_ll_io_init for
-earlyprintk") triggers in the current kernel the attached backtrace on
-PXA/tosa early in the boot time when DEBUG_LL is enabled.
+> Larry, Rafa=C5=82, any other b43 user:
+> Can you please test whether this doesn't cause regressions for suspend/re=
+sume on b43?
+> (Patch is attached as reference)
+>=20
+>=20
+> > Signed-off-by: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
+> > ---
+> >  drivers/net/ethernet/broadcom/b44.c |    2 ++
+> >  drivers/ssb/pcihost_wrapper.c       |   33 ++++++++++++++++++++++-----=
+------
+> >  2 files changed, 24 insertions(+), 11 deletions(-)
 
-It is due to overlap between uart virtual memory defined in
-DEBUG_UART_VIRT and mapped by debug_ll_io_init() and peripheral bus
-mapped by pxa_map_io at the same address, 0xf2100000.
 
-As hinted by Arnd, map early virtual memory for low level debug on
-address 0xf6200000, even if that means 2 virtual mappings will give
-access to the pxa internal UARTs (FFUART, BTUART, STUART, ...).
+--=20
+Best regards,
+Andrey Skvortsov
 
-------------[ cut here ]------------
-kernel BUG at /home/lumag/linux/mm/vmalloc.c:1143!
-Internal error: Oops - BUG: 0 [#1] PREEMPT ARM
-Modules linked in:
-CPU: 0 PID: 0 Comm: swapper Not tainted 3.17.0-00032-g8e0d202-dirty #23
-task: c062a5a8 ti: c0620000 task.ti: c0620000
-PC is at vm_area_add_early+0x54/0x84
-LR is at add_static_vm_early+0xc/0x60
-pc : [<c03e1100>]    lr : [<c03d9ef4>]    psr: 800001d3
-sp : c0621f04  ip : c03efa74  fp : c03edf84
-r10: c0637e98  r9 : 40000001  r8 : c03da57c
-r7 : c3ffcfb0  r6 : 00000000  r5 : c3ffcfb0  r4 : 02000000
-r3 : c3ffcfd8  r2 : f2100000  r1 : f4000000  r0 : c3ffcfb0
-Flags: Nzcv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
-Control: 00007977  Table: a0004000  DAC: 00000017
-Process swapper (pid: 0, stack limit = 0xc06201c8)
-Stack: (0xc0621f04 to 0xc0622000)
-1f00:          c3ffcfd8 40000001 c3ffcfd8 c03ee08c c03da570 c03db90c c0637d24
-1f20: 00000000 c03ec7cc c066e654 a0700000 000a0700 c03db914 c03db90c c03daf84
-1f40: 00000000 000a0000 c0000000 c03ec7cc 000a0700 c0700000 ffff1000 000a3fff
-1f60: 00001000 00000007 00000000 c03ec7cc c0008000 c03ed748 c0621fd4 c03d5d18
-1f80: 69052d00 a03ec48c 00000000 c03d8ad0 0000006c 00007977 c036c6e8 00000001
-1fa0: c0621fd4 c03ed744 c0628000 a0004000 69052d00 a03ec48c 00000000 c03d68d4
-1fc0: 00000000 00000000 00000000 00000000 00000000 c03ed748 c0649894 c062801c
-1fe0: c03ed744 c062b2f0 a0004000 69052d00 a03ec48c a0008040 00000000 00000000
-[<c03e1100>] (vm_area_add_early) from [<c03d9ef4>] (add_static_vm_early+0xc/0x60)
-[<c03d9ef4>] (add_static_vm_early) from [<c03da570>] (iotable_init.part.6+0xa8/0xb4)
-[<c03da570>] (iotable_init.part.6) from [<c03db914>] (pxa25x_map_io+0x8/0x24)
-[<c03db914>] (pxa25x_map_io) from [<c03daf84>] (paging_init+0x744/0x8d8)
-[<c03daf84>] (paging_init) from [<c03d8ad0>] (setup_arch+0x354/0x608)
-[<c03d8ad0>] (setup_arch) from [<c03d68d4>] (start_kernel+0xa8/0x3dc)
-[<c03d68d4>] (start_kernel) from [<a0008040>] (0xa0008040)
-Code: e5904008 e0811004 e1520001 2a000005 (e7f001f2)
----[ end trace f24b6c88ae00fa9a ]---
-Kernel panic - not syncing: Attempted to kill the idle task!
----[ end Kernel panic - not syncing: Attempted to kill the idle task!
+PGP Key ID: 0x57A3AEAD
 
-Reported-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- arch/arm/Kconfig.debug                    | 2 +-
- arch/arm/mach-pxa/include/mach/addr-map.h | 5 +++++
- 2 files changed, 6 insertions(+), 1 deletion(-)
+--DocE+STaALJfprDB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 5765abf..ae15787 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -1033,7 +1033,7 @@ config DEBUG_UART_VIRT
- 	default 0xf1600000 if ARCH_INTEGRATOR
- 	default 0xf1c28000 if DEBUG_SUNXI_UART0
- 	default 0xf1c28400 if DEBUG_SUNXI_UART1
--	default 0xf2100000 if DEBUG_PXA_UART1
-+	default 0xf6200000 if DEBUG_PXA_UART1
- 	default 0xf4090000 if ARCH_LPC32XX
- 	default 0xf4200000 if ARCH_GEMINI
- 	default 0xf8009000 if DEBUG_VEXPRESS_UART0_CA9
-diff --git a/arch/arm/mach-pxa/include/mach/addr-map.h b/arch/arm/mach-pxa/include/mach/addr-map.h
-index bbf9df3..d28fe29 100644
---- a/arch/arm/mach-pxa/include/mach/addr-map.h
-+++ b/arch/arm/mach-pxa/include/mach/addr-map.h
-@@ -39,6 +39,11 @@
- #define DMEMC_SIZE		0x00100000
- 
- /*
-+ * Reserved space for low level debug virtual addresses within
-+ * 0xf6200000..0xf6201000
-+ */
-+
-+/*
-  * Internal Memory Controller (PXA27x and later)
-  */
- #define IMEMC_PHYS		0x58000000
--- 
-1.9.1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iQIcBAEBCgAGBQJUfhqZAAoJEAF8y6L1SLCtkkAP/icnHi9LdVrEGNQHoL31hF0a
+mh8SKYT7bAE+B2FrklNLEIVnQi2nZqhDr8bbMp6ZRO22C4C5RdwcLRTxGKELID4v
+JVOKpTlDaQN3BJqSmD5yWwW+Fn4bTOqhkcyFzYVe4EoGRq6Se2J7yqFdtcHoKFJ7
+g3TPpAaXflyiViCWF9zlnoHXDjZpqVOqoyQVoEdv/57wa3emGKu6iBfSPyiePhRr
+46ozDOHwAJ4GYa70vEv06I7ftLTgeRS342QZEgih965/Cde6v4nMtk+ySVVFuOuP
+GrWm/C5FXViTIlRCABn/7SIM8Hclydklzu0R7RQpGjlkvx2syhtCPXRqJc6MmkR3
+cCcnZcJ13XP6qvTQ/ZuWb3i+ZjN75TL/CIqckdF49Wjy6wcUVFSVBajEBHx/xWoA
++BR1iuSTEsv9lbrqO8IQ6/rU+rrgxDzRDhJfyZU62I66sAwJNW+K8lzgET3OBd/u
+/p2GL3vNdLg2srw+zhIwuPM0yQdscHieN2FaEpt3PMXcO91rKuL/w3Hzaf8hWBF1
+fYCNM0RhI/olYeASJvFUkzYAJkbbtwHH9+kmljOjJRFYqj24nkWiS3xJDDQHt4qi
+rZDYvLXHnD19ExmwjY8oFipLRB2Sk0xhmKp+RsvJDas/D/j+wwrKNzpzklFAPdUe
+dIemJlPfad33CZH3Mkb3
+=ganE
+-----END PGP SIGNATURE-----
+
+--DocE+STaALJfprDB--
