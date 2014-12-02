@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932947AbaLBTUd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:20:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46425 "EHLO
+	id S932923AbaLBTUc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:20:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46429 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753677AbaLBTUY (ORCPT
+	with ESMTP id S1753906AbaLBTUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Dec 2014 14:20:24 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 001/121] ALSA: usb-audio: Fix device_del() sysfs warnings at disconnect
-Date: Tue,  2 Dec 2014 11:18:00 -0800
-Message-Id: <1417548000-1794-2-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 005/121] drm/i915, HD-audio: Don't continue probing when nomodeset is given
+Date: Tue,  2 Dec 2014 11:18:04 -0800
+Message-Id: <1417548000-1794-6-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
@@ -28,103 +28,161 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit 0725dda207e95ff25f1aa01432250323e0ec49d6 upstream.
+commit 74b0c2d75fb4cc89173944e6d8f9eb47aca0c343 upstream.
 
-Some USB-audio devices show weird sysfs warnings at disconnecting the
-devices, e.g.
- usb 1-3: USB disconnect, device number 3
- ------------[ cut here ]------------
- WARNING: CPU: 0 PID: 973 at fs/sysfs/group.c:216 device_del+0x39/0x180()
- sysfs group ffffffff8183df40 not found for kobject 'midiC1D0'
- Call Trace:
-  [<ffffffff814a3e38>] ? dump_stack+0x49/0x71
-  [<ffffffff8103cb72>] ? warn_slowpath_common+0x82/0xb0
-  [<ffffffff8103cc55>] ? warn_slowpath_fmt+0x45/0x50
-  [<ffffffff813521e9>] ? device_del+0x39/0x180
-  [<ffffffff81352339>] ? device_unregister+0x9/0x20
-  [<ffffffff81352384>] ? device_destroy+0x34/0x40
-  [<ffffffffa00ba29f>] ? snd_unregister_device+0x7f/0xd0 [snd]
-  [<ffffffffa025124e>] ? snd_rawmidi_dev_disconnect+0xce/0x100 [snd_rawmidi]
-  [<ffffffffa00c0192>] ? snd_device_disconnect+0x62/0x90 [snd]
-  [<ffffffffa00c025c>] ? snd_device_disconnect_all+0x3c/0x60 [snd]
-  [<ffffffffa00bb574>] ? snd_card_disconnect+0x124/0x1a0 [snd]
-  [<ffffffffa02e54e8>] ? usb_audio_disconnect+0x88/0x1c0 [snd_usb_audio]
-  [<ffffffffa015260e>] ? usb_unbind_interface+0x5e/0x1b0 [usbcore]
-  [<ffffffff813553e9>] ? __device_release_driver+0x79/0xf0
-  [<ffffffff81355485>] ? device_release_driver+0x25/0x40
-  [<ffffffff81354e11>] ? bus_remove_device+0xf1/0x130
-  [<ffffffff813522b9>] ? device_del+0x109/0x180
-  [<ffffffffa01501d5>] ? usb_disable_device+0x95/0x1f0 [usbcore]
-  [<ffffffffa014634f>] ? usb_disconnect+0x8f/0x190 [usbcore]
-  [<ffffffffa0149179>] ? hub_thread+0x539/0x13a0 [usbcore]
-  [<ffffffff810669f5>] ? sched_clock_local+0x15/0x80
-  [<ffffffff81066c98>] ? sched_clock_cpu+0xb8/0xd0
-  [<ffffffff81070730>] ? bit_waitqueue+0xb0/0xb0
-  [<ffffffffa0148c40>] ? usb_port_resume+0x430/0x430 [usbcore]
-  [<ffffffffa0148c40>] ? usb_port_resume+0x430/0x430 [usbcore]
-  [<ffffffff8105973e>] ? kthread+0xce/0xf0
-  [<ffffffff81059670>] ? kthread_create_on_node+0x1c0/0x1c0
-  [<ffffffff814a8b7c>] ? ret_from_fork+0x7c/0xb0
-  [<ffffffff81059670>] ? kthread_create_on_node+0x1c0/0x1c0
- ---[ end trace 40b1928d1136b91e ]---
+When a machine is booted with nomodeset option, i915 driver skips the
+whole initialization.  Meanwhile, HD-audio tries to bind wth i915 just
+by request_symbol() without knowing that the initialization was
+skipped, and eventually it hits WARN_ON() in i915_request_power_well()
+and i915_release_power_well() wrongly but still continues probing,
+even though it doesn't work at all.
 
-This comes from the fact that usb-audio driver may receive the
-disconnect callback multiple times, per each usb interface.  When a
-device has both audio and midi interfaces, it gets called twice, and
-currently the driver tries to release resources at the last call.
-At this point, the first parent interface has been already deleted,
-thus deleting a child of the first parent hits such a warning.
+In this patch, both functions are changed to return an error in case
+of uninitialized state instead of WARN_ON(), so that HD-audio driver
+can give up HDMI controller initialization at the right time.
 
-For fixing this problem, we need to call snd_card_disconnect() and
-cancel pending operations at the very first disconnect while the
-release of the whole objects waits until the last disconnect call.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=80931
-Reported-and-tested-by: Tomas Gayoso <tgayoso@gmail.com>
-Reported-and-tested-by: Chris J Arges <chris.j.arges@canonical.com>
+Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/usb/card.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/intel_pm.c | 14 ++++++++------
+ include/drm/i915_powerwell.h    |  4 ++--
+ sound/pci/hda/hda_i915.c        | 12 ++++++------
+ sound/pci/hda/hda_i915.h        |  4 ++--
+ sound/pci/hda/hda_intel.c       |  7 ++++++-
+ 5 files changed, 24 insertions(+), 17 deletions(-)
 
-diff --git a/sound/usb/card.c b/sound/usb/card.c
-index af19560..ab433a0 100644
---- a/sound/usb/card.c
-+++ b/sound/usb/card.c
-@@ -586,18 +586,19 @@ static void snd_usb_audio_disconnect(struct usb_device *dev,
+diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
+index 1218c44..839e581 100644
+--- a/drivers/gpu/drm/i915/intel_pm.c
++++ b/drivers/gpu/drm/i915/intel_pm.c
+@@ -5849,12 +5849,12 @@ void intel_display_power_put(struct drm_device *dev,
+ static struct i915_power_domains *hsw_pwr;
+ 
+ /* Display audio driver power well request */
+-void i915_request_power_well(void)
++int i915_request_power_well(void)
  {
- 	struct snd_card *card;
- 	struct list_head *p;
-+	bool was_shutdown;
+ 	struct drm_i915_private *dev_priv;
  
- 	if (chip == (void *)-1L)
- 		return;
+-	if (WARN_ON(!hsw_pwr))
+-		return;
++	if (!hsw_pwr)
++		return -ENODEV;
  
- 	card = chip->card;
- 	down_write(&chip->shutdown_rwsem);
-+	was_shutdown = chip->shutdown;
- 	chip->shutdown = 1;
- 	up_write(&chip->shutdown_rwsem);
+ 	dev_priv = container_of(hsw_pwr, struct drm_i915_private,
+ 				power_domains);
+@@ -5862,16 +5862,17 @@ void i915_request_power_well(void)
+ 	mutex_lock(&hsw_pwr->lock);
+ 	__intel_power_well_get(dev_priv->dev, &hsw_pwr->power_wells[0]);
+ 	mutex_unlock(&hsw_pwr->lock);
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(i915_request_power_well);
  
- 	mutex_lock(&register_mutex);
--	chip->num_interfaces--;
--	if (chip->num_interfaces <= 0) {
-+	if (!was_shutdown) {
- 		struct snd_usb_endpoint *ep;
+ /* Display audio driver power well release */
+-void i915_release_power_well(void)
++int i915_release_power_well(void)
+ {
+ 	struct drm_i915_private *dev_priv;
  
- 		snd_card_disconnect(card);
-@@ -617,6 +618,10 @@ static void snd_usb_audio_disconnect(struct usb_device *dev,
- 		list_for_each(p, &chip->mixer_list) {
- 			snd_usb_mixer_disconnect(p);
+-	if (WARN_ON(!hsw_pwr))
+-		return;
++	if (!hsw_pwr)
++		return -ENODEV;
+ 
+ 	dev_priv = container_of(hsw_pwr, struct drm_i915_private,
+ 				power_domains);
+@@ -5879,6 +5880,7 @@ void i915_release_power_well(void)
+ 	mutex_lock(&hsw_pwr->lock);
+ 	__intel_power_well_put(dev_priv->dev, &hsw_pwr->power_wells[0]);
+ 	mutex_unlock(&hsw_pwr->lock);
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(i915_release_power_well);
+ 
+diff --git a/include/drm/i915_powerwell.h b/include/drm/i915_powerwell.h
+index cfdc884..2baba99 100644
+--- a/include/drm/i915_powerwell.h
++++ b/include/drm/i915_powerwell.h
+@@ -30,7 +30,7 @@
+ #define _I915_POWERWELL_H_
+ 
+ /* For use by hda_i915 driver */
+-extern void i915_request_power_well(void);
+-extern void i915_release_power_well(void);
++extern int i915_request_power_well(void);
++extern int i915_release_power_well(void);
+ 
+ #endif				/* _I915_POWERWELL_H_ */
+diff --git a/sound/pci/hda/hda_i915.c b/sound/pci/hda/hda_i915.c
+index 76c13d5..3ea8b98 100644
+--- a/sound/pci/hda/hda_i915.c
++++ b/sound/pci/hda/hda_i915.c
+@@ -22,20 +22,20 @@
+ #include <drm/i915_powerwell.h>
+ #include "hda_i915.h"
+ 
+-static void (*get_power)(void);
+-static void (*put_power)(void);
++static int (*get_power)(void);
++static int (*put_power)(void);
+ 
+-void hda_display_power(bool enable)
++int hda_display_power(bool enable)
+ {
+ 	if (!get_power || !put_power)
+-		return;
++		return -ENODEV;
+ 
+ 	snd_printdd("HDA display power %s \n",
+ 			enable ? "Enable" : "Disable");
+ 	if (enable)
+-		get_power();
++		return get_power();
+ 	else
+-		put_power();
++		return put_power();
+ }
+ 
+ int hda_i915_init(void)
+diff --git a/sound/pci/hda/hda_i915.h b/sound/pci/hda/hda_i915.h
+index 5a63da2..bfd835f 100644
+--- a/sound/pci/hda/hda_i915.h
++++ b/sound/pci/hda/hda_i915.h
+@@ -17,11 +17,11 @@
+ #define __SOUND_HDA_I915_H
+ 
+ #ifdef CONFIG_SND_HDA_I915
+-void hda_display_power(bool enable);
++int hda_display_power(bool enable);
+ int hda_i915_init(void);
+ int hda_i915_exit(void);
+ #else
+-static inline void hda_display_power(bool enable) {}
++static inline int hda_display_power(bool enable) { return 0; }
+ static inline int hda_i915_init(void)
+ {
+ 	return -ENODEV;
+diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+index f319b8c..3066ba0 100644
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -3903,8 +3903,13 @@ static int azx_probe_continue(struct azx *chip)
+ 			snd_printk(KERN_ERR SFX "Error request power-well from i915\n");
+ 			goto out_free;
  		}
-+	}
-+
-+	chip->num_interfaces--;
-+	if (chip->num_interfaces <= 0) {
- 		usb_chip[chip->index] = NULL;
- 		mutex_unlock(&register_mutex);
- 		snd_card_free_when_closed(card);
++		err = hda_display_power(true);
++		if (err < 0) {
++			dev_err(chip->card->dev,
++				"Cannot turn on display power on i915\n");
++			goto out_free;
++		}
+ #endif
+-		hda_display_power(true);
+ 	}
+ 
+ 	err = azx_first_init(chip);
 -- 
 1.9.1
 
