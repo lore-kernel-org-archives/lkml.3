@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613AbaLBSYs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 13:24:48 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:63733 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932365AbaLBSYp (ORCPT
+	id S932767AbaLBSZA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 13:25:00 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:50544 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932649AbaLBSYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 13:24:45 -0500
+	Tue, 2 Dec 2014 13:24:51 -0500
 From: Jeff Layton <jlayton@primarydata.com>
 To: linux-nfs@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
         Al Viro <viro@zeniv.linux.org.uk>
-Subject: [RFC PATCH 10/14] nfsd: keep a reference to the fs_struct in svc_rqst
-Date: Tue,  2 Dec 2014 13:24:19 -0500
-Message-Id: <1417544663-13299-11-git-send-email-jlayton@primarydata.com>
+Subject: [RFC PATCH 14/14] sunrpc: add tracepoints around svc_sock handling
+Date: Tue,  2 Dec 2014 13:24:23 -0500
+Message-Id: <1417544663-13299-15-git-send-email-jlayton@primarydata.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
 References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
@@ -21,200 +21,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we convert this code to use a workqueue, we won't want to allocate
-a new fs_struct to handle each RPC. Doing so might also be problematic
-since we'd be swapping out the ->fs value on a "public" workqueue
-kthread.
-
-Change the code to allocate an fs struct when when allocating a svc_rqst
-and then switch to using that in the "nfsd" function.
-
-Cc: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Jeff Layton <jlayton@primarydata.com>
 ---
- fs/fs_struct.c             | 59 +++++++++++++++++++++++++++++++++++++++-------
- fs/nfsd/nfssvc.c           | 17 ++++++-------
- include/linux/fs_struct.h  |  3 +++
- include/linux/sunrpc/svc.h |  1 +
- net/sunrpc/svc.c           |  8 +++++++
- 5 files changed, 69 insertions(+), 19 deletions(-)
+ include/trace/events/sunrpc.h | 46 +++++++++++++++++++++++++++++++++++++++++++
+ net/sunrpc/svcsock.c          |  6 ++++++
+ 2 files changed, 52 insertions(+)
 
-diff --git a/fs/fs_struct.c b/fs/fs_struct.c
-index 7dca743b2ce1..9bc08ea2f433 100644
---- a/fs/fs_struct.c
-+++ b/fs/fs_struct.c
-@@ -127,26 +127,67 @@ struct fs_struct *copy_fs_struct(struct fs_struct *old)
- 	}
- 	return fs;
- }
-+EXPORT_SYMBOL_GPL(copy_fs_struct);
+diff --git a/include/trace/events/sunrpc.h b/include/trace/events/sunrpc.h
+index 434b46e79053..711ebd9179b1 100644
+--- a/include/trace/events/sunrpc.h
++++ b/include/trace/events/sunrpc.h
+@@ -9,6 +9,7 @@
+ #include <linux/sunrpc/svc.h>
+ #include <linux/sunrpc/xprtsock.h>
+ #include <linux/sunrpc/svc_xprt.h>
++#include <linux/sunrpc/svcsock.h>
+ #include <net/tcp_states.h>
+ #include <linux/net.h>
+ #include <linux/tracepoint.h>
+@@ -584,6 +585,51 @@ TRACE_EVENT(svc_handle_xprt,
+ 		show_svc_xprt_flags(__entry->xprt->xpt_flags))
+ );
  
--int unshare_fs_struct(void)
-+/* Replace current fs struct with one given. Return a pointer to old one. */
-+static struct fs_struct *
-+swap_fs_struct(struct fs_struct *new_fs)
- {
--	struct fs_struct *fs = current->fs;
--	struct fs_struct *new_fs = copy_fs_struct(fs);
--	int kill;
--
--	if (!new_fs)
--		return -ENOMEM;
-+	struct fs_struct *old_fs;
- 
- 	task_lock(current);
-+	old_fs = current->fs;
-+	current->fs = new_fs;
-+	task_unlock(current);
++DECLARE_EVENT_CLASS(svc_socket_event,
++	TP_PROTO(struct sock *sk),
 +
-+	return old_fs;
-+}
++	TP_ARGS(sk),
 +
-+/* Put a reference to a fs_struct. */
-+void put_fs_struct(struct fs_struct *fs)
-+{
-+	bool kill;
++	TP_STRUCT__entry(
++		__field(struct sock *, sk)
++		__field(struct svc_sock *, svsk)
++		__field_struct(struct sockaddr_storage, ss)
++		__field(unsigned long, xpt_flags)
++	),
 +
- 	spin_lock(&fs->lock);
- 	kill = !--fs->users;
--	current->fs = new_fs;
- 	spin_unlock(&fs->lock);
--	task_unlock(current);
- 
- 	if (kill)
- 		free_fs_struct(fs);
-+}
-+EXPORT_SYMBOL_GPL(put_fs_struct);
++	TP_fast_assign(
++		__entry->sk = sk;
++		__entry->svsk = sk->sk_user_data;
++		if (__entry->svsk) {
++			struct svc_xprt *xprt = &__entry->svsk->sk_xprt;
 +
-+/* Take an extra reference to a fs_struct. Caller must already hold one! */
-+struct fs_struct *
-+get_fs_struct(struct fs_struct *fs)
-+{
-+	spin_lock(&fs->lock);
-+	++fs->users;
-+	spin_unlock(&fs->lock);
-+	return fs;
-+}
-+EXPORT_SYMBOL_GPL(get_fs_struct);
++			memcpy(&__entry->ss, &xprt->xpt_remote,
++						sizeof(__entry->ss));
++			__entry->xpt_flags = xprt->xpt_flags;
++		} else {
++			memset(&__entry->ss, 0, sizeof(__entry->ss));
++			__entry->xpt_flags = 0;
++		}
++	),
 +
-+/*
-+ * Swap in a new fs_struct and drop the reference on the old one.
-+ * Caller must have already taken the reference to the new one.
-+ */
-+void replace_fs_struct(struct fs_struct *new_fs)
-+{
-+	struct fs_struct *old_fs = swap_fs_struct(new_fs);
++	TP_printk("sk=0x%p peer=%pIScp sk_state=%s xpt_flags=%s", __entry->sk,
++		(struct sockaddr *)&__entry->ss,
++		rpc_show_sock_state(__entry->sk->sk_state),
++		show_svc_xprt_flags(__entry->xpt_flags))
++);
 +
-+	put_fs_struct(old_fs);
-+}
-+EXPORT_SYMBOL_GPL(replace_fs_struct);
++DEFINE_EVENT(svc_socket_event, svc_tcp_listen_data_ready,
++	TP_PROTO(struct sock *sk), TP_ARGS(sk));
 +
-+int unshare_fs_struct(void)
-+{
-+	struct fs_struct *new_fs = copy_fs_struct(current->fs);
++DEFINE_EVENT(svc_socket_event, svc_tcp_state_change,
++	TP_PROTO(struct sock *sk), TP_ARGS(sk));
 +
-+	if (!new_fs)
-+		return -ENOMEM;
++DEFINE_EVENT(svc_socket_event, svc_tcp_data_ready,
++	TP_PROTO(struct sock *sk), TP_ARGS(sk));
++
++DEFINE_EVENT(svc_socket_event, svc_tcp_accept,
++	TP_PROTO(struct sock *sk), TP_ARGS(sk));
++
+ #endif /* _TRACE_SUNRPC_H */
  
-+	replace_fs_struct(new_fs);
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(unshare_fs_struct);
-diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index 71e7b180c0d9..f37bd7db2176 100644
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -582,15 +582,13 @@ nfsd(void *vrqstp)
- 	/* Lock module and set up kernel thread */
- 	mutex_lock(&nfsd_mutex);
- 
--	/* At this point, the thread shares current->fs
--	 * with the init process. We need to create files with a
--	 * umask of 0 instead of init's umask. */
--	if (unshare_fs_struct() < 0) {
--		printk("Unable to start nfsd thread: out of memory\n");
--		goto out;
--	}
--
--	current->fs->umask = 0;
-+	/*
-+	 * At this point, the thread shares current->fs with the init process.
-+	 * We need to create files with a umask of 0 instead of init's umask,
-+	 * so switch to the fs_struct associated with the rqstp.
-+	 */
-+	get_fs_struct(rqstp->rq_fs);
-+	replace_fs_struct(rqstp->rq_fs);
- 
- 	/*
- 	 * thread is spawned with all signals set to SIG_IGN, re-enable
-@@ -632,7 +630,6 @@ nfsd(void *vrqstp)
- 	mutex_lock(&nfsd_mutex);
- 	nfsdstats.th_cnt --;
- 
--out:
- 	rqstp->rq_server = NULL;
- 
- 	/* Release the thread */
-diff --git a/include/linux/fs_struct.h b/include/linux/fs_struct.h
-index 0efc3e62843a..d2b7a1942790 100644
---- a/include/linux/fs_struct.h
-+++ b/include/linux/fs_struct.h
-@@ -21,7 +21,10 @@ extern void set_fs_root(struct fs_struct *, const struct path *);
- extern void set_fs_pwd(struct fs_struct *, const struct path *);
- extern struct fs_struct *copy_fs_struct(struct fs_struct *);
- extern void free_fs_struct(struct fs_struct *);
-+extern void replace_fs_struct(struct fs_struct *);
- extern int unshare_fs_struct(void);
-+struct fs_struct *get_fs_struct(struct fs_struct *);
-+void put_fs_struct(struct fs_struct *);
- 
- static inline void get_fs_root(struct fs_struct *fs, struct path *root)
- {
-diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
-index 81e723220346..f47de87660b4 100644
---- a/include/linux/sunrpc/svc.h
-+++ b/include/linux/sunrpc/svc.h
-@@ -295,6 +295,7 @@ struct svc_rqst {
- 	struct svc_cacherep *	rq_cacherep;	/* cache info */
- 	struct task_struct	*rq_task;	/* service thread */
- 	spinlock_t		rq_lock;	/* per-request lock */
-+	struct fs_struct 	*rq_fs;
- };
- 
- #define SVC_NET(svc_rqst)	(svc_rqst->rq_xprt->xpt_net)
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index 7c8e33923210..4300bc852f6e 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -20,6 +20,7 @@
- #include <linux/module.h>
- #include <linux/kthread.h>
- #include <linux/slab.h>
-+#include <linux/fs_struct.h>
+ #include <trace/define_trace.h>
+diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
+index 74db5ca60b33..2b09deabac24 100644
+--- a/net/sunrpc/svcsock.c
++++ b/net/sunrpc/svcsock.c
+@@ -44,6 +44,7 @@
+ #include <asm/uaccess.h>
+ #include <asm/ioctls.h>
+ #include <trace/events/skb.h>
++#include <trace/events/sunrpc.h>
  
  #include <linux/sunrpc/types.h>
- #include <linux/sunrpc/xdr.h>
-@@ -622,6 +623,11 @@ svc_rqst_alloc(struct svc_serv *serv, struct svc_pool *pool, int node)
- 	if (!svc_init_buffer(rqstp, serv->sv_max_mesg, node))
- 		goto out_enomem;
+ #include <linux/sunrpc/clnt.h>
+@@ -765,6 +766,7 @@ static void svc_tcp_listen_data_ready(struct sock *sk)
+ 	struct svc_sock	*svsk = (struct svc_sock *)sk->sk_user_data;
+ 	wait_queue_head_t *wq;
  
-+	rqstp->rq_fs = copy_fs_struct(current->fs);
-+	if (!rqstp->rq_fs)
-+		goto out_enomem;
++	trace_svc_tcp_listen_data_ready(sk);
+ 	dprintk("svc: socket %p TCP (listen) state change %d\n",
+ 		sk, sk->sk_state);
+ 
+@@ -799,6 +801,7 @@ static void svc_tcp_state_change(struct sock *sk)
+ 	struct svc_sock	*svsk = (struct svc_sock *)sk->sk_user_data;
+ 	wait_queue_head_t *wq = sk_sleep(sk);
+ 
++	trace_svc_tcp_state_change(sk);
+ 	dprintk("svc: socket %p TCP (connected) state change %d (svsk %p)\n",
+ 		sk, sk->sk_state, sk->sk_user_data);
+ 
+@@ -817,6 +820,7 @@ static void svc_tcp_data_ready(struct sock *sk)
+ 	struct svc_sock *svsk = (struct svc_sock *)sk->sk_user_data;
+ 	wait_queue_head_t *wq = sk_sleep(sk);
+ 
++	trace_svc_tcp_data_ready(sk);
+ 	dprintk("svc: socket %p TCP data ready (svsk %p)\n",
+ 		sk, sk->sk_user_data);
+ 	if (svsk) {
+@@ -842,6 +846,8 @@ static struct svc_xprt *svc_tcp_accept(struct svc_xprt *xprt)
+ 	int		err, slen;
+ 	RPC_IFDEBUG(char buf[RPC_MAX_ADDRBUFLEN]);
+ 
++	trace_svc_tcp_accept(svsk->sk_sk);
 +
-+	rqstp->rq_fs->umask = 0;
- 	return rqstp;
- out_enomem:
- 	svc_rqst_free(rqstp);
-@@ -784,6 +790,8 @@ svc_rqst_free(struct svc_rqst *rqstp)
- 	kfree(rqstp->rq_resp);
- 	kfree(rqstp->rq_argp);
- 	kfree(rqstp->rq_auth_data);
-+	if (rqstp->rq_fs)
-+		put_fs_struct(rqstp->rq_fs);
- 	kfree_rcu(rqstp, rq_rcu_head);
- }
- EXPORT_SYMBOL_GPL(svc_rqst_free);
+ 	dprintk("svc: tcp_accept %p sock %p\n", svsk, sock);
+ 	if (!sock)
+ 		return NULL;
 -- 
 2.1.0
 
