@@ -1,110 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933468AbaLBXKT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 18:10:19 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:38145 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933071AbaLBXKR (ORCPT
+	id S933480AbaLBXKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 18:10:33 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:64657 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933397AbaLBXKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 18:10:17 -0500
-Message-ID: <547E4736.5000303@oracle.com>
-Date: Tue, 02 Dec 2014 18:11:50 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, bhelgaas@google.com, linux@eikelenboom.it
-Subject: Re: [Xen-devel] [PATCH v4 7/7] xen/pciback: Restore configuration
- space when detaching from a guest.
-References: <1416608271-18931-1-git-send-email-konrad.wilk@oracle.com> <1416608271-18931-8-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1416608271-18931-8-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Tue, 2 Dec 2014 18:10:18 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Benoit Taine <benoit.taine@lip6.fr>,
+        Bjorn Helgaas <bhelgaas@google.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] sound: pci: cmipci.c:  Cleaning up function that are not used anywhere
+Date: Wed,  3 Dec 2014 00:12:55 +0100
+Message-Id: <1417561975-27627-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2014 05:17 PM, Konrad Rzeszutek Wilk wrote:
-> The commit "xen/pciback: Don't deadlock when unbinding." was using
-> the version of pci_reset_function which would lock the device lock.
-> That is no good as we can dead-lock. As such we swapped to using
-> the lock-less version and requiring that the callers
-> of 'pcistub_put_pci_dev' take the device lock. And as such
-> this bug got exposed.
->
-> Using the lock-less version is  OK, except that we tried to
-> use 'pci_restore_state' after the lock-less version of
-> __pci_reset_function_locked - which won't work as 'state_saved'
-> is set to false. Said 'state_saved' is a toggle boolean that
-> is to be used by the sequence of a) pci_save_state/pci_restore_state
-> or b) pci_load_and_free_saved_state/pci_restore_state. We don't
-> want to use a) as the guest might have messed up the PCI
-> configuration space and we want it to revert to the state
-> when the PCI device was binded to us. Therefore we pick
-> b) to restore the configuration space.
+Remove function snd_cmipci_pll_rmn() that is not used anywhere.
 
+This was partially found by using a static code analysis program called cppcheck.
 
-Doesn't this all mean that patch 1/7 broke pcistub_put_pci_dev()?
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ sound/pci/cmipci.c |   41 -----------------------------------------
+ 1 file changed, 41 deletions(-)
 
--boris
-
-
->
-> We restore from our 'golden' version of PCI configuration space, when an:
->   - Device is unbinded from pciback
->   - Device is detached from a guest.
->
-> Reported-by:  Sander Eikelenboom <linux@eikelenboom.it>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->   drivers/xen/xen-pciback/pci_stub.c | 20 ++++++++++++++++----
->   1 file changed, 16 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
-> index 843a2ba..eb8b58e 100644
-> --- a/drivers/xen/xen-pciback/pci_stub.c
-> +++ b/drivers/xen/xen-pciback/pci_stub.c
-> @@ -105,7 +105,7 @@ static void pcistub_device_release(struct kref *kref)
->   	 */
->   	__pci_reset_function_locked(dev);
->   	if (pci_load_and_free_saved_state(dev, &dev_data->pci_saved_state))
-> -		dev_dbg(&dev->dev, "Could not reload PCI state\n");
-> +		dev_info(&dev->dev, "Could not reload PCI state\n");
->   	else
->   		pci_restore_state(dev);
->   
-> @@ -257,6 +257,8 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
->   {
->   	struct pcistub_device *psdev, *found_psdev = NULL;
->   	unsigned long flags;
-> +	struct xen_pcibk_dev_data *dev_data;
-> +	int ret;
->   
->   	spin_lock_irqsave(&pcistub_devices_lock, flags);
->   
-> @@ -279,9 +281,19 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
->   	 * (so it's ready for the next domain)
->   	 */
->   	device_lock_assert(&dev->dev);
-> -	__pci_reset_function_locked(dev);
-> -	pci_restore_state(dev);
-> -
-> +	dev_data = pci_get_drvdata(dev);
-> +	ret = pci_load_saved_state(dev, dev_data->pci_saved_state);
-> +	if (ret < 0)
-> +		dev_warn(&dev->dev, "Could not reload PCI state\n");
-> +	else {
-> +		__pci_reset_function_locked(dev);
-> +		/*
-> +		 * The usual sequence is pci_save_state & pci_restore_state
-> +		 * but the guest might have messed the configuration space up.
-> +		 * Use the initial version (when device was bound to us).
-> +		 */
-> +		pci_restore_state(dev);
-> +	}
->   	/* This disables the device. */
->   	xen_pcibk_reset_device(dev);
->   
+diff --git a/sound/pci/cmipci.c b/sound/pci/cmipci.c
+index 85ed403..e33edae 100644
+--- a/sound/pci/cmipci.c
++++ b/sound/pci/cmipci.c
+@@ -615,47 +615,6 @@ static unsigned int snd_cmipci_rate_freq(unsigned int rate)
+ 
+ #ifdef USE_VAR48KRATE
+ /*
+- * Determine PLL values for frequency setup, maybe the CMI8338 (CMI8738???)
+- * does it this way .. maybe not.  Never get any information from C-Media about
+- * that <werner@suse.de>.
+- */
+-static int snd_cmipci_pll_rmn(unsigned int rate, unsigned int adcmult, int *r, int *m, int *n)
+-{
+-	unsigned int delta, tolerance;
+-	int xm, xn, xr;
+-
+-	for (*r = 0; rate < CM_MAXIMUM_RATE/adcmult; *r += (1<<5))
+-		rate <<= 1;
+-	*n = -1;
+-	if (*r > 0xff)
+-		goto out;
+-	tolerance = rate*CM_TOLERANCE_RATE;
+-
+-	for (xn = (1+2); xn < (0x1f+2); xn++) {
+-		for (xm = (1+2); xm < (0xff+2); xm++) {
+-			xr = ((CM_REFFREQ_XIN/adcmult) * xm) / xn;
+-
+-			if (xr < rate)
+-				delta = rate - xr;
+-			else
+-				delta = xr - rate;
+-
+-			/*
+-			 * If we found one, remember this,
+-			 * and try to find a closer one
+-			 */
+-			if (delta < tolerance) {
+-				tolerance = delta;
+-				*m = xm - 2;
+-				*n = xn - 2;
+-			}
+-		}
+-	}
+-out:
+-	return (*n > -1);
+-}
+-
+-/*
+  * Program pll register bits, I assume that the 8 registers 0xf8 up to 0xff
+  * are mapped onto the 8 ADC/DAC sampling frequency which can be chosen
+  * at the register CM_REG_FUNCTRL1 (0x04).
+-- 
+1.7.10.4
 
