@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934070AbaLBT4W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:56:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46513 "EHLO
+	id S934171AbaLBT5x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:57:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46500 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932856AbaLBTU2 (ORCPT
+	with ESMTP id S1754369AbaLBTU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:20:28 -0500
+	Tue, 2 Dec 2014 14:20:26 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anton Blanchard <anton@samba.org>, Michael Ellerman <mpe@ellerman.id.au>,
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 020/121] powerpc: do_notify_resume can be called with bad thread_info flags argument
-Date: Tue,  2 Dec 2014 11:18:19 -0800
-Message-Id: <1417548000-1794-21-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 016/121] acer-wmi: Add Aspire 5741 to video_vendor_dmi_table
+Date: Tue,  2 Dec 2014 11:18:15 -0800
+Message-Id: <1417548000-1794-17-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
@@ -27,56 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 808be31426af57af22268ef0fcb42617beb3d15b upstream.
+commit 9404cd95507de0a61f2a000fbd76748a9cae33b4 upstream.
 
-Back in 7230c5644188 ("powerpc: Rework lazy-interrupt handling") we
-added a call out to restore_interrupts() (written in c) before calling
-do_notify_resume:
+The Aspire 5741 has broken acpi-video backlight control, so add it to the
+quirk table.
 
-        bl      restore_interrupts
-        addi    r3,r1,STACK_FRAME_OVERHEAD
-        bl      do_notify_resume
-
-Unfortunately do_notify_resume takes two arguments, the second one
-being the thread_info flags:
-
-void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
-
-We do populate r4 (the second argument) earlier, but
-restore_interrupts() is free to muck it up all it wants. My guess is
-the gcc compiler gods shone down on us and its register allocator
-never used r4. Sometimes, rarely, luck is on our side.
-
-LLVM on the other hand did trample r4.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
-[ kamal: backport to 3.13-stable: context ]
+References: https://bugzilla.redhat.com/show_bug.cgi?id=1012674
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Reviewed-by: Lee, Chun-Yi <jlee@suse.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/kernel/entry_64.S | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/platform/x86/acer-wmi.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/arch/powerpc/kernel/entry_64.S b/arch/powerpc/kernel/entry_64.S
-index fb5ba6d..088dca5 100644
---- a/arch/powerpc/kernel/entry_64.S
-+++ b/arch/powerpc/kernel/entry_64.S
-@@ -660,7 +660,13 @@ _GLOBAL(ret_from_except_lite)
- 	b	.ret_from_except_lite
+diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+index c9076bd..3990c79 100644
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -572,6 +572,14 @@ static const struct dmi_system_id video_vendor_dmi_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5750"),
+ 		},
+ 	},
++	{
++		.callback = video_set_backlight_video_vendor,
++		.ident = "Acer Aspire 5741",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Acer"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5741"),
++		},
++	},
+ 	{}
+ };
  
- 2:	bl	.save_nvgprs
-+	/*
-+	 * Use a non volatile GPR to save and restore our thread_info flags
-+	 * across the call to restore_interrupts.
-+	 */
-+	mr	r30,r4
- 	bl	.restore_interrupts
-+	mr	r4,r30
- 	addi	r3,r1,STACK_FRAME_OVERHEAD
- 	bl	.do_notify_resume
- 	b	.ret_from_except
 -- 
 1.9.1
 
