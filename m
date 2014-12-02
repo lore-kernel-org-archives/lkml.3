@@ -1,113 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533AbaLBItV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 03:49:21 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:38376 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303AbaLBItT (ORCPT
+	id S1752846AbaLBItv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 03:49:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43015 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035AbaLBIts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 03:49:19 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID sB28nGFV001834, This message is accepted by code: ctloc85258
-From: Chunhao Lin <hau@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        Chunhao Lin <hau@realtek.com>
-Subject: [PATCH net-next 2/2] r8169:disable rtl8168ep cmac engine
-Date: Tue, 2 Dec 2014 16:48:31 +0800
-Message-ID: <1417510111-3568-3-git-send-email-hau@realtek.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417510111-3568-1-git-send-email-hau@realtek.com>
-References: <1417510111-3568-1-git-send-email-hau@realtek.com>
+	Tue, 2 Dec 2014 03:49:48 -0500
+Message-ID: <547D7D29.8000602@canonical.com>
+Date: Tue, 02 Dec 2014 09:49:45 +0100
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.94]
+To: Slava Pestov <sp@datera.io>
+CC: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        Kent Overstreet <kmo@daterainc.com>
+Subject: Re: [PATCH] bcache: prevent crash on changing writeback_running
+References: <1408453293-17917-1-git-send-email-stefan.bader@canonical.com> <CACHGV4J8pQM7pt+0NXJL60OJHxMUQu2S9U_DnKFh0BW0=1XpuA@mail.gmail.com>
+In-Reply-To: <CACHGV4J8pQM7pt+0NXJL60OJHxMUQu2S9U_DnKFh0BW0=1XpuA@mail.gmail.com>
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="qdDUVglFDHIE23h9W6HH2rKf98aaXIFaN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cmac engine is the bridge between driver and dash firmware.
-Other os may not disable cmac when leave. And r8169 did not allocate any
-resources for cmac engine. Disable it to prevent abnormal system behavior.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--qdDUVglFDHIE23h9W6HH2rKf98aaXIFaN
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Chunhao Lin <hau@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c | 30 ++++++++++++++++++++++--------
- 1 file changed, 22 insertions(+), 8 deletions(-)
+On 19.08.2014 20:03, Slava Pestov wrote:
+> Thanks, this is now in our development branch.
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 7f4515f..56280c1 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -1377,6 +1377,16 @@ DECLARE_RTL_COND(rtl_ocp_tx_cond)
- 	return RTL_R8(IBISR0) & 0x02;
- }
- 
-+static void rtl8168ep_stop_cmac(struct rtl8169_private *tp)
-+{
-+	void __iomem *ioaddr = tp->mmio_addr;
-+
-+	RTL_W8(IBCR2, RTL_R8(IBCR2) & ~0x01);
-+	rtl_msleep_loop_wait_low(tp, &rtl_ocp_tx_cond, 50, 2000);
-+	RTL_W8(IBISR0, RTL_R8(IBISR0) | 0x20);
-+	RTL_W8(IBCR0, RTL_R8(IBCR0) & ~0x01);
-+}
-+
- static void rtl8168dp_driver_start(struct rtl8169_private *tp)
- {
- 	rtl8168_oob_notify(tp, OOB_CMD_DRIVER_START);
-@@ -1417,12 +1427,7 @@ static void rtl8168dp_driver_stop(struct rtl8169_private *tp)
- 
- static void rtl8168ep_driver_stop(struct rtl8169_private *tp)
- {
--	void __iomem *ioaddr = tp->mmio_addr;
--
--	RTL_W8(IBCR2, RTL_R8(IBCR2) & ~0x01);
--	rtl_msleep_loop_wait_low(tp, &rtl_ocp_tx_cond, 50, 2000);
--	RTL_W8(IBISR0, RTL_R8(IBISR0) | 0x20);
--	RTL_W8(IBCR0, RTL_R8(IBCR0) & ~0x01);
-+	rtl8168ep_stop_cmac(tp);
- 	ocp_write(tp, 0x01, 0x180, OOB_CMD_DRIVER_STOP);
- 	ocp_write(tp, 0x01, 0x30, ocp_read(tp, 0x01, 0x30) | 0x01);
- 	rtl_msleep_loop_wait_low(tp, &rtl_ep_ocp_read_cond, 10, 10);
-@@ -6089,6 +6094,8 @@ static void rtl_hw_start_8168ep(struct rtl8169_private *tp)
- 	void __iomem *ioaddr = tp->mmio_addr;
- 	struct pci_dev *pdev = tp->pci_dev;
- 
-+	rtl8168ep_stop_cmac(tp);
-+
- 	RTL_W32(TxConfig, RTL_R32(TxConfig) | TXCFG_AUTO_FIFO);
- 
- 	rtl_eri_write(tp, 0xc8, ERIAR_MASK_0101, 0x00080002, ERIAR_EXGMAC);
-@@ -8002,6 +8009,12 @@ static void rtl_hw_init_8168g(struct rtl8169_private *tp)
- 		return;
- }
- 
-+static void rtl_hw_init_8168ep(struct rtl8169_private *tp)
-+{
-+	rtl8168ep_stop_cmac(tp);
-+	rtl_hw_init_8168g(tp);
-+}
-+
- static void rtl_hw_initialize(struct rtl8169_private *tp)
- {
- 	switch (tp->mac_version) {
-@@ -8014,12 +8027,13 @@ static void rtl_hw_initialize(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_46:
- 	case RTL_GIGA_MAC_VER_47:
- 	case RTL_GIGA_MAC_VER_48:
-+		rtl_hw_init_8168g(tp);
-+		break;
- 	case RTL_GIGA_MAC_VER_49:
- 	case RTL_GIGA_MAC_VER_50:
- 	case RTL_GIGA_MAC_VER_51:
--		rtl_hw_init_8168g(tp);
-+		rtl_hw_init_8168ep(tp);
- 		break;
--
- 	default:
- 		break;
- 	}
--- 
-1.9.1
+It has been a while but I just went back there and checked linux and linu=
+x-next
+but cannot find this change anywhere. I think it is a rather simple bugfi=
+x. So I
+start to wonder where it went and when it would get pushed.
 
+-Stefan
+
+>=20
+> On Tue, Aug 19, 2014 at 6:01 AM, Stefan Bader
+> <stefan.bader@canonical.com> wrote:
+>> commit a664d0f05a2ec02c8f042db536d84d15d6e19e81
+>>     bcache: fix crash on shutdown in passthrough mode
+>>
+>> added a safeguard in the shutdown case. At least while not being
+>> attached it is also possible to trigger a kernel bug by writing into
+>> writeback_running. This change  adds the same check before trying to
+>> wake up the thread for that case.
+>>
+>> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+>> ---
+>>  drivers/md/bcache/writeback.h | 3 ++-
+>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeba=
+ck.h
+>> index 0a9dab1..073a042 100644
+>> --- a/drivers/md/bcache/writeback.h
+>> +++ b/drivers/md/bcache/writeback.h
+>> @@ -63,7 +63,8 @@ static inline bool should_writeback(struct cached_de=
+v *dc, struct bio *bio,
+>>
+>>  static inline void bch_writeback_queue(struct cached_dev *dc)
+>>  {
+>> -       wake_up_process(dc->writeback_thread);
+>> +       if (!IS_ERR_OR_NULL(dc->writeback_thread))
+>> +               wake_up_process(dc->writeback_thread);
+>>  }
+>>
+>>  static inline void bch_writeback_add(struct cached_dev *dc)
+>> --
+>> 1.9.1
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-bcache=
+" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
+--qdDUVglFDHIE23h9W6HH2rKf98aaXIFaN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUfX0pAAoJEOhnXe7L7s6jyCgP/RSClzHGIlrqMrR4P9cYh2We
+YYfDduKPwhwuLl6WtmtV05gGClcKXIYhnv62R0Z6E4r6F7b+LtT4XooYYi3gIHHk
+GjPetA8EFoVEQD+JSvSVAKiuRAV4QKAHuzNtEbg3h3PRuoOx/2GuP64oM9RSLg/L
+Xct421mlpf/xilSLq0KEQPXaUA/3CeyjXd/Z6Wz33gH6v6TPtlOyZAHfWvLOuA7Z
+6/ZRegqw8NMnTVOc9CM4Rj6MRVmQYcD4pkF18fIt/DKpJaSDVjXTqSdIVS2k0A4E
+POFT530lnC9QfRaaTIEAiCnXJH2fNfnG6ohuK3cTInqbpfPdN87Bf6HyLhO3v9e/
+VyNWuyuCi7BTFholZvTSca98ttvkQNN9AqRVjeAkBIvXz+DuupUoyvo1PpIiq6Uk
+ni/D13C2y7TMLfPJzJTbb5d7/oETRb5aa8bhxnj0WLzn/EU56nX1ZSdULLx3XVLM
+3VMM/yqhNK3qOJ7RhWrhkI+gyvH80/o7+uiGZK61wHZuI/MPU97ZxM38zwzGTAko
+PQHWhHSABmaglV7iuQWXe7ASm3wBTVW2/VdNcCz4BxYZteXySilXPhA3nB2Q/eDJ
+SPqTiisYYUXl/0oEuAQa+aupAAOZ3ILYnrzKzakCO7RWvQAtXRn17r/FEadPUY/O
+DF0d6IQLhAz5JLJSy3P8
+=DGMF
+-----END PGP SIGNATURE-----
+
+--qdDUVglFDHIE23h9W6HH2rKf98aaXIFaN--
