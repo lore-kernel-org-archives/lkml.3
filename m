@@ -1,115 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933341AbaLBWlQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 17:41:16 -0500
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:34062 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932984AbaLBWlP convert rfc822-to-8bit (ORCPT
+	id S933413AbaLBWmF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 17:42:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42979 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932984AbaLBWmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 17:41:15 -0500
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Alex Thorlton <athorlton@sgi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: James Smart <james.smart@emulex.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [BUG] kzalloc overflow in lpfc driver on 6k core system
-Thread-Topic: [BUG] kzalloc overflow in lpfc driver on 6k core system
-Thread-Index: AQHQDnsS8SnA4dxJE0WSH6ZYVZUNbZx84GDg
-Date: Tue, 2 Dec 2014 22:39:40 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B4029593EFC9E@G4W3202.americas.hpqcorp.net>
-References: <20141202215810.GT4720@sgi.com>
-In-Reply-To: <20141202215810.GT4720@sgi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.37]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 2 Dec 2014 17:42:01 -0500
+Date: Tue, 2 Dec 2014 14:42:00 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Milosz Tanski <milosz@adfin.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-aio@kvack.org" <linux-aio@kvack.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux API <linux-api@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-arch@vger.kernel.org
+Subject: Re: [PATCH v6 0/7] vfs: Non-blockling buffered fs read (page cache
+ only)
+Message-Id: <20141202144200.a4ca81a46a43563a8874fd8e@linux-foundation.org>
+In-Reply-To: <CANP1eJEALZTwMv0Z1udmPWKhfGmpe+idtdRASp62Jm_V0N2HcQ@mail.gmail.com>
+References: <cover.1415636409.git.milosz@adfin.com>
+	<20141125150101.9596a09e.akpm@linux-foundation.org>
+	<CANP1eJEALZTwMv0Z1udmPWKhfGmpe+idtdRASp62Jm_V0N2HcQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2 Dec 2014 17:17:42 -0500 Milosz Tanski <milosz@adfin.com> wrote:
 
-
-> -----Original Message-----
-> From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
-> owner@vger.kernel.org] On Behalf Of Alex Thorlton
-> Sent: Tuesday, 02 December, 2014 3:58 PM
-...
-> We've recently upgraded our big machine up to 6144 cores, and we're
-> shaking out a number of bugs related to booting at that large core
-> count.  Last night I tripped a warning from the lpfc driver that appears
-> to be related to a kzalloc that uses the number of cores as part of it's
-> size calculation.  Here's the backtrace from the warning:
-...
-> For a little bit more information on exactly what's going wrong, we're
-> tripping the warning from lpfc_pci_probe_one_s4 (as you can see from the
-> trace).  That function calls down to lpfc_sli4_driver_resource_setup,
-> which contains the failing kzalloc here:
+> > There have been several incomplete attempts to implement fincore().  If
+> > we were to complete those attempts, preadv2() could be implemented
+> > using fincore()+pread().  Plus we get fincore(), which is useful for
+> > other (but probably similar) reasons.  Probably fincore()+pwrite() could
+> > be used to implement pwritev2(), but I don't know what pwritev2() does
+> > yet.
+> >
+> > Implementing fincore() is more flexible, requires less code and is less
+> > likely to have bugs.  So why not go that way?  Yes, it's more CPU
+> > intensive, but how much?  Is the difference sufficient to justify the
+> > preadv2()/pwritev2() approach?
 > 
-> phba->sli4_hba.cpu_map = kzalloc((sizeof(struct lpfc_vector_map_info) *
->                                  phba->sli4_hba.num_present_cpu),
->                                  GFP_KERNEL);
-> 
-> As mentioned, it looks like we're multiplying the number available cpus
-> by that struct size to get an allocation size, which ends up being
-> greater than KMALLOC_MAX_SIZE.
-> 
-> Does anyone have any ideas on what could be done to break that
-> allocation up into smaller pieces, or to make it in a different way so
-> that we avoid this warning?
-> 
-> Any help is greatly appreciated.  Thanks!
-> 
+> I would like to see a fincore() functionality (for other reasons) I
+> don't think it does the job here. fincore() + preadv() is inherently
+> racy as there's no guarantee that the data becomes uncached between
+> the two calls.
 
-That structure includes an NR_CPU-based maskbits field, which is
-probably too big.
+There will always be holes.  For example find_get_page() could block on
+lock_page() while some other process is doing IO. 
+page_cache_async_readahead() does lots of memory allocation which can
+get blocked for long periods in the page allocator. 
+page_cache_async_readahead() can block on synchronous metadata reads,
+etc.
 
-include/cpumask.h:
-typedef struct cpumask { DECLARE_BITMAP(bits, NR_CPUS); } cpumask_t;
+The question is whether a simpler approach such as fincore() will be
+sufficient.
 
-drivers/scsi/lpfc/lpfc_sli4.h:
-struct lpfc_vector_map_info {
-        uint16_t        phys_id;
-        uint16_t        core_id;
-        uint16_t        irq;
-        uint16_t        channel_id;
-        struct cpumask  maskbits;
-};
+> This may not matter in some cases, but in others (ones
+> that I'm trying to solve) it will introduce unexpected latency.
 
-maskbits appears to only be used for setting IRQ affinity hints in
-drivers/scsi/lpfc_init.c:
-        for (idx = 0; idx < vectors; idx++) {
-                cpup = phba->sli4_hba.cpu_map;
-                cpu = lpfc_find_next_cpu(phba, phys_id);
-                ...
-                mask = &cpup->maskbits;
-                cpumask_clear(mask);
-                cpumask_set_cpu(cpu, mask);
-                i = irq_set_affinity_hint(phba->sli4_hba.msix_entries[idx].
-                                          vector, mask);
+Details?
 
-In similar code, mpt3sas and lockless hpsa just call get_cpu_mask()
-inside the loop:
-        cpu = cpumask_first(cpu_online_mask);
-        for (i = 0; i < h->msix_vector; i++) {
-                rc = irq_set_affinity_hint(h->intr[i], get_cpu_mask(cpu));
-                cpu = cpumask_next(cpu, cpu_online_mask);
-        }
+> There's no overlap between prwritev2 and fincore() functionality.
 
-get_cpu_mask() uses the global cpu_bit_bitmap array, which is declared
-in kernel/cpu.c:
-extern const unsigned long
-        cpu_bit_bitmap[BITS_PER_LONG+1][BITS_TO_LONGS(NR_CPUS)];
-
-That approach should work for lpfc.
-
----
-Rob Elliott    HP Server Storage
+Do we actually need pwritev2()?  What's the justification for that?
 
 
+Please let's examine the alternative(s) seriously.  It would be mistake
+to add preadv2/pwritev2 if fincore+pread would have sufficed.  
 
