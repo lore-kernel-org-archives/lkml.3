@@ -1,121 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934012AbaLBTdO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:33:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46985 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933730AbaLBT0p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:26:45 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jeff Layton <jlayton@redhat.com>, "J. Bruce Fields" <bfields@redhat.com>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 043/121] nfsd: don't try to reuse an expired DRC entry off the list
-Date: Tue,  2 Dec 2014 11:18:42 -0800
-Message-Id: <1417548000-1794-44-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
-References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S933997AbaLBTdM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:33:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49110 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932967AbaLBTdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 14:33:10 -0500
+Date: Tue, 2 Dec 2014 14:32:52 -0500
+From: Dave Jones <davej@redhat.com>
+To: Chris Mason <clm@fb.com>, Linus Torvalds <torvalds@linux-foundation.org>,
+        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141202193252.GB17595@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	=?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+	Sasha Levin <sasha.levin@oracle.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <20141127225637.GA24019@redhat.com>
+ <m5dart$co$1@ger.gmane.org>
+ <CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
+ <547b8a45.6e608c0a.20f9.1002@mx.google.com>
+ <CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
+ <547bbe36.48548c0a.105c.779c@mx.google.com>
+ <20141201191431.GA17385@linux.vnet.ibm.com>
+ <547ccf74.a5198c0a.25de.26d9@mx.google.com>
+ <CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
+ <20141201230339.GA20487@ret.masoncoding.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141201230339.GA20487@ret.masoncoding.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11-ckt12 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, Dec 01, 2014 at 06:08:38PM -0500, Chris Mason wrote:
+ > I'm not sure if this is related, but running trinity here, I noticed it
+ > was stuck at 100% system time on every CPU.  perf report tells me we are
+ > spending all of our time in spin_lock under the sync system call.
+ > 
+ > I think it's coming from contention in the bdi_queue_work() call from
+ > inside sync_inodes_sb, which is spin_lock_bh(). 
+ > 
+ > I wonder if we're just spinning so hard on this one bh lock that we're
+ > starving the watchdog?
+ > 
+ > Dave, do you have spinlock debugging on?  
 
-------------------
+That has been a constant, yes. I can try with that disabled some time.
 
-From: Jeff Layton <jlayton@redhat.com>
-
-commit a0ef5e19684f0447da9ff0654a12019c484f57ca upstream.
-
-Currently when we are processing a request, we try to scrape an expired
-or over-limit entry off the list in preference to allocating a new one
-from the slab.
-
-This is unnecessarily complicated. Just use the slab layer.
-
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
-Reference: http://bugs.launchpad.net/bugs/1396065
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- fs/nfsd/nfscache.c | 36 ++++--------------------------------
- 1 file changed, 4 insertions(+), 32 deletions(-)
-
-diff --git a/fs/nfsd/nfscache.c b/fs/nfsd/nfscache.c
-index b6af150..f8f060f 100644
---- a/fs/nfsd/nfscache.c
-+++ b/fs/nfsd/nfscache.c
-@@ -132,13 +132,6 @@ nfsd_reply_cache_alloc(void)
- }
- 
- static void
--nfsd_reply_cache_unhash(struct svc_cacherep *rp)
--{
--	hlist_del_init(&rp->c_hash);
--	list_del_init(&rp->c_lru);
--}
--
--static void
- nfsd_reply_cache_free_locked(struct svc_cacherep *rp)
- {
- 	if (rp->c_type == RC_REPLBUFF && rp->c_replvec.iov_base) {
-@@ -416,22 +409,8 @@ nfsd_cache_lookup(struct svc_rqst *rqstp)
- 
- 	/*
- 	 * Since the common case is a cache miss followed by an insert,
--	 * preallocate an entry. First, try to reuse the first entry on the LRU
--	 * if it works, then go ahead and prune the LRU list.
-+	 * preallocate an entry.
- 	 */
--	spin_lock(&cache_lock);
--	if (!list_empty(&lru_head)) {
--		rp = list_first_entry(&lru_head, struct svc_cacherep, c_lru);
--		if (nfsd_cache_entry_expired(rp) ||
--		    num_drc_entries >= max_drc_entries) {
--			nfsd_reply_cache_unhash(rp);
--			prune_cache_entries();
--			goto search_cache;
--		}
--	}
--
--	/* No expired ones available, allocate a new one. */
--	spin_unlock(&cache_lock);
- 	rp = nfsd_reply_cache_alloc();
- 	spin_lock(&cache_lock);
- 	if (likely(rp)) {
-@@ -439,7 +418,9 @@ nfsd_cache_lookup(struct svc_rqst *rqstp)
- 		drc_mem_usage += sizeof(*rp);
- 	}
- 
--search_cache:
-+	/* go ahead and prune the cache */
-+	prune_cache_entries();
-+
- 	found = nfsd_cache_search(rqstp, csum);
- 	if (found) {
- 		if (likely(rp))
-@@ -453,15 +434,6 @@ search_cache:
- 		goto out;
- 	}
- 
--	/*
--	 * We're keeping the one we just allocated. Are we now over the
--	 * limit? Prune one off the tip of the LRU in trade for the one we
--	 * just allocated if so.
--	 */
--	if (num_drc_entries >= max_drc_entries)
--		nfsd_reply_cache_free_locked(list_first_entry(&lru_head,
--						struct svc_cacherep, c_lru));
--
- 	nfsdstats.rcmisses++;
- 	rqstp->rq_cacherep = rp;
- 	rp->c_state = RC_INPROG;
--- 
-1.9.1
+	Dave
 
