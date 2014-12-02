@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548AbaLBTWD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:22:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46585 "EHLO
+	id S933201AbaLBTWM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:22:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46598 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932551AbaLBTWA (ORCPT
+	with ESMTP id S933179AbaLBTWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:22:00 -0500
+	Tue, 2 Dec 2014 14:22:07 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: Luciano Coelho <luciano.coelho@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 067/121] Input: alps - ignore potential bare packets when device is out of sync
-Date: Tue,  2 Dec 2014 11:19:06 -0800
-Message-Id: <1417548000-1794-68-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 051/121] mac80211: use secondary channel offset IE also beacons during CSA
+Date: Tue,  2 Dec 2014 11:18:50 -0800
+Message-Id: <1417548000-1794-52-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,64 +28,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+From: Luciano Coelho <luciano.coelho@intel.com>
 
-commit 4ab8f7f320f91f279c3f06a9795cfea5c972888a upstream.
+commit 84469a45a1bedec9918e94ab2f78c5dc0739e4a7 upstream.
 
-5th and 6th byte of ALPS trackstick V3 protocol match condition for first
-byte of PS/2 3 bytes packet. When driver enters out of sync state and ALPS
-trackstick is sending data then driver match 5th, 6th and next 1st bytes as
-PS/2.
+If we are switching from an HT40+ to an HT40- channel (or vice-versa),
+we need the secondary channel offset IE to specify what is the
+post-CSA offset to be used.  This applies both to beacons and to probe
+responses.
 
-It basically means if user is using trackstick when driver is in out of
-sync state driver will never resync. Processing these bytes as 3 bytes PS/2
-data cause total mess (random cursor movements, random clicks) and make
-trackstick unusable until psmouse driver decide to do full device reset.
+In ieee80211_parse_ch_switch_ie() we were ignoring this IE from
+beacons and using the *current* HT information IE instead.  This was
+causing us to use the same offset as before the switch.
 
-Lot of users reported problems with ALPS devices on Dell Latitude E6440,
-E6540 and E7440 laptops. ALPS device or Dell EC for unknown reason send
-some invalid ALPS PS/2 bytes which cause driver out of sync. It looks like
-that i8042 and psmouse/alps driver always receive group of 6 bytes packets
-so there are no missing bytes and no bytes were inserted between valid
-ones.
+Fix that by using the secondary channel offset IE also for beacons and
+don't ever use the pre-switch offset.  Additionally, remove the
+"beacon" argument from ieee80211_parse_ch_switch_ie(), since it's not
+needed anymore.
 
-This patch does not fix root of problem with ALPS devices found in Dell
-Latitude laptops but it does not allow to process some (invalid)
-subsequence of 6 bytes ALPS packets as 3 bytes PS/2 when driver is out of
-sync.
-
-So with this patch trackstick input device does not report bogus data when
-also driver is out of sync, so trackstick should be usable on those
-machines.
-
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-Tested-by: Pali Rohár <pali.rohar@gmail.com>
-Reviewed-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Reported-by: Jouni Malinen <j@w1.fi>
+Signed-off-by: Luciano Coelho <luciano.coelho@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/input/mouse/alps.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ net/mac80211/ibss.c        |  2 +-
+ net/mac80211/ieee80211_i.h |  3 +--
+ net/mac80211/mesh.c        |  2 +-
+ net/mac80211/mlme.c        |  2 +-
+ net/mac80211/spectmgmt.c   | 18 ++++++------------
+ 5 files changed, 10 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/input/mouse/alps.c b/drivers/input/mouse/alps.c
-index 5cf62e3..80fac48 100644
---- a/drivers/input/mouse/alps.c
-+++ b/drivers/input/mouse/alps.c
-@@ -963,7 +963,13 @@ static psmouse_ret_t alps_process_byte(struct psmouse *psmouse)
- {
- 	struct alps_data *priv = psmouse->private;
+diff --git a/net/mac80211/ibss.c b/net/mac80211/ibss.c
+index 3727941..57ac06f 100644
+--- a/net/mac80211/ibss.c
++++ b/net/mac80211/ibss.c
+@@ -809,7 +809,7 @@ ieee80211_ibss_process_chanswitch(struct ieee80211_sub_if_data *sdata,
  
--	if ((psmouse->packet[0] & 0xc8) == 0x08) { /* PS/2 packet */
-+	/*
-+	 * Check if we are dealing with a bare PS/2 packet, presumably from
-+	 * a device connected to the external PS/2 port. Because bare PS/2
-+	 * protocol does not have enough constant bits to self-synchronize
-+	 * properly we only do this if the device is fully synchronized.
-+	 */
-+	if (!psmouse->out_of_sync_cnt && (psmouse->packet[0] & 0xc8) == 0x08) {
- 		if (psmouse->pktcnt == 3) {
- 			alps_report_bare_ps2_packet(psmouse, psmouse->packet,
- 						    true);
+ 	memset(&params, 0, sizeof(params));
+ 	memset(&csa_ie, 0, sizeof(csa_ie));
+-	err = ieee80211_parse_ch_switch_ie(sdata, elems, beacon,
++	err = ieee80211_parse_ch_switch_ie(sdata, elems,
+ 					   ifibss->chandef.chan->band,
+ 					   sta_flags, ifibss->bssid, &csa_ie);
+ 	/* can't switch to destination channel, fail */
+diff --git a/net/mac80211/ieee80211_i.h b/net/mac80211/ieee80211_i.h
+index 980d863..c0bb6e4 100644
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -1527,7 +1527,6 @@ void ieee80211_process_measurement_req(struct ieee80211_sub_if_data *sdata,
+  * ieee80211_parse_ch_switch_ie - parses channel switch IEs
+  * @sdata: the sdata of the interface which has received the frame
+  * @elems: parsed 802.11 elements received with the frame
+- * @beacon: indicates if the frame was a beacon or probe response
+  * @current_band: indicates the current band
+  * @sta_flags: contains information about own capabilities and restrictions
+  *	to decide which channel switch announcements can be accepted. Only the
+@@ -1541,7 +1540,7 @@ void ieee80211_process_measurement_req(struct ieee80211_sub_if_data *sdata,
+  * Return: 0 on success, <0 on error and >0 if there is nothing to parse.
+  */
+ int ieee80211_parse_ch_switch_ie(struct ieee80211_sub_if_data *sdata,
+-				 struct ieee802_11_elems *elems, bool beacon,
++				 struct ieee802_11_elems *elems,
+ 				 enum ieee80211_band current_band,
+ 				 u32 sta_flags, u8 *bssid,
+ 				 struct ieee80211_csa_ie *csa_ie);
+diff --git a/net/mac80211/mesh.c b/net/mac80211/mesh.c
+index ba10525..5b2c192 100644
+--- a/net/mac80211/mesh.c
++++ b/net/mac80211/mesh.c
+@@ -882,7 +882,7 @@ ieee80211_mesh_process_chnswitch(struct ieee80211_sub_if_data *sdata,
+ 
+ 	memset(&params, 0, sizeof(params));
+ 	memset(&csa_ie, 0, sizeof(csa_ie));
+-	err = ieee80211_parse_ch_switch_ie(sdata, elems, beacon, band,
++	err = ieee80211_parse_ch_switch_ie(sdata, elems, band,
+ 					   sta_flags, sdata->vif.addr,
+ 					   &csa_ie);
+ 	if (err < 0)
+diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
+index 6c126fc..d8824f9 100644
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -998,7 +998,7 @@ ieee80211_sta_process_chanswitch(struct ieee80211_sub_if_data *sdata,
+ 
+ 	current_band = cbss->channel->band;
+ 	memset(&csa_ie, 0, sizeof(csa_ie));
+-	res = ieee80211_parse_ch_switch_ie(sdata, elems, beacon, current_band,
++	res = ieee80211_parse_ch_switch_ie(sdata, elems, current_band,
+ 					   ifmgd->flags,
+ 					   ifmgd->associated->bssid, &csa_ie);
+ 	if (res	< 0)
+diff --git a/net/mac80211/spectmgmt.c b/net/mac80211/spectmgmt.c
+index 6ab0090..efeba56 100644
+--- a/net/mac80211/spectmgmt.c
++++ b/net/mac80211/spectmgmt.c
+@@ -22,7 +22,7 @@
+ #include "wme.h"
+ 
+ int ieee80211_parse_ch_switch_ie(struct ieee80211_sub_if_data *sdata,
+-				 struct ieee802_11_elems *elems, bool beacon,
++				 struct ieee802_11_elems *elems,
+ 				 enum ieee80211_band current_band,
+ 				 u32 sta_flags, u8 *bssid,
+ 				 struct ieee80211_csa_ie *csa_ie)
+@@ -91,19 +91,13 @@ int ieee80211_parse_ch_switch_ie(struct ieee80211_sub_if_data *sdata,
+ 		return -EINVAL;
+ 	}
+ 
+-	if (!beacon && sec_chan_offs) {
++	if (sec_chan_offs) {
+ 		secondary_channel_offset = sec_chan_offs->sec_chan_offs;
+-	} else if (beacon && ht_oper) {
+-		secondary_channel_offset =
+-			ht_oper->ht_param & IEEE80211_HT_PARAM_CHA_SEC_OFFSET;
+ 	} else if (!(sta_flags & IEEE80211_STA_DISABLE_HT)) {
+-		/* If it's not a beacon, HT is enabled and the IE not present,
+-		 * it's 20 MHz, 802.11-2012 8.5.2.6:
+-		 *	This element [the Secondary Channel Offset Element] is
+-		 *	present when switching to a 40 MHz channel. It may be
+-		 *	present when switching to a 20 MHz channel (in which
+-		 *	case the secondary channel offset is set to SCN).
+-		 */
++		/* If the secondary channel offset IE is not present,
++		 * we can't know what's the post-CSA offset, so the
++		 * best we can do is use 20MHz.
++		*/
+ 		secondary_channel_offset = IEEE80211_HT_PARAM_CHA_SEC_NONE;
+ 	}
+ 
 -- 
 1.9.1
 
