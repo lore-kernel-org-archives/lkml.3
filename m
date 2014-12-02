@@ -1,49 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932886AbaLBDnY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 22:43:24 -0500
-Received: from imap.thunk.org ([74.207.234.97]:33462 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932304AbaLBDnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 22:43:23 -0500
-Date: Mon, 1 Dec 2014 22:43:18 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: [GIT PULL] ext4 bug fixes for 3.18
-Message-ID: <20141202034318.GA13101@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-	linux-ext4@vger.kernel.org
+	id S932884AbaLBDwO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 22:52:14 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:63891 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932304AbaLBDwN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 22:52:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <20141201214104.32d3f10d@gandalf.local.home>
+References: <20141202021912.GA29096@thunk.org>
+	<20141201214104.32d3f10d@gandalf.local.home>
+Date: Mon, 1 Dec 2014 19:52:11 -0800
+Message-ID: <CAMEtUuzEg39N9ZALuq-u4X+oaNJGqL6G05UABSHYpejQ78Cp3Q@mail.gmail.com>
+Subject: Re: Checking to see if a bit is _not_ set in a ftrace event filter
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
+On Mon, Dec 1, 2014 at 6:41 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Mon, 1 Dec 2014 21:19:12 -0500
+> Theodore Ts'o <tytso@mit.edu> wrote:
+>
+>> I was trying to do something like this:
+>>
+>> filter="events/writeback/writeback_mark_inode_dirty/filter"
+>> echo "(flags & 2048) && ((state & 2048) == 0)" > $filter
+>>
+>> ... but that doesn't work.
+>>
+>> This works:
+>>
+>> echo "flags & 2048" > $filter
+>>
+>> But the problem is this:
+>>
+>> echo "(state & 2048) == 0" > $filter
+>>
+>> The simplest patch to add this would be add a new filter_ops so we
+>> could do this:
+>>
+>> echo "(state !& 2048)" > $filter
+>>
+>> ... but that's pretty ugly.  But adding more general expression
+>> parsing in the ftrace event filter code would be non-trivial, and if
+>> we start trying to make things like "!(state & 2048)" or "(state &
+>> 2048) == 0", then at some point some crazy person might request
+>> supporting something like this: "(state ^ flags) == 2048".  :-)
+>>
+>> So I guess the main question I want to ask is your opinion about
+>> whether a patch that adds support for the operator "!&" is too ugly to
+>> live?
+>>
+>
+> Yeah, I don't want to add some bastardization compare that we'll be
+> stuck with till the end of time. Either we modify the tree walk to
+> handle values (it shouldn't be too difficult, but it wont be trivial),
+> or we wait till eBPF is up and running as the trace filter replacement
+> and that should be able to handle this much better.
 
-  Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus_urgent
-
-for you to fetch changes up to 32f3869184d498850d36b7e6aa3b9f5260ea648a:
-
-  jbd2: fix regression where we fail to initialize checksum seed when loading (2014-12-01 21:57:06 -0500)
-
-----------------------------------------------------------------
-Fix an ext4 metadata checksum regression introduced in v3.18-rc3.
-
-----------------------------------------------------------------
-Darrick J. Wong (1):
-      jbd2: fix regression where we fail to initialize checksum seed when loading
-
- fs/jbd2/journal.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+yeah. teaching tree walk to do (state & 2048) == 0 is not trivial,
+since it doesn't have a concept of value of expression.
+Doing !(state & 2048) is probably a bit easier, since there
+are hacks for 'not' already.
+Another alternative is, of course, to wait little bit for
+eBPF+tracing to land ;) All the core pieces
+(verifier, bpf syscall, maps) are in net-next already,
+so in the next dev cycle we can get tracing bits
+reviewed/tested/merged without cross-tree conflicts.
+All parsing and code generation will be done by user space,
+so all complex expression will be supported.
+It will change the workflow for folks who use 'echo expr > filter'
+directly. trace-cmd -e -f can be made to work transparently
+with new features.
+Ted, I don't see 'writeback_mark_inode_dirty' event
+in the tree. Some new stuff?
+What kind of post-filtering are you doing with this event?
+Just visually checking that trace is sane or the trace output
+is fed into other tools? Are you trying to aggregate or
+correlate multiple events (may be based on 'ino') ?
+One of the goals for eBPF+tracing is to minimize
+additions of new tracepoints. Right now we already
+have a ton of them. events/ext4.h is ~2500 lines.
+Some of them look like hooks for in-production
+debugging of a function at a time. Sort of like poor's man
+kprobe/kretprobe.
+With eBPF we should be able to avoid adding
+trace_func_enter(), trace_func_exit() to so many func.
