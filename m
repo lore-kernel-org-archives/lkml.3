@@ -1,87 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933219AbaLBVyK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 16:54:10 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:65362 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289AbaLBVyI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 16:54:08 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] arch: alpha: kernel: core_lca.c:  Cleaning up functions that are not used anywhere
-Date: Tue,  2 Dec 2014 22:56:44 +0100
-Message-Id: <1417557404-26268-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	id S933239AbaLBVyx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 16:54:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44978 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932814AbaLBVyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 16:54:52 -0500
+Message-ID: <547E3508.2080500@suse.de>
+Date: Tue, 02 Dec 2014 13:54:16 -0800
+From: Tony Jones <tonyj@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-api@vger.kernel.org
+CC: sgrubb@redhat.com, eparis@parisplace.org, pmoore@redhat.com
+Subject: Re: [PATCH] powerpc: add little endian flag to syscall_get_arch()
+References: <fbe03529d720e75aa8663f8b521af5b11b33d52f.1417553967.git.rgb@redhat.com>
+In-Reply-To: <fbe03529d720e75aa8663f8b521af5b11b33d52f.1417553967.git.rgb@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere.
-lca_clock_print() lca_get_clock() lca_clock_fiddle()
+On 12/02/2014 01:27 PM, Richard Guy Briggs wrote:
+> Since both ppc and ppc64 have LE variants which are now reported by uname, add
+> that flag (__AUDIT_ARCH_LE) to syscall_get_arch() and add AUDIT_ARCH_PPC*LE
+> variants.
+> 
+> Without this,  perf trace and auditctl fail.
+> 
+> Mainline kernel reports ppc64le (per a058801) but there is no matching
+> AUDIT_ARCH_PPC64LE.
+> 
+> See:
+> 	https://www.redhat.com/archives/linux-audit/2014-August/msg00082.html
+> 	https://www.redhat.com/archives/linux-audit/2014-December/msg00004.html
+> 
+> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> ---
+>  arch/powerpc/include/asm/syscall.h |    6 +++++-
+>  include/uapi/linux/audit.h         |    2 ++
+>  2 files changed, 7 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/powerpc/include/asm/syscall.h b/arch/powerpc/include/asm/syscall.h
+> index 6fa2708..a58acab 100644
+> --- a/arch/powerpc/include/asm/syscall.h
+> +++ b/arch/powerpc/include/asm/syscall.h
+> @@ -90,6 +90,10 @@ static inline void syscall_set_arguments(struct task_struct *task,
+>  
+>  static inline int syscall_get_arch(void)
+>  {
+> -	return is_32bit_task() ? AUDIT_ARCH_PPC : AUDIT_ARCH_PPC64;
+> +	int arch = is_32bit_task() ? AUDIT_ARCH_PPC : AUDIT_ARCH_PPC64;
+> +#ifdef __LITTLE_ENDIAN__
+> +	arch |= __AUDIT_ARCH_LE
+> +#endif
+> +	return arch;
+>  }
+>  #endif	/* _ASM_SYSCALL_H */
+> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+> index 4d100c8..fe29a99 100644
+> --- a/include/uapi/linux/audit.h
+> +++ b/include/uapi/linux/audit.h
+> @@ -364,7 +364,9 @@ enum {
+>  #define AUDIT_ARCH_PARISC	(EM_PARISC)
+>  #define AUDIT_ARCH_PARISC64	(EM_PARISC|__AUDIT_ARCH_64BIT)
+>  #define AUDIT_ARCH_PPC		(EM_PPC)
+> +#define AUDIT_ARCH_PPCLE	(EM_PPC|__AUDIT_ARCH_LE)
+>  #define AUDIT_ARCH_PPC64	(EM_PPC64|__AUDIT_ARCH_64BIT)
+> +#define AUDIT_ARCH_PPC64LE	(EM_PPC64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
+>  #define AUDIT_ARCH_S390		(EM_S390)
+>  #define AUDIT_ARCH_S390X	(EM_S390|__AUDIT_ARCH_64BIT)
+>  #define AUDIT_ARCH_SH		(EM_SH)
 
-This was partially found by using a static code analysis program called cppcheck.
-
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- arch/alpha/kernel/core_lca.c |   43 ------------------------------------------
- 1 file changed, 43 deletions(-)
-
-diff --git a/arch/alpha/kernel/core_lca.c b/arch/alpha/kernel/core_lca.c
-index cb2801c..b7ab44b 100644
---- a/arch/alpha/kernel/core_lca.c
-+++ b/arch/alpha/kernel/core_lca.c
-@@ -470,46 +470,3 @@ lca_machine_check(unsigned long vector, unsigned long la_ptr)
- #endif /* CONFIG_VERBOSE_MCHECK */
- }
- 
--/*
-- * The following routines are needed to support the SPEED changing
-- * necessary to successfully manage the thermal problem on the AlphaBook1.
-- */
--
--void
--lca_clock_print(void)
--{
--        long    pmr_reg;
--
--        pmr_reg = LCA_READ_PMR;
--
--        printk("Status of clock control:\n");
--        printk("\tPrimary clock divisor\t0x%lx\n", LCA_GET_PRIMARY(pmr_reg));
--        printk("\tOverride clock divisor\t0x%lx\n", LCA_GET_OVERRIDE(pmr_reg));
--        printk("\tInterrupt override is %s\n",
--	       (pmr_reg & LCA_PMR_INTO) ? "on" : "off"); 
--        printk("\tDMA override is %s\n",
--	       (pmr_reg & LCA_PMR_DMAO) ? "on" : "off"); 
--
--}
--
--int
--lca_get_clock(void)
--{
--        long    pmr_reg;
--
--        pmr_reg = LCA_READ_PMR;
--        return(LCA_GET_PRIMARY(pmr_reg));
--
--}
--
--void
--lca_clock_fiddle(int divisor)
--{
--        long    pmr_reg;
--
--        pmr_reg = LCA_READ_PMR;
--        LCA_SET_PRIMARY_CLOCK(pmr_reg, divisor);
--	/* lca_norm_clock = divisor; */
--        LCA_WRITE_PMR(pmr_reg);
--        mb();
--}
--- 
-1.7.10.4
+IBM would know for certain but I wasn't aware there was a PPCLE (32bit compat).
 
