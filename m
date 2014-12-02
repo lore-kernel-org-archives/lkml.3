@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527AbaLBKG1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 05:06:27 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:49977 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483AbaLBKGX (ORCPT
+	id S1753995AbaLBKGl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 05:06:41 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:48175 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753571AbaLBKGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 05:06:23 -0500
+	Tue, 2 Dec 2014 05:06:37 -0500
 From: Harini Katakam <harinik@xilinx.com>
 To: wsa@the-dreams.de, grant.likely@linaro.org, robh+dt@kernel.org,
         pawel.moll@arm.com, mark.rutland@arm.com,
@@ -15,9 +15,9 @@ Cc: michal.simek@xilinx.com, soren.brinkmann@xilinx.com,
         linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         harinik@xilinx.com, vishnum@xilinx.com
-Subject: [PATCH 1/4] i2c: cadence: Handle > 252 byte transfers
-Date: Tue,  2 Dec 2014 15:35:46 +0530
-Message-Id: <1417514749-24319-2-git-send-email-harinik@xilinx.com>
+Subject: [PATCH 2/4] i2c: cadence: Set the hardware time-out register to maximum value
+Date: Tue,  2 Dec 2014 15:35:47 +0530
+Message-Id: <1417514749-24319-3-git-send-email-harinik@xilinx.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1417514749-24319-1-git-send-email-harinik@xilinx.com>
 References: <1417514749-24319-1-git-send-email-harinik@xilinx.com>
@@ -25,250 +25,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The I2C controller sends a NACK to the slave when transfer size register
-reaches zero, irrespective of the hold bit. So, in order to handle transfers
-greater than 252 bytes, the transfer size register has to be maintained at a
-value >= 1. This patch implements the same.
-The interrupt status is cleared at the beginning of the isr instead of
-the end, to avoid missing any interrupts - this is in sync with the new
-transfer handling.
+From: Vishnu Motghare <vishnum@xilinx.com>
 
+Cadence I2C controller has bug wherein it generates invalid read transactions
+after time-out in master receiver mode. This driver does not use the HW
+timeout and this interrupt is disabled but the feature itself cannot be
+disabled. Hence, this patch writes the maximum value (0xFF) to this register.
+This is one of the workarounds to this bug and it will not avoid the issue
+completely but reduce the chances of error.
+
+Signed-off-by: Vishnu Motghare <vishnum@xilinx.com>
 Signed-off-by: Harini Katakam <harinik@xilinx.com>
 ---
- drivers/i2c/busses/i2c-cadence.c |  156 ++++++++++++++++++++------------------
- 1 file changed, 81 insertions(+), 75 deletions(-)
+ drivers/i2c/busses/i2c-cadence.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
 diff --git a/drivers/i2c/busses/i2c-cadence.c b/drivers/i2c/busses/i2c-cadence.c
-index 63f3f03..e54899e 100644
+index e54899e..8065205 100644
 --- a/drivers/i2c/busses/i2c-cadence.c
 +++ b/drivers/i2c/busses/i2c-cadence.c
-@@ -126,6 +126,7 @@
-  * @suspended:		Flag holding the device's PM status
-  * @send_count:		Number of bytes still expected to send
-  * @recv_count:		Number of bytes still expected to receive
-+ * @curr_recv_count:	Number of bytes to be received in current transfer
-  * @irq:		IRQ number
-  * @input_clk:		Input clock to I2C controller
-  * @i2c_clk:		Maximum I2C clock speed
-@@ -144,6 +145,7 @@ struct cdns_i2c {
- 	u8 suspended;
- 	unsigned int send_count;
- 	unsigned int recv_count;
-+	unsigned int curr_recv_count;
- 	int irq;
- 	unsigned long input_clk;
- 	unsigned int i2c_clk;
-@@ -180,14 +182,15 @@ static void cdns_i2c_clear_bus_hold(struct cdns_i2c *id)
-  */
- static irqreturn_t cdns_i2c_isr(int irq, void *ptr)
- {
--	unsigned int isr_status, avail_bytes;
--	unsigned int bytes_to_recv, bytes_to_send;
-+	unsigned int isr_status, avail_bytes, updatetx;
-+	unsigned int bytes_to_send;
- 	struct cdns_i2c *id = ptr;
- 	/* Signal completion only after everything is updated */
- 	int done_flag = 0;
- 	irqreturn_t status = IRQ_NONE;
+@@ -111,6 +111,8 @@
+ #define CDNS_I2C_DIVA_MAX	4
+ #define CDNS_I2C_DIVB_MAX	64
  
- 	isr_status = cdns_i2c_readreg(CDNS_I2C_ISR_OFFSET);
-+	cdns_i2c_writereg(isr_status, CDNS_I2C_ISR_OFFSET);
++#define CDNS_I2C_TIMEOUT_MAX	0xFF
++
+ #define cdns_i2c_readreg(offset)       readl_relaxed(id->membase + offset)
+ #define cdns_i2c_writereg(val, offset) writel_relaxed(val, id->membase + offset)
  
- 	/* Handling nack and arbitration lost interrupt */
- 	if (isr_status & (CDNS_I2C_IXR_NACK | CDNS_I2C_IXR_ARB_LOST)) {
-@@ -195,89 +198,91 @@ static irqreturn_t cdns_i2c_isr(int irq, void *ptr)
- 		status = IRQ_HANDLED;
+@@ -858,6 +860,8 @@ static int cdns_i2c_probe(struct platform_device *pdev)
+ 		goto err_clk_dis;
  	}
  
--	/* Handling Data interrupt */
--	if ((isr_status & CDNS_I2C_IXR_DATA) &&
--			(id->recv_count >= CDNS_I2C_DATA_INTR_DEPTH)) {
--		/* Always read data interrupt threshold bytes */
--		bytes_to_recv = CDNS_I2C_DATA_INTR_DEPTH;
--		id->recv_count -= CDNS_I2C_DATA_INTR_DEPTH;
--		avail_bytes = cdns_i2c_readreg(CDNS_I2C_XFER_SIZE_OFFSET);
--
--		/*
--		 * if the tranfer size register value is zero, then
--		 * check for the remaining bytes and update the
--		 * transfer size register.
--		 */
--		if (!avail_bytes) {
--			if (id->recv_count > CDNS_I2C_TRANSFER_SIZE)
--				cdns_i2c_writereg(CDNS_I2C_TRANSFER_SIZE,
--						CDNS_I2C_XFER_SIZE_OFFSET);
--			else
--				cdns_i2c_writereg(id->recv_count,
--						CDNS_I2C_XFER_SIZE_OFFSET);
--		}
-+	updatetx = 0;
-+	if (id->recv_count > id->curr_recv_count)
-+		updatetx = 1;
++	cdns_i2c_writereg(CDNS_I2C_TIMEOUT_MAX, CDNS_I2C_TIME_OUT_OFFSET);
 +
-+	/* When receiving, handle data and transfer complete interrupts */
-+	if (id->p_recv_buf &&
-+	    ((isr_status & CDNS_I2C_IXR_COMP) ||
-+	     (isr_status & CDNS_I2C_IXR_DATA))) {
-+		while (cdns_i2c_readreg(CDNS_I2C_SR_OFFSET) &
-+		       CDNS_I2C_SR_RXDV) {
-+			if ((id->recv_count < CDNS_I2C_FIFO_DEPTH) &&
-+			    !id->bus_hold_flag)
-+				cdns_i2c_clear_bus_hold(id);
+ 	dev_info(&pdev->dev, "%u kHz mmio %08lx irq %d\n",
+ 		 id->i2c_clk / 1000, (unsigned long)r_mem->start, id->irq);
  
--		/* Process the data received */
--		while (bytes_to_recv--)
- 			*(id->p_recv_buf)++ =
- 				cdns_i2c_readreg(CDNS_I2C_DATA_OFFSET);
-+			id->recv_count--;
-+			id->curr_recv_count--;
- 
--		if (!id->bus_hold_flag &&
--				(id->recv_count <= CDNS_I2C_FIFO_DEPTH))
--			cdns_i2c_clear_bus_hold(id);
-+			if (updatetx &&
-+			    (id->curr_recv_count == CDNS_I2C_FIFO_DEPTH + 1))
-+				break;
-+		}
- 
--		status = IRQ_HANDLED;
--	}
-+		if (updatetx &&
-+		    (id->curr_recv_count == CDNS_I2C_FIFO_DEPTH + 1)) {
-+			/* wait while fifo is full */
-+			while (cdns_i2c_readreg(CDNS_I2C_XFER_SIZE_OFFSET) !=
-+			       (id->curr_recv_count - CDNS_I2C_FIFO_DEPTH))
-+				;
- 
--	/* Handling Transfer Complete interrupt */
--	if (isr_status & CDNS_I2C_IXR_COMP) {
--		if (!id->p_recv_buf) {
--			/*
--			 * If the device is sending data If there is further
--			 * data to be sent. Calculate the available space
--			 * in FIFO and fill the FIFO with that many bytes.
--			 */
--			if (id->send_count) {
--				avail_bytes = CDNS_I2C_FIFO_DEPTH -
--				    cdns_i2c_readreg(CDNS_I2C_XFER_SIZE_OFFSET);
--				if (id->send_count > avail_bytes)
--					bytes_to_send = avail_bytes;
--				else
--					bytes_to_send = id->send_count;
--
--				while (bytes_to_send--) {
--					cdns_i2c_writereg(
--						(*(id->p_send_buf)++),
--						 CDNS_I2C_DATA_OFFSET);
--					id->send_count--;
--				}
-+			if (((int)(id->recv_count) - CDNS_I2C_FIFO_DEPTH) >
-+			    CDNS_I2C_TRANSFER_SIZE) {
-+				cdns_i2c_writereg(CDNS_I2C_TRANSFER_SIZE,
-+						  CDNS_I2C_XFER_SIZE_OFFSET);
-+				id->curr_recv_count = CDNS_I2C_TRANSFER_SIZE +
-+						      CDNS_I2C_FIFO_DEPTH;
- 			} else {
--				/*
--				 * Signal the completion of transaction and
--				 * clear the hold bus bit if there are no
--				 * further messages to be processed.
--				 */
--				done_flag = 1;
-+				cdns_i2c_writereg(id->recv_count -
-+						  CDNS_I2C_FIFO_DEPTH,
-+						  CDNS_I2C_XFER_SIZE_OFFSET);
-+				id->curr_recv_count = id->recv_count;
- 			}
--			if (!id->send_count && !id->bus_hold_flag)
--				cdns_i2c_clear_bus_hold(id);
--		} else {
-+		}
-+
-+		if ((isr_status & CDNS_I2C_IXR_COMP) && !id->recv_count) {
- 			if (!id->bus_hold_flag)
- 				cdns_i2c_clear_bus_hold(id);
-+			done_flag = 1;
-+		}
-+
-+		status = IRQ_HANDLED;
-+	}
-+
-+	/* When sending, handle transfer complete interrupt */
-+	if ((isr_status & CDNS_I2C_IXR_COMP) && !id->p_recv_buf) {
-+		/*
-+		 * If the device is sending data If there is further
-+		 * data to be sent. Calculate the available space
-+		 * in FIFO and fill the FIFO with that many bytes.
-+		 */
-+		if (id->send_count) {
-+			avail_bytes = CDNS_I2C_FIFO_DEPTH -
-+			    cdns_i2c_readreg(CDNS_I2C_XFER_SIZE_OFFSET);
-+			if (id->send_count > avail_bytes)
-+				bytes_to_send = avail_bytes;
-+			else
-+				bytes_to_send = id->send_count;
-+
-+			while (bytes_to_send--) {
-+				cdns_i2c_writereg(
-+					(*(id->p_send_buf)++),
-+					 CDNS_I2C_DATA_OFFSET);
-+				id->send_count--;
-+			}
-+		} else {
- 			/*
--			 * If the device is receiving data, then signal
--			 * the completion of transaction and read the data
--			 * present in the FIFO. Signal the completion of
--			 * transaction.
-+			 * Signal the completion of transaction and
-+			 * clear the hold bus bit if there are no
-+			 * further messages to be processed.
- 			 */
--			while (cdns_i2c_readreg(CDNS_I2C_SR_OFFSET) &
--					CDNS_I2C_SR_RXDV) {
--				*(id->p_recv_buf)++ =
--					cdns_i2c_readreg(CDNS_I2C_DATA_OFFSET);
--				id->recv_count--;
--			}
- 			done_flag = 1;
- 		}
-+		if (!id->send_count && !id->bus_hold_flag)
-+			cdns_i2c_clear_bus_hold(id);
- 
- 		status = IRQ_HANDLED;
- 	}
-@@ -287,8 +292,6 @@ static irqreturn_t cdns_i2c_isr(int irq, void *ptr)
- 	if (id->err_status)
- 		status = IRQ_HANDLED;
- 
--	cdns_i2c_writereg(isr_status, CDNS_I2C_ISR_OFFSET);
--
- 	if (done_flag)
- 		complete(&id->xfer_done);
- 
-@@ -314,6 +317,8 @@ static void cdns_i2c_mrecv(struct cdns_i2c *id)
- 	if (id->p_msg->flags & I2C_M_RECV_LEN)
- 		id->recv_count = I2C_SMBUS_BLOCK_MAX + 1;
- 
-+	id->curr_recv_count = id->recv_count;
-+
- 	/*
- 	 * Check for the message size against FIFO depth and set the
- 	 * 'hold bus' bit if it is greater than FIFO depth.
-@@ -333,10 +338,11 @@ static void cdns_i2c_mrecv(struct cdns_i2c *id)
- 	 * receive if it is less than transfer size and transfer size if
- 	 * it is more. Enable the interrupts.
- 	 */
--	if (id->recv_count > CDNS_I2C_TRANSFER_SIZE)
-+	if (id->recv_count > CDNS_I2C_TRANSFER_SIZE) {
- 		cdns_i2c_writereg(CDNS_I2C_TRANSFER_SIZE,
- 				  CDNS_I2C_XFER_SIZE_OFFSET);
--	else
-+		id->curr_recv_count = CDNS_I2C_TRANSFER_SIZE;
-+	} else
- 		cdns_i2c_writereg(id->recv_count, CDNS_I2C_XFER_SIZE_OFFSET);
- 	/* Clear the bus hold flag if bytes to receive is less than FIFO size */
- 	if (!id->bus_hold_flag &&
 -- 
 1.7.9.5
 
