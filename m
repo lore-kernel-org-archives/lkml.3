@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240AbaLBP3U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 10:29:20 -0500
-Received: from exprod7og109.obsmtp.com ([64.18.2.171]:48011 "EHLO
-	exprod7og109.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754198AbaLBP3Q (ORCPT
+	id S932177AbaLBPdF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 10:33:05 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:62758 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908AbaLBPdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 10:29:16 -0500
-From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-X-Google-Original-From: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-To: jejb@kernel.org, hch@infradead.org
-Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
-        JBottomley@Parallels.com, Sathya.Prakash@avagotech.com,
-        Nagalakshmi.Nandigama@avagotech.com, linux-kernel@vger.kernel.org,
-        Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>,
-        <stable@vger.kernel.org>, Tomas Henzl <thenzl@redhat.com>
-Subject: [PATCH 2/2] Revert "[SCSI] mpt3sas: Remove phys on topology change"
-Date: Tue,  2 Dec 2014 20:58:47 +0530
-Message-Id: <1417534127-6189-3-git-send-email-Sreekanth.Reddy@avagotech.com>
-X-Mailer: git-send-email 2.0.2
-In-Reply-To: <1417534127-6189-1-git-send-email-Sreekanth.Reddy@avagotech.com>
-References: <1417534127-6189-1-git-send-email-Sreekanth.Reddy@avagotech.com>
+	Tue, 2 Dec 2014 10:33:03 -0500
+Message-ID: <1417534380.5303.64.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH 1/2] fs: introduce sendfd() syscall
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Alex Dubov <alex.dubov@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alex Dubov <oakad@yahoo.com>
+Date: Tue, 02 Dec 2014 07:33:00 -0800
+In-Reply-To: <CAPs88r_Dz+UqwhqAcKwXuLZGz4n=NocD-0FuOZug5UGH64p_8w@mail.gmail.com>
+References: <1417494919-4577-1-git-send-email-oakad@yahoo.com>
+	 <1417494919-4577-2-git-send-email-oakad@yahoo.com>
+	 <1417524607.5303.45.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <CAPs88r_Dz+UqwhqAcKwXuLZGz4n=NocD-0FuOZug5UGH64p_8w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 963ba22b90a955363644cd397b20226928eab976
-("mpt3sas: Remove phys on topology change")
+On Wed, 2014-12-03 at 01:47 +1100, Alex Dubov wrote:
+> > User A can send fd(s) to processes belonging to user B, even if user B
+> > does (probably) not want this to happen ?
+> 
+> 1. Process A must have sufficient permissions to signal process B.
+> This will only happen if process A belongs to the same user as process
+> B or has elevated capabilities, which can not appear by themselves
+> (and if root on some machine can not be trusted, then all is lost
+> anyway).
+> 
 
-Reverting the previous mpt3sas drives patch changes,
-since we will observe below issue
+I do not see this enforced in your patch.
 
-Issue:
-Drives connected Enclosure/Expander will unregister with
-SCSI Transport Layer, if any one remove and add expander
-cable with in DMD (Device Missing Delay) time period or 
-even any one power-off and power-on the Enclosure with in
-the DMD period.
+Allowing a process to hold many times the lock protecting my file
+descriptor table is very scary.
 
-Cc: <stable@vger.kernel.org>
-Cc: Tomas Henzl <thenzl@redhat.com>
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
----
- drivers/scsi/mpt3sas/mpt3sas_transport.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+Reserving a slot, then undo this if the signal failed is a nice way to
+slow down critical programs and eventually block them from doing
+progress when using file descriptors (most system calls afaik)
 
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_transport.c b/drivers/scsi/mpt3sas/mpt3sas_transport.c
-index d4bafaa..3637ae6 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_transport.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_transport.c
-@@ -1003,12 +1003,9 @@ mpt3sas_transport_update_links(struct MPT3SAS_ADAPTER *ioc,
- 		    &mpt3sas_phy->remote_identify);
- 		_transport_add_phy_to_an_existing_port(ioc, sas_node,
- 		    mpt3sas_phy, mpt3sas_phy->remote_identify.sas_address);
--	} else {
-+	} else
- 		memset(&mpt3sas_phy->remote_identify, 0 , sizeof(struct
- 		    sas_identify));
--		_transport_del_phy_from_an_existing_port(ioc, sas_node,
--		    mpt3sas_phy);
--	}
- 
- 	if (mpt3sas_phy->phy)
- 		mpt3sas_phy->phy->negotiated_linkrate =
--- 
-2.0.2
+
+> 2. If process B has not specified explicitly how it wants the
+> particular signal to be handled, it will be killed by the default
+> handler. End of story, nothing else is going to happen.
+
+So it seems possible for an arbitrary program to send fds to innocent
+programs, that will likely fill their fd table and wont be able to open
+a new file.
+
+This opens interesting security issues and attack vectors.
+
 
