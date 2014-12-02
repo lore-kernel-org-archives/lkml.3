@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933226AbaLBTWz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:22:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46628 "EHLO
+	id S933243AbaLBTXA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:23:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46632 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932688AbaLBTWx (ORCPT
+	with ESMTP id S933214AbaLBTWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:22:53 -0500
+	Tue, 2 Dec 2014 14:22:55 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: James Ralston <james.d.ralston@intel.com>, Tejun Heo <tj@kernel.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 049/121] ahci: Add Device IDs for Intel Sunrise Point PCH
-Date: Tue,  2 Dec 2014 11:18:48 -0800
-Message-Id: <1417548000-1794-50-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 062/121] drm/radeon: make sure mode init is complete in bandwidth_update
+Date: Tue,  2 Dec 2014 11:19:01 -0800
+Message-Id: <1417548000-1794-63-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
@@ -27,35 +27,133 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Ralston <james.d.ralston@intel.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 690000b930456a98663567d35dd5c54b688d1e3f upstream.
+commit 8efe82ca908400785253c8f0dfcf301e6bd93488 upstream.
 
-This patch adds the AHCI-mode SATA Device IDs for the Intel Sunrise Point PCH.
+The power management code calls into the display code for
+certain things.  If certain power management sysfs attributes
+are called before the driver has finished initializing all of
+the hardware we can run into problems with uninitialized
+modesetting state.  Add a check to make sure modesetting
+init has completed to the bandwidth update callbacks to
+fix this.  Can be triggered by the tlp and laptop start
+up scripts depending on the timing.
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+bugs:
+https://bugzilla.kernel.org/show_bug.cgi?id=83611
+https://bugs.freedesktop.org/show_bug.cgi?id=85771
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/ahci.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/gpu/drm/radeon/cik.c       | 3 +++
+ drivers/gpu/drm/radeon/evergreen.c | 3 +++
+ drivers/gpu/drm/radeon/r100.c      | 3 +++
+ drivers/gpu/drm/radeon/rs600.c     | 3 +++
+ drivers/gpu/drm/radeon/rs690.c     | 3 +++
+ drivers/gpu/drm/radeon/rv515.c     | 3 +++
+ drivers/gpu/drm/radeon/si.c        | 3 +++
+ 7 files changed, 21 insertions(+)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index b942b1e..12fc8d7 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -320,6 +320,11 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H AHCI */
-+	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H RAID */
-+	{ PCI_VDEVICE(INTEL, 0xa105), board_ahci }, /* Sunrise Point-H RAID */
-+	{ PCI_VDEVICE(INTEL, 0xa107), board_ahci }, /* Sunrise Point-H RAID */
-+	{ PCI_VDEVICE(INTEL, 0xa10f), board_ahci }, /* Sunrise Point-H RAID */
+diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
+index 927d523..642eed1 100644
+--- a/drivers/gpu/drm/radeon/cik.c
++++ b/drivers/gpu/drm/radeon/cik.c
+@@ -8690,6 +8690,9 @@ void dce8_bandwidth_update(struct radeon_device *rdev)
+ 	u32 num_heads = 0, lb_size;
+ 	int i;
  
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	for (i = 0; i < rdev->num_crtc; i++) {
+diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
+index 838dcd5..e337e43 100644
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -2361,6 +2361,9 @@ void evergreen_bandwidth_update(struct radeon_device *rdev)
+ 	u32 num_heads = 0, lb_size;
+ 	int i;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	for (i = 0; i < rdev->num_crtc; i++) {
+diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
+index 10abc4d..a90ce9c 100644
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -3190,6 +3190,9 @@ void r100_bandwidth_update(struct radeon_device *rdev)
+ 	uint32_t pixel_bytes1 = 0;
+ 	uint32_t pixel_bytes2 = 0;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	if (rdev->mode_info.crtcs[0]->base.enabled) {
+diff --git a/drivers/gpu/drm/radeon/rs600.c b/drivers/gpu/drm/radeon/rs600.c
+index 76cc8d3..83f6da3 100644
+--- a/drivers/gpu/drm/radeon/rs600.c
++++ b/drivers/gpu/drm/radeon/rs600.c
+@@ -888,6 +888,9 @@ void rs600_bandwidth_update(struct radeon_device *rdev)
+ 	u32 d1mode_priority_a_cnt, d2mode_priority_a_cnt;
+ 	/* FIXME: implement full support */
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	if (rdev->mode_info.crtcs[0]->base.enabled)
+diff --git a/drivers/gpu/drm/radeon/rs690.c b/drivers/gpu/drm/radeon/rs690.c
+index e7dab06..008d2d0 100644
+--- a/drivers/gpu/drm/radeon/rs690.c
++++ b/drivers/gpu/drm/radeon/rs690.c
+@@ -579,6 +579,9 @@ void rs690_bandwidth_update(struct radeon_device *rdev)
+ 	u32 d1mode_priority_a_cnt, d1mode_priority_b_cnt;
+ 	u32 d2mode_priority_a_cnt, d2mode_priority_b_cnt;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	if (rdev->mode_info.crtcs[0]->base.enabled)
+diff --git a/drivers/gpu/drm/radeon/rv515.c b/drivers/gpu/drm/radeon/rv515.c
+index 5d1c316..7295405 100644
+--- a/drivers/gpu/drm/radeon/rv515.c
++++ b/drivers/gpu/drm/radeon/rv515.c
+@@ -1271,6 +1271,9 @@ void rv515_bandwidth_update(struct radeon_device *rdev)
+ 	struct drm_display_mode *mode0 = NULL;
+ 	struct drm_display_mode *mode1 = NULL;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	if (rdev->mode_info.crtcs[0]->base.enabled)
+diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
+index 18c197f..ae10c7c 100644
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -2225,6 +2225,9 @@ void dce6_bandwidth_update(struct radeon_device *rdev)
+ 	u32 num_heads = 0, lb_size;
+ 	int i;
+ 
++	if (!rdev->mode_info.mode_config_initialized)
++		return;
++
+ 	radeon_update_display_priority(rdev);
+ 
+ 	for (i = 0; i < rdev->num_crtc; i++) {
 -- 
 1.9.1
 
