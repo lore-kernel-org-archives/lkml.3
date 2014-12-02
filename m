@@ -1,111 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016AbaLBKXd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 05:23:33 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:56033 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021AbaLBKXb (ORCPT
+	id S1754278AbaLBKZZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 05:25:25 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36364 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964AbaLBKZX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 05:23:31 -0500
-Message-ID: <547D9308.8080403@huawei.com>
-Date: Tue, 2 Dec 2014 18:23:04 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: <tixy@linaro.org>, <linux@arm.linux.org.uk>, <lizefan@huawei.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v11 1/7] ARM: probes: move all probe code to dedicate
- directory
-References: <1417423513-47161-1-git-send-email-wangnan0@huawei.com> <1417423695-47521-1-git-send-email-wangnan0@huawei.com> <547D471B.2070908@hitachi.com>
-In-Reply-To: <547D471B.2070908@hitachi.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
+	Tue, 2 Dec 2014 05:25:23 -0500
+Message-ID: <1417515882.3411.8.camel@pengutronix.de>
+Subject: Re: [PATCH v15 12/12] drm: bridge/dw_hdmi: add rockchip rk3288
+ support
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Andy Yan <andy.yan@rock-chips.com>
+Cc: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>, vladimir_zapolskiy@mentor.com,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Date: Tue, 02 Dec 2014 11:24:42 +0100
+In-Reply-To: <1417506327-18908-1-git-send-email-andy.yan@rock-chips.com>
+References: <1417505778-18341-1-git-send-email-andy.yan@rock-chips.com>
+	 <1417506327-18908-1-git-send-email-andy.yan@rock-chips.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020208.547D9322.0072,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 0572fd1f03bad724ccf0bdfe081d47d8
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/12/2 12:59, Masami Hiramatsu wrote:
-> (2014/12/01 17:48), Wang Nan wrote:
->> In discussion on LKML (https://lkml.org/lkml/2014/11/28/158), Russell
->> King suggest to move all probe related code to arch/arm/probes. This
->> patch do the work. Due to dependency on 'arch/arm/kernel/patch.h', this
->> patch also move patch.h to 'arch/arm/include/asm/patch.h', and related
->> '#include' directive are also midified to '#include <asm/patch.h>'.
-> 
-> Moving is good to me, but renaming files are also required I think.
-> 
->> Signed-off-by: Wang Nan <wangnan0@huawei.com>
->> ---
->>  arch/arm/Makefile                                |  1 +
->>  arch/arm/{kernel => include/asm}/patch.h         |  0
->>  arch/arm/kernel/Makefile                         | 16 ++--------------
->>  arch/arm/kernel/jump_label.c                     |  2 +-
->>  arch/arm/kernel/patch.c                          |  3 +--
->>  arch/arm/probes/Makefile                         | 15 +++++++++++++++
->>  arch/arm/{kernel => probes}/kprobes-arm.c        |  0
->>  arch/arm/{kernel => probes}/kprobes-common.c     |  0
->>  arch/arm/{kernel => probes}/kprobes-test-arm.c   |  0
->>  arch/arm/{kernel => probes}/kprobes-test-thumb.c |  0
->>  arch/arm/{kernel => probes}/kprobes-test.c       |  0
->>  arch/arm/{kernel => probes}/kprobes-test.h       |  0
->>  arch/arm/{kernel => probes}/kprobes-thumb.c      |  0
->>  arch/arm/{kernel => probes}/kprobes.c            |  2 +-
->>  arch/arm/{kernel => probes}/kprobes.h            |  0
->>  arch/arm/{kernel => probes}/probes-arm.c         |  0
->>  arch/arm/{kernel => probes}/probes-arm.h         |  0
->>  arch/arm/{kernel => probes}/probes-thumb.c       |  0
->>  arch/arm/{kernel => probes}/probes-thumb.h       |  0
->>  arch/arm/{kernel => probes}/probes.c             |  0
->>  arch/arm/{kernel => probes}/probes.h             |  0
->>  arch/arm/{kernel => probes}/uprobes-arm.c        |  0
->>  arch/arm/{kernel => probes}/uprobes.c            |  0
->>  arch/arm/{kernel => probes}/uprobes.h            |  0
-> 
-> As I did on x86, these would be better renamed as expressing what they do.
-> I guess most of the files may have emulate-*.c or decode-*.c :)
-> 
-> Thank you,
-> 
+Hi Andy,
 
-OK. I posted another patch in this thread. The directory tree is as follow:
+Am Dienstag, den 02.12.2014, 15:45 +0800 schrieb Andy Yan:
+[...]
+> +static int dw_hdmi_rockchip_bind(struct device *dev, struct device *master,
+> +				 void *data)
+> +{
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +	const struct dw_hdmi_plat_data *plat_data;
+> +	const struct of_device_id *match;
+> +	struct drm_device *drm = data;
+> +	struct drm_encoder *encoder;
+> +	struct rockchip_hdmi *hdmi;
+> +	int ret;
+> +
+> +	if (!pdev->dev.of_node)
+> +		return -ENODEV;
+> +
+> +	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
+> +	if (!hdmi)
+> +		return -ENOMEM;
+> +
+> +	match = of_match_node(dw_hdmi_rockchip_ids, pdev->dev.of_node);
+> +	plat_data = match->data;
+> +	hdmi->dev = &pdev->dev;
+> +	encoder = &hdmi->encoder;
+> +	platform_set_drvdata(pdev, hdmi);
+> +
+> +	ret = rockchip_hdmi_parse_dt(hdmi);
+> +	if (ret) {
+> +		dev_err(hdmi->dev, "Unable to parse OF data\n");
+> +		return ret;
+> +	}
+> +
+> +	ret = clk_prepare_enable(hdmi->clk);
+> +	if (ret) {
+> +		dev_err(hdmi->dev, "Cannot enable HDMI clock: %d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	ret = clk_prepare_enable(hdmi->hdcp_clk);
+> +	if (ret) {
+> +		dev_err(hdmi->dev, "Cannot enable HDMI hdcp clock: %d\n", ret);
+> +		return ret;
+> +	}
 
-arch/arm/probes/
-|-- Makefile
-|-- decode-arm.c
-|-- decode-arm.h
-|-- decode-thumb.c
-|-- decode-thumb.h
-|-- decode.c
-|-- decode.h
-|-- kprobes
-|   |-- actions-arm.c
-|   |-- actions-common.c
-|   |-- actions-thumb.c
-|   |-- kprobes.c
-|   |-- kprobes.h
-|   |-- test-arm.c
-|   |-- test-core.c
-|   |-- test-core.h
-|   `-- test-thumb.c
-`-- uprobes
-    |-- actions-arm.c
-    |-- uprobes.c
-    `-- uprobes.h
+Could we have a look at the clocks again? Basically the Rockchip clock
+handling is exactly the same, except the clocks are called by other
+names.
 
-2 directories, 19 files
+On i.MX6, according to the reference manual, the HDMI TX module has four
+clock inputs: "iahbclk" (bus clock), "icecclk" (32 kHz CEC clock),
+"ihclk" (module clock), and "isfrclk" (27 MHz internal SFR clock).
+The "iahbclk" and "ihclk" are both sourced from the SoC AHB root clock,
+the 32 kHz reference input can't be gated, and the "isfrclk" has its own
+gate.
 
-What do you think?
+Does the HDMI TX implementation on Rockchip still have the separate
+external sfr bus and module clock inputs? I assume that your "clk" input
+is a single gate bit for bus and module clocks at the same time?
+If possible, I'd prefer to find a common binding for the clocks with
+some of the clocks being optional, but for that we need to know the
+actual clock inputs to the HDMI TX module.
 
-> 
-> 
-
+regards
+Philipp
 
