@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353AbaLBRLQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 12:11:16 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:50918 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754263AbaLBRLO (ORCPT
+	id S1754401AbaLBRMS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 12:12:18 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:60843 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754187AbaLBRMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 12:11:14 -0500
-Date: Tue, 2 Dec 2014 12:11:02 -0500
-From: Tejun Heo <htejun@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Final per cpu consistency patch for -next or late in 3.19 merge
- period
-Message-ID: <20141202171102.GC10918@htj.dyndns.org>
-References: <alpine.DEB.2.11.1411281229350.11435@gentwo.org>
- <20141202164024.GA10918@htj.dyndns.org>
- <alpine.DEB.2.11.1412021049580.13039@gentwo.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1412021049580.13039@gentwo.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 2 Dec 2014 12:12:16 -0500
+From: Stefan Agner <stefan@agner.ch>
+To: shawn.guo@linaro.org, kernel@pengutronix.de, linux@roeck-us.net,
+        arnd@arndb.de, sre@kernel.org, fkan@apm.com, mark.rutland@arm.com
+Cc: dbaryshkov@gmail.com, dwmw2@infradead.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        stefan@agner.ch
+Subject: [PATCH v3 0/3] power: reset: vf610 system reset controller
+Date: Tue,  2 Dec 2014 18:11:57 +0100
+Message-Id: <1417540320-2385-1-git-send-email-stefan@agner.ch>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 10:57:50AM -0600, Christoph Lameter wrote:
-> On Tue, 2 Dec 2014, Tejun Heo wrote:
-> 
-> > Can you please update Documentation/local_ops.txt and comments which
-> > contain __get_cpu_var() and send the updated patch to Andrew?
-> 
-> Owww.... local_* ops are exotic operations that should no longer be
-> regularly used. This_cpu ops create less overhead and
-> are simpler to use. Lets merge the prior patch as is and then add this
-> documentation patch which may cause some additional discussion.
+This third version does essentially the same as v1, but with a lot
+less code due to the usage of syscon and syscon-reboot driver. My
+earlier misgivings that it might be a problem for the suspend/resume
+implementation later on did not hold true: I tested my prelinear
+suspend code and in case the code really needs to access some
+registers form assembler, it is possible to map temporarly the
+relevant region again.
 
-Sure, I just wanna make sure we don't have dangling references to
-__get_cpu_var() which no longer exists.  There are also a couple
-places where comment text refers to it.  Let's please take care of
-them too.
+I refrained from adding POWER_RESET_SYSCON as a hard dependency for
+Vybrid (SOC_VF610): In its dual-core configuration, one might want
+have the Cortex-M4 in charge of the system reset... Hence the user
+should be able to build a kernel without the system reset (beside
+the option to create a board specific device tree with disabled
+SRC node).
 
-Thanks.
+Shawn, the defconfig change is based on the latest (almost-merged?)
+defconfig patch.
+
+Changes since v2:
+- Drop priority property for syscon-reboot
+- Alter default priority of syscon-reboot, set it to 192
+
+Changes since v1:
+- Total rework using syscon/syscon-reboot capabilities
+- Enhance syscon-reboot with priority capabilities
+
+Stefan Agner (3):
+  power: reset: adjust priority of simple syscon reboot driver
+  ARM: dts: vf610: add system reset controller and syscon-reboot
+  ARM: imx_v6_v7_defconfig: add POWER_RESET_SYSCON
+
+ arch/arm/boot/dts/vf500.dtsi         |  4 ++++
+ arch/arm/boot/dts/vfxxx.dtsi         | 12 ++++++++++++
+ arch/arm/configs/imx_v6_v7_defconfig |  8 ++++----
+ drivers/power/reset/syscon-reboot.c  |  2 +-
+ 4 files changed, 21 insertions(+), 5 deletions(-)
 
 -- 
-tejun
+2.1.3
+
