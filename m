@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190AbaLBFIt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 00:08:49 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:33096 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642AbaLBFIs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 00:08:48 -0500
-Message-ID: <1417496925.5303.18.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH V2 net-next] udp: Neaten and reduce size of
- compute_score functions
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 01 Dec 2014 21:08:45 -0800
-In-Reply-To: <1417494546.4894.12.camel@perches.com>
-References: <1417484341.4894.6.camel@perches.com>
-	 <1417489141.4442.24.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <1417489760.4894.8.camel@perches.com>
-	 <1417494546.4894.12.camel@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753915AbaLBFSM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 00:18:12 -0500
+Received: from mga14.intel.com ([192.55.52.115]:28453 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751925AbaLBFSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 00:18:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="423853962"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH 1/2] kvm: x86: revert mask out xsaves
+Date: Tue,  2 Dec 2014 13:17:52 +0800
+Message-Id: <1417497473-1159-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-12-01 at 20:29 -0800, Joe Perches wrote:
-> The compute_score functions are a bit difficult to read.
-> 
-> Neaten them a bit to reduce object sizes and make them a
-> bit more intelligible.
-> 
-> Return early to avoid indentation and avoid unnecessary
-> initializations.
-> 
-> (allyesconfig, but w/ -O2 and no profiling)
+xsaves will be exported to guest in the next patch, so revert the
+mask out xsaves patch.
 
-hmm... Not sure how you get such large numbers...
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+---
+ arch/x86/kvm/cpuid.c | 10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
 
-
-> 
-> $ size net/ipv[46]/udp.o.*
->    text    data     bss     dec     hex filename
->   28680    1184      25   29889    74c1 net/ipv4/udp.o.new
->   28756    1184      25   29965    750d net/ipv4/udp.o.old
->   17600    1010       2   18612    48b4 net/ipv6/udp.o.new
->   17632    1010       2   18644    48d4 net/ipv6/udp.o.old
-
-Here I have :
-
-# size net/ipv4/udp.o.*
-   text	   data	    bss	    dec	    hex	filename
-  21989	    616	      9	  22614	   5856	net/ipv4/udp.o.old
-  21957	    616	      9	  22582	   5836	net/ipv4/udp.o.new
-
-
-With CONFIG_CC_OPTIMIZE_FOR_SIZE=y I even have an opposite result (code
-gets bigger after your patch)
-
-# size net/ipv4/udp.o.*
-   text	   data	    bss	    dec	    hex	filename
-  17242	    600	      9	  17851	   45bb	net/ipv4/udp.o.old
-  17256	    600	      9	  17865	   45c9	net/ipv4/udp.o.new
-
-Anyway, your patch looks fine to me, no matter what the code size is.
-
-Acked-by: Eric Dumazet <edumazet@google.com>
-
+diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+index a4f5ac4..7af07571 100644
+--- a/arch/x86/kvm/cpuid.c
++++ b/arch/x86/kvm/cpuid.c
+@@ -320,10 +320,6 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+ 		F(ADX) | F(SMAP) | F(AVX512F) | F(AVX512PF) | F(AVX512ER) |
+ 		F(AVX512CD);
+ 
+-	/* cpuid 0xD.1.eax */
+-	const u32 kvm_supported_word10_x86_features =
+-		F(XSAVEOPT) | F(XSAVEC) | F(XGETBV1);
+-
+ 	/* all calls to cpuid_count() should be made on the same cpu */
+ 	get_cpu();
+ 
+@@ -460,8 +456,6 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+ 		entry->eax &= supported;
+ 		entry->edx &= supported >> 32;
+ 		entry->flags |= KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
+-		if (!supported)
+-			break;
+ 
+ 		for (idx = 1, i = 1; idx < 64; ++idx) {
+ 			u64 mask = ((u64)1 << idx);
+@@ -469,9 +463,7 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+ 				goto out;
+ 
+ 			do_cpuid_1_ent(&entry[i], function, idx);
+-			if (idx == 1)
+-				entry[i].eax &= kvm_supported_word10_x86_features;
+-			else if (entry[i].eax == 0 || !(supported & mask))
++			if (entry[i].eax == 0 || !(supported & mask))
+ 				continue;
+ 			entry[i].flags |=
+ 			       KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
+-- 
+1.9.1
 
