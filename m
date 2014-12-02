@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530AbaLBI4e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 03:56:34 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:13699 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752902AbaLBIuF (ORCPT
+	id S1754714AbaLBI4y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 03:56:54 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:52358 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752893AbaLBIuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 03:50:05 -0500
-X-AuditID: cbfee68f-f791c6d000004834-97-547d7d3636e3
+	Tue, 2 Dec 2014 03:50:03 -0500
+X-AuditID: cbfee68f-f791c6d000004834-a9-547d7d379b0c
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: kgene.kim@samsung.com, mark.rutland@arm.com, marc.zyngier@arm.com,
@@ -18,39 +18,40 @@ Cc: kgene.kim@samsung.com, mark.rutland@arm.com, marc.zyngier@arm.com,
         sw0312.kim@samsung.com, jh80.chung@samsung.com, cw00.choi@samsung.com,
         a.kesavan@samsung.com, pankaj.dubey@samsung.com,
         devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 05/19] clk: samsung: exynos5433: Add clocks for CMU_G2D domain
-Date: Tue, 02 Dec 2014 17:49:42 +0900
-Message-id: <1417510196-6714-6-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH 10/19] clk: samsung: exynos5433: Add missing clocks for
+ CMU_FSYS domain
+Date: Tue, 02 Dec 2014 17:49:47 +0900
+Message-id: <1417510196-6714-11-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1417510196-6714-1-git-send-email-cw00.choi@samsung.com>
 References: <1417510196-6714-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsWyRsSkRNestjbEYOoKLYvHaxYzWfyddIzd
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsWyRsSkUNe8tjbE4NQkWYvHaxYzWfyddIzd
 	4v2yHkaLy/u1La5/ec5qMf/IOVaLPxNa2Swm3Z/AYnHjVxurRe+Cq2wWZ5vesFtsenyN1eLy
 	rjlsFjPO7wPqv/OPzWLp9YtMFqeuf2azWLT1C7vF4TftrBYzJr9ks1i16w+jxcuPJ1gcxDzW
-	zFvD6PH71yRGj52z7rJ7bF5S73HlRBOrR9+WVYwenzfJBbBHcdmkpOZklqUW6dslcGV83CBZ
-	8DSo4uXvPSwNjHfduhg5OSQETCQuvJ3JBGGLSVy4t56ti5GLQ0hgKaPEuYOPGLsYOcCK/k+O
-	hohPZ5Q4c2kFK4TTxCTx4MYGRpBuNgEtif0vbrCB2CICzhINUxuZQIqYBd4wS+y5v5sFJCEs
-	4CfR8eMRK4jNIqAq8WHHfmYQm1fAReL8i6msEGcoSCxbPhPM5hRwleg608cOYgsB1fxq/cgO
-	MlRCYCaHxJ+ls1kgBglIfJt8iAXiVFmJTQeYIeZIShxccYNlAqPwAkaGVYyiqQXJBcVJ6UXG
-	esWJucWleel6yfm5mxiB0Xj637P+HYx3D1gfYhTgYFTi4T1xviZEiDWxrLgy9xCjKdCGicxS
-	osn5wJjPK4k3NDYzsjA1MTU2Mrc0UxLnXSj1M1hIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QD
-	Y/id1dErV825k/L1Vs3/rgO3ktZbc1us3lujxjzfViLdqf6ag6DO/cP5xj9DFjXocVQfmqpY
-	2fhh+0mjfeFG56PKatOm/rpqXZezOE12UszTXz4J4e9k0hZMy52mOMf9/kHhrJeiE3Psat7P
-	3MHXa/u6xMWtbM21FQs8mc9uN2rTeN6cx/OXXYmlOCPRUIu5qDgRANDqLhTBAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t9jQV2z2toQg1nT5Swer1nMZPF30jF2
+	zFvD6PH71yRGj52z7rJ7bF5S73HlRBOrR9+WVYwenzfJBbBHcdmkpOZklqUW6dslcGUcfTmB
+	seDPcsaKlgsr2RsYt05i7GLk5JAQMJG4t/UyM4QtJnHh3nq2LkYuDiGBpYwSX2b/YIUput3z
+	ih0iMZ1RYtmBqVBOE5PEgxsbwEaxCWhJ7H9xgw3EFhFwlmiY2sgEUsQs8IZZYs/93SwgCWGB
+	SImZ15+zg9gsAqoSsx7uA4vzCrhKzL64kA1inYLEsuUzwVZzAsW7zvSB1QsJuEj8av0ItllC
+	YCqHxNwV11ggBglIfJt8CMjmAErISmw6APWPpMTBFTdYJjAKL2BkWMUomlqQXFCclF5krFec
+	mFtcmpeul5yfu4kRGJWn/z3r38F494D1IUYBDkYlHt4T52tChFgTy4orcw8xmgJtmMgsJZqc
+	D4z9vJJ4Q2MzIwtTE1NjI3NLMyVx3oVSP4OFBNITS1KzU1MLUovii0pzUosPMTJxcEo1MB5n
+	C01zWX3dhoel9mR/oyB7frDPyke77XXCZpcaiF4+kjJhe5fb7XcCt7uecZon3jt6fIryzQXr
+	7qqkXJF/WLmfNTFAIX3dN/7XM90tNZ2evOG7sS/rjemilfznZxt+v5/wfOf+6yyzZGZfMHu7
+	lmvO9n2aR294ed2o1TghtYH/g/a7hQ1P/eYosRRnJBpqMRcVJwIA2lZSRsUCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDIsWRmVeSWpSXmKPExsVy+t9jQV3z2toQg9Wr+Swer1nMZPF30jF2
 	i/fLehgtLu/Xtrj+5Tmrxfwj51gt/kxoZbOYdH8Ci8WNX22sFr0LrrJZnG16w26x6fE1VovL
 	u+awWcw4vw+o/84/Noul1y8yWZy6/pnNYtHWL+wWh9+0s1rMmPySzWLVrj+MFi8/nmBxEPNY
 	M28No8fvX5MYPXbOusvusXlJvceVE02sHn1bVjF6fN4kF8Ae1cBok5GamJJapJCal5yfkpmX
 	bqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQP0mpJCWWJOKVAoILG4WEnfDtOE0BA3
-	XQuYxghd35AguB4jAzSQsIYx4+MGyYKnQRUvf+9haWC869bFyMEhIWAi8X9ydBcjJ5ApJnHh
-	3nq2LkYuDiGB6YwSZy6tYIVwmpgkHtzYwAhSxSagJbH/xQ02EFtEwFmiYWojE0gRs8AbZok9
-	93ezgCSEBfwkOn48YgWxWQRUJT7s2M8MYvMKuEicfzGVFWKdgsSy5TPBbE4BV4muM33sILYQ
-	UM2v1o/sExh5FzAyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQIjvVnUjsYVzZYHGIU4GBU
-	4uE9cb4mRIg1say4MvcQowQHs5II7y/j2hAh3pTEyqrUovz4otKc1OJDjKZAV01klhJNzgem
-	obySeENjEzMjSyNzQwsjY3Mlcd4bN3NDhATSE0tSs1NTC1KLYPqYODilGhjd+Xk67/W77BT0
-	MDlocL56UW7r7UgOf9nZ3v/33UiwdvlxSlzhpZDDneccrQ+z7Wc+2X5n7qETXIZaRzM3/F2y
-	SOXea7baJ1JbXGPXpc54MU9PIf4Wd//j2Z1/rIVFnxntXCKaNYVdrTTp+rFjqu+TZl1d1v5p
-	Fu/h71+0Mzpk9+hU/+ueYS2pxFKckWioxVxUnAgAOpBGqAsDAAA=
+	XQuYxghd35AguB4jAzSQsIYx4+jLCYwFf5YzVrRcWMnewLh1EmMXIyeHhICJxO2eV+wQtpjE
+	hXvr2boYuTiEBKYzSiw7MJUdwmliknhwYwNYB5uAlsT+FzfYQGwRAWeJhqmNTCBFzAJvmCX2
+	3N/NApIQFoiUmHn9OdhYFgFViVkP94HFeQVcJWZfXMgGsU5BYtnymawgNidQvOtMH1i9kICL
+	xK/Wj+wTGHkXMDKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiO+WdSOxhXNlgcYhTgYFTi
+	4T1xviZEiDWxrLgy9xCjBAezkgjvL+PaECHelMTKqtSi/Pii0pzU4kOMpkBXTWSWEk3OB6aj
+	vJJ4Q2MTMyNLI3NDCyNjcyVx3hs3c0OEBNITS1KzU1MLUotg+pg4OKUaGBO3/2tr2fbCfcWx
+	hQYBO3l7srSSfmdyS1VOvef+fa/HO/eFK/z8pL4taM/KtlsXFOP4NHPuOxWJFXLhoYX+JQph
+	/Ce4X09KnL3sbejyLzLNfpOMcqdV+pmJPDN94nxdtfE+E0fz1vUfNlxcE3Lz59ycTnlNFYaT
+	VbeFn12qXJtlVSGcYv9TRImlOCPRUIu5qDgRAK/Dk+0PAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -58,9 +59,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds ths mux/divider/gate clocksof CMU_G2D domain which includes
-G2D/MDMA IPs. The CMU_G2D must need the clocks related to G2D by providing
-CMU_TOP domain. So, this patch add several clocks for G2D from CMU_TOP domain.
+This patch adds the mux/divider/gate clocks for CMU_FSYS domain which
+contains the clocks of USB/UFS/SDMMC/TSI/PDMA IPs.
 
 Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
 Cc: Tomasz Figa <tomasz.figa@gmail.com>
@@ -68,269 +68,486 @@ Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Acked-by: Inki Dae <inki.dae@samsung.com>
 Acked-by: Geunsik Lim <geunsik.lim@samsung.com>
 ---
- .../devicetree/bindings/clock/exynos5433-clock.txt |   8 ++
- drivers/clk/samsung/clk-exynos5433.c               | 144 +++++++++++++++++++++
- include/dt-bindings/clock/exynos5433.h             |  42 +++++-
- 3 files changed, 193 insertions(+), 1 deletion(-)
+ drivers/clk/samsung/clk-exynos5433.c   | 286 +++++++++++++++++++++++++++++++++
+ include/dt-bindings/clock/exynos5433.h |  82 +++++++++-
+ 2 files changed, 365 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/clock/exynos5433-clock.txt b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
-index 72cd0ba..27dd77b 100644
---- a/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
-+++ b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
-@@ -19,6 +19,8 @@ Required Properties:
-     which generates clocks for PMU/TMU/MCT/WDT/RTC/SECKEY/TZPC IPs.
-   - "samsung,exynos5433-cmu-fsys"  - clock controller compatible for CMU_FSYS
-     which generates clocks for USB/UFS/SDMMC/TSI/PDMA IPs.
-+  - "samsung,exynos5433-cmu-g2d"   - clock controller compatible for CMU_G2D
-+    which generates clocks for G2D/MDMA IPs.
- 
- - reg: physical base address of the controller and length of memory mapped
-   region.
-@@ -70,6 +72,12 @@ Example 1: Examples of clock controller nodes are listed below.
- 		#clock-cells = <1>;
- 	};
- 
-+	cmu_g2d: clock-controller@0x12460000 {
-+		compatible = "samsung,exynos5433-cmu-g2d";
-+		reg = <0x12460000 0x0b08>;
-+		#clock-cells = <1>;
-+	};
-+
- Example 2: UART controller node that consumes the clock generated by the clock
- 	   controller.
- 
 diff --git a/drivers/clk/samsung/clk-exynos5433.c b/drivers/clk/samsung/clk-exynos5433.c
-index 7e4612f..4dec9fc 100644
+index 5b4ec83..e2b7ea6 100644
 --- a/drivers/clk/samsung/clk-exynos5433.c
 +++ b/drivers/clk/samsung/clk-exynos5433.c
-@@ -400,6 +400,20 @@ static struct samsung_mux_clock top_mux_clks[] __initdata = {
- };
+@@ -464,6 +464,16 @@ static struct samsung_div_clock top_div_clks[] __initdata = {
+ 	DIV(CLK_DIV_SCLK_MMC2_A, "div_sclk_mmc2_a", "mout_sclk_mmc2_b",
+ 			DIV_TOP_FSYS1, 0, 4),
  
- static struct samsung_div_clock top_div_clks[] __initdata = {
-+	/* DIV_TOP1 */
-+	DIV(CLK_DIV_ACLK_GSCL_111, "div_aclk_gscl_111", "mout_aclk_gscl_333",
-+			DIV_TOP1, 28, 3),
-+	DIV(CLK_DIV_ACLK_GSCL_333, "div_aclk_gscl_333", "mout_aclk_gscl_333",
-+			DIV_TOP1, 24, 3),
-+	DIV(CLK_DIV_ACLK_HEVC_400, "div_aclk_hevc_400", "mout_aclk_hevc_400",
-+			DIV_TOP1, 20, 3),
-+	DIV(CLK_DIV_ACLK_MFC_400, "div_aclk_mfc_400", "mout_aclk_mfc_400_c",
-+			DIV_TOP1, 12, 3),
-+	DIV(CLK_DIV_ACLK_G2D_266, "div_aclk_g2d_266", "mout_bus_pll_user",
-+			DIV_TOP1, 8, 3),
-+	DIV(CLK_DIV_ACLK_G2D_400, "div_aclk_g2d_400", "mout_aclk_g2d_400_b",
-+			DIV_TOP1, 0, 3),
++	/* DIV_TOP_FSYS2 */
++	DIV(CLK_DIV_SCLK_PCIE_100, "div_sclk_pcie_100", "mout_sclk_pcie_100",
++			DIV_TOP_FSYS2, 12, 3),
++	DIV(CLK_DIV_SCLK_USBHOST30, "div_sclk_usbhost30",
++			"mout_sclk_usbhost30", DIV_TOP_FSYS2, 8, 4),
++	DIV(CLK_DIV_SCLK_UFSUNIPRO, "div_sclk_ufsunipro",
++			"mout_sclk_ufsunipro", DIV_TOP_FSYS2, 4, 4),
++	DIV(CLK_DIV_SCLK_USBDRD30, "div_sclk_usbdrd30", "mout_sclk_usbdrd30",
++			DIV_TOP_FSYS2, 0, 4),
 +
- 	/* DIV_TOP2 */
- 	DIV(CLK_DIV_ACLK_FSYS_200, "div_aclk_fsys_200", "mout_bus_pll_user",
- 			DIV_TOP2, 0, 3),
-@@ -489,6 +503,10 @@ static struct samsung_gate_clock top_gate_clks[] __initdata = {
- 			ENABLE_ACLK_TOP, 21, CLK_IGNORE_UNUSED, 0),
- 	GATE(CLK_ACLK_FSYS_200, "aclk_fsys_200", "div_aclk_fsys_200",
- 			ENABLE_ACLK_TOP, 18, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_G2D_266, "aclk_g2d_266", "div_aclk_g2d_266",
-+			ENABLE_ACLK_TOP, 2, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_G2D_400, "aclk_g2d_400", "div_aclk_g2d_400",
-+			ENABLE_ACLK_TOP, 0, CLK_IGNORE_UNUSED, 0),
+ 	/* DIV_TOP_PERIC0 */
+ 	DIV(CLK_DIV_SCLK_SPI1_B, "div_sclk_spi1_b", "div_sclk_spi1_a",
+ 			DIV_TOP_PERIC0, 16, 8),
+@@ -536,12 +546,20 @@ static struct samsung_gate_clock top_gate_clks[] __initdata = {
+ 			ENABLE_ACLK_TOP, 0, CLK_IGNORE_UNUSED, 0),
  
  	/* ENABLE_SCLK_TOP_FSYS */
++	GATE(CLK_SCLK_PCIE_100_FSYS, "sclk_pcie_100_fsys", "div_sclk_pcie_100",
++			ENABLE_SCLK_TOP_FSYS, 7, 0, 0),
  	GATE(CLK_SCLK_MMC2_FSYS, "sclk_mmc2_fsys", "div_sclk_mmc2_b",
-@@ -1275,3 +1293,129 @@ static void __init exynos5433_cmu_fsys_init(struct device_node *np)
+ 			ENABLE_SCLK_TOP_FSYS, 6, 0, 0),
+ 	GATE(CLK_SCLK_MMC1_FSYS, "sclk_mmc1_fsys", "div_sclk_mmc1_b",
+ 			ENABLE_SCLK_TOP_FSYS, 5, 0, 0),
+ 	GATE(CLK_SCLK_MMC0_FSYS, "sclk_mmc0_fsys", "div_sclk_mmc0_b",
+ 			ENABLE_SCLK_TOP_FSYS, 4, 0, 0),
++	GATE(CLK_SCLK_UFSUNIPRO_FSYS, "sclk_ufsunipro_fsys",
++			"div_sclk_ufsunipro", ENABLE_SCLK_TOP_FSYS, 7, 0, 0),
++	GATE(CLK_SCLK_USBHOST30_FSYS, "sclk_usbhost30_fsys",
++			"div_sclk_usbhost30", ENABLE_SCLK_TOP_FSYS, 7, 0, 0),
++	GATE(CLK_SCLK_USBDRD30_FSYS, "sclk_usbdrd30_fsys",
++			"div_sclk_usbdrd30", ENABLE_SCLK_TOP_FSYS, 7, 0, 0),
  
- CLK_OF_DECLARE(exynos5433_cmu_fsys, "samsung,exynos5433-cmu-fsys",
- 		exynos5433_cmu_fsys_init);
+ 	/* ENABLE_SCLK_TOP_PERIC */
+ 	GATE(CLK_SCLK_SPI4_PERIC, "sclk_spi4_peric", "div_sclk_spi4_b",
+@@ -1819,10 +1837,45 @@ CLK_OF_DECLARE(exynos5433_cmu_peris, "samsung,exynos5433-cmu-peris",
+ #define ENABLE_IP_FSYS1			0x0b04
+ 
+ /* list of all parent clock list */
++PNAME(mout_sclk_ufs_mphy_user_p)	= { "fin_pll", "sclk_ufs_mphy", };
+ PNAME(mout_aclk_fsys_200_user_p)	= { "fin_pll", "aclk_fsys_200", };
++PNAME(mout_sclk_pcie_100_user_p)	= { "fin_pll", "sclk_ufsunipro_fsys",};
++PNAME(mout_sclk_ufsunipro_user_p)	= { "fin_pll", "sclk_ufsunipro_fsys",};
+ PNAME(mout_sclk_mmc2_user_p)		= { "fin_pll", "sclk_mmc2_fsys", };
+ PNAME(mout_sclk_mmc1_user_p)		= { "fin_pll", "sclk_mmc1_fsys", };
+ PNAME(mout_sclk_mmc0_user_p)		= { "fin_pll", "sclk_mmc0_fsys", };
++PNAME(mout_sclk_usbhost30_user_p)	= { "fin_pll", "sclk_usbhost30_fsys",};
++PNAME(mout_sclk_usbdrd30_user_p)	= { "fin_pll", "sclk_usbdrd30_fsys", };
 +
-+/*
-+ * Register offset definitions for CMU_G2D
-+ */
-+#define MUX_SEL_G2D0				0x0200
-+#define MUX_SEL_ENABLE_G2D0			0x0300
-+#define MUX_SEL_STAT_G2D0			0x0400
-+#define DIV_G2D					0x0600
-+#define DIV_STAT_G2D				0x0700
-+#define DIV_ENABLE_ACLK_G2D			0x0800
-+#define DIV_ENABLE_ACLK_G2D_SECURE_SMMU_G2D	0x0804
-+#define DIV_ENABLE_PCLK_G2D			0x0900
-+#define DIV_ENABLE_PCLK_G2D_SECURE_SMMU_G2D	0x0904
-+#define DIV_ENABLE_IP_G2D0			0x0b00
-+#define DIV_ENABLE_IP_G2D1			0x0b04
-+#define DIV_ENABLE_IP_G2D_SECURE_SMMU_G2D	0x0b08
-+
-+static unsigned long g2d_clk_regs[] __initdata = {
-+	MUX_SEL_G2D0,
-+	MUX_SEL_ENABLE_G2D0,
-+	MUX_SEL_STAT_G2D0,
-+	DIV_G2D,
-+	DIV_STAT_G2D,
-+	DIV_ENABLE_ACLK_G2D,
-+	DIV_ENABLE_ACLK_G2D_SECURE_SMMU_G2D,
-+	DIV_ENABLE_PCLK_G2D,
-+	DIV_ENABLE_PCLK_G2D_SECURE_SMMU_G2D,
-+	DIV_ENABLE_IP_G2D0,
-+	DIV_ENABLE_IP_G2D1,
-+	DIV_ENABLE_IP_G2D_SECURE_SMMU_G2D,
++PNAME(mout_phyclk_usbhost30_uhost30_pipe_pclk_user_p)
++		= { "fin_pll", "phyclk_usbhost30_uhost30_pipe_pclk_phy", };
++PNAME(mout_phyclk_usbhost30_uhost30_phyclock_user_p)
++		= { "fin_pll", "phyclk_usbhost30_uhost30_phyclock_phy", };
++PNAME(mout_phyclk_usbhost20_phy_hsic1_p)
++		= { "fin_pll", "phyclk_usbhost20_phy_hsic1_phy", };
++PNAME(mout_phyclk_usbhost20_phy_clk48mohci_user_p)
++		= { "fin_pll", "phyclk_usbhost20_phy_clk48mohci_phy", };
++PNAME(mout_phyclk_usbhost20_phy_phyclock_user_p)
++		= { "fin_pll", "phyclk_usbhost20_phy_phyclock_phy", };
++PNAME(mout_phyclk_usbhost20_phy_freeclk_user_p)
++		= { "fin_pll", "phyclk_usbhost20_phy_freeclk_phy", };
++PNAME(mout_phyclk_usbdrd30_udrd30_pipe_pclk_p)
++		= { "fin_pll", "phyclk_usbhost30_uhost30_pipe_pclk_phy", };
++PNAME(mout_phyclk_usbdrd30_udrd30_phyclock_user_p)
++		= { "fin_pll", "phyclk_usbhost30_uhost30_phyclock_phy", };
++PNAME(mout_phyclk_ufs_rx1_symbol_user_p)
++		= { "fin_pll", "phyclk_ufs_rx1_symbol_phy", };
++PNAME(mout_phyclk_ufs_rx0_symbol_user_p)
++		= { "fin_pll", "phyclk_ufs_rx0_symbol_phy", };
++PNAME(mout_phyclk_ufs_tx1_symbol_user_p)
++		= { "fin_pll", "phyclk_ufs_tx1_symbol_phy", };
++PNAME(mout_phyclk_ufs_tx0_symbol_user_p)
++		= { "fin_pll", "phyclk_ufs_tx0_symbol_phy", };
++PNAME(mout_phyclk_lli_mphy_to_ufs_user_p)
++		= { "fin_pll", "phyclk_lli_mphy_to_ufs_phy", };
++PNAME(mout_sclk_mphy_p)
++		= { "mout_sclk_ufs_mphy_user",
++			    "mout_phyclk_lli_mphy_to_ufs_user", };
+ 
+ static unsigned long fsys_clk_regs[] __initdata = {
+ 	MUX_SEL_FSYS0,
+@@ -1850,18 +1903,117 @@ static unsigned long fsys_clk_regs[] __initdata = {
+ 	ENABLE_IP_FSYS1,
+ };
+ 
++static struct samsung_fixed_rate_clock fsys_fixed_clks[] __initdata = {
++	/* PHY clocks from USBDRD30_PHY */
++	FRATE(0, "phyclk_usbdrd30_udrd30_phyclock_phy", NULL, CLK_IS_ROOT,
++			60000000),
++	FRATE(0, "phyclk_usbdrd30_udrd30_pipe_pclk_phy", NULL, CLK_IS_ROOT,
++			125000000),
++	/* PHY clocks from USBHOST30_PHY */
++	FRATE(0, "phyclk_usbhost30_uhost30_phyclock_phy", NULL, CLK_IS_ROOT,
++			60000000),
++	FRATE(0, "phyclk_usbhost30_uhost30_pipe_pclk_phy", NULL, CLK_IS_ROOT,
++			125000000),
++	/* PHY clocks from USBHOST20_PHY */
++	FRATE(0, "phyclk_usbhost20_phy_freeclk_phy", NULL, CLK_IS_ROOT,
++			60000000),
++	FRATE(0, "phyclk_usbhost20_phy_phyclock_phy", NULL, CLK_IS_ROOT,
++			60000000),
++	FRATE(0, "phyclk_usbhost20_phy_clk48mohci_phy", NULL, CLK_IS_ROOT,
++			48000000),
++	FRATE(0, "phyclk_usbhost20_phy_hsic1_phy", NULL, CLK_IS_ROOT,
++			60000000),
++	/* PHY clocks from UFS_PHY */
++	FRATE(0, "phyclk_ufs_tx0_symbol_phy", NULL, CLK_IS_ROOT, 300000000),
++	FRATE(0, "phyclk_ufs_rx0_symbol_phy", NULL, CLK_IS_ROOT, 300000000),
++	FRATE(0, "phyclk_ufs_tx1_symbol_phy", NULL, CLK_IS_ROOT, 300000000),
++	FRATE(0, "phyclk_ufs_rx1_symbol_phy", NULL, CLK_IS_ROOT, 300000000),
++	/* PHY clocks from LLI_PHY */
++	FRATE(0, "phyclk_lli_mphy_to_ufs_phy", NULL, CLK_IS_ROOT, 260000000),
 +};
 +
-+/* list of all parent clock list */
-+PNAME(mout_aclk_g2d_266_user_p)		= { "fin_pll", "aclk_g2d_266", };
-+PNAME(mout_aclk_g2d_400_user_p)		= { "fin_pll", "aclk_g2d_400", };
+ static struct samsung_mux_clock fsys_mux_clks[] __initdata = {
+ 	/* MUX_SEL_FSYS0 */
++	MUX(CLK_MOUT_SCLK_UFS_MPHY_USER, "mout_sclk_ufs_mphy_user",
++			mout_sclk_ufs_mphy_user_p, MUX_SEL_FSYS0, 4, 1),
+ 	MUX(CLK_MOUT_ACLK_FSYS_200_USER, "mout_aclk_fsys_200_user",
+ 			mout_aclk_fsys_200_user_p, MUX_SEL_FSYS0, 0, 1),
+ 
+ 	/* MUX_SEL_FSYS1 */
++	MUX(CLK_MOUT_SCLK_PCIE_100_USER, "mout_sclk_pcie_100_user",
++			mout_sclk_pcie_100_user_p, MUX_SEL_FSYS1, 28, 1),
++	MUX(CLK_MOUT_SCLK_UFSUNIPRO_USER, "mout_sclk_ufsunipro_user",
++			mout_sclk_ufsunipro_user_p, MUX_SEL_FSYS1, 24, 1),
+ 	MUX(CLK_MOUT_SCLK_MMC2_USER, "mout_sclk_mmc2_user",
+ 			mout_sclk_mmc2_user_p, MUX_SEL_FSYS1, 20, 1),
+ 	MUX(CLK_MOUT_SCLK_MMC1_USER, "mout_sclk_mmc1_user",
+ 			mout_sclk_mmc1_user_p, MUX_SEL_FSYS1, 16, 1),
+ 	MUX(CLK_MOUT_SCLK_MMC0_USER, "mout_sclk_mmc0_user",
+ 			mout_sclk_mmc0_user_p, MUX_SEL_FSYS1, 12, 1),
++	MUX(CLK_MOUT_SCLK_USBHOST30_USER, "mout_sclk_usbhost30_user",
++			mout_sclk_usbhost30_user_p, MUX_SEL_FSYS1, 4, 1),
++	MUX(CLK_MOUT_SCLK_USBDRD30_USER, "mout_sclk_usbdrd30_user",
++			mout_sclk_usbdrd30_user_p, MUX_SEL_FSYS1, 0, 1),
 +
-+static struct samsung_mux_clock g2d_mux_clks[] __initdata = {
-+	/* MUX_SEL_G2D0 */
-+	MUX(CLK_MUX_ACLK_G2D_266_USER, "mout_aclk_g2d_266_user",
-+			mout_aclk_g2d_266_user_p, MUX_SEL_G2D0, 4, 1),
-+	MUX(CLK_MUX_ACLK_G2D_400_USER, "mout_aclk_g2d_400_user",
-+			mout_aclk_g2d_400_user_p, MUX_SEL_G2D0, 0, 1),
-+};
++	/* MUX_SEL_FSYS2 */
++	MUX(CLK_MOUT_PHYCLK_USBHOST30_UHOST30_PIPE_PCLK_USER,
++			"mout_phyclk_usbhost30_uhost30_pipe_pclk_user",
++			mout_phyclk_usbhost30_uhost30_pipe_pclk_user_p,
++			MUX_SEL_FSYS2, 28, 1),
++	MUX(CLK_MOUT_PHYCLK_USBHOST30_UHOST30_PHYCLOCK_USER,
++			"mout_phyclk_usbhost30_uhost30_phyclock_user",
++			mout_phyclk_usbhost30_uhost30_phyclock_user_p,
++			MUX_SEL_FSYS2, 24, 1),
++	MUX(CLK_MOUT_PHYCLK_USBHOST20_PHY_HSIC1_USER,
++			"mout_phyclk_usbhost20_phy_hsic1",
++			mout_phyclk_usbhost20_phy_hsic1_p,
++			MUX_SEL_FSYS2, 20, 1),
++	MUX(CLK_MOUT_PHYCLK_USBHOST20_PHY_CLK48MOHCI_USER,
++			"mout_phyclk_usbhost20_phy_clk48mohci_user",
++			mout_phyclk_usbhost20_phy_clk48mohci_user_p,
++			MUX_SEL_FSYS2, 16, 1),
++	MUX(CLK_MOUT_PHYCLK_USBHOST20_PHY_PHYCLOCK_USER,
++			"mout_phyclk_usbhost20_phy_phyclock_user",
++			mout_phyclk_usbhost20_phy_phyclock_user_p,
++			MUX_SEL_FSYS2, 12, 1),
++	MUX(CLK_MOUT_PHYCLK_USBHOST20_PHY_PHY_FREECLK_USER,
++			"mout_phyclk_usbhost20_phy_freeclk_user",
++			mout_phyclk_usbhost20_phy_freeclk_user_p,
++			MUX_SEL_FSYS2, 8, 1),
++	MUX(CLK_MOUT_PHYCLK_USBDRD30_UDRD30_PIPE_PCLK_USER,
++			"mout_phyclk_usbdrd30_udrd30_pipe_pclk_user",
++			mout_phyclk_usbdrd30_udrd30_pipe_pclk_p,
++			MUX_SEL_FSYS2, 4, 1),
++	MUX(CLK_MOUT_PHYCLK_USBDRD30_UDRD30_PHYCLOCK_USER,
++			"mout_phyclk_usbdrd30_udrd30_phyclock_user",
++			mout_phyclk_usbdrd30_udrd30_phyclock_user_p,
++			MUX_SEL_FSYS2, 0, 1),
 +
-+static struct samsung_div_clock g2d_div_clks[] __initdata = {
-+	/* DIV_G2D */
-+	DIV(CLK_DIV_PCLK_G2D, "div_pclk_g2d", "mout_aclk_g2d_266_user",
-+			DIV_G2D, 0, 2),
-+};
++	/* MUX_SEL_FSYS3 */
++	MUX(CLK_MOUT_PHYCLK_UFS_RX1_SYMBOL_USER,
++			"mout_phyclk_ufs_rx1_symbol_user",
++			mout_phyclk_ufs_rx1_symbol_user_p,
++			MUX_SEL_FSYS3, 16, 1),
++	MUX(CLK_MOUT_PHYCLK_UFS_RX0_SYMBOL_USER,
++			"mout_phyclk_ufs_rx0_symbol_user",
++			mout_phyclk_ufs_rx0_symbol_user_p,
++			MUX_SEL_FSYS3, 12, 1),
++	MUX(CLK_MOUT_PHYCLK_UFS_TX1_SYMBOL_USER,
++			"mout_phyclk_ufs_tx1_symbol_user",
++			mout_phyclk_ufs_tx1_symbol_user_p,
++			MUX_SEL_FSYS3, 8, 1),
++	MUX(CLK_MOUT_PHYCLK_UFS_TX0_SYMBOL_USER,
++			"mout_phyclk_ufs_tx0_symbol_user",
++			mout_phyclk_ufs_tx0_symbol_user_p,
++			MUX_SEL_FSYS3, 4, 1),
++	MUX(CLK_MOUT_PHYCLK_LLI_MPHY_TO_UFS_USER,
++			"mout_phyclk_lli_mphy_to_ufs_user",
++			mout_phyclk_lli_mphy_to_ufs_user_p,
++			MUX_SEL_FSYS4, 0, 1),
 +
-+static struct samsung_gate_clock g2d_gate_clks[] __initdata = {
-+	/* DIV_ENABLE_ACLK_G2D */
-+	GATE(CLK_ACLK_SMMU_MDMA1, "aclk_smmu_mdma1", "mout_aclk_g2d_266_user",
-+			DIV_ENABLE_ACLK_G2D, 12, 0, 0),
-+	GATE(CLK_ACLK_BTS_MDMA1, "aclk_bts_mdam1", "mout_aclk_g2d_266_user",
-+			DIV_ENABLE_ACLK_G2D, 11, 0, 0),
-+	GATE(CLK_ACLK_BTS_G2D, "aclk_bts_g2d", "mout_aclk_g2d_400_user",
-+			DIV_ENABLE_ACLK_G2D, 10, 0, 0),
-+	GATE(CLK_ACLK_ALB_G2D, "aclk_alb_g2d", "mout_aclk_g2d_400_user",
-+			DIV_ENABLE_ACLK_G2D, 9, 0, 0),
-+	GATE(CLK_ACLK_AXIUS_G2DX, "aclk_axius_g2dx", "mout_aclk_g2d_400_user",
-+			DIV_ENABLE_ACLK_G2D, 8, 0, 0),
-+	GATE(CLK_ACLK_ASYNCAXI_SYSX, "aclk_asyncaxi_sysx",
-+			"mout_aclk_g2d_400_user", DIV_ENABLE_ACLK_G2D,
-+			7, 0, 0),
-+	GATE(CLK_ACLK_AHB2APB_G2D1P, "aclk_ahb2apb_g2d1p", "div_pclk_g2d",
-+			DIV_ENABLE_ACLK_G2D, 6, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_AHB2APB_G2D0P, "aclk_ahb2apb_g2d0p", "div_pclk_g2d",
-+			DIV_ENABLE_ACLK_G2D, 5, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_XIU_G2DX, "aclk_xiu_g2dx", "mout_aclk_g2d_400_user",
-+			DIV_ENABLE_ACLK_G2D, 4, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_G2DNP_133, "aclk_g2dnp_133", "div_pclk_g2d",
-+			DIV_ENABLE_ACLK_G2D, 3, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_G2DND_400, "aclk_g2dnd_400", "mout_aclk_g2d_400_user",
-+			DIV_ENABLE_ACLK_G2D, 2, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_MDMA1, "aclk_mdma1", "mout_aclk_g2d_266_user",
-+			DIV_ENABLE_ACLK_G2D, 1, 0, 0),
-+	GATE(CLK_ACLK_G2D, "aclk_g2d", "mout_aclk_g2d_400_user",
-+			DIV_ENABLE_ACLK_G2D, 0, 0, 0),
++	/* MUX_SEL_FSYS4 */
++	MUX(CLK_MOUT_SCLK_MPHY, "mout_sclk_mphy", mout_sclk_mphy_p,
++			MUX_SEL_FSYS4, 0, 1),
+ };
+ 
+ static struct samsung_gate_clock fsys_gate_clks[] __initdata = {
+@@ -1889,13 +2041,145 @@ static struct samsung_gate_clock fsys_gate_clks[] __initdata = {
+ 	GATE(CLK_ACLK_PDMA0, "aclk_pdma0", "mout_aclk_fsys_200_user",
+ 			ENABLE_ACLK_FSYS0, 0, CLK_IGNORE_UNUSED, 0),
+ 
++	/* ENABLE_ACLK_FSYS1 */
++	GATE(CLK_ACLK_XIU_FSYSPX, "aclk_xiu_fsyspx", "mout_aclk_fsys_200_user",
++			ENABLE_ACLK_FSYS1, 27, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_AHB_USBLINKH1, "aclk_ahb_usblinkh1",
++			"mout_aclk_fsys_200_user", ENABLE_ACLK_FSYS1,
++			26, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_SMMU_PDMA1, "aclk_smmu_pdma1", "mout_aclk_fsys_200_user",
++			ENABLE_ACLK_FSYS1, 25, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_BTS_PCIE, "aclk_bts_pcie", "mout_aclk_fsys_200_user",
++			ENABLE_ACLK_FSYS1, 24, 0, 0),
++	GATE(CLK_ACLK_AXIUS_PDMA1, "aclk_axius_pdma1",
++			"mout_aclk_fsys_200_user", ENABLE_ACLK_FSYS1,
++			22, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_SMMU_PDMA0, "aclk_smmu_pdma0", "mout_aclk_fsys_200_user",
++			ENABLE_ACLK_FSYS1, 17, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_BTS_UFS, "aclk_bts_ufs", "mout_aclk_fsys_200_user",
++			ENABLE_ACLK_FSYS1, 14, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_BTS_USBHOST30, "aclk_bts_usbhost30",
++			"mout_aclk_fsys_200_user", ENABLE_ACLK_FSYS1,
++			13, 0, 0),
++	GATE(CLK_ACLK_BTS_USBDRD30, "aclk_bts_usbdrd30",
++			"mout_aclk_fsys_200_user", ENABLE_ACLK_FSYS1,
++			12, 0, 0),
++	GATE(CLK_ACLK_AXIUS_PDMA0, "aclk_axius_pdma0",
++			"mout_aclk_fsys_200_user", ENABLE_ACLK_FSYS1,
++			11, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_AXIUS_USBHS, "aclk_axius_usbhs",
++			"mout_aclk_fsys_200_user", ENABLE_ACLK_FSYS1,
++			10, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_AXIUS_FSYSSX, "aclk_axius_fsyssx",
++			"mout_aclk_fsys_200_user", ENABLE_ACLK_FSYS1,
++			9, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_AHB2APB_FSYSP, "aclk_ahb2apb_fsysp",
++			"mout_aclk_fsys_200_user", ENABLE_ACLK_FSYS1,
++			8, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_AHB2AXI_USBHS, "aclk_ahb2axi_usbhs",
++			"mout_aclk_fsys_200_user", ENABLE_ACLK_FSYS1,
++			7, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_AHB_USBLINKH0, "aclk_ahb_usblinkh0",
++			"mout_aclk_fsys_200_user", ENABLE_ACLK_FSYS1,
++			6, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_AHB_USBHS, "aclk_ahb_usbhs", "mout_aclk_fsys_200_user",
++			ENABLE_ACLK_FSYS1, 5, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_AHB_FSYSH, "aclk_ahb_fsysh", "mout_aclk_fsys_200_user",
++			ENABLE_ACLK_FSYS1, 4, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_XIU_FSYSX, "aclk_xiu_fsysx", "mout_aclk_fsys_200_user",
++			ENABLE_ACLK_FSYS1, 3, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_XIU_FSYSSX, "aclk_xiu_fsyssx", "mout_aclk_fsys_200_user",
++			ENABLE_ACLK_FSYS1, 2, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_FSYSNP_200, "aclk_fsysnp_200", "mout_aclk_fsys_200_user",
++			ENABLE_ACLK_FSYS1, 1, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_FSYSND_200, "aclk_fsysnd_200", "mout_aclk_fsys_200_user",
++			ENABLE_ACLK_FSYS1, 0, CLK_IGNORE_UNUSED, 0),
 +
-+	/* DIV_ENABLE_ACLK_G2D_SECURE_SMMU_G2D */
-+	GATE(CLK_ACLK_SMMU_G2D, "aclk_smmu_g2d", "mout_aclk_g2d_400_user",
-+		DIV_ENABLE_ACLK_G2D_SECURE_SMMU_G2D, 0, 0, 0),
++	/* ENABLE_PCLK_FSYS */
++	GATE(CLK_PCLK_PCIE_CTRL, "pclk_pcie_ctrl", "mout_aclk_fsys_200_user",
++			ENABLE_PCLK_FSYS, 17, 0, 0),
++	GATE(CLK_PCLK_SMMU_PDMA1, "pclk_smmu_pdma1", "mout_aclk_fsys_200_user",
++			ENABLE_PCLK_FSYS, 16, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_PCLK_PCIE_PHY, "pclk_pcie_phy", "mout_aclk_fsys_200_user",
++			ENABLE_PCLK_FSYS, 14, 0, 0),
++	GATE(CLK_PCLK_BTS_PCIE, "pclk_bts_pcie", "mout_aclk_fsys_200_user",
++			ENABLE_PCLK_FSYS, 13, 0, 0),
++	GATE(CLK_PCLK_SMMU_PDMA0, "pclk_smmu_pdma0", "mout_aclk_fsys_200_user",
++			ENABLE_PCLK_FSYS, 8, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_PCLK_BTS_UFS, "pclk_bts_ufs", "mout_aclk_fsys_200_user",
++			ENABLE_PCLK_FSYS, 5, 0, 0),
++	GATE(CLK_PCLK_BTS_USBHOST30, "pclk_bts_usbhost30",
++			"mout_aclk_fsys_200_user", ENABLE_PCLK_FSYS, 4, 0, 0),
++	GATE(CLK_PCLK_BTS_USBDRD30, "pclk_bts_usbdrd30",
++			"mout_aclk_fsys_200_user", ENABLE_PCLK_FSYS, 3, 0, 0),
++	GATE(CLK_PCLK_GPIO_FSYS, "pclk_gpio_fsys", "mout_aclk_fsys_200_user",
++			ENABLE_PCLK_FSYS, 2, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_PCLK_PMU_FSYS, "pclk_pmu_fsys", "mout_aclk_fsys_200_user",
++			ENABLE_PCLK_FSYS, 1, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_PCLK_SYSREG_FSYS, "pclk_sysreg_fsys",
++			"mout_aclk_fsys_200_user", ENABLE_PCLK_FSYS,
++			0, CLK_IGNORE_UNUSED, 0),
 +
-+	/* DIV_ENABLE_PCLK_G2D */
-+	GATE(CLK_PCLK_SMMU_MDMA1, "pclk_smmu_mdma1", "div_pclk_g2d",
-+			DIV_ENABLE_PCLK_G2D, 7, 0, 0),
-+	GATE(CLK_PCLK_BTS_MDMA1, "pclk_bts_mdam1", "div_pclk_g2d",
-+			DIV_ENABLE_PCLK_G2D, 6, 0, 0),
-+	GATE(CLK_PCLK_BTS_G2D, "pclk_bts_g2d", "div_pclk_g2d",
-+			DIV_ENABLE_PCLK_G2D, 5, 0, 0),
-+	GATE(CLK_PCLK_ALB_G2D, "pclk_alb_g2d", "div_pclk_g2d",
-+			DIV_ENABLE_PCLK_G2D, 4, 0, 0),
-+	GATE(CLK_PCLK_ASYNCAXI_SYSX, "pclk_asyncaxi_sysx", "div_pclk_g2d",
-+			DIV_ENABLE_PCLK_G2D, 3, 0, 0),
-+	GATE(CLK_PCLK_PMU_G2D, "pclk_pmu_g2d", "div_pclk_g2d",
-+			DIV_ENABLE_PCLK_G2D, 2, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_SYSREG_G2D, "pclk_sysreg_g2d", "div_pclk_g2d",
-+			DIV_ENABLE_PCLK_G2D, 1, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_G2D, "pclk_g2d", "div_pclk_g2d", DIV_ENABLE_PCLK_G2D,
-+			0, 0, 0),
-+
-+	/* DIV_ENABLE_PCLK_G2D_SECURE_SMMU_G2D */
-+	GATE(CLK_PCLK_SMMU_G2D, "pclk_smmu_g2d", "div_pclk_g2d",
-+		DIV_ENABLE_PCLK_G2D_SECURE_SMMU_G2D, 0, 0, 0),
-+};
-+
-+static struct samsung_cmu_info g2d_cmu_info __initdata = {
-+	.mux_clks		= g2d_mux_clks,
-+	.nr_mux_clks		= ARRAY_SIZE(g2d_mux_clks),
-+	.div_clks		= g2d_div_clks,
-+	.nr_div_clks		= ARRAY_SIZE(g2d_div_clks),
-+	.gate_clks		= g2d_gate_clks,
-+	.nr_gate_clks		= ARRAY_SIZE(g2d_gate_clks),
-+	.nr_clk_ids		= G2D_NR_CLK,
-+	.clk_regs		= g2d_clk_regs,
-+	.nr_clk_regs		= ARRAY_SIZE(g2d_clk_regs),
-+};
-+
-+static void __init exynos5433_cmu_g2d_init(struct device_node *np)
-+{
-+	samsung_cmu_register_one(np, &g2d_cmu_info);
-+}
-+
-+CLK_OF_DECLARE(exynos5433_cmu_g2d, "samsung,exynos5433-cmu-g2d",
-+		exynos5433_cmu_g2d_init);
+ 	/* ENABLE_SCLK_FSYS */
++	GATE(CLK_SCLK_PCIE_100, "sclk_pcie_100", "mout_sclk_pcie_100_user",
++			ENABLE_SCLK_FSYS, 21, 0, 0),
++	GATE(CLK_PHYCLK_USBHOST30_UHOST30_PIPE_PCLK,
++			"phyclk_usbhost30_uhost30_pipe_pclk",
++			"mout_phyclk_usbhost30_uhost30_pipe_pclk_user",
++			ENABLE_SCLK_FSYS, 18, 0, 0),
++	GATE(CLK_PHYCLK_USBHOST30_UHOST30_PHYCLOCK,
++			"phyclk_usbhost30_uhost30_phyclock",
++			"mout_phyclk_usbhost30_uhost30_phyclock_user",
++			ENABLE_SCLK_FSYS, 17, 0, 0),
++	GATE(CLK_PHYCLK_UFS_RX1_SYMBOL, "phyclk_ufs_rx1_symbol",
++			"mout_phyclk_ufs_rx1_symbol_user", ENABLE_SCLK_FSYS,
++			16, 0, 0),
++	GATE(CLK_PHYCLK_UFS_RX0_SYMBOL, "phyclk_ufs_rx0_symbol",
++			"mout_phyclk_ufs_rx0_symbol_user", ENABLE_SCLK_FSYS,
++			15, 0, 0),
++	GATE(CLK_PHYCLK_UFS_TX1_SYMBOL, "phyclk_ufs_tx1_symbol",
++			"mout_phyclk_ufs_tx1_symbol_user", ENABLE_SCLK_FSYS,
++			14, 0, 0),
++	GATE(CLK_PHYCLK_UFS_TX0_SYMBOL, "phyclk_ufs_tx0_symbol",
++			"mout_phyclk_ufs_tx0_symbol_user", ENABLE_SCLK_FSYS,
++			13, 0, 0),
++	GATE(CLK_PHYCLK_USBHOST20_PHY_HSIC1, "phyclk_usbhost20_phy_hsic1",
++			"mout_phyclk_usbhost20_phy_hsic1", ENABLE_SCLK_FSYS,
++			12, 0, 0),
++	GATE(CLK_PHYCLK_USBHOST20_PHY_CLK48MOHCI,
++			"phyclk_usbhost20_phy_clk48mohci",
++			"mout_phyclk_usbhost20_phy_clk48mohci_user",
++			ENABLE_SCLK_FSYS, 11, 0, 0),
++	GATE(CLK_PHYCLK_USBHOST20_PHY_PHYCLOCK,
++			"phyclk_usbhost20_phy_phyclock",
++			"mout_phyclk_usbhost20_phy_phyclock_user",
++			ENABLE_SCLK_FSYS, 10, 0, 0),
++	GATE(CLK_PHYCLK_USBHOST20_PHY_FREECLK,
++			"phyclk_usbhost20_phy_freeclk",
++			"mout_phyclk_usbhost20_phy_freeclk_user",
++			ENABLE_SCLK_FSYS, 9, 0, 0),
++	GATE(CLK_PHYCLK_USBDRD30_UDRD30_PIPE_PCLK,
++			"phyclk_usbdrd30_udrd30_pipe_pclk",
++			"mout_phyclk_usbdrd30_udrd30_pipe_pclk_user",
++			ENABLE_SCLK_FSYS, 8, 0, 0),
++	GATE(CLK_PHYCLK_USBDRD30_UDRD30_PHYCLOCK,
++			"phyclk_usbdrd30_udrd30_phyclock",
++			"mout_phyclk_usbdrd30_udrd30_phyclock_user",
++			ENABLE_SCLK_FSYS, 7, 0, 0),
++	GATE(CLK_SCLK_MPHY, "sclk_mphy", "mout_sclk_mphy",
++			ENABLE_SCLK_FSYS, 6, 0, 0),
++	GATE(CLK_SCLK_UFSUNIPRO, "sclk_ufsunipro", "mout_sclk_ufsunipro_user",
++			ENABLE_SCLK_FSYS, 5, 0, 0),
+ 	GATE(CLK_SCLK_MMC2, "sclk_mmc2", "mout_sclk_mmc2_user",
+ 			ENABLE_SCLK_FSYS, 4, CLK_SET_RATE_PARENT, 0),
+ 	GATE(CLK_SCLK_MMC1, "sclk_mmc1", "mout_sclk_mmc1_user",
+ 			ENABLE_SCLK_FSYS, 3, CLK_SET_RATE_PARENT, 0),
+ 	GATE(CLK_SCLK_MMC0, "sclk_mmc0", "mout_sclk_mmc0_user",
+ 			ENABLE_SCLK_FSYS, 2, CLK_SET_RATE_PARENT, 0),
++	GATE(CLK_SCLK_USBHOST30, "sclk_usbhost30", "mout_sclk_usbhost30_user",
++			ENABLE_SCLK_FSYS, 1, 0, 0),
++	GATE(CLK_SCLK_USBDRD30, "sclk_usbdrd30", "mout_sclk_usbdrd30_user",
++			ENABLE_SCLK_FSYS, 0, 0, 0),
+ 
+ 	/* ENABLE_IP_FSYS0 */
+ 	GATE(CLK_PDMA1, "pdma1", "aclk_pdma1", ENABLE_IP_FSYS0, 15, 0, 0),
+@@ -1907,6 +2191,8 @@ static struct samsung_cmu_info fsys_cmu_info __initdata = {
+ 	.nr_mux_clks		= ARRAY_SIZE(fsys_mux_clks),
+ 	.gate_clks		= fsys_gate_clks,
+ 	.nr_gate_clks		= ARRAY_SIZE(fsys_gate_clks),
++	.fixed_clks		= fsys_fixed_clks,
++	.nr_fixed_clks		= ARRAY_SIZE(fsys_fixed_clks),
+ 	.nr_clk_ids		= FSYS_NR_CLK,
+ 	.clk_regs		= fsys_clk_regs,
+ 	.nr_clk_regs		= ARRAY_SIZE(fsys_clk_regs),
 diff --git a/include/dt-bindings/clock/exynos5433.h b/include/dt-bindings/clock/exynos5433.h
-index 48eb6f3..054f767 100644
+index 8c44674..e76300a 100644
 --- a/include/dt-bindings/clock/exynos5433.h
 +++ b/include/dt-bindings/clock/exynos5433.h
-@@ -100,6 +100,12 @@
- #define CLK_DIV_SCLK_PCM1		128
- #define CLK_DIV_SCLK_AUDIO1		129
- #define CLK_DIV_SCLK_AUDIO0		130
-+#define CLK_DIV_ACLK_GSCL_111		131
-+#define CLK_DIV_ACLK_GSCL_333		132
-+#define CLK_DIV_ACLK_HEVC_400		133
-+#define CLK_DIV_ACLK_MFC_400		134
-+#define CLK_DIV_ACLK_G2D_266		135
-+#define CLK_DIV_ACLK_G2D_400		136
+@@ -110,6 +110,10 @@
+ #define CLK_DIV_ACLK_G3D_400		137
+ #define CLK_DIV_ACLK_BUS0_400		138
+ #define CLK_DIV_ACLK_BUS1_400		139
++#define CLK_DIV_SCLK_PCIE_100		140
++#define CLK_DIV_SCLK_USBHOST30		141
++#define CLK_DIV_SCLK_UFSUNIPRO		142
++#define CLK_DIV_SCLK_USBDRD30		143
  
  #define CLK_ACLK_PERIC_66		200
  #define CLK_ACLK_PERIS_66		201
-@@ -121,8 +127,10 @@
- #define CLK_SCLK_SLIMBUS		217
- #define CLK_SCLK_AUDIO1			218
- #define CLK_SCLK_AUDIO0			219
-+#define CLK_ACLK_G2D_266		220
-+#define CLK_ACLK_G2D_400		221
+@@ -139,8 +143,12 @@
+ #define CLK_ACLK_BUS1_400		225
+ #define CLK_ACLK_IMEM_200		226
+ #define CLK_ACLK_IMEM_266		227
++#define CLK_SCLK_PCIE_100_FSYS		228
++#define CLK_SCLK_UFSUNIPRO_FSYS		229
++#define CLK_SCLK_USBHOST30_FSYS		230
++#define CLK_SCLK_USBDRD30_FSYS		231
  
--#define TOP_NR_CLK			220
-+#define TOP_NR_CLK			222
+-#define TOP_NR_CLK			228
++#define TOP_NR_CLK			232
  
  /* CMU_CPIF */
  #define CLK_FOUT_MPHY_PLL		1
-@@ -286,4 +294,36 @@
+@@ -473,6 +481,25 @@
+ #define CLK_MOUT_SCLK_MMC2_USER		2
+ #define CLK_MOUT_SCLK_MMC1_USER		3
+ #define CLK_MOUT_SCLK_MMC0_USER		4
++#define CLK_MOUT_SCLK_UFS_MPHY_USER	5
++#define CLK_MOUT_SCLK_PCIE_100_USER	6
++#define CLK_MOUT_SCLK_UFSUNIPRO_USER	7
++#define CLK_MOUT_SCLK_USBHOST30_USER	8
++#define CLK_MOUT_SCLK_USBDRD30_USER	9
++#define CLK_MOUT_PHYCLK_USBHOST30_UHOST30_PIPE_PCLK_USER	10
++#define CLK_MOUT_PHYCLK_USBHOST30_UHOST30_PHYCLOCK_USER		11
++#define CLK_MOUT_PHYCLK_USBHOST20_PHY_HSIC1_USER		12
++#define CLK_MOUT_PHYCLK_USBHOST20_PHY_CLK48MOHCI_USER		13
++#define CLK_MOUT_PHYCLK_USBHOST20_PHY_PHYCLOCK_USER		14
++#define CLK_MOUT_PHYCLK_USBHOST20_PHY_PHY_FREECLK_USER		15
++#define CLK_MOUT_PHYCLK_USBDRD30_UDRD30_PIPE_PCLK_USER		16
++#define CLK_MOUT_PHYCLK_USBDRD30_UDRD30_PHYCLOCK_USER		17
++#define CLK_MOUT_PHYCLK_UFS_RX1_SYMBOL_USER			18
++#define CLK_MOUT_PHYCLK_UFS_RX0_SYMBOL_USER			19
++#define CLK_MOUT_PHYCLK_UFS_TX1_SYMBOL_USER			20
++#define CLK_MOUT_PHYCLK_UFS_TX0_SYMBOL_USER			21
++#define CLK_MOUT_PHYCLK_LLI_MPHY_TO_UFS_USER			22
++#define CLK_MOUT_SCLK_MPHY					23
  
- #define FSYS_NR_CLK			66
+ #define CLK_ACLK_PCIE			50
+ #define CLK_ACLK_PDMA1			51
+@@ -490,8 +517,57 @@
+ #define CLK_SCLK_MMC0			63
+ #define CLK_PDMA1			64
+ #define CLK_PDMA0			65
+-
+-#define FSYS_NR_CLK			66
++#define CLK_ACLK_XIU_FSYSPX		66
++#define CLK_ACLK_AHB_USBLINKH1		67
++#define CLK_ACLK_SMMU_PDMA1		68
++#define CLK_ACLK_BTS_PCIE		69
++#define CLK_ACLK_AXIUS_PDMA1		70
++#define CLK_ACLK_SMMU_PDMA0		71
++#define CLK_ACLK_BTS_UFS		72
++#define CLK_ACLK_BTS_USBHOST30		73
++#define CLK_ACLK_BTS_USBDRD30		74
++#define CLK_ACLK_AXIUS_PDMA0		75
++#define CLK_ACLK_AXIUS_USBHS		76
++#define CLK_ACLK_AXIUS_FSYSSX		77
++#define CLK_ACLK_AHB2APB_FSYSP		78
++#define CLK_ACLK_AHB2AXI_USBHS		79
++#define CLK_ACLK_AHB_USBLINKH0		80
++#define CLK_ACLK_AHB_USBHS		81
++#define CLK_ACLK_AHB_FSYSH		82
++#define CLK_ACLK_XIU_FSYSX		83
++#define CLK_ACLK_XIU_FSYSSX		84
++#define CLK_ACLK_FSYSNP_200		85
++#define CLK_ACLK_FSYSND_200		86
++#define CLK_PCLK_PCIE_CTRL		87
++#define CLK_PCLK_SMMU_PDMA1		88
++#define CLK_PCLK_PCIE_PHY		89
++#define CLK_PCLK_BTS_PCIE		90
++#define CLK_PCLK_SMMU_PDMA0		91
++#define CLK_PCLK_BTS_UFS		92
++#define CLK_PCLK_BTS_USBHOST30		93
++#define CLK_PCLK_BTS_USBDRD30		94
++#define CLK_PCLK_GPIO_FSYS		95
++#define CLK_PCLK_PMU_FSYS		96
++#define CLK_PCLK_SYSREG_FSYS		97
++#define CLK_SCLK_PCIE_100		98
++#define CLK_PHYCLK_USBHOST30_UHOST30_PIPE_PCLK	99
++#define CLK_PHYCLK_USBHOST30_UHOST30_PHYCLOCK	100
++#define CLK_PHYCLK_UFS_RX1_SYMBOL		101
++#define CLK_PHYCLK_UFS_RX0_SYMBOL		102
++#define CLK_PHYCLK_UFS_TX1_SYMBOL		103
++#define CLK_PHYCLK_UFS_TX0_SYMBOL		104
++#define CLK_PHYCLK_USBHOST20_PHY_HSIC1		105
++#define CLK_PHYCLK_USBHOST20_PHY_CLK48MOHCI	106
++#define CLK_PHYCLK_USBHOST20_PHY_PHYCLOCK	107
++#define CLK_PHYCLK_USBHOST20_PHY_FREECLK	108
++#define CLK_PHYCLK_USBDRD30_UDRD30_PIPE_PCLK	109
++#define CLK_PHYCLK_USBDRD30_UDRD30_PHYCLOCK	110
++#define CLK_SCLK_MPHY			111
++#define CLK_SCLK_UFSUNIPRO		112
++#define CLK_SCLK_USBHOST30		113
++#define CLK_SCLK_USBDRD30		114
++
++#define FSYS_NR_CLK			115
  
-+/* CMU_G2D */
-+#define CLK_MUX_ACLK_G2D_266_USER	1
-+#define CLK_MUX_ACLK_G2D_400_USER	2
-+
-+#define CLK_DIV_PCLK_G2D		3
-+
-+#define CLK_ACLK_SMMU_MDMA1		4
-+#define CLK_ACLK_BTS_MDMA1		5
-+#define CLK_ACLK_BTS_G2D		6
-+#define CLK_ACLK_ALB_G2D		7
-+#define CLK_ACLK_AXIUS_G2DX		8
-+#define CLK_ACLK_ASYNCAXI_SYSX		9
-+#define CLK_ACLK_AHB2APB_G2D1P		10
-+#define CLK_ACLK_AHB2APB_G2D0P		11
-+#define CLK_ACLK_XIU_G2DX		12
-+#define CLK_ACLK_G2DNP_133		13
-+#define CLK_ACLK_G2DND_400		14
-+#define CLK_ACLK_MDMA1			15
-+#define CLK_ACLK_G2D			16
-+#define CLK_ACLK_SMMU_G2D		17
-+#define CLK_PCLK_SMMU_MDMA1		18
-+#define CLK_PCLK_BTS_MDMA1		19
-+#define CLK_PCLK_BTS_G2D		20
-+#define CLK_PCLK_ALB_G2D		21
-+#define CLK_PCLK_ASYNCAXI_SYSX		22
-+#define CLK_PCLK_PMU_G2D		23
-+#define CLK_PCLK_SYSREG_G2D		24
-+#define CLK_PCLK_G2D			25
-+#define CLK_PCLK_SMMU_G2D		26
-+
-+#define G2D_NR_CLK			27
-+
- #endif /* _DT_BINDINGS_CLOCK_EXYNOS5433_H */
+ /* CMU_G2D */
+ #define CLK_MUX_ACLK_G2D_266_USER	1
 -- 
 1.8.5.5
 
