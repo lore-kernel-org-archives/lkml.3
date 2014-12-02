@@ -1,120 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165AbaLBOZn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 09:25:43 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:53395 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753551AbaLBOZj (ORCPT
+	id S932122AbaLBO0e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 09:26:34 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:33347 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305AbaLBO0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 09:25:39 -0500
-Message-ID: <547DCBDE.6020504@linaro.org>
-Date: Tue, 02 Dec 2014 14:25:34 +0000
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+	Tue, 2 Dec 2014 09:26:33 -0500
+Message-ID: <547DCC15.70300@roeck-us.net>
+Date: Tue, 02 Dec 2014 06:26:29 -0800
+From: Guenter Roeck <linux@roeck-us.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Lee Jones <lee.jones@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Mark Brown <broonie@kernel.org>
-CC: Josh Cartwright <joshc@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v8 0/3] Qualcomm Resource Power Manager
-References: <1417038661-30209-1-git-send-email-bjorn.andersson@sonymobile.com>
-In-Reply-To: <1417038661-30209-1-git-send-email-bjorn.andersson@sonymobile.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Jean Delvare <jdelvare@suse.de>,
+        =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Subject: Re: [PATCH] i8k: Add support for temperature sensor labels
+References: <1417277047-15489-1-git-send-email-pali.rohar@gmail.com>	 <201411291849.44032@pali> <20141129175152.GA32510@kroah.com>	 <201411291904.07644@pali> <1417526599.15239.7.camel@chaos.site>
+In-Reply-To: <1417526599.15239.7.camel@chaos.site>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020207.547DCC18.0152,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
+On 12/02/2014 05:23 AM, Jean Delvare wrote:
+> Hi Pali, hi Greg,
+>
+> Le Saturday 29 November 2014 à 19:04 +0100, Pali Rohár a écrit :
+>> On Saturday 29 November 2014 18:51:52 Greg Kroah-Hartman wrote:
+>>> On Sat, Nov 29, 2014 at 06:49:43PM +0100, Pali Rohár wrote:
+>>>> On Saturday 29 November 2014 18:43:15 Greg Kroah-Hartman wrote:
+>>>>> No Documentation/ABI/ entry for your new sysfs file?
+>>>>
+>>>> It is standard hwmon sysfs entry which is used by other
+>>>> hwmon drivers... It is not i8k.ko driver specific.
+>>>
+>>> Ok, then why is this driver not in a "hwmon-standard" location
+>>> in the kernel tree?
+>>>
+>>> greg k-h
+>>
+>> This is question not for me but for maintainers of hwmon and char
+>> trees... I just contributed patch for existing driver.
+>>
+>> But my idea is that because this driver exported temperature data
+>> for a long time only via /proc/i8k character file (since 2.4? or
+>> earlier?) and only 3 years ago was added standard hwmon interface
+>> to existing code (949a9d70020defd7c241607ab3ed037ea88f551c).
+>>
+>> So now there are both interfaces. Standard hwmon and old /proc/.
+>>
+>> CCing Jean Delvare (author of hwmon i8k code)
+>
+> Yes, that's for historical reasons. Also the i8k driver does more than
+> just hardware monitoring, it handles function keys and power status too.
+> And it is heavily platform-specific. So while I agree that drivers/char
+> isn't necessarily the best place for this driver, I'd rather move it to
+> drivers/platform/x86 together with other laptop vendor-specific drivers,
+> than to drivers/hwmon.
+>
+> Ultimately /proc/i8k should be killed altogether and every function
+> should use the appropriate standard interface. But I don't have any Dell
+> laptop around so I won't go into that myself.
+>
+The only function not covered by hwmon, as far as I can see, is reading
+the "Fn key" status, whatever that is, and reporting the power status
+(AC or battery).
 
-Thanks for the patches, I tested few regulators which are connected to 
-IO devices with this series on IFC6410 with APQ8064 and they work fine. 
-Except one issue which you already are aware of "regulator dependencies 
-on each other" I guess this is another topic which can be discussed 
-separately to this patchset.
+The first seems to be covered by the already existing dell drivers in
+platform/x86. The latter must be covered as well; Linux does
+display the correct power status on all my Dell laptops.
 
-Tested-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Changing the ABI is not supposed to happen, so I am not sure if we can
+just drop the /proc interface.
 
+Guenter
 
---srini
-On 26/11/14 21:50, Bjorn Andersson wrote:
-> In order to support the SoC assisted power save features of the Qualcomm
-> platform some changes are most likely needed to the regulator part of the DT
-> bindings provided before.
->
-> This version of the patchset carries the RPM core part, which allows us to move
-> forward with merging Josh's patches [1] as well as aiding the discussion and
-> development of the additional patches needed to properly implement the power
-> save features being discussed.
->
-> It also carries the patch to the already merged regulator driver, to make it
-> compile.
->
-> [1] https://lkml.org/lkml/2014/11/20/629
->
-> Changes since v7:
->    - Mark merged the regulator part of the previous series
->    - Removed regulator part of dt binding, for further discussions
->
-> Changes since v6:
->    - Changed filenames from qcom,rpm.{txt,h} to qcom-rpm.{txt,h}
->
-> Changes since v5:
->    - Clarified dt binding
->    - Converted regulator qcom,force-mode to enum instead of multi-boolean
->    - Remove unecessary version handshake
->    - Cleaned up naming of RPM resources between different RPM versions
->    - Updated regulator qcom,force-mode parsing
->    - Updated regulator qcom,power-mode-* parsing
->    - Cleanups in rpm driver
->    - Dropped dev_get_qcom_rpm helper function
->
-> Changes since v4:
->    - Moved RPM driver to mfd
->
-> Changes since v3:
->    - IPC register is acquired through syscon, as it's shared with others
->
-> Changes since v2:
->    - Fix copy-paste error in dt binding
->    - Correct incomplete move from mfd to soc
->    - Correct const mistake in regulator driver
->
-> Changes since v1:
->    - Moved rpm driver to drivers/soc
->    - Extracted resource table structs from rpm struct, as per Srinivas request
->    - Dropped mode setting support for the regulators for now. Unsure if we need
->      it and it requires some rework from the codeaurora solution.
->    - Using set_voltage_sel instead of rolling my own "snapping", as per Marks
->      request
->    - Split regulator ops in mV, uV and swtich versions as per Marks request.
->    - Added devicetree property to enable pull down.
->
-> Bjorn Andersson (3):
->    mfd: devicetree: bindings: Add Qualcomm RPM DT binding
->    mfd: qcom-rpm: Driver for the Qualcomm RPM
->    regulator: qcom-rpm: Add missing state flag in call to RPM
->
->   Documentation/devicetree/bindings/mfd/qcom-rpm.txt |  70 +++
->   drivers/mfd/Kconfig                                |  14 +
->   drivers/mfd/Makefile                               |   1 +
->   drivers/mfd/qcom_rpm.c                             | 581 +++++++++++++++++++++
->   drivers/regulator/qcom_rpm-regulator.c             |   1 +
->   include/dt-bindings/mfd/qcom-rpm.h                 | 154 ++++++
->   include/linux/mfd/qcom_rpm.h                       |  13 +
->   7 files changed, 834 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/mfd/qcom-rpm.txt
->   create mode 100644 drivers/mfd/qcom_rpm.c
->   create mode 100644 include/dt-bindings/mfd/qcom-rpm.h
->   create mode 100644 include/linux/mfd/qcom_rpm.h
->
-> --
-> 1.8.2.2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
