@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490AbaLBRrZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 12:47:25 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:43071 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754366AbaLBRrT (ORCPT
+	id S1754350AbaLBRuX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 12:50:23 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:65088 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754063AbaLBRuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 12:47:19 -0500
+	Tue, 2 Dec 2014 12:50:21 -0500
 MIME-Version: 1.0
-In-Reply-To: <547D6F36.50103@rock-chips.com>
-References: <1415970338-2637-1-git-send-email-addy.ke@rock-chips.com>
-	<1416903008-4160-1-git-send-email-addy.ke@rock-chips.com>
-	<CAD=FV=UmG1okxJ5JV-1cuRRQJi7EEPXc7Q90sWjfMWBqb7VSMw@mail.gmail.com>
-	<547D6F36.50103@rock-chips.com>
-Date: Tue, 2 Dec 2014 09:47:18 -0800
-X-Google-Sender-Auth: H7za1kIGC9bBoeGF-49d80C6TGc
-Message-ID: <CAD=FV=V3BF8qv17n4_T5Lys1BnKsqE9NqOTB-6OwX0VOviWRrw@mail.gmail.com>
-Subject: Re: [PATCH v2] mmc: dw_mmc: add quirk for broken data transfer over scheme
-From: Doug Anderson <dianders@chromium.org>
-To: addy ke <addy.ke@rock-chips.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Alexandru Stan <amstan@chromium.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, lintao <lintao@rock-chips.com>,
-        chenfen <chenfen@rock-chips.com>, zyf <zyf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Chris <zyw@rock-chips.com>,
-        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        zhangqing <zhangqing@rock-chips.com>, Lin Huang <hl@rock-chips.com>
+In-Reply-To: <1417541251-20761-1-git-send-email-eric.auger@linaro.org>
+References: <1417541251-20761-1-git-send-email-eric.auger@linaro.org>
+From: Peter Maydell <peter.maydell@linaro.org>
+Date: Tue, 2 Dec 2014 17:50:00 +0000
+Message-ID: <CAFEAcA9YmAVYAOFbmV53Y3zBdcmK9MGSVR4gaLCjKxbyrZ6Xaw@mail.gmail.com>
+Subject: Re: [PATCH] KVM: arm/arm64: vgic: add init entry to VGIC KVM device
+To: Eric Auger <eric.auger@linaro.org>
+Cc: eric.auger@st.com, Christoffer Dall <christoffer.dall@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        arm-mail-list <linux-arm-kernel@lists.infradead.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        kvm-devel <kvm@vger.kernel.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Alexander Graf <agraf@suse.de>, "gleb@kernel.org" <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Patch Tracking <patches@linaro.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Addy,
-
-On Mon, Dec 1, 2014 at 11:50 PM, addy ke <addy.ke@rock-chips.com> wrote:
-> We don't know why we have this problem,
-> but this problem is really exist, and we need patch to fix this problem now.
-> I will post a follow up change when we find the root cause.
-
-To me that seems reasonable.  Certainly I would prefer to have this
-patch while waiting for the root cause, but it's up to Ulf.
-
-
-> And there is a little probability of this problem on RK SoC, such as RK3188, RK3066,
-> when worse card inserted in.
-> Maybe the other SoCs have the similar problem.
+On 2 December 2014 at 17:27, Eric Auger <eric.auger@linaro.org> wrote:
+> Since the advent of dynamic initialization of VGIC, this latter is
+> initialized very late, on the first vcpu run. This initialization
+> could be initiated much earlier by the user, as soon as it has
+> provided the requested dimensioning parameters:
+> - number of IRQs and number of vCPUs,
+> - DIST and CPU interface base address.
 >
-> So I will add this quirk in rockchip code(dw_mmc-rockchip.c) as follows:
-> static int dw_mci_rockchip_parse_dt(struct dw_mci *host)
-> {
->         host->quirk |= DW_MCI_QUIRK_BROKEN_DTO;
->
->         return 0;
-> }
->
-> ......
->         .parse_dt = dw_mci_rockchip_parse_dt,
-> ......
->
-> is right?
+> One motivation behind being able to initialize the VGIC sooner is
+> related to the setup of IRQ injection in VFIO use case. The VFIO
+> signaling, especially when used along with irqfd must be set *after*
+> vgic initialization to prevent any virtual IRQ injection before
+> VGIC initialization. If virtual IRQ injection occurs before the VGIC
+> init, the IRQ cannot be injected and subsequent injection is blocked
+> due to VFIO completion mechanism (unmask/mask or forward/unforward).
 
-When you added "sdio_id0" you got feedback that you should use
-dw_mci_rockchip_init().  Why not do the same thing here?
+This implies that you're potentially injecting virtual IRQs
+(and changing the state of the VGIC) before we actually
+start running the VM (ie before userspace calls KVM_RUN).
+Is that right? It seems odd, but maybe vfio works that way?
+
+-- PMM
