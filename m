@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268AbaLBONc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 09:13:32 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:58870 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205AbaLBONa (ORCPT
+	id S1754288AbaLBONy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 09:13:54 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:36641 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169AbaLBONw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 09:13:30 -0500
-Message-ID: <1417529606.3924.26.camel@maggy.simpson.net>
-Subject: Re: frequent lockups in 3.18rc4
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Chris Mason <clm@fb.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        =?ISO-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Dave Jones <davej@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 02 Dec 2014 07:13:26 -0700
-In-Reply-To: <20141201230339.GA20487@ret.masoncoding.com>
-References: <CA+55aFz-JUX6CU-aO+cwLHYtH7BA+dgyUnEGoy8T4S62gEDFpA@mail.gmail.com>
-	 <20141127225637.GA24019@redhat.com> <m5dart$co$1@ger.gmane.org>
-	 <CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
-	 <547b8a45.6e608c0a.20f9.1002@mx.google.com>
-	 <CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
-	 <547bbe36.48548c0a.105c.779c@mx.google.com>
-	 <20141201191431.GA17385@linux.vnet.ibm.com>
-	 <547ccf74.a5198c0a.25de.26d9@mx.google.com>
-	 <CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
-	 <20141201230339.GA20487@ret.masoncoding.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Dec 2014 09:13:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141201163639.GI25249@lukather>
+References: <1416527684-19017-1-git-send-email-bparrot@ti.com>
+ <1416527684-19017-2-git-send-email-bparrot@ti.com> <CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com>
+ <20141201163639.GI25249@lukather>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 2 Dec 2014 23:13:31 +0900
+Message-ID: <CAAVeFuLTupDenZdSi8KO+dYsf-ekcqjsDaQ2GEzYpBG34oF7Zw@mail.gmail.com>
+Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Benoit Parrot <bparrot@ti.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-12-01 at 18:08 -0500, Chris Mason wrote:
-> I'm not sure if this is related, but running trinity here, I noticed it
-> was stuck at 100% system time on every CPU.  perf report tells me we are
-> spending all of our time in spin_lock under the sync system call.
-> 
-> I think it's coming from contention in the bdi_queue_work() call from
-> inside sync_inodes_sb, which is spin_lock_bh(). 
-> 
-> I wonder if we're just spinning so hard on this one bh lock that we're
-> starving the watchdog?
+On Tue, Dec 2, 2014 at 1:36 AM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> Hi,
+>
+> On Fri, Nov 28, 2014 at 04:30:01PM +0900, Alexandre Courbot wrote:
+>> > +/**
+>> > + * do_gpio_hog - Given node is a GPIO hog configuration, handle it
+>> > + * @np:                device node to get GPIO from
+>> > + *
+>> > + * This is only used by of_gpiochip_add to request/set GPIO initial
+>> > + * configuration.
+>> > + */
+>> > +static int do_gpio_hog(struct device_node *np)
+>> > +{
+>> > +       struct gpio_desc *desc = NULL;
+>> > +       int err;
+>> > +       const char *name;
+>> > +       enum gpio_lookup_flags lflags;
+>> > +       enum gpiod_flags dflags;
+>> > +
+>> > +       desc = of_get_gpio_hog(np, &name, &lflags, &dflags);
+>> > +       if (!desc)
+>> > +               return -ENOTSUPP;
+>> > +       else if (IS_ERR(desc))
+>> > +               return PTR_ERR(desc);
+>> > +
+>> > +       err = gpiod_request(desc, name);
+>>
+>> Using this function means that a GPIO chip module cannot be unloaded
+>> if it uses GPIO hogs. Is it the intended behavior? If not, please use
+>> gpiochip_request_own_desc() instead, and make sure to call
+>> gpiochip_free_own_desc() for each hog when the driver is unloaded.
+>
+> The only thing I'd like to have would be that the request here would
+> be non-exclusive, so that a later driver would still be allowed later
+> on to request that GPIO later on and manage it itself (ideally using
+> the usual gpiod_request function).
 
-The bean counting problem below can contribute.
-
-https://lkml.org/lkml/2014/3/30/7
-
-	-Mike
-
+Actually we have a plan (and I have some code too) to allow multiple
+consumers per GPIO. Although like Benoit I wonder why you would want
+to hog a GPIO and then request it properly later. Also, that probably
+means we should abandon the hog since it actively drives the line and
+would interfere with the late requested. How to do that correctly is
+not really clear to me.
