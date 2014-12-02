@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932132AbaLBOW2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 09:22:28 -0500
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:37535 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305AbaLBOW1 (ORCPT
+	id S1752902AbaLBOYy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 09:24:54 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:49058 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424AbaLBOYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 09:22:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAAVeFuJrLth2bT20i0MoPYhLFidNbUEfoUjqdb0oNg6ARCZryg@mail.gmail.com>
-References: <CAAVeFuJm_UXHioENBg6himgZkEmopr=T8iCbt0xD6-ds6AHyxA@mail.gmail.com>
- <1417527724-24960-1-git-send-email-acourbot@nvidia.com> <CACRpkdY3vHHNSovaEf1UysuQD5gSHM-n6DUSdF372hYMyr9e8g@mail.gmail.com>
- <CAAVeFuJrLth2bT20i0MoPYhLFidNbUEfoUjqdb0oNg6ARCZryg@mail.gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 2 Dec 2014 23:22:05 +0900
-Message-ID: <CAAVeFu+2xcpYriQxNx7o7NR4DheoUDLBEZFvoddezagrkS-P0w@mail.gmail.com>
-Subject: Re: [PATCH] gpio: fix deferred probe detection for legacy API
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+	Tue, 2 Dec 2014 09:24:52 -0500
+Date: Tue, 2 Dec 2014 19:54:33 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: "Fujinaka, Todd" <todd.fujinaka@intel.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>,
+        Linux NICS <Linux-nics@isotope.jf.intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        Hisashi T Fujinaka <htodd@twofifty.com>,
+        "Vick, Matthew" <matthew.vick@intel.com>,
+        "Greg@isotope.jf.intel.com" <Greg@isotope.jf.intel.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+        "John@isotope.jf.intel.com" <John@isotope.jf.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [linux-nics] [PATCH] e1000: remove unused variables
+Message-ID: <20141202142433.GA14246@sudip-PC>
+References: <1417065728-5592-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <alpine.NEB.2.11.1411262157110.1481@chris.i8u.org>
+ <1417311913.7215.111.camel@decadent.org.uk>
+ <20141201045446.GA3277@sudip-PC>
+ <9B4A1B1917080E46B64F07F2989DADD653454C69@ORSMSX114.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9B4A1B1917080E46B64F07F2989DADD653454C69@ORSMSX114.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 2, 2014 at 11:20 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
-> On Tue, Dec 2, 2014 at 11:19 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
->> On Tue, Dec 2, 2014 at 2:42 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
->>
->>> Commit 14e85c0e69d5 ("gpio: remove gpio_descs global array") changed
->>> gpio_to_desc()'s behavior to return NULL not only for GPIOs numbers
->>> not in the valid range, but also for all GPIOs whose controller has not
->>> been probed yet. Although this behavior is more correct (nothing hints
->>> that these GPIO numbers will be populated later), this affects
->>> gpio_request() and gpio_request_one() which call gpiod_request() with a
->>> NULL descriptor, causing it to return -EINVAL instead of the expected
->>> -EPROBE_DEFER for a non-probed GPIO.
->>>
->>> gpiod_request() is only called with a descriptor obtained from
->>> gpio_to_desc() from these two functions, so address the issue there.
->>>
->>> Other ways to obtain GPIOs rely on well-defined mappings and can thus
->>> return -EPROBE_DEFER only for relevant GPIOs, and are thus not affected
->>> by this issue.
->>>
->>> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
->>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->>
->> Patch applied with Geert's tested tag.
->
-> I just send a v2 which only prints the warning if the GPIO is outside
-> of the valid range (better for legacy API).
+On Mon, Dec 01, 2014 at 06:56:46PM +0000, Fujinaka, Todd wrote:
+> After discussing this locally, I'd like to NAK it because this could cause regressions to parts that are still in use but we don't have access to. Also, the assignment was necessary in the past for some versions of gcc and since this may be used in embedded systems using older compilers, we should leave it be.
+> 
+ok. i understand.
+just a thought:
+maybe you can put a comment in the file that these are there for a reason and should not be removed. else, you might receive the same type of patch again from someone else.
 
-... although contrary to what the log says I forgot to add Geerts
-Tested-by tag. Sorry for the noise.
+thanks
+sudip
 
-Alex (Zzzz... -_- )
+> Thanks.
+> 
+> Todd Fujinaka
+> Software Application Engineer
+> Networking Division (ND)
+> Intel Corporation
+> todd.fujinaka@intel.com
+> (503) 712-4565
+> 
+> -----Original Message-----
+> From: linux-nics-bounces@isotope.jf.intel.com [mailto:linux-nics-bounces@isotope.jf.intel.com] On Behalf Of Sudip Mukherjee
+> Sent: Sunday, November 30, 2014 8:55 PM
+> To: Ben Hutchings
+> Cc: Linux NICS; e1000-devel@lists.sourceforge.net; Hisashi T Fujinaka; Vick, Matthew; Greg@isotope.jf.intel.com; Kirsher, Jeffrey T; netdev@vger.kernel.org; Wyborny, Carolyn; John@isotope.jf.intel.com; linux-kernel@vger.kernel.org
+> Subject: Re: [linux-nics] [PATCH] e1000: remove unused variables
+> 
+> On Sun, Nov 30, 2014 at 01:45:13AM +0000, Ben Hutchings wrote:
+> > On Wed, 2014-11-26 at 21:59 -0800, Hisashi T Fujinaka wrote:
+> > > I'm pretty sure those double reads are there for a reason, so most 
+> > > of this I'm going to have to check on Monday. We have a long holiday 
+> > > weekend here in the US.
+> > [...]
+> > 
+> > If there were double register reads being replaced with single 
+> > register reads, I'd agree this was likely to introduce a regression.  
+> > But all I see is var = er32(REG) being changed to er32(REG).
+> 
+> no, double register reads are not modified. only the unused variables are removed.
+> 
+> thanks
+> sudip
+> 
+> > 
+> > Ben.
+> > 
+> > --
+> > Ben Hutchings
+> > The world is coming to an end.	Please log off.
+> 
+> 
+> _______________________________________________
+> Linux-nics mailing list
+> Linux-nics@intel.com
