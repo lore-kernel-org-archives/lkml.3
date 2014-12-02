@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932848AbaLBCuN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 21:50:13 -0500
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:53096 "EHLO
+	id S932813AbaLBCuM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 21:50:12 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:53095 "EHLO
 	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932256AbaLBCuK (ORCPT
+	with ESMTP id S932219AbaLBCuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Dec 2014 21:50:10 -0500
 X-Original-SENDERIP: 10.177.220.156
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Luigi Semenzato <semenzato@google.com>,
         Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
         seungho1.park@lge.com, Minchan Kim <minchan@kernel.org>
-Subject: [RFC 4/6] zsmalloc: encode alloced mark in handle object
-Date: Tue,  2 Dec 2014 11:49:45 +0900
-Message-Id: <1417488587-28609-5-git-send-email-minchan@kernel.org>
+Subject: [RFC 6/6] zram: support compaction
+Date: Tue,  2 Dec 2014 11:49:47 +0900
+Message-Id: <1417488587-28609-7-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1417488587-28609-1-git-send-email-minchan@kernel.org>
 References: <1417488587-28609-1-git-send-email-minchan@kernel.org>
@@ -28,103 +28,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For compaction, we need to look up using object in zspage
-to migrate but there is no way to distinguish it from
-free objects without walking all of free objects via
-first_page->freelist, which would be haavy.
+Now that zsmalloc supports compaction, zram can use it.
+For the first step, this patch exports compact knob via sysfs
+so user can do compaction via "echo 1 > /sys/block/zram0/compact".
 
-This patch encodes alloced mark in handle's least bit
-so compaction can find it with small cost.
+Maybe, we need another knob to trigger compaction automatically
+once the amount of fragment is higher than the ratio.
+
+echo "fragment_ratio" > /sys/block/zram0/compact_based_on_the_ratio
 
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- mm/zsmalloc.c | 35 +++++++++++++++++++++++------------
- 1 file changed, 23 insertions(+), 12 deletions(-)
+ drivers/block/zram/zram_drv.c | 24 ++++++++++++++++++++++++
+ drivers/block/zram/zram_drv.h |  1 +
+ 2 files changed, 25 insertions(+)
 
-diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-index 1eec2a539f77..16c40081c22e 100644
---- a/mm/zsmalloc.c
-+++ b/mm/zsmalloc.c
-@@ -133,7 +133,9 @@
- #endif
- #endif
- #define _PFN_BITS		(MAX_PHYSMEM_BITS - PAGE_SHIFT)
--#define OBJ_INDEX_BITS	(BITS_PER_LONG - _PFN_BITS)
-+#define OBJ_ALLOCATED	1
-+#define OBJ_ALLOC_BITS	1
-+#define OBJ_INDEX_BITS	(BITS_PER_LONG - _PFN_BITS - OBJ_ALLOC_BITS)
- #define OBJ_INDEX_MASK	((_AC(1, UL) << OBJ_INDEX_BITS) - 1)
- 
- #define MAX(a, b) ((a) >= (b) ? (a) : (b))
-@@ -555,9 +557,6 @@ static struct page *get_next_page(struct page *page)
- 
- /*
-  * Encode <page, obj_idx> as a single handle value.
-- * On hardware platforms with physical memory starting at 0x0 the pfn
-- * could be 0 so we ensure that the handle will never be 0 by adjusting the
-- * encoded obj_idx value before encoding.
-  */
- static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
- {
-@@ -568,22 +567,20 @@ static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
- 		return NULL;
- 	}
- 
--	handle = page_to_pfn(page) << OBJ_INDEX_BITS;
--	handle |= ((obj_idx + 1) & OBJ_INDEX_MASK);
-+	handle = page_to_pfn(page) << (OBJ_INDEX_BITS + OBJ_ALLOC_BITS);
-+	handle |= (obj_idx & OBJ_INDEX_MASK) << OBJ_ALLOC_BITS;
- 
- 	return (void *)handle;
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 976eab6f35b9..53c110b289fc 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -247,6 +247,26 @@ static ssize_t comp_algorithm_store(struct device *dev,
+ 	return len;
  }
  
- /*
-- * Decode <page, obj_idx> pair from the given object handle. We adjust the
-- * decoded obj_idx back to its original value since it was adjusted in
-- * obj_location_to_handle().
-+ * Decode <page, obj_idx> pair from the given object handle.
-  */
- static void obj_to_location(unsigned long handle, struct page **page,
- 				unsigned long *obj_idx)
- {
--	*page = pfn_to_page(handle >> OBJ_INDEX_BITS);
--	*obj_idx = (handle & OBJ_INDEX_MASK) - 1;
-+	*page = pfn_to_page(handle >> (OBJ_INDEX_BITS + OBJ_ALLOC_BITS));
-+	*obj_idx = ((handle >> OBJ_ALLOC_BITS) & OBJ_INDEX_MASK);
- }
- 
- static unsigned long obj_idx_to_offset(struct page *page,
-@@ -623,8 +620,21 @@ static unsigned long handle_to_obj(struct zs_pool *pool, unsigned long handle)
- 
- static unsigned long alloc_handle(struct zs_pool *pool)
- {
--	return __zs_malloc(pool, pool->handle_class,
-+	unsigned long handle;
++static ssize_t compact_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t len)
++{
++	unsigned long nr_migrated;
++	struct zram *zram = dev_to_zram(dev);
++	struct zram_meta *meta;
 +
-+	handle = __zs_malloc(pool, pool->handle_class,
- 			pool->flags & ~__GFP_HIGHMEM, 0);
-+	/*
-+	 * OBJ_ALLOCATED marks the object allocated tag so compaction
-+	 * can identify it among free objects in zspage.
-+	 * In addtion, on hardware platforms with physical memory
-+	 * starting at 0x0 the pfn could be 0 so it ensure that the
-+	 * handle will never be 0 which means fail of allocation now.
-+	 */
-+	if (likely(handle))
-+		handle |= OBJ_ALLOCATED;
++	down_read(&zram->init_lock);
++	if (!init_done(zram)) {
++		up_read(&zram->init_lock);
++		return -EINVAL;
++	}
 +
-+	return handle;
- }
++	meta = zram->meta;
++	nr_migrated = zs_compact(meta->mem_pool);
++	up_read(&zram->init_lock);
++	atomic64_add(nr_migrated, &zram->stats.num_migrated);
++	return len;
++}
++
+ /* flag operations needs meta->tb_lock */
+ static int zram_test_flag(struct zram_meta *meta, u32 index,
+ 			enum zram_pageflags flag)
+@@ -1008,6 +1028,7 @@ static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
+ 		max_comp_streams_show, max_comp_streams_store);
+ static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
+ 		comp_algorithm_show, comp_algorithm_store);
++static DEVICE_ATTR(compact, S_IWUSR, NULL, compact_store);
  
- static void free_handle(struct zs_pool *pool, unsigned long handle)
-@@ -1259,6 +1269,7 @@ static void __zs_free(struct zs_pool *pool, struct size_class *class,
- 	spin_lock(&class->lock);
- 	/* Insert this object in containing zspage's freelist */
- 	link = (struct link_free *)(vaddr + f_offset);
-+	link->handle &= ~OBJ_ALLOCATED;
- 	link->next = first_page->freelist;
- 	first_page->freelist = (void *)handle;
+ ZRAM_ATTR_RO(num_reads);
+ ZRAM_ATTR_RO(num_writes);
+@@ -1017,6 +1038,7 @@ ZRAM_ATTR_RO(invalid_io);
+ ZRAM_ATTR_RO(notify_free);
+ ZRAM_ATTR_RO(zero_pages);
+ ZRAM_ATTR_RO(compr_data_size);
++ZRAM_ATTR_RO(num_migrated);
  
+ static struct attribute *zram_disk_attrs[] = {
+ 	&dev_attr_disksize.attr,
+@@ -1024,6 +1046,7 @@ static struct attribute *zram_disk_attrs[] = {
+ 	&dev_attr_reset.attr,
+ 	&dev_attr_num_reads.attr,
+ 	&dev_attr_num_writes.attr,
++	&dev_attr_num_migrated.attr,
+ 	&dev_attr_failed_reads.attr,
+ 	&dev_attr_failed_writes.attr,
+ 	&dev_attr_invalid_io.attr,
+@@ -1036,6 +1059,7 @@ static struct attribute *zram_disk_attrs[] = {
+ 	&dev_attr_mem_used_max.attr,
+ 	&dev_attr_max_comp_streams.attr,
+ 	&dev_attr_comp_algorithm.attr,
++	&dev_attr_compact.attr,
+ 	NULL,
+ };
+ 
+diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+index b05a816b09ac..5e7a565808b9 100644
+--- a/drivers/block/zram/zram_drv.h
++++ b/drivers/block/zram/zram_drv.h
+@@ -84,6 +84,7 @@ struct zram_stats {
+ 	atomic64_t compr_data_size;	/* compressed size of pages stored */
+ 	atomic64_t num_reads;	/* failed + successful */
+ 	atomic64_t num_writes;	/* --do-- */
++	atomic64_t num_migrated;	/* no. of migrated object */
+ 	atomic64_t failed_reads;	/* can happen when memory is too low */
+ 	atomic64_t failed_writes;	/* can happen when memory is too low */
+ 	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
 -- 
 2.0.0
 
