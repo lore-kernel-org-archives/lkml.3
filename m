@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933862AbaLBTf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:35:28 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46961 "EHLO
+	id S934065AbaLBTgh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:36:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46948 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933719AbaLBT0g (ORCPT
+	with ESMTP id S932903AbaLBT0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:26:36 -0500
+	Tue, 2 Dec 2014 14:26:33 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Jonathan Cameron <jic23@kernel.org>,
+Cc: Grant Likely <grant.likely@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Darren Hart <darren.hart@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 032/121] staging:iio:ade7758: Fix NULL pointer deref when enabling buffer
-Date: Tue,  2 Dec 2014 11:18:31 -0800
-Message-Id: <1417548000-1794-33-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 029/121] of: Fix overflow bug in string property parsing functions
+Date: Tue,  2 Dec 2014 11:18:28 -0800
+Message-Id: <1417548000-1794-30-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
@@ -27,262 +31,376 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Grant Likely <grant.likely@linaro.org>
 
-commit e10554738cab4224e097c2f9d975ea781a4fcde4 upstream.
+commit a87fa1d81a9fb5e9adca9820e16008c40ad09f33 upstream.
 
-In older versions of the IIO framework it was possible to pass a completely
-different set of channels to iio_buffer_register() as the one that is
-assigned to the IIO device. Commit 959d2952d124 ("staging:iio: make
-iio_sw_buffer_preenable much more general.") introduced a restriction that
-requires that the set of channels that is passed to iio_buffer_register() is
-a subset of the channels assigned to the IIO device as the IIO core will use
-the list of channels that is assigned to the device to lookup a channel by
-scan index in iio_compute_scan_bytes(). If it can not find the channel the
-function will crash. This patch fixes the issue by making sure that the same
-set of channels is assigned to the IIO device and passed to
-iio_buffer_register().
+The string property read helpers will run off the end of the buffer if
+it is handed a malformed string property. Rework the parsers to make
+sure that doesn't happen. At the same time add new test cases to make
+sure the functions behave themselves.
 
-Note that we need to remove the IIO_CHAN_INFO_RAW and IIO_CHAN_INFO_SCALE
-info attributes from the channels since we don't actually want those to be
-registered.
+The original implementations of of_property_read_string_index() and
+of_property_count_strings() both open-coded the same block of parsing
+code, each with it's own subtly different bugs. The fix here merges
+functions into a single helper and makes the original functions static
+inline wrappers around the helper.
 
-Fixes the following crash:
-	Unable to handle kernel NULL pointer dereference at virtual address 00000016
-	pgd = d2094000
-	[00000016] *pgd=16e39831, *pte=00000000, *ppte=00000000
-	Internal error: Oops: 17 [#1] PREEMPT SMP ARM
-	Modules linked in:
-	CPU: 1 PID: 1695 Comm: bash Not tainted 3.17.0-06329-g29461ee #9686
-	task: d7768040 ti: d5bd4000 task.ti: d5bd4000
-	PC is at iio_compute_scan_bytes+0x38/0xc0
-	LR is at iio_compute_scan_bytes+0x34/0xc0
-	pc : [<c0316de8>]    lr : [<c0316de4>]    psr: 60070013
-	sp : d5bd5ec0  ip : 00000000  fp : 00000000
-	r10: d769f934  r9 : 00000000  r8 : 00000001
-	r7 : 00000000  r6 : c8fc6240  r5 : d769f800  r4 : 00000000
-	r3 : d769f800  r2 : 00000000  r1 : ffffffff  r0 : 00000000
-	Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-	Control: 18c5387d  Table: 1209404a  DAC: 00000015
-	Process bash (pid: 1695, stack limit = 0xd5bd4240)
-	Stack: (0xd5bd5ec0 to 0xd5bd6000)
-	5ec0: d769f800 d7435640 c8fc6240 d769f984 00000000 c03175a4 d7435690 d7435640
-	5ee0: d769f990 00000002 00000000 d769f800 d5bd4000 00000000 000b43a8 c03177f4
-	5f00: d769f810 0162b8c8 00000002 c8fc7e00 d77f1d08 d77f1da8 c8fc7e00 c01faf1c
-	5f20: 00000002 c010694c c010690c d5bd5f88 00000002 c8fc6840 c8fc684c c0105e08
-	5f40: 00000000 00000000 d20d1580 00000002 000af408 d5bd5f88 c000de84 c00b76d4
-	5f60: d20d1580 000af408 00000002 d20d1580 d20d1580 00000002 000af408 c000de84
-	5f80: 00000000 c00b7a44 00000000 00000000 00000002 b6ebea78 00000002 000af408
-	5fa0: 00000004 c000dd00 b6ebea78 00000002 00000001 000af408 00000002 00000000
-	5fc0: b6ebea78 00000002 000af408 00000004 bee96a4c 000a6094 00000000 000b43a8
-	5fe0: 00000000 bee969cc b6e2eb77 b6e6525c 40070010 00000001 00000000 00000000
-	[<c0316de8>] (iio_compute_scan_bytes) from [<c03175a4>] (__iio_update_buffers+0x248/0x438)
-	[<c03175a4>] (__iio_update_buffers) from [<c03177f4>] (iio_buffer_store_enable+0x60/0x7c)
-	[<c03177f4>] (iio_buffer_store_enable) from [<c01faf1c>] (dev_attr_store+0x18/0x24)
-	[<c01faf1c>] (dev_attr_store) from [<c010694c>] (sysfs_kf_write+0x40/0x4c)
-	[<c010694c>] (sysfs_kf_write) from [<c0105e08>] (kernfs_fop_write+0x110/0x154)
-	[<c0105e08>] (kernfs_fop_write) from [<c00b76d4>] (vfs_write+0xbc/0x170)
-	[<c00b76d4>] (vfs_write) from [<c00b7a44>] (SyS_write+0x40/0x78)
-	[<c00b7a44>] (SyS_write) from [<c000dd00>] (ret_fast_syscall+0x0/0x30)
+One non-bugfix aspect of this patch is the addition of a new wrapper,
+of_property_read_string_array(). The new wrapper is needed by the
+device_properties feature that Rafael is working on and planning to
+merge for v3.19. The implementation is identical both with and without
+the new static inline wrapper, so it just got left in to reduce the
+churn on the header file.
 
-Fixes: 959d2952d124 ("staging:iio: make iio_sw_buffer_preenable much more general.")
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Darren Hart <darren.hart@intel.com>
+[ kamal: backport to 3.13-stable: context; dropped tests-phandle.dtsi ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/iio/meter/ade7758.h      |  1 -
- drivers/staging/iio/meter/ade7758_core.c | 33 ++------------------------------
- drivers/staging/iio/meter/ade7758_ring.c |  3 +--
- 3 files changed, 3 insertions(+), 34 deletions(-)
+ drivers/of/base.c     | 88 +++++++++++++--------------------------------------
+ drivers/of/selftest.c | 66 ++++++++++++++++++++++++++++++++++----
+ include/linux/of.h    | 84 ++++++++++++++++++++++++++++++++++++++++--------
+ 3 files changed, 152 insertions(+), 86 deletions(-)
 
-diff --git a/drivers/staging/iio/meter/ade7758.h b/drivers/staging/iio/meter/ade7758.h
-index 0731820..e8c98cf 100644
---- a/drivers/staging/iio/meter/ade7758.h
-+++ b/drivers/staging/iio/meter/ade7758.h
-@@ -119,7 +119,6 @@ struct ade7758_state {
- 	u8			*tx;
- 	u8			*rx;
- 	struct mutex		buf_lock;
--	const struct iio_chan_spec *ade7758_ring_channels;
- 	struct spi_transfer	ring_xfer[4];
- 	struct spi_message	ring_msg;
- 	/*
-diff --git a/drivers/staging/iio/meter/ade7758_core.c b/drivers/staging/iio/meter/ade7758_core.c
-index cba183e..214b03e 100644
---- a/drivers/staging/iio/meter/ade7758_core.c
-+++ b/drivers/staging/iio/meter/ade7758_core.c
-@@ -631,8 +631,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.indexed = 1,
- 		.channel = 0,
- 		.extend_name = "raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_VOLTAGE),
- 		.scan_index = 0,
- 		.scan_type = {
-@@ -645,8 +643,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.indexed = 1,
- 		.channel = 0,
- 		.extend_name = "raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_CURRENT),
- 		.scan_index = 1,
- 		.scan_type = {
-@@ -659,8 +655,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.indexed = 1,
- 		.channel = 0,
- 		.extend_name = "apparent_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_APP_PWR),
- 		.scan_index = 2,
- 		.scan_type = {
-@@ -673,8 +667,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.indexed = 1,
- 		.channel = 0,
- 		.extend_name = "active_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_ACT_PWR),
- 		.scan_index = 3,
- 		.scan_type = {
-@@ -687,8 +679,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.indexed = 1,
- 		.channel = 0,
- 		.extend_name = "reactive_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_A, AD7758_REACT_PWR),
- 		.scan_index = 4,
- 		.scan_type = {
-@@ -701,8 +691,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.indexed = 1,
- 		.channel = 1,
- 		.extend_name = "raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_VOLTAGE),
- 		.scan_index = 5,
- 		.scan_type = {
-@@ -715,8 +703,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.indexed = 1,
- 		.channel = 1,
- 		.extend_name = "raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_CURRENT),
- 		.scan_index = 6,
- 		.scan_type = {
-@@ -729,8 +715,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.indexed = 1,
- 		.channel = 1,
- 		.extend_name = "apparent_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_APP_PWR),
- 		.scan_index = 7,
- 		.scan_type = {
-@@ -743,8 +727,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.indexed = 1,
- 		.channel = 1,
- 		.extend_name = "active_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_ACT_PWR),
- 		.scan_index = 8,
- 		.scan_type = {
-@@ -757,8 +739,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.indexed = 1,
- 		.channel = 1,
- 		.extend_name = "reactive_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_B, AD7758_REACT_PWR),
- 		.scan_index = 9,
- 		.scan_type = {
-@@ -771,8 +751,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.indexed = 1,
- 		.channel = 2,
- 		.extend_name = "raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_VOLTAGE),
- 		.scan_index = 10,
- 		.scan_type = {
-@@ -785,8 +763,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.indexed = 1,
- 		.channel = 2,
- 		.extend_name = "raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_CURRENT),
- 		.scan_index = 11,
- 		.scan_type = {
-@@ -799,8 +775,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.indexed = 1,
- 		.channel = 2,
- 		.extend_name = "apparent_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_APP_PWR),
- 		.scan_index = 12,
- 		.scan_type = {
-@@ -813,8 +787,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.indexed = 1,
- 		.channel = 2,
- 		.extend_name = "active_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_ACT_PWR),
- 		.scan_index = 13,
- 		.scan_type = {
-@@ -827,8 +799,6 @@ static const struct iio_chan_spec ade7758_channels[] = {
- 		.indexed = 1,
- 		.channel = 2,
- 		.extend_name = "reactive_raw",
--		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
--		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
- 		.address = AD7758_WT(AD7758_PHASE_C, AD7758_REACT_PWR),
- 		.scan_index = 14,
- 		.scan_type = {
-@@ -869,13 +839,14 @@ static int ade7758_probe(struct spi_device *spi)
- 		goto error_free_rx;
- 	}
- 	st->us = spi;
--	st->ade7758_ring_channels = &ade7758_channels[0];
- 	mutex_init(&st->buf_lock);
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index f807d0e..6c0dcf5 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -1075,52 +1075,6 @@ int of_property_read_string(struct device_node *np, const char *propname,
+ EXPORT_SYMBOL_GPL(of_property_read_string);
  
- 	indio_dev->name = spi->dev.driver->name;
- 	indio_dev->dev.parent = &spi->dev;
- 	indio_dev->info = &ade7758_info;
- 	indio_dev->modes = INDIO_DIRECT_MODE;
-+	indio_dev->channels = ade7758_channels;
-+	indio_dev->num_channels = ARRAY_SIZE(ade7758_channels);
+ /**
+- * of_property_read_string_index - Find and read a string from a multiple
+- * strings property.
+- * @np:		device node from which the property value is to be read.
+- * @propname:	name of the property to be searched.
+- * @index:	index of the string in the list of strings
+- * @out_string:	pointer to null terminated return string, modified only if
+- *		return value is 0.
+- *
+- * Search for a property in a device tree node and retrieve a null
+- * terminated string value (pointer to data, not a copy) in the list of strings
+- * contained in that property.
+- * Returns 0 on success, -EINVAL if the property does not exist, -ENODATA if
+- * property does not have a value, and -EILSEQ if the string is not
+- * null-terminated within the length of the property data.
+- *
+- * The out_string pointer is modified only if a valid string can be decoded.
+- */
+-int of_property_read_string_index(struct device_node *np, const char *propname,
+-				  int index, const char **output)
+-{
+-	struct property *prop = of_find_property(np, propname, NULL);
+-	int i = 0;
+-	size_t l = 0, total = 0;
+-	const char *p;
+-
+-	if (!prop)
+-		return -EINVAL;
+-	if (!prop->value)
+-		return -ENODATA;
+-	if (strnlen(prop->value, prop->length) >= prop->length)
+-		return -EILSEQ;
+-
+-	p = prop->value;
+-
+-	for (i = 0; total < prop->length; total += l, p += l) {
+-		l = strlen(p) + 1;
+-		if (i++ == index) {
+-			*output = p;
+-			return 0;
+-		}
+-	}
+-	return -ENODATA;
+-}
+-EXPORT_SYMBOL_GPL(of_property_read_string_index);
+-
+-/**
+  * of_property_match_string() - Find string in a list and return index
+  * @np: pointer to node containing string list property
+  * @propname: string list property name
+@@ -1146,7 +1100,7 @@ int of_property_match_string(struct device_node *np, const char *propname,
+ 	end = p + prop->length;
  
- 	ret = ade7758_configure_ring(indio_dev);
- 	if (ret)
-diff --git a/drivers/staging/iio/meter/ade7758_ring.c b/drivers/staging/iio/meter/ade7758_ring.c
-index c0accf8..628e902 100644
---- a/drivers/staging/iio/meter/ade7758_ring.c
-+++ b/drivers/staging/iio/meter/ade7758_ring.c
-@@ -85,7 +85,6 @@ static irqreturn_t ade7758_trigger_handler(int irq, void *p)
-  **/
- static int ade7758_ring_preenable(struct iio_dev *indio_dev)
+ 	for (i = 0; p < end; i++, p += l) {
+-		l = strlen(p) + 1;
++		l = strnlen(p, end - p) + 1;
+ 		if (p + l > end)
+ 			return -EILSEQ;
+ 		pr_debug("comparing %s with %s\n", string, p);
+@@ -1158,39 +1112,41 @@ int of_property_match_string(struct device_node *np, const char *propname,
+ EXPORT_SYMBOL_GPL(of_property_match_string);
+ 
+ /**
+- * of_property_count_strings - Find and return the number of strings from a
+- * multiple strings property.
++ * of_property_read_string_util() - Utility helper for parsing string properties
+  * @np:		device node from which the property value is to be read.
+  * @propname:	name of the property to be searched.
++ * @out_strs:	output array of string pointers.
++ * @sz:		number of array elements to read.
++ * @skip:	Number of strings to skip over at beginning of list.
+  *
+- * Search for a property in a device tree node and retrieve the number of null
+- * terminated string contain in it. Returns the number of strings on
+- * success, -EINVAL if the property does not exist, -ENODATA if property
+- * does not have a value, and -EILSEQ if the string is not null-terminated
+- * within the length of the property data.
++ * Don't call this function directly. It is a utility helper for the
++ * of_property_read_string*() family of functions.
+  */
+-int of_property_count_strings(struct device_node *np, const char *propname)
++int of_property_read_string_helper(struct device_node *np, const char *propname,
++				   const char **out_strs, size_t sz, int skip)
  {
--	struct ade7758_state *st = iio_priv(indio_dev);
- 	unsigned channel;
+ 	struct property *prop = of_find_property(np, propname, NULL);
+-	int i = 0;
+-	size_t l = 0, total = 0;
+-	const char *p;
++	int l = 0, i = 0;
++	const char *p, *end;
  
- 	if (!bitmap_empty(indio_dev->active_scan_mask, indio_dev->masklength))
-@@ -95,7 +94,7 @@ static int ade7758_ring_preenable(struct iio_dev *indio_dev)
- 				 indio_dev->masklength);
+ 	if (!prop)
+ 		return -EINVAL;
+ 	if (!prop->value)
+ 		return -ENODATA;
+-	if (strnlen(prop->value, prop->length) >= prop->length)
+-		return -EILSEQ;
+-
+ 	p = prop->value;
++	end = p + prop->length;
  
- 	ade7758_write_waveform_type(&indio_dev->dev,
--		st->ade7758_ring_channels[channel].address);
-+		indio_dev->channels[channel].address);
- 
- 	return 0;
+-	for (i = 0; total < prop->length; total += l, p += l, i++)
+-		l = strlen(p) + 1;
+-
+-	return i;
++	for (i = 0; p < end && (!out_strs || i < skip + sz); i++, p += l) {
++		l = strnlen(p, end - p) + 1;
++		if (p + l > end)
++			return -EILSEQ;
++		if (out_strs && i >= skip)
++			*out_strs++ = p;
++	}
++	i -= skip;
++	return i <= 0 ? -ENODATA : i;
  }
+-EXPORT_SYMBOL_GPL(of_property_count_strings);
++EXPORT_SYMBOL_GPL(of_property_read_string_helper);
+ 
+ void of_print_phandle_args(const char *msg, const struct of_phandle_args *args)
+ {
+diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
+index e21012b..aaa46ea 100644
+--- a/drivers/of/selftest.c
++++ b/drivers/of/selftest.c
+@@ -132,8 +132,9 @@ static void __init of_selftest_parse_phandle_with_args(void)
+ 	selftest(rc == -EINVAL, "expected:%i got:%i\n", -EINVAL, rc);
+ }
+ 
+-static void __init of_selftest_property_match_string(void)
++static void __init of_selftest_property_string(void)
+ {
++	const char *strings[4];
+ 	struct device_node *np;
+ 	int rc;
+ 
+@@ -150,13 +151,66 @@ static void __init of_selftest_property_match_string(void)
+ 	rc = of_property_match_string(np, "phandle-list-names", "third");
+ 	selftest(rc == 2, "third expected:0 got:%i\n", rc);
+ 	rc = of_property_match_string(np, "phandle-list-names", "fourth");
+-	selftest(rc == -ENODATA, "unmatched string; rc=%i", rc);
++	selftest(rc == -ENODATA, "unmatched string; rc=%i\n", rc);
+ 	rc = of_property_match_string(np, "missing-property", "blah");
+-	selftest(rc == -EINVAL, "missing property; rc=%i", rc);
++	selftest(rc == -EINVAL, "missing property; rc=%i\n", rc);
+ 	rc = of_property_match_string(np, "empty-property", "blah");
+-	selftest(rc == -ENODATA, "empty property; rc=%i", rc);
++	selftest(rc == -ENODATA, "empty property; rc=%i\n", rc);
+ 	rc = of_property_match_string(np, "unterminated-string", "blah");
+-	selftest(rc == -EILSEQ, "unterminated string; rc=%i", rc);
++	selftest(rc == -EILSEQ, "unterminated string; rc=%i\n", rc);
++
++	/* of_property_count_strings() tests */
++	rc = of_property_count_strings(np, "string-property");
++	selftest(rc == 1, "Incorrect string count; rc=%i\n", rc);
++	rc = of_property_count_strings(np, "phandle-list-names");
++	selftest(rc == 3, "Incorrect string count; rc=%i\n", rc);
++	rc = of_property_count_strings(np, "unterminated-string");
++	selftest(rc == -EILSEQ, "unterminated string; rc=%i\n", rc);
++	rc = of_property_count_strings(np, "unterminated-string-list");
++	selftest(rc == -EILSEQ, "unterminated string array; rc=%i\n", rc);
++
++	/* of_property_read_string_index() tests */
++	rc = of_property_read_string_index(np, "string-property", 0, strings);
++	selftest(rc == 0 && !strcmp(strings[0], "foobar"), "of_property_read_string_index() failure; rc=%i\n", rc);
++	strings[0] = NULL;
++	rc = of_property_read_string_index(np, "string-property", 1, strings);
++	selftest(rc == -ENODATA && strings[0] == NULL, "of_property_read_string_index() failure; rc=%i\n", rc);
++	rc = of_property_read_string_index(np, "phandle-list-names", 0, strings);
++	selftest(rc == 0 && !strcmp(strings[0], "first"), "of_property_read_string_index() failure; rc=%i\n", rc);
++	rc = of_property_read_string_index(np, "phandle-list-names", 1, strings);
++	selftest(rc == 0 && !strcmp(strings[0], "second"), "of_property_read_string_index() failure; rc=%i\n", rc);
++	rc = of_property_read_string_index(np, "phandle-list-names", 2, strings);
++	selftest(rc == 0 && !strcmp(strings[0], "third"), "of_property_read_string_index() failure; rc=%i\n", rc);
++	strings[0] = NULL;
++	rc = of_property_read_string_index(np, "phandle-list-names", 3, strings);
++	selftest(rc == -ENODATA && strings[0] == NULL, "of_property_read_string_index() failure; rc=%i\n", rc);
++	strings[0] = NULL;
++	rc = of_property_read_string_index(np, "unterminated-string", 0, strings);
++	selftest(rc == -EILSEQ && strings[0] == NULL, "of_property_read_string_index() failure; rc=%i\n", rc);
++	rc = of_property_read_string_index(np, "unterminated-string-list", 0, strings);
++	selftest(rc == 0 && !strcmp(strings[0], "first"), "of_property_read_string_index() failure; rc=%i\n", rc);
++	strings[0] = NULL;
++	rc = of_property_read_string_index(np, "unterminated-string-list", 2, strings); /* should fail */
++	selftest(rc == -EILSEQ && strings[0] == NULL, "of_property_read_string_index() failure; rc=%i\n", rc);
++	strings[1] = NULL;
++
++	/* of_property_read_string_array() tests */
++	rc = of_property_read_string_array(np, "string-property", strings, 4);
++	selftest(rc == 1, "Incorrect string count; rc=%i\n", rc);
++	rc = of_property_read_string_array(np, "phandle-list-names", strings, 4);
++	selftest(rc == 3, "Incorrect string count; rc=%i\n", rc);
++	rc = of_property_read_string_array(np, "unterminated-string", strings, 4);
++	selftest(rc == -EILSEQ, "unterminated string; rc=%i\n", rc);
++	/* -- An incorrectly formed string should cause a failure */
++	rc = of_property_read_string_array(np, "unterminated-string-list", strings, 4);
++	selftest(rc == -EILSEQ, "unterminated string array; rc=%i\n", rc);
++	/* -- parsing the correctly formed strings should still work: */
++	strings[2] = NULL;
++	rc = of_property_read_string_array(np, "unterminated-string-list", strings, 2);
++	selftest(rc == 2 && strings[2] == NULL, "of_property_read_string_array() failure; rc=%i\n", rc);
++	strings[1] = NULL;
++	rc = of_property_read_string_array(np, "phandle-list-names", strings, 1);
++	selftest(rc == 1 && strings[1] == NULL, "Overwrote end of string array; rc=%i, str='%s'\n", rc, strings[1]);
+ }
+ 
+ static void __init of_selftest_parse_interrupts(void)
+@@ -313,7 +367,7 @@ static int __init of_selftest(void)
+ 
+ 	pr_info("start of selftest - you will see error messages\n");
+ 	of_selftest_parse_phandle_with_args();
+-	of_selftest_property_match_string();
++	of_selftest_property_string();
+ 	of_selftest_parse_interrupts();
+ 	of_selftest_parse_interrupts_extended();
+ 	pr_info("end of selftest - %i passed, %i failed\n",
+diff --git a/include/linux/of.h b/include/linux/of.h
+index 276c546..6e47b7f 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -267,14 +267,12 @@ extern int of_property_read_u64(const struct device_node *np,
+ extern int of_property_read_string(struct device_node *np,
+ 				   const char *propname,
+ 				   const char **out_string);
+-extern int of_property_read_string_index(struct device_node *np,
+-					 const char *propname,
+-					 int index, const char **output);
+ extern int of_property_match_string(struct device_node *np,
+ 				    const char *propname,
+ 				    const char *string);
+-extern int of_property_count_strings(struct device_node *np,
+-				     const char *propname);
++extern int of_property_read_string_helper(struct device_node *np,
++					      const char *propname,
++					      const char **out_strs, size_t sz, int index);
+ extern int of_device_is_compatible(const struct device_node *device,
+ 				   const char *);
+ extern int of_device_is_available(const struct device_node *device);
+@@ -458,15 +456,9 @@ static inline int of_property_read_string(struct device_node *np,
+ 	return -ENOSYS;
+ }
+ 
+-static inline int of_property_read_string_index(struct device_node *np,
+-						const char *propname, int index,
+-						const char **out_string)
+-{
+-	return -ENOSYS;
+-}
+-
+-static inline int of_property_count_strings(struct device_node *np,
+-					    const char *propname)
++static inline int of_property_read_string_helper(struct device_node *np,
++						 const char *propname,
++						 const char **out_strs, size_t sz, int index)
+ {
+ 	return -ENOSYS;
+ }
+@@ -565,6 +557,70 @@ static inline int of_node_to_nid(struct device_node *device) { return 0; }
+ #endif
+ 
+ /**
++ * of_property_read_string_array() - Read an array of strings from a multiple
++ * strings property.
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ * @out_strs:	output array of string pointers.
++ * @sz:		number of array elements to read.
++ *
++ * Search for a property in a device tree node and retrieve a list of
++ * terminated string values (pointer to data, not a copy) in that property.
++ *
++ * If @out_strs is NULL, the number of strings in the property is returned.
++ */
++static inline int of_property_read_string_array(struct device_node *np,
++						const char *propname, const char **out_strs,
++						size_t sz)
++{
++	return of_property_read_string_helper(np, propname, out_strs, sz, 0);
++}
++
++/**
++ * of_property_count_strings() - Find and return the number of strings from a
++ * multiple strings property.
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ *
++ * Search for a property in a device tree node and retrieve the number of null
++ * terminated string contain in it. Returns the number of strings on
++ * success, -EINVAL if the property does not exist, -ENODATA if property
++ * does not have a value, and -EILSEQ if the string is not null-terminated
++ * within the length of the property data.
++ */
++static inline int of_property_count_strings(struct device_node *np,
++					    const char *propname)
++{
++	return of_property_read_string_helper(np, propname, NULL, 0, 0);
++}
++
++/**
++ * of_property_read_string_index() - Find and read a string from a multiple
++ * strings property.
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ * @index:	index of the string in the list of strings
++ * @out_string:	pointer to null terminated return string, modified only if
++ *		return value is 0.
++ *
++ * Search for a property in a device tree node and retrieve a null
++ * terminated string value (pointer to data, not a copy) in the list of strings
++ * contained in that property.
++ * Returns 0 on success, -EINVAL if the property does not exist, -ENODATA if
++ * property does not have a value, and -EILSEQ if the string is not
++ * null-terminated within the length of the property data.
++ *
++ * The out_string pointer is modified only if a valid string can be decoded.
++ */
++static inline int of_property_read_string_index(struct device_node *np,
++						const char *propname,
++						int index, const char **output)
++{
++	int rc = of_property_read_string_helper(np, propname, output, 1, index);
++	return rc < 0 ? rc : 0;
++}
++
++/**
+  * of_property_read_bool - Findfrom a property
+  * @np:		device node from which the property value is to be read.
+  * @propname:	name of the property to be searched.
 -- 
 1.9.1
 
