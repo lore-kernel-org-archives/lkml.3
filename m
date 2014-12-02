@@ -1,99 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762AbaLBSbf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 13:31:35 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:64701 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754582AbaLBSbd (ORCPT
+	id S1754506AbaLBSeM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 13:34:12 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:59658 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754095AbaLBSeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 13:31:33 -0500
-Date: Tue, 2 Dec 2014 19:31:30 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
+	Tue, 2 Dec 2014 13:34:10 -0500
+Date: Tue, 2 Dec 2014 10:32:49 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Stefan Agner <stefan@agner.ch>
+Cc: shawn.guo@linaro.org, kernel@pengutronix.de, arnd@arndb.de, sre@kernel.org,
+        fkan@apm.com, mark.rutland@arm.com, dbaryshkov@gmail.com,
+        dwmw2@infradead.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] oom: don't assume that a coredumping thread will
- exit soon
-Message-ID: <20141202183130.GM27014@dhcp22.suse.cz>
-References: <20141127230349.GA25075@redhat.com>
- <20141127230405.GA25093@redhat.com>
- <20141202091947.GB27014@dhcp22.suse.cz>
- <20141202175041.GA20314@redhat.com>
+Subject: Re: [PATCH v3 1/3] power: reset: adjust priority of simple syscon
+ reboot driver
+Message-ID: <20141202183249.GA31298@roeck-us.net>
+References: <1417540320-2385-1-git-send-email-stefan@agner.ch>
+ <1417540320-2385-2-git-send-email-stefan@agner.ch>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141202175041.GA20314@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1417540320-2385-2-git-send-email-stefan@agner.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020206.547E0621.0257,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 11
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 02-12-14 18:50:41, Oleg Nesterov wrote:
-> On 12/02, Michal Hocko wrote:
-> >
-> > On Fri 28-11-14 00:04:05, Oleg Nesterov wrote:
-> >
-> > > Note: this is only the first step, this patch doesn't try to solve other
-> > > problems. For example it doesn't try to clear the wrongly set TIF_MEMDIE
-> > > (SIGNAL_GROUP_COREDUMP check is obviously racy),
-> >
-> > I am not sure I understand this. What do you mean by wrongly set
-> > TIF_MEMDIE? That we give a process access to reserves even though it is
-> > already done with the coredumping?
+On Tue, Dec 02, 2014 at 06:11:58PM +0100, Stefan Agner wrote:
+> Currently, all restart handler use the priority 128, including
+> watchdogs. Probably most SoC have a watchdog, and some of them
+> register it also as a restart handler. But if a SoC specifies
+> a dedicated reboot capability using this syscon driver, this is
+> usually the preferred reboot method. Hence, raise the priority
+> of this driver to 192.
 > 
-> I meant that (say) oom_kill_process() can set TIF_MEMDIE because
-> PF_EXITING && !SIGNAL_GROUP_COREDUMP, and after that this task can
-> participate the coredumping. For example, this thread can exit on its
-> own, but before it calls exit_mm() another thread can start the coredump.
-> 
-> In this case TIF_MEMDIE can fool oom-killer the same way,
-> oom_scan_process_thread() returns OOM_SCAN_ABORT if TIF_MEMDIE is set.
-> 
-> > > fatal_signal_pending() can be false positive, etc.
-> >
-> > When can this happen?
-> 
-> I meant "if (fatal_signal_pending(current) || task_will_free_mem(current))"
-> in out_of_memory(). Yes, sorry, "false positive" looks confusing. I meant
-> that fatal_signal_pending() can be true because of SIGNAL_GROUP_COREDUMP.
+> Signed-off-by: Stefan Agner <stefan@agner.ch>
 
-Ahh, OK I guess I see what you meant.
- 
-> > > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> >
-> > I guess the patch as is makes sense and it is an improvement. We need
-> > to call the helper in mem_cgroup_out_of_memory as well, though.
-> 
-> Yes, but can't we do this in a separate patch?
-
-I would prefer if it was in the same patch because we might be facing
-the same problem in memcg as with the global case. And worse, smaller
-limit tend to trigger corner cases more often than the global case.
-
-> try_charge() plays with TIF_MEMDIE/PF_EXITING too, but probably this
-> is fine.
-
-try_charge is OK because this is from the time when the allocation has
-been already done and we just decide to bypass the charge.
-
-> > With that feel free to add
-> > Acked-by: Michal Hocko <mhocko@suse.cz>
-> 
-> Thanks.
-> 
-> > Also the original fix for the coredumping (edd45544c6f0 "oom: avoid
-> > deferring oom killer if exiting task is being traced") doesn't work
-> > really as per http://marc.info/?l=linux-kernel&m=141711049013620 then
-> > this and the follow up patch should be marked for stable I guess.
-> 
-> Perhaps this makes sense. It looks simple enough.
-> 
-> Oleg.
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
