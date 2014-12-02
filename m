@@ -1,119 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932865AbaLBM64 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 07:58:56 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:60664 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753363AbaLBM6z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 07:58:55 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        linux-media <linux-media@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Sakari Ailus <sakari.ailus@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sakari Ailus <sakari.ailus@iki.fi>
-Subject: Re: [PATCH] media: v4l2-subdev.h: drop the guard CONFIG_VIDEO_V4L2_SUBDEV_API for v4l2_subdev_get_try_*()
-Date: Tue, 02 Dec 2014 14:59:29 +0200
-Message-ID: <6626165.z9d655UICS@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <547DB631.3060309@xs4all.nl>
-References: <1416220913-5047-1-git-send-email-prabhakar.csengg@gmail.com> <547D6E20.7040406@xs4all.nl> <547DB631.3060309@xs4all.nl>
+	id S932982AbaLBM7G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 07:59:06 -0500
+Received: from h1.radempa.de ([176.9.142.194]:49627 "EHLO mail.cosmopool.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932909AbaLBM7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 07:59:03 -0500
+From: Harald Geyer <harald@ccbib.org>
+To: Richard Weinberger <richard@nod.at>
+cc: jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
+        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] iio: dht11: IRQ fixes
+In-reply-to: <547D9A6F.9010801@nod.at>
+References: <1417465651-16036-1-git-send-email-richard@nod.at> <1417465651-16036-2-git-send-email-richard@nod.at> <E1XvkYl-00013g-VO@stardust.g4.wien.funkfeuer.at> <547D9A6F.9010801@nod.at>
+Comments: In-reply-to Richard Weinberger <richard@nod.at>
+   message dated "Tue, 02 Dec 2014 11:54:39 +0100."
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
+Content-ID: <4603.1417525133.1@stardust.g4.wien.funkfeuer.at>
+Date: Tue, 02 Dec 2014 13:58:53 +0100
+Message-Id: <E1Xvn2b-0001CH-PM@stardust.g4.wien.funkfeuer.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
-
-On Tuesday 02 December 2014 13:53:05 Hans Verkuil wrote:
-> On 12/02/14 08:45, Hans Verkuil wrote:
-> > On 12/02/2014 12:26 AM, Laurent Pinchart wrote:
-> >> On Sunday 30 November 2014 21:30:35 Prabhakar Lad wrote:
-> >>> On Sun, Nov 30, 2014 at 9:16 PM, Laurent Pinchart wrote:
-> >>>> On Sunday 30 November 2014 21:05:50 Prabhakar Lad wrote:
-> >>>>> On Sat, Nov 29, 2014 at 7:12 PM, Laurent Pinchart wrote:
-> >>>>>> Hi Prabhakar,
-> >>>>> 
-> >>>>> [Snip]
-> >>>>> 
-> >>>>>>>> Sure. That's a better choice than removing the config option
-> >>>>>>>> dependency of the fields struct v4l2_subdev.
-> >>>>>> 
-> >>>>>> Decoupling CONFIG_VIDEO_V4L2_SUBDEV_API from the availability of the
-> >>>>>> in-kernel pad format and selection rectangles helpers is definitely a
-> >>>>>> good idea. I was thinking about decoupling the try format and
-> >>>>>> rectangles from v4l2_subdev_fh by creating a kind of configuration
-> >>>>>> store structure to store them, and embedding that structure in
-> >>>>>> v4l2_subdev_fh. The pad-level operations would then take a pointer to
-> >>>>>> the configuration store instead of the v4l2_subdev_fh. Bridge drivers
-> >>>>>> that want to implement TRY_FMT based on pad-level operations would
-> >>>>>> create a configuration store, use the pad-level operations, and
-> >>>>>> destroy the configuration store. The userspace subdev API would use
-> >>>>>> the configuration store from the file handle.
-> >>>>> 
-> >>>>> are planning to work/post any time soon ? Or are you OK with
-> >>>>> suggestion from Hans ?
-> >>>> 
-> >>>> I have no plan to work on that myself now, I was hoping you could
-> >>>> implement it ;-)
-> >>> 
-> >>> OK will implement it.
-> >>> 
-> >>> Can you please elaborate a more on this "The userspace subdev API would
-> >>> use the configuration store from the file handle."
-> >> 
-> >> Basically,
-> >> 
-> >> 1. Create a subdev pad configuration store structure to store the formats
-> >> and selection rectangles for each pad.
+Richard Weinberger writes:
+> Harald,
+> 
+> Am 02.12.2014 um 11:19 schrieb Harald Geyer:
+> > Hi Richard,
 > > 
-> > I wouldn't call it a 'store'. Just call it fmt_config or pad_config
-> > something like that.
-
-Sure, the name doesn't matter too much.
-
-> >> 2. Embed an instance of that structure in v4l2_subdev_fh.
-> >> 
-> >> 3. Modify the subdev pad ops to take a configuration store pointer
-> >> instead of a file handle pointer.
-> >> 
-> >> The userspace API implementation (v4l2-subdev.c) would then pass
-> >> &fh->store to the pad operations instead of fh.
-> >> 
-> >> Bridge drivers that need to implement TRY_FMT on top of pad ops would
-> >> create a temporary store (or temporary stores when multiple subsdevs are
-> >> involved), call the pad ops with a pointer to the temporary store to
-> >> propagate TRY formats, destroy the store(s) and return the resulting
-> >> format.
+> > thanks for the patch.
 > > 
-> > That will work. I think this is a good approach and it shouldn't be too
-> > difficult.
->
-> Laurent, just so I understand this correctly: does this mean that all
-> occurrences of 'struct v4l2_subdev_fh *fh' will be replaced by 'struct
-> v4l2_subdev_pad_config *cfg'?
+> > I think (haven't tried yet) that your patch changes the number of
+> > edges recorded per transmission. So probably the decoding function
+> > needs to be adapted too...
+> 
+> Can you explain your thought?
+> I'll happily dig into that.
 
-That's the plan, yes.
+Part of the reason to have the IRQ enabled during output was to
+get consistent timestamps (all timestamps would be taken via the
+same codepath). While this isn't essential, the current code expects
+that the start command we generate is in the list of edges. I think
+your changes will cause that start command not to be in the list of
+edges.
 
-> Is there any reason why the 'fh' should still be passed on?
+Note: There have been issues with some sensors (DHT11s?) not to
+send proper start bits, so the driver tries to be liberal about
+what it expects and you probably haven't seen any decoding errors
+if your sample sensor works to specification. (Now that I come to
+think about it: Undefined behaviour of IRQs on output lines could
+have been involved too...)
 
-We might find out reasons to still pass the fh, but in that case I think they 
-should be addressed and the fh just dropped from the pad ops arguments.
+This is a bit of a mess and I'd rather clean this up than add more
+to it. Maybe I'm overly fussy about this, but it has bitten me in
+the past.
 
-> Personally I am in favor of this since the 'fh' always made it hard for
-> bridge drivers to use these pad ops. So if we can replace it by something
-> that can be used by bridge drivers as well, then that will make it easier
-> to move all drivers over to the pad ops.
+Since it seems you have some interesst in working on these parts,
+let me mention an unrelated issue: The DHT22 stops sending data
+after a random time (think of days here) which AFAIK only can be
+worked around by power-cycling the sensor. I mean to add something
+for this to the driver but couln't make up my mind about what the
+proper ABI for this would be, so right now I'm using some userspace
+hack for this. (The issue was already discussed on the linux-iio
+mailing list a few month ago, if you want to look into this.
+Anyway: You have been warned ... ;)  
+ 
+> > I won't be able to ACK this before testing on real HW. Of course
+> > confirmation that your changes work reliably on both DHT11 and DHT22
+> > will do as well. The debuging code present in the initial submission
+> > of the driver might be helpful to anybody trying to verify the
+> > timing.
+> 
+> I have only DHT22 sensors. Of course I've tested the driver with these.
 
-Good, looks like we have a plan for world domination :-)
+Ok, so I'll test DHT11 first. It would still be nice to confirm how
+many edges are recorded from DHT22 though.
 
--- 
-Regards,
-
-Laurent Pinchart
-
+Thanks,
+Harald
