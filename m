@@ -1,39 +1,352 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751AbaLBIb2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 03:31:28 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:45403 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752230AbaLBIb0 (ORCPT
+	id S1751466AbaLBIaX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 03:30:23 -0500
+Received: from TYO201.gate.nec.co.jp ([210.143.35.51]:46685 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320AbaLBIaP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 03:31:26 -0500
+	Tue, 2 Dec 2014 03:30:15 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>
+CC: David Rientjes <rientjes@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: [PATCH v5 3/8] mm/hugetlb: take page table lock in follow_huge_pmd()
+Thread-Topic: [PATCH v5 3/8] mm/hugetlb: take page table lock in
+ follow_huge_pmd()
+Thread-Index: AQHQDgmxs9SBWizom0mvXb2ptl/K7g==
+Date: Tue, 2 Dec 2014 08:26:39 +0000
+Message-ID: <1417508759-10848-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1417508759-10848-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1417508759-10848-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.128.101.13]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdWWnO7m8f+NnM8Xahexc+3ELeAgTDv67CzWWEZENqztEA@mail.gmail.com>
-References: <1417494919-4577-1-git-send-email-oakad@yahoo.com>
-	<1417494919-4577-3-git-send-email-oakad@yahoo.com>
-	<CAMuHMdWWnO7m8f+NnM8Xahexc+3ELeAgTDv67CzWWEZENqztEA@mail.gmail.com>
-Date: Tue, 2 Dec 2014 19:31:26 +1100
-Message-ID: <CAPs88r-pzz86GJLv-QPEAc7AsBZLDwffrD-J633_xqR5cHVUTA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] fs: Wire up sendfd() syscall (all architectures)
-From: Alex Dubov <alex.dubov@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alex Dubov <oakad@yahoo.com>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 2, 2014 at 7:01 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> This really needs a CC to linux-arch (added).
->
->
-> You forgot to update NR_syscalls in arch/m68k/include/asm/unistd.h.
->
+We have a race condition between move_pages() and freeing hugepages,
+where move_pages() calls follow_page(FOLL_GET) for hugepages internally
+and tries to get its refcount without preventing concurrent freeing.
+This race crashes the kernel, so this patch fixes it by moving FOLL_GET
+code for hugepages into follow_huge_pmd() with taking the page table lock.
 
-Noted. I would assume that other architectures may have similar
-problems (I only tested
-my submission on x86_64).
+This patch intentionally removes page==NULL check after pte_page. This
+is justified because pte_page() never returns NULL for any architectures
+or configurations.
 
-Will try to fix those when/if there's progress toward accepting the
-proposed feature.
+This patch changes the behavior of follow_huge_pmd() for tail pages and
+then tail pages can be pinned/returned. So the caller must be changed to
+properly handle the returned tail pages.
+
+We could have a choice to add the similar locking to follow_huge_(addr|pud)
+for consistency, but it's not necessary because currently these functions
+don't support FOLL_GET flag, so let's leave it for future development.
+
+Here is the reproducer:
+
+  $ cat movepages.c
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <numaif.h>
+
+  #define ADDR_INPUT      0x700000000000UL
+  #define HPS             0x200000
+  #define PS              0x1000
+
+  int main(int argc, char *argv[]) {
+          int i;
+          int nr_hp = strtol(argv[1], NULL, 0);
+          int nr_p  = nr_hp * HPS / PS;
+          int ret;
+          void **addrs;
+          int *status;
+          int *nodes;
+          pid_t pid;
+
+          pid = strtol(argv[2], NULL, 0);
+          addrs  = malloc(sizeof(char *) * nr_p + 1);
+          status = malloc(sizeof(char *) * nr_p + 1);
+          nodes  = malloc(sizeof(char *) * nr_p + 1);
+
+          while (1) {
+                  for (i = 0; i < nr_p; i++) {
+                          addrs[i] = (void *)ADDR_INPUT + i * PS;
+                          nodes[i] = 1;
+                          status[i] = 0;
+                  }
+                  ret = numa_move_pages(pid, nr_p, addrs, nodes, status,
+                                        MPOL_MF_MOVE_ALL);
+                  if (ret == -1)
+                          err("move_pages");
+
+                  for (i = 0; i < nr_p; i++) {
+                          addrs[i] = (void *)ADDR_INPUT + i * PS;
+                          nodes[i] = 0;
+                          status[i] = 0;
+                  }
+                  ret = numa_move_pages(pid, nr_p, addrs, nodes, status,
+                                        MPOL_MF_MOVE_ALL);
+                  if (ret == -1)
+                          err("move_pages");
+          }
+          return 0;
+  }
+
+  $ cat hugepage.c
+  #include <stdio.h>
+  #include <sys/mman.h>
+  #include <string.h>
+
+  #define ADDR_INPUT      0x700000000000UL
+  #define HPS             0x200000
+
+  int main(int argc, char *argv[]) {
+          int nr_hp = strtol(argv[1], NULL, 0);
+          char *p;
+
+          while (1) {
+                  p = mmap((void *)ADDR_INPUT, nr_hp * HPS, PROT_READ | PROT_WRITE,
+                           MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
+                  if (p != (void *)ADDR_INPUT) {
+                          perror("mmap");
+                          break;
+                  }
+                  memset(p, 0, nr_hp * HPS);
+                  munmap(p, nr_hp * HPS);
+          }
+  }
+
+  $ sysctl vm.nr_hugepages=40
+  $ ./hugepage 10 &
+  $ ./movepages 10 $(pgrep -f hugepage)
+
+Fixes: e632a938d914 ("mm: migrate: add hugepage migration code to move_pages()")
+Reported-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: <stable@vger.kernel.org>  # [3.12+]
+---
+ChangeLog v5:
+- make follow_huge_pmd() wake and retry if pmd is migration entry,
+  for that purpose __migration_entry_wait() is exported outside mm/migrate.c
+- make follow_huge_pmd() return NULL if pmd is hwpoison entry
+- return no_page_table() instead of NULL if follow_huge_pmd/pud returns NULL
+
+ChangeLog v4:
+- remove changes related to taking ptl from follow_huge_(addr|pud)(),
+  which is not neccessary because these functions don't support FOLL_GET
+  at least for now
+- add justification of removing page==NULL check to patch description
+- stop changing parameter mm to vma in follow_huge_(pud|pmd)()
+- use pmd_lockptr() instead of huge_pte_lock() in follow_huge_pmd()
+- use get_page() instead of get_page_unless_zero() in follow_huge_pmd()
+- use Fixes: tag and move changelog under '---'
+
+ChangeLog v3:
+- remove unnecessary if (page) check
+- check (pmd|pud)_huge again after holding ptl
+- do the same change also on follow_huge_pud()
+- take page table lock also in follow_huge_addr()
+
+ChangeLog v2:
+- introduce follow_huge_pmd_lock() to do locking in arch-independent code.
+---
+ include/linux/hugetlb.h |  8 ++++----
+ include/linux/swapops.h |  4 ++++
+ mm/gup.c                | 25 ++++++++-----------------
+ mm/hugetlb.c            | 48 ++++++++++++++++++++++++++++++++++--------------
+ mm/migrate.c            |  5 +++--
+ 5 files changed, 53 insertions(+), 37 deletions(-)
+
+diff --git mmotm-2014-11-26-15-45.orig/include/linux/hugetlb.h mmotm-2014-11-26-15-45/include/linux/hugetlb.h
+index cdd149ca5cc0..65b73169f511 100644
+--- mmotm-2014-11-26-15-45.orig/include/linux/hugetlb.h
++++ mmotm-2014-11-26-15-45/include/linux/hugetlb.h
+@@ -99,9 +99,9 @@ int huge_pmd_unshare(struct mm_struct *mm, unsigned long *addr, pte_t *ptep);
+ struct page *follow_huge_addr(struct mm_struct *mm, unsigned long address,
+ 			      int write);
+ struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+-				pmd_t *pmd, int write);
++				pmd_t *pmd, int flags);
+ struct page *follow_huge_pud(struct mm_struct *mm, unsigned long address,
+-				pud_t *pud, int write);
++				pud_t *pud, int flags);
+ int pmd_huge(pmd_t pmd);
+ int pud_huge(pud_t pmd);
+ unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
+@@ -133,8 +133,8 @@ static inline void hugetlb_report_meminfo(struct seq_file *m)
+ static inline void hugetlb_show_meminfo(void)
+ {
+ }
+-#define follow_huge_pmd(mm, addr, pmd, write)	NULL
+-#define follow_huge_pud(mm, addr, pud, write)	NULL
++#define follow_huge_pmd(mm, addr, pmd, flags)	NULL
++#define follow_huge_pud(mm, addr, pud, flags)	NULL
+ #define prepare_hugepage_range(file, addr, len)	(-EINVAL)
+ #define pmd_huge(x)	0
+ #define pud_huge(x)	0
+diff --git mmotm-2014-11-26-15-45.orig/include/linux/swapops.h mmotm-2014-11-26-15-45/include/linux/swapops.h
+index 6adfb7bfbf44..e288d5c016a7 100644
+--- mmotm-2014-11-26-15-45.orig/include/linux/swapops.h
++++ mmotm-2014-11-26-15-45/include/linux/swapops.h
+@@ -137,6 +137,8 @@ static inline void make_migration_entry_read(swp_entry_t *entry)
+ 	*entry = swp_entry(SWP_MIGRATION_READ, swp_offset(*entry));
+ }
+ 
++extern void __migration_entry_wait(struct mm_struct *mm, pte_t *ptep,
++					spinlock_t *ptl);
+ extern void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+ 					unsigned long address);
+ extern void migration_entry_wait_huge(struct vm_area_struct *vma,
+@@ -150,6 +152,8 @@ static inline int is_migration_entry(swp_entry_t swp)
+ }
+ #define migration_entry_to_page(swp) NULL
+ static inline void make_migration_entry_read(swp_entry_t *entryp) { }
++static inline void __migration_entry_wait(struct mm_struct *mm, pte_t *ptep,
++					spinlock_t *ptl) { }
+ static inline void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+ 					 unsigned long address) { }
+ static inline void migration_entry_wait_huge(struct vm_area_struct *vma,
+diff --git mmotm-2014-11-26-15-45.orig/mm/gup.c mmotm-2014-11-26-15-45/mm/gup.c
+index 3af2f08578ce..a9b260c5e2c8 100644
+--- mmotm-2014-11-26-15-45.orig/mm/gup.c
++++ mmotm-2014-11-26-15-45/mm/gup.c
+@@ -167,10 +167,10 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
+ 	if (pud_none(*pud))
+ 		return no_page_table(vma, flags);
+ 	if (pud_huge(*pud) && vma->vm_flags & VM_HUGETLB) {
+-		if (flags & FOLL_GET)
+-			return NULL;
+-		page = follow_huge_pud(mm, address, pud, flags & FOLL_WRITE);
+-		return page;
++		page = follow_huge_pud(mm, address, pud, flags);
++		if (page)
++			return page;
++		return no_page_table(vma, flags);
+ 	}
+ 	if (unlikely(pud_bad(*pud)))
+ 		return no_page_table(vma, flags);
+@@ -179,19 +179,10 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
+ 	if (pmd_none(*pmd))
+ 		return no_page_table(vma, flags);
+ 	if (pmd_huge(*pmd) && vma->vm_flags & VM_HUGETLB) {
+-		page = follow_huge_pmd(mm, address, pmd, flags & FOLL_WRITE);
+-		if (flags & FOLL_GET) {
+-			/*
+-			 * Refcount on tail pages are not well-defined and
+-			 * shouldn't be taken. The caller should handle a NULL
+-			 * return when trying to follow tail pages.
+-			 */
+-			if (PageHead(page))
+-				get_page(page);
+-			else
+-				page = NULL;
+-		}
+-		return page;
++		page = follow_huge_pmd(mm, address, pmd, flags);
++		if (page)
++			return page;
++		return no_page_table(vma, flags);
+ 	}
+ 	if ((flags & FOLL_NUMA) && pmd_numa(*pmd))
+ 		return no_page_table(vma, flags);
+diff --git mmotm-2014-11-26-15-45.orig/mm/hugetlb.c mmotm-2014-11-26-15-45/mm/hugetlb.c
+index dd42878549d5..adafced1aa17 100644
+--- mmotm-2014-11-26-15-45.orig/mm/hugetlb.c
++++ mmotm-2014-11-26-15-45/mm/hugetlb.c
+@@ -3675,28 +3675,48 @@ follow_huge_addr(struct mm_struct *mm, unsigned long address,
+ 
+ struct page * __weak
+ follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+-		pmd_t *pmd, int write)
++		pmd_t *pmd, int flags)
+ {
+-	struct page *page;
+-
+-	if (!pmd_present(*pmd))
+-		return NULL;
+-	page = pte_page(*(pte_t *)pmd);
+-	if (page)
+-		page += ((address & ~PMD_MASK) >> PAGE_SHIFT);
++	struct page *page = NULL;
++	spinlock_t *ptl;
++retry:
++	ptl = pmd_lockptr(mm, pmd);
++	spin_lock(ptl);
++	/*
++	 * make sure that the address range covered by this pmd is not
++	 * unmapped from other threads.
++	 */
++	if (!pmd_huge(*pmd))
++		goto out;
++	if (pmd_present(*pmd)) {
++		page = pte_page(*(pte_t *)pmd) +
++			((address & ~PMD_MASK) >> PAGE_SHIFT);
++		if (flags & FOLL_GET)
++			get_page(page);
++	} else {
++		if (is_hugetlb_entry_migration(huge_ptep_get((pte_t *)pmd))) {
++			spin_unlock(ptl);
++			__migration_entry_wait(mm, (pte_t *)pmd, ptl);
++			goto retry;
++		}
++		/*
++		 * hwpoisoned entry is treated as no_page_table in
++		 * follow_page_mask().
++		 */
++	}
++out:
++	spin_unlock(ptl);
+ 	return page;
+ }
+ 
+ struct page * __weak
+ follow_huge_pud(struct mm_struct *mm, unsigned long address,
+-		pud_t *pud, int write)
++		pud_t *pud, int flags)
+ {
+-	struct page *page;
++	if (flags & FOLL_GET)
++		return NULL;
+ 
+-	page = pte_page(*(pte_t *)pud);
+-	if (page)
+-		page += ((address & ~PUD_MASK) >> PAGE_SHIFT);
+-	return page;
++	return pte_page(*(pte_t *)pud) + ((address & ~PUD_MASK) >> PAGE_SHIFT);
+ }
+ 
+ #ifdef CONFIG_MEMORY_FAILURE
+diff --git mmotm-2014-11-26-15-45.orig/mm/migrate.c mmotm-2014-11-26-15-45/mm/migrate.c
+index 41945cb0ca38..a4b2a4103d38 100644
+--- mmotm-2014-11-26-15-45.orig/mm/migrate.c
++++ mmotm-2014-11-26-15-45/mm/migrate.c
+@@ -229,7 +229,7 @@ static void remove_migration_ptes(struct page *old, struct page *new)
+  * get to the page and wait until migration is finished.
+  * When we return from this function the fault will be retried.
+  */
+-static void __migration_entry_wait(struct mm_struct *mm, pte_t *ptep,
++void __migration_entry_wait(struct mm_struct *mm, pte_t *ptep,
+ 				spinlock_t *ptl)
+ {
+ 	pte_t pte;
+@@ -1260,7 +1260,8 @@ static int do_move_page_to_node_array(struct mm_struct *mm,
+ 			goto put_and_set;
+ 
+ 		if (PageHuge(page)) {
+-			isolate_huge_page(page, &pagelist);
++			if (PageHead(page))
++				isolate_huge_page(page, &pagelist);
+ 			goto put_and_set;
+ 		}
+ 
+-- 
+2.2.0.rc0.2.gf745acb
