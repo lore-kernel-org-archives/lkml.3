@@ -1,114 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607AbaLBMVu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 07:21:50 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:39377 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754485AbaLBMVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 07:21:49 -0500
-Message-ID: <547DAEF3.1090106@gentoo.org>
-Date: Tue, 02 Dec 2014 07:22:11 -0500
-From: Richard Yao <ryao@gentoo.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
+	id S1754633AbaLBMXR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 07:23:17 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:46072 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211AbaLBMXP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 07:23:15 -0500
+Date: Tue, 2 Dec 2014 12:22:58 +0000
+From: Mark Brown <broonie@kernel.org>
+To: gyungoh@gmail.com
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
+        cooloney@gmail.com, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
+        treding@nvidia.com, florian.vaussard@epfl.ch, trivial@kernel.org,
+        linux@roeck-us.net, andrew@lunn.ch, jic23@kernel.org
+Message-ID: <20141202122258.GU7712@sirena.org.uk>
+References: <1417507529-13654-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1417507529-13654-9-git-send-email-jack.yoo@skyworksinc.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: Why not make kdbus use CUSE?
-References: <20141129063416.GE32286@woodpecker.gentoo.org> <20141129175947.GB32510@kroah.com> <547D50B9.9040909@gentoo.org> <20141202054850.GA17043@kroah.com> <547D7159.2040900@gentoo.org>
-In-Reply-To: <547D7159.2040900@gentoo.org>
-X-Enigmail-Version: 1.6
 Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="AouaX40JOEF1LqN14GjkwF9fRUAsH5P92"
+	protocol="application/pgp-signature"; boundary="8e+elk6dDJQo2Rug"
+Content-Disposition: inline
+In-Reply-To: <1417507529-13654-9-git-send-email-jack.yoo@skyworksinc.com>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v9 8/8] devicetree: regulator: sky81452: Modify Device
+ Tree structure
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---AouaX40JOEF1LqN14GjkwF9fRUAsH5P92
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-Dear Greg,
+--8e+elk6dDJQo2Rug
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I had hoped that I could avoid reading through the code for yet another
-IPC mechanism when I asked why we needed kdbus at LinuxCon Europe. In
-hindsight, I should have just checked out the code and read it instead
-of asking. However, what I did instead was ask and then do some thinking
-based on that, mean to send an email and then sent it long after I
-should have.
+On Tue, Dec 02, 2014 at 05:05:29PM +0900, gyungoh@gmail.com wrote:
+> From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 
-Our conversation now has lead me to realize my mistake and I have tried
-to rectify it. I now see that kdbus is hooking into kernel interface to
-implement KDBUS_ITEM_PAYLOAD_MEMFD in a way that we could only achieve
-from userspace with UNIX domain sockets. I imagine that we could avoid
-putting this code into the kernel through a combination of libev,
-libfuse, memfds and UNIX domain sockets.
+Applied, thanks.
 
-A fallback path could be provided by using anonymous files on the FUSE
-filesystem. This could probably by by the sender doing something like
-the following:
-
-void *buf;
-int coookie;
-char *name =3D strdup("/sys/fs/kdbus/tmp/XXXXXX");
-int fd =3D mkstemp(name);
-unlink(name);
-buf =3D mmap(NULL, LENGTH, PROT_WRITE, MAP_SHARED, fd, 0);
-// Do your writes here
-cookie =3D ioctl(fd, SEAL);
-close(fd);
-munmap(buf);
-// Send a message via a UNIX domain socket to the server with the
-// cookie, plus whatever XXXXXX became and instructions on where to
-// send the data. If the file had been closed before the message was
-// received, the server should be able to say okay. Otherwise, it can //
-send an error. The server would need to have a timer to handle the
-// case where a process never actually sends a message with the cookie.
-
-Assuming that this dance succeeds, the FUSE process could then make a
-readonly file in itself, open it read only, unlink it, put the data into
-the file and send the file descriptor via UNIX domain socket while
-refusing further writes. If it has its own user/group, the file should
-be safe from prying eyes.
-
-This is not as good as a memfd and also suffers from the race that
-O_TMPFILE was meant to close, but it should be able to function as a
-decent fallback. This would preserve portability across not only
-different versions of Linux, but also other POSIX systems. Keeping the
-code in userspace would allow us to apply SELinux policies to it, which
-is something that we would lose if it were go to into the kernel.
-
-That said, it is still not clear to me that dbus must be inside the
-kernel to be able to perform multicast and zero copy using memfd. Is
-there something that I have missed that make this not the case?
-
-Yours truly,
-Richard Yao
-
-
---AouaX40JOEF1LqN14GjkwF9fRUAsH5P92
+--8e+elk6dDJQo2Rug
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iQIcBAEBAgAGBQJUfa7/AAoJECDuEZm+6ExkNxcP/0zw9TxwLI8+s+cgwKJ1zTd4
-vna3Zt6dokmzrwLibQC0P/ILuvP0jXSVvHjk995nl9Bn2UFC1XVkb9vu/90L7apP
-46bRPGNDYwDi+VNTurp85cAu0LY6CFZ4qg3XgdYhovngyCQMk34ZefSCeOapV7+o
-mvs1dlJ4Q8gWZ6EIHlSnRwc7Hbqwa6QAYj0gYwHfLdMSyGQqVnRRlazkGk3s9heU
-QSegG4FKxt4IcaQf6UE71sZgES2xqcT2C6GUF9bIIRnqIuYg9DuWDlikcGqXV3vS
-zbzIY5gHzIdshCAb6tHjkfuArX/YSn16P74VWbh5ZUlR/Fq+3z7iA+b7wCpYqDSp
-Zo5/RvCniknWLlMKwOwmhgnAPZovb8zjVJFpEslSLYRC3LQvmG9HshiBWKWcOA/n
-HRtMODt6lsGoNaEsEAh1cG8gs9d5eI+vi3JuDjKLHdmyPm/HcfNiEnbhrXyr/m5h
-aaP9ytyRaN9dWi+9czk6sAuWI/H6JedxIcElWGghdGHWTFrqkve5wCW/bD1Rk0mp
-6RbCOClh+hw0PyuDr2zAtPEbnEuxrHq1wO6BpvKAqg15S7YPALJGZ00dasooKgj6
-9pAFIfOq6nUbhMDIY018Vd+M6CdyGSZVPGq1Ox3rEvXLbcQDkFwt2LgwnQ6NEQJP
-4EmUKVTcM4mADu0ZnjFq
-=bicU
+iQEcBAEBAgAGBQJUfa8hAAoJECTWi3JdVIfQde8H/3DM+edbbG2sHII2V4Su86iu
+n9fxZURPoWanVXHV984+iVCKInKdJyj6hgy8iloTCw0vuJCBWALUcxn9vL0j2Xjh
+Ju8/T8/lAQJsuANotlsFqHq0y2idned2O29jrI0GdTWtGjZ5XJTxE8bfyoaYs5ex
+Opdzyw2GiPorlIzdt2APWhVlCGME4H52FSAxXfB7/ypnLaPWdoT/gQyZlT1s6pK+
+6dYNCkt0B3CEnnMhx7BRom63sBWTS6m5qyDWcdSWxWVHUatL5AX9YyYQ9bxfnGnx
+AbHzDWnoIwlOFeg0MYlSTiHJNp6xd0XVwZW2YzE9VKAEFLet+2DD1XodMzUQBSc=
+=ahYc
 -----END PGP SIGNATURE-----
 
---AouaX40JOEF1LqN14GjkwF9fRUAsH5P92--
+--8e+elk6dDJQo2Rug--
