@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291AbaLBCDv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 21:03:51 -0500
-Received: from mout.gmx.net ([212.227.17.20]:55769 "EHLO mout.gmx.net"
+	id S1754295AbaLBCLI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 21:11:08 -0500
+Received: from mout.gmx.net ([212.227.15.18]:58223 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752495AbaLBCDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 21:03:50 -0500
-Message-ID: <547D1E01.90900@gmx.de>
-Date: Tue, 02 Dec 2014 03:03:45 +0100
+	id S1753557AbaLBCLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 21:11:07 -0500
+Message-ID: <547D1FB5.80809@gmx.de>
+Date: Tue, 02 Dec 2014 03:11:01 +0100
 From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
 To: Jan Kara <jack@suse.cz>
 CC: eparis@redhat.com, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 3/3] fanotify: fix inconsistent behaviour regarding flag
- FAN_ONDIR
-References: <1417304258-16838-1-git-send-email-LinoSanfilippo@gmx.de> <1417304258-16838-3-git-send-email-LinoSanfilippo@gmx.de> <20141201100547.GD16185@quack.suse.cz>
-In-Reply-To: <20141201100547.GD16185@quack.suse.cz>
+Subject: Re: [PATCH 1/3] fanotify: only destroy mark when both mask and ignored_mask
+ are cleared
+References: <1417304258-16838-1-git-send-email-LinoSanfilippo@gmx.de> <20141201090450.GB16185@quack.suse.cz>
+In-Reply-To: <20141201090450.GB16185@quack.suse.cz>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:2phX7URBiBBJcsjC8Swu1Oh4edfXzgeldMmoiUG5/Ba+4TjpDnf
- w2OJc60Nk5/OZMuXdSZ560rzh7EJneCxezw44hgBB9ECMwWLlS6b91a3CQcJuFXeCafit5y
- QhLIsyD1MoN2vQKEwzrVzvOKbKo3B6DT59lvsO3tdxizJt+CCF+jKWo+2x/TzcZ8eCYtkpv
- dx7QbDU1S3zesZJTMCL3Q==
+X-Provags-ID: V03:K0:Eu3/C0YcYMiAIL/adCu8UDI4DLvVB5MW7RSspZLACkWMrT0ZRX+
+ N91sKAnTCLVcVVPmCdu8IHWBciAc9i1aLzpHdFG0P8yM29ECEU8BC2DiU/D5VsOjbavS0gK
+ 1k6T98oQmmIcTlmuCx9EXEqv888m0LEy0jXy/HgdUWGVzg3JkAyBXMvrYexjeRA1EG3zv9s
+ A1xWau0SrSZMMXqA7LRIw==
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,50 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On 01.12.2014 11:05, Jan Kara wrote:
-> On Sun 30-11-14 00:37:38, Lino Sanfilippo wrote:
->> Before flag FAN_ONDIR was implicitly set in a marks ignored mask. This led to
->> some inconsistent behaviour:
+On 01.12.2014 10:04, Jan Kara wrote:
+> On Sun 30-11-14 00:37:36, Lino Sanfilippo wrote:
+>> In fanotify_mark_remove_from_mask() a mark is destroyed if only one of both
+>> bitmasks (mask or ignored_mask) of a mark is cleared. However the other mask
+>> may still be set and contain information that should not be lost. Thus only
+>> destroy a mark if both masks are cleared.
 >> 
->> 1. It was not possible to remove the flag from the ignored mask, once it was set
->> (implicitly) with a call like
+>> Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+>> ---
+>>  fs/notify/fanotify/fanotify_user.c | 6 +++++-
+>>  1 file changed, 5 insertions(+), 1 deletion(-)
 >> 
->> fanotify_mark(fd, FAN_MARK_ADD, FAN_OPEN, AT_FDCWD, "dir");
->> 
->> This was since the needed flag FAN_MARK_ONDIR was only honored when setting a
->> marks mask, but not when removing it. Now FAN_ONDIR is only set when explicitly
->> passed in the masks parameter. It now is also possible to remove it again:
->> 
->> fanotify_mark(fd, FAN_MARK_ADD, FAN_OPEN | FAN_ONDIR , AT_FDCWD, "dir");
->> fanotify_mark(fd, FAN_MARK_REMOVE, FAN_ONDIR , AT_FDCWD, "dir");
->> 
->> 2. Subsequent calls to fanotify_mark for a mark that had FAN_ONDIR already set
->> in its mask removed the flag, if it was not specified in the mask parameter
->> again. Thus
->> 
->> fanotify_mark(fd, FAN_MARK_ADD, FAN_OPEN | FAN_ONDIR , AT_FDCWD, "dir");
->> fanotify_mark(fd, FAN_MARK_ADD, FAN_CLOSE, AT_FDCWD, "dir");
->> 
->> set FAN_ONDIR in the first call on the marks mask but also on the ignored
->> mask in the second call. So the first request for DIR events was overwritten.
->> Since the flag is now not set implicitly any longer this cant happen any more.
->   Ugh, I have to say I don't understand the changelog. From the code I
-> think I understood that instead of always adding FAN_ONDIR to ignore mask
-> you require FAN_ONDIR to be set in the normal mask. That makes sense to me
-> but please make the changelog more comprehensible.
-
-Hm. My intention was to describe at least two cases of strange behaviour
-when setting the FAN_ONDIR flag. But maybe the description has indeed
-become a little bit too complicated. I will adjust that and resend the
-patch.
-
- Also please add a
-> testcase to LTP fanotify() coverage for FAN_ONDIR behavior so that we can
-> easily see how userspace visible behavior changed / didn't change. Thanks!
+>> diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+>> index c991616..03a0dd1 100644
+>> --- a/fs/notify/fanotify/fanotify_user.c
+>> +++ b/fs/notify/fanotify/fanotify_user.c
+>> @@ -488,6 +488,8 @@ static __u32 fanotify_mark_remove_from_mask(struct fsnotify_mark *fsn_mark,
+>>  					    int *destroy)
+>>  {
+>>  	__u32 oldmask;
+>> +	__u32 new_mask;
+>> +	__u32 new_ignored;
+>>  
+>>  	spin_lock(&fsn_mark->lock);
+>>  	if (!(flags & FAN_MARK_IGNORED_MASK)) {
+>> @@ -497,9 +499,11 @@ static __u32 fanotify_mark_remove_from_mask(struct fsnotify_mark *fsn_mark,
+>>  		oldmask = fsn_mark->ignored_mask;
+>>  		fsnotify_set_mark_ignored_mask_locked(fsn_mark, (oldmask & ~mask));
+>>  	}
+>> +	new_mask = fsn_mark->mask;
+>> +	new_ignored = fsn_mark->ignored_mask;
+>>  	spin_unlock(&fsn_mark->lock);
+>>  
+>> -	*destroy = !(oldmask & ~mask);
+>> +	*destroy = !(new_mask | new_ignored);
+>   There's no need for new variables, is there? You can just set *destroy
+> under the spinlock...
 > 
 
-Ok, i can do that (it may take a few days until i find the time for it
-though). Thank you for review!
+youre right, these variables are totally unneeded. I cant remember the
+reason why i introduced them (maybe leftovers from an earlier attempt).
+I will resend a cleaned up version of that patch.
 
 Regards,
 Lino
+
