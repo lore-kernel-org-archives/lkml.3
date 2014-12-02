@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933089AbaLBHox (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 02:44:53 -0500
-Received: from lucky1.263xmail.com ([211.157.147.131]:60493 "EHLO
+	id S933101AbaLBHp0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 02:45:26 -0500
+Received: from lucky1.263xmail.com ([211.157.147.131]:60877 "EHLO
 	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932269AbaLBHou (ORCPT
+	with ESMTP id S1754437AbaLBHpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 02:44:50 -0500
+	Tue, 2 Dec 2014 02:45:24 -0500
 X-263anti-spam: KSV:0;
 X-MAIL-GRAY: 1
 X-MAIL-DELIVERY: 0
@@ -16,7 +16,7 @@ X-RL-SENDER: andy.yan@rock-chips.com
 X-FST-TO: airlied@linux.ie
 X-SENDER-IP: 127.0.0.1
 X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <8045c226873e554e24ae6063edb18b38>
+X-UNIQUE-TAG: <6e6e237d8c3eded45eb158e2e2fb2f03>
 X-ATTACHMENT-NUM: 0
 X-DNS-TYPE: 0
 From: Andy Yan <andy.yan@rock-chips.com>
@@ -36,9 +36,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Mark Rutland <mark.rutland@arm.com>, vladimir_zapolskiy@mentor.com,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>, Andy Yan <andy.yan@rock-chips.com>
-Subject: [PATCH v15 10/12] drm: bridge/dw_hdmi: add function dw_hdmi_phy_enable_spare
-Date: Tue,  2 Dec 2014 15:44:22 +0800
-Message-Id: <1417506262-18813-1-git-send-email-andy.yan@rock-chips.com>
+Subject: [PATCH v15 11/12] dt-bindings: Add documentation for rockchip dw hdmi
+Date: Tue,  2 Dec 2014 15:44:54 +0800
+Message-Id: <1417506294-18859-1-git-send-email-andy.yan@rock-chips.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417505778-18341-1-git-send-email-andy.yan@rock-chips.com>
 References: <1417505778-18341-1-git-send-email-andy.yan@rock-chips.com>
@@ -46,10 +46,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RK3288 HDMI will not work without the spare bit of
-HDMI_PHY_CONF0 enable
-
 Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+
 ---
 
 Changes in v15: None
@@ -59,49 +57,68 @@ Changes in v12: None
 Changes in v11: None
 Changes in v10: None
 Changes in v9: None
-Changes in v8: None
+Changes in v8:
+- Add documentation for rockchip dw hdmi
+
 Changes in v7: None
 Changes in v6: None
 Changes in v5: None
 Changes in v4: None
 Changes in v3: None
 
- drivers/gpu/drm/bridge/dw_hdmi.c | 7 +++++++
- drivers/gpu/drm/bridge/dw_hdmi.h | 3 ++-
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ .../devicetree/bindings/video/dw_hdmi-rockchip.txt | 43 ++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
 
-diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
-index 13ace4e..961693a 100644
---- a/drivers/gpu/drm/bridge/dw_hdmi.c
-+++ b/drivers/gpu/drm/bridge/dw_hdmi.c
-@@ -710,6 +710,13 @@ static void dw_hdmi_phy_enable_tmds(struct dw_hdmi *hdmi, u8 enable)
- 			 HDMI_PHY_CONF0_ENTMDS_MASK);
- }
- 
-+static void dw_hdmi_phy_enable_spare(struct dw_hdmi *hdmi, u8 enable)
-+{
-+	hdmi_mask_writeb(hdmi, enable, HDMI_PHY_CONF0,
-+			 HDMI_PHY_CONF0_SPARECTRL_OFFSET,
-+			 HDMI_PHY_CONF0_SPARECTRL_MASK);
-+}
+diff --git a/Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt b/Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
+new file mode 100644
+index 0000000..0735464
+--- /dev/null
++++ b/Documentation/devicetree/bindings/video/dw_hdmi-rockchip.txt
+@@ -0,0 +1,43 @@
++Rockchip specific extensions to the Synopsys Designware HDMI
++================================
 +
- static void dw_hdmi_phy_gen2_pddq(struct dw_hdmi *hdmi, u8 enable)
- {
- 	hdmi_mask_writeb(hdmi, enable, HDMI_PHY_CONF0,
-diff --git a/drivers/gpu/drm/bridge/dw_hdmi.h b/drivers/gpu/drm/bridge/dw_hdmi.h
-index baa7849..175dbc8 100644
---- a/drivers/gpu/drm/bridge/dw_hdmi.h
-+++ b/drivers/gpu/drm/bridge/dw_hdmi.h
-@@ -837,7 +837,8 @@ enum {
- 	HDMI_PHY_CONF0_PDZ_OFFSET = 7,
- 	HDMI_PHY_CONF0_ENTMDS_MASK = 0x40,
- 	HDMI_PHY_CONF0_ENTMDS_OFFSET = 6,
--	HDMI_PHY_CONF0_SPARECTRL = 0x20,
-+	HDMI_PHY_CONF0_SPARECTRL_MASK = 0x20,
-+	HDMI_PHY_CONF0_SPARECTRL_OFFSET = 5,
- 	HDMI_PHY_CONF0_GEN2_PDDQ_MASK = 0x10,
- 	HDMI_PHY_CONF0_GEN2_PDDQ_OFFSET = 4,
- 	HDMI_PHY_CONF0_GEN2_TXPWRON_MASK = 0x8,
++Required properties:
++- compatible: "rockchip,rk3288-dw-hdmi";
++- reg: Physical base address and length of the controller's registers.
++- ddc-i2c-bus:  phandle of an I2C controller used for DDC EDID probing
++- clocks: from common clock binding: handle to hdmi clock.
++- clock-names: should be "clk" "hdcp_clk"
++- rockchip,grf: this soc should set GRF regs to mux vopl/vopb.
++- interrupts: HDMI interrupt number
++- ports: contain a port node with endpoint definitions as defined in
++  Documentation/devicetree/bindings/media/video-interfaces.txt. For
++  vopb,set the reg = <0> and set the reg = <1> for vopl.
++- reg-io-width: the width of the reg:1,4, the value should be 4 on
++  rk3288 platform
++
++Example:
++hdmi: hdmi@ff980000 {
++	compatible = "rockchip,rk3288-dw-hdmi";
++	reg = <0xff980000 0x20000>;
++	reg-io-width = <4>;
++	ddc-i2c-bus = <&i2c5>;
++	rockchip,grf = <&grf>;
++	interrupts = <GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>;
++	clocks = <&cru  PCLK_HDMI_CTRL>, <&cru SCLK_HDMI_HDCP>;
++	clock-names = "clk", "hdcp_clk";
++	status = "disabled";
++	ports {
++		hdmi_in: port {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			hdmi_in_vopb: endpoint@0 {
++				reg = <0>;
++				remote-endpoint = <&vopb_out_hdmi>;
++			};
++			hdmi_in_vopl: endpoint@1 {
++				reg = <1>;
++				remote-endpoint = <&vopl_out_hdmi>;
++			};
++		};
++	};
++};
 -- 
 1.9.1
 
