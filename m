@@ -1,146 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751536AbaLBNzT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 08:55:19 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:58537 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026AbaLBNzP (ORCPT
+	id S1752203AbaLBN4O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 08:56:14 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49839 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639AbaLBN4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 08:55:15 -0500
-MIME-Version: 1.0
-In-Reply-To: <547DC0B7.6050600@arm.com>
-References: <1416902662-19281-1-git-send-email-yingjoe.chen@mediatek.com>
-	<1416902662-19281-2-git-send-email-yingjoe.chen@mediatek.com>
-	<CAMuHMdWj0Z66fya=7oN=ZUoz0TQOHFxBe0wyHmkDDVzU8Lafog@mail.gmail.com>
-	<547DC0B7.6050600@arm.com>
-Date: Tue, 2 Dec 2014 14:55:13 +0100
-X-Google-Sender-Auth: DVYXbEMcczVfrNZOWV5dyiceJIg
-Message-ID: <CAMuHMdVkH_qshTfpXBcHx1FiEzL8055s1TiJqayWLXeFUf97NQ@mail.gmail.com>
-Subject: Re: [PATCH v8 1/4] irqchip: gic: Support hierarchy irq domain.
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <Pawel.Moll@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "hc.yen@mediatek.com" <hc.yen@mediatek.com>,
-        "srv_heupstream@mediatek.com" <srv_heupstream@mediatek.com>,
-        "yh.chen@mediatek.com" <yh.chen@mediatek.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Yijing Wang <wangyijing@huawei.com>, Rob Herring <robh+dt@kernel.org>,
-        "nathan.chung@mediatek.com" <nathan.chung@mediatek.com>,
-        "yingjoe.chen@gmail.com" <yingjoe.chen@gmail.com>,
+	Tue, 2 Dec 2014 08:56:11 -0500
+Date: Tue, 2 Dec 2014 14:55:27 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>,
+        Hongzhou Yang <hongzhou.yang@mediatek.com>,
         Matthias Brugger <matthias.bgg@gmail.com>,
-        "eddie.huang@mediatek.com" <eddie.huang@mediatek.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
+        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        Heiko =?iso-8859-15?Q?St=FCbner?= <heiko@sntech.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        huang eddie <eddie.huang@mediatek.com>, dandan.he@mediatek.com,
+        alan.cheng@mediatek.com, toby.liu@mediatek.com
+Subject: Re: [PATCH v3 2/3] dt-bindings: Add pinctrl bindings for
+ mt65xx/mt81xx.
+Message-ID: <20141202135527.GM30369@pengutronix.de>
+References: <1415709535-31515-1-git-send-email-hongzhou.yang@mediatek.com>
+ <1415709535-31515-3-git-send-email-hongzhou.yang@mediatek.com>
+ <CACRpkdYSe_BH_qiHma2BA+c2otEi3wd0TBXy83t8vwrNL+3U2g@mail.gmail.com>
+ <20141127101830.GP30369@pengutronix.de>
+ <CACRpkdbMdJT6y-NL36RgQe0-CAFAVGqKiwY9+yFcwA7JDLmA+Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbMdJT6y-NL36RgQe0-CAFAVGqKiwY9+yFcwA7JDLmA+Q@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:15:31 up 47 days, 20:29, 61 users,  load average: 0.09, 0.13,
+ 0.18
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marc,
+Hi Linus,
 
-On Tue, Dec 2, 2014 at 2:37 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
-> On 02/12/14 13:27, Geert Uytterhoeven wrote:
->> On Tue, Nov 25, 2014 at 9:04 AM, Yingjoe Chen <yingjoe.chen@mediatek.com> wrote:
->>> Add support to use gic as a parent for stacked irq domain.
->>>
->>> Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
->>
->> This change (which is now in -next as commit 9a1091ef0017c40a) breaks
->> booting on r8a7740/armadillo-legacy.
->>
->> It hangs because the timers cannot get their interrupts:
->>
->> console [tty0] enabled
->>  sh-tmu.0: ch0: used for clock events
->>  sh-tmu.0: ch0: used for periodic clock events
->>  sh-tmu.0: ch0: failed to request irq 230
->>  sh-tmu.0: ch1: used as clock source
->>  sh-cmt-48.1: ch0: failed to request irq 90
->>  sh-cmt-48.1: ch0: registration failed
->> earlytimer: unable to probe sh-cmt-48 early.
->> Calibrating delay loop...
->
-> Grmbl... Are you, by any (lack of) chance, using a setup where the GIC
-> is probed via DT, but the timers have their IRQs hardcoded?
+On Fri, Nov 28, 2014 at 05:12:44PM +0100, Linus Walleij wrote:
+> On Thu, Nov 27, 2014 at 11:18 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> > On Thu, Nov 27, 2014 at 09:44:42AM +0100, Linus Walleij wrote:
+> >> On Tue, Nov 11, 2014 at 1:38 PM, Hongzhou Yang
+> >> <hongzhou.yang@mediatek.com> wrote:
+> 
+> >> > +- mediatek,pins: 2 integers array, represents gpio pinmux number and config
+> >> > +  setting. The format as following
+> >> > +
+> >> > +    node {
+> >> > +     mediatek,pins = <PIN_NUMBER_PINMUX>;
+> >> > +                     GENERIC_PINCONFIG;
+> >> > +    };
+> >>
+> >> As suggested by Sacha, use just "pins" and define the binding as a patch
+> >> to Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+> >> that is generic for multiplexing, so we get some order here.
+> >>
+> >> I want you however to put pin multiplexing and pin configuration into
+> >> different nodes if possible. I don't like combines muxing and config
+> >> nodes. If necessary tag the node with something.
+> >
+> > Why? I think the properties can live happily together, even when the
+> > parsing functions go to the pinctrl core.
+> 
+> I'm worried about the semantic ambiguity between the pins = <...>;
+> property on different pin controllers, whether they are based on
+> function+group or per-pin. It's not even up to me to decide,
+> this is for the DT binding people.
+> 
+> In this case:
+> 
+> pins = <MT8135_PIN_100_SDA0__FUNC_SDA0>,
+>           <MT8135_PIN_101_SCL0__FUNC_SCL0>;
+> 
+> Each element is a 32bit unsigned where the lower and higher
+> 16 bits have different meanings.
+> 
+> In some other pin controller (using generic bindings and
+> already merged! arch/arm/boot/dts/ste-href-ab8500.dtsi):
+> 
+> gpio39 {
+>       gpio39_default_mode: gpio39_default {
+>              default_mux {
+>                       function = "gpio";
+>                       groups = "gpio39_a_1";
+>              };
+>              default_cfg {
+>                       pins = "GPIO39_E16";
+>                       input-enable;
+>                       bias-pull-down;
+>              };
+>      };
+> };
+> 
+> Can we get away with using the same core parser with this
+> as well, here the nodes are split and using strings to identify
+> pins, not 32bit numbers.
+> 
+> I am worried about semantic coexistance...
 
-Yes, the GIC is declared in arch/arm/boot/dts/r8a7740.dtsi:
+We could rename the property from 'pins' to 'pinmux' for this variant of
+the binding. Then a parser would know that this property is about pins
+and muxing.
 
-        gic: interrupt-controller@c2800000 {
-                compatible = "arm,cortex-a9-gic";
-                #interrupt-cells = <3>;
-                interrupt-controller;
-                reg = <0xc2800000 0x1000>,
-                      <0xc2000000 0x1000>;
-        };
+> 
+> >> > +               i2c0_pins_a: i2c0@0 {
+> >> > +                       pins1 {
+> >> > +                               mediatek,pins = <MT8135_PIN_100_SDA0__FUNC_SDA0>,
+> >> > +                                               <MT8135_PIN_101_SCL0__FUNC_SCL0>;
+> >> > +                               bias-disable;
+> >> > +                       };
+> >> > +               };
+> >>
+> >> I would split it up.
+> >>
+> >> i2c0_pins_a: i2c0@0 {
+> >>         pins1 {
+> >>                 pins = <MT8135_PIN_100_SDA0>;
+> >>                 function = <MT8135_PIN_100_FUNC_SDA0>;
+> >>         };
+> >
+> > The reason to put this in a single define was to make writing the device
+> > trees less error prone. When you have two arrays you must correlate the
+> > entries.
+> 
+> I see the upside. I'm just worried about ambiguity when comparing
+> different device trees to each other, because they should be about
+> readability and understanding, not confusing...
 
-The timers come from legacy C board code in
-arch/arm/mach-shmobile/setup-r8a7740.c:
+Sorry, given the currently existing devicetrees I don't buy that
+readability argument. Let's look into the snowball example, here ssp0:
 
-/* CMT */
-static struct sh_timer_config cmt1_platform_data = {
-        .channels_mask = 0x3f,
-};
+	ssp0_snowball_mode: ssp0_snowball_default {
+		snowball_mux {
+			ste,function = "ssp0";
+			ste,pins = "ssp0_a_1";
+		};
+		snowball_cfg1 {
+			ste,pins = "GPIO144_B13"; /* FRM */
+			ste,config = <&gpio_out_hi>;
+		};
+		snowball_cfg2 {
+			ste,pins = "GPIO145_C13"; /* RXD */
+			ste,config = <&in_pd>;
+		};
+		snowball_cfg3 {
+			ste,pins =
+			"GPIO146_D13", /* TXD */
+			"GPIO143_D12"; /* CLK */
+			ste,config = <&out_lo>;
+		};
+	};
 
-static struct resource cmt1_resources[] = {
-        DEFINE_RES_MEM(0xe6138000, 0x170),
-        DEFINE_RES_IRQ(gic_spi(58)),
-};
 
-static struct platform_device cmt1_device = {
-        .name           = "sh-cmt-48",
-        .id             = 1,
-        .dev = {
-                .platform_data  = &cmt1_platform_data,
-        },
-        .resource       = cmt1_resources,
-        .num_resources  = ARRAY_SIZE(cmt1_resources),
-};
+For the SSP0 it needs the string "ssp0_a_1" which is documented exactly
+nowhere. Only the sourcecode shows that this (totally made up) string
+means that the pins DB8500_PIN_D12, DB8500_PIN_B13, DB8500_PIN_C13 and
+DB8500_PIN_D13 shall be muxed. The corresponding ste,function property
+has the value "ssp0" which again is not documented. The following config
+nodes reference the same pins under a different name: "GPIO144_B13",
+"GPIO145_C13", "GPIO146_D13" and "GPIO143_D12". Again, these strings are
+completely undocumented and only the sourcecode shows which strings can
+be used for the ste,pins property. Not only that no documentation shows
+which strings are allowed, there's also no documentation which describes
+which combination of strings for the different properties make sense.
+The use of ## for concatenating defines in the driver makes the whole
+stuff even harder to understand. It even took me quite a while to
+realize that the binding requires me to configure the muxes in groups,
+but the config as individual pins. So no, the current devicetrees are
+not about readability.
 
-/* TMU */
-static struct sh_timer_config tmu0_platform_data = {
-        .channels_mask = 7,
-};
+Rewrite this to:
 
-static struct resource tmu0_resources[] = {
-        DEFINE_RES_MEM(0xfff80000, 0x2c),
-        DEFINE_RES_IRQ(gic_spi(198)),
-        DEFINE_RES_IRQ(gic_spi(199)),
-        DEFINE_RES_IRQ(gic_spi(200)),
-};
+#define GPIO143_D12_SSP0_CLK	PINMUX_PIN(143, 1)
+#define GPIO144_B13_SSP0_FRM	PINMUX_PIN(144, 1)
+#define GPIO145_C13_SSP0_RXD	PINMUX_PIN(145, 1)
+#define GPIO146_D13_SSP0_TXD	PINMUX_PIN(146, 1)
 
-static struct platform_device tmu0_device = {
-        .name           = "sh-tmu",
-        .id             = 0,
-        .dev = {
-                .platform_data  = &tmu0_platform_data,
-        },
-        .resource       = tmu0_resources,
-        .num_resources  = ARRAY_SIZE(tmu0_resources),
-};
+and we get:
 
-The corresponding r8a7740/armadillo-multiplatform works fine.
+	ssp0_snowball_mode: ssp0_snowball_default {
+		snowball_cfg1 {
+			pinmux = <GPIO144_B13_SSP0_FRM>;
+			ste,config = <&gpio_out_hi>;
+		};
+		snowball_cfg2 {
+			pinmux = <GPIO145_C13_SSP0_RXD>;
+			ste,config = <&in_pd>;
+		};
+		snowball_cfg3 {
+			pinmux = <GPIO143_D12_SSP0_CLK GPIO146_D13_SSP0_TXD>;
+			ste,config = <&out_lo>;
+		};
+	};
 
-Still, I'm wondering why sh73a0/kzm9g-legacy is not impacted by this
-change...
+And the documentation we need is: "For the pinmux property pick macros
+from dt-bindings/.../xy.h"
 
-Gr{oetje,eeting}s,
+> 
+> >> One node for the multiplexing, one node for the config. This is the
+> >> pattern used by most drivers, so I want to have this structure.
+> >>
+> >> It is also easy to tell one node from the other: if it contains "function"
+> >> we know it's a multiplexing node, if it doesn't, it's a config node.
+> >
+> > So when merging these together a node is always multiplexing and
+> > configuration. But do we really win anything if both are separated? When
+> > both are separated you still need an array of pins in the nodes to
+> > tell which pins this node is for. If this array also contains the
+> > mux information then this won't hurt. You can still ignore it.
+> 
+> Well we definately have to support the case with split config and
+> muxing nodes at least. I am very worried that we would get into
+> ambguities where that is not possible.
 
-                        Geert
+Sure we have as we cannot change existing bindings, but I cannot see
+any ambiguities. In the end it's the SoC specific driver which decides
+over the binding. Of course we do ourselves a favor when all use a
+similar binding and use common code to parse it, but when everything
+else fails we can still make a SoC specific parser. Nobody wants that
+of course, we are all lazy ;)
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Sascha
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
