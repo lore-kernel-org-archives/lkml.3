@@ -1,53 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522AbaLBSFx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 13:05:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46233 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754071AbaLBSFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 13:05:52 -0500
-Date: Tue, 2 Dec 2014 19:05:29 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] oom: kill the insufficient and no longer needed
-	PT_TRACE_EXIT check
-Message-ID: <20141202180529.GB20314@redhat.com>
-References: <20141127230349.GA25075@redhat.com> <20141127230408.GA25100@redhat.com> <20141202093530.GC27014@dhcp22.suse.cz>
+	id S932596AbaLBSHs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 13:07:48 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:55684 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932365AbaLBSHq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 13:07:46 -0500
+Date: Tue, 2 Dec 2014 13:07:43 -0500
+From: Tejun Heo <tj@kernel.org>
+To: nick <xerofoify@gmail.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Fix me in libata-scsi.c
+Message-ID: <20141202180743.GI10918@htj.dyndns.org>
+References: <546A9EAC.4080509@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141202093530.GC27014@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <546A9EAC.4080509@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02, Michal Hocko wrote:
->
-> On Fri 28-11-14 00:04:08, Oleg Nesterov wrote:
-> > After the previous patch we can remove the PT_TRACE_EXIT check in
-> > oom_scan_process_thread(), it was added to handle the case when the
-> > coredumping was "frozen" by ptrace, but it doesn't really work. If
-> > nothing else, we would need to check all threads which could share
-> > the same ->mm to make it more or less correct.
-> >
-> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
->
-> I still do not see why we do not need task->ptrace & PT_TRACE_EXIT check
-> here. I do understand that the check on group_leader doesn't make much
-> sense. ptrace_event would block until the tracer let the task run again
-> which may be never AFAICS.
+On Mon, Nov 17, 2014 at 08:19:40PM -0500, nick wrote:
+> I am wondering about the fix me in following code in the file listed
+> in my message. Seems this is necessary from reading the code and the
+> FIX ME is no longer needed as the memset is correct and needed for
+> the function.
 
-No, note that PT_TRACE_EXIT (the last ptrace event) is reported before
-PF_EXITING is set.
+Yeah, I think the sense buffer clearing is the right thing regardless
+of it being not strictly necessary for all devices.  There's no point
+in not clearing it.  Please feel free to send a patch to remove the
+comment.
 
-(just in case... we do have some problems with SIGKILL && ptrace, but
- this is completely off-topic and has nothing to do with oom-kill.c)
+Thanks.
 
-Oleg.
-
+-- 
+tejun
