@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933210AbaLBTWo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:22:44 -0500
-Received: from mail-oi0-f47.google.com ([209.85.218.47]:39266 "EHLO
-	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754676AbaLBTWm (ORCPT
+	id S933226AbaLBTWz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:22:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46628 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932688AbaLBTWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:22:42 -0500
-From: Ashley Lai <ashley@ashleylai.com>
-X-Google-Original-From: Ashley Lai <alai@ant>
-Date: Tue, 2 Dec 2014 13:22:35 -0600 (CST)
-To: Anton Blanchard <anton@samba.org>
-cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] tpm/tpm_ibmvtpm: Fail in ibmvtpm_get_data if
- driver_data is bad
-In-Reply-To: <20140920072942.27c28768@kryten>
-Message-ID: <alpine.DEB.2.10.1412021307180.15589@ant>
-References: <20140920072942.27c28768@kryten>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	Tue, 2 Dec 2014 14:22:53 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: James Ralston <james.d.ralston@intel.com>, Tejun Heo <tj@kernel.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 049/121] ahci: Add Device IDs for Intel Sunrise Point PCH
+Date: Tue,  2 Dec 2014 11:18:48 -0800
+Message-Id: <1417548000-1794-50-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> @@ -63,9 +63,9 @@ static int ibmvtpm_send_crq(struct vio_dev *vdev, u64 w1, u64 w2)
-> static struct ibmvtpm_dev *ibmvtpm_get_data(const struct device *dev)
-> {
-> 	struct tpm_chip *chip = dev_get_drvdata(dev);
-> -	if (chip)
-> -		return (struct ibmvtpm_dev *)TPM_VPRIV(chip);
-> -	return NULL;
-> +
-> +	BUG_ON(!chip);
+3.13.11-ckt12 -stable review patch.  If anyone has any objections, please let me know.
 
-With the recent patch from Vicky, it is possible to have a NULL value for 
-chip which will trigger a false positive for BUG_ON(!chip).
+------------------
 
-> +	return (struct ibmvtpm_dev *)TPM_VPRIV(chip);
-> }
->
-> /**
->
+From: James Ralston <james.d.ralston@intel.com>
+
+commit 690000b930456a98663567d35dd5c54b688d1e3f upstream.
+
+This patch adds the AHCI-mode SATA Device IDs for the Intel Sunrise Point PCH.
+
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/ata/ahci.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index b942b1e..12fc8d7 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -320,6 +320,11 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H AHCI */
++	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H RAID */
++	{ PCI_VDEVICE(INTEL, 0xa105), board_ahci }, /* Sunrise Point-H RAID */
++	{ PCI_VDEVICE(INTEL, 0xa107), board_ahci }, /* Sunrise Point-H RAID */
++	{ PCI_VDEVICE(INTEL, 0xa10f), board_ahci }, /* Sunrise Point-H RAID */
+ 
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+-- 
+1.9.1
+
