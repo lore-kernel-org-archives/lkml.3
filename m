@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933407AbaLBTYV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:24:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46713 "EHLO
+	id S933422AbaLBTYa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:24:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46728 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933364AbaLBTXu (ORCPT
+	with ESMTP id S932820AbaLBTYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:23:50 -0500
+	Tue, 2 Dec 2014 14:24:25 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 077/121] NFSv4.1: nfs41_clear_delegation_stateid shouldn't trust NFS_DELEGATED_STATE
-Date: Tue,  2 Dec 2014 11:19:16 -0800
-Message-Id: <1417548000-1794-78-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 120/121] x86_64, traps: Stop using IST for #SS
+Date: Tue,  2 Dec 2014 11:19:59 -0800
+Message-Id: <1417548000-1794-121-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
@@ -27,104 +28,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 0c116cadd94b16b30b1dd90d38b2784d9b39b01a upstream.
+commit 6f442be2fb22be02cafa606f1769fa1e6f894441 upstream.
 
-This patch removes the assumption made previously, that we only need to
-check the delegation stateid when it matches the stateid on a cached
-open.
+On a 32-bit kernel, this has no effect, since there are no IST stacks.
 
-If we believe that we hold a delegation for this file, then we must assume
-that its stateid may have been revoked or expired too. If we don't test it
-then our state recovery process may end up caching open/lock state in a
-situation where it should not.
-We therefore rename the function nfs41_clear_delegation_stateid as
-nfs41_check_delegation_stateid, and change it to always run through the
-delegation stateid test and recovery process as outlined in RFC5661.
+On a 64-bit kernel, #SS can only happen in user code, on a failed iret
+to user space, a canonical violation on access via RSP or RBP, or a
+genuine stack segment violation in 32-bit kernel code.  The first two
+cases don't need IST, and the latter two cases are unlikely fatal bugs,
+and promoting them to double faults would be fine.
 
-http://lkml.kernel.org/r/CAN-5tyHwG=Cn2Q9KsHWadewjpTTy_K26ee+UnSvHvG4192p-Xw@mail.gmail.com
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+This fixes a bug in which the espfix64 code mishandles a stack segment
+violation.
+
+This saves 4k of memory per CPU and a tiny bit of code.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ kamal: backport to 3.13-stable: errorentry context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfs/nfs4proc.c | 42 +++++++++++++++++-------------------------
- 1 file changed, 17 insertions(+), 25 deletions(-)
+ arch/x86/include/asm/page_32_types.h |  1 -
+ arch/x86/include/asm/page_64_types.h | 11 +++++------
+ arch/x86/include/asm/traps.h         |  1 +
+ arch/x86/kernel/dumpstack_64.c       |  1 -
+ arch/x86/kernel/entry_64.S           |  2 +-
+ arch/x86/kernel/traps.c              | 18 +-----------------
+ 6 files changed, 8 insertions(+), 26 deletions(-)
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 33f76f9..f81f845 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -2059,45 +2059,37 @@ static int nfs40_open_expired(struct nfs4_state_owner *sp, struct nfs4_state *st
- }
+diff --git a/arch/x86/include/asm/page_32_types.h b/arch/x86/include/asm/page_32_types.h
+index f48b17d..3a52ee0 100644
+--- a/arch/x86/include/asm/page_32_types.h
++++ b/arch/x86/include/asm/page_32_types.h
+@@ -20,7 +20,6 @@
+ #define THREAD_SIZE_ORDER	1
+ #define THREAD_SIZE		(PAGE_SIZE << THREAD_SIZE_ORDER)
  
- #if defined(CONFIG_NFS_V4_1)
--static void nfs41_clear_delegation_stateid(struct nfs4_state *state)
-+static void nfs41_check_delegation_stateid(struct nfs4_state *state)
- {
- 	struct nfs_server *server = NFS_SERVER(state->inode);
--	nfs4_stateid *stateid = &state->stateid;
-+	nfs4_stateid stateid;
- 	struct nfs_delegation *delegation;
--	struct rpc_cred *cred = NULL;
--	int status = -NFS4ERR_BAD_STATEID;
+-#define STACKFAULT_STACK 0
+ #define DOUBLEFAULT_STACK 1
+ #define NMI_STACK 0
+ #define DEBUG_STACK 0
+diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+index 43dcd80..d1d2972 100644
+--- a/arch/x86/include/asm/page_64_types.h
++++ b/arch/x86/include/asm/page_64_types.h
+@@ -14,12 +14,11 @@
+ #define IRQ_STACK_ORDER 2
+ #define IRQ_STACK_SIZE (PAGE_SIZE << IRQ_STACK_ORDER)
+ 
+-#define STACKFAULT_STACK 1
+-#define DOUBLEFAULT_STACK 2
+-#define NMI_STACK 3
+-#define DEBUG_STACK 4
+-#define MCE_STACK 5
+-#define N_EXCEPTION_STACKS 5  /* hw limit: 7 */
++#define DOUBLEFAULT_STACK 1
++#define NMI_STACK 2
++#define DEBUG_STACK 3
++#define MCE_STACK 4
++#define N_EXCEPTION_STACKS 4  /* hw limit: 7 */
+ 
+ #define PUD_PAGE_SIZE		(_AC(1, UL) << PUD_SHIFT)
+ #define PUD_PAGE_MASK		(~(PUD_PAGE_SIZE-1))
+diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
+index 58d66fe..b409b17 100644
+--- a/arch/x86/include/asm/traps.h
++++ b/arch/x86/include/asm/traps.h
+@@ -39,6 +39,7 @@ asmlinkage void simd_coprocessor_error(void);
+ 
+ #ifdef CONFIG_TRACING
+ asmlinkage void trace_page_fault(void);
++#define trace_stack_segment stack_segment
+ #define trace_divide_error divide_error
+ #define trace_bounds bounds
+ #define trace_invalid_op invalid_op
+diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+index addb207..66e274a 100644
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -24,7 +24,6 @@ static char x86_stack_ids[][8] = {
+ 		[ DEBUG_STACK-1			]	= "#DB",
+ 		[ NMI_STACK-1			]	= "NMI",
+ 		[ DOUBLEFAULT_STACK-1		]	= "#DF",
+-		[ STACKFAULT_STACK-1		]	= "#SS",
+ 		[ MCE_STACK-1			]	= "#MC",
+ #if DEBUG_STKSZ > EXCEPTION_STKSZ
+ 		[ N_EXCEPTION_STACKS ...
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 2bb5032..29e2ff3 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1519,7 +1519,7 @@ apicinterrupt3 HYPERVISOR_CALLBACK_VECTOR \
+ 
+ paranoidzeroentry_ist debug do_debug DEBUG_STACK
+ paranoidzeroentry_ist int3 do_int3 DEBUG_STACK
+-paranoiderrorentry stack_segment do_stack_segment
++errorentry stack_segment do_stack_segment
+ #ifdef CONFIG_XEN
+ zeroentry xen_debug do_debug
+ zeroentry xen_int3 do_int3
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index e5b2976..d2451ad 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -221,28 +221,12 @@ DO_ERROR(X86_TRAP_OLD_MF, SIGFPE, "coprocessor segment overrun",
+ 		coprocessor_segment_overrun)
+ DO_ERROR(X86_TRAP_TS, SIGSEGV, "invalid TSS", invalid_TSS)
+ DO_ERROR(X86_TRAP_NP, SIGBUS, "segment not present", segment_not_present)
+-#ifdef CONFIG_X86_32
+ DO_ERROR(X86_TRAP_SS, SIGBUS, "stack segment", stack_segment)
+-#endif
+ DO_ERROR_INFO(X86_TRAP_AC, SIGBUS, "alignment check", alignment_check,
+ 		BUS_ADRALN, 0)
+ 
+ #ifdef CONFIG_X86_64
+ /* Runs on IST stack */
+-dotraplinkage void do_stack_segment(struct pt_regs *regs, long error_code)
+-{
+-	enum ctx_state prev_state;
 -
--	/* If a state reset has been done, test_stateid is unneeded */
--	if (test_bit(NFS_DELEGATED_STATE, &state->flags) == 0)
--		return;
-+	struct rpc_cred *cred;
-+	int status;
- 
- 	/* Get the delegation credential for use by test/free_stateid */
- 	rcu_read_lock();
- 	delegation = rcu_dereference(NFS_I(state->inode)->delegation);
--	if (delegation != NULL &&
--	    nfs4_stateid_match(&delegation->stateid, stateid)) {
--		cred = get_rpccred(delegation->cred);
--		rcu_read_unlock();
--		status = nfs41_test_stateid(server, stateid, cred);
--		trace_nfs4_test_delegation_stateid(state, NULL, status);
--	} else
-+	if (delegation == NULL) {
- 		rcu_read_unlock();
-+		return;
-+	}
-+
-+	nfs4_stateid_copy(&stateid, &delegation->stateid);
-+	cred = get_rpccred(delegation->cred);
-+	rcu_read_unlock();
-+	status = nfs41_test_stateid(server, &stateid, cred);
-+	trace_nfs4_test_delegation_stateid(state, NULL, status);
- 
- 	if (status != NFS_OK) {
- 		/* Free the stateid unless the server explicitly
- 		 * informs us the stateid is unrecognized. */
- 		if (status != -NFS4ERR_BAD_STATEID)
--			nfs41_free_stateid(server, stateid, cred);
--		nfs_remove_bad_delegation(state->inode);
+-	prev_state = exception_enter();
+-	if (notify_die(DIE_TRAP, "stack segment", regs, error_code,
+-		       X86_TRAP_SS, SIGBUS) != NOTIFY_STOP) {
+-		preempt_conditional_sti(regs);
+-		do_trap(X86_TRAP_SS, SIGBUS, "stack segment", regs, error_code, NULL);
+-		preempt_conditional_cli(regs);
+-	}
+-	exception_exit(prev_state);
+-}
 -
--		write_seqlock(&state->seqlock);
--		nfs4_stateid_copy(&state->stateid, &state->open_stateid);
--		write_sequnlock(&state->seqlock);
--		clear_bit(NFS_DELEGATED_STATE, &state->flags);
-+			nfs41_free_stateid(server, &stateid, cred);
-+		nfs_finish_clear_delegation_stateid(state);
- 	}
- 
--	if (cred != NULL)
--		put_rpccred(cred);
-+	put_rpccred(cred);
- }
- 
- /**
-@@ -2141,7 +2133,7 @@ static int nfs41_open_expired(struct nfs4_state_owner *sp, struct nfs4_state *st
+ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
  {
- 	int status;
- 
--	nfs41_clear_delegation_stateid(state);
-+	nfs41_check_delegation_stateid(state);
- 	status = nfs41_check_open_stateid(state);
- 	if (status != NFS_OK)
- 		status = nfs4_open_expired(sp, state);
+ 	static const char str[] = "double fault";
+@@ -776,7 +760,7 @@ void __init trap_init(void)
+ 	set_intr_gate(X86_TRAP_OLD_MF, coprocessor_segment_overrun);
+ 	set_intr_gate(X86_TRAP_TS, invalid_TSS);
+ 	set_intr_gate(X86_TRAP_NP, segment_not_present);
+-	set_intr_gate_ist(X86_TRAP_SS, &stack_segment, STACKFAULT_STACK);
++	set_intr_gate(X86_TRAP_SS, stack_segment);
+ 	set_intr_gate(X86_TRAP_GP, general_protection);
+ 	set_intr_gate(X86_TRAP_SPURIOUS, spurious_interrupt_bug);
+ 	set_intr_gate(X86_TRAP_MF, coprocessor_error);
 -- 
 1.9.1
 
