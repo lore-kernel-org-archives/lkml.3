@@ -1,294 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932607AbaLBQfs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 11:35:48 -0500
-Received: from smtp2-g21.free.fr ([212.27.42.2]:17330 "EHLO smtp2-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932464AbaLBQfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 11:35:40 -0500
-Date: Tue, 2 Dec 2014 17:35:30 +0100
-From: Sabrina Dubroca <sd@queasysnail.net>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com
-Subject: Re: e1000_netpoll(): disable_irq() triggers might_sleep() on
- linux-next
-Message-ID: <20141202163530.GA19420@kria>
-References: <20141029155620.GA4886@kria>
- <20141029180734.GQ12706@worktop.programming.kicks-ass.net>
- <alpine.DEB.2.11.1410291918060.5308@nanos>
- <20141029193603.GS12706@worktop.programming.kicks-ass.net>
+	id S932425AbaLBQk3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 11:40:29 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:52738 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753306AbaLBQk1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 11:40:27 -0500
+Date: Tue, 2 Dec 2014 11:40:24 -0500
+From: Tejun Heo <htejun@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Final per cpu consistency patch for -next or late in 3.19 merge
+ period
+Message-ID: <20141202164024.GA10918@htj.dyndns.org>
+References: <alpine.DEB.2.11.1411281229350.11435@gentwo.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141029193603.GS12706@worktop.programming.kicks-ass.net>
+In-Reply-To: <alpine.DEB.2.11.1411281229350.11435@gentwo.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, sorry for the delay.
+Hello, Christoph.
 
-2014-10-29, 20:36:03 +0100, Peter Zijlstra wrote:
-> On Wed, Oct 29, 2014 at 07:33:00PM +0100, Thomas Gleixner wrote:
-> > Yuck. No. You are just papering over the problem.
-> > 
-> > What happens if you add 'threadirqs' to the kernel command line? Or if
-> > the interrupt line is shared with a real threaded interrupt user?
-> > 
-> > The proper solution is to have a poll_lock for e1000 which serializes
-> > the hardware interrupt against netpoll instead of using
-> > disable/enable_irq().
-> > 
-> > In fact that's less expensive than the disable/enable_irq() dance and
-> > the chance of contention is pretty low. If done right it will be a
-> > NOOP for the CONFIG_NET_POLL_CONTROLLER=n case.
-> > 
+On Fri, Nov 28, 2014 at 12:31:22PM -0600, Christoph Lameter wrote:
+> This is the final patch to remove __get_cpu_var. I checked -next and there
+> are no remaining uses of __get_cpu_var. So either merge this to -next or
+> wait until 3.19 late.
 > 
-> OK a little something like so then I suppose.. But I suspect most all
-> the network drivers will need this and maybe more, disable_irq() is a
-> popular little thing and we 'just' changed semantics on them.
+> However, if we wait till 3.19 then I may have to do another pass if
+> people add more uses of __get_cpu_var and submit another patch.
 > 
-> ---
->  drivers/net/ethernet/intel/e1000/e1000.h      |  2 ++
->  drivers/net/ethernet/intel/e1000/e1000_main.c | 22 +++++++++++++++++-----
->  kernel/irq/manage.c                           |  2 +-
->  3 files changed, 20 insertions(+), 6 deletions(-)
+> From: Christoph Lameter <cl@linux.com>
+> Date: Tue, 29 Jul 2014 16:09:54 -0500
+> Subject: [PATCH] Remove __get_cpu_var and __raw_get_cpu_var macros
+> 
+> No user is left in the kernel source tree. Therefore we can
+> drop the definitions.
+> 
+> This is the final merge of the transition away from __get_cpu_var.
+> After this patch the kernel will not build if anyone uses __get_cpu_var.
 
-I've been running with variants of this patch, things seem ok.
+Can you please update Documentation/local_ops.txt and comments which
+contain __get_cpu_var() and send the updated patch to Andrew?
 
-As noted earlier, there are a lot of drivers doing this disable_irq +
-irq_handler + enable_irq sequence.  I found about 60.
-Many already take a lock in the interrupt handler, and look like we
-could just remove the call to disable_irq (example: cp_interrupt,
-drivers/net/ethernet/realtek/8139cp.c).
-
-Here's how I modified your patch.  The locking compiles away if
-CONFIG_NET_POLL_CONTROLLER=n.
-
-I can work on converting all the drivers from disable_irq to
-netpoll_irq_lock, if that's okay with you.
-
-In igb there's also a synchronize_irq() called from the netpoll
-controller (in igb_irq_disable()), I think a similar locking scheme
-would work.
-I also saw a few disable_irq_nosync and disable_percpu_irq. These are
-okay?
-
+Andrew, this is removal of the two deprecated per-cpu accessors.  All
+the existing users are gone from the devel branches and thus from -mm.
+Can you please route this once Christoph posts an updated version?
 
 Thanks.
 
----
-
-diff --git a/drivers/net/ethernet/intel/e1000/e1000.h b/drivers/net/ethernet/intel/e1000/e1000.h
-index 69707108d23c..79444125b9bd 100644
---- a/drivers/net/ethernet/intel/e1000/e1000.h
-+++ b/drivers/net/ethernet/intel/e1000/e1000.h
-@@ -68,6 +68,7 @@
- #include <linux/mii.h>
- #include <linux/ethtool.h>
- #include <linux/if_vlan.h>
-+#include <linux/netpoll.h>
- 
- #define BAR_0		0
- #define BAR_1		1
-@@ -323,6 +324,8 @@ struct e1000_adapter {
- 	struct delayed_work watchdog_task;
- 	struct delayed_work fifo_stall_task;
- 	struct delayed_work phy_info_task;
-+
-+	struct netpoll_irq_lock netpoll_lock;
- };
- 
- enum e1000_state_t {
-diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
-index 24f3986cfae2..5749a27e5c5e 100644
---- a/drivers/net/ethernet/intel/e1000/e1000_main.c
-+++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
-@@ -32,6 +32,7 @@
- #include <linux/prefetch.h>
- #include <linux/bitops.h>
- #include <linux/if_vlan.h>
-+#include <linux/netpoll.h>
- 
- char e1000_driver_name[] = "e1000";
- static char e1000_driver_string[] = "Intel(R) PRO/1000 Network Driver";
-@@ -1313,6 +1314,7 @@ static int e1000_sw_init(struct e1000_adapter *adapter)
- 	e1000_irq_disable(adapter);
- 
- 	spin_lock_init(&adapter->stats_lock);
-+	netpoll_irq_lock_init(&adapter->netpoll_lock);
- 
- 	set_bit(__E1000_DOWN, &adapter->flags);
- 
-@@ -3751,10 +3753,8 @@ void e1000_update_stats(struct e1000_adapter *adapter)
-  * @irq: interrupt number
-  * @data: pointer to a network interface device structure
-  **/
--static irqreturn_t e1000_intr(int irq, void *data)
-+static irqreturn_t __e1000_intr(int irq, struct e1000_adapter *adapter)
- {
--	struct net_device *netdev = data;
--	struct e1000_adapter *adapter = netdev_priv(netdev);
- 	struct e1000_hw *hw = &adapter->hw;
- 	u32 icr = er32(ICR);
- 
-@@ -3796,6 +3796,19 @@ static irqreturn_t e1000_intr(int irq, void *data)
- 	return IRQ_HANDLED;
- }
- 
-+static irqreturn_t e1000_intr(int irq, void *data)
-+{
-+	struct net_device *netdev = data;
-+	struct e1000_adapter *adapter = netdev_priv(netdev);
-+	irqreturn_t ret;
-+
-+	netpoll_irq_lock(&adapter->netpoll_lock);
-+	ret = __e1000_intr(irq, adapter);
-+	netpoll_irq_unlock(&adapter->netpoll_lock);
-+
-+	return ret;
-+}
-+
- /**
-  * e1000_clean - NAPI Rx polling callback
-  * @adapter: board private structure
-@@ -5220,9 +5233,7 @@ static void e1000_netpoll(struct net_device *netdev)
- {
- 	struct e1000_adapter *adapter = netdev_priv(netdev);
- 
--	disable_irq(adapter->pdev->irq);
- 	e1000_intr(adapter->pdev->irq, netdev);
--	enable_irq(adapter->pdev->irq);
- }
- #endif
- 
-diff --git a/include/linux/netpoll.h b/include/linux/netpoll.h
-index b25ee9ffdbe6..a171f1a50e0e 100644
---- a/include/linux/netpoll.h
-+++ b/include/linux/netpoll.h
-@@ -117,4 +117,35 @@ static inline bool netpoll_tx_running(struct net_device *dev)
- }
- #endif
- 
-+struct netpoll_irq_lock {
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	spinlock_t lock;
-+#endif
-+};
-+
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+static inline void netpoll_irq_lock_init(struct netpoll_irq_lock *np_lock)
-+{
-+	spin_lock_init(&np_lock->lock);
-+}
-+static inline void netpoll_irq_lock(struct netpoll_irq_lock *np_lock)
-+{
-+	spin_lock(&np_lock->lock);
-+}
-+static inline void netpoll_irq_unlock(struct netpoll_irq_lock *np_lock)
-+{
-+	spin_unlock(&np_lock->lock);
-+}
-+#else
-+static inline void netpoll_irq_lock_init(struct netpoll_irq_lock *np_lock)
-+{
-+}
-+static inline void netpoll_irq_lock(struct netpoll_irq_lock *np_lock)
-+{
-+}
-+static inline void netpoll_irq_unlock(struct netpoll_irq_lock *np_lock)
-+{
-+}
-+#endif
-+
- #endif
-
-
-
-> 
-> diff --git a/drivers/net/ethernet/intel/e1000/e1000.h b/drivers/net/ethernet/intel/e1000/e1000.h
-> index 69707108d23c..3f48609f2318 100644
-> --- a/drivers/net/ethernet/intel/e1000/e1000.h
-> +++ b/drivers/net/ethernet/intel/e1000/e1000.h
-> @@ -323,6 +323,8 @@ struct e1000_adapter {
->  	struct delayed_work watchdog_task;
->  	struct delayed_work fifo_stall_task;
->  	struct delayed_work phy_info_task;
-> +
-> +	spinlock_t irq_lock;
->  };
->  
->  enum e1000_state_t {
-> diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
-> index 5f6aded512f5..d12cbffe2149 100644
-> --- a/drivers/net/ethernet/intel/e1000/e1000_main.c
-> +++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
-> @@ -1310,6 +1310,7 @@ static int e1000_sw_init(struct e1000_adapter *adapter)
->  	e1000_irq_disable(adapter);
->  
->  	spin_lock_init(&adapter->stats_lock);
-> +	spin_lock_init(&adapter->irq_lock);
->  
->  	set_bit(__E1000_DOWN, &adapter->flags);
->  
-> @@ -3748,10 +3749,8 @@ void e1000_update_stats(struct e1000_adapter *adapter)
->   * @irq: interrupt number
->   * @data: pointer to a network interface device structure
->   **/
-> -static irqreturn_t e1000_intr(int irq, void *data)
-> +static irqreturn_t __e1000_intr(int irq, struct e1000_adapter *adapter)
->  {
-> -	struct net_device *netdev = data;
-> -	struct e1000_adapter *adapter = netdev_priv(netdev);
->  	struct e1000_hw *hw = &adapter->hw;
->  	u32 icr = er32(ICR);
->  
-> @@ -3793,6 +3792,19 @@ static irqreturn_t e1000_intr(int irq, void *data)
->  	return IRQ_HANDLED;
->  }
->  
-> +static irqreturn_t e1000_intr(int irq, void *data)
-> +{
-> +	struct net_device *netdev = data;
-> +	struct e1000_adapter *adapter = netdev_priv(netdev);
-> +	irqreturn_t ret;
-> +
-> +	spin_lock(&adapter->irq_lock);
-> +	ret = __e1000_intr(irq, adapter);
-> +	spin_unlock(&adapter->irq_lock);
-> +
-> +	return ret;
-> +}
-> +
->  /**
->   * e1000_clean - NAPI Rx polling callback
->   * @adapter: board private structure
-> @@ -5217,9 +5229,9 @@ static void e1000_netpoll(struct net_device *netdev)
->  {
->  	struct e1000_adapter *adapter = netdev_priv(netdev);
->  
-> -	disable_irq(adapter->pdev->irq);
-> +	spin_lock(&adapter->irq_lock)
->  	e1000_intr(adapter->pdev->irq, netdev);
-> -	enable_irq(adapter->pdev->irq);
-> +	spin_unlock(&adapter->irq_lock)
->  }
->  #endif
->  
-> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-> index 0a9104b4608b..b5a4a06bf2fd 100644
-> --- a/kernel/irq/manage.c
-> +++ b/kernel/irq/manage.c
-> @@ -427,7 +427,7 @@ EXPORT_SYMBOL(disable_irq_nosync);
->   *	to complete before returning. If you use this function while
->   *	holding a resource the IRQ handler may need you will deadlock.
->   *
-> - *	This function may be called - with care - from IRQ context.
-> + *	This function may _NOT_ be called from IRQ context.
->   */
->  void disable_irq(unsigned int irq)
->  {
-
 -- 
-Sabrina
+tejun
