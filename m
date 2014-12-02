@@ -1,93 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933317AbaLBWax (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 17:30:53 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:59286 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932550AbaLBWaw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 17:30:52 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        navin patidar <navin.patidar@gmail.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: rtl8188eu: hal: hal_intf.c:  Cleaning up functions that are not used anywhere
-Date: Tue,  2 Dec 2014 23:33:29 +0100
-Message-Id: <1417559609-26920-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	id S933351AbaLBWbh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 17:31:37 -0500
+Received: from mga02.intel.com ([134.134.136.20]:60470 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932550AbaLBWbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 17:31:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,503,1413270000"; 
+   d="scan'208";a="617571642"
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>
+Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        josh.triplett@intel.com, christophe.ricard@gmail.com,
+        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
+        trousers-tech@lists.sourceforge.net,
+        Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Subject: [PATCH v8 0/8] TPM 2.0 support
+Date: Wed,  3 Dec 2014 00:31:12 +0200
+Message-Id: <1417559480-13757-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere.
-rtw_hal_interrupt_handler() rtw_hal_sreset_get_wifi_status()
+This patch set enables TPM2 protocol and provides drivers for FIFO and
+CRB interfaces. This patch set does not export any sysfs attributes for
+TPM 2.0 because existing sysfs attributes have three non-trivial issues:
 
-This was partially found by using a static code analysis program called cppcheck.
+- They are associated with the platform device instead of character
+  device.
+- They are are not trivial key-value pairs but contain text that is
+  not easily parsed by a computer.
+- Raciness as described in
+  http://kroah.com/log/blog/2013/06/26/how-to-create-a-sysfs-file-correctly/
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/staging/rtl8188eu/hal/hal_intf.c     |   16 ----------------
- drivers/staging/rtl8188eu/include/hal_intf.h |    3 ---
- 2 files changed, 19 deletions(-)
+This is too big effort to be included into this patch set and requires
+more discussion.
 
-diff --git a/drivers/staging/rtl8188eu/hal/hal_intf.c b/drivers/staging/rtl8188eu/hal/hal_intf.c
-index 538a0f6..4bdbed2 100644
---- a/drivers/staging/rtl8188eu/hal/hal_intf.c
-+++ b/drivers/staging/rtl8188eu/hal/hal_intf.c
-@@ -275,13 +275,6 @@ void rtw_hal_write_rfreg(struct adapter *adapt, enum rf_radio_path rfpath,
- 					      bitmask, data);
- }
- 
--s32 rtw_hal_interrupt_handler(struct adapter *adapt)
--{
--	if (adapt->HalFunc.interrupt_handler)
--		return adapt->HalFunc.interrupt_handler(adapt);
--	return _FAIL;
--}
--
- void rtw_hal_set_bwmode(struct adapter *adapt,
- 			enum ht_channel_width bandwidth, u8 offset)
- {
-@@ -329,15 +322,6 @@ void rtw_hal_sreset_init(struct adapter *adapt)
- 		adapt->HalFunc.sreset_init_value(adapt);
- }
- 
--u8   rtw_hal_sreset_get_wifi_status(struct adapter *adapt)
--{
--	u8 status = 0;
--
--	if (adapt->HalFunc.sreset_get_wifi_status)
--		status = adapt->HalFunc.sreset_get_wifi_status(adapt);
--	return status;
--}
--
- void rtw_hal_notch_filter(struct adapter *adapter, bool enable)
- {
- 	if (adapter->HalFunc.hal_notch_filter)
-diff --git a/drivers/staging/rtl8188eu/include/hal_intf.h b/drivers/staging/rtl8188eu/include/hal_intf.h
-index 9191993..3b476d8 100644
---- a/drivers/staging/rtl8188eu/include/hal_intf.h
-+++ b/drivers/staging/rtl8188eu/include/hal_intf.h
-@@ -304,8 +304,6 @@ void	rtw_hal_write_rfreg(struct adapter *padapter,
- 			    enum rf_radio_path eRFPath, u32 RegAddr,
- 			    u32 BitMask, u32 Data);
- 
--s32	rtw_hal_interrupt_handler(struct adapter *padapter);
--
- void	rtw_hal_set_bwmode(struct adapter *padapter,
- 			   enum ht_channel_width Bandwidth, u8 Offset);
- void	rtw_hal_set_chan(struct adapter *padapter, u8 channel);
-@@ -317,7 +315,6 @@ void	rtw_hal_antdiv_rssi_compared(struct adapter *padapter,
- 				     struct wlan_bssid_ex *src);
- 
- void rtw_hal_sreset_init(struct adapter *padapter);
--u8   rtw_hal_sreset_get_wifi_status(struct adapter *padapter);
- 
- void rtw_hal_notch_filter(struct adapter *adapter, bool enable);
- void rtw_hal_reset_security_engine(struct adapter *adapter);
+v2:
+- Improved struct tpm_chip life-cycle by taking advantage of devres
+  API.
+- Refined sysfs attributes as simple key-values thereby not repeating
+  mistakes in TPM1 sysfs attributes.
+- Documented functions in tpm-chip.c and tpm2-cmd.c.
+- Documented sysfs attributes.
+
+v3:
+- Lots of fixes in calling order in device drivers (thanks to Jason
+  Gunthorpe for pointing these out!).
+- Attach sysfs attributes to the misc device because it represents
+  TPM device to the user space.
+
+v4:
+- Disable sysfs attibutes for TPM 2.0 for until we can sort out the 
+  best approach for them.
+- Fixed all the style issues found with checkpatch.pl.
+
+v5:
+- missing EXPORT_SYMBOL_GPL()
+- own class for TPM devices used for TPM 2.0 devices and onwards.
+
+v6:
+- Non-racy initialization for sysfs attributes using struct device's
+  groups field.
+- The class 'tpm' is used now for all TPM devices. For the first device
+  node major MISC_MAJOR and minor TPM_MINOR is used in order to retain
+  backwards compatability.
+
+v7:
+- Release device number and free struct tpm_chip memory inside
+  tpm_dev_release callback.
+- Moved code from tpm-interface.c and tpm_dev.c to tpm-chip.c.
+
+v8:
+- Cleaned up unneeded cast from tpm_transmit_cmd().
+- Cleaned up redundant PPI_VERSION_LEN constant from tpm_ppi.c.
+- Fixed tpm_tis to use tpm2_calc_ordinal_duration() for TPM2 devices.
+- tpm_crb: in crb_recv, check that count can hold the TPM header at
+  minimum.
+- tpm_crb: add enumerations for bit flags in start and cancel fields
+  of the control area.
+- tpm_crb: use ioremap() for command and response buffer because
+  they might be anywhere.
+- tpm_crb: use IO access functions for reading ioremapped buffers
+  because using direct pointers is not portable.
+- tpm_crb: only apply ACPI start if start method reported by the
+  TPM2 ACPI table allows it.
+- In tpm2_pcr_read() just calculate index and bit and get rid of
+  hacky loop.
+- Do not add sysfs attributes for TPM 2.0 devices.
+
+Jarkko Sakkinen (7):
+  tpm: merge duplicate transmit_cmd() functions
+  tpm: two-phase chip management functions
+  tpm: fix raciness of PPI interface lookup
+  tpm: rename chip->dev to chip->pdev
+  tpm: device class for tpm
+  tpm: TPM 2.0 baseline support
+  tpm: TPM 2.0 CRB Interface
+
+Will Arthur (1):
+  tpm: TPM 2.0 FIFO Interface
+
+ drivers/char/tpm/Kconfig            |   9 +
+ drivers/char/tpm/Makefile           |   3 +-
+ drivers/char/tpm/tpm-chip.c         | 251 ++++++++++++++++
+ drivers/char/tpm/tpm-dev.c          |  42 +--
+ drivers/char/tpm/tpm-interface.c    | 261 ++++++----------
+ drivers/char/tpm/tpm-sysfs.c        |  29 +-
+ drivers/char/tpm/tpm.h              | 113 ++++++-
+ drivers/char/tpm/tpm2-cmd.c         | 571 ++++++++++++++++++++++++++++++++++++
+ drivers/char/tpm/tpm_atmel.c        |  25 +-
+ drivers/char/tpm/tpm_crb.c          | 356 ++++++++++++++++++++++
+ drivers/char/tpm/tpm_i2c_atmel.c    |  49 ++--
+ drivers/char/tpm/tpm_i2c_infineon.c |  43 +--
+ drivers/char/tpm/tpm_i2c_nuvoton.c  |  68 ++---
+ drivers/char/tpm/tpm_i2c_stm_st33.c |  44 ++-
+ drivers/char/tpm/tpm_ibmvtpm.c      |  17 +-
+ drivers/char/tpm/tpm_infineon.c     |  51 ++--
+ drivers/char/tpm/tpm_nsc.c          |  34 ++-
+ drivers/char/tpm/tpm_ppi.c          | 137 +++++----
+ drivers/char/tpm/tpm_tis.c          | 180 +++++++-----
+ drivers/char/tpm/xen-tpmfront.c     |  14 +-
+ 20 files changed, 1717 insertions(+), 580 deletions(-)
+ create mode 100644 drivers/char/tpm/tpm-chip.c
+ create mode 100644 drivers/char/tpm/tpm2-cmd.c
+ create mode 100644 drivers/char/tpm/tpm_crb.c
+
 -- 
-1.7.10.4
+2.1.0
 
