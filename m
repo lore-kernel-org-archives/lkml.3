@@ -1,100 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932560AbaLBQfl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 11:35:41 -0500
-Received: from mail.fireflyinternet.com ([87.106.93.118]:53996 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932483AbaLBQfe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 11:35:34 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
-Date: Tue, 2 Dec 2014 16:35:06 +0000
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Daniel Vetter <daniel.vetter@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: compute wait_ioctl timeout
- correctly
-Message-ID: <20141202163506.GG18921@nuc-i3427.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	John Stultz <john.stultz@linaro.org>,
-	Daniel Vetter <daniel.vetter@intel.com>,
-	Thomas Gleixner <tglx@linutronix.de>
-References: <1417533733-2289-1-git-send-email-daniel.vetter@ffwll.ch>
- <1417534582-2977-1-git-send-email-daniel.vetter@ffwll.ch>
+	id S932607AbaLBQfs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 11:35:48 -0500
+Received: from smtp2-g21.free.fr ([212.27.42.2]:17330 "EHLO smtp2-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932464AbaLBQfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 11:35:40 -0500
+Date: Tue, 2 Dec 2014 17:35:30 +0100
+From: Sabrina Dubroca <sd@queasysnail.net>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com
+Subject: Re: e1000_netpoll(): disable_irq() triggers might_sleep() on
+ linux-next
+Message-ID: <20141202163530.GA19420@kria>
+References: <20141029155620.GA4886@kria>
+ <20141029180734.GQ12706@worktop.programming.kicks-ass.net>
+ <alpine.DEB.2.11.1410291918060.5308@nanos>
+ <20141029193603.GS12706@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1417534582-2977-1-git-send-email-daniel.vetter@ffwll.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141029193603.GS12706@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 04:36:22PM +0100, Daniel Vetter wrote:
-> We've lost the +1 required for correct timeouts in
+Hello, sorry for the delay.
+
+2014-10-29, 20:36:03 +0100, Peter Zijlstra wrote:
+> On Wed, Oct 29, 2014 at 07:33:00PM +0100, Thomas Gleixner wrote:
+> > Yuck. No. You are just papering over the problem.
+> > 
+> > What happens if you add 'threadirqs' to the kernel command line? Or if
+> > the interrupt line is shared with a real threaded interrupt user?
+> > 
+> > The proper solution is to have a poll_lock for e1000 which serializes
+> > the hardware interrupt against netpoll instead of using
+> > disable/enable_irq().
+> > 
+> > In fact that's less expensive than the disable/enable_irq() dance and
+> > the chance of contention is pretty low. If done right it will be a
+> > NOOP for the CONFIG_NET_POLL_CONTROLLER=n case.
+> > 
 > 
-> commit 5ed0bdf21a85d78e04f89f15ccf227562177cbd9
-> Author: Thomas Gleixner <tglx@linutronix.de>
-> Date:   Wed Jul 16 21:05:06 2014 +0000
+> OK a little something like so then I suppose.. But I suspect most all
+> the network drivers will need this and maybe more, disable_irq() is a
+> popular little thing and we 'just' changed semantics on them.
 > 
->     drm: i915: Use nsec based interfaces
-> 
->     Use ktime_get_raw_ns() and get rid of the back and forth timespec
->     conversions.
-> 
->     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
->     Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
->     Signed-off-by: John Stultz <john.stultz@linaro.org>
-> 
-> So fix this up by reinstating our handrolled _timeout function. While
-> at it bother with handling MAX_JIFFIES.
-> 
-> v2: Convert to usecs (we don't care about the accuracy anyway) first
-> to avoid overflow issues Dave Gordon spotted.
-> 
-> v3: Drop the explicit MAX_JIFFY_OFFSET check, usecs_to_jiffies should
-> take care of that already. It might be a bit too enthusiastic about it
-> though.
-> 
-> Cc: Dave Gordon <david.s.gordon@intel.com>
-> Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=82749
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
 > ---
->  drivers/gpu/drm/i915/i915_drv.h | 8 ++++++++
->  drivers/gpu/drm/i915/i915_gem.c | 3 ++-
->  2 files changed, 10 insertions(+), 1 deletion(-)
+>  drivers/net/ethernet/intel/e1000/e1000.h      |  2 ++
+>  drivers/net/ethernet/intel/e1000/e1000_main.c | 22 +++++++++++++++++-----
+>  kernel/irq/manage.c                           |  2 +-
+>  3 files changed, 20 insertions(+), 6 deletions(-)
+
+I've been running with variants of this patch, things seem ok.
+
+As noted earlier, there are a lot of drivers doing this disable_irq +
+irq_handler + enable_irq sequence.  I found about 60.
+Many already take a lock in the interrupt handler, and look like we
+could just remove the call to disable_irq (example: cp_interrupt,
+drivers/net/ethernet/realtek/8139cp.c).
+
+Here's how I modified your patch.  The locking compiles away if
+CONFIG_NET_POLL_CONTROLLER=n.
+
+I can work on converting all the drivers from disable_irq to
+netpoll_irq_lock, if that's okay with you.
+
+In igb there's also a synchronize_irq() called from the netpoll
+controller (in igb_irq_disable()), I think a similar locking scheme
+would work.
+I also saw a few disable_irq_nosync and disable_percpu_irq. These are
+okay?
+
+
+Thanks.
+
+---
+
+diff --git a/drivers/net/ethernet/intel/e1000/e1000.h b/drivers/net/ethernet/intel/e1000/e1000.h
+index 69707108d23c..79444125b9bd 100644
+--- a/drivers/net/ethernet/intel/e1000/e1000.h
++++ b/drivers/net/ethernet/intel/e1000/e1000.h
+@@ -68,6 +68,7 @@
+ #include <linux/mii.h>
+ #include <linux/ethtool.h>
+ #include <linux/if_vlan.h>
++#include <linux/netpoll.h>
+ 
+ #define BAR_0		0
+ #define BAR_1		1
+@@ -323,6 +324,8 @@ struct e1000_adapter {
+ 	struct delayed_work watchdog_task;
+ 	struct delayed_work fifo_stall_task;
+ 	struct delayed_work phy_info_task;
++
++	struct netpoll_irq_lock netpoll_lock;
+ };
+ 
+ enum e1000_state_t {
+diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
+index 24f3986cfae2..5749a27e5c5e 100644
+--- a/drivers/net/ethernet/intel/e1000/e1000_main.c
++++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
+@@ -32,6 +32,7 @@
+ #include <linux/prefetch.h>
+ #include <linux/bitops.h>
+ #include <linux/if_vlan.h>
++#include <linux/netpoll.h>
+ 
+ char e1000_driver_name[] = "e1000";
+ static char e1000_driver_string[] = "Intel(R) PRO/1000 Network Driver";
+@@ -1313,6 +1314,7 @@ static int e1000_sw_init(struct e1000_adapter *adapter)
+ 	e1000_irq_disable(adapter);
+ 
+ 	spin_lock_init(&adapter->stats_lock);
++	netpoll_irq_lock_init(&adapter->netpoll_lock);
+ 
+ 	set_bit(__E1000_DOWN, &adapter->flags);
+ 
+@@ -3751,10 +3753,8 @@ void e1000_update_stats(struct e1000_adapter *adapter)
+  * @irq: interrupt number
+  * @data: pointer to a network interface device structure
+  **/
+-static irqreturn_t e1000_intr(int irq, void *data)
++static irqreturn_t __e1000_intr(int irq, struct e1000_adapter *adapter)
+ {
+-	struct net_device *netdev = data;
+-	struct e1000_adapter *adapter = netdev_priv(netdev);
+ 	struct e1000_hw *hw = &adapter->hw;
+ 	u32 icr = er32(ICR);
+ 
+@@ -3796,6 +3796,19 @@ static irqreturn_t e1000_intr(int irq, void *data)
+ 	return IRQ_HANDLED;
+ }
+ 
++static irqreturn_t e1000_intr(int irq, void *data)
++{
++	struct net_device *netdev = data;
++	struct e1000_adapter *adapter = netdev_priv(netdev);
++	irqreturn_t ret;
++
++	netpoll_irq_lock(&adapter->netpoll_lock);
++	ret = __e1000_intr(irq, adapter);
++	netpoll_irq_unlock(&adapter->netpoll_lock);
++
++	return ret;
++}
++
+ /**
+  * e1000_clean - NAPI Rx polling callback
+  * @adapter: board private structure
+@@ -5220,9 +5233,7 @@ static void e1000_netpoll(struct net_device *netdev)
+ {
+ 	struct e1000_adapter *adapter = netdev_priv(netdev);
+ 
+-	disable_irq(adapter->pdev->irq);
+ 	e1000_intr(adapter->pdev->irq, netdev);
+-	enable_irq(adapter->pdev->irq);
+ }
+ #endif
+ 
+diff --git a/include/linux/netpoll.h b/include/linux/netpoll.h
+index b25ee9ffdbe6..a171f1a50e0e 100644
+--- a/include/linux/netpoll.h
++++ b/include/linux/netpoll.h
+@@ -117,4 +117,35 @@ static inline bool netpoll_tx_running(struct net_device *dev)
+ }
+ #endif
+ 
++struct netpoll_irq_lock {
++#ifdef CONFIG_NET_POLL_CONTROLLER
++	spinlock_t lock;
++#endif
++};
++
++#ifdef CONFIG_NET_POLL_CONTROLLER
++static inline void netpoll_irq_lock_init(struct netpoll_irq_lock *np_lock)
++{
++	spin_lock_init(&np_lock->lock);
++}
++static inline void netpoll_irq_lock(struct netpoll_irq_lock *np_lock)
++{
++	spin_lock(&np_lock->lock);
++}
++static inline void netpoll_irq_unlock(struct netpoll_irq_lock *np_lock)
++{
++	spin_unlock(&np_lock->lock);
++}
++#else
++static inline void netpoll_irq_lock_init(struct netpoll_irq_lock *np_lock)
++{
++}
++static inline void netpoll_irq_lock(struct netpoll_irq_lock *np_lock)
++{
++}
++static inline void netpoll_irq_unlock(struct netpoll_irq_lock *np_lock)
++{
++}
++#endif
++
+ #endif
+
+
+
 > 
-> diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-> index 049482f5d9ac..4ea14a8c31f7 100644
-> --- a/drivers/gpu/drm/i915/i915_drv.h
-> +++ b/drivers/gpu/drm/i915/i915_drv.h
-> @@ -3097,6 +3097,14 @@ static inline unsigned long msecs_to_jiffies_timeout(const unsigned int m)
->  	return min_t(unsigned long, MAX_JIFFY_OFFSET, j + 1);
+> diff --git a/drivers/net/ethernet/intel/e1000/e1000.h b/drivers/net/ethernet/intel/e1000/e1000.h
+> index 69707108d23c..3f48609f2318 100644
+> --- a/drivers/net/ethernet/intel/e1000/e1000.h
+> +++ b/drivers/net/ethernet/intel/e1000/e1000.h
+> @@ -323,6 +323,8 @@ struct e1000_adapter {
+>  	struct delayed_work watchdog_task;
+>  	struct delayed_work fifo_stall_task;
+>  	struct delayed_work phy_info_task;
+> +
+> +	spinlock_t irq_lock;
+>  };
+>  
+>  enum e1000_state_t {
+> diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
+> index 5f6aded512f5..d12cbffe2149 100644
+> --- a/drivers/net/ethernet/intel/e1000/e1000_main.c
+> +++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
+> @@ -1310,6 +1310,7 @@ static int e1000_sw_init(struct e1000_adapter *adapter)
+>  	e1000_irq_disable(adapter);
+>  
+>  	spin_lock_init(&adapter->stats_lock);
+> +	spin_lock_init(&adapter->irq_lock);
+>  
+>  	set_bit(__E1000_DOWN, &adapter->flags);
+>  
+> @@ -3748,10 +3749,8 @@ void e1000_update_stats(struct e1000_adapter *adapter)
+>   * @irq: interrupt number
+>   * @data: pointer to a network interface device structure
+>   **/
+> -static irqreturn_t e1000_intr(int irq, void *data)
+> +static irqreturn_t __e1000_intr(int irq, struct e1000_adapter *adapter)
+>  {
+> -	struct net_device *netdev = data;
+> -	struct e1000_adapter *adapter = netdev_priv(netdev);
+>  	struct e1000_hw *hw = &adapter->hw;
+>  	u32 icr = er32(ICR);
+>  
+> @@ -3793,6 +3792,19 @@ static irqreturn_t e1000_intr(int irq, void *data)
+>  	return IRQ_HANDLED;
 >  }
 >  
-> +static inline unsigned long nsecs_to_jiffies_timeout(const u64 m)
+> +static irqreturn_t e1000_intr(int irq, void *data)
 > +{
-> +	u64 usecs = div_u64(m + 999, 1000);
-> +	unsigned long j = usecs_to_jiffies(usecs);
+> +	struct net_device *netdev = data;
+> +	struct e1000_adapter *adapter = netdev_priv(netdev);
+> +	irqreturn_t ret;
 > +
-> +	return min_t(unsigned long, MAX_JIFFY_OFFSET, j + 1);
-
-Or more concisely and review friendly:
-
-static inline unsigned long nsecs_to_jiffies_timeout(const u64 n)
-{
-	return min_t(u64, MAX_JIFFY_OFFSET, nsecs_to_jiffies64(n) + 1);
-}
--Chris
+> +	spin_lock(&adapter->irq_lock);
+> +	ret = __e1000_intr(irq, adapter);
+> +	spin_unlock(&adapter->irq_lock);
+> +
+> +	return ret;
+> +}
+> +
+>  /**
+>   * e1000_clean - NAPI Rx polling callback
+>   * @adapter: board private structure
+> @@ -5217,9 +5229,9 @@ static void e1000_netpoll(struct net_device *netdev)
+>  {
+>  	struct e1000_adapter *adapter = netdev_priv(netdev);
+>  
+> -	disable_irq(adapter->pdev->irq);
+> +	spin_lock(&adapter->irq_lock)
+>  	e1000_intr(adapter->pdev->irq, netdev);
+> -	enable_irq(adapter->pdev->irq);
+> +	spin_unlock(&adapter->irq_lock)
+>  }
+>  #endif
+>  
+> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+> index 0a9104b4608b..b5a4a06bf2fd 100644
+> --- a/kernel/irq/manage.c
+> +++ b/kernel/irq/manage.c
+> @@ -427,7 +427,7 @@ EXPORT_SYMBOL(disable_irq_nosync);
+>   *	to complete before returning. If you use this function while
+>   *	holding a resource the IRQ handler may need you will deadlock.
+>   *
+> - *	This function may be called - with care - from IRQ context.
+> + *	This function may _NOT_ be called from IRQ context.
+>   */
+>  void disable_irq(unsigned int irq)
+>  {
 
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+Sabrina
