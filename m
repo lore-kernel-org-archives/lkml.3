@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540AbaLBLZU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 06:25:20 -0500
-Received: from mga14.intel.com ([192.55.52.115]:12993 "EHLO mga14.intel.com"
+	id S1754542AbaLBLat (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 06:30:49 -0500
+Received: from mta-out1.inet.fi ([62.71.2.203]:40470 "EHLO jenni2.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752320AbaLBLZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 06:25:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,500,1413270000"; 
-   d="scan'208";a="631320104"
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: [PATCH v3 3/3] kvm: x86: Enable Intel XSAVES for guest
-Date: Tue,  2 Dec 2014 19:21:30 +0800
-Message-Id: <1417519290-44063-1-git-send-email-wanpeng.li@linux.intel.com>
-X-Mailer: git-send-email 1.7.1
+	id S1751591AbaLBLas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 06:30:48 -0500
+Date: Tue, 2 Dec 2014 13:30:14 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC V2] mm:add zero_page _mapcount when mapped into user space
+Message-ID: <20141202113014.GA22683@node.dhcp.inet.fi>
+References: <35FD53F367049845BC99AC72306C23D103E688B313E0@CNBJMBX05.corpusers.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <35FD53F367049845BC99AC72306C23D103E688B313E0@CNBJMBX05.corpusers.net>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exporse intel xsaves feature to guest.
+On Tue, Dec 02, 2014 at 05:27:36PM +0800, Wang, Yalin wrote:
+> This patch add/dec zero_page's _mapcount to make sure
+> the mapcount is correct for zero_page,
+> so that when read from /proc/kpagecount, zero_page's
+> mapcount is also correct, userspace process like procrank can
+> calculate PSS correctly.
 
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
----
- arch/x86/kvm/cpuid.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+I don't have specific code path to point to, but I would expect zero page
+with non-zero mapcount would cause a problem with rmap.
 
-diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-index a4f5ac4..0d919bc 100644
---- a/arch/x86/kvm/cpuid.c
-+++ b/arch/x86/kvm/cpuid.c
-@@ -267,6 +267,7 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
- 	unsigned f_rdtscp = kvm_x86_ops->rdtscp_supported() ? F(RDTSCP) : 0;
- 	unsigned f_invpcid = kvm_x86_ops->invpcid_supported() ? F(INVPCID) : 0;
- 	unsigned f_mpx = kvm_x86_ops->mpx_supported() ? F(MPX) : 0;
-+	unsigned f_xsaves = kvm_x86_ops->xsaves_supported() ? F(XSAVES) : 0;
- 
- 	/* cpuid 1.edx */
- 	const u32 kvm_supported_word0_x86_features =
-@@ -322,7 +323,7 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
- 
- 	/* cpuid 0xD.1.eax */
- 	const u32 kvm_supported_word10_x86_features =
--		F(XSAVEOPT) | F(XSAVEC) | F(XGETBV1);
-+		F(XSAVEOPT) | F(XSAVEC) | F(XGETBV1) | f_xsaves;
- 
- 	/* all calls to cpuid_count() should be made on the same cpu */
- 	get_cpu();
+How do you test the change?
+
 -- 
-1.9.1
-
+ Kirill A. Shutemov
