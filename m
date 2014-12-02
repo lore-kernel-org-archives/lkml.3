@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933512AbaLBTZQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:25:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46805 "EHLO
+	id S933549AbaLBTZf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:25:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46823 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073AbaLBTZL (ORCPT
+	with ESMTP id S932979AbaLBTZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:25:11 -0500
+	Tue, 2 Dec 2014 14:25:31 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Chris J Arges <chris.j.arges@canonical.com>,
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 089/121] x86: kvm: use alternatives for VMCALL vs. VMMCALL if kernel text is read-only
-Date: Tue,  2 Dec 2014 11:19:28 -0800
-Message-Id: <1417548000-1794-90-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 116/121] ACPI / PM: Ignore wakeup setting if the ACPI companion can't wake up
+Date: Tue,  2 Dec 2014 11:19:55 -0800
+Message-Id: <1417548000-1794-117-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
@@ -30,95 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit c1118b3602c2329671ad5ec8bdf8e374323d6343 upstream.
+commit 78579b7c7eb45f0e7ec5e9437087ed21749f9a9c upstream.
 
-On x86_64, kernel text mappings are mapped read-only with CONFIG_DEBUG_RODATA.
-In that case, KVM will fail to patch VMCALL instructions to VMMCALL
-as required on AMD processors.
+As reported by Dmitry, on some Chromebooks there are devices with
+corresponding ACPI objects and with unusual system wakeup
+configuration.  Namely, they technically are wakeup-capable, but the
+wakeup is handled via a platform-specific out-of-band mechanism and
+the ACPI PM layer has no information on the wakeup capability.  As
+a result, device_may_wakeup(dev) called from acpi_dev_suspend_late()
+returns 'true' for those devices, but the wakeup.flags.valid flag is
+unset for the corresponding ACPI device objects, so acpi_device_wakeup()
+reproducibly fails for them causing acpi_dev_suspend_late() to return
+an error code.  The entire system suspend is then aborted and the
+machines in question cannot suspend at all.
 
-The failure mode is currently a divide-by-zero exception, which obviously
-is a KVM bug that has to be fixed.  However, picking the right instruction
-between VMCALL and VMMCALL will be faster and will help if you cannot upgrade
-the hypervisor.
+Address the problem by ignoring the device_may_wakeup(dev) return
+value in acpi_dev_suspend_late() if the ACPI companion of the device
+being handled has wakeup.flags.valid unset (in which case it is clear
+that the wakeup is supposed to be handled by other means).
 
-Reported-by: Chris Webb <chris@arachsys.com>
-Tested-by: Chris Webb <chris@arachsys.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Acked-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
+This fixes a regression introduced by commit a76e9bd89ae7 (i2c:
+attach/detach I2C client device to the ACPI power domain) as the
+affected systems could suspend and resume successfully before that
+commit.
+
+Fixes: a76e9bd89ae7 (i2c: attach/detach I2C client device to the ACPI power domain)
+Reported-by: Dmitry Torokhov <dtor@chromium.org>
+Reviewed-by: Dmitry Torokhov <dtor@chromium.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/include/asm/cpufeature.h |  1 +
- arch/x86/include/asm/kvm_para.h   | 10 ++++++++--
- arch/x86/kernel/cpu/amd.c         |  7 +++++++
- 3 files changed, 16 insertions(+), 2 deletions(-)
+ drivers/acpi/device_pm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 1e49a03..cbc03f9 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -203,6 +203,7 @@
- #define X86_FEATURE_DECODEASSISTS (8*32+12) /* AMD Decode Assists support */
- #define X86_FEATURE_PAUSEFILTER (8*32+13) /* AMD filtered pause intercept */
- #define X86_FEATURE_PFTHRESHOLD (8*32+14) /* AMD pause filter threshold */
-+#define X86_FEATURE_VMMCALL     (8*32+15) /* Prefer vmmcall to vmcall */
+diff --git a/drivers/acpi/device_pm.c b/drivers/acpi/device_pm.c
+index b3480cf..5b39ae5 100644
+--- a/drivers/acpi/device_pm.c
++++ b/drivers/acpi/device_pm.c
+@@ -857,7 +857,7 @@ int acpi_dev_suspend_late(struct device *dev)
+ 		return 0;
  
- 
- /* Intel-defined CPU features, CPUID level 0x00000007:0 (ebx), word 9 */
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index c7678e4..e62cf89 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -2,6 +2,7 @@
- #define _ASM_X86_KVM_PARA_H
- 
- #include <asm/processor.h>
-+#include <asm/alternative.h>
- #include <uapi/asm/kvm_para.h>
- 
- extern void kvmclock_init(void);
-@@ -16,10 +17,15 @@ static inline bool kvm_check_and_clear_guest_paused(void)
- }
- #endif /* CONFIG_KVM_GUEST */
- 
--/* This instruction is vmcall.  On non-VT architectures, it will generate a
-- * trap that we will then rewrite to the appropriate instruction.
-+#ifdef CONFIG_DEBUG_RODATA
-+#define KVM_HYPERCALL \
-+        ALTERNATIVE(".byte 0x0f,0x01,0xc1", ".byte 0x0f,0x01,0xd9", X86_FEATURE_VMMCALL)
-+#else
-+/* On AMD processors, vmcall will generate a trap that we will
-+ * then rewrite to the appropriate instruction.
-  */
- #define KVM_HYPERCALL ".byte 0x0f,0x01,0xc1"
-+#endif
- 
- /* For KVM hypercalls, a three-byte sequence of either the vmcall or the vmmcall
-  * instruction.  The hypervisor may replace it with something else but only the
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 59bfebc..3bb450b 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -509,6 +509,13 @@ static void early_init_amd(struct cpuinfo_x86 *c)
- 	}
- #endif
- 
-+	/*
-+	 * This is only needed to tell the kernel whether to use VMCALL
-+	 * and VMMCALL.  VMMCALL is never executed except under virt, so
-+	 * we can set it unconditionally.
-+	 */
-+	set_cpu_cap(c, X86_FEATURE_VMMCALL);
-+
- 	/* F16h erratum 793, CVE-2013-6885 */
- 	if (c->x86 == 0x16 && c->x86_model <= 0xf) {
- 		u64 val;
+ 	target_state = acpi_target_system_state();
+-	wakeup = device_may_wakeup(dev);
++	wakeup = device_may_wakeup(dev) && acpi_device_can_wakeup(adev);
+ 	error = __acpi_device_sleep_wake(adev, target_state, wakeup);
+ 	if (wakeup && error)
+ 		return error;
 -- 
 1.9.1
 
