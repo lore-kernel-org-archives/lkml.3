@@ -1,177 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933414AbaLBXPi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 18:15:38 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:64093 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933162AbaLBXPg (ORCPT
+	id S933465AbaLBXP5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 18:15:57 -0500
+Received: from mout.gmx.net ([212.227.15.15]:60688 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932722AbaLBXP4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 18:15:36 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-df-547e481592bf
-Message-id: <547E4815.7010100@samsung.com>
-Date: Wed, 03 Dec 2014 08:15:33 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Doug Anderson <dianders@chromium.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Alim Akhtar <alim.akhtar@samsung.com>, Sonny Rao <sonnyrao@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Heiko Stuebner <heiko@sntech.de>, tony@atomide.com,
-        linux@arm.linux.org.uk, chris@printf.net, gsoutade@neotion.com,
-        axel.lin@ingics.com, s.hauer@pengutronix.de, wsa@the-dreams.de,
-        joe@perches.com, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org
-Subject: Re: [PATCH v4 1/3] mmc: core: Support the optional init_card()
- callback for MMC and SD
-References: <1417553397-460-1-git-send-email-dianders@chromium.org>
- <1417553397-460-2-git-send-email-dianders@chromium.org>
-In-reply-to: <1417553397-460-2-git-send-email-dianders@chromium.org>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplleLIzCtJLcpLzFFi42JZI2JSoivqURdi0PhTw2Ll+7+MFg/mbWOz
-	ODLnK7PFhMvbGS3OLjvIZjG7fxqzxf9Hr1ktZt9/zGKx6fE1VovLu+YA1f3vZ7SYvaSfxeL2
-	ZV6Lv9s3sVg8OTOT0eLD/YvMFvuveFkcXxtusfLELGYHYY+W5h42j29fJ7F4zG64yOLR9rPM
-	4861PWwem5fUexzbJuHR/9fA48uqa8weN14tZPLo27KK0WP7tXnMHidPPWHx+LxJLoAvissm
-	JTUnsyy1SN8ugSvjxJ9bzAXTZCum7O5jb2D8K9bFyMkhIWAisbXtNjOELSZx4d56NhBbSGAp
-	o8Sq44kwNa++/mDvYuQCii9ilGj6d4Qdoug1o8SFTe4gNq+AlsTVufOZQGwWAVWJ7w/es4DY
-	bAI6Etu/HQeLiwqESRxqm8cEUS8o8WPyPbAaEYFyiTlbe5hAFjALHGaWWLZnH1iRsECixOtz
-	HVDLaiV+bPkC1sAp4CLxcu1LsDgz0IL9rdPYIGx5ic1r3jKDDJIQuMEhcaJ7OQvERQIS3yYf
-	ArI5gBKyEpsOQH0sKXFwxQ2WCYxis5DcNAvJ2FlIxi5gZF7FKJpakFxQnJReZKRXnJhbXJqX
-	rpecn7uJEZg6Tv971reD8eYB60OMAhyMSjy8J87XhAixJpYVV+YeYjQFumIis5Rocj4wQeWV
-	xBsamxlZmJqYGhuZW5opifMmSP0MFhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cBYcZi7Nit+
-	pfuPFG0lXdmbkdZ/F9Q6sThsnPpEyYbRW47vftDfe29SJt++HKF4ZkVul6Kyq8K7F+rz0mcJ
-	3C/rWy0UV54ftEJ2ZcaMJXJb1R5XCSmvk58oFb/SNlF2YaJmofoFJSWBE5JOtQ/Y59+4ckDH
-	d2v2+eXvbrDIBhkJn1qauFE/+IwSS3FGoqEWc1FxIgBnejtkGAMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAKsWRmVeSWpSXmKPExsVy+t9jAV1Rj7oQgxVb5SxWvv/LaPFg3jY2
-	iyNzvjJbTLi8ndHi7LKDbBaz+6cxW/x/9JrVYvb9xywWmx5fY7W4vGsOUN3/fkaL2Uv6WSxu
-	X+a1+Lt9E4vFkzMzGS0+3L/IbLH/ipfF8bXhFitPzGJ2EPZoae5h8/j2dRKLx+yGiywebT/L
-	PO5c28PmsXlJvcexbRIe/X8NPL6susbscePVQiaPvi2rGD22X5vH7HHy1BMWj8+b5AL4ohoY
-	bTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOAPlVSKEvM
-	KQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYwZpz4c4u5YJpsxZTdfewNjH/Fuhg5
-	OSQETCReff3BDmGLSVy4t56ti5GLQ0hgEaNE078jYAkhgdeMEhc2uYPYvAJaElfnzmcCsVkE
-	VCW+P3jPAmKzCehIbP92HCwuKhAmcahtHhNEvaDEj8n3wGpEBMol5mztYQJZwCxwmFli2Z59
-	YEXCAokSr891QC2rlfix5QtYA6eAi8TLtS/B4sxAC/a3TmODsOUlNq95yzyBUWAWkh2zkJTN
-	QlK2gJF5FaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwanomtYNxZYPFIUYBDkYlHt6PcnUh
-	QqyJZcWVuYcYJTiYlUR48+yAQrwpiZVVqUX58UWlOanFhxhNgUEwkVlKNDkfmDbzSuINjU3M
-	jCyNzA0tjIzNlcR5b9zMDRESSE8sSc1OTS1ILYLpY+LglGpg5K67/KkgKZJT78/JEK6crV/c
-	VnJf4bnk3msbtfVTT1Lwyn2L26Sjrv8PjOcN5D4vMyfg+yTOoC5HtzyZZYd8/JJn7lv+8vni
-	4tTDbmUC06Z1lW6e4Zy31ddoXnHD20n33723u83i2tl8w2WOYN68+F3aZesjW63OaS/+deTG
-	9zfb3s2sndXHr8RSnJFoqMVcVJwIAOEAG1JjAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 2 Dec 2014 18:15:56 -0500
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: tpmdd-devel@lists.sourceforge.net
+Subject: Re: [tpmdd-devel] [PATCH v8 0/8] TPM 2.0 support
+Date: Wed, 3 Dec 2014 00:21:07 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-rc6-dirty; KDE/4.12.5; x86_64; ; )
+Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
+        christophe.ricard@gmail.com, josh.triplett@intel.com,
+        linux-api@vger.kernel.org, Ashley Lai <ashley@ashleylai.com>,
+        linux-kernel@vger.kernel.org, jason.gunthorpe@obsidianresearch.com,
+        trousers-tech@lists.sourceforge.net
+References: <1417559480-13757-1-git-send-email-jarkko.sakkinen@linux.intel.com> <201412030016.20268.PeterHuewe@gmx.de>
+In-Reply-To: <201412030016.20268.PeterHuewe@gmx.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201412030021.07882.PeterHuewe@gmx.de>
+X-Provags-ID: V03:K0:0XMBH+pjMovGQhO2pR7ay48NZNXuooz7DYcxAT+oMAXP/gh+46u
+ 0l/IiosfhAJIOL+Y4DYZOhl8VOMCmjPcaP8SV4KWfjwd1uIolGaqIxtpcU6KPI5GUvq7DvR
+ zg2RHtGBqLmoncqrQNgVmu6q4gSEC7TuYmLSi1/tED0UW3fZj8s8+dWG+MvJiLaQeBtCKnu
+ 5E0WT11j8ofFYvMfcPryg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug.
+Am Mittwoch, 3. Dezember 2014, 00:16:19 schrieb Peter Hüwe:
+> Am Dienstag, 2. Dezember 2014, 23:31:12 schrieb Jarkko Sakkinen:
+> > This patch set enables TPM2 protocol and provides drivers for FIFO and
+> > CRB interfaces. This patch set does not export any sysfs attributes for
+> > TPM 2.0 because existing sysfs attributes have three non-trivial issues:
+> > 
+> > - They are associated with the platform device instead of character
+> > 
+> >   device.
+> > 
+> > - They are are not trivial key-value pairs but contain text that is
+> > 
+> >   not easily parsed by a computer.
+> > 
+> > - Raciness as described in
+> > 
+> > http://kroah.com/log/blog/2013/06/26/how-to-create-a-sysfs-file-correctly
+> > /
+> > 
+> > This is too big effort to be included into this patch set and requires
+> > more discussion.
+> > 
+> > v2:
+> > - Improved struct tpm_chip life-cycle by taking advantage of devres
+> > 
+> >   API.
+> > 
+> > - Refined sysfs attributes as simple key-values thereby not repeating
+> > 
+> >   mistakes in TPM1 sysfs attributes.
+> > 
+> > - Documented functions in tpm-chip.c and tpm2-cmd.c.
+> > - Documented sysfs attributes.
+> > 
+> > v3:
+> > - Lots of fixes in calling order in device drivers (thanks to Jason
+> > 
+> >   Gunthorpe for pointing these out!).
+> > 
+> > - Attach sysfs attributes to the misc device because it represents
+> > 
+> >   TPM device to the user space.
+> > 
+> > v4:
+> > - Disable sysfs attibutes for TPM 2.0 for until we can sort out the
+> > 
+> >   best approach for them.
+> > 
+> > - Fixed all the style issues found with checkpatch.pl.
+> > 
+> > v5:
+> > - missing EXPORT_SYMBOL_GPL()
+> > - own class for TPM devices used for TPM 2.0 devices and onwards.
+> > 
+> > v6:
+> > - Non-racy initialization for sysfs attributes using struct device's
+> > 
+> >   groups field.
+> > 
+> > - The class 'tpm' is used now for all TPM devices. For the first device
+> > 
+> >   node major MISC_MAJOR and minor TPM_MINOR is used in order to retain
+> >   backwards compatability.
+> > 
+> > v7:
+> > - Release device number and free struct tpm_chip memory inside
+> > 
+> >   tpm_dev_release callback.
+> > 
+> > - Moved code from tpm-interface.c and tpm_dev.c to tpm-chip.c.
+> > 
+> > v8:
+> > - Cleaned up unneeded cast from tpm_transmit_cmd().
+> > - Cleaned up redundant PPI_VERSION_LEN constant from tpm_ppi.c.
+> > - Fixed tpm_tis to use tpm2_calc_ordinal_duration() for TPM2 devices.
+> > - tpm_crb: in crb_recv, check that count can hold the TPM header at
+> > 
+> >   minimum.
+> > 
+> > - tpm_crb: add enumerations for bit flags in start and cancel fields
+> > 
+> >   of the control area.
+> > 
+> > - tpm_crb: use ioremap() for command and response buffer because
+> > 
+> >   they might be anywhere.
+> > 
+> > - tpm_crb: use IO access functions for reading ioremapped buffers
+> > 
+> >   because using direct pointers is not portable.
+> > 
+> > - tpm_crb: only apply ACPI start if start method reported by the
+> > 
+> >   TPM2 ACPI table allows it.
+> > 
+> > - In tpm2_pcr_read() just calculate index and bit and get rid of
+> > 
+> >   hacky loop.
+> > 
+> > - Do not add sysfs attributes for TPM 2.0 devices.
+> > 
+> > Jarkko Sakkinen (7):
+> >   tpm: merge duplicate transmit_cmd() functions
+> >   tpm: two-phase chip management functions
+> >   tpm: fix raciness of PPI interface lookup
+> >   tpm: rename chip->dev to chip->pdev
+> >   tpm: device class for tpm
+> >   tpm: TPM 2.0 baseline support
+> >   tpm: TPM 2.0 CRB Interface
+> > 
+> > Will Arthur (1):
+> >   tpm: TPM 2.0 FIFO Interface
+> >  
+> >  drivers/char/tpm/Kconfig            |   9 +
+> >  drivers/char/tpm/Makefile           |   3 +-
+> >  drivers/char/tpm/tpm-chip.c         | 251 ++++++++++++++++
+> >  drivers/char/tpm/tpm-dev.c          |  42 +--
+> >  drivers/char/tpm/tpm-interface.c    | 261 ++++++----------
+> >  drivers/char/tpm/tpm-sysfs.c        |  29 +-
+> >  drivers/char/tpm/tpm.h              | 113 ++++++-
+> >  drivers/char/tpm/tpm2-cmd.c         | 571
+> > 
+> > ++++++++++++++++++++++++++++++++++++ drivers/char/tpm/tpm_atmel.c       
+> > |
+> > 
+> >  25 +-
+> >  drivers/char/tpm/tpm_crb.c          | 356 ++++++++++++++++++++++
+> >  drivers/char/tpm/tpm_i2c_atmel.c    |  49 ++--
+> >  drivers/char/tpm/tpm_i2c_infineon.c |  43 +--
+> >  drivers/char/tpm/tpm_i2c_nuvoton.c  |  68 ++---
+> 
+> When applying to linux-v3.18-rc6 I get this new coccinelle warning:
+> drivers/char/tpm/tpm_i2c_nuvoton.c:607:1-3: WARNING: end returns can be
+> simpified
+> 
+> 
+> make -C ../../../linux/ M=$(pwd) coccicheck
+> 
+Consider folding this patch to remove the warning
 
-I think good that this patch is separated to two patches.
-(board file and codes relevant to mmc.)
+----
 
-Best Regards,
-Jaehoon Chung
+>From cb1b82859ba98f8573624905d2b3cc8d10f456b2 Mon Sep 17 00:00:00 2001
+From: Peter Huewe <peterhuewe@gmx.de>
+Date: Wed, 3 Dec 2014 00:18:52 +0100
+Subject: [PATCH] tpm:tpm_i2c_nuvoton: simpyl return statements
 
-On 12/03/2014 05:49 AM, Doug Anderson wrote:
-> In (3fcb027 ARM: MXC: mxcmmc: work around a bug in the SDHC busy line
-> handling) the optional init_card() callback was added.  According to
-> the original change it was "for now only called from
-> mmc_sdio_init_card()".
-> 
-> This callback really ought to be called from the SD and MMC init
-> functions as well.  One current user of this callback
-> (mxcmci_init_card) will not work as expected if you insert an SDIO
-> card, then eject it and put a normal SD card in.  Specifically the
-> normal SD card will not get to run with 4-bit data.
-> 
-> I'd like to use the init_card() callback to handle a similar quirk on
-> dw_mmc when using SDIO Interrupts (the "low power" feature of the card
-> needs to be disabled), so that will add a second user of the function.
-> 
-> As part of this change fixup the one place that relied on the callback
-> only happening for SDIO cards.
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Reviewed-by: Grant Grundler <grundler@chromium.org>
-> ---
-> Changes in v3:
-> - Add fixup to pandora_wl1251_init_card().
-> 
-> Changes in v2:
-> - mmc core change new for this version.
-> 
->  arch/arm/mach-omap2/board-omap3pandora.c | 14 ++++++++------
->  drivers/mmc/core/mmc.c                   |  6 ++++++
->  drivers/mmc/core/sd.c                    |  7 ++++++-
->  3 files changed, 20 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/board-omap3pandora.c b/arch/arm/mach-omap2/board-omap3pandora.c
-> index 7f17087..969e100 100644
-> --- a/arch/arm/mach-omap2/board-omap3pandora.c
-> +++ b/arch/arm/mach-omap2/board-omap3pandora.c
-> @@ -254,12 +254,14 @@ static void pandora_wl1251_init_card(struct mmc_card *card)
->  	 * We have TI wl1251 attached to MMC3. Pass this information to
->  	 * SDIO core because it can't be probed by normal methods.
->  	 */
-> -	card->quirks |= MMC_QUIRK_NONSTD_SDIO;
-> -	card->cccr.wide_bus = 1;
-> -	card->cis.vendor = 0x104c;
-> -	card->cis.device = 0x9066;
-> -	card->cis.blksize = 512;
-> -	card->cis.max_dtr = 20000000;
-> +	if (card->type == MMC_TYPE_SDIO || card->type == MMC_TYPE_SD_COMBO) {
-> +		card->quirks |= MMC_QUIRK_NONSTD_SDIO;
-> +		card->cccr.wide_bus = 1;
-> +		card->cis.vendor = 0x104c;
-> +		card->cis.device = 0x9066;
-> +		card->cis.blksize = 512;
-> +		card->cis.max_dtr = 20000000;
-> +	}
->  }
->  
->  static struct omap2_hsmmc_info omap3pandora_mmc[] = {
-> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-> index 02ad792..4a21d66 100644
-> --- a/drivers/mmc/core/mmc.c
-> +++ b/drivers/mmc/core/mmc.c
-> @@ -1297,6 +1297,12 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
->  	}
->  
->  	/*
-> +	 * Call the optional HC's init_card function to handle quirks.
-> +	 */
-> +	if (host->ops->init_card)
-> +		host->ops->init_card(host, card);
-> +
-> +	/*
->  	 * For native busses:  set card RCA and quit open drain mode.
->  	 */
->  	if (!mmc_host_is_spi(host)) {
-> diff --git a/drivers/mmc/core/sd.c b/drivers/mmc/core/sd.c
-> index d90a6de..29fccdc 100644
-> --- a/drivers/mmc/core/sd.c
-> +++ b/drivers/mmc/core/sd.c
-> @@ -933,6 +933,12 @@ static int mmc_sd_init_card(struct mmc_host *host, u32 ocr,
->  	}
->  
->  	/*
-> +	 * Call the optional HC's init_card function to handle quirks.
-> +	 */
-> +	if (host->ops->init_card)
-> +		host->ops->init_card(host, card);
-> +
-> +	/*
->  	 * For native busses:  get card RCA and quit open drain mode.
->  	 */
->  	if (!mmc_host_is_spi(host)) {
-> @@ -1271,4 +1277,3 @@ err:
->  
->  	return err;
->  }
-> -
-> 
+if !rc evals to false it is 0
+-> we can return rc in both cases
+
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/char/tpm/tpm_i2c_nuvoton.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/drivers/char/tpm/tpm_i2c_nuvoton.c b/drivers/char/tpm/tpm_i2c_nuvoton.c
+index 14246e2..79f4fef 100644
+--- a/drivers/char/tpm/tpm_i2c_nuvoton.c
++++ b/drivers/char/tpm/tpm_i2c_nuvoton.c
+@@ -605,10 +605,8 @@ static int i2c_nuvoton_probe(struct i2c_client *client,
+ 		return -ENODEV;
+ 
+ 	rc = tpm_chip_register(chip);
+-	if (rc)
+-		return rc;
+ 
+-	return 0;
++	return rc;
+ }
+ 
+ static int i2c_nuvoton_remove(struct i2c_client *client)
+-- 
+2.0.4
+
+
 
