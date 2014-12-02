@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820AbaLBS2Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 13:28:25 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:42099 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754719AbaLBSYf (ORCPT
+	id S1754832AbaLBS25 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 13:28:57 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:36166 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754685AbaLBSYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 13:24:35 -0500
+	Tue, 2 Dec 2014 13:24:31 -0500
 From: Jeff Layton <jlayton@primarydata.com>
 To: linux-nfs@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
         Al Viro <viro@zeniv.linux.org.uk>
-Subject: [RFC PATCH 04/14] sunrpc: turn enqueueing a svc_xprt into a svc_serv operation
-Date: Tue,  2 Dec 2014 13:24:13 -0500
-Message-Id: <1417544663-13299-5-git-send-email-jlayton@primarydata.com>
+Subject: [RFC PATCH 01/14] sunrpc: add a new svc_serv_ops struct and move sv_shutdown into it
+Date: Tue,  2 Dec 2014 13:24:10 -0500
+Message-Id: <1417544663-13299-2-git-send-email-jlayton@primarydata.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
 References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
@@ -21,152 +21,200 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For now, all services use svc_xprt_do_enqueue, but once we add
-workqueue-based service support, we'll need to do something different.
+In later patches we'll need to abstract out more operations on a
+per-service level, besides sv_shutdown and sv_function.
+
+Declare a new svc_serv_ops struct to hold these operations, and move
+sv_shutdown into this struct.
 
 Signed-off-by: Jeff Layton <jlayton@primarydata.com>
 ---
- fs/lockd/svc.c                  |  3 ++-
- fs/nfs/callback.c               |  1 +
- fs/nfsd/nfssvc.c                | 11 ++++++-----
- include/linux/sunrpc/svc.h      |  3 +++
- include/linux/sunrpc/svc_xprt.h |  1 +
- net/sunrpc/svc_xprt.c           | 10 +++++-----
- 6 files changed, 18 insertions(+), 11 deletions(-)
+ fs/lockd/svc.c             |  6 +++++-
+ fs/nfs/callback.c          |  5 ++++-
+ fs/nfsd/nfssvc.c           |  6 +++++-
+ include/linux/sunrpc/svc.h | 20 ++++++++++----------
+ net/sunrpc/svc.c           | 18 +++++++++---------
+ 5 files changed, 33 insertions(+), 22 deletions(-)
 
 diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
-index d93a8d0a04bb..b6bdba25d4fb 100644
+index e94c887da2d7..d93a8d0a04bb 100644
 --- a/fs/lockd/svc.c
 +++ b/fs/lockd/svc.c
-@@ -327,7 +327,8 @@ out_rqst:
+@@ -326,6 +326,10 @@ out_rqst:
+ 	return error;
  }
  
- static struct svc_serv_ops lockd_sv_ops = {
--	.svo_shutdown	= svc_rpcb_cleanup,
-+	.svo_shutdown		= svc_rpcb_cleanup,
-+	.svo_enqueue_xprt	= svc_xprt_do_enqueue,
- };
- 
++static struct svc_serv_ops lockd_sv_ops = {
++	.svo_shutdown	= svc_rpcb_cleanup,
++};
++
  static struct svc_serv *lockd_create_svc(void)
+ {
+ 	struct svc_serv *serv;
+@@ -350,7 +354,7 @@ static struct svc_serv *lockd_create_svc(void)
+ 		printk(KERN_WARNING
+ 			"lockd_up: no pid, %d users??\n", nlmsvc_users);
+ 
+-	serv = svc_create(&nlmsvc_program, LOCKD_BUFSIZE, svc_rpcb_cleanup);
++	serv = svc_create(&nlmsvc_program, LOCKD_BUFSIZE, &lockd_sv_ops);
+ 	if (!serv) {
+ 		printk(KERN_WARNING "lockd_up: create service failed\n");
+ 		return ERR_PTR(-ENOMEM);
 diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
-index ace6c70f807b..1800a918f244 100644
+index b8fb3a4ef649..ace6c70f807b 100644
 --- a/fs/nfs/callback.c
 +++ b/fs/nfs/callback.c
-@@ -307,6 +307,7 @@ err_bind:
- }
- 
- static struct svc_serv_ops nfs_cb_sv_ops = {
-+	.svo_enqueue_xprt	= svc_xprt_do_enqueue,
- };
- 
- static struct svc_serv *nfs_callback_create_svc(int minorversion)
-diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index 94e7e173aa10..5904c06cfd32 100644
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -390,10 +390,11 @@ static int nfsd_get_default_max_blksize(void)
+@@ -306,6 +306,9 @@ err_bind:
  	return ret;
  }
  
--static struct svc_serv_ops nfsd_sv_ops = {
--	.svo_shutdown = nfsd_last_thread,
--	.svo_function = nfsd,
--	.svo_module = THIS_MODULE,
-+static struct svc_serv_ops nfsd_thread_sv_ops = {
-+	.svo_shutdown		= nfsd_last_thread,
-+	.svo_function		= nfsd,
-+	.svo_enqueue_xprt	= svc_xprt_do_enqueue,
-+	.svo_module		= THIS_MODULE,
- };
++static struct svc_serv_ops nfs_cb_sv_ops = {
++};
++
+ static struct svc_serv *nfs_callback_create_svc(int minorversion)
+ {
+ 	struct nfs_callback_data *cb_info = &nfs_callback_info[minorversion];
+@@ -331,7 +334,7 @@ static struct svc_serv *nfs_callback_create_svc(int minorversion)
+ 		printk(KERN_WARNING "nfs_callback_create_svc: no kthread, %d users??\n",
+ 			cb_info->users);
  
+-	serv = svc_create(&nfs4_callback_program, NFS4_CALLBACK_BUFSIZE, NULL);
++	serv = svc_create(&nfs4_callback_program, NFS4_CALLBACK_BUFSIZE, &nfs_cb_sv_ops);
+ 	if (!serv) {
+ 		printk(KERN_ERR "nfs_callback_create_svc: create service failed\n");
+ 		return ERR_PTR(-ENOMEM);
+diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+index 314f5c8f8f1a..cc5dd1227732 100644
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -390,6 +390,10 @@ static int nfsd_get_default_max_blksize(void)
+ 	return ret;
+ }
+ 
++static struct svc_serv_ops nfsd_sv_ops = {
++	.svo_shutdown = nfsd_last_thread,
++};
++
  int nfsd_create_serv(struct net *net)
-@@ -410,7 +411,7 @@ int nfsd_create_serv(struct net *net)
+ {
+ 	int error;
+@@ -404,7 +408,7 @@ int nfsd_create_serv(struct net *net)
  		nfsd_max_blksize = nfsd_get_default_max_blksize();
  	nfsd_reset_versions();
  	nn->nfsd_serv = svc_create_pooled(&nfsd_program, nfsd_max_blksize,
--						&nfsd_sv_ops);
-+						&nfsd_thread_sv_ops);
+-				      nfsd_last_thread, nfsd, THIS_MODULE);
++				      &nfsd_sv_ops, nfsd, THIS_MODULE);
  	if (nn->nfsd_serv == NULL)
  		return -ENOMEM;
  
 diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
-index 377be73b736f..7429cdcb48b5 100644
+index 6f22cfeef5e3..35faea625d9f 100644
 --- a/include/linux/sunrpc/svc.h
 +++ b/include/linux/sunrpc/svc.h
-@@ -58,6 +58,9 @@ struct svc_serv_ops {
- 	/* function for service threads to run */
- 	int		(*svo_function)(void *);
+@@ -54,6 +54,13 @@ struct svc_pool {
+ 	unsigned long		sp_flags;
+ } ____cacheline_aligned_in_smp;
  
-+	/* queue up a transport for servicing */
-+	void		(*svo_enqueue_xprt)(struct svc_xprt *);
++struct svc_serv;
 +
- 	/* optional module to count when adding threads (pooled svcs only) */
- 	struct module	*svo_module;
- };
-diff --git a/include/linux/sunrpc/svc_xprt.h b/include/linux/sunrpc/svc_xprt.h
-index 79f6f8f3dc0a..78512cfe1fe6 100644
---- a/include/linux/sunrpc/svc_xprt.h
-+++ b/include/linux/sunrpc/svc_xprt.h
-@@ -116,6 +116,7 @@ void	svc_xprt_init(struct net *, struct svc_xprt_class *, struct svc_xprt *,
- 		      struct svc_serv *);
- int	svc_create_xprt(struct svc_serv *, const char *, struct net *,
- 			const int, const unsigned short, int);
-+void	svc_xprt_do_enqueue(struct svc_xprt *xprt);
- void	svc_xprt_enqueue(struct svc_xprt *xprt);
- void	svc_xprt_put(struct svc_xprt *xprt);
- void	svc_xprt_copy_addrs(struct svc_rqst *rqstp, struct svc_xprt *xprt);
-diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
-index c69358b3cf7f..4954339315b7 100644
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -24,7 +24,6 @@ static int svc_deferred_recv(struct svc_rqst *rqstp);
- static struct cache_deferred_req *svc_defer(struct cache_req *req);
- static void svc_age_temp_xprts(unsigned long closure);
- static void svc_delete_xprt(struct svc_xprt *xprt);
--static void svc_xprt_do_enqueue(struct svc_xprt *xprt);
- 
- /* apparently the "standard" is that clients close
-  * idle connections after 5 minutes, servers after
-@@ -226,12 +225,12 @@ static void svc_xprt_received(struct svc_xprt *xprt)
- 	}
- 
- 	/* As soon as we clear busy, the xprt could be closed and
--	 * 'put', so we need a reference to call svc_xprt_do_enqueue with:
-+	 * 'put', so we need a reference to call svc_enqueue_xprt with:
- 	 */
- 	svc_xprt_get(xprt);
- 	smp_mb__before_atomic();
- 	clear_bit(XPT_BUSY, &xprt->xpt_flags);
--	svc_xprt_do_enqueue(xprt);
-+	xprt->xpt_server->sv_ops->svo_enqueue_xprt(xprt);
- 	svc_xprt_put(xprt);
- }
- 
-@@ -321,7 +320,7 @@ static bool svc_xprt_has_something_to_do(struct svc_xprt *xprt)
- 	return false;
- }
- 
--static void svc_xprt_do_enqueue(struct svc_xprt *xprt)
-+void svc_xprt_do_enqueue(struct svc_xprt *xprt)
- {
- 	struct svc_pool *pool;
- 	struct svc_rqst	*rqstp = NULL;
-@@ -403,6 +402,7 @@ redo_search:
- out:
- 	trace_svc_xprt_do_enqueue(xprt, rqstp);
- }
-+EXPORT_SYMBOL_GPL(svc_xprt_do_enqueue);
- 
++struct svc_serv_ops {
++	/* Callback to use when last thread exits. */
++	void	(*svo_shutdown)(struct svc_serv *serv, struct net *net);
++};
++
  /*
-  * Queue up a transport with data pending. If there are idle nfsd
-@@ -413,7 +413,7 @@ void svc_xprt_enqueue(struct svc_xprt *xprt)
+  * RPC service.
+  *
+@@ -85,13 +92,7 @@ struct svc_serv {
+ 
+ 	unsigned int		sv_nrpools;	/* number of thread pools */
+ 	struct svc_pool *	sv_pools;	/* array of thread pools */
+-
+-	void			(*sv_shutdown)(struct svc_serv *serv,
+-					       struct net *net);
+-						/* Callback to use when last thread
+-						 * exits.
+-						 */
+-
++	struct svc_serv_ops *	sv_ops;		/* server operations */
+ 	struct module *		sv_module;	/* optional module to count when
+ 						 * adding threads */
+ 	svc_thread_fn		sv_function;	/* main function for threads */
+@@ -429,13 +430,12 @@ int svc_rpcb_setup(struct svc_serv *serv, struct net *net);
+ void svc_rpcb_cleanup(struct svc_serv *serv, struct net *net);
+ int svc_bind(struct svc_serv *serv, struct net *net);
+ struct svc_serv *svc_create(struct svc_program *, unsigned int,
+-			    void (*shutdown)(struct svc_serv *, struct net *net));
++			    struct svc_serv_ops *);
+ struct svc_rqst *svc_prepare_thread(struct svc_serv *serv,
+ 					struct svc_pool *pool, int node);
+ void		   svc_exit_thread(struct svc_rqst *);
+ struct svc_serv *  svc_create_pooled(struct svc_program *, unsigned int,
+-			void (*shutdown)(struct svc_serv *, struct net *net),
+-			svc_thread_fn, struct module *);
++			struct svc_serv_ops *, svc_thread_fn, struct module *);
+ int		   svc_set_num_threads(struct svc_serv *, struct svc_pool *, int);
+ int		   svc_pool_stats_open(struct svc_serv *serv, struct file *file);
+ void		   svc_destroy(struct svc_serv *);
+diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+index 4308881d9d0a..057185e11261 100644
+--- a/net/sunrpc/svc.c
++++ b/net/sunrpc/svc.c
+@@ -423,7 +423,7 @@ EXPORT_SYMBOL_GPL(svc_bind);
+  */
+ static struct svc_serv *
+ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+-	     void (*shutdown)(struct svc_serv *serv, struct net *net))
++	     struct svc_serv_ops *ops)
  {
- 	if (test_bit(XPT_BUSY, &xprt->xpt_flags))
- 		return;
--	svc_xprt_do_enqueue(xprt);
-+	xprt->xpt_server->sv_ops->svo_enqueue_xprt(xprt);
+ 	struct svc_serv	*serv;
+ 	unsigned int vers;
+@@ -440,7 +440,7 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+ 		bufsize = RPCSVC_MAXPAYLOAD;
+ 	serv->sv_max_payload = bufsize? bufsize : 4096;
+ 	serv->sv_max_mesg  = roundup(serv->sv_max_payload + PAGE_SIZE, PAGE_SIZE);
+-	serv->sv_shutdown  = shutdown;
++	serv->sv_ops = ops;
+ 	xdrsize = 0;
+ 	while (prog) {
+ 		prog->pg_lovers = prog->pg_nvers-1;
+@@ -486,21 +486,21 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+ 
+ struct svc_serv *
+ svc_create(struct svc_program *prog, unsigned int bufsize,
+-	   void (*shutdown)(struct svc_serv *serv, struct net *net))
++	   struct svc_serv_ops *ops)
+ {
+-	return __svc_create(prog, bufsize, /*npools*/1, shutdown);
++	return __svc_create(prog, bufsize, /*npools*/1, ops);
  }
- EXPORT_SYMBOL_GPL(svc_xprt_enqueue);
+ EXPORT_SYMBOL_GPL(svc_create);
+ 
+ struct svc_serv *
+ svc_create_pooled(struct svc_program *prog, unsigned int bufsize,
+-		  void (*shutdown)(struct svc_serv *serv, struct net *net),
+-		  svc_thread_fn func, struct module *mod)
++		  struct svc_serv_ops *ops, svc_thread_fn func,
++		  struct module *mod)
+ {
+ 	struct svc_serv *serv;
+ 	unsigned int npools = svc_pool_map_get();
+ 
+-	serv = __svc_create(prog, bufsize, npools, shutdown);
++	serv = __svc_create(prog, bufsize, npools, ops);
+ 	if (!serv)
+ 		goto out_err;
+ 
+@@ -517,8 +517,8 @@ void svc_shutdown_net(struct svc_serv *serv, struct net *net)
+ {
+ 	svc_close_net(serv, net);
+ 
+-	if (serv->sv_shutdown)
+-		serv->sv_shutdown(serv, net);
++	if (serv->sv_ops->svo_shutdown)
++		serv->sv_ops->svo_shutdown(serv, net);
+ }
+ EXPORT_SYMBOL_GPL(svc_shutdown_net);
  
 -- 
 2.1.0
