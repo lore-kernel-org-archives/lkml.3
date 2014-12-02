@@ -1,115 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932502AbaLBQPH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 11:15:07 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:33678 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932079AbaLBQPE (ORCPT
+	id S932547AbaLBQPW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 11:15:22 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:43241 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753711AbaLBQPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 11:15:04 -0500
-Date: Tue, 2 Dec 2014 17:12:27 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <gnurou@gmail.com>, Benoit Parrot <bparrot@ti.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Jiri Prchal <jiri.prchal@aksignal.cz>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
-Message-ID: <20141202161227.GH30256@lukather>
-References: <1416527684-19017-1-git-send-email-bparrot@ti.com>
- <1416527684-19017-2-git-send-email-bparrot@ti.com>
- <CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com>
- <20141201163639.GI25249@lukather>
- <CAAVeFuLTupDenZdSi8KO+dYsf-ekcqjsDaQ2GEzYpBG34oF7Zw@mail.gmail.com>
- <CACRpkdZcNcPBYQM438CZJx1gYst9BFBSTj-3Qv2aPGF9pdWa5g@mail.gmail.com>
+	Tue, 2 Dec 2014 11:15:18 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aYDVKSzuImP48n7V"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZcNcPBYQM438CZJx1gYst9BFBSTj-3Qv2aPGF9pdWa5g@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141202102632.6ae37b88@lwn.net>
+References: <1417494919-4577-1-git-send-email-oakad@yahoo.com>
+	<20141202102632.6ae37b88@lwn.net>
+Date: Wed, 3 Dec 2014 03:15:16 +1100
+Message-ID: <CAPs88r_+yOYTNeKZEq+kPS83-+T4_ehR0Y_5kpTP1LmO2508MQ@mail.gmail.com>
+Subject: Re: Minimal effort/low overhead file descriptor duplication over
+ Posix.1b s
+From: Alex Dubov <alex.dubov@gmail.com>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-api@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 3, 2014 at 2:26 AM, Jonathan Corbet <corbet@lwn.net> wrote:
+> On Tue,  2 Dec 2014 15:35:17 +1100
+> Alex Dubov <alex.dubov@gmail.com> wrote:
+>
+>
+>  - Messing with another process's file descriptor table without its
+>    knowledge looks like a possible source of all kinds problems.  Might
+>    there be race conditions with close()/dup() code, for example?  And
+>    remember that users can be root in a user namespace; maybe there's no
+>    potential for mischief there, but it needs to be considered.
 
---aYDVKSzuImP48n7V
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+If process A has sufficient permissions to signal process B, it can
+already do arbitrary mischief, no news there (SIGKILL and SIGSTOP will
+definitely cause more havoc :-).
 
-On Tue, Dec 02, 2014 at 03:29:46PM +0100, Linus Walleij wrote:
-> On Tue, Dec 2, 2014 at 3:13 PM, Alexandre Courbot <gnurou@gmail.com> wrot=
-e:
-> > On Tue, Dec 2, 2014 at 1:36 AM, Maxime Ripard
-> > <maxime.ripard@free-electrons.com> wrote:
->=20
-> >> The only thing I'd like to have would be that the request here would
-> >> be non-exclusive, so that a later driver would still be allowed later
-> >> on to request that GPIO later on and manage it itself (ideally using
-> >> the usual gpiod_request function).
-> >
-> > Actually we have a plan (and I have some code too) to allow multiple
-> > consumers per GPIO. Although like Benoit I wonder why you would want
-> > to hog a GPIO and then request it properly later. Also, that probably
-> > means we should abandon the hog since it actively drives the line and
-> > would interfere with the late requested. How to do that correctly is
-> > not really clear to me.
->=20
-> I don't get the usecase. A hogged GPIO is per definition hogged.
-> This sounds more like "initial settings" or something, which is another
-> usecase altogether.
+I don't believe there can be any race conditions as this is not
+different to what happens when dup() is invoked from one of the
+threads in multi-threaded application, whereupon other threads go on
+with their usual file operations. Descriptor duplication happens prior
+to any signal handling activities.
 
-We do have one board where we have a pin (let's say GPIO14 of the bank
-A) that enables a regulator that will provide VCC the bank B.
+>  - Forcing the use of realtime signals seems strange; this isn't a
+>    realtime operation by any stretch.
 
-Now, both banks are handled by the same driver, but in order to have a
-working output on the bank B, we do need to set GPIO14 as soon as
-we're probed.
+"Real time signals" are merely a misleading name for Posix.1b
+micro-messaging facility. To the best of my knowledge they do not
+affect scheduling any more then SIGIO or SIGALRM would.
 
-Just relying on the usual deferred probing introduces a circular
-dependency between the gpio-regulator that needs to grab its GPIO from
-a driver not there yet, and the gpio driver that needs to enable its
-gpio-regulator.
+As Posix.1b signals are best handled by signalfd() facility anyway, no
+impact on scheduling compared to any other approach (including the
+existing domain socket approach) is expected at all.
 
-GPIO hogging needs to be the ideal solution for that, since we can
-just enforce the GPIO14 value as the driver is probed, which provides
-the guarantee that any driver using the bank B will actually drive the
-GPIO it might use.
+>
+>  - How might the sending process communicate to the recipient what the fd
+>    is for?  Even if a process only expects one type of file descriptor,
+>    the ability to communicate information other than its number seems
+>    like it would often be useful.
 
-However, an exclusive request will prevent any representation of this
-as a regulator, which sounds a bit weird, since it really is just
-that.
+There are 32 "real time" signals defined by default in kernel; this
+range can be increased at will with kernel recompilation and glibc
+will pick up the correct range automatically (this is Posix mandated
+behavior and it actually works like that).
 
-Maxime
+I have not seen an app yet that relied on more than half a dozen of
+distinct signal numbers. Thus any application can conveniently define
+more than 2 dozens of different fd varieties out of the box, delivered
+to it with dedicated signal ids, whereupon in most practical
+applications only 1 or 2 varieties of file descriptors are ever passed
+around.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+>
+> Some of these concerns might be addressable by requiring the recipient to
+> call acceptfd() (or some such) with the ability to use poll().  As an
+> alternative, I believe kdbus has fd-passing abilities; if kdbus goes in,
+> would you still need this feature?
 
---aYDVKSzuImP48n7V
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Any process willing to handle Posix.1b signals must explicitly
+manipulate the signal masks - otherwise it will be killed the moment
+signal is received. Thus, no special "acceptfd()" call is necessary on
+the receiver side - applications usually don't  modify their signal
+masks unless they expect some particular signal to arrive.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+kdbus has something like it and binder on android has it as well. The
+problem with both of them are the same as with unix domain sockets
+(which implement a whole, rather convoluted, cmsg facility to be ever
+used for that single purpose): they try to solve big problems with
+fancy functionality, whereupon fd passing is a nice side feature
+(which then gets used the most).
 
-iQIcBAEBAgAGBQJUfeTrAAoJEBx+YmzsjxAg7wYQAJjqiXLHrQqwc+skXbprskOn
-rcVJePS4tpBlurQ53c3furPKW6R0LQNsyM9pMkllPceFCD7wvsbGvpg1z4yeuUaQ
-Wn7Lzu0fipLPHpCZhXc9bU4Db3CemEAhRoUrDwTV8fvSAcIS2zTxQmqcmGlBUCZQ
-1+mzoB5w3keBrEtkT7Zl9EZyq5Zs8neortY8/fePrPyE69o0dhZ57/uBgIIfXIbs
-BY9QC5Wm5cKMpB9VcERVWzV+VLzCZIJ4pSpWpm9S8qpXtQ/cMOmOT8aNYpNRkant
-mTcP0kVMGf81qyAn9ujD++IScXeM6eMaKdafryXMu8jkY7yVONobB7H3kAUFyG0U
-066z3SodJZ2jiA1O22Zy3TAXrquEw6xRQGZJq4g04me9W8w1LisfCx6MI6SQuZr2
-9rZ7jFgs9LGTtpihacok5xKT2cNafoGYz5U1rfgBkKJDtXGZM7aI4gpM1Td5efRM
-oEHmFWmx5tuINJojWVB8VBifad4z9WwPAyMmT7t8CiVsVyksnUIHrb04pZcYTvd7
-IMdVwIxqP/A0XTJ8nf/bNvib1hxr+whl/UDpLzpLxliexCaHonr5ADVH4QrFe2WU
-NmID1qMhXDAyKGeOElRwY14vQNTC/A/xiMDdcTQ9qFfXOVbozr/EbebiJgkOQWyg
-my+TgT1EUKb5R2YW7wyP
-=+AOe
------END PGP SIGNATURE-----
+To my understanding, commonly used functionality deserves to have its
+own quick, low overhead path:
 
---aYDVKSzuImP48n7V--
+1. We've got eventfd() which is neat and all, but to use it we need an
+easy way to pass its fd around.
+
+2. We've got memfd() which is also neat, but to use it..
+
+3. We've got fairly complex (and consequently buggy) functionality
+like SO_REUSEPORT, but I can't avoid a feeling that if there was a low
+overhead transport available to path fds around (like the one
+proposed), the old school approach of having one process running
+tightly around accept() and sending sockets to workers may still rival
+it (pity I don't have google's setup around to test it).
+
+4. Most importantly, when network appliances are concerned (and those
+represent a huge percentage of linux install base), it is desirable to
+have the leanest possible code paths both in kernel and in the user
+space (no functionality - no vulnerabilities to fish for) and still be
+able to rely on multi-process applications (as multi-process
+applications are considerably more reliable then multi-threaded ones,
+for all the obvious reasons). A compact, easily traceable facility
+comprising few hundred LOCs in the kernel, end to end, and very simple
+application code (sigqueue() -> signalfd()) pose a distinct advantage
+in this regard over largish subsystems which may provide similar
+feature (invariable at the expense of unnecessary costs, like
+persistent file system objects, specialized user-space libraries, etc)
+.
