@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933275AbaLBTXK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:23:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46650 "EHLO
+	id S933294AbaLBTXR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:23:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46658 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932762AbaLBTXH (ORCPT
+	with ESMTP id S932762AbaLBTXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:23:07 -0500
+	Tue, 2 Dec 2014 14:23:12 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 082/121] ARM: 8191/1: decompressor: ensure I-side picks up relocated code
-Date: Tue,  2 Dec 2014 11:19:21 -0800
-Message-Id: <1417548000-1794-83-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 076/121] NFSv4: Ensure that we remove NFSv4.0 delegations when state has expired
+Date: Tue,  2 Dec 2014 11:19:15 -0800
+Message-Id: <1417548000-1794-77-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
@@ -28,112 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 238962ac71910d6c20162ea5230685fead1836a4 upstream.
+commit 4dfd4f7af0afd201706ad186352ca423b0f17d4b upstream.
 
-To speed up decompression, the decompressor sets up a flat, cacheable
-mapping of memory. However, when there is insufficient space to hold
-the page tables for this mapping, we don't bother to enable the caches
-and subsequently skip all the cache maintenance hooks.
+NFSv4.0 does not have TEST_STATEID/FREE_STATEID functionality, so
+unlike NFSv4.1, the recovery procedure when stateids have expired or
+have been revoked requires us to just forget the delegation.
 
-Skipping the cache maintenance before jumping to the relocated code
-allows the processor to predict the branch and populate the I-cache
-with stale data before the relocation loop has completed (since a
-bootloader may have SCTLR.I set, which permits normal, cacheable
-instruction fetches regardless of SCTLR.M).
-
-This patch moves the cache maintenance check into the maintenance
-routines themselves, allowing the v6/v7 versions to invalidate the
-I-cache regardless of the MMU state.
-
-Reported-by: Marc Carino <marc.ceeeee@gmail.com>
-Tested-by: Julien Grall <julien.grall@linaro.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+http://lkml.kernel.org/r/CAN-5tyHwG=Cn2Q9KsHWadewjpTTy_K26ee+UnSvHvG4192p-Xw@mail.gmail.com
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/boot/compressed/head.S | 20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+ fs/nfs/nfs4proc.c | 24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
-index 066b034..8017cde 100644
---- a/arch/arm/boot/compressed/head.S
-+++ b/arch/arm/boot/compressed/head.S
-@@ -400,8 +400,7 @@ dtb_check_done:
- 		add	sp, sp, r6
- #endif
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index b54753e..33f76f9 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -2036,6 +2036,28 @@ static int nfs4_open_expired(struct nfs4_state_owner *sp, struct nfs4_state *sta
+ 	return ret;
+ }
  
--		tst	r4, #1
--		bleq	cache_clean_flush
-+		bl	cache_clean_flush
- 
- 		adr	r0, BSYM(restart)
- 		add	r0, r0, r6
-@@ -1050,6 +1049,8 @@ cache_clean_flush:
- 		b	call_cache_fn
- 
- __armv4_mpu_cache_flush:
-+		tst	r4, #1
-+		movne	pc, lr
- 		mov	r2, #1
- 		mov	r3, #0
- 		mcr	p15, 0, ip, c7, c6, 0	@ invalidate D cache
-@@ -1067,6 +1068,8 @@ __armv4_mpu_cache_flush:
- 		mov	pc, lr
- 		
- __fa526_cache_flush:
-+		tst	r4, #1
-+		movne	pc, lr
- 		mov	r1, #0
- 		mcr	p15, 0, r1, c7, c14, 0	@ clean and invalidate D cache
- 		mcr	p15, 0, r1, c7, c5, 0	@ flush I cache
-@@ -1075,13 +1078,16 @@ __fa526_cache_flush:
- 
- __armv6_mmu_cache_flush:
- 		mov	r1, #0
--		mcr	p15, 0, r1, c7, c14, 0	@ clean+invalidate D
-+		tst	r4, #1
-+		mcreq	p15, 0, r1, c7, c14, 0	@ clean+invalidate D
- 		mcr	p15, 0, r1, c7, c5, 0	@ invalidate I+BTB
--		mcr	p15, 0, r1, c7, c15, 0	@ clean+invalidate unified
-+		mcreq	p15, 0, r1, c7, c15, 0	@ clean+invalidate unified
- 		mcr	p15, 0, r1, c7, c10, 4	@ drain WB
- 		mov	pc, lr
- 
- __armv7_mmu_cache_flush:
-+		tst	r4, #1
-+		bne	iflush
- 		mrc	p15, 0, r10, c0, c1, 5	@ read ID_MMFR1
- 		tst	r10, #0xf << 16		@ hierarchical cache (ARMv7)
- 		mov	r10, #0
-@@ -1142,6 +1148,8 @@ iflush:
- 		mov	pc, lr
- 
- __armv5tej_mmu_cache_flush:
-+		tst	r4, #1
-+		movne	pc, lr
- 1:		mrc	p15, 0, r15, c7, c14, 3	@ test,clean,invalidate D cache
- 		bne	1b
- 		mcr	p15, 0, r0, c7, c5, 0	@ flush I cache
-@@ -1149,6 +1157,8 @@ __armv5tej_mmu_cache_flush:
- 		mov	pc, lr
- 
- __armv4_mmu_cache_flush:
-+		tst	r4, #1
-+		movne	pc, lr
- 		mov	r2, #64*1024		@ default: 32K dcache size (*2)
- 		mov	r11, #32		@ default: 32 byte line size
- 		mrc	p15, 0, r3, c0, c0, 1	@ read cache type
-@@ -1182,6 +1192,8 @@ no_cache_id:
- 
- __armv3_mmu_cache_flush:
- __armv3_mpu_cache_flush:
-+		tst	r4, #1
-+		movne	pc, lr
- 		mov	r1, #0
- 		mcr	p15, 0, r1, c7, c0, 0	@ invalidate whole cache v3
- 		mov	pc, lr
++static void nfs_finish_clear_delegation_stateid(struct nfs4_state *state)
++{
++	nfs_remove_bad_delegation(state->inode);
++	write_seqlock(&state->seqlock);
++	nfs4_stateid_copy(&state->stateid, &state->open_stateid);
++	write_sequnlock(&state->seqlock);
++	clear_bit(NFS_DELEGATED_STATE, &state->flags);
++}
++
++static void nfs40_clear_delegation_stateid(struct nfs4_state *state)
++{
++	if (rcu_access_pointer(NFS_I(state->inode)->delegation) != NULL)
++		nfs_finish_clear_delegation_stateid(state);
++}
++
++static int nfs40_open_expired(struct nfs4_state_owner *sp, struct nfs4_state *state)
++{
++	/* NFSv4.0 doesn't allow for delegation recovery on open expire */
++	nfs40_clear_delegation_stateid(state);
++	return nfs4_open_expired(sp, state);
++}
++
+ #if defined(CONFIG_NFS_V4_1)
+ static void nfs41_clear_delegation_stateid(struct nfs4_state *state)
+ {
+@@ -8256,7 +8278,7 @@ static const struct nfs4_state_recovery_ops nfs41_reboot_recovery_ops = {
+ static const struct nfs4_state_recovery_ops nfs40_nograce_recovery_ops = {
+ 	.owner_flag_bit = NFS_OWNER_RECLAIM_NOGRACE,
+ 	.state_flag_bit	= NFS_STATE_RECLAIM_NOGRACE,
+-	.recover_open	= nfs4_open_expired,
++	.recover_open	= nfs40_open_expired,
+ 	.recover_lock	= nfs4_lock_expired,
+ 	.establish_clid = nfs4_init_clientid,
+ };
 -- 
 1.9.1
 
