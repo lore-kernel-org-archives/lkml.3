@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177AbaLBPdF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 10:33:05 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:62758 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908AbaLBPdD (ORCPT
+	id S932283AbaLBPhL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 10:37:11 -0500
+Received: from mail1.bemta12.messagelabs.com ([216.82.251.7]:6288 "EHLO
+	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752846AbaLBPhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 10:33:03 -0500
-Message-ID: <1417534380.5303.64.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH 1/2] fs: introduce sendfd() syscall
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alex Dubov <alex.dubov@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alex Dubov <oakad@yahoo.com>
-Date: Tue, 02 Dec 2014 07:33:00 -0800
-In-Reply-To: <CAPs88r_Dz+UqwhqAcKwXuLZGz4n=NocD-0FuOZug5UGH64p_8w@mail.gmail.com>
-References: <1417494919-4577-1-git-send-email-oakad@yahoo.com>
-	 <1417494919-4577-2-git-send-email-oakad@yahoo.com>
-	 <1417524607.5303.45.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <CAPs88r_Dz+UqwhqAcKwXuLZGz4n=NocD-0FuOZug5UGH64p_8w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Dec 2014 10:37:09 -0500
+X-Greylist: delayed 411 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Dec 2014 10:37:09 EST
+X-Env-Sender: Benjamin.Romer@unisys.com
+X-Msg-Ref: server-15.tower-28.messagelabs.com!1417534154!34785887!71
+X-Originating-IP: [192.61.61.105]
+X-StarScan-Received: 
+X-StarScan-Version: 6.12.4; banners=-,-,-
+X-VirusChecked: Checked
+From: "Romer, Benjamin M" <Benjamin.Romer@unisys.com>
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+CC: "Kershner, David A" <David.Kershner@unisys.com>,
+        *S-Par-Maintainer <SParMaintainer@unisys.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Jeremiah Mahler" <jmmahler@gmail.com>
+Date: Tue, 2 Dec 2014 09:30:08 -0600
+Subject: Re: [PATCH v2] staging: unisys: remove duplicate header
+Thread-Topic: [PATCH v2] staging: unisys: remove duplicate header
+Thread-Index: AdAORNq6h/CxIqQXRZqPyiFPSmd0dg==
+Message-ID: <C97001BC43954D438ACB059713BA5CDFDBEE618BAC@USEA-EXCH7.na.uis.unisys.com>
+References: <1417517414-11817-1-git-send-email-sudipm.mukherjee@gmail.com>
+In-Reply-To: <1417517414-11817-1-git-send-email-sudipm.mukherjee@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sB2FbJ11017561
 
-On Wed, 2014-12-03 at 01:47 +1100, Alex Dubov wrote:
-> > User A can send fd(s) to processes belonging to user B, even if user B
-> > does (probably) not want this to happen ?
+On Tue, 2014-12-02 at 16:20 +0530, Sudip Mukherjee wrote:
+> these header files were included multiple times
 > 
-> 1. Process A must have sufficient permissions to signal process B.
-> This will only happen if process A belongs to the same user as process
-> B or has elevated capabilities, which can not appear by themselves
-> (and if root on some machine can not be trusted, then all is lost
-> anyway).
-> 
+> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
 
-I do not see this enforced in your patch.
+Looks good to me, thanks for the help. :)
 
-Allowing a process to hold many times the lock protecting my file
-descriptor table is very scary.
-
-Reserving a slot, then undo this if the signal failed is a nice way to
-slow down critical programs and eventually block them from doing
-progress when using file descriptors (most system calls afaik)
-
-
-> 2. If process B has not specified explicitly how it wants the
-> particular signal to be handled, it will be killed by the default
-> handler. End of story, nothing else is going to happen.
-
-So it seems possible for an arbitrary program to send fds to innocent
-programs, that will likely fill their fd table and wont be able to open
-a new file.
-
-This opens interesting security issues and attack vectors.
-
-
+Signed-off-by: Benjamin Romer <benjamin.romer@unisys.com>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
