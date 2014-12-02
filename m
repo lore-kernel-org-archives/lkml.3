@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333AbaLBJ1h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 04:27:37 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:60691 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751666AbaLBJ1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 04:27:34 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Mark Yao <mark.yao@rock-chips.com>
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-api@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, dianders@chromium.org,
-        marcheu@chromium.org, dbehr@chromium.org, olof@lixom.net,
-        djkurtz@chromium.org, cf@rock-chips.com, xxm@rock-chips.com,
-        huangtao@rock-chips.com, kever.yang@rock-chips.com, yxj@rock-chips.com,
-        xw@rock-chips.com
-Subject: Re: [PATCH v15 0/3] Add drm driver for Rockchip Socs
-Date: Tue, 02 Dec 2014 10:31:14 +0100
-Message-ID: <2556534.qktPW9tbxy@diego>
-User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <1417511600-7054-1-git-send-email-mark.yao@rock-chips.com>
-References: <1417511600-7054-1-git-send-email-mark.yao@rock-chips.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	id S1753535AbaLBJ1n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 04:27:43 -0500
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:5576 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751065AbaLBJ1k convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 04:27:40 -0500
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 2 Dec 2014 17:27:36 +0800
+Subject: [RFC V2] mm:add zero_page _mapcount when mapped into user space
+Thread-Topic: [RFC V2] mm:add zero_page _mapcount when mapped into user space
+Thread-Index: AdAOEjVZ7CVTZrZqRRuSy8tkAu1Gbw==
+Message-ID: <35FD53F367049845BC99AC72306C23D103E688B313E0@CNBJMBX05.corpusers.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+This patch add/dec zero_page's _mapcount to make sure
+the mapcount is correct for zero_page,
+so that when read from /proc/kpagecount, zero_page's
+mapcount is also correct, userspace process like procrank can
+calculate PSS correctly.
 
-Am Dienstag, 2. Dezember 2014, 17:13:20 schrieb Mark Yao:
-> This a series of patches is a DRM Driver for Rockchip Socs, add support
-> for vop devices. Future patches will add additional encoders/connectors,
-> such as eDP, HDMI.
-> 
-> The basic "crtc" for rockchip is a "VOP" - Video Output Processor.
-> the vop devices found on Rockchip rk3288 Soc, rk3288 soc have two similar
-> Vop devices. Vop devices support iommu mapping, we use dma-mapping API with
-> ARM_DMA_USE_IOMMU.
+Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+---
+ mm/memory.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-[...]
-
-> Changes in v15:
-> - remove depends on ARM_DMA_USE_IOMMU & IOMMU_API which cause
->   recursive dependency problem
-> - fix compile problems when build as a module.
-
-maybe you could also already create a new pull request for this version [like 
-the last one based on the iommu branch], so that we save time and Dave can 
-pull it in easily for testing if he likes.
-
-
-Heiko
+diff --git a/mm/memory.c b/mm/memory.c
+index 3e50383..7215423 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2198,6 +2198,7 @@ gotten:
+ 		new_page = alloc_zeroed_user_highpage_movable(vma, address);
+ 		if (!new_page)
+ 			goto oom;
++		atomic_dec(&pfn_to_page(pte_pfn(orig_pte))->_mapcount);
+ 	} else {
+ 		new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, address);
+ 		if (!new_page)
+@@ -2647,6 +2648,7 @@ static int do_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		page_table = pte_offset_map_lock(mm, pmd, address, &ptl);
+ 		if (!pte_none(*page_table))
+ 			goto unlock;
++		atomic_inc(&pfn_to_page(my_zero_pfn(address))->_mapcount);
+ 		goto setpte;
+ 	}
+ 
+-- 
+2.1.3
