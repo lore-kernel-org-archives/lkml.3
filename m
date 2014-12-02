@@ -1,131 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932923AbaLBLRe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 06:17:34 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:64393 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754504AbaLBLRc (ORCPT
+	id S932955AbaLBLTT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 06:19:19 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36742 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752196AbaLBLTR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 06:17:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141202103640.GB14649@pd.tnic>
-References: <a1c485c3bb214d5699fdbfc6180f96f8@BN1AFFO11FD044.protection.gbl>
-	<20141201182611.GA4169@pd.tnic>
-	<CAGnW=BaRuZvFYCz0=s_ENn_sbH4YPxZiHt1x4GvRcUAyO0s+Jw@mail.gmail.com>
-	<20141202103640.GB14649@pd.tnic>
-Date: Tue, 2 Dec 2014 16:47:31 +0530
-X-Google-Sender-Auth: Wo8bxvZZORhiHhOmkiWlG1g5kdM
-Message-ID: <CAGnW=BZO0Aj1yFJEXc0sZzo1Ym518d_Ges6pRkZsTuSdpWk+-w@mail.gmail.com>
-Subject: Re: [PATCH v6] edac: synps: Added EDAC support for zynq ddr ecc controller
-From: punnaiah choudary kalluri <punnaia@xilinx.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>,
-        dougthompson@xmission.com,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-edac@vger.kernel.org,
-        "michal.simek@xilinx.com" <michal.simek@xilinx.com>,
+	Tue, 2 Dec 2014 06:19:17 -0500
+Date: Tue, 2 Dec 2014 11:19:07 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Harini Katakam <harinik@xilinx.com>
+Cc: "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
         "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
         "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Punnaiah Choudary <kpc528@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "michal.simek@xilinx.com" <michal.simek@xilinx.com>,
+        "soren.brinkmann@xilinx.com" <soren.brinkmann@xilinx.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "vishnum@xilinx.com" <vishnum@xilinx.com>
+Subject: Re: [PATCH 3/4] devicetree: bindings: Add defeature-repeated-start
+ property for Cadence I2C
+Message-ID: <20141202111907.GC23671@leverpostej>
+References: <1417514749-24319-1-git-send-email-harinik@xilinx.com>
+ <1417514749-24319-4-git-send-email-harinik@xilinx.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417514749-24319-4-git-send-email-harinik@xilinx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 2, 2014 at 4:06 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Tue, Dec 02, 2014 at 10:51:22AM +0530, punnaiah choudary kalluri wrote:
->> >> +/**
->> >> + * synps_edac_get_eccstate - Return the controller ecc enable/disable status
->> >> + * @base:    Pointer to the ddr memory contoller base address
->> >> + *
->> >> + * This routine returns the ECC enable/disable status for the controller
->> >> + *
->> >> + * Return: a ecc status boolean i.e true/false - enabled/disabled.
->> >> + */
->> >> +static bool synps_edac_get_eccstate(void __iomem *base)
->> >> +{
->> >> +     enum dev_type dt;
->> >> +     u32 ecctype;
->> >> +     bool state = false;
->> >> +
->> >> +     dt = synps_edac_get_dtype(base);
->> >> +     if (dt == DEV_UNKNOWN)
->> >> +             return state;
->> >> +
->> >> +     ecctype = readl(base + SCRUB_OFST) & SCRUB_MODE_MASK;
->> >> +
->> >> +     if ((ecctype == SCRUB_MODE_SECDED) && (dt == DEV_X2)) {
->> >> +             state = true;
->> >> +             writel(0x0, base + ECC_CTRL_OFST);
->> >
->> > Out of curiosity, why is that register write needed here? Maybe
->> > forgotten? It looks unbalanced...
->>
->> This is needed to start capturing the correctable and uncorrectable errors.
->> Writing 1 to this register bits will clear the counters and writing 0 will start
->> the counters.
->
-> So this definitely doesn't belong here then.
->
-> It should be the *last* thing you do after having initialized the whole
-> driver entirely and successfully and you're ready to start logging
-> errors.
->
-> Now you're calling it in synps_edac_mc_probe() so the counters will
-> start before you have even initialized the rest of the driver.
->
-> What is worse, if one of those things you do on the init path fails, you
-> enter prematurely and the counters are still running. Not good.
+On Tue, Dec 02, 2014 at 10:05:48AM +0000, Harini Katakam wrote:
+> From: Vishnu Motghare <vishnum@xilinx.com>
+> 
+> This patch adds "defeature-repeated-start" property in i2c-cadence.txt.
+> 
+> Signed-off-by: Vishnu Motghare <vishnum@xilinx.com>
+> Signed-off-by: Harini Katakam <harinik@xilinx.com>
+> ---
+>  .../devicetree/bindings/i2c/i2c-cadence.txt        |   11 +++++++++++
+>  1 file changed, 11 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/i2c/i2c-cadence.txt b/Documentation/devicetree/bindings/i2c/i2c-cadence.txt
+> index 7cb0b56..9d417a7 100644
+> --- a/Documentation/devicetree/bindings/i2c/i2c-cadence.txt
+> +++ b/Documentation/devicetree/bindings/i2c/i2c-cadence.txt
+> @@ -11,6 +11,17 @@ Required properties:
+>  Optional properties:
+>    - clock-frequency: Desired operating frequency, in Hz, of the bus.
+>    - clock-names: Input clock name, should be 'pclk'.
+> +  - defeature-repeated-start: Include this property to defeature repeated start
+> +			      This defeature is due to a few bugs in the
+> +			      I2C controller.
+> +			      Completion interrupt after a read/receive
+> +			      operation is NOT obtained if HOLD bit is set
+> +			      at that time. Because of this bug, repeated start
+> +			      will only work if there are no transfers following
+> +			      a read/receive transfer.
+> +			      If HOLD is held for long without a transfer,
+> +			      invalid read transactions are generated by the
+> +			      controller due to a HW timeout related bug.
 
-Understood. thanks.
+I'm not keen on the name; it sounds like we're disabling a feature
+rather than describing the problem (and "defeature" is not a common
+term in this sense, "disable" would be better).
 
->
->> It is crossing 80 cols. so, there is line break here. I feel the other
->> way as the check patch throws warning for this.
->
-> And I'm saying you shouldn't follow checkpatch to the letter and think
-> for yourself instead.
->
-> What do you think is more readable?
-
-Definitely the second one :). I will update accordingly
+It sounds like there are two issues with staying in the HOLD state? Lost
+completion IRQs and a separate HW timeout bug? Or are the two related?
 
 Thanks,
-Punnaiah
-
->
-> This:
->
->                        dimm = csi->channels[j]->dimm;
->                        dimm->edac_mode = EDAC_FLAG_SECDED;
->                        dimm->mtype = synps_edac_get_mtype(priv->baseaddr);
->                        dimm->nr_pages =
->                            (size >> PAGE_SHIFT) / csi->nr_channels;
->                        dimm->grain = SYNPS_EDAC_ERR_GRAIN;
->                        dimm->dtype = synps_edac_get_dtype(priv->baseaddr);
->
-> or this:
->
->                        dimm             = csi->channels[j]->dimm;
->                        dimm->mtype      = synps_edac_get_mtype(priv->baseaddr);
->                        dimm->grain      = SYNPS_EDAC_ERR_GRAIN;
->                        dimm->dtype      = synps_edac_get_dtype(priv->baseaddr);
->                        dimm->nr_pages   = (size >> PAGE_SHIFT) / csi->nr_channels;
->                        dimm->edac_mode  = EDAC_FLAG_SECDED;
->
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-edac" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Mark.
