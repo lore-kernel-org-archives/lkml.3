@@ -1,105 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932861AbaLBDEe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 22:04:34 -0500
-Received: from mail-2.alumni.tu-berlin.de ([130.149.5.29]:59566 "EHLO
-	mail-2.alumni.tu-berlin.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932222AbaLBDEc (ORCPT
+	id S932860AbaLBDJY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 22:09:24 -0500
+Received: from smtprelay0112.hostedemail.com ([216.40.44.112]:60546 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753557AbaLBDJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 22:04:32 -0500
-X-Greylist: delayed 1165 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Dec 2014 22:04:32 EST
-X-tubIT-Incoming-IP: 66.181.131.84
-Message-ID: <547D27AE.5070900@slac.stanford.edu>
-Date: Mon, 01 Dec 2014 18:45:02 -0800
-From: Till Straumann <strauman@slac.stanford.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: BUG: sleeping function called from invalid context (arm CONFIG_PREEMPT_RT_FULL
- )
-Content-Type: text/plain; charset=utf-8; format=flowed
+	Mon, 1 Dec 2014 22:09:23 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3867:3868:3871:3872:4321:4605:5007:6261:10004:10400:10848:11026:11232:11658:11914:12296:12517:12519:12679:12740:13069:13071:13311:13357:14096:14097:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: knife67_6eced03ff5c0f
+X-Filterd-Recvd-Size: 2271
+Message-ID: <1417489760.4894.8.camel@perches.com>
+Subject: Re: [PATCH net-next] udp: Neaten and reduce size of compute_score
+ functions
+From: Joe Perches <joe@perches.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 01 Dec 2014 19:09:20 -0800
+In-Reply-To: <1417489141.4442.24.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1417484341.4894.6.camel@perches.com>
+	 <1417489141.4442.24.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I - very reproducibly - get this 'BUG' message
+On Mon, 2014-12-01 at 18:59 -0800, Eric Dumazet wrote:
+> On Mon, 2014-12-01 at 17:39 -0800, Joe Perches wrote:
+> > The compute_score functions are a bit difficult to read.
+> > 
+> > Neaten them a bit to reduce object sizes and make them a
+> > bit more intelligible.
+> > 
+> > Return early to avoid indentation and avoid unnecessary
+> > initializations.
+[]
+> > +	if (!(net_eq(sock_net(sk), net) &&
+> > +	      udp_sk(sk)->udp_port_hash == hnum &&
+> > +	      !ipv6_only_sock(sk)))
+> > +		return -1
+> 
+> Or even better :
+> 
+> 
+> 	if (!net_eq(sock_net(sk), net) ||
+> 	    udp_sk(sk)->udp_port_hash != hnum ||
+> 	    ipv6_only_sock(sk))
+> 		return -1;
 
-[ 6462.460032] Unhandled fault: external abort on non-linefetch (0x018) 
-at 0xb6fdd000
-[ 6462.460042] BUG: sleeping function called from invalid context at 
-kernel/locking/rtmutex.c:905
-[ 6462.460049] in_atomic(): 0, irqs_disabled(): 128, pid: 1488, name: ldfilt
-[ 6462.460053] no locks held by ldfilt/1488.
-[ 6462.460057] irq event stamp: 1790
-[ 6462.460081] hardirqs last  enabled at (1789): [<c000ed10>] 
-no_work_pending+0x8/0x2c
-[ 6462.460096] hardirqs last disabled at (1790): [<c05bf834>] 
-__dabt_usr+0x34/0x40
-[ 6462.460116] softirqs last  enabled at (0): [<c0021594>] 
-copy_process.part.50+0x498/0x170c
-[ 6462.460124] softirqs last disabled at (0): [<  (null)>]   (null)
-[ 6462.460135] CPU: 0 PID: 1488 Comm: ldfilt Tainted: G           O 
-3.14.12-rt9-xilinx #25
-[ 6462.460161] [<c0015f6c>] (unwind_backtrace) from [<c0012cc0>] 
-(show_stack+0x20/0x24)
-[ 6462.460182] [<c0012cc0>] (show_stack) from [<c05ba9ac>] 
-(dump_stack+0x7c/0xcc)
-[ 6462.460208] [<c05ba9ac>] (dump_stack) from [<c00574b8>] 
-(__might_sleep+0x1a0/0x1d8)
-[ 6462.460225] [<c00574b8>] (__might_sleep) from [<c05bea40>] 
-(rt_spin_lock+0x30/0x64)
-[ 6462.460240] [<c05bea40>] (rt_spin_lock) from [<c0036b44>] 
-(force_sig_info+0x38/0xe8)
-[ 6462.460254] [<c0036b44>] (force_sig_info) from [<c00130c0>] 
-(arm_notify_die+0x50/0x60)
-[ 6462.460266] [<c00130c0>] (arm_notify_die) from [<c000845c>] 
-(do_DataAbort+0x94/0xa8)
-[ 6462.460280] [<c000845c>] (do_DataAbort) from [<c05bf83c>] 
-(__dabt_usr+0x3c/0x40)
-[ 6462.460285] Exception stack(0xd2e65fb0 to 0xd2e65ff8)
-[ 6462.460295] 5fa0:                                     0189d008 
-00000001 00001000 b6fdd000
-[ 6462.460308] 5fc0: 00011cf0 b6fbc078 0189d008 00009530 00000000 
-be9b9ad0 ffffffff 00000000
-[ 6462.460317] 5fe0: 00000000 be9b9a98 b6fa6c30 00008ad4 20000010 ffffffff
-[ 6462.478073] Unhandled fault: external abort on non-linefetch (0x018) 
-at 0xb6f2a000
+Hi Eric.
 
-on my CONFIG_PREEMPT_RT_FULL system:
-#uname -a
-Linux buildroot 3.14.12-rt9 #25 SMP PREEMPT RT Fri Nov 28 09:42:05 PST 
-2014 armv7l GNU/Linux
+Yeah, I thought about it but thought it
+simpler to not change the logic.
 
-when accessing a mmapped, non-existing device from user-space.
+Either way is fine with me.
 
-I'm not an ARM expert but I suspect that when the exception is taken
-interrupts are disabled and probably not re-enabled by the exception
-handler (irqs_disabled(): 128).
+David?
 
-arm_notify_die() calls force_sig_info() which may block (under 
-RT_PREEMPT_FULL).
+btw: the same thing can be done for the v6 block too:
 
-In 'force_sig_info()' we find
++       if (!(net_eq(sock_net(sk), net) && !ipv6_only_sock(sk)))
++               return -1;
+ 
+-               if (inet->inet_rcv_saddr != daddr)
++       inet = inet_sk(sk);
++
++       if (inet->inet_rcv_saddr != daddr)
++               return -1;
++       if (inet->inet_num != hnum)
++               return -1;
 
-/*
-  * On some archs, PREEMPT_RT has to delay sending a signal from a trap
-  * since it can not enable preemption, and the signal code's spin_locks
-  * turn into mutexes. Instead, it must set TIF_NOTIFY_RESUME which will
-  * send the signal on exit of the trap.
-  */
-#ifdef ARCH_RT_DELAYS_SIGNAL_SEND
+to:
 
-and if this CPP symbol is defined there is a codepath that
-delays signal delivery and never blocks.
+	if (!net_eq(sock_net(sk, net) ||
+	    ipv6_only_sock(sk))
+		return -1;
 
-Perhaps the arm support should use this facility?
+	inet = inet_sk(sk);
 
-Unfortunately I'm not familiar enough with this CPU arch to propose
-a fix.
+	if (inet->inet_rcv_saddr != daddr ||
+	    inet->inet_num != hnum)
+		return -1;
 
-Best regards
-- Till
-
-PS: Please CC me on any replies since I'm not a lkml subscriber; thanks.
 
