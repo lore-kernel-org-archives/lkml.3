@@ -1,92 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933694AbaLBT00 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:26:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46920 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933662AbaLBT0R (ORCPT
+	id S933712AbaLBT0e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:26:34 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:55012 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933662AbaLBT0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:26:17 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Chris Moore <chris.moore@emulex.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 117/121] IB/isert: Adjust CQ size to HW limits
-Date: Tue,  2 Dec 2014 11:19:56 -0800
-Message-Id: <1417548000-1794-118-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
-References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 2 Dec 2014 14:26:30 -0500
+From: Jeff Layton <jeff.layton@primarydata.com>
+X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
+Date: Tue, 2 Dec 2014 14:26:27 -0500
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a
+ workqueue-based nfsd
+Message-ID: <20141202142627.6f59f693@tlielax.poochiereds.net>
+In-Reply-To: <20141202191814.GK10918@htj.dyndns.org>
+References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
+	<20141202191814.GK10918@htj.dyndns.org>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11-ckt12 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, 2 Dec 2014 14:18:14 -0500
+Tejun Heo <tj@kernel.org> wrote:
 
-------------------
+> Hello, Jeff.
+> 
+> On Tue, Dec 02, 2014 at 01:24:09PM -0500, Jeff Layton wrote:
+> > 2) get some insight about the latency from those with a better
+> > understanding of the CMWQ code. Any thoughts as to why we might be
+> > seeing such high latency here? Any ideas of what we can do about it?
+> 
+> The latency is prolly from concurrency management.  Work items which
+> participate in concurrency management (the ones on per-cpu workqueues
+> w/o WQ_CPU_INTENSIVE set) tend to get penalized on latency side quite
+> a bit as the "run" durations for all such work items end up being
+> serialized on the cpu.  Setting WQ_CPU_INTENSIVE on the workqueue
+> disables concurrency management and so does making the workqueue
+> unbound.  If strict cpu locality is likely to be beneficial and each
+> work item isn't likely to consume huge amount of cpu cycles,
+> WQ_CPU_INTENSIVE would fit better; otherwise, WQ_UNBOUND to let the
+> scheduler do its thing.
+> 
+> Thanks.
+> 
 
-From: Chris Moore <Chris.Moore@Emulex.Com>
+Thanks Tejun,
 
-commit b1a5ad006b34ded9dc7ec64988deba1b3ecad367 upstream.
+I'm already using WQ_UNBOUND workqueues. If that exempts this code from
+the concurrency management, then that's probably not the problem. The
+jobs here aren't terribly CPU intensive, but they can sleep for a long
+time while waiting on I/O, etc...
 
-isert has an issue of trying to create a CQ with more CQEs than are
-supported by the hardware, that currently results in failures during
-isert_device creation during first session login.
+I don't think we necessarily need CPU locality (though that's nice to
+have of course), but NUMA affinity will likely be important. It looked
+like you had done some work a year or so ago to make unbound workqueues
+prefer to queue work on the same NUMA node which meshes nicely with
+what I think we want for this.
 
-This is the isert version of the patch that Minh Tran submitted for
-iser, and is simple a workaround required to function with existing
-ocrdma hardware.
+I'll keep looking at it -- let me know if you have any other thoughts
+on the latency...
 
-Signed-off-by: Chris Moore <chris.moore@emulex.com>
-Reviewied-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/infiniband/ulp/isert/ib_isert.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index 39e5824..5502c7f 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -223,12 +223,16 @@ isert_create_device_ib_res(struct isert_device *device)
- 	struct isert_cq_desc *cq_desc;
- 	struct ib_device_attr *dev_attr;
- 	int ret = 0, i, j;
-+	int max_rx_cqe, max_tx_cqe;
- 
- 	dev_attr = &device->dev_attr;
- 	ret = isert_query_device(ib_dev, dev_attr);
- 	if (ret)
- 		return ret;
- 
-+	max_rx_cqe = min(ISER_MAX_RX_CQ_LEN, dev_attr->max_cqe);
-+	max_tx_cqe = min(ISER_MAX_TX_CQ_LEN, dev_attr->max_cqe);
-+
- 	/* asign function handlers */
- 	if (dev_attr->device_cap_flags & IB_DEVICE_MEM_MGT_EXTENSIONS) {
- 		device->use_frwr = 1;
-@@ -270,7 +274,7 @@ isert_create_device_ib_res(struct isert_device *device)
- 						isert_cq_rx_callback,
- 						isert_cq_event_callback,
- 						(void *)&cq_desc[i],
--						ISER_MAX_RX_CQ_LEN, i);
-+						max_rx_cqe, i);
- 		if (IS_ERR(device->dev_rx_cq[i])) {
- 			ret = PTR_ERR(device->dev_rx_cq[i]);
- 			device->dev_rx_cq[i] = NULL;
-@@ -282,7 +286,7 @@ isert_create_device_ib_res(struct isert_device *device)
- 						isert_cq_tx_callback,
- 						isert_cq_event_callback,
- 						(void *)&cq_desc[i],
--						ISER_MAX_TX_CQ_LEN, i);
-+						max_tx_cqe, i);
- 		if (IS_ERR(device->dev_tx_cq[i])) {
- 			ret = PTR_ERR(device->dev_tx_cq[i]);
- 			device->dev_tx_cq[i] = NULL;
+Cheers!
 -- 
-1.9.1
-
+Jeff Layton <jlayton@primarydata.com>
