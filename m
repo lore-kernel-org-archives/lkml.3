@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933195AbaLBUsj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 15:48:39 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:40508 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933169AbaLBUsh (ORCPT
+	id S933209AbaLBUu1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 15:50:27 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:38408 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932695AbaLBUuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 15:48:37 -0500
-Date: Tue, 2 Dec 2014 15:48:25 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: david.vrabel@citrix.com, stefano.stabellini@eu.citrix.com,
-        jun.nakajima@intel.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xen.org
-Subject: Re: [PATCH v4 0/2]  xen/pci: Use APIC for MSIs when APIC
- virtualization is supported
-Message-ID: <20141202204825.GS357@laptop.dumpdata.com>
-References: <1417551553-22234-1-git-send-email-boris.ostrovsky@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417551553-22234-1-git-send-email-boris.ostrovsky@oracle.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Tue, 2 Dec 2014 15:50:23 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Alim Akhtar <alim.akhtar@samsung.com>, Sonny Rao <sonnyrao@chromium.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Doug Anderson <dianders@chromium.org>, linux@arm.linux.org.uk,
+        wsa@the-dreams.de, tony@atomide.com, linux-kernel@vger.kernel.org,
+        s.hauer@pengutronix.de, linux-mmc@vger.kernel.org, chris@printf.net,
+        gsoutade@neotion.com, joe@perches.com, axel.lin@ingics.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v4 0/3] Fixes for SDIO interrupts for dw_mmc
+Date: Tue,  2 Dec 2014 12:49:54 -0800
+Message-Id: <1417553397-460-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 03:19:11PM -0500, Boris Ostrovsky wrote:
-> Changes in v4:
-> * Added comment describing what we check for in pci_xen_init()
-> 
+Bing Zhao at Marvell found a problem with dw_mmc where interrupts
+weren't firing sometimes.  He tracked it down to a read-modify-write
+problem with the INTMASK.  These three patches fix the problem.
 
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Note: I've picked up a > 1-year old series here to make another
+attempt at landing it upstream.  These patches have been in shipping
+Chromebooks for the last year.  There are essentially no changes from
+the last v3 other than a rebase.
 
-> Changes in v3:
-> * Explicitly include asm/apic.h in arch/x86/pci/xen.c for !CONFIG_SMP.
-> 
-> Changes in v2:
-> * New version of cpuid.h file from Xen tree (with a couple of style adjustments)
-> * Whitespace cleanup
-> 
-> Currently HVM guests handle MSI interrupts using pirqs/event channels, allowing
-> us to not issue APIC accesses that result in somewhat expensive VMEXITs. When
-> hardware supports APIC virtualization we don't need to use pirqs anymore
-> since now guest's APIC accesses can be handled by the processor itself.
-> 
-> There are two patches in this series:
-> 
-> 1. Move setting of x86_msi ops to a later point. The reason for doing so is that
-> we currently decide whether or not to use pirqs before kernel had a chance to
-> see whether it should be using x2APIC instead of plain APIC. Since hardware may
-> virtualize either or both of those two we can only make pirqs vs. APIC selection
-> after kernel has settled down on which APIC version it will use. (Note that
-> currently x2APIC is not used by HVM guests so technically this patch is not
-> necessary. However, it probably makes sense to apply it now to avoid
-> forgetting to do it when we enable x2APIC).
-> 
-> 2. Set x86_msi ops to use pirqs only when APIC virtualization is not available.
-> The commit message describes performance improvements that this change brings.
-> 
-> 
-> Boris Ostrovsky (2):
->   xen/pci: Defer initialization of MSI ops on HVM guests until after
->     x2APIC has been set up
->   xen/pci: Use APIC directly when APIC virtualization is supported by
->     hardware
-> 
->  arch/x86/include/asm/xen/cpuid.h | 91 ++++++++++++++++++++++++++++++++++++++++
->  arch/x86/pci/xen.c               | 31 +++++++++++++-
->  2 files changed, 120 insertions(+), 2 deletions(-)
->  create mode 100644 arch/x86/include/asm/xen/cpuid.h
-> 
-> -- 
-> 1.8.1.4
-> 
+The first patch extends the "init_card()" mechanism of MMC core to
+actually be called for all card types, not just SDIO.  That could be
+applied any time and should fix at least one longstanding bug
+(untested).
+
+The second patch is a cleanup patch to use init_card() to move things
+around a bit so we don't need to handle SDIO cards in such a strange
+place.  On earlier versions of this patch Seungwon brought up a few
+points which I have _not_ addressed.  See
+<https://patchwork.kernel.org/patch/3049071/>.  Other than talk of
+cards with out of band interrupts maybe being able to gate their
+clocks, he wanted to use MMC_QUIRK_BROKEN_CLK_GATING.  I didn't do
+that because of the ordering of init_card() and when the quirks are
+set.  Some users of init_card() like pandora_wl1251_init_card() rely
+on it being called very early in the process.
+pandora_wl1251_init_card() hardcodes a vendor and device and thus need
+to be called super early.  On the other hand the code that adds quirks
+_reads_ the vendor and device.  It can't possibly move before
+init_card().  If folks are willing to take an additional host op of
+init_card_late() I can certainly go that way, though.
+
+The third patch is (I think) reviewed and ready to go assuming the
+other two land.
+
+Changes in v3:
+- Add fixup to pandora_wl1251_init_card().
+
+Changes in v2:
+- mmc core change new for this version.
+- Fixed "|" to "&".
+- intmask_lock renamed to irq_lock
+
+Doug Anderson (3):
+  mmc: core: Support the optional init_card() callback for MMC and SD
+  mmc: dw_mmc: Cleanup disable of low power mode w/ SDIO interrupts
+  mmc: dw_mmc: Protect read-modify-write of INTMASK with a lock
+
+ arch/arm/mach-omap2/board-omap3pandora.c | 14 +++---
+ drivers/mmc/core/mmc.c                   |  6 +++
+ drivers/mmc/core/sd.c                    |  7 ++-
+ drivers/mmc/host/dw_mmc.c                | 80 +++++++++++++++++++-------------
+ drivers/mmc/host/dw_mmc.h                |  1 +
+ include/linux/mmc/dw_mmc.h               |  6 +++
+ 6 files changed, 74 insertions(+), 40 deletions(-)
+
+-- 
+2.2.0.rc0.207.ga3a616c
+
