@@ -1,123 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933024AbaLBHmh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 02:42:37 -0500
-Received: from lucky1.263xmail.com ([211.157.147.131]:58152 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754437AbaLBHmf (ORCPT
+	id S933044AbaLBHmw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 02:42:52 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:55459 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932686AbaLBHmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 02:42:35 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: andy.yan@rock-chips.com
-X-FST-TO: airlied@linux.ie
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: andy.yan@rock-chips.com
-X-UNIQUE-TAG: <a9caa19ecf4b557d4da9dc1763199f3c>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Andy Yan <andy.yan@rock-chips.com>
-To: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
-        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>, vladimir_zapolskiy@mentor.com,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Andy Yan <andy.yan@rock-chips.com>
-Subject: [PATCH v15 06/12] dt-bindings: add document for dw_hdmi
-Date: Tue,  2 Dec 2014 15:42:04 +0800
-Message-Id: <1417506124-18626-1-git-send-email-andy.yan@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417505778-18341-1-git-send-email-andy.yan@rock-chips.com>
-References: <1417505778-18341-1-git-send-email-andy.yan@rock-chips.com>
+	Tue, 2 Dec 2014 02:42:51 -0500
+Date: Tue, 2 Dec 2014 16:42:39 +0900
+From: Gyungoh Yoo <gyungoh@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
+        cooloney@gmail.com, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
+        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
+        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
+        jic23@kernel.org
+Subject: Re: [PATCH v8 7/8] regulator: sky81452: Modify Device Tree structure
+Message-ID: <20141202074239.GA13415@jack-ThinkPad-T520>
+References: <1416898986-24530-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1416898986-24530-8-git-send-email-jack.yoo@skyworksinc.com>
+ <20141125121916.GW7712@sirena.org.uk>
+ <20141126014007.GA2876@jack-ThinkPad-T520>
+ <20141126163702.GI7712@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141126163702.GI7712@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Yan <andy.yan@rock-chips.com>
+On Wed, Nov 26, 2014 at 04:37:02PM +0000, Mark Brown wrote:
+> On Wed, Nov 26, 2014 at 10:40:07AM +0900, Gyungoh Yoo wrote:
+> > On Tue, Nov 25, 2014 at 12:19:16PM +0000, Mark Brown wrote:
+> > > On Tue, Nov 25, 2014 at 04:03:05PM +0900, gyungoh@gmail.com wrote:
+> > > > From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> 
+> > > This doesn't apply, please check and resend.
+> 
+> > Could you please explain why this doesn't?
+> 
+> When I tried to apply it to my topic/sky81452 branch git am barfed on
+> it, presumably because the code you based it on is different to that
+> branch.
 
----
-
-Changes in v15: None
-Changes in v14: None
-Changes in v13: None
-Changes in v12: None
-Changes in v11: None
-Changes in v10: None
-Changes in v9: None
-Changes in v8:
-- correct some spelling mistake
-- modify ddc-i2c-bus and interrupt description
-
-Changes in v7: None
-Changes in v6: None
-Changes in v5: None
-Changes in v4: None
-Changes in v3: None
-
- .../devicetree/bindings/drm/bridge/dw_hdmi.txt     | 40 ++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
-
-diff --git a/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
-new file mode 100644
-index 0000000..107c1ca
---- /dev/null
-+++ b/Documentation/devicetree/bindings/drm/bridge/dw_hdmi.txt
-@@ -0,0 +1,40 @@
-+DesignWare HDMI bridge bindings
-+
-+Required properities:
-+- compatible: platform specific such as:
-+   * "fsl,imx6q-hdmi"
-+   * "fsl,imx6dl-hdmi"
-+   * "rockchip,rk3288-dw-hdmi"
-+- reg: Physical base address and length of the controller's registers.
-+- ddc-i2c-bus: phandle of an I2C controller used for DDC EDID probing
-+- interrupts: The HDMI interrupt number
-+
-+Optional properties
-+- reg-io-width: the width of the reg:1,4, default set to 1 if not present
-+
-+Example:
-+	hdmi: hdmi@0120000 {
-+		compatible = "fsl,imx6q-hdmi";
-+		reg = <0x00120000 0x9000>;
-+		interrupts = <0 115 0x04>;
-+		gpr = <&gpr>;
-+		clocks = <&clks 123>, <&clks 124>;
-+		clock-names = "iahb", "isfr";
-+		ddc-i2c-bus = <&i2c2>;
-+
-+		port@0 {
-+			reg = <0>;
-+
-+			hdmi_mux_0: endpoint {
-+				remote-endpoint = <&ipu1_di0_hdmi>;
-+			};
-+		};
-+
-+		port@1 {
-+			reg = <1>;
-+
-+			hdmi_mux_1: endpoint {
-+				remote-endpoint = <&ipu1_di1_hdmi>;
-+			};
-+		};
-+	};
--- 
-1.9.1
-
-
+I checked it and I will resend it.
+Thank you.
