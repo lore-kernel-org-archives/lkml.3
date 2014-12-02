@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754546AbaLBS04 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 13:26:56 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:57605 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754758AbaLBSYm (ORCPT
+	id S1754792AbaLBS1S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 13:27:18 -0500
+Received: from na6sys009bog005.obsmtp.com ([74.125.150.50]:48114 "HELO
+	na6sys009bog005.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754392AbaLBS0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 13:24:42 -0500
-From: Jeff Layton <jlayton@primarydata.com>
-To: linux-nfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [RFC PATCH 08/14] sunrpc: set up workqueue function in svc_xprt
-Date: Tue,  2 Dec 2014 13:24:17 -0500
-Message-Id: <1417544663-13299-9-git-send-email-jlayton@primarydata.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
-References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
+	Tue, 2 Dec 2014 13:26:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+mtBx9RwkJ9b84d_OkCtOunFBsuqw276=5E+Qhoqq75utCR4w@mail.gmail.com>
+References: <1416525081-27779-1-git-send-email-joestringer@nicira.com>
+ <CAEP_g=-VEWi2Qo6gcJGr2+NXWEhkuMyu7BiAke6H=x+PTLcNcg@mail.gmail.com>
+ <CANr6G5zrA6NUtcyhX1cwEO1Hiq9jnarB36P6m5eoHUFqWWc26Q@mail.gmail.com>
+ <CANr6G5xRbG=UnJEdBEN_5ZRjNikCjuUseb1VbQmjjfb36jDP0g@mail.gmail.com>
+ <CA+mtBx-Q=Ebrx_8NVB5mWURj-oWB3gdNs5fSAL=Frr9sOmyvHw@mail.gmail.com>
+ <CAEP_g=979u0baWXGmCxo61a-KYEUwkruqBNof_zQpsvJxRFqSA@mail.gmail.com> <CA+mtBx9RwkJ9b84d_OkCtOunFBsuqw276=5E+Qhoqq75utCR4w@mail.gmail.com>
+From: Jesse Gross <jesse@nicira.com>
+Date: Tue, 2 Dec 2014 10:26:31 -0800
+Message-ID: <CAEP_g=9Yg-pZf9-Wb4qrZhAMSB=edqDxBXSRskWCturt-nnxTg@mail.gmail.com>
+Subject: Re: [PATCHv2 net] i40e: Implement ndo_gso_check()
+To: Tom Herbert <therbert@google.com>
+Cc: Joe Stringer <joestringer@nicira.com>, netdev <netdev@vger.kernel.org>,
+        Shannon Nelson <shannon.nelson@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "linux.nics" <linux.nics@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For workqueue-based services we'll want to queue a workqueue job
-whenever a xprt needs to be serviced. Add a work_struct to svc_xprt
-and initialize it from a new work_func_t field in the svc_serv_ops.
+On Mon, Dec 1, 2014 at 4:09 PM, Tom Herbert <therbert@google.com> wrote:
+> On Mon, Dec 1, 2014 at 3:53 PM, Jesse Gross <jesse@nicira.com> wrote:
+>> On Mon, Dec 1, 2014 at 3:47 PM, Tom Herbert <therbert@google.com> wrote:
+>>> On Mon, Dec 1, 2014 at 3:35 PM, Joe Stringer <joestringer@nicira.com> wrote:
+>>>> On 21 November 2014 at 09:59, Joe Stringer <joestringer@nicira.com> wrote:
+>>>>> On 20 November 2014 16:19, Jesse Gross <jesse@nicira.com> wrote:
+>>>>>> I don't know if we need to have the check at all for IPIP though -
+>>>>>> after all the driver doesn't expose support for it all (actually it
+>>>>>> doesn't expose GRE either). This raises kind of an interesting
+>>>>>> question about the checks though - it's pretty easy to add support to
+>>>>>> the driver for a new GSO type (and I imagine that people will be
+>>>>>> adding GRE soon) and forget to update the check.
+>>>>>
+>>>>> If the check is more conservative, then testing would show that it's
+>>>>> not working and lead people to figure out why (and update the check).
+>>>>
+>>>> More concretely, one suggestion would be something like following at
+>>>> the start of each gso_check():
+>>>>
+>>>> +       const int supported = SKB_GSO_TCPV4 | SKB_GSO_TCPV6 | SKB_GSO_FCOE |
+>>>> +                             SKB_GSO_UDP | SKB_GSO_UDP_TUNNEL;
+>>>> +
+>>>> +       if (skb_shinfo(skb)->gso_type & ~supported)
+>>>> +               return false;
+>>>
+>>> This should already be handled by net_gso_ok.
+>>
+>> My original point wasn't so much that this isn't handled at the moment
+>> but that it's easy to add a supported GSO type but then forget to
+>> update this check - i.e. if a driver already supports UDP_TUNNEL and
+>> adds support for GRE with the same constraints. It seems not entirely
+>> ideal that this function is acting as a blacklist rather than a
+>> whitelist.
+>
+> Agreed, it would be nice to have all the checking logic in one place.
+> If all the drivers end up implementing ndo_gso_check then we could
+> potentially get rid of the GSO types as features. This probably
+> wouldn't be a bad thing since we already know that the features
+> mechanism doesn't scale (for instance there's no way to indicate that
+> certain combinations of GSO types are supported by a device).
 
-Signed-off-by: Jeff Layton <jlayton@primarydata.com>
----
- include/linux/sunrpc/svc.h      | 3 +++
- include/linux/sunrpc/svc_xprt.h | 1 +
- net/sunrpc/svc.c                | 2 +-
- net/sunrpc/svc_xprt.c           | 2 ++
- 4 files changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
-index 3d2113222dda..8bd53f723485 100644
---- a/include/linux/sunrpc/svc.h
-+++ b/include/linux/sunrpc/svc.h
-@@ -58,6 +58,9 @@ struct svc_serv_ops {
- 	/* function for service threads to run */
- 	int		(*svo_function)(void *);
- 
-+	/* xprt work function */
-+	work_func_t	svo_xprt_work;
-+
- 	/* queue up a transport for servicing */
- 	void		(*svo_enqueue_xprt)(struct svc_xprt *);
- 
-diff --git a/include/linux/sunrpc/svc_xprt.h b/include/linux/sunrpc/svc_xprt.h
-index 78512cfe1fe6..096937871cda 100644
---- a/include/linux/sunrpc/svc_xprt.h
-+++ b/include/linux/sunrpc/svc_xprt.h
-@@ -53,6 +53,7 @@ struct svc_xprt {
- 	struct kref		xpt_ref;
- 	struct list_head	xpt_list;
- 	struct list_head	xpt_ready;
-+	struct work_struct	xpt_work;
- 	unsigned long		xpt_flags;
- #define	XPT_BUSY	0		/* enqueued/receiving */
- #define	XPT_CONN	1		/* conn pending */
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index 165fa1803a0a..135ffbe9d983 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -34,7 +34,7 @@
- 
- static void svc_unregister(const struct svc_serv *serv, struct net *net);
- 
--#define svc_serv_is_pooled(serv)    ((serv)->sv_ops->svo_function)
-+#define svc_serv_is_pooled(serv)    ((serv)->sv_ops->svo_function || (serv)->sv_ops->svo_xprt_work)
- 
- #define SVC_POOL_DEFAULT	SVC_POOL_GLOBAL
- 
-diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
-index 4954339315b7..63b42a8578c0 100644
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -157,6 +157,8 @@ void svc_xprt_init(struct net *net, struct svc_xprt_class *xcl,
- 	xprt->xpt_ops = xcl->xcl_ops;
- 	kref_init(&xprt->xpt_ref);
- 	xprt->xpt_server = serv;
-+	if (serv->sv_ops->svo_xprt_work)
-+		INIT_WORK(&xprt->xpt_work, serv->sv_ops->svo_xprt_work);
- 	INIT_LIST_HEAD(&xprt->xpt_list);
- 	INIT_LIST_HEAD(&xprt->xpt_ready);
- 	INIT_LIST_HEAD(&xprt->xpt_deferred);
--- 
-2.1.0
-
+This crossed my mind and I agree that it's pretty clear that the
+features mechanism isn't scaling very well. Presumably, the logical
+extension of this is that each driver would have a function that looks
+at a packet and returns a set of offload operations that it can
+support rather than exposing a set of protocols. However, it seems
+like it would probably result in a bunch of duplicate code in each
+driver.
