@@ -1,489 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933614AbaLBXNe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 18:13:34 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:65326 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933506AbaLBXMH (ORCPT
+	id S933414AbaLBXPi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 18:15:38 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:64093 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933162AbaLBXPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 18:12:07 -0500
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Finn Thain <fthain@telegraphics.com.au>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH v2 3/6] scsi/aha152x: Replace seq_printf with seq_puts
-Date: Wed,  3 Dec 2014 00:10:51 +0100
-Message-Id: <1417561854-17188-4-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1417561854-17188-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1417221258-4937-1-git-send-email-linux@rasmusvillemoes.dk>
- <1417561854-17188-1-git-send-email-linux@rasmusvillemoes.dk>
+	Tue, 2 Dec 2014 18:15:36 -0500
+X-AuditID: cbfee68e-f79b46d000002b74-df-547e481592bf
+Message-id: <547E4815.7010100@samsung.com>
+Date: Wed, 03 Dec 2014 08:15:33 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Doug Anderson <dianders@chromium.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Alim Akhtar <alim.akhtar@samsung.com>, Sonny Rao <sonnyrao@chromium.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Heiko Stuebner <heiko@sntech.de>, tony@atomide.com,
+        linux@arm.linux.org.uk, chris@printf.net, gsoutade@neotion.com,
+        axel.lin@ingics.com, s.hauer@pengutronix.de, wsa@the-dreams.de,
+        joe@perches.com, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH v4 1/3] mmc: core: Support the optional init_card()
+ callback for MMC and SD
+References: <1417553397-460-1-git-send-email-dianders@chromium.org>
+ <1417553397-460-2-git-send-email-dianders@chromium.org>
+In-reply-to: <1417553397-460-2-git-send-email-dianders@chromium.org>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplleLIzCtJLcpLzFFi42JZI2JSoivqURdi0PhTw2Ll+7+MFg/mbWOz
+	ODLnK7PFhMvbGS3OLjvIZjG7fxqzxf9Hr1ktZt9/zGKx6fE1VovLu+YA1f3vZ7SYvaSfxeL2
+	ZV6Lv9s3sVg8OTOT0eLD/YvMFvuveFkcXxtusfLELGYHYY+W5h42j29fJ7F4zG64yOLR9rPM
+	4861PWwem5fUexzbJuHR/9fA48uqa8weN14tZPLo27KK0WP7tXnMHidPPWHx+LxJLoAvissm
+	JTUnsyy1SN8ugSvjxJ9bzAXTZCum7O5jb2D8K9bFyMkhIWAisbXtNjOELSZx4d56NhBbSGAp
+	o8Sq44kwNa++/mDvYuQCii9ilGj6d4Qdoug1o8SFTe4gNq+AlsTVufOZQGwWAVWJ7w/es4DY
+	bAI6Etu/HQeLiwqESRxqm8cEUS8o8WPyPbAaEYFyiTlbe5hAFjALHGaWWLZnH1iRsECixOtz
+	HVDLaiV+bPkC1sAp4CLxcu1LsDgz0IL9rdPYIGx5ic1r3jKDDJIQuMEhcaJ7OQvERQIS3yYf
+	ArI5gBKyEpsOQH0sKXFwxQ2WCYxis5DcNAvJ2FlIxi5gZF7FKJpakFxQnJReZKRXnJhbXJqX
+	rpecn7uJEZg6Tv971reD8eYB60OMAhyMSjy8J87XhAixJpYVV+YeYjQFumIis5Rocj4wQeWV
+	xBsamxlZmJqYGhuZW5opifMmSP0MFhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cBYcZi7Nit+
+	pfuPFG0lXdmbkdZ/F9Q6sThsnPpEyYbRW47vftDfe29SJt++HKF4ZkVul6Kyq8K7F+rz0mcJ
+	3C/rWy0UV54ftEJ2ZcaMJXJb1R5XCSmvk58oFb/SNlF2YaJmofoFJSWBE5JOtQ/Y59+4ckDH
+	d2v2+eXvbrDIBhkJn1qauFE/+IwSS3FGoqEWc1FxIgBnejtkGAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAKsWRmVeSWpSXmKPExsVy+t9jAV1Rj7oQgxVb5SxWvv/LaPFg3jY2
+	iyNzvjJbTLi8ndHi7LKDbBaz+6cxW/x/9JrVYvb9xywWmx5fY7W4vGsOUN3/fkaL2Uv6WSxu
+	X+a1+Lt9E4vFkzMzGS0+3L/IbLH/ipfF8bXhFitPzGJ2EPZoae5h8/j2dRKLx+yGiywebT/L
+	PO5c28PmsXlJvcexbRIe/X8NPL6susbscePVQiaPvi2rGD22X5vH7HHy1BMWj8+b5AL4ohoY
+	bTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOAPlVSKEvM
+	KQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYwZpz4c4u5YJpsxZTdfewNjH/Fuhg5
+	OSQETCReff3BDmGLSVy4t56ti5GLQ0hgEaNE078jYAkhgdeMEhc2uYPYvAJaElfnzmcCsVkE
+	VCW+P3jPAmKzCehIbP92HCwuKhAmcahtHhNEvaDEj8n3wGpEBMol5mztYQJZwCxwmFli2Z59
+	YEXCAokSr891QC2rlfix5QtYA6eAi8TLtS/B4sxAC/a3TmODsOUlNq95yzyBUWAWkh2zkJTN
+	QlK2gJF5FaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwanomtYNxZYPFIUYBDkYlHt6PcnUh
+	QqyJZcWVuYcYJTiYlUR48+yAQrwpiZVVqUX58UWlOanFhxhNgUEwkVlKNDkfmDbzSuINjU3M
+	jCyNzA0tjIzNlcR5b9zMDRESSE8sSc1OTS1ILYLpY+LglGpg5K67/KkgKZJT78/JEK6crV/c
+	VnJf4bnk3msbtfVTT1Lwyn2L26Sjrv8PjOcN5D4vMyfg+yTOoC5HtzyZZYd8/JJn7lv+8vni
+	4tTDbmUC06Z1lW6e4Zy31ddoXnHD20n33723u83i2tl8w2WOYN68+F3aZesjW63OaS/+deTG
+	9zfb3s2sndXHr8RSnJFoqMVcVJwIAOEAG1JjAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using seq_printf to print a simple string is a lot more expensive than
-it needs to be, since seq_puts exists. Replace seq_printf with
-seq_puts when possible.
+Hi Doug.
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
- drivers/scsi/aha152x.c | 248 ++++++++++++++++++++++++-------------------------
- 1 file changed, 124 insertions(+), 124 deletions(-)
+I think good that this patch is separated to two patches.
+(board file and codes relevant to mmc.)
 
-diff --git a/drivers/scsi/aha152x.c b/drivers/scsi/aha152x.c
-index f14ad8a..e31c460 100644
---- a/drivers/scsi/aha152x.c
-+++ b/drivers/scsi/aha152x.c
-@@ -2505,21 +2505,21 @@ static void get_command(struct seq_file *m, Scsi_Cmnd * ptr)
- 		ptr->SCp.buffers_residual);
- 
- 	if (ptr->SCp.phase & not_issued)
--		seq_printf(m, "not issued|");
-+		seq_puts(m, "not issued|");
- 	if (ptr->SCp.phase & selecting)
--		seq_printf(m, "selecting|");
-+		seq_puts(m, "selecting|");
- 	if (ptr->SCp.phase & disconnected)
--		seq_printf(m, "disconnected|");
-+		seq_puts(m, "disconnected|");
- 	if (ptr->SCp.phase & aborted)
--		seq_printf(m, "aborted|");
-+		seq_puts(m, "aborted|");
- 	if (ptr->SCp.phase & identified)
--		seq_printf(m, "identified|");
-+		seq_puts(m, "identified|");
- 	if (ptr->SCp.phase & completed)
--		seq_printf(m, "completed|");
-+		seq_puts(m, "completed|");
- 	if (ptr->SCp.phase & spiordy)
--		seq_printf(m, "spiordy|");
-+		seq_puts(m, "spiordy|");
- 	if (ptr->SCp.phase & syncneg)
--		seq_printf(m, "syncneg|");
-+		seq_puts(m, "syncneg|");
- 	seq_printf(m, "; next=0x%p\n", SCNEXT(ptr));
- }
- 
-@@ -2530,256 +2530,256 @@ static void get_ports(struct seq_file *m, struct Scsi_Host *shpnt)
- 	seq_printf(m, "\n%s: %s(%s) ", CURRENT_SC ? "on bus" : "waiting", states[STATE].name, states[PREVSTATE].name);
- 
- 	s = GETPORT(SCSISEQ);
--	seq_printf(m, "SCSISEQ( ");
-+	seq_puts(m, "SCSISEQ( ");
- 	if (s & TEMODEO)
--		seq_printf(m, "TARGET MODE ");
-+		seq_puts(m, "TARGET MODE ");
- 	if (s & ENSELO)
--		seq_printf(m, "SELO ");
-+		seq_puts(m, "SELO ");
- 	if (s & ENSELI)
--		seq_printf(m, "SELI ");
-+		seq_puts(m, "SELI ");
- 	if (s & ENRESELI)
--		seq_printf(m, "RESELI ");
-+		seq_puts(m, "RESELI ");
- 	if (s & ENAUTOATNO)
--		seq_printf(m, "AUTOATNO ");
-+		seq_puts(m, "AUTOATNO ");
- 	if (s & ENAUTOATNI)
--		seq_printf(m, "AUTOATNI ");
-+		seq_puts(m, "AUTOATNI ");
- 	if (s & ENAUTOATNP)
--		seq_printf(m, "AUTOATNP ");
-+		seq_puts(m, "AUTOATNP ");
- 	if (s & SCSIRSTO)
--		seq_printf(m, "SCSIRSTO ");
--	seq_printf(m, ");");
-+		seq_puts(m, "SCSIRSTO ");
-+	seq_puts(m, ");");
- 
--	seq_printf(m, " SCSISIG(");
-+	seq_puts(m, " SCSISIG(");
- 	s = GETPORT(SCSISIG);
- 	switch (s & P_MASK) {
- 	case P_DATAO:
--		seq_printf(m, "DATA OUT");
-+		seq_puts(m, "DATA OUT");
- 		break;
- 	case P_DATAI:
--		seq_printf(m, "DATA IN");
-+		seq_puts(m, "DATA IN");
- 		break;
- 	case P_CMD:
--		seq_printf(m, "COMMAND");
-+		seq_puts(m, "COMMAND");
- 		break;
- 	case P_STATUS:
--		seq_printf(m, "STATUS");
-+		seq_puts(m, "STATUS");
- 		break;
- 	case P_MSGO:
--		seq_printf(m, "MESSAGE OUT");
-+		seq_puts(m, "MESSAGE OUT");
- 		break;
- 	case P_MSGI:
--		seq_printf(m, "MESSAGE IN");
-+		seq_puts(m, "MESSAGE IN");
- 		break;
- 	default:
--		seq_printf(m, "*invalid*");
-+		seq_puts(m, "*invalid*");
- 		break;
- 	}
- 
--	seq_printf(m, "); ");
-+	seq_puts(m, "); ");
- 
- 	seq_printf(m, "INTSTAT (%s); ", TESTHI(DMASTAT, INTSTAT) ? "hi" : "lo");
- 
--	seq_printf(m, "SSTAT( ");
-+	seq_puts(m, "SSTAT( ");
- 	s = GETPORT(SSTAT0);
- 	if (s & TARGET)
--		seq_printf(m, "TARGET ");
-+		seq_puts(m, "TARGET ");
- 	if (s & SELDO)
--		seq_printf(m, "SELDO ");
-+		seq_puts(m, "SELDO ");
- 	if (s & SELDI)
--		seq_printf(m, "SELDI ");
-+		seq_puts(m, "SELDI ");
- 	if (s & SELINGO)
--		seq_printf(m, "SELINGO ");
-+		seq_puts(m, "SELINGO ");
- 	if (s & SWRAP)
--		seq_printf(m, "SWRAP ");
-+		seq_puts(m, "SWRAP ");
- 	if (s & SDONE)
--		seq_printf(m, "SDONE ");
-+		seq_puts(m, "SDONE ");
- 	if (s & SPIORDY)
--		seq_printf(m, "SPIORDY ");
-+		seq_puts(m, "SPIORDY ");
- 	if (s & DMADONE)
--		seq_printf(m, "DMADONE ");
-+		seq_puts(m, "DMADONE ");
- 
- 	s = GETPORT(SSTAT1);
- 	if (s & SELTO)
--		seq_printf(m, "SELTO ");
-+		seq_puts(m, "SELTO ");
- 	if (s & ATNTARG)
--		seq_printf(m, "ATNTARG ");
-+		seq_puts(m, "ATNTARG ");
- 	if (s & SCSIRSTI)
--		seq_printf(m, "SCSIRSTI ");
-+		seq_puts(m, "SCSIRSTI ");
- 	if (s & PHASEMIS)
--		seq_printf(m, "PHASEMIS ");
-+		seq_puts(m, "PHASEMIS ");
- 	if (s & BUSFREE)
--		seq_printf(m, "BUSFREE ");
-+		seq_puts(m, "BUSFREE ");
- 	if (s & SCSIPERR)
--		seq_printf(m, "SCSIPERR ");
-+		seq_puts(m, "SCSIPERR ");
- 	if (s & PHASECHG)
--		seq_printf(m, "PHASECHG ");
-+		seq_puts(m, "PHASECHG ");
- 	if (s & REQINIT)
--		seq_printf(m, "REQINIT ");
--	seq_printf(m, "); ");
-+		seq_puts(m, "REQINIT ");
-+	seq_puts(m, "); ");
- 
- 
--	seq_printf(m, "SSTAT( ");
-+	seq_puts(m, "SSTAT( ");
- 
- 	s = GETPORT(SSTAT0) & GETPORT(SIMODE0);
- 
- 	if (s & TARGET)
--		seq_printf(m, "TARGET ");
-+		seq_puts(m, "TARGET ");
- 	if (s & SELDO)
--		seq_printf(m, "SELDO ");
-+		seq_puts(m, "SELDO ");
- 	if (s & SELDI)
--		seq_printf(m, "SELDI ");
-+		seq_puts(m, "SELDI ");
- 	if (s & SELINGO)
--		seq_printf(m, "SELINGO ");
-+		seq_puts(m, "SELINGO ");
- 	if (s & SWRAP)
--		seq_printf(m, "SWRAP ");
-+		seq_puts(m, "SWRAP ");
- 	if (s & SDONE)
--		seq_printf(m, "SDONE ");
-+		seq_puts(m, "SDONE ");
- 	if (s & SPIORDY)
--		seq_printf(m, "SPIORDY ");
-+		seq_puts(m, "SPIORDY ");
- 	if (s & DMADONE)
--		seq_printf(m, "DMADONE ");
-+		seq_puts(m, "DMADONE ");
- 
- 	s = GETPORT(SSTAT1) & GETPORT(SIMODE1);
- 
- 	if (s & SELTO)
--		seq_printf(m, "SELTO ");
-+		seq_puts(m, "SELTO ");
- 	if (s & ATNTARG)
--		seq_printf(m, "ATNTARG ");
-+		seq_puts(m, "ATNTARG ");
- 	if (s & SCSIRSTI)
--		seq_printf(m, "SCSIRSTI ");
-+		seq_puts(m, "SCSIRSTI ");
- 	if (s & PHASEMIS)
--		seq_printf(m, "PHASEMIS ");
-+		seq_puts(m, "PHASEMIS ");
- 	if (s & BUSFREE)
--		seq_printf(m, "BUSFREE ");
-+		seq_puts(m, "BUSFREE ");
- 	if (s & SCSIPERR)
--		seq_printf(m, "SCSIPERR ");
-+		seq_puts(m, "SCSIPERR ");
- 	if (s & PHASECHG)
--		seq_printf(m, "PHASECHG ");
-+		seq_puts(m, "PHASECHG ");
- 	if (s & REQINIT)
--		seq_printf(m, "REQINIT ");
--	seq_printf(m, "); ");
-+		seq_puts(m, "REQINIT ");
-+	seq_puts(m, "); ");
- 
--	seq_printf(m, "SXFRCTL0( ");
-+	seq_puts(m, "SXFRCTL0( ");
- 
- 	s = GETPORT(SXFRCTL0);
- 	if (s & SCSIEN)
--		seq_printf(m, "SCSIEN ");
-+		seq_puts(m, "SCSIEN ");
- 	if (s & DMAEN)
--		seq_printf(m, "DMAEN ");
-+		seq_puts(m, "DMAEN ");
- 	if (s & CH1)
--		seq_printf(m, "CH1 ");
-+		seq_puts(m, "CH1 ");
- 	if (s & CLRSTCNT)
--		seq_printf(m, "CLRSTCNT ");
-+		seq_puts(m, "CLRSTCNT ");
- 	if (s & SPIOEN)
--		seq_printf(m, "SPIOEN ");
-+		seq_puts(m, "SPIOEN ");
- 	if (s & CLRCH1)
--		seq_printf(m, "CLRCH1 ");
--	seq_printf(m, "); ");
-+		seq_puts(m, "CLRCH1 ");
-+	seq_puts(m, "); ");
- 
--	seq_printf(m, "SIGNAL( ");
-+	seq_puts(m, "SIGNAL( ");
- 
- 	s = GETPORT(SCSISIG);
- 	if (s & SIG_ATNI)
--		seq_printf(m, "ATNI ");
-+		seq_puts(m, "ATNI ");
- 	if (s & SIG_SELI)
--		seq_printf(m, "SELI ");
-+		seq_puts(m, "SELI ");
- 	if (s & SIG_BSYI)
--		seq_printf(m, "BSYI ");
-+		seq_puts(m, "BSYI ");
- 	if (s & SIG_REQI)
--		seq_printf(m, "REQI ");
-+		seq_puts(m, "REQI ");
- 	if (s & SIG_ACKI)
--		seq_printf(m, "ACKI ");
--	seq_printf(m, "); ");
-+		seq_puts(m, "ACKI ");
-+	seq_puts(m, "); ");
- 
- 	seq_printf(m, "SELID(%02x), ", GETPORT(SELID));
- 
- 	seq_printf(m, "STCNT(%d), ", GETSTCNT());
- 
--	seq_printf(m, "SSTAT2( ");
-+	seq_puts(m, "SSTAT2( ");
- 
- 	s = GETPORT(SSTAT2);
- 	if (s & SOFFSET)
--		seq_printf(m, "SOFFSET ");
-+		seq_puts(m, "SOFFSET ");
- 	if (s & SEMPTY)
--		seq_printf(m, "SEMPTY ");
-+		seq_puts(m, "SEMPTY ");
- 	if (s & SFULL)
--		seq_printf(m, "SFULL ");
-+		seq_puts(m, "SFULL ");
- 	seq_printf(m, "); SFCNT (%d); ", s & (SFULL | SFCNT));
- 
- 	s = GETPORT(SSTAT3);
- 	seq_printf(m, "SCSICNT (%d), OFFCNT(%d), ", (s & 0xf0) >> 4, s & 0x0f);
- 
--	seq_printf(m, "SSTAT4( ");
-+	seq_puts(m, "SSTAT4( ");
- 	s = GETPORT(SSTAT4);
- 	if (s & SYNCERR)
--		seq_printf(m, "SYNCERR ");
-+		seq_puts(m, "SYNCERR ");
- 	if (s & FWERR)
--		seq_printf(m, "FWERR ");
-+		seq_puts(m, "FWERR ");
- 	if (s & FRERR)
--		seq_printf(m, "FRERR ");
--	seq_printf(m, "); ");
-+		seq_puts(m, "FRERR ");
-+	seq_puts(m, "); ");
- 
--	seq_printf(m, "DMACNTRL0( ");
-+	seq_puts(m, "DMACNTRL0( ");
- 	s = GETPORT(DMACNTRL0);
- 	seq_printf(m, "%s ", s & _8BIT ? "8BIT" : "16BIT");
- 	seq_printf(m, "%s ", s & DMA ? "DMA" : "PIO");
- 	seq_printf(m, "%s ", s & WRITE_READ ? "WRITE" : "READ");
- 	if (s & ENDMA)
--		seq_printf(m, "ENDMA ");
-+		seq_puts(m, "ENDMA ");
- 	if (s & INTEN)
--		seq_printf(m, "INTEN ");
-+		seq_puts(m, "INTEN ");
- 	if (s & RSTFIFO)
--		seq_printf(m, "RSTFIFO ");
-+		seq_puts(m, "RSTFIFO ");
- 	if (s & SWINT)
--		seq_printf(m, "SWINT ");
--	seq_printf(m, "); ");
-+		seq_puts(m, "SWINT ");
-+	seq_puts(m, "); ");
- 
--	seq_printf(m, "DMASTAT( ");
-+	seq_puts(m, "DMASTAT( ");
- 	s = GETPORT(DMASTAT);
- 	if (s & ATDONE)
--		seq_printf(m, "ATDONE ");
-+		seq_puts(m, "ATDONE ");
- 	if (s & WORDRDY)
--		seq_printf(m, "WORDRDY ");
-+		seq_puts(m, "WORDRDY ");
- 	if (s & DFIFOFULL)
--		seq_printf(m, "DFIFOFULL ");
-+		seq_puts(m, "DFIFOFULL ");
- 	if (s & DFIFOEMP)
--		seq_printf(m, "DFIFOEMP ");
--	seq_printf(m, ")\n");
-+		seq_puts(m, "DFIFOEMP ");
-+	seq_puts(m, ")\n");
- 
--	seq_printf(m, "enabled interrupts( ");
-+	seq_puts(m, "enabled interrupts( ");
- 
- 	s = GETPORT(SIMODE0);
- 	if (s & ENSELDO)
--		seq_printf(m, "ENSELDO ");
-+		seq_puts(m, "ENSELDO ");
- 	if (s & ENSELDI)
--		seq_printf(m, "ENSELDI ");
-+		seq_puts(m, "ENSELDI ");
- 	if (s & ENSELINGO)
--		seq_printf(m, "ENSELINGO ");
-+		seq_puts(m, "ENSELINGO ");
- 	if (s & ENSWRAP)
--		seq_printf(m, "ENSWRAP ");
-+		seq_puts(m, "ENSWRAP ");
- 	if (s & ENSDONE)
--		seq_printf(m, "ENSDONE ");
-+		seq_puts(m, "ENSDONE ");
- 	if (s & ENSPIORDY)
--		seq_printf(m, "ENSPIORDY ");
-+		seq_puts(m, "ENSPIORDY ");
- 	if (s & ENDMADONE)
--		seq_printf(m, "ENDMADONE ");
-+		seq_puts(m, "ENDMADONE ");
- 
- 	s = GETPORT(SIMODE1);
- 	if (s & ENSELTIMO)
--		seq_printf(m, "ENSELTIMO ");
-+		seq_puts(m, "ENSELTIMO ");
- 	if (s & ENATNTARG)
--		seq_printf(m, "ENATNTARG ");
-+		seq_puts(m, "ENATNTARG ");
- 	if (s & ENPHASEMIS)
--		seq_printf(m, "ENPHASEMIS ");
-+		seq_puts(m, "ENPHASEMIS ");
- 	if (s & ENBUSFREE)
--		seq_printf(m, "ENBUSFREE ");
-+		seq_puts(m, "ENBUSFREE ");
- 	if (s & ENSCSIPERR)
--		seq_printf(m, "ENSCSIPERR ");
-+		seq_puts(m, "ENSCSIPERR ");
- 	if (s & ENPHASECHG)
--		seq_printf(m, "ENPHASECHG ");
-+		seq_puts(m, "ENPHASECHG ");
- 	if (s & ENREQINIT)
--		seq_printf(m, "ENREQINIT ");
--	seq_printf(m, ")\n");
-+		seq_puts(m, "ENREQINIT ");
-+	seq_puts(m, ")\n");
- }
- 
- static int aha152x_set_info(struct Scsi_Host *shpnt, char *buffer, int length)
-@@ -2822,7 +2822,7 @@ static int aha152x_show_info(struct seq_file *m, struct Scsi_Host *shpnt)
- 	Scsi_Cmnd *ptr;
- 	unsigned long flags;
- 
--	seq_printf(m, AHA152X_REVID "\n");
-+	seq_puts(m, AHA152X_REVID "\n");
- 
- 	seq_printf(m, "ioports 0x%04lx to 0x%04lx\n",
- 		shpnt->io_port, shpnt->io_port + shpnt->n_io_port - 1);
-@@ -2836,7 +2836,7 @@ static int aha152x_show_info(struct seq_file *m, struct Scsi_Host *shpnt)
- 	seq_printf(m, "%d commands currently queued\n", HOSTDATA(shpnt)->commands);
- 
- 	if(SYNCHRONOUS) {
--		seq_printf(m, "synchronously operating targets (tick=50 ns):\n");
-+		seq_puts(m, "synchronously operating targets (tick=50 ns):\n");
- 		for (i = 0; i < 8; i++)
- 			if (HOSTDATA(shpnt)->syncrate[i] & 0x7f)
- 				seq_printf(m, "target %d: period %dT/%dns; req/ack offset %d\n",
-@@ -2845,28 +2845,28 @@ static int aha152x_show_info(struct seq_file *m, struct Scsi_Host *shpnt)
- 					(((HOSTDATA(shpnt)->syncrate[i] & 0x70) >> 4) + 2) * 50,
- 				    HOSTDATA(shpnt)->syncrate[i] & 0x0f);
- 	}
--	seq_printf(m, "\nqueue status:\n");
-+	seq_puts(m, "\nqueue status:\n");
- 	DO_LOCK(flags);
- 	if (ISSUE_SC) {
--		seq_printf(m, "not yet issued commands:\n");
-+		seq_puts(m, "not yet issued commands:\n");
- 		for (ptr = ISSUE_SC; ptr; ptr = SCNEXT(ptr))
- 			get_command(m, ptr);
- 	} else
--		seq_printf(m, "no not yet issued commands\n");
-+		seq_puts(m, "no not yet issued commands\n");
- 	DO_UNLOCK(flags);
- 
- 	if (CURRENT_SC) {
--		seq_printf(m, "current command:\n");
-+		seq_puts(m, "current command:\n");
- 		get_command(m, CURRENT_SC);
- 	} else
--		seq_printf(m, "no current command\n");
-+		seq_puts(m, "no current command\n");
- 
- 	if (DISCONNECTED_SC) {
--		seq_printf(m, "disconnected commands:\n");
-+		seq_puts(m, "disconnected commands:\n");
- 		for (ptr = DISCONNECTED_SC; ptr; ptr = SCNEXT(ptr))
- 			get_command(m, ptr);
- 	} else
--		seq_printf(m, "no disconnected commands\n");
-+		seq_puts(m, "no disconnected commands\n");
- 
- 	get_ports(m, shpnt);
- 
--- 
-2.0.4
+Best Regards,
+Jaehoon Chung
+
+On 12/03/2014 05:49 AM, Doug Anderson wrote:
+> In (3fcb027 ARM: MXC: mxcmmc: work around a bug in the SDHC busy line
+> handling) the optional init_card() callback was added.  According to
+> the original change it was "for now only called from
+> mmc_sdio_init_card()".
+> 
+> This callback really ought to be called from the SD and MMC init
+> functions as well.  One current user of this callback
+> (mxcmci_init_card) will not work as expected if you insert an SDIO
+> card, then eject it and put a normal SD card in.  Specifically the
+> normal SD card will not get to run with 4-bit data.
+> 
+> I'd like to use the init_card() callback to handle a similar quirk on
+> dw_mmc when using SDIO Interrupts (the "low power" feature of the card
+> needs to be disabled), so that will add a second user of the function.
+> 
+> As part of this change fixup the one place that relied on the callback
+> only happening for SDIO cards.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Reviewed-by: Grant Grundler <grundler@chromium.org>
+> ---
+> Changes in v3:
+> - Add fixup to pandora_wl1251_init_card().
+> 
+> Changes in v2:
+> - mmc core change new for this version.
+> 
+>  arch/arm/mach-omap2/board-omap3pandora.c | 14 ++++++++------
+>  drivers/mmc/core/mmc.c                   |  6 ++++++
+>  drivers/mmc/core/sd.c                    |  7 ++++++-
+>  3 files changed, 20 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/board-omap3pandora.c b/arch/arm/mach-omap2/board-omap3pandora.c
+> index 7f17087..969e100 100644
+> --- a/arch/arm/mach-omap2/board-omap3pandora.c
+> +++ b/arch/arm/mach-omap2/board-omap3pandora.c
+> @@ -254,12 +254,14 @@ static void pandora_wl1251_init_card(struct mmc_card *card)
+>  	 * We have TI wl1251 attached to MMC3. Pass this information to
+>  	 * SDIO core because it can't be probed by normal methods.
+>  	 */
+> -	card->quirks |= MMC_QUIRK_NONSTD_SDIO;
+> -	card->cccr.wide_bus = 1;
+> -	card->cis.vendor = 0x104c;
+> -	card->cis.device = 0x9066;
+> -	card->cis.blksize = 512;
+> -	card->cis.max_dtr = 20000000;
+> +	if (card->type == MMC_TYPE_SDIO || card->type == MMC_TYPE_SD_COMBO) {
+> +		card->quirks |= MMC_QUIRK_NONSTD_SDIO;
+> +		card->cccr.wide_bus = 1;
+> +		card->cis.vendor = 0x104c;
+> +		card->cis.device = 0x9066;
+> +		card->cis.blksize = 512;
+> +		card->cis.max_dtr = 20000000;
+> +	}
+>  }
+>  
+>  static struct omap2_hsmmc_info omap3pandora_mmc[] = {
+> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+> index 02ad792..4a21d66 100644
+> --- a/drivers/mmc/core/mmc.c
+> +++ b/drivers/mmc/core/mmc.c
+> @@ -1297,6 +1297,12 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
+>  	}
+>  
+>  	/*
+> +	 * Call the optional HC's init_card function to handle quirks.
+> +	 */
+> +	if (host->ops->init_card)
+> +		host->ops->init_card(host, card);
+> +
+> +	/*
+>  	 * For native busses:  set card RCA and quit open drain mode.
+>  	 */
+>  	if (!mmc_host_is_spi(host)) {
+> diff --git a/drivers/mmc/core/sd.c b/drivers/mmc/core/sd.c
+> index d90a6de..29fccdc 100644
+> --- a/drivers/mmc/core/sd.c
+> +++ b/drivers/mmc/core/sd.c
+> @@ -933,6 +933,12 @@ static int mmc_sd_init_card(struct mmc_host *host, u32 ocr,
+>  	}
+>  
+>  	/*
+> +	 * Call the optional HC's init_card function to handle quirks.
+> +	 */
+> +	if (host->ops->init_card)
+> +		host->ops->init_card(host, card);
+> +
+> +	/*
+>  	 * For native busses:  get card RCA and quit open drain mode.
+>  	 */
+>  	if (!mmc_host_is_spi(host)) {
+> @@ -1271,4 +1277,3 @@ err:
+>  
+>  	return err;
+>  }
+> -
+> 
 
