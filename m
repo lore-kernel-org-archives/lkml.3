@@ -1,71 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933285AbaLBWXx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 17:23:53 -0500
-Received: from mail-oi0-f54.google.com ([209.85.218.54]:47965 "EHLO
-	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932550AbaLBWXv (ORCPT
+	id S933338AbaLBWYa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 17:24:30 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:35599 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932550AbaLBWY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 17:23:51 -0500
-Message-ID: <547E3BF5.5060201@lwfinger.net>
-Date: Tue, 02 Dec 2014 16:23:49 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 2 Dec 2014 17:24:28 -0500
 MIME-Version: 1.0
-To: =?UTF-8?B?TWljaGFlbCBCw7xzY2g=?= <m@bues.ch>,
-        Andrey Skvortsov <andrej.skvortzov@gmail.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Gary.Zambrano@qlogic.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        b43-dev <b43-dev@lists.infradead.org>,
-        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-Subject: Re: [PATCH] SSB / B44: fix WOL for BCM4401
-References: <20141201111125.GA11974@localhost.localdomain>	<1417466798-15735-1-git-send-email-Andrej.Skvortzov@gmail.com>	<20141201221023.79ffb40d@wiggum>	<20141202200129.GA4580@crion89> <20141202211211.7e08b935@wiggum>
-In-Reply-To: <20141202211211.7e08b935@wiggum>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1417507529-13654-5-git-send-email-jack.yoo@skyworksinc.com>
+References: <1417507529-13654-1-git-send-email-jack.yoo@skyworksinc.com> <1417507529-13654-5-git-send-email-jack.yoo@skyworksinc.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Tue, 2 Dec 2014 14:24:07 -0800
+Message-ID: <CAK5ve-+tVD-9XpY3AdNYbBkLYokh+U_EADyMSO1iRNSfp7pQ6w@mail.gmail.com>
+Subject: Re: [PATCH v9 4/8] devicetree: backlight: Add new SKY81452 backlight binding
+To: gyungoh@gmail.com
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, jack.yoo@skyworksinc.com,
+        lkml <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        heiko@sntech.de, Jason Cooper <jason@lakedaemon.net>,
+        Thierry Reding <treding@nvidia.com>, florian.vaussard@epfl.ch,
+        Jiri Kosina <trivial@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Andrew Lunn <andrew@lunn.ch>, jic23@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2014 02:12 PM, Michael Büsch wrote:
-> On Tue, 2 Dec 2014 23:01:29 +0300
-> Andrey Skvortsov <andrej.skvortzov@gmail.com> wrote:
+On Tue, Dec 2, 2014 at 12:05 AM,  <gyungoh@gmail.com> wrote:
+> From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 >
->> On Mon, Dec 01, 2014 at 10:10:23PM +0100, Michael Büsch wrote:
->>> On Mon,  1 Dec 2014 23:46:38 +0300
->>> Andrey Skvortsov <andrej.skvortzov@gmail.com> wrote:
->>>
->>>> Wake On Lan was not working on laptop DELL Vostro 1500.
->>>> If WOL was turned on, BCM4401 was powered up in suspend mode. LEDs blinked.
->>>> But the laptop could not be woken up with the Magic Packet. The reason for
->>>> that was that PCIE was not enabled as a system wakeup source and
->>>> therefore the host PCI bridge was not powered up in suspend mode.
->>>> PCIE was not enabled in suspend by PM because no child devices were
->>>> registered as wakeup source during suspend process.
->>>> On laptop BCM4401 is connected through the SSB bus, that is connected to the
->>>> PCI-Express bus. SSB and B44 did not use standard PM wakeup functions
->>>> and did not forward wakeup settings to their parents.
->>>> To fix that B44 driver enables PM wakeup and registers new wakeup source
->>>> using device_set_wakeup_enable(). Wakeup is automatically reported to the parent SSB
->>>> bus via power.wakeup_path. SSB bus enables wakeup for the parent PCI bridge, if there is any
->>>> child devices with enabled wakeup functionality. All other steps are
->>>> done by PM core code.
->>>
->>> Thanks, this looks good.
->>> I assume you tested this (I currently don't have a device to test this).
->>
->> Sure, I've tested it. WOL from suspend is working and after resume from hibernate Ethernet is working too.
+> Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+
+
+Acked-by: Bryan Wu <cooloney@gmail.com>
+
+Thanks,
+-Bryan
+
+> ---
+> Changes v9:
+> Nothing
 >
-> That sounds good, indeed.
-> I'd still prefer, if someone with b43 (wireless) would test it, too.
-
-I did a partial test with my PowerBook G4. With the patch installed, it would 
-both suspend and hibernate, but WOL would be impossible. This computer uses a 
-PCMCIA version of the BCM4318, and power is turned off to the PCMCIA card when 
-suspended or hibernating.
-
-If WOL works for the OP, then I think we can ACK this patch.
-
-Larry
-
-
+> Changes v8:
+> Renamed property names for backlight with vendor prefix
+> Modified gpio-enable property to generic property for GPIO
+> Made up the example for backlight DT
+>
+> Changes v7:
+> Nothing
+>
+> Changes v6:
+> Nothing
+>
+> Changes v5:
+> Nothing
+>
+> Changes v4:
+> Nothing
+>
+> Changes v3:
+> Nothing
+>
+> Changes v2:
+> Added reg attribute for I2C slave address
+>
+>  .../video/backlight/sky81452-backlight.txt         | 29 ++++++++++++++++++++++
+>  1 file changed, 29 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+>
+> diff --git a/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+> new file mode 100644
+> index 0000000..8daebf5
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+> @@ -0,0 +1,29 @@
+> +SKY81452-backlight bindings
+> +
+> +Required properties:
+> +- compatible           : Must be "skyworks,sky81452-backlight"
+> +
+> +Optional properties:
+> +- name                 : Name of backlight device. Default is 'lcd-backlight'.
+> +- gpios                        : GPIO to use to EN pin.
+> +                       See Documentation/devicetree/bindings/gpio/gpio.txt
+> +- skyworks,en-channels : Enable mask for current sink channel 1 to 6.
+> +- skyworks,ignore-pwm  : Ignore both PWM input
+> +- skyworks,dpwm-mode   : Enable DPWM dimming mode, otherwise Analog dimming.
+> +- skyworks,phase-shift : Enable phase shift mode
+> +- skyworks,ovp-level   : Over-voltage protection level.
+> +                       Should be between 14 or 28V.
+> +- skyworks,short-detection-threshold   : It should be one of 4, 5, 6 and 7V.
+> +- skyworks,current-limit       : It should be 2300mA or 2750mA.
+> +
+> +Example:
+> +
+> +       backlight {
+> +               compatible = "skyworks,sky81452-backlight";
+> +               name = "pwm-backlight";
+> +               skyworks,en-channels = <0x3f>;
+> +               skyworks,ignore-pwm;
+> +               skyworks,phase-shift;
+> +               skyworks,ovp-level = <20>;
+> +               skyworks,current-limit = <2300>;
+> +       };
+> --
+> 1.9.1
+>
