@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933258AbaLBTXG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:23:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46644 "EHLO
+	id S933275AbaLBTXK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:23:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46650 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933214AbaLBTXC (ORCPT
+	with ESMTP id S932762AbaLBTXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:23:02 -0500
+	Tue, 2 Dec 2014 14:23:07 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Jeffery <djeffery@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        =?UTF-8?q?Moritz=20M=C3=BChlenhoff?= <muehlenhoff@univention.de>,
+Cc: Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 088/121] nfs: Don't busy-wait on SIGKILL in __nfs_iocounter_wait
-Date: Tue,  2 Dec 2014 11:19:27 -0800
-Message-Id: <1417548000-1794-89-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 082/121] ARM: 8191/1: decompressor: ensure I-side picks up relocated code
+Date: Tue,  2 Dec 2014 11:19:21 -0800
+Message-Id: <1417548000-1794-83-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,40 +28,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Jeffery <djeffery@redhat.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 92a56555bd576c61b27a5cab9f38a33a1e9a1df5 upstream.
+commit 238962ac71910d6c20162ea5230685fead1836a4 upstream.
 
-If a SIGKILL is sent to a task waiting in __nfs_iocounter_wait,
-it will busy-wait or soft lockup in its while loop.
-nfs_wait_bit_killable won't sleep, and the loop won't exit on
-the error return.
+To speed up decompression, the decompressor sets up a flat, cacheable
+mapping of memory. However, when there is insufficient space to hold
+the page tables for this mapping, we don't bother to enable the caches
+and subsequently skip all the cache maintenance hooks.
 
-Stop the busy-wait by breaking out of the loop when
-nfs_wait_bit_killable returns an error.
+Skipping the cache maintenance before jumping to the relocated code
+allows the processor to predict the branch and populate the I-cache
+with stale data before the relocation loop has completed (since a
+bootloader may have SCTLR.I set, which permits normal, cacheable
+instruction fetches regardless of SCTLR.M).
 
-Signed-off-by: David Jeffery <djeffery@redhat.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-[ kamal: backport to 3.13-stable: context ]
-Cc: Moritz Mühlenhoff <muehlenhoff@univention.de>
+This patch moves the cache maintenance check into the maintenance
+routines themselves, allowing the v6/v7 versions to invalidate the
+I-cache regardless of the MMU state.
+
+Reported-by: Marc Carino <marc.ceeeee@gmail.com>
+Tested-by: Julien Grall <julien.grall@linaro.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfs/pagelist.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/boot/compressed/head.S | 20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
 
-diff --git a/fs/nfs/pagelist.c b/fs/nfs/pagelist.c
-index 2ffebf2..27d7f27 100644
---- a/fs/nfs/pagelist.c
-+++ b/fs/nfs/pagelist.c
-@@ -113,7 +113,7 @@ __nfs_iocounter_wait(struct nfs_io_counter *c)
- 		if (atomic_read(&c->io_count) == 0)
- 			break;
- 		ret = nfs_wait_bit_killable(&c->flags);
--	} while (atomic_read(&c->io_count) != 0);
-+	} while (atomic_read(&c->io_count) != 0 && !ret);
- 	finish_wait(wq, &q.wait);
- 	return ret;
- }
+diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
+index 066b034..8017cde 100644
+--- a/arch/arm/boot/compressed/head.S
++++ b/arch/arm/boot/compressed/head.S
+@@ -400,8 +400,7 @@ dtb_check_done:
+ 		add	sp, sp, r6
+ #endif
+ 
+-		tst	r4, #1
+-		bleq	cache_clean_flush
++		bl	cache_clean_flush
+ 
+ 		adr	r0, BSYM(restart)
+ 		add	r0, r0, r6
+@@ -1050,6 +1049,8 @@ cache_clean_flush:
+ 		b	call_cache_fn
+ 
+ __armv4_mpu_cache_flush:
++		tst	r4, #1
++		movne	pc, lr
+ 		mov	r2, #1
+ 		mov	r3, #0
+ 		mcr	p15, 0, ip, c7, c6, 0	@ invalidate D cache
+@@ -1067,6 +1068,8 @@ __armv4_mpu_cache_flush:
+ 		mov	pc, lr
+ 		
+ __fa526_cache_flush:
++		tst	r4, #1
++		movne	pc, lr
+ 		mov	r1, #0
+ 		mcr	p15, 0, r1, c7, c14, 0	@ clean and invalidate D cache
+ 		mcr	p15, 0, r1, c7, c5, 0	@ flush I cache
+@@ -1075,13 +1078,16 @@ __fa526_cache_flush:
+ 
+ __armv6_mmu_cache_flush:
+ 		mov	r1, #0
+-		mcr	p15, 0, r1, c7, c14, 0	@ clean+invalidate D
++		tst	r4, #1
++		mcreq	p15, 0, r1, c7, c14, 0	@ clean+invalidate D
+ 		mcr	p15, 0, r1, c7, c5, 0	@ invalidate I+BTB
+-		mcr	p15, 0, r1, c7, c15, 0	@ clean+invalidate unified
++		mcreq	p15, 0, r1, c7, c15, 0	@ clean+invalidate unified
+ 		mcr	p15, 0, r1, c7, c10, 4	@ drain WB
+ 		mov	pc, lr
+ 
+ __armv7_mmu_cache_flush:
++		tst	r4, #1
++		bne	iflush
+ 		mrc	p15, 0, r10, c0, c1, 5	@ read ID_MMFR1
+ 		tst	r10, #0xf << 16		@ hierarchical cache (ARMv7)
+ 		mov	r10, #0
+@@ -1142,6 +1148,8 @@ iflush:
+ 		mov	pc, lr
+ 
+ __armv5tej_mmu_cache_flush:
++		tst	r4, #1
++		movne	pc, lr
+ 1:		mrc	p15, 0, r15, c7, c14, 3	@ test,clean,invalidate D cache
+ 		bne	1b
+ 		mcr	p15, 0, r0, c7, c5, 0	@ flush I cache
+@@ -1149,6 +1157,8 @@ __armv5tej_mmu_cache_flush:
+ 		mov	pc, lr
+ 
+ __armv4_mmu_cache_flush:
++		tst	r4, #1
++		movne	pc, lr
+ 		mov	r2, #64*1024		@ default: 32K dcache size (*2)
+ 		mov	r11, #32		@ default: 32 byte line size
+ 		mrc	p15, 0, r3, c0, c0, 1	@ read cache type
+@@ -1182,6 +1192,8 @@ no_cache_id:
+ 
+ __armv3_mmu_cache_flush:
+ __armv3_mpu_cache_flush:
++		tst	r4, #1
++		movne	pc, lr
+ 		mov	r1, #0
+ 		mcr	p15, 0, r1, c7, c0, 0	@ invalidate whole cache v3
+ 		mov	pc, lr
 -- 
 1.9.1
 
