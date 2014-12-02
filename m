@@ -1,315 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933094AbaLBMMM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 07:12:12 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:60950 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932911AbaLBMMF (ORCPT
+	id S933118AbaLBMNQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 07:13:16 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38176 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932837AbaLBMNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 07:12:05 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-man <linux-man@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Richard Weinberger <richard@nod.at>, kenton@sandstorm.io,
-        stable@vger.kernel.org
-References: <52e0643bd47b1e5c65921d6e00aea1f724bb510a.1417281801.git.luto@amacapital.net>
-Date: Tue, 02 Dec 2014 06:09:51 -0600
-In-Reply-To: <52e0643bd47b1e5c65921d6e00aea1f724bb510a.1417281801.git.luto@amacapital.net>
-	(Andy Lutomirski's message of "Sat, 29 Nov 2014 09:26:37 -0800")
-Message-ID: <87h9xez20g.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Tue, 2 Dec 2014 07:13:14 -0500
+Date: Tue, 2 Dec 2014 12:13:10 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, "arnd@arndb.de" <arnd@arndb.de>,
+        "olof@lixom.net" <olof@lixom.net>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "s.nawrocki@samsung.com" <s.nawrocki@samsung.com>,
+        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        "inki.dae@samsung.com" <inki.dae@samsung.com>,
+        "chanho61.park@samsung.com" <chanho61.park@samsung.com>,
+        "geunsik.lim@samsung.com" <geunsik.lim@samsung.com>,
+        "sw0312.kim@samsung.com" <sw0312.kim@samsung.com>,
+        "jh80.chung@samsung.com" <jh80.chung@samsung.com>,
+        "a.kesavan@samsung.com" <a.kesavan@samsung.com>,
+        "pankaj.dubey@samsung.com" <pankaj.dubey@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 14/19] arm64: dts: exynos: Add dts files for 64-bit
+ Exynos5433 SoC
+Message-ID: <20141202121310.GH23671@leverpostej>
+References: <1417510196-6714-1-git-send-email-cw00.choi@samsung.com>
+ <1417510196-6714-15-git-send-email-cw00.choi@samsung.com>
+ <20141202110909.GB23671@leverpostej>
+ <547DA818.2050908@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/lg6Sdl7hBq90iyAjFrVCbgVdj63PD5is=
-X-SA-Exim-Connect-IP: 97.121.92.161
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 TVD_RCVD_IP Message was received from an IP address
-	*  3.0 XMDrug1234561 Drug references
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
-	*  1.2 LotsOfNums_01 BODY: Lots of long strings of numbers
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.5000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *****;Andy Lutomirski <luto@amacapital.net>
-X-Spam-Relay-Country: 
-X-Spam-Timing: total 1564 ms - load_scoreonly_sql: 0.05 (0.0%),
-	signal_user_changed: 3.8 (0.2%), b_tie_ro: 2.8 (0.2%), parse: 1.49 (0.1%),
-	extract_message_metadata: 19 (1.2%), get_uri_detail_list: 8 (0.5%),
-	tests_pri_-1000: 6 (0.4%), tests_pri_-950: 1.29 (0.1%), tests_pri_-900: 1.12
-	(0.1%), tests_pri_-400: 45 (2.9%), check_bayes: 43 (2.8%), b_tokenize: 16
-	(1.0%), b_tok_get_all: 15 (1.0%), b_comp_prob: 5 (0.3%), b_tok_touch_all: 3.9
-	(0.3%), b_finish: 0.78 (0.0%), tests_pri_0: 1452 (92.8%), tests_pri_500: 30
-	(1.9%), rewrite_mail: 0.00 (0.0%)
-Subject: Re: [PATCH v2] userns: Disallow setgroups unless the gid_map writer is privileged
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <547DA818.2050908@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Lutomirski <luto@amacapital.net> writes:
+Hi,
 
-> Classic unix permission checks have an interesting feature.  The
-> group permissions for a file can be set to less than the other
-> permissions on a file.  Occasionally this is used deliberately to
-> give a certain group of users fewer permissions than the default.
->
-> User namespaces break this usage.  Groups set in rgid or egid are
-> unaffected because an unprivileged user namespace creator can only
-> map a single group, so setresgid inside and outside the namespace
-> have the same effect.  However, an unprivileged user namespace
-> creator can currently use setgroups(2) to drop all supplementary
-> groups, so, if a supplementary group denies access to some resource,
-> user namespaces can be used to bypass that restriction.
->
-> To fix this issue, this introduces a new user namespace flag
-> USERNS_SETGROUPS_ALLOWED.  If that flag is not set, then
-> setgroups(2) will fail regardless of the caller's capabilities.
->
-> USERNS_SETGROUPS_ALLOWED is cleared in a new user namespace.  By
-> default, if the writer of gid_map has CAP_SETGID in the parent
-> userns and the parent userns has USERNS_SETGROUPS_ALLOWED, then the
-> USERNS_SETGROUPS_ALLOWED will be set in the child.  If the writer is
-> not so privileged, then writing to gid_map will fail unless the
-> writer adds "setgroups deny" to gid_map, in which case the check is
-> skipped but USERNS_SETGROUPS_ALLOWED will remain cleared.
->
-> The full semantics are:
->
-> If "setgroups allow" is present or no explicit "setgroups" setting
-> is written to gid_map, then writing to gid_map will fail with -EPERM
-> unless the opener and writer have CAP_SETGID in the parent namespace
-> and the parent namespace has USERNS_SETGROUPS_ALLOWED.
->
-> If "setgroups deny" is present, then writing gid_map will work as
-> before, but USERNS_SETGROUPS_ALLOWED will remain cleared.  This will
-> result in processes in the userns that have CAP_SETGID to be
-> nontheless unable to use setgroups(2).  If this breaks something
-> inside the userns, then this is okay -- the userns creator
-> specifically requested this behavior.
+> >> +       psci {
+> >> +               compatible = "arm,psci";
+> >> +               method = "smc";
+> >> +               cpu_off = <0x84000002>;
+> >> +               cpu_on = <0xC4000003>;
+> >> +       };
+> >
+> > Given your comments on the latest posting, has CPU_OFF been tested, and
+> > does it work for _all_ CPUs (including CPU0)?
+> 
+> At current version,
+> CPU_OFF of Exynos5433 is not working. I'm now working to find the cause of CPU_OFF fail.
+> (I got CPU_ON of Exynos5433 all cores.)
 
-I think we need to do this but I also think setgroups allow/deny
-should be a separate knob than the uid/gid mapping.
+CPU_OFF should not be described in the DT unless it works.
 
-If for no other reason than you missed at least two implementations of
-setgroups, in your implementation.
+[...]
 
-> While it could be safe to set USERNS_SETGROUPS_ALLOWED if the user
-> namespace creator has no supplementary groups, doing so could be
-> surprising and could have unpleasant interactions with setns(2).
->
-> Any application that uses newgidmap(1) should be unaffected by this
-> fix, but unprivileged users that create user namespaces to
-> manipulate mounts or sandbox themselves will break until they start
-> using "setgroups deny".
->
-> This should fix CVE-2014-8989.
->
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->
-> Unlike v1, this *will* break things like Sandstorm.  Fixing them will be
-> easy.  I agree that this will result in better long-term semantics, but
-> I'm not so happy about breaking working software.
+> >> +       soc: soc {
+> >> +               compatible = "simple-bus";
+> >> +               #address-cells = <1>;
+> >> +               #size-cells = <1>;
+> >> +               ranges;
+> >
+> > Is that valid when changing the number of cells? The address spaces
+> > aren't strictly identical in that case, and I'd expect a translation
+> > something like:
+> >
+> >         ranges = <0x0 0x0 0x0 0xff000000>;
+> 
+> I'll fix it after checking correct spec.
 
-I know what you mean.   One of the pieces of software broken by all of
-this is my test to verify the remount semantics.   Which makes all of
-this very unfortunate.
+Thanks.
 
-> If this is unpalatable, here's a different option: get rid of all these
-> permission checks and just change setgroups.  Specifically, make it so
-> that setgroups(2) in a userns will succeed but will silently refuse to
-> remove unmapped groups.
+[...]
 
-Nope silently refusing to remove unmapped groups is not enough.  I can
-make any gid in my supplemental groups my egid, it takes a sgid helper
-application but I don't need any special privileges to create that.
-Once that group is my egid I can map it.  Which means I could drop
-any one group of my choosing without privielges.  Which out and out
-breaks negative groups :(
+> >> +               gic:interrupt-controller@11001000 {
+> >> +                       compatible = "arm,gic-400";
+> >> +                       #interrupt-cells = <3>;
+> >> +                       interrupt-controller;
+> >> +                       reg =   <0x11001000 0x1000>,
+> >> +                               <0x11002000 0x1000>,
+> >> +                               <0x11004000 0x2000>,
+> >> +                               <0x11006000 0x2000>;
+> >> +                       interrupts = <1 9 0xf04>;
+> >> +               };
+> >
+> > The GICC needs to be 0x2000 long to map the GICC_DIR, which is at
+> > 0x1000-0x1003.
+> 
+> Do you mean that following dt node is right for gic-400?
+> 
+>                 reg =   <0x11001000 0x1000>,
+>                         <0x11002000 0x2000>,    <- I changed the the range of GICC.
+>                         <0x11004000 0x2000>,
+>                         <0x11006000 0x2000>;
 
-I got to looking and I have a significant piece of code that all of this
-breaks.
+Yes.
 
-tools/testing/selftests/mount/unprivileged-remount-test.c
+[...]
 
-So I am extra motivated to figure out at find a way to preserve most of
-the existing functionality.  My regression tests won't pass until I can
-find something pallateable.
+> >> +               pinctrl_alive: pinctrl@10580000 {
+> >> +                       compatible = "samsung,exynos5433-pinctrl";
+> >> +                       reg = <0x10580000 0x1000>;
+> >> +
+> >> +                       wakeup-interrupt-controller {
+> >> +                               compatible = "samsung,exynos7-wakeup-eint";
+> >> +                               interrupts = <0 16 0>;
+> >> +                       };
+> >> +               };
+> >
+> > How exactly does the wakeup interrupt controller interact with the GIC?
+> > Surely the relationship between the two should be described?
+> 
+> The pinctrl_alive contains the alive part of GPIO PAD (gpa0~gpa3).
+> 
+> The each GPA0/GPA1 of pinctrl_alive pad did map to unique SPI number of GIC
+> amd GPA2/GPA3 use only one interrupt (SPI[16])  as following:
+> 
+>         +&pinctrl_alive {
+>         +       gpa0: gpa0 {
+>         +               gpio-controller;
+>         +               #gpio-cells = <2>;
+>         +
+>         +               interrupt-controller;
+>         +               interrupt-parent = <&gic>;
+>         +               interrupts = <0 0 0>, <0 1 0>, <0 2 0>, <0 3 0>,
+>         +                            <0 4 0>, <0 5 0>, <0 6 0>, <0 7 0>;
+>         +               #interrupt-cells = <2>;
+>         +       };
+>         +
+>         +       gpa1: gpa1 {
+>         +               gpio-controller;
+>         +               #gpio-cells = <2>;
+>         +
+>         +               interrupt-controller;
+>         +               interrupt-parent = <&gic>;
+>         +               interrupts = <0 8 0>, <0 9 0>, <0 10 0>, <0 11 0>,
+>         +                            <0 12 0>, <0 13 0>, <0 14 0>, <0 15 0>;
+>         +               #interrupt-cells = <2>;
+>         +       };
+> 
+>         gpa0-0 - SPI[0]
+>         gpa0-1 - SPI[1]
+>         gpa0-2 - SPI[2]
+>         gpa0-3 - SPI[3]
+>         gpa0-4 - SPI[4]
+>         gpa0-5 - SPI[5]
+>         gpa0-6 - SPI[6]
+>         gpa0-7 - SPI[7]
+> 
+>         gpa1-0 - SPI[8]
+>         gpa1-1 - SPI[9]
+>         gpa1-2 - SPI[10]
+>         gpa1-3 - SPI[11]
+>         gpa1-4 - SPI[12]
+>         gpa1-5 - SPI[13]
+>         gpa1-6 - SPI[14]
+>         gpa1-7 - SPI[15]
+> 
+>         GPA2/GPA3 use only one interrupt (SPI[16]).
+> 
+> The pinctrl-exynos.c driver initialized external wakeup interrupt
+> (e.g., GPA0/GPA1/GPA2/GPA3 of Exynos5433) in exynos_eint_wkup_init() function.
+> 
+> Following patch[1] adds the control for Exynos5433 wakeup irq.The exynos5433_pin_ctrl structure
+> includes '.eint_wkup_init = exynos_eint_wkup_init;' fields to handle wakeup interrupt of Exynos SoC.
+> 
+> [PATCHv2] pinctrl: exynos: Add support for Exynos543
+> - https://lkml.org/lkml/2014/12/2/207
+> 
+>         +struct samsung_pin_ctrl exynos5433_pin_ctrl[] = {
+>         +       {
+>         +               /* pin-controller instance 0 data */
+>         +               .pin_banks      = exynos5433_pin_banks0,
+>         +               .nr_banks       = ARRAY_SIZE(exynos5433_pin_banks0),
+>         +               .eint_wkup_init = exynos_eint_wkup_init,
+>         +               .suspend        = exynos_pinctrl_suspend,
+>         +               .resume         = exynos_pinctrl_resume,
+>         +               .label          = "exynos5433-gpio-ctrl0",
+>         +       }, {
+> 
+> And,
+> 'struct exynos_irq_chip exynos7_wkup_irq_chip' handles the external interrupt of Exynos5433 SoC
+> because Exynos5433 is the same with Exynos7 EINT (External Interrupt) register offset.
+> 
+> We can check it following patch[1] to control wakeup interrupt for Exynos7/Exynos5433.
+> - [1] [patch] pinctrl: exynos: Add irq_chip instance for Exynos7 wakeup interrupts
+>   https://git.kernel.org/cgit/linux/kernel/git/linusw/linux-pinctrl.git/commit/?h=for-next&id=14c255d35b25126149fb2fd199b030404229af65
+> 
+> 
+>         +static struct exynos_irq_chip exynos7_wkup_irq_chip __initdata = {
+>         + .chip = {
+>         + .name = "exynos7_wkup_irq_chip",
+>         + .irq_unmask = exynos_irq_unmask,
+>         + .irq_mask = exynos_irq_mask,
+>         + .irq_ack = exynos_irq_ack,
+>         + .irq_set_type = exynos_irq_set_type,
+>         + .irq_set_wake = exynos_wkup_irq_set_wake,
+>         + .irq_request_resources = exynos_irq_request_resources,
+>         + .irq_release_resources = exynos_irq_release_resources,
+>         + },
+>         + .eint_con = EXYNOS7_WKUP_ECON_OFFSET,
+>         + .eint_mask = EXYNOS7_WKUP_EMASK_OFFSET,
+>         + .eint_pend = EXYNOS7_WKUP_EPEND_OFFSET,
+>         +};
+> 
+> If happen external interrupt by pressing power button, the ops of 'struct exynos_irq_chip exynos7_wkup_irq_chip'
+> would handle the interrupt.
+> 
+> For exampl, If I use following GPAx as interrupt, I can check it on the result of /proc/interrupts.
+>         gpa2-7 - power key
+>         gpa2-0 - volume-up key
+>         gpa2-1 - volume-up key
+>         gpa0-7 - s2mps13 pmic irq
+> 
+> 'exynos7_wkup_irq_chip' would handle the external interrupt(gpa).
+> 
+> #cat /proc/interrupts
+>   1:          0          0          0          0          0          0          0  exynos7_wkup_irq_chip   0  volume-up key
+>   2:          0          0          0          0          0          0          0  exynos7_wkup_irq_chip   1  volume-down key
+>   7:          0          0          0          0          0          0          0  exynos7_wkup_irq_chip   7  s2mps13
+>   8:          0          0          0          0          0          0          0  exynos7_wkup_irq_chip   7  power key
+> 
+> 
+> IMHO,
+> Happen SPI -> GIC -> Cortex-A57/Cortex-A53 -> pinctrl-exynos.c -> exynos7_wkup_irq_chip -> irq handling
 
-It is very annoying that every option I have considered so far breaks
-something useful.
+So physically interrupts are fed into the wakeup IRQ chip, which routes
+them to the GIC? And we describe such in DT, as opposed to pretending
+interrupts are fed straight into the GIC, and bolting the wakeup
+controller on the side?
 
-Having a write once setgroups disable, and the allowing unprivileged
-mappings after that seems the most palatable option I have seen,
-semantically.  Which means existing software that doesn't care about
-setgroups can just add the disable code and then work otherwise
-unmodified.
+If so, that sounds fine to me.
 
-The other option that I have played with is forcing a set of groups
-in setgroups if your user namespace was created without privilege,
-that winds up requiring that verify you don't have any other
-supplementary groups, and is generally messy whichever way I look at it.
-
-*Pounds head on desk*
-
-What a mess.
-
-Eric
-
-> Changes from v1:
->  - Userns flags are now properly atomic.
->  - "setgroups allow" is now the default, so legacy unprivileged gid_map
->    writers will start to fail.
->
->  include/linux/user_namespace.h |  3 +++
->  kernel/groups.c                |  3 +++
->  kernel/user.c                  |  1 +
->  kernel/user_namespace.c        | 42 ++++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 49 insertions(+)
->
-> diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
-> index e95372654f09..0ae4a8c97165 100644
-> --- a/include/linux/user_namespace.h
-> +++ b/include/linux/user_namespace.h
-> @@ -17,6 +17,8 @@ struct uid_gid_map {	/* 64 bytes -- 1 cache line */
->  	} extent[UID_GID_MAP_MAX_EXTENTS];
->  };
->  
-> +#define USERNS_SETGROUPS_ALLOWED 0
-> +
->  struct user_namespace {
->  	struct uid_gid_map	uid_map;
->  	struct uid_gid_map	gid_map;
-> @@ -27,6 +29,7 @@ struct user_namespace {
->  	kuid_t			owner;
->  	kgid_t			group;
->  	unsigned int		proc_inum;
-> +	unsigned long		flags;
->  
->  	/* Register of per-UID persistent keyrings for this namespace */
->  #ifdef CONFIG_PERSISTENT_KEYRINGS
-> diff --git a/kernel/groups.c b/kernel/groups.c
-> index 451698f86cfa..b5ec42423202 100644
-> --- a/kernel/groups.c
-> +++ b/kernel/groups.c
-> @@ -6,6 +6,7 @@
->  #include <linux/slab.h>
->  #include <linux/security.h>
->  #include <linux/syscalls.h>
-> +#include <linux/user_namespace.h>
->  #include <asm/uaccess.h>
->  
->  /* init to 2 - one for init_task, one to ensure it is never freed */
-> @@ -223,6 +224,8 @@ SYSCALL_DEFINE2(setgroups, int, gidsetsize, gid_t __user *, grouplist)
->  	struct group_info *group_info;
->  	int retval;
->  
-> +	if (!test_bit(USERNS_SETGROUPS_ALLOWED, &current_user_ns()->flags))
-> +		return -EPERM;
->  	if (!ns_capable(current_user_ns(), CAP_SETGID))
->  		return -EPERM;
->  	if ((unsigned)gidsetsize > NGROUPS_MAX)
-> diff --git a/kernel/user.c b/kernel/user.c
-> index 4efa39350e44..58fba8ea0845 100644
-> --- a/kernel/user.c
-> +++ b/kernel/user.c
-> @@ -51,6 +51,7 @@ struct user_namespace init_user_ns = {
->  	.owner = GLOBAL_ROOT_UID,
->  	.group = GLOBAL_ROOT_GID,
->  	.proc_inum = PROC_USER_INIT_INO,
-> +	.flags = (1 << USERNS_SETGROUPS_ALLOWED),
->  #ifdef CONFIG_PERSISTENT_KEYRINGS
->  	.persistent_keyring_register_sem =
->  	__RWSEM_INITIALIZER(init_user_ns.persistent_keyring_register_sem),
-> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-> index aa312b0dc3ec..1f63935483e9 100644
-> --- a/kernel/user_namespace.c
-> +++ b/kernel/user_namespace.c
-> @@ -601,6 +601,10 @@ static ssize_t map_write(struct file *file, const char __user *buf,
->  	char *kbuf, *pos, *next_line;
->  	ssize_t ret = -EINVAL;
->  
-> +	bool may_setgroups = false;
-> +	bool setgroups_requested = true;
-> +	bool seen_explicit_setgroups = false;
-> +
->  	/*
->  	 * The id_map_mutex serializes all writes to any given map.
->  	 *
-> @@ -633,6 +637,18 @@ static ssize_t map_write(struct file *file, const char __user *buf,
->  	if (cap_valid(cap_setid) && !file_ns_capable(file, ns, CAP_SYS_ADMIN))
->  		goto out;
->  
-> +	if (map == &ns->gid_map) {
-> +		/*
-> +		 * Setgroups is permitted if the writer and the
-> +		 * parent ns are privileged.
-> +		 */
-> +		may_setgroups =
-> +			test_bit(USERNS_SETGROUPS_ALLOWED,
-> +				 &ns->parent->flags) &&
-> +			file_ns_capable(file, ns->parent, CAP_SETGID) &&
-> +			ns_capable(ns->parent, CAP_SETGID);
-> +	}
-> +
->  	/* Get a buffer */
->  	ret = -ENOMEM;
->  	page = __get_free_page(GFP_TEMPORARY);
-> @@ -667,6 +683,23 @@ static ssize_t map_write(struct file *file, const char __user *buf,
->  				next_line = NULL;
->  		}
->  
-> +		/* Is this line a gid_map option? */
-> +		if (map == &ns->gid_map) {
-> +			if (!strcmp(pos, "setgroups deny")) {
-> +				if (seen_explicit_setgroups)
-> +					goto out;
-> +				seen_explicit_setgroups = true;
-> +				setgroups_requested = false;
-> +				continue;
-> +			} else if (!strcmp(pos, "setgroups allow")) {
-> +				if (seen_explicit_setgroups)
-> +					goto out;
-> +				seen_explicit_setgroups = true;
-> +				setgroups_requested = true;
-> +				continue;
-> +			}
-> +		}
-> +
->  		pos = skip_spaces(pos);
->  		extent->first = simple_strtoul(pos, &pos, 10);
->  		if (!isspace(*pos))
-> @@ -741,6 +774,15 @@ static ssize_t map_write(struct file *file, const char __user *buf,
->  		extent->lower_first = lower_first;
->  	}
->  
-> +	/* Validate and install setgroups permission. */
-> +	if (map == &ns->gid_map && setgroups_requested) {
-> +		if (!may_setgroups) {
-> +			ret = -EPERM;
-> +			goto out;
-> +		}
-> +		set_bit(USERNS_SETGROUPS_ALLOWED, &ns->flags);
-> +	}
-> +
->  	/* Install the map */
->  	memcpy(map->extent, new_map.extent,
->  		new_map.nr_extents*sizeof(new_map.extent[0]));
+Thanks,
+Mark.
