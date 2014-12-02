@@ -1,128 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932752AbaLBQ4U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 11:56:20 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:51305 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753306AbaLBQ4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 11:56:16 -0500
-Date: Tue, 2 Dec 2014 11:56:07 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/3] mm: memory: merge shared-writable dirtying branches
- in do_wp_page()
-Message-ID: <20141202165607.GD8401@phnom.home.cmpxchg.org>
-References: <1417474682-29326-1-git-send-email-hannes@cmpxchg.org>
- <1417474682-29326-3-git-send-email-hannes@cmpxchg.org>
- <20141202091939.GC9092@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141202091939.GC9092@quack.suse.cz>
+	id S932667AbaLBQ5x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 11:57:53 -0500
+Received: from resqmta-ch2-06v.sys.comcast.net ([69.252.207.38]:51231 "EHLO
+	resqmta-ch2-06v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932303AbaLBQ5v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 11:57:51 -0500
+Date: Tue, 2 Dec 2014 10:57:50 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Tejun Heo <htejun@gmail.com>
+cc: linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Final per cpu consistency patch for -next or late in 3.19 merge
+ period
+In-Reply-To: <20141202164024.GA10918@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.11.1412021049580.13039@gentwo.org>
+References: <alpine.DEB.2.11.1411281229350.11435@gentwo.org> <20141202164024.GA10918@htj.dyndns.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 10:19:39AM +0100, Jan Kara wrote:
-> On Mon 01-12-14 17:58:02, Johannes Weiner wrote:
-> > Whether there is a vm_ops->page_mkwrite or not, the page dirtying is
-> > pretty much the same.  Make sure the page references are the same in
-> > both cases, then merge the two branches.
-> > 
-> > It's tempting to go even further and page-lock the !page_mkwrite case,
-> > to get it in line with everybody else setting the page table and thus
-> > further simplify the model.  But that's not quite compelling enough to
-> > justify dropping the pte lock, then relocking and verifying the entry
-> > for filesystems without ->page_mkwrite, which notably includes tmpfs.
-> > Leave it for now and lock the page late in the !page_mkwrite case.
-> > 
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > ---
-> >  mm/memory.c | 46 ++++++++++++++++------------------------------
-> >  1 file changed, 16 insertions(+), 30 deletions(-)
-> > 
-> > diff --git a/mm/memory.c b/mm/memory.c
-> > index 2a2e3648ed65..ff92abfa5303 100644
-> > --- a/mm/memory.c
-> > +++ b/mm/memory.c
-> ...
-> > @@ -2147,42 +2147,28 @@ reuse:
-> >  		pte_unmap_unlock(page_table, ptl);
-> >  		ret |= VM_FAULT_WRITE;
-> >  
-> > -		if (!dirty_page)
-> > -			return ret;
-> > -
-> > -		if (!page_mkwrite) {
-> > +		if (dirty_shared) {
-> >  			struct address_space *mapping;
-> >  			int dirtied;
-> >  
-> > -			lock_page(dirty_page);
-> > -			dirtied = set_page_dirty(dirty_page);
-> > -			mapping = dirty_page->mapping;
-> > -			unlock_page(dirty_page);
-> > +			if (!page_mkwrite)
-> > +				lock_page(old_page);
-> >  
-> > -			if (dirtied && mapping) {
-> > -				/*
-> > -				 * Some device drivers do not set page.mapping
-> > -				 * but still dirty their pages
-> > -				 */
-> > -				balance_dirty_pages_ratelimited(mapping);
-> > -			}
-> > +			dirtied = set_page_dirty(old_page);
-> > +			mapping = old_page->mapping;
-> > +			unlock_page(old_page);
-> > +			page_cache_release(old_page);
-> >  
-> > -			file_update_time(vma->vm_file);
-> > -		}
-> > -		put_page(dirty_page);
-> > -		if (page_mkwrite) {
-> > -			struct address_space *mapping = dirty_page->mapping;
-> > -
-> > -			set_page_dirty(dirty_page);
-> > -			unlock_page(dirty_page);
-> > -			page_cache_release(dirty_page);
-> > -			if (mapping)	{
-> > +			if ((dirtied || page_mkwrite) && mapping) {
->   Why do we actually call balance_dirty_pages_ratelimited() even if we
-> didn't dirty the page when ->page_mkwrite() exists? Is it because
-> filesystem may dirty the page in ->page_mkwrite() and we don't want it to
-> deal with calling balance_dirty_pages_ratelimited()?
+On Tue, 2 Dec 2014, Tejun Heo wrote:
 
-Yes, ->page_mkwrite() can dirty the page, but balance_dirty_pages(),
-as you noted, is not allowed under the page lock.  However, it also
-can't drop the page lock if that is the final set_page_dirty() as the
-pte isn't dirty yet, and clear_page_dirty_for_io() relies on the pte
-to be dirtied before the page outside the page lock.
+> Can you please update Documentation/local_ops.txt and comments which
+> contain __get_cpu_var() and send the updated patch to Andrew?
 
-That being said, the page lock semantics in there are strange.  It
-seems to me that page_mkwrite semantics inherited fault semantics,
-which don't allow the page lock to be dropped between verifying the
-page->mapping and installing the page table, to make sure we don't map
-a truncated page.  That's why when ->page_mkwrite() returns with the
-page unlocked, do_page_mkwrite() locks it and verifies page->mapping,
-only to hold the page lock until after the page table update is done.
+Owww.... local_* ops are exotic operations that should no longer be
+regularly used. This_cpu ops create less overhead and
+are simpler to use. Lets merge the prior patch as is and then add this
+documentation patch which may cause some additional discussion.
 
-However, unlike during a nopage fault, we fault against an existing
-read-only pte mapping of the page, and truncation needs to unmap it.
-Even if we dropped both the page lock and the pte lock, that
-pte_same() check after re-locking the page table would reliably tell
-us if somebody swooped in and truncated the page behind our backs.
 
-So AFAICS ->page_mkwrite() could safely return with the page unlocked
-in terms of correctness.  But OTOH if it locks the page anyway, it's
-cheaper to just keep it until we need it again for set_page_dirty().
-Either way, I think the truncation verification in do_page_mkwrite()
-is unnecessary.
 
-> Otherwise the patch looks good to me.
 
-Thanks!
+From: Christoph Lameter <cl@linux.com>
+Subject: [PATCH] Update local_ops.txt to reflect this_cpu operations
+
+Update the documentation to reflect changes due to the availability
+of this_cpu operations.
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+---
+ include/asm-generic/percpu.h | 5 -----
+ 1 file changed, 5 deletions(-)
+
+Index: linux/Documentation/local_ops.txt
+===================================================================
+--- linux.orig/Documentation/local_ops.txt
++++ linux/Documentation/local_ops.txt
+@@ -8,6 +8,11 @@ to implement them for any given architec
+ properly. It also stresses on the precautions that must be taken when reading
+ those local variables across CPUs when the order of memory writes matters.
+
++Note that local_t based operations are not recommended for general kernel use.
++Please use the this_cpu operations instead unless there is really a special purpose.
++Most uses of local_t in the kernel have been replaced by this_cpu operations.
++this_cpu operations combine the relocation with the local_t like semantics in
++a single instruction and yield more compact and faster executing code.
+
+
+ * Purpose of local atomic operations
+@@ -87,10 +92,10 @@ the per cpu variable. For instance :
+ 	local_inc(&get_cpu_var(counters));
+ 	put_cpu_var(counters);
+
+-If you are already in a preemption-safe context, you can directly use
+-__get_cpu_var() instead.
++If you are already in a preemption-safe context, you can use
++this_cpu_ptr() instead.
+
+-	local_inc(&__get_cpu_var(counters));
++	local_inc(this_cpu_ptr(&counters));
+
+
+
+@@ -134,7 +139,7 @@ static void test_each(void *info)
+ {
+ 	/* Increment the counter from a non preemptible context */
+ 	printk("Increment on cpu %d\n", smp_processor_id());
+-	local_inc(&__get_cpu_var(counters));
++	local_inc(this_cpu_ptr(&counters));
+
+ 	/* This is what incrementing the variable would look like within a
+ 	 * preemptible context (it disables preemption) :
