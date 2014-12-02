@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933164AbaLBTVw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:21:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46580 "EHLO
+	id S1754548AbaLBTWD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:22:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46585 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933129AbaLBTVt (ORCPT
+	with ESMTP id S932551AbaLBTWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:21:49 -0500
+	Tue, 2 Dec 2014 14:22:00 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+Cc: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 057/121] dm thin: grab a virtual cell before looking up the mapping
-Date: Tue,  2 Dec 2014 11:18:56 -0800
-Message-Id: <1417548000-1794-58-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 067/121] Input: alps - ignore potential bare packets when device is out of sync
+Date: Tue,  2 Dec 2014 11:19:06 -0800
+Message-Id: <1417548000-1794-68-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,77 +31,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
 
-commit c822ed967cba38505713d59ed40a114386ef6c01 upstream.
+commit 4ab8f7f320f91f279c3f06a9795cfea5c972888a upstream.
 
-Avoids normal IO racing with discard.
+5th and 6th byte of ALPS trackstick V3 protocol match condition for first
+byte of PS/2 3 bytes packet. When driver enters out of sync state and ALPS
+trackstick is sending data then driver match 5th, 6th and next 1st bytes as
+PS/2.
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+It basically means if user is using trackstick when driver is in out of
+sync state driver will never resync. Processing these bytes as 3 bytes PS/2
+data cause total mess (random cursor movements, random clicks) and make
+trackstick unusable until psmouse driver decide to do full device reset.
+
+Lot of users reported problems with ALPS devices on Dell Latitude E6440,
+E6540 and E7440 laptops. ALPS device or Dell EC for unknown reason send
+some invalid ALPS PS/2 bytes which cause driver out of sync. It looks like
+that i8042 and psmouse/alps driver always receive group of 6 bytes packets
+so there are no missing bytes and no bytes were inserted between valid
+ones.
+
+This patch does not fix root of problem with ALPS devices found in Dell
+Latitude laptops but it does not allow to process some (invalid)
+subsequence of 6 bytes ALPS packets as 3 bytes PS/2 when driver is out of
+sync.
+
+So with this patch trackstick input device does not report bogus data when
+also driver is out of sync, so trackstick should be usable on those
+machines.
+
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Tested-by: Pali Rohár <pali.rohar@gmail.com>
+Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/dm-thin.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ drivers/input/mouse/alps.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
-index f8c36d3..0396d7f 100644
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -1504,6 +1504,14 @@ static int thin_bio_map(struct dm_target *ti, struct bio *bio)
- 		return DM_MAPIO_SUBMITTED;
- 	}
+diff --git a/drivers/input/mouse/alps.c b/drivers/input/mouse/alps.c
+index 5cf62e3..80fac48 100644
+--- a/drivers/input/mouse/alps.c
++++ b/drivers/input/mouse/alps.c
+@@ -963,7 +963,13 @@ static psmouse_ret_t alps_process_byte(struct psmouse *psmouse)
+ {
+ 	struct alps_data *priv = psmouse->private;
  
+-	if ((psmouse->packet[0] & 0xc8) == 0x08) { /* PS/2 packet */
 +	/*
-+	 * We must hold the virtual cell before doing the lookup, otherwise
-+	 * there's a race with discard.
++	 * Check if we are dealing with a bare PS/2 packet, presumably from
++	 * a device connected to the external PS/2 port. Because bare PS/2
++	 * protocol does not have enough constant bits to self-synchronize
++	 * properly we only do this if the device is fully synchronized.
 +	 */
-+	build_virtual_key(tc->td, block, &key);
-+	if (dm_bio_detain(tc->pool->prison, &key, bio, &cell1, &cell_result))
-+		return DM_MAPIO_SUBMITTED;
-+
- 	r = dm_thin_find_block(td, block, 0, &result);
- 
- 	/*
-@@ -1527,13 +1535,10 @@ static int thin_bio_map(struct dm_target *ti, struct bio *bio)
- 			 * shared flag will be set in their case.
- 			 */
- 			thin_defer_bio(tc, bio);
-+			cell_defer_no_holder_no_free(tc, &cell1);
- 			return DM_MAPIO_SUBMITTED;
- 		}
- 
--		build_virtual_key(tc->td, block, &key);
--		if (dm_bio_detain(tc->pool->prison, &key, bio, &cell1, &cell_result))
--			return DM_MAPIO_SUBMITTED;
--
- 		build_data_key(tc->td, result.block, &key);
- 		if (dm_bio_detain(tc->pool->prison, &key, bio, &cell2, &cell_result)) {
- 			cell_defer_no_holder_no_free(tc, &cell1);
-@@ -1554,6 +1559,7 @@ static int thin_bio_map(struct dm_target *ti, struct bio *bio)
- 			 * of doing so.  Just error it.
- 			 */
- 			bio_io_error(bio);
-+			cell_defer_no_holder_no_free(tc, &cell1);
- 			return DM_MAPIO_SUBMITTED;
- 		}
- 		/* fall through */
-@@ -1564,6 +1570,7 @@ static int thin_bio_map(struct dm_target *ti, struct bio *bio)
- 		 * provide the hint to load the metadata into cache.
- 		 */
- 		thin_defer_bio(tc, bio);
-+		cell_defer_no_holder_no_free(tc, &cell1);
- 		return DM_MAPIO_SUBMITTED;
- 
- 	default:
-@@ -1573,6 +1580,7 @@ static int thin_bio_map(struct dm_target *ti, struct bio *bio)
- 		 * pool is switched to fail-io mode.
- 		 */
- 		bio_io_error(bio);
-+		cell_defer_no_holder_no_free(tc, &cell1);
- 		return DM_MAPIO_SUBMITTED;
- 	}
- }
++	if (!psmouse->out_of_sync_cnt && (psmouse->packet[0] & 0xc8) == 0x08) {
+ 		if (psmouse->pktcnt == 3) {
+ 			alps_report_bare_ps2_packet(psmouse, psmouse->packet,
+ 						    true);
 -- 
 1.9.1
 
