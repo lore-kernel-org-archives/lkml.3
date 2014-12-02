@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933861AbaLBTvO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:51:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46612 "EHLO
+	id S934023AbaLBTvf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:51:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46603 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060AbaLBTWP (ORCPT
+	with ESMTP id S933187AbaLBTWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:22:15 -0500
+	Tue, 2 Dec 2014 14:22:09 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 064/121] drm/radeon: add missing crtc unlock when setting up the MC
-Date: Tue,  2 Dec 2014 11:19:03 -0800
-Message-Id: <1417548000-1794-65-git-send-email-kamal@canonical.com>
+Cc: Christoph Hellwig <hch@lst.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 069/121] scsi: only re-lock door after EH on devices that were reset
+Date: Tue,  2 Dec 2014 11:19:08 -0800
+Message-Id: <1417548000-1794-70-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
@@ -27,30 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Christoph Hellwig <hch@lst.de>
 
-commit f0d7bfb9407fccb6499ec01c33afe43512a439a2 upstream.
+commit 48379270fe6808cf4612ee094adc8da2b7a83baa upstream.
 
-Need to unlock the crtc after updating the blanking state.
+Setups that use the blk-mq I/O path can lock up if a host with a single
+device that has its door locked enters EH.  Make sure to only send the
+command to re-lock the door to devices that actually were reset and thus
+might have lost their state.  Otherwise the EH code might be get blocked
+on blk_get_request as all requests for non-reset devices might be in use.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reported-by: Meelis Roos <meelis.roos@ut.ee>
+Tested-by: Meelis Roos <meelis.roos@ut.ee>
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/evergreen.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/scsi/scsi_error.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index e337e43..0e0160b 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -2572,6 +2572,7 @@ void evergreen_mc_stop(struct radeon_device *rdev, struct evergreen_mc_save *sav
- 					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
- 					tmp |= EVERGREEN_CRTC_BLANK_DATA_EN;
- 					WREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i], tmp);
-+					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
- 				}
- 			} else {
- 				tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
+diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+index 09f930d..c6dcbe6 100644
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -1860,8 +1860,10 @@ static void scsi_restart_operations(struct Scsi_Host *shost)
+ 	 * is no point trying to lock the door of an off-line device.
+ 	 */
+ 	shost_for_each_device(sdev, shost) {
+-		if (scsi_device_online(sdev) && sdev->locked)
++		if (scsi_device_online(sdev) && sdev->was_reset && sdev->locked) {
+ 			scsi_eh_lock_door(sdev);
++			sdev->was_reset = 0;
++		}
+ 	}
+ 
+ 	/*
 -- 
 1.9.1
 
