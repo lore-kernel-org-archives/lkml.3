@@ -1,99 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470AbaLBQN2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 11:13:28 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:35834 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932249AbaLBQN1 (ORCPT
+	id S932502AbaLBQPH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 11:15:07 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:33678 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932079AbaLBQPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 11:13:27 -0500
-X-Greylist: delayed 449 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Dec 2014 11:13:26 EST
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Intel Graphics Development <intel-gfx@lists.freedesktop.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Gordon <david.s.gordon@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Daniel Vetter <daniel.vetter@intel.com>
-Subject: [PATCH] drm/i915: compute wait_ioctl timeout correctly
-Date: Tue,  2 Dec 2014 16:36:22 +0100
-Message-Id: <1417534582-2977-1-git-send-email-daniel.vetter@ffwll.ch>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1417533733-2289-1-git-send-email-daniel.vetter@ffwll.ch>
-References: <1417533733-2289-1-git-send-email-daniel.vetter@ffwll.ch>
+	Tue, 2 Dec 2014 11:15:04 -0500
+Date: Tue, 2 Dec 2014 17:12:27 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>, Benoit Parrot <bparrot@ti.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
+Message-ID: <20141202161227.GH30256@lukather>
+References: <1416527684-19017-1-git-send-email-bparrot@ti.com>
+ <1416527684-19017-2-git-send-email-bparrot@ti.com>
+ <CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com>
+ <20141201163639.GI25249@lukather>
+ <CAAVeFuLTupDenZdSi8KO+dYsf-ekcqjsDaQ2GEzYpBG34oF7Zw@mail.gmail.com>
+ <CACRpkdZcNcPBYQM438CZJx1gYst9BFBSTj-3Qv2aPGF9pdWa5g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="aYDVKSzuImP48n7V"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZcNcPBYQM438CZJx1gYst9BFBSTj-3Qv2aPGF9pdWa5g@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We've lost the +1 required for correct timeouts in
 
-commit 5ed0bdf21a85d78e04f89f15ccf227562177cbd9
-Author: Thomas Gleixner <tglx@linutronix.de>
-Date:   Wed Jul 16 21:05:06 2014 +0000
+--aYDVKSzuImP48n7V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-    drm: i915: Use nsec based interfaces
+On Tue, Dec 02, 2014 at 03:29:46PM +0100, Linus Walleij wrote:
+> On Tue, Dec 2, 2014 at 3:13 PM, Alexandre Courbot <gnurou@gmail.com> wrot=
+e:
+> > On Tue, Dec 2, 2014 at 1:36 AM, Maxime Ripard
+> > <maxime.ripard@free-electrons.com> wrote:
+>=20
+> >> The only thing I'd like to have would be that the request here would
+> >> be non-exclusive, so that a later driver would still be allowed later
+> >> on to request that GPIO later on and manage it itself (ideally using
+> >> the usual gpiod_request function).
+> >
+> > Actually we have a plan (and I have some code too) to allow multiple
+> > consumers per GPIO. Although like Benoit I wonder why you would want
+> > to hog a GPIO and then request it properly later. Also, that probably
+> > means we should abandon the hog since it actively drives the line and
+> > would interfere with the late requested. How to do that correctly is
+> > not really clear to me.
+>=20
+> I don't get the usecase. A hogged GPIO is per definition hogged.
+> This sounds more like "initial settings" or something, which is another
+> usecase altogether.
 
-    Use ktime_get_raw_ns() and get rid of the back and forth timespec
-    conversions.
+We do have one board where we have a pin (let's say GPIO14 of the bank
+A) that enables a regulator that will provide VCC the bank B.
 
-    Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-    Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-    Signed-off-by: John Stultz <john.stultz@linaro.org>
+Now, both banks are handled by the same driver, but in order to have a
+working output on the bank B, we do need to set GPIO14 as soon as
+we're probed.
 
-So fix this up by reinstating our handrolled _timeout function. While
-at it bother with handling MAX_JIFFIES.
+Just relying on the usual deferred probing introduces a circular
+dependency between the gpio-regulator that needs to grab its GPIO from
+a driver not there yet, and the gpio driver that needs to enable its
+gpio-regulator.
 
-v2: Convert to usecs (we don't care about the accuracy anyway) first
-to avoid overflow issues Dave Gordon spotted.
+GPIO hogging needs to be the ideal solution for that, since we can
+just enforce the GPIO14 value as the driver is probed, which provides
+the guarantee that any driver using the bank B will actually drive the
+GPIO it might use.
 
-v3: Drop the explicit MAX_JIFFY_OFFSET check, usecs_to_jiffies should
-take care of that already. It might be a bit too enthusiastic about it
-though.
+However, an exclusive request will prevent any representation of this
+as a regulator, which sounds a bit weird, since it really is just
+that.
 
-Cc: Dave Gordon <david.s.gordon@intel.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=82749
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
----
- drivers/gpu/drm/i915/i915_drv.h | 8 ++++++++
- drivers/gpu/drm/i915/i915_gem.c | 3 ++-
- 2 files changed, 10 insertions(+), 1 deletion(-)
+Maxime
 
-diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-index 049482f5d9ac..4ea14a8c31f7 100644
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -3097,6 +3097,14 @@ static inline unsigned long msecs_to_jiffies_timeout(const unsigned int m)
- 	return min_t(unsigned long, MAX_JIFFY_OFFSET, j + 1);
- }
- 
-+static inline unsigned long nsecs_to_jiffies_timeout(const u64 m)
-+{
-+	u64 usecs = div_u64(m + 999, 1000);
-+	unsigned long j = usecs_to_jiffies(usecs);
-+
-+	return min_t(unsigned long, MAX_JIFFY_OFFSET, j + 1);
-+}
-+
- static inline unsigned long
- timespec_to_jiffies_timeout(const struct timespec *value)
- {
-diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index 9d362d320d82..04a9f26407ae 100644
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -1226,7 +1226,8 @@ int __i915_wait_request(struct drm_i915_gem_request *req,
- 	if (i915_gem_request_completed(req, true))
- 		return 0;
- 
--	timeout_expire = timeout ? jiffies + nsecs_to_jiffies((u64)*timeout) : 0;
-+	timeout_expire = timeout ?
-+		jiffies + nsecs_to_jiffies_timeout((u64)*timeout) : 0;
- 
- 	if (INTEL_INFO(dev)->gen >= 6 && ring->id == RCS && can_wait_boost(file_priv)) {
- 		gen6_rps_boost(dev_priv);
--- 
-1.9.3
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
+--aYDVKSzuImP48n7V
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUfeTrAAoJEBx+YmzsjxAg7wYQAJjqiXLHrQqwc+skXbprskOn
+rcVJePS4tpBlurQ53c3furPKW6R0LQNsyM9pMkllPceFCD7wvsbGvpg1z4yeuUaQ
+Wn7Lzu0fipLPHpCZhXc9bU4Db3CemEAhRoUrDwTV8fvSAcIS2zTxQmqcmGlBUCZQ
+1+mzoB5w3keBrEtkT7Zl9EZyq5Zs8neortY8/fePrPyE69o0dhZ57/uBgIIfXIbs
+BY9QC5Wm5cKMpB9VcERVWzV+VLzCZIJ4pSpWpm9S8qpXtQ/cMOmOT8aNYpNRkant
+mTcP0kVMGf81qyAn9ujD++IScXeM6eMaKdafryXMu8jkY7yVONobB7H3kAUFyG0U
+066z3SodJZ2jiA1O22Zy3TAXrquEw6xRQGZJq4g04me9W8w1LisfCx6MI6SQuZr2
+9rZ7jFgs9LGTtpihacok5xKT2cNafoGYz5U1rfgBkKJDtXGZM7aI4gpM1Td5efRM
+oEHmFWmx5tuINJojWVB8VBifad4z9WwPAyMmT7t8CiVsVyksnUIHrb04pZcYTvd7
+IMdVwIxqP/A0XTJ8nf/bNvib1hxr+whl/UDpLzpLxliexCaHonr5ADVH4QrFe2WU
+NmID1qMhXDAyKGeOElRwY14vQNTC/A/xiMDdcTQ9qFfXOVbozr/EbebiJgkOQWyg
+my+TgT1EUKb5R2YW7wyP
+=+AOe
+-----END PGP SIGNATURE-----
+
+--aYDVKSzuImP48n7V--
