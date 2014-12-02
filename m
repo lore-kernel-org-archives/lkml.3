@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603AbaLBR2t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 12:28:49 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:22875 "EHLO
+	id S1754633AbaLBR2z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 12:28:55 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:22918 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754530AbaLBR2r (ORCPT
+	with ESMTP id S1754607AbaLBR2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 12:28:47 -0500
+	Tue, 2 Dec 2014 12:28:53 -0500
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: Arnd Bergmann <arnd@arndb.de>,
         Boris BREZILLON <boris.brezillon@free-electrons.com>,
@@ -16,9 +16,9 @@ CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         Olof Johansson <olof@lixom.net>, <arm@kernel.org>,
         Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 6/8] ARM: at91: remove unneeded header files
-Date: Tue, 2 Dec 2014 18:27:26 +0100
-Message-ID: <0ac062515b70e8dbe50014b3d1f8ccee02aaf2eb.1417541118.git.nicolas.ferre@atmel.com>
+Subject: [PATCH 7/8] pinctrl: at91: add registers definitions directly into driver
+Date: Tue, 2 Dec 2014 18:27:27 +0100
+Message-ID: <720f350230a76bb5df0beed7b9a1b7cfd01ab158.1417541118.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <e093d7cf37ec9ff24b0631b0a2e405a7cf7574db.1417541118.git.nicolas.ferre@atmel.com>
 References: <e093d7cf37ec9ff24b0631b0a2e405a7cf7574db.1417541118.git.nicolas.ferre@atmel.com>
@@ -28,28 +28,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These files were left behind with no reason. Remove them.
+As the old gpio.c driver is gone, we can merge the registers definitions with
+the pinctrl driver.
+This also allows us to empty the AT91 include/mach directory.
 
+Reported-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
 ---
- arch/arm/mach-at91/at91_tc.h | 146 -------------------------------------------
- arch/arm/mach-at91/gsia18s.h |  33 ----------
- 2 files changed, 179 deletions(-)
- delete mode 100644 arch/arm/mach-at91/at91_tc.h
- delete mode 100644 arch/arm/mach-at91/gsia18s.h
+ arch/arm/mach-at91/include/mach/at91_pio.h | 80 ------------------------------
+ drivers/pinctrl/pinctrl-at91.c             | 65 ++++++++++++++++++++++--
+ 2 files changed, 62 insertions(+), 83 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/include/mach/at91_pio.h
 
-diff --git a/arch/arm/mach-at91/at91_tc.h b/arch/arm/mach-at91/at91_tc.h
+diff --git a/arch/arm/mach-at91/include/mach/at91_pio.h b/arch/arm/mach-at91/include/mach/at91_pio.h
 deleted file mode 100644
-index 46a317fd7164..000000000000
---- a/arch/arm/mach-at91/at91_tc.h
+index 7b7366253ceb..000000000000
+--- a/arch/arm/mach-at91/include/mach/at91_pio.h
 +++ /dev/null
-@@ -1,146 +0,0 @@
+@@ -1,80 +0,0 @@
 -/*
-- * arch/arm/mach-at91/include/mach/at91_tc.h
+- * arch/arm/mach-at91/include/mach/at91_pio.h
 - *
+- * Copyright (C) 2005 Ivan Kokshaysky
 - * Copyright (C) SAN People
 - *
-- * Timer/Counter Unit (TC) registers.
+- * Parallel I/O Controller (PIO) - System peripherals registers.
 - * Based on AT91RM9200 datasheet revision E.
 - *
 - * This program is free software; you can redistribute it and/or modify
@@ -58,177 +62,149 @@ index 46a317fd7164..000000000000
 - * (at your option) any later version.
 - */
 -
--#ifndef AT91_TC_H
--#define AT91_TC_H
+-#ifndef AT91_PIO_H
+-#define AT91_PIO_H
 -
--#define AT91_TC_BCR		0xc0		/* TC Block Control Register */
--#define		AT91_TC_SYNC		(1 << 0)	/* Synchro Command */
+-#define PIO_PER		0x00	/* Enable Register */
+-#define PIO_PDR		0x04	/* Disable Register */
+-#define PIO_PSR		0x08	/* Status Register */
+-#define PIO_OER		0x10	/* Output Enable Register */
+-#define PIO_ODR		0x14	/* Output Disable Register */
+-#define PIO_OSR		0x18	/* Output Status Register */
+-#define PIO_IFER	0x20	/* Glitch Input Filter Enable */
+-#define PIO_IFDR	0x24	/* Glitch Input Filter Disable */
+-#define PIO_IFSR	0x28	/* Glitch Input Filter Status */
+-#define PIO_SODR	0x30	/* Set Output Data Register */
+-#define PIO_CODR	0x34	/* Clear Output Data Register */
+-#define PIO_ODSR	0x38	/* Output Data Status Register */
+-#define PIO_PDSR	0x3c	/* Pin Data Status Register */
+-#define PIO_IER		0x40	/* Interrupt Enable Register */
+-#define PIO_IDR		0x44	/* Interrupt Disable Register */
+-#define PIO_IMR		0x48	/* Interrupt Mask Register */
+-#define PIO_ISR		0x4c	/* Interrupt Status Register */
+-#define PIO_MDER	0x50	/* Multi-driver Enable Register */
+-#define PIO_MDDR	0x54	/* Multi-driver Disable Register */
+-#define PIO_MDSR	0x58	/* Multi-driver Status Register */
+-#define PIO_PUDR	0x60	/* Pull-up Disable Register */
+-#define PIO_PUER	0x64	/* Pull-up Enable Register */
+-#define PIO_PUSR	0x68	/* Pull-up Status Register */
+-#define PIO_ASR		0x70	/* Peripheral A Select Register */
+-#define PIO_ABCDSR1	0x70	/* Peripheral ABCD Select Register 1 [some sam9 only] */
+-#define PIO_BSR		0x74	/* Peripheral B Select Register */
+-#define PIO_ABCDSR2	0x74	/* Peripheral ABCD Select Register 2 [some sam9 only] */
+-#define PIO_ABSR	0x78	/* AB Status Register */
+-#define PIO_IFSCDR	0x80	/* Input Filter Slow Clock Disable Register */
+-#define PIO_IFSCER	0x84	/* Input Filter Slow Clock Enable Register */
+-#define PIO_IFSCSR	0x88	/* Input Filter Slow Clock Status Register */
+-#define PIO_SCDR	0x8c	/* Slow Clock Divider Debouncing Register */
+-#define		PIO_SCDR_DIV	(0x3fff <<  0)		/* Slow Clock Divider Mask */
+-#define PIO_PPDDR	0x90	/* Pad Pull-down Disable Register */
+-#define PIO_PPDER	0x94	/* Pad Pull-down Enable Register */
+-#define PIO_PPDSR	0x98	/* Pad Pull-down Status Register */
+-#define PIO_OWER	0xa0	/* Output Write Enable Register */
+-#define PIO_OWDR	0xa4	/* Output Write Disable Register */
+-#define PIO_OWSR	0xa8	/* Output Write Status Register */
+-#define PIO_AIMER	0xb0	/* Additional Interrupt Modes Enable Register */
+-#define PIO_AIMDR	0xb4	/* Additional Interrupt Modes Disable Register */
+-#define PIO_AIMMR	0xb8	/* Additional Interrupt Modes Mask Register */
+-#define PIO_ESR		0xc0	/* Edge Select Register */
+-#define PIO_LSR		0xc4	/* Level Select Register */
+-#define PIO_ELSR	0xc8	/* Edge/Level Status Register */
+-#define PIO_FELLSR	0xd0	/* Falling Edge/Low Level Select Register */
+-#define PIO_REHLSR	0xd4	/* Rising Edge/ High Level Select Register */
+-#define PIO_FRLHSR	0xd8	/* Fall/Rise - Low/High Status Register */
+-#define PIO_SCHMITT	0x100	/* Schmitt Trigger Register */
 -
--#define AT91_TC_BMR		0xc4		/* TC Block Mode Register */
--#define		AT91_TC_TC0XC0S		(3 << 0)	/* External Clock Signal 0 Selection */
--#define			AT91_TC_TC0XC0S_TCLK0		(0 << 0)
--#define			AT91_TC_TC0XC0S_NONE		(1 << 0)
--#define			AT91_TC_TC0XC0S_TIOA1		(2 << 0)
--#define			AT91_TC_TC0XC0S_TIOA2		(3 << 0)
--#define		AT91_TC_TC1XC1S		(3 << 2)	/* External Clock Signal 1 Selection */
--#define			AT91_TC_TC1XC1S_TCLK1		(0 << 2)
--#define			AT91_TC_TC1XC1S_NONE		(1 << 2)
--#define			AT91_TC_TC1XC1S_TIOA0		(2 << 2)
--#define			AT91_TC_TC1XC1S_TIOA2		(3 << 2)
--#define		AT91_TC_TC2XC2S		(3 << 4)	/* External Clock Signal 2 Selection */
--#define			AT91_TC_TC2XC2S_TCLK2		(0 << 4)
--#define			AT91_TC_TC2XC2S_NONE		(1 << 4)
--#define			AT91_TC_TC2XC2S_TIOA0		(2 << 4)
--#define			AT91_TC_TC2XC2S_TIOA1		(3 << 4)
+-#define ABCDSR_PERIPH_A	0x0
+-#define ABCDSR_PERIPH_B	0x1
+-#define ABCDSR_PERIPH_C	0x2
+-#define ABCDSR_PERIPH_D	0x3
 -
+-#define SAMA5D3_PIO_DRIVER1		0x118  /*PIO Driver 1 register offset*/
+-#define SAMA5D3_PIO_DRIVER2		0x11C  /*PIO Driver 2 register offset*/
 -
--#define AT91_TC_CCR		0x00		/* Channel Control Register */
--#define		AT91_TC_CLKEN		(1 << 0)	/* Counter Clock Enable Command */
--#define		AT91_TC_CLKDIS		(1 << 1)	/* Counter CLock Disable Command */
--#define		AT91_TC_SWTRG		(1 << 2)	/* Software Trigger Command */
--
--#define AT91_TC_CMR		0x04		/* Channel Mode Register */
--#define		AT91_TC_TCCLKS		(7 << 0)	/* Capture/Waveform Mode: Clock Selection */
--#define			AT91_TC_TIMER_CLOCK1		(0 << 0)
--#define			AT91_TC_TIMER_CLOCK2		(1 << 0)
--#define			AT91_TC_TIMER_CLOCK3		(2 << 0)
--#define			AT91_TC_TIMER_CLOCK4		(3 << 0)
--#define			AT91_TC_TIMER_CLOCK5		(4 << 0)
--#define			AT91_TC_XC0			(5 << 0)
--#define			AT91_TC_XC1			(6 << 0)
--#define			AT91_TC_XC2			(7 << 0)
--#define		AT91_TC_CLKI		(1 << 3)	/* Capture/Waveform Mode: Clock Invert */
--#define		AT91_TC_BURST		(3 << 4)	/* Capture/Waveform Mode: Burst Signal Selection */
--#define		AT91_TC_LDBSTOP		(1 << 6)	/* Capture Mode: Counter Clock Stopped with TB Loading */
--#define		AT91_TC_LDBDIS		(1 << 7)	/* Capture Mode: Counter Clock Disable with RB Loading */
--#define		AT91_TC_ETRGEDG		(3 << 8)	/* Capture Mode: External Trigger Edge Selection */
--#define		AT91_TC_ABETRG		(1 << 10)	/* Capture Mode: TIOA or TIOB External Trigger Selection */
--#define		AT91_TC_CPCTRG		(1 << 14)	/* Capture Mode: RC Compare Trigger Enable */
--#define		AT91_TC_WAVE		(1 << 15)	/* Capture/Waveform mode */
--#define		AT91_TC_LDRA		(3 << 16)	/* Capture Mode: RA Loading Selection */
--#define		AT91_TC_LDRB		(3 << 18)	/* Capture Mode: RB Loading Selection */
--
--#define		AT91_TC_CPCSTOP		(1 <<  6)	/* Waveform Mode: Counter Clock Stopped with RC Compare */
--#define		AT91_TC_CPCDIS		(1 <<  7)	/* Waveform Mode: Counter Clock Disable with RC Compare */
--#define		AT91_TC_EEVTEDG		(3 <<  8)	/* Waveform Mode: External Event Edge Selection */
--#define			AT91_TC_EEVTEDG_NONE		(0 << 8)
--#define			AT91_TC_EEVTEDG_RISING		(1 << 8)
--#define			AT91_TC_EEVTEDG_FALLING		(2 << 8)
--#define			AT91_TC_EEVTEDG_BOTH		(3 << 8)
--#define		AT91_TC_EEVT		(3 << 10)	/* Waveform Mode: External Event Selection */
--#define			AT91_TC_EEVT_TIOB		(0 << 10)
--#define			AT91_TC_EEVT_XC0		(1 << 10)
--#define			AT91_TC_EEVT_XC1		(2 << 10)
--#define			AT91_TC_EEVT_XC2		(3 << 10)
--#define		AT91_TC_ENETRG		(1 << 12)	/* Waveform Mode: External Event Trigger Enable */
--#define		AT91_TC_WAVESEL		(3 << 13)	/* Waveform Mode: Waveform Selection */
--#define			AT91_TC_WAVESEL_UP		(0 << 13)
--#define			AT91_TC_WAVESEL_UP_AUTO		(2 << 13)
--#define			AT91_TC_WAVESEL_UPDOWN		(1 << 13)
--#define			AT91_TC_WAVESEL_UPDOWN_AUTO	(3 << 13)
--#define		AT91_TC_ACPA		(3 << 16)	/* Waveform Mode: RA Compare Effect on TIOA */
--#define			AT91_TC_ACPA_NONE		(0 << 16)
--#define			AT91_TC_ACPA_SET		(1 << 16)
--#define			AT91_TC_ACPA_CLEAR		(2 << 16)
--#define			AT91_TC_ACPA_TOGGLE		(3 << 16)
--#define		AT91_TC_ACPC		(3 << 18)	/* Waveform Mode: RC Compre Effect on TIOA */
--#define			AT91_TC_ACPC_NONE		(0 << 18)
--#define			AT91_TC_ACPC_SET		(1 << 18)
--#define			AT91_TC_ACPC_CLEAR		(2 << 18)
--#define			AT91_TC_ACPC_TOGGLE		(3 << 18)
--#define		AT91_TC_AEEVT		(3 << 20)	/* Waveform Mode: External Event Effect on TIOA */
--#define			AT91_TC_AEEVT_NONE		(0 << 20)
--#define			AT91_TC_AEEVT_SET		(1 << 20)
--#define			AT91_TC_AEEVT_CLEAR		(2 << 20)
--#define			AT91_TC_AEEVT_TOGGLE		(3 << 20)
--#define		AT91_TC_ASWTRG		(3 << 22)	/* Waveform Mode: Software Trigger Effect on TIOA */
--#define			AT91_TC_ASWTRG_NONE		(0 << 22)
--#define			AT91_TC_ASWTRG_SET		(1 << 22)
--#define			AT91_TC_ASWTRG_CLEAR		(2 << 22)
--#define			AT91_TC_ASWTRG_TOGGLE		(3 << 22)
--#define		AT91_TC_BCPB		(3 << 24)	/* Waveform Mode: RB Compare Effect on TIOB */
--#define			AT91_TC_BCPB_NONE		(0 << 24)
--#define			AT91_TC_BCPB_SET		(1 << 24)
--#define			AT91_TC_BCPB_CLEAR		(2 << 24)
--#define			AT91_TC_BCPB_TOGGLE		(3 << 24)
--#define		AT91_TC_BCPC		(3 << 26)	/* Waveform Mode: RC Compare Effect on TIOB */
--#define			AT91_TC_BCPC_NONE		(0 << 26)
--#define			AT91_TC_BCPC_SET		(1 << 26)
--#define			AT91_TC_BCPC_CLEAR		(2 << 26)
--#define			AT91_TC_BCPC_TOGGLE		(3 << 26)
--#define		AT91_TC_BEEVT		(3 << 28)	/* Waveform Mode: External Event Effect on TIOB */
--#define			AT91_TC_BEEVT_NONE		(0 << 28)
--#define			AT91_TC_BEEVT_SET		(1 << 28)
--#define			AT91_TC_BEEVT_CLEAR		(2 << 28)
--#define			AT91_TC_BEEVT_TOGGLE		(3 << 28)
--#define		AT91_TC_BSWTRG		(3 << 30)	/* Waveform Mode: Software Trigger Effect on TIOB */
--#define			AT91_TC_BSWTRG_NONE		(0 << 30)
--#define			AT91_TC_BSWTRG_SET		(1 << 30)
--#define			AT91_TC_BSWTRG_CLEAR		(2 << 30)
--#define			AT91_TC_BSWTRG_TOGGLE		(3 << 30)
--
--#define AT91_TC_CV		0x10		/* Counter Value */
--#define AT91_TC_RA		0x14		/* Register A */
--#define AT91_TC_RB		0x18		/* Register B */
--#define AT91_TC_RC		0x1c		/* Register C */
--
--#define AT91_TC_SR		0x20		/* Status Register */
--#define		AT91_TC_COVFS		(1 <<  0)	/* Counter Overflow Status */
--#define		AT91_TC_LOVRS		(1 <<  1)	/* Load Overrun Status */
--#define		AT91_TC_CPAS		(1 <<  2)	/* RA Compare Status */
--#define		AT91_TC_CPBS		(1 <<  3)	/* RB Compare Status */
--#define		AT91_TC_CPCS		(1 <<  4)	/* RC Compare Status */
--#define		AT91_TC_LDRAS		(1 <<  5)	/* RA Loading Status */
--#define		AT91_TC_LDRBS		(1 <<  6)	/* RB Loading Status */
--#define		AT91_TC_ETRGS		(1 <<  7)	/* External Trigger Status */
--#define		AT91_TC_CLKSTA		(1 << 16)	/* Clock Enabling Status */
--#define		AT91_TC_MTIOA		(1 << 17)	/* TIOA Mirror */
--#define		AT91_TC_MTIOB		(1 << 18)	/* TIOB Mirror */
--
--#define AT91_TC_IER		0x24		/* Interrupt Enable Register */
--#define AT91_TC_IDR		0x28		/* Interrupt Disable Register */
--#define AT91_TC_IMR		0x2c		/* Interrupt Mask Register */
+-#define AT91SAM9X5_PIO_DRIVER1	0x114  /*PIO Driver 1 register offset*/
+-#define AT91SAM9X5_PIO_DRIVER2	0x118  /*PIO Driver 2 register offset*/
 -
 -#endif
-diff --git a/arch/arm/mach-at91/gsia18s.h b/arch/arm/mach-at91/gsia18s.h
-deleted file mode 100644
-index 307c194926f9..000000000000
---- a/arch/arm/mach-at91/gsia18s.h
-+++ /dev/null
-@@ -1,33 +0,0 @@
--/* Buttons */
--#define GPIO_TRIG_NET_IN		AT91_PIN_PB21
--#define GPIO_CARD_UNMOUNT_0		AT91_PIN_PB13
--#define GPIO_CARD_UNMOUNT_1		AT91_PIN_PB12
--#define GPIO_KEY_POWER			AT91_PIN_PA25
+diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
+index 354a81d40925..47d755861b5a 100644
+--- a/drivers/pinctrl/pinctrl-at91.c
++++ b/drivers/pinctrl/pinctrl-at91.c
+@@ -25,11 +25,70 @@
+ /* Since we request GPIOs from ourself */
+ #include <linux/pinctrl/consumer.h>
+ 
+-#include <mach/hardware.h>
+-#include <mach/at91_pio.h>
 -
--/* PCF8574 0x20 GPIO - U1 on the GS_IA18-CB_V3 board */
--#define GS_IA18_S_PCF_GPIO_BASE0	NR_BUILTIN_GPIO
--#define PCF_GPIO_HDC_POWER		(GS_IA18_S_PCF_GPIO_BASE0 + 0)
--#define PCF_GPIO_WIFI_SETUP		(GS_IA18_S_PCF_GPIO_BASE0 + 1)
--#define PCF_GPIO_WIFI_ENABLE		(GS_IA18_S_PCF_GPIO_BASE0 + 2)
--#define PCF_GPIO_WIFI_RESET		(GS_IA18_S_PCF_GPIO_BASE0 + 3)
--#define PCF_GPIO_ETH_DETECT		4 /* this is a GPI */
--#define PCF_GPIO_GPS_SETUP		(GS_IA18_S_PCF_GPIO_BASE0 + 5)
--#define PCF_GPIO_GPS_STANDBY		(GS_IA18_S_PCF_GPIO_BASE0 + 6)
--#define PCF_GPIO_GPS_POWER		(GS_IA18_S_PCF_GPIO_BASE0 + 7)
--
--/* PCF8574 0x22 GPIO - U1 on the GS_2G_OPT1-A_V0 board (Alarm) */
--#define GS_IA18_S_PCF_GPIO_BASE1	(GS_IA18_S_PCF_GPIO_BASE0 + 8)
--#define PCF_GPIO_ALARM1			(GS_IA18_S_PCF_GPIO_BASE1 + 0)
--#define PCF_GPIO_ALARM2			(GS_IA18_S_PCF_GPIO_BASE1 + 1)
--#define PCF_GPIO_ALARM3			(GS_IA18_S_PCF_GPIO_BASE1 + 2)
--#define PCF_GPIO_ALARM4			(GS_IA18_S_PCF_GPIO_BASE1 + 3)
--/* bits 4, 5, 6 not used */
--#define PCF_GPIO_ALARM_V_RELAY_ON	(GS_IA18_S_PCF_GPIO_BASE1 + 7)
--
--/* PCF8574 0x24 GPIO U1 on the GS_2G-OPT23-A_V0 board (Modem) */
--#define GS_IA18_S_PCF_GPIO_BASE2	(GS_IA18_S_PCF_GPIO_BASE1 + 8)
--#define PCF_GPIO_MODEM_POWER		(GS_IA18_S_PCF_GPIO_BASE2 + 0)
--#define PCF_GPIO_MODEM_RESET		(GS_IA18_S_PCF_GPIO_BASE2 + 3)
--/* bits 1, 2, 4, 5 not used */
--#define PCF_GPIO_TRX_RESET		(GS_IA18_S_PCF_GPIO_BASE2 + 6)
--/* bit 7 not used */
+ #include "core.h"
+ 
++/* PIO register definitions */
++#define PIO_PER		0x00	/* Enable Register */
++#define PIO_PDR		0x04	/* Disable Register */
++#define PIO_PSR		0x08	/* Status Register */
++#define PIO_OER		0x10	/* Output Enable Register */
++#define PIO_ODR		0x14	/* Output Disable Register */
++#define PIO_OSR		0x18	/* Output Status Register */
++#define PIO_IFER	0x20	/* Glitch Input Filter Enable */
++#define PIO_IFDR	0x24	/* Glitch Input Filter Disable */
++#define PIO_IFSR	0x28	/* Glitch Input Filter Status */
++#define PIO_SODR	0x30	/* Set Output Data Register */
++#define PIO_CODR	0x34	/* Clear Output Data Register */
++#define PIO_ODSR	0x38	/* Output Data Status Register */
++#define PIO_PDSR	0x3c	/* Pin Data Status Register */
++#define PIO_IER		0x40	/* Interrupt Enable Register */
++#define PIO_IDR		0x44	/* Interrupt Disable Register */
++#define PIO_IMR		0x48	/* Interrupt Mask Register */
++#define PIO_ISR		0x4c	/* Interrupt Status Register */
++#define PIO_MDER	0x50	/* Multi-driver Enable Register */
++#define PIO_MDDR	0x54	/* Multi-driver Disable Register */
++#define PIO_MDSR	0x58	/* Multi-driver Status Register */
++#define PIO_PUDR	0x60	/* Pull-up Disable Register */
++#define PIO_PUER	0x64	/* Pull-up Enable Register */
++#define PIO_PUSR	0x68	/* Pull-up Status Register */
++#define PIO_ASR		0x70	/* Peripheral A Select Register */
++#define PIO_ABCDSR1	0x70	/* Peripheral ABCD Select Register 1 [some SoCs only] */
++#define PIO_BSR		0x74	/* Peripheral B Select Register */
++#define PIO_ABCDSR2	0x74	/* Peripheral ABCD Select Register 2 [some SoCs only] */
++#define PIO_ABSR	0x78	/* AB Status Register */
++#define PIO_IFSCDR	0x80	/* Input Filter Slow Clock Disable Register */
++#define PIO_IFSCER	0x84	/* Input Filter Slow Clock Enable Register */
++#define PIO_IFSCSR	0x88	/* Input Filter Slow Clock Status Register */
++#define PIO_SCDR	0x8c	/* Slow Clock Divider Debouncing Register */
++#define		PIO_SCDR_DIV	(0x3fff <<  0)		/* Slow Clock Divider Mask */
++#define PIO_PPDDR	0x90	/* Pad Pull-down Disable Register */
++#define PIO_PPDER	0x94	/* Pad Pull-down Enable Register */
++#define PIO_PPDSR	0x98	/* Pad Pull-down Status Register */
++#define PIO_OWER	0xa0	/* Output Write Enable Register */
++#define PIO_OWDR	0xa4	/* Output Write Disable Register */
++#define PIO_OWSR	0xa8	/* Output Write Status Register */
++#define PIO_AIMER	0xb0	/* Additional Interrupt Modes Enable Register */
++#define PIO_AIMDR	0xb4	/* Additional Interrupt Modes Disable Register */
++#define PIO_AIMMR	0xb8	/* Additional Interrupt Modes Mask Register */
++#define PIO_ESR		0xc0	/* Edge Select Register */
++#define PIO_LSR		0xc4	/* Level Select Register */
++#define PIO_ELSR	0xc8	/* Edge/Level Status Register */
++#define PIO_FELLSR	0xd0	/* Falling Edge/Low Level Select Register */
++#define PIO_REHLSR	0xd4	/* Rising Edge/ High Level Select Register */
++#define PIO_FRLHSR	0xd8	/* Fall/Rise - Low/High Status Register */
++#define PIO_SCHMITT	0x100	/* Schmitt Trigger Register */
++
++#define ABCDSR_PERIPH_A	0x0
++#define ABCDSR_PERIPH_B	0x1
++#define ABCDSR_PERIPH_C	0x2
++#define ABCDSR_PERIPH_D	0x3
++
++#define SAMA5D3_PIO_DRIVER1		0x118  /*PIO Driver 1 register offset*/
++#define SAMA5D3_PIO_DRIVER2		0x11C  /*PIO Driver 2 register offset*/
++
++#define AT91SAM9X5_PIO_DRIVER1	0x114  /*PIO Driver 1 register offset*/
++#define AT91SAM9X5_PIO_DRIVER2	0x118  /*PIO Driver 2 register offset*/
++
+ #define MAX_GPIO_BANKS		5
+ #define MAX_NB_GPIO_PER_BANK	32
+ 
 -- 
 2.1.3
 
