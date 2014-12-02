@@ -1,75 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203AbaLBJgp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 04:36:45 -0500
-Received: from mail-bl2on0099.outbound.protection.outlook.com ([65.55.169.99]:64534
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750964AbaLBJgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 04:36:43 -0500
-Date: Tue, 2 Dec 2014 10:36:28 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752442AbaLBJjq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 04:39:46 -0500
+Received: from regular1.263xmail.com ([211.150.99.140]:56147 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111AbaLBJjm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 04:39:42 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <b91851bf4f3e0a638c4e694b8ebdd6d1>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <547D88D7.5080005@rock-chips.com>
+Date: Tue, 02 Dec 2014 17:39:35 +0800
+From: Mark yao <mark.yao@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Michal Simek <michal.simek@xilinx.com>
-CC: LKML <linux-kernel@vger.kernel.org>, <monstr@monstr.eu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Laura Abbott <lauraa@codeaurora.org>, Olof Johansson <olof@lixom.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
-Subject: Re: [PATCH v1] lib/genalloc.c: Export devm_gen_pool_create for modules
-References: <2e3f47e730975654f9b6c888a07db6c3f886b892.1417438852.git.michal.simek@xilinx.com>
- <CA+V-a8vw2d8H=Qx99M4oXqUatt5wmePVW82ARdMcWLEVLXbZJw@mail.gmail.com>
-In-Reply-To: <CA+V-a8vw2d8H=Qx99M4oXqUatt5wmePVW82ARdMcWLEVLXbZJw@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21144.006
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <522b42cef4da41d48e81d99bc8e447a8@BL2FFO11FD047.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(51914003)(164054003)(189002)(199003)(479174003)(377454003)(51704005)(24454002)(19580405001)(92566001)(19580395003)(74316001)(46102003)(65956001)(87936001)(104016003)(20776003)(47776003)(107046002)(120916001)(108616004)(6806004)(44976005)(50466002)(62966003)(77156002)(64126003)(23676002)(102836001)(86362001)(50986999)(106466001)(4396001)(99396003)(21056001)(83506001)(54356999)(95666004)(76176999)(31966008)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB015;H:xir-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB015;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB015;
-X-Forefront-PRVS: 0413C9F1ED
-Authentication-Results: spf=pass (sender IP is 62.221.5.235)
- smtp.mailfrom=michal.simek@xilinx.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB015;
-X-OriginatorOrg: xilinx.com
+To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>
+CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
+        olof@lixom.net, djkurtz@chromium.org, cf@rock-chips.com,
+        xxm@rock-chips.com, huangtao@rock-chips.com, kever.yang@rock-chips.com,
+        yxj@rock-chips.com, xw@rock-chips.com,
+        Mark Yao <mark.yao@rock-chips.com>
+Subject: [GIT PULL] core drm support for Rockchip SoCs v15
+References: <1417511600-7054-1-git-send-email-mark.yao@rock-chips.com>
+In-Reply-To: <1417511600-7054-1-git-send-email-mark.yao@rock-chips.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2014 10:31 AM, Prabhakar Lad wrote:
-> Hi Michal,
-> 
-> Thanks for the patch.
-> 
-> On Mon, Dec 1, 2014 at 1:00 PM, Michal Simek <michal.simek@xilinx.com> wrote:
->> Modules can use this function for creating pool.
->>
->> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
->> ---
->>
->> I am pushing Zynq OCMC driver which is using this function.
->>
->> ---
->>  lib/genalloc.c | 1 +
->>  1 file changed, 1 insertion(+)
->>
-> don’t you need to add an entry in include/linux/genalloc.h ?
+Hi Dave
 
-Not sure what exactly you mean. declaration is there.
-include/linux/genalloc.h:120:extern struct gen_pool *devm_gen_pool_create(struct device *dev,
+The following changes since commit 656d7077d8ffd1c2492d4a0a354367ab2e545059:
 
-And all EXPORT_SYMBOL() are out of headers directly below function
-which you want to export.
+   dt-bindings: iommu: Add documentation for rockchip iommu (2014-11-03 
+17:29:09 +0100)
 
-Can you please clarify what you did mean by that?
+are available in the git repository at:
 
-Thanks,
-Michal
+   https://github.com/markyzq/kernel-drm-rockchip.git drm_iommu_v15
+
+for you to fetch changes up to 5ac4837b12f533de5d9f8f66b45494c58e805536:
+
+   dt-bindings: video: Add documentation for rockchip vop (2014-12-02 
+17:29:33 +0800)
+
+----------------------------------------------------------------
+Mark Yao (3):
+       drm: rockchip: Add basic drm driver
+       dt-bindings: video: Add for rockchip display subsytem
+       dt-bindings: video: Add documentation for rockchip vop
+
+  .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
+  .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
+  drivers/gpu/drm/Kconfig                            |    2 +
+  drivers/gpu/drm/Makefile                           |    1 +
+  drivers/gpu/drm/rockchip/Kconfig                   |   17 +
+  drivers/gpu/drm/rockchip/Makefile                  |    8 +
+  drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  551 ++++++++
+  drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   68 +
+  drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  201 +++
+  drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
+  drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  210 +++
+  drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   21 +
+  drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  294 ++++
+  drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   54 +
+  drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1455 
+++++++++++++++++++++
+  drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  201 +++
+  16 files changed, 3188 insertions(+)
+  create mode 100644 
+Documentation/devicetree/bindings/video/rockchip-drm.txt
+  create mode 100644 
+Documentation/devicetree/bindings/video/rockchip-vop.txt
+  create mode 100644 drivers/gpu/drm/rockchip/Kconfig
+  create mode 100644 drivers/gpu/drm/rockchip/Makefile
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.c
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.h
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.c
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.h
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.c
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.h
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.c
+  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.h
+
