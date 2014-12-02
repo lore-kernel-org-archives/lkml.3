@@ -1,83 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281AbaLBBHn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 20:07:43 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:37362 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753571AbaLBBHk (ORCPT
+	id S1754339AbaLBBKj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 20:10:39 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:51368 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754283AbaLBBKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 20:07:40 -0500
+	Mon, 1 Dec 2014 20:10:35 -0500
+From: Kevin Hilman <khilman@kernel.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>, linux-sh@vger.kernel.org,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org
+Subject: Re: [PATCH] PM / Kconfig: Do not select PM directly from Kconfig files
+References: <4088467.A4Xd3YfMSv@vostro.rjw.lan>
+Date: Mon, 01 Dec 2014 17:10:32 -0800
+In-Reply-To: <4088467.A4Xd3YfMSv@vostro.rjw.lan> (Rafael J. Wysocki's message
+	of "Sat, 29 Nov 2014 02:03:48 +0100")
+Message-ID: <7h388y501j.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAD=FV=V2go5BMFbiFKu73_aVz5ck949W-kJQ6WLkAQRPJbjPVA@mail.gmail.com>
-References: <1417423940-1669-1-git-send-email-zyw@rock-chips.com>
-	<7htx1f409k.fsf@deeprootsystems.com>
-	<CAD=FV=V2go5BMFbiFKu73_aVz5ck949W-kJQ6WLkAQRPJbjPVA@mail.gmail.com>
-Date: Mon, 1 Dec 2014 17:07:39 -0800
-X-Google-Sender-Auth: 0foLSAwcYTJdMisd9PAaPXakZ-4
-Message-ID: <CAD=FV=XuQk17CTNKJY++J+w9Ab9_OUX0ca0A99m7yKPAWSs2=w@mail.gmail.com>
-Subject: Re: [PATCH v10 0/4] This suspend patch is only support cut off the
- power of cpu and some external
-From: Doug Anderson <dianders@chromium.org>
-To: Kevin Hilman <khilman@kernel.org>
-Cc: Chris Zhong <zyw@rock-chips.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Tony Xie <xxx@rock-chips.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+"Rafael J. Wysocki" <rjw@rjwysocki.net> writes:
 
-On Mon, Dec 1, 2014 at 2:08 PM, Doug Anderson <dianders@chromium.org> wrote:
-> Hi,
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 >
-> On Mon, Dec 1, 2014 at 11:51 AM, Kevin Hilman <khilman@kernel.org> wrote:
->> Chris Zhong <zyw@rock-chips.com> writes:
->>
->>> devices, since we still lack power_domain driver, so the other power rail
->>> of rk3288 need keep power on.
->>> I have tested it on rk3288-evb board, atop next-20141112. goto suspend by type
->>> "echo mem > /sys/power/state", vdd_cpu is about 0mv by measuring, so it can be
->>> determined in sleep mode, then press power button to wakeup it.
->>
->> I tested this on top of today's linux-next (next-20141201) and it
->> suspends, but doesn't wake up from any of the button presses.  What
->> wakeup sources are configured for the rk3288-evb-rk808?
+> It is not valid to select CONFIG_PM directly without selecting
+> CONFIG_PM_SLEEP or CONFIG_PM_RUNTIME too, because that breaks
+> dependencies (ia64 does that) and it is not necessary to select
+> CONFIG_PM directly if CONFIG_PM_SLEEP or CONFIG_PM_RUNTIME is
+> set, because it will be set automatically then (sh does that).
 >
-> Just to close the loop (I talked with Kevin over IM about this, too):
+> Fix those mistakes.
 >
-> I have a huge description of how I tested this as part of my patch at
-> <https://patchwork.kernel.org/patch/5414941/>.  Chris:  I think Kevin
-> has asked you several times to include information like this in your
-> cover letter.  Please, please, please can you try to remember to do
-> this?
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Talked to Chris offline.  He said that in his tests the other patches
-weren't needed, so he didn't list any other patches.  Things just
-worked for him.  ...so I guess he did post the instructions that
-worked for him.  Sorry for the complaint.  Possibly things are
-different on "next-20141112" and that's where Chris said he tested.
-
-I know that I personally needed some of the extra patches.  I guess
-the USB one wasn't truly needed (only needed for hotplug), but for me
-things were unhappy without SMP.  It was hanging when trying to turn
-off secondary CPUs.  I didn't dig, though.  The clocksource patches
-are needed for me because I'm using an old bootloader, but I think
-they're also relevant for S2R because (I'm told) we can lose the
-virtual offset at suspend time in certain modes.
-
--Doug
-
-.
+Reviewed-by: Kevin Hilman <khilman@linaro.org>
