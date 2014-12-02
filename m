@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933166AbaLBUsX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 15:48:23 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:37692 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932365AbaLBUsU (ORCPT
+	id S933195AbaLBUsj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 15:48:39 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:40508 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933169AbaLBUsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 15:48:20 -0500
-Date: Tue, 2 Dec 2014 12:48:12 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141202204812.GP25340@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141127225637.GA24019@redhat.com>
- <m5dart$co$1@ger.gmane.org>
- <CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
- <547b8a45.6e608c0a.20f9.1002@mx.google.com>
- <CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
- <547bbe36.48548c0a.105c.779c@mx.google.com>
- <20141201191431.GA17385@linux.vnet.ibm.com>
- <547ccf74.a5198c0a.25de.26d9@mx.google.com>
- <CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
- <20141202203044.GA26482@redhat.com>
+	Tue, 2 Dec 2014 15:48:37 -0500
+Date: Tue, 2 Dec 2014 15:48:25 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: david.vrabel@citrix.com, stefano.stabellini@eu.citrix.com,
+        jun.nakajima@intel.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xen.org
+Subject: Re: [PATCH v4 0/2]  xen/pci: Use APIC for MSIs when APIC
+ virtualization is supported
+Message-ID: <20141202204825.GS357@laptop.dumpdata.com>
+References: <1417551553-22234-1-git-send-email-boris.ostrovsky@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141202203044.GA26482@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120220-0025-0000-0000-000006915856
+In-Reply-To: <1417551553-22234-1-git-send-email-boris.ostrovsky@oracle.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 03:30:44PM -0500, Dave Jones wrote:
-> On Mon, Dec 01, 2014 at 12:36:34PM -0800, Linus Torvalds wrote:
->  > On Mon, Dec 1, 2014 at 12:28 PM, Dâniel Fraga <fragabr@gmail.com> wrote:
->  > >
->  > >         Hi Paul. Please, I'd like the patch, because without
->  > > preemption, I'm unable to trigger this bug.
->  > 
->  > Ok, that's already interesting information. And yes, it would probably
->  > be interesting to see if CONFIG_PREEMPT=y but !CONFIG_TREE_PREEMPT_RCU
->  > then solves it too, to narrow it down to one but not the other..
+On Tue, Dec 02, 2014 at 03:19:11PM -0500, Boris Ostrovsky wrote:
+> Changes in v4:
+> * Added comment describing what we check for in pci_xen_init()
 > 
-> That combination doesn't seem possible. TREE_PREEMPT_RCU is the only
-> possible choice if PREEMPT=y
 
-Indeed, getting that combination requires a Kconfig patch, which I
-supplied below.  Not for mainline, debugging only.
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-diff --git a/init/Kconfig b/init/Kconfig
-index 903505e66d1d..2cf71fcd514f 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -469,7 +469,7 @@ choice
- 
- config TREE_RCU
- 	bool "Tree-based hierarchical RCU"
--	depends on !PREEMPT && SMP
-+	depends on SMP
- 	select IRQ_WORK
- 	help
- 	  This option selects the RCU implementation that is
-
+> Changes in v3:
+> * Explicitly include asm/apic.h in arch/x86/pci/xen.c for !CONFIG_SMP.
+> 
+> Changes in v2:
+> * New version of cpuid.h file from Xen tree (with a couple of style adjustments)
+> * Whitespace cleanup
+> 
+> Currently HVM guests handle MSI interrupts using pirqs/event channels, allowing
+> us to not issue APIC accesses that result in somewhat expensive VMEXITs. When
+> hardware supports APIC virtualization we don't need to use pirqs anymore
+> since now guest's APIC accesses can be handled by the processor itself.
+> 
+> There are two patches in this series:
+> 
+> 1. Move setting of x86_msi ops to a later point. The reason for doing so is that
+> we currently decide whether or not to use pirqs before kernel had a chance to
+> see whether it should be using x2APIC instead of plain APIC. Since hardware may
+> virtualize either or both of those two we can only make pirqs vs. APIC selection
+> after kernel has settled down on which APIC version it will use. (Note that
+> currently x2APIC is not used by HVM guests so technically this patch is not
+> necessary. However, it probably makes sense to apply it now to avoid
+> forgetting to do it when we enable x2APIC).
+> 
+> 2. Set x86_msi ops to use pirqs only when APIC virtualization is not available.
+> The commit message describes performance improvements that this change brings.
+> 
+> 
+> Boris Ostrovsky (2):
+>   xen/pci: Defer initialization of MSI ops on HVM guests until after
+>     x2APIC has been set up
+>   xen/pci: Use APIC directly when APIC virtualization is supported by
+>     hardware
+> 
+>  arch/x86/include/asm/xen/cpuid.h | 91 ++++++++++++++++++++++++++++++++++++++++
+>  arch/x86/pci/xen.c               | 31 +++++++++++++-
+>  2 files changed, 120 insertions(+), 2 deletions(-)
+>  create mode 100644 arch/x86/include/asm/xen/cpuid.h
+> 
+> -- 
+> 1.8.1.4
+> 
