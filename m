@@ -1,145 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378AbaLBRUa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 12:20:30 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:37567 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753974AbaLBRU2 (ORCPT
+	id S1754175AbaLBR0P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 12:26:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37184 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaLBR0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 12:20:28 -0500
-Date: Tue, 2 Dec 2014 09:19:55 -0800
-From: Darren Hart <dvhart@infradead.org>
-To: Giedrius Statkevicius <giedrius.statkevicius@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>,
-        Giedrius Statkevicius <giedriuswork@gmail.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alex Hung <alex.hung@canonical.com>
-Subject: Re: [PATCH] platform: x86: hp_wireless: Inform the user if
- hp_wireless_input_setup()/add() fails
-Message-ID: <20141202171954.GB113527@vmdeb7>
-References: <1417212867-25187-1-git-send-email-giedriuswork@gmail.com>
- <20141128231555.GA31468@pd.tnic>
- <547909CF.8060907@gmail.com>
- <20141129000417.GG30997@pd.tnic>
- <20141125225719.GA32102@vmdeb7>
- <547DE5A4.4010506@gmail.com>
+	Tue, 2 Dec 2014 12:26:13 -0500
+Date: Tue, 2 Dec 2014 09:26:12 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Richard Yao <ryao@gentoo.org>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: Why not make kdbus use CUSE?
+Message-ID: <20141202172612.GA8958@kroah.com>
+References: <20141129063416.GE32286@woodpecker.gentoo.org>
+ <20141129175947.GB32510@kroah.com>
+ <547D50B9.9040909@gentoo.org>
+ <20141202054850.GA17043@kroah.com>
+ <547D7159.2040900@gentoo.org>
+ <547DAEF3.1090106@gentoo.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <547DE5A4.4010506@gmail.com>
+In-Reply-To: <547DAEF3.1090106@gentoo.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 06:15:32PM +0200, Giedrius Statkevicius wrote:
-> On 2014.11.26 00:57, Darren Hart wrote:
-> > On Sat, Nov 29, 2014 at 01:04:17AM +0100, Borislav Petkov wrote:
-> >> On Sat, Nov 29, 2014 at 01:48:31AM +0200, Giedrius Statkevicius wrote:
-> >>> On 2014.11.29 01:15, Borislav Petkov wrote:
-> >>>> On Sat, Nov 29, 2014 at 12:14:27AM +0200, Giedrius Statkevicius wrote:
-> >>>>> In hpwl_add() there is a unused variable err to which we assign the
-> >>>>> result of hp_wireless_input_setup() but we don't do anything depending
-> >>>>> on the result so print out a message that informs the user if add()
-> >>>>> (hp_wireless_input_setup()) fails since acpi_device_probe() doesn't
-> >>>>> print anything in this case.
-> >>>>>
-> >>>>> Signed-off-by: Giedrius Statkevicius <giedriuswork@gmail.com>
-> >>>>> ---
-> >>>>>  drivers/platform/x86/hp-wireless.c | 3 +++
-> >>>>>  1 file changed, 3 insertions(+)
-> >>>>>
-> >>>>> diff --git a/drivers/platform/x86/hp-wireless.c b/drivers/platform/x86/hp-wireless.c
-> >>>>> index 415348f..4e4cc8b 100644
-> >>>>> --- a/drivers/platform/x86/hp-wireless.c
-> >>>>> +++ b/drivers/platform/x86/hp-wireless.c
-> >>>>> @@ -85,6 +85,9 @@ static int hpwl_add(struct acpi_device *device)
-> >>>>>  	int err;
-> >>>>>  
-> >>>>>  	err = hp_wireless_input_setup();
-> >>>>> +	if (err)
-> >>>>> +		pr_err("Failed to setup hp wireless hotkeys\n");
-> >>>>> +
-> >>>>
-> >>>> I don't think there's need for that. Just do:
-> >>>>
-> >>>> 	return hp_wireless_input_setup();
-> >>>>
-> >>>> and drop err completely.
-> >>>>
-> >>>> The upper layer which calls the ->add() method should propagate the
-> >>>> error properly.
-> > 
-> > This is the key. If the caller already prints a message, we don't need to. If
-> > nothing is displayed and the user would be left confused, then an appropriate
-> > message should be displayed.
-> > 
-> > If the upper level already handles this, then we can just drop the unused
-> > variable.
-> > 
-> > Have a look and decide which is the most appropriate. And thanks for preparing a
-> > fix.
-> > 
-> To start with I've looked at all modules in drivers/platform/x86 that
-> have a struct acpi_driver and calculated some statistics about
-> whether the module informs the user if add() fails or not to find out
-> the current policy on whether we should inform the user or not:
+On Tue, Dec 02, 2014 at 07:22:11AM -0500, Richard Yao wrote:
+> Assuming that this dance succeeds, the FUSE process could then make a
+> readonly file in itself, open it read only, unlink it, put the data into
+> the file and send the file descriptor via UNIX domain socket while
+> refusing further writes. If it has its own user/group, the file should
+> be safe from prying eyes.
 > 
-> Module             Does it use any pr_/dev_ function to give info?
-> asus-laptop        Yes
-> classmate-laptop   No
-> dell-smo8800       Yes
-> dell-wireless      No
-> eeepc-laptop       Yes
-> fujitsu-laptop     Yes
-> hp-wireless        No
-> hp_accel           Yes
-> intel-rst          No
-> intel-smartconnect Yes
-> intel_menlow       No
-> panasonic-laptop   No (but it uses ACPI_DEBUG_PRINT)
-> pvpanic            No
-> sony-laptop        Yes (has a message for failing to setup input devices)
-> topstar-laptop     No
-> toshiba_acpi       Yes
-> toshiba_haps       Yes
-> toshiba_bluetooth  Yes
-> wmi                Yes
-> xo15-ebook         Yes
-> 
-> That being said it looks like most add()s inform the user. So maybe we
-> should make a patch that does it for other modules with struct
-> acpi_driver? That being said, I've also took a look at if any messages
-> are printed out about add() failing.
-> 
-> There is acpi_device_probe() that's hooked into acpi_bus_type which
-> defines names and some actions of a bus. There it simply returns any
-> non-zero value:
-> 
-> 990         ret = acpi_drv->ops.add(acpi_dev);
-> 991         if (ret)
-> 992                 return ret;
-> 
-> Delving a bit deeper I've found about driver_probe_device() and
-> really_probe(). And in these lines I think is what the user would get if
-> the probe failed:
-> 
-> 330         } else if (ret != -ENODEV && ret != -ENXIO) {
-> 331                 /* driver matched but the probe failed */
-> 332                 printk(KERN_WARNING
-> 333                        "%s: probe of %s failed with error %d\n",
-> 334                        drv->name, dev_name(dev), ret);
-> 
-> So the user would get only the numerical value of a error and thus a
-> pr_err or printing any other message in the add() is useful to make more
-> sense of what really happened and allow to quickly find where the issue
-> happened. In the end I think that this patch is better than the last one
-> (the one where add() simply returns the result of another function).
-> 
-> Please correct me if I'm wrong.
+> This is not as good as a memfd and also suffers from the race that
+> O_TMPFILE was meant to close, but it should be able to function as a
+> decent fallback.
 
-I'd agree. I'll queue it up, thanks for the detailed investigation Giedrius.
+We can't knowingly create and advocate for broken code, sorry.
 
--- 
-Darren Hart
-Intel Open Source Technology Center
+> This would preserve portability across not only
+> different versions of Linux, but also other POSIX systems.
+
+I honestly do not care about any other system than Linux, so I don't see
+why this would ever be an issue.
+
+> Keeping the code in userspace would allow us to apply SELinux policies
+> to it, which is something that we would lose if it were go to into the
+> kernel.
+
+On the contrary, the kdbusfs implementation gives you better security
+model support than before, it ties directly into the LSM hooks, see the
+add-on patches from some other developers that bring full support of LSM
+to the codebase.
+
+> That said, it is still not clear to me that dbus must be inside the
+> kernel to be able to perform multicast and zero copy using memfd.
+
+It seems you have yet to read my introductory email for the patch
+series.
+
+greg k-h
