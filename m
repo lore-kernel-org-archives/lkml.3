@@ -1,159 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239AbaLBJT3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 04:19:29 -0500
-Received: from regular1.263xmail.com ([211.150.99.138]:50867 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091AbaLBJTZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 04:19:25 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: mark.yao@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: mark.yao@rock-chips.com
-X-UNIQUE-TAG: <f544f7a4ec46797d386a7d6f6ba57fb2>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Mark Yao <mark.yao@rock-chips.com>
-To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
-        olof@lixom.net, djkurtz@chromium.org, cf@rock-chips.com,
-        xxm@rock-chips.com, huangtao@rock-chips.com, kever.yang@rock-chips.com,
-        yxj@rock-chips.com, xw@rock-chips.com,
-        Mark Yao <mark.yao@rock-chips.com>
-Subject: [PATCH v15 3/3] dt-bindings: video: Add documentation for rockchip vop
-Date: Tue,  2 Dec 2014 17:18:11 +0800
-Message-Id: <1417511891-7232-1-git-send-email-mark.yao@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1417511600-7054-1-git-send-email-mark.yao@rock-chips.com>
-References: <1417511600-7054-1-git-send-email-mark.yao@rock-chips.com>
+	id S1753517AbaLBJTp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 04:19:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58360 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753279AbaLBJTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 04:19:42 -0500
+Date: Tue, 2 Dec 2014 10:19:39 +0100
+From: Jan Kara <jack@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        Jan Kara <jack@suse.cz>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/3] mm: memory: merge shared-writable dirtying branches
+ in do_wp_page()
+Message-ID: <20141202091939.GC9092@quack.suse.cz>
+References: <1417474682-29326-1-git-send-email-hannes@cmpxchg.org>
+ <1417474682-29326-3-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417474682-29326-3-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds binding documentation for Rockchip SoC VOP driver.
+On Mon 01-12-14 17:58:02, Johannes Weiner wrote:
+> Whether there is a vm_ops->page_mkwrite or not, the page dirtying is
+> pretty much the same.  Make sure the page references are the same in
+> both cases, then merge the two branches.
+> 
+> It's tempting to go even further and page-lock the !page_mkwrite case,
+> to get it in line with everybody else setting the page table and thus
+> further simplify the model.  But that's not quite compelling enough to
+> justify dropping the pte lock, then relocking and verifying the entry
+> for filesystems without ->page_mkwrite, which notably includes tmpfs.
+> Leave it for now and lock the page late in the !page_mkwrite case.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  mm/memory.c | 46 ++++++++++++++++------------------------------
+>  1 file changed, 16 insertions(+), 30 deletions(-)
+> 
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 2a2e3648ed65..ff92abfa5303 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+...
+> @@ -2147,42 +2147,28 @@ reuse:
+>  		pte_unmap_unlock(page_table, ptl);
+>  		ret |= VM_FAULT_WRITE;
+>  
+> -		if (!dirty_page)
+> -			return ret;
+> -
+> -		if (!page_mkwrite) {
+> +		if (dirty_shared) {
+>  			struct address_space *mapping;
+>  			int dirtied;
+>  
+> -			lock_page(dirty_page);
+> -			dirtied = set_page_dirty(dirty_page);
+> -			mapping = dirty_page->mapping;
+> -			unlock_page(dirty_page);
+> +			if (!page_mkwrite)
+> +				lock_page(old_page);
+>  
+> -			if (dirtied && mapping) {
+> -				/*
+> -				 * Some device drivers do not set page.mapping
+> -				 * but still dirty their pages
+> -				 */
+> -				balance_dirty_pages_ratelimited(mapping);
+> -			}
+> +			dirtied = set_page_dirty(old_page);
+> +			mapping = old_page->mapping;
+> +			unlock_page(old_page);
+> +			page_cache_release(old_page);
+>  
+> -			file_update_time(vma->vm_file);
+> -		}
+> -		put_page(dirty_page);
+> -		if (page_mkwrite) {
+> -			struct address_space *mapping = dirty_page->mapping;
+> -
+> -			set_page_dirty(dirty_page);
+> -			unlock_page(dirty_page);
+> -			page_cache_release(dirty_page);
+> -			if (mapping)	{
+> +			if ((dirtied || page_mkwrite) && mapping) {
+  Why do we actually call balance_dirty_pages_ratelimited() even if we
+didn't dirty the page when ->page_mkwrite() exists? Is it because
+filesystem may dirty the page in ->page_mkwrite() and we don't want it to
+deal with calling balance_dirty_pages_ratelimited()?
 
-Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
----
-Changes in v2:
-- rename "lcdc" to "vop"
-- add vop reset
-- add iommu node
-- add port for display-subsystem
+Otherwise the patch looks good to me.
 
-Changes in v3: None
+								Honza
 
-Changes in v4: None
-
-Changes in v5: None
-
-Changes in v6: None
-
-Changes in v7: None
-
-Changes in v8: None
-
-Changes in v9: None
-
-Changes in v10: None
-
-Changes in v11: None
-
-Changes in v12: None
-
-Changes in v13: None
-
-Changes in v14: None
-
-Changes in v15: None
-
- .../devicetree/bindings/video/rockchip-vop.txt     |   58 ++++++++++++++++++++
- 1 file changed, 58 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/video/rockchip-vop.txt
-
-diff --git a/Documentation/devicetree/bindings/video/rockchip-vop.txt b/Documentation/devicetree/bindings/video/rockchip-vop.txt
-new file mode 100644
-index 0000000..d15351f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/video/rockchip-vop.txt
-@@ -0,0 +1,58 @@
-+device-tree bindings for rockchip soc display controller (vop)
-+
-+VOP (Visual Output Processor) is the Display Controller for the Rockchip
-+series of SoCs which transfers the image data from a video memory
-+buffer to an external LCD interface.
-+
-+Required properties:
-+- compatible: value should be one of the following
-+		"rockchip,rk3288-vop";
-+
-+- interrupts: should contain a list of all VOP IP block interrupts in the
-+		 order: VSYNC, LCD_SYSTEM. The interrupt specifier
-+		 format depends on the interrupt controller used.
-+
-+- clocks: must include clock specifiers corresponding to entries in the
-+		clock-names property.
-+
-+- clock-names: Must contain
-+		aclk_vop: for ddr buffer transfer.
-+		hclk_vop: for ahb bus to R/W the phy regs.
-+		dclk_vop: pixel clock.
-+
-+- resets: Must contain an entry for each entry in reset-names.
-+  See ../reset/reset.txt for details.
-+- reset-names: Must include the following entries:
-+  - axi
-+  - ahb
-+  - dclk
-+
-+- iommus: required a iommu node
-+
-+- port: A port node with endpoint definitions as defined in
-+  Documentation/devicetree/bindings/media/video-interfaces.txt.
-+
-+Example:
-+SoC specific DT entry:
-+	vopb: vopb@ff930000 {
-+		compatible = "rockchip,rk3288-vop";
-+		reg = <0xff930000 0x19c>;
-+		interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru ACLK_VOP0>, <&cru DCLK_VOP0>, <&cru HCLK_VOP0>;
-+		clock-names = "aclk_vop", "dclk_vop", "hclk_vop";
-+		resets = <&cru SRST_LCDC1_AXI>, <&cru SRST_LCDC1_AHB>, <&cru SRST_LCDC1_DCLK>;
-+		reset-names = "axi", "ahb", "dclk";
-+		iommus = <&vopb_mmu>;
-+		vopb_out: port {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			vopb_out_edp: endpoint@0 {
-+				reg = <0>;
-+				remote-endpoint=<&edp_in_vopb>;
-+			};
-+			vopb_out_hdmi: endpoint@1 {
-+				reg = <1>;
-+				remote-endpoint=<&hdmi_in_vopb>;
-+			};
-+		};
-+	};
+>  				/*
+>  				 * Some device drivers do not set page.mapping
+>  				 * but still dirty their pages
+>  				 */
+>  				balance_dirty_pages_ratelimited(mapping);
+>  			}
+> +
+> +			if (!page_mkwrite)
+> +				file_update_time(vma->vm_file);
+>  		}
+>  
+>  		return ret;
+> -- 
+> 2.1.3
+> 
 -- 
-1.7.9.5
-
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
