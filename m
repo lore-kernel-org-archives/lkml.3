@@ -1,88 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932973AbaLBUl4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 15:41:56 -0500
-Received: from omr2.cc.vt.edu ([198.82.141.100]:55698 "EHLO omr2.cc.vt.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932550AbaLBUly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 15:41:54 -0500
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Herbert Xu <herbert@gondor.apana.org.au>, davem@davemloft.net,
-        Jason Wang <jasowang@redhat.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next Problems with VPN tunnel - no packets sent
-From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1417552899_7336P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 02 Dec 2014 15:41:39 -0500
-Message-ID: <17929.1417552899@turing-police.cc.vt.edu>
+	id S933005AbaLBUnJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 15:43:09 -0500
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:42195 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932199AbaLBUnI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 15:43:08 -0500
+Date: Tue, 2 Dec 2014 15:43:04 -0500
+From: Tejun Heo <tj@kernel.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Jan Kara <jack@suse.cz>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dongsu Park <dongsu.park@profitbricks.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH - v3?] workqueue: allow rescuer thread to do more work.
+Message-ID: <20141202204304.GR10918@htj.dyndns.org>
+References: <20141029172608.39119c80@notabene.brown>
+ <20141029143210.GA25226@htj.dyndns.org>
+ <20141030101932.2241daa7@notabene.brown>
+ <20141104142240.GD14459@htj.dyndns.org>
+ <20141106165811.GA2338@gmail.com>
+ <545C368C.5040704@cn.fujitsu.com>
+ <20141110162848.6f2246bb@notabene.brown>
+ <20141110085250.GB15948@quack.suse.cz>
+ <20141111090402.35fa0700@notabene.brown>
+ <20141118152754.60b0c75e@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141118152754.60b0c75e@notabene.brown>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1417552899_7336P
-Content-Type: text/plain; charset=us-ascii
+Hello,
 
-Recent linux-next has broken my Juniper VPN client.  The tunnel gets created,
-routes get added, but trying to actually send packets across results in packets
-just disappearing. 'ifconfig' consistently reports exactly 1 packet sent (even
-after a 'ping' command or similar should have sent multiple packets.
+On Tue, Nov 18, 2014 at 03:27:54PM +1100, NeilBrown wrote:
+> @@ -2253,26 +2253,36 @@ repeat:
+>  					struct pool_workqueue, mayday_node);
+>  		struct worker_pool *pool = pwq->pool;
+>  		struct work_struct *work, *n;
+> +		int still_needed;
+>  
+>  		__set_current_state(TASK_RUNNING);
+> -		list_del_init(&pwq->mayday_node);
+> -
+> -		spin_unlock_irq(&wq_mayday_lock);
+> -
+> -		worker_attach_to_pool(rescuer, pool);
+> -
+> -		spin_lock_irq(&pool->lock);
+> -		rescuer->pool = pool;
+> -
+> +		spin_lock(&pool->lock);
+>  		/*
+>  		 * Slurp in all works issued via this workqueue and
+>  		 * process'em.
+>  		 */
+>  		WARN_ON_ONCE(!list_empty(&rescuer->scheduled));
+> +		still_needed = need_to_create_worker(pool);
+>  		list_for_each_entry_safe(work, n, &pool->worklist, entry)
+>  			if (get_work_pwq(work) == pwq)
+>  				move_linked_works(work, scheduled, &n);
+>  
+> +		if (!list_empty(scheduled))
+> +			still_needed = 1;
+> +		if (still_needed) {
+> +			list_move_tail(&pwq->mayday_node, &wq->maydays);
+> +			get_pwq(pwq);
+> +		} else
+> +			/* We can let go of this one now */
+> +			list_del_init(&pwq->mayday_node);
 
-tun0: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 1400
-        inet 172.27.1.40  netmask 255.255.255.255  destination 172.27.1.40
-        unspec 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  txqueuelen 500  (UNSPEC)
-        RX packets 1  bytes 355 (355.0 B)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 1  bytes 61 (61.0 B)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+This seems rather convoluted.  Why are we testing this before
+executing the work item?  Can't we do this after?  Isn't that -
+whether the wq still needs rescuing after rescuer went through it once
+- what we wanna know anyway?  e.g. something like the following.
 
-Still broken in next-20141201, and bisection fingers this commit:
+	for_each_pwq_on_mayday_list {
+		try to fetch work items from pwq->pool;
+		if (none was fetched)
+			goto remove_pwq;
 
-commit e0b46d0ee9c240c7430a47e9b0365674d4a04522
-Author: Herbert Xu <herbert@gondor.apana.org.au>
-Date:   Fri Nov 7 21:22:23 2014 +0800
+		execute the fetched work items;
 
-    tun: Use iovec iterators
+		if (need_to_create_worker()) {
+			move the pwq to the tail;
+			continue;
+		}
 
-    This patch removes the use of skb_copy_datagram_const_iovec in
-    favour of the iovec iterator-based skb_copy_datagram_iter.
+	remove_pwq:
+		remove the pwq;
+	}
 
-This commit is in the kernel, and does *not* fix the problem:
+> +
+> +		spin_unlock(&pool->lock);
+> +		spin_unlock_irq(&wq_mayday_lock);
+> +
+> +		worker_attach_to_pool(rescuer, pool);
+> +
+> +		spin_lock_irq(&pool->lock);
+> +		rescuer->pool = pool;
+>  		process_scheduled_works(rescuer);
+>  
+>  		/*
+> @@ -2293,7 +2303,7 @@ repeat:
+>  		spin_unlock_irq(&pool->lock);
+>  
+>  		worker_detach_from_pool(rescuer, pool);
+> -
+> +		cond_resched();
 
-commit 8c847d254146d32c86574a1b16923ff91bb784dd
-Author: Jason Wang <jasowang@redhat.com>
-Date:   Thu Nov 13 16:54:14 2014 +0800
+Also, why this addition?  process_one_work() already has
+cond_resched_rcu_qs().
 
-    tun: fix issues of iovec iterators using in tun_put_user()
+Thanks.
 
-So there's apparently additional issues that Jason didn't address. I tried to
-revert Herbert's patch for testing, but there's at  least 5 or 6 other patches
-that need reverting first, so I abandoned that unless it becomes necessary...
-
-What's the best way to proceed?
-
---==_Exmh_1417552899_7336P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBVH4kAwdmEQWDXROgAQL2XBAAjsij8ySSYMOJZ77nN+/YI2HJVl6xt5ma
-9vupieu2xMptaWrjhW9IEYdGkdzsDTsANGv4K8nr80m6cI3AmRkXKYiYIVsGUpmL
-tSxIbs+S9ks7zJCtHECB3+WwWpG6HGfCaxHGY+/BVdSGbdUrTOgIzlC30tpizUJ0
-3VgpkiKGwjdzx2TVLu47JMpokynq8+xogFAmT+hiJ/mNKKq8FESPeL9Q/GlnPz4K
-jujrLvluzz3ff5uaYKQ/dJLisxsVdBMnBEHQ2rp+XnVTOf5d2D1XWu1am5+cjX/C
-v9a3iphUxwaUSZ9VYQSanlF3DoLV6S3lFsV5kB/sTBhMr/yQKJrc0haLm4unZ8+O
-QM0iHdnjs35v2EGUEh8bvObR3Sg5ZZjnrWXRQeiXMG8BCGJy5RXX0XnldoU5FG8C
-1Y6D3fxk7yP1+VUN6VNyeXMvEZ03LtOWodbinZOMSkYjbEpRTxBu089529G8t/T4
-UcVCBcZmxBCo5iWUBVId3wIC8L/jUekcu3GpEyQ8B6t3bIRVJ9rUyIj/zI061Y3i
-55XW/oEbP5r5tcjOBibFoo62cvxTuwgcMyhhc6kyj/aiwhztNg6OdtoLFvCz2Vbw
-uhj0jwTlhw3Z7HCBr8hpEwz9mesgEhtGKlM79sJhG0kP0/Qqdzxx71OuESl9iZXI
-X51IEV4SVxE=
-=dIq8
------END PGP SIGNATURE-----
-
---==_Exmh_1417552899_7336P--
+-- 
+tejun
