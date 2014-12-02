@@ -1,136 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932892AbaLBANS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 19:13:18 -0500
-Received: from mga02.intel.com ([134.134.136.20]:6237 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753636AbaLBANM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 19:13:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,497,1413270000"; 
-   d="scan'208";a="616952915"
-From: "David E. Box" <david.e.box@linux.intel.com>
-To: wsa@the-dreams.de
-Cc: jdelvare@suse.de, arnd@arndb.de, maxime.ripard@free-electrons.com,
-        dianders@chromium.org, u.kleine-koenig@pengutronix.de,
-        laurent.pinchart+renesas@ideasonboard.com,
-        boris.brezillon@free-electrons.com, andrew@lunn.ch, sjg@chromium.org,
-        markus.mayer@linaro.org, jacob.jun.pan@linux.intel.com,
-        max.schwarz@online.de, mika.westerberg@linux.intel.com,
-        skuribay@pobox.com, Romain.Baeriswyl@abilis.com, wenkai.du@intel.com,
-        chiau.ee.chew@intel.com, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: [PATCH V3 1/2] i2c-designware: Add i2c bus locking support
-Date: Mon,  1 Dec 2014 16:09:32 -0800
-Message-Id: <1417478973-25522-2-git-send-email-david.e.box@linux.intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417478973-25522-1-git-send-email-david.e.box@linux.intel.com>
-References: <1411497626-7984-1-git-send-email-david.e.box@linux.intel.com>
- <1417478973-25522-1-git-send-email-david.e.box@linux.intel.com>
+	id S1754194AbaLBAVz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 19:21:55 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:54808 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753571AbaLBAVx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Dec 2014 19:21:53 -0500
+Date: Mon, 1 Dec 2014 17:21:46 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, x86@kernel.org,
+        Joerg Roedel <joro@8bytes.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, iommu@lists.linux-foundation.org
+Subject: Re: [Patch Part3 v4 18/38] x86: irq_remapping: Clean up unsued code
+Message-ID: <20141202002146.GA5825@google.com>
+References: <1416901802-24211-1-git-send-email-jiang.liu@linux.intel.com>
+ <1416901802-24211-19-git-send-email-jiang.liu@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416901802-24211-19-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds support for acquiring and releasing a hardware bus lock in the i2c
-designware core transfer function. This is needed for i2c bus controllers
-that are shared with but not controlled by the kernel.
+s/unsued/unused/ in subject (here and other patches).
 
-Signed-off-by: David E. Box <david.e.box@linux.intel.com>
----
- drivers/i2c/busses/i2c-designware-core.c    | 11 +++++++++++
- drivers/i2c/busses/i2c-designware-core.h    |  6 ++++++
- drivers/i2c/busses/i2c-designware-platdrv.c | 18 +++++++++++++-----
- 3 files changed, 30 insertions(+), 5 deletions(-)
+"Clean up" is slightly ambiguous; it could mean either "make better" or
+"remove."  "Remove unused code" would be less ambiguous.
 
-diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-index 3c20e4b..377deeb 100644
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -631,6 +631,14 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
- 	dev->abort_source = 0;
- 	dev->rx_outstanding = 0;
- 
-+	if (dev->acquire_lock) {
-+		ret = dev->acquire_lock(dev);
-+		if (ret) {
-+			dev_err(dev->dev, "couldn't acquire bus ownership\n");
-+			goto done;
-+		}
-+	}
-+
- 	ret = i2c_dw_wait_bus_not_busy(dev);
- 	if (ret < 0)
- 		goto done;
-@@ -676,6 +684,9 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
- 	ret = -EIO;
- 
- done:
-+	if (dev->release_lock)
-+		dev->release_lock(dev);
-+
- 	pm_runtime_mark_last_busy(dev->dev);
- 	pm_runtime_put_autosuspend(dev->dev);
- 	mutex_unlock(&dev->lock);
-diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
-index d66b6cb..a472c91 100644
---- a/drivers/i2c/busses/i2c-designware-core.h
-+++ b/drivers/i2c/busses/i2c-designware-core.h
-@@ -65,6 +65,9 @@
-  * @ss_lcnt: standard speed LCNT value
-  * @fs_hcnt: fast speed HCNT value
-  * @fs_lcnt: fast speed LCNT value
-+ * @acquire_lock: function to acquire a hardware lock on the bus
-+ * @release_lock: function to release a hardware lock on the bus
-+ * @pm_runtime_disabled: true if pm runtime is disabled
-  *
-  * HCNT and LCNT parameters can be used if the platform knows more accurate
-  * values than the one computed based only on the input clock frequency.
-@@ -105,6 +108,9 @@ struct dw_i2c_dev {
- 	u16			ss_lcnt;
- 	u16			fs_hcnt;
- 	u16			fs_lcnt;
-+	int			(*acquire_lock)(struct dw_i2c_dev *dev);
-+	void			(*release_lock)(struct dw_i2c_dev *dev);
-+	bool			pm_runtime_disabled;
- };
- 
- #define ACCESS_SWAP		0x00000001
-diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
-index a743115..afdff3b 100644
---- a/drivers/i2c/busses/i2c-designware-platdrv.c
-+++ b/drivers/i2c/busses/i2c-designware-platdrv.c
-@@ -261,10 +261,16 @@ static int dw_i2c_probe(struct platform_device *pdev)
- 		return r;
- 	}
- 
--	pm_runtime_set_autosuspend_delay(&pdev->dev, 1000);
--	pm_runtime_use_autosuspend(&pdev->dev);
--	pm_runtime_set_active(&pdev->dev);
--	pm_runtime_enable(&pdev->dev);
-+	i2c_dw_eval_lock_support(dev);
-+
-+	if (dev->pm_runtime_disabled) {
-+		pm_runtime_forbid(&pdev->dev);
-+	} else {
-+		pm_runtime_set_autosuspend_delay(&pdev->dev, 1000);
-+		pm_runtime_use_autosuspend(&pdev->dev);
-+		pm_runtime_set_active(&pdev->dev);
-+		pm_runtime_enable(&pdev->dev);
-+	}
- 
- 	return 0;
- }
-@@ -314,7 +320,9 @@ static int dw_i2c_resume(struct device *dev)
- 	struct dw_i2c_dev *i_dev = platform_get_drvdata(pdev);
- 
- 	clk_prepare_enable(i_dev->clk);
--	i2c_dw_init(i_dev);
-+
-+	if (!i_dev->pm_runtime_disabled)
-+		i2c_dw_init(i_dev);
- 
- 	return 0;
- }
--- 
-1.9.1
-
+On Tue, Nov 25, 2014 at 03:49:42PM +0800, Jiang Liu wrote:
+> Now we have converted to hierarchy irqdomain, so clean up unused code.
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> Tested-by: Joerg Roedel <jroedel@suse.de>
+> ---
+>  arch/x86/include/asm/irq_remapping.h |   23 ----------------------
+>  arch/x86/kernel/apic/vector.c        |    1 -
+>  drivers/iommu/irq_remapping.c        |   36 ----------------------------------
+>  3 files changed, 60 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+> index de8470b6f36a..6ba243126b3b 100644
+> --- a/arch/x86/include/asm/irq_remapping.h
+> +++ b/arch/x86/include/asm/irq_remapping.h
+> @@ -26,12 +26,7 @@
+>  #include <asm/hw_irq.h>
+>  #include <asm/io_apic.h>
+>  
+> -struct IO_APIC_route_entry;
+> -struct io_apic_irq_attr;
+> -struct irq_chip;
+>  struct msi_msg;
+> -struct pci_dev;
+> -struct irq_cfg;
+>  struct irq_alloc_info;
+>  
+>  #ifdef CONFIG_IRQ_REMAP
+> @@ -44,13 +39,7 @@ extern int irq_remapping_enable(void);
+>  extern void irq_remapping_disable(void);
+>  extern int irq_remapping_reenable(int);
+>  extern int irq_remap_enable_fault_handling(void);
+> -extern void free_remapped_irq(int irq);
+>  extern void panic_if_irq_remap(const char *msg);
+> -extern bool setup_remapped_irq(int irq,
+> -			       struct irq_cfg *cfg,
+> -			       struct irq_chip *chip);
+> -
+> -void irq_remap_modify_chip_defaults(struct irq_chip *chip);
+>  
+>  extern struct irq_domain *
+>  irq_remapping_get_ir_irq_domain( struct irq_alloc_info *info);
+> @@ -77,23 +66,11 @@ static inline int irq_remapping_enable(void) { return -ENODEV; }
+>  static inline void irq_remapping_disable(void) { }
+>  static inline int irq_remapping_reenable(int eim) { return -ENODEV; }
+>  static inline int irq_remap_enable_fault_handling(void) { return -ENODEV; }
+> -static inline void free_remapped_irq(int irq) { }
+>  
+>  static inline void panic_if_irq_remap(const char *msg)
+>  {
+>  }
+>  
+> -static inline void irq_remap_modify_chip_defaults(struct irq_chip *chip)
+> -{
+> -}
+> -
+> -static inline bool setup_remapped_irq(int irq,
+> -				      struct irq_cfg *cfg,
+> -				      struct irq_chip *chip)
+> -{
+> -	return false;
+> -}
+> -
+>  static inline struct irq_domain *
+>  irq_remapping_get_ir_irq_domain(struct irq_alloc_info *info)
+>  {
+> diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
+> index 31dc4a871673..ca30365507a0 100644
+> --- a/arch/x86/kernel/apic/vector.c
+> +++ b/arch/x86/kernel/apic/vector.c
+> @@ -283,7 +283,6 @@ static void x86_vector_free_irqs(struct irq_domain *domain,
+>  	for (i = 0; i < nr_irqs; i++) {
+>  		irq_data = irq_domain_get_irq_data(x86_vector_domain, virq + i);
+>  		if (irq_data && irq_data->chip_data) {
+> -			free_remapped_irq(virq);
+>  			clear_irq_vector(virq + i, irq_data->chip_data);
+>  			free_irq_cfg(irq_data->chip_data);
+>  #ifdef	CONFIG_X86_IO_APIC
+> diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+> index d175d6911821..3c3da04da8c5 100644
+> --- a/drivers/iommu/irq_remapping.c
+> +++ b/drivers/iommu/irq_remapping.c
+> @@ -26,11 +26,6 @@ int no_x2apic_optout;
+>  
+>  static struct irq_remap_ops *remap_ops;
+>  
+> -static bool irq_remapped(struct irq_cfg *cfg)
+> -{
+> -	return (cfg->remapped == 1);
+> -}
+> -
+>  static void irq_remapping_disable_io_apic(void)
+>  {
+>  	/*
+> @@ -160,17 +155,6 @@ int __init irq_remap_enable_fault_handling(void)
+>  	return remap_ops->enable_faulting();
+>  }
+>  
+> -void free_remapped_irq(int irq)
+> -{
+> -	struct irq_cfg *cfg = irq_cfg(irq);
+> -
+> -	if (!remap_ops || !remap_ops->free_irq)
+> -		return;
+> -
+> -	if (irq_remapped(cfg))
+> -		remap_ops->free_irq(irq);
+> -}
+> -
+>  void panic_if_irq_remap(const char *msg)
+>  {
+>  	if (irq_remapping_enabled)
+> @@ -195,26 +179,6 @@ void irq_remapping_print_chip(struct irq_data *data, struct seq_file *p)
+>  		seq_printf(p, " %s", data->chip->name);
+>  }
+>  
+> -static void ir_print_prefix(struct irq_data *data, struct seq_file *p)
+> -{
+> -	seq_printf(p, " IR-%s", data->chip->name);
+> -}
+> -
+> -void irq_remap_modify_chip_defaults(struct irq_chip *chip)
+> -{
+> -	chip->irq_print_chip = ir_print_prefix;
+> -	chip->irq_ack = ir_ack_apic_edge;
+> -}
+> -
+> -bool setup_remapped_irq(int irq, struct irq_cfg *cfg, struct irq_chip *chip)
+> -{
+> -	if (!irq_remapped(cfg))
+> -		return false;
+> -	irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
+> -	irq_remap_modify_chip_defaults(chip);
+> -	return true;
+> -}
+> -
+>  /**
+>   * irq_remapping_get_ir_irq_domain - Get the irqdomain associated with the IOMMU
+>   *				     device serving request @info
+> -- 
+> 1.7.10.4
+> 
