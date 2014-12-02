@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933069AbaLBMZh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 07:25:37 -0500
-Received: from host.manna.ro ([74.200.89.108]:55323 "EHLO host.cashmatters.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932079AbaLBMZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 07:25:35 -0500
+	id S933098AbaLBMZl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 07:25:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60869 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932079AbaLBMZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 07:25:38 -0500
+Date: Tue, 2 Dec 2014 13:25:18 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 0/8] perf buildid-cache: Add clean command
+Message-ID: <20141202122518.GA7744@krava.brq.redhat.com>
+References: <1417460789-13874-1-git-send-email-jolsa@kernel.org>
+ <20141201222919.GC6774@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8bit
-Date: Tue, 02 Dec 2014 07:23:48 -0500
-From: lamirada@cashmatters.com
-To: undisclosed-recipients:;
-Subject: geschaftsvorschlag
-Reply-To: rodthompson50@aol.com
-Mail-Reply-To: rodthompson50@aol.com
-Message-ID: <3807c0d7791c7abcde344b2afd2f140d@cashmatters.com>
-User-Agent: Roundcube Webmail/0.9.5
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host.cashmatters.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - cashmatters.com
-X-Get-Message-Sender-Via: host.cashmatters.com: authenticated_id: lamirada@cashmatters.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141201222919.GC6774@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hallo  geschaftsvorschlag
+On Mon, Dec 01, 2014 at 08:29:19PM -0200, Arnaldo Carvalho de Melo wrote:
 
-Es ist verständlich , dass Sie vielleicht ein bisschen besorgt , weil 
-Sie mich nicht kennen , Bitte verzeihen Sie diese ungewöhnliche Art und 
-Weise , Sie zu kontaktieren , aber diese spezielle Brief / E-Mail ist 
-von außergewöhnlicher und sehr privater Natur , da aufgrund meiner Sicht 
-in meiner Position Land Libyen , ich habe ein lukratives Geschäft 
-Vorschlag von gemeinsamem Interesse mit Ihnen teilen. Es gibt keine 
-Möglichkeit für mich zu wissen , ob ich richtig verstanden werden , aber 
-es ist meine Pflicht zu schreiben und zu erreichen, um Ihnen , im 
-Vertrauen , dass Sie geben diesem Vorschlag eine positive 
-Berücksichtigung .
+SNIP
 
-Ich bin Rod Thompson einer der Direktoren einer Bank hier in Libya.I 
-müssen Sie mir bei der Ausführung eines Business-Projekt von unserer 
-Bank im Wert von US $ 21,1 Millionen zu unterstützen. Diese Mittel 
-wurden bei unserer Bank von einem Kunden unserer Bank , die die 
-Staatsangehörigkeit { } Bürger Ihres Landes / der Region , der leider 
-vor 10 Jahren gestorben ist, hinterlegt . Ich werde Ihnen weitere 
-Informationen zu diesem Vorgang zu liefern , als ich Ihre Antwort 
-erhalten .
+> [acme@sandy wb]$ 
+> 
+> If we keep the way it is, I think it would be clearer to add a -l/--list
+> command and that would:
+> 
+>   perf buildid-cache --list  # list all the files in the cache
+>   perf buildid-cache --list 3d  # list 3 days old files
+>   perf buildid-cache --list +3d  # list files 3 days or more older
+>   perf buildid-cache --list -3d  # list files up to 3 days old
 
-senden Sie Ihre Antwort auf diese E-Mail -Adresse : 
-rodthompson50@aol.com
+ok, I was up to old files (and big files) removal only.. not sure
+the other way will be actually needed.. but it's easy enought to
+add
 
-Dr.Rod Thompson
+> 
+> And all these would print the sum of the matching files, i.e. the space
+> those files use in the filesystem.
+>  
+> > Remove cache files older than 3 days:
+> >   $ perf buildid-cache clean 3d -r
+> 
+>   perf buildid-cache --remove [-+]Nd # Same semantics as above
+> 
+> >     
+> > Total cache removal:
+> >   $ perf buildid-cache clean -r
+> 
+>  perf buildid-cache --remove '*'
+
+hum, maybe '--removal all' might be better
+
+>  
+> > Remove and display items bigger than 200M
+> >   $ perf buildid-cache clean -r -a 200M
+> 
+> But yeah, perhaps we could switch to having subcommands and add:
+> 
+>   perf buildid-cache [add|remove|update|list]
+> 
+> What do you think?
+
+yep, those commands seem nicer.. 
+
+let's see of there're other comments and I'll come up with
+new interface after..
+
+thanks,
+jirka
