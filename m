@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307AbaLBSSN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 13:18:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38110 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754135AbaLBSSL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 13:18:11 -0500
-Date: Tue, 2 Dec 2014 10:18:10 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: [GIT PULL] USB driver fixes for 3.18-rc7
-Message-ID: <20141202181810.GB15869@kroah.com>
-References: <20141128224028.GA29538@kroah.com>
- <CA+55aFyJunLbQPBgUf4rhZN0vbaj7hpK3Jwqwqf-S7A2-LLhFA@mail.gmail.com>
+	id S932674AbaLBSSV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 13:18:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41270 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754330AbaLBSSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 13:18:16 -0500
+Date: Tue, 2 Dec 2014 13:17:58 -0500
+From: Aristeu Rozanski <aris@redhat.com>
+To: Tony Luck <tony.luck@intel.com>
+Cc: Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Borislav Petkov <bp@alien8.de>, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sb_edac: Fix typo computing number of banks
+Message-ID: <20141202181757.GE21208@redhat.com>
+References: <088380@agluck-desk.sc.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFyJunLbQPBgUf4rhZN0vbaj7hpK3Jwqwqf-S7A2-LLhFA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <088380@agluck-desk.sc.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 30, 2014 at 11:47:20AM -0800, Linus Torvalds wrote:
-> Hmm, Greg.
+On Tue, Dec 02, 2014 at 09:41:58AM -0800, Tony Luck wrote:
+> Code will always think there are 16 banks because of a typo
 > 
-> I seem to get this problem possibly more commonly at boot these days:
+> Reported-by: Misha
+> Signed-off-by: Tony Luck <tony.luck@intel.com>
+> ---
 > 
->   usb 1-6: new full-speed USB device number 2 using xhci_hcd
->   usb 1-6: device descriptor read/64, error -71
->   xhci_hcd 0000:00:14.0: Setup ERROR: setup context command for slot 1.
->   usb 1-6: hub failed to enable device, error -22
->   usb 1-6: new full-speed USB device number 3 using xhci_hcd
->   usb 1-6: device descriptor read/64, error -71
->   usb 1-6: hub failed to enable device, error -22
->   usb 1-6: new full-speed USB device number 4 using xhci_hcd
->   usb 1-6: Device not responding to setup address.
->   usb 1-6: Device not responding to setup address.
->   usb 1-6: device not accepting address 4, error -71
->   usb 1-6: new full-speed USB device number 5 using xhci_hcd
->   usb 1-6: Device not responding to setup address.
->   usb 1-6: Device not responding to setup address.
->   usb 1-6: device not accepting address 5, error -71
->  usb usb1-port6: unable to enumerate USB device
+> Not sure if Misha is shy, or just busy. But my attempt to get
+> them to post their own patch didn't work
 > 
-> and my keyboard doesn't work. I then unplug and re-plug it, and get
+>  drivers/edac/sb_edac.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
->   usb 1-6: new full-speed USB device number 9 using xhci_hcd
->   usb 1-6: New USB device found, idVendor=2516, idProduct=0020
->   usb 1-6: New USB device strings: Mfr=1, Product=2, SerialNumber=0
->   usb 1-6: Product: Quickfire Rapid i
->   usb 1-6: Manufacturer: CM Storm
-> 
-> Any ideas? Some setup delay that isn't long enough at boot time for a
-> slightly finicky device? It has happened before, but now I've gotten
-> it twice within a couple of days:
-> 
->   Nov 02 12:18:56 i7.lan kernel: usb 1-6: device descriptor read/64, error -71
->   Nov 28 16:54:06 i7.lan kernel: usb 1-6: device descriptor read/64, error -71
->   Nov 30 11:26:35 i7.lan kernel: usb 1-6: device descriptor read/64, error -71
-> 
-> (I've had this keyboard since mid-September, and looking at the logs
-> this machine has been rebooted 41 times since, with those three
-> failures..)
+> diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
+> index 993e8b61c4b2..63aa6730e89e 100644
+> --- a/drivers/edac/sb_edac.c
+> +++ b/drivers/edac/sb_edac.c
+> @@ -901,7 +901,7 @@ static int get_dimm_config(struct mem_ctl_info *mci)
+>  	else
+>  		edac_dbg(0, "Memory is unregistered\n");
+>  
+> -	if (mtype == MEM_DDR4 || MEM_RDDR4)
+> +	if (mtype == MEM_DDR4 || mtype == MEM_RDDR4)
+>  		banks = 16;
+>  	else
+>  		banks = 8;
 
-I've been seeing this occasionally recently as well, but was blaming a
-"bad" USB 3 hub I have here that I use, and the problem goes away with a
-replug.
+ACK
 
-Mathias, any ideas what is going on here?
+-- 
+Aristeu
 
-thanks,
-
-greg k-h
-
-> 
->               Linus
