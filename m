@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933549AbaLBTZf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:25:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46823 "EHLO
+	id S933554AbaLBTZl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:25:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46833 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932979AbaLBTZb (ORCPT
+	with ESMTP id S932979AbaLBTZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:25:31 -0500
+	Tue, 2 Dec 2014 14:25:38 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 116/121] ACPI / PM: Ignore wakeup setting if the ACPI companion can't wake up
-Date: Tue,  2 Dec 2014 11:19:55 -0800
-Message-Id: <1417548000-1794-117-git-send-email-kamal@canonical.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rob Herring <robh@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 113/121] of/base: Fix PowerPC address parsing hack
+Date: Tue,  2 Dec 2014 11:19:52 -0800
+Message-Id: <1417548000-1794-114-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
@@ -27,54 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 78579b7c7eb45f0e7ec5e9437087ed21749f9a9c upstream.
+commit 746c9e9f92dde2789908e51a354ba90a1962a2eb upstream.
 
-As reported by Dmitry, on some Chromebooks there are devices with
-corresponding ACPI objects and with unusual system wakeup
-configuration.  Namely, they technically are wakeup-capable, but the
-wakeup is handled via a platform-specific out-of-band mechanism and
-the ACPI PM layer has no information on the wakeup capability.  As
-a result, device_may_wakeup(dev) called from acpi_dev_suspend_late()
-returns 'true' for those devices, but the wakeup.flags.valid flag is
-unset for the corresponding ACPI device objects, so acpi_device_wakeup()
-reproducibly fails for them causing acpi_dev_suspend_late() to return
-an error code.  The entire system suspend is then aborted and the
-machines in question cannot suspend at all.
+We have a historical hack that treats missing ranges properties as the
+equivalent of an empty one. This is needed for ancient PowerMac "bad"
+device-trees, and shouldn't be enabled for any other PowerPC platform,
+otherwise we get some nasty layout of devices in sysfs or even
+duplication when a set of otherwise identically named devices is
+created multiple times under a different parent node with no ranges
+property.
 
-Address the problem by ignoring the device_may_wakeup(dev) return
-value in acpi_dev_suspend_late() if the ACPI companion of the device
-being handled has wakeup.flags.valid unset (in which case it is clear
-that the wakeup is supposed to be handled by other means).
+This fix is needed for the PowerNV i2c busses to be exposed properly
+and will fix a number of other embedded cases.
 
-This fixes a regression introduced by commit a76e9bd89ae7 (i2c:
-attach/detach I2C client device to the ACPI power domain) as the
-affected systems could suspend and resume successfully before that
-commit.
-
-Fixes: a76e9bd89ae7 (i2c: attach/detach I2C client device to the ACPI power domain)
-Reported-by: Dmitry Torokhov <dtor@chromium.org>
-Reviewed-by: Dmitry Torokhov <dtor@chromium.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Acked-by: Grant Likely <grant.likely@linaro.org>
+Signed-off-by: Rob Herring <robh@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/acpi/device_pm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/of/address.c | 19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/acpi/device_pm.c b/drivers/acpi/device_pm.c
-index b3480cf..5b39ae5 100644
---- a/drivers/acpi/device_pm.c
-+++ b/drivers/acpi/device_pm.c
-@@ -857,7 +857,7 @@ int acpi_dev_suspend_late(struct device *dev)
- 		return 0;
+diff --git a/drivers/of/address.c b/drivers/of/address.c
+index 1a54f1f..005c657 100644
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -401,6 +401,21 @@ static struct of_bus *of_match_bus(struct device_node *np)
+ 	return NULL;
+ }
  
- 	target_state = acpi_target_system_state();
--	wakeup = device_may_wakeup(dev);
-+	wakeup = device_may_wakeup(dev) && acpi_device_can_wakeup(adev);
- 	error = __acpi_device_sleep_wake(adev, target_state, wakeup);
- 	if (wakeup && error)
- 		return error;
++static int of_empty_ranges_quirk(void)
++{
++	if (IS_ENABLED(CONFIG_PPC)) {
++		/* To save cycles, we cache the result */
++		static int quirk_state = -1;
++
++		if (quirk_state < 0)
++			quirk_state =
++				of_machine_is_compatible("Power Macintosh") ||
++				of_machine_is_compatible("MacRISC");
++		return quirk_state;
++	}
++	return false;
++}
++
+ static int of_translate_one(struct device_node *parent, struct of_bus *bus,
+ 			    struct of_bus *pbus, __be32 *addr,
+ 			    int na, int ns, int pna, const char *rprop)
+@@ -426,12 +441,10 @@ static int of_translate_one(struct device_node *parent, struct of_bus *bus,
+ 	 * This code is only enabled on powerpc. --gcl
+ 	 */
+ 	ranges = of_get_property(parent, rprop, &rlen);
+-#if !defined(CONFIG_PPC)
+-	if (ranges == NULL) {
++	if (ranges == NULL && !of_empty_ranges_quirk()) {
+ 		pr_err("OF: no ranges; cannot translate\n");
+ 		return 1;
+ 	}
+-#endif /* !defined(CONFIG_PPC) */
+ 	if (ranges == NULL || rlen == 0) {
+ 		offset = of_read_number(addr, na);
+ 		memset(addr, 0, pna * 4);
 -- 
 1.9.1
 
