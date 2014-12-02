@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932588AbaLBTLs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:11:48 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:47943 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073AbaLBTLr (ORCPT
+	id S932736AbaLBTMP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:12:15 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:20953 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753677AbaLBTMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:11:47 -0500
-Date: Tue, 2 Dec 2014 11:11:43 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141202191143.GN25340@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
- <547bbe36.48548c0a.105c.779c@mx.google.com>
- <20141201191431.GA17385@linux.vnet.ibm.com>
- <547ccf74.a5198c0a.25de.26d9@mx.google.com>
- <20141201230813.GE25340@linux.vnet.ibm.com>
- <547dec29.c71f8c0a.33d1.11d9@mx.google.com>
- <20141202170407.GK25340@linux.vnet.ibm.com>
- <547df364.236a8c0a.7b2d.ffffac67@mx.google.com>
- <20141202184202.GM25340@linux.vnet.ibm.com>
- <547e0947.c332e00a.23bf.ffffa8bd@mx.google.com>
+	Tue, 2 Dec 2014 14:12:13 -0500
+Date: Tue, 2 Dec 2014 14:10:58 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
+        Douglas Hatch <doug.hatch@hp.com>
+Subject: Re: [PATCH v13 10/11] pvqspinlock, x86: Enable PV qspinlock for KVM
+Message-ID: <20141202191058.GA357@laptop.dumpdata.com>
+References: <1414613951-32532-1-git-send-email-Waiman.Long@hp.com>
+ <1414613951-32532-11-git-send-email-Waiman.Long@hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <547e0947.c332e00a.23bf.ffffa8bd@mx.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120219-0013-0000-0000-000006B40B94
+In-Reply-To: <1414613951-32532-11-git-send-email-Waiman.Long@hp.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 04:47:31PM -0200, Dâniel Fraga wrote:
-> On Tue, 2 Dec 2014 10:42:02 -0800
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On Wed, Oct 29, 2014 at 04:19:10PM -0400, Waiman Long wrote:
+> This patch adds the necessary KVM specific code to allow KVM to
+> support the CPU halting and kicking operations needed by the queue
+> spinlock PV code.
 > 
-> > I was actually suggesting something a bit different.  Instead of bisecting
-> > by release, bisect by code.  The procedure is as follows:
-> > 
-> > 1.	I figure out some reliable way of making RCU allow preemption to
-> > 	be disabled for some RCU read-side critical sections, but not for
-> > 	others.  I send you the patch, which has rcu_read_lock_test()
-> > 	as well as rcu_read_lock().
-> > 
-> > 2.	You build a kernel without my Kconfig hack, with my patch from
-> > 	#1 above, and build a kernel with CONFIG_PREEMPT=y (which of
-> > 	course implies CONFIG_TREE_PREEMPT_RCU=y, given that you are
-> > 	building without my Kconfig hack).
-> > 
-> > 3.	You make a list of all the rcu_read_lock() uses in the kernel
-> > 	(or ask me to provide it).  You change the rcu_read_lock()
-> > 	calls in the first half of this list to rcu_read_lock_test().
-> > 
-> > 	If the kernel locks up as easily with this change as it did
-> > 	in a stock CONFIG_PREEMPT=y CONFIG_TREE_PREEMPT_RCU=y kernel,
-> > 	change half of the remaining rcu_read_lock() calls to
-> > 	rcu_read_lock_test().  If the kernel is much more resistant
-> > 	to lockup, change half of the rcu_read_lock_test() calls
-> > 	back to rcu_read_lock().
+> Two KVM guests of 20 CPU cores (2 nodes) were created for performance
+> testing in one of the following three configurations:
+>  1) Only 1 VM is active
+>  2) Both VMs are active and they share the same 20 physical CPUs
+>     (200% overcommit)
 > 
-> 	Ok Paul, I want to do everything I can to help you debug this.
-> 
-> 	So can you provide me the list you mentioned at point 3 (or
-> tell me how can I get it)? If you guide me through this, I can do
-> whatever you need. Thanks!
+> The tests run included the disk workload of the AIM7 benchmark on
+> both ext4 and xfs RAM disks at 3000 users on a 3.17 based kernel. The
+> "ebizzy -m" test and futextest was was also run and its performance
+> data were recorded.  With two VMs running, the "idle=poll" kernel
+> option was added to simulate a busy guest. If PV qspinlock is not
+> enabled, unfairlock will be used automically in a guest.
 
-OK.  I need to know exactly what version of the Linux kernel you are
-using.  3.18-rc7?  (I am not too worried about exactly which version
-you are using as long as I know which version it is.)
-
-							Thanx, Paul
-
+What is the unfairlock? Isn't it just using a bytelock at this point?
