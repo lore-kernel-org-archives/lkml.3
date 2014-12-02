@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933122AbaLBNee (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 08:34:34 -0500
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:34395 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932259AbaLBNec (ORCPT
+	id S1753950AbaLBNiM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 08:38:12 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:43108 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753747AbaLBNiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 08:34:32 -0500
+	Tue, 2 Dec 2014 08:38:10 -0500
+Message-ID: <547DC0B7.6050600@arm.com>
+Date: Tue, 02 Dec 2014 13:37:59 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <25485084.A6ydfR9Xle@wuerfel>
-References: <1417461694-5129-1-git-send-email-dianders@chromium.org>
-	<20141201225057.GA11285@n2100.arm.linux.org.uk>
-	<CAD=FV=VT7gr504-ZgWPfha+40XDX5eShkzZ36bg=-4Oub1S27w@mail.gmail.com>
-	<25485084.A6ydfR9Xle@wuerfel>
-Date: Tue, 2 Dec 2014 14:34:32 +0100
-Message-ID: <CACRpkdYd0=TBL3YFaZjn-dq1kH719SFSMG0aCRiRFbiTnxMxcQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: rockchip: Convert resume code to C
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
-        russ.dill@gmail.com, Olof Johansson <olof@lixom.net>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>
+CC: Mark Rutland <Mark.Rutland@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <Pawel.Moll@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "hc.yen@mediatek.com" <hc.yen@mediatek.com>,
+        "srv_heupstream@mediatek.com" <srv_heupstream@mediatek.com>,
+        "yh.chen@mediatek.com" <yh.chen@mediatek.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Chris Zhong <zyw@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Yijing Wang <wangyijing@huawei.com>, Rob Herring <robh+dt@kernel.org>,
+        "nathan.chung@mediatek.com" <nathan.chung@mediatek.com>,
+        "yingjoe.chen@gmail.com" <yingjoe.chen@gmail.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        "eddie.huang@mediatek.com" <eddie.huang@mediatek.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Subject: Re: [PATCH v8 1/4] irqchip: gic: Support hierarchy irq domain.
+References: <1416902662-19281-1-git-send-email-yingjoe.chen@mediatek.com>	<1416902662-19281-2-git-send-email-yingjoe.chen@mediatek.com> <CAMuHMdWj0Z66fya=7oN=ZUoz0TQOHFxBe0wyHmkDDVzU8Lafog@mail.gmail.com>
+In-Reply-To: <CAMuHMdWj0Z66fya=7oN=ZUoz0TQOHFxBe0wyHmkDDVzU8Lafog@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 2, 2014 at 10:33 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Monday 01 December 2014 15:04:59 Doug Anderson wrote:
+On 02/12/14 13:27, Geert Uytterhoeven wrote:
+> On Tue, Nov 25, 2014 at 9:04 AM, Yingjoe Chen <yingjoe.chen@mediatek.com> wrote:
+>> Add support to use gic as a parent for stacked irq domain.
+>>
+>> Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
+> 
+> This change (which is now in -next as commit 9a1091ef0017c40a) breaks
+> booting on r8a7740/armadillo-legacy.
+> 
+> It hangs because the timers cannot get their interrupts:
+> 
+> console [tty0] enabled
+>  sh-tmu.0: ch0: used for clock events
+>  sh-tmu.0: ch0: used for periodic clock events
+>  sh-tmu.0: ch0: failed to request irq 230
+>  sh-tmu.0: ch1: used as clock source
+>  sh-cmt-48.1: ch0: failed to request irq 90
+>  sh-cmt-48.1: ch0: registration failed
+> earlytimer: unable to probe sh-cmt-48 early.
+> Calibrating delay loop...
 
->> Adding that code in assembly seems like a very, very bad idea.
->> Certainly my patch could wait until the DDR code is ready to be posted
->> upstream if that made sense.  One advantage of waiting is that it's
->> possible that the DDR code might end up moving elsewhere if it made
->> sense to have it part of a memory controller driver or something like
->> that.
-(...)
-> AFAICT, the quantenna implementation is similar to the itcm/dtcm
-> stuff we already have (but are not using upstream), so I wonder
-> why we can't use that here too, see Documentation/arm/tcm.txt
+Grmbl... Are you, by any (lack of) chance, using a setup where the GIC
+is probed via DT, but the timers have their IRQs hardcoded?
 
-I agree. The TCM __tcm* macros to tag code and data for the TCM
-can be used by any mechanism by modifying mem_init() in
-arch/arm/mm/init.c
-
-If the name is disturbing the __tcm* function can be renamed
-__onchip* simply.
-
-It will never work on multiplatform however, and if some real change
-shall come to that, something like Russ Dills patches and a
-generic approach to dynamic loading of onchip executables is
-needed.
-
-I had hopes of replacing the TCM mechanism with that
-scheme, people also want to load onchip programs from
-userspace as it happens, that would be the right way to go.
-
-Yours,
-Linus Walleij
+	M.
+-- 
+Jazz is not dead. It just smells funny...
