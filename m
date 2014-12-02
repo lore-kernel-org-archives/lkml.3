@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933532AbaLBXnX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 18:43:23 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:39031 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933319AbaLBXnR (ORCPT
+	id S933472AbaLBXnJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 18:43:09 -0500
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:52710 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933282AbaLBXnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 18:43:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <547E4815.7010100@samsung.com>
-References: <1417553397-460-1-git-send-email-dianders@chromium.org>
-	<1417553397-460-2-git-send-email-dianders@chromium.org>
-	<547E4815.7010100@samsung.com>
-Date: Tue, 2 Dec 2014 15:43:16 -0800
-X-Google-Sender-Auth: 161E42z0RlWZtM_YCesBRVmGN38
-Message-ID: <CAD=FV=VqirunbqKtC7hXTKNXfnDjj2fBMa7sRuJLvdnGeqxUUw@mail.gmail.com>
-Subject: Re: [PATCH v4 1/3] mmc: core: Support the optional init_card()
- callback for MMC and SD
+	Tue, 2 Dec 2014 18:43:03 -0500
 From: Doug Anderson <dianders@chromium.org>
-To: Jaehoon Chung <jh80.chung@samsung.com>
-Cc: Seungwon Jeon <tgih.jun@samsung.com>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
+To: Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Alim Akhtar <alim.akhtar@samsung.com>, Sonny Rao <sonnyrao@chromium.org>,
         Andrew Bresticker <abrestic@chromium.org>,
-        Heiko Stuebner <heiko@sntech.de>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, Chris Ball <chris@printf.net>,
-        gsoutade@neotion.com, Axel Lin <axel.lin@ingics.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Wolfram Sang <wsa@the-dreams.de>, Joe Perches <joe@perches.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Heiko Stuebner <heiko@sntech.de>,
+        Doug Anderson <dianders@chromium.org>, tony@atomide.com,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v5 1/4] ARM: OMAP2+: Make sure pandora_wl1251_init_card() applies to SDIO only
+Date: Tue,  2 Dec 2014 15:42:44 -0800
+Message-Id: <1417563767-32181-2-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
+In-Reply-To: <1417563767-32181-1-git-send-email-dianders@chromium.org>
+References: <1417563767-32181-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jaehoon,
+In preparation for having init_card() called for all card types (not
+just SDIO), change pandora_wl1251_init_card() so it checks whether the
+card type is SDIO.
 
-On Tue, Dec 2, 2014 at 3:15 PM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
-> Hi Doug.
->
-> I think good that this patch is separated to two patches.
-> (board file and codes relevant to mmc.)
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+Changes in v5:
+- Split fixup to pandora_wl1251_init_card() into its own patch.
 
-Yes, good idea.  I've spun v5 with this.
+Changes in v3: None
+Changes in v2: None
 
--Doug
+ arch/arm/mach-omap2/board-omap3pandora.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/board-omap3pandora.c b/arch/arm/mach-omap2/board-omap3pandora.c
+index 7f17087..969e100 100644
+--- a/arch/arm/mach-omap2/board-omap3pandora.c
++++ b/arch/arm/mach-omap2/board-omap3pandora.c
+@@ -254,12 +254,14 @@ static void pandora_wl1251_init_card(struct mmc_card *card)
+ 	 * We have TI wl1251 attached to MMC3. Pass this information to
+ 	 * SDIO core because it can't be probed by normal methods.
+ 	 */
+-	card->quirks |= MMC_QUIRK_NONSTD_SDIO;
+-	card->cccr.wide_bus = 1;
+-	card->cis.vendor = 0x104c;
+-	card->cis.device = 0x9066;
+-	card->cis.blksize = 512;
+-	card->cis.max_dtr = 20000000;
++	if (card->type == MMC_TYPE_SDIO || card->type == MMC_TYPE_SD_COMBO) {
++		card->quirks |= MMC_QUIRK_NONSTD_SDIO;
++		card->cccr.wide_bus = 1;
++		card->cis.vendor = 0x104c;
++		card->cis.device = 0x9066;
++		card->cis.blksize = 512;
++		card->cis.max_dtr = 20000000;
++	}
+ }
+ 
+ static struct omap2_hsmmc_info omap3pandora_mmc[] = {
+-- 
+2.2.0.rc0.207.ga3a616c
+
