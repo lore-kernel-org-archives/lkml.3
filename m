@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288AbaLBO2P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 09:28:15 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:50249 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932228AbaLBO2N (ORCPT
+	id S1751535AbaLBO3t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 09:29:49 -0500
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:36942 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491AbaLBO3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 09:28:13 -0500
+	Tue, 2 Dec 2014 09:29:47 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAAVeFuJWPvdmO_KPXP2LrkAy4SQDZ+f7pvE6U8r7gPH+jE3Lrw@mail.gmail.com>
+In-Reply-To: <CAAVeFuLTupDenZdSi8KO+dYsf-ekcqjsDaQ2GEzYpBG34oF7Zw@mail.gmail.com>
 References: <1416527684-19017-1-git-send-email-bparrot@ti.com>
 	<1416527684-19017-2-git-send-email-bparrot@ti.com>
 	<CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com>
-	<20141202002244.GB24551@ti.com>
-	<CAAVeFuJWPvdmO_KPXP2LrkAy4SQDZ+f7pvE6U8r7gPH+jE3Lrw@mail.gmail.com>
-Date: Tue, 2 Dec 2014 15:28:11 +0100
-Message-ID: <CACRpkdZPd8w8wiP-dkY4X-jy5Gb7dx6vx3HPxTjHw4NM722NCw@mail.gmail.com>
+	<20141201163639.GI25249@lukather>
+	<CAAVeFuLTupDenZdSi8KO+dYsf-ekcqjsDaQ2GEzYpBG34oF7Zw@mail.gmail.com>
+Date: Tue, 2 Dec 2014 15:29:46 +0100
+Message-ID: <CACRpkdZcNcPBYQM438CZJx1gYst9BFBSTj-3Qv2aPGF9pdWa5g@mail.gmail.com>
 Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Benoit Parrot <bparrot@ti.com>,
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Benoit Parrot <bparrot@ti.com>,
         Pantelis Antoniou <panto@antoniou-consulting.com>,
         Jiri Prchal <jiri.prchal@aksignal.cz>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
         "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
@@ -31,71 +31,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 2, 2014 at 3:10 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
-> On Tue, Dec 2, 2014 at 9:22 AM, Benoit Parrot <bparrot@ti.com> wrote:
->>> > +       }
->>> > +
->>> > +       if (tmp > MAX_PHANDLE_ARGS) {
->>> > +               desc = ERR_PTR(-EINVAL);
->>> > +               goto out;
->>> > +       }
->>> > +
->>> > +       gg_data.gpiospec.args_count = tmp;
->>> > +       gg_data.gpiospec.np = chip_np;
->>> > +       for (i = 0; i < tmp; i++) {
->>> > +               ret = of_property_read_u32(np, "gpios",
->>> > +                                          &gg_data.gpiospec.args[i]);
->>> > +               if (ret) {
->>> > +                       desc = ERR_PTR(ret);
->>> > +                       goto out;
->>> > +               }
->>> > +       }
->>> > +
->>> > +       gpiochip_find(&gg_data, of_gpiochip_find_and_xlate);
->>>
->>> This seems to work but only supports one GPIO per hog node. It would
->>> be nice to be able to specify several GPIOs to which the same settings
->>> need to be applied.
->>
->> This is on purpose following Linus Walleij's comment.
+On Tue, Dec 2, 2014 at 3:13 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Tue, Dec 2, 2014 at 1:36 AM, Maxime Ripard
+> <maxime.ripard@free-electrons.com> wrote:
+
+>> The only thing I'd like to have would be that the request here would
+>> be non-exclusive, so that a later driver would still be allowed later
+>> on to request that GPIO later on and manage it itself (ideally using
+>> the usual gpiod_request function).
 >
-> Could you point me to his comment? My bad for not remembering what he
-> said, but I'd like to understand why.
+> Actually we have a plan (and I have some code too) to allow multiple
+> consumers per GPIO. Although like Benoit I wonder why you would want
+> to hog a GPIO and then request it properly later. Also, that probably
+> means we should abandon the hog since it actively drives the line and
+> would interfere with the late requested. How to do that correctly is
+> not really clear to me.
 
-Said in previous message I think: either one-per-node or lists directly
-in the gpiochip node.
-
->>> Using this function means that a GPIO chip module cannot be unloaded
->>> if it uses GPIO hogs. Is it the intended behavior? If not, please use
->>> gpiochip_request_own_desc() instead, and make sure to call
->>> gpiochip_free_own_desc() for each hog when the driver is unloaded.
->>
->> So I guess we could add a undo_gpio_hog() function and hook it up under of_gpiochip_remove().
->> Now instead of maintaining a seperate structure just to keep track of hogged descriptor,
->> would it be acceptable to add a new "gpio_desc.flags" value in gpiolib.h says:
->>
->>    #define FLAG_GPIO_IS_HOGGED 10
->>
->> And key on that at removal time instead of creating a list and having to maintain that?
->
-> Definitely, that would be even better I think.
-
-Clever. Go for this.
-
->>> I would suggest to factorize this code that is similar to the one
->>> found in __gpiod_get_index(). Do all the DT parsing in a function that
->>> just returns a descriptor and the
->>
->> I would tend to agree.
->> But as Linus suggested I was trying to contain the changes to gpiolib_of.c only.
->
-> If we add a FLAG_GPIO_IS_HOGGED and undo the hogs when the chip is
-> unloaded, I would say that this becomes a gpiolib feature. Moving it
-> here would also allow non-DT GPIO providers to implement hogs (it
-> should be particularly easy to implement for platform data). Linus, do
-> you agree?
-
-Yes, this is better and leaves the door open for other users.
+I don't get the usecase. A hogged GPIO is per definition hogged.
+This sounds more like "initial settings" or something, which is another
+usecase altogether.
 
 Yours,
 Linus Walleij
