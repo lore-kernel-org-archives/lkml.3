@@ -1,300 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932734AbaLBSYw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 13:24:52 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:60488 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932545AbaLBSYs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 13:24:48 -0500
-From: Jeff Layton <jlayton@primarydata.com>
-To: linux-nfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [RFC PATCH 12/14] sunrpc: keep a cache of svc_rqsts for each NUMA node
-Date: Tue,  2 Dec 2014 13:24:21 -0500
-Message-Id: <1417544663-13299-13-git-send-email-jlayton@primarydata.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
-References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
+	id S932818AbaLBSZb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 13:25:31 -0500
+Received: from mga03.intel.com ([134.134.136.65]:18392 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932649AbaLBSZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 13:25:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,502,1413270000"; 
+   d="scan'208";a="617433251"
+Date: Tue, 2 Dec 2014 10:24:02 -0800
+From: Kristen Carlson Accardi <kristen@linux.intel.com>
+To: Ethan Zhao <ethan.zhao@oracle.com>
+Cc: <dirk.j.brandewie@intel.com>, <viresh.kumar@linaro.org>,
+        <rjw@rjwysocki.net>, <corbet@lwn.net>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <ethan.kernel@gmail.com>, <joe.jin@oracle.com>,
+        <brian.maly@oracle.com>
+Subject: Re: [PATCH 2/2 V6] intel_pstate: add kernel parameter to force
+ loading on Sun X86 servers.
+Message-ID: <20141202102402.09ea6017@kcaccard-desk.amr.corp.intel.com>
+In-Reply-To: <1417145777-21897-4-git-send-email-ethan.zhao@oracle.com>
+References: <1417145777-21897-1-git-send-email-ethan.zhao@oracle.com>
+	<1417145777-21897-4-git-send-email-ethan.zhao@oracle.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allocating an entire svc_rqst (including all of the pages, etc...) for
-each workqueue request is pretty expensive. Keep a cache of allocated
-svc_rqst structures for each NUMA node that we keep in svc_pool.
+On Fri, 28 Nov 2014 12:36:17 +0900
+Ethan Zhao <ethan.zhao@oracle.com> wrote:
 
-In order to keep the cache from growing without bound, we register a
-shrinker. Since the cache is already NUMA-aware, we can use a NUMA-aware
-shrinker as well.
+> To force loading on Oracle Sun X86 servers, provide one kernel command line
+> parameter
+> 
+>   intel_pstate = ora_force
+> 
+> For those who be aware of the risk of no power capping capabily working and
+> try to get better performance with this driver.
 
-Signed-off-by: Jeff Layton <jlayton@primarydata.com>
----
- fs/nfsd/nfssvc.c           |   6 +-
- include/linux/sunrpc/svc.h |  17 ++++++
- net/sunrpc/svc.c           |   1 +
- net/sunrpc/svc_wq.c        | 136 ++++++++++++++++++++++++++++++++++++++++++++-
- 4 files changed, 154 insertions(+), 6 deletions(-)
+So, is this something you'd expect users to use on production systems,
+or is it just for debug?
 
-diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index 2c7ebced0311..c359e8f77b30 100644
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -672,7 +672,6 @@ nfsd(void *vrqstp)
- static void
- nfsd_work(struct work_struct *work)
- {
--	int node = numa_node_id();
- 	struct svc_xprt *xprt = container_of(work, struct svc_xprt, xpt_work);
- 	struct net *net = xprt->xpt_net;
- 	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
-@@ -681,7 +680,7 @@ nfsd_work(struct work_struct *work)
- 	struct fs_struct *saved_fs;
- 	int err;
- 
--	rqstp = svc_rqst_alloc(serv, &serv->sv_pools[node], node);
-+	rqstp = find_or_alloc_svc_rqst(serv);
- 	if (!rqstp) {
- 		/* Alloc failure. Give up for now, and requeue the work */
- 		queue_work(serv->sv_wq, &xprt->xpt_work);
-@@ -703,8 +702,7 @@ nfsd_work(struct work_struct *work)
- 
- 	saved_fs = swap_fs_struct(saved_fs);
- 	put_fs_struct(saved_fs);
--
--	svc_rqst_free(rqstp);
-+	put_svc_rqst(rqstp);
- }
- 
- static struct svc_serv_ops nfsd_wq_sv_ops = {
-diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
-index f47de87660b4..33321ddacfee 100644
---- a/include/linux/sunrpc/svc.h
-+++ b/include/linux/sunrpc/svc.h
-@@ -105,6 +105,7 @@ struct svc_serv {
- 	struct svc_pool *	sv_pools;	/* array of thread pools */
- 	struct svc_serv_ops *	sv_ops;		/* server operations */
- 	struct workqueue_struct	*sv_wq;		/* workqueue for wq-based services */
-+	struct shrinker		sv_shrinker;	/* for shrinking svc_rqst caches */
- #if defined(CONFIG_SUNRPC_BACKCHANNEL)
- 	struct list_head	sv_cb_list;	/* queue for callback requests
- 						 * that arrive over the same
-@@ -274,6 +275,7 @@ struct svc_rqst {
- #define	RQ_VICTIM	(5)			/* about to be shut down */
- #define	RQ_BUSY		(6)			/* request is busy */
- 	unsigned long		rq_flags;	/* flags field */
-+	unsigned long		rq_time;	/* when rqstp was last put */
- 
- 	void *			rq_argp;	/* decoded arguments */
- 	void *			rq_resp;	/* xdr'd results */
-@@ -493,6 +495,21 @@ char *		   svc_print_addr(struct svc_rqst *, char *, size_t);
- #if IS_ENABLED(CONFIG_SUNRPC_SVC_WORKQUEUE)
- int		   svc_wq_setup(struct svc_serv *, struct svc_pool *, int);
- void		   svc_wq_enqueue_xprt(struct svc_xprt *);
-+struct svc_rqst	*  find_or_alloc_svc_rqst(struct svc_serv *serv);
-+void		   exit_svc_rqst_cache(struct svc_serv *serv);
-+
-+static inline void
-+put_svc_rqst(struct svc_rqst *rqstp)
-+{
-+	rqstp->rq_time = jiffies;
-+	clear_bit(RQ_BUSY, &rqstp->rq_flags);
-+}
-+#else
-+static inline void
-+exit_svc_rqst_cache(struct svc_serv *serv)
-+{
-+	return;
-+}
- #endif
- 
- #define	RPC_MAX_ADDRBUFLEN	(63U)
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index 4300bc852f6e..4ebba00b8b27 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -547,6 +547,7 @@ svc_destroy(struct svc_serv *serv)
- 
- 	if (serv->sv_wq) {
- 		destroy_workqueue(serv->sv_wq);
-+		exit_svc_rqst_cache(serv);
- 		module_put(serv->sv_ops->svo_module);
- 	}
- 
-diff --git a/net/sunrpc/svc_wq.c b/net/sunrpc/svc_wq.c
-index d4720ecd0b32..e96bbf49c1a0 100644
---- a/net/sunrpc/svc_wq.c
-+++ b/net/sunrpc/svc_wq.c
-@@ -12,6 +12,130 @@
- #include <trace/events/sunrpc.h>
- 
- /*
-+ * Find a svc_rqst to use. Try to find an already allocated-one on the list
-+ * first, and then allocate if there isn't one already available.
-+ */
-+struct svc_rqst *
-+find_or_alloc_svc_rqst(struct svc_serv *serv)
-+{
-+	int node = numa_node_id();
-+	struct svc_rqst *rqstp;
-+	struct svc_pool *pool = &serv->sv_pools[node];
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(rqstp, &pool->sp_all_threads, rq_all) {
-+		if (!test_and_set_bit(RQ_BUSY, &rqstp->rq_flags)) {
-+			rcu_read_unlock();
-+			return rqstp;
-+		}
-+	}
-+	rcu_read_unlock();
-+
-+	rqstp = svc_rqst_alloc(serv, pool, node);
-+	if (rqstp) {
-+		spin_lock_bh(&pool->sp_lock);
-+		list_add_tail_rcu(&rqstp->rq_all, &pool->sp_all_threads);
-+		++pool->sp_nrthreads;
-+		spin_unlock_bh(&pool->sp_lock);
-+	}
-+	return rqstp;
-+}
-+EXPORT_SYMBOL_GPL(find_or_alloc_svc_rqst);
-+
-+static unsigned long
-+count_svc_rqst_objects(struct shrinker *shrinker, struct shrink_control *sc)
-+{
-+	struct svc_serv *serv = container_of(shrinker, struct svc_serv,
-+						sv_shrinker);
-+	struct svc_pool *pool = &serv->sv_pools[sc->nid];
-+	struct svc_rqst *rqstp;
-+	unsigned long count = 0;
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(rqstp, &pool->sp_all_threads, rq_all) {
-+		/* Don't count it if it's busy */
-+		if (test_bit(RQ_BUSY, &rqstp->rq_flags))
-+			continue;
-+
-+		/* Don't count it if it was used within the last second */
-+		if (time_before(jiffies, rqstp->rq_time + HZ))
-+			continue;
-+
-+		++count;
-+	}
-+	rcu_read_unlock();
-+
-+	return count;
-+}
-+
-+static unsigned long
-+scan_svc_rqst_objects(struct shrinker *shrinker, struct shrink_control *sc)
-+{
-+	struct svc_serv *serv = container_of(shrinker, struct svc_serv,
-+						sv_shrinker);
-+	struct svc_pool *pool = &serv->sv_pools[sc->nid];
-+	struct svc_rqst *rqstp;
-+	unsigned long count = 0;
-+
-+	spin_lock(&pool->sp_lock);
-+	list_for_each_entry_rcu(rqstp, &pool->sp_all_threads, rq_all) {
-+		/* Don't free it if it's busy */
-+		if (test_and_set_bit(RQ_BUSY, &rqstp->rq_flags))
-+			continue;
-+
-+		list_del_rcu(&rqstp->rq_all);
-+		svc_rqst_free(rqstp);
-+		--pool->sp_nrthreads;
-+		++count;
-+		if (sc->nr_to_scan-- == 0)
-+			break;
-+	}
-+	spin_unlock(&pool->sp_lock);
-+
-+	return count;
-+}
-+
-+static int
-+init_svc_rqst_cache(struct svc_serv *serv)
-+{
-+	struct shrinker *shrinker = &serv->sv_shrinker;
-+
-+	memset(shrinker, 0, sizeof(*shrinker));
-+
-+	shrinker->count_objects = count_svc_rqst_objects;
-+	shrinker->scan_objects = scan_svc_rqst_objects;
-+	shrinker->seeks = DEFAULT_SEEKS;
-+	shrinker->flags = SHRINKER_NUMA_AWARE;
-+
-+	return register_shrinker(shrinker);
-+}
-+
-+void
-+exit_svc_rqst_cache(struct svc_serv *serv)
-+{
-+	int node;
-+
-+	unregister_shrinker(&serv->sv_shrinker);
-+
-+	for (node = 0; node < serv->sv_nrpools; node++) {
-+		struct svc_pool *pool = &serv->sv_pools[node];
-+
-+		spin_lock_bh(&pool->sp_lock);
-+		while (!list_empty(&pool->sp_all_threads)) {
-+			struct svc_rqst *rqstp = list_first_entry(
-+					&pool->sp_all_threads, struct svc_rqst,
-+					rq_all);
-+
-+			WARN_ON_ONCE(test_bit(RQ_BUSY, &rqstp->rq_flags));
-+			list_del_rcu(&rqstp->rq_all);
-+			svc_rqst_free(rqstp);
-+		}
-+		pool->sp_nrthreads = 0;
-+		spin_unlock_bh(&pool->sp_lock);
-+	}
-+}
-+
-+/*
-  * This workqueue job should run on each node when the workqueue is created. It
-  * walks the list of xprts for its node, and queues the workqueue job for each.
-  */
-@@ -58,12 +182,13 @@ process_queued_xprts(struct svc_serv *serv)
- 
- /*
-  * Start up or shut down a workqueue-based RPC service. Basically, we use this
-- * to allocate the workqueue. The function assumes that the caller holds one
-- * serv->sv_nrthreads reference.
-+ * to allocate the workqueue and set up the shrinker for the svc_rqst cache.
-+ * This function assumes that the caller holds one serv->sv_nrthreads reference.
-  */
- int
- svc_wq_setup(struct svc_serv *serv, struct svc_pool *pool, int max_active)
- {
-+	int err;
- 	int nrthreads = serv->sv_nrthreads - 1; /* -1 for caller's reference */
- 
- 	WARN_ON_ONCE(nrthreads < 0);
-@@ -79,14 +204,21 @@ svc_wq_setup(struct svc_serv *serv, struct svc_pool *pool, int max_active)
- 		/* svc is down and none requested? */
- 		if (!max_active)
- 			return 0;
-+
-+		err = init_svc_rqst_cache(serv);
-+		if (err)
-+			return err;
-+
- 		__module_get(serv->sv_ops->svo_module);
- 		serv->sv_wq = alloc_workqueue("%s",
- 					WQ_UNBOUND|WQ_FREEZABLE|WQ_SYSFS,
- 					max_active, serv->sv_name);
- 		if (!serv->sv_wq) {
-+			exit_svc_rqst_cache(serv);
- 			module_put(serv->sv_ops->svo_module);
- 			return -ENOMEM;
- 		}
-+
- 		process_queued_xprts(serv);
- 	} else {
- 		/*
--- 
-2.1.0
+Thanks,
+Kristen
+
+> 
+> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+> ---
+>  v2: change to hardware vendor specific naming parameter.
+>  v4: refine code and doc.
+>  v5&v6: fix a typo in doc.
+> 
+>  Documentation/kernel-parameters.txt | 5 +++++
+>  drivers/cpufreq/intel_pstate.c      | 6 +++++-
+>  2 files changed, 10 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 479f332..7d0983e 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -1446,6 +1446,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  		       disable
+>  		         Do not enable intel_pstate as the default
+>  		         scaling driver for the supported processors
+> +		       ora_force
+> +			 Force loading intel_pstate on Oracle Sun Servers(X86).
+> +			 only for those who be aware of the risk of no power capping
+> +			 capability working and try to get better performance with this
+> +			 driver.
+>  
+>  	intremap=	[X86-64, Intel-IOMMU]
+>  			on	enable Interrupt Remapping (default)
+> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+> index 1bb62ca..2654e13 100644
+> --- a/drivers/cpufreq/intel_pstate.c
+> +++ b/drivers/cpufreq/intel_pstate.c
+> @@ -866,6 +866,7 @@ static struct cpufreq_driver intel_pstate_driver = {
+>  };
+>  
+>  static int __initdata no_load;
+> +static unsigned int  ora_force;
+>  
+>  static int intel_pstate_msrs_not_valid(void)
+>  {
+> @@ -1003,7 +1004,8 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
+>  			case PSS:
+>  				return intel_pstate_no_acpi_pss();
+>  			case PCC:
+> -				return intel_pstate_has_acpi_ppc();
+> +				return intel_pstate_has_acpi_ppc() &&
+> +					(!ora_force);
+>  			}
+>  	}
+>  
+> @@ -1078,6 +1080,8 @@ static int __init intel_pstate_setup(char *str)
+>  
+>  	if (!strcmp(str, "disable"))
+>  		no_load = 1;
+> +	if (!strcmp(str, "ora_force"))
+> +		ora_force = 1;
+>  	return 0;
+>  }
+>  early_param("intel_pstate", intel_pstate_setup);
 
