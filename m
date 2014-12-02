@@ -1,221 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832AbaLBS25 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 13:28:57 -0500
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:36166 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754685AbaLBSYb (ORCPT
+	id S1754762AbaLBSbf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 13:31:35 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:64701 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754582AbaLBSbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 13:24:31 -0500
-From: Jeff Layton <jlayton@primarydata.com>
-To: linux-nfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [RFC PATCH 01/14] sunrpc: add a new svc_serv_ops struct and move sv_shutdown into it
-Date: Tue,  2 Dec 2014 13:24:10 -0500
-Message-Id: <1417544663-13299-2-git-send-email-jlayton@primarydata.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
-References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
+	Tue, 2 Dec 2014 13:31:33 -0500
+Date: Tue, 2 Dec 2014 19:31:30 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] oom: don't assume that a coredumping thread will
+ exit soon
+Message-ID: <20141202183130.GM27014@dhcp22.suse.cz>
+References: <20141127230349.GA25075@redhat.com>
+ <20141127230405.GA25093@redhat.com>
+ <20141202091947.GB27014@dhcp22.suse.cz>
+ <20141202175041.GA20314@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141202175041.GA20314@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In later patches we'll need to abstract out more operations on a
-per-service level, besides sv_shutdown and sv_function.
+On Tue 02-12-14 18:50:41, Oleg Nesterov wrote:
+> On 12/02, Michal Hocko wrote:
+> >
+> > On Fri 28-11-14 00:04:05, Oleg Nesterov wrote:
+> >
+> > > Note: this is only the first step, this patch doesn't try to solve other
+> > > problems. For example it doesn't try to clear the wrongly set TIF_MEMDIE
+> > > (SIGNAL_GROUP_COREDUMP check is obviously racy),
+> >
+> > I am not sure I understand this. What do you mean by wrongly set
+> > TIF_MEMDIE? That we give a process access to reserves even though it is
+> > already done with the coredumping?
+> 
+> I meant that (say) oom_kill_process() can set TIF_MEMDIE because
+> PF_EXITING && !SIGNAL_GROUP_COREDUMP, and after that this task can
+> participate the coredumping. For example, this thread can exit on its
+> own, but before it calls exit_mm() another thread can start the coredump.
+> 
+> In this case TIF_MEMDIE can fool oom-killer the same way,
+> oom_scan_process_thread() returns OOM_SCAN_ABORT if TIF_MEMDIE is set.
+> 
+> > > fatal_signal_pending() can be false positive, etc.
+> >
+> > When can this happen?
+> 
+> I meant "if (fatal_signal_pending(current) || task_will_free_mem(current))"
+> in out_of_memory(). Yes, sorry, "false positive" looks confusing. I meant
+> that fatal_signal_pending() can be true because of SIGNAL_GROUP_COREDUMP.
 
-Declare a new svc_serv_ops struct to hold these operations, and move
-sv_shutdown into this struct.
+Ahh, OK I guess I see what you meant.
+ 
+> > > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> >
+> > I guess the patch as is makes sense and it is an improvement. We need
+> > to call the helper in mem_cgroup_out_of_memory as well, though.
+> 
+> Yes, but can't we do this in a separate patch?
 
-Signed-off-by: Jeff Layton <jlayton@primarydata.com>
----
- fs/lockd/svc.c             |  6 +++++-
- fs/nfs/callback.c          |  5 ++++-
- fs/nfsd/nfssvc.c           |  6 +++++-
- include/linux/sunrpc/svc.h | 20 ++++++++++----------
- net/sunrpc/svc.c           | 18 +++++++++---------
- 5 files changed, 33 insertions(+), 22 deletions(-)
+I would prefer if it was in the same patch because we might be facing
+the same problem in memcg as with the global case. And worse, smaller
+limit tend to trigger corner cases more often than the global case.
 
-diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
-index e94c887da2d7..d93a8d0a04bb 100644
---- a/fs/lockd/svc.c
-+++ b/fs/lockd/svc.c
-@@ -326,6 +326,10 @@ out_rqst:
- 	return error;
- }
- 
-+static struct svc_serv_ops lockd_sv_ops = {
-+	.svo_shutdown	= svc_rpcb_cleanup,
-+};
-+
- static struct svc_serv *lockd_create_svc(void)
- {
- 	struct svc_serv *serv;
-@@ -350,7 +354,7 @@ static struct svc_serv *lockd_create_svc(void)
- 		printk(KERN_WARNING
- 			"lockd_up: no pid, %d users??\n", nlmsvc_users);
- 
--	serv = svc_create(&nlmsvc_program, LOCKD_BUFSIZE, svc_rpcb_cleanup);
-+	serv = svc_create(&nlmsvc_program, LOCKD_BUFSIZE, &lockd_sv_ops);
- 	if (!serv) {
- 		printk(KERN_WARNING "lockd_up: create service failed\n");
- 		return ERR_PTR(-ENOMEM);
-diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
-index b8fb3a4ef649..ace6c70f807b 100644
---- a/fs/nfs/callback.c
-+++ b/fs/nfs/callback.c
-@@ -306,6 +306,9 @@ err_bind:
- 	return ret;
- }
- 
-+static struct svc_serv_ops nfs_cb_sv_ops = {
-+};
-+
- static struct svc_serv *nfs_callback_create_svc(int minorversion)
- {
- 	struct nfs_callback_data *cb_info = &nfs_callback_info[minorversion];
-@@ -331,7 +334,7 @@ static struct svc_serv *nfs_callback_create_svc(int minorversion)
- 		printk(KERN_WARNING "nfs_callback_create_svc: no kthread, %d users??\n",
- 			cb_info->users);
- 
--	serv = svc_create(&nfs4_callback_program, NFS4_CALLBACK_BUFSIZE, NULL);
-+	serv = svc_create(&nfs4_callback_program, NFS4_CALLBACK_BUFSIZE, &nfs_cb_sv_ops);
- 	if (!serv) {
- 		printk(KERN_ERR "nfs_callback_create_svc: create service failed\n");
- 		return ERR_PTR(-ENOMEM);
-diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index 314f5c8f8f1a..cc5dd1227732 100644
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -390,6 +390,10 @@ static int nfsd_get_default_max_blksize(void)
- 	return ret;
- }
- 
-+static struct svc_serv_ops nfsd_sv_ops = {
-+	.svo_shutdown = nfsd_last_thread,
-+};
-+
- int nfsd_create_serv(struct net *net)
- {
- 	int error;
-@@ -404,7 +408,7 @@ int nfsd_create_serv(struct net *net)
- 		nfsd_max_blksize = nfsd_get_default_max_blksize();
- 	nfsd_reset_versions();
- 	nn->nfsd_serv = svc_create_pooled(&nfsd_program, nfsd_max_blksize,
--				      nfsd_last_thread, nfsd, THIS_MODULE);
-+				      &nfsd_sv_ops, nfsd, THIS_MODULE);
- 	if (nn->nfsd_serv == NULL)
- 		return -ENOMEM;
- 
-diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
-index 6f22cfeef5e3..35faea625d9f 100644
---- a/include/linux/sunrpc/svc.h
-+++ b/include/linux/sunrpc/svc.h
-@@ -54,6 +54,13 @@ struct svc_pool {
- 	unsigned long		sp_flags;
- } ____cacheline_aligned_in_smp;
- 
-+struct svc_serv;
-+
-+struct svc_serv_ops {
-+	/* Callback to use when last thread exits. */
-+	void	(*svo_shutdown)(struct svc_serv *serv, struct net *net);
-+};
-+
- /*
-  * RPC service.
-  *
-@@ -85,13 +92,7 @@ struct svc_serv {
- 
- 	unsigned int		sv_nrpools;	/* number of thread pools */
- 	struct svc_pool *	sv_pools;	/* array of thread pools */
--
--	void			(*sv_shutdown)(struct svc_serv *serv,
--					       struct net *net);
--						/* Callback to use when last thread
--						 * exits.
--						 */
--
-+	struct svc_serv_ops *	sv_ops;		/* server operations */
- 	struct module *		sv_module;	/* optional module to count when
- 						 * adding threads */
- 	svc_thread_fn		sv_function;	/* main function for threads */
-@@ -429,13 +430,12 @@ int svc_rpcb_setup(struct svc_serv *serv, struct net *net);
- void svc_rpcb_cleanup(struct svc_serv *serv, struct net *net);
- int svc_bind(struct svc_serv *serv, struct net *net);
- struct svc_serv *svc_create(struct svc_program *, unsigned int,
--			    void (*shutdown)(struct svc_serv *, struct net *net));
-+			    struct svc_serv_ops *);
- struct svc_rqst *svc_prepare_thread(struct svc_serv *serv,
- 					struct svc_pool *pool, int node);
- void		   svc_exit_thread(struct svc_rqst *);
- struct svc_serv *  svc_create_pooled(struct svc_program *, unsigned int,
--			void (*shutdown)(struct svc_serv *, struct net *net),
--			svc_thread_fn, struct module *);
-+			struct svc_serv_ops *, svc_thread_fn, struct module *);
- int		   svc_set_num_threads(struct svc_serv *, struct svc_pool *, int);
- int		   svc_pool_stats_open(struct svc_serv *serv, struct file *file);
- void		   svc_destroy(struct svc_serv *);
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index 4308881d9d0a..057185e11261 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -423,7 +423,7 @@ EXPORT_SYMBOL_GPL(svc_bind);
-  */
- static struct svc_serv *
- __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
--	     void (*shutdown)(struct svc_serv *serv, struct net *net))
-+	     struct svc_serv_ops *ops)
- {
- 	struct svc_serv	*serv;
- 	unsigned int vers;
-@@ -440,7 +440,7 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
- 		bufsize = RPCSVC_MAXPAYLOAD;
- 	serv->sv_max_payload = bufsize? bufsize : 4096;
- 	serv->sv_max_mesg  = roundup(serv->sv_max_payload + PAGE_SIZE, PAGE_SIZE);
--	serv->sv_shutdown  = shutdown;
-+	serv->sv_ops = ops;
- 	xdrsize = 0;
- 	while (prog) {
- 		prog->pg_lovers = prog->pg_nvers-1;
-@@ -486,21 +486,21 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
- 
- struct svc_serv *
- svc_create(struct svc_program *prog, unsigned int bufsize,
--	   void (*shutdown)(struct svc_serv *serv, struct net *net))
-+	   struct svc_serv_ops *ops)
- {
--	return __svc_create(prog, bufsize, /*npools*/1, shutdown);
-+	return __svc_create(prog, bufsize, /*npools*/1, ops);
- }
- EXPORT_SYMBOL_GPL(svc_create);
- 
- struct svc_serv *
- svc_create_pooled(struct svc_program *prog, unsigned int bufsize,
--		  void (*shutdown)(struct svc_serv *serv, struct net *net),
--		  svc_thread_fn func, struct module *mod)
-+		  struct svc_serv_ops *ops, svc_thread_fn func,
-+		  struct module *mod)
- {
- 	struct svc_serv *serv;
- 	unsigned int npools = svc_pool_map_get();
- 
--	serv = __svc_create(prog, bufsize, npools, shutdown);
-+	serv = __svc_create(prog, bufsize, npools, ops);
- 	if (!serv)
- 		goto out_err;
- 
-@@ -517,8 +517,8 @@ void svc_shutdown_net(struct svc_serv *serv, struct net *net)
- {
- 	svc_close_net(serv, net);
- 
--	if (serv->sv_shutdown)
--		serv->sv_shutdown(serv, net);
-+	if (serv->sv_ops->svo_shutdown)
-+		serv->sv_ops->svo_shutdown(serv, net);
- }
- EXPORT_SYMBOL_GPL(svc_shutdown_net);
- 
+> try_charge() plays with TIF_MEMDIE/PF_EXITING too, but probably this
+> is fine.
+
+try_charge is OK because this is from the time when the allocation has
+been already done and we just decide to bypass the charge.
+
+> > With that feel free to add
+> > Acked-by: Michal Hocko <mhocko@suse.cz>
+> 
+> Thanks.
+> 
+> > Also the original fix for the coredumping (edd45544c6f0 "oom: avoid
+> > deferring oom killer if exiting task is being traced") doesn't work
+> > really as per http://marc.info/?l=linux-kernel&m=141711049013620 then
+> > this and the follow up patch should be marked for stable I guess.
+> 
+> Perhaps this makes sense. It looks simple enough.
+> 
+> Oleg.
+> 
+
 -- 
-2.1.0
-
+Michal Hocko
+SUSE Labs
