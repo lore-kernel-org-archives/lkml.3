@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979AbaLBN4o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 08:56:44 -0500
-Received: from tex.lwn.net ([70.33.254.29]:59821 "EHLO vena.lwn.net"
+	id S1753467AbaLBN5l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 08:57:41 -0500
+Received: from tex.lwn.net ([70.33.254.29]:59831 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751599AbaLBN4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 08:56:42 -0500
-Date: Tue, 2 Dec 2014 08:56:39 -0500
+	id S1752928AbaLBN5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 08:57:40 -0500
+Date: Tue, 2 Dec 2014 08:57:38 -0500
 From: Jonathan Corbet <corbet@lwn.net>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        SF Markus Elfring <elfring@users.sourceforge.net>,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [patch] CodingStyle: add some more error handling guidelines
-Message-ID: <20141202085639.43080af0@lwn.net>
-In-Reply-To: <alpine.DEB.2.10.1412021007560.2483@hadrien>
-References: <20141202085950.GA13434@mwanda>
-	<alpine.DEB.2.10.1412021007560.2483@hadrien>
+To: Richard Leitner <dev@g0hl1n.net>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation/email-clients.txt: add info about Claws
+ Mail
+Message-ID: <20141202085738.28b7763d@lwn.net>
+In-Reply-To: <20141202081048.357a0953@frodo>
+References: <20141201230208.4567b6cc@frodo>
+	<20141201173405.0a291ecb@lwn.net>
+	<20141202081048.357a0953@frodo>
 Organization: LWN.net
 X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
@@ -28,14 +26,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Dec 2014 10:09:02 +0100 (CET)
-Julia Lawall <julia.lawall@lip6.fr> wrote:
+On Tue, 2 Dec 2014 08:10:48 +0100
+Richard Leitner <dev@g0hl1n.net> wrote:
 
-> kmalloc actually takes two arguments.  Perhaps it would be better to show
-> something that looks like a valid call.
+> Should I change the patch to something like:
+> 
+> To insert a patch use Message->Insert File (CTRL+i) or an external
+> editor.
+> If the inserted patch has to be edited in the Claws composition window
+> Auto wrapping in Configuration->Preferences->Compose->Wrapping should
+> be disabled.
+> 
+> Or should I resend the patch without any hint to the auto wrapping?
 
-Agreed; I took the liberty of sticking in a GFP_KERNEL as I applied the
-patch with Julia's ack.
+The former looks good; it's worth a mention in case somebody does decide
+to edit their patches on the way out.  Send a new patch (soon for 3.19)
+and I'll apply it.
 
 Thanks,
 
