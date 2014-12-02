@@ -1,152 +1,421 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932185AbaLBKUM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 05:20:12 -0500
-Received: from h1.radempa.de ([176.9.142.194]:59828 "EHLO mail.cosmopool.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751873AbaLBKUG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 05:20:06 -0500
-From: Harald Geyer <harald@ccbib.org>
-To: Richard Weinberger <richard@nod.at>
-cc: jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
-        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] iio: dht11: IRQ fixes
-In-reply-to: <1417465651-16036-2-git-send-email-richard@nod.at>
-References: <1417465651-16036-1-git-send-email-richard@nod.at> <1417465651-16036-2-git-send-email-richard@nod.at>
-Comments: In-reply-to Richard Weinberger <richard@nod.at>
-   message dated "Mon, 01 Dec 2014 21:27:31 +0100."
+	id S1752844AbaLBKT7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 05:19:59 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:54224 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751483AbaLBKT4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 05:19:56 -0500
+From: Wang Nan <wangnan0@huawei.com>
+To: <masami.hiramatsu.pt@hitachi.com>
+CC: <tixy@linaro.org>, <linux@arm.linux.org.uk>, <lizefan@huawei.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH] ARM: probes: move all probe code to dedicate directory
+Date: Tue, 2 Dec 2014 18:16:23 +0800
+Message-ID: <1417515383-79890-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <547D471B.2070908@hitachi.com>
+References: <547D471B.2070908@hitachi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <4070.1417515595.1@stardust.g4.wien.funkfeuer.at>
-Date: Tue, 02 Dec 2014 11:19:55 +0100
-Message-Id: <E1XvkYl-00013g-VO@stardust.g4.wien.funkfeuer.at>
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020205.547D924A.0077,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: ffc95889af32d5cb488ac6c26cc00934
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+In discussion on LKML (https://lkml.org/lkml/2014/11/28/158), Russell
+King suggests to move all probe related code to arch/arm/probes. This
+patch does the work. Due to dependency on 'arch/arm/kernel/patch.h', this
+patch also moves patch.h to 'arch/arm/include/asm/patch.h', and related
+'#include' directives are also midified to '#include <asm/patch.h>'.
 
-thanks for the patch.
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
 
-I think (haven't tried yet) that your patch changes the number of
-edges recorded per transmission. So probably the decoding function
-needs to be adapted too...
+---
 
-I won't be able to ACK this before testing on real HW. Of course
-confirmation that your changes work reliably on both DHT11 and DHT22
-will do as well. The debuging code present in the initial submission
-of the driver might be helpful to anybody trying to verify the
-timing.
+v1 -> v2:
+ - Names of files are also changes to express their function.
+---
+ arch/arm/Makefile                                        |  1 +
+ arch/arm/{kernel => include/asm}/patch.h                 |  0
+ arch/arm/kernel/Makefile                                 | 16 ++--------------
+ arch/arm/kernel/jump_label.c                             |  2 +-
+ arch/arm/kernel/patch.c                                  |  3 +--
+ arch/arm/probes/Makefile                                 | 15 +++++++++++++++
+ arch/arm/{kernel/probes-arm.c => probes/decode-arm.c}    |  4 ++--
+ arch/arm/{kernel/probes-arm.h => probes/decode-arm.h}    |  0
+ .../arm/{kernel/probes-thumb.c => probes/decode-thumb.c} |  4 ++--
+ .../arm/{kernel/probes-thumb.h => probes/decode-thumb.h} |  0
+ arch/arm/{kernel/probes.c => probes/decode.c}            |  2 +-
+ arch/arm/{kernel/probes.h => probes/decode.h}            |  0
+ .../kprobes-arm.c => probes/kprobes/actions-arm.c}       |  2 +-
+ .../kprobes-common.c => probes/kprobes/actions-common.c} |  0
+ .../kprobes-thumb.c => probes/kprobes/actions-thumb.c}   |  2 +-
+ arch/arm/{kernel => probes/kprobes}/kprobes.c            |  6 +++---
+ arch/arm/{kernel => probes/kprobes}/kprobes.h            |  2 +-
+ .../kprobes-test-arm.c => probes/kprobes/test-arm.c}     |  2 +-
+ .../kprobes-test.c => probes/kprobes/test-core.c}        |  6 +++---
+ .../kprobes-test.h => probes/kprobes/test-core.h}        |  0
+ .../kprobes-test-thumb.c => probes/kprobes/test-thumb.c} |  2 +-
+ .../uprobes-arm.c => probes/uprobes/actions-arm.c}       |  4 ++--
+ arch/arm/{kernel => probes/uprobes}/uprobes.c            |  4 ++--
+ arch/arm/{kernel => probes/uprobes}/uprobes.h            |  0
+ 24 files changed, 40 insertions(+), 37 deletions(-)
+ rename arch/arm/{kernel => include/asm}/patch.h (100%)
+ create mode 100644 arch/arm/probes/Makefile
+ rename arch/arm/{kernel/probes-arm.c => probes/decode-arm.c} (99%)
+ rename arch/arm/{kernel/probes-arm.h => probes/decode-arm.h} (100%)
+ rename arch/arm/{kernel/probes-thumb.c => probes/decode-thumb.c} (99%)
+ rename arch/arm/{kernel/probes-thumb.h => probes/decode-thumb.h} (100%)
+ rename arch/arm/{kernel/probes.c => probes/decode.c} (99%)
+ rename arch/arm/{kernel/probes.h => probes/decode.h} (100%)
+ rename arch/arm/{kernel/kprobes-arm.c => probes/kprobes/actions-arm.c} (99%)
+ rename arch/arm/{kernel/kprobes-common.c => probes/kprobes/actions-common.c} (100%)
+ rename arch/arm/{kernel/kprobes-thumb.c => probes/kprobes/actions-thumb.c} (99%)
+ rename arch/arm/{kernel => probes/kprobes}/kprobes.c (99%)
+ rename arch/arm/{kernel => probes/kprobes}/kprobes.h (98%)
+ rename arch/arm/{kernel/kprobes-test-arm.c => probes/kprobes/test-arm.c} (99%)
+ rename arch/arm/{kernel/kprobes-test.c => probes/kprobes/test-core.c} (99%)
+ rename arch/arm/{kernel/kprobes-test.h => probes/kprobes/test-core.h} (100%)
+ rename arch/arm/{kernel/kprobes-test-thumb.c => probes/kprobes/test-thumb.c} (99%)
+ rename arch/arm/{kernel/uprobes-arm.c => probes/uprobes/actions-arm.c} (99%)
+ rename arch/arm/{kernel => probes/uprobes}/uprobes.c (99%)
+ rename arch/arm/{kernel => probes/uprobes}/uprobes.h (100%)
 
-I'm doing kernel work in my free time and am quite busy with my day job
-right now, so it will take a few days before I can test your code myself.
-Sorry about that.
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index 034a949..a57d9bb 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -266,6 +266,7 @@ core-$(CONFIG_KVM_ARM_HOST) 	+= arch/arm/kvm/
+ 
+ # If we have a machine-specific directory, then include it in the build.
+ core-y				+= arch/arm/kernel/ arch/arm/mm/ arch/arm/common/
++core-y				+= arch/arm/probes/
+ core-y				+= arch/arm/net/
+ core-y				+= arch/arm/crypto/
+ core-y				+= arch/arm/firmware/
+diff --git a/arch/arm/kernel/patch.h b/arch/arm/include/asm/patch.h
+similarity index 100%
+rename from arch/arm/kernel/patch.h
+rename to arch/arm/include/asm/patch.h
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 38ddd9f..40d3e00 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -51,20 +51,8 @@ obj-$(CONFIG_DYNAMIC_FTRACE)	+= ftrace.o insn.o
+ obj-$(CONFIG_FUNCTION_GRAPH_TRACER)	+= ftrace.o insn.o
+ obj-$(CONFIG_JUMP_LABEL)	+= jump_label.o insn.o patch.o
+ obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel.o
+-obj-$(CONFIG_UPROBES)		+= probes.o probes-arm.o uprobes.o uprobes-arm.o
+-obj-$(CONFIG_KPROBES)		+= probes.o kprobes.o kprobes-common.o patch.o
+-ifdef CONFIG_THUMB2_KERNEL
+-obj-$(CONFIG_KPROBES)		+= kprobes-thumb.o probes-thumb.o
+-else
+-obj-$(CONFIG_KPROBES)		+= kprobes-arm.o probes-arm.o
+-endif
+-obj-$(CONFIG_ARM_KPROBES_TEST)	+= test-kprobes.o
+-test-kprobes-objs		:= kprobes-test.o
+-ifdef CONFIG_THUMB2_KERNEL
+-test-kprobes-objs		+= kprobes-test-thumb.o
+-else
+-test-kprobes-objs		+= kprobes-test-arm.o
+-endif
++# Main staffs in KPROBES are in arch/arm/probes/ .
++obj-$(CONFIG_KPROBES)		+= patch.o
+ obj-$(CONFIG_OABI_COMPAT)	+= sys_oabi-compat.o
+ obj-$(CONFIG_ARM_THUMBEE)	+= thumbee.o
+ obj-$(CONFIG_KGDB)		+= kgdb.o
+diff --git a/arch/arm/kernel/jump_label.c b/arch/arm/kernel/jump_label.c
+index 4ce4f78..c6c73ed 100644
+--- a/arch/arm/kernel/jump_label.c
++++ b/arch/arm/kernel/jump_label.c
+@@ -1,8 +1,8 @@
+ #include <linux/kernel.h>
+ #include <linux/jump_label.h>
++#include <asm/patch.h>
+ 
+ #include "insn.h"
+-#include "patch.h"
+ 
+ #ifdef HAVE_JUMP_LABEL
+ 
+diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
+index 07314af..08bcfa1 100644
+--- a/arch/arm/kernel/patch.c
++++ b/arch/arm/kernel/patch.c
+@@ -5,8 +5,7 @@
+ #include <asm/cacheflush.h>
+ #include <asm/smp_plat.h>
+ #include <asm/opcodes.h>
+-
+-#include "patch.h"
++#include <asm/patch.h>
+ 
+ struct patch {
+ 	void *addr;
+diff --git a/arch/arm/probes/Makefile b/arch/arm/probes/Makefile
+new file mode 100644
+index 0000000..0b9bd28
+--- /dev/null
++++ b/arch/arm/probes/Makefile
+@@ -0,0 +1,15 @@
++obj-$(CONFIG_UPROBES)		+= decode.o decode-arm.o uprobes/uprobes.o uprobes/actions-arm.o
++obj-$(CONFIG_KPROBES)		+= decode.o kprobes/kprobes.o kprobes/actions-common.o
++ifdef CONFIG_THUMB2_KERNEL
++obj-$(CONFIG_KPROBES)		+= decode-thumb.o kprobes/actions-thumb.o
++else
++obj-$(CONFIG_KPROBES)		+= decode-arm.o kprobes/actions-arm.o
++endif
++obj-$(CONFIG_ARM_KPROBES_TEST)	+= test-kprobes.o
++test-kprobes-objs		:= kprobes/test-core.o
++ifdef CONFIG_THUMB2_KERNEL
++test-kprobes-objs		+= kprobes/test-thumb.o
++else
++test-kprobes-objs		+= kprobes/test-arm.o
++endif
++
+diff --git a/arch/arm/kernel/probes-arm.c b/arch/arm/probes/decode-arm.c
+similarity index 99%
+rename from arch/arm/kernel/probes-arm.c
+rename to arch/arm/probes/decode-arm.c
+index 8eaef81..1fb81e7 100644
+--- a/arch/arm/kernel/probes-arm.c
++++ b/arch/arm/probes/decode-arm.c
+@@ -20,8 +20,8 @@
+ #include <linux/stddef.h>
+ #include <linux/ptrace.h>
+ 
+-#include "probes.h"
+-#include "probes-arm.h"
++#include "decode.h"
++#include "decode-arm.h"
+ 
+ #define sign_extend(x, signbit) ((x) | (0 - ((x) & (1 << (signbit)))))
+ 
+diff --git a/arch/arm/kernel/probes-arm.h b/arch/arm/probes/decode-arm.h
+similarity index 100%
+rename from arch/arm/kernel/probes-arm.h
+rename to arch/arm/probes/decode-arm.h
+diff --git a/arch/arm/kernel/probes-thumb.c b/arch/arm/probes/decode-thumb.c
+similarity index 99%
+rename from arch/arm/kernel/probes-thumb.c
+rename to arch/arm/probes/decode-thumb.c
+index 4131351..2cddd18 100644
+--- a/arch/arm/kernel/probes-thumb.c
++++ b/arch/arm/probes/decode-thumb.c
+@@ -12,8 +12,8 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ 
+-#include "probes.h"
+-#include "probes-thumb.h"
++#include "decode.h"
++#include "decode-thumb.h"
+ 
+ 
+ static const union decode_item t32_table_1110_100x_x0xx[] = {
+diff --git a/arch/arm/kernel/probes-thumb.h b/arch/arm/probes/decode-thumb.h
+similarity index 100%
+rename from arch/arm/kernel/probes-thumb.h
+rename to arch/arm/probes/decode-thumb.h
+diff --git a/arch/arm/kernel/probes.c b/arch/arm/probes/decode.c
+similarity index 99%
+rename from arch/arm/kernel/probes.c
+rename to arch/arm/probes/decode.c
+index a8ab540..0141d70 100644
+--- a/arch/arm/kernel/probes.c
++++ b/arch/arm/probes/decode.c
+@@ -17,7 +17,7 @@
+ #include <asm/ptrace.h>
+ #include <linux/bug.h>
+ 
+-#include "probes.h"
++#include "decode.h"
+ 
+ 
+ #ifndef find_str_pc_offset
+diff --git a/arch/arm/kernel/probes.h b/arch/arm/probes/decode.h
+similarity index 100%
+rename from arch/arm/kernel/probes.h
+rename to arch/arm/probes/decode.h
+diff --git a/arch/arm/kernel/kprobes-arm.c b/arch/arm/probes/kprobes/actions-arm.c
+similarity index 99%
+rename from arch/arm/kernel/kprobes-arm.c
+rename to arch/arm/probes/kprobes/actions-arm.c
+index ac300c6..864feac 100644
+--- a/arch/arm/kernel/kprobes-arm.c
++++ b/arch/arm/probes/kprobes/actions-arm.c
+@@ -63,7 +63,7 @@
+ #include <linux/ptrace.h>
+ 
+ #include "kprobes.h"
+-#include "probes-arm.h"
++#include "../decode-arm.h"
+ 
+ #if  __LINUX_ARM_ARCH__ >= 6
+ #define BLX(reg)	"blx	"reg"		\n\t"
+diff --git a/arch/arm/kernel/kprobes-common.c b/arch/arm/probes/kprobes/actions-common.c
+similarity index 100%
+rename from arch/arm/kernel/kprobes-common.c
+rename to arch/arm/probes/kprobes/actions-common.c
+diff --git a/arch/arm/kernel/kprobes-thumb.c b/arch/arm/probes/kprobes/actions-thumb.c
+similarity index 99%
+rename from arch/arm/kernel/kprobes-thumb.c
+rename to arch/arm/probes/kprobes/actions-thumb.c
+index 9495d7f..35d6054 100644
+--- a/arch/arm/kernel/kprobes-thumb.c
++++ b/arch/arm/probes/kprobes/actions-thumb.c
+@@ -14,7 +14,7 @@
+ #include <linux/kprobes.h>
+ 
+ #include "kprobes.h"
+-#include "probes-thumb.h"
++#include "decode-thumb.h"
+ 
+ /* These emulation encodings are functionally equivalent... */
+ #define t32_emulate_rd8rn16rm0ra12_noflags \
+diff --git a/arch/arm/kernel/kprobes.c b/arch/arm/probes/kprobes/kprobes.c
+similarity index 99%
+rename from arch/arm/kernel/kprobes.c
+rename to arch/arm/probes/kprobes/kprobes.c
+index 6d64420..ea77d39 100644
+--- a/arch/arm/kernel/kprobes.c
++++ b/arch/arm/probes/kprobes/kprobes.c
+@@ -30,11 +30,11 @@
+ #include <asm/cacheflush.h>
+ #include <linux/percpu.h>
+ #include <linux/bug.h>
++#include <asm/patch.h>
+ 
+ #include "kprobes.h"
+-#include "probes-arm.h"
+-#include "probes-thumb.h"
+-#include "patch.h"
++#include "decode-arm.h"
++#include "decode-thumb.h"
+ 
+ #define MIN_STACK_SIZE(addr) 				\
+ 	min((unsigned long)MAX_STACK_SIZE,		\
+diff --git a/arch/arm/kernel/kprobes.h b/arch/arm/probes/kprobes/kprobes.h
+similarity index 98%
+rename from arch/arm/kernel/kprobes.h
+rename to arch/arm/probes/kprobes/kprobes.h
+index 9a2712e..7b58ecf 100644
+--- a/arch/arm/kernel/kprobes.h
++++ b/arch/arm/probes/kprobes/kprobes.h
+@@ -19,7 +19,7 @@
+ #ifndef _ARM_KERNEL_KPROBES_H
+ #define _ARM_KERNEL_KPROBES_H
+ 
+-#include "probes.h"
++#include "../decode.h"
+ 
+ /*
+  * These undefined instructions must be unique and
+diff --git a/arch/arm/kernel/kprobes-test-arm.c b/arch/arm/probes/kprobes/test-arm.c
+similarity index 99%
+rename from arch/arm/kernel/kprobes-test-arm.c
+rename to arch/arm/probes/kprobes/test-arm.c
+index cb14242..d9a1255 100644
+--- a/arch/arm/kernel/kprobes-test-arm.c
++++ b/arch/arm/probes/kprobes/test-arm.c
+@@ -13,7 +13,7 @@
+ #include <asm/system_info.h>
+ #include <asm/opcodes.h>
+ 
+-#include "kprobes-test.h"
++#include "test-core.h"
+ 
+ 
+ #define TEST_ISA "32"
+diff --git a/arch/arm/kernel/kprobes-test.c b/arch/arm/probes/kprobes/test-core.c
+similarity index 99%
+rename from arch/arm/kernel/kprobes-test.c
+rename to arch/arm/probes/kprobes/test-core.c
+index b206d77..3dcfc58 100644
+--- a/arch/arm/kernel/kprobes-test.c
++++ b/arch/arm/probes/kprobes/test-core.c
+@@ -210,9 +210,9 @@
+ #include <asm/opcodes.h>
+ 
+ #include "kprobes.h"
+-#include "probes-arm.h"
+-#include "probes-thumb.h"
+-#include "kprobes-test.h"
++#include "decode-arm.h"
++#include "decode-thumb.h"
++#include "test-core.h"
+ 
+ 
+ #define BENCHMARKING	1
+diff --git a/arch/arm/kernel/kprobes-test.h b/arch/arm/probes/kprobes/test-core.h
+similarity index 100%
+rename from arch/arm/kernel/kprobes-test.h
+rename to arch/arm/probes/kprobes/test-core.h
+diff --git a/arch/arm/kernel/kprobes-test-thumb.c b/arch/arm/probes/kprobes/test-thumb.c
+similarity index 99%
+rename from arch/arm/kernel/kprobes-test-thumb.c
+rename to arch/arm/probes/kprobes/test-thumb.c
+index 844dd10..d58fa10 100644
+--- a/arch/arm/kernel/kprobes-test-thumb.c
++++ b/arch/arm/probes/kprobes/test-thumb.c
+@@ -12,7 +12,7 @@
+ #include <linux/module.h>
+ #include <asm/opcodes.h>
+ 
+-#include "kprobes-test.h"
++#include "test-core.h"
+ 
+ 
+ #define TEST_ISA "16"
+diff --git a/arch/arm/kernel/uprobes-arm.c b/arch/arm/probes/uprobes/actions-arm.c
+similarity index 99%
+rename from arch/arm/kernel/uprobes-arm.c
+rename to arch/arm/probes/uprobes/actions-arm.c
+index d3b655f..b98a0a8 100644
+--- a/arch/arm/kernel/uprobes-arm.c
++++ b/arch/arm/probes/uprobes/actions-arm.c
+@@ -13,8 +13,8 @@
+ #include <linux/uprobes.h>
+ #include <linux/module.h>
+ 
+-#include "probes.h"
+-#include "probes-arm.h"
++#include "../decode.h"
++#include "../decode-arm.h"
+ #include "uprobes.h"
+ 
+ static int uprobes_substitute_pc(unsigned long *pinsn, u32 oregs)
+diff --git a/arch/arm/kernel/uprobes.c b/arch/arm/probes/uprobes/uprobes.c
+similarity index 99%
+rename from arch/arm/kernel/uprobes.c
+rename to arch/arm/probes/uprobes/uprobes.c
+index 56adf9c..f611989 100644
+--- a/arch/arm/kernel/uprobes.c
++++ b/arch/arm/probes/uprobes/uprobes.c
+@@ -17,8 +17,8 @@
+ #include <asm/opcodes.h>
+ #include <asm/traps.h>
+ 
+-#include "probes.h"
+-#include "probes-arm.h"
++#include "../decode.h"
++#include "../decode-arm.h"
+ #include "uprobes.h"
+ 
+ #define UPROBE_TRAP_NR	UINT_MAX
+diff --git a/arch/arm/kernel/uprobes.h b/arch/arm/probes/uprobes/uprobes.h
+similarity index 100%
+rename from arch/arm/kernel/uprobes.h
+rename to arch/arm/probes/uprobes/uprobes.h
+-- 
+1.8.4
 
-Thanks,
-Harald
-
-Richard Weinberger writes:
-> We must not set an IRQ pin into output mode.
-> Set the data GPIO only into IRQ mode if needed.
-> This is a bit hacky but the only way to communicate in a sane
-> way with the device.
-> 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  drivers/iio/humidity/dht11.c | 56 ++++++++++++++++++++++++--------------------
->  1 file changed, 30 insertions(+), 26 deletions(-)
-> 
-> diff --git a/drivers/iio/humidity/dht11.c b/drivers/iio/humidity/dht11.c
-> index 7636e66..b6c44ad 100644
-> --- a/drivers/iio/humidity/dht11.c
-> +++ b/drivers/iio/humidity/dht11.c
-> @@ -139,6 +139,27 @@ static int dht11_decode(struct dht11 *dht11, int offset)
->  	return 0;
->  }
->  
-> +/*
-> + * IRQ handler called on GPIO edges
-> + */
-> +static irqreturn_t dht11_handle_irq(int irq, void *data)
-> +{
-> +	struct iio_dev *iio = data;
-> +	struct dht11 *dht11 = iio_priv(iio);
-> +
-> +	/* TODO: Consider making the handler safe for IRQ sharing */
-> +	if (dht11->num_edges < DHT11_EDGES_PER_READ && dht11->num_edges >= 0) {
-> +		dht11->edges[dht11->num_edges].ts = iio_get_time_ns();
-> +		dht11->edges[dht11->num_edges++].value =
-> +						gpio_get_value(dht11->gpio);
-> +
-> +		if (dht11->num_edges >= DHT11_EDGES_PER_READ)
-> +			complete(&dht11->completion);
-> +	}
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
->  static int dht11_read_raw(struct iio_dev *iio_dev,
->  			const struct iio_chan_spec *chan,
->  			int *val, int *val2, long m)
-> @@ -159,8 +180,17 @@ static int dht11_read_raw(struct iio_dev *iio_dev,
->  		if (ret)
->  			goto err_unlock;
->  
-> +		ret = request_irq(dht11->irq, dht11_handle_irq,
-> +				  IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
-> +				  iio_dev->name, iio_dev);
-> +		if (ret)
-> +			goto err_unlock;
-> +
->  		ret = wait_for_completion_killable_timeout(&dht11->completion,
->  								 HZ);
-> +
-> +		free_irq(dht11->irq, iio_dev);
-> +
->  		if (ret == 0 && dht11->num_edges < DHT11_EDGES_PER_READ - 1) {
->  			dev_err(&iio_dev->dev,
->  					"Only %d signal edges detected\n",
-> @@ -201,27 +231,6 @@ static const struct iio_info dht11_iio_info = {
->  	.read_raw		= dht11_read_raw,
->  };
->  
-> -/*
-> - * IRQ handler called on GPIO edges
-> -*/
-> -static irqreturn_t dht11_handle_irq(int irq, void *data)
-> -{
-> -	struct iio_dev *iio = data;
-> -	struct dht11 *dht11 = iio_priv(iio);
-> -
-> -	/* TODO: Consider making the handler safe for IRQ sharing */
-> -	if (dht11->num_edges < DHT11_EDGES_PER_READ && dht11->num_edges >= 0) {
-> -		dht11->edges[dht11->num_edges].ts = iio_get_time_ns();
-> -		dht11->edges[dht11->num_edges++].value =
-> -						gpio_get_value(dht11->gpio);
-> -
-> -		if (dht11->num_edges >= DHT11_EDGES_PER_READ)
-> -			complete(&dht11->completion);
-> -	}
-> -
-> -	return IRQ_HANDLED;
-> -}
-> -
->  static const struct iio_chan_spec dht11_chan_spec[] = {
->  	{ .type = IIO_TEMP,
->  		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED), },
-> @@ -264,11 +273,6 @@ static int dht11_probe(struct platform_device *pdev)
->  		dev_err(dev, "GPIO %d has no interrupt\n", dht11->gpio);
->  		return -EINVAL;
->  	}
-> -	ret = devm_request_irq(dev, dht11->irq, dht11_handle_irq,
-> -				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
-> -				pdev->name, iio);
-> -	if (ret)
-> -		return ret;
->  
->  	dht11->timestamp = iio_get_time_ns() - DHT11_DATA_VALID_TIME - 1;
->  	dht11->num_edges = -1;
-> -- 
-> 2.1.0
-> 
