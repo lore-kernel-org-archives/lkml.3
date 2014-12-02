@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932736AbaLBTMP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:12:15 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:20953 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753677AbaLBTMN (ORCPT
+	id S932496AbaLBTO1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:14:27 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:41405 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753495AbaLBTOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:12:13 -0500
-Date: Tue, 2 Dec 2014 14:10:58 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
-        Douglas Hatch <doug.hatch@hp.com>
-Subject: Re: [PATCH v13 10/11] pvqspinlock, x86: Enable PV qspinlock for KVM
-Message-ID: <20141202191058.GA357@laptop.dumpdata.com>
-References: <1414613951-32532-1-git-send-email-Waiman.Long@hp.com>
- <1414613951-32532-11-git-send-email-Waiman.Long@hp.com>
+	Tue, 2 Dec 2014 14:14:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414613951-32532-11-git-send-email-Waiman.Long@hp.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <CAFLxGvybiem34J3zrtVhW=4itSdczassNt9RcuxnpJQeAz-JVA@mail.gmail.com>
+References: <1414783141-6947-1-git-send-email-adityakali@google.com>
+ <20141104131030.GA2937@redhat.com> <CAGr1F2Hm4+aCUz3RqkgUhbJAQtWvUbb2CRDkW5rJSZkwLM_huw@mail.gmail.com>
+ <CAFLxGvybiem34J3zrtVhW=4itSdczassNt9RcuxnpJQeAz-JVA@mail.gmail.com>
+From: Aditya Kali <adityakali@google.com>
+Date: Tue, 2 Dec 2014 11:14:04 -0800
+Message-ID: <CAGr1F2F97LcORP6mbEfC+kU0Eib8AWt=n25Ok5EM5U_HB=DfsQ@mail.gmail.com>
+Subject: Re: [PATCHv2 0/7] CGroup Namespaces
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Linux Containers <containers@lists.linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 04:19:10PM -0400, Waiman Long wrote:
-> This patch adds the necessary KVM specific code to allow KVM to
-> support the CPU halting and kicking operations needed by the queue
-> spinlock PV code.
-> 
-> Two KVM guests of 20 CPU cores (2 nodes) were created for performance
-> testing in one of the following three configurations:
->  1) Only 1 VM is active
->  2) Both VMs are active and they share the same 20 physical CPUs
->     (200% overcommit)
-> 
-> The tests run included the disk workload of the AIM7 benchmark on
-> both ext4 and xfs RAM disks at 3000 users on a 3.17 based kernel. The
-> "ebizzy -m" test and futextest was was also run and its performance
-> data were recorded.  With two VMs running, the "idle=poll" kernel
-> option was added to simulate a busy guest. If PV qspinlock is not
-> enabled, unfairlock will be used automically in a guest.
+On Wed, Nov 26, 2014 at 2:58 PM, Richard Weinberger
+<richard.weinberger@gmail.com> wrote:
+>
+> On Thu, Nov 6, 2014 at 6:33 PM, Aditya Kali <adityakali@google.com> wrote:
+> > On Tue, Nov 4, 2014 at 5:10 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> >> On Fri, Oct 31, 2014 at 12:18:54PM -0700, Aditya Kali wrote:
+> >> [..]
+> >>>  fs/kernfs/dir.c                  | 194 ++++++++++++++++++++++++++++++++++-----
+> >>>  fs/kernfs/mount.c                |  48 ++++++++++
+> >>>  fs/proc/namespaces.c             |   1 +
+> >>>  include/linux/cgroup.h           |  41 ++++++++-
+> >>>  include/linux/cgroup_namespace.h |  36 ++++++++
+> >>>  include/linux/kernfs.h           |   5 +
+> >>>  include/linux/nsproxy.h          |   2 +
+> >>>  include/linux/proc_ns.h          |   4 +
+> >>>  include/uapi/linux/sched.h       |   3 +-
+> >>>  kernel/Makefile                  |   2 +-
+> >>>  kernel/cgroup.c                  | 108 +++++++++++++++++-----
+> >>>  kernel/cgroup_namespace.c        | 148 +++++++++++++++++++++++++++++
+> >>>  kernel/fork.c                    |   2 +-
+> >>>  kernel/nsproxy.c                 |  19 +++-
+> >>
+> >> Hi Aditya,
+> >>
+> >> Can we provide a documentation file for cgroup namespace behavior. Say,
+> >> Documentation/namespaces/cgroup-namespace.txt.
+> >>
+> > Yes, definitely. I will add it as soon as we have a consensus on the
+> > overall series.
+>
+> Do you have a public git repository which contains your patches?
+>
 
-What is the unfairlock? Isn't it just using a bytelock at this point?
+Hi, Sorry for late reply. I don't have these in a public git repo yet.
+But I will try to post it on github or somewhere.
+Also, I found a bug in this patchset that crashes the kernel in some
+cases (when both unified and split hierarchies are mounted). I have a
+fix and will send out the patches (with documentation) soon.
+
+>
+> --
+> Thanks,
+> //richard
+
+Thanks,
+-- 
+Aditya
