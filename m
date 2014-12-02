@@ -1,114 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751241AbaLBIVy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 03:21:54 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:58451 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750886AbaLBIVx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 03:21:53 -0500
-Date: Tue, 2 Dec 2014 09:21:50 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Huang Shijie <shijie.huang@intel.com>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        Huang Shijie <shijie8@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org, Roy Lee <roylee@paypal.com>,
-        Mike Voytovich <mvoytovich@paypal.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v6 0/3] mtd: nand: gpmi: add proper raw access support
-Message-ID: <20141202092150.738a53bb@bbrezillon>
-In-Reply-To: <20141202004743.GB11370@shldeISGChi005.sh.intel.com>
-References: <1417371030-24015-1-git-send-email-boris.brezillon@free-electrons.com>
-	<20141201084709.GI29070@brian-ubuntu>
-	<20141201095858.75ac3889@bbrezillon>
-	<20141202004743.GB11370@shldeISGChi005.sh.intel.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751169AbaLBI1L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 03:27:11 -0500
+Received: from mga01.intel.com ([192.55.52.88]:52142 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750963AbaLBI1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 03:27:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="423905757"
+From: Todor Minchev <todor.minchev@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
+        Todor Minchev <todor.minchev@intel.com>
+Subject: [PATCH] i8042: prevent the loading of the i8042 driver on Intel NUC D54250WYK
+Date: Tue,  2 Dec 2014 08:27:02 +0000
+Message-Id: <1417508822-8243-1-git-send-email-todor.minchev@intel.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Dec 2014 08:47:43 +0800
-Huang Shijie <shijie.huang@intel.com> wrote:
+The Intel NUC D54250WYK has no PS/2 controller, however the DSDT declares
+PS/2 devices which trigger the loading of the i8042 driver.
 
-> On Mon, Dec 01, 2014 at 09:58:58AM +0100, Boris Brezillon wrote:
-> > Hi Brian,
-> > 
-> > On Mon, 1 Dec 2014 00:47:09 -0800
-> > Brian Norris <computersforpeace@gmail.com> wrote:
-> > 
-> > > On Sun, Nov 30, 2014 at 07:10:27PM +0100, Boris Brezillon wrote:
-> > > > Hello,
-> > > > 
-> > > > This series provides an implementation for raw accesses taking care of
-> > > > hidding the specific layout used by the GPMI controller.
-> > > > 
-> > > > Best Regards,
-> > > > 
-> > > > Boris
-> > > > 
-> > > > Changes since v5:
-> > > >  - rename gpmi_move_bits into gpmi_copy_bits
-> > > > 
-> > > > Changes since v4:
-> > > >  - fixed a few corner cases in gpmi_move_bits (tested it with:
-> > > >    https://github.com/bbrezillon/gpmi-move-bits-test/blob/master/gpmi-move-bits-test.c)
-> > > >  - add documentation and comments for the new gpmi functions
-> > > > 
-> > > > Changes since v3:
-> > > >  - add comments to the gpmi_move_bits function
-> > > >  - extend raw read/write documentation
-> > > >  - move last part of the raw_page_read function into a conditional block
-> > > > 
-> > > > Changes since v2:
-> > > >  - fixed a bug in gpmi_move_bits
-> > > >  - add a raw_buffer field to be used when using raw access methods
-> > > >    (experienced memory corruptions when directly using page_buffer_virt
-> > > >    buffer)
-> > > >  - add raw OOB access functions
-> > > 
-> > > Applied the series. Thanks!
-> > > 
-> > > Out of curiosity, what tests does gpmi-nand.c now pass/fail?
-> > 
-> > The oobtest is still failing. I started to debug it, but didn't have
-> > enough time to make it work.
-> > 
-> > The nandbiterrs test is working, though I didn't manage to make the
-> > incremental test fail (writing the same pattern 10000 times without
-> > erasing the block between each write does not generate any bit flips) on
-> > my SLC NAND: MT29F2G08ABAEAH4.
-> > Can someone with another SLC NAND chip try it ?
-> > 
-> > > 
-> > > Also, is it time to yank / fixup some of these comments from
-> > > gpmi-nand.c?
-> > 
-> > I was asking myself the same question...
-> > 
-> > > 
-> > >  ...
-> > >  * FIXME: The following paragraph is incorrect, now that there exist
-> > >  * ecc.read_oob_raw and ecc.write_oob_raw functions.
-> > >  *
-> > >  * Since MTD assumes the OOB is not covered by ECC, there is no pair of
-> > >  * ECC-based/raw functions for reading or or writing the OOB. The fact that the
-> > >  * caller wants an ECC-based or raw view of the page is not propagated down to
-> > >  * this driver.
-> > >  */
-> > 
-> > I guess we can remove them.
-> > Huang can you confirm that the raw access functions introduced in this
-> > series are covering what's described here ?
-> I think we can remove these comments now.
+Signed-off-by: Todor Minchev <todor.minchev@intel.com>
+---
+ drivers/input/serio/i8042-x86ia64io.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Brian, do you want me to send this patch or are you taking care of it ?
-
-
+diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
+index faeeb13..5182008 100644
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -579,6 +579,13 @@ static const struct dmi_system_id __initconst i8042_dmi_nopnp_table[] = {
+ 		},
+ 	},
+ 	{
++		/* Intel NUC D54250WYK */
++		.matches = {
++			DMI_MATCH(DMI_BOARD_NAME, "D54250WYK"),
++			DMI_MATCH(DMI_BOARD_VENDOR, "Intel Corporation"),
++		},
++	},
++	{
+ 		/* MSI Wind U-100 */
+ 		.matches = {
+ 			DMI_MATCH(DMI_BOARD_NAME, "U-100"),
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+2.1.3
+
