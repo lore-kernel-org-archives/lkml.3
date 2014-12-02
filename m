@@ -1,116 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932332AbaLBPLV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 10:11:21 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:51290 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753541AbaLBPLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 10:11:20 -0500
-Date: Tue, 2 Dec 2014 10:11:12 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
-        Jan Kara <jack@suse.cz>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/3] mm: protect set_page_dirty() from ongoing truncation
-Message-ID: <20141202151112.GB8401@phnom.home.cmpxchg.org>
-References: <1417474682-29326-1-git-send-email-hannes@cmpxchg.org>
- <20141202115652.GB22683@node.dhcp.inet.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141202115652.GB22683@node.dhcp.inet.fi>
+	id S932398AbaLBPLr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 10:11:47 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:44898 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508AbaLBPLq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 10:11:46 -0500
+From: Paul Hedman <paul@mybboard.net>
+X-Google-Original-From: Paul Hedman <paul@mybb.com>
+To: paul@mybb.com, greg@kroah.com
+Cc: marek.belisko@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: ft1000: fix spaces around comparisons in ft1000_debug.c
+Date: Tue,  2 Dec 2014 09:11:15 -0600
+Message-Id: <1417533075-687-1-git-send-email-paul@mybb.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 01:56:52PM +0200, Kirill A. Shutemov wrote:
-> On Mon, Dec 01, 2014 at 05:58:00PM -0500, Johannes Weiner wrote:
-> > Tejun, while reviewing the code, spotted the following race condition
-> > between the dirtying and truncation of a page:
-> > 
-> > __set_page_dirty_nobuffers()       __delete_from_page_cache()
-> >   if (TestSetPageDirty(page))
-> >                                      page->mapping = NULL
-> > 				     if (PageDirty())
-> > 				       dec_zone_page_state(page, NR_FILE_DIRTY);
-> > 				       dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
-> >     if (page->mapping)
-> >       account_page_dirtied(page)
-> >         __inc_zone_page_state(page, NR_FILE_DIRTY);
-> > 	__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
-> > 
-> > which results in an imbalance of NR_FILE_DIRTY and BDI_RECLAIMABLE.
-> > 
-> > Dirtiers usually lock out truncation, either by holding the page lock
-> > directly, or in case of zap_pte_range(), by pinning the mapcount with
-> > the page table lock held.  The notable exception to this rule, though,
-> > is do_wp_page(), for which this race exists.  However, do_wp_page()
-> > already waits for a locked page to unlock before setting the dirty
-> > bit, in order to prevent a race where clear_page_dirty() misses the
-> > page bit in the presence of dirty ptes.  Upgrade that wait to a fully
-> > locked set_page_dirty() to also cover the situation explained above.
-> > 
-> > Afterwards, the code in set_page_dirty() dealing with a truncation
-> > race is no longer needed.  Remove it.
-> > 
-> > Reported-by: Tejun Heo <tj@kernel.org>
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > Cc: <stable@vger.kernel.org>
-> > ---
-> >  include/linux/writeback.h |  1 -
-> >  mm/memory.c               | 26 ++++++++++++++++----------
-> >  mm/page-writeback.c       | 43 ++++++++++++-------------------------------
-> >  3 files changed, 28 insertions(+), 42 deletions(-)
-> > 
-> > diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-> > index a219be961c0a..00048339c23e 100644
-> > --- a/include/linux/writeback.h
-> > +++ b/include/linux/writeback.h
-> > @@ -177,7 +177,6 @@ int write_cache_pages(struct address_space *mapping,
-> >  		      struct writeback_control *wbc, writepage_t writepage,
-> >  		      void *data);
-> >  int do_writepages(struct address_space *mapping, struct writeback_control *wbc);
-> > -void set_page_dirty_balance(struct page *page);
-> >  void writeback_set_ratelimit(void);
-> >  void tag_pages_for_writeback(struct address_space *mapping,
-> >  			     pgoff_t start, pgoff_t end);
-> > diff --git a/mm/memory.c b/mm/memory.c
-> > index 3e503831e042..73220eb6e9e3 100644
-> > --- a/mm/memory.c
-> > +++ b/mm/memory.c
-> > @@ -2150,17 +2150,23 @@ reuse:
-> >  		if (!dirty_page)
-> >  			return ret;
-> >  
-> > -		/*
-> > -		 * Yes, Virginia, this is actually required to prevent a race
-> > -		 * with clear_page_dirty_for_io() from clearing the page dirty
-> > -		 * bit after it clear all dirty ptes, but before a racing
-> > -		 * do_wp_page installs a dirty pte.
-> > -		 *
-> > -		 * do_shared_fault is protected similarly.
-> > -		 */
-> >  		if (!page_mkwrite) {
-> > -			wait_on_page_locked(dirty_page);
-> > -			set_page_dirty_balance(dirty_page);
-> > +			struct address_space *mapping;
-> > +			int dirtied;
-> > +
-> > +			lock_page(dirty_page);
-> > +			dirtied = set_page_dirty(dirty_page);
-> > +			mapping = dirty_page->mapping;
-> 
-> At first, I wanted to ask why you don't use page_mapping() here, but after
-> a bit of digging I see we cannot get here with anon page.
-> 
-> Explicid VM_BUG_ON_PAGE(PageAnon(dirty_page), dirty_page); would be great.
+This fix fixes spacing issues around operators, e.g. i=0 to i = 0, found by the checkpatch.pl tool.
 
-Fair enough, I added that.
+Signed-off-by: Paul Hedman <paul@mybb.com>
+---
+ drivers/staging/ft1000/ft1000-usb/ft1000_debug.c | 28 ++++++++++++------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
-> Otherwise looks good to me.
-> 
-> Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c b/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c
+index 0f347ab..02bfb3e 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c
+@@ -193,7 +193,7 @@ int ft1000_create_dev(struct ft1000_usb *dev)
+ 
+     /* initialize application information */
+     dev->appcnt = 0;
+-    for (i=0; i<MAX_NUM_APP; i++) {
++    for (i = 0; i < MAX_NUM_APP; i++) {
+         dev->app_info[i].nTxMsg = 0;
+         dev->app_info[i].nRxMsg = 0;
+         dev->app_info[i].nTxMsgReject = 0;
+@@ -260,7 +260,7 @@ void ft1000_destroy_dev(struct net_device *netdev)
+ 					   dev->DeviceName);
+ 
+         /* Make sure we free any memory reserve for slow Queue */
+-        for (i=0; i<MAX_NUM_APP; i++) {
++        for (i = 0; i < MAX_NUM_APP; i++) {
+             while (list_empty(&dev->app_info[i].app_sqlist) == 0) {
+                 pdpram_blk = list_entry(dev->app_info[i].app_sqlist.next, struct dpram_blk, list);
+                 list_del(&pdpram_blk->list);
+@@ -318,7 +318,7 @@ static int ft1000_open(struct inode *inode, struct file *file)
+     }
+ 
+     /* Search for available application info block */
+-    for (i=0; i<MAX_NUM_APP; i++) {
++    for (i = 0; i < MAX_NUM_APP; i++) {
+         if ((dev->app_info[i].fileobject == NULL)) {
+             break;
+         }
+@@ -369,7 +369,7 @@ static unsigned int ft1000_poll_dev(struct file *file, poll_table *wait)
+     }
+ 
+     /* Search for matching file object */
+-    for (i=0; i<MAX_NUM_APP; i++) {
++    for (i = 0; i < MAX_NUM_APP; i++) {
+         if (dev->app_info[i].fileobject == &file->f_owner) {
+             /* DEBUG("FT1000:ft1000_ioctl: Message is for AppId = %d\n", dev->app_info[i].app_id); */
+             break;
+@@ -411,7 +411,7 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
+     void __user *argp = (void __user *)argument;
+ 	struct ft1000_info *info;
+     struct ft1000_usb *ft1000dev;
+-    int result=0;
++    int result = 0;
+     int cmd;
+     int i;
+     u16 tempword;
+@@ -426,8 +426,8 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
+                           0x00,0x00,0x02,0x37,0x00,0x00,0x00,0x08,0x00,0x00,0x00,0x01,0x00,0x01,0x7f,0x00,
+                           0x00,0x01,0x00,0x00};
+ 
+-    unsigned short ledStat=0;
+-    unsigned short conStat=0;
++    unsigned short ledStat = 0;
++    unsigned short conStat = 0;
+ 
+     /* DEBUG("ft1000_ioctl called\n"); */
+ 
+@@ -454,7 +454,7 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
+             }
+             if (tempword == DSPBCMSGID) {
+                 /* Search for matching file object */
+-                for (i=0; i<MAX_NUM_APP; i++) {
++                for (i = 0; i < MAX_NUM_APP; i++) {
+                     if (ft1000dev->app_info[i].fileobject == &file->f_owner) {
+                         ft1000dev->app_info[i].DspBCMsgFlag = 1;
+                         DEBUG("FT1000:ft1000_ioctl:Registered for broadcast messages\n");
+@@ -581,12 +581,12 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
+                     result = -EFAULT;
+                 } else {
+                     /* Check if this message came from a registered application */
+-                    for (i=0; i<MAX_NUM_APP; i++) {
++                    for (i = 0; i < MAX_NUM_APP; i++) {
+                         if (ft1000dev->app_info[i].fileobject == &file->f_owner) {
+                             break;
+                         }
+                     }
+-                    if (i==MAX_NUM_APP) {
++                    if (i == MAX_NUM_APP) {
+                         DEBUG("FT1000:No matching application fileobject\n");
+                         result = -EINVAL;
+ 			kfree(dpram_data);
+@@ -646,7 +646,7 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
+                             /* Calculate new checksum */
+                             ppseudo_hdr->checksum = *pmsg++;
+                             /* DEBUG("checksum = 0x%x\n", ppseudo_hdr->checksum); */
+-                            for (i=1; i<7; i++) {
++                            for (i = 1; i < 7; i++) {
+                                 ppseudo_hdr->checksum ^= *pmsg++;
+                                 /* DEBUG("checksum = 0x%x\n", ppseudo_hdr->checksum); */
+                             }
+@@ -682,7 +682,7 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
+             }
+ 
+             /* Search for matching file object */
+-            for (i=0; i<MAX_NUM_APP; i++) {
++            for (i = 0; i < MAX_NUM_APP; i++) {
+                 if (ft1000dev->app_info[i].fileobject == &file->f_owner) {
+                     /*DEBUG("FT1000:ft1000_ioctl: Message is for AppId = %d\n", ft1000dev->app_info[i].app_id); */
+                     break;
+@@ -766,14 +766,14 @@ static int ft1000_release(struct inode *inode, struct file *file)
+     }
+ 
+     /* Search for matching file object */
+-    for (i=0; i<MAX_NUM_APP; i++) {
++    for (i = 0; i < MAX_NUM_APP; i++) {
+         if (ft1000dev->app_info[i].fileobject == &file->f_owner) {
+             /* DEBUG("FT1000:ft1000_ioctl: Message is for AppId = %d\n", ft1000dev->app_info[i].app_id); */
+             break;
+         }
+     }
+ 
+-    if (i==MAX_NUM_APP)
++    if (i == MAX_NUM_APP)
+ 	    return 0;
+ 
+     while (list_empty(&ft1000dev->app_info[i].app_sqlist) == 0) {
+-- 
+2.1.0
 
-Thanks!
