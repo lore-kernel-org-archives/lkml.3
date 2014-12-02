@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934159AbaLBT5F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:57:05 -0500
-Received: from www.linutronix.de ([62.245.132.108]:49757 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933377AbaLBT5D (ORCPT
+	id S934070AbaLBT4W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:56:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46513 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932856AbaLBTU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:57:03 -0500
-Date: Tue, 2 Dec 2014 20:56:52 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andy Lutomirski <luto@amacapital.net>
-cc: "Berthier, Emmanuel" <emmanuel.berthier@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        "Jarzmik, Robert" <robert.jarzmik@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] [LBR] Dump LBRs on Exception
-In-Reply-To: <CALCETrWxXm_Cvu+3dakCFX1GSN2KcaoxC+qbTr8Z7ha2CtEEXw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1412022044410.16275@nanos>
-References: <65CD3FC07F3BF942ABE211646D72D770356EACA5@IRSMSX110.ger.corp.intel.com> <1417099205-13309-1-git-send-email-emmanuel.berthier@intel.com> <alpine.DEB.2.11.1411271609510.3961@nanos> <CALCETrWKiTdzSQ6kKPaufHoW2aTjPtqkQy9cyq_YiBwoowe-+g@mail.gmail.com>
- <65CD3FC07F3BF942ABE211646D72D770356EB2B2@IRSMSX110.ger.corp.intel.com> <CALCETrWO5jVaXrvtMmxEtV0-9husbwFrm=FLWUvEJJev25KXmg@mail.gmail.com> <65CD3FC07F3BF942ABE211646D72D770356EC658@IRSMSX110.ger.corp.intel.com>
- <CALCETrWxXm_Cvu+3dakCFX1GSN2KcaoxC+qbTr8Z7ha2CtEEXw@mail.gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 2 Dec 2014 14:20:28 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Anton Blanchard <anton@samba.org>, Michael Ellerman <mpe@ellerman.id.au>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 020/121] powerpc: do_notify_resume can be called with bad thread_info flags argument
+Date: Tue,  2 Dec 2014 11:18:19 -0800
+Message-Id: <1417548000-1794-21-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Dec 2014, Andy Lutomirski wrote:
-> TBH, I'm wondering whether this is actually a good idea.  It might be
-> more valuable and less scary to try to make this work for BUG instead.
-> To get the most impact, it might be worth allocating a new exception
-> vector for BUG and using 'int 0xwhatever', and the prologue to that
-> could read out all the MSRs without any branches.
+3.13.11-ckt12 -stable review patch.  If anyone has any objections, please let me know.
 
-BUG is pretty uninteresting. We usually know how we got there. Now
-where LBR might be useful is if you have stack corruption and branch
-into nirvana or access random crap via a few hoops. There the LBR data
-might help, because the corrupted stack does not tell anything.
+------------------
 
-So yes, this is a corner case debugging scenario, but given the
-complexity of coordination with perf and the possible intrusiveness in
-the low level entry path, we really need to see a few real world
-examples where this helps, aside of the constructed case.
+From: Anton Blanchard <anton@samba.org>
 
-Thanks,
+commit 808be31426af57af22268ef0fcb42617beb3d15b upstream.
 
-	tglx
+Back in 7230c5644188 ("powerpc: Rework lazy-interrupt handling") we
+added a call out to restore_interrupts() (written in c) before calling
+do_notify_resume:
+
+        bl      restore_interrupts
+        addi    r3,r1,STACK_FRAME_OVERHEAD
+        bl      do_notify_resume
+
+Unfortunately do_notify_resume takes two arguments, the second one
+being the thread_info flags:
+
+void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
+
+We do populate r4 (the second argument) earlier, but
+restore_interrupts() is free to muck it up all it wants. My guess is
+the gcc compiler gods shone down on us and its register allocator
+never used r4. Sometimes, rarely, luck is on our side.
+
+LLVM on the other hand did trample r4.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+[ kamal: backport to 3.13-stable: context ]
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ arch/powerpc/kernel/entry_64.S | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/powerpc/kernel/entry_64.S b/arch/powerpc/kernel/entry_64.S
+index fb5ba6d..088dca5 100644
+--- a/arch/powerpc/kernel/entry_64.S
++++ b/arch/powerpc/kernel/entry_64.S
+@@ -660,7 +660,13 @@ _GLOBAL(ret_from_except_lite)
+ 	b	.ret_from_except_lite
+ 
+ 2:	bl	.save_nvgprs
++	/*
++	 * Use a non volatile GPR to save and restore our thread_info flags
++	 * across the call to restore_interrupts.
++	 */
++	mr	r30,r4
+ 	bl	.restore_interrupts
++	mr	r4,r30
+ 	addi	r3,r1,STACK_FRAME_OVERHEAD
+ 	bl	.do_notify_resume
+ 	b	.ret_from_except
+-- 
+1.9.1
+
