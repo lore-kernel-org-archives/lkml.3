@@ -1,86 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934073AbaLBTiW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:38:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46929 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933670AbaLBT0X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:26:23 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Ronald Wahl <ronald.wahl@raritan.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 098/121] mac80211: Fix regression that triggers a kernel BUG with CCMP
-Date: Tue,  2 Dec 2014 11:19:37 -0800
-Message-Id: <1417548000-1794-99-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
-References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S933972AbaLBTil (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:38:41 -0500
+Received: from mga14.intel.com ([192.55.52.115]:63308 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933669AbaLBT0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 14:26:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,502,1413270000"; 
+   d="scan'208";a="631549875"
+From: "Berthier, Emmanuel" <emmanuel.berthier@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        X86 ML <x86@kernel.org>, "Jarzmik, Robert" <robert.jarzmik@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2] [LBR] Dump LBRs on Exception
+Thread-Topic: [PATCH v2] [LBR] Dump LBRs on Exception
+Thread-Index: AQHQClAp6CYIYedu6ESpcFdbEVpmDZx0+/cAgAAJTYCAAK9oAIAAcvIAgATcELA=
+Date: Tue, 2 Dec 2014 19:09:40 +0000
+Message-ID: <65CD3FC07F3BF942ABE211646D72D770356EC658@IRSMSX110.ger.corp.intel.com>
+References: <65CD3FC07F3BF942ABE211646D72D770356EACA5@IRSMSX110.ger.corp.intel.com>
+ <1417099205-13309-1-git-send-email-emmanuel.berthier@intel.com>
+ <alpine.DEB.2.11.1411271609510.3961@nanos>
+ <CALCETrWKiTdzSQ6kKPaufHoW2aTjPtqkQy9cyq_YiBwoowe-+g@mail.gmail.com>
+ <65CD3FC07F3BF942ABE211646D72D770356EB2B2@IRSMSX110.ger.corp.intel.com>
+ <CALCETrWO5jVaXrvtMmxEtV0-9husbwFrm=FLWUvEJJev25KXmg@mail.gmail.com>
+In-Reply-To: <CALCETrWO5jVaXrvtMmxEtV0-9husbwFrm=FLWUvEJJev25KXmg@mail.gmail.com>
+Accept-Language: fr-FR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.181]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sB2JcmIe019525
 
-3.13.11-ckt12 -stable review patch.  If anyone has any objections, please let me know.
+> From: Andy Lutomirski [mailto:luto@amacapital.net]
+> Sent: Friday, November 28, 2014 4:15 PM
+> To: Berthier, Emmanuel
+> Cc: Thomas Gleixner; H. Peter Anvin; X86 ML; Jarzmik, Robert; LKML
+> Subject: Re: [PATCH v2] [LBR] Dump LBRs on Exception
+> 
+> On Fri, Nov 28, 2014 at 12:44 AM, Berthier, Emmanuel
+> <emmanuel.berthier@intel.com> wrote:
+> >  diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+> > index df088bb..f39cded 100644
+> > --- a/arch/x86/kernel/entry_64.S
+> > +++ b/arch/x86/kernel/entry_64.S
+> > @@ -1035,6 +1035,46 @@ apicinterrupt IRQ_WORK_VECTOR \
+> >         irq_work_interrupt smp_irq_work_interrupt  #endif
+> >
+> > +.macro STOP_LBR
+> > +#ifdef CONFIG_LBR_DUMP_ON_EXCEPTION
+> > +       testl $3,CS+8(%rsp)             /* Kernel Space? */
+> > +       jz 1f
+> > +       testl $1, lbr_dump_on_exception
+> 
+> Is there a guarantee that, if lbr_dump_on_exception is true, then LBR is on?
+> What happens if you schedule between stopping and resuming LBR?
 
-------------------
+Good point. The current assumption is to rely on the numerous exceptions to "re-arm" the LBR recording.
+Even if we bypass UserSpace page faults, we can keep rely on kernel VMalloc page faults to re-arm the recording.
 
-From: Ronald Wahl <ronald.wahl@raritan.com>
+> > +       jz 1f
+> > +       push %rax
+> > +       push %rcx
+> > +       push %rdx
+> > +       movl $MSR_IA32_DEBUGCTLMSR, %ecx
+> > +       rdmsr
+> > +       and $~1, %eax                   /* Disable LBR recording */
+> > +       wrmsr
+> 
+> wrmsr is rather slow.  Have you checked whether this is faster than just
+> saving the LBR trace on exception entry?
 
-commit 4f031fa9f188b2b0641ac20087d9e16bcfb4e49d upstream.
+The figures I have show that for common MSR, rdmsr and wrmsr have quite the same impact, around 100 cycles (greatly depends on the arch).
+The cost of stop/start is: 2 rdmsr + 2 wrmsr = 4 msr
+The cost of reading LBR is: 1 rdmsr for TOS + 2 rdmsr per record, and there are from 8 to 32 Records (Arch specific) = between 17 to 65 msr.
+I've measured on Atom arch (8 records): LBR read versus stop/start: around x3 more time.
+As the LBR size is arch dependent, it's not easy to implement the record reading in ASM without any branch, and this would generate maintenance dependency.
+I prefer to let perf_event_lbr dealing with all that stuff.
 
-Commit 7ec7c4a9a686c608315739ab6a2b0527a240883c (mac80211: port CCMP to
-cryptoapi's CCM driver) introduced a regression when decrypting empty
-packets (data_len == 0). This will lead to backtraces like:
+Thx,
 
-(scatterwalk_start) from [<c01312f4>] (scatterwalk_map_and_copy+0x2c/0xa8)
-(scatterwalk_map_and_copy) from [<c013a5a0>] (crypto_ccm_decrypt+0x7c/0x25c)
-(crypto_ccm_decrypt) from [<c032886c>] (ieee80211_aes_ccm_decrypt+0x160/0x170)
-(ieee80211_aes_ccm_decrypt) from [<c031c628>] (ieee80211_crypto_ccmp_decrypt+0x1ac/0x238)
-(ieee80211_crypto_ccmp_decrypt) from [<c032ef28>] (ieee80211_rx_handlers+0x870/0x1d24)
-(ieee80211_rx_handlers) from [<c0330c7c>] (ieee80211_prepare_and_rx_handle+0x8a0/0x91c)
-(ieee80211_prepare_and_rx_handle) from [<c0331260>] (ieee80211_rx+0x568/0x730)
-(ieee80211_rx) from [<c01d3054>] (__carl9170_rx+0x94c/0xa20)
-(__carl9170_rx) from [<c01d3324>] (carl9170_rx_stream+0x1fc/0x320)
-(carl9170_rx_stream) from [<c01cbccc>] (carl9170_usb_tasklet+0x80/0xc8)
-(carl9170_usb_tasklet) from [<c00199dc>] (tasklet_hi_action+0x88/0xcc)
-(tasklet_hi_action) from [<c00193c8>] (__do_softirq+0xcc/0x200)
-(__do_softirq) from [<c0019734>] (irq_exit+0x80/0xe0)
-(irq_exit) from [<c0009c10>] (handle_IRQ+0x64/0x80)
-(handle_IRQ) from [<c000c3a0>] (__irq_svc+0x40/0x4c)
-(__irq_svc) from [<c0009d44>] (arch_cpu_idle+0x2c/0x34)
+Emmanuel.
 
-Such packets can appear for example when using the carl9170 wireless driver
-because hardware sometimes generates garbage when the internal FIFO overruns.
-
-This patch adds an additional length check.
-
-Fixes: 7ec7c4a9a686 ("mac80211: port CCMP to cryptoapi's CCM driver")
-Acked-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Signed-off-by: Ronald Wahl <ronald.wahl@raritan.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/mac80211/aes_ccm.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/net/mac80211/aes_ccm.c b/net/mac80211/aes_ccm.c
-index 7c7df47..cb4f8d2 100644
---- a/net/mac80211/aes_ccm.c
-+++ b/net/mac80211/aes_ccm.c
-@@ -52,6 +52,9 @@ int ieee80211_aes_ccm_decrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
- 		u8			priv[crypto_aead_reqsize(tfm)];
- 	} aead_req;
- 
-+	if (data_len == 0)
-+		return -EINVAL;
-+
- 	memset(&aead_req, 0, sizeof(aead_req));
- 
- 	sg_init_one(&pt, data, data_len);
--- 
-1.9.1
-
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
