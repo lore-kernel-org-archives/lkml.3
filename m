@@ -1,225 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933317AbaLBIHR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 03:07:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47588 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932867AbaLBIHO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 03:07:14 -0500
-Date: Tue, 02 Dec 2014 08:15:02 +0008
-From: Jason Wang <jasowang@redhat.com>
-Subject: Re: [PATCH RFC v4 net-next 0/5] virtio_net: enabling tx interrupts
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net, pagupta@redhat.com
-Message-Id: <1417507622.12638.0@smtp.corp.redhat.com>
-In-Reply-To: <1417490120.4405.2@smtp.corp.redhat.com>
-References: <1417429028-11971-1-git-send-email-jasowang@redhat.com>
-	<20141201104223.GB16108@redhat.com>
-	<1417490120.4405.2@smtp.corp.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
+	id S933207AbaLBIIY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 03:08:24 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:57352 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933149AbaLBIGO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 03:06:14 -0500
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+Cc: peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de,
+        james.hogan@imgtec.com, avagin@openvz.org, Paul.Clothier@imgtec.com,
+        palves@redhat.com, oleg@redhat.com, dhowells@redhat.com,
+        davej@redhat.com, davem@davemloft.net, mikey@neuling.org,
+        benh@kernel.crashing.org, sukadev@linux.vnet.ibm.com,
+        mpe@ellerman.id.au, sam.bobroff@au1.ibm.com, kirjanov@gmail.com,
+        shuahkh@osg.samsung.com
+Subject: [PATCH V6 0/9] Add new powerpc specific ELF core notes
+Date: Tue,  2 Dec 2014 13:26:44 +0530
+Message-Id: <1417507013-11948-1-git-send-email-khandual@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.9.3
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120208-0025-0000-0000-000000A290DB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+	This patch series adds five new ELF core note sections which can be
+used with existing ptrace request PTRACE_GETREGSET-SETREGSET for accessing
+various transactional memory and miscellaneous debug register sets on powerpc
+platform.
 
+Previous versions:
+==================
+RFC: https://lkml.org/lkml/2014/4/1/292
+V1:  https://lkml.org/lkml/2014/4/2/43
+V2:  https://lkml.org/lkml/2014/5/5/88
+V3:  https://lkml.org/lkml/2014/5/23/486
+V4:  https://lkml.org/lkml/2014/11/11/6
+V5:  https://lkml.org/lkml/2014/11/25/134
 
-On Tue, Dec 2, 2014 at 11:15 AM, Jason Wang <jasowang@redhat.com> wrote:
-> 
-> 
-> On Mon, Dec 1, 2014 at 6:42 PM, Michael S. Tsirkin <mst@redhat.com> 
-> wrote:
->> On Mon, Dec 01, 2014 at 06:17:03PM +0800, Jason Wang wrote:
->>>  Hello:
->>>   We used to orphan packets before transmission for virtio-net. 
->>> This breaks
->>>  socket accounting and can lead serveral functions won't work, e.g:
->>>   - Byte Queue Limit depends on tx completion nofication to work.
->>>  - Packet Generator depends on tx completion nofication for the last
->>>    transmitted packet to complete.
->>>  - TCP Small Queue depends on proper accounting of sk_wmem_alloc to 
->>> work.
->>>   This series tries to solve the issue by enabling tx interrupts. 
->>> To minize
->>>  the performance impacts of this, several optimizations were used:
->>>   - In guest side, virtqueue_enable_cb_delayed() was used to delay 
->>> the tx
->>>    interrupt untile 3/4 pending packets were sent.
->>>  - In host side, interrupt coalescing were used to reduce tx 
->>> interrupts.
->>>   Performance test results[1] (tx-frames 16 tx-usecs 16) shows:
->>>   - For guest receiving. No obvious regression on throughput were
->>>    noticed. More cpu utilization were noticed in few cases.
->>>  - For guest transmission. Very huge improvement on througput for 
->>> small
->>>    packet transmission were noticed. This is expected since TSQ and 
->>> other
->>>    optimization for small packet transmission work after tx 
->>> interrupt. But
->>>    will use more cpu for large packets.
->>>  - For TCP_RR, regression (10% on transaction rate and cpu 
->>> utilization) were
->>>    found. Tx interrupt won't help but cause overhead in this case. 
->>> Using
->>>    more aggressive coalescing parameters may help to reduce the 
->>> regression.
->> 
->> OK, you do have posted coalescing patches - does it help any?
-> 
-> Helps a lot.
-> 
-> For RX, it saves about 5% - 10% cpu. (reduce 60%-90% tx intrs)
-> For small packet TX, it increases 33% - 245% throughput. (reduce 
-> about 60% inters)
-> For TCP_RR, it increase the 3%-10% trans.rate. (reduce 40%-80% tx 
-> intrs)
-> 
->> 
->> I'm not sure the regression is due to interrupts.
->> It would make sense for CPU but why would it
->> hurt transaction rate?
-> 
-> Anyway guest need to take some cycles to handle tx interrupts.
-> And transaction rate does increase if we coalesces more tx 
-> interurpts. 
->> 
->> 
->> It's possible that we are deferring kicks too much due to BQL.
->> 
->> As an experiment: do we get any of it back if we do
->> -        if (kick || netif_xmit_stopped(txq))
->> -                virtqueue_kick(sq->vq);
->> +        virtqueue_kick(sq->vq);
->> ?
-> 
-> 
-> I will try, but during TCP_RR, at most 1 packets were pending,
-> I suspect if BQL can help in this case.
+Changes in V6:
+--------------
+- Added two git ignore patches for powerpc selftests
+- Re-formatted all in-code function definitions in kernel-doc format
 
-Looks like this helps a lot in multiple sessions of TCP_RR.
+Changes in V5:
+--------------
+- Changed flush_tmregs_to_thread, so not to take into account self tracing
+- Dropped the 3rd patch in the series which had merged two functions
+- Fixed one build problem for the misc debug register patch
+- Accommodated almost all the review comments from Suka on the 6th patch
+- Minor changes to the self test program
+- Changed commit messages for some of the patches
 
-How about move the BQL patch out of this series?
+Changes in V4:
+--------------
+- Added one test program into the powerpc selftest bucket in this regard
+- Split the 2nd patch in the previous series into four different patches
+- Accommodated most of the review comments on the previous patch series
+- Added a patch to merge functions __switch_to_tm and tm_reclaim_task
 
-Let's first converge tx interrupt and then introduce it?
-(e.g with kicking after queuing X bytes?)
+Changes in V3:
+--------------
+- Added two new error paths in every TM related get/set functions when regset
+  support is not present on the system (ENODEV) or when the process does not
+  have any transaction active (ENODATA) in the context
+- Installed the active hooks for all the newly added regset core note types
 
-> 
->> 
->> 
->> If yes, we can just kick e.g. periodically, e.g. after queueing each
->> X bytes.
-> 
-> Okay, let me try to see if this help.
->> 
->>>  Changes from RFC V3:
->>>  - Don't free tx packets in ndo_start_xmit()
->>>  - Add interrupt coalescing support for virtio-net
->>>  Changes from RFC v2:
->>>  - clean up code, address issues raised by Jason
->>>  Changes from RFC v1:
->>>  - address comments by Jason Wang, use delayed cb everywhere
->>>  - rebased Jason's patch on top of mine and include it (with some 
->>> tweaks)
->>>   Please reivew. Comments were more than welcomed.
->>>   [1] Performance Test result:
->>>   Environment:
->>>  - Two Intel(R) Xeon(R) CPU E5620 @ 2.40GHz machines connected back 
->>> to back
->>>    with 82599ES cards.
->>>  - Both host and guest were net-next.git plus the patch
->>>  - Coalescing parameters for the card:
->>>    Adaptive RX: off  TX: off
->>>    rx-usecs: 1
->>>    rx-frames: 0
->>>    tx-usecs: 0
->>>    tx-frames: 0
->>>  - Vhost_net was enabled and zerocopy was disabled
->>>  - Tests was done by netperf-2.6
->>>  - Guest has 2 vcpus with single queue virtio-net
->>>   Results:
->>>  - Numbers of square brackets are whose significance is grater than 
->>> 95%
->>>   Guest RX:
->>>   size/sessions/+throughput/+cpu/+per_cpu_throughput/
->>>  64/1/+2.0326/[+6.2807%]/-3.9970%/
->>>  64/2/-0.2104%/[+3.2012%]/[-3.3058%]/
->>>  64/4/+1.5956%/+2.2451%/-0.6353%/
->>>  64/8/+1.1732%/+3.5123%/-2.2598%/
->>>  256/1/+3.7619%/[+5.8117%]/-1.9372%/
->>>  256/2/-0.0661%/[+3.2511%]/-3.2127%/
->>>  256/4/+1.1435%/[-8.1842%]/[+10.1591%]/
->>>  256/8/[+2.2447%]/[+6.2044%]/[-3.7283%]/
->>>  1024/1/+9.1479%/[+12.0997%]/[-2.6332%]/
->>>  1024/2/[-17.3341%]/[+0.0000%]/[-17.3341%]/
->>>  1024/4/[-0.6284%]/-1.0376%/+0.4135%/
->>>  1024/8/+1.1444%/-1.6069%/+2.7961%/
->>>  4096/1/+0.0401%/-0.5993%/+0.6433%/
->>>  4096/2/[-0.5894%]/-2.2071%/+1.6542%/
->>>  4096/4/[-0.5560%]/-1.4969%/+0.9553%/
->>>  4096/8/-0.3362%/+2.7086%/-2.9645%/
->>>  16384/1/-0.0285%/+0.7247%/-0.7478%/
->>>  16384/2/-0.5286%/+0.3287%/-0.8545%/
->>>  16384/4/-0.3297%/-2.0543%/+1.7608%/
->>>  16384/8/+1.0932%/+4.0253%/-2.8187%/
->>>  65535/1/+0.0003%/-0.1502%/+0.1508%/
->>>  65535/2/[-0.6065%]/+0.2309%/-0.8355%/
->>>  65535/4/[-0.6861%]/[+3.9451%]/[-4.4554%]/
->>>  65535/8/+1.8359%/+3.1590%/-1.2825%/
->>>   Guest RX:
->>>  size/sessions/+throughput/+cpu/+per_cpu_throughput/
->>>  64/1/[+65.0961%]/[-8.6807%]/[+80.7900%]/
->>>  64/2/[+6.0288%]/[-2.2823%]/[+8.5052%]/
->>>  64/4/[+5.9038%]/[-2.1834%]/[+8.2677%]/
->>>  64/8/[+5.4154%]/[-2.1804%]/[+7.7651%]/
->>>  256/1/[+184.6462%]/[+4.8906%]/[+171.3742%]/
->>>  256/2/[+46.0731%]/[-8.9626%]/[+60.4539%]/
->>>  256/4/[+45.8547%]/[-8.3027%]/[+59.0612%]/
->>>  256/8/[+45.3486%]/[-8.4024%]/[+58.6817%]/
->>>  1024/1/[+432.5372%]/[+3.9566%]/[+412.2689%]/
->>>  1024/2/[-1.4207%]/[-23.6426%]/[+29.1025%]/
->>>  1024/4/-0.1003%/[-13.6416%]/[+15.6804%]/
->>>  1024/8/[+0.2200%]/[+2.0634%]/[-1.8061%]/
->>>  4096/1/[+18.4835%]/[-46.1508%]/[+120.0283%]/
->>>  4096/2/+0.1770%/[-26.2780%]/[+35.8848%]/
->>>  4096/4/-0.1012%/-0.7353%/+0.6388%/
->>>  4096/8/-0.6091%/+1.4159%/-1.9968%/
->>>  16384/1/-0.0424%/[+11.9373%]/[-10.7021%]/
->>>  16384/2/+0.0482%/+2.4685%/-2.3620%/
->>>  16384/4/+0.0840%/[+5.3587%]/[-5.0064%]/
->>>  16384/8/+0.0048%/[+5.0176%]/[-4.7733%]/
->>>  65535/1/-0.0095%/[+10.9408%]/[-9.8705%]/
->>>  65535/2/+0.1515%/[+8.1709%]/[-7.4137%]/
->>>  65535/4/+0.0203%/[+5.4316%]/[-5.1325%]/
->>>  65535/8/+0.1427%/[+6.2753%]/[-5.7705%]/
->>>   size/sessions/+trans.rate/+cpu/+per_cpu_trans.rate/
->>>  64/1/+0.2346%/[+11.5080%]/[-10.1099%]/
->>>  64/25/[-10.7893%]/-0.5791%/[-10.2697%]/
->>>  64/50/[-11.5997%]/-0.3429%/[-11.2956%]/
->>>  256/1/+0.7219%/[+13.2374%]/[-11.0524%]/
->>>  256/25/-6.9567%/+0.8887%/[-7.7763%]/
->>>  256/50/[-4.8814%]/-0.0338%/[-4.8492%]/
->>>  4096/1/-1.6061%/-0.7561%/-0.8565%/
->>>  4096/25/[+2.2120%]/[+1.0839%]/+1.1161%/
->>>  4096/50/[+5.6180%]/[+3.2116%]/[+2.3315%]/
->>>   Jason Wang (4):
->>>    virtio_net: enable tx interrupt
->>>    virtio-net: optimize free_old_xmit_skbs stats
->>>    virtio-net: add basic interrupt coalescing support
->>>    vhost_net: interrupt coalescing support
->>>   Michael S. Tsirkin (1):
->>>    virtio_net: bql
->>>    drivers/net/virtio_net.c        | 211 
->>> ++++++++++++++++++++++++++++++++--------
->>>   drivers/vhost/net.c             | 200 
->>> +++++++++++++++++++++++++++++++++++--
->>>   include/uapi/linux/vhost.h      |  12 +++
->>>   include/uapi/linux/virtio_net.h |  12 +++
->>>   4 files changed, 383 insertions(+), 52 deletions(-)
->>>   --  1.8.3.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Changes in V2:
+--------------
+- Removed all the power specific ptrace requests corresponding to new NT_PPC_*
+  elf core note types. Now all the register sets can be accessed from ptrace
+  through PTRACE_GETREGSET/PTRACE_SETREGSET using the individual NT_PPC* core
+  note type instead
+- Fixed couple of attribute values for REGSET_TM_CGPR register set
+- Renamed flush_tmreg_to_thread as flush_tmregs_to_thread
+- Fixed 32 bit checkpointed GPR support
+- Changed commit messages accordingly
+
+Test Result
+-----------
+The patch series has been verified both in 32 bit and 64 bit compiled test
+program. Test result for the selftest test (64 bit compiled) can be found here.
+
+test: tm_ptrace
+tags: git_version:v3.18-rc6-8-ge2aa4ce
+===Testing TM based PTRACE Interface===
+Testing TM specific SPR:
+TFHAR: 10001098
+TEXASR: de0000018c000001
+TFIAR: c000000000041858
+TM ORIG_MSR: 800000050000f032
+TM CH DSCR: a (PASSED)
+TM CH TAR: 14 (PASSED)
+TM CH PPR: 8000000000000 (PASSED)
+Testing TM checkpointed GPR:
+TM CH NIP: 10001098
+TM CH LINK: 10000ea0
+TM CH CCR: 24000422
+TM CH GPR[0]: 0 (PASSED)
+TM CH GPR[1]: 1 (PASSED)
+TM CH GPR[2]: 2 (PASSED)
+TM CH GPR[3]: 3 (PASSED)
+TM CH GPR[4]: 4 (PASSED)
+TM CH GPR[5]: 5 (PASSED)
+TM CH GPR[6]: 6 (PASSED)
+TM CH GPR[7]: 7 (PASSED)
+TM CH GPR[8]: 8 (PASSED)
+TM CH GPR[9]: 9 (PASSED)
+TM CH GPR[10]: a (PASSED)
+TM CH GPR[11]: b (PASSED)
+TM CH GPR[12]: c (PASSED)
+TM CH GPR[13]: d (PASSED)
+TM CH GPR[14]: e (PASSED)
+TM CH GPR[15]: f (PASSED)
+TM CH GPR[16]: 0 (PASSED)
+TM CH GPR[17]: 1 (PASSED)
+TM CH GPR[18]: 2 (PASSED)
+TM CH GPR[19]: 3 (PASSED)
+TM CH GPR[20]: 4 (PASSED)
+TM CH GPR[21]: 5 (PASSED)
+TM CH GPR[22]: 6 (PASSED)
+TM CH GPR[23]: 7 (PASSED)
+TM CH GPR[24]: 8 (PASSED)
+TM CH GPR[25]: 9 (PASSED)
+TM CH GPR[26]: a (PASSED)
+TM CH GPR[27]: b (PASSED)
+TM CH GPR[28]: c (PASSED)
+TM CH GPR[29]: d (PASSED)
+TM CH GPR[30]: e (PASSED)
+TM CH GPR[31]: f (PASSED)
+Testing TM checkpointed FPR:
+TM CH FPSCR: 0
+TM CH FPR[0]: 0 (PASSED)
+TM CH FPR[1]: 1 (PASSED)
+TM CH FPR[2]: 2 (PASSED)
+TM CH FPR[3]: 3 (PASSED)
+TM CH FPR[4]: 4 (PASSED)
+TM CH FPR[5]: 5 (PASSED)
+TM CH FPR[6]: 6 (PASSED)
+TM CH FPR[7]: 7 (PASSED)
+TM CH FPR[8]: 8 (PASSED)
+TM CH FPR[9]: 9 (PASSED)
+TM CH FPR[10]: a (PASSED)
+TM CH FPR[11]: b (PASSED)
+TM CH FPR[12]: c (PASSED)
+TM CH FPR[13]: d (PASSED)
+TM CH FPR[14]: e (PASSED)
+TM CH FPR[15]: f (PASSED)
+TM CH FPR[16]: 0 (PASSED)
+TM CH FPR[17]: 1 (PASSED)
+TM CH FPR[18]: 2 (PASSED)
+TM CH FPR[19]: 3 (PASSED)
+TM CH FPR[20]: 4 (PASSED)
+TM CH FPR[21]: 5 (PASSED)
+TM CH FPR[22]: 6 (PASSED)
+TM CH FPR[23]: 7 (PASSED)
+TM CH FPR[24]: 8 (PASSED)
+TM CH FPR[25]: 9 (PASSED)
+TM CH FPR[26]: a (PASSED)
+TM CH FPR[27]: b (PASSED)
+TM CH FPR[28]: c (PASSED)
+TM CH FPR[29]: d (PASSED)
+TM CH FPR[30]: e (PASSED)
+TM CH FPR[31]: f (PASSED)
+Testing TM running GPR:
+TM RN NIP: 100011b0
+TM RN LINK: 10000ea0
+TM RN CCR: 4000422
+TM RN GPR[0]: f (PASSED)
+TM RN GPR[1]: e (PASSED)
+TM RN GPR[2]: d (PASSED)
+TM RN GPR[3]: c (PASSED)
+TM RN GPR[4]: b (PASSED)
+TM RN GPR[5]: a (PASSED)
+TM RN GPR[6]: 9 (PASSED)
+TM RN GPR[7]: 8 (PASSED)
+TM RN GPR[8]: 7 (PASSED)
+TM RN GPR[9]: 6 (PASSED)
+TM RN GPR[10]: 5 (PASSED)
+TM RN GPR[11]: 4 (PASSED)
+TM RN GPR[12]: 3 (PASSED)
+TM RN GPR[13]: 2 (PASSED)
+TM RN GPR[14]: 1 (PASSED)
+TM RN GPR[15]: 0 (PASSED)
+TM RN GPR[16]: f (PASSED)
+TM RN GPR[17]: e (PASSED)
+TM RN GPR[18]: d (PASSED)
+TM RN GPR[19]: c (PASSED)
+TM RN GPR[20]: b (PASSED)
+TM RN GPR[21]: a (PASSED)
+TM RN GPR[22]: 9 (PASSED)
+TM RN GPR[23]: 8 (PASSED)
+TM RN GPR[24]: 7 (PASSED)
+TM RN GPR[25]: 6 (PASSED)
+TM RN GPR[26]: 5 (PASSED)
+TM RN GPR[27]: 4 (PASSED)
+TM RN GPR[28]: 3 (PASSED)
+TM RN GPR[29]: 2 (PASSED)
+TM RN GPR[30]: 1 (PASSED)
+TM RN GPR[31]: 0 (PASSED)
+Testing TM running FPR:
+TM RN FPSCR: 0
+TM RN FPR[0]: f (PASSED)
+TM RN FPR[1]: e (PASSED)
+TM RN FPR[2]: d (PASSED)
+TM RN FPR[3]: c (PASSED)
+TM RN FPR[4]: b (PASSED)
+TM RN FPR[5]: a (PASSED)
+TM RN FPR[6]: 9 (PASSED)
+TM RN FPR[7]: 8 (PASSED)
+TM RN FPR[8]: 7 (PASSED)
+TM RN FPR[9]: 6 (PASSED)
+TM RN FPR[10]: 5 (PASSED)
+TM RN FPR[11]: 4 (PASSED)
+TM RN FPR[12]: 3 (PASSED)
+TM RN FPR[13]: 2 (PASSED)
+TM RN FPR[14]: 1 (PASSED)
+TM RN FPR[15]: 0 (PASSED)
+TM RN FPR[16]: f (PASSED)
+TM RN FPR[17]: e (PASSED)
+TM RN FPR[18]: d (PASSED)
+TM RN FPR[19]: c (PASSED)
+TM RN FPR[20]: b (PASSED)
+TM RN FPR[21]: a (PASSED)
+TM RN FPR[22]: 9 (PASSED)
+TM RN FPR[23]: 8 (PASSED)
+TM RN FPR[24]: 7 (PASSED)
+TM RN FPR[25]: 6 (PASSED)
+TM RN FPR[26]: 5 (PASSED)
+TM RN FPR[27]: 4 (PASSED)
+TM RN FPR[28]: 3 (PASSED)
+TM RN FPR[29]: 2 (PASSED)
+TM RN FPR[30]: 1 (PASSED)
+TM RN FPR[31]: 0 (PASSED)
+Testing TM running MISC debug registers:
+TM RN DSCR: 32 (PASSED)
+TM RN TAR: 3c (PASSED)
+TM RN PPR: 4000000000000 (PASSED)
+success: tm_ptrace
+
+Anshuman Khandual (9):
+  elf: Add new powerpc specifc core note sections
+  powerpc, process: Add the function flush_tmregs_to_thread
+  powerpc, ptrace: Enable fpr_(get/set) for transactional memory
+  powerpc, ptrace: Enable vr_(get/set) for transactional memory
+  powerpc, ptrace: Enable support for transactional memory register sets
+  powerpc, ptrace: Enable support for miscellaneous debug registers
+  selftests, powerpc: Add test case for TM related ptrace interface
+  selftests, powerpc: Make GIT ignore all binaries related to TM
+  selftests: Make GIT ignore all binaries in powerpc test suite
+
+ arch/powerpc/include/asm/switch_to.h               |    8 +
+ arch/powerpc/include/uapi/asm/elf.h                |    3 +
+ arch/powerpc/kernel/process.c                      |   20 +
+ arch/powerpc/kernel/ptrace.c                       | 1059 +++++++++++++++++++-
+ include/uapi/linux/elf.h                           |    5 +
+ .../testing/selftests/powerpc/copyloops/.gitignore |    4 +
+ tools/testing/selftests/powerpc/mm/.gitignore      |    1 +
+ tools/testing/selftests/powerpc/pmu/.gitignore     |    3 +
+ tools/testing/selftests/powerpc/pmu/ebb/.gitignore |   22 +
+ .../selftests/powerpc/primitives/.gitignore        |    1 +
+ tools/testing/selftests/powerpc/tm/.gitignore      |    2 +
+ tools/testing/selftests/powerpc/tm/Makefile        |    2 +-
+ tools/testing/selftests/powerpc/tm/tm-ptrace.c     |  542 ++++++++++
+ 13 files changed, 1647 insertions(+), 25 deletions(-)
+ create mode 100644 tools/testing/selftests/powerpc/copyloops/.gitignore
+ create mode 100644 tools/testing/selftests/powerpc/mm/.gitignore
+ create mode 100644 tools/testing/selftests/powerpc/pmu/.gitignore
+ create mode 100644 tools/testing/selftests/powerpc/pmu/ebb/.gitignore
+ create mode 100644 tools/testing/selftests/powerpc/primitives/.gitignore
+ create mode 100644 tools/testing/selftests/powerpc/tm/.gitignore
+ create mode 100644 tools/testing/selftests/powerpc/tm/tm-ptrace.c
+
+-- 
+1.9.3
 
