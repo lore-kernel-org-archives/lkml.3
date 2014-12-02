@@ -1,57 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732AbaLBEi0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Dec 2014 23:38:26 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:47276 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701AbaLBEiY (ORCPT
+	id S1753743AbaLBEoz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Dec 2014 23:44:55 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:33877 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752641AbaLBEox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Dec 2014 23:38:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <547AD41F.7030907@huawei.com>
-References: <1417142619-14548-1-git-send-email-wangweidong1@huawei.com>
-	<2248504.pAVebap2qN@vostro.rjw.lan>
-	<547923F2.6000701@huawei.com>
-	<4004530.x5fm24OG42@vostro.rjw.lan>
-	<547AD41F.7030907@huawei.com>
-Date: Tue, 2 Dec 2014 10:08:24 +0530
-Message-ID: <CAKohpomMWj8QRW5eYdTGXT+HEZpSA6AV5C6mUzYyC1N1fWV7vg@mail.gmail.com>
-Subject: Re: [PATCH 0/2] fix some problems for cpufreq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Wang Weidong <wangweidong1@huawei.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        guohanjun@huawei.com
-Content-Type: text/plain; charset=UTF-8
+	Mon, 1 Dec 2014 23:44:53 -0500
+Message-ID: <1417495491.5303.11.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH net-next] udp: Neaten and reduce size of compute_score
+ functions
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 01 Dec 2014 20:44:51 -0800
+In-Reply-To: <1417489760.4894.8.camel@perches.com>
+References: <1417484341.4894.6.camel@perches.com>
+	 <1417489141.4442.24.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <1417489760.4894.8.camel@perches.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 November 2014 at 13:53, Wang Weidong <wangweidong1@huawei.com> wrote:
-> No, there are not utilities and scripts relying on it.
+On Mon, 2014-12-01 at 19:09 -0800, Joe Perches wrote:
+> On Mon, 2014-12-01 at 18:59 -0800, Eric Dumazet wrote:
+> > On Mon, 2014-12-01 at 17:39 -0800, Joe Perches wrote:
+> > > The compute_score functions are a bit difficult to read.
+> > > 
+> > > Neaten them a bit to reduce object sizes and make them a
+> > > bit more intelligible.
+> > > 
+> > > Return early to avoid indentation and avoid unnecessary
+> > > initializations.
+> []
+> > > +	if (!(net_eq(sock_net(sk), net) &&
+> > > +	      udp_sk(sk)->udp_port_hash == hnum &&
+> > > +	      !ipv6_only_sock(sk)))
+> > > +		return -1
+> > 
+> > Or even better :
+> > 
+> > 
+> > 	if (!net_eq(sock_net(sk), net) ||
+> > 	    udp_sk(sk)->udp_port_hash != hnum ||
+> > 	    ipv6_only_sock(sk))
+> > 		return -1;
+> 
+> Hi Eric.
+> 
+> Yeah, I thought about it but thought it
+> simpler to not change the logic.
+> 
+> Either way is fine with me.
 
-How can you be so sure about it ? There might be scripts/utils you
-aren't aware of
-and are depending on this..
 
-> I just confuse that:
-> If the policy->min and policy-max is changed while it shows all available freqs
-> though scaling_available_frequencies. I can't set all freq-steps, only [policy->min, policy->max].
-> why should it show all the available freqs.
+Your patch does not change the logic at all.
 
-That's not the only purpose of those frequencies there. It shows list
-of all possible
-frequencies. Now, there can be issues if those lists are updated.
+My suggestion is about avoiding double negates which are really hard to
+read. This is simple boolean logic rules.
 
-Suppose somebody just played with the min/max frequency, now how would anybody
-come to know about the frequencies available above/below the
-user-max/min frequency?
+Code was :
 
-So as you mentioned in your example above: User space would never know about
+if (a && x == y && !ipv6_only_sock(sk))) {
+    EXPR1;
+} else {
+    return -1;
+}
 
-1.05 Ghz and 2.3GHz anymore.. Unless you remember it or save it somewhere.
+So the 'logical' way of negating the condition is actually to not add
+double negations and use :
 
-> Although, it doesn't impact on us. So just ignore the patch#2. :)
+if (!a || x != y || ipv6_only_sock(sk)))
+    return -1;
+EXPR1;
 
-Probably yes.
+Instead of the less readable form :
+
+if (!(a && x == y && !ipv6_only_sock(sk))))
+    return -1;
+EXPR1;
+
+You do not have to ask David permission for this, really.
+
+
+
