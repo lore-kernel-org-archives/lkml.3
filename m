@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747AbaLBOp4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 09:45:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37476 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753460AbaLBOpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 09:45:55 -0500
-Date: Tue, 2 Dec 2014 15:45:51 +0100
-From: Joerg Roedel <jroedel@suse.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] x86, swiotlb: Try coherent allocations with
- __GFP_NOWARN
-Message-ID: <20141202144551.GJ3156@suse.de>
-References: <1417174149-31210-1-git-send-email-joro@8bytes.org>
- <1417174149-31210-3-git-send-email-joro@8bytes.org>
- <20141201202854.GD21626@laptop.dumpdata.com>
+	id S1753849AbaLBOqh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 09:46:37 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39145 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752091AbaLBOqg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 09:46:36 -0500
+Date: Tue, 2 Dec 2014 15:46:15 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Volker Armin Hemmann <volkerarmin@googlemail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Regression: suspend to ram completely broken since at least
+ 3.13-rc5, works with 3.12.
+Message-ID: <20141202144615.GA3178@xo-6d-61-c0.localdomain>
+References: <54624E40.30802@googlemail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141201202854.GD21626@laptop.dumpdata.com>
+In-Reply-To: <54624E40.30802@googlemail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 03:28:54PM -0500, Konrad Rzeszutek Wilk wrote:
-> On Fri, Nov 28, 2014 at 12:29:08PM +0100, Joerg Roedel wrote:
-> > diff --git a/arch/x86/kernel/pci-swiotlb.c b/arch/x86/kernel/pci-swiotlb.c
-> > index 77dd0ad..79b2291 100644
-> > --- a/arch/x86/kernel/pci-swiotlb.c
-> > +++ b/arch/x86/kernel/pci-swiotlb.c
-> > @@ -20,6 +20,14 @@ void *x86_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
-> >  {
-> >  	void *vaddr;
-> >  
-> > +	/*
-> > +	 * When booting a kdump kernel in high memory these allocations are very
-> > +	 * likely to fail, as there are by default only 8MB of low memory to
-> > +	 * allocate from. So disable the warnings from the allocator when this
-> > +	 * happens.  SWIOTLB also implements fall-backs for failed allocations.
-> > +	 */
-> > +	flags |= __GFP_NOWARN;
+Hi!
+
+> with kernel 3.12.X with X tested up to .23 suspend to ram works
+> flawlessly. My machine suspends quickly and wakes up reliably, giving me
+> uptimes measured in weeks.
 > 
-> Should this perhaps then have 'if (kdump_kernel)' around it since
-> the use-case seems to be kdump related?
+> Every kernel I tried between 3.13.0-rc5 and 3.16.7 on the other hand
+> shows this behaviour:
+> 
+> IF suspend works it takes ages. Video blanks quickly, harddisks are
+> turned off, then it is stuck for a long time (more minute than tens of
+> seconds), and at some point suspends.
+> 
+> Afterwards there is a 50% chance it will wake up. In that case: nothing
+> in dmesg.
+> If it does not wake up on pressing any button, I have to press power
+> button for a nice cold boot.
+> 
+> Even if it does suspend and resume successfully, it will NOT suspend the
+> next time. Never.
+> 
+> The much more likely failure mode looks like this:
+> It will blank video and turn of harddisks and then nothing happens. usb
+> dead, ps2 keyboard dead, no harddisk activity, fans are spinning,
+> mainboard is powered - and nothing happens. I can turn off or hit reset
+> button.
+> 
+> Of course, after a reboot nothing will show up in the logs.
+> 
+> So this is a severe regression. Box worked, it stopped working.
 
-Hmm, I don't think this is entirely kdump specific. It can also be
-triggered on a non-kdump kernel, it is just much more unlikely. But
-maybe I should change the comment to something like:
+Any chance to do a bisect? Any chance to try with minimum drivers?
 
-	/*
-	 * Don't print a warning when the first allocation attempt
-	 * fails. The swiotlb_alloc_coherent() function will print a
-	 * warning when the allocation of DMA memory ultimatly failed.
-	 */
-
-This takes the kdump-specifics out of this change (in the end
-kdump-kernel loaded high is just a case where this failure is much more
-likely).
-
-
-	Joerg
-
+								Pavel
