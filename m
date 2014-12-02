@@ -1,104 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631AbaLBJru (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 04:47:50 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:54727 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaLBJrq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 04:47:46 -0500
-Date: Tue, 2 Dec 2014 10:47:42 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Andrew Bresticker <abrestic@chromium.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Cc: Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Felipe Balbi <balbi@ti.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH V6 05/12] mailbox: Add NVIDIA Tegra XUSB mailbox driver
-Message-ID: <20141202094741.GC6135@ulmo>
-References: <1416874644-12070-1-git-send-email-abrestic@chromium.org>
- <1416874644-12070-6-git-send-email-abrestic@chromium.org>
+	id S1752262AbaLBJwA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 04:52:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44857 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750964AbaLBJv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 04:51:57 -0500
+Date: Tue, 02 Dec 2014 09:59:48 +0008
+From: Jason Wang <jasowang@redhat.com>
+Subject: Re: [PATCH RFC v4 net-next 0/5] virtio_net: enabling tx interrupts
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net, pagupta@redhat.com
+Message-Id: <1417513908.16540.0@smtp.corp.redhat.com>
+In-Reply-To: <20141202094318.GB7732@redhat.com>
+References: <1417429028-11971-1-git-send-email-jasowang@redhat.com>
+	<20141201104223.GB16108@redhat.com>
+	<1417490120.4405.2@smtp.corp.redhat.com>
+	<1417507622.12638.0@smtp.corp.redhat.com>
+	<20141202094318.GB7732@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8NvZYKFJsRX2Djef"
-Content-Disposition: inline
-In-Reply-To: <1416874644-12070-6-git-send-email-abrestic@chromium.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=utf-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---8NvZYKFJsRX2Djef
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Mon, Nov 24, 2014 at 04:17:17PM -0800, Andrew Bresticker wrote:
-> The Tegra xHCI controller's firmware communicates requests to the host
-> processor through a mailbox interface.  While there is only a single
-> physical channel, messages sent by the controller can be divided
-> into two groups: those intended for the PHY driver and those intended
-> for the host-controller driver.  The requesting driver is assigned
-> one of two virtual channels when the single physical channel is
-> requested.  All incoming messages are sent to both virtual channels.
->=20
-> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-> Reviewed-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> Thierry,
->=20
-> I've left this as a separate driver because I don't think it should be
-> combined with the xHCI host.  Stephen and I discussed this earlier in
-> review of v1 of this series and he agreed that the mailbox belongs in
-> its own DT node and driver.
+On Tue, Dec 2, 2014 at 5:43 PM, Michael S. Tsirkin <mst@redhat.com> 
+wrote:
+> On Tue, Dec 02, 2014 at 08:15:02AM +0008, Jason Wang wrote:
+>>  
+>>  
+>>  On Tue, Dec 2, 2014 at 11:15 AM, Jason Wang <jasowang@redhat.com> 
+>> wrote:
+>>  >
+>>  >
+>>  >On Mon, Dec 1, 2014 at 6:42 PM, Michael S. Tsirkin 
+>> <mst@redhat.com> wrote:
+>>  >>On Mon, Dec 01, 2014 at 06:17:03PM +0800, Jason Wang wrote:
+>>  >>> Hello:
+>>  >>>  We used to orphan packets before transmission for virtio-net. 
+>> This
+>>  >>>breaks
+>>  >>> socket accounting and can lead serveral functions won't work, 
+>> e.g:
+>>  >>>  - Byte Queue Limit depends on tx completion nofication to work.
+>>  >>> - Packet Generator depends on tx completion nofication for the 
+>> last
+>>  >>>   transmitted packet to complete.
+>>  >>> - TCP Small Queue depends on proper accounting of sk_wmem_alloc 
+>> to
+>>  >>>work.
+>>  >>>  This series tries to solve the issue by enabling tx 
+>> interrupts. To
+>>  >>>minize
+>>  >>> the performance impacts of this, several optimizations were 
+>> used:
+>>  >>>  - In guest side, virtqueue_enable_cb_delayed() was used to 
+>> delay the
+>>  >>>tx
+>>  >>>   interrupt untile 3/4 pending packets were sent.
+>>  >>> - In host side, interrupt coalescing were used to reduce tx
+>>  >>>interrupts.
+>>  >>>  Performance test results[1] (tx-frames 16 tx-usecs 16) shows:
+>>  >>>  - For guest receiving. No obvious regression on throughput were
+>>  >>>   noticed. More cpu utilization were noticed in few cases.
+>>  >>> - For guest transmission. Very huge improvement on througput for
+>>  >>>small
+>>  >>>   packet transmission were noticed. This is expected since TSQ 
+>> and
+>>  >>>other
+>>  >>>   optimization for small packet transmission work after tx 
+>> interrupt.
+>>  >>>But
+>>  >>>   will use more cpu for large packets.
+>>  >>> - For TCP_RR, regression (10% on transaction rate and cpu
+>>  >>>utilization) were
+>>  >>>   found. Tx interrupt won't help but cause overhead in this 
+>> case.
+>>  >>>Using
+>>  >>>   more aggressive coalescing parameters may help to reduce the
+>>  >>>regression.
+>>  >>
+>>  >>OK, you do have posted coalescing patches - does it help any?
+>>  >
+>>  >Helps a lot.
+>>  >
+>>  >For RX, it saves about 5% - 10% cpu. (reduce 60%-90% tx intrs)
+>>  >For small packet TX, it increases 33% - 245% throughput. (reduce 
+>> about 60%
+>>  >inters)
+>>  >For TCP_RR, it increase the 3%-10% trans.rate. (reduce 40%-80% tx 
+>> intrs)
+>>  >
+>>  >>
+>>  >>I'm not sure the regression is due to interrupts.
+>>  >>It would make sense for CPU but why would it
+>>  >>hurt transaction rate?
+>>  >
+>>  >Anyway guest need to take some cycles to handle tx interrupts.
+>>  >And transaction rate does increase if we coalesces more tx 
+>> interurpts.
+>>  >>
+>>  >>
+>>  >>It's possible that we are deferring kicks too much due to BQL.
+>>  >>
+>>  >>As an experiment: do we get any of it back if we do
+>>  >>-        if (kick || netif_xmit_stopped(txq))
+>>  >>-                virtqueue_kick(sq->vq);
+>>  >>+        virtqueue_kick(sq->vq);
+>>  >>?
+>>  >
+>>  >
+>>  >I will try, but during TCP_RR, at most 1 packets were pending,
+>>  >I suspect if BQL can help in this case.
+>>  
+>>  Looks like this helps a lot in multiple sessions of TCP_RR.
+> 
+> so what's faster
+> 	BQL + kick each packet
+> 	no BQL
+> ?
 
-My objection wasn't strictly against merging the drivers. What I don't
-want to see is two devices sharing the same memory-mapped regions in DT.
+Quick and manual tests (TCP_RR 64, TCP_STREAM 512) does not 
+show obvious differences.
 
-That's based on earlier discussion with Stephen as well, because we have
-had the same problem with USB and USB-PHY before. Unless I completely
-misinterpreted we came to the conclusion that we should avoid this in
-the future.
+May need a complete benchmark to see.
+> 
+> 
+>>  How about move the BQL patch out of this series?
+>>  
+>>  Let's first converge tx interrupt and then introduce it?
+>>  (e.g with kicking after queuing X bytes?)
+> 
+> Sounds good.
 
-Like I said, this doesn't mean that both need to be in the same driver.
-We could use MFD for example, or provide an entry point in the mailbox
-driver that can be called from the XUSB driver to instantiate the
-mailbox (which is really the same as MFD).
-
-Thierry
-
---8NvZYKFJsRX2Djef
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUfYq9AAoJEN0jrNd/PrOhAjsP/jQ382JNqadfDFsBPsWxQiqa
-pkYO8rripE9yDaU1NtK0601yfpQzganxugkl9OICZ6cU90MTI2hw3RWteaHvvD37
-DPhJ1R/13yvDO8OmdjcnAYhiUdNLxuSocEOTtgNuUetmMx83LCEGeOXmXSI+Zt92
-jDHHOWEfN+LJ8lY9U8qQ2r/ZzEY1QHnq1C0ACO4SbFku/ABWjtPVcOt67X0GhIit
-h1+bLLUC5mPQrdutyKWUy0+32ohIvfMCBkJ5yitxQJ42CSDd2n3DKDMY9xwtBjlx
-dxM5UQdajtoBuSd+FlWk0GyoH8EVJePaOBzGwLqTB6gv7DDT41bA+518wy5HMo4W
-hXG8zuFeV+Z83iD6tGXQL8Kx46oeRn9RvzVDfGcKQagkspyAHwEcvGfTIh/be9aG
-10ssMn8DgeK6nF4DufhMUj0UowNB60MGs1y8qyKgOSEA97p1VfHR9Cktv408sEml
-XSrSegN5Tt3ogHKLzfHIgyXTG6PJ3hOy5seMvmkztzzl2eOuMTWornjuQe33eq4U
-Rcrgjz03HW/yXF5BEEI0Nb/O/hV1t8RlsdFNmo+KdOaFeaJpjafQm280a9T2Zsr6
-uze/bGhT1Y4peOHdl30Nu8dKHpdCths53J3IrvHpQpMPtBI+1bf5Ihqi4wcJNyzT
-ByGCnw1O7FR8Pe2ZeIFV
-=vDMG
------END PGP SIGNATURE-----
-
---8NvZYKFJsRX2Djef--
