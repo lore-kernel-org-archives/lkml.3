@@ -1,62 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933217AbaLBNBE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 08:01:04 -0500
-Received: from mout.web.de ([212.227.15.14]:51756 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933183AbaLBNBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 08:01:00 -0500
-Message-ID: <547DB803.1080406@users.sourceforge.net>
-Date: Tue, 02 Dec 2014 14:00:51 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        devicetree@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 1/1] of-unittest: Deletion of an unnecessary check before
- the function call "of_node_put"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:ciyhSYHWHnwOpG8Z61TdGpy/3sY78dkktP0R9lZiZfzoDEMMsqr
- rSi7WFD60PI5XK4d0k59EXsz0l71nAqoc8tkLkSrozaWrCYC0HAjTrC0IHPG/4cxzEhnkDC
- 8yklzoArHijvZarwBOk1uZNnDUG+ShaAgmolqiE7HEK7iWwx4ewsyPfWLW5HLjZyCCeOzxQ
- Urrys2k1ZB38EnN5blfHw==
-X-UI-Out-Filterresults: notjunk:1;
+	id S933229AbaLBNBi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 08:01:38 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43389 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754622AbaLBNBg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 08:01:36 -0500
+Message-ID: <1417525257.3411.12.camel@pengutronix.de>
+Subject: Re: [PATCH v15 12/12] drm: bridge/dw_hdmi: add rockchip rk3288
+ support
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Andy Yan <andy.yan@rock-chips.com>
+Cc: airlied@linux.ie, heiko@sntech.de, fabio.estevam@freescale.com,
+        rmk+kernel@arm.linux.org.uk,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>, vladimir_zapolskiy@mentor.com,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Date: Tue, 02 Dec 2014 14:00:57 +0100
+In-Reply-To: <547DB1ED.7000409@rock-chips.com>
+References: <1417505778-18341-1-git-send-email-andy.yan@rock-chips.com>
+		 <1417506327-18908-1-git-send-email-andy.yan@rock-chips.com>
+	 <1417515882.3411.8.camel@pengutronix.de> <547DB1ED.7000409@rock-chips.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Tue, 2 Dec 2014 13:54:00 +0100
+Hi Andy,
 
-The of_node_put() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+Am Dienstag, den 02.12.2014, 20:34 +0800 schrieb Andy Yan:
+> Hi Philipp:
+> On 2014年12月02日 18:24, Philipp Zabel wrote:
+> > Hi Andy,
+> >
+> > Am Dienstag, den 02.12.2014, 15:45 +0800 schrieb Andy Yan:
+> > [...]
+> >> +static int dw_hdmi_rockchip_bind(struct device *dev, struct device *master,
+> >> +				 void *data)
+> >> +{
+> >> +	struct platform_device *pdev = to_platform_device(dev);
+> >> +	const struct dw_hdmi_plat_data *plat_data;
+> >> +	const struct of_device_id *match;
+> >> +	struct drm_device *drm = data;
+> >> +	struct drm_encoder *encoder;
+> >> +	struct rockchip_hdmi *hdmi;
+> >> +	int ret;
+> >> +
+> >> +	if (!pdev->dev.of_node)
+> >> +		return -ENODEV;
+> >> +
+> >> +	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
+> >> +	if (!hdmi)
+> >> +		return -ENOMEM;
+> >> +
+> >> +	match = of_match_node(dw_hdmi_rockchip_ids, pdev->dev.of_node);
+> >> +	plat_data = match->data;
+> >> +	hdmi->dev = &pdev->dev;
+> >> +	encoder = &hdmi->encoder;
+> >> +	platform_set_drvdata(pdev, hdmi);
+> >> +
+> >> +	ret = rockchip_hdmi_parse_dt(hdmi);
+> >> +	if (ret) {
+> >> +		dev_err(hdmi->dev, "Unable to parse OF data\n");
+> >> +		return ret;
+> >> +	}
+> >> +
+> >> +	ret = clk_prepare_enable(hdmi->clk);
+> >> +	if (ret) {
+> >> +		dev_err(hdmi->dev, "Cannot enable HDMI clock: %d\n", ret);
+> >> +		return ret;
+> >> +	}
+> >> +
+> >> +	ret = clk_prepare_enable(hdmi->hdcp_clk);
+> >> +	if (ret) {
+> >> +		dev_err(hdmi->dev, "Cannot enable HDMI hdcp clock: %d\n", ret);
+> >> +		return ret;
+> >> +	}
+> > Could we have a look at the clocks again? Basically the Rockchip clock
+> > handling is exactly the same, except the clocks are called by other
+> > names.
+> >
+> > On i.MX6, according to the reference manual, the HDMI TX module has four
+> > clock inputs: "iahbclk" (bus clock), "icecclk" (32 kHz CEC clock),
+> > "ihclk" (module clock), and "isfrclk" (27 MHz internal SFR clock).
+> > The "iahbclk" and "ihclk" are both sourced from the SoC AHB root clock,
+> > the 32 kHz reference input can't be gated, and the "isfrclk" has its own
+> > gate.
+> >
+> > Does the HDMI TX implementation on Rockchip still have the separate
+> > external sfr bus and module clock inputs? I assume that your "clk" input
+> > is a single gate bit for bus and module clocks at the same time?
+> > If possible, I'd prefer to find a common binding for the clocks with
+> > some of the clocks being optional, but for that we need to know the
+> > actual clock inputs to the HDMI TX module.
+> >
+> > regards
+> > Philipp
+> >
+>      There are three  individual clock inputs on Rockchip RK3288 HDMI: 
+> "hdmi_ctrl_clk",
+>      "hdmi_cec_clk", "hdmi_hdcp_clk", the three clocks are responsible 
+> for different
+>       functions as their name described, and have their own private gate 
+> bit. That is
+>       to say, the cec_clk and hdcp_clk can all be disabled if we don't 
+> need hdcp and cec
+>       function.
+>       So I think it's better to make the clk control platform independent.
 
-This issue was detected by using the Coccinelle software.
+My question is not about the available gates at the SoC level, but about
+the actual clock inputs from point of view of the HDMI TX IP.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/of/unittest.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+It could be that the hdmi_ctrl_clk gates all inputs to the module and
+bus clocks together. If so, you could just reuse "isfr" and "iahb" and
+set it to the same clock. If not, we'd need to think of something else.
+Unfortunately I don't have any Synopsys documentation of the HDMI TX at
+that level.
 
-diff --git a/drivers/of/unittest.c b/drivers/of/unittest.c
-index cc0c5ec..06ebe9d 100644
---- a/drivers/of/unittest.c
-+++ b/drivers/of/unittest.c
-@@ -486,8 +486,7 @@ static void __init of_selftest_changeset(void)
- 	/* Make sure node names are constructed correctly */
- 	selftest((np = of_find_node_by_path("/testcase-data/changeset/n2/n21")),
- 		 "'%s' not added\n", n21->full_name);
--	if (np)
--		of_node_put(np);
-+	of_node_put(np);
- 
- 	mutex_lock(&of_mutex);
- 	selftest(!of_changeset_revert(&chgset), "revert failed\n");
--- 
-2.1.3
+regards
+Philipp
 
