@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751714AbaLBJ1T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 04:27:19 -0500
-Received: from hofr.at ([212.69.189.236]:53661 "EHLO mail.hofr.at"
+	id S1753333AbaLBJ1h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 04:27:37 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:60691 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751309AbaLBJ1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 04:27:18 -0500
-Date: Tue, 2 Dec 2014 10:18:36 +0100
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Michal Marek <mmarek@suse.cz>, Joe Perches <joe@perches.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] additional external module symbol dependecy handling
-	options
-Message-ID: <20141202091836.GG13909@opentech.at>
+	id S1751666AbaLBJ1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 04:27:34 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Mark Yao <mark.yao@rock-chips.com>
+Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-api@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, dianders@chromium.org,
+        marcheu@chromium.org, dbehr@chromium.org, olof@lixom.net,
+        djkurtz@chromium.org, cf@rock-chips.com, xxm@rock-chips.com,
+        huangtao@rock-chips.com, kever.yang@rock-chips.com, yxj@rock-chips.com,
+        xw@rock-chips.com
+Subject: Re: [PATCH v15 0/3] Add drm driver for Rockchip Socs
+Date: Tue, 02 Dec 2014 10:31:14 +0100
+Message-ID: <2556534.qktPW9tbxy@diego>
+User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <1417511600-7054-1-git-send-email-mark.yao@rock-chips.com>
+References: <1417511600-7054-1-git-send-email-mark.yao@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Mark,
 
-additional external module symbol dependecy handling options
+Am Dienstag, 2. Dezember 2014, 17:13:20 schrieb Mark Yao:
+> This a series of patches is a DRM Driver for Rockchip Socs, add support
+> for vop devices. Future patches will add additional encoders/connectors,
+> such as eDP, HDMI.
+> 
+> The basic "crtc" for rockchip is a "VOP" - Video Output Processor.
+> the vop devices found on Rockchip rk3288 Soc, rk3288 soc have two similar
+> Vop devices. Vop devices support iommu mapping, we use dma-mapping API with
+> ARM_DMA_USE_IOMMU.
 
-The use of KBUILD_EXTRA_SYMBOLS is clarified by an example and
-the additional option of using  KBUILD_EXTMOD is added as
-equivalent alternative.
+[...]
 
-This patch is against linux 3.18.0-rc6
+> Changes in v15:
+> - remove depends on ARM_DMA_USE_IOMMU & IOMMU_API which cause
+>   recursive dependency problem
+> - fix compile problems when build as a module.
 
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
- Documentation/kbuild/modules.txt |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+maybe you could also already create a new pull request for this version [like 
+the last one based on the iommu branch], so that we save time and Dave can 
+pull it in easily for testing if he likes.
 
-diff --git a/Documentation/kbuild/modules.txt b/Documentation/kbuild/modules.txt
-index 3fb39e0..450af1f 100644
---- a/Documentation/kbuild/modules.txt
-+++ b/Documentation/kbuild/modules.txt
-@@ -517,6 +517,18 @@ build.
- 		These files will be loaded by modpost during the
- 		initialization of its symbol tables.
- 
-+		Example:
-+			$ make KBUILD_EXTRA_SYMBOLS=/PATH/TO/bar/Module.symvers \
-+			  -C $KDIR M=$PWD modules
-+
-+	Use "make" variable KBUILD_EXTMOD
-+		Alternatively to passing the Module.symvers files explicitly
-+		one can also pass the directory containing the external module
-+		that will satisfy the dependecies with KBUILD_EXTMOD and
-+		Kbuild will pick up the Module.symvers found there.
-+
-+		Example:
-+			$ make -C $KDIR M=$PWD KBUILD_EXTMOD=/PATH/TO/bar/ modules
- 
- === 7. Tips & Tricks
- 
--- 
-1.7.10.4
 
+Heiko
