@@ -1,91 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933068AbaLBU4p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 15:56:45 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:50386 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932365AbaLBU4n (ORCPT
+	id S933081AbaLBU6c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 15:58:32 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:51133 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932365AbaLBU63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 15:56:43 -0500
-Date: Tue, 2 Dec 2014 12:56:36 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141202205636.GQ25340@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141201191431.GA17385@linux.vnet.ibm.com>
- <547ccf74.a5198c0a.25de.26d9@mx.google.com>
- <20141201230813.GE25340@linux.vnet.ibm.com>
- <547dec29.c71f8c0a.33d1.11d9@mx.google.com>
- <20141202170407.GK25340@linux.vnet.ibm.com>
- <547df364.236a8c0a.7b2d.ffffac67@mx.google.com>
- <20141202184202.GM25340@linux.vnet.ibm.com>
- <547e0947.c332e00a.23bf.ffffa8bd@mx.google.com>
- <20141202191143.GN25340@linux.vnet.ibm.com>
- <547e11fa.8778e00a.3439.ffffa88c@mx.google.com>
+	Tue, 2 Dec 2014 15:58:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <547e11fa.8778e00a.3439.ffffa88c@mx.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120220-0017-0000-0000-000006C22719
+In-Reply-To: <87fvcxyf28.fsf_-_@x220.int.ebiederm.org>
+References: <52e0643bd47b1e5c65921d6e00aea1f724bb510a.1417281801.git.luto@amacapital.net>
+ <87h9xez20g.fsf@x220.int.ebiederm.org> <CALCETrXOz4C7Tu8mggBtR=k47ZmkuAhinVUxWJSFyS1Ep0HvRw@mail.gmail.com>
+ <87mw75ygwp.fsf@x220.int.ebiederm.org> <CALCETrVfO4sBdZcQiZXsofPZMj7pqKeVbX+4g3dAj6WjUca+1w@mail.gmail.com>
+ <87fvcxyf28.fsf_-_@x220.int.ebiederm.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 2 Dec 2014 12:58:07 -0800
+Message-ID: <CALCETrXsQbCeQBUo_FrXNVS42mBEFXz1jku9TicVbFhxTmNGmA@mail.gmail.com>
+Subject: Re: [CFT][PATCH 1/3] userns: Avoid problems with negative groups
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Richard Weinberger <richard@nod.at>,
+        Kenton Varda <kenton@sandstorm.io>, stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 05:24:39PM -0200, Dâniel Fraga wrote:
-> On Tue, 2 Dec 2014 11:11:43 -0800
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > OK.  I need to know exactly what version of the Linux kernel you are
-> > using.  3.18-rc7?  (I am not too worried about exactly which version
-> > you are using as long as I know which version it is.)
-> 
-> 	Ok, I stopped bisecting and went back to 3.17.0 stock kernel.
-> I'm testing with 3.17.0 kernel because this one is the first to show
-> problems. If you want me to go to 3.18-rc7, just ask I can checkout
-> through git.
-> 
-> 	Ps: my signature will reflect the kernel I'm using now ;)
+On Tue, Dec 2, 2014 at 12:25 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+>
+> Classic unix permission checks have an interesting feature, the group
+> permissions for a file can be set to less than the other permissions
+> on a file.  Occassionally this is used deliberately to give a certain
+> group of users fewer permissions than the default.
+>
+> Overlooking negative groups has resulted in the permission checks for
+> setting up a group mapping in a user namespace to be too lax.  Tighten
+> the permission checks in new_idmap_permitted to ensure that mapping
+> uids and gids into user namespaces without privilege will not result
+> in new combinations of credentials being available to the users.
+>
+> When setting mappings without privilege only the creator of the user
+> namespace is interesting as all other users that have CAP_SETUID over
+> the user namespace will also have CAP_SETUID over the user namespaces
+> parent.  So the scope of the unprivileged check is reduced to just
+> the case where cred->euid is the namespace creator.
+>
+> For setting a uid mapping without privilege only euid is considered as
+> setresuid can set uid, suid and fsuid from euid without privielege
+> making any combination of uids possible with user namespaces already
+> possible without them.
+>
+> For now seeting a gid mapping without privilege is removed.  The only
+> possible set of credentials that would be safe without a gid mapping
+> (egid without any supplementary groups) just doesn't happen in practice
+> so would simply lead to unused untested code.
+>
+> setgroups is modified to fail not only when the group ids do not
+> map but also when there are no gid mappings at all, preventing
+> setgroups(0, NULL) from succeeding when gid mappings have not been
+> established.
+>
+> For a small class of applications this change breaks userspace
+> and removes useful functionality.  This small class of applications
+> includes tools/testing/selftests/mount/unprivileged-remount-test.c
+>
+> Most of the removed functionality will be added back with the
+> addition of a one way knob to disable setgroups.  Once setgroups
+> is disabled setting the gid_map becomes as safe as setting the uid_map.
+>
+> For more common applications that set the uid_map and the gid_map with
+> privilege this change will have no effect on them.
+>
+> This should fix CVE-2014-8989.
+>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> ---
 
-And I left out a step.  Let's make sure that my preempt_disabled() hack
-to CONFIG_TREE_PREEMPT_RCU=y has the same effect as the Kconfig hack
-that allowed CONFIG_PREEMPT=y and CONFIG_TREE_PREEMPT_RCU=n.  Could you
-please try out the following patch configured with CONFIG_PREEMPT=y
-and CONFIG_TREE_PREEMPT_RCU=y?
+>
+> +static inline bool gid_mapping_possible(const struct user_namespace *ns)
+> +{
+> +       return ns->gid_map.nr_extents != 0;
+> +}
+> +
 
-							Thanx, Paul
+Can you rename this to userns_may_setgroups or something like that?
+To me, gid_mapping_possible sounds like you're allowed to map gids,
+which sounds like the opposite condition, and it doesn't explain what
+the point is.
 
-------------------------------------------------------------------------
 
-diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-index e0d31a345ee6..fff605a9e87f 100644
---- a/kernel/rcu/update.c
-+++ b/kernel/rcu/update.c
-@@ -71,7 +71,11 @@ module_param(rcu_expedited, int, 0);
-  */
- void __rcu_read_lock(void)
- {
--	current->rcu_read_lock_nesting++;
-+	struct task_struct *t = current;
-+
-+	if (!t->rcu_read_lock_nesting)
-+		preempt_disable();
-+	t->rcu_read_lock_nesting++;
- 	barrier();  /* critical section after entry code. */
- }
- EXPORT_SYMBOL_GPL(__rcu_read_lock);
-@@ -92,6 +96,7 @@ void __rcu_read_unlock(void)
- 	} else {
- 		barrier();  /* critical section before exit code. */
- 		t->rcu_read_lock_nesting = INT_MIN;
-+		preempt_enable();
- 		barrier();  /* assign before ->rcu_read_unlock_special load */
- 		if (unlikely(ACCESS_ONCE(t->rcu_read_unlock_special.s)))
- 			rcu_read_unlock_special(t);
+> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+> index aa312b0dc3ec..51d65b444951 100644
+> --- a/kernel/user_namespace.c
+> +++ b/kernel/user_namespace.c
+> @@ -812,16 +812,19 @@ static bool new_idmap_permitted(const struct file *file,
+>                                 struct user_namespace *ns, int cap_setid,
+>                                 struct uid_gid_map *new_map)
+>  {
+> -       /* Allow mapping to your own filesystem ids */
+> -       if ((new_map->nr_extents == 1) && (new_map->extent[0].count == 1)) {
+> +       const struct cred *cred = file->f_cred;
+> +
+> +       /* Allow a mapping without capabilities when allowing the root
+> +        * of the user namespace capabilities restricted to that id
+> +        * will not change the set of credentials available to that
+> +        * user.
+> +        */
+> +       if ((new_map->nr_extents == 1) && (new_map->extent[0].count == 1) &&
+> +           uid_eq(ns->owner, cred->euid)) {
 
+What's uid_eq(ns->owner, cred->euid)) for?  This should already be covered by:
+
+    if (cap_valid(cap_setid) && !file_ns_capable(file, ns, CAP_SYS_ADMIN))
+        goto out;
+
+(except that I don't know why cap_valid(cap_setid) is checked -- this
+ought to be enforced for projid_map, too, right?)
+
+>                 u32 id = new_map->extent[0].lower_first;
+>                 if (cap_setid == CAP_SETUID) {
+>                         kuid_t uid = make_kuid(ns->parent, id);
+> -                       if (uid_eq(uid, file->f_cred->fsuid))
+> -                               return true;
+> -               } else if (cap_setid == CAP_SETGID) {
+> -                       kgid_t gid = make_kgid(ns->parent, id);
+> -                       if (gid_eq(gid, file->f_cred->fsgid))
+> +                       if (uid_eq(uid, cred->euid))
+
+Why'd you change this from fsuid to euid?
+
+--Andy
