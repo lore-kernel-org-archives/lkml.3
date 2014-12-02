@@ -1,92 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933972AbaLBTil (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:38:41 -0500
-Received: from mga14.intel.com ([192.55.52.115]:63308 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933669AbaLBT0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:26:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,502,1413270000"; 
-   d="scan'208";a="631549875"
-From: "Berthier, Emmanuel" <emmanuel.berthier@intel.com>
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        X86 ML <x86@kernel.org>, "Jarzmik, Robert" <robert.jarzmik@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2] [LBR] Dump LBRs on Exception
-Thread-Topic: [PATCH v2] [LBR] Dump LBRs on Exception
-Thread-Index: AQHQClAp6CYIYedu6ESpcFdbEVpmDZx0+/cAgAAJTYCAAK9oAIAAcvIAgATcELA=
-Date: Tue, 2 Dec 2014 19:09:40 +0000
-Message-ID: <65CD3FC07F3BF942ABE211646D72D770356EC658@IRSMSX110.ger.corp.intel.com>
-References: <65CD3FC07F3BF942ABE211646D72D770356EACA5@IRSMSX110.ger.corp.intel.com>
- <1417099205-13309-1-git-send-email-emmanuel.berthier@intel.com>
- <alpine.DEB.2.11.1411271609510.3961@nanos>
- <CALCETrWKiTdzSQ6kKPaufHoW2aTjPtqkQy9cyq_YiBwoowe-+g@mail.gmail.com>
- <65CD3FC07F3BF942ABE211646D72D770356EB2B2@IRSMSX110.ger.corp.intel.com>
- <CALCETrWO5jVaXrvtMmxEtV0-9husbwFrm=FLWUvEJJev25KXmg@mail.gmail.com>
-In-Reply-To: <CALCETrWO5jVaXrvtMmxEtV0-9husbwFrm=FLWUvEJJev25KXmg@mail.gmail.com>
-Accept-Language: fr-FR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.33.239.181]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S933961AbaLBTjJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:39:09 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46909 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933646AbaLBT0O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 14:26:14 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Peng Tao <tao.peng@primarydata.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 074/121] nfs: fix pnfs direct write memory leak
+Date: Tue,  2 Dec 2014 11:19:13 -0800
+Message-Id: <1417548000-1794-75-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sB2JcmIe019525
 
-> From: Andy Lutomirski [mailto:luto@amacapital.net]
-> Sent: Friday, November 28, 2014 4:15 PM
-> To: Berthier, Emmanuel
-> Cc: Thomas Gleixner; H. Peter Anvin; X86 ML; Jarzmik, Robert; LKML
-> Subject: Re: [PATCH v2] [LBR] Dump LBRs on Exception
-> 
-> On Fri, Nov 28, 2014 at 12:44 AM, Berthier, Emmanuel
-> <emmanuel.berthier@intel.com> wrote:
-> >  diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> > index df088bb..f39cded 100644
-> > --- a/arch/x86/kernel/entry_64.S
-> > +++ b/arch/x86/kernel/entry_64.S
-> > @@ -1035,6 +1035,46 @@ apicinterrupt IRQ_WORK_VECTOR \
-> >         irq_work_interrupt smp_irq_work_interrupt  #endif
-> >
-> > +.macro STOP_LBR
-> > +#ifdef CONFIG_LBR_DUMP_ON_EXCEPTION
-> > +       testl $3,CS+8(%rsp)             /* Kernel Space? */
-> > +       jz 1f
-> > +       testl $1, lbr_dump_on_exception
-> 
-> Is there a guarantee that, if lbr_dump_on_exception is true, then LBR is on?
-> What happens if you schedule between stopping and resuming LBR?
+3.13.11-ckt12 -stable review patch.  If anyone has any objections, please let me know.
 
-Good point. The current assumption is to rely on the numerous exceptions to "re-arm" the LBR recording.
-Even if we bypass UserSpace page faults, we can keep rely on kernel VMalloc page faults to re-arm the recording.
+------------------
 
-> > +       jz 1f
-> > +       push %rax
-> > +       push %rcx
-> > +       push %rdx
-> > +       movl $MSR_IA32_DEBUGCTLMSR, %ecx
-> > +       rdmsr
-> > +       and $~1, %eax                   /* Disable LBR recording */
-> > +       wrmsr
-> 
-> wrmsr is rather slow.  Have you checked whether this is faster than just
-> saving the LBR trace on exception entry?
+From: Peng Tao <tao.peng@primarydata.com>
 
-The figures I have show that for common MSR, rdmsr and wrmsr have quite the same impact, around 100 cycles (greatly depends on the arch).
-The cost of stop/start is: 2 rdmsr + 2 wrmsr = 4 msr
-The cost of reading LBR is: 1 rdmsr for TOS + 2 rdmsr per record, and there are from 8 to 32 Records (Arch specific) = between 17 to 65 msr.
-I've measured on Atom arch (8 records): LBR read versus stop/start: around x3 more time.
-As the LBR size is arch dependent, it's not easy to implement the record reading in ASM without any branch, and this would generate maintenance dependency.
-I prefer to let perf_event_lbr dealing with all that stuff.
+commit 8c393f9a721c30a030049a680e1bf896669bb279 upstream.
 
-Thx,
+For pNFS direct writes, layout driver may dynamically allocate ds_cinfo.buckets.
+So we need to take care to free them when freeing dreq.
 
-Emmanuel.
+Ideally this needs to be done inside layout driver where ds_cinfo.buckets
+are allocated. But buckets are attached to dreq and reused across LD IO iterations.
+So I feel it's OK to free them in the generic layer.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Signed-off-by: Peng Tao <tao.peng@primarydata.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ fs/nfs/direct.c         |  1 +
+ include/linux/nfs_xdr.h | 11 +++++++++++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c
+index d71d66c..a74e888 100644
+--- a/fs/nfs/direct.c
++++ b/fs/nfs/direct.c
+@@ -178,6 +178,7 @@ static void nfs_direct_req_free(struct kref *kref)
+ {
+ 	struct nfs_direct_req *dreq = container_of(kref, struct nfs_direct_req, kref);
+ 
++	nfs_free_pnfs_ds_cinfo(&dreq->ds_cinfo);
+ 	if (dreq->l_ctx != NULL)
+ 		nfs_put_lock_context(dreq->l_ctx);
+ 	if (dreq->ctx != NULL)
+diff --git a/include/linux/nfs_xdr.h b/include/linux/nfs_xdr.h
+index 5624e4e..53988cb 100644
+--- a/include/linux/nfs_xdr.h
++++ b/include/linux/nfs_xdr.h
+@@ -1247,11 +1247,22 @@ struct nfs41_free_stateid_res {
+ 	unsigned int			status;
+ };
+ 
++static inline void
++nfs_free_pnfs_ds_cinfo(struct pnfs_ds_commit_info *cinfo)
++{
++	kfree(cinfo->buckets);
++}
++
+ #else
+ 
+ struct pnfs_ds_commit_info {
+ };
+ 
++static inline void
++nfs_free_pnfs_ds_cinfo(struct pnfs_ds_commit_info *cinfo)
++{
++}
++
+ #endif /* CONFIG_NFS_V4_1 */
+ 
+ struct nfs_page;
+-- 
+1.9.1
+
