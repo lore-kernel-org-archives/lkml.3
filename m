@@ -1,151 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932401AbaLBQH3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 11:07:29 -0500
-Received: from mail-oi0-f52.google.com ([209.85.218.52]:56866 "EHLO
-	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932309AbaLBQH1 (ORCPT
+	id S932470AbaLBQN2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 11:13:28 -0500
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:35834 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932249AbaLBQN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 11:07:27 -0500
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v3] ARM: zynq: DT: Add USB to device tree
-Date: Tue,  2 Dec 2014 08:07:11 -0800
-Message-Id: <1417536431-27759-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 2.2.0.1.g9ee0458
+	Tue, 2 Dec 2014 11:13:27 -0500
+X-Greylist: delayed 449 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Dec 2014 11:13:26 EST
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Gordon <david.s.gordon@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Daniel Vetter <daniel.vetter@intel.com>
+Subject: [PATCH] drm/i915: compute wait_ioctl timeout correctly
+Date: Tue,  2 Dec 2014 16:36:22 +0100
+Message-Id: <1417534582-2977-1-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1417533733-2289-1-git-send-email-daniel.vetter@ffwll.ch>
+References: <1417533733-2289-1-git-send-email-daniel.vetter@ffwll.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add USB nodes to zc702, zc706 and zed device trees.
+We've lost the +1 required for correct timeouts in
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
-v3:
- - rename phy nodes: usb_phy -> phy0
- - rebased onto zynq/dt
-v2:
- - remove '@0' from phy node name
- - don't add bogus space
----
- arch/arm/boot/dts/zynq-7000.dtsi | 20 ++++++++++++++++++++
- arch/arm/boot/dts/zynq-zc702.dts | 11 +++++++++++
- arch/arm/boot/dts/zynq-zc706.dts | 10 ++++++++++
- arch/arm/boot/dts/zynq-zed.dts   | 10 ++++++++++
- 4 files changed, 51 insertions(+)
+commit 5ed0bdf21a85d78e04f89f15ccf227562177cbd9
+Author: Thomas Gleixner <tglx@linutronix.de>
+Date:   Wed Jul 16 21:05:06 2014 +0000
 
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index f8e4a28adfc0..21aae01a3fe9 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -314,5 +314,25 @@
- 			reg = <0xf8f00600 0x20>;
- 			clocks = <&clkc 4>;
- 		};
-+
-+		usb0: usb@e0002000 {
-+			compatible = "xlnx,zynq-usb-2.20a", "chipidea,usb2";
-+			status = "disabled";
-+			clocks = <&clkc 28>;
-+			interrupt-parent = <&intc>;
-+			interrupts = <0 21 4>;
-+			reg = <0xe0002000 0x1000>;
-+			phy_type = "ulpi";
-+		};
-+
-+		usb1: usb@e0003000 {
-+			compatible = "xlnx,zynq-usb-2.20a", "chipidea,usb2";
-+			status = "disabled";
-+			clocks = <&clkc 29>;
-+			interrupt-parent = <&intc>;
-+			interrupts = <0 44 4>;
-+			reg = <0xe0003000 0x1000>;
-+			phy_type = "ulpi";
-+		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
-index 280f02dd4ddc..399fed4d9c19 100644
---- a/arch/arm/boot/dts/zynq-zc702.dts
-+++ b/arch/arm/boot/dts/zynq-zc702.dts
-@@ -36,6 +36,11 @@
- 			linux,default-trigger = "heartbeat";
- 		};
- 	};
-+
-+	usb_phy0: phy0 {
-+		compatible = "usb-nop-xceiv";
-+		#phy-cells = <0>;
-+	};
- };
+    drm: i915: Use nsec based interfaces
+
+    Use ktime_get_raw_ns() and get rid of the back and forth timespec
+    conversions.
+
+    Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+    Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+    Signed-off-by: John Stultz <john.stultz@linaro.org>
+
+So fix this up by reinstating our handrolled _timeout function. While
+at it bother with handling MAX_JIFFIES.
+
+v2: Convert to usecs (we don't care about the accuracy anyway) first
+to avoid overflow issues Dave Gordon spotted.
+
+v3: Drop the explicit MAX_JIFFY_OFFSET check, usecs_to_jiffies should
+take care of that already. It might be a bit too enthusiastic about it
+though.
+
+Cc: Dave Gordon <david.s.gordon@intel.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=82749
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
+---
+ drivers/gpu/drm/i915/i915_drv.h | 8 ++++++++
+ drivers/gpu/drm/i915/i915_gem.c | 3 ++-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index 049482f5d9ac..4ea14a8c31f7 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -3097,6 +3097,14 @@ static inline unsigned long msecs_to_jiffies_timeout(const unsigned int m)
+ 	return min_t(unsigned long, MAX_JIFFY_OFFSET, j + 1);
+ }
  
- &can0 {
-@@ -139,3 +144,9 @@
- &uart1 {
- 	status = "okay";
- };
++static inline unsigned long nsecs_to_jiffies_timeout(const u64 m)
++{
++	u64 usecs = div_u64(m + 999, 1000);
++	unsigned long j = usecs_to_jiffies(usecs);
 +
-+&usb0 {
-+	status = "okay";
-+	dr_mode = "host";
-+	usb-phy = <&usb_phy0>;
-+};
-diff --git a/arch/arm/boot/dts/zynq-zc706.dts b/arch/arm/boot/dts/zynq-zc706.dts
-index 34f7812d2ee8..89cc9adc569d 100644
---- a/arch/arm/boot/dts/zynq-zc706.dts
-+++ b/arch/arm/boot/dts/zynq-zc706.dts
-@@ -27,6 +27,10 @@
- 		bootargs = "console=ttyPS0,115200 earlyprintk";
- 	};
- 
-+	usb_phy0: phy0 {
-+		compatible = "usb-nop-xceiv";
-+		#phy-cells = <0>;
-+	};
- };
- 
- &clkc {
-@@ -118,3 +122,9 @@
- &uart1 {
- 	status = "okay";
- };
++	return min_t(unsigned long, MAX_JIFFY_OFFSET, j + 1);
++}
 +
-+&usb0 {
-+	status = "okay";
-+	dr_mode = "host";
-+	usb-phy = <&usb_phy0>;
-+};
-diff --git a/arch/arm/boot/dts/zynq-zed.dts b/arch/arm/boot/dts/zynq-zed.dts
-index 1c7cc990b47a..e20956e5e720 100644
---- a/arch/arm/boot/dts/zynq-zed.dts
-+++ b/arch/arm/boot/dts/zynq-zed.dts
-@@ -27,6 +27,10 @@
- 		bootargs = "console=ttyPS0,115200 earlyprintk";
- 	};
+ static inline unsigned long
+ timespec_to_jiffies_timeout(const struct timespec *value)
+ {
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 9d362d320d82..04a9f26407ae 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -1226,7 +1226,8 @@ int __i915_wait_request(struct drm_i915_gem_request *req,
+ 	if (i915_gem_request_completed(req, true))
+ 		return 0;
  
-+	usb_phy0: phy0 {
-+		compatible = "usb-nop-xceiv";
-+		#phy-cells = <0>;
-+	};
- };
+-	timeout_expire = timeout ? jiffies + nsecs_to_jiffies((u64)*timeout) : 0;
++	timeout_expire = timeout ?
++		jiffies + nsecs_to_jiffies_timeout((u64)*timeout) : 0;
  
- &clkc {
-@@ -50,3 +54,9 @@
- &uart1 {
- 	status = "okay";
- };
-+
-+&usb0 {
-+	status = "okay";
-+	dr_mode = "host";
-+	usb-phy = <&usb_phy0>;
-+};
+ 	if (INTEL_INFO(dev)->gen >= 6 && ring->id == RCS && can_wait_boost(file_priv)) {
+ 		gen6_rps_boost(dev_priv);
 -- 
-2.2.0.1.g9ee0458
+1.9.3
 
