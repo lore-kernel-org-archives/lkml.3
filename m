@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933321AbaLBWJp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 17:09:45 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:39477 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933194AbaLBWJl (ORCPT
+	id S933354AbaLBWKf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 17:10:35 -0500
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:47289 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933029AbaLBWKe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 17:09:41 -0500
-Date: Tue, 2 Dec 2014 14:09:35 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Srikanth Thokala <sriku.linux@gmail.com>, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Documentation: memory-barriers: Fix typo in the first
- example
-Message-ID: <20141202220935.GW25340@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1416285598-6630-1-git-send-email-sriku.linux@gmail.com>
- <CA+mB=1+4=eG6d-99+yZ6HgpqvU2uan+-13pXt1=H+GZ0HeRL1A@mail.gmail.com>
- <20141202161519.581ea1af@lwn.net>
- <20141202215006.GT25340@linux.vnet.ibm.com>
- <20141202170136.7fb6f6a0@lwn.net>
+	Tue, 2 Dec 2014 17:10:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141202170136.7fb6f6a0@lwn.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14120222-8236-0000-0000-000007670407
+In-Reply-To: <547e36d1.c54ae00a.2571.fffffd13@mx.google.com>
+References: <20141201191431.GA17385@linux.vnet.ibm.com>
+	<547ccf74.a5198c0a.25de.26d9@mx.google.com>
+	<20141201230813.GE25340@linux.vnet.ibm.com>
+	<547dec29.c71f8c0a.33d1.11d9@mx.google.com>
+	<20141202170407.GK25340@linux.vnet.ibm.com>
+	<547df364.236a8c0a.7b2d.ffffac67@mx.google.com>
+	<20141202184202.GM25340@linux.vnet.ibm.com>
+	<547e0947.c332e00a.23bf.ffffa8bd@mx.google.com>
+	<20141202191143.GN25340@linux.vnet.ibm.com>
+	<547e11fa.8778e00a.3439.ffffa88c@mx.google.com>
+	<20141202205636.GQ25340@linux.vnet.ibm.com>
+	<547e36d1.c54ae00a.2571.fffffd13@mx.google.com>
+Date: Tue, 2 Dec 2014 14:10:33 -0800
+X-Google-Sender-Auth: mkUYAN-H2skkeUM_ZcUOU3qtyhk
+Message-ID: <CA+55aFxdZjJprk8t9NxcZmewAAQ5Gf1XQWV=5i+Vfc5uTSfWFg@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 05:01:36PM -0500, Jonathan Corbet wrote:
-> On Tue, 2 Dec 2014 13:50:06 -0800
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > I am guessing that this patch is against an old version of this file
-> > (there have been two patches applied to this example in the last six
-> > months).  I believe that the current version is correct, in other words,
-> > that Alexey Dobriyan and Pranith Kumar beat you to this one.  ;-)
-> 
-> I thought it looked familiar somehow...patch dropped.
-> 
-> I guess it's comforting to know that so many people are reading that file
-> so closely, but it's a little scary too...:)
+On Tue, Dec 2, 2014 at 2:01 PM, Dâniel Fraga <fragabr@gmail.com> wrote:
+>
+>         Of course! I applied your patch to 3.17 stock kernel and after
+> stressing it (compiling with -j8 and watching videos on Youtube) to
+> trigger the bug I got the following:
 
-What scares me is that so few people appear to have been reading it
-earlier on.  ;-)
+So it appears that you can recreate this much more quickly than DaveJ
+can recreate his issue.
 
-							Thanx, Paul
+The two issues may be entirely unrelated, but the it is certainly
+quite possible that they have some relation to each other, and the
+timing is intriguing, in that 3.17 seems to be the first kernel
+release this happened in.
 
+So at this point I think I'd ask you to just go back to your bisection
+that you apparently already started earlier. I take it 3.16 worked
+fine, and that's what you used as the good base for your bisect?
+
+Even if it's something else than what DaveJ sees (or perhaps
+*particularly* if it's something else), bisecting when it started
+would be very worthwhile.
+
+There's 13k+ commits in between 3.16 and 3.17, so a full bisect should
+be around 15 test-points. But judging by the timing of your emails,
+you can generally reproduce this relatively quickly..
+
+                   Linus
