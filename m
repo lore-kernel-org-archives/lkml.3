@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbaLBJCV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 04:02:21 -0500
-Received: from mga02.intel.com ([134.134.136.20]:27014 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750927AbaLBJCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 04:02:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,499,1413270000"; 
-   d="scan'208";a="646740967"
-Date: Tue, 2 Dec 2014 16:41:55 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] kvm: x86: revert mask out xsaves
-Message-ID: <20141202084155.GA19635@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1417500894-7604-1-git-send-email-wanpeng.li@linux.intel.com>
- <547D7E6D.6090000@redhat.com>
+	id S1751323AbaLBJEk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 04:04:40 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:13957 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaLBJEh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 04:04:37 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <pebolle@tiscali.nl>, <broonie@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <alsa-devel@alsa-project.org>, Bo Shen <voice.shen@atmel.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] ASoC: Kconfig: remove not used SND_AT91_SOC_AFEB9260 option
+Date: Tue, 2 Dec 2014 10:04:35 +0100
+Message-ID: <1417511075-13725-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1417461001.30245.35.camel@x220>
+References: <1417461001.30245.35.camel@x220>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <547D7E6D.6090000@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 09:55:09AM +0100, Paolo Bonzini wrote:
->
->
->On 02/12/2014 07:14, Wanpeng Li wrote:
->> xsaves will be exported to guest in the next patch, so revert the
->> mask out xsaves patch.
->> 
->> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->> ---
->>  arch/x86/kvm/cpuid.c | 10 +---------
->>  1 file changed, 1 insertion(+), 9 deletions(-)
->> 
->> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
->> index a4f5ac4..7af07571 100644
->> --- a/arch/x86/kvm/cpuid.c
->> +++ b/arch/x86/kvm/cpuid.c
->> @@ -320,10 +320,6 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
->>  		F(ADX) | F(SMAP) | F(AVX512F) | F(AVX512PF) | F(AVX512ER) |
->>  		F(AVX512CD);
->>  
->> -	/* cpuid 0xD.1.eax */
->> -	const u32 kvm_supported_word10_x86_features =
->> -		F(XSAVEOPT) | F(XSAVEC) | F(XGETBV1);
->
->Every single bit needs to be whitelisted independently of the others, so
->a full revert is not possible.  We need to be careful about post-Skylake
->processors introducing new bits in this cpuid leaf.
->
->Also, you cannot just add F(XSAVES) here; you must only do it if XSAVES
->is actually supported.  This makes sure that nested virtualization will
->_not_ present XSAVES to the guests until specific support is introduced
->for XSAVES and XRSTORS exits (including the XSS exit bitmap).
->
->In order to do this, you have to introduce a new member in kvm_x86_ops,
->modeling what was done for MPX.  The second patch can then implement
->this new member.
+Now that the driver snd-soc-afeb9260.c is deleted, remove its Kconfig option.
 
-Will do, thanks for your review.
+Reported-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+Hi Paul,
 
-Regards,
-Wanpeng Li 
+Indeed, I forgot to include the Kconfig removal: sorry for the noise.
 
->
->Thanks,
->
->Paolo
->
->>  	/* all calls to cpuid_count() should be made on the same cpu */
->>  	get_cpu();
->>  
->> @@ -460,8 +456,6 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
->>  		entry->eax &= supported;
->>  		entry->edx &= supported >> 32;
->>  		entry->flags |= KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
->> -		if (!supported)
->> -			break;
->>  
->>  		for (idx = 1, i = 1; idx < 64; ++idx) {
->>  			u64 mask = ((u64)1 << idx);
->> @@ -469,9 +463,7 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
->>  				goto out;
->>  
->>  			do_cpuid_1_ent(&entry[i], function, idx);
->> -			if (idx == 1)
->> -				entry[i].eax &= kvm_supported_word10_x86_features;
->> -			else if (entry[i].eax == 0 || !(supported & mask))
->> +			if (entry[i].eax == 0 || !(supported & mask))
->>  				continue;
->>  			entry[i].flags |=
->>  			       KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
->> 
+Mark,
+
+I send another patch so that it is easier for you to stack it or squash it on
+top of your branch. 
+
+Thanks, bye.
+ Nicolas
+
+ sound/soc/atmel/Kconfig | 9 ---------
+ 1 file changed, 9 deletions(-)
+
+diff --git a/sound/soc/atmel/Kconfig b/sound/soc/atmel/Kconfig
+index 27e3fc4a536b..fb3878312bf8 100644
+--- a/sound/soc/atmel/Kconfig
++++ b/sound/soc/atmel/Kconfig
+@@ -52,12 +52,3 @@ config SND_AT91_SOC_SAM9X5_WM8731
+ 	help
+ 	  Say Y if you want to add support for audio SoC on an
+ 	  at91sam9x5 based board that is using WM8731 codec.
+-
+-config SND_AT91_SOC_AFEB9260
+-	tristate "SoC Audio support for AFEB9260 board"
+-	depends on ARCH_AT91 && ATMEL_SSC && ARCH_AT91 && MACH_AFEB9260 && SND_ATMEL_SOC
+-	select SND_ATMEL_SOC_PDC
+-	select SND_ATMEL_SOC_SSC
+-	select SND_SOC_TLV320AIC23_I2C
+-	help
+-	  Say Y here to support sound on AFEB9260 board.
+-- 
+2.1.3
+
