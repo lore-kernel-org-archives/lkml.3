@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754572AbaLBSku (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 13:40:50 -0500
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:39132 "EHLO
-	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752442AbaLBSkt (ORCPT
+	id S1754670AbaLBSl3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 13:41:29 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:35093 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754094AbaLBSl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 13:40:49 -0500
-From: Roman Gushchin <klamm@yandex-team.ru>
-To: Tejun Heo <tj@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-In-Reply-To: <20141202165553.GB10918@htj.dyndns.org>
-References: <1417193274-20679-1-git-send-email-klamm@yandex-team.ru> <20141202165553.GB10918@htj.dyndns.org>
-Subject: Re: [PATCH 3.10] cgroup: break infinite loop in __css_tryget()
+	Tue, 2 Dec 2014 13:41:27 -0500
+Message-ID: <547e07d6.641c8c0a.400f.fffff838@mx.google.com>
+Date: Tue, 2 Dec 2014 16:41:22 -0200
+From: =?UTF-8?B?RMOibmllbA==?= Fraga <fragabr@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+In-Reply-To: <20141202180947.GA27959@linux.vnet.ibm.com>
+References: <m5dart$co$1@ger.gmane.org>
+	<CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
+	<547b8a45.6e608c0a.20f9.1002@mx.google.com>
+	<CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
+	<547bbe36.48548c0a.105c.779c@mx.google.com>
+	<20141201191431.GA17385@linux.vnet.ibm.com>
+	<547ccf74.a5198c0a.25de.26d9@mx.google.com>
+	<20141201230813.GE25340@linux.vnet.ibm.com>
+	<547dec29.c71f8c0a.33d1.11d9@mx.google.com>
+	<20141202170407.GK25340@linux.vnet.ibm.com>
+	<20141202180947.GA27959@linux.vnet.ibm.com>
+Organization: http://www.youtube.com/DanielFragaBR
+X-Mailer: Claws Mail 3.11.1-9-g1f531c (GTK+ 2.24.25; x86_64-unknown-linux-gnu)
 MIME-Version: 1.0
-Message-Id: <119181417545645@webcorp02h.yandex-team.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Tue, 02 Dec 2014 21:40:45 +0300
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Tejun!
+On Tue, 2 Dec 2014 10:09:47 -0800
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
-02.12.2014, 19:56, "Tejun Heo" <tj@kernel.org>:
-> Hello, Roman.
->
-> On Fri, Nov 28, 2014 at 07:47:54PM +0300, Roman Gushchin wrote:
->> šIf cgroup_destroy_locked() sets the css refcount to a negative value,
->> šwe get an infinite loop in __css_tryget().
->>
->> šIn this case css_refcnt() returns modified (non-negative value), so
->> šboth (t == v) and (t < 0) conditions are always false.
->
-> I don't follow. šThe count is biased and modified by unbiasing iff the
-> value is negative. šHere, @v is the unbiased value and @t is the
-> verbatim value. šIf @v is different from @t due to unbiasing, @t must
-> be negative satisfying the second condition and returning NULL, no?
+> To Linus's point, I guess I could look at the RCU CPU stall warning.  ;-)
+> 
+> Summary:  Not seeing something that would loop for 21 seconds.
+> DÃ¢niel, if you let this run, does it hit a second RCU CPU stall
+> warning, or does it just lock up?
 
-Yep. I missed that we compare t with 0 (not v).
-Thanks!
+	It just lock up. I can't even use the keyboard or mouse, so I
+have to hard reset the system.
+
+	I'm trying the bisect you asked... even if it takes longer,
+maybe I can find something for you.
+
+-- 
+Linux 3.17.0-rc6-00235-gb94d525: Shuffling Zombie Juror
+http://www.youtube.com/DanielFragaBR
+http://exchangewar.info
+Bitcoin: 12H6661yoLDUZaYPdah6urZS5WiXwTAUgL
