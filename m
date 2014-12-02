@@ -1,60 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932780AbaLBMuL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 07:50:11 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:53187 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752196AbaLBMuK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 07:50:10 -0500
-Message-ID: <1417524607.5303.45.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH 1/2] fs: introduce sendfd() syscall
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alex Dubov <alex.dubov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Alex Dubov <oakad@yahoo.com>
-Date: Tue, 02 Dec 2014 04:50:07 -0800
-In-Reply-To: <1417494919-4577-2-git-send-email-oakad@yahoo.com>
-References: <1417494919-4577-1-git-send-email-oakad@yahoo.com>
-	 <1417494919-4577-2-git-send-email-oakad@yahoo.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754605AbaLBMwT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 07:52:19 -0500
+Received: from sauhun.de ([89.238.76.85]:41649 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751211AbaLBMwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 07:52:17 -0500
+Date: Tue, 2 Dec 2014 13:52:03 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Harini Katakam <harinikatakamlinux@gmail.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "michal.simek@xilinx.com" <michal.simek@xilinx.com>,
+        "soren.brinkmann@xilinx.com" <soren.brinkmann@xilinx.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "vishnum@xilinx.com" <vishnum@xilinx.com>
+Subject: Re: [PATCH 3/4] devicetree: bindings: Add defeature-repeated-start
+ property for Cadence I2C
+Message-ID: <20141202125203.GA4072@katana>
+References: <1417514749-24319-1-git-send-email-harinik@xilinx.com>
+ <1417514749-24319-4-git-send-email-harinik@xilinx.com>
+ <20141202111907.GC23671@leverpostej>
+ <CAFcVECLtPx6shBXJbg9Uf_8fnhkMoO1zpoxGcdda7PSA7z_2rA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
+Content-Disposition: inline
+In-Reply-To: <CAFcVECLtPx6shBXJbg9Uf_8fnhkMoO1zpoxGcdda7PSA7z_2rA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-12-02 at 15:35 +1100, Alex Dubov wrote:
-> Present patch introduces exceptionally easy to use, low latency and low
-> overhead mechanism for transferring file descriptors between cooperating
-> processes:
-> 
->     int sendfd(pid_t pid, int sig, int fd)
-> 
-> Given a target process pid, the sendfd() syscall will create a duplicate
-> file descriptor in a target task's (referred by pid) file table pointing to
-> the file references by descriptor fd. Then, it will attempt to notify the
-> target task by issuing a Posix.1b real-time signal (sig), carrying the new
-> file descriptor as integer payload. If real-time signal can not be enqueued
-> at the destination signal queue, the newly created file descriptor will be
-> promptly closed.
-> 
-> Signed-off-by: Alex Dubov <oakad@yahoo.com>
-> ---
 
-User A can send fd(s) to processes belonging to user B, even if user B
-does (probably) not want this to happen ?
+--RnlQjJ0d97Da+TV1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Also, relying on signals seems quite old fashion these days. How about
-multi-threaded programs wanting separate channels to receive fds ?
+> >> +  - defeature-repeated-start: Include this property to defeature repe=
+ated start
+> >> +                           This defeature is due to a few bugs in the
+> >> +                           I2C controller.
+> >> +                           Completion interrupt after a read/receive
+> >> +                           operation is NOT obtained if HOLD bit is s=
+et
+> >> +                           at that time. Because of this bug, repeate=
+d start
+> >> +                           will only work if there are no transfers f=
+ollowing
+> >> +                           a read/receive transfer.
+> >> +                           If HOLD is held for long without a transfe=
+r,
+> >> +                           invalid read transactions are generated by=
+ the
+> >> +                           controller due to a HW timeout related bug.
+> >
+> > I'm not keen on the name; it sounds like we're disabling a feature
+> > rather than describing the problem (and "defeature" is not a common
+> > term in this sense, "disable" would be better).
+> >
+> > It sounds like there are two issues with staying in the HOLD state? Lost
+> > completion IRQs and a separate HW timeout bug? Or are the two related?
+> >
+>=20
+> Yes, there are two issues here and they are not related.
+> But a combination of both is leading to not using repeated start.
+> The intention was to defeature except that it works in some scenarios
+> (such as a typical write+read in that order with repeated start)
+> and there are people who already use the driver with slaves that need thi=
+s.
 
-Ability to flood fds and fill target file descriptors table looks very
-dangerous to me. Some programs could break as they expect they control
-fd allocations.
+That should not be handled using a binding. If you get a transfer (at
+runtime) with criteria you don't support, return with -EOPNOTSUPP from
+the master xfer routine.
 
-I like the idea of not having to use AF_UNIX and stick to a well defined
-interface, but I do not like this asynchronous model.
+That being said, the number of broken/not-fully-compliant I2C
+controllers has increased a lot recent times (why can't we just use the
+established old ones?). Maybe we will have core support for a subset of
+I2C (wr+rd) in the future, but that's still ahead...
 
-Thanks.
 
+--RnlQjJ0d97Da+TV1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUfbXzAAoJEBQN5MwUoCm2SVEQAKislH9uLpKzI/F6xVYHO86O
+wojbo5Mmrpx5sCZfFgfl2iK7emBL9zDUVrZbX1gelrCGuVmwP0f/n8LwLNweu9YZ
+B4hwRbnAusMaxxU95OdeHKDEYJN8NUY62bhmjhSFANZ1m03XK+YN+m+BUxvb8yfk
+hv2ORgRn+pXb9QMim7dAYaETRzNi6TRZ8orbRuckt9b8tYojzGUJcaDQRAB9xy35
+2kDVlxzPDodY9l/AZBt+yckhRUu0uJgUvcvO2NILqJDXAQwBtKMSKULaSMNVdJcc
+o8rVAjYXj57RAr2iNf+xNPgfFUGx13BK7gjxZJg1G/6wJtesz1sfa/MJ7ALFqrMt
+CnebxMTWOyMahU1AvZOZee4PDX4FU4pyh3kxKM51hgz2abNEaCb6Md9hrRy3Y0Z8
+isoyIds1RbluLkYMZLHFLJIZrU+bxECMnYsSPchZ4GFhB+yNKhkTLSE73vMcy1K2
+U/BIOLyaqHFmSK8GMYu1S6LoJMHG/enFcvaS9LHWBgLxXftx3qElgG+lK9NaaCfN
+MK2qz2hxmK+BE0a26wiDv6oA6aJs8Jj9bz3Hg1pEaNwN/dVZuHAjOwnbdHbaWl2J
+pIjS58EwjNyVDhHC5eQyWs2ZHxX7dYXkcpziy1uuPlB2j5sjrgIPfsgZupQ951CF
+NlZJ/ACPfhgk8lH33WGD
+=TJQZ
+-----END PGP SIGNATURE-----
+
+--RnlQjJ0d97Da+TV1--
