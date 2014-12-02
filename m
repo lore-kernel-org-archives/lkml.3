@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086AbaLBH77 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 02:59:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49187 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932270AbaLBH50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 02:57:26 -0500
-Date: Tue, 2 Dec 2014 08:57:21 +0100
-From: Igor Mammedov <imammedo@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 0/5] kvm: memslots lookup optimization
-Message-ID: <20141202085721.2c328a40@nial.usersys.redhat.com>
-In-Reply-To: <547CA79A.10206@redhat.com>
-References: <1417454967-4465-1-git-send-email-imammedo@redhat.com>
-	<547CA79A.10206@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933321AbaLBIAs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 03:00:48 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:61609 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933083AbaLBH4J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 02:56:09 -0500
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: linux-kernel@vger.kernel.org
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH v7 4/7] clk: change clk_debugfs_add_file to take a struct clk_hw
+Date: Tue,  2 Dec 2014 08:54:21 +0100
+Message-Id: <1417506933-8915-5-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1417506933-8915-1-git-send-email-tomeu.vizoso@collabora.com>
+References: <1417506933-8915-1-git-send-email-tomeu.vizoso@collabora.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 01 Dec 2014 18:38:34 +0100
-Paolo Bonzini <pbonzini@redhat.com> wrote:
+Instead of struct clk, as this should be only used by providers.
 
-> 
-> 
-> On 01/12/2014 18:29, Igor Mammedov wrote:
-> > Series speed-ups GFN to memslot lookup time by:
-> >  * introducing LRU cache, which improves looukup time for
-> >    same slot workload (typically boot time of Windows and Linux guest)
-> >  * switching to binary search for GFN to memslot lookup,
-> >    improving lookup time with large amount of memory slots
-> > 
-> > Igor Mammedov (5):
-> >   kvm: update_memslots: drop not needed check for the same number of
-> >     pages
-> >   kvm: update_memslots: drop not needed check for the same slot
-> >   kvm: search_memslots: add simple LRU memslot caching
-> >   kvm: change memslot sorting rule from size to GFN
-> >   kvm: optimize GFN to memslot lookup with large slots amount
-> > 
-> >  include/linux/kvm_host.h | 28 +++++++++++++++++++++++-----
-> >  virt/kvm/kvm_main.c      | 46 ++++++++++++++++++++++++++--------------------
-> >  2 files changed, 49 insertions(+), 25 deletions(-)
-> > 
-> 
-> Applied patches 1-3 for now, I'm not in the mood for proving that the
-> binary search is correct. :)
-Following write up could help with improving a proving mood :)
-http://community.topcoder.com/tc?module=Static&d1=tutorials&d2=binarySearch
+Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clk/clk.c            | 6 +++---
+ include/linux/clk-provider.h | 2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-
-> 
-> Paolo
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 73247e9..f549e8b 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -354,13 +354,13 @@ out:
+ 	mutex_unlock(&clk_debug_lock);
+ }
+ 
+-struct dentry *clk_debugfs_add_file(struct clk *clk, char *name, umode_t mode,
++struct dentry *clk_debugfs_add_file(struct clk_hw *hw, char *name, umode_t mode,
+ 				void *data, const struct file_operations *fops)
+ {
+ 	struct dentry *d = NULL;
+ 
+-	if (clk->dentry)
+-		d = debugfs_create_file(name, mode, clk->dentry, data, fops);
++	if (hw->clk->dentry)
++		d = debugfs_create_file(name, mode, hw->clk->dentry, data, fops);
+ 
+ 	return d;
+ }
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 270137a..5e06f23 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -650,7 +650,7 @@ static inline void clk_writel(u32 val, u32 __iomem *reg)
+ #endif	/* platform dependent I/O accessors */
+ 
+ #ifdef CONFIG_DEBUG_FS
+-struct dentry *clk_debugfs_add_file(struct clk *clk, char *name, umode_t mode,
++struct dentry *clk_debugfs_add_file(struct clk_hw *hw, char *name, umode_t mode,
+ 				void *data, const struct file_operations *fops);
+ #endif
+ 
+-- 
+1.9.3
 
