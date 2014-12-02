@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933361AbaLBTXr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 14:23:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46698 "EHLO
+	id S933724AbaLBTqd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 14:46:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46705 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932659AbaLBTXm (ORCPT
+	with ESMTP id S933345AbaLBTXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 14:23:42 -0500
+	Tue, 2 Dec 2014 14:23:46 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 072/121] ALSA: usb-audio: Fix memory leak in FTU quirk
-Date: Tue,  2 Dec 2014 11:19:11 -0800
-Message-Id: <1417548000-1794-73-git-send-email-kamal@canonical.com>
+Cc: Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 090/121] target: Don't call TFO->write_pending if data_length == 0
+Date: Tue,  2 Dec 2014 11:19:29 -0800
+Message-Id: <1417548000-1794-91-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1417548000-1794-1-git-send-email-kamal@canonical.com>
 References: <1417548000-1794-1-git-send-email-kamal@canonical.com>
@@ -26,43 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 1a290581ded60e87276741f8ca97b161d2b226fc upstream.
+commit 885e7b0e181c14e4d0ddd26c688bad2b84c1ada9 upstream.
 
-M-audio FastTrack Ultra quirk doesn't release the kzalloc'ed memory.
-This patch adds the private_free callback to release it properly.
+If an initiator sends a zero-length command (e.g. TEST UNIT READY) but
+sets the transfer direction in the transport layer to indicate a
+data-out phase, we still shouldn't try to transfer data.  At best it's
+a NOP, and depending on the transport, we might crash on an
+uninitialized sg list.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Craig Watson <craig.watson@vanguard-rugged.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/usb/mixer_quirks.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/target/target_core_transport.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/usb/mixer_quirks.c b/sound/usb/mixer_quirks.c
-index f4b12c2..5a723df 100644
---- a/sound/usb/mixer_quirks.c
-+++ b/sound/usb/mixer_quirks.c
-@@ -885,6 +885,11 @@ static int snd_ftu_eff_switch_put(struct snd_kcontrol *kctl,
- 	return changed;
- }
- 
-+static void kctl_private_value_free(struct snd_kcontrol *kctl)
-+{
-+	kfree((void *)kctl->private_value);
-+}
-+
- static int snd_ftu_create_effect_switch(struct usb_mixer_interface *mixer,
- 	int validx, int bUnitID)
- {
-@@ -919,6 +924,7 @@ static int snd_ftu_create_effect_switch(struct usb_mixer_interface *mixer,
- 		return -ENOMEM;
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 3acb125..40f171b 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -2192,7 +2192,7 @@ transport_generic_new_cmd(struct se_cmd *cmd)
+ 	 * and let it call back once the write buffers are ready.
+ 	 */
+ 	target_add_to_state_list(cmd);
+-	if (cmd->data_direction != DMA_TO_DEVICE) {
++	if (cmd->data_direction != DMA_TO_DEVICE || cmd->data_length == 0) {
+ 		target_execute_cmd(cmd);
+ 		return 0;
  	}
- 
-+	kctl->private_free = kctl_private_value_free;
- 	err = snd_ctl_add(mixer->chip->card, kctl);
- 	if (err < 0)
- 		return err;
 -- 
 1.9.1
 
