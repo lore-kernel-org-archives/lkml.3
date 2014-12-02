@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932858AbaLBUjk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 15:39:40 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	id S932973AbaLBUl4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 15:41:56 -0500
+Received: from omr2.cc.vt.edu ([198.82.141.100]:55698 "EHLO omr2.cc.vt.edu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932199AbaLBUjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 15:39:39 -0500
-Message-ID: <547E2386.9030901@nod.at>
-Date: Tue, 02 Dec 2014 21:39:34 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Harald Geyer <harald@ccbib.org>
-CC: jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
-        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] iio: dht11: IRQ fixes
-References: <1417465651-16036-1-git-send-email-richard@nod.at> <1417465651-16036-2-git-send-email-richard@nod.at> <E1XvkYl-00013g-VO@stardust.g4.wien.funkfeuer.at> <547D9A6F.9010801@nod.at> <E1Xvn2b-0001CH-PM@stardust.g4.wien.funkfeuer.at> <547E0109.8000106@nod.at> <E1XvtRn-000158-1J@stardust.g4.wien.funkfeuer.at>
-In-Reply-To: <E1XvtRn-000158-1J@stardust.g4.wien.funkfeuer.at>
-Content-Type: text/plain; charset=windows-1252
+	id S932550AbaLBUly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 15:41:54 -0500
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: Herbert Xu <herbert@gondor.apana.org.au>, davem@davemloft.net,
+        Jason Wang <jasowang@redhat.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next Problems with VPN tunnel - no packets sent
+From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1417552899_7336P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Tue, 02 Dec 2014 15:41:39 -0500
+Message-ID: <17929.1417552899@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Harald,
+--==_Exmh_1417552899_7336P
+Content-Type: text/plain; charset=us-ascii
 
-Am 02.12.2014 um 20:49 schrieb Harald Geyer:
->> Yeah, if the sensor starts transmitting data before we've setup
->> the IRQ we'll lose edges.
-> 
-> Yes, but you missunderstood me. That's not the point.
-> 
-> The point is that now the edges that the driver generates while
-> the gpio is configured as output are part of the preamble of the
-> data transmission. I think with your patch applied this is no longer
-> the case (we don't get interrupts for these edges anymore). So the
-> decoding needs to be changed to work with a shorter preamble.
+Recent linux-next has broken my Juniper VPN client.  The tunnel gets created,
+routes get added, but trying to actually send packets across results in packets
+just disappearing. 'ifconfig' consistently reports exactly 1 packet sent (even
+after a 'ping' command or similar should have sent multiple packets.
 
-Hmm, I get always 84 edges.
-This value makes sense to me, 40 bits (80 edges) plus 4 preamble edges.
+tun0: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 1400
+        inet 172.27.1.40  netmask 255.255.255.255  destination 172.27.1.40
+        unspec 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  txqueuelen 500  (UNSPEC)
+        RX packets 1  bytes 355 (355.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 1  bytes 61 (61.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
 
->> But AFAICT the DHT is much slower than we are with setting up the IRQ.
->> The DHT is a rather stupid device so we cannot use proper interrupting.
->> But I can think of adding also polling support to the driver.
->> Such that one can select whether she wants to use IRQ or polling...
-> 
-> I don't like the idea of a polling driver. Also I don't think it will
-> be necessary.
+Still broken in next-20141201, and bisection fingers this commit:
 
-Of course polling is ugly, if IRQ works let's keep it as is. :)
+commit e0b46d0ee9c240c7430a47e9b0365674d4a04522
+Author: Herbert Xu <herbert@gondor.apana.org.au>
+Date:   Fri Nov 7 21:22:23 2014 +0800
 
->>> Since it seems you have some interesst in working on these parts,
->>> let me mention an unrelated issue: The DHT22 stops sending data
->>> after a random time (think of days here) which AFAIK only can be
->>> worked around by power-cycling the sensor. I mean to add something
->>> for this to the driver but couln't make up my mind about what the
->>> proper ABI for this would be, so right now I'm using some userspace
->>> hack for this. (The issue was already discussed on the linux-iio
->>> mailing list a few month ago, if you want to look into this.
->>> Anyway: You have been warned ... ;)  
->>
->> Oh, that's a very valuable information!
->> Currently I'm evaluating some sensors for a private project.
->> You can recommend a better temp/humidity sensor?
-> 
-> No really. When I noticed these cheap little parts are actually
-> *cheap* parts, I looked which sensors are already supported by
-> hwmon, but none appealed to me, so I decided to try and work
-> around this in software as far as possible. It's not hard to do, just
-> hard to do right. ;)
-> 
-> The best I can recommend you is to have a look at the list of
-> humidity sensors supported by hwmon yourself.
+    tun: Use iovec iterators
 
-Ok!
+    This patch removes the use of skb_copy_datagram_const_iovec in
+    favour of the iovec iterator-based skb_copy_datagram_iter.
 
-Thanks,
-//richard
+This commit is in the kernel, and does *not* fix the problem:
+
+commit 8c847d254146d32c86574a1b16923ff91bb784dd
+Author: Jason Wang <jasowang@redhat.com>
+Date:   Thu Nov 13 16:54:14 2014 +0800
+
+    tun: fix issues of iovec iterators using in tun_put_user()
+
+So there's apparently additional issues that Jason didn't address. I tried to
+revert Herbert's patch for testing, but there's at  least 5 or 6 other patches
+that need reverting first, so I abandoned that unless it becomes necessary...
+
+What's the best way to proceed?
+
+--==_Exmh_1417552899_7336P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBVH4kAwdmEQWDXROgAQL2XBAAjsij8ySSYMOJZ77nN+/YI2HJVl6xt5ma
+9vupieu2xMptaWrjhW9IEYdGkdzsDTsANGv4K8nr80m6cI3AmRkXKYiYIVsGUpmL
+tSxIbs+S9ks7zJCtHECB3+WwWpG6HGfCaxHGY+/BVdSGbdUrTOgIzlC30tpizUJ0
+3VgpkiKGwjdzx2TVLu47JMpokynq8+xogFAmT+hiJ/mNKKq8FESPeL9Q/GlnPz4K
+jujrLvluzz3ff5uaYKQ/dJLisxsVdBMnBEHQ2rp+XnVTOf5d2D1XWu1am5+cjX/C
+v9a3iphUxwaUSZ9VYQSanlF3DoLV6S3lFsV5kB/sTBhMr/yQKJrc0haLm4unZ8+O
+QM0iHdnjs35v2EGUEh8bvObR3Sg5ZZjnrWXRQeiXMG8BCGJy5RXX0XnldoU5FG8C
+1Y6D3fxk7yP1+VUN6VNyeXMvEZ03LtOWodbinZOMSkYjbEpRTxBu089529G8t/T4
+UcVCBcZmxBCo5iWUBVId3wIC8L/jUekcu3GpEyQ8B6t3bIRVJ9rUyIj/zI061Y3i
+55XW/oEbP5r5tcjOBibFoo62cvxTuwgcMyhhc6kyj/aiwhztNg6OdtoLFvCz2Vbw
+uhj0jwTlhw3Z7HCBr8hpEwz9mesgEhtGKlM79sJhG0kP0/Qqdzxx71OuESl9iZXI
+X51IEV4SVxE=
+=dIq8
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1417552899_7336P--
