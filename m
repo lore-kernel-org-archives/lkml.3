@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932983AbaLBLmT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 06:42:19 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:37012 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752133AbaLBLmR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 06:42:17 -0500
-Message-ID: <547DA592.7090900@monstr.eu>
-Date: Tue, 02 Dec 2014 12:42:10 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S933010AbaLBLoQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 06:44:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37327 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752133AbaLBLoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 06:44:14 -0500
+Date: Tue, 2 Dec 2014 13:44:06 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: [PATCH RFC 1/2] virtio_balloon: convert to virtio 1.0 endian-ness
+Message-ID: <1417520617-2135-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Alex Dubov <alex.dubov@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alex Dubov <oakad@yahoo.com>
-Subject: Re: [PATCH 2/2] fs: Wire up sendfd() syscall (all architectures)
-References: <1417494919-4577-1-git-send-email-oakad@yahoo.com>	<1417494919-4577-3-git-send-email-oakad@yahoo.com> <CAMuHMdWWnO7m8f+NnM8Xahexc+3ELeAgTDv67CzWWEZENqztEA@mail.gmail.com>
-In-Reply-To: <CAMuHMdWWnO7m8f+NnM8Xahexc+3ELeAgTDv67CzWWEZENqztEA@mail.gmail.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="4qDN9JJU6eUeG0wWbksSXGiD7JjuaJsiA"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---4qDN9JJU6eUeG0wWbksSXGiD7JjuaJsiA
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+balloon device is not part of virtio 1.0 spec.  Still, it's easy enough
+to make it handle endian-ness exactly as other virtio 1.0 devices: what
+we gain from this, is that there's no need to special-case it in virtio
+core.
 
-On 12/02/2014 09:01 AM, Geert Uytterhoeven wrote:
-> This really needs a CC to linux-arch (added).
->=20
-> On Tue, Dec 2, 2014 at 5:35 AM, Alex Dubov <alex.dubov@gmail.com> wrote=
-:
->> Signed-off-by: Alex Dubov <oakad@yahoo.com>
->> ---
->>  arch/arm/include/uapi/asm/unistd.h        |  1 +
->>  arch/arm/kernel/calls.S                   |  1 +
->>  arch/arm64/include/asm/unistd32.h         |  2 ++
->>  arch/ia64/include/uapi/asm/unistd.h       |  1 +
->>  arch/ia64/kernel/entry.S                  |  1 +
->>  arch/m68k/include/uapi/asm/unistd.h       |  1 +
->>  arch/m68k/kernel/syscalltable.S           |  1 +
->=20
-> You forgot to update NR_syscalls in arch/m68k/include/asm/unistd.h.
->=20
->>  arch/microblaze/include/uapi/asm/unistd.h |  1 +
->>  arch/microblaze/kernel/syscall_table.S    |  1 +
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ include/uapi/linux/virtio_balloon.h | 5 +++--
+ drivers/virtio/virtio_balloon.c     | 4 ++--
+ 2 files changed, 5 insertions(+), 4 deletions(-)
 
+diff --git a/include/uapi/linux/virtio_balloon.h b/include/uapi/linux/virtio_balloon.h
+index 5e26f61..5bee71c 100644
+--- a/include/uapi/linux/virtio_balloon.h
++++ b/include/uapi/linux/virtio_balloon.h
+@@ -27,6 +27,7 @@
+  * SUCH DAMAGE. */
+ #include <linux/virtio_ids.h>
+ #include <linux/virtio_config.h>
++#include <linux/virtio_types.h>
+ 
+ /* The feature bitmap for virtio balloon */
+ #define VIRTIO_BALLOON_F_MUST_TELL_HOST	0 /* Tell before reclaiming pages */
+@@ -52,8 +53,8 @@ struct virtio_balloon_config
+ #define VIRTIO_BALLOON_S_NR       6
+ 
+ struct virtio_balloon_stat {
+-	__u16 tag;
+-	__u64 val;
++	__virtio16 tag;
++	__virtio64 val;
+ } __attribute__((packed));
+ 
+ #endif /* _LINUX_VIRTIO_BALLOON_H */
+diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+index 4497def..721e32f 100644
+--- a/drivers/virtio/virtio_balloon.c
++++ b/drivers/virtio/virtio_balloon.c
+@@ -201,8 +201,8 @@ static inline void update_stat(struct virtio_balloon *vb, int idx,
+ 			       u16 tag, u64 val)
+ {
+ 	BUG_ON(idx >= VIRTIO_BALLOON_S_NR);
+-	vb->stats[idx].tag = tag;
+-	vb->stats[idx].val = val;
++	vb->stats[idx].tag = cpu_to_virtio16(vb->vdev, tag);
++	vb->stats[idx].val = cpu_to_virtio64(vb->vdev, val);
+ }
+ 
+ #define pages_to_bytes(x) ((u64)(x) << PAGE_SHIFT)
+-- 
+MST
 
-The same for microblaze here
-arch/microblaze/include/asm/unistd.h
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---4qDN9JJU6eUeG0wWbksSXGiD7JjuaJsiA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAlR9pZUACgkQykllyylKDCGWqgCaArzsmCs53eX6oPJmj3ttGGaQ
-5gkAn30WVj1HtleR4nHHGO0XJyoaqKPw
-=7OJW
------END PGP SIGNATURE-----
-
---4qDN9JJU6eUeG0wWbksSXGiD7JjuaJsiA--
