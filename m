@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933195AbaLBN0Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 08:26:24 -0500
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:54928 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932259AbaLBN0V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 08:26:21 -0500
+	id S1754626AbaLBN1j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 08:27:39 -0500
+Received: from hofr.at ([212.69.189.236]:56986 "EHLO mail.hofr.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753363AbaLBN1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 08:27:38 -0500
+Date: Tue, 2 Dec 2014 14:27:36 +0100
+From: Nicholas Mc Guire <der.herr@hofr.at>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, Joe Perches <joe@perches.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/5] limit _shipped to c h and S files
+Message-ID: <20141202132736.GB9328@opentech.at>
+References: <20141202091621.GE13909@opentech.at> <547D924A.2010205@suse.cz> <20141202103231.GA30141@opentech.at> <547DA742.1010806@suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <CAAVeFuJm_UXHioENBg6himgZkEmopr=T8iCbt0xD6-ds6AHyxA@mail.gmail.com>
-References: <1416383487-15993-1-git-send-email-acourbot@nvidia.com>
-	<CACRpkdZV-nQPXDnxiBgPTZTpyQ2eiKNL8qJY9jRq=A5foc-xmw@mail.gmail.com>
-	<CAMuHMdUQ+rPasUWuGCc0AnV-g6J9zf9HbozuodHaYpy36Khcpg@mail.gmail.com>
-	<CAAVeFuJm_UXHioENBg6himgZkEmopr=T8iCbt0xD6-ds6AHyxA@mail.gmail.com>
-Date: Tue, 2 Dec 2014 14:26:20 +0100
-Message-ID: <CACRpkda9PbzEOpYABFy46pqow2yyhWJ0iE71GhAS61j5odZArw@mail.gmail.com>
-Subject: Re: [PATCH] gpio: remove gpio_descs global array
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <547DA742.1010806@suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 2, 2014 at 2:25 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
-> On Tue, Dec 2, 2014 at 7:32 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+On Tue, 02 Dec 2014, Michal Marek wrote:
 
->> This patch changes a return value from -EPROBE_DEFER to -EINVAL in
->> regulator-gpio when a GPIO cannot be found yet, causing probe failures
->> on r8a7791/koelsch:
+> On 2014-12-02 11:32, Nicholas Mc Guire wrote:
+> > On Tue, 02 Dec 2014, Michal Marek wrote:
+> > 
+> >> Dne 2.12.2014 v 10:16 Nicholas Mc Guire napsal(a):
+> >>>
+> >>> limit _shipped to c h and S files
+> >>>
+> >>> _shipped targets are intended for generated source files which should
+> >>> not permit .o binary blobs which is currently the case. This patch
+> >>> simply restricts _shipped targets to .c, .h and .S files.
+> >>
+> >>
+> >> IMO this just adds lines of code without any obvious advantage. The
+> >> other patches in the series are fine.
+> >>
+> > 
+> > The idea simply was to make the behavior of kbuild match the
+> > documented intent of _shipped files.
+> 
+> The usage of *.o_shipped is documented by Documentation/kbuild/modules.txt.
 >
-> Hi Geert,
->
-> Thanks for signaling this. I think I understand what is going wrong
-> and will send a fixup patch in a few minutes.
+I know - and Im looking at how to address this so that it would be out-of-tree
+only - a minor update of the wording for 3.3 Binary Blobs was sent out as
+patch - 3.2 change proposal is not yet done.
 
-OK standing by.
+Currently there is no .o_shipped in mainline (linux-next 3.18-rc6,
+linux-stable 3.18-rc5) so the intent is to rewrite some of those parts to 
+kick the .o_shipped there too.
 
-Yours,
-Linus Walleij
+But if there is a legitimate need for .o_shipped then of course this patch
+(and the changes I'm working on) make no sense at all. My understanding is 
+though that it should not be needed any more. 
+
+thx!
+hofrat
