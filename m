@@ -1,223 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751363AbaLCSm3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 13:42:29 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:11255 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751104AbaLCSm1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 13:42:27 -0500
-Message-ID: <547F598D.7030205@sonymobile.com>
-Date: Wed, 3 Dec 2014 10:42:21 -0800
-From: Tim Bird <tim.bird@sonymobile.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751434AbaLCSpx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 13:45:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59190 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750798AbaLCSpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 13:45:51 -0500
+Date: Wed, 3 Dec 2014 19:45:38 +0100
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Nadav Amit <nadav.amit@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kvm list <kvm@vger.kernel.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Nadav Amit <namit@cs.technion.ac.il>, hpa@linux.intel.com,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: [CFT PATCH v2 2/2] KVM: x86: support XSAVES usage in the host
+Message-ID: <20141203184537.GA27128@potion.brq.redhat.com>
+References: <1416847414-22253-1-git-send-email-pbonzini@redhat.com>
+ <1416847414-22253-3-git-send-email-pbonzini@redhat.com>
+ <802AF3F4-2631-4979-A8CC-46B406546062@gmail.com>
+ <547F1D84.9040505@redhat.com>
 MIME-Version: 1.0
-To: Shuah Khan <shuahkh@osg.samsung.com>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [PATCH v6] selftest: size: Add size test for Linux kernel
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <547F1D84.9040505@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2014-12-03 15:26+0100, Paolo Bonzini:
+> 
+> 
+> On 03/12/2014 15:23, Nadav Amit wrote:
+> > I think it is better just to replace the last line with:
+> > 
+> > *(u64 *)(dest + XSAVE_HDR_OFFSET) = xsave->xsave_hdr.xstate_bv
 
-This test shows the amount of memory used by the system.
-Note that this is dependent on the user-space that is loaded
-when this program runs.  Optimally, this program would be
-run as the init program itself.
+Yeah, or we can use this value for xstate_bv to save some copying too,
 
-The program is optimized for size itself, to avoid conflating
-its own execution with that of the system software.
-The code is compiled statically, with no stdlibs. On my x86_64 system,
-this results in a statically linked binary of less than 5K.
-
-Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
----
-Changes from v5:
-  - remove #ifdef in Makefile (doh!)
-  - use variables in build command
-  - use different num_to_str, with less conversions
-
-Changes from v4:
-  - make most routines static
-  - replace strip with gcc -s
-  - remove explicit reference to _start
-  - change --static to -static
-  - remove explicit reference to LIBGCC
-  - fix test description for ok and not ok paths, for test 1
-
-Changes from v3:
-  - add more human-readable output
-  - put libgcc reference into a variable in Makefile
-
-Changes from v2:
-  - fix copyright string (again!)
-  - use __builtin_strlen instead of my own strlen
-  - replace main with _start
-
-Changes from v1:
-  - add return values to print routines
-  - add .gitignore file
-  - use more correct Copyright string in get_size.c
-
- tools/testing/selftests/Makefile        |   1 +
- tools/testing/selftests/size/.gitignore |   1 +
- tools/testing/selftests/size/Makefile   |  12 ++++
- tools/testing/selftests/size/get_size.c | 100 ++++++++++++++++++++++++++++++++
- 4 files changed, 114 insertions(+)
- create mode 100644 tools/testing/selftests/size/.gitignore
- create mode 100644 tools/testing/selftests/size/Makefile
- create mode 100644 tools/testing/selftests/size/get_size.c
-
-diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
-index 45f145c..fa91aef 100644
---- a/tools/testing/selftests/Makefile
-+++ b/tools/testing/selftests/Makefile
-@@ -15,6 +15,7 @@ TARGETS += user
- TARGETS += sysctl
- TARGETS += firmware
- TARGETS += ftrace
-+TARGETS += size
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 19e5e8f..ba2b7bd 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3137,7 +3137,7 @@ static int kvm_vcpu_ioctl_x86_set_debugregs(struct kvm_vcpu *vcpu,
+ static void fill_xsave(u8 *dest, struct kvm_vcpu *vcpu)
+ {
+ 	struct xsave_struct *xsave = &vcpu->arch.guest_fpu.state->xsave;
+-	u64 xstate_bv = vcpu->arch.guest_supported_xcr0 | XSTATE_FPSSE;
++	u64 xstate_bv = xsave->xsave_hdr.xstate_bv;
+ 	u64 valid;
  
- TARGETS_HOTPLUG = cpu-hotplug
- TARGETS_HOTPLUG += memory-hotplug
-diff --git a/tools/testing/selftests/size/.gitignore b/tools/testing/selftests/size/.gitignore
-new file mode 100644
-index 0000000..189b781
---- /dev/null
-+++ b/tools/testing/selftests/size/.gitignore
-@@ -0,0 +1 @@
-+get_size
-diff --git a/tools/testing/selftests/size/Makefile b/tools/testing/selftests/size/Makefile
-new file mode 100644
-index 0000000..04dc25e
---- /dev/null
-+++ b/tools/testing/selftests/size/Makefile
-@@ -0,0 +1,12 @@
-+CC = $(CROSS_COMPILE)gcc
-+
-+all: get_size
-+
-+get_size: get_size.c
-+	$(CC) -static -ffreestanding -nostartfiles -s $< -o $@
-+
-+run_tests: all
-+	./get_size
-+
-+clean:
-+	$(RM) get_size
-diff --git a/tools/testing/selftests/size/get_size.c b/tools/testing/selftests/size/get_size.c
-new file mode 100644
-index 0000000..2d1af7c
---- /dev/null
-+++ b/tools/testing/selftests/size/get_size.c
-@@ -0,0 +1,100 @@
-+/*
-+ * Copyright 2014 Sony Mobile Communications Inc.
-+ *
-+ * Licensed under the terms of the GNU GPL License version 2
-+ *
-+ * Selftest for runtime system size
-+ *
-+ * Prints the amount of RAM that the currently running system is using.
-+ *
-+ * This program tries to be as small as possible itself, to
-+ * avoid perturbing the system memory utilization with its
-+ * own execution.  It also attempts to have as few dependencies
-+ * on kernel features as possible.
-+ *
-+ * It should be statically linked, with startup libs avoided.
-+ * It uses no library calls, and only the following 3 syscalls:
-+ *   sysinfo(), write(), and _exit()
-+ *
-+ * For output, it avoids printf (which in some C libraries
-+ * has large external dependencies) by  implementing it's own
-+ * number output and print routines, and using __builtin_strlen()
-+ */
-+
-+#include <sys/sysinfo.h>
-+#include <unistd.h>
-+
-+#define STDOUT_FILENO 1
-+
-+static int print(const char *s)
-+{
-+	return write(STDOUT_FILENO, s, __builtin_strlen(s));
-+}
-+
-+static inline char *num_to_str(unsigned long num, char *buf, int len)
-+{
-+	unsigned int digit;
-+
-+	/* put digits in buffer from back to front */
-+	buf += len - 1;
-+	*buf = 0;
-+	do {
-+		digit = num % 10;
-+		*(--buf) = digit + '0';
-+		num /= 10;
-+	} while (num > 0);
-+
-+	return buf;
-+}
-+
-+static int print_num(unsigned long num)
-+{
-+	char num_buf[30];
-+
-+	return print(num_to_str(num, num_buf, sizeof(num_buf)));
-+}
-+
-+static int print_k_value(const char *s, unsigned long num, unsigned long units)
-+{
-+	unsigned long long temp;
-+	int ccode;
-+
-+	print(s);
-+
-+	temp = num;
-+	temp = (temp * units)/1024;
-+	num = temp;
-+	ccode = print_num(num);
-+	print("\n");
-+	return ccode;
-+}
-+
-+/* this program has no main(), as startup libraries are not used */
-+void _start(void)
-+{
-+	int ccode;
-+	struct sysinfo info;
-+	unsigned long used;
-+
-+	print("Testing system size.\n");
-+	print("1..1\n");
-+
-+	ccode = sysinfo(&info);
-+	if (ccode < 0) {
-+		print("not ok 1 get runtime memory use\n");
-+		print("# could not get sysinfo\n");
-+		_exit(ccode);
+ 	/*
+
+> Right, this matches
+> 
+>         u64 xstate_bv = *(u64 *)(src + XSAVE_HDR_OFFSET);
+> 	...
+>         xsave->xsave_hdr.xstate_bv = xstate_bv;
+> 
+> in load_xsave.
+
+Btw, we don't care about crashers from userspace?
+
+---8<---
+KVM: x86: prevent #GP with malicious xsave
+
+XRSTORS throws #GP when XSTATE_BV isn't a subset of XCOMP_BV.
+Make it so.
+
+SDM: XRSTORS Exceptions
+ #GP If a bit in the XCOMP_BV field in the XSAVE header is 0 and the
+     corresponding bit in the XSTATE_BV field is 1.
+(Also in SDM: 13.11 OPERATION OF XRSTORS)
+
+Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+---
+ arch/x86/kvm/x86.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index ca26681..19e5e8f 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3184,8 +3184,10 @@ static void load_xsave(struct kvm_vcpu *vcpu, u8 *src)
+ 
+ 	/* Set XSTATE_BV and possibly XCOMP_BV.  */
+ 	xsave->xsave_hdr.xstate_bv = xstate_bv;
+-	if (cpu_has_xsaves)
++	if (cpu_has_xsaves) {
+ 		xsave->xsave_hdr.xcomp_bv = host_xcr0 | XSTATE_COMPACTION_ENABLED;
++		xsave->xsave_hdr.xstate_bv &= xsave->xsave_hdr.xcomp_bv;
 +	}
-+	/* ignore cache complexities for now */
-+	used = info.totalram - info.freeram - info.bufferram;
-+	print_k_value("ok 1 get runtime memory use # size = ", used,
-+		info.mem_unit);
-+
-+	print("# System runtime memory report (units in Kilobytes):\n");
-+	print_k_value("#   Total:  ", info.totalram, info.mem_unit);
-+	print_k_value("#   Free:   ", info.freeram, info.mem_unit);
-+	print_k_value("#   Buffer: ", info.bufferram, info.mem_unit);
-+	print_k_value("#   In use: ", used, info.mem_unit);
-+
-+	_exit(0);
-+}
+ 
+ 	/*
+ 	 * Copy each region from the non-compacted offset to the
 -- 
-1.8.2.2
+2.2.0
 
