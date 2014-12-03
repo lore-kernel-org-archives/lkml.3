@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080AbaLCLsB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:48:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54705 "EHLO mx2.suse.de"
+	id S1753013AbaLCLsY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:48:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54704 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752456AbaLCL1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:27:24 -0500
+	id S1752446AbaLCL1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:27:23 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Ben Dooks <ben.dooks@codethink.co.uk>,
-        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        Wang Nan <wangnan0@huawei.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 065/101] ARM: probes: fix instruction fetch order with <asm/opcodes.h>
-Date: Wed,  3 Dec 2014 12:26:27 +0100
-Message-Id: <612d07862d30f4a08cc1157b82bf94312c63f3ef.1417605922.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 054/101] nfs: Fix use of uninitialized variable in nfs_getattr()
+Date: Wed,  3 Dec 2014 12:26:16 +0100
+Message-Id: <77683fa6ccecf2eb8b4dd34fe609455580dfe766.1417605922.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
 References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
@@ -23,191 +23,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Dooks <ben.dooks@codethink.co.uk>
+From: Jan Kara <jack@suse.cz>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 888be25402021a425da3e85e2d5a954d7509286e upstream.
+commit 16caf5b6101d03335b386e77e9e14136f989be87 upstream.
 
-If we are running BE8, the data and instruction endianness do not
-match, so use <asm/opcodes.h> to correctly translate memory accesses
-into ARM instructions.
+Variable 'err' needn't be initialized when nfs_getattr() uses it to
+check whether it should call generic_fillattr() or not. That can result
+in spurious error returns. Initialize 'err' properly.
 
-Acked-by: Jon Medhurst <tixy@linaro.org>
-Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
-[taras.kondratiuk@linaro.org: fixed Thumb instruction fetch order]
-Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-[wangnan: backport to 3.10 and 3.14:
- - adjust context
- - backport all changes on arch/arm/kernel/probes.c to
-   arch/arm/kernel/kprobes-common.c since we don't have
-   commit c18377c303787ded44b7decd7dee694db0f205e9.
- - After the above adjustments, becomes same to Taras Kondratiuk's
-   original patch:
-     http://lists.linaro.org/pipermail/linaro-kernel/2014-January/010346.html
-]
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/arm/kernel/kprobes-common.c | 19 +++++++++++--------
- arch/arm/kernel/kprobes-thumb.c  | 21 +++++++++++++--------
- arch/arm/kernel/kprobes.c        |  9 +++++----
- 3 files changed, 29 insertions(+), 20 deletions(-)
+ fs/nfs/inode.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/kernel/kprobes-common.c b/arch/arm/kernel/kprobes-common.c
-index 18a76282970e..380c20fb9c85 100644
---- a/arch/arm/kernel/kprobes-common.c
-+++ b/arch/arm/kernel/kprobes-common.c
-@@ -14,6 +14,7 @@
- #include <linux/kernel.h>
- #include <linux/kprobes.h>
- #include <asm/system_info.h>
-+#include <asm/opcodes.h>
- 
- #include "kprobes.h"
- 
-@@ -305,7 +306,8 @@ kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi)
- 
- 	if (handler) {
- 		/* We can emulate the instruction in (possibly) modified form */
--		asi->insn[0] = (insn & 0xfff00000) | (rn << 16) | reglist;
-+		asi->insn[0] = __opcode_to_mem_arm((insn & 0xfff00000) |
-+						   (rn << 16) | reglist);
- 		asi->insn_handler = handler;
- 		return INSN_GOOD;
- 	}
-@@ -334,13 +336,14 @@ prepare_emulated_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
- #ifdef CONFIG_THUMB2_KERNEL
- 	if (thumb) {
- 		u16 *thumb_insn = (u16 *)asi->insn;
--		thumb_insn[1] = 0x4770; /* Thumb bx lr */
--		thumb_insn[2] = 0x4770; /* Thumb bx lr */
-+		/* Thumb bx lr */
-+		thumb_insn[1] = __opcode_to_mem_thumb16(0x4770);
-+		thumb_insn[2] = __opcode_to_mem_thumb16(0x4770);
- 		return insn;
- 	}
--	asi->insn[1] = 0xe12fff1e; /* ARM bx lr */
-+	asi->insn[1] = __opcode_to_mem_arm(0xe12fff1e); /* ARM bx lr */
- #else
--	asi->insn[1] = 0xe1a0f00e; /* mov pc, lr */
-+	asi->insn[1] = __opcode_to_mem_arm(0xe1a0f00e); /* mov pc, lr */
- #endif
- 	/* Make an ARM instruction unconditional */
- 	if (insn < 0xe0000000)
-@@ -360,12 +363,12 @@ set_emulated_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
- 	if (thumb) {
- 		u16 *ip = (u16 *)asi->insn;
- 		if (is_wide_instruction(insn))
--			*ip++ = insn >> 16;
--		*ip++ = insn;
-+			*ip++ = __opcode_to_mem_thumb16(insn >> 16);
-+		*ip++ = __opcode_to_mem_thumb16(insn);
- 		return;
- 	}
- #endif
--	asi->insn[0] = insn;
-+	asi->insn[0] = __opcode_to_mem_arm(insn);
- }
- 
- /*
-diff --git a/arch/arm/kernel/kprobes-thumb.c b/arch/arm/kernel/kprobes-thumb.c
-index 6123daf397a7..241222c66a13 100644
---- a/arch/arm/kernel/kprobes-thumb.c
-+++ b/arch/arm/kernel/kprobes-thumb.c
-@@ -11,6 +11,7 @@
- #include <linux/kernel.h>
- #include <linux/kprobes.h>
- #include <linux/module.h>
-+#include <asm/opcodes.h>
- 
- #include "kprobes.h"
- 
-@@ -163,9 +164,9 @@ t32_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi)
- 	enum kprobe_insn ret = kprobe_decode_ldmstm(insn, asi);
- 
- 	/* Fixup modified instruction to have halfwords in correct order...*/
--	insn = asi->insn[0];
--	((u16 *)asi->insn)[0] = insn >> 16;
--	((u16 *)asi->insn)[1] = insn & 0xffff;
-+	insn = __mem_to_opcode_arm(asi->insn[0]);
-+	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(insn >> 16);
-+	((u16 *)asi->insn)[1] = __opcode_to_mem_thumb16(insn & 0xffff);
- 
- 	return ret;
- }
-@@ -1153,7 +1154,7 @@ t16_decode_hiregs(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+index 7f5799d098fd..e5eb677ca9ce 100644
+--- a/fs/nfs/inode.c
++++ b/fs/nfs/inode.c
+@@ -598,7 +598,7 @@ int nfs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
  {
- 	insn &= ~0x00ff;
- 	insn |= 0x001; /* Set Rdn = R1 and Rm = R0 */
--	((u16 *)asi->insn)[0] = insn;
-+	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(insn);
- 	asi->insn_handler = t16_emulate_hiregs;
- 	return INSN_GOOD;
- }
-@@ -1182,8 +1183,10 @@ t16_decode_push(kprobe_opcode_t insn, struct arch_specific_insn *asi)
- 	 * and call it with R9=SP and LR in the register list represented
- 	 * by R8.
- 	 */
--	((u16 *)asi->insn)[0] = 0xe929;		/* 1st half STMDB R9!,{} */
--	((u16 *)asi->insn)[1] = insn & 0x1ff;	/* 2nd half (register list) */
-+	/* 1st half STMDB R9!,{} */
-+	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(0xe929);
-+	/* 2nd half (register list) */
-+	((u16 *)asi->insn)[1] = __opcode_to_mem_thumb16(insn & 0x1ff);
- 	asi->insn_handler = t16_emulate_push;
- 	return INSN_GOOD;
- }
-@@ -1232,8 +1235,10 @@ t16_decode_pop(kprobe_opcode_t insn, struct arch_specific_insn *asi)
- 	 * and call it with R9=SP and PC in the register list represented
- 	 * by R8.
- 	 */
--	((u16 *)asi->insn)[0] = 0xe8b9;		/* 1st half LDMIA R9!,{} */
--	((u16 *)asi->insn)[1] = insn & 0x1ff;	/* 2nd half (register list) */
-+	/* 1st half LDMIA R9!,{} */
-+	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(0xe8b9);
-+	/* 2nd half (register list) */
-+	((u16 *)asi->insn)[1] = __opcode_to_mem_thumb16(insn & 0x1ff);
- 	asi->insn_handler = insn & 0x100 ? t16_emulate_pop_pc
- 					 : t16_emulate_pop_nopc;
- 	return INSN_GOOD;
-diff --git a/arch/arm/kernel/kprobes.c b/arch/arm/kernel/kprobes.c
-index 170e9f34003f..1c6ece51781c 100644
---- a/arch/arm/kernel/kprobes.c
-+++ b/arch/arm/kernel/kprobes.c
-@@ -26,6 +26,7 @@
- #include <linux/stop_machine.h>
- #include <linux/stringify.h>
- #include <asm/traps.h>
-+#include <asm/opcodes.h>
- #include <asm/cacheflush.h>
+ 	struct inode *inode = dentry->d_inode;
+ 	int need_atime = NFS_I(inode)->cache_validity & NFS_INO_INVALID_ATIME;
+-	int err;
++	int err = 0;
  
- #include "kprobes.h"
-@@ -62,10 +63,10 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
- #ifdef CONFIG_THUMB2_KERNEL
- 	thumb = true;
- 	addr &= ~1; /* Bit 0 would normally be set to indicate Thumb code */
--	insn = ((u16 *)addr)[0];
-+	insn = __mem_to_opcode_thumb16(((u16 *)addr)[0]);
- 	if (is_wide_instruction(insn)) {
--		insn <<= 16;
--		insn |= ((u16 *)addr)[1];
-+		u16 inst2 = __mem_to_opcode_thumb16(((u16 *)addr)[1]);
-+		insn = __opcode_thumb32_compose(insn, inst2);
- 		decode_insn = thumb32_kprobe_decode_insn;
- 	} else
- 		decode_insn = thumb16_kprobe_decode_insn;
-@@ -73,7 +74,7 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
- 	thumb = false;
- 	if (addr & 0x3)
- 		return -EINVAL;
--	insn = *p->addr;
-+	insn = __mem_to_opcode_arm(*p->addr);
- 	decode_insn = arm_kprobe_decode_insn;
- #endif
- 
+ 	trace_nfs_getattr_enter(inode);
+ 	/* Flush out writes to the server in order to update c/mtime.  */
 -- 
 2.1.3
 
