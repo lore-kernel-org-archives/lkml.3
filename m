@@ -1,82 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351AbaLCNDJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 08:03:09 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:36009 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751444AbaLCNDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 08:03:07 -0500
-Message-ID: <1417611812.30615.28.camel@mm-sol.com>
-Subject: Re: [PATCH v2 7/7] pinctrl: qcom-spmi-gpio: Migrate to
- pinconf-generic
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-rockchip@lists.infradead.org, linux-sh@vger.kernel.org,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Beniamino Galvani <b.galvani@gmail.com>
-Date: Wed, 03 Dec 2014 15:03:32 +0200
-In-Reply-To: <1417137993-8337-8-git-send-email-soren.brinkmann@xilinx.com>
-References: <1417137993-8337-1-git-send-email-soren.brinkmann@xilinx.com>
-	 <1417137993-8337-8-git-send-email-soren.brinkmann@xilinx.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.13.7-fta1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752391AbaLCNEa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 08:04:30 -0500
+Received: from www.linutronix.de ([62.245.132.108]:53658 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341AbaLCNE2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 08:04:28 -0500
+Date: Wed, 3 Dec 2014 14:04:08 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: Stefan Agner <stefan@agner.ch>, shawn.guo@linaro.org,
+        kernel@pengutronix.de, Russell King <linux@arm.linux.org.uk>,
+        u.kleine-koenig@pengutronix.de, Jason Cooper <jason@lakedaemon.net>,
+        olof@lixom.net, daniel.lezcano@linaro.org, mark.rutland@arm.com,
+        pawel.moll@arm.com, robh+dt@kernel.org, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devicetree@vger.kernel.org,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Nishanth Menon <nm@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>, Marc Zyngier <marc.zyngier@arm.com>
+Subject: Re: [PATCH 03/12] irqchip: gic: define register_routable_domain_ops
+ conditional
+In-Reply-To: <5174649.NxPq80uDz8@wuerfel>
+Message-ID: <alpine.DEB.2.11.1412031303000.16275@nanos>
+References: <1417565531-4507-1-git-send-email-stefan@agner.ch> <1417565531-4507-4-git-send-email-stefan@agner.ch> <5174649.NxPq80uDz8@wuerfel>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 3 Dec 2014, Arnd Bergmann wrote:
 
-On Thu, 2014-11-27 at 17:26 -0800, Soren Brinkmann wrote:
-> Instead of the driver caring about implementation details like device
-> tree, just provide information about driver specific pinconf parameters
-> to pinconf-generic which takes care of parsing the DT.
+> On Wednesday 03 December 2014 01:12:02 Stefan Agner wrote:
+> > The inline function register_routable_domain_ops is only usable if
+> > CONFIG_ARM_GIC is set. Make it depend on this configuration. This
+> > also allows other SoC interrupt controller to provide such a
+> > function.
+> > 
+> > Signed-off-by: Stefan Agner <stefan@agner.ch>
 > 
-> Signed-off-by: Soren Brinkmann brinkmann@xilinx.com>
-> ---
-> This is compile tested only. So, it's likely that it needs more tweaking
-> to make it actually work on HW. But it illustrates the potential
-> benefits of the pinconf-generic changes in this series.
-> ---
->  drivers/pinctrl/qcom/pinctrl-spmi-gpio.c | 125 +++----------------------------
->  1 file changed, 11 insertions(+), 114 deletions(-)
+> I don't think this is a good idea: either the interface is meant
+> to be generic and should work with any interrupt controller, or
+> it is specific to one irqchip and another irqchip should provide
+> a different interface that has a nonconflicting name.
 > 
-> diff --git a/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c b/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
-> index b863b5080890..2db85e53ef73 100644
-> --- a/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
-> +++ b/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
-> @@ -131,14 +131,14 @@ struct pmic_gpio_state {
->         struct gpio_chip chip;
->  };
-> 
-> -struct pmic_gpio_bindings {
-> -       const char*property;
-> -       unsigned      param;
-> +static const struct pinconf_generic_dt_params pmic_gpio_bindings[] = {
-> +       {"qcom,pull-up-strength",PMIC_GPIO_CONF_PULL_UP,0},
-> +       {"qcom,drive-strength",PMIC_GPIO_CONF_STRENGTH,0},
->  };
-> 
-> -static struct pmic_gpio_bindings pmic_gpio_bindings[] = {
-> -       {"qcom,pull-up-strength",PMIC_GPIO_CONF_PULL_UP},
-> -       {"qcom,drive-strength",PMIC_GPIO_CONF_STRENGTH},
-> +static const struct pin_config_item pmic_conf_items[] = {
-> +       PCONFDUMP(PMIC_GPIO_CONF_PULL_UP,  "pull-up-strength", NULL, true),
+> I suppose you want the latter here, given that the declaration
+> is part of the gic specific header file.
 
-s/pull-up-strength/qcom,pull-up-strength/
+That routable_domain stuff should have never been invented. In
+hindsight we should have done the stacked irq domains back then
+already, but in hindsight ...
 
-> +       PCONFDUMP(PMIC_GPIO_CONF_STRENGTH, "drive-strength", NULL, true),
->  };
-> 
+If you look at the crossbar scheme what we have now:
 
+   GIC domain
+|--------------|
+|              |---------- private
+| non routable |---------- peripheral
+|              |---------- peripheral
+|              |
+|--------------|
+|              |---------- peripheral
+|   routable   |---------- peripheral
+|    |         |---------- peripheral
+|--------------|
+     |               |----------------|
+     |-------------->| crossbar magic |
+                     |----------------|
 
+which is not how the hardware looks. The hardware actually looks like
+this:
 
-I am not happy that we have to define the same think two times.
+   GIC domain
+|--------------|
+|              |---------- private
+| non routable |---------- peripheral
+|              |---------- peripheral
+|              |
+|--------------|           |--------------|
+|              |           |              |---------- peripheral
+|   routable   |-----------| crossbar     |---------- peripheral
+|              |           | domain       |---------- peripheral
+|--------------|           |--------------|
 
-Regards,
-Ivan
+So it is completely obvious that the peripheral interrupts which need
+to be routed through the crossbar belong to a different domain. We
+really should convert crossbar to that scheme and get rid of the
+routable domain stuff completely.
+
+With vybrid thats not different according to the diagram in the
+reference manual.
+
+  GIC domain
+|--------------|
+|              |---------- private
+| non routable |---------- peripheral
+|              |---------- peripheral
+|              |
+|--------------|           |--------------|
+|              |           |              |
+|   routable   |-----------|  IRQ router  |
+|              |           |  domain      |
+|              |           |              |
+|--------------|           |--------------|
+                           | Shared state |---------- CPU to CPU 
+  NVIC domain              | and hardware |---------- peripheral
+|--------------|           |              |---------- peripheral
+|              |           |--------------|
+|              |           |              |
+|   routable   |-----------|  IRQ router  |
+|              |           |  domain      |
+|              |           |              |
+|--------------|           |--------------|
+|              |
+|              |---------- private
+| non routable |---------- peripheral
+|              |---------- peripheral
+|--------------|
+
+The routable domain stuff is just an adhoc redirector which must be
+tied to a particular base irq chip implementation (i.e. GIC). With
+stacked irq domains there is no dependency on the underlying irq
+chip. No ifdeffery, nothing. So you can use the same router domain
+implementation for both the A5 and the M4 side.
+
+On the A5 side the router domain has the gic domain as parent and on
+the M4 side the nvic domain.
+
+The shared interrupts are allocated through the router domain which
+decides whether the interrupt can be assigned to a particular core or
+not. If it can be assigned it allocates the corresponding interrupt in
+the parent domain, sets up the routing and everything just works.
+
+See: http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/log/?h=irq/irqdomain-arm
+
+Thanks,
+
+	tglx
