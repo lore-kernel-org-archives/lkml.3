@@ -1,105 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751343AbaLCBL2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 20:11:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47451 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751252AbaLCBL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 20:11:27 -0500
-Date: Wed, 3 Dec 2014 12:11:18 +1100
-From: NeilBrown <neilb@suse.de>
-To: Jeff Layton <jlayton@primarydata.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a
- workqueue-based nfsd
-Message-ID: <20141203121118.21a32fe1@notabene.brown>
-In-Reply-To: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
-References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
-X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.25; x86_64-suse-linux-gnu)
+	id S1751355AbaLCBMY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 20:12:24 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:58271 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864AbaLCBMV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 20:12:21 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/68YI9_iRKG0BcnmjvbSfeDg"; protocol="application/pgp-signature"
+In-Reply-To: <547E6201.1090804@samsung.com>
+References: <1417563767-32181-1-git-send-email-dianders@chromium.org>
+	<1417563767-32181-4-git-send-email-dianders@chromium.org>
+	<547E569C.3080606@samsung.com>
+	<CAD=FV=VU5804WD5SRwr8HAOXwvumkUY+yzjM81oNbPUwwv=nTQ@mail.gmail.com>
+	<547E6201.1090804@samsung.com>
+Date: Tue, 2 Dec 2014 17:12:20 -0800
+X-Google-Sender-Auth: hCdar8LJmNrt58kJcBSmDLr3Koc
+Message-ID: <CAD=FV=W5vapWUcWur1my=AJg=wzcQ_n-tMYGVf2qXLatsXGAsA@mail.gmail.com>
+Subject: Re: [PATCH v5 3/4] mmc: dw_mmc: Cleanup disable of low power mode w/
+ SDIO interrupts
+From: Doug Anderson <dianders@chromium.org>
+To: Jaehoon Chung <jh80.chung@samsung.com>
+Cc: Seungwon Jeon <tgih.jun@samsung.com>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Heiko Stuebner <heiko@sntech.de>, Chris Ball <chris@printf.net>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/68YI9_iRKG0BcnmjvbSfeDg
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Jaehoon,
 
-On Tue,  2 Dec 2014 13:24:09 -0500 Jeff Layton <jlayton@primarydata.com>
-wrote:
+On Tue, Dec 2, 2014 at 5:06 PM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+> Hi Doug
+>
+> On 12/03/2014 09:36 AM, Doug Anderson wrote:
+>> Jaehoon,
+>>
+>> On Tue, Dec 2, 2014 at 4:17 PM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+>>>> @@ -1245,27 +1246,37 @@ static int dw_mci_get_cd(struct mmc_host *mmc)
+>>>>       return present;
+>>>>  }
+>>>>
+>>>> -/*
+>>>> - * Disable lower power mode.
+>>>> - *
+>>>> - * Low power mode will stop the card clock when idle.  According to the
+>>>> - * description of the CLKENA register we should disable low power mode
+>>>> - * for SDIO cards if we need SDIO interrupts to work.
+>>>> - *
+>>>> - * This function is fast if low power mode is already disabled.
+>>>> - */
+>>>> -static void dw_mci_disable_low_power(struct dw_mci_slot *slot)
+>>>> +static void dw_mci_init_card(struct mmc_host *mmc, struct mmc_card *card)
+>>>>  {
+>>>> +     struct dw_mci_slot *slot = mmc_priv(mmc);
+>>>>       struct dw_mci *host = slot->host;
+>>>> -     u32 clk_en_a;
+>>>> -     const u32 clken_low_pwr = SDMMC_CLKEN_LOW_PWR << slot->id;
+>>>>
+>>>> -     clk_en_a = mci_readl(host, CLKENA);
+>>>> +     /*
+>>>> +      * Low power mode will stop the card clock when idle.  According to the
+>>>> +      * description of the CLKENA register we should disable low power mode
+>>>> +      * for SDIO cards if we need SDIO interrupts to work.
+>>>> +      */
+>>>> +     if (mmc->caps & MMC_CAP_SDIO_IRQ) {
+>>>> +             const u32 clken_low_pwr = SDMMC_CLKEN_LOW_PWR << slot->id;
+>>>> +             u32 clk_en_a_old;
+>>>> +             u32 clk_en_a;
+>>>>
+>>>> -     if (clk_en_a & clken_low_pwr) {
+>>>> -             mci_writel(host, CLKENA, clk_en_a & ~clken_low_pwr);
+>>>> -             mci_send_cmd(slot, SDMMC_CMD_UPD_CLK |
+>>>> -                          SDMMC_CMD_PRV_DAT_WAIT, 0);
+>>>> +             clk_en_a_old = mci_readl(host, CLKENA);
+>>>> +
+>>>> +             if (card->type == MMC_TYPE_SDIO ||
+>>>> +                 card->type == MMC_TYPE_SD_COMBO) {
+>>>> +                     set_bit(DW_MMC_CARD_NO_LOW_PWR, &slot->flags);
+>>>> +                     clk_en_a = clk_en_a_old & ~clken_low_pwr;
+>>>> +             } else {
+>>>
+>>> I wonder this point. When entered at this point?
+>>>
+>>> MMC_CAP_SDIO_IRQ is sdio capability. and card->type is also related with SDIO, isn't?
+>>
+>> Right.  As I understand it:
+>>
+>> * You can certainly add MMC_CAP_SDIO_IRQ to an external card slot that
+>> might have an MMC card, and SD card, or an SDIO card.  You still want
+>> the LOW_PWR mode for MMC/SD cards but don't want it for SDIO cards in
+>> that case.
+>
+> Ok, I understood your purpose.
+> Your mean is MMC_CAP_SIDO_IRQ can be set to MMC or SD...not only SDIO card.
+> It's reasonable.
+> But i think it doesn't need to set LOW_PWR_mode for SD/eMMC at here. it should be already set to Low-power mode.
+> And SDIO case should not enter at here.
 
-> tl;dr: this code works and is much simpler than the dedicated thread
->        pool, but there are some latencies in the workqueue code that
->        seem to keep it from being as fast as it could be.
->=20
-> This patchset is a little skunkworks project that I've been poking at
-> for the last few weeks. Currently nfsd uses a dedicated thread pool to
-> handle RPCs, but that requires maintaining a rather large swath of
-> "fiddly" code to handle the threads and transports.
->=20
-> This patchset represents an alternative approach, which makes nfsd use
-> workqueues to do its bidding rather than a dedicated thread pool. When a
-> transport needs to do work, we simply queue it to the workqueue in
-> softirq context and let it service the transport.
->=20
-> The current draft is runtime-switchable via a new sunrpc pool_mode
-> module parameter setting. When that's set to "workqueue", nfsd will use
-> a workqueue-based service. One of the goals of this patchset was to
-> *not* need to change any userland code, so starting it up using rpc.nfsd
-> still works as expected. The only real difference is that the nfsdfs
-> "threads" file is reinterpreted as the "max_active" value for the
-> workqueue.
+Are you sure?  What about if you plug in an SDIO card, then unplug it,
+then plug in an SD card?
 
-Hi Jeff,
- I haven't looked very closely at the code, but in principal I think this is
- an excellent idea.  Having to set a number of threads manually was never
- nice as it is impossible to give sensible guidance on what an appropriate
- number is.
- Tying max_active to "threads" doesn't really make sense I think.
- "max_active" is a per-cpu number and I think the only meaningful numbers a=
-re
- "1" (meaning concurrent works might mutually deadlock) or infinity (which =
-is
- approximated as 512).  I would just ignore the "threads" number when
- workqueues are used.... or maybe enable workqueues when "auto" is written =
-to
- "threads"??
+>> * If you don't set MMC_CAP_SDIO_IRQ then presumably you've got some
+>> problem where the SDIO interrupt is broken on your board.  That means
+>> you're using polling mode to find interrupts.  As I understand it that
+>> would allow you to use LOW_PWR since you don't need to detect SDIO
+>> interrupts.  I know on Marvell WiFi modules I tested this seemed to
+>> work OK, but I doubt anyone is really running a production device in
+>> this way.
+>
+> No, we needs to set MMC_CAP_SDIO_IRQ, if i didn't set to it, i will also see the problem.
+> Since I knew which slot is used as SDIO card, i thought MMC_CAP_SDIO_IRQ is set for only sdio card.
+> Then it would be check the twice whether card is SDIO or not.
+>
+> Actually, i didn't test WiFi module with this patch. but concept is not problem.
 
- Using a shrinker to manage the allocation and freeing of svc_rqst is a
- really good idea.  It will put pressure on the effective number of threads
- when needed, but will not artificially constrain things.
+Yup, I think you were only thinking about the embedded case where you
+know that an SDIO card will be plugged into the slot.  In the case
+where you have an exposed slot it is certainly possible to expect
+someone might plug in an SD card or an SDIO card.  ...or even a combo
+card!
 
- The combination of workqueue and shrinker seems like a perfect match for
- nfsd.
-
- I hope you can work out the latency issues!
-
-Thanks,
-NeilBrown
-
---Sig_/68YI9_iRKG0BcnmjvbSfeDg
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUBVH5jNjnsnt1WYoG5AQLFVRAAh5V0coqjUJzz1DfEMuz/coI8H4Srf6Ia
-hH51IWQ/5AYNlTcFqxVCs3LnUr09FzQ70nuw18a0Wt7K4VOmF+ZMwmB5Gx+i0++K
-3nhvDIKFbIOQoqoKw7VVfO/RV2a9NugZpzjD6VYcV8W2h4bk8rciaUTmdghnAEl/
-R+SDLV6tLJVnReEynIA2rztqWkNpoay2uIaLTFLS2MuOkh3pFEITaQ4a8+hIWt3X
-mjQbb+Q4SGa56tFP0e2Of0D5vzWb/DUFMHnfsbjmtUgfsK5gafs6qVDRbThwmWaX
-ciTOpxHzm9XqoWov8p8fPfn5/AY5QWeNxOUTP1HfWzR3vNbESfPLtIZuCeKioOlv
-RZ2SSY+zQiCdj2hc1Xydts0aGIGg5C/g2QAnTPO6GO1ho/0PFxKFKlLq7xpV9oGj
-1jxmxvJIHg9NsVPw83oqQiIKjBUECZbGmBTSZQTJB7GhjSLJGyA2/wOtv9CZ2wjn
-7NLdCinsAlWZ6p06yR1MTYthMAe5a/Rzxf5jtwGur6bMgPt5Dint+td2Efxi6nDE
-xGklrDTx1MluDZzdjP08VajUSrc0+88w6Cj1D00eNxTsg3M5XEPyym9Es7uHIBg3
-5Y+lo0ytK1vt2uwfnG1wW69AShG8bQOsmYIfWkMkVirlYNIDTinlq4YKKg8GXwuY
-URb138Y9Cjg=
-=7feE
------END PGP SIGNATURE-----
-
---Sig_/68YI9_iRKG0BcnmjvbSfeDg--
+-Doug
