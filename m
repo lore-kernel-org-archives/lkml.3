@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751309AbaLCEOs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 23:14:48 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:52256 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830AbaLCEOq (ORCPT
+	id S1751402AbaLCEOz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 23:14:55 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:50706 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830AbaLCEOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 23:14:46 -0500
-Date: Wed, 3 Dec 2014 12:14:33 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH] hwrandom / exynos / PM: Use CONFIG_PM in #ifdef
-Message-ID: <20141203041433.GA7387@gondor.apana.org.au>
-References: <1743562.8SOccckWiK@vostro.rjw.lan>
+	Tue, 2 Dec 2014 23:14:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1743562.8SOccckWiK@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141203034020.GI29748@ZenIV.linux.org.uk>
+References: <1417494919-4577-1-git-send-email-oakad@yahoo.com>
+	<1417494919-4577-2-git-send-email-oakad@yahoo.com>
+	<20141202170037.GG29748@ZenIV.linux.org.uk>
+	<CAPs88r8m2QmaOWy623swGk=T3cyG85X3N7Z9tAp3nZvD0Tch+A@mail.gmail.com>
+	<20141203034020.GI29748@ZenIV.linux.org.uk>
+Date: Wed, 3 Dec 2014 15:14:51 +1100
+Message-ID: <CAPs88r_K85w0uPni_TuSr1FZqS33dhew0mP42qSPwUp4STj0sg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] fs: introduce sendfd() syscall
+From: Alex Dubov <alex.dubov@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alex Dubov <oakad@yahoo.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 02:40:35AM +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> CONFIG_PM is defined as the alternative of CONFIG_PM_RUNTIME and
-> CONFIG_PM_SLEEP, so it can be used instead of that.
-> 
-> Besides, after commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-> PM_SLEEP is selected) PM_RUNTIME is always set if PM is set, so
-> using the alternative isn't even necessary.
-> 
-> Use CONFIG_PM instead of it in drivers/char/hw_random/exynos-rng.c.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Wed, Dec 3, 2014 at 2:40 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Wed, Dec 03, 2014 at 01:22:33PM +1100, Alex Dubov wrote:
+>
+>> On a less related note, I hope you will agree that the simpler
+>> mechanism for this very in-demand feature is long overdue on Linux
+>> (every man and his dog are passing fds around these days).
+>
+> ... and I'm less than sure that it's a good thing.  If nothing else,
+> once the pieces of your program are passing descriptors around freely,
+> you have created a barfball that will be impossible to split between
+> several boxen if you run into scalability issues.  Descriptor-passing
+> is limited to a single system; you *can't* do that between e.g. components
+> of a cluster.  So it's not an unmixed blessing, just as overuse of
+> shared memory segments, etc.  They do have their uses, but that needs
+> to be carefully considered every time, or you'll create a major headache
+> a few years down the road.
 
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+Well, if you try hard enough, you can pass fds around the components
+of the cluster - Mosix was doing just that some 10 years ago.
+Conceptually, it's even easier than doing distributed shared memory,
+as long as mmap is not concerned. :-)
 
-> Please let me know if it is OK to take this one into linux-pm.
+I was, however, looking at it from a different standpoint. Abundance
+of cores in the contemporary CPUs calls for locally parallel
+applications (and those are still the majority - clearly 90% of the
+applications and their workloads fit just fine on a single node).
 
-Sure.
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Thus, any modern application developer faces the usual dilemma:
+
+1. Go multi-threaded - easy inter-thread IPC, lousy reliability with
+minor errors in secondary tasks crashing the whole application.
+
+2. Go multi-process - circus hoop jumping when IPC is concerned, great
+reliability through OS provided fault isolation (so even really broken
+stuff, like PHP plugin for apache manages to perform most of the time
+:-)
+
+Memfd (on its own) and eventfd are great steps in the right direction,
+as managing persistent shmem and sem objects was always pain in the
+arse. If there was an alternative to AF_UNIX fd passing, with its
+arcane API, fs persistence and mind boggling fd recursion bugs, then
+option 2 would became much more attractive for developers leading to
+over-all increase in application reliability and security.
