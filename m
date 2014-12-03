@@ -1,67 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713AbaLCQ7x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 11:59:53 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:39415 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045AbaLCQ7v (ORCPT
+	id S1751982AbaLCRCQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 12:02:16 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:35432 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190AbaLCRCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 11:59:51 -0500
+	Wed, 3 Dec 2014 12:02:13 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Oleg Nesterov <oleg@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Howells <dhowells@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <levinsasha928@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        netdev@vger.kernel.org
+References: <20140805194627.GA30693@redhat.com>
+	<20140805194655.GA30728@redhat.com>
+	<20141203141433.GA25683@node.dhcp.inet.fi>
+Date: Wed, 03 Dec 2014 10:59:57 -0600
+In-Reply-To: <20141203141433.GA25683@node.dhcp.inet.fi> (Kirill A. Shutemov's
+	message of "Wed, 3 Dec 2014 16:14:33 +0200")
+Message-ID: <87fvcwk6sy.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20141203164951.GI11285@n2100.arm.linux.org.uk>
-References: <1417461694-5129-1-git-send-email-dianders@chromium.org>
-	<20141201225057.GA11285@n2100.arm.linux.org.uk>
-	<CAD=FV=VT7gr504-ZgWPfha+40XDX5eShkzZ36bg=-4Oub1S27w@mail.gmail.com>
-	<25485084.A6ydfR9Xle@wuerfel>
-	<CAD=FV=UFWZEcbO2ty0m+qEGv4Xgq0N=Rs30wBgw=6+OGd5gSpg@mail.gmail.com>
-	<CACRpkdapVhrQe7n5wDzZbf3fYGGpB-jPzG8Z+A8X6j5ERLxAfg@mail.gmail.com>
-	<CAD=FV=Vn_U6YWFN-hruWcYo-HSHt9=hwduEv32Bb5aP_hzNB8Q@mail.gmail.com>
-	<20141203164951.GI11285@n2100.arm.linux.org.uk>
-Date: Wed, 3 Dec 2014 08:59:50 -0800
-X-Google-Sender-Auth: UYRXza1gPJL_jzORTUEhmivqnM8
-Message-ID: <CAD=FV=VDD82SD85WS3MGBChKTfdvxvK0L1iJW6R1cwqZeqx0LQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: rockchip: Convert resume code to C
-From: Doug Anderson <dianders@chromium.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kevin Hilman <khilman@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
-        Russ Dill <russ.dill@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Chris Zhong <zyw@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+VBR6r1wEV1sNNtPqn/1knIHMXotjHZDA=
+X-SA-Exim-Connect-IP: 97.121.92.161
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 TVD_RCVD_IP Message was received from an IP address
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
+	*  1.2 LotsOfNums_01 BODY: Lots of long strings of numbers
+	*  1.2 XM_Multi_Part_URI URI: Long-Multi-Part URIs
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.5000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_04 7+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ***;"Kirill A. Shutemov" <kirill@shutemov.name>
+X-Spam-Relay-Country: 
+X-Spam-Timing: total 1472 ms - load_scoreonly_sql: 0.09 (0.0%),
+	signal_user_changed: 3.6 (0.2%), b_tie_ro: 2.4 (0.2%), parse: 1.32 (0.1%),
+	extract_message_metadata: 55 (3.8%), get_uri_detail_list: 6 (0.4%),
+	tests_pri_-1000: 36 (2.5%), tests_pri_-950: 26 (1.8%), tests_pri_-900: 1.68
+	(0.1%), tests_pri_-400: 100 (6.8%), check_bayes: 99 (6.7%), b_tokenize: 46
+	(3.1%), b_tok_get_all: 27 (1.8%), b_comp_prob: 4.5 (0.3%), b_tok_touch_all:
+	3.4 (0.2%), b_finish: 0.77 (0.1%), tests_pri_0: 1207 (82.0%), tests_pri_500:
+	34 (2.3%), rewrite_mail: 0.00 (0.0%)
+Subject: Re: [PATCH v2 4/7] fs/proc/task_mmu.c: shift mm_access() from m_start() to proc_maps_open()
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell,
+"Kirill A. Shutemov" <kirill@shutemov.name> writes:
 
-On Wed, Dec 3, 2014 at 8:49 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Dec 03, 2014 at 08:44:55AM -0800, Doug Anderson wrote:
->> Sure.  I look forward to someone solving it.  ...and as I said, until
->> someone does solve it I think we're blocked from landing deep sleep
->> mode for rk3288 upstream (unless someone decides that my patches are
->> OK).
+> On Tue, Aug 05, 2014 at 09:46:55PM +0200, Oleg Nesterov wrote:
+>> A simple test-case from Kirill Shutemov
+>> 
+>> 	cat /proc/self/maps >/dev/null
+>> 	chmod +x /proc/self/net/packet
+>> 	exec /proc/self/net/packet
+>> 
+>> makes lockdep unhappy, cat/exec take seq_file->lock + cred_guard_mutex in
+>> the opposite order.
 >
-> What we definitely don't want to do is to have each SoC doing their
-> own thing on this, so we really need it to either be generic across
-> all ARMs, or fully generic.
+> Oleg, I see it again with almost the same test-case:
 >
-> So, if it can be turned into some kind of generic infrastructure, I'd
-> be happier with it, because that would help it be re-used across other
-> SoCs.
+> 	cat /proc/self/stack >/dev/null
+> 	chmod +x /proc/self/net/packet
+> 	exec /proc/self/net/packet
+>
+> Looks like bunch of proc files were converted to use seq_file by Alexey
+> Dobriyan around the same time you've fixed the issue for /proc/pid/maps.
+>
+> More generic test-case:
+>
+> 	find /proc/self/ -type f -exec dd if='{}' of=/dev/null bs=1 count=1 ';' 2>/dev/null
+> 	chmod +x /proc/self/net/packet
+> 	exec /proc/self/net/packet
+>
+> David, any justification for allowing chmod +x for files under
+> /proc/pid/net?
 
-If folks can come up with a way to adapt my current approach to be
-acceptable then I'm happy to do it.
+I don't think there are any good reasons for allowing chmod +x for the
+proc generic files.   Certainly executing any of them is nonsense.
 
-...but if not then I'll happily drop this patch and patiently await
-the day when this problem is solved upstream.  Once that happens,
-someone can try landing the deep sleep for rk3288 using that new
-approach.
+I do recall some weird conner cases existing.  I think they resulted
+in a need to preserve chmod if not chmod +x.  This is just me saying
+tread carefully before you change anything.
 
+It really should be safe to tweak proc_notify_change to not allow
+messing with the executable bits of proc files.
 
--Doug
+> [    2.042212] ======================================================
+> [    2.042930] [ INFO: possible circular locking dependency detected ]
+> [    2.043648] 3.18.0-rc7-00003-g3a18ca061311-dirty #237 Not tainted
+> [    2.044350] -------------------------------------------------------
+> [    2.045054] sh/94 is trying to acquire lock:
+> [    2.045546]  (&p->lock){+.+.+.}, at: [<ffffffff811e12fd>] seq_read+0x3d/0x3e0
+> [    2.045781] 
+> [    2.045781] but task is already holding lock:
+> [    2.045781]  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff811c0e3d>] prepare_bprm_creds+0x2d/0x90
+> [    2.045781] 
+> [    2.045781] which lock already depends on the new lock.
+> [    2.045781] 
+> [    2.045781] 
+> [    2.045781] the existing dependency chain (in reverse order) is:
+> [    2.045781] 
+> -> #1 (&sig->cred_guard_mutex){+.+.+.}:
+> [    2.045781]        [<ffffffff810a6e99>] __lock_acquire+0x4d9/0xd40
+> [    2.045781]        [<ffffffff810a7ff2>] lock_acquire+0xd2/0x2a0
+> [    2.045781]        [<ffffffff81849da6>] mutex_lock_killable_nested+0x66/0x460
+> [    2.045781]        [<ffffffff81229de4>] lock_trace+0x24/0x70
+> [    2.045781]        [<ffffffff81229e8f>] proc_pid_stack+0x5f/0xe0
+> [    2.045781]        [<ffffffff81227244>] proc_single_show+0x54/0xa0
+> [    2.045781]        [<ffffffff811e13a0>] seq_read+0xe0/0x3e0
+> [    2.045781]        [<ffffffff811b9377>] vfs_read+0x97/0x180
+> [    2.045781]        [<ffffffff811b9f5d>] SyS_read+0x4d/0xc0
+> [    2.045781]        [<ffffffff8184e492>] system_call_fastpath+0x12/0x17
+> [    2.045781] 
+> -> #0 (&p->lock){+.+.+.}:
+> [    2.045781]        [<ffffffff810a389f>] validate_chain.isra.36+0xfff/0x1400
+> [    2.045781]        [<ffffffff810a6e99>] __lock_acquire+0x4d9/0xd40
+> [    2.045781]        [<ffffffff810a7ff2>] lock_acquire+0xd2/0x2a0
+> [    2.045781]        [<ffffffff81849629>] mutex_lock_nested+0x69/0x3c0
+> [    2.045781]        [<ffffffff811e12fd>] seq_read+0x3d/0x3e0
+> [    2.045781]        [<ffffffff81226428>] proc_reg_read+0x48/0x70
+> [    2.045781]        [<ffffffff811b9377>] vfs_read+0x97/0x180
+> [    2.045781]        [<ffffffff811bf1a8>] kernel_read+0x48/0x60
+> [    2.045781]        [<ffffffff811bfb2c>] prepare_binprm+0xdc/0x180
+> [    2.045781]        [<ffffffff811c139a>] do_execve_common.isra.29+0x4fa/0x960
+> [    2.045781]        [<ffffffff811c1818>] do_execve+0x18/0x20
+> [    2.045781]        [<ffffffff811c1b05>] SyS_execve+0x25/0x30
+> [    2.045781]        [<ffffffff8184ea49>] stub_execve+0x69/0xa0
+> [    2.045781] 
+> [    2.045781] other info that might help us debug this:
+> [    2.045781] 
+> [    2.045781]  Possible unsafe locking scenario:
+> [    2.045781] 
+> [    2.045781]        CPU0                    CPU1
+> [    2.045781]        ----                    ----
+> [    2.045781]   lock(&sig->cred_guard_mutex);
+> [    2.045781]                                lock(&p->lock);
+> [    2.045781]                                lock(&sig->cred_guard_mutex);
+> [    2.045781]   lock(&p->lock);
+> [    2.045781] 
+> [    2.045781]  *** DEADLOCK ***
+> [    2.045781] 
+> [    2.045781] 1 lock held by sh/94:
+> [    2.045781]  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff811c0e3d>] prepare_bprm_creds+0x2d/0x90
+> [    2.045781] 
+> [    2.045781] stack backtrace:
+> [    2.045781] CPU: 0 PID: 94 Comm: sh Not tainted 3.18.0-rc7-00003-g3a18ca061311-dirty #237
+> [    2.045781] Hardware name: QEMU Standard PC (Q35 + ICH9, 2009), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
+> [    2.045781]  ffffffff82a48d50 ffff88085427bad8 ffffffff81844a85 0000000000000cac
+> [    2.045781]  ffffffff82a654a0 ffff88085427bb28 ffffffff810a1b03 0000000000000000
+> [    2.045781]  ffff88085427bb68 ffff88085427bb28 ffff8808547f1500 ffff8808547f1c40
+> [    2.045781] Call Trace:
+> [    2.045781]  [<ffffffff81844a85>] dump_stack+0x4e/0x68
+> [    2.045781]  [<ffffffff810a1b03>] print_circular_bug+0x203/0x310
+> [    2.045781]  [<ffffffff810a389f>] validate_chain.isra.36+0xfff/0x1400
+> [    2.045781]  [<ffffffff8108fa76>] ? local_clock+0x16/0x30
+> [    2.045781]  [<ffffffff810a6e99>] __lock_acquire+0x4d9/0xd40
+> [    2.045781]  [<ffffffff810a7ff2>] lock_acquire+0xd2/0x2a0
+> [    2.045781]  [<ffffffff811e12fd>] ? seq_read+0x3d/0x3e0
+> [    2.045781]  [<ffffffff81849629>] mutex_lock_nested+0x69/0x3c0
+> [    2.045781]  [<ffffffff811e12fd>] ? seq_read+0x3d/0x3e0
+> [    2.045781]  [<ffffffff8108f9f8>] ? sched_clock_cpu+0x98/0xc0
+> [    2.045781]  [<ffffffff811e12fd>] ? seq_read+0x3d/0x3e0
+> [    2.045781]  [<ffffffff814050b9>] ? lockref_put_or_lock+0x29/0x40
+> [    2.045781]  [<ffffffff811e12fd>] seq_read+0x3d/0x3e0
+> [    2.045781]  [<ffffffff814050b9>] ? lockref_put_or_lock+0x29/0x40
+> [    2.045781]  [<ffffffff81226428>] proc_reg_read+0x48/0x70
+> [    2.045781]  [<ffffffff811b9377>] vfs_read+0x97/0x180
+> [    2.045781]  [<ffffffff811bf1a8>] kernel_read+0x48/0x60
+> [    2.045781]  [<ffffffff811bfb2c>] prepare_binprm+0xdc/0x180
+> [    2.045781]  [<ffffffff811c139a>] do_execve_common.isra.29+0x4fa/0x960
+> [    2.092142] tsc: Refined TSC clocksource calibration: 2693.484 MHz
+> [    2.045781]  [<ffffffff811c0fd3>] ? do_execve_common.isra.29+0x133/0x960
+> [    2.045781]  [<ffffffff8184f04d>] ? retint_swapgs+0xe/0x13
+> [    2.045781]  [<ffffffff811c1818>] do_execve+0x18/0x20
+> [    2.045781]  [<ffffffff811c1b05>] SyS_execve+0x25/0x30
+> [    2.045781]  [<ffffffff8184ea49>] stub_execve+0x69/0xa0
