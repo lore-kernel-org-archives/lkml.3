@@ -1,121 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751404AbaLCRIX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 12:08:23 -0500
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:41448 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750969AbaLCRIW (ORCPT
+	id S1751272AbaLCROy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 12:14:54 -0500
+Received: from smtprelay0170.hostedemail.com ([216.40.44.170]:44014 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751114AbaLCROw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 12:08:22 -0500
-Date: Wed, 3 Dec 2014 19:08:18 +0200
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
-        rpurdie@rpsys.net, s.nawrocki@samsung.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
-Subject: Re: [PATCH/RFC v9 02/19] Documentation: leds: Add description of LED
- Flash class extension
-Message-ID: <20141203170818.GN14746@valkosipuli.retiisi.org.uk>
-References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
- <1417622814-10845-3-git-send-email-j.anaszewski@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417622814-10845-3-git-send-email-j.anaszewski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 3 Dec 2014 12:14:52 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:965:966:967:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2525:2553:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3873:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:4385:4390:4395:5007:6261:8660:8985:9025:10004:10400:10848:10967:11026:11232:11658:11854:11914:12043:12517:12519:12740:13069:13148:13230:13311:13357:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: cast84_81822bcb4ae10
+X-Filterd-Recvd-Size: 2514
+Message-ID: <1417626888.2902.13.camel@perches.com>
+Subject: Re: ALSA: ctxfi: Delete an unnecessary check before kfree()
+From: Joe Perches <joe@perches.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: SF Markus Elfring <elfring@users.sourceforge.net>,
+        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Date: Wed, 03 Dec 2014 09:14:48 -0800
+In-Reply-To: <s5h61dssy5n.wl-tiwai@suse.de>
+References: <5307CAA2.8060406@users.sourceforge.net>
+	 <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
+	 <530A086E.8010901@users.sourceforge.net>
+	 <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
+	 <530A72AA.3000601@users.sourceforge.net>
+	 <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
+	 <530B5FB6.6010207@users.sourceforge.net>
+	 <alpine.DEB.2.10.1402241710370.2074@hadrien>
+	 <530C5E18.1020800@users.sourceforge.net>
+	 <alpine.DEB.2.10.1402251014170.2080@hadrien>
+	 <530CD2C4.4050903@users.sourceforge.net>
+	 <alpine.DEB.2.10.1402251840450.7035@hadrien>
+	 <530CF8FF.8080600@users.sourceforge.net>
+	 <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+	 <530DD06F.4090703@users.sourceforge.net>
+	 <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+	 <5317A59D.4@users.sourceforge.net> <547E2612.6010304@users.sourceforge.net>
+	 <s5hvblt6xav.wl-tiwai@suse.de> <547EF64B.1080403@users.sourceforge.net>
+	 <s5h61dssy5n.wl-tiwai@suse.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jacek,
-
-On Wed, Dec 03, 2014 at 05:06:37PM +0100, Jacek Anaszewski wrote:
-> The documentation being added contains overall description of the
-> LED Flash Class and the related sysfs attributes.
+On Wed, 2014-12-03 at 13:41 +0100, Takashi Iwai wrote:
+> At Wed, 03 Dec 2014 12:38:51 +0100,
+> SF Markus Elfring wrote:
+> > 
+> > >>   Deletion of an unnecessary check before the function call "kfree"
+> > >>   One function call less in get_daio_rsc() after error detection
+> > > 
+> > > In these cases, the changes aren't so straightforward, and they don't
+> > > improve the readability.
+> > 
+> > How do you prefer to improve the affected source code here?
 > 
-> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Bryan Wu <cooloney@gmail.com>
-> Cc: Richard Purdie <rpurdie@rpsys.net>
-> ---
->  Documentation/leds/leds-class-flash.txt |   50 +++++++++++++++++++++++++++++++
->  1 file changed, 50 insertions(+)
->  create mode 100644 Documentation/leds/leds-class-flash.txt
-> 
-> diff --git a/Documentation/leds/leds-class-flash.txt b/Documentation/leds/leds-class-flash.txt
-> new file mode 100644
-> index 0000000..82e58b1
-> --- /dev/null
-> +++ b/Documentation/leds/leds-class-flash.txt
-> @@ -0,0 +1,50 @@
-> +
-> +Flash LED handling under Linux
-> +==============================
-> +
-> +Some LED devices support two modes - torch and flash. The modes are
-> +supported by the LED class (see Documentation/leds/leds-class.txt)
-> +and LED Flash class respectively.
-> +
-> +In order to enable support for flash LEDs CONFIG_LEDS_CLASS_FLASH symbol
-> +must be defined in the kernel config. A flash LED driver must register
-> +in the LED subsystem with led_classdev_flash_register to gain flash
-> +capabilities.
-> +
-> +Following sysfs attributes are exposed for controlling flash led devices:
-> +
-> +	- flash_brightness - flash LED brightness in microamperes (RW)
-> +	- max_flash_brightness - maximum available flash LED brightness (RO)
-> +	- flash_timeout - flash strobe duration in microseconds (RW)
-> +	- max_flash_timeout - maximum available flash strobe duration (RO)
-> +	- flash_strobe - flash strobe state (RW)
-> +	- flash_sync_strobe - one flash device can control more than one
-> +			      sub-led; when this atrribute is set to 1
+> Don't touch then.  There are no bugs to fix there.
 
-s/atrribute/attribute/
+Takashi, what did you think of this?
+https://lkml.org/lkml/2014/12/2/771
 
-> +			      the flash led will be strobed synchronously
-> +			      with the other one controlled by the same
-> +			      device; flash timeout setting is inherited
-> +			      from the led being strobed explicitly and
-> +			      flash brightness setting of a sub-led's
-> +			      being synchronized is used (RW)
+Just unnecessary?
 
-The flash brightness shouldn't be determined by the strobed LED. If this is
-a property of the hardware, then be it, but in general no, it it shouldn't
-be an interface requirement. I think this should just say that the strobe is
-synchronised.
-
-How does the user btw. figure out which flash LEDs may be strobed
-synchronously using the LED flash interface?
-
-> +	- flash_fault - bitmask of flash faults that may have occurred
-> +			possible flags are:
-> +		* 0x01 - flash controller voltage to the flash LED has exceeded
-> +			 the limit specific to the flash controller
-> +		* 0x02 - the flash strobe was still on when the timeout set by
-> +			 the user has expired; not all flash controllers may
-> +			 set this in all such conditions
-> +		* 0x04 - the flash controller has overheated
-> +		* 0x08 - the short circuit protection of the flash controller
-> +			 has been triggered
-> +		* 0x10 - current in the LED power supply has exceeded the limit
-> +			 specific to the flash controller
-> +		* 0x40 - flash controller voltage to the flash LED has been
-> +			 below the minimum limit specific to the flash
-> +		* 0x80 - the input voltage of the flash controller is below
-> +			 the limit under which strobing the flash at full
-> +			 current will not be possible. The condition persists
-> +			 until this flag is no longer set
-> +		* 0x100 - the temperature of the LED has exceeded its allowed
-> +			  upper limit
-> +
-> +		Flash faults are cleared by reading the attribute.
-
--- 
-Kind regards,
-
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
