@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751442AbaLCReo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 12:34:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55155 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273AbaLCRen (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 12:34:43 -0500
-Date: Wed, 3 Dec 2014 09:34:41 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sean Cleator <seancleator@hotmail.co.uk>
-Cc: lidza.louina@gmail.com, markh@compro.net,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: dgnc: Fix long line coding style issues in
- dgnc_cls.h
-Message-ID: <20141203173441.GA12889@kroah.com>
-References: <BLU437-SMTP66508C574F65742CE8FCDEE97B0@phx.gbl>
+	id S1751539AbaLCRfg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 12:35:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39156 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750730AbaLCRfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 12:35:34 -0500
+Date: Wed, 3 Dec 2014 18:34:48 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Howells <dhowells@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <levinsasha928@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v2 4/7] fs/proc/task_mmu.c: shift mm_access() from
+	m_start() to proc_maps_open()
+Message-ID: <20141203173448.GA4003@redhat.com>
+References: <20140805194627.GA30693@redhat.com> <20140805194655.GA30728@redhat.com> <20141203141433.GA25683@node.dhcp.inet.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BLU437-SMTP66508C574F65742CE8FCDEE97B0@phx.gbl>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141203141433.GA25683@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 05:07:28PM +0000, Sean Cleator wrote:
-> A patch to fix the rest of the long line warnings in the dgnc_cls.h file
-> found by the checkpatch.pl tool
-> 
-> Signed-off-by: Sean Cleator <seancleator@hotmail.co.uk>
-> 
-> ---
->  drivers/staging/dgnc/dgnc_cls.h | 22 +++++++++++++++++-----
->  1 file changed, 17 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/staging/dgnc/dgnc_cls.h b/drivers/staging/dgnc/dgnc_cls.h
-> index 465d79a..32034e4 100644
-> --- a/drivers/staging/dgnc/dgnc_cls.h
-> +++ b/drivers/staging/dgnc/dgnc_cls.h
-> @@ -38,7 +38,10 @@
->  struct cls_uart_struct {
->  	u8 txrx;		/* WR  RHR/THR - Holding Reg */
->  	u8 ier;		/* WR  IER - Interrupt Enable Reg */
-> -	u8 isr_fcr;		/* WR  ISR/FCR - Interrupt Status Reg/Fifo Control Reg */
-> +	u8 isr_fcr;		/*
-> +				 * WR  ISR/FCR - Interrupt Status Reg/Fifo
-> +				 * Control Reg
-> +				 */
->  	u8 lcr;		/* WR  LCR - Line Control Reg */
->  	u8 mcr;		/* WR  MCR - Modem Control Reg */
->  	u8 lsr;		/* WR  LSR - Line Status Reg */
-> @@ -61,8 +64,11 @@ struct cls_uart_struct {
->  #define UART_16654_FCR_RXTRIGGER_56	0x80
->  #define UART_16654_FCR_RXTRIGGER_60     0xC0
->  
-> -#define UART_IIR_CTSRTS			0x20	/* Received CTS/RTS change of state */
-> -#define UART_IIR_RDI_TIMEOUT		0x0C    /* Receiver data TIMEOUT */
-> +#define UART_IIR_CTSRTS			0x20	/*
-> +						 *  Received CTS/RTS change of
-> +						 *  state
-> +						 */
+On 12/03, Kirill A. Shutemov wrote:
+>
+> On Tue, Aug 05, 2014 at 09:46:55PM +0200, Oleg Nesterov wrote:
+> > A simple test-case from Kirill Shutemov
+> >
+> > 	cat /proc/self/maps >/dev/null
+> > 	chmod +x /proc/self/net/packet
+> > 	exec /proc/self/net/packet
+> >
+> > makes lockdep unhappy, cat/exec take seq_file->lock + cred_guard_mutex in
+> > the opposite order.
+>
+> Oleg, I see it again with almost the same test-case:
+>
+> 	cat /proc/self/stack >/dev/null
+> 	chmod +x /proc/self/net/packet
+> 	exec /proc/self/net/packet
 
-That's pretty ugly, don't you think?  How about putting the comments on
-the line before the #define, instead of at the end?  That would make
-things much nicer to read.
+Yes, there are more lock_trace/mm_access (ab)users. Fortunately, they
+are much simpler than proc/pid/maps (which also asked for other cleanups
+and fixes).
 
-thanks,
+I'll try to take a look, thanks for reminding.
 
-greg k-h
+And I agree with Eric, chmod+x probably makes no sense. Still I think
+this code deserves some cleanups regardless. To the point I think that
+lock_trace() should probably die.
+
+Thanks!
+
+Oleg.
+
