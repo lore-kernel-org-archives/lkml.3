@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152AbaLCLcW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:32:22 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:39263 "EHLO
+	id S1752864AbaLCLc3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:32:29 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:39391 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753095AbaLCLcP (ORCPT
+	with ESMTP id S1752628AbaLCLcZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:32:15 -0500
+	Wed, 3 Dec 2014 06:32:25 -0500
 From: Boris Brezillon <boris.brezillon@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -20,60 +20,73 @@ Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH 00/11] usb: gadget: at91_udc: Rework for multi-platform support
-Date: Wed,  3 Dec 2014 12:31:59 +0100
-Message-Id: <1417606330-17753-1-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH 11/11] ARM: at91/dt: fix at91 udc compatible strings
+Date: Wed,  3 Dec 2014 12:32:10 +0100
+Message-Id: <1417606330-17753-12-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417606330-17753-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1417606330-17753-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The at91rm9200, at91sam9260, at91sam9261 and at91sam9263 SoCs have slightly
+different UDC IPs.
+Those differences were previously handled with cpu_is_at91xx macro which
+are about to be dropped for multi-platform support, thus we need to
+change compatible strings.
 
-This series reworks the at91_udc driver to prepare at91 for multi-platform
-support.
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+---
+ arch/arm/boot/dts/at91sam9260.dtsi | 2 +-
+ arch/arm/boot/dts/at91sam9261.dtsi | 3 ++-
+ arch/arm/boot/dts/at91sam9263.dtsi | 2 +-
+ 3 files changed, 4 insertions(+), 3 deletions(-)
 
-It also include several fixes:
- - fix clock names to be consistent with other USB drivers
- - document clocks and clock-names properties in atmel-usb DT bindings doc
-
-and some cleanup changes:
- - remove useless usb_clk
- - allocate at91_udc instance instead of using the statically defined one
- - simplify the probe and remove functions by using devm_ helpers
- - remove !DT specific code
-
-The series depends on this patch [1] (which adds matrix registers definition).
-
-Regards,
-
-Boris
-
-[1]https://lkml.org/lkml/2014/12/3/230
-
-Boris Brezillon (11):
-  usb: gadget: at91_udc: Fix clock names
-  usb: gadget: at91_udc: Drop uclk clock
-  usb: gadget: at91_udc: Document DT clocks and clock-names property
-  ARM: at91/dt: at91sam9261: fix clocks and clock-names in udc
-    definition
-  usb: gadget: at91_udc: Remove non-DT handling code
-  usb: gadget: at91_udc: Simplify probe and remove functions
-  usb: gadget: at91_udc: Rework for multi-platform kernel support
-  usb: gadget: at91_udc: Update DT binding documentation
-  usb: gadget: at91_udc: Allocate udc instance
-  ARM: at91/dt: declare matrix node as a syscon device
-  ARM: at91/dt: fix at91 udc compatible strings
-
- .../devicetree/bindings/usb/atmel-usb.txt          |  10 +-
- arch/arm/boot/dts/at91sam9260.dtsi                 |   2 +-
- arch/arm/boot/dts/at91sam9261.dtsi                 |   9 +-
- arch/arm/boot/dts/at91sam9263.dtsi                 |   2 +-
- drivers/usb/gadget/udc/Kconfig                     |   1 +
- drivers/usb/gadget/udc/at91_udc.c                  | 530 +++++++++++----------
- drivers/usb/gadget/udc/at91_udc.h                  |   9 +-
- 7 files changed, 298 insertions(+), 265 deletions(-)
-
+diff --git a/arch/arm/boot/dts/at91sam9260.dtsi b/arch/arm/boot/dts/at91sam9260.dtsi
+index cb100b0..b43de88 100644
+--- a/arch/arm/boot/dts/at91sam9260.dtsi
++++ b/arch/arm/boot/dts/at91sam9260.dtsi
+@@ -848,7 +848,7 @@
+ 			};
+ 
+ 			usb1: gadget@fffa4000 {
+-				compatible = "atmel,at91rm9200-udc";
++				compatible = "atmel,at91sam9260-udc";
+ 				reg = <0xfffa4000 0x4000>;
+ 				interrupts = <10 IRQ_TYPE_LEVEL_HIGH 2>;
+ 				clocks = <&udc_clk>, <&udpck>;
+diff --git a/arch/arm/boot/dts/at91sam9261.dtsi b/arch/arm/boot/dts/at91sam9261.dtsi
+index e52ae97..90f0b59 100644
+--- a/arch/arm/boot/dts/at91sam9261.dtsi
++++ b/arch/arm/boot/dts/at91sam9261.dtsi
+@@ -119,11 +119,12 @@
+ 			};
+ 
+ 			usb1: gadget@fffa4000 {
+-				compatible = "atmel,at91rm9200-udc";
++				compatible = "atmel,at91sam9261-udc";
+ 				reg = <0xfffa4000 0x4000>;
+ 				interrupts = <10 IRQ_TYPE_LEVEL_HIGH 2>;
+ 				clocks = <&udc_clk>, <&udpck>;
+ 				clock-names = "pclk", "hclk";
++				atmel,matrix = <&matrix>;
+ 				status = "disabled";
+ 			};
+ 
+diff --git a/arch/arm/boot/dts/at91sam9263.dtsi b/arch/arm/boot/dts/at91sam9263.dtsi
+index 51416c7d..2c7ed05 100644
+--- a/arch/arm/boot/dts/at91sam9263.dtsi
++++ b/arch/arm/boot/dts/at91sam9263.dtsi
+@@ -817,7 +817,7 @@
+ 			};
+ 
+ 			usb1: gadget@fff78000 {
+-				compatible = "atmel,at91rm9200-udc";
++				compatible = "atmel,at91sam9263-udc";
+ 				reg = <0xfff78000 0x4000>;
+ 				interrupts = <24 IRQ_TYPE_LEVEL_HIGH 2>;
+ 				clocks = <&udc_clk>, <&udpck>;
 -- 
 1.9.1
 
