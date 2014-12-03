@@ -1,240 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751197AbaLCBwe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 20:52:34 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:62570 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750730AbaLCBwc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 20:52:32 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: linux-media@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        Kamil Debski <k.debski@samsung.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] media / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
-Date: Wed, 03 Dec 2014 03:13:55 +0100
-Message-ID: <4139875.fkJ48z9AaU@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+	id S1751334AbaLCBwx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 20:52:53 -0500
+Received: from ozlabs.org ([103.22.144.67]:55675 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751232AbaLCBwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 20:52:51 -0500
+Date: Wed, 3 Dec 2014 12:52:38 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        Shuah Khan <shuahkh@osg.samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        stephen hemminger <stephen@networkplumber.org>
+Subject: linux-next: manual merge of the net-next tree with the
+ kselftest-fixes tree
+Message-ID: <20141203125238.48fa7380@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/+PSmxa3y_RuCJsG7Uphl6rI"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+--Sig_/+PSmxa3y_RuCJsG7Uphl6rI
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-depending on CONFIG_PM_RUNTIME may now be changed to depend on
-CONFIG_PM.
+Hi all,
 
-The alternative of CONFIG_PM_SLEEP and CONFIG_PM_RUNTIME may be
-replaced with CONFIG_PM too.
+Today's linux-next merge of the net-next tree got a conflict in
+include/uapi/linux/Kbuild between commit 3f4994cfc15f ("kcmp: Move
+kcmp.h into uapi") from the kselftest-fixes tree and commit
+df32dd2054b6 ("uapi: resort Kbuild entries") from the net-next tree.
 
-Make these changes everywhere under drivers/media/.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
-PM_SLEEP is selected) which is only in linux-next at the moment (via the
-linux-pm tree).
+diff --cc include/uapi/linux/Kbuild
+index d78fecf216bf,a1e8175cc488..000000000000
+--- a/include/uapi/linux/Kbuild
++++ b/include/uapi/linux/Kbuild
+@@@ -211,12 -211,11 +211,12 @@@ header-y +=3D ivtv.
+  header-y +=3D ixjuser.h
+  header-y +=3D jffs2.h
+  header-y +=3D joystick.h
+ +header-y +=3D kcmp.h
+- header-y +=3D kd.h
+  header-y +=3D kdev_t.h
+- header-y +=3D kernel-page-flags.h
+- header-y +=3D kernel.h
++ header-y +=3D kd.h
+  header-y +=3D kernelcapi.h
++ header-y +=3D kernel.h
++ header-y +=3D kernel-page-flags.h
+  header-y +=3D kexec.h
+  header-y +=3D keyboard.h
+  header-y +=3D keyctl.h
 
-Please let me know if it is OK to take this one into linux-pm.
+--Sig_/+PSmxa3y_RuCJsG7Uphl6rI
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
----
- drivers/media/platform/coda/coda-common.c       |    4 ++--
- drivers/media/platform/exynos4-is/fimc-core.c   |    6 +++---
- drivers/media/platform/exynos4-is/fimc-is-i2c.c |    2 +-
- drivers/media/platform/exynos4-is/fimc-lite.c   |    2 +-
- drivers/media/platform/exynos4-is/mipi-csis.c   |    2 +-
- drivers/media/platform/s5p-jpeg/jpeg-core.c     |    4 ++--
- drivers/media/platform/s5p-mfc/s5p_mfc.c        |    2 +-
- drivers/media/platform/s5p-mfc/s5p_mfc_pm.c     |   10 ++++------
- 8 files changed, 15 insertions(+), 17 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Index: linux-pm/drivers/media/platform/s5p-jpeg/jpeg-core.c
-===================================================================
---- linux-pm.orig/drivers/media/platform/s5p-jpeg/jpeg-core.c
-+++ linux-pm/drivers/media/platform/s5p-jpeg/jpeg-core.c
-@@ -2632,7 +2632,7 @@ static int s5p_jpeg_remove(struct platfo
- 	return 0;
- }
- 
--#if defined(CONFIG_PM_RUNTIME) || defined(CONFIG_PM_SLEEP)
-+#ifdef CONFIG_PM
- static int s5p_jpeg_runtime_suspend(struct device *dev)
- {
- 	struct s5p_jpeg *jpeg = dev_get_drvdata(dev);
-@@ -2682,7 +2682,7 @@ static int s5p_jpeg_runtime_resume(struc
- 
- 	return 0;
- }
--#endif /* CONFIG_PM_RUNTIME || CONFIG_PM_SLEEP */
-+#endif /* CONFIG_PM */
- 
- #ifdef CONFIG_PM_SLEEP
- static int s5p_jpeg_suspend(struct device *dev)
-Index: linux-pm/drivers/media/platform/s5p-mfc/s5p_mfc.c
-===================================================================
---- linux-pm.orig/drivers/media/platform/s5p-mfc/s5p_mfc.c
-+++ linux-pm/drivers/media/platform/s5p-mfc/s5p_mfc.c
-@@ -1302,7 +1302,7 @@ static int s5p_mfc_resume(struct device
- }
- #endif
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int s5p_mfc_runtime_suspend(struct device *dev)
- {
- 	struct platform_device *pdev = to_platform_device(dev);
-Index: linux-pm/drivers/media/platform/s5p-mfc/s5p_mfc_pm.c
-===================================================================
---- linux-pm.orig/drivers/media/platform/s5p-mfc/s5p_mfc_pm.c
-+++ linux-pm/drivers/media/platform/s5p-mfc/s5p_mfc_pm.c
-@@ -13,9 +13,7 @@
- #include <linux/clk.h>
- #include <linux/err.h>
- #include <linux/platform_device.h>
--#ifdef CONFIG_PM_RUNTIME
- #include <linux/pm_runtime.h>
--#endif
- #include "s5p_mfc_common.h"
- #include "s5p_mfc_debug.h"
- #include "s5p_mfc_pm.h"
-@@ -67,7 +65,7 @@ int s5p_mfc_init_pm(struct s5p_mfc_dev *
- 	}
- 
- 	atomic_set(&pm->power, 0);
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- 	pm->device = &dev->plat_dev->dev;
- 	pm_runtime_enable(pm->device);
- #endif
-@@ -93,7 +91,7 @@ void s5p_mfc_final_pm(struct s5p_mfc_dev
- 	}
- 	clk_unprepare(pm->clock_gate);
- 	clk_put(pm->clock_gate);
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- 	pm_runtime_disable(pm->device);
- #endif
- }
-@@ -120,7 +118,7 @@ void s5p_mfc_clock_off(void)
- 
- int s5p_mfc_power_on(void)
- {
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- 	return pm_runtime_get_sync(pm->device);
- #else
- 	atomic_set(&pm->power, 1);
-@@ -130,7 +128,7 @@ int s5p_mfc_power_on(void)
- 
- int s5p_mfc_power_off(void)
- {
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- 	return pm_runtime_put_sync(pm->device);
- #else
- 	atomic_set(&pm->power, 0);
-Index: linux-pm/drivers/media/platform/exynos4-is/fimc-is-i2c.c
-===================================================================
---- linux-pm.orig/drivers/media/platform/exynos4-is/fimc-is-i2c.c
-+++ linux-pm/drivers/media/platform/exynos4-is/fimc-is-i2c.c
-@@ -81,7 +81,7 @@ static int fimc_is_i2c_remove(struct pla
- 	return 0;
- }
- 
--#if defined(CONFIG_PM_RUNTIME) || defined(CONFIG_PM_SLEEP)
-+#ifdef CONFIG_PM
- static int fimc_is_i2c_runtime_suspend(struct device *dev)
- {
- 	struct fimc_is_i2c *isp_i2c = dev_get_drvdata(dev);
-Index: linux-pm/drivers/media/platform/exynos4-is/fimc-lite.c
-===================================================================
---- linux-pm.orig/drivers/media/platform/exynos4-is/fimc-lite.c
-+++ linux-pm/drivers/media/platform/exynos4-is/fimc-lite.c
-@@ -1588,7 +1588,7 @@ err_clk_put:
- 	return ret;
- }
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int fimc_lite_runtime_resume(struct device *dev)
- {
- 	struct fimc_lite *fimc = dev_get_drvdata(dev);
-Index: linux-pm/drivers/media/platform/exynos4-is/mipi-csis.c
-===================================================================
---- linux-pm.orig/drivers/media/platform/exynos4-is/mipi-csis.c
-+++ linux-pm/drivers/media/platform/exynos4-is/mipi-csis.c
-@@ -978,7 +978,7 @@ static int s5pcsis_resume(struct device
- }
- #endif
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int s5pcsis_runtime_suspend(struct device *dev)
- {
- 	return s5pcsis_pm_suspend(dev, true);
-Index: linux-pm/drivers/media/platform/exynos4-is/fimc-core.c
-===================================================================
---- linux-pm.orig/drivers/media/platform/exynos4-is/fimc-core.c
-+++ linux-pm/drivers/media/platform/exynos4-is/fimc-core.c
-@@ -832,7 +832,7 @@ err:
- 	return -ENXIO;
- }
- 
--#if defined(CONFIG_PM_RUNTIME) || defined(CONFIG_PM_SLEEP)
-+#ifdef CONFIG_PM
- static int fimc_m2m_suspend(struct fimc_dev *fimc)
- {
- 	unsigned long flags;
-@@ -871,7 +871,7 @@ static int fimc_m2m_resume(struct fimc_d
- 
- 	return 0;
- }
--#endif /* CONFIG_PM_RUNTIME || CONFIG_PM_SLEEP */
-+#endif /* CONFIG_PM */
- 
- static const struct of_device_id fimc_of_match[];
- 
-@@ -1039,7 +1039,7 @@ err_sclk:
- 	return ret;
- }
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int fimc_runtime_resume(struct device *dev)
- {
- 	struct fimc_dev *fimc =	dev_get_drvdata(dev);
-Index: linux-pm/drivers/media/platform/coda/coda-common.c
-===================================================================
---- linux-pm.orig/drivers/media/platform/coda/coda-common.c
-+++ linux-pm/drivers/media/platform/coda/coda-common.c
-@@ -1980,7 +1980,7 @@ static int coda_probe(struct platform_de
- 
- 	/*
- 	 * Start activated so we can directly call coda_hw_init in
--	 * coda_fw_callback regardless of whether CONFIG_PM_RUNTIME is
-+	 * coda_fw_callback regardless of whether CONFIG_PM is
- 	 * enabled or whether the device is associated with a PM domain.
- 	 */
- 	pm_runtime_get_noresume(&pdev->dev);
-@@ -2013,7 +2013,7 @@ static int coda_remove(struct platform_d
- 	return 0;
- }
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- static int coda_runtime_resume(struct device *dev)
- {
- 	struct coda_dev *cdev = dev_get_drvdata(dev);
+iQIcBAEBCAAGBQJUfmzwAAoJEMDTa8Ir7ZwVzdEP/R2dC4soe0tC9SXyYdOUzCZe
+/6Ajh6yFu21DHZM5mkaR6DhHSUYWjX1nnUt20VxhueFUhVIe9ImE37dgs7AkNRoU
+fWtBz2tfbklWnleIrbuoarAeVtWdn603O2IV/bari51pbHNGbcHv3FyckHUEEnEo
+8GHtHt7rEAqQ/LStF4tBXtbqoH+NKateRdRf9vV7rgVX+6gRrfIdBglvEGTcME83
+HxUCE8NJA3bkCdaal+PkPP7HDqrNFfnTkT2EsFKaRfFs4YSEy0/6Xx5PLzp6No7a
+FAjmWf8Wxxxn33eJCjUEI9YFpfWYKmITOugtlVMGx8UtfQ6qwVfq0gw6MxR5Ru4D
+vMPzmFs286rQpvyulO44Ns04EFTQYasFHrOj2RWbLhOfO38EqjUK2I1Zo4p6Li+E
+CGe2Njxy5gkiU6DBIMKnakFwBWXrIWnEB7HxvUvcWrcq8QIjqx39udc93nEKqQWz
+rwraArb3JEdCaa6mVchHPfuhsferLIN3xHPPuh30GIqO4k7sOabAi/WR7QiVRhoq
+1ZW6pwHQYtKU3i+7Ik8q70/gGDnK8sidtdBmqumfQvYzh7z+eL72tRtVNTzE6/fw
+QSDK0oPBlwWScyRwKRvsv9s1sFllYoA4F7kf8MXEJZweAtgrKpBAJVWGqb7C+KGU
+TlMKk1LlBj3RS1mab5uL
+=y44f
+-----END PGP SIGNATURE-----
 
+--Sig_/+PSmxa3y_RuCJsG7Uphl6rI--
