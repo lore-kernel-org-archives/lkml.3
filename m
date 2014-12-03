@@ -1,86 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933562AbaLCAJd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 19:09:33 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:52295 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933271AbaLCAJc (ORCPT
+	id S933631AbaLCAM3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 19:12:29 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:33420 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933408AbaLCAMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 19:09:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <547E4C14.6040509@oracle.com>
-References: <20141127225637.GA24019@redhat.com>
-	<m5dart$co$1@ger.gmane.org>
-	<CA+55aFwm4hpyDjJ=GzrahOe2QtuO7im71sPky7U6Rh+18A0X0w@mail.gmail.com>
-	<547b8a45.6e608c0a.20f9.1002@mx.google.com>
-	<CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
-	<547bbe36.48548c0a.105c.779c@mx.google.com>
-	<20141201191431.GA17385@linux.vnet.ibm.com>
-	<547ccf74.a5198c0a.25de.26d9@mx.google.com>
-	<CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
-	<20141201230339.GA20487@ret.masoncoding.com>
-	<20141202193252.GB17595@redhat.com>
-	<547E4C14.6040509@oracle.com>
-Date: Tue, 2 Dec 2014 16:09:31 -0800
-X-Google-Sender-Auth: TovhLLjxgb6LjBLj3wmEveBuGDA
-Message-ID: <CA+55aFxms_9g9bVuVmbMa6Bx78yQGb34RSoE5DEtNt8Le-bRPA@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 2 Dec 2014 19:12:24 -0500
+From: Stefan Agner <stefan@agner.ch>
+To: shawn.guo@linaro.org, kernel@pengutronix.de, linux@arm.linux.org.uk,
+        u.kleine-koenig@pengutronix.de, jason@lakedaemon.net, olof@lixom.net,
+        arnd@arndb.de, daniel.lezcano@linaro.org, tglx@linutronix.de,
+        mark.rutland@arm.com, pawel.moll@arm.com, robh+dt@kernel.org,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Stefan Agner <stefan.agner@toradex.com>,
+        Stefan Agner <stefan@agner.ch>
+Subject: [PATCH 01/12] ARM: dts: vf610: add routable-irqs property for gic node
+Date: Wed,  3 Dec 2014 01:12:00 +0100
+Message-Id: <1417565531-4507-2-git-send-email-stefan@agner.ch>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1417565531-4507-1-git-send-email-stefan@agner.ch>
+References: <1417565531-4507-1-git-send-email-stefan@agner.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 2, 2014 at 3:32 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->
-> I've disabled lock debugging to see if anything new will show up, and hit
-> something that may be related:
+From: Stefan Agner <stefan.agner@toradex.com>
 
-Very interesting. But your source code doesn't match mine - can you
-say what that
+To enable proper routable interrupt controller support for
+the GIC driver, the routable-irqs need to be specified.
+Hence add the routable-irqs property with the amount of
+IRQs supported by the GIC controller on the Vybrid SoC.
 
-    kernel/sched/fair.c:4541:17
-
-line is?
-
-There are at least five multiplications there (all inlined):
-
- - "imbalance*min_load" from find_idlest_group()
-
- - "factor * p->wakee_flips" in wake_wide()
-
- - at least three in wake_affine:
-
-    "prev_eff_load *= capacity_of(this_cpu)"
-    "this_eff_load *= this_load + effective_load(tg, this_cpu, weight, weight)"
-    "prev_eff_load *= load + effective_load(tg, prev_cpu, 0, weight)"
-
-(There are other multiplications too, but they are by constants afaik
-and don't match yours).
-
-None of those seem to have anything to do with the 3.16..3.17 changes,
-but I might be missing something, and obviously this also might have
-nothing to do with the problems anyway.
-
-Adding Ingo/PeterZ to the participants again.
-
-                 Linus
-
-
+Signed-off-by: Stefan Agner <stefan@agner.ch>
 ---
-> [  787.894288] ================================================================================
-> [  787.897074] UBSan: Undefined behaviour in kernel/sched/fair.c:4541:17
-> [  787.898981] signed integer overflow:
-> [  787.900066] 361516561629678 * 101500 cannot be represented in type 'long long int'
-> [  787.900066] ubsan_epilogue (lib/ubsan.c:159)
-> [  787.900066] handle_overflow (lib/ubsan.c:191)
-> [  787.900066] ? __do_page_fault (arch/x86/mm/fault.c:1220)
-> [  787.900066] ? local_clock (kernel/sched/clock.c:392)
-> [  787.900066] __ubsan_handle_mul_overflow (lib/ubsan.c:218)
-> [  787.900066] select_task_rq_fair (kernel/sched/fair.c:4541 kernel/sched/fair.c:4755)
+ arch/arm/boot/dts/vf500.dtsi | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/vf500.dtsi b/arch/arm/boot/dts/vf500.dtsi
+index de67005..2b0d84d 100644
+--- a/arch/arm/boot/dts/vf500.dtsi
++++ b/arch/arm/boot/dts/vf500.dtsi
+@@ -30,6 +30,7 @@
+ 
+ 			intc: interrupt-controller@40002000 {
+ 				compatible = "arm,cortex-a9-gic";
++				arm,routable-irqs = <144>;
+ 				#interrupt-cells = <3>;
+ 				interrupt-controller;
+ 				reg = <0x40003000 0x1000>,
+-- 
+2.1.3
+
