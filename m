@@ -1,42 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752479AbaLCOBR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 09:01:17 -0500
-Received: from tex.lwn.net ([70.33.254.29]:35884 "EHLO vena.lwn.net"
+	id S1752694AbaLCOCh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 09:02:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32966 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750707AbaLCOBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 09:01:16 -0500
-Date: Wed, 3 Dec 2014 09:01:13 -0500
-From: Jonathan Corbet <corbet@lwn.net>
-To: SeongJae Park <sj38.park@gmail.com>
-Cc: tj@kernel.org, lizefan@huawei.com, trivial@kernel.org,
-        cgroups@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] cgroups: Documentation: fix trivial typos and wrong
- paragraph numberings
-Message-ID: <20141203090113.359198f6@lwn.net>
-In-Reply-To: <1417607625-2775-2-git-send-email-sj38.park@gmail.com>
-References: <1417607625-2775-1-git-send-email-sj38.park@gmail.com>
-	<1417607625-2775-2-git-send-email-sj38.park@gmail.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1751194AbaLCOCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 09:02:35 -0500
+Date: Wed, 3 Dec 2014 16:02:28 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH RFC 1/2] virtio_balloon: convert to virtio 1.0 endian-ness
+Message-ID: <20141203140228.GA12370@redhat.com>
+References: <1417520617-2135-1-git-send-email-mst@redhat.com>
+ <20141202193930.2b8750f7.cornelia.huck@de.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141202193930.2b8750f7.cornelia.huck@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  3 Dec 2014 20:53:45 +0900
-SeongJae Park <sj38.park@gmail.com> wrote:
+On Tue, Dec 02, 2014 at 07:39:30PM +0100, Cornelia Huck wrote:
+> On Tue, 2 Dec 2014 13:44:06 +0200
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> 
+> > balloon device is not part of virtio 1.0 spec.  Still, it's easy enough
+> > to make it handle endian-ness exactly as other virtio 1.0 devices: what
+> > we gain from this, is that there's no need to special-case it in virtio
+> > core.
+> 
+> Well, the balloon is weird in a number of ways, including its always
+> little-endian config space.
 
->  Documentation/cgroups/cpusets.txt | 6 +++---
->  Documentation/cgroups/memory.txt  | 8 ++++----
->  2 files changed, 7 insertions(+), 7 deletions(-)
+Hmm yes, I forgot about that.
 
-I applied patch 1 to my docs tree, but this one doesn't apply.  Which
-kernel did you base it on?
+> But I'm not quite sure the spec covers this?
 
-Thanks,
+The spec does not cover balloon.  It merely includes a reference section
+about legacy balloon device.  What to do when that device sets VERSION_1
+is really up to us.
 
-jon
+Patchset v8 simply makes balloon tell core it's legacy_only.
+This is I guess fine as far as it goes.
+I was still looking for the best way that involves minimal noise
+in core. This looked like the best way: change 4 lines,
+and drop all special casing in core, but given the config space
+endian-ness mess, I'm not sure anymore.
+I guess we'll just stick to what v8 does for now.
+
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  include/uapi/linux/virtio_balloon.h | 5 +++--
+> >  drivers/virtio/virtio_balloon.c     | 4 ++--
+> >  2 files changed, 5 insertions(+), 4 deletions(-)
+> > 
+> 
+> >  struct virtio_balloon_stat {
+> > -	__u16 tag;
+> > -	__u64 val;
+> > +	__virtio16 tag;
+> > +	__virtio64 val;
+> >  } __attribute__((packed));
+> 
+> Would the respective fields in the spec need updating? While it is
+> actually talking about legacy requirements, the fields are not
+> specified as __virtio{16,64}.
+> 
+> Also, is changing the stat fields enough? I've not looked into balloon
+> operation, but does the payload need some endianess conversion as well?
