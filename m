@@ -1,67 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866AbaLCRak (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 12:30:40 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:35208 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751614AbaLCRaN (ORCPT
+	id S1751101AbaLCRcb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 12:32:31 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:50061 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750833AbaLCRc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 12:30:13 -0500
+	Wed, 3 Dec 2014 12:32:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-Date: Wed, 03 Dec 2014 18:32:22 +0100
-From: Stefan Agner <stefan@agner.ch>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: shawn.guo@linaro.org, kernel@pengutronix.de, linux@arm.linux.org.uk,
-        u.kleine-koenig@pengutronix.de, jason@lakedaemon.net, olof@lixom.net,
-        daniel.lezcano@linaro.org, tglx@linutronix.de, mark.rutland@arm.com,
-        pawel.moll@arm.com, robh+dt@kernel.org, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/12] irqchip: nvic: support routable irq domain ops
-In-Reply-To: <4576226.8jDcZiCptE@wuerfel>
-References: <1417565531-4507-1-git-send-email-stefan@agner.ch>
- <1417565531-4507-5-git-send-email-stefan@agner.ch>
- <4576226.8jDcZiCptE@wuerfel>
-Message-ID: <2586ebb42daf66877335adaad4b4d3e6@agner.ch>
-User-Agent: Roundcube Webmail/1.0.3
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Dec  3 18:29:37 2014
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 547f488112811767866895
+In-Reply-To: <07ece1998971cf11077934917508c709.squirrel@codeaurora.org>
+References: <1417470961-16524-1-git-send-email-jilaiw@codeaurora.org>
+	<CAJAp7OjrC_huXY268XFrE+v63bWW7r8JW6XpcKPYLfvqzOjcMg@mail.gmail.com>
+	<CAF6AEGts4791fkM4NzYWyGhx4HvoBUDtqsRNgjB5k=6bUOA2LA@mail.gmail.com>
+	<07ece1998971cf11077934917508c709.squirrel@codeaurora.org>
+Date: Wed, 3 Dec 2014 09:32:27 -0800
+Message-ID: <CAJAp7Oj7=v=ewdDa7USif+Ojdkym5wQyX0HtBky5JracN6phtA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] drm/msm/hdmi: add hdmi hdcp support
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Jilai Wang <jilaiw@codeaurora.org>
+Cc: Rob Clark <robdclark@gmail.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-12-03 11:49, Arnd Bergmann wrote:
-> On Wednesday 03 December 2014 01:12:03 Stefan Agner wrote:
->> +#ifdef CONFIG_ARM_NVIC
->> +extern const struct irq_domain_ops *nvic_routable_irq_domain_ops;
->> +static inline void __init register_routable_domain_ops
->> +                                       (const struct irq_domain_ops *ops)
->> +{
->> +               nvic_routable_irq_domain_ops = ops;
->> +}
->> +#endif /* CONFIG_ARM_NVIC */
+On Wed, Dec 3, 2014 at 9:16 AM,  <jilaiw@codeaurora.org> wrote:
+[..]
+>>>> +       enum hdmi_hdcp_state hdcp_state;
+>>>> +       struct mutex state_mutex;
+>>>> +       struct delayed_work hdcp_reauth_work;
+>>>> +       struct delayed_work hdcp_auth_part1_1_work;
+>>>> +       struct delayed_work hdcp_auth_part1_2_work;
+>>>> +       struct work_struct hdcp_auth_part1_3_work;
+>>>> +       struct delayed_work hdcp_auth_part2_1_work;
+>>>> +       struct delayed_work hdcp_auth_part2_2_work;
+>>>> +       struct delayed_work hdcp_auth_part2_3_work;
+>>>> +       struct delayed_work hdcp_auth_part2_4_work;
+>>>> +       struct work_struct hdcp_auth_prepare_work;
+>>>
+>>> You shouldn't use "work" as a way to express states in your state
+>>> machine.
+>>> Better have 1 auth work function that does all these steps, probably
+>>> having
+>>> them split in functions just like you do now.
+>>>
+>>> That way you can have 1 function running the pass of authentication,
+>>> starting
+>>> by checking if you're reauthing or not then processing each step one by
+>>> one,
+>>> sleeping inbetween them. You can have the functions return -EAGAIN to
+>>> indicate
+>>> that you need to retry the current operation and so on.
+>>>
+>>> This would split the state machine from the state executioners and
+>>> simplify
+>>> your code.
 >>
-> 
-> As you mentioned, this conflicts with the gic specific declaration.
-> Why not remove the #ifdef here and rename the function to
-> nvic_register_routable_domain_ops() ?
-> 
-> If that doesn't work, I guess we need something more generic
-> and move the routable_irq_domain_ops to some common location.
-> 
+>> As a side note (disclaimer, I'm not an hdcp expert), but I wonder if
+>> eventually some of that should be extracted out into some helpers in
+>> drm core.  I guess that is something we'll figure out when a 2nd
+>> driver gains upstream HDCP support.  One big work w/ msleep()'s does
+>> sound like it would be easier to understand (and therefore easier to
+>> refactor out into helpers).
+>>
+>> [snip]
+>>
+>
+> The reason that I break the partI/PartII work into these small works
+> because I want to avoid to use msleep in work.
+> Otherwise cancel a HDCP work may cause long delay up to several seconds.
+>
 
-This would move the ifdef to the MSCM driver code. I thought of having a
-generic function to call, no matter what base IRQ chip is used.
+I definitely think the steps are nice size and make things easy to understand.
 
-Anyway, as tglx suggested in patch 3/12, I will try to use the IRQ
-domain hierarchy stuff...
+If you make the steps that require a retry return out to the main
+state handling function with a -EAGAIN, then you can have check if you
+should retry or abort based on cancellation. Giving you the worst case
+cancellation time of the longest sleep...
 
---
-Stefan
+As Rob suggest you could use wait_event_timeout() or something to
+improve this, but on the other hand the worst case here seems to be
+the HZ/2 after prepare_auth; others are HZ/8, HZ/20 and HZ/50; not
+"seconds".
 
+So I would start with a simple msleep() for implementation simplicity
+and then enhance that in a follow up commit (if needed)...
 
+Regards,
+Bjorn
