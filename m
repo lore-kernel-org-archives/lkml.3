@@ -1,114 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475AbaLCCoF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 21:44:05 -0500
-Received: from ozlabs.org ([103.22.144.67]:39584 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750831AbaLCCoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 21:44:03 -0500
-Date: Wed, 3 Dec 2014 13:43:55 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
-        <dri-devel@lists.freedesktop.org>, Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stefan =?UTF-8?B?QnLDvG5z?= <stefan.bruens@rwth-aachen.de>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Subject: linux-next: manual merge of the drm-misc tree with the drm tree
-Message-ID: <20141203134355.6fd6e3b7@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/F=8_IrDOUM3Z1zR1I3d/u0Y"; protocol="application/pgp-signature"
+	id S1751212AbaLCC4Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 21:56:24 -0500
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:54711 "HELO
+	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750860AbaLCC4V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 21:56:21 -0500
+From: Joe Stringer <joestringer@nicira.com>
+To: netdev@vger.kernel.org
+Cc: pshelar@nicira.com, linux-kernel@vger.kernel.org, dev@openvswitch.org
+Subject: [PATCHv11 net-next 1/2] openvswitch: Refactor ovs_nla_fill_match().
+Date: Tue,  2 Dec 2014 18:56:02 -0800
+Message-Id: <1417575363-13770-1-git-send-email-joestringer@nicira.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/F=8_IrDOUM3Z1zR1I3d/u0Y
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Refactor the ovs_nla_fill_match() function into separate netlink
+serialization functions ovs_nla_put_{unmasked_key,masked_key,mask}().
+Modify ovs_nla_put_flow() to handle attribute nesting and expose the
+'is_mask' parameter - all callers need to nest the flow, and callers
+have better knowledge about whether it is serializing a mask or not.
+The next patch will be the first user of ovs_nla_put_masked_key().
 
-Hi all,
+Signed-off-by: Joe Stringer <joestringer@nicira.com>
+---
+v11: Shift netlink serialization of key/mask to flow_netlink.c
+     Add put_{unmasked_key,key,mask} helpers.
+     Perform nesting in ovs_nla_put_flow().
+v10: First post.
+---
+ net/openvswitch/datapath.c     |   41 ++++++------------------------------
+ net/openvswitch/flow_netlink.c |   45 +++++++++++++++++++++++++++++++++++++---
+ net/openvswitch/flow_netlink.h |    8 +++++--
+ 3 files changed, 54 insertions(+), 40 deletions(-)
 
-Today's linux-next merge of the drm-misc tree got a conflict in
-drivers/gpu/drm/drm_edid.c between commit 18df89fef2d5 ("drm: Decouple
-EDID parsing from I2C adapter") from the drm tree and commit
-d6885d659037 ("drm/edid: move drm_edid_is_zero to top, make edid
-argument const") from the drm-misc tree.
+diff --git a/net/openvswitch/datapath.c b/net/openvswitch/datapath.c
+index 332b5a0..b2a3796 100644
+--- a/net/openvswitch/datapath.c
++++ b/net/openvswitch/datapath.c
+@@ -462,10 +462,8 @@ static int queue_userspace_packet(struct datapath *dp, struct sk_buff *skb,
+ 			     0, upcall_info->cmd);
+ 	upcall->dp_ifindex = dp_ifindex;
+ 
+-	nla = nla_nest_start(user_skb, OVS_PACKET_ATTR_KEY);
+-	err = ovs_nla_put_flow(key, key, user_skb);
++	err = ovs_nla_put_flow(key, key, OVS_PACKET_ATTR_KEY, false, user_skb);
+ 	BUG_ON(err);
+-	nla_nest_end(user_skb, nla);
+ 
+ 	if (upcall_info->userdata)
+ 		__nla_put(user_skb, OVS_PACKET_ATTR_USERDATA,
+@@ -676,37 +674,6 @@ static size_t ovs_flow_cmd_msg_size(const struct sw_flow_actions *acts)
+ }
+ 
+ /* Called with ovs_mutex or RCU read lock. */
+-static int ovs_flow_cmd_fill_match(const struct sw_flow *flow,
+-				   struct sk_buff *skb)
+-{
+-	struct nlattr *nla;
+-	int err;
+-
+-	/* Fill flow key. */
+-	nla = nla_nest_start(skb, OVS_FLOW_ATTR_KEY);
+-	if (!nla)
+-		return -EMSGSIZE;
+-
+-	err = ovs_nla_put_flow(&flow->unmasked_key, &flow->unmasked_key, skb);
+-	if (err)
+-		return err;
+-
+-	nla_nest_end(skb, nla);
+-
+-	/* Fill flow mask. */
+-	nla = nla_nest_start(skb, OVS_FLOW_ATTR_MASK);
+-	if (!nla)
+-		return -EMSGSIZE;
+-
+-	err = ovs_nla_put_flow(&flow->key, &flow->mask->key, skb);
+-	if (err)
+-		return err;
+-
+-	nla_nest_end(skb, nla);
+-	return 0;
+-}
+-
+-/* Called with ovs_mutex or RCU read lock. */
+ static int ovs_flow_cmd_fill_stats(const struct sw_flow *flow,
+ 				   struct sk_buff *skb)
+ {
+@@ -787,7 +754,11 @@ static int ovs_flow_cmd_fill_info(const struct sw_flow *flow, int dp_ifindex,
+ 
+ 	ovs_header->dp_ifindex = dp_ifindex;
+ 
+-	err = ovs_flow_cmd_fill_match(flow, skb);
++	err = ovs_nla_put_unmasked_key(flow, skb);
++	if (err)
++		goto error;
++
++	err = ovs_nla_put_mask(flow, skb);
+ 	if (err)
+ 		goto error;
+ 
+diff --git a/net/openvswitch/flow_netlink.c b/net/openvswitch/flow_netlink.c
+index df3c7f2..7bb571f 100644
+--- a/net/openvswitch/flow_netlink.c
++++ b/net/openvswitch/flow_netlink.c
+@@ -1131,12 +1131,12 @@ int ovs_nla_get_flow_metadata(const struct nlattr *attr,
+ 	return metadata_from_nlattrs(&match, &attrs, a, false, log);
+ }
+ 
+-int ovs_nla_put_flow(const struct sw_flow_key *swkey,
+-		     const struct sw_flow_key *output, struct sk_buff *skb)
++int __ovs_nla_put_flow(const struct sw_flow_key *swkey,
++		       const struct sw_flow_key *output, bool is_mask,
++		       struct sk_buff *skb)
+ {
+ 	struct ovs_key_ethernet *eth_key;
+ 	struct nlattr *nla, *encap;
+-	bool is_mask = (swkey != output);
+ 
+ 	if (nla_put_u32(skb, OVS_KEY_ATTR_RECIRC_ID, output->recirc_id))
+ 		goto nla_put_failure;
+@@ -1346,6 +1346,45 @@ nla_put_failure:
+ 	return -EMSGSIZE;
+ }
+ 
++int ovs_nla_put_flow(const struct sw_flow_key *swkey,
++		     const struct sw_flow_key *output, int attr, bool is_mask,
++		     struct sk_buff *skb)
++{
++	int err;
++	struct nlattr *nla;
++
++	nla = nla_nest_start(skb, attr);
++	if (!nla)
++		return -EMSGSIZE;
++	err = __ovs_nla_put_flow(swkey, output, is_mask, skb);
++	if (err)
++		return err;
++	nla_nest_end(skb, nla);
++
++	return 0;
++}
++
++/* Called with ovs_mutex or RCU read lock. */
++int ovs_nla_put_unmasked_key(const struct sw_flow *flow, struct sk_buff *skb)
++{
++	return ovs_nla_put_flow(&flow->unmasked_key, &flow->unmasked_key,
++				OVS_FLOW_ATTR_KEY, false, skb);
++}
++
++/* Called with ovs_mutex or RCU read lock. */
++int ovs_nla_put_masked_key(const struct sw_flow *flow, struct sk_buff *skb)
++{
++	return ovs_nla_put_flow(&flow->mask->key, &flow->key,
++				OVS_FLOW_ATTR_KEY, false, skb);
++}
++
++/* Called with ovs_mutex or RCU read lock. */
++int ovs_nla_put_mask(const struct sw_flow *flow, struct sk_buff *skb)
++{
++	return ovs_nla_put_flow(&flow->key, &flow->mask->key,
++				OVS_FLOW_ATTR_MASK, true, skb);
++}
++
+ #define MAX_ACTIONS_BUFSIZE	(32 * 1024)
+ 
+ static struct sw_flow_actions *nla_alloc_flow_actions(int size, bool log)
+diff --git a/net/openvswitch/flow_netlink.h b/net/openvswitch/flow_netlink.h
+index 577f12b..ea54564 100644
+--- a/net/openvswitch/flow_netlink.h
++++ b/net/openvswitch/flow_netlink.h
+@@ -43,11 +43,15 @@ size_t ovs_key_attr_size(void);
+ void ovs_match_init(struct sw_flow_match *match,
+ 		    struct sw_flow_key *key, struct sw_flow_mask *mask);
+ 
+-int ovs_nla_put_flow(const struct sw_flow_key *,
+-		     const struct sw_flow_key *, struct sk_buff *);
++int ovs_nla_put_flow(const struct sw_flow_key *, const struct sw_flow_key *,
++		     int attr, bool is_mask, struct sk_buff *);
+ int ovs_nla_get_flow_metadata(const struct nlattr *, struct sw_flow_key *,
+ 			      bool log);
+ 
++int ovs_nla_put_unmasked_key(const struct sw_flow *flow, struct sk_buff *skb);
++int ovs_nla_put_masked_key(const struct sw_flow *flow, struct sk_buff *skb);
++int ovs_nla_put_mask(const struct sw_flow *flow, struct sk_buff *skb);
++
+ int ovs_nla_get_match(struct sw_flow_match *, const struct nlattr *key,
+ 		      const struct nlattr *mask, bool log);
+ int ovs_nla_put_egress_tunnel_key(struct sk_buff *,
+-- 
+1.7.10.4
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/gpu/drm/drm_edid.c
-index a7b5a71856a7,2c1d2e49fb6f..000000000000
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@@ -1176,34 -1196,8 +1196,26 @@@ drm_do_probe_ddc_edid(void *data, u8 *b
-  	return ret =3D=3D xfers ? 0 : -1;
-  }
- =20
-- static bool drm_edid_is_zero(u8 *in_edid, int length)
-- {
-- 	if (memchr_inv(in_edid, 0, length))
-- 		return false;
--=20
-- 	return true;
-- }
--=20
- -static u8 *
- -drm_do_get_edid(struct drm_connector *connector, struct i2c_adapter *adap=
-ter)
- +/**
- + * drm_do_get_edid - get EDID data using a custom EDID block read function
- + * @connector: connector we're probing
- + * @get_edid_block: EDID block read function
- + * @data: private data passed to the block read function
- + *
- + * When the I2C adapter connected to the DDC bus is hidden behind a devic=
-e that
- + * exposes a different interface to read EDID blocks this function can be=
- used
- + * to get EDID data using a custom block read function.
- + *
- + * As in the general case the DDC bus is accessible by the kernel at the =
-I2C
- + * level, drivers must make all reasonable efforts to expose it as an I2C
- + * adapter and use drm_get_edid() instead of abusing this function.
- + *
- + * Return: Pointer to valid EDID or NULL if we couldn't find any.
- + */
- +struct edid *drm_do_get_edid(struct drm_connector *connector,
- +	int (*get_edid_block)(void *data, u8 *buf, unsigned int block,
- +			      size_t len),
- +	void *data)
-  {
-  	int i, j =3D 0, valid_extensions =3D 0;
-  	u8 *block, *new;
-
---Sig_/F=8_IrDOUM3Z1zR1I3d/u0Y
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUfnjwAAoJEMDTa8Ir7ZwV5J0P/3mpPLenieHjgY4UWyO1tuIV
-XhA3RVLqui0w/B81+oAVE0NS/MJTVURqQ36gHu1WWy7XCYU9BaKb8ZWOdqlWrUkR
-ooA5waoe78LHb7e2gq4XFaSMh0qnx2W5O7+YRt3fluKMkxa+GgAXuiWnnZ+bg0Bm
-gvxUI4hEX4cSXGLl3MwriYLlURG5vCwKyxl+7Q8b7/Eyy4stmWUw28WtuqN6b8yJ
-TzfoUBw6u5ZZGsY+56IxrhIaxWD/u7viCCOPa64iPohHloAVUhnmBlgWgujJKHJ8
-3aLFSD04+rA+1hCeAOJZslPayjgxjdGlJOAHz23iy1RiksZZwZeCLH9sevhhvIzF
-7n61TwnE9FUDIY1XZ2anQV5lGvYHNj3JRcga4SxGZJ9Nc6+NSNpynr/16giXfVq0
-4ZqhNoaoufpKUCf0P+npgEsqEM5P2Stxbugiik715ByA3Btn4HuGad04bPrBnjqL
-ZK69+RaApA4rZ2Fvj3UD7T+PT6NUIN7gl+WlxZwfi4MZZGZToorIN7SkGFFq7the
-ub4xrM7HaYkz2HTMMqnestXUJ8HLJvQnwGXi0LAmSmaoj9VEsQCl7pDn7WoUym+F
-c+QrdW+/r16h8SZ8UEleMo67cmMHP8XuPuTtYuXVTSQbQyEtiwPg3wffPVU6RlPY
-dHUtJSxXlItt+/r36tYk
-=3t23
------END PGP SIGNATURE-----
-
---Sig_/F=8_IrDOUM3Z1zR1I3d/u0Y--
