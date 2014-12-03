@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970AbaLCPvv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 10:51:51 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:39104 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751091AbaLCPvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 10:51:49 -0500
-Message-ID: <547F3193.3040003@osg.samsung.com>
-Date: Wed, 03 Dec 2014 08:51:47 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752050AbaLCPw1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 10:52:27 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:46274 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751560AbaLCPw0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 10:52:26 -0500
+Date: Wed, 3 Dec 2014 16:52:22 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Qiang Huang <h.huangqiang@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, oom: remove gfp helper function
+Message-ID: <20141203155222.GH23236@dhcp22.suse.cz>
+References: <alpine.DEB.2.10.1411261416480.13014@chino.kir.corp.google.com>
+ <20141127102547.GA18833@dhcp22.suse.cz>
+ <20141201233040.GB29642@phnom.home.cmpxchg.org>
 MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: linux-next: manual merge of the kselftest tree with the kselftest-fixes
- tree
-References: <20141203203210.2eef1e6c@canb.auug.org.au> <1417607797.23663.1.camel@concordia> <547F199A.3020600@osg.samsung.com>
-In-Reply-To: <547F199A.3020600@osg.samsung.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141201233040.GB29642@phnom.home.cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2014 07:09 AM, Shuah Khan wrote:
-> On 12/03/2014 04:56 AM, Michael Ellerman wrote:
->> On Wed, 2014-12-03 at 20:32 +1100, Stephen Rothwell wrote:
->>> Hi Shuah,
->>>
->>> Today's linux-next merge of the kselftest tree got a cselftests/kcmp:
->>> Always try to build the testonflict in
->>> tools/testing/selftests/kcmp/Makefile between commit 4c12df63f7ff ("")
->>> from the kselftest-fixes tree and commit c0d8a9393efd
->>> ("selftests/kcmp: add install target to enable installing test") from
->>> the kselftest tree.
->>
->> That got a bit mixed up, I think it should be:
->>
->>   Today's linux-next merge of the kselftest tree got a conflict in
->>   tools/testing/selftests/kcmp/Makefile between commit 4c12df63f7ff
->>   ("selftests/kcmp: Always try to build the test") from the kselftest-fixes
->>   tree and commit c0d8a9393efd ("selftests/kcmp: add install target to enable
->>   installing test") from the kselftest tree.
->>
->>> I fixed it up (see below - probably some more could be done) and can
->>> carry the fix as necessary (no action is required).
->>
->> That resolution basically negates the effect of the first patch.
->>
->> Shuah, seeing these are both your trees are you happy to do the proper
->> resolution?
->>
+On Mon 01-12-14 18:30:40, Johannes Weiner wrote:
+> On Thu, Nov 27, 2014 at 11:25:47AM +0100, Michal Hocko wrote:
+> > On Wed 26-11-14 14:17:32, David Rientjes wrote:
+> > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > --- a/mm/page_alloc.c
+> > > +++ b/mm/page_alloc.c
+> > > @@ -2706,7 +2706,7 @@ rebalance:
+> > >  	 * running out of options and have to consider going OOM
+> > >  	 */
+> > >  	if (!did_some_progress) {
+> > > -		if (oom_gfp_allowed(gfp_mask)) {
+> > 		/*
+> > 		 * Do not attempt to trigger OOM killer for !__GFP_FS
+> > 		 * allocations because it would be premature to kill
+> > 		 * anything just because the reclaim is stuck on
+> > 		 * dirty/writeback pages.
+> > 		 * __GFP_NORETRY allocations might fail and so the OOM
+> > 		 * would be more harmful than useful.
+> > 		 */
 > 
-> Stephen and Michael,
-> 
-> I will sort this out. I have some patches in next that I should have
-> cleaned up yesterday when I applied commit 4c12df63f7ff.
-> 
-> Sorry for the mix-up
-> 
+> I don't think we need to explain the individual flags, but it would
+> indeed be useful to remark here that we shouldn't OOM kill from
+> allocations contexts with (severely) limited reclaim abilities.
 
-Done. kselftes-next is clean now.
-
--- Shuah
+Is __GFP_NORETRY really related to limited reclaim abilities? I thought
+it was merely a way to tell the allocator to fail rather than spend too
+much time reclaiming. If you are referring to __GFP_FS part then I have
+no objections to be less specific, of course, but __GFP_IO would fall
+into the same category but we are not checking for it. I have no idea
+why we consider the first and not the later one, to be honest...
 
 -- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+Michal Hocko
+SUSE Labs
