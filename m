@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895AbaLCIQQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 03:16:16 -0500
-Received: from mout.web.de ([212.227.15.14]:50306 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751013AbaLCIQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 03:16:14 -0500
-Message-ID: <547EC6B8.6000001@users.sourceforge.net>
-Date: Wed, 03 Dec 2014 09:15:52 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751970AbaLCIRj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 03:17:39 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:62145 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751393AbaLCIRi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 03:17:38 -0500
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@deeprootsystems.com>,
-        Russell King <linux@arm.linux.org.uk>, Sekhar Nori <nsekhar@ti.com>,
-        linux-arm-kernel@lists.infradead.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] ARM: DaVinci: Deletion of an unnecessary check before the
- function call "__clk_disable"
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:CYUOXTHM44OwA9itVhdhn7pFUZp50hVYxZRn9xQGfovklX1sZlM
- O5IuBPNrI9YGT5HnYkFEBvM9sNbCup+ueJmEfGg2agLQOwUVMLhFrXUcIkfo9erhs/XTQdf
- ssVKwhqHY3EvpaG/VXhilFhPTLwFcboP6s5C+4DF71tB4g3tdtpsAN9uh7o2iQyzCPwjjqr
- Vw9xIcBRpA9RliCMZYGOg==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <20141203080800.GB5193@localhost.localdomain>
+References: <1417494919-4577-1-git-send-email-oakad@yahoo.com>
+	<1417494919-4577-2-git-send-email-oakad@yahoo.com>
+	<20141202170037.GG29748@ZenIV.linux.org.uk>
+	<CAPs88r8m2QmaOWy623swGk=T3cyG85X3N7Z9tAp3nZvD0Tch+A@mail.gmail.com>
+	<1417589446.5303.121.camel@edumazet-glaptop2.roam.corp.google.com>
+	<20141203080800.GB5193@localhost.localdomain>
+Date: Wed, 3 Dec 2014 09:17:37 +0100
+Message-ID: <CAFLxGvzZQ59BRdWiPyVhCEUrR2UD3Ozdg2DHzRUqNQocf9o-EA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] fs: introduce sendfd() syscall
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Alex Dubov <alex.dubov@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alex Dubov <oakad@yahoo.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Wed, 3 Dec 2014 09:01:33 +0100
+On Wed, Dec 3, 2014 at 9:08 AM, Richard Cochran
+<richardcochran@gmail.com> wrote:
+> On Tue, Dec 02, 2014 at 10:50:46PM -0800, Eric Dumazet wrote:
+>> I think I will ignore your future mails.
+>
+> And I won't have time to read them either, because I will be too busy
+> passing fds to my two collies.
 
-The __clk_disable() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+Come on guys, get a cup of coffee and relax a bit...
 
-This issue was detected by using the Coccinelle software.
-
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- arch/arm/mach-davinci/clock.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/arch/arm/mach-davinci/clock.c b/arch/arm/mach-davinci/clock.c
-index c70bb0a..8f2c2d8 100644
---- a/arch/arm/mach-davinci/clock.c
-+++ b/arch/arm/mach-davinci/clock.c
-@@ -55,8 +55,7 @@ static void __clk_disable(struct clk *clk)
- 		else if (clk->clk_disable)
- 			clk->clk_disable(clk);
- 	}
--	if (clk->parent)
--		__clk_disable(clk->parent);
-+	__clk_disable(clk->parent);
- }
- 
- int davinci_clk_reset(struct clk *clk, bool reset)
 -- 
-2.1.3
-
+Thanks,
+//richard
