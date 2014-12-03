@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837AbaLCLvr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:51:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54700 "EHLO mx2.suse.de"
+	id S1753349AbaLCLwa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:52:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54697 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752271AbaLCL1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:27:18 -0500
+	id S1752344AbaLCL1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:27:16 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andreas Larsson <andreas@gaisler.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 015/101] sparc32: Implement xchg and atomic_xchg using ATOMIC_HASH locks
-Date: Wed,  3 Dec 2014 12:25:37 +0100
-Message-Id: <1c854a6cd16b5096200fb47d1418b1d20f7df6bd.1417605922.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 058/101] kgdb: Remove "weak" from kgdb_arch_pc() declaration
+Date: Wed,  3 Dec 2014 12:26:20 +0100
+Message-Id: <33176fe6d29e0a689928532db6cf44de67c72921.1417605922.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
 References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
@@ -22,111 +22,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Larsson <andreas@gaisler.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 1a17fdc4f4ed06b63fac1937470378a5441a663a ]
+commit 107bcc6d566cb40184068d888637f9aefe6252dd upstream.
 
-Atomicity between xchg and cmpxchg cannot be guaranteed when xchg is
-implemented with a swap and cmpxchg is implemented with locks.
-Without this, e.g. mcs_spin_lock and mcs_spin_unlock are broken.
+kernel/debug/debug_core.c provides a default kgdb_arch_pc() definition
+explicitly marked "weak".  Several architectures provide their own
+definitions intended to override the default, but the "weak" attribute on
+the declaration applied to the arch definitions as well, so the linker
+chose one based on link order (see 10629d711ed7 ("PCI: Remove __weak
+annotation from pcibios_get_phb_of_node decl")).
 
-Signed-off-by: Andreas Larsson <andreas@gaisler.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Remove the "weak" attribute from the declaration so we always prefer a
+non-weak definition over the weak one, independent of link order.
+
+Fixes: 688b744d8bc8 ("kgdb: fix signedness mixmatches, add statics, add declaration to header")
+Tested-by: Vineet Gupta <vgupta@synopsys.com>	# for ARC build
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reviewed-by: Harvey Harrison <harvey.harrison@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/sparc/include/asm/atomic_32.h  |  2 +-
- arch/sparc/include/asm/cmpxchg_32.h | 12 ++----------
- arch/sparc/lib/atomic32.c           | 27 +++++++++++++++++++++++++++
- 3 files changed, 30 insertions(+), 11 deletions(-)
+ include/linux/kgdb.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/sparc/include/asm/atomic_32.h b/arch/sparc/include/asm/atomic_32.h
-index 905832aa9e9e..a0ed182ae73c 100644
---- a/arch/sparc/include/asm/atomic_32.h
-+++ b/arch/sparc/include/asm/atomic_32.h
-@@ -21,7 +21,7 @@
+diff --git a/include/linux/kgdb.h b/include/linux/kgdb.h
+index c6e091bf39a5..bdfc95bddde9 100644
+--- a/include/linux/kgdb.h
++++ b/include/linux/kgdb.h
+@@ -283,7 +283,7 @@ struct kgdb_io {
  
- extern int __atomic_add_return(int, atomic_t *);
- extern int atomic_cmpxchg(atomic_t *, int, int);
--#define atomic_xchg(v, new) (xchg(&((v)->counter), new))
-+extern int atomic_xchg(atomic_t *, int);
- extern int __atomic_add_unless(atomic_t *, int, int);
- extern void atomic_set(atomic_t *, int);
+ extern struct kgdb_arch		arch_kgdb_ops;
  
-diff --git a/arch/sparc/include/asm/cmpxchg_32.h b/arch/sparc/include/asm/cmpxchg_32.h
-index 1fae1a02e3c2..ae0f9a7a314d 100644
---- a/arch/sparc/include/asm/cmpxchg_32.h
-+++ b/arch/sparc/include/asm/cmpxchg_32.h
-@@ -11,22 +11,14 @@
- #ifndef __ARCH_SPARC_CMPXCHG__
- #define __ARCH_SPARC_CMPXCHG__
+-extern unsigned long __weak kgdb_arch_pc(int exception, struct pt_regs *regs);
++extern unsigned long kgdb_arch_pc(int exception, struct pt_regs *regs);
  
--static inline unsigned long xchg_u32(__volatile__ unsigned long *m, unsigned long val)
--{
--	__asm__ __volatile__("swap [%2], %0"
--			     : "=&r" (val)
--			     : "0" (val), "r" (m)
--			     : "memory");
--	return val;
--}
--
-+extern unsigned long __xchg_u32(volatile u32 *m, u32 new);
- extern void __xchg_called_with_bad_pointer(void);
- 
- static inline unsigned long __xchg(unsigned long x, __volatile__ void * ptr, int size)
- {
- 	switch (size) {
- 	case 4:
--		return xchg_u32(ptr, x);
-+		return __xchg_u32(ptr, x);
- 	}
- 	__xchg_called_with_bad_pointer();
- 	return x;
-diff --git a/arch/sparc/lib/atomic32.c b/arch/sparc/lib/atomic32.c
-index 1d32b54089aa..8f2f94d53434 100644
---- a/arch/sparc/lib/atomic32.c
-+++ b/arch/sparc/lib/atomic32.c
-@@ -40,6 +40,19 @@ int __atomic_add_return(int i, atomic_t *v)
- }
- EXPORT_SYMBOL(__atomic_add_return);
- 
-+int atomic_xchg(atomic_t *v, int new)
-+{
-+	int ret;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(ATOMIC_HASH(v), flags);
-+	ret = v->counter;
-+	v->counter = new;
-+	spin_unlock_irqrestore(ATOMIC_HASH(v), flags);
-+	return ret;
-+}
-+EXPORT_SYMBOL(atomic_xchg);
-+
- int atomic_cmpxchg(atomic_t *v, int old, int new)
- {
- 	int ret;
-@@ -132,3 +145,17 @@ unsigned long __cmpxchg_u32(volatile u32 *ptr, u32 old, u32 new)
- 	return (unsigned long)prev;
- }
- EXPORT_SYMBOL(__cmpxchg_u32);
-+
-+unsigned long __xchg_u32(volatile u32 *ptr, u32 new)
-+{
-+	unsigned long flags;
-+	u32 prev;
-+
-+	spin_lock_irqsave(ATOMIC_HASH(ptr), flags);
-+	prev = *ptr;
-+	*ptr = new;
-+	spin_unlock_irqrestore(ATOMIC_HASH(ptr), flags);
-+
-+	return (unsigned long)prev;
-+}
-+EXPORT_SYMBOL(__xchg_u32);
+ #ifdef CONFIG_SERIAL_KGDB_NMI
+ extern int kgdb_register_nmi_console(void);
 -- 
 2.1.3
 
