@@ -1,373 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163AbaLCWyL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 17:54:11 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:61608 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088AbaLCWyH (ORCPT
+	id S1752253AbaLCWyo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 17:54:44 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:61048 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173AbaLCWym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 17:54:07 -0500
-From: vishnupatekar <vishnupatekar0510@gmail.com>
-X-Google-Original-From: vishnupatekar <VishnuPatekar0510@gmail.com>
-To: maxime.ripard@free-electrons.com, linux-sunxi@googlegroups.com
-Cc: robh+dt@kernel.org, benh@kernel.crashing.org, msalter@redhat.com,
-        ralf@linux-mips.org, jdelvare@suse.de, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, dmitry.torokhov@gmail.com,
-        vishnupatekar <VishnuPatekar0510@gmail.com>
-Subject: [PATCH 2/3] drivers:input:ps2 Added sunxi A20 ps2 driver, changed makefile and Kconfig
-Date: Thu,  4 Dec 2014 04:23:44 +0530
-Message-Id: <1417647224-27950-1-git-send-email-VishnuPatekar0510@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 3 Dec 2014 17:54:42 -0500
+Message-ID: <547F94B0.1000902@linaro.org>
+Date: Wed, 03 Dec 2014 17:54:40 -0500
+From: David Long <dave.long@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: William Cohen <wcohen@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steve Capper <steve.capper@linaro.org>
+CC: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        David Miller <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/5] ARM64: Add kernel probes(Kprobes) support
+References: <1416292375-29560-1-git-send-email-dave.long@linaro.org> <20141120135851.GA32528@linaro.org> <54759041.9080105@hitachi.com> <20141126100325.GA9157@linaro.org> <5476120D.9030703@linaro.org> <CAPvkgC3eVOZEn79C9PC9c7TqC_-yCtDhw5LL6ZWUJxr+oQFaow@mail.gmail.com> <5476BFB4.2020705@hitachi.com> <CAPvkgC0ELPPWfa-8kQ4H_e_O5G1ER4KEKuSWLxh_u-VZgh7W6A@mail.gmail.com> <547C36DB.7060903@hitachi.com> <547F242D.1060705@redhat.com>
+In-Reply-To: <547F242D.1060705@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- drivers/input/serio/Kconfig     |    9 ++
- drivers/input/serio/Makefile    |    1 +
- drivers/input/serio/sunxi-ps2.c |  305 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 315 insertions(+)
- create mode 100644 drivers/input/serio/sunxi-ps2.c
+On 12/03/14 09:54, William Cohen wrote:
+> On 12/01/2014 04:37 AM, Masami Hiramatsu wrote:
+>> (2014/11/29 1:01), Steve Capper wrote:
+>>> On 27 November 2014 at 06:07, Masami Hiramatsu
+>>> <masami.hiramatsu.pt@hitachi.com> wrote:
+>>>> (2014/11/27 3:59), Steve Capper wrote:
+>>>>> The crash is extremely easy to reproduce.
+>>>>>
+>>>>> I've not observed any missed events on a kprobe on an arm64 system
+>>>>> that's still alive.
+>>>>> My (limited!) understanding is that this suggests there could be a
+>>>>> problem with how missed events from a recursive call to memcpy are
+>>>>> being handled.
+>>>>
+>>>> I think so too. BTW, could you bisect that? :)
+>>>>
+>>>
+>>> I can't bisect, but the following functions look suspicious to me
+>>> (again I'm new to kprobes...):
+>>> kprobes_save_local_irqflag
+>>> kprobes_restore_local_irqflag
+>>>
+>>> I think these are breaking somehow when nested (i.e. from a recursive probe).
+>>
+>> Agreed. On x86, prev_kprobe has old_flags and saved_flags, this
+>> at least must have saved_irqflag and save/restore it in
+>> save/restore_previous_kprobe().
+>>
+>> What about adding this?
+>>
+>>   struct prev_kprobe {
+>>   	struct kprobe *kp;
+>>   	unsigned int status;
+>> +	unsigned long saved_irqflag;
+>>   };
+>>
+>> and
+>>
+>>   static void __kprobes save_previous_kprobe(struct kprobe_ctlblk *kcb)
+>>   {
+>>   	kcb->prev_kprobe.kp = kprobe_running();
+>>   	kcb->prev_kprobe.status = kcb->kprobe_status;
+>> +	kcb->prev_kprobe.saved_irqflag = kcb->saved_irqflag;
+>>   }
+>>
+>>   static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
+>>   {
+>>   	__this_cpu_write(current_kprobe, kcb->prev_kprobe.kp);
+>>   	kcb->kprobe_status = kcb->prev_kprobe.status;
+>> +	kcb->saved_irqflag = kcb->prev_kprobe.saved_irqflag;
+>>   }
+>>
+>>
+>
+> I have noticed with the aarch64 kprobe patches and recent kernel I can get the machine to end up getting stuck and printing out endless strings of
+>
+> [187694.855843] Unexpected kernel single-step exception at EL1
+> [187694.861385] Unexpected kernel single-step exception at EL1
+> [187694.866926] Unexpected kernel single-step exception at EL1
+> [187694.872467] Unexpected kernel single-step exception at EL1
+> [187694.878009] Unexpected kernel single-step exception at EL1
+> [187694.883550] Unexpected kernel single-step exception at EL1
+>
+> I can reproduce this pretty easily on my machine with functioncallcount.stp from https://sourceware.org/systemtap/examples/profiling/functioncallcount.stp and the following steps:
+>
+> # stap -p4 -k -m mm_probes -w functioncallcount.stp "*@mm/*.c" -c "sleep 1"
+> # staprun mm_probes.ko -c "sleep 1"
+>
+> -Will
 
-diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
-index bc2d474..1a86e41 100644
---- a/drivers/input/serio/Kconfig
-+++ b/drivers/input/serio/Kconfig
-@@ -281,4 +281,13 @@ config HYPERV_KEYBOARD
- 	  To compile this driver as a module, choose M here: the module will
- 	  be called hyperv_keyboard.
- 
-+config SERIO_SUNXI_PS2
-+	tristate "Allwinner Sun7i-A20 PS/2 controller"
-+	default m
-+	help
-+	  Say Y here if you have Sun7i-A20 Allwinner PS/2 ports.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called sunxi-ps2.
-+
- endif
-diff --git a/drivers/input/serio/Makefile b/drivers/input/serio/Makefile
-index 815d874..0fa0f78 100644
---- a/drivers/input/serio/Makefile
-+++ b/drivers/input/serio/Makefile
-@@ -29,3 +29,4 @@ obj-$(CONFIG_SERIO_ARC_PS2)	+= arc_ps2.o
- obj-$(CONFIG_SERIO_APBPS2)	+= apbps2.o
- obj-$(CONFIG_SERIO_OLPC_APSP)	+= olpc_apsp.o
- obj-$(CONFIG_HYPERV_KEYBOARD)	+= hyperv-keyboard.o
-+obj-$(CONFIG_SERIO_SUNXI_PS2)	+= sunxi-ps2.o
-diff --git a/drivers/input/serio/sunxi-ps2.c b/drivers/input/serio/sunxi-ps2.c
-new file mode 100644
-index 0000000..ccd7b29
---- /dev/null
-+++ b/drivers/input/serio/sunxi-ps2.c
-@@ -0,0 +1,305 @@
-+/*
-+ * sunxi-ps2.c Support for Allwinner A20 PS2 host controller
-+ *
-+ * Author: Aaron.maoye <leafy.myeh@newbietech.com>
-+ *	   Vishnu Patekar <vishnupatekar0510@gmail.com>
-+ * Based on sunxi-ps2.c 3.0 kernel
-+ *
-+*/
-+
-+#include <linux/module.h>
-+#include <linux/serio.h>
-+#include <linux/interrupt.h>
-+#include <linux/errno.h>
-+#include <linux/slab.h>
-+#include <linux/list.h>
-+#include <linux/io.h>
-+#include <linux/of_address.h>
-+#include <linux/of_device.h>
-+#include <linux/of_irq.h>
-+#include <linux/of_platform.h>
-+#include <linux/clk.h>
-+#include <linux/delay.h>
-+
-+#define DRIVER_NAME		"sunxi-ps2"
-+
-+#define RESSIZE(res)        (((res)->end - (res)->start)+1)
-+
-+#define SW_PS2_GCTRL        (0x00)
-+#define SW_PS2_DATA         (0x04)
-+#define SW_PS2_LCTRL        (0x08)
-+#define SW_PS2_LSTAT        (0x0c)
-+#define SW_PS2_FCTRL        (0x10)
-+#define SW_PS2_FSTAT        (0x14)
-+#define SW_PS2_CLKDR        (0x18)
-+
-+/* SW_PS2_GCTRL */
-+#define SWPS2_BUSEN         (1 << 0)
-+#define SWPS2_MASTER        (1 << 1)
-+#define SWPS2_RESET         (1 << 2)
-+#define SWPS2_INTEN         (1 << 3)
-+#define SWPS2_INTFLAG       (1 << 3)
-+
-+/* SW_PS2_LCTRL */
-+#define SWPS2_LCTL_NOACK        (0x0 << 18)
-+#define SWPS2_LCTL_TXDTOEN      (0x1 << 8)
-+#define SWPS2_LCTL_STOPERREN    (0x1 << 3)
-+#define SWPS2_LCTL_ACKERREN     (0x1 << 2)
-+#define SWPS2_LCTL_PARERREN     (0x1 << 1)
-+#define SWPS2_LCTL_RXDTOEN      (0x1 << 0)
-+
-+/* SW_PS2_FSTAT */
-+#define SWPS2_FSTA_RXRDY        (1 << 0)
-+#define SWPS2_FSTA_RXOF         (1 << 1)
-+#define SWPS2_FSTA_RXUF         (1 << 2)
-+#define SWPS2_FSTA_TXRDY        (1 << 8)
-+#define SWPS2_FSTA_TXOF         (1 << 9)
-+#define SWPS2_FSTA_TXUF         (1 << 10)
-+
-+#define SW_PS2_SAMPLE_CLK      (1000000)
-+#define SW_PS2_SCLK            (125000)
-+
-+struct sunxips2data {
-+	int irq;
-+	spinlock_t ps2_lock;
-+	void __iomem *base_address;	/* virt address of control registers*/
-+	struct serio *serio;		/* serio*/
-+	struct device *dev;
-+	struct	clk	*pclk;
-+};
-+
-+/*********************/
-+/* Interrupt handler */
-+/*********************/
-+static irqreturn_t sunxips2_interrupt(int irq, void *dev_id)
-+{
-+	struct sunxips2data *drvdata = dev_id;
-+	u32 intr_status;
-+	u32 fifo_status;
-+	unsigned char byte;
-+	u32 rval;
-+	u32 error = 0;
-+
-+	spin_lock(&drvdata->ps2_lock);
-+
-+	/* Get the PS/2 interrupts and clear them */
-+	intr_status  = readl(drvdata->base_address + SW_PS2_LSTAT);
-+	fifo_status  = readl(drvdata->base_address + SW_PS2_FSTAT);
-+
-+	/*Check Line Status Register*/
-+	if (intr_status & 0x10f) {
-+		if (intr_status & 0x08)
-+			dev_info(drvdata->dev, "PS/2 Stop Bit Error!");
-+		if (intr_status & 0x04)
-+			dev_info(drvdata->dev, "PS/2 Acknowledge Error!\n");
-+		if (intr_status & 0x02)
-+			dev_info(drvdata->dev, "PS/2 Parity Error!\n");
-+		if (intr_status & 0x100)
-+			dev_info(drvdata->dev, "PS/2 Transmit Data Timeout!\n");
-+		if (intr_status & 0x01)
-+			dev_info(drvdata->dev, "PS/2 Receive Data Timeout!\n");
-+
-+		writel(readl(drvdata->base_address + SW_PS2_GCTRL)|0x4, drvdata->base_address + SW_PS2_GCTRL);/*reset PS/2 controller*/
-+		writel(0x10f, drvdata->base_address + SW_PS2_LSTAT);
-+
-+		error = 1;
-+	}
-+
-+    /*Check FIFO Status Register*/
-+	if (fifo_status & 0x0606) {
-+		if (fifo_status & 0x400)
-+			dev_info(drvdata->dev, "PS/2 Tx FIFO Underflow!\n");
-+		if (fifo_status & 0x200)
-+			dev_info(drvdata->dev, "PS/2 Tx FIFO Overflow!\n");
-+		if (fifo_status & 0x04)
-+			dev_info(drvdata->dev, "PS/2 Rx FIFO Underflow!\n");
-+		if (fifo_status & 0x02)
-+			dev_info(drvdata->dev, "PS/2 Rx FIFO Overflow!\n");
-+
-+		writel(readl(drvdata->base_address + SW_PS2_GCTRL)|0x4, drvdata->base_address + SW_PS2_GCTRL); /*reset PS/2 controller*/
-+		writel(0x707, drvdata->base_address + SW_PS2_FSTAT);
-+		error = 1;
-+	}
-+
-+	rval = (fifo_status >> 16) & 0x3;
-+	while (!error && rval--) {
-+		byte = readl(drvdata->base_address + SW_PS2_DATA) & 0xff;
-+		dev_info(drvdata->dev, "PS/2 Receive %02x\n", byte);
-+		serio_interrupt(drvdata->serio, byte, 0);
-+	}
-+
-+	writel(intr_status, drvdata->base_address + SW_PS2_LSTAT);
-+	writel(fifo_status, drvdata->base_address + SW_PS2_FSTAT);
-+
-+	spin_unlock(&drvdata->ps2_lock);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int sunxips2_open(struct serio *pserio)
-+{
-+	struct sunxips2data *drvdata = pserio->port_data;
-+	u32 src_clk = 0;
-+	u32 clk_scdf;
-+	u32 clk_pcdf;
-+	u32 rval;
-+
-+	/*Set Line Control And Enable Interrupt*/
-+	rval = SWPS2_LCTL_TXDTOEN|SWPS2_LCTL_STOPERREN|SWPS2_LCTL_ACKERREN|SWPS2_LCTL_PARERREN|SWPS2_LCTL_RXDTOEN;
-+	writel(rval, drvdata->base_address + SW_PS2_LCTRL);
-+
-+	/*Reset FIFO*/
-+	writel(0x3<<16 | 0x607, drvdata->base_address + SW_PS2_FCTRL);
-+
-+	src_clk = clk_get_rate(drvdata->pclk);
-+
-+	if (!src_clk) {
-+		dev_info(drvdata->dev, "w_ps2c_set_sclk error, source clock is 0.");
-+		return -1;
-+	}
-+
-+	/*Set Clock Divider Register*/
-+	clk_scdf = ((src_clk + (SW_PS2_SAMPLE_CLK>>1)) / SW_PS2_SAMPLE_CLK - 1);
-+	clk_pcdf = ((SW_PS2_SAMPLE_CLK + (SW_PS2_SCLK>>1)) / SW_PS2_SCLK - 1);
-+	rval = (clk_scdf<<8) | clk_pcdf;/* | (PS2_DEBUG_SEL<<16);*/
-+	writel(rval, drvdata->base_address + SW_PS2_CLKDR);
-+
-+	/*Set Global Control Register*/
-+	rval = SWPS2_RESET|SWPS2_INTEN|SWPS2_MASTER|SWPS2_BUSEN;
-+	writel(rval, drvdata->base_address + SW_PS2_GCTRL);
-+
-+	udelay(100);
-+
-+	return 0;
-+}
-+
-+static void sunxips2_close(struct serio *pserio)
-+{
-+	struct sunxips2data *drvdata = pserio->port_data;
-+
-+	spin_lock(&drvdata->ps2_lock);
-+	/* Disable the PS2 interrupts */
-+	writel(0, drvdata->base_address + SW_PS2_GCTRL);
-+	spin_unlock(&drvdata->ps2_lock);
-+}
-+
-+static int sunxips2_write(struct serio *pserio, unsigned char val)
-+{
-+	struct sunxips2data *drvdata = (struct sunxips2data *)pserio->port_data;
-+	u32 timeout = 10000;
-+
-+	do {
-+		if (readl(drvdata->base_address + SW_PS2_FSTAT) & SWPS2_FSTA_TXRDY) {
-+			writel(val, drvdata->base_address + SW_PS2_DATA);
-+			return 0;
-+		}
-+	} while (timeout--);
-+
-+	return -1;
-+}
-+
-+static int sunxips2_probe(struct platform_device *ofdev)
-+{
-+	struct resource *res; /* IO mem resources */
-+	struct sunxips2data *drvdata;
-+	struct serio *serio;
-+	struct device *dev = &ofdev->dev;
-+	unsigned int irq;
-+	int error;
-+
-+	drvdata = devm_kzalloc(dev, sizeof(struct sunxips2data), GFP_KERNEL);
-+	serio = devm_kzalloc(dev, sizeof(struct serio), GFP_KERNEL);
-+	if (!drvdata || !serio)
-+		error = -ENOMEM;
-+
-+	/* Request clock */
-+	drvdata->pclk = clk_get(dev, NULL);
-+	if (IS_ERR(drvdata->pclk))
-+		dev_dbg(dev, "couldn't get clock %li\n",
-+			PTR_ERR(drvdata->pclk));
-+
-+	if (!IS_ERR(drvdata->pclk)) {
-+		error = clk_prepare_enable(drvdata->pclk);
-+		if (error < 0) {
-+			dev_err(dev, "failed to enable clock %d\n", error);
-+			return error;
-+		}
-+	}
-+
-+	/* IO */
-+	res = platform_get_resource(ofdev, IORESOURCE_MEM, 0);
-+	drvdata->base_address = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(drvdata->base_address)) {
-+		dev_err(dev, "failed to map registers\n");
-+		error = PTR_ERR(drvdata->base_address);
-+	}
-+
-+	serio->id.type = SERIO_8042;
-+	serio->write = sunxips2_write;
-+	serio->open = sunxips2_open;
-+	serio->close = sunxips2_close;
-+	serio->port_data = drvdata;
-+	serio->dev.parent = dev;
-+	strlcpy(serio->name, dev_name(dev), sizeof(serio->name));
-+	strlcpy(serio->phys, dev_name(dev), sizeof(serio->phys));
-+
-+	platform_set_drvdata(ofdev, drvdata);
-+	serio_register_port(serio);
-+
-+	/* Get IRQ for the device */
-+	irq = irq_of_parse_and_map(ofdev->dev.of_node, 0);
-+	if (!irq) {
-+		dev_err(dev, "no IRQ found\n");
-+		return -ENODEV;
-+	}
-+
-+	drvdata->irq = irq;
-+	drvdata->serio = serio;
-+	drvdata->dev = dev;
-+	error = devm_request_any_context_irq(drvdata->dev, drvdata->irq, &sunxips2_interrupt, 0,
-+				DRIVER_NAME, drvdata);
-+	if (error) {
-+		dev_err(drvdata->dev,
-+			"Couldn't allocate interrupt %d : error: %d\n", drvdata->irq, error);
-+		return error;
-+	}
-+	return 0;		/* success */
-+}
-+
-+static int sunxips2_remove(struct platform_device *of_dev)
-+{
-+	struct sunxips2data *drvdata = platform_get_drvdata(of_dev);
-+
-+	if (!IS_ERR(drvdata->pclk)) {
-+		clk_disable_unprepare(drvdata->pclk);
-+		clk_put(drvdata->pclk);
-+	}
-+	serio_unregister_port(drvdata->serio);
-+	mdelay(2);
-+	return 0;
-+}
-+
-+/* Match table for of_platform binding */
-+static const struct of_device_id sunxips2_of_match[] = {
-+	{ .compatible = "allwinner,sun7i-a20-ps2", },
-+	{ },
-+};
-+
-+MODULE_DEVICE_TABLE(of, sunxips2_of_match);
-+
-+/*platform driver structure*/
-+static struct platform_driver sunxips2_of_driver = {
-+	.probe		= sunxips2_probe,
-+	.remove		= sunxips2_remove,
-+	.driver = {
-+		.name = DRIVER_NAME,
-+		.owner = THIS_MODULE,
-+		.of_match_table = sunxips2_of_match,
-+	},
-+};
-+module_platform_driver(sunxips2_of_driver);
-+
-+MODULE_AUTHOR("Aaron.maoye<leafy.myeh@newbietech.com, "
-+		"Vishnu Patekar <vishnupatekar0510@gmail.com>");
-+MODULE_DESCRIPTION("Sunxi PS/2 driver");
-+MODULE_LICENSE("GPL");
--- 
-1.7.9.5
+I did a fresh checkout and build of systemtap and tried the above.  I'm 
+not yet seeing this problem.  It does remind me of the problem we saw 
+before debug exception handling in entry.S was patched in v3.18-rc1, but 
+you say you are using recent kernel sources.
+
+>>
+>>
+>>> That would explain why the state of play of the interrupts is in an
+>>> unexpected state in the crash I reported:
+>>> "The point of failure in the panic was:
+>>> fs/buffer.c:1257
+>>>
+>>> static inline void check_irqs_on(void)
+>>> {
+>>> #ifdef irqs_disabled
+>>>          BUG_ON(irqs_disabled());
+>>> #endif
+>>> }
+>>> "
+>>>
+>>> This is all new to me so I'm still at the head-scratching stage.
+>>
+>> Ah, I see.
+>>
+>> Thank you,
+>>
+>>>
+>>> David,
+>>> Does the above make sense to you? Have you managed to reproduce the crash I get?
+>>>
+>>> Cheers,
+>>> --
+>>> Steve
+
+I have easily produced a crash although it doesn't look to me like the 
+same one.  I'm getting a NULL pointer dereference.  The PMU stuff (used 
+by perf record|stat -e) should be quite independent of kprobes though.
+
+-dl
+
 
