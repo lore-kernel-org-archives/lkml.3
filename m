@@ -1,150 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751316AbaLCBaM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 20:30:12 -0500
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:44531 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204AbaLCBaK (ORCPT
+	id S1751340AbaLCBa7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 20:30:59 -0500
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:59864 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864AbaLCBa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 20:30:10 -0500
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Tue, 2 Dec 2014 20:29:46 -0500
-To: NeilBrown <neilb@suse.de>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a
- workqueue-based nfsd
-Message-ID: <20141202202946.1e0f399b@tlielax.poochiereds.net>
-In-Reply-To: <20141203121118.21a32fe1@notabene.brown>
-References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
-	<20141203121118.21a32fe1@notabene.brown>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/qcs07EqwRnzZJw3h_o_dnIh"; protocol="application/pgp-signature"
+	Tue, 2 Dec 2014 20:30:58 -0500
+From: Paul Hedman <paul@mybboard.net>
+X-Google-Original-From: Paul Hedman <paul@mybb.com>
+To: paul@mybb.com, greg@kroah.com
+Cc: marek.belisko@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: ft1000: fix spaces around operators in ft1000_debug.c
+Date: Tue,  2 Dec 2014 19:30:40 -0600
+Message-Id: <1417570240-3139-1-git-send-email-paul@mybb.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/qcs07EqwRnzZJw3h_o_dnIh
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Fixes spacing issues around operators, e.g. i=0 to i = 0, as
+found by the checkpatch.pl tool.
+---
+ drivers/staging/ft1000/ft1000-usb/ft1000_debug.c | 28 ++++++++++++------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
-On Wed, 3 Dec 2014 12:11:18 +1100
-NeilBrown <neilb@suse.de> wrote:
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c b/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c
+index 0f347ab..02bfb3e 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c
+@@ -193,7 +193,7 @@ int ft1000_create_dev(struct ft1000_usb *dev)
+ 
+     /* initialize application information */
+     dev->appcnt = 0;
+-    for (i=0; i<MAX_NUM_APP; i++) {
++    for (i = 0; i < MAX_NUM_APP; i++) {
+         dev->app_info[i].nTxMsg = 0;
+         dev->app_info[i].nRxMsg = 0;
+         dev->app_info[i].nTxMsgReject = 0;
+@@ -260,7 +260,7 @@ void ft1000_destroy_dev(struct net_device *netdev)
+ 					   dev->DeviceName);
+ 
+         /* Make sure we free any memory reserve for slow Queue */
+-        for (i=0; i<MAX_NUM_APP; i++) {
++        for (i = 0; i < MAX_NUM_APP; i++) {
+             while (list_empty(&dev->app_info[i].app_sqlist) == 0) {
+                 pdpram_blk = list_entry(dev->app_info[i].app_sqlist.next, struct dpram_blk, list);
+                 list_del(&pdpram_blk->list);
+@@ -318,7 +318,7 @@ static int ft1000_open(struct inode *inode, struct file *file)
+     }
+ 
+     /* Search for available application info block */
+-    for (i=0; i<MAX_NUM_APP; i++) {
++    for (i = 0; i < MAX_NUM_APP; i++) {
+         if ((dev->app_info[i].fileobject == NULL)) {
+             break;
+         }
+@@ -369,7 +369,7 @@ static unsigned int ft1000_poll_dev(struct file *file, poll_table *wait)
+     }
+ 
+     /* Search for matching file object */
+-    for (i=0; i<MAX_NUM_APP; i++) {
++    for (i = 0; i < MAX_NUM_APP; i++) {
+         if (dev->app_info[i].fileobject == &file->f_owner) {
+             /* DEBUG("FT1000:ft1000_ioctl: Message is for AppId = %d\n", dev->app_info[i].app_id); */
+             break;
+@@ -411,7 +411,7 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
+     void __user *argp = (void __user *)argument;
+ 	struct ft1000_info *info;
+     struct ft1000_usb *ft1000dev;
+-    int result=0;
++    int result = 0;
+     int cmd;
+     int i;
+     u16 tempword;
+@@ -426,8 +426,8 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
+                           0x00,0x00,0x02,0x37,0x00,0x00,0x00,0x08,0x00,0x00,0x00,0x01,0x00,0x01,0x7f,0x00,
+                           0x00,0x01,0x00,0x00};
+ 
+-    unsigned short ledStat=0;
+-    unsigned short conStat=0;
++    unsigned short ledStat = 0;
++    unsigned short conStat = 0;
+ 
+     /* DEBUG("ft1000_ioctl called\n"); */
+ 
+@@ -454,7 +454,7 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
+             }
+             if (tempword == DSPBCMSGID) {
+                 /* Search for matching file object */
+-                for (i=0; i<MAX_NUM_APP; i++) {
++                for (i = 0; i < MAX_NUM_APP; i++) {
+                     if (ft1000dev->app_info[i].fileobject == &file->f_owner) {
+                         ft1000dev->app_info[i].DspBCMsgFlag = 1;
+                         DEBUG("FT1000:ft1000_ioctl:Registered for broadcast messages\n");
+@@ -581,12 +581,12 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
+                     result = -EFAULT;
+                 } else {
+                     /* Check if this message came from a registered application */
+-                    for (i=0; i<MAX_NUM_APP; i++) {
++                    for (i = 0; i < MAX_NUM_APP; i++) {
+                         if (ft1000dev->app_info[i].fileobject == &file->f_owner) {
+                             break;
+                         }
+                     }
+-                    if (i==MAX_NUM_APP) {
++                    if (i == MAX_NUM_APP) {
+                         DEBUG("FT1000:No matching application fileobject\n");
+                         result = -EINVAL;
+ 			kfree(dpram_data);
+@@ -646,7 +646,7 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
+                             /* Calculate new checksum */
+                             ppseudo_hdr->checksum = *pmsg++;
+                             /* DEBUG("checksum = 0x%x\n", ppseudo_hdr->checksum); */
+-                            for (i=1; i<7; i++) {
++                            for (i = 1; i < 7; i++) {
+                                 ppseudo_hdr->checksum ^= *pmsg++;
+                                 /* DEBUG("checksum = 0x%x\n", ppseudo_hdr->checksum); */
+                             }
+@@ -682,7 +682,7 @@ static long ft1000_ioctl(struct file *file, unsigned int command,
+             }
+ 
+             /* Search for matching file object */
+-            for (i=0; i<MAX_NUM_APP; i++) {
++            for (i = 0; i < MAX_NUM_APP; i++) {
+                 if (ft1000dev->app_info[i].fileobject == &file->f_owner) {
+                     /*DEBUG("FT1000:ft1000_ioctl: Message is for AppId = %d\n", ft1000dev->app_info[i].app_id); */
+                     break;
+@@ -766,14 +766,14 @@ static int ft1000_release(struct inode *inode, struct file *file)
+     }
+ 
+     /* Search for matching file object */
+-    for (i=0; i<MAX_NUM_APP; i++) {
++    for (i = 0; i < MAX_NUM_APP; i++) {
+         if (ft1000dev->app_info[i].fileobject == &file->f_owner) {
+             /* DEBUG("FT1000:ft1000_ioctl: Message is for AppId = %d\n", ft1000dev->app_info[i].app_id); */
+             break;
+         }
+     }
+ 
+-    if (i==MAX_NUM_APP)
++    if (i == MAX_NUM_APP)
+ 	    return 0;
+ 
+     while (list_empty(&ft1000dev->app_info[i].app_sqlist) == 0) {
+-- 
+2.1.0
 
-> On Tue,  2 Dec 2014 13:24:09 -0500 Jeff Layton <jlayton@primarydata.com>
-> wrote:
->=20
-> > tl;dr: this code works and is much simpler than the dedicated thread
-> >        pool, but there are some latencies in the workqueue code that
-> >        seem to keep it from being as fast as it could be.
-> >=20
-> > This patchset is a little skunkworks project that I've been poking at
-> > for the last few weeks. Currently nfsd uses a dedicated thread pool to
-> > handle RPCs, but that requires maintaining a rather large swath of
-> > "fiddly" code to handle the threads and transports.
-> >=20
-> > This patchset represents an alternative approach, which makes nfsd use
-> > workqueues to do its bidding rather than a dedicated thread pool. When a
-> > transport needs to do work, we simply queue it to the workqueue in
-> > softirq context and let it service the transport.
-> >=20
-> > The current draft is runtime-switchable via a new sunrpc pool_mode
-> > module parameter setting. When that's set to "workqueue", nfsd will use
-> > a workqueue-based service. One of the goals of this patchset was to
-> > *not* need to change any userland code, so starting it up using rpc.nfsd
-> > still works as expected. The only real difference is that the nfsdfs
-> > "threads" file is reinterpreted as the "max_active" value for the
-> > workqueue.
->=20
-> Hi Jeff,
->  I haven't looked very closely at the code, but in principal I think this=
- is
->  an excellent idea.  Having to set a number of threads manually was never
->  nice as it is impossible to give sensible guidance on what an appropriate
->  number is.
-
-Yes, this should be a lot more "dynamic" in principle. A lightly-used
-nfs server using workqueues should really not consume much at all in
-the way of resources.
-
->  Tying max_active to "threads" doesn't really make sense I think.
->  "max_active" is a per-cpu number and I think the only meaningful numbers=
- are
->  "1" (meaning concurrent works might mutually deadlock) or infinity (whic=
-h is
->  approximated as 512).  I would just ignore the "threads" number when
->  workqueues are used.... or maybe enable workqueues when "auto" is writte=
-n to
->  "threads"??
->=20
-
-That's a good point. I had originally thought that max_active on an
-unbound workqueue would be the number of concurrent jobs that could run
-across all the CPUs, but now that I look I'm not sure that's really
-the case.
-
-Certainly, not bounding this at all has some appeal, but having some
-limit here does help put an upper bound on the size of the svc_rqst
-cache.
-
-I'll definitely give that some thought.
-
->  Using a shrinker to manage the allocation and freeing of svc_rqst is a
->  really good idea.  It will put pressure on the effective number of threa=
-ds
->  when needed, but will not artificially constrain things.
->=20
-
-That's my hope. We might also consider reaping idle rqsts ourselves
-as needed somehow, but for now I decided not to worry about it until we
-see whether this is really viable or not.
-
->  The combination of workqueue and shrinker seems like a perfect match for
->  nfsd.
->=20
->  I hope you can work out the latency issues!
->=20
-> Thanks,
-> NeilBrown
-
-I've heard random grumblings from various people in the past that
-workqueues have significant latency, but this is the first time I've
-really hit it in practice. If we can get this fixed, then that may be a
-significant perf win for all workqueue users. For instance, rpciod in
-the NFS client is all workqueue-based. Getting that latency down could
-really help things.
-
-I'm currently trying to roll up a kernel module for benchmarking the
-workqueue dispatching code in the hopes that we can use that to help
-nail it down.
-
-Thanks for having a look!
---=20
-Jeff Layton <jlayton@primarydata.com>
-
---Sig_/qcs07EqwRnzZJw3h_o_dnIh
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUfmeKAAoJEAAOaEEZVoIVjYoQAJnTRdXHEmaeppeYf8YB1rYi
-P4w/hWCUmKCUkHtRg6wkn9R8tXLaXogbbNpUCz477zxB3J36nbPiS84gpHLWv99n
-iE4AoA+eWkL4q6enMDaKSSF72rhLPyxDi5DNOXKGEEMkej7ZSCLPxG85CnHO6w2E
-yVwijSKhCyTqYU9IpQhGzRHSUkJB6a1OpUCm7aZrRZ23aPl+o4nqnHHurYeN+hDL
-yX0Q17PaEMfUZI0pTaSVt+SbZtJCP7bjsfE5zQyQofjp5MnApKZqAkpdlumyo31o
-PUltFasRUleU1OffqrlC3e5tl8lKDtNvQSo5vmNN9JEFKryntSDPLnNzxPbIDMtu
-GXTKQ0fcCN5qMeMmlBFFKw8ILTV9iYMAR5TLFJFF2bsdPKj9C7ULzLbK6aQ63PuR
-jtfXg/ldJBt4VC+V4uq3yWNYU25/Wsea31OtcLgcwOwVWNaj37vkS7IqnELGBX2H
-MOOnNjlfyw+zxjSYB7fpElA/5jPzY6a0IGcGLgXW0FT91T/RUntnQmU8kynVkspc
-8P54aPGVBFgQeoGGBOo64SM7dTLz4lLWI4tzxFKVyzf4+Mw3X75Z8StPea57CyZe
-JTli4/3Ihk4nPZImBlFd1hhRGHU3ofQ0zbnGqux/hZ1V9ju4AwpnIWmBFM7R1WAx
-rL3arkC+P45N0gzShSxq
-=f5Mw
------END PGP SIGNATURE-----
-
---Sig_/qcs07EqwRnzZJw3h_o_dnIh--
