@@ -1,87 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898AbaLCCgb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 21:36:31 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:60129 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317AbaLCCga (ORCPT
+	id S1751624AbaLCCiI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 21:38:08 -0500
+Received: from regular1.263xmail.com ([211.150.99.137]:48631 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750907AbaLCCiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 21:36:30 -0500
-From: Fred Chou <fred.chou.nd@gmail.com>
-X-Google-Original-From: Fred Chou
-To: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, fred.chou.nd@gmail.com
-Subject: [PATCH] staging: rt8192u: fix sparse warnings in r8192U_core.c
-Date: Wed,  3 Dec 2014 10:38:27 +0800
-Message-Id: <1417574307-3030-1-git-send-email-fred.chou.nd@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 2 Dec 2014 21:38:06 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: addy.ke@rock-chips.com
+X-FST-TO: wsa@the-dreams.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: addy.ke@rock-chips.com
+X-UNIQUE-TAG: <36f88272de4824b2d382bd2e1e1d8cc0>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Addy Ke <addy.ke@rock-chips.com>
+To: wsa@the-dreams.de, max.schwarz@online.de, heiko@sntech.de, olof@lixom.net,
+        dianders@chromium.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, cf@rock-chips.com,
+        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
+        yzq@rock-chips.com, hj@rock-chips.com, kever.yang@rock-chips.com,
+        hl@rock-chips.com, caesar.wang@rock-chips.com, zhengsq@rock-chips.com,
+        Addy Ke <addy.ke@rock-chips.com>
+Subject: [PATCH v2] i2c: rk3x: fix bug that cause measured high_ns doesn't meet I2C spec
+Date: Wed,  3 Dec 2014 10:37:17 +0800
+Message-Id: <1417574237-4328-1-git-send-email-addy.ke@rock-chips.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1415261514-4051-1-git-send-email-addy.ke@rock-chips.com>
+References: <1415261514-4051-1-git-send-email-addy.ke@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fred Chou <fred.chou.nd@gmail.com>
+high_ns calculated from the low division of CLKDIV register is the sum
+of actual measured high_ns and rise_ns. The rise time which related to
+external pull-up resistor can be up to the maximum rise time in I2C spec.
 
-Fixed the following warnings in sparse:
-drivers/staging/rtl8192u/r8192U_core.c:670:6: warning:
- 	symbol 'dump_eprom' was not declared.
-	Should it be static?
-drivers/staging/rtl8192u/r8192U_core.c:1489:5: warning:
- 	symbol 'ComputeTxTime' was not declared.
-	Should it be static?
-drivers/staging/rtl8192u/r8192U_core.c:1556:14: warning:
-	symbol 'txqueue2outpipe' was not declared.
-	Should it be static?
-drivers/staging/rtl8192u/r8192U_core.c:4876:5: warning:
-	symbol 'GetRxPacketShiftBytes819xUsb' was not declared.
-	Should it be static?
+In my test, if external pull-up resistor is 4.7K, rise_ns is about
+700ns. So the actual measured high_ns is about 3900ns, which is less
+than 4000ns(the minimum high_ns in I2C spec).
 
-Signed-off-by: Fred Chou <fred.chou.nd@gmail.com>
+To fix this bug, min_low_ns should include fall time and min_high_ns
+should include rise time too.
+
+This patch merged the patch that Doug submitted to chromium, which
+can get the rise and fall times for signals from the device tree.
+This allows us to more accurately calculate timings. see:
+https://chromium-review.googlesource.com/#/c/232774/
+
+Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
 ---
- drivers/staging/rtl8192u/r8192U_core.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+Changes in v2:
+- merged the patch that Doug submitted to chromium
 
-diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
-index 7640386..6b647ad 100644
---- a/drivers/staging/rtl8192u/r8192U_core.c
-+++ b/drivers/staging/rtl8192u/r8192U_core.c
-@@ -667,7 +667,7 @@ static void tx_timeout(struct net_device *dev)
+ Documentation/devicetree/bindings/i2c/i2c-rk3x.txt | 10 ++++
+ drivers/i2c/busses/i2c-rk3x.c                      | 55 +++++++++++++++-------
+ 2 files changed, 47 insertions(+), 18 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt b/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
+index dde6c22..faf5997 100644
+--- a/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
++++ b/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
+@@ -21,6 +21,13 @@ Required on RK3066, RK3188 :
+ Optional properties :
  
+  - clock-frequency : SCL frequency to use (in Hz). If omitted, 100kHz is used.
++ - rise-ns : Number of nanoseconds the signal takes to rise (t(r) in i2c spec).
++	     If not specified this is assumed to be the max the spec allows
++	     (1000 ns for standard mode, 300 ns for fast mode) which might
++	     cause slightly slower communication.
++ - fall-ns : Number of nanoseconds the signal takes to fall (t(f) in the i2c0
++	     spec).  If not specified this is assumed to be the max the spec
++	     allows (300 ns) which might cause slightly slower communication.
  
- /* this is only for debug */
--void dump_eprom(struct net_device *dev)
-+static void dump_eprom(struct net_device *dev)
+ Example:
+ 
+@@ -39,4 +46,7 @@ i2c0: i2c@2002d000 {
+ 
+ 	clock-names = "i2c";
+ 	clocks = <&cru PCLK_I2C0>;
++
++	rise-ns = <800>;
++	fall-ns = <100>;
+ };
+diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
+index 0ee5802..025d4b5 100644
+--- a/drivers/i2c/busses/i2c-rk3x.c
++++ b/drivers/i2c/busses/i2c-rk3x.c
+@@ -102,6 +102,8 @@ struct rk3x_i2c {
+ 
+ 	/* Settings */
+ 	unsigned int scl_frequency;
++	unsigned int rise_ns;
++	unsigned int fall_ns;
+ 
+ 	/* Synchronization & notification */
+ 	spinlock_t lock;
+@@ -435,6 +437,8 @@ out:
+  *
+  * @clk_rate: I2C input clock rate
+  * @scl_rate: Desired SCL rate
++ * @rise_ns: How many ns it takes for signals to rise.
++ * @fall_ns: How many ns it takes for signals to fall.
+  * @div_low: Divider output for low
+  * @div_high: Divider output for high
+  *
+@@ -443,11 +447,14 @@ out:
+  * too high, we silently use the highest possible rate.
+  */
+ static int rk3x_i2c_calc_divs(unsigned long clk_rate, unsigned long scl_rate,
++			      unsigned long rise_ns, unsigned long fall_ns,
+ 			      unsigned long *div_low, unsigned long *div_high)
  {
- 	int i;
- 	for (i = 0; i < 63; i++)
-@@ -1486,7 +1486,7 @@ inline u8 rtl8192_IsWirelessBMode(u16 rate)
++	unsigned long spec_min_low_ns, spec_min_high_ns;
++	unsigned long spec_max_data_hold_ns;
++	unsigned long spec_data_hold_buffer_ns;
++
+ 	unsigned long min_low_ns, min_high_ns;
+-	unsigned long max_data_hold_ns;
+-	unsigned long data_hold_buffer_ns;
+ 	unsigned long max_low_ns, min_total_ns;
  
- u16 N_DBPSOfRate(u16 DataRate);
+ 	unsigned long clk_rate_khz, scl_rate_khz;
+@@ -470,28 +477,30 @@ static int rk3x_i2c_calc_divs(unsigned long clk_rate, unsigned long scl_rate,
  
--u16 ComputeTxTime(u16 FrameLength, u16 DataRate, u8 bManagementFrame,
-+static u16 ComputeTxTime(u16 FrameLength, u16 DataRate, u8 bManagementFrame,
- 		  u8 bShortPreamble)
- {
- 	u16	FrameTime;
-@@ -1553,7 +1553,8 @@ u16 N_DBPSOfRate(u16 DataRate)
- 	return N_DBPS;
- }
+ 	/*
+ 	 * min_low_ns:  The minimum number of ns we need to hold low
+-	 *		to meet i2c spec
++	 *		to meet i2c spec, should include fall time.
+ 	 * min_high_ns: The minimum number of ns we need to hold high
+-	 *		to meet i2c spec
++	 *		to meet i2c spec, should include rise time.
+ 	 * max_low_ns:  The maximum number of ns we can hold low
+-	 *		to meet i2c spec
++	 *		to meet i2c spec.
+ 	 *
+ 	 * Note: max_low_ns should be (max data hold time * 2 - buffer)
+ 	 *	 This is because the i2c host on Rockchip holds the data line
+ 	 *	 for half the low time.
+ 	 */
+ 	if (scl_rate <= 100000) {
+-		min_low_ns = 4700;
+-		min_high_ns = 4000;
+-		max_data_hold_ns = 3450;
+-		data_hold_buffer_ns = 50;
++		spec_min_low_ns = 4700;
++		spec_min_high_ns = 4000;
++		spec_max_data_hold_ns = 3450;
++		spec_data_hold_buffer_ns = 50;
+ 	} else {
+-		min_low_ns = 1300;
+-		min_high_ns = 600;
+-		max_data_hold_ns = 900;
+-		data_hold_buffer_ns = 50;
++		spec_min_low_ns = 1300;
++		spec_min_high_ns = 600;
++		spec_max_data_hold_ns = 900;
++		spec_data_hold_buffer_ns = 50;
+ 	}
+-	max_low_ns = max_data_hold_ns * 2 - data_hold_buffer_ns;
++	min_low_ns = spec_min_low_ns + fall_ns;
++	min_high_ns = spec_min_high_ns + rise_ns;
++	max_low_ns = spec_max_data_hold_ns * 2 - spec_data_hold_buffer_ns;
+ 	min_total_ns = min_low_ns + min_high_ns;
  
--unsigned int txqueue2outpipe(struct r8192_priv *priv, unsigned int tx_queue)
-+static unsigned int txqueue2outpipe(struct r8192_priv *priv,
-+						unsigned int tx_queue)
- {
- 	if (tx_queue >= 9) {
- 		RT_TRACE(COMP_ERR, "%s():Unknown queue ID!!!\n", __func__);
-@@ -4873,7 +4874,8 @@ static void query_rxdesc_status(struct sk_buff *skb,
+ 	/* Adjust to avoid overflow */
+@@ -588,8 +597,8 @@ static void rk3x_i2c_adapt_div(struct rk3x_i2c *i2c, unsigned long clk_rate)
+ 	u64 t_low_ns, t_high_ns;
+ 	int ret;
  
- }
+-	ret = rk3x_i2c_calc_divs(clk_rate, i2c->scl_frequency, &div_low,
+-				 &div_high);
++	ret = rk3x_i2c_calc_divs(clk_rate, i2c->scl_frequency, i2c->rise_ns,
++				 i2c->fall_ns, &div_low, &div_high);
  
--u32 GetRxPacketShiftBytes819xUsb(struct ieee80211_rx_stats  *Status, bool bIsRxAggrSubframe)
-+static u32 GetRxPacketShiftBytes819xUsb(struct ieee80211_rx_stats  *Status,
-+						bool bIsRxAggrSubframe)
- {
- #ifdef USB_RX_AGGREGATION_SUPPORT
- 	if (bIsRxAggrSubframe)
+ 	WARN_ONCE(ret != 0, "Could not reach SCL freq %u", i2c->scl_frequency);
+ 
+@@ -633,9 +642,9 @@ static int rk3x_i2c_clk_notifier_cb(struct notifier_block *nb, unsigned long
+ 	switch (event) {
+ 	case PRE_RATE_CHANGE:
+ 		if (rk3x_i2c_calc_divs(ndata->new_rate, i2c->scl_frequency,
+-				      &div_low, &div_high) != 0) {
++				       i2c->rise_ns, i2c->fall_ns, &div_low,
++				       &div_high) != 0)
+ 			return NOTIFY_STOP;
+-		}
+ 
+ 		/* scale up */
+ 		if (ndata->new_rate > ndata->old_rate)
+@@ -859,6 +868,16 @@ static int rk3x_i2c_probe(struct platform_device *pdev)
+ 		i2c->scl_frequency = DEFAULT_SCL_RATE;
+ 	}
+ 
++	/* Read rise and fall ns; if not there use the default max from spec */
++	if (of_property_read_u32(pdev->dev.of_node, "rise-ns", &i2c->rise_ns)) {
++		if (i2c->scl_frequency <= 100000)
++			i2c->rise_ns = 1000;
++		else
++			i2c->rise_ns = 300;
++	}
++	if (of_property_read_u32(pdev->dev.of_node, "fall-ns", &i2c->fall_ns))
++		i2c->fall_ns = 300;
++
+ 	strlcpy(i2c->adap.name, "rk3x-i2c", sizeof(i2c->adap.name));
+ 	i2c->adap.owner = THIS_MODULE;
+ 	i2c->adap.algo = &rk3x_i2c_algorithm;
 -- 
-1.9.1
+1.8.3.2
+
 
