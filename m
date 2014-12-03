@@ -1,46 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839AbaLCPLZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 10:11:25 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:33102 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262AbaLCPLX convert rfc822-to-8bit (ORCPT
+	id S1751863AbaLCPM0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 10:12:26 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:43093 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340AbaLCPMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 10:11:23 -0500
-From: Alexander Kochetkov <al.kochet@gmail.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: Question about patch "i2c: omap: resize fifos before each message"
-Date: Wed, 3 Dec 2014 18:11:18 +0300
-Message-Id: <A20987D6-DEEC-488D-9655-36A4D186599B@gmail.com>
-Cc: Kevin Hilman <khilman@kernel.org>, Tony Lindgren <tony@atomide.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        linux-omap <linux-omap@vger.kernel.org>, linux-i2c@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-To: Felipe Balbi <balbi@ti.com>
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-X-Mailer: Apple Mail (2.1878.6)
+	Wed, 3 Dec 2014 10:12:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <547E7455.6090009@gmail.com>
+References: <1417110967-16284-1-git-send-email-leif.lindholm@linaro.org>
+ <1417110967-16284-2-git-send-email-leif.lindholm@linaro.org> <547E7455.6090009@gmail.com>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Wed, 3 Dec 2014 15:12:03 +0000
+X-Google-Sender-Auth: nQqF0-DOn88KRNS2B_o_dXBd66U
+Message-ID: <CACxGe6vdbURE3=W3Uerwy90piGKhv7-m+-vpUhCiUTKB4AzTsw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] devicetree: of: Add bindings for chosen node, stdout-path
+To: Frank Rowand <frowand.list@gmail.com>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        Rob Herring <robh+dt@kernel.org>, Ian Campbell <ijc@debian.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe,
+On Wed, Dec 3, 2014 at 2:24 AM, Frank Rowand <frowand.list@gmail.com> wrote:
+> On 11/27/2014 9:56 AM, Leif Lindholm wrote:
+>> Add a global binding for the chosen node.
+>> Include a description of the stdout-path, and an explicit statement on
+>> its extra options in the context of a UART console.
+>>
+>> Opening description stolen from www.devicetree.org, and part of the
+>> remaining text provided by Mark Rutland.
+>>
+>> Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+>> ---
+>>  Documentation/devicetree/bindings/chosen.txt |   42 ++++++++++++++++++++++++++
+>>  1 file changed, 42 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/chosen.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/chosen.txt b/Documentation/devicetree/bindings/chosen.txt
+>> new file mode 100644
+>> index 0000000..9cd74e9
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/chosen.txt
+>> @@ -0,0 +1,42 @@
+>> +The chosen node
+>> +---------------
+>> +
+>> +The chosen node does not represent a real device, but serves as a place
+>> +for passing data between firmware and the operating system, like boot
+>> +arguments. Data in the chosen node does not represent the hardware.
+>> +
+>> +
+>> +stdout-path property
+>
+> The code in patch 3/3 adds the extra options feature to the properties:
+>
+>   stdout-path
+>   linux,stdout-path
+>   stdout  [if (IS_ENABLED(CONFIG_PPC) ... ]
 
-Question about the patch[1].
+I don't understand what you mean here. Are you suggesting a change to
+this patch? Is there something deficient in it?
 
-I want to change the code in a way to not touch fifo thresholds for each message.
-Because:
-1. dev->threshold is valid only with checking of transfer direction.
-   So, if last transfer was transmission and ISR get RRDY interrupt from slave receiver,
-   then dev->threshold is invalid. We must read threshold value from BUF register, to
-   process correctly.
-2. I want to avoid changing fifos before message submission, because IP can start receiving
-   message in a slave mode (race).
-3. dev->threshold is changed in range 1-fifo_size/2. So instead of RDR we get RRDY and
-   for messages larger then fifo_size/2 we still get RRDY and RDR.
+g.
 
-Felipe, do you have in mind why do you want to avoid RDR and XDR events?
-Something about errata?
-
-[1] https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/drivers/i2c/busses/i2c-omap.c?id=dd74548ddece4b9d68e5528287a272fa552c81d0
-
+>
+>> +--------------------
+>> +
+>> +Device trees may specify the device to be used for boot console output
+>> +with a stdout-path property under /chosen, as described in ePAPR, e.g.
+>> +
+>> +/ {
+>> +     chosen {
+>> +             stdout-path = "/serial@f00:115200";
+>> +     };
+>> +
+>> +     serial@f00 {
+>> +             compatible = "vendor,some-uart";
+>> +             reg = <0xf00 0x10>;
+>> +     };
+>> +};
+>> +
+>> +If the character ":" is present in the value, this terminates the path.
+>> +The meaning of any characters following the ":" is device-specific, and
+>> +must be specified in the relevant binding documentation.
+>> +
+>> +For UART devices, the format supported by uart_parse_options() is the
+>> +expected one. In this case, the format of the string is:
+>> +
+>> +     <baud>{<parity>{<bits>{<flow>}}}
+>> +
+>> +where
+>> +
+>> +     baud    - baud rate in decimal
+>> +     parity  - 'n' (none), 'o', (odd) or 'e' (even)
+>> +     bits    - number of data bits
+>> +     flow    - 'r' (rts)
+>> +
+>> +For example: 115200n8r
+>>
+>
