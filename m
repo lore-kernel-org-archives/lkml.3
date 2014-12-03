@@ -1,128 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118AbaLCM7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 07:59:14 -0500
-Received: from h1.radempa.de ([176.9.142.194]:59374 "EHLO mail.cosmopool.net"
+	id S1752167AbaLCNA4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 08:00:56 -0500
+Received: from mout.web.de ([212.227.15.4]:58093 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750855AbaLCM7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 07:59:13 -0500
-From: Harald Geyer <harald@ccbib.org>
-To: Richard Weinberger <richard@nod.at>
-cc: jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
-        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] iio: dht11: Logging updates
-In-reply-to: <1417563176-31972-4-git-send-email-richard@nod.at>
-References: <1417563176-31972-1-git-send-email-richard@nod.at> <1417563176-31972-4-git-send-email-richard@nod.at>
-Comments: In-reply-to Richard Weinberger <richard@nod.at>
-   message dated "Wed, 03 Dec 2014 00:32:55 +0100."
+	id S1751031AbaLCNAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 08:00:54 -0500
+Message-ID: <547F0977.7090908@users.sourceforge.net>
+Date: Wed, 03 Dec 2014 14:00:39 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <4685.1417611532.1@stardust.g4.wien.funkfeuer.at>
-Date: Wed, 03 Dec 2014 13:58:52 +0100
-Message-Id: <E1Xw9W8-0001Db-9a@stardust.g4.wien.funkfeuer.at>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Julia Lawall <julia.lawall@lip6.fr>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Jonathan Corbet <corbet@lwn.net>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Coccinelle <cocci@systeme.lip6.fr>, backports@vger.kernel.org,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>
+Subject: Re: [patch] CodingStyle: add some more error handling guidelines
+References: <20141202085950.GA13434@mwanda> <547F0297.6030202@users.sourceforge.net> <20141203124511.GR5048@mwanda>
+In-Reply-To: <20141203124511.GR5048@mwanda>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:QIsSIcCOoePhlhdUucuClEUYDuQVAvWTpfjeV0blJLGQOU93GTz
+ W/xyMc3rjcsN5uTTHz3pE+d01lKV3T7s5Mxqn5e556tpctdfxttdlIAGoSj9a+PfZTxJowT
+ oLkUQB5wLSZo5iGUfOhsxuGHg7crxulhX+rAZziyKdgMD+eYfKy5LApAiguTvNLyiD4yejr
+ nkRjc+Y4otPo2KKvLnSKg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Weinberger writes:
-> Currently the driver uses pr_* and dev_* functions.
-> Change all logging functions to dev_* style to be consistent
-> and have the correct device prefix in all messages.
-
-Yes, actually this was on purpose:
-The dev_ messages are really about something wrong with the device.
-Ie if something goes wrong with one device but could perfectly work
-with some other device.
-The pr_ messages OTOH are about something wrong with clock resolution,
-etc that would affect any DHT11 sensor on the system. Ideally we would
-notice these things during probe() and just return with an error there.
-Right now we aren't as clever as that, so we just log an error message
-about the driver, when actually we are reading the device.
-
-That said, I don't have strong feelings about this. If you want to
-change this, I won't object. However if you really want to fix this,
-then the proper thing would be to check for this conditions in
-probe().
-
-> This change set also adds new messages to diagnose issues.
-
-Comment below.
-
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  drivers/iio/humidity/dht11.c | 16 ++++++++++------
->  1 file changed, 10 insertions(+), 6 deletions(-)
+>> * To which source code place should the word "location" refer to?
+>>   - jump source
+>>   - jump target
 > 
-> diff --git a/drivers/iio/humidity/dht11.c b/drivers/iio/humidity/dht11.c
-> index 0023699..fbcd7cb 100644
-> --- a/drivers/iio/humidity/dht11.c
-> +++ b/drivers/iio/humidity/dht11.c
-> @@ -96,20 +96,22 @@ static int dht11_decode(struct dht11 *dht11, int offset)
->  			timeres = t;
->  	}
->  	if (2*timeres > DHT11_DATA_BIT_HIGH) {
-> -		pr_err("dht11: timeresolution %d too bad for decoding\n",
-> +		dev_err(dht11->dev, "timeresolution %d too bad for decoding\n",
->  			timeres);
->  		return -EIO;
->  	}
->  	threshold = DHT11_DATA_BIT_HIGH / timeres;
->  	if (DHT11_DATA_BIT_LOW/timeres + 1 >= threshold)
-> -		pr_err("dht11: WARNING: decoding ambiguous\n");
-> +		dev_err(dht11->dev, "decoding ambiguous\n");
->  
->  	/* scale down with timeres and check validity */
->  	for (i = 0; i < DHT11_BITS_PER_READ; ++i) {
->  		t = dht11->edges[offset + 2*i + 2].ts -
->  			dht11->edges[offset + 2*i + 1].ts;
-> -		if (!dht11->edges[offset + 2*i + 1].value)
-> -			return -EIO;  /* lost synchronisation */
-> +		if (!dht11->edges[offset + 2*i + 1].value) {
-> +			dev_err(dht11->dev, "lost synchronisation\n");
-> +			return -EIO;
-> +		}
+> jump target.
 
-Are you sure this warrants a log message? I don't think this provides
-much information. The userspace application should just try reading
-the sensor again.
+Thanks for the clarification of your intention.
 
-We could do someting smart and try to recover from such errors, but
-ultimately userspace will need to deal with failed sensor communication
-anyway, so I don't see the point.
+I wonder then why I got the feedback "That is a useless thing to do."
+from you yesterday.
+I hope that we can still clarify our different opinions about specific
+implementation details in constructive ways.
 
->  		timing[i] = t / timeres;
->  	}
->  
-> @@ -119,8 +121,10 @@ static int dht11_decode(struct dht11 *dht11, int offset)
->  	temp_dec = dht11_decode_byte(&timing[24], threshold);
->  	checksum = dht11_decode_byte(&timing[32], threshold);
->  
-> -	if (((hum_int + hum_dec + temp_int + temp_dec) & 0xff) != checksum)
-> +	if (((hum_int + hum_dec + temp_int + temp_dec) & 0xff) != checksum) {
-> +		dev_err(dht11->dev, "invalid checksum\n");
->  		return -EIO;
-> +	}
-
-Same thing here.
-
->  	dht11->timestamp = iio_get_time_ns();
->  	if (hum_int < 20) {  /* DHT22 */
-> @@ -193,7 +197,7 @@ static int dht11_read_raw(struct iio_dev *iio_dev,
->  		free_irq(dht11->irq, iio_dev);
->  
->  		if (ret == 0 && dht11->num_edges < DHT11_EDGES_PER_READ - 1) {
-> -			dev_err(&iio_dev->dev,
-> +			dev_err(dht11->dev,
-
-Ack.
-
-Thanks,
-Harald
-
->  					"Only %d signal edges detected\n",
->  					dht11->num_edges);
->  			ret = -ETIMEDOUT;
-> -- 
-> 1.8.4.5
-> 
+Regards,
+Markus
