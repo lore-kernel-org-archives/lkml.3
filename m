@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237AbaLCQJC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 11:09:02 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:65437 "EHLO
+	id S1753310AbaLCQJQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 11:09:16 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:65468 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860AbaLCQI4 (ORCPT
+	with ESMTP id S1752362AbaLCQJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 11:08:56 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-c6-547f35969ef8
+	Wed, 3 Dec 2014 11:09:09 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-d2-547f35a2bf5c
 From: Jacek Anaszewski <j.anaszewski@samsung.com>
 To: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org
@@ -15,174 +15,285 @@ Cc: kyungmin.park@samsung.com, b.zolnierkie@samsung.com, pavel@ucw.cz,
         cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
         s.nawrocki@samsung.com, robh+dt@kernel.org, pawel.moll@arm.com,
         mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, Jacek Anaszewski <j.anaszewski@samsung.com>
-Subject: [PATCH/RFC v9 16/19] exynos4-is: Add support for v4l2-flash subdevs
-Date: Wed, 03 Dec 2014 17:06:51 +0100
-Message-id: <1417622814-10845-17-git-send-email-j.anaszewski@samsung.com>
+        galak@codeaurora.org, Jacek Anaszewski <j.anaszewski@samsung.com>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>
+Subject: [PATCH/RFC v9 18/19] leds: max77693: add support for V4L2 Flash
+ sub-device
+Date: Wed, 03 Dec 2014 17:06:53 +0100
+Message-id: <1417622814-10845-19-git-send-email-j.anaszewski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
 References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t9jQd1ppvUhBjMvCVpsnLGe1eLozolM
-	Fv1vFrJanHu1ktGi9+pzRouzTW/YLS7vmsNmsfXNOkaLng1bWS2WXr/IZHH31FE2iwnT17JY
-	tO49wm6xe9dTVovDb9pZLc7sX8nmIOCxZt4aRo/Lfb1MHjtn3WX3WLn8C5vH4a8LWTw2repk
-	89gz/werR9+WVYweK1Z/Z/f4vEkugCuKyyYlNSezLLVI3y6BK+Nbq3tBo3pF24rJLA2MGxW6
-	GDk5JARMJDZ/Pc0GYYtJXLi3Hsjm4hASmM4osfjfVWYIp51J4uL23awgVWwChhI/X7xm6mLk
-	4BARiJa4dKweJMwscJBJ4tbjchBbWMBH4syXR4wgJSwCqhJ3b8eAhHkFPCXOH7zFDBKWEFCQ
-	mDPJBiTMCRR++uM+O0hYSMBD4uBE/wmMvAsYGVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525i
-	BAf2M6kdjCsbLA4xCnAwKvHwWsTVhQixJpYVV+YeYpTgYFYS4X32DSjEm5JYWZValB9fVJqT
-	WnyIUZqDRUmc98bN3BAhgfTEktTs1NSC1CKYLBMHp1QDo2XzuY0rg078jJ22mW/z4T2pm05t
-	mXD7RuhM7ogTWp0vnb553CzvOmd6bW6pOc/nK55tzV8nHmrh//9T+eo6K/7Fk+we/LK4aOpb
-	E7l497z8b07p1Z25zhut76Q3rZVQu5Z84Fli/KQT7bErvztvvDpVMeuezL/3nCecjZl/3d+k
-	4HtO1+OoR4USS3FGoqEWc1FxIgBqdfZqaAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsVy+t9jQd1FpvUhBv0vLCw2zljPanF050Qm
+	i/43C1ktzr1ayWjRe/U5o8XZpjfsFpd3zWGz2PpmHaNFz4atrBZLr19ksrh76iibxYTpa1ks
+	WvceYbfYvespq8XhN+2sFmf2r2Sz+LTlG5ODoMeaeWsYPS739TJ57Jx1l91j5fIvbB6Hvy5k
+	8di0qpPNY97JQI8983+wevRtWcXosWL1d3aPz5vkArijuGxSUnMyy1KL9O0SuDJmPbvHVPDT
+	oeJgj0UD4xvTLkZODgkBE4lLnT/ZIWwxiQv31rN1MXJxCAlMZ5R4f/0JC4TTziTxcOZyJpAq
+	NgFDiZ8vXgPZHBwiAtESl47Vg9QwC3xgkrj4/wvYJGGBUIm++a+ZQWwWAVWJvZvfgtm8Ap4S
+	/x58YgPplRBQkJgzyQYkzAkUfvrjPjtIWEjAQ+LgRP8JjLwLGBlWMYqmFiQXFCel5xrqFSfm
+	Fpfmpesl5+duYgSH+zOpHYwrGywOMQpwMCrx8FrE1YUIsSaWFVfmHmKU4GBWEuF99g0oxJuS
+	WFmVWpQfX1Sak1p8iFGag0VJnPfGzdwQIYH0xJLU7NTUgtQimCwTB6dUA6Obh0rVbOXd7y+Y
+	bBWwkjp3ks2peGOqw4K8pWp/F+Rueti6++hCp16NL4En/4sa/CmQW9r6LUDIsrMh94SQgpXz
+	HeVkj5YFcycH3HuwzPNWZAH/ZP+/12bUBR/z3iaUxOwo9oEjIMUv/KDYveSpSfu32Zd8t1P9
+	p9Z9uOqA6ZvVy+yt1+2RW6nEUpyRaKjFXFScCAAv0jCDcwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds suppport for external v4l2-flash devices.
-The support includes parsing camera-flash DT property
-and asynchronous subdevice registration.
+Add support for V4L2 Flash sub-device to the max77693 LED Flash class
+driver. The support allows for V4L2 Flash sub-device to take the control
+of the LED Flash class device.
 
 Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Bryan Wu <cooloney@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Cc: Sakari Ailus <sakari.ailus@linux.intel.com>
 ---
- drivers/media/platform/exynos4-is/media-dev.c |   42 +++++++++++++++++++++++--
- drivers/media/platform/exynos4-is/media-dev.h |   13 +++++++-
- 2 files changed, 52 insertions(+), 3 deletions(-)
+ drivers/leds/leds-max77693.c |  133 +++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 132 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/media/platform/exynos4-is/media-dev.c b/drivers/media/platform/exynos4-is/media-dev.c
-index f315ef9..b422d2e 100644
---- a/drivers/media/platform/exynos4-is/media-dev.c
-+++ b/drivers/media/platform/exynos4-is/media-dev.c
-@@ -451,6 +451,25 @@ rpm_put:
- 	return ret;
+diff --git a/drivers/leds/leds-max77693.c b/drivers/leds/leds-max77693.c
+index 67a2f8f..e93edbd 100644
+--- a/drivers/leds/leds-max77693.c
++++ b/drivers/leds/leds-max77693.c
+@@ -21,6 +21,7 @@
+ #include <linux/regmap.h>
+ #include <linux/slab.h>
+ #include <linux/workqueue.h>
++#include <media/v4l2-flash.h>
+ 
+ #define MODE_OFF		0
+ #define MODE_FLASH1		(1 << 0)
+@@ -49,6 +50,7 @@ enum {
+ struct max77693_sub_led {
+ 	struct led_classdev_flash ldev;
+ 	struct work_struct work_brightness_set;
++	struct v4l2_flash *v4l2_flash;
+ 
+ 	unsigned int torch_brightness;
+ 	unsigned int flash_timeout;
+@@ -602,6 +604,32 @@ unlock:									\
+ 	return ret;							\
  }
  
-+static void fimc_md_register_flash_entities(struct fimc_md *fmd)
-+{
-+	struct device_node *parent = fmd->pdev->dev.of_node;
-+	struct device_node *np;
-+	int i = 0;
++#if IS_ENABLED(CONFIG_V4L2_FLASH_LED_CLASS)
++#define MAX77693_LED_FLASH_EXTERNAL_STROBE_SET(ID)			\
++static int max77693_led##ID##_external_strobe_set(			\
++				struct v4l2_flash *v4l2_flash,		\
++				bool enable)				\
++{									\
++	struct max77693_led *led =					\
++			ldev##ID##_to_led(v4l2_flash->flash);		\
++	int ret;							\
++									\
++	mutex_lock(&led->lock);						\
++									\
++	if (enable)							\
++		ret = max77693_add_mode(led, MODE_FLASH_EXTERNAL##ID);	\
++	else								\
++		ret = max77693_clear_mode(led,				\
++					MODE_FLASH_EXTERNAL##ID);	\
++									\
++	mutex_unlock(&led->lock);					\
++									\
++	return ret;							\
++}
++#else
++#define MAX77693_LED_FLASH_EXTERNAL_STROBE_SET(ID)
++#endif
 +
-+	do {
-+		np = of_parse_phandle(parent, "flashes", i);
-+		if (np) {
-+			fmd->flash[fmd->num_flashes].asd.match_type =
-+							V4L2_ASYNC_MATCH_CUSTOM_OF;
-+			fmd->flash[fmd->num_flashes].asd.match.of.node = np;
-+			fmd->num_flashes++;
-+			fmd->async_subdevs[fmd->num_sensors + i] =
-+						&fmd->flash[i].asd;
-+		}
-+	} while (np && (++i < FIMC_MAX_FLASHES));
+ #define MAX77693_LED_FLASH_FAULT_GET(ID)				\
+ static int max77693_led##ID##_flash_fault_get(				\
+ 				struct led_classdev_flash *flash,	\
+@@ -670,6 +698,7 @@ MAX77693_LED_TORCH_BRIGHTNESS_SET(1)
+ MAX77693_LED_FLASH_BRIGHTNESS_SET(1)
+ MAX77693_LED_FLASH_STROBE_SET(1)
+ MAX77693_LED_FLASH_STROBE_GET(1)
++MAX77693_LED_FLASH_EXTERNAL_STROBE_SET(1)
+ MAX77693_LED_FLASH_TIMEOUT_SET(1)
+ MAX77693_LED_FLASH_FAULT_GET(1)
+ 
+@@ -679,6 +708,7 @@ MAX77693_LED_TORCH_BRIGHTNESS_SET(2)
+ MAX77693_LED_FLASH_BRIGHTNESS_SET(2)
+ MAX77693_LED_FLASH_STROBE_SET(2)
+ MAX77693_LED_FLASH_STROBE_GET(2)
++MAX77693_LED_FLASH_EXTERNAL_STROBE_SET(2)
+ MAX77693_LED_FLASH_TIMEOUT_SET(2)
+ MAX77693_LED_FLASH_FAULT_GET(2)
+ 
+@@ -838,9 +868,35 @@ static const struct led_flash_ops flash_ops##ID = {				\
+ 	.fault_get		= max77693_led##ID##_flash_fault_get,		\
+ }
+ 
++#if IS_ENABLED(CONFIG_V4L2_FLASH_LED_CLASS)
++#define MAX77693_LED_V4L2_FLASH_OPS(ID)						\
++static const struct v4l2_flash_ops v4l2_flash##ID##_ops = {			\
++	.external_strobe_set = max77693_led##ID##_external_strobe_set,		\
 +}
 +
- static int __of_get_csis_id(struct device_node *np)
- {
- 	u32 reg = 0;
-@@ -1272,9 +1291,24 @@ static int subdev_notifier_bound(struct v4l2_async_notifier *notifier,
- 				 struct v4l2_async_subdev *asd)
- {
- 	struct fimc_md *fmd = notifier_to_fimc_md(notifier);
-+	struct device_node *node;
- 	struct fimc_sensor_info *si = NULL;
- 	int i;
- 
-+	node = v4l2_async_get_of_node_by_subdev(subdev);
-+	if (node) {
-+		/* Register flash subdev if detected any */
-+		for (i = 0; i < ARRAY_SIZE(fmd->flash); i++) {
-+			if (fmd->flash[i].asd.match.of.node == node) {
-+				fmd->flash[i].subdev = subdev;
-+				fmd->num_flashes++;
-+				return 0;
-+			}
-+		}
++#define MAX77693_LED_GET_V4L2_FLASH_OPS(ID)					\
++static inline const struct v4l2_flash_ops *get_v4l2_flash##ID##_ops(void)	\
++{										\
++	return &v4l2_flash##ID##_ops;						\
++}
++#else
++#define MAX77693_LED_V4L2_FLASH_OPS(ID)
 +
-+		return -EINVAL;
++#define MAX77693_LED_GET_V4L2_FLASH_OPS(ID)					\
++static inline const struct v4l2_flash_ops *get_v4l2_flash##ID##_ops(void)	\
++{										\
++	return NULL;								\
++}
++#endif
++
+ MAX77693_LED_INIT_FLASH_OPS(1);
+ MAX77693_LED_INIT_FLASH_OPS(2);
+ 
++MAX77693_LED_V4L2_FLASH_OPS(1);
++MAX77693_LED_V4L2_FLASH_OPS(2);
++MAX77693_LED_GET_V4L2_FLASH_OPS(1);
++MAX77693_LED_GET_V4L2_FLASH_OPS(2);
++
+ static void max77693_init_flash_settings(struct max77693_led *led,
+ 					 struct max77693_led_settings *s,
+ 					 int led_id)
+@@ -876,18 +932,68 @@ static void max77693_init_flash_settings(struct max77693_led *led,
+ 	setting->val = setting->max;
+ }
+ 
++#if IS_ENABLED(CONFIG_V4L2_FLASH_LED_CLASS)
++static void max77693_init_v4l2_ctrl_config(struct max77693_led_settings *s,
++					struct max77693_led_platform_data *p,
++					struct v4l2_flash_ctrl_config *config,
++					int led_id)
++{
++	struct led_flash_setting *setting;
++	struct v4l2_ctrl_config *c;
++
++	c = &config->intensity;
++	setting = &s->torch_brightness;
++	c->min = setting->min;
++	c->max = setting->max;
++	c->step = setting->step;
++	c->def = setting->val;
++
++	c = &config->flash_intensity;
++	setting = &s->flash_brightness;
++	c->min = setting->min;
++	c->max = setting->max;
++	c->step = setting->step;
++	c->def = setting->val;
++
++	c = &config->flash_timeout;
++	setting = &s->flash_timeout;
++	c->min = setting->min;
++	c->max = setting->max;
++	c->step = setting->step;
++	c->def = setting->val;
++
++	/* Init flash faults config */
++	config->flash_faults =	V4L2_FLASH_FAULT_OVER_VOLTAGE |
++				V4L2_FLASH_FAULT_SHORT_CIRCUIT |
++				V4L2_FLASH_FAULT_OVER_CURRENT;
++
++	config->has_external_strobe =
++			!!(p->trigger[led_id] & MAX77693_LED_TRIG_FLASH);
++}
++#else
++#define max77693_init_v4l2_ctrl_config(s, p, config, led_id)
++#endif
++
+ static int max77693_register_led(struct max77693_led *led, int id)
+ {
+ 	struct platform_device *pdev = led->pdev;
+ 	struct led_classdev_flash *flash;
+ 	struct led_classdev *led_cdev;
+ 	struct max77693_sub_led *sub_leds = led->sub_leds;
++#if IS_ENABLED(CONFIG_V4L2_FLASH_LED_CLASS)
++	struct v4l2_flash_ctrl_config v4l2_flash_config;
++#endif
++	const struct v4l2_flash_ops *v4l2_flash_ops = NULL;
+ 	struct max77693_led_settings settings;
++	int ret;
+ 
+ 	flash = &sub_leds[id].ldev;
+ 
+ 	/* Initialize flash settings */
+ 	max77693_init_flash_settings(led, &settings, id);
++	/* Initialize V4L2 Flash config basing on initialized settings */
++	max77693_init_v4l2_ctrl_config(&settings, led->pdata,
++					&v4l2_flash_config, id);
+ 
+ 	/* Initialize LED Flash class device */
+ 	led_cdev = &flash->led_cdev;
+@@ -901,6 +1007,7 @@ static int max77693_register_led(struct max77693_led *led, int id)
+ 		INIT_WORK(&sub_leds[id].work_brightness_set,
+ 				max77693_led1_brightness_set_work);
+ 		flash->ops = &flash_ops1;
++		v4l2_flash_ops = get_v4l2_flash1_ops();
+ 	} else {
+ 		led_cdev->brightness_set = max77693_led2_brightness_set;
+ 		led_cdev->brightness_set_sync =
+@@ -908,6 +1015,7 @@ static int max77693_register_led(struct max77693_led *led, int id)
+ 		INIT_WORK(&sub_leds[id].work_brightness_set,
+ 				max77693_led2_brightness_set_work);
+ 		flash->ops = &flash_ops2;
++		v4l2_flash_ops = get_v4l2_flash2_ops();
+ 	}
+ 
+ 	led_cdev->max_brightness = settings.torch_brightness.val /
+@@ -921,7 +1029,27 @@ static int max77693_register_led(struct max77693_led *led, int id)
+ 	sub_leds[id].flash_timeout = flash->timeout.val;
+ 
+ 	/* Register in the LED subsystem. */
+-	return led_classdev_flash_register(&pdev->dev, flash);
++	ret = led_classdev_flash_register(&pdev->dev, flash);
++	if (ret < 0)
++		return ret;
++
++	sub_leds[id].v4l2_flash =
++		v4l2_flash_init(flash,
++				v4l2_flash_ops,
++				led->pdata->sub_nodes[id],
++				&v4l2_flash_config);
++
++	if (IS_ERR(sub_leds[id].v4l2_flash)) {
++		ret = PTR_ERR(sub_leds[id].v4l2_flash);
++		goto err_v4l2_flash_init;
 +	}
 +
- 	/* Find platform data for this sensor subdev */
- 	for (i = 0; i < ARRAY_SIZE(fmd->sensor); i++)
- 		if (fmd->sensor[i].asd.match.of.node == subdev->dev->of_node)
-@@ -1385,6 +1419,8 @@ static int fimc_md_probe(struct platform_device *pdev)
- 		goto err_m_ent;
++	return 0;
++
++err_v4l2_flash_init:
++	led_classdev_flash_unregister(flash);
++
++	return ret;
+ }
+ 
+ static int max77693_led_probe(struct platform_device *pdev)
+@@ -972,6 +1100,7 @@ static int max77693_led_probe(struct platform_device *pdev)
+ err_register_led2:
+ 	if (!p->fleds[FLED1])
+ 		goto err_setup;
++	v4l2_flash_release(sub_leds[FLED1].v4l2_flash);
+ 	led_classdev_flash_unregister(&sub_leds[FLED1].ldev);
+ err_setup:
+ 	mutex_destroy(&led->lock);
+@@ -986,11 +1115,13 @@ static int max77693_led_remove(struct platform_device *pdev)
+ 	struct max77693_sub_led *sub_leds = led->sub_leds;
+ 
+ 	if (led->iout_joint || p->fleds[FLED1]) {
++		v4l2_flash_release(sub_leds[FLED1].v4l2_flash);
+ 		led_classdev_flash_unregister(&sub_leds[FLED1].ldev);
+ 		cancel_work_sync(&sub_leds[FLED1].work_brightness_set);
  	}
  
-+	fimc_md_register_flash_entities(fmd);
-+
- 	mutex_unlock(&fmd->media_dev.graph_mutex);
- 
- 	ret = device_create_file(&pdev->dev, &dev_attr_subdev_conf_mode);
-@@ -1401,12 +1437,14 @@ static int fimc_md_probe(struct platform_device *pdev)
- 		goto err_attr;
+ 	if (!led->iout_joint && p->fleds[FLED2]) {
++		v4l2_flash_release(sub_leds[FLED2].v4l2_flash);
+ 		led_classdev_flash_unregister(&sub_leds[FLED2].ldev);
+ 		cancel_work_sync(&sub_leds[FLED2].work_brightness_set);
  	}
- 
--	if (fmd->num_sensors > 0) {
-+	if (fmd->num_sensors > 0 || fmd->num_flashes > 0) {
- 		fmd->subdev_notifier.subdevs = fmd->async_subdevs;
--		fmd->subdev_notifier.num_subdevs = fmd->num_sensors;
-+		fmd->subdev_notifier.num_subdevs = fmd->num_sensors +
-+							fmd->num_flashes;
- 		fmd->subdev_notifier.bound = subdev_notifier_bound;
- 		fmd->subdev_notifier.complete = subdev_notifier_complete;
- 		fmd->num_sensors = 0;
-+		fmd->num_flashes = 0;
- 
- 		ret = v4l2_async_notifier_register(&fmd->v4l2_dev,
- 						&fmd->subdev_notifier);
-diff --git a/drivers/media/platform/exynos4-is/media-dev.h b/drivers/media/platform/exynos4-is/media-dev.h
-index 0321454..feff9c8 100644
---- a/drivers/media/platform/exynos4-is/media-dev.h
-+++ b/drivers/media/platform/exynos4-is/media-dev.h
-@@ -34,6 +34,8 @@
- 
- #define FIMC_MAX_SENSORS	4
- #define FIMC_MAX_CAMCLKS	2
-+#define FIMC_MAX_FLASHES	2
-+#define FIMC_MAX_ASYNC_SUBDEVS (FIMC_MAX_SENSORS + FIMC_MAX_FLASHES)
- #define DEFAULT_SENSOR_CLK_FREQ	24000000U
- 
- /* LCD/ISP Writeback clocks (PIXELASYNCMx) */
-@@ -93,6 +95,11 @@ struct fimc_sensor_info {
- 	struct fimc_dev *host;
- };
- 
-+struct fimc_flash_info {
-+	struct v4l2_subdev *subdev;
-+	struct v4l2_async_subdev asd;
-+};
-+
- struct cam_clk {
- 	struct clk_hw hw;
- 	struct fimc_md *fmd;
-@@ -104,6 +111,8 @@ struct cam_clk {
-  * @csis: MIPI CSIS subdevs data
-  * @sensor: array of registered sensor subdevs
-  * @num_sensors: actual number of registered sensors
-+ * @flash: array of registered flash subdevs
-+ * @num_flashes: actual number of registered flashes
-  * @camclk: external sensor clock information
-  * @fimc: array of registered fimc devices
-  * @fimc_is: fimc-is data structure
-@@ -123,6 +132,8 @@ struct fimc_md {
- 	struct fimc_csis_info csis[CSIS_MAX_ENTITIES];
- 	struct fimc_sensor_info sensor[FIMC_MAX_SENSORS];
- 	int num_sensors;
-+	struct fimc_flash_info flash[FIMC_MAX_FLASHES];
-+	int num_flashes;
- 	struct fimc_camclk_info camclk[FIMC_MAX_CAMCLKS];
- 	struct clk *wbclk[FIMC_MAX_WBCLKS];
- 	struct fimc_lite *fimc_lite[FIMC_LITE_MAX_DEVS];
-@@ -149,7 +160,7 @@ struct fimc_md {
- 	} clk_provider;
- 
- 	struct v4l2_async_notifier subdev_notifier;
--	struct v4l2_async_subdev *async_subdevs[FIMC_MAX_SENSORS];
-+	struct v4l2_async_subdev *async_subdevs[FIMC_MAX_ASYNC_SUBDEVS];
- 
- 	bool user_subdev_api;
- 	spinlock_t slock;
 -- 
 1.7.9.5
 
