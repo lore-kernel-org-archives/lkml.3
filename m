@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751503AbaLCFSi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 00:18:38 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:35994 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798AbaLCFSg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 00:18:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <547E616C.1020503@rock-chips.com>
-References: <1417531766-29669-1-git-send-email-jay.xu@rock-chips.com>
-	<1417531977-30094-1-git-send-email-jay.xu@rock-chips.com>
-	<CAD=FV=Uwb1NxxCoXHzHu6DJCpnG_HV2RhCr3JaJaXbJja8kd7A@mail.gmail.com>
-	<547E616C.1020503@rock-chips.com>
-Date: Tue, 2 Dec 2014 21:18:35 -0800
-X-Google-Sender-Auth: RKOzkqsQ0A1Lh_4TzIYMriJF-hY
-Message-ID: <CAD=FV=VtYU5Pdz-xvjSdsReyCqMQaMtw=ZXmH4PO5wFnGVPY1g@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ASoC: rockchip: i2s: add support for grabbing output
- clock to codec
-From: Doug Anderson <dianders@chromium.org>
-To: Jianqun <xjq@rock-chips.com>
-Cc: Jianqun Xu <jay.xu@rock-chips.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>, perex@perex.cz,
-        tiwai@suse.de, Sonny Rao <sonnyrao@chromium.org>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        alsa-devel@alsa-project.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1751523AbaLCFWI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 00:22:08 -0500
+Received: from ozlabs.org ([103.22.144.67]:54419 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750927AbaLCFWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 00:22:06 -0500
+In-Reply-To: <1417507013-11948-2-git-send-email-khandual@linux.vnet.ibm.com>
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+From: Michael Ellerman <mpe@ellerman.id.au>
+Cc: shuahkh@osg.samsung.com, mikey@neuling.org, james.hogan@imgtec.com,
+        avagin@openvz.org, Paul.Clothier@imgtec.com, peterz@infradead.org,
+        palves@redhat.com, oleg@redhat.com, davem@davemloft.net,
+        dhowells@redhat.com, kirjanov@gmail.com, davej@redhat.com,
+        akpm@linux-foundation.org, sukadev@linux.vnet.ibm.com,
+        tglx@linutronix.de, sam.bobroff@au1.ibm.com
+Subject: Re: [V6,1/9] elf: Add new powerpc specifc core note sections
+Message-Id: <20141203052204.9DA8F1400DD@ozlabs.org>
+Date: Wed,  3 Dec 2014 16:22:04 +1100 (AEDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 2, 2014 at 5:03 PM, Jianqun <xjq@rock-chips.com> wrote:
-> Hi Doug:
->
-> 在 12/03/2014 01:54 AM, Doug Anderson 写道:
->> Jianqun,
->>
->> This ought to be a "v3" patch and ideally ought to describe
->> differences from v2 (after the cut).  Please have Kever or Chris
->> review your next patch before sending it out since I think they are
->> familiar with the process.
+On Tue, 2014-02-12 at 07:56:45 UTC, Anshuman Khandual wrote:
+> This patch adds four new ELF core note sections for powerpc
+> transactional memory and one new ELF core note section for
+> powerpc general miscellaneous debug registers. These addition
+> of new ELF core note sections extends the existing ELF ABI
+> without affecting it in any manner.
+> 
+> Acked-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+> ---
+>  include/uapi/linux/elf.h | 5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/include/uapi/linux/elf.h b/include/uapi/linux/elf.h
+> index ea9bf25..2260fc0 100644
+> --- a/include/uapi/linux/elf.h
+> +++ b/include/uapi/linux/elf.h
+> @@ -379,6 +379,11 @@ typedef struct elf64_shdr {
+>  #define NT_PPC_VMX	0x100		/* PowerPC Altivec/VMX registers */
+>  #define NT_PPC_SPE	0x101		/* PowerPC SPE/EVR registers */
+>  #define NT_PPC_VSX	0x102		/* PowerPC VSX registers */
+> +#define NT_PPC_TM_SPR	0x103		/* PowerPC TM special registers */
+> +#define NT_PPC_TM_CGPR	0x104		/* PowerpC TM checkpointed GPR */
+> +#define NT_PPC_TM_CFPR	0x105		/* PowerPC TM checkpointed FPR */
+> +#define NT_PPC_TM_CVMX	0x106		/* PowerPC TM checkpointed VMX */
+> +#define NT_PPC_MISC	0x107		/* PowerPC miscellaneous registers */
 
-You still seem to be missing versions in your subject line and missing
-info on what changed version to version.  The latest version you just
-sent (v4?) is still missing it.
+This is a really terrible name, "MISC".
 
-Unless Mark says so then I don't think you need to spin this series,
-but please try to add that in the future.
+Having said that, I guess it's accurate. We have a whole bunch of regs that
+have accrued over recent years that aren't accessible via ptrace.
 
+It seems to me if we're adding a misc regset we should be adding everything we
+might want to it that is currenty architected.
 
->> You still forgot the blank line here requested by Heiko.  Please try
->> again.  See <https://patchwork.kernel.org/patch/5334991/>
-> Although I thought there needn't a blank ~, I wll add it next patch
+But currently you only include the PPR, TAR & DSCR.
 
-That would have been OK, but in that case you should have responded to
-Heiko's patch and explained that you weren't taking his feedback (and
-why you weren't).
+Looking at Power ISA v2.07, I see the following that could be included:
 
--Doug
+  MMCR2
+  MMCRA
+  PMC1
+  PMC2
+  PMC3
+  PMC4
+  PMC5
+  PMC6
+  MMCR0
+  EBBHR
+  EBBRR
+  BESCR
+  SIAR
+  SDAR
+  CFAR?
+
+Those are all new in 2.07 except for CFAR.
+
+There might be more I missed, that was just a quick scan.
+
+Some are only accessible when EBB is in use, maybe those could be a separate
+regset.
+
+cheers
