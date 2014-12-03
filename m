@@ -1,149 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927AbaLCSAk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 13:00:40 -0500
-Received: from mga11.intel.com ([192.55.52.93]:12429 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751624AbaLCSAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 13:00:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="424589680"
-Date: Wed, 3 Dec 2014 18:01:25 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "David E. Box" <david.e.box@linux.intel.com>
-Cc: wsa@the-dreams.de, jdelvare@suse.de, arnd@arndb.de,
-        maxime.ripard@free-electrons.com, dianders@chromium.org,
-        u.kleine-koenig@pengutronix.de,
-        laurent.pinchart+renesas@ideasonboard.com,
-        boris.brezillon@free-electrons.com, andrew@lunn.ch, sjg@chromium.org,
-        markus.mayer@linaro.org, jacob.jun.pan@linux.intel.com,
-        max.schwarz@online.de, skuribay@pobox.com, Romain.Baeriswyl@abilis.com,
-        wenkai.du@intel.com, chiau.ee.chew@intel.com, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH V3 1/2] i2c-designware: Add i2c bus locking support
-Message-ID: <20141203160125.GB28857@lahna.fi.intel.com>
-References: <1411497626-7984-1-git-send-email-david.e.box@linux.intel.com>
- <1417478973-25522-1-git-send-email-david.e.box@linux.intel.com>
- <1417478973-25522-2-git-send-email-david.e.box@linux.intel.com>
+	id S1751593AbaLCSBm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 13:01:42 -0500
+Received: from smtprelay0170.hostedemail.com ([216.40.44.170]:36225 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750893AbaLCSBl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 13:01:41 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2693:2915:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3874:4470:5007:6119:6261:7875:7903:8531:10004:10400:10848:10967:11232:11658:11914:12050:12517:12519:12663:12740:13069:13161:13229:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: rest09_659ef8fe3e329
+X-Filterd-Recvd-Size: 2298
+Date: Wed, 3 Dec 2014 13:01:34 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Theodore Tso <tytso@mit.edu>
+Subject: Re: [PATCH 3/3] ftracetests: Add test to test event filter logic
+Message-ID: <20141203130134.117af4be@gandalf.local.home>
+In-Reply-To: <CAMEtUuxjCQ_eZ9aMmzKWvQw55DO7vgVDN-8neAwR8W+Xdu3zwg@mail.gmail.com>
+References: <20141203031334.174087814@goodmis.org>
+	<20141203032106.156623189@goodmis.org>
+	<CAMEtUuyzfKYVSJUra6nib-wWYQ91uEPC6mizF9PLpg+5Kjb+3w@mail.gmail.com>
+	<20141203034033.19a30e2f@gandalf.local.home>
+	<CAMEtUuxjCQ_eZ9aMmzKWvQw55DO7vgVDN-8neAwR8W+Xdu3zwg@mail.gmail.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417478973-25522-2-git-send-email-david.e.box@linux.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 04:09:32PM -0800, David E. Box wrote:
-> Adds support for acquiring and releasing a hardware bus lock in the i2c
-> designware core transfer function. This is needed for i2c bus controllers
-> that are shared with but not controlled by the kernel.
-> 
-> Signed-off-by: David E. Box <david.e.box@linux.intel.com>
-> ---
->  drivers/i2c/busses/i2c-designware-core.c    | 11 +++++++++++
->  drivers/i2c/busses/i2c-designware-core.h    |  6 ++++++
->  drivers/i2c/busses/i2c-designware-platdrv.c | 18 +++++++++++++-----
->  3 files changed, 30 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-> index 3c20e4b..377deeb 100644
-> --- a/drivers/i2c/busses/i2c-designware-core.c
-> +++ b/drivers/i2c/busses/i2c-designware-core.c
-> @@ -631,6 +631,14 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
->  	dev->abort_source = 0;
->  	dev->rx_outstanding = 0;
->  
-> +	if (dev->acquire_lock) {
-> +		ret = dev->acquire_lock(dev);
-> +		if (ret) {
-> +			dev_err(dev->dev, "couldn't acquire bus ownership\n");
-> +			goto done;
+On Wed, 3 Dec 2014 09:53:18 -0800
+Alexei Starovoitov <ast@plumgrid.com> wrote:
 
-I wonder what happens now since you failed to acquire the lock...
+ 
+> aren't we all starting to hack things only to realize
+> that the scope of work is too large? ;)
 
-> +		}
-> +	}
-> +
->  	ret = i2c_dw_wait_bus_not_busy(dev);
->  	if (ret < 0)
->  		goto done;
-> @@ -676,6 +684,9 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
->  	ret = -EIO;
->  
->  done:
-> +	if (dev->release_lock)
-> +		dev->release_lock(dev);
+Yep. Although I did say I would only spend a few hours on a solution,
+and would give up if it too longer. The patches themselves took much
+shorter than I expected. It was writing the tests that brought me over
+the brink. Although, I did a lot of manual tests to make sure things
+did what was expected. But those manual tests need to become automatic
+ones.
 
-... but here you unconditionally release it?
 
-Otherwise the patch looks good to me.
+> Anyway, will try to add these tests when your patches land.
 
-> +
->  	pm_runtime_mark_last_busy(dev->dev);
->  	pm_runtime_put_autosuspend(dev->dev);
->  	mutex_unlock(&dev->lock);
-> diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
-> index d66b6cb..a472c91 100644
-> --- a/drivers/i2c/busses/i2c-designware-core.h
-> +++ b/drivers/i2c/busses/i2c-designware-core.h
-> @@ -65,6 +65,9 @@
->   * @ss_lcnt: standard speed LCNT value
->   * @fs_hcnt: fast speed HCNT value
->   * @fs_lcnt: fast speed LCNT value
-> + * @acquire_lock: function to acquire a hardware lock on the bus
-> + * @release_lock: function to release a hardware lock on the bus
-> + * @pm_runtime_disabled: true if pm runtime is disabled
->   *
->   * HCNT and LCNT parameters can be used if the platform knows more accurate
->   * values than the one computed based only on the input clock frequency.
-> @@ -105,6 +108,9 @@ struct dw_i2c_dev {
->  	u16			ss_lcnt;
->  	u16			fs_hcnt;
->  	u16			fs_lcnt;
-> +	int			(*acquire_lock)(struct dw_i2c_dev *dev);
-> +	void			(*release_lock)(struct dw_i2c_dev *dev);
-> +	bool			pm_runtime_disabled;
->  };
->  
->  #define ACCESS_SWAP		0x00000001
-> diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
-> index a743115..afdff3b 100644
-> --- a/drivers/i2c/busses/i2c-designware-platdrv.c
-> +++ b/drivers/i2c/busses/i2c-designware-platdrv.c
-> @@ -261,10 +261,16 @@ static int dw_i2c_probe(struct platform_device *pdev)
->  		return r;
->  	}
->  
-> -	pm_runtime_set_autosuspend_delay(&pdev->dev, 1000);
-> -	pm_runtime_use_autosuspend(&pdev->dev);
-> -	pm_runtime_set_active(&pdev->dev);
-> -	pm_runtime_enable(&pdev->dev);
-> +	i2c_dw_eval_lock_support(dev);
-> +
-> +	if (dev->pm_runtime_disabled) {
-> +		pm_runtime_forbid(&pdev->dev);
-> +	} else {
-> +		pm_runtime_set_autosuspend_delay(&pdev->dev, 1000);
-> +		pm_runtime_use_autosuspend(&pdev->dev);
-> +		pm_runtime_set_active(&pdev->dev);
-> +		pm_runtime_enable(&pdev->dev);
-> +	}
->  
->  	return 0;
->  }
-> @@ -314,7 +320,9 @@ static int dw_i2c_resume(struct device *dev)
->  	struct dw_i2c_dev *i_dev = platform_get_drvdata(pdev);
->  
->  	clk_prepare_enable(i_dev->clk);
-> -	i2c_dw_init(i_dev);
-> +
-> +	if (!i_dev->pm_runtime_disabled)
-> +		i2c_dw_init(i_dev);
->  
->  	return 0;
->  }
-> -- 
-> 1.9.1
+I'm placing the code changes in my 3.19 queue, and the test cases in my
+3.20 queue. This is probably a good idea anyway, as the test cases will
+fail if the code wasn't implemented, and the test goes in a separate
+branch, where the code isn't implemented :-)  I did a merge to do the
+test cases.
+
+I also need to solve the busybox limitation. I don't know how that
+shell can do bit logic, which is needed to verify that the filters
+really did work.
+
+-- Steve 
