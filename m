@@ -1,81 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751388AbaLCV6N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 16:58:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56947 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991AbaLCV6M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 16:58:12 -0500
-Date: Wed, 3 Dec 2014 13:58:10 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>, David Rientjes <rientjes@google.com>,
-        Michal Hocko <mhocko@suse.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] oom: don't assume that a coredumping thread will
- exit soon
-Message-Id: <20141203135810.d7e9d4f5e93e3087717e452d@linux-foundation.org>
-In-Reply-To: <20141203195020.GB11558@redhat.com>
-References: <20141127230349.GA25075@redhat.com>
-	<20141203195001.GA11558@redhat.com>
-	<20141203195020.GB11558@redhat.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751941AbaLCWAH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 17:00:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46106 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750991AbaLCWAF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 17:00:05 -0500
+From: Paul Moore <pmoore@redhat.com>
+To: Tony Jones <tonyj@suse.de>
+Cc: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-api@vger.kernel.org, sgrubb@redhat.com, eparis@parisplace.org
+Subject: Re: [PATCH] powerpc: add little endian flag to syscall_get_arch()
+Date: Wed, 03 Dec 2014 16:59:55 -0500
+Message-ID: <1687038.iUVICprQqD@sifl>
+Organization: Red Hat
+User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <547E3508.2080500@suse.de>
+References: <fbe03529d720e75aa8663f8b521af5b11b33d52f.1417553967.git.rgb@redhat.com> <547E3508.2080500@suse.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Dec 2014 20:50:20 +0100 Oleg Nesterov <oleg@redhat.com> wrote:
-
-> oom_kill.c assumes that PF_EXITING task should exit and free the memory
-> soon. This is wrong in many ways and one important case is the coredump.
-> A task can sleep in exit_mm() "forever" while the coredumping sub-thread
-> can need more memory.
+On Tuesday, December 02, 2014 01:54:16 PM Tony Jones wrote:
+> On 12/02/2014 01:27 PM, Richard Guy Briggs wrote:
+> > Since both ppc and ppc64 have LE variants which are now reported by uname,
+> > add that flag (__AUDIT_ARCH_LE) to syscall_get_arch() and add
+> > AUDIT_ARCH_PPC*LE variants.
+> > 
+> > Without this,  perf trace and auditctl fail.
+> > 
+> > Mainline kernel reports ppc64le (per a058801) but there is no matching
+> > AUDIT_ARCH_PPC64LE.
+> > 
+> > See:
+> > 	https://www.redhat.com/archives/linux-audit/2014-August/msg00082.html
+> > 	https://www.redhat.com/archives/linux-audit/2014-December/msg00004.html
+> > 
+> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> > ---
+> > 
+> >  arch/powerpc/include/asm/syscall.h |    6 +++++-
+> >  include/uapi/linux/audit.h         |    2 ++
+> >  2 files changed, 7 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/arch/powerpc/include/asm/syscall.h
+> > b/arch/powerpc/include/asm/syscall.h index 6fa2708..a58acab 100644
+> > --- a/arch/powerpc/include/asm/syscall.h
+> > +++ b/arch/powerpc/include/asm/syscall.h
+> > @@ -90,6 +90,10 @@ static inline void syscall_set_arguments(struct
+> > task_struct *task,> 
+> >  static inline int syscall_get_arch(void)
+> >  {
+> > 
+> > -	return is_32bit_task() ? AUDIT_ARCH_PPC : AUDIT_ARCH_PPC64;
+> > +	int arch = is_32bit_task() ? AUDIT_ARCH_PPC : AUDIT_ARCH_PPC64;
+> > +#ifdef __LITTLE_ENDIAN__
+> > +	arch |= __AUDIT_ARCH_LE
+> > +#endif
+> > +	return arch;
+> > 
+> >  }
+> >  #endif	/* _ASM_SYSCALL_H */
+> > 
+> > diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+> > index 4d100c8..fe29a99 100644
+> > --- a/include/uapi/linux/audit.h
+> > +++ b/include/uapi/linux/audit.h
+> > @@ -364,7 +364,9 @@ enum {
+> > 
+> >  #define AUDIT_ARCH_PARISC	(EM_PARISC)
+> >  #define AUDIT_ARCH_PARISC64	(EM_PARISC|__AUDIT_ARCH_64BIT)
+> >  #define AUDIT_ARCH_PPC		(EM_PPC)
+> > 
+> > +#define AUDIT_ARCH_PPCLE	(EM_PPC|__AUDIT_ARCH_LE)
+> > 
+> >  #define AUDIT_ARCH_PPC64	(EM_PPC64|__AUDIT_ARCH_64BIT)
+> > 
+> > +#define AUDIT_ARCH_PPC64LE	(EM_PPC64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
+> > 
+> >  #define AUDIT_ARCH_S390		(EM_S390)
+> >  #define AUDIT_ARCH_S390X	(EM_S390|__AUDIT_ARCH_64BIT)
+> >  #define AUDIT_ARCH_SH		(EM_SH)
 > 
-> Change the PF_EXITING checks to take SIGNAL_GROUP_COREDUMP into account,
-> we add the new trivial helper for that.
-> 
-> Note: this is only the first step, this patch doesn't try to solve other
-> problems. The SIGNAL_GROUP_COREDUMP check is obviously racy, a task can
-> participate in coredump after it was already observed in PF_EXITING state,
-> so TIF_MEMDIE (which also blocks oom-killer) still can be wrongly set.
-> fatal_signal_pending() can be true because of SIGNAL_GROUP_COREDUMP so
-> out_of_memory() and mem_cgroup_out_of_memory() shouldn't blindly trust it.
-> And even the name/usage of the new helper is confusing, an exiting thread
-> can only free its ->mm if it is the only/last task in thread group.
-> 
-> ...
->
-> --- a/include/linux/oom.h
-> +++ b/include/linux/oom.h
-> @@ -92,6 +92,12 @@ static inline bool oom_gfp_allowed(gfp_t gfp_mask)
->  
->  extern struct task_struct *find_lock_task_mm(struct task_struct *p);
->  
-> +static inline bool task_will_free_mem(struct task_struct *task)
-> +{
-> +	return (task->flags & PF_EXITING) &&
-> +		!(task->signal->flags & SIGNAL_GROUP_COREDUMP);
-> +}
+> IBM would know for certain but I wasn't aware there was a PPCLE (32bit
+> compat).
 
-The SIGNAL_GROUP_COREDUMP test is utterly obscure.  Let's help our poor
-readers?
+FWIW, I've heard the same thing from IBM folks off-list.
 
---- a/include/linux/oom.h~oom-dont-assume-that-a-coredumping-thread-will-exit-soon-v2-fix
-+++ a/include/linux/oom.h
-@@ -89,6 +89,11 @@ extern struct task_struct *find_lock_tas
- 
- static inline bool task_will_free_mem(struct task_struct *task)
- {
-+	/*
-+	 * A coredumping process may sleep for extended periods in exit_mm(), so
-+	 * the oom killer cannot assume that the process will promptly exit and
-+	 * release memory.
-+	 */
- 	return (task->flags & PF_EXITING) &&
- 		!(task->signal->flags & SIGNAL_GROUP_COREDUMP);
- }
+-- 
+paul moore
+security and virtualization @ redhat
 
