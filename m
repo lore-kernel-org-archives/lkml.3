@@ -1,106 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751186AbaLCBDw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 20:03:52 -0500
-Received: from regular1.263xmail.com ([211.150.99.140]:49525 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845AbaLCBDu (ORCPT
+	id S1751041AbaLCBGP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 20:06:15 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:50786 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaLCBGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 20:03:50 -0500
-X-Greylist: delayed 35906 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Dec 2014 20:03:49 EST
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: xjq@rock-chips.com
-X-FST-TO: linux-rockchip@lists.infradead.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: xjq@rock-chips.com
-X-UNIQUE-TAG: <7258f400fa1fa5c5e84574e6449452fc>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <547E616C.1020503@rock-chips.com>
-Date: Wed, 03 Dec 2014 09:03:40 +0800
-From: Jianqun <xjq@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>, Jianqun Xu <jay.xu@rock-chips.com>
-CC: xjq@rock-chips.com, Liam Girdwood <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>, perex@perex.cz,
-        tiwai@suse.de, Sonny Rao <sonnyrao@chromium.org>,
-        =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        alsa-devel@alsa-project.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>
-Subject: Re: [PATCH 2/2] ASoC: rockchip: i2s: add support for grabbing output
- clock to codec
-References: <1417531766-29669-1-git-send-email-jay.xu@rock-chips.com>	<1417531977-30094-1-git-send-email-jay.xu@rock-chips.com> <CAD=FV=Uwb1NxxCoXHzHu6DJCpnG_HV2RhCr3JaJaXbJja8kd7A@mail.gmail.com>
-In-Reply-To: <CAD=FV=Uwb1NxxCoXHzHu6DJCpnG_HV2RhCr3JaJaXbJja8kd7A@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	Tue, 2 Dec 2014 20:06:13 -0500
+X-AuditID: cbfee68e-f79b46d000002b74-0c-547e62028bfa
+Message-id: <547E6201.1090804@samsung.com>
+Date: Wed, 03 Dec 2014 10:06:09 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Doug Anderson <dianders@chromium.org>
+Cc: Seungwon Jeon <tgih.jun@samsung.com>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Heiko Stuebner <heiko@sntech.de>, Chris Ball <chris@printf.net>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3/4] mmc: dw_mmc: Cleanup disable of low power mode w/
+ SDIO interrupts
+References: <1417563767-32181-1-git-send-email-dianders@chromium.org>
+ <1417563767-32181-4-git-send-email-dianders@chromium.org>
+ <547E569C.3080606@samsung.com>
+ <CAD=FV=VU5804WD5SRwr8HAOXwvumkUY+yzjM81oNbPUwwv=nTQ@mail.gmail.com>
+In-reply-to: <CAD=FV=VU5804WD5SRwr8HAOXwvumkUY+yzjM81oNbPUwwv=nTQ@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsWyRsSkRJcpqS7E4MgkK4uV7/8yWjyYt43N
+	YsLl7YwWZ5cdZLP4/+g1q8XlXXPYLI7872e0eHJmJqPFh/sXmS2Orw134PKY3XCRxePOtT1s
+	HjdeLWTy6NuyitFj+7V5zB6fN8kFsEVx2aSk5mSWpRbp2yVwZezdeoC9YIlcxe21j9gbGI+J
+	dTFyckgImEgsXzeJGcIWk7hwbz1bFyMXh5DAUkaJ+1eOM8EUXZl/mQUiMZ1R4lTTVFYI5zWj
+	xNOP28CqeAW0JB51/2EFsVkEVCWaz30Fi7MJ6Ehs/wYxSVQgTOJQ2zyoekGJH5PvsYDYIgKa
+	Es8aXjKDDGUWaGOWuH9kHhtIQlggXuLh+0OMENteAm1btwpsA6dAsMSkAwfBDmcWUJeYNG8R
+	lC0vsXnNW7BJEgIv2SXO3p3OCHGSgMS3yYeA1nEAJWQlNh2AelpS4uCKGywTGMVmITlqFpKx
+	s5CMXcDIvIpRNLUguaA4Kb3ISK84Mbe4NC9dLzk/dxMjMEZP/3vWt4Px5gHrQ4wCHIxKPLwW
+	cXUhQqyJZcWVuYcYTYGumMgsJZqcD0wEeSXxhsZmRhamJqbGRuaWZkrivAlSP4OFBNITS1Kz
+	U1MLUovii0pzUosPMTJxcEo1MAp5GknvOFUa1XBxg5hQYffGKaf1sx9t9RTqLrBJau/Wb8pR
+	f97SdUjAZqFhePTFOTk1hlxKpxq1Tf/9Oncy7sce/y3zIvN+95+x3zX3ROu505Nzurxc76x4
+	0TtTkSXmjdIdnTe7ti9w5L7vmKf97WZUfdba+1IM5TEOxx84iX/5Vvgt726toBJLcUaioRZz
+	UXEiAOFH5kPMAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmleLIzCtJLcpLzFFi42I5/e+xoC5TUl2Iwd6FhhYr3/9ltHgwbxub
+	xYTL2xktzi47yGbx/9FrVovLu+awWRz5389o8eTMTEaLD/cvMlscXxvuwOUxu+Eii8eda3vY
+	PG68Wsjk0bdlFaPH9mvzmD0+b5ILYItqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1
+	tLQwV1LIS8xNtVVy8QnQdcvMATpNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EB
+	GkhYw5ixd+sB9oIlchW31z5ib2A8JtbFyMkhIWAicWX+ZRYIW0ziwr31bF2MXBxCAtMZJU41
+	TWWFcF4zSjz9uI0JpIpXQEviUfcfVhCbRUBVovncV7A4m4COxPZvx8FsUYEwiUNt86DqBSV+
+	TL4HtkFEQFPiWcNLZpChzAJtzBL3j8xjA0kIC8RLPHx/iBFi20ugbetWgW3gFAiWmHTgIDOI
+	zSygLjFp3iIoW15i85q3zBMYBWYhWTILSdksJGULGJlXMYqmFiQXFCel5xrpFSfmFpfmpesl
+	5+duYgQngGfSOxhXNVgcYhTgYFTi4bWIqwsRYk0sK67MPcQowcGsJMKbZwcU4k1JrKxKLcqP
+	LyrNSS0+xGgKDIOJzFKiyfnA5JRXEm9obGJmZGlkbmhhZGyuJM5742ZuiJBAemJJanZqakFq
+	EUwfEwenVANjEve6jtvzloaGrrt/mbvMw7W6MONlv5Rg34yVVpFVJiYaKwNDxZ8cMVw9rb9b
+	P4vbISRx7sJEWzdHqeijEiXfHf912E4L/3rwybuA+AchbP3+zWJ8pm/U5myPKJPUf7Q0euPk
+	mT57JgXPLbnzmVNpp+T0slWcNUeKMk5bbFMUaf+kF3/40yolluKMREMt5qLiRAAJ3ChtFgMA	AA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug:
+Hi Doug
 
-在 12/03/2014 01:54 AM, Doug Anderson 写道:
-> Jianqun,
+On 12/03/2014 09:36 AM, Doug Anderson wrote:
+> Jaehoon,
 > 
-> This ought to be a "v3" patch and ideally ought to describe
-> differences from v2 (after the cut).  Please have Kever or Chris
-> review your next patch before sending it out since I think they are
-> familiar with the process.
-> 
-> 
-> On Tue, Dec 2, 2014 at 6:52 AM, Jianqun Xu <jay.xu@rock-chips.com> wrote:
->> From: Sonny Rao <sonnyrao@chromium.org>
+> On Tue, Dec 2, 2014 at 4:17 PM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+>>> @@ -1245,27 +1246,37 @@ static int dw_mci_get_cd(struct mmc_host *mmc)
+>>>       return present;
+>>>  }
+>>>
+>>> -/*
+>>> - * Disable lower power mode.
+>>> - *
+>>> - * Low power mode will stop the card clock when idle.  According to the
+>>> - * description of the CLKENA register we should disable low power mode
+>>> - * for SDIO cards if we need SDIO interrupts to work.
+>>> - *
+>>> - * This function is fast if low power mode is already disabled.
+>>> - */
+>>> -static void dw_mci_disable_low_power(struct dw_mci_slot *slot)
+>>> +static void dw_mci_init_card(struct mmc_host *mmc, struct mmc_card *card)
+>>>  {
+>>> +     struct dw_mci_slot *slot = mmc_priv(mmc);
+>>>       struct dw_mci *host = slot->host;
+>>> -     u32 clk_en_a;
+>>> -     const u32 clken_low_pwr = SDMMC_CLKEN_LOW_PWR << slot->id;
+>>>
+>>> -     clk_en_a = mci_readl(host, CLKENA);
+>>> +     /*
+>>> +      * Low power mode will stop the card clock when idle.  According to the
+>>> +      * description of the CLKENA register we should disable low power mode
+>>> +      * for SDIO cards if we need SDIO interrupts to work.
+>>> +      */
+>>> +     if (mmc->caps & MMC_CAP_SDIO_IRQ) {
+>>> +             const u32 clken_low_pwr = SDMMC_CLKEN_LOW_PWR << slot->id;
+>>> +             u32 clk_en_a_old;
+>>> +             u32 clk_en_a;
+>>>
+>>> -     if (clk_en_a & clken_low_pwr) {
+>>> -             mci_writel(host, CLKENA, clk_en_a & ~clken_low_pwr);
+>>> -             mci_send_cmd(slot, SDMMC_CMD_UPD_CLK |
+>>> -                          SDMMC_CMD_PRV_DAT_WAIT, 0);
+>>> +             clk_en_a_old = mci_readl(host, CLKENA);
+>>> +
+>>> +             if (card->type == MMC_TYPE_SDIO ||
+>>> +                 card->type == MMC_TYPE_SD_COMBO) {
+>>> +                     set_bit(DW_MMC_CARD_NO_LOW_PWR, &slot->flags);
+>>> +                     clk_en_a = clk_en_a_old & ~clken_low_pwr;
+>>> +             } else {
 >>
->> We need to claim the clock which is driving the codec so that when we enable
->> clock gating, we continue to clock the codec when needed.  I make this an
->> optional clock since there might be some applications where we don't need it
->> but can still use the I2S block.
+>> I wonder this point. When entered at this point?
 >>
->> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+>> MMC_CAP_SDIO_IRQ is sdio capability. and card->type is also related with SDIO, isn't?
 > 
-> You still forgot your own signed-off-by.  Please try again.  See
-> <https://patchwork.kernel.org/patch/5334991/>
-ok, I will add my signed-off-by
+> Right.  As I understand it:
 > 
-> 
->> +       i2s->oclk = devm_clk_get(&pdev->dev, "i2s_clk_out");
->> +       if (IS_ERR(i2s->oclk)) {
->> +               dev_dbg(&pdev->dev, "Didn't find output clock\n");
->> +               i2s->oclk = NULL;
->> +       }
-> 
-> You still forgot the blank line here requested by Heiko.  Please try
-> again.  See <https://patchwork.kernel.org/patch/5334991/>
-Although I thought there needn't a blank ~, I wll add it next patch
-> 
-> 
->> +       if (i2s->oclk)
->> +               ret = clk_prepare_enable(i2s->oclk);
->> +
-> 
-> 
-> 
+> * You can certainly add MMC_CAP_SDIO_IRQ to an external card slot that
+> might have an MMC card, and SD card, or an SDIO card.  You still want
+> the LOW_PWR mode for MMC/SD cards but don't want it for SDIO cards in
+> that case.
 
--- 
-Jianqun Xu
+Ok, I understood your purpose.
+Your mean is MMC_CAP_SIDO_IRQ can be set to MMC or SD...not only SDIO card.
+It's reasonable.
+But i think it doesn't need to set LOW_PWR_mode for SD/eMMC at here. it should be already set to Low-power mode.
+And SDIO case should not enter at here.
 
-****************************************************************************
-*IMPORTANT NOTICE:*This email is from Fuzhou Rockchip Electronics Co.,
-Ltd .The contents of this email and any attachments may contain
-information that is privileged, confidential and/or exempt from
-disclosure under applicable law and relevant NDA. If you are not the
-intended recipient, you are hereby notified that any disclosure,
-copying, distribution, or use of the information is STRICTLY PROHIBITED.
-Please immediately contact the sender as soon as possible and destroy
-the material in its entirety in any format. Thank you.
-****************************************************************************
+> 
+> * If you don't set MMC_CAP_SDIO_IRQ then presumably you've got some
+> problem where the SDIO interrupt is broken on your board.  That means
+> you're using polling mode to find interrupts.  As I understand it that
+> would allow you to use LOW_PWR since you don't need to detect SDIO
+> interrupts.  I know on Marvell WiFi modules I tested this seemed to
+> work OK, but I doubt anyone is really running a production device in
+> this way.
+
+No, we needs to set MMC_CAP_SDIO_IRQ, if i didn't set to it, i will also see the problem.
+Since I knew which slot is used as SDIO card, i thought MMC_CAP_SDIO_IRQ is set for only sdio card.
+Then it would be check the twice whether card is SDIO or not.
+
+Actually, i didn't test WiFi module with this patch. but concept is not problem.
+
+Best Regards,
+Jaehoon Chung
+
+> 
+> 
+> Basically I was trying to mirror the functionality of the old code as
+> closely as possible.  In the old code if you were using polling mode
+> then dw_mci_enable_sdio_irq() should never be called and you'd never
+> go out of low power mode.
+> 
+> -Doug
+> 
 
