@@ -1,146 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933515AbaLEBoI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Dec 2014 20:44:08 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:59699 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933044AbaLEBoG (ORCPT
+	id S933530AbaLEBpO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Dec 2014 20:45:14 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:49321 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933009AbaLEBpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Dec 2014 20:44:06 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linda Knippers <linda.knippers@hp.com>
-Cc: Kristen Carlson Accardi <kristen@linux.intel.com>,
-        Ethan Zhao <ethan.zhao@oracle.com>, dirk.j.brandewie@intel.com,
-        viresh.kumar@linaro.org, corbet@lwn.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        ethan.kernel@gmail.com
-Subject: Re: [PATCH 2/2 V7] intel_pstate: add kernel parameter to force loading on Sun X86 servers.
-Date: Fri, 05 Dec 2014 03:05:30 +0100
-Message-ID: <1503861.cAhigf14ME@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5480E829.2020805@hp.com>
-References: <1417658851-8729-1-git-send-email-ethan.zhao@oracle.com> <20141204143853.1adf98d8@kcaccard-desk.amr.corp.intel.com> <5480E829.2020805@hp.com>
+	Thu, 4 Dec 2014 20:45:12 -0500
+Date: Wed, 3 Dec 2014 03:51:37 -0800
+From: Darren Hart <dvhart@infradead.org>
+To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        libsmbios-devel@lists.us.dell.com, Srinivas_G_Gowda@dell.com,
+        Michael_E_Brown@dell.com
+Subject: Re: [PATCH v2] platform: x86: dell-laptop: Add support for keyboard
+ backlight
+Message-ID: <20141203115135.GA42394@vmdeb7>
+References: <1415967813-7223-1-git-send-email-pali.rohar@gmail.com>
+ <1416754245-15550-1-git-send-email-pali.rohar@gmail.com>
+ <20141203084319.GA52608@vmdeb7>
+ <4874352.BarQGyiSH1@xps13>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4874352.BarQGyiSH1@xps13>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, December 04, 2014 06:03:05 PM Linda Knippers wrote:
-> On 12/4/2014 5:38 PM, Kristen Carlson Accardi wrote:
-> > On Thu, 04 Dec 2014 23:10:58 +0100
-> > "Rafael J. Wysocki" <rjw@rjwysocki.net> wrote:
+On Thu, Dec 04, 2014 at 09:50:02AM +0100, Gabriele Mazzotta wrote:
+> On Wednesday 03 December 2014 00:43:21 Darren Hart wrote:
+> > > +     int kbd_timeouts[];
+> > >
+> > >  };
+> > >  
+> > >  static struct quirk_entry *quirks;
+> > >
+> > > @@ -76,6 +89,10 @@ static int __init dmi_matched(const struct
+> > > dmi_system_id *dmi)>
+> > >       return 1;
+> > >  }
+> > >  
+> > >
+> > > +static struct quirk_entry quirk_dell_xps13_9333 = {
+> > > +     .kbd_timeouts = { 0, 5, 15, 60, 5*60, 15*60, -1 },
 > > 
-> >> On Thursday, December 04, 2014 11:07:31 AM Ethan Zhao wrote:
-> >>> To force loading on Oracle Sun X86 servers, provide one kernel command line
-> >>> parameter
-> >>>
-> >>>   intel_pstate = ora_force
-> >>
-> >> I would suggest to change the name of the option to "oracle_force" or "sun_force"
-> >> for clarity.
-> >>
-> >> Anyway, I need an ACK from Kristen if this patch is to be applied.
-> >>
-> >>> For those who be aware of the risk of no power capping capabily working and
-> >>> try to get better performance with this driver.
-> >>>
-> >>> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
-> >>> ---
-> >>>  v2: change to hardware vendor specific naming parameter.
-> >>>  v4: refine code and doc.
-> >>>  v5&v6: fix a typo in doc.
-> >>>  v7: change enum PCC to PPC.
-> >>>
-> >>>  Documentation/kernel-parameters.txt | 5 +++++
-> >>>  drivers/cpufreq/intel_pstate.c      | 6 +++++-
-> >>>  2 files changed, 10 insertions(+), 1 deletion(-)
-> >>>
-> >>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> >>> index 479f332..7d0983e 100644
-> >>> --- a/Documentation/kernel-parameters.txt
-> >>> +++ b/Documentation/kernel-parameters.txt
-> >>> @@ -1446,6 +1446,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
-> >>>  		       disable
-> >>>  		         Do not enable intel_pstate as the default
-> >>>  		         scaling driver for the supported processors
-> >>> +		       ora_force
-> >>> +			 Force loading intel_pstate on Oracle Sun Servers(X86).
-> >>> +			 only for those who be aware of the risk of no power capping
-> >>> +			 capability working and try to get better performance with this
-> >>> +			 driver.
-> >>
-> >> That is not sufficiently clear.  What does "risk of no power capping capability
-> >> working" mean, in particular?
-> >>
-> >>>  
-> >>>  	intremap=	[X86-64, Intel-IOMMU]
-> >>>  			on	enable Interrupt Remapping (default)
-> >>> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> >>> index 1bb62ca..2654e13 100644
-> >>> --- a/drivers/cpufreq/intel_pstate.c
-> >>> +++ b/drivers/cpufreq/intel_pstate.c
-> >>> @@ -866,6 +866,7 @@ static struct cpufreq_driver intel_pstate_driver = {
-> >>>  };
-> >>>  
-> >>>  static int __initdata no_load;
-> >>> +static unsigned int  ora_force;
-> >>>  
-> >>>  static int intel_pstate_msrs_not_valid(void)
-> >>>  {
-> >>> @@ -1003,7 +1004,8 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
-> >>>  			case PSS:
-> >>>  				return intel_pstate_no_acpi_pss();
-> >>>  			case PPC:
-> >>> -				return intel_pstate_has_acpi_ppc();
-> >>> +				return intel_pstate_has_acpi_ppc() &&
-> >>> +					(!ora_force);
-> >>>  			}
-> >>>  	}
-> >>>  
-> >>> @@ -1078,6 +1080,8 @@ static int __init intel_pstate_setup(char *str)
-> >>>  
-> >>>  	if (!strcmp(str, "disable"))
-> >>>  		no_load = 1;
-> >>> +	if (!strcmp(str, "ora_force"))
-> >>> +		ora_force = 1;
-> >>>  	return 0;
-> >>>  }
-> >>>  early_param("intel_pstate", intel_pstate_setup);
-> >>
-> >> And can anyone please remind me what was wrong with a "force" option that would
-> >> work for everyone, not just Oracle/Sun?
-> >>
-> > 
-> > That was my suggestion as well (i.e. a parameter to bypass the vendor
-> > checks), but Linda didn't like it.  My personal opinion is that unless
-> > it's generic, I don't really feel like having a force option solely for
-> > oracle.  I'm not convinced you want this for production machines, and I
-> > think for debug purposes I don't want a vendor specific param.
+> > Where did these values come from? Were they documented in the
+> > libsmbios project? Can you provide a URL to that? These really should
+> > be described by the firmware, but if they aren't, nothing we can do
+> > about it.
 > 
-> I'd be happy with it if it somehow disabled what the platform is doing,
-> but it doesn't.  I don't see the point of forcing intel_pstate if you
-> can't force the platform to stop doing power management at the same time.
-> Even if it's for test/debug purposes, I'm not sure what you're testing
-> when you have dueling power management.
-> 
-> The description would need to be different too since I think on
-> ProLiant, power capping can happen at any time, even if the
-> system is in OS control mode and the intel_pstate driver is
-> loaded.
-> 
-> Can anyone suggest a description for a force option that would
-> make sense generically?
+> I took those values from a Windows utility provided by Dell. I tried
+> to find a reason for that specific list to exist, but I couldn't. The
+> reason why it's there is that the BIOS of my laptop accepts any timeout,
+> but it silently sets the timeout to 0 (i.e. illumination never off)
+> if a value not in that list is given. So, given the wide range of
+> of possible input values, we added that quirk. This is something my
+> laptop does, Pali's behaves differently and such a list is not needed.
 
-What about:
+Let's get a comment above the quirk describing the scenario.
 
-	force
-		Enable intel_pstate on systems where it may cause problems to
-		happen due to conflicts with platform firmware attempting to
-		drive P-states by itself in certain situations (for thermal
-		control or power capping in general or other purposes).
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Darren Hart
+Intel Open Source Technology Center
