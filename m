@@ -1,156 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592AbaLCTUj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 14:20:39 -0500
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:35925 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342AbaLCTUi (ORCPT
+	id S1751958AbaLCTUs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 14:20:48 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47418 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751715AbaLCTUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 14:20:38 -0500
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Wed, 3 Dec 2014 14:20:34 -0500
-To: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: Jeff Layton <jeff.layton@primarydata.com>, Tejun Heo <tj@kernel.org>,
-        NeilBrown <neilb@suse.de>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a
- workqueue-based nfsd
-Message-ID: <20141203142034.5c14529d@tlielax.poochiereds.net>
-In-Reply-To: <CAHQdGtQzth78BzBo9Gsz8LKe4ippJv6VYtjGCDmES7viByG_gA@mail.gmail.com>
-References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
-	<20141203121118.21a32fe1@notabene.brown>
-	<20141202202946.1e0f399b@tlielax.poochiereds.net>
-	<20141203155649.GB5013@htj.dyndns.org>
-	<20141203110405.5ecc85df@tlielax.poochiereds.net>
-	<20141203140202.7865bedb@tlielax.poochiereds.net>
-	<CAHQdGtQzth78BzBo9Gsz8LKe4ippJv6VYtjGCDmES7viByG_gA@mail.gmail.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+	Wed, 3 Dec 2014 14:20:45 -0500
+Date: Wed, 3 Dec 2014 19:20:24 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jianqun Xu <jay.xu@rock-chips.com>
+Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de, sonnyrao@chromium.org,
+        heiko@sntech.de, linux-arm-kernel@lists.infradead.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-rockchip@lists.infradead.org
+Message-ID: <20141203192024.GL7712@sirena.org.uk>
+References: <1417531766-29669-1-git-send-email-jay.xu@rock-chips.com>
+ <1417591118-18695-1-git-send-email-jay.xu@rock-chips.com>
+ <1417591118-18695-3-git-send-email-jay.xu@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JQobbgWnX7WjL0pQ"
+Content-Disposition: inline
+In-Reply-To: <1417591118-18695-3-git-send-email-jay.xu@rock-chips.com>
+X-Cookie: Celebrity voices impersonated.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 2/2] ASoC: rockchip: i2s: add support for grabbing
+ output clock to codec
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Dec 2014 14:08:01 -0500
-Trond Myklebust <trond.myklebust@primarydata.com> wrote:
 
-> On Wed, Dec 3, 2014 at 2:02 PM, Jeff Layton <jeff.layton@primarydata.com> wrote:
-> > On Wed, 3 Dec 2014 11:04:05 -0500
-> > Jeff Layton <jlayton@primarydata.com> wrote:
-> >
-> >> On Wed, 3 Dec 2014 10:56:49 -0500
-> >> Tejun Heo <tj@kernel.org> wrote:
-> >>
-> >> > Hello, Neil, Jeff.
-> >> >
-> >> > On Tue, Dec 02, 2014 at 08:29:46PM -0500, Jeff Layton wrote:
-> >> > > That's a good point. I had originally thought that max_active on an
-> >> > > unbound workqueue would be the number of concurrent jobs that could run
-> >> > > across all the CPUs, but now that I look I'm not sure that's really
-> >> > > the case.
-> >> >
-> >> > @max_active is a per-pool number.  By default, unbound wqs use
-> >> > per-node pools, so @max_active would be per-node.  Currently,
-> >> > @max_active is mostly meant as a protection against run-away
-> >> > workqueues creating crazy number of workers, which has been enough for
-> >> > the existing wq users.  *Maybe* it makes sense to make it actually
-> >> > mean maximum concurrency which would prolly involve aggregated per-cpu
-> >> > distribution mechanism so that we don't end up inc'ing and dec'ing the
-> >> > same counter from all CPUs on each work item execution.
-> >> >
-> >> > However, I do agree with Neil that making it user configurable is
-> >> > almost always painful.  It's usually a question without a good answer
-> >> > and the same value may behave differently depending on a lot of
-> >> > implementation details and a better approach, probably, is to use
-> >> > @max_active as the last resort protection mechanism while providing
-> >> > automatic throttling of in-flight work items which is meaningful for
-> >> > the specific use cases.
-> >> >
-> >> > > I've heard random grumblings from various people in the past that
-> >> > > workqueues have significant latency, but this is the first time I've
-> >> > > really hit it in practice. If we can get this fixed, then that may be a
-> >> > > significant perf win for all workqueue users. For instance, rpciod in
-> >> > > the NFS client is all workqueue-based. Getting that latency down could
-> >> > > really help things.
-> >> > >
-> >> > > I'm currently trying to roll up a kernel module for benchmarking the
-> >> > > workqueue dispatching code in the hopes that we can use that to help
-> >> > > nail it down.
-> >> >
-> >> > Definitely, there were some reportings but nothing really got tracked
-> >> > down properly.  It'd be awesome to actually find out where the latency
-> >> > is coming from.
-> >> >
-> >> > Thanks!
-> >> >
-> >>
-> >> I think I might have figured this out (and before I go any farther
-> >> allow me to say <facepalm>), thanks to the workqueue tracepoints in the
-> >> code. What I noticed is that when things are fairly idle, the work is
-> >> picked up quickly, but once things get busy it takes a lot longer.
-> >>
-> >> I think that the issue is in the design of the workqueue-based nfsd
-> >> code. In particular, I attached a work_struct to the svc_xprt which is
-> >> limiting the code to only process one RPC at a time for a xprt, from
-> >> beginning to end.
-> >>
-> >> So, even if we requeue that work after the receive phase is done, the
-> >> workqueue won't pick it up again until the thing is processed and the
-> >> reply is sent.
-> >>
-> >> What I think I need to do is to do the receive phase using the
-> >> work_struct attached to the xprt, and then do the rest of the
-> >> processing from the context of a different work_struct (possibly one
-> >> attached to the svc_rqst), which should free up the xprt's work_struct
-> >> sooner.
-> >>
-> >> I'm going to work on changing that today and see if it improves things.
-> >>
-> >> Thanks for the help so far!
-> >
-> > Yes! That does help. The new workqueue based code is a little (a few
-> > percent?) slower than the thread-based code across the board. I suspect
-> > that's due to the fact that I'm having to queue each RPC to the
-> > workqueue twice (once for the receive and once to do the processing).
-> >
-> > I suspect that I can remedy that, but I'll have to think about the best
-> > way to do it.
-> >
-> 
-> Which workqueue are you using? Since the receive code is non-blocking,
-> I'd expect you might be able to use rpciod, for the initial socket
-> reads, but you wouldn't want to use that for the actual knfsd
-> processing.
-> 
+--JQobbgWnX7WjL0pQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm using the same (nfsd) workqueue for everything. The workqueue
-isn't really the bottleneck though, it's the work_struct.
+On Wed, Dec 03, 2014 at 03:18:38PM +0800, Jianqun Xu wrote:
+> From: Sonny Rao <sonnyrao@chromium.org>
+>=20
+> We need to claim the clock which is driving the codec so that when we ena=
+ble
+> clock gating, we continue to clock the codec when needed.  I make this an
+> optional clock since there might be some applications where we don't need=
+ it
+> but can still use the I2S block.
 
-Basically, the problem is that the work_struct in the svc_xprt was
-remaining busy for far too long. So, even though the XPT_BUSY bit had
-cleared, the work wouldn't get picked up again until the previous
-workqueue job had returned.
+I would expect that the clock for the CODEC should be managed by the
+CODEC if at all possible - that seems more logical than having the CPU
+I2S controller request and manage it if it's a separate clock.  Why add
+this to the CPU side driver?
 
-With the change I made today, I just added a new work_struct to
-svc_rqst and queue that to the same workqueue to do svc_process as soon
-as the receive is done. That means though that each RPC ends up waiting
-in the queue twice (once to do the receive and once to process the
-RPC), and I think that's probably the reason for the performance delta.
+We've not always done this for older systems due to the lack of a usable
+clock API but that's starting to be addressed.
 
-What I think I'm going to do on the next pass is have the job that
-enqueues the xprt instead try to find an svc_rqst. If it finds it,
-then it can go ahead and queue the work struct in it to do the receive
-and processing in a single go.
+--JQobbgWnX7WjL0pQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-If it can't find one, it'll queue the xprt's work to allocate one and
-then queue that to do all of the work as before. That will likely
-penalize the case where there isn't an available svc_rqst, but in the
-common case that there is one it should go quickly.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Thanks!
--- 
-Jeff Layton <jlayton@primarydata.com>
+iQEcBAEBAgAGBQJUf2J4AAoJECTWi3JdVIfQpDUH+QGvbqNNpYTTeH9BR7l1M2F1
+Zbiy2YsxaimSZggqRO1wIKuXgiikPtNctuduDCCN9feAWkjvvh5qPfo2gTE3EMw/
+p4PHfrozU/7NMhkZ4bJwneTMg2/Cs4YTMKpEYF1VD8rDZvyR4OzGswTNnJSrBX4Q
+bYLL0NyUb/hQUIHzAF2VAU6ffbjPXJvrAmzolEp7ujsuRq3qpRDtU8hiScaUpUG2
+8sluxjAaNbtMpB6ycQUx8ImIf48z3uRLrPK8mQW8THX1d/tFBtqk2ZBI0xNSdV8T
+8lowjJ2p+9y15mhDLOrOZg1N2Toh6Uo6VK/xfSFRUNYUw4FSUyDrvRHp74J3YAA=
+=2pcn
+-----END PGP SIGNATURE-----
+
+--JQobbgWnX7WjL0pQ--
