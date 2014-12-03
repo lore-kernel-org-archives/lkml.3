@@ -1,103 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340AbaLCQEM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 11:04:12 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:61297 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752138AbaLCQEJ (ORCPT
+	id S1752386AbaLCQEV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 11:04:21 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:62559 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045AbaLCQES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 11:04:09 -0500
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Wed, 3 Dec 2014 11:04:05 -0500
-To: Tejun Heo <tj@kernel.org>
-Cc: Jeff Layton <jeff.layton@primarydata.com>, NeilBrown <neilb@suse.de>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFC PATCH 00/14] nfsd/sunrpc: add support for a
- workqueue-based nfsd
-Message-ID: <20141203110405.5ecc85df@tlielax.poochiereds.net>
-In-Reply-To: <20141203155649.GB5013@htj.dyndns.org>
-References: <1417544663-13299-1-git-send-email-jlayton@primarydata.com>
-	<20141203121118.21a32fe1@notabene.brown>
-	<20141202202946.1e0f399b@tlielax.poochiereds.net>
-	<20141203155649.GB5013@htj.dyndns.org>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+	Wed, 3 Dec 2014 11:04:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CACxGe6skTZDe40eJN06BDapfKuN-KzMqgbEWNyLiTeXTt5dw5g@mail.gmail.com>
+References: <CAL8zT=iXizKqJjWDcLT-chZ7=ioPYtQcB4GeqZpiL7kCpGOKZw@mail.gmail.com>
+	<CACxGe6sRULEmOvdxFvR=Mcbf4Cgd3YijrJg1q9Uz1vgYw5tG+w@mail.gmail.com>
+	<CAL8zT=geUOJnmUHvqyYk651U+HF3NSy3XU7hiWUn3gPX0sVjPg@mail.gmail.com>
+	<CACxGe6skTZDe40eJN06BDapfKuN-KzMqgbEWNyLiTeXTt5dw5g@mail.gmail.com>
+Date: Wed, 3 Dec 2014 14:04:16 -0200
+Message-ID: <CAOMZO5AmA5-Ji6SDUv6b3qrhSi-KvSNYDV=ZaL7HoOhh-6SnsA@mail.gmail.com>
+Subject: Re: DT parsing : duplicate name error
+From: Fabio Estevam <festevam@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        rafael.j.wysocki@intel.com, mika.westerberg@linux.intel.com,
+        Bryan Wu <cooloney@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Dec 2014 10:56:49 -0500
-Tejun Heo <tj@kernel.org> wrote:
+On Wed, Dec 3, 2014 at 1:41 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
 
-> Hello, Neil, Jeff.
-> 
-> On Tue, Dec 02, 2014 at 08:29:46PM -0500, Jeff Layton wrote:
-> > That's a good point. I had originally thought that max_active on an
-> > unbound workqueue would be the number of concurrent jobs that could run
-> > across all the CPUs, but now that I look I'm not sure that's really
-> > the case.
-> 
-> @max_active is a per-pool number.  By default, unbound wqs use
-> per-node pools, so @max_active would be per-node.  Currently,
-> @max_active is mostly meant as a protection against run-away
-> workqueues creating crazy number of workers, which has been enough for
-> the existing wq users.  *Maybe* it makes sense to make it actually
-> mean maximum concurrency which would prolly involve aggregated per-cpu
-> distribution mechanism so that we don't end up inc'ing and dec'ing the
-> same counter from all CPUs on each work item execution.
-> 
-> However, I do agree with Neil that making it user configurable is
-> almost always painful.  It's usually a question without a good answer
-> and the same value may behave differently depending on a lot of
-> implementation details and a better approach, probably, is to use
-> @max_active as the last resort protection mechanism while providing
-> automatic throttling of in-flight work items which is meaningful for
-> the specific use cases.
-> 
-> > I've heard random grumblings from various people in the past that
-> > workqueues have significant latency, but this is the first time I've
-> > really hit it in practice. If we can get this fixed, then that may be a
-> > significant perf win for all workqueue users. For instance, rpciod in
-> > the NFS client is all workqueue-based. Getting that latency down could
-> > really help things.
-> > 
-> > I'm currently trying to roll up a kernel module for benchmarking the
-> > workqueue dispatching code in the hopes that we can use that to help
-> > nail it down.
-> 
-> Definitely, there were some reportings but nothing really got tracked
-> down properly.  It'd be awesome to actually find out where the latency
-> is coming from.
-> 
-> Thanks!
-> 
+> From a quick reading of the backlog, for some reason the new device is
+> getting assigned NULL as the device name in led_classdev_register().
+> Probably because led_cdev->name is set to NULL. The leds are getting
+> bound to the LED driver in gpio_led_probe() which is the non-DT path
+> for creating LED devices. That would mean there is pdata attached to
+> the LED device, but I haven't dug any farther than that. Really need
+> the bisect to narrow down what is going on.
 
-I think I might have figured this out (and before I go any farther
-allow me to say <facepalm>), thanks to the workqueue tracepoints in the
-code. What I noticed is that when things are fairly idle, the work is
-picked up quickly, but once things get busy it takes a lot longer.
+Ok, so this issue happens when two or more gpio-leds do not contain
+the 'label' property.
 
-I think that the issue is in the design of the workqueue-based nfsd
-code. In particular, I attached a work_struct to the svc_xprt which is
-limiting the code to only process one RPC at a time for a xprt, from
-beginning to end.
+'label' is an optional property according to
+Documentation/devicetree/bindings/leds/common.txt:
 
-So, even if we requeue that work after the receive phase is done, the
-workqueue won't pick it up again until the thing is processed and the
-reply is sent.
+"Optional properties for child nodes:
+- label : The label for this LED.  If omitted, the label is
+  taken from the node name (excluding the unit address)."
 
-What I think I need to do is to do the receive phase using the
-work_struct attached to the xprt, and then do the rest of the
-processing from the context of a different work_struct (possibly one
-attached to the svc_rqst), which should free up the xprt's work_struct
-sooner.
+This works fine on 3.17.1 as we used to have this logic in leds-gpio:
+led.name = of_get_property(child, "label", NULL) ? : child->name;
 
-I'm going to work on changing that today and see if it improves things.
+,but since commit a43f2cbbb009f96 ("leds: leds-gpio: Make use of
+device property API "), this is no longer true:
 
-Thanks for the help so far!
--- 
-Jeff Layton <jlayton@primarydata.com>
+ + fwnode_property_read_string(child, "label", &led.name);
+
+If 'label' is not present then both of the LEDs will have the same
+name and then the duplicate name error will happen.
+
+So we would need something like this:
+
+ if (fwnode_property_present(child, "label"))
+       fwnode_property_read_string(child, "label", &led.name);
+ else
+     get the name from the child ---> This is what I am not sure how
+to do after the conversion to use fwnode_handle.
+
+Any ideas?
+
+On linux-next I am only able to get two LEDs without 'label' property
+to work if I do the following:
+
+git checkout a43f2cbbb009f96
+git revert a43f2cbbb009f96
+git revert 5c51277a9ab
