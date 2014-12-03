@@ -1,88 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641AbaLCXty (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 18:49:54 -0500
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:34019 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752057AbaLCXtv (ORCPT
+	id S1752673AbaLCXuM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 18:50:12 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:36722 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752273AbaLCXuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 18:49:51 -0500
+	Wed, 3 Dec 2014 18:50:08 -0500
+Date: Wed, 3 Dec 2014 15:50:02 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH v2] context_tracking: Restore previous state in
+ schedule_user
+Message-ID: <20141203235002.GW25340@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141203220836.GC31369@lerouge>
+ <e840280bba54050816470caa870bd9f561efc545.1417649608.git.luto@amacapital.net>
 MIME-Version: 1.0
-In-Reply-To: <1417642834-20350-7-git-send-email-konrad.wilk@oracle.com>
-References: <1417642834-20350-1-git-send-email-konrad.wilk@oracle.com> <1417642834-20350-7-git-send-email-konrad.wilk@oracle.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 3 Dec 2014 16:49:30 -0700
-Message-ID: <CAErSpo62D02fh-AmLC4N7OUK0yYN89X_FuZNqXsv4AfYUTj5eg@mail.gmail.com>
-Subject: Re: [PATCH v5 6/9] PCI: Expose pci_load_saved_state for public consumption.
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <e840280bba54050816470caa870bd9f561efc545.1417649608.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120323-0029-0000-0000-00000618600E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 3, 2014 at 2:40 PM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> We have the pci_load_and_free_saved_state, and pci_store_saved_state
-> but are missing the functionality to just load the state
-> multiple times in the PCI device without having to free/save
-> the state.
->
-> This patch makes it possible to use this function.
->
-> CC: Bjorn Helgaas <bhelgaas@google.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+On Wed, Dec 03, 2014 at 03:37:08PM -0800, Andy Lutomirski wrote:
+> It appears that some SCHEDULE_USER (asm for schedule_user) callers
+> in arch/x86/kernel/entry_64.S are called from RCU kernel context,
+> and schedule_user will return in RCU user context.  This causes RCU
+> warnings and possible failures.
+> 
+> This is intended to be a minimal fix suitable for 3.18.
+> 
+> Reported-and-tested-by: Dave Jones <davej@redhat.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+> Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Looks like the RCU entry/exit stuff is properly accounted for, so:
 
-I assume you'll merge this whole series through your tree.  Let me
-know if you want me to do anything else.
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
 > ---
->  drivers/pci/pci.c   | 5 +++--
->  include/linux/pci.h | 2 ++
->  2 files changed, 5 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index 625a4ac..f00a9d6 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -1142,8 +1142,8 @@ EXPORT_SYMBOL_GPL(pci_store_saved_state);
->   * @dev: PCI device that we're dealing with
->   * @state: Saved state returned from pci_store_saved_state()
->   */
-> -static int pci_load_saved_state(struct pci_dev *dev,
-> -                               struct pci_saved_state *state)
-> +int pci_load_saved_state(struct pci_dev *dev,
-> +                        struct pci_saved_state *state)
->  {
->         struct pci_cap_saved_data *cap;
->
-> @@ -1171,6 +1171,7 @@ static int pci_load_saved_state(struct pci_dev *dev,
->         dev->state_saved = true;
->         return 0;
+> 
+> Hi all-
+> 
+> This is intended to be a suitable last-minute fix for the RCU issue that
+> Dave saw.
+> 
+> Dave, can you confirm that this fixes it?
+> 
+> Frédéric, can you confirm that you think that this will have no effect
+> on correct callers of schedule_user and that will do the right thing
+> for incorrect callers of schedule_user?
+> 
+> I don't like the x86 asm that calls this at all, and I don't really
+> like the fragility of the mechanism is general, but I think that this
+> improves the situation enough to avoid problems in the short term.
+> 
+> With the obvious warning added, I get:
+> 
+> [    0.751022] ------------[ cut here ]------------
+> [    0.751937] WARNING: CPU: 0 PID: 72 at kernel/sched/core.c:2883 schedule_user+0xcf/0xe0()
+> [    0.753477] Modules linked in:
+> [    0.754089] CPU: 0 PID: 72 Comm: mount Not tainted 3.18.0-rc7+ #653
+> [    0.755258] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
+> [    0.757655]  0000000000000009 ffff880005c13f00 ffffffff81741dca ffff8800069f5a50
+> [    0.759228]  0000000000000000 ffff880005c13f40 ffffffff8108e781 0000000000000246
+> [    0.760758]  0000000000000000 00007fff970441c8 00007fff97043fd0 00007f67794ebcc8
+> [    0.762294] Call Trace:
+> [    0.762775]  [<ffffffff81741dca>] dump_stack+0x46/0x58
+> [    0.763739]  [<ffffffff8108e781>] warn_slowpath_common+0x81/0xa0
+> [    0.764865]  [<ffffffff8108e85a>] warn_slowpath_null+0x1a/0x20
+> [    0.765958]  [<ffffffff8174565f>] schedule_user+0xcf/0xe0
+> [    0.766974]  [<ffffffff8174ae69>] sysret_careful+0x19/0x1c
+> [    0.768011] ---[ end trace 329f34db2b3be966 ]---
+> 
+> So, yes, we have a bug, and this could cause any number of strange
+> problems.
+> 
+> Changes from v1:
+>  - Added Dave's Tested-by.
+>  - Fixed a comment typo.
+> 
+>  kernel/sched/core.c | 8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 24beb9bb4c3e..89e7283015a6 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2874,10 +2874,14 @@ asmlinkage __visible void __sched schedule_user(void)
+>  	 * or we have been woken up remotely but the IPI has not yet arrived,
+>  	 * we haven't yet exited the RCU idle mode. Do it here manually until
+>  	 * we find a better solution.
+> +	 *
+> +	 * NB: There are buggy callers of this function.  Ideally we
+> +	 * should warn if prev_state != IN_USER, but that will trigger
+> +	 * too frequently to make sense yet.
+>  	 */
+> -	user_exit();
+> +	enum ctx_state prev_state = exception_enter();
+>  	schedule();
+> -	user_enter();
+> +	exception_exit(prev_state);
 >  }
-> +EXPORT_SYMBOL_GPL(pci_load_saved_state);
->
->  /**
->   * pci_load_and_free_saved_state - Reload the save state pointed to by state,
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 5be8db4..08088cb1 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -1003,6 +1003,8 @@ void __iomem __must_check *pci_platform_rom(struct pci_dev *pdev, size_t *size);
->  int pci_save_state(struct pci_dev *dev);
->  void pci_restore_state(struct pci_dev *dev);
->  struct pci_saved_state *pci_store_saved_state(struct pci_dev *dev);
-> +int pci_load_saved_state(struct pci_dev *dev,
-> +                        struct pci_saved_state *state);
->  int pci_load_and_free_saved_state(struct pci_dev *dev,
->                                   struct pci_saved_state **state);
->  struct pci_cap_saved_state *pci_find_saved_cap(struct pci_dev *dev, char cap);
-> --
+>  #endif
+> 
+> -- 
 > 1.9.3
->
+> 
+
