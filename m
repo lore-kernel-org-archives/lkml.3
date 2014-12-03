@@ -1,99 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751460AbaLCFla (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 00:41:30 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47237 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750830AbaLCFl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 00:41:28 -0500
-Message-ID: <547EA275.8050208@ti.com>
-Date: Wed, 3 Dec 2014 11:11:09 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751339AbaLCFqt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 00:46:49 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:60979 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750815AbaLCFqr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 00:46:47 -0500
+Message-ID: <547EA3B0.6040309@linux.vnet.ibm.com>
+Date: Wed, 03 Dec 2014 11:16:24 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: <gregkh@linuxfoundation.org>, <tony@atomide.com>, <sfr@canb.auug.org.au>
-CC: <linux-kernel@vger.kernel.org>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>, <linux-usb@vger.kernel.org>,
-        <andrew.kim@intel.com>
-Subject: Re: [PATCH] arm: omap3: twl: remove usb phy init data
-References: <1416410903-162369-1-git-send-email-heikki.krogerus@linux.intel.com> <1416410903-162369-5-git-send-email-heikki.krogerus@linux.intel.com>
-In-Reply-To: <1416410903-162369-5-git-send-email-heikki.krogerus@linux.intel.com>
-Content-Type: text/plain; charset="windows-1252"
+To: Shuah Khan <shuahkh@osg.samsung.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org
+CC: peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de,
+        james.hogan@imgtec.com, avagin@openvz.org, Paul.Clothier@imgtec.com,
+        palves@redhat.com, oleg@redhat.com, dhowells@redhat.com,
+        davej@redhat.com, davem@davemloft.net, mikey@neuling.org,
+        benh@kernel.crashing.org, sukadev@linux.vnet.ibm.com,
+        mpe@ellerman.id.au, sam.bobroff@au1.ibm.com, kirjanov@gmail.com
+Subject: Re: [PATCH V6 9/9] selftests: Make GIT ignore all binaries in powerpc
+ test suite
+References: <1417507013-11948-1-git-send-email-khandual@linux.vnet.ibm.com> <1417507013-11948-10-git-send-email-khandual@linux.vnet.ibm.com> <547E039F.7070509@osg.samsung.com>
+In-Reply-To: <547E039F.7070509@osg.samsung.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14120305-0029-0000-0000-000000BC2D74
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On 12/02/2014 11:53 PM, Shuah Khan wrote:
+> On 12/02/2014 12:56 AM, Anshuman Khandual wrote:
+>> > This patch includes all of the powerpc test binaries into the
+>> > .gitignore file listing in their respective directories. This
+>> > will make sure that GIT ignores all of these test binaries while
+>> > displaying status.
+>> > 
+>> > Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+>> > ---
+>> >  .../testing/selftests/powerpc/copyloops/.gitignore |  4 ++++
+>> >  tools/testing/selftests/powerpc/mm/.gitignore      |  1 +
+>> >  tools/testing/selftests/powerpc/pmu/.gitignore     |  3 +++
+>> >  tools/testing/selftests/powerpc/pmu/ebb/.gitignore | 22 ++++++++++++++++++++++
+>> >  .../selftests/powerpc/primitives/.gitignore        |  1 +
+>> >  5 files changed, 31 insertions(+)
+>> >  create mode 100644 tools/testing/selftests/powerpc/copyloops/.gitignore
+>> >  create mode 100644 tools/testing/selftests/powerpc/mm/.gitignore
+>> >  create mode 100644 tools/testing/selftests/powerpc/pmu/.gitignore
+>> >  create mode 100644 tools/testing/selftests/powerpc/pmu/ebb/.gitignore
+>> >  create mode 100644 tools/testing/selftests/powerpc/primitives/.gitignore
+>> > 
+> Creating a single .gitignore at tools/testing/selftests/powerpc will
+> make this simpler without having to add one .gitignore for each
+> directory underneath.
 
-On Monday 01 December 2014 02:14 PM, Kishon Vijay Abraham I wrote:
-> From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> 
-> The driver does no use it any more.
-> 
-> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Sure, will do.
 
-This patch is required to get rid of the error that Stephen Rothwell reported.
+> 
+> Thanks for taking on the task to add .gitignore for all powerpc
+> binaries.
 
-Thanks
-Kishon
-> ---
-> While this patch was part of the original series sent by Heikki, I couldn't
-> get Ack from Tony to be merged this in my tree and I failed to catch the
-> build error during my testing :-(
-> 
-> This patch should fix the error pointed out by Stephen Rothwell.
-> arch/arm/mach-omap2/twl-common.c:94:21: error: array type has incomplete element type
->  struct phy_consumer consumers[] = {
->                      ^
->  arch/arm/mach-omap2/twl-common.c | 12 +-----------
->  include/linux/i2c/twl.h          |  2 --
->  2 files changed, 1 insertion(+), 13 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/twl-common.c b/arch/arm/mach-omap2/twl-common.c
-> index b0d54da..4457e73 100644
-> --- a/arch/arm/mach-omap2/twl-common.c
-> +++ b/arch/arm/mach-omap2/twl-common.c
-> @@ -91,18 +91,8 @@ void __init omap_pmic_late_init(void)
->  }
->  
->  #if defined(CONFIG_ARCH_OMAP3)
-> -struct phy_consumer consumers[] = {
-> -	PHY_CONSUMER("musb-hdrc.0", "usb"),
-> -};
-> -
-> -struct phy_init_data init_data = {
-> -	.consumers = consumers,
-> -	.num_consumers = ARRAY_SIZE(consumers),
-> -};
-> -
->  static struct twl4030_usb_data omap3_usb_pdata = {
-> -	.usb_mode	= T2_USB_MODE_ULPI,
-> -	.init_data	= &init_data,
-> +	.usb_mode = T2_USB_MODE_ULPI,
->  };
->  
->  static int omap3_batt_table[] = {
-> diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
-> index 8cfb50f..0bc03f1 100644
-> --- a/include/linux/i2c/twl.h
-> +++ b/include/linux/i2c/twl.h
-> @@ -26,7 +26,6 @@
->  #define __TWL_H_
->  
->  #include <linux/types.h>
-> -#include <linux/phy/phy.h>
->  #include <linux/input/matrix_keypad.h>
->  
->  /*
-> @@ -634,7 +633,6 @@ enum twl4030_usb_mode {
->  struct twl4030_usb_data {
->  	enum twl4030_usb_mode	usb_mode;
->  	unsigned long		features;
-> -	struct phy_init_data	*init_data;
->  
->  	int		(*phy_init)(struct device *dev);
->  	int		(*phy_exit)(struct device *dev);
-> 
+
