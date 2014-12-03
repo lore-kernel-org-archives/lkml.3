@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629AbaLCXO5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 18:14:57 -0500
-Received: from mail-bn1on0133.outbound.protection.outlook.com ([157.56.110.133]:17888
+	id S1752658AbaLCXPV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 18:15:21 -0500
+Received: from mail-bn1bon0143.outbound.protection.outlook.com ([157.56.111.143]:34656
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752569AbaLCXOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 18:14:54 -0500
+	id S1752520AbaLCXOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 18:14:55 -0500
 From: "J. German Rivera" <German.Rivera@freescale.com>
 To: <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
         <linux-kernel@vger.kernel.org>
@@ -16,937 +16,2879 @@ CC: <stuart.yoder@freescale.com>, <Kim.Phillips@freescale.com>,
         <bhupesh.sharma@freescale.com>, <nir.erez@freescale.com>,
         <richard.schmitt@freescale.com>,
         "J. German Rivera" <German.Rivera@freescale.com>
-Subject: [PATCH 2/3 v5] drivers/bus: Freescale Management Complex (fsl-mc) bus driver
-Date: Wed, 3 Dec 2014 17:12:58 -0600
-Message-ID: <1417648379-12518-3-git-send-email-German.Rivera@freescale.com>
+Subject: [PATCH 1/3 v5] drivers/bus: Added Freescale Management Complex APIs
+Date: Wed, 3 Dec 2014 17:12:57 -0600
+Message-ID: <1417648379-12518-2-git-send-email-German.Rivera@freescale.com>
 X-Mailer: git-send-email 2.2.0
 In-Reply-To: <1417648379-12518-1-git-send-email-German.Rivera@freescale.com>
 References: <1417648379-12518-1-git-send-email-German.Rivera@freescale.com>
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(86362001)(47776003)(20776003)(93916002)(62966003)(64706001)(92726001)(2201001)(87286001)(92566001)(88136002)(87936001)(31966008)(89996001)(81156004)(77096005)(68736005)(36756003)(99396003)(106466001)(104166001)(104016003)(77156002)(50466002)(120916001)(48376002)(107046002)(229853001)(84676001)(95666004)(50986999)(21056001)(105606002)(102836001)(19580395003)(69596002)(19580405001)(76176999)(44976005)(6806004)(97736003)(50226001)(4396001)(46102003);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB432;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(45074003)(199003)(21056001)(19580395003)(6806004)(84676001)(44976005)(19580405001)(92726001)(69596002)(4396001)(50226001)(2201001)(76176999)(77096005)(50986999)(92566001)(31966008)(86362001)(105606002)(106466001)(95666004)(81156004)(107046002)(89996001)(229853001)(87286001)(77156002)(62966003)(87936001)(104016003)(48376002)(102836001)(46102003)(104166001)(36756003)(50466002)(20776003)(64706001)(47776003)(120916001)(99396003)(68736005)(97736003)(2004002)(579004)(559001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB422;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB432;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB422;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB432;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB422;
 X-Forefront-PRVS: 0414DF926F
 Authentication-Results: spf=fail (sender IP is 192.88.158.2)
  smtp.mailfrom=German.Rivera@freescale.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB432;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB422;
 X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Platform device driver that sets up the basic bus infrastructure
-for the fsl-mc bus type, including support for adding/removing
-fsl-mc devices, register/unregister of fsl-mc drivers, and bus
-match support to bind devices to drivers.
+APIs to access the Management Complex (MC) hardware
+module of Freescale LS2 SoCs. This patch includes
+APIs to check the MC firmware version and to manipulate
+DPRC objects in the MC.
 
 Signed-off-by: J. German Rivera <German.Rivera@freescale.com>
 Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
 ---
-Changes addressed in v5:
+Changes in v5:
 - Addressed comments from Alex Graf:
-  * Renamed dprc_get_container_id() call as dpmng_get_container_id().
-  * Added TODO comment to use the 'ranges' property of the
-    fsl-mc DT node.
+  * Removed unused variable in mc_send_command()
+  * Renamed dprc_get_container_id() as dpmng_get_container_id()
+    and moved corresponding code from dprc.[hc] to dpmng.[hc],
+    as "get_container_id" is not really an operation on a DPRC
+    object, but it is a general MC management operation.
+  * Ensure that strings sent/received to/from the MC fw for DPRC
+    commands are null-terminated.
 
-Changes addressed in v4:
+Changes in v4:
 - Addressed comments from Alex Graf:
-  * Added missing scope limitations and more descriptive help
-    text for the FSL_MC_BUS config option.
-- Fixed bug related to setting fsl_mc_bus_type.dev_root too
-  late.
+  * Added file description for files that did not have one
+  * Removed Marshalling/unmarshalling macros invoked in MC
+    command wrapper functions, and instead do the marshalling/
+    unmarshalling directly in these functions.
+  * Added type cast u32 in status range-check in mc_status_to_error()
+  * Moved mc_write_command() and mc_read_response() inline
+    function to mc_sys.c as they are only used in that file
+  * Renamed u64_enc() as mc_enc() and u64_dec() as mc_dec()
+- Upgraded MC flibs for MC firmware 0.5
 
 Changes in v3:
-- Addressed changes from Kim Phillips:
-  * Renamed files:
-	drivers/bus/fsl-mc/fsl_mc_bus.c -> drivers/bus/fsl-mc/mc-bus.c
-	include/linux/fsl_mc.h -> include/linux/fsl/mc.h
-	include/linux/fsl_mc_private.h -> include/linux/fsl/mc-private.h
+- Addressed comment from Greg Kroah-Hartman:
+  * Removed doxygen comments
 
-- Addressed comments from Timur Tabi:
-  * Changed all functions that had goto out/error when no common cleanup
-    was done, to just have multiple return points.
-  * Replaced error cleanup boolean flags with multiple exit points.
+- Addressed comment from Scott Wood:
+  * Replaced udelay() call with usleep_range() call in polling loop
+- Addressed comments from Kim Phillips:
+  * Fixed license text in all files
+  * Renamed files:
+	drivers/bus/fsl-mc/fsl_dpmng_cmd.h -> drivers/bus/fsl-mc/dpmng-cmd.h
+	drivers/bus/fsl-mc/fsl_dprc_cmd.h -> drivers/bus/fsl-mc/dprc-cmd.h
+	drivers/bus/fsl-mc/fsl_mc_sys.c -> drivers/bus/fsl-mc/mc-sys.c
+	include/linux/fsl_dpmng.h -> include/linux/fsl/dpmng.h
+	include/linux/fsl_dprc.h -> include/linux/fsl/dprc.h
+	include/linux/fsl_mc_cmd.h -> include/linux/fsl/mc-cmd.h
+	include/linux/fsl_mc_sys.h -> include/linux/fsl/mc-sys.h
+  * Changed dpmng_load_iop() to take the DMA address directly,
+    instead of the image virtual address.
+  * Removed if and WARN_ON that checks for NULL fsl_destroy_mc_io()
+  * Removed locking from mc_send_command(). Now the caller of MC flib
+    APIs is responsible for protecting concurrent accesses to the same
+    MC portal.
 
 Changes in v2:
 - Addressed comment from Joe Perches:
-  * Changed pr_debug to dev_dbg in fsl_mc_bus_match
+  * Refactored logic to actively fail on err and proceed at
+    the same indent level on success, for all functions in dprc.c
+    and dpmng.c.
 
-- Addressed comments from Kim Phillips and Alex Graf:
-  * Changed version check to allow the driver to run with MC
-    firmware that has major version number greater than or equal
-    to the driver's major version number.
-  * Removed minor version check
+- Addressed comments from Kim Phillips:
+  * Fixed warning in mc_send_command
+  * Changed serialization logic in mc_send_command() to only use
+    spinlock_irqsave() when both threads and interrupt handlers
+    concurrently access the same portal.
+  * Changed switch to lookup table in mc_status_to_error()
+  * Removed macros iowrite64(), ioread64(), ENOTSUP from fsl_mc_sys.h
+  * Removed #ifdef side for FSL_MC_FIRMWARE in fsl_mc_cmd.h
+  * Changed non-devm_ API calls to devm_ API calls and refactored
+    fsl_create_mc_io()/fsl_destroy_mc_io() to simplify cleanup logic.
 
-- Removed unused variable parent_dev in fsl_mc_device_remove
+- Addressed comments from Scott Wood:
+  * Return -ENXIO instead of -EFAULT when ioremap_nocache() fails
 
- drivers/bus/Kconfig            |   3 +
- drivers/bus/Makefile           |   3 +
- drivers/bus/fsl-mc/Kconfig     |  24 ++
- drivers/bus/fsl-mc/Makefile    |  14 +
- drivers/bus/fsl-mc/mc-bus.c    | 588 +++++++++++++++++++++++++++++++++++++++++
- include/linux/fsl/mc-private.h |  33 +++
- include/linux/fsl/mc.h         | 137 ++++++++++
- 7 files changed, 802 insertions(+)
- create mode 100644 drivers/bus/fsl-mc/Kconfig
- create mode 100644 drivers/bus/fsl-mc/Makefile
- create mode 100644 drivers/bus/fsl-mc/mc-bus.c
- create mode 100644 include/linux/fsl/mc-private.h
- create mode 100644 include/linux/fsl/mc.h
+- Addressed comments from Alex Graf:
+  * Added MAINTAINERS file entries for new files
+  * Added dev param to fsl_create_mc_io(), to enable the use
+    of devm_ APIs in this function and fsl_destroy_mc_io().
+  * Changed the value of the timeout for MC command completion
+    to be a function of HZ instead of a hard-coded jiffies value.
 
-diff --git a/drivers/bus/Kconfig b/drivers/bus/Kconfig
-index 603eb1b..2fbb1fd 100644
---- a/drivers/bus/Kconfig
-+++ b/drivers/bus/Kconfig
-@@ -67,4 +67,7 @@ config VEXPRESS_CONFIG
- 	help
- 	  Platform configuration infrastructure for the ARM Ltd.
- 	  Versatile Express.
+ MAINTAINERS                    |   8 +
+ drivers/bus/fsl-mc/dpmng-cmd.h |  51 +++
+ drivers/bus/fsl-mc/dpmng.c     | 147 +++++++
+ drivers/bus/fsl-mc/dprc-cmd.h  |  84 ++++
+ drivers/bus/fsl-mc/dprc.c      | 913 +++++++++++++++++++++++++++++++++++++++++
+ drivers/bus/fsl-mc/mc-sys.c    | 283 +++++++++++++
+ include/linux/fsl/dpmng.h      | 161 ++++++++
+ include/linux/fsl/dprc.h       | 858 ++++++++++++++++++++++++++++++++++++++
+ include/linux/fsl/mc-cmd.h     | 109 +++++
+ include/linux/fsl/mc-sys.h     |  70 ++++
+ 10 files changed, 2684 insertions(+)
+ create mode 100644 drivers/bus/fsl-mc/dpmng-cmd.h
+ create mode 100644 drivers/bus/fsl-mc/dpmng.c
+ create mode 100644 drivers/bus/fsl-mc/dprc-cmd.h
+ create mode 100644 drivers/bus/fsl-mc/dprc.c
+ create mode 100644 drivers/bus/fsl-mc/mc-sys.c
+ create mode 100644 include/linux/fsl/dpmng.h
+ create mode 100644 include/linux/fsl/dprc.h
+ create mode 100644 include/linux/fsl/mc-cmd.h
+ create mode 100644 include/linux/fsl/mc-sys.h
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index c444907..3750444 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3972,6 +3972,14 @@ F:	sound/soc/fsl/fsl*
+ F:	sound/soc/fsl/imx*
+ F:	sound/soc/fsl/mpc8610_hpcd.c
+
++FREESCALE QORIQ MANAGEMENT COMPLEX DRIVER
++M:	J. German Rivera <German.Rivera@freescale.com>
++L:	linux-kernel@vger.kernel.org
++S:	Maintained
++F:	include/linux/fsl_mc*
++F:	include/linux/fsl_dp*
++F:	drivers/bus/fsl-mc/*
 +
-+source "drivers/bus/fsl-mc/Kconfig"
-+
- endmenu
-diff --git a/drivers/bus/Makefile b/drivers/bus/Makefile
-index 2973c18..6abcab1 100644
---- a/drivers/bus/Makefile
-+++ b/drivers/bus/Makefile
-@@ -15,3 +15,6 @@ obj-$(CONFIG_ARM_CCI)		+= arm-cci.o
- obj-$(CONFIG_ARM_CCN)		+= arm-ccn.o
-
- obj-$(CONFIG_VEXPRESS_CONFIG)	+= vexpress-config.o
-+
-+# Freescale Management Complex (MC) bus drivers
-+obj-$(CONFIG_FSL_MC_BUS)	+= fsl-mc/
-diff --git a/drivers/bus/fsl-mc/Kconfig b/drivers/bus/fsl-mc/Kconfig
+ FREEVXFS FILESYSTEM
+ M:	Christoph Hellwig <hch@infradead.org>
+ W:	ftp://ftp.openlinux.org/pub/people/hch/vxfs
+diff --git a/drivers/bus/fsl-mc/dpmng-cmd.h b/drivers/bus/fsl-mc/dpmng-cmd.h
 new file mode 100644
-index 0000000..0d779d9
+index 0000000..16eddbd
 --- /dev/null
-+++ b/drivers/bus/fsl-mc/Kconfig
-@@ -0,0 +1,24 @@
-+#
-+# Freescale Management Complex (MC) bus drivers
-+#
-+# Copyright (C) 2014 Freescale Semiconductor, Inc.
-+#
-+# This file is released under the GPLv2
-+#
-+
-+config FSL_MC_BUS
-+	tristate "Freescale Management Complex (MC) bus driver"
-+	depends on OF && ARM64
-+	help
-+	  Driver to enable the bus infrastructure for the Freescale
-+          QorIQ Management Complex (fsl-mc). The fsl-mc is a hardware
-+	  module of the QorIQ LS2 SoCs, that does resource management
-+	  for hardware building-blocks in the SoC that can be used
-+	  to dynamically create networking hardware objects such as
-+	  network interfaces (NICs), crypto accelerator instances,
-+	  or L2 switches.
-+
-+	  Only enable this option when building the kernel for
-+	  Freescale QorQIQ LS2xxxx SoCs.
-+
-+
-diff --git a/drivers/bus/fsl-mc/Makefile b/drivers/bus/fsl-mc/Makefile
-new file mode 100644
-index 0000000..decd339
---- /dev/null
-+++ b/drivers/bus/fsl-mc/Makefile
-@@ -0,0 +1,14 @@
-+#
-+# Freescale Management Complex (MC) bus drivers
-+#
-+# Copyright (C) 2014 Freescale Semiconductor, Inc.
-+#
-+# This file is released under the GPLv2
-+#
-+obj-$(CONFIG_FSL_MC_BUS) += mc-bus-driver.o
-+
-+mc-bus-driver-objs := mc-bus.o \
-+		      mc-sys.o \
-+		      dprc.o \
-+		      dpmng.o
-+
-diff --git a/drivers/bus/fsl-mc/mc-bus.c b/drivers/bus/fsl-mc/mc-bus.c
-new file mode 100644
-index 0000000..3db8a73
---- /dev/null
-+++ b/drivers/bus/fsl-mc/mc-bus.c
-@@ -0,0 +1,588 @@
-+/*
-+ * Freescale Management Complex (MC) bus driver
++++ b/drivers/bus/fsl-mc/dpmng-cmd.h
+@@ -0,0 +1,51 @@
++/* Copyright 2013-2014 Freescale Semiconductor Inc.
 + *
-+ * Copyright (C) 2014 Freescale Semiconductor, Inc.
-+ * Author: German Rivera <German.Rivera@freescale.com>
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *     * Redistributions of source code must retain the above copyright
++ *       notice, this list of conditions and the following disclaimer.
++ *     * Redistributions in binary form must reproduce the above copyright
++ *       notice, this list of conditions and the following disclaimer in the
++ *       documentation and/or other materials provided with the distribution.
++ *     * Neither the name of the above-listed copyright holders nor the
++ *       names of any contributors may be used to endorse or promote products
++ *       derived from this software without specific prior written permission.
 + *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
++ *
++ * ALTERNATIVELY, this software may be distributed under the terms of the
++ * GNU General Public License ("GPL") as published by the Free Software
++ * Foundation, either version 2 of that License or (at your option) any
++ * later version.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
 + */
 +
-+#include <linux/fsl/mc-private.h>
-+#include <linux/module.h>
-+#include <linux/of_device.h>
-+#include <linux/of_address.h>
-+#include <linux/ioport.h>
-+#include <linux/slab.h>
-+#include <linux/limits.h>
-+#include <linux/fsl/dpmng.h>
++/*************************************************************************//*
++ dpmng-cmd.h
++
++ defines portal commands
++
++ *//**************************************************************************/
++
++#ifndef __FSL_DPMNG_CMD_H
++#define __FSL_DPMNG_CMD_H
++
++/* Command IDs */
++#define DPMNG_CMDID_GET_CONT_ID			0x830
++#define DPMNG_CMDID_GET_VERSION			0x831
++#define DPMNG_CMDID_RESET_AIOP			0x832
++#define DPMNG_CMDID_LOAD_AIOP			0x833
++#define DPMNG_CMDID_RUN_AIOP			0x834
++#define DPMNG_CMDID_RESET_MC_PORTAL		0x835
++
++#endif /* __FSL_DPMNG_CMD_H */
+diff --git a/drivers/bus/fsl-mc/dpmng.c b/drivers/bus/fsl-mc/dpmng.c
+new file mode 100644
+index 0000000..170e11c
+--- /dev/null
++++ b/drivers/bus/fsl-mc/dpmng.c
+@@ -0,0 +1,147 @@
++/* Copyright 2013-2014 Freescale Semiconductor Inc.
++*
++* Redistribution and use in source and binary forms, with or without
++* modification, are permitted provided that the following conditions are met:
++* * Redistributions of source code must retain the above copyright
++* notice, this list of conditions and the following disclaimer.
++* * Redistributions in binary form must reproduce the above copyright
++* notice, this list of conditions and the following disclaimer in the
++* documentation and/or other materials provided with the distribution.
++* * Neither the name of the above-listed copyright holders nor the
++* names of any contributors may be used to endorse or promote products
++* derived from this software without specific prior written permission.
++*
++*
++* ALTERNATIVELY, this software may be distributed under the terms of the
++* GNU General Public License ("GPL") as published by the Free Software
++* Foundation, either version 2 of that License or (at your option) any
++* later version.
++*
++* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
++* LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++* SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++* INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++* CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++* POSSIBILITY OF SUCH DAMAGE.
++*/
 +#include <linux/fsl/mc-sys.h>
++#include <linux/fsl/mc-cmd.h>
++#include <linux/fsl/dpmng.h>
++#include "dpmng-cmd.h"
++
++int mc_get_version(struct fsl_mc_io *mc_io, struct mc_version *mc_ver_info)
++{
++	struct mc_command cmd = { 0 };
++	int err;
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPMNG_CMDID_GET_VERSION,
++					  MC_CMD_PRI_LOW, 0);
++
++	/* send command to mc*/
++	err = mc_send_command(mc_io, &cmd);
++	if (err)
++		return err;
++
++	/* retrieve response parameters */
++	mc_ver_info->revision = mc_dec(cmd.params[0], 0, 32);
++	mc_ver_info->major = mc_dec(cmd.params[0], 32, 32);
++	mc_ver_info->minor = mc_dec(cmd.params[1], 0, 32);
++
++	return 0;
++}
++
++int dpmng_reset_aiop(struct fsl_mc_io *mc_io, int container_id,
++		     int aiop_tile_id)
++{
++	struct mc_command cmd = { 0 };
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPMNG_CMDID_RESET_AIOP,
++					  MC_CMD_PRI_LOW, 0);
++	cmd.params[0] |= mc_enc(0, 32, aiop_tile_id);
++	cmd.params[0] |= mc_enc(32, 32, container_id);
++
++	/* send command to mc*/
++	return mc_send_command(mc_io, &cmd);
++}
++
++int dpmng_load_aiop(struct fsl_mc_io *mc_io,
++		    int container_id,
++		    int aiop_tile_id,
++		    uint64_t img_iova,
++		    uint32_t img_size)
++{
++	struct mc_command cmd = { 0 };
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPMNG_CMDID_LOAD_AIOP,
++					  MC_CMD_PRI_LOW,
++					  0);
++	cmd.params[0] |= mc_enc(0, 32, aiop_tile_id);
++	cmd.params[0] |= mc_enc(32, 32, container_id);
++	cmd.params[1] |= mc_enc(0, 32, img_size);
++	cmd.params[2] |= mc_enc(0, 64, img_iova);
++
++	/* send command to mc*/
++	return mc_send_command(mc_io, &cmd);
++}
++
++int dpmng_run_aiop(struct fsl_mc_io *mc_io,
++		   int container_id,
++		   int aiop_tile_id,
++		   const struct dpmng_aiop_run_cfg *cfg)
++{
++	struct mc_command cmd = { 0 };
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPMNG_CMDID_RUN_AIOP,
++					  MC_CMD_PRI_LOW,
++					  0);
++	cmd.params[0] |= mc_enc(0, 32, aiop_tile_id);
++	cmd.params[0] |= mc_enc(32, 32, container_id);
++	cmd.params[1] |= mc_enc(0, 32, cfg->cores_mask);
++	cmd.params[2] |= mc_enc(0, 64, cfg->options);
++
++	/* send command to mc*/
++	return mc_send_command(mc_io, &cmd);
++}
++
++int dpmng_reset_mc_portal(struct fsl_mc_io *mc_io)
++{
++	struct mc_command cmd = { 0 };
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPMNG_CMDID_RESET_MC_PORTAL,
++					  MC_CMD_PRI_LOW,
++					  0);
++
++	/* send command to mc*/
++	return mc_send_command(mc_io, &cmd);
++}
++
++int dpmng_get_container_id(struct fsl_mc_io *mc_io, int *container_id)
++{
++	struct mc_command cmd = { 0 };
++	int err;
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPMNG_CMDID_GET_CONT_ID,
++					  MC_CMD_PRI_LOW, 0);
++
++	/* send command to mc*/
++	err = mc_send_command(mc_io, &cmd);
++	if (err)
++		return err;
++
++	/* retrieve response parameters */
++	*container_id = mc_dec(cmd.params[0], 0, 32);
++
++	return 0;
++}
++
+diff --git a/drivers/bus/fsl-mc/dprc-cmd.h b/drivers/bus/fsl-mc/dprc-cmd.h
+new file mode 100644
+index 0000000..79e037b
+--- /dev/null
++++ b/drivers/bus/fsl-mc/dprc-cmd.h
+@@ -0,0 +1,84 @@
++/* Copyright 2013-2014 Freescale Semiconductor Inc.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *     * Redistributions of source code must retain the above copyright
++ *       notice, this list of conditions and the following disclaimer.
++ *     * Redistributions in binary form must reproduce the above copyright
++ *       notice, this list of conditions and the following disclaimer in the
++ *       documentation and/or other materials provided with the distribution.
++ *     * Neither the name of the above-listed copyright holders nor the
++ *       names of any contributors may be used to endorse or promote products
++ *       derived from this software without specific prior written permission.
++ *
++ *
++ * ALTERNATIVELY, this software may be distributed under the terms of the
++ * GNU General Public License ("GPL") as published by the Free Software
++ * Foundation, either version 2 of that License or (at your option) any
++ * later version.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ */
++
++/*************************************************************************//*
++ dprc-cmd.h
++
++ defines dprc portal commands
++
++ *//**************************************************************************/
++
++#ifndef _FSL_DPRC_CMD_H
++#define _FSL_DPRC_CMD_H
++
++/* DPRC Version */
++#define DPRC_VER_MAJOR				2
++#define DPRC_VER_MINOR				0
++
++/* Command IDs */
++#define DPRC_CMDID_CLOSE			0x800
++#define DPRC_CMDID_OPEN				0x805
++#define DPRC_CMDID_CREATE			0x905
++
++#define DPRC_CMDID_GET_ATTR			0x004
++#define DPRC_CMDID_RESET_CONT			0x005
++
++#define DPRC_CMDID_SET_IRQ			0x010
++#define DPRC_CMDID_GET_IRQ			0x011
++#define DPRC_CMDID_SET_IRQ_ENABLE		0x012
++#define DPRC_CMDID_GET_IRQ_ENABLE		0x013
++#define DPRC_CMDID_SET_IRQ_MASK			0x014
++#define DPRC_CMDID_GET_IRQ_MASK			0x015
++#define DPRC_CMDID_GET_IRQ_STATUS		0x016
++#define DPRC_CMDID_CLEAR_IRQ_STATUS		0x017
++
++#define DPRC_CMDID_CREATE_CONT			0x151
++#define DPRC_CMDID_DESTROY_CONT			0x152
++#define DPRC_CMDID_SET_RES_QUOTA		0x155
++#define DPRC_CMDID_GET_RES_QUOTA		0x156
++#define DPRC_CMDID_ASSIGN			0x157
++#define DPRC_CMDID_UNASSIGN			0x158
++#define DPRC_CMDID_GET_OBJ_COUNT		0x159
++#define DPRC_CMDID_GET_OBJ			0x15A
++#define DPRC_CMDID_GET_RES_COUNT		0x15B
++#define DPRC_CMDID_GET_RES_IDS			0x15C
++#define DPRC_CMDID_GET_OBJ_REG			0x15E
++
++#define DPRC_CMDID_CONNECT			0x167
++#define DPRC_CMDID_DISCONNECT			0x168
++#define DPRC_CMDID_GET_POOL			0x169
++#define DPRC_CMDID_GET_POOL_COUNT		0x16A
++#define DPRC_CMDID_GET_PORTAL_PADDR		0x16B
++
++#define DPRC_CMDID_GET_CONNECTION		0x16C
++
++#endif /* _FSL_DPRC_CMD_H */
+diff --git a/drivers/bus/fsl-mc/dprc.c b/drivers/bus/fsl-mc/dprc.c
+new file mode 100644
+index 0000000..e525c6c
+--- /dev/null
++++ b/drivers/bus/fsl-mc/dprc.c
+@@ -0,0 +1,913 @@
++/* Copyright 2013-2014 Freescale Semiconductor Inc.
++*
++* Redistribution and use in source and binary forms, with or without
++* modification, are permitted provided that the following conditions are met:
++* * Redistributions of source code must retain the above copyright
++* notice, this list of conditions and the following disclaimer.
++* * Redistributions in binary form must reproduce the above copyright
++* notice, this list of conditions and the following disclaimer in the
++* documentation and/or other materials provided with the distribution.
++* * Neither the name of the above-listed copyright holders nor the
++* names of any contributors may be used to endorse or promote products
++* derived from this software without specific prior written permission.
++*
++*
++* ALTERNATIVELY, this software may be distributed under the terms of the
++* GNU General Public License ("GPL") as published by the Free Software
++* Foundation, either version 2 of that License or (at your option) any
++* later version.
++*
++* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
++* LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++* SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++* INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++* CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++* POSSIBILITY OF SUCH DAMAGE.
++*/
++#include <linux/fsl/mc-sys.h>
++#include <linux/fsl/mc-cmd.h>
++#include <linux/fsl/dprc.h>
 +#include "dprc-cmd.h"
 +
-+static struct kmem_cache *mc_dev_cache;
++int dprc_open(struct fsl_mc_io *mc_io, int container_id, uint16_t *token)
++{
++	struct mc_command cmd = { 0 };
++	int err;
 +
-+/**
-+ * fsl_mc_bus_match - device to driver matching callback
-+ * @dev: the MC object device structure to match against
-+ * @drv: the device driver to search for matching MC object device id
-+ * structures
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_OPEN, MC_CMD_PRI_LOW,
++					  0);
++	cmd.params[0] |= mc_enc(0, 32, container_id);
++
++	/* send command to mc*/
++	err = mc_send_command(mc_io, &cmd);
++	if (err)
++		return err;
++
++	/* retrieve response parameters */
++	*token = MC_CMD_HDR_READ_AUTHID(cmd.header);
++
++	return 0;
++}
++EXPORT_SYMBOL(dprc_open);
++
++int dprc_close(struct fsl_mc_io *mc_io, uint16_t token)
++{
++	struct mc_command cmd = { 0 };
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_CLOSE, MC_CMD_PRI_HIGH,
++					  token);
++
++	/* send command to mc*/
++	return mc_send_command(mc_io, &cmd);
++}
++EXPORT_SYMBOL(dprc_close);
++
++int dprc_create_container(struct fsl_mc_io *mc_io,
++			  uint16_t token,
++			  struct dprc_cfg *cfg,
++			  int *child_container_id,
++			  uint64_t *child_portal_paddr)
++{
++	struct mc_command cmd = { 0 };
++	int err;
++
++	/* prepare command */
++	cmd.params[0] |= mc_enc(32, 16, cfg->icid);
++	cmd.params[0] |= mc_enc(0, 32, cfg->options);
++	cmd.params[1] |= mc_enc(32, 32, cfg->portal_id);
++
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_CREATE_CONT,
++					  MC_CMD_PRI_LOW, token);
++
++	/* send command to mc*/
++	err = mc_send_command(mc_io, &cmd);
++	if (err)
++		return err;
++
++	/* retrieve response parameters */
++	*child_container_id = mc_dec(cmd.params[1], 0, 32);
++	*child_portal_paddr = mc_dec(cmd.params[2], 0, 64);
++
++	return 0;
++}
++
++int dprc_destroy_container(struct fsl_mc_io *mc_io,
++			   uint16_t token,
++			   int child_container_id)
++{
++	struct mc_command cmd = { 0 };
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_DESTROY_CONT,
++					  MC_CMD_PRI_LOW, token);
++	cmd.params[0] |= mc_enc(0, 32, child_container_id);
++
++	/* send command to mc*/
++	return mc_send_command(mc_io, &cmd);
++}
++
++int dprc_reset_container(struct fsl_mc_io *mc_io,
++			 uint16_t token,
++			 int child_container_id)
++{
++	struct mc_command cmd = { 0 };
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_RESET_CONT,
++					  MC_CMD_PRI_LOW, token);
++	cmd.params[0] |= mc_enc(0, 32, child_container_id);
++
++	/* send command to mc*/
++	return mc_send_command(mc_io, &cmd);
++}
++
++int dprc_get_irq(struct fsl_mc_io *mc_io,
++		 uint16_t token,
++		 uint8_t irq_index,
++		 int *type,
++		 uint64_t *irq_paddr,
++		 uint32_t *irq_val,
++		 int *user_irq_id)
++{
++	struct mc_command cmd = { 0 };
++	int err;
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_GET_IRQ,
++					  MC_CMD_PRI_LOW,
++					  token);
++	cmd.params[0] |= mc_enc(32, 8, irq_index);
++
++	/* send command to mc*/
++	err = mc_send_command(mc_io, &cmd);
++	if (err)
++		return err;
++
++	/* retrieve response parameters */
++	*irq_val = mc_dec(cmd.params[0], 0, 32);
++	*irq_paddr = mc_dec(cmd.params[1], 0, 64);
++	*user_irq_id = mc_dec(cmd.params[2], 0, 32);
++	*type = mc_dec(cmd.params[2], 32, 32);
++
++	return 0;
++}
++
++int dprc_set_irq(struct fsl_mc_io *mc_io,
++		 uint16_t token,
++		 uint8_t irq_index,
++		 uint64_t irq_paddr,
++		 uint32_t irq_val,
++		 int user_irq_id)
++{
++	struct mc_command cmd = { 0 };
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_SET_IRQ,
++					  MC_CMD_PRI_LOW,
++					  token);
++	cmd.params[0] |= mc_enc(32, 8, irq_index);
++	cmd.params[0] |= mc_enc(0, 32, irq_val);
++	cmd.params[1] |= mc_enc(0, 64, irq_paddr);
++	cmd.params[2] |= mc_enc(0, 32, user_irq_id);
++
++	/* send command to mc*/
++	return mc_send_command(mc_io, &cmd);
++}
++
++int dprc_get_irq_enable(struct fsl_mc_io *mc_io,
++			uint16_t token,
++			uint8_t irq_index,
++			uint8_t *en)
++{
++	struct mc_command cmd = { 0 };
++	int err;
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_GET_IRQ_ENABLE,
++					  MC_CMD_PRI_LOW, token);
++	cmd.params[0] |= mc_enc(32, 8, irq_index);
++
++	/* send command to mc*/
++	err = mc_send_command(mc_io, &cmd);
++	if (err)
++		return err;
++
++	/* retrieve response parameters */
++	*en = mc_dec(cmd.params[0], 0, 8);
++
++	return 0;
++}
++
++int dprc_set_irq_enable(struct fsl_mc_io *mc_io,
++			uint16_t token,
++			uint8_t irq_index,
++			uint8_t en)
++{
++	struct mc_command cmd = { 0 };
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_SET_IRQ_ENABLE,
++					  MC_CMD_PRI_LOW, token);
++	cmd.params[0] |= mc_enc(0, 8, en);
++	cmd.params[0] |= mc_enc(32, 8, irq_index);
++
++	/* send command to mc*/
++	return mc_send_command(mc_io, &cmd);
++}
++
++int dprc_get_irq_mask(struct fsl_mc_io *mc_io,
++		      uint16_t token,
++		      uint8_t irq_index,
++		      uint32_t *mask)
++{
++	struct mc_command cmd = { 0 };
++	int err;
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_GET_IRQ_MASK,
++					  MC_CMD_PRI_LOW, token);
++	cmd.params[0] |= mc_enc(32, 8, irq_index);
++
++	/* send command to mc*/
++	err = mc_send_command(mc_io, &cmd);
++	if (err)
++		return err;
++
++	/* retrieve response parameters */
++	*mask = mc_dec(cmd.params[0], 0, 32);
++
++	return 0;
++}
++
++int dprc_set_irq_mask(struct fsl_mc_io *mc_io,
++		      uint16_t token,
++		      uint8_t irq_index,
++		      uint32_t mask)
++{
++	struct mc_command cmd = { 0 };
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_SET_IRQ_MASK,
++					  MC_CMD_PRI_LOW, token);
++	cmd.params[0] |= mc_enc(0, 32, mask);
++	cmd.params[0] |= mc_enc(32, 8, irq_index);
++
++	/* send command to mc*/
++	return mc_send_command(mc_io, &cmd);
++}
++
++int dprc_get_irq_status(struct fsl_mc_io *mc_io,
++			uint16_t token,
++			uint8_t irq_index,
++			uint32_t *status)
++{
++	struct mc_command cmd = { 0 };
++	int err;
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_GET_IRQ_STATUS,
++					  MC_CMD_PRI_LOW, token);
++	cmd.params[0] |= mc_enc(32, 8, irq_index);
++
++	/* send command to mc*/
++	err = mc_send_command(mc_io, &cmd);
++	if (err)
++		return err;
++
++	/* retrieve response parameters */
++	*status = mc_dec(cmd.params[0], 0, 32);
++
++	return 0;
++}
++
++int dprc_clear_irq_status(struct fsl_mc_io *mc_io,
++			  uint16_t token,
++			  uint8_t irq_index,
++			  uint32_t status)
++{
++	struct mc_command cmd = { 0 };
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_CLEAR_IRQ_STATUS,
++					  MC_CMD_PRI_LOW, token);
++	cmd.params[0] |= mc_enc(0, 32, status);
++	cmd.params[0] |= mc_enc(32, 8, irq_index);
++
++	/* send command to mc*/
++	return mc_send_command(mc_io, &cmd);
++}
++
++int dprc_get_attributes(struct fsl_mc_io *mc_io,
++			uint16_t token,
++			struct dprc_attributes *attr)
++{
++	struct mc_command cmd = { 0 };
++	int err;
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_GET_ATTR,
++					  MC_CMD_PRI_LOW,
++					  token);
++
++	/* send command to mc*/
++	err = mc_send_command(mc_io, &cmd);
++	if (err)
++		return err;
++
++	/* retrieve response parameters */
++	attr->container_id = mc_dec(cmd.params[0], 0, 32);
++	attr->icid = mc_dec(cmd.params[0], 32, 16);
++	attr->options = mc_dec(cmd.params[1], 0, 32);
++	attr->portal_id = mc_dec(cmd.params[1], 32, 32);
++	attr->version.major = mc_dec(cmd.params[2], 0, 16);
++	attr->version.minor = mc_dec(cmd.params[2], 16, 16);
++
++	return 0;
++}
++
++int dprc_set_res_quota(struct fsl_mc_io *mc_io,
++		       uint16_t token,
++		       int child_container_id,
++		       char *type,
++		       uint16_t quota)
++{
++	struct mc_command cmd = { 0 };
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_SET_RES_QUOTA,
++					  MC_CMD_PRI_LOW, token);
++	cmd.params[0] |= mc_enc(0, 32, child_container_id);
++	cmd.params[0] |= mc_enc(32, 16, quota);
++	cmd.params[1] |= mc_enc(0, 8, type[0]);
++	cmd.params[1] |= mc_enc(8, 8, type[1]);
++	cmd.params[1] |= mc_enc(16, 8, type[2]);
++	cmd.params[1] |= mc_enc(24, 8, type[3]);
++	cmd.params[1] |= mc_enc(32, 8, type[4]);
++	cmd.params[1] |= mc_enc(40, 8, type[5]);
++	cmd.params[1] |= mc_enc(48, 8, type[6]);
++	cmd.params[1] |= mc_enc(56, 8, type[7]);
++	cmd.params[2] |= mc_enc(0, 8, type[8]);
++	cmd.params[2] |= mc_enc(8, 8, type[9]);
++	cmd.params[2] |= mc_enc(16, 8, type[10]);
++	cmd.params[2] |= mc_enc(24, 8, type[11]);
++	cmd.params[2] |= mc_enc(32, 8, type[12]);
++	cmd.params[2] |= mc_enc(40, 8, type[13]);
++	cmd.params[2] |= mc_enc(48, 8, type[14]);
++	cmd.params[2] |= mc_enc(56, 8, '\0');
++
++	/* send command to mc*/
++	return mc_send_command(mc_io, &cmd);
++}
++
++int dprc_get_res_quota(struct fsl_mc_io *mc_io,
++		       uint16_t token,
++		       int child_container_id,
++		       char *type,
++		       uint16_t *quota)
++{
++	struct mc_command cmd = { 0 };
++	int err;
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_GET_RES_QUOTA,
++					  MC_CMD_PRI_LOW, token);
++	cmd.params[0] |= mc_enc(0, 32, child_container_id);
++	cmd.params[1] |= mc_enc(0, 8, type[0]);
++	cmd.params[1] |= mc_enc(8, 8, type[1]);
++	cmd.params[1] |= mc_enc(16, 8, type[2]);
++	cmd.params[1] |= mc_enc(24, 8, type[3]);
++	cmd.params[1] |= mc_enc(32, 8, type[4]);
++	cmd.params[1] |= mc_enc(40, 8, type[5]);
++	cmd.params[1] |= mc_enc(48, 8, type[6]);
++	cmd.params[1] |= mc_enc(56, 8, type[7]);
++	cmd.params[2] |= mc_enc(0, 8, type[8]);
++	cmd.params[2] |= mc_enc(8, 8, type[9]);
++	cmd.params[2] |= mc_enc(16, 8, type[10]);
++	cmd.params[2] |= mc_enc(24, 8, type[11]);
++	cmd.params[2] |= mc_enc(32, 8, type[12]);
++	cmd.params[2] |= mc_enc(40, 8, type[13]);
++	cmd.params[2] |= mc_enc(48, 8, type[14]);
++	cmd.params[2] |= mc_enc(56, 8, '\0');
++
++	/* send command to mc*/
++	err = mc_send_command(mc_io, &cmd);
++	if (err)
++		return err;
++
++	/* retrieve response parameters */
++	*quota = mc_dec(cmd.params[0], 32, 16);
++
++	return 0;
++}
++
++int dprc_assign(struct fsl_mc_io *mc_io,
++		uint16_t token,
++		int container_id,
++		struct dprc_res_req *res_req)
++{
++	struct mc_command cmd = { 0 };
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_ASSIGN,
++					  MC_CMD_PRI_LOW, token);
++	cmd.params[0] |= mc_enc(0, 32, container_id);
++	cmd.params[0] |= mc_enc(32, 32, res_req->options);
++	cmd.params[1] |= mc_enc(0, 32, res_req->num);
++	cmd.params[1] |= mc_enc(32, 32, res_req->id_base_align);
++	cmd.params[2] |= mc_enc(0, 8, res_req->type[0]);
++	cmd.params[2] |= mc_enc(8, 8, res_req->type[1]);
++	cmd.params[2] |= mc_enc(16, 8, res_req->type[2]);
++	cmd.params[2] |= mc_enc(24, 8, res_req->type[3]);
++	cmd.params[2] |= mc_enc(32, 8, res_req->type[4]);
++	cmd.params[2] |= mc_enc(40, 8, res_req->type[5]);
++	cmd.params[2] |= mc_enc(48, 8, res_req->type[6]);
++	cmd.params[2] |= mc_enc(56, 8, res_req->type[7]);
++	cmd.params[3] |= mc_enc(0, 8, res_req->type[8]);
++	cmd.params[3] |= mc_enc(8, 8, res_req->type[9]);
++	cmd.params[3] |= mc_enc(16, 8, res_req->type[10]);
++	cmd.params[3] |= mc_enc(24, 8, res_req->type[11]);
++	cmd.params[3] |= mc_enc(32, 8, res_req->type[12]);
++	cmd.params[3] |= mc_enc(40, 8, res_req->type[13]);
++	cmd.params[3] |= mc_enc(48, 8, res_req->type[14]);
++	cmd.params[3] |= mc_enc(56, 8, res_req->type[15]);
++
++	/* send command to mc*/
++	return mc_send_command(mc_io, &cmd);
++}
++
++int dprc_unassign(struct fsl_mc_io *mc_io,
++		  uint16_t token,
++		  int child_container_id,
++		  struct dprc_res_req *res_req)
++{
++	struct mc_command cmd = { 0 };
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_UNASSIGN,
++					  MC_CMD_PRI_LOW,
++					  token);
++	cmd.params[0] |= mc_enc(0, 32, child_container_id);
++	cmd.params[0] |= mc_enc(32, 32, res_req->options);
++	cmd.params[1] |= mc_enc(0, 32, res_req->num);
++	cmd.params[1] |= mc_enc(32, 32, res_req->id_base_align);
++	cmd.params[2] |= mc_enc(0, 8, res_req->type[0]);
++	cmd.params[2] |= mc_enc(8, 8, res_req->type[1]);
++	cmd.params[2] |= mc_enc(16, 8, res_req->type[2]);
++	cmd.params[2] |= mc_enc(24, 8, res_req->type[3]);
++	cmd.params[2] |= mc_enc(32, 8, res_req->type[4]);
++	cmd.params[2] |= mc_enc(40, 8, res_req->type[5]);
++	cmd.params[2] |= mc_enc(48, 8, res_req->type[6]);
++	cmd.params[2] |= mc_enc(56, 8, res_req->type[7]);
++	cmd.params[3] |= mc_enc(0, 8, res_req->type[8]);
++	cmd.params[3] |= mc_enc(8, 8, res_req->type[9]);
++	cmd.params[3] |= mc_enc(16, 8, res_req->type[10]);
++	cmd.params[3] |= mc_enc(24, 8, res_req->type[11]);
++	cmd.params[3] |= mc_enc(32, 8, res_req->type[12]);
++	cmd.params[3] |= mc_enc(40, 8, res_req->type[13]);
++	cmd.params[3] |= mc_enc(48, 8, res_req->type[14]);
++	cmd.params[3] |= mc_enc(56, 8, res_req->type[15]);
++
++	/* send command to mc*/
++	return mc_send_command(mc_io, &cmd);
++}
++
++int dprc_get_pool_count(struct fsl_mc_io *mc_io,
++			uint16_t token,
++			int *pool_count)
++{
++	struct mc_command cmd = { 0 };
++	int err;
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_GET_POOL_COUNT,
++					  MC_CMD_PRI_LOW, token);
++
++	/* send command to mc*/
++	err = mc_send_command(mc_io, &cmd);
++	if (err)
++		return err;
++
++	/* retrieve response parameters */
++	*pool_count = mc_dec(cmd.params[0], 0, 32);
++
++	return 0;
++}
++
++int dprc_get_pool(struct fsl_mc_io *mc_io,
++		  uint16_t token,
++		  int pool_index,
++		  char *type)
++{
++	struct mc_command cmd = { 0 };
++	int err;
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_GET_POOL,
++					  MC_CMD_PRI_LOW,
++					  token);
++	cmd.params[0] |= mc_enc(0, 32, pool_index);
++
++	/* send command to mc*/
++	err = mc_send_command(mc_io, &cmd);
++	if (err)
++		return err;
++
++	/* retrieve response parameters */
++	type[0] = mc_dec(cmd.params[1], 0, 8);
++	type[1] = mc_dec(cmd.params[1], 8, 8);
++	type[2] = mc_dec(cmd.params[1], 16, 8);
++	type[3] = mc_dec(cmd.params[1], 24, 8);
++	type[4] = mc_dec(cmd.params[1], 32, 8);
++	type[5] = mc_dec(cmd.params[1], 40, 8);
++	type[6] = mc_dec(cmd.params[1], 48, 8);
++	type[7] = mc_dec(cmd.params[1], 56, 8);
++	type[8] = mc_dec(cmd.params[2], 0, 8);
++	type[9] = mc_dec(cmd.params[2], 8, 8);
++	type[10] = mc_dec(cmd.params[2], 16, 8);
++	type[11] = mc_dec(cmd.params[2], 24, 8);
++	type[12] = mc_dec(cmd.params[2], 32, 8);
++	type[13] = mc_dec(cmd.params[2], 40, 8);
++	type[14] = mc_dec(cmd.params[2], 48, 8);
++	type[15] = '\0';
++
++	return 0;
++}
++
++int dprc_get_obj_count(struct fsl_mc_io *mc_io, uint16_t token, int *obj_count)
++{
++	struct mc_command cmd = { 0 };
++	int err;
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_GET_OBJ_COUNT,
++					  MC_CMD_PRI_LOW, token);
++
++	/* send command to mc*/
++	err = mc_send_command(mc_io, &cmd);
++	if (err)
++		return err;
++
++	/* retrieve response parameters */
++	*obj_count = mc_dec(cmd.params[0], 32, 32);
++
++	return 0;
++}
++EXPORT_SYMBOL(dprc_get_obj_count);
++
++int dprc_get_obj(struct fsl_mc_io *mc_io,
++		 uint16_t token,
++		 int obj_index,
++		 struct dprc_obj_desc *obj_desc)
++{
++	struct mc_command cmd = { 0 };
++	int err;
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_GET_OBJ,
++					  MC_CMD_PRI_LOW,
++					  token);
++	cmd.params[0] |= mc_enc(0, 32, obj_index);
++
++	/* send command to mc*/
++	err = mc_send_command(mc_io, &cmd);
++	if (err)
++		return err;
++
++	/* retrieve response parameters */
++	obj_desc->id = mc_dec(cmd.params[0], 32, 32);
++	obj_desc->vendor = mc_dec(cmd.params[1], 0, 16);
++	obj_desc->irq_count = mc_dec(cmd.params[1], 16, 8);
++	obj_desc->region_count = mc_dec(cmd.params[1], 24, 8);
++	obj_desc->state = mc_dec(cmd.params[1], 32, 32);
++	obj_desc->ver_major = mc_dec(cmd.params[2], 0, 16);
++	obj_desc->ver_minor = mc_dec(cmd.params[2], 16, 16);
++	obj_desc->type[0] = mc_dec(cmd.params[3], 0, 8);
++	obj_desc->type[1] = mc_dec(cmd.params[3], 8, 8);
++	obj_desc->type[2] = mc_dec(cmd.params[3], 16, 8);
++	obj_desc->type[3] = mc_dec(cmd.params[3], 24, 8);
++	obj_desc->type[4] = mc_dec(cmd.params[3], 32, 8);
++	obj_desc->type[5] = mc_dec(cmd.params[3], 40, 8);
++	obj_desc->type[6] = mc_dec(cmd.params[3], 48, 8);
++	obj_desc->type[7] = mc_dec(cmd.params[3], 56, 8);
++	obj_desc->type[8] = mc_dec(cmd.params[4], 0, 8);
++	obj_desc->type[9] = mc_dec(cmd.params[4], 8, 8);
++	obj_desc->type[10] = mc_dec(cmd.params[4], 16, 8);
++	obj_desc->type[11] = mc_dec(cmd.params[4], 24, 8);
++	obj_desc->type[12] = mc_dec(cmd.params[4], 32, 8);
++	obj_desc->type[13] = mc_dec(cmd.params[4], 40, 8);
++	obj_desc->type[14] = mc_dec(cmd.params[4], 48, 8);
++	obj_desc->type[15] = '\0';
++
++	return 0;
++}
++EXPORT_SYMBOL(dprc_get_obj);
++
++int dprc_get_res_count(struct fsl_mc_io *mc_io,
++		       uint16_t token,
++		       char *type,
++		       int *res_count)
++{
++	struct mc_command cmd = { 0 };
++	int err;
++
++	*res_count = 0;
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_GET_RES_COUNT,
++					  MC_CMD_PRI_LOW, token);
++	cmd.params[1] |= mc_enc(0, 8, type[0]);
++	cmd.params[1] |= mc_enc(8, 8, type[1]);
++	cmd.params[1] |= mc_enc(16, 8, type[2]);
++	cmd.params[1] |= mc_enc(24, 8, type[3]);
++	cmd.params[1] |= mc_enc(32, 8, type[4]);
++	cmd.params[1] |= mc_enc(40, 8, type[5]);
++	cmd.params[1] |= mc_enc(48, 8, type[6]);
++	cmd.params[1] |= mc_enc(56, 8, type[7]);
++	cmd.params[2] |= mc_enc(0, 8, type[8]);
++	cmd.params[2] |= mc_enc(8, 8, type[9]);
++	cmd.params[2] |= mc_enc(16, 8, type[10]);
++	cmd.params[2] |= mc_enc(24, 8, type[11]);
++	cmd.params[2] |= mc_enc(32, 8, type[12]);
++	cmd.params[2] |= mc_enc(40, 8, type[13]);
++	cmd.params[2] |= mc_enc(48, 8, type[14]);
++	cmd.params[2] |= mc_enc(56, 8, '\0');
++
++	/* send command to mc*/
++	err = mc_send_command(mc_io, &cmd);
++	if (err)
++		return err;
++
++	/* retrieve response parameters */
++	*res_count = mc_dec(cmd.params[0], 0, 32);
++
++	return 0;
++}
++EXPORT_SYMBOL(dprc_get_res_count);
++
++int dprc_get_res_ids(struct fsl_mc_io *mc_io,
++		     uint16_t token,
++		     char *type,
++		     struct dprc_res_ids_range_desc *range_desc)
++{
++	struct mc_command cmd = { 0 };
++	int err;
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_GET_RES_IDS,
++					  MC_CMD_PRI_LOW, token);
++	cmd.params[0] |= mc_enc(42, 7, range_desc->iter_status);
++	cmd.params[1] |= mc_enc(0, 32, range_desc->base_id);
++	cmd.params[1] |= mc_enc(32, 32, range_desc->last_id);
++	cmd.params[2] |= mc_enc(0, 8, type[0]);
++	cmd.params[2] |= mc_enc(8, 8, type[1]);
++	cmd.params[2] |= mc_enc(16, 8, type[2]);
++	cmd.params[2] |= mc_enc(24, 8, type[3]);
++	cmd.params[2] |= mc_enc(32, 8, type[4]);
++	cmd.params[2] |= mc_enc(40, 8, type[5]);
++	cmd.params[2] |= mc_enc(48, 8, type[6]);
++	cmd.params[2] |= mc_enc(56, 8, type[7]);
++	cmd.params[3] |= mc_enc(0, 8, type[8]);
++	cmd.params[3] |= mc_enc(8, 8, type[9]);
++	cmd.params[3] |= mc_enc(16, 8, type[10]);
++	cmd.params[3] |= mc_enc(24, 8, type[11]);
++	cmd.params[3] |= mc_enc(32, 8, type[12]);
++	cmd.params[3] |= mc_enc(40, 8, type[13]);
++	cmd.params[3] |= mc_enc(48, 8, type[14]);
++	cmd.params[3] |= mc_enc(56, 8, '\0');
++
++	/* send command to mc*/
++	err = mc_send_command(mc_io, &cmd);
++	if (err)
++		return err;
++
++	/* retrieve response parameters */
++	range_desc->iter_status = mc_dec(cmd.params[0], 42, 7);
++	range_desc->base_id = mc_dec(cmd.params[1], 0, 32);
++	range_desc->last_id = mc_dec(cmd.params[1], 32, 32);
++
++	return 0;
++}
++EXPORT_SYMBOL(dprc_get_res_ids);
++
++int dprc_get_portal_paddr(struct fsl_mc_io *mc_io,
++			  uint16_t token,
++			  int portal_id,
++			  uint64_t *portal_addr)
++{
++	struct mc_command cmd = { 0 };
++	int err;
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_GET_PORTAL_PADDR,
++					  MC_CMD_PRI_LOW, token);
++	cmd.params[0] |= mc_enc(0, 32, portal_id);
++
++	/* send command to mc*/
++	err = mc_send_command(mc_io, &cmd);
++	if (err)
++		return err;
++
++	/* retrieve response parameters */
++	*portal_addr = mc_dec(cmd.params[1], 0, 64);
++
++	return 0;
++}
++EXPORT_SYMBOL(dprc_get_portal_paddr);
++
++int dprc_get_obj_region(struct fsl_mc_io *mc_io,
++			uint16_t token,
++			char *obj_type,
++			int obj_id,
++			uint8_t region_index,
++			struct dprc_region_desc *region_desc)
++{
++	struct mc_command cmd = { 0 };
++	int err;
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_GET_OBJ_REG,
++					  MC_CMD_PRI_LOW, token);
++	cmd.params[0] |= mc_enc(0, 32, obj_id);
++	cmd.params[0] |= mc_enc(48, 8, region_index);
++	cmd.params[3] |= mc_enc(0, 8, obj_type[0]);
++	cmd.params[3] |= mc_enc(8, 8, obj_type[1]);
++	cmd.params[3] |= mc_enc(16, 8, obj_type[2]);
++	cmd.params[3] |= mc_enc(24, 8, obj_type[3]);
++	cmd.params[3] |= mc_enc(32, 8, obj_type[4]);
++	cmd.params[3] |= mc_enc(40, 8, obj_type[5]);
++	cmd.params[3] |= mc_enc(48, 8, obj_type[6]);
++	cmd.params[3] |= mc_enc(56, 8, obj_type[7]);
++	cmd.params[4] |= mc_enc(0, 8, obj_type[8]);
++	cmd.params[4] |= mc_enc(8, 8, obj_type[9]);
++	cmd.params[4] |= mc_enc(16, 8, obj_type[10]);
++	cmd.params[4] |= mc_enc(24, 8, obj_type[11]);
++	cmd.params[4] |= mc_enc(32, 8, obj_type[12]);
++	cmd.params[4] |= mc_enc(40, 8, obj_type[13]);
++	cmd.params[4] |= mc_enc(48, 8, obj_type[14]);
++	cmd.params[4] |= mc_enc(56, 8, '\0');
++
++	/* send command to mc*/
++	err = mc_send_command(mc_io, &cmd);
++	if (err)
++		return err;
++
++	/* retrieve response parameters */
++	region_desc->base_paddr = mc_dec(cmd.params[1], 0, 64);
++	region_desc->size = mc_dec(cmd.params[2], 0, 32);
++
++	return 0;
++}
++EXPORT_SYMBOL(dprc_get_obj_region);
++
++int dprc_connect(struct fsl_mc_io *mc_io,
++		 uint16_t token,
++		 const struct dprc_endpoint *endpoint1,
++		 const struct dprc_endpoint *endpoint2)
++{
++	struct mc_command cmd = { 0 };
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_CONNECT,
++					  MC_CMD_PRI_LOW,
++					  token);
++	cmd.params[0] |= mc_enc(0, 32, endpoint1->id);
++	cmd.params[0] |= mc_enc(32, 32, endpoint1->interface_id);
++	cmd.params[1] |= mc_enc(0, 32, endpoint2->id);
++	cmd.params[1] |= mc_enc(32, 32, endpoint2->interface_id);
++	cmd.params[2] |= mc_enc(0, 8, endpoint1->type[0]);
++	cmd.params[2] |= mc_enc(8, 8, endpoint1->type[1]);
++	cmd.params[2] |= mc_enc(16, 8, endpoint1->type[2]);
++	cmd.params[2] |= mc_enc(24, 8, endpoint1->type[3]);
++	cmd.params[2] |= mc_enc(32, 8, endpoint1->type[4]);
++	cmd.params[2] |= mc_enc(40, 8, endpoint1->type[5]);
++	cmd.params[2] |= mc_enc(48, 8, endpoint1->type[6]);
++	cmd.params[2] |= mc_enc(56, 8, endpoint1->type[7]);
++	cmd.params[3] |= mc_enc(0, 8, endpoint1->type[8]);
++	cmd.params[3] |= mc_enc(8, 8, endpoint1->type[9]);
++	cmd.params[3] |= mc_enc(16, 8, endpoint1->type[10]);
++	cmd.params[3] |= mc_enc(24, 8, endpoint1->type[11]);
++	cmd.params[3] |= mc_enc(32, 8, endpoint1->type[12]);
++	cmd.params[3] |= mc_enc(40, 8, endpoint1->type[13]);
++	cmd.params[3] |= mc_enc(48, 8, endpoint1->type[14]);
++	cmd.params[3] |= mc_enc(56, 8, endpoint1->type[15]);
++	cmd.params[5] |= mc_enc(0, 8, endpoint2->type[0]);
++	cmd.params[5] |= mc_enc(8, 8, endpoint2->type[1]);
++	cmd.params[5] |= mc_enc(16, 8, endpoint2->type[2]);
++	cmd.params[5] |= mc_enc(24, 8, endpoint2->type[3]);
++	cmd.params[5] |= mc_enc(32, 8, endpoint2->type[4]);
++	cmd.params[5] |= mc_enc(40, 8, endpoint2->type[5]);
++	cmd.params[5] |= mc_enc(48, 8, endpoint2->type[6]);
++	cmd.params[5] |= mc_enc(56, 8, endpoint2->type[7]);
++	cmd.params[6] |= mc_enc(0, 8, endpoint2->type[8]);
++	cmd.params[6] |= mc_enc(8, 8, endpoint2->type[9]);
++	cmd.params[6] |= mc_enc(16, 8, endpoint2->type[10]);
++	cmd.params[6] |= mc_enc(24, 8, endpoint2->type[11]);
++	cmd.params[6] |= mc_enc(32, 8, endpoint2->type[12]);
++	cmd.params[6] |= mc_enc(40, 8, endpoint2->type[13]);
++	cmd.params[6] |= mc_enc(48, 8, endpoint2->type[14]);
++	cmd.params[6] |= mc_enc(56, 8, endpoint2->type[15]);
++
++	/* send command to mc*/
++	return mc_send_command(mc_io, &cmd);
++}
++
++int dprc_disconnect(struct fsl_mc_io *mc_io,
++		    uint16_t token,
++		    const struct dprc_endpoint *endpoint)
++{
++	struct mc_command cmd = { 0 };
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_DISCONNECT,
++					  MC_CMD_PRI_LOW,
++					  token);
++	cmd.params[0] |= mc_enc(0, 32, endpoint->id);
++	cmd.params[0] |= mc_enc(32, 32, endpoint->interface_id);
++	cmd.params[1] |= mc_enc(0, 8, endpoint->type[0]);
++	cmd.params[1] |= mc_enc(8, 8, endpoint->type[1]);
++	cmd.params[1] |= mc_enc(16, 8, endpoint->type[2]);
++	cmd.params[1] |= mc_enc(24, 8, endpoint->type[3]);
++	cmd.params[1] |= mc_enc(32, 8, endpoint->type[4]);
++	cmd.params[1] |= mc_enc(40, 8, endpoint->type[5]);
++	cmd.params[1] |= mc_enc(48, 8, endpoint->type[6]);
++	cmd.params[1] |= mc_enc(56, 8, endpoint->type[7]);
++	cmd.params[2] |= mc_enc(0, 8, endpoint->type[8]);
++	cmd.params[2] |= mc_enc(8, 8, endpoint->type[9]);
++	cmd.params[2] |= mc_enc(16, 8, endpoint->type[10]);
++	cmd.params[2] |= mc_enc(24, 8, endpoint->type[11]);
++	cmd.params[2] |= mc_enc(32, 8, endpoint->type[12]);
++	cmd.params[2] |= mc_enc(40, 8, endpoint->type[13]);
++	cmd.params[2] |= mc_enc(48, 8, endpoint->type[14]);
++	cmd.params[2] |= mc_enc(56, 8, endpoint->type[15]);
++
++	/* send command to mc*/
++	return mc_send_command(mc_io, &cmd);
++}
++
++int dprc_get_connection(struct fsl_mc_io *mc_io,
++			uint16_t token,
++					const struct dprc_endpoint *endpoint1,
++					struct dprc_endpoint *endpoint2,
++					int *state)
++{
++	struct mc_command cmd = { 0 };
++	int err;
++
++	/* prepare command */
++	cmd.header = mc_encode_cmd_header(DPRC_CMDID_GET_CONNECTION,
++					  MC_CMD_PRI_LOW,
++					  token);
++	cmd.params[0] |= mc_enc(0, 32, endpoint1->id);
++	cmd.params[0] |= mc_enc(32, 32, endpoint1->interface_id);
++	cmd.params[1] |= mc_enc(0, 8, endpoint1->type[0]);
++	cmd.params[1] |= mc_enc(8, 8, endpoint1->type[1]);
++	cmd.params[1] |= mc_enc(16, 8, endpoint1->type[2]);
++	cmd.params[1] |= mc_enc(24, 8, endpoint1->type[3]);
++	cmd.params[1] |= mc_enc(32, 8, endpoint1->type[4]);
++	cmd.params[1] |= mc_enc(40, 8, endpoint1->type[5]);
++	cmd.params[1] |= mc_enc(48, 8, endpoint1->type[6]);
++	cmd.params[1] |= mc_enc(56, 8, endpoint1->type[7]);
++	cmd.params[2] |= mc_enc(0, 8, endpoint1->type[8]);
++	cmd.params[2] |= mc_enc(8, 8, endpoint1->type[9]);
++	cmd.params[2] |= mc_enc(16, 8, endpoint1->type[10]);
++	cmd.params[2] |= mc_enc(24, 8, endpoint1->type[11]);
++	cmd.params[2] |= mc_enc(32, 8, endpoint1->type[12]);
++	cmd.params[2] |= mc_enc(40, 8, endpoint1->type[13]);
++	cmd.params[2] |= mc_enc(48, 8, endpoint1->type[14]);
++	cmd.params[2] |= mc_enc(56, 8, endpoint1->type[15]);
++
++	/* send command to mc*/
++	err = mc_send_command(mc_io, &cmd);
++	if (err)
++		return err;
++
++	/* retrieve response parameters */
++	endpoint2->id = mc_dec(cmd.params[3], 0, 32);
++	endpoint2->interface_id = mc_dec(cmd.params[3], 32, 32);
++	endpoint2->type[0] = mc_dec(cmd.params[4], 0, 8);
++	endpoint2->type[1] = mc_dec(cmd.params[4], 8, 8);
++	endpoint2->type[2] = mc_dec(cmd.params[4], 16, 8);
++	endpoint2->type[3] = mc_dec(cmd.params[4], 24, 8);
++	endpoint2->type[4] = mc_dec(cmd.params[4], 32, 8);
++	endpoint2->type[5] = mc_dec(cmd.params[4], 40, 8);
++	endpoint2->type[6] = mc_dec(cmd.params[4], 48, 8);
++	endpoint2->type[7] = mc_dec(cmd.params[4], 56, 8);
++	endpoint2->type[8] = mc_dec(cmd.params[5], 0, 8);
++	endpoint2->type[9] = mc_dec(cmd.params[5], 8, 8);
++	endpoint2->type[10] = mc_dec(cmd.params[5], 16, 8);
++	endpoint2->type[11] = mc_dec(cmd.params[5], 24, 8);
++	endpoint2->type[12] = mc_dec(cmd.params[5], 32, 8);
++	endpoint2->type[13] = mc_dec(cmd.params[5], 40, 8);
++	endpoint2->type[14] = mc_dec(cmd.params[5], 48, 8);
++	endpoint2->type[15] = mc_dec(cmd.params[5], 56, 8);
++	*state = mc_dec(cmd.params[6], 0, 32);
++
++	return 0;
++}
+diff --git a/drivers/bus/fsl-mc/mc-sys.c b/drivers/bus/fsl-mc/mc-sys.c
+new file mode 100644
+index 0000000..abd45ae
+--- /dev/null
++++ b/drivers/bus/fsl-mc/mc-sys.c
+@@ -0,0 +1,283 @@
++/* Copyright 2013-2014 Freescale Semiconductor Inc.
 + *
-+ * Returns 1 on success, 0 otherwise.
++ * I/O services to send MC commands to the MC hardware
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *     * Redistributions of source code must retain the above copyright
++ *       notice, this list of conditions and the following disclaimer.
++ *     * Redistributions in binary form must reproduce the above copyright
++ *       notice, this list of conditions and the following disclaimer in the
++ *       documentation and/or other materials provided with the distribution.
++ *     * Neither the name of the above-listed copyright holders nor the
++ *       names of any contributors may be used to endorse or promote products
++ *       derived from this software without specific prior written permission.
++ *
++ *
++ * ALTERNATIVELY, this software may be distributed under the terms of the
++ * GNU General Public License ("GPL") as published by the Free Software
++ * Foundation, either version 2 of that License or (at your option) any
++ * later version.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
 + */
-+static int fsl_mc_bus_match(struct device *dev, struct device_driver *drv)
-+{
-+	const struct fsl_mc_device_match_id *id;
-+	struct fsl_mc_device *mc_dev = to_fsl_mc_device(dev);
-+	struct fsl_mc_driver *mc_drv = to_fsl_mc_driver(drv);
-+	bool found = false;
 +
-+	if (mc_drv->match_id_table == NULL)
-+		goto out;
-+
-+	if (WARN_ON(fsl_mc_bus_type.dev_root == NULL))
-+		goto out;
-+
-+	/*
-+	 * If the object is not 'plugged' don't match.
-+	 * Only exception is the root DPRC, which is a special case.
-+	 */
-+	if ((mc_dev->obj_desc.state & DPRC_OBJ_STATE_PLUGGED) == 0 &&
-+	    &mc_dev->dev != fsl_mc_bus_type.dev_root)
-+		goto out;
-+
-+	/*
-+	 * Traverse the match_id table of the given driver, trying to find
-+	 * a matching for the given MC object device.
-+	 */
-+	for (id = mc_drv->match_id_table; id->vendor != 0x0; id++) {
-+		if (id->vendor == mc_dev->obj_desc.vendor &&
-+		    strcmp(id->obj_type, mc_dev->obj_desc.type) == 0 &&
-+		    id->ver_major == mc_dev->obj_desc.ver_major &&
-+		    id->ver_minor == mc_dev->obj_desc.ver_minor) {
-+			found = true;
-+			break;
-+		}
-+	}
-+
-+out:
-+	dev_dbg(dev, "%smatched\n", found ? "" : "not ");
-+	return found;
-+}
++#include <linux/fsl/mc-sys.h>
++#include <linux/fsl/mc-cmd.h>
++#include <linux/delay.h>
++#include <linux/slab.h>
++#include <linux/ioport.h>
++#include <linux/device.h>
 +
 +/**
-+ * fsl_mc_bus_uevent - callback invoked when a device is added
++ * Timeout in jiffies to wait for the completion of an MC command
 + */
-+static int fsl_mc_bus_uevent(struct device *dev, struct kobj_uevent_env *env)
++#define MC_CMD_COMPLETION_TIMEOUT_JIFFIES   (HZ / 2)	/* 500 ms */
++
++/*
++ * usleep_range() min and max values used to throttle down polling
++ * iterations while waiting for MC command completion
++ */
++#define MC_CMD_COMPLETION_POLLING_MIN_SLEEP_USECS    10
++#define MC_CMD_COMPLETION_POLLING_MAX_SLEEP_USECS    500
++
++#define MC_CMD_HDR_READ_CMDID(_hdr) \
++	((uint16_t)mc_dec((_hdr), MC_CMD_HDR_CMDID_O, MC_CMD_HDR_CMDID_S))
++
++/**
++ * Creates an MC I/O object
++ *
++ * @dev: device to be associated with the MC I/O object
++ * @mc_portal_phys_addr: physical address of the MC portal to use
++ * @mc_portal_size: size in bytes of the MC portal
++ * @flags: flags for the new MC I/O object
++ * @new_mc_io: Area to return pointer to newly created MC I/O object
++ *
++ * Returns '0' on Success; Error code otherwise.
++ */
++int __must_check fsl_create_mc_io(struct device *dev,
++				  phys_addr_t mc_portal_phys_addr,
++				  uint32_t mc_portal_size,
++				  uint32_t flags, struct fsl_mc_io **new_mc_io)
 +{
-+	pr_debug("%s invoked\n", __func__);
-+	return 0;
-+}
++	struct fsl_mc_io *mc_io;
++	void __iomem *mc_portal_virt_addr;
++	struct resource *res;
 +
-+struct bus_type fsl_mc_bus_type = {
-+	.name = "fsl-mc",
-+	.match = fsl_mc_bus_match,
-+	.uevent = fsl_mc_bus_uevent,
-+};
-+EXPORT_SYMBOL_GPL(fsl_mc_bus_type);
++	mc_io = devm_kzalloc(dev, sizeof(*mc_io), GFP_KERNEL);
++	if (mc_io == NULL)
++		return -ENOMEM;
 +
-+static int fsl_mc_driver_probe(struct device *dev)
-+{
-+	struct fsl_mc_driver *mc_drv;
-+	struct fsl_mc_device *mc_dev = to_fsl_mc_device(dev);
-+	int error;
-+
-+	if (WARN_ON(dev->driver == NULL))
-+		return -EINVAL;
-+
-+	mc_drv = to_fsl_mc_driver(dev->driver);
-+	if (WARN_ON(mc_drv->probe == NULL))
-+		return -EINVAL;
-+
-+	error = mc_drv->probe(mc_dev);
-+	if (error < 0) {
-+		dev_err(dev, "MC object device probe callback failed: %d\n",
-+			error);
-+		return error;
-+	}
-+
-+	return 0;
-+}
-+
-+static int fsl_mc_driver_remove(struct device *dev)
-+{
-+	struct fsl_mc_driver *mc_drv = to_fsl_mc_driver(dev->driver);
-+	struct fsl_mc_device *mc_dev = to_fsl_mc_device(dev);
-+	int error;
-+
-+	if (WARN_ON(dev->driver == NULL))
-+		return -EINVAL;
-+
-+	error = mc_drv->remove(mc_dev);
-+	if (error < 0) {
++	mc_io->dev = dev;
++	mc_io->flags = flags;
++	mc_io->portal_phys_addr = mc_portal_phys_addr;
++	mc_io->portal_size = mc_portal_size;
++	res = devm_request_mem_region(dev,
++				      mc_portal_phys_addr,
++				      mc_portal_size,
++				      "mc_portal");
++	if (res == NULL) {
 +		dev_err(dev,
-+			"MC object device remove callback failed: %d\n",
-+			error);
-+		return error;
++			"devm_request_mem_region failed for MC portal %#llx\n",
++			mc_portal_phys_addr);
++		return -EBUSY;
 +	}
 +
++	mc_portal_virt_addr = devm_ioremap_nocache(dev,
++						   mc_portal_phys_addr,
++						   mc_portal_size);
++	if (mc_portal_virt_addr == NULL) {
++		dev_err(dev,
++			"devm_ioremap_nocache failed for MC portal %#llx\n",
++			mc_portal_phys_addr);
++		return -ENXIO;
++	}
++
++	mc_io->portal_virt_addr = mc_portal_virt_addr;
++	*new_mc_io = mc_io;
 +	return 0;
 +}
-+
-+static void fsl_mc_driver_shutdown(struct device *dev)
-+{
-+	struct fsl_mc_driver *mc_drv = to_fsl_mc_driver(dev->driver);
-+	struct fsl_mc_device *mc_dev = to_fsl_mc_device(dev);
-+
-+	mc_drv->shutdown(mc_dev);
-+}
++EXPORT_SYMBOL_GPL(fsl_create_mc_io);
 +
 +/**
-+ * __fsl_mc_driver_register - registers a child device driver with the
-+ * MC bus
++ * Destroys an MC I/O object
 + *
-+ * This function is implicitly invoked from the registration function of
-+ * fsl_mc device drivers, which is generated by the
-+ * module_fsl_mc_driver() macro.
++ * @mc_io: MC I/O object to destroy
 + */
-+int __fsl_mc_driver_register(struct fsl_mc_driver *mc_driver,
-+			     struct module *owner)
++void fsl_destroy_mc_io(struct fsl_mc_io *mc_io)
 +{
-+	int error;
++	devm_iounmap(mc_io->dev, mc_io->portal_virt_addr);
++	devm_release_mem_region(mc_io->dev,
++				mc_io->portal_phys_addr,
++				mc_io->portal_size);
 +
-+	mc_driver->driver.owner = owner;
-+	mc_driver->driver.bus = &fsl_mc_bus_type;
-+
-+	/*
-+	 * Set default driver callbacks, if not set by the child driver:
-+	 */
-+	if (mc_driver->probe != NULL)
-+		mc_driver->driver.probe = fsl_mc_driver_probe;
-+
-+	if (mc_driver->remove != NULL)
-+		mc_driver->driver.remove = fsl_mc_driver_remove;
-+
-+	if (mc_driver->shutdown != NULL)
-+		mc_driver->driver.shutdown = fsl_mc_driver_shutdown;
-+
-+	error = driver_register(&mc_driver->driver);
-+	if (error < 0) {
-+		pr_err("driver_register() failed for %s: %d\n",
-+		       mc_driver->driver.name, error);
-+		return error;
-+	}
-+
-+	pr_info("MC object device driver %s registered\n",
-+		mc_driver->driver.name);
-+	return 0;
++	mc_io->portal_virt_addr = NULL;
++	devm_kfree(mc_io->dev, mc_io);
 +}
-+EXPORT_SYMBOL_GPL(__fsl_mc_driver_register);
++EXPORT_SYMBOL_GPL(fsl_destroy_mc_io);
++
++static int mc_status_to_error(enum mc_cmd_status status)
++{
++	static const int mc_status_to_error_map[] = {
++		[MC_CMD_STATUS_OK] = 0,
++		[MC_CMD_STATUS_AUTH_ERR] = -EACCES,
++		[MC_CMD_STATUS_NO_PRIVILEGE] = -EPERM,
++		[MC_CMD_STATUS_DMA_ERR] = -EIO,
++		[MC_CMD_STATUS_CONFIG_ERR] = -ENXIO,
++		[MC_CMD_STATUS_TIMEOUT] = -ETIMEDOUT,
++		[MC_CMD_STATUS_NO_RESOURCE] = -ENAVAIL,
++		[MC_CMD_STATUS_NO_MEMORY] = -ENOMEM,
++		[MC_CMD_STATUS_BUSY] = -EBUSY,
++		[MC_CMD_STATUS_UNSUPPORTED_OP] = -ENOTSUPP,
++		[MC_CMD_STATUS_INVALID_STATE] = -ENODEV,
++	};
++
++	if (WARN_ON((u32)status >= ARRAY_SIZE(mc_status_to_error_map)))
++		return -EINVAL;
++
++	return mc_status_to_error_map[status];
++}
++
++static const char *mc_status_to_string(enum mc_cmd_status status)
++{
++	static const char *const status_strings[] = {
++		[MC_CMD_STATUS_OK] = "Command completed successfully",
++		[MC_CMD_STATUS_READY] = "Command ready to be processed",
++		[MC_CMD_STATUS_AUTH_ERR] = "Authentication error",
++		[MC_CMD_STATUS_NO_PRIVILEGE] = "No privilege",
++		[MC_CMD_STATUS_DMA_ERR] = "DMA or I/O error",
++		[MC_CMD_STATUS_CONFIG_ERR] = "Configuration error",
++		[MC_CMD_STATUS_TIMEOUT] = "Operation timed out",
++		[MC_CMD_STATUS_NO_RESOURCE] = "No resources",
++		[MC_CMD_STATUS_NO_MEMORY] = "No memory available",
++		[MC_CMD_STATUS_BUSY] = "Device is busy",
++		[MC_CMD_STATUS_UNSUPPORTED_OP] = "Unsupported operation",
++		[MC_CMD_STATUS_INVALID_STATE] = "Invalid state"
++	};
++
++	if ((unsigned int)status >= ARRAY_SIZE(status_strings))
++		return "Unknown MC error";
++
++	return status_strings[status];
++}
 +
 +/**
-+ * fsl_mc_driver_unregister - unregisters a device driver from the
-+ * MC bus
++ * mc_write_command - writes a command to a Management Complex (MC) portal
++ *
++ * @portal: pointer to an MC portal
++ * @cmd: pointer to a filled command
 + */
-+void fsl_mc_driver_unregister(struct fsl_mc_driver *mc_driver)
-+{
-+	driver_unregister(&mc_driver->driver);
-+}
-+EXPORT_SYMBOL_GPL(fsl_mc_driver_unregister);
-+
-+static int get_dprc_icid(struct fsl_mc_io *mc_io,
-+			 int container_id, uint16_t *icid)
-+{
-+	uint16_t dprc_handle;
-+	struct dprc_attributes attr;
-+	int error;
-+
-+	error = dprc_open(mc_io, container_id, &dprc_handle);
-+	if (error < 0) {
-+		pr_err("dprc_open() failed: %d\n", error);
-+		return error;
-+	}
-+
-+	memset(&attr, 0, sizeof(attr));
-+	error = dprc_get_attributes(mc_io, dprc_handle, &attr);
-+	if (error < 0) {
-+		pr_err("dprc_get_attributes() failed: %d\n", error);
-+		goto common_cleanup;
-+	}
-+
-+	*icid = attr.icid;
-+	error = 0;
-+
-+common_cleanup:
-+	(void)dprc_close(mc_io, dprc_handle);
-+	return error;
-+}
-+
-+static int fsl_mc_device_get_mmio_regions(struct fsl_mc_device *mc_dev,
-+					  struct fsl_mc_device *mc_bus_dev)
++static inline void mc_write_command(struct mc_command __iomem *portal,
++				    struct mc_command *cmd)
 +{
 +	int i;
-+	int error;
-+	struct resource *regions;
-+	struct dprc_obj_desc *obj_desc = &mc_dev->obj_desc;
-+	struct device *parent_dev = mc_dev->dev.parent;
 +
-+	regions = kmalloc_array(obj_desc->region_count,
-+				sizeof(regions[0]), GFP_KERNEL);
-+	if (regions == NULL)
-+		return -ENOMEM;
++	/* copy command parameters into the portal */
++	for (i = 0; i < MC_CMD_NUM_OF_PARAMS; i++)
++		writeq(cmd->params[i], &portal->params[i]);
 +
-+	for (i = 0; i < obj_desc->region_count; i++) {
-+		struct dprc_region_desc region_desc;
-+
-+		error = dprc_get_obj_region(mc_bus_dev->mc_io,
-+					    mc_bus_dev->mc_handle,
-+					    obj_desc->type,
-+					    obj_desc->id, i, &region_desc);
-+		if (error < 0) {
-+			dev_err(parent_dev,
-+				"dprc_get_obj_region() failed: %d\n", error);
-+			goto error_cleanup_regions;
-+		}
-+
-+		WARN_ON(region_desc.base_paddr == 0x0);
-+		WARN_ON(region_desc.size == 0);
-+		regions[i].start = region_desc.base_paddr;
-+		regions[i].end = region_desc.base_paddr + region_desc.size - 1;
-+		regions[i].name = "fsl-mc object MMIO region";
-+		regions[i].flags = IORESOURCE_IO;
-+	}
-+
-+	mc_dev->regions = regions;
-+	return 0;
-+
-+error_cleanup_regions:
-+	kfree(regions);
-+	return error;
++	/* submit the command by writing the header */
++	writeq(cmd->header, &portal->header);
 +}
 +
 +/**
-+ * Add a newly discovered MC object device to be visible in Linux
++ * mc_read_response - reads the response for the last MC command from a
++ * Management Complex (MC) portal
++ *
++ * @portal: pointer to an MC portal
++ * @resp: pointer to command response buffer
++ *
++ * Returns MC_CMD_STATUS_OK on Success; Error code otherwise.
 + */
-+int fsl_mc_device_add(struct dprc_obj_desc *obj_desc,
-+		      struct fsl_mc_io *mc_io,
-+		      struct device *parent_dev,
-+		      struct fsl_mc_device **new_mc_dev)
++static inline enum mc_cmd_status mc_read_response(struct mc_command __iomem *
++						  portal,
++						  struct mc_command *resp)
 +{
-+	int error;
-+	struct fsl_mc_device *mc_dev = NULL;
-+	struct fsl_mc_device *parent_mc_dev;
++	int i;
++	enum mc_cmd_status status;
 +
-+	if (parent_dev->bus == &fsl_mc_bus_type)
-+		parent_mc_dev = to_fsl_mc_device(parent_dev);
-+	else
-+		parent_mc_dev = NULL;
++	/* Copy command response header from MC portal: */
++	resp->header = readq(&portal->header);
++	status = MC_CMD_HDR_READ_STATUS(resp->header);
++	if (status != MC_CMD_STATUS_OK)
++		return status;
++
++	/* Copy command response data from MC portal: */
++	for (i = 0; i < MC_CMD_NUM_OF_PARAMS; i++)
++		resp->params[i] = readq(&portal->params[i]);
++
++	return status;
++}
++
++/**
++ * Sends an command to the MC device using the given MC I/O object
++ *
++ * @mc_io: MC I/O object to be used
++ * @cmd: command to be sent
++ *
++ * Returns '0' on Success; Error code otherwise.
++ *
++ * NOTE: This function cannot be invoked from from atomic contexts.
++ */
++int mc_send_command(struct fsl_mc_io *mc_io, struct mc_command *cmd)
++{
++	enum mc_cmd_status status;
++	unsigned long jiffies_until_timeout =
++	    jiffies + MC_CMD_COMPLETION_TIMEOUT_JIFFIES;
 +
 +	/*
-+	 * DPRC devices must have a dedicated MC portal
++	 * Send command to the MC hardware:
 +	 */
-+	if (WARN_ON(strcmp(obj_desc->type, "dprc") == 0 && mc_io == NULL))
-+		return -EINVAL;
++	mc_write_command(mc_io->portal_virt_addr, cmd);
 +
-+	mc_dev = kmem_cache_zalloc(mc_dev_cache, GFP_KERNEL);
-+	if (mc_dev == NULL) {
-+		dev_err(parent_dev,
-+			"No memory to allocate fsl_mc_device\n");
-+		return -ENOMEM;
-+	}
-+
-+	mc_dev->obj_desc = *obj_desc;
-+	mc_dev->mc_io = mc_io;
-+	device_initialize(&mc_dev->dev);
-+	mc_dev->dev.parent = parent_dev;
-+	mc_dev->dev.bus = &fsl_mc_bus_type;
-+	dev_set_name(&mc_dev->dev, "%s.%x", obj_desc->type, obj_desc->id);
-+
-+	if (strcmp(obj_desc->type, "dprc") == 0) {
-+		struct fsl_mc_io *mc_io2;
-+
-+		mc_dev->flags |= FSL_MC_IS_DPRC;
++	/*
++	 * Wait for response from the MC hardware:
++	 */
++	for (;;) {
++		status = mc_read_response(mc_io->portal_virt_addr, cmd);
++		if (status != MC_CMD_STATUS_READY)
++			break;
 +
 +		/*
-+		 * To get the DPRC's ICID, we need to open the DPRC
-+		 * in get_dprc_icid(). For child DPRCs, we do so using the
-+		 * parent DPRC's MC portal instead of the child DPRC's MC
-+		 * portal, in case the child DPRC is already opened with
-+		 * its own portal (e.g., the DPRC used by AIOP).
-+		 *
-+		 * NOTE: There cannot be more than one active open for a
-+		 * given MC object, using the same MC portal.
++		 * TODO: When MC command completion interrupts are supported
++		 * call wait function here instead of usleep_range()
 +		 */
-+		if (parent_mc_dev != NULL) {
-+			/*
-+			 * device being added is a child DPRC device
-+			 */
-+			mc_io2 = parent_mc_dev->mc_io;
-+		} else {
-+			/*
-+			 * device being added is the root DPRC device
-+			 */
-+			mc_io2 = mc_io;
++		usleep_range(MC_CMD_COMPLETION_POLLING_MIN_SLEEP_USECS,
++			     MC_CMD_COMPLETION_POLLING_MAX_SLEEP_USECS);
 +
-+			if (fsl_mc_bus_type.dev_root == NULL)
-+				fsl_mc_bus_type.dev_root = &mc_dev->dev;
-+		}
++		if (time_after_eq(jiffies, jiffies_until_timeout)) {
++			pr_debug("MC command timed out (portal: %#llx, obj handle: %#x, command: %#x)\n",
++				 mc_io->portal_phys_addr,
++				 (unsigned int)
++					MC_CMD_HDR_READ_AUTHID(cmd->header),
++				 (unsigned int)
++					MC_CMD_HDR_READ_CMDID(cmd->header));
 +
-+		error = get_dprc_icid(mc_io2, obj_desc->id, &mc_dev->icid);
-+		if (error < 0)
-+			goto error_cleanup_dev;
-+	} else {
-+		/*
-+		 * A non-DPRC MC object device has to be a child of another
-+		 * MC object (specifically a DPRC object)
-+		 */
-+		mc_dev->icid = parent_mc_dev->icid;
-+		mc_dev->dma_mask = FSL_MC_DEFAULT_DMA_MASK;
-+		mc_dev->dev.dma_mask = &mc_dev->dma_mask;
-+		if (obj_desc->region_count != 0) {
-+			error = fsl_mc_device_get_mmio_regions(mc_dev,
-+							       parent_mc_dev);
-+			if (error < 0)
-+				goto error_cleanup_dev;
++			return -ETIMEDOUT;
 +		}
 +	}
 +
-+	/*
-+	 * The device-specific probe callback will get invoked by device_add()
-+	 */
-+	error = device_add(&mc_dev->dev);
-+	if (error < 0) {
-+		dev_err(parent_dev,
-+			"device_add() failed for device %s: %d\n",
-+			dev_name(&mc_dev->dev), error);
-+		goto error_cleanup_dev;
-+	}
++	if (status != MC_CMD_STATUS_OK) {
++		pr_debug("MC command failed: portal: %#llx, obj handle: %#x, command: %#x, status: %s (%#x)\n",
++			 mc_io->portal_phys_addr,
++			 (unsigned int)MC_CMD_HDR_READ_AUTHID(cmd->header),
++			 (unsigned int)MC_CMD_HDR_READ_CMDID(cmd->header),
++			 mc_status_to_string(status),
++			 (unsigned int)status);
 +
-+	(void)get_device(&mc_dev->dev);
-+	dev_dbg(parent_dev, "Added MC object device %s\n",
-+		dev_name(&mc_dev->dev));
-+
-+	*new_mc_dev = mc_dev;
-+	return 0;
-+
-+error_cleanup_dev:
-+	if (mc_dev->regions != NULL)
-+		kfree(mc_dev->regions);
-+
-+	kmem_cache_free(mc_dev_cache, mc_dev);
-+	return error;
-+}
-+EXPORT_SYMBOL_GPL(fsl_mc_device_add);
-+
-+/**
-+ * fsl_mc_device_remove - Remove a MC object device from being visible to
-+ * Linux
-+ *
-+ * @mc_dev: Pointer to a MC object device object
-+ */
-+void fsl_mc_device_remove(struct fsl_mc_device *mc_dev)
-+{
-+	if (mc_dev->regions != NULL)
-+		kfree(mc_dev->regions);
-+
-+	/*
-+	 * The device-specific remove callback will get invoked by device_del()
-+	 */
-+	device_del(&mc_dev->dev);
-+	put_device(&mc_dev->dev);
-+
-+	if (strcmp(mc_dev->obj_desc.type, "dprc") == 0) {
-+		fsl_destroy_mc_io(mc_dev->mc_io);
-+		if (&mc_dev->dev == fsl_mc_bus_type.dev_root)
-+			fsl_mc_bus_type.dev_root = NULL;
-+	}
-+
-+	mc_dev->mc_io = NULL;
-+	kmem_cache_free(mc_dev_cache, mc_dev);
-+}
-+EXPORT_SYMBOL_GPL(fsl_mc_device_remove);
-+
-+/**
-+ * fsl_mc_bus_probe - callback invoked when the root MC bus is being
-+ * added
-+ */
-+static int fsl_mc_bus_probe(struct platform_device *pdev)
-+{
-+	struct dprc_obj_desc obj_desc;
-+	int error;
-+	struct fsl_mc_device *mc_bus_dev = NULL;
-+	struct fsl_mc_io *mc_io = NULL;
-+	int container_id;
-+	phys_addr_t mc_portal_phys_addr;
-+	uint32_t mc_portal_size;
-+	struct mc_version mc_version;
-+	struct resource res;
-+
-+	dev_info(&pdev->dev, "Root MC bus device probed");
-+
-+	/*
-+	 * TODO: When the 'ranges' property gets added to the fsl-mc
-+	 * node in the device tree, we need to use it here, to validate
-+	 * the MC portal base address. For example, given the following
-+	 * ranges property:
-+	 *	ranges = <0x8 0x0 0x8 0x0 0x20000000>;
-+	 *
-+	 * we could check that the portal address  falls in the
-+	 * 512MiB region that starts at 0x8_0000_0000 in the physical
-+	 * address map.  Also, we can use the 'range' property to translate
-+	 * the MC portal address from the 'reg' propertu, into a physical,
-+	 * if in the future the MC portal address specified specified
-+	 * in the 'reg' property becomes an MC-relative address (offset).
-+	 */
-+	error = of_address_to_resource(pdev->dev.of_node, 0, &res);
-+	if (error < 0) {
-+		dev_err(&pdev->dev,
-+			"of_address_to_resource() failed for %s\n",
-+			pdev->dev.of_node->full_name);
-+		return error;
-+	}
-+
-+	mc_portal_phys_addr = res.start;
-+	mc_portal_size = resource_size(&res);
-+	error = fsl_create_mc_io(&pdev->dev, mc_portal_phys_addr,
-+				 mc_portal_size, 0, &mc_io);
-+	if (error < 0)
-+		return error;
-+
-+	error = mc_get_version(mc_io, &mc_version);
-+	if (error != 0) {
-+		dev_err(&pdev->dev,
-+			"mc_get_version() failed with error %d\n", error);
-+		goto error_cleanup_mc_io;
-+	}
-+
-+	dev_info(&pdev->dev,
-+		 "Freescale Management Complex Firmware version: %u.%u.%u\n",
-+		 mc_version.major, mc_version.minor, mc_version.revision);
-+
-+	if (mc_version.major < MC_VER_MAJOR) {
-+		dev_err(&pdev->dev,
-+			"ERROR: MC firmware version not supported by driver (driver version: %u.%u)\n",
-+			MC_VER_MAJOR, MC_VER_MINOR);
-+		error = -ENOTSUPP;
-+		goto error_cleanup_mc_io;
-+	}
-+
-+	if (mc_version.major > MC_VER_MAJOR) {
-+		dev_warn(&pdev->dev,
-+			 "WARNING: driver may not support newer MC firmware features (driver version: %u.%u)\n",
-+			 MC_VER_MAJOR, MC_VER_MINOR);
-+	}
-+
-+	error = dpmng_get_container_id(mc_io, &container_id);
-+	if (error < 0) {
-+		dev_err(&pdev->dev,
-+			"dpmng_get_container_id() failed: %d\n", error);
-+		goto error_cleanup_mc_io;
-+	}
-+
-+	obj_desc.vendor = FSL_MC_VENDOR_FREESCALE;
-+	strcpy(obj_desc.type, "dprc");
-+	obj_desc.id = container_id;
-+	obj_desc.ver_major = DPRC_VER_MAJOR;
-+	obj_desc.ver_minor = DPRC_VER_MINOR;
-+	obj_desc.region_count = 0;
-+
-+	error = fsl_mc_device_add(&obj_desc, mc_io, &pdev->dev, &mc_bus_dev);
-+	if (error < 0)
-+		goto error_cleanup_mc_io;
-+
-+	platform_set_drvdata(pdev, mc_bus_dev);
-+	return 0;
-+
-+error_cleanup_mc_io:
-+	fsl_destroy_mc_io(mc_io);
-+	return error;
-+}
-+
-+/**
-+ * fsl_mc_bus_remove - callback invoked when the root MC bus is being
-+ * removed
-+ */
-+static int fsl_mc_bus_remove(struct platform_device *pdev)
-+{
-+	struct fsl_mc_device *mc_bus_dev = platform_get_drvdata(pdev);
-+
-+	if (WARN_ON(&mc_bus_dev->dev != fsl_mc_bus_type.dev_root))
-+		return -EINVAL;
-+
-+	fsl_mc_device_remove(mc_bus_dev);
-+	dev_info(&pdev->dev, "Root MC bus device removed");
-+	return 0;
-+}
-+
-+static const struct of_device_id fsl_mc_bus_match_table[] = {
-+	{.compatible = "fsl,qoriq-mc",},
-+	{},
-+};
-+
-+MODULE_DEVICE_TABLE(of, fsl_mc_bus_match_table);
-+
-+static struct platform_driver fsl_mc_bus_driver = {
-+	.driver = {
-+		   .name = "fsl_mc_bus",
-+		   .owner = THIS_MODULE,
-+		   .pm = NULL,
-+		   .of_match_table = fsl_mc_bus_match_table,
-+		   },
-+	.probe = fsl_mc_bus_probe,
-+	.remove = fsl_mc_bus_remove,
-+};
-+
-+static int __init fsl_mc_bus_driver_init(void)
-+{
-+	int error;
-+
-+	mc_dev_cache = kmem_cache_create("fsl_mc_device",
-+					 sizeof(struct fsl_mc_device), 0, 0,
-+					 NULL);
-+	if (mc_dev_cache == NULL) {
-+		pr_err("Could not create fsl_mc_device cache\n");
-+		return -ENOMEM;
-+	}
-+
-+	error = bus_register(&fsl_mc_bus_type);
-+	if (error < 0) {
-+		pr_err("fsl-mc bus type registration failed: %d\n", error);
-+		goto error_cleanup_cache;
-+	}
-+
-+	pr_info("fsl-mc bus type registered\n");
-+
-+	error = platform_driver_register(&fsl_mc_bus_driver);
-+	if (error < 0) {
-+		pr_err("platform_driver_register() failed: %d\n", error);
-+		goto error_cleanup_bus;
++		return mc_status_to_error(status);
 +	}
 +
 +	return 0;
-+
-+error_cleanup_bus:
-+	bus_unregister(&fsl_mc_bus_type);
-+
-+error_cleanup_cache:
-+	kmem_cache_destroy(mc_dev_cache);
-+	return error;
 +}
-+
-+postcore_initcall(fsl_mc_bus_driver_init);
-+
-+static void __exit fsl_mc_bus_driver_exit(void)
-+{
-+	if (WARN_ON(mc_dev_cache == NULL))
-+		return;
-+
-+	platform_driver_unregister(&fsl_mc_bus_driver);
-+	bus_unregister(&fsl_mc_bus_type);
-+	kmem_cache_destroy(mc_dev_cache);
-+	pr_info("MC bus unregistered\n");
-+}
-+
-+module_exit(fsl_mc_bus_driver_exit);
-+
-+MODULE_AUTHOR("Freescale Semiconductor Inc.");
-+MODULE_DESCRIPTION("Freescale Management Complex (MC) bus driver");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/fsl/mc-private.h b/include/linux/fsl/mc-private.h
++EXPORT_SYMBOL(mc_send_command);
+diff --git a/include/linux/fsl/dpmng.h b/include/linux/fsl/dpmng.h
 new file mode 100644
-index 0000000..604832a
+index 0000000..389489b
 --- /dev/null
-+++ b/include/linux/fsl/mc-private.h
-@@ -0,0 +1,33 @@
++++ b/include/linux/fsl/dpmng.h
+@@ -0,0 +1,161 @@
++/* Copyright 2013-2014 Freescale Semiconductor Inc.
++*
++* Redistribution and use in source and binary forms, with or without
++* modification, are permitted provided that the following conditions are met:
++* * Redistributions of source code must retain the above copyright
++* notice, this list of conditions and the following disclaimer.
++* * Redistributions in binary form must reproduce the above copyright
++* notice, this list of conditions and the following disclaimer in the
++* documentation and/or other materials provided with the distribution.
++* * Neither the name of the above-listed copyright holders nor the
++* names of any contributors may be used to endorse or promote products
++* derived from this software without specific prior written permission.
++*
++*
++* ALTERNATIVELY, this software may be distributed under the terms of the
++* GNU General Public License ("GPL") as published by the Free Software
++* Foundation, either version 2 of that License or (at your option) any
++* later version.
++*
++* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
++* LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++* SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++* INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++* CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++* POSSIBILITY OF SUCH DAMAGE.
++*/
 +/*
-+ * Freescale Management Complex (MC) bus private declarations
-+ *
-+ * Copyright (C) 2014 Freescale Semiconductor, Inc.
-+ * Author: German Rivera <German.Rivera@freescale.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
++ *  dpmng.h
++ *  Management Complex General API
 + */
-+#ifndef _FSL_MC_PRIVATE_H_
-+#define _FSL_MC_PRIVATE_H_
 +
-+#include <linux/fsl/mc.h>
-+#include <linux/mutex.h>
-+#include <linux/stringify.h>
++#ifndef __FSL_DPMNG_H
++#define __FSL_DPMNG_H
 +
-+#define FSL_MC_DEVICE_MATCH(_mc_dev, _obj_desc) \
-+	(strcmp((_mc_dev)->obj_desc.type, (_obj_desc)->type) == 0 && \
-+	 (_mc_dev)->obj_desc.id == (_obj_desc)->id)
-+
-+#define FSL_MC_IS_ALLOCATABLE(_obj_type) \
-+	(strcmp(_obj_type, "dpbp") == 0 || \
-+	 strcmp(_obj_type, "dpcon") == 0)
-+
-+int __must_check fsl_mc_device_add(struct dprc_obj_desc *obj_desc,
-+				   struct fsl_mc_io *mc_io,
-+				   struct device *parent_dev,
-+				   struct fsl_mc_device **new_mc_dev);
-+
-+void fsl_mc_device_remove(struct fsl_mc_device *mc_dev);
-+
-+#endif /* _FSL_MC_PRIVATE_H_ */
-diff --git a/include/linux/fsl/mc.h b/include/linux/fsl/mc.h
-new file mode 100644
-index 0000000..5d89d1bf
---- /dev/null
-+++ b/include/linux/fsl/mc.h
-@@ -0,0 +1,137 @@
 +/*
-+ * Freescale Management Complex (MC) bus public interface
++ * grp_dpmng	Management Complex General API
 + *
-+ * Copyright (C) 2014 Freescale Semiconductor, Inc.
-+ * Author: German Rivera <German.Rivera@freescale.com>
++ * Contains general API for the Management Complex firmware
 + *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
 + */
-+#ifndef _FSL_MC_H_
-+#define _FSL_MC_H_
 +
-+#include <linux/device.h>
-+#include <linux/mod_devicetable.h>
-+#include <linux/list.h>
-+#include <linux/spinlock.h>
-+#include <linux/fsl/dprc.h>
-+
-+#define FSL_MC_VENDOR_FREESCALE	0x1957
-+
-+struct fsl_mc_device;
 +struct fsl_mc_io;
 +
-+/**
-+ * struct fsl_mc_driver - MC object device driver object
-+ * @driver: Generic device driver
-+ * @match_id_table: table of supported device matching Ids
-+ * @probe: Function called when a device is added
-+ * @remove: Function called when a device is removed
-+ * @shutdown: Function called at shutdown time to quiesce the device
-+ * @suspend: Function called when a device is stopped
-+ * @resume: Function called when a device is resumed
-+ *
-+ * Generic DPAA device driver object for device drivers that are registered
-+ * with a DPRC bus. This structure is to be embedded in each device-specific
-+ * driver structure.
++/*
++ * Management Complex firmware version information
 + */
-+struct fsl_mc_driver {
-+	struct device_driver driver;
-+	const struct fsl_mc_device_match_id *match_id_table;
-+	int (*probe)(struct fsl_mc_device *dev);
-+	int (*remove)(struct fsl_mc_device *dev);
-+	void (*shutdown)(struct fsl_mc_device *dev);
-+	int (*suspend)(struct fsl_mc_device *dev, pm_message_t state);
-+	int (*resume)(struct fsl_mc_device *dev);
++#define MC_VER_MAJOR 3
++#define MC_VER_MINOR 0
++
++struct mc_version {
++	/* Major version number: incremented on API compatibility changes */
++	uint32_t major;
++
++	/*
++	 * Minor version number: incremented on API additions (that are
++	 * backward compatible); reset when major version is incremented
++	 */
++	uint32_t minor;
++
++	/*
++	 * Internal revision number: incremented on implementation changes
++	 * and/or bug fixes that have no impact on API
++	 */
++	uint32_t revision;
 +};
 +
-+#define to_fsl_mc_driver(_drv) \
-+	container_of(_drv, struct fsl_mc_driver, driver)
-+
-+/**
-+ * struct fsl_mc_device_match_id - MC object device Id entry for driver matching
-+ * @vendor: vendor ID
-+ * @obj_type: MC object type
-+ * @ver_major: MC object version major number
-+ * @ver_minor: MC object version minor number
++/*
++ * Retrieves the Management Complex firmware version information
 + *
-+ * Type of entries in the "device Id" table for MC object devices supported by
-+ * a MC object device driver. The last entry of the table has vendor set to 0x0
++ * mc_io		Pointer to opaque I/O object
++ * mc_ver_info	Pointer to version information structure
++ *
++ * returns	'0' on Success; Error code otherwise.
 + */
-+struct fsl_mc_device_match_id {
-+	uint16_t vendor;
-+	const char obj_type[16];
-+	uint32_t ver_major;
-+	uint32_t ver_minor;
++int mc_get_version(struct fsl_mc_io *mc_io, struct mc_version *mc_ver_info);
++
++/*
++ * Resets an AIOP tile
++ *
++ * mc_io		Pointer to opaque I/O object
++ * container_id	AIOP container ID
++ * aiop_tile_id	AIOP tile ID to reset
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dpmng_reset_aiop(struct fsl_mc_io	*mc_io,
++		     int		container_id,
++		     int		aiop_tile_id);
++
++/*
++ * Loads an image to AIOP tile
++ *
++ * mc_io		Pointer to opaque I/O object
++ * container_id	AIOP container ID
++ * aiop_tile_id	AIOP tile ID to reset
++ * img_iova	I/O virtual address of AIOP ELF image
++ * img_size	Size of AIOP ELF image in memory (in bytes)
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dpmng_load_aiop(struct fsl_mc_io	*mc_io,
++		    int			container_id,
++		    int			aiop_tile_id,
++		    uint64_t		img_iova,
++		    uint32_t		img_size);
++
++/*
++ * AIOP run configuration
++ */
++struct dpmng_aiop_run_cfg {
++	/* Mask of AIOP cores to run (core 0 in most significant bit) */
++	uint32_t cores_mask;
++
++	/* Execution options (currently none defined) */
++	uint64_t options;
 +};
 +
-+/**
-+ * Bit masks for a MC object device (struct fsl_mc_device) flags
-+ */
-+#define FSL_MC_IS_DPRC	0x0001
-+
-+/**
-+ * Default DMA mask for devices on a fsl-mc bus
-+ */
-+#define FSL_MC_DEFAULT_DMA_MASK	(~0ULL)
-+
-+/**
-+ * struct fsl_mc_device - MC object device object
-+ * @dev: Linux driver model device object
-+ * @dma_mask: Default DMA mask
-+ * @flags: MC object device flags
-+ * @icid: Isolation context ID for the device
-+ * @mc_handle: MC handle for the corresponding MC object opened
-+ * @mc_io: Pointer to MC IO object assigned to this device or
-+ * NULL if none.
-+ * @obj_desc: MC description of the DPAA device
-+ * @regions: pointer to array of MMIO region entries
++/*
++ * Starts AIOP tile execution
 + *
-+ * Generic device object for MC object devices that are "attached" to a
-+ * MC bus.
++ * mc_io		Pointer to MC portal's I/O object
++ * container_id	AIOP container ID
++ * aiop_tile_id	AIOP tile ID to reset
++ * cfg		AIOP run configuration
 + *
-+ * NOTES:
-+ * - For a non-DPRC object its icid is the same as its parent DPRC's icid.
-+ * - The SMMU notifier callback gets invoked after device_add() has been
-+ *   called for an MC object device, but before the device-specific probe
-+ *   callback gets called.
++ * returns	'0' on Success; Error code otherwise.
 + */
-+struct fsl_mc_device {
-+	struct device dev;
-+	uint64_t dma_mask;
-+	uint16_t flags;
++int dpmng_run_aiop(struct fsl_mc_io			*mc_io,
++		   int					container_id,
++		   int					aiop_tile_id,
++		   const struct dpmng_aiop_run_cfg	*cfg);
++
++/*
++ * Resets MC portal
++ *
++ * This function closes all object handles (tokens) that are currently
++ * open in the MC portal on which the command is submitted. This allows
++ * cleanup of stale handles that belong to non-functional user processes.
++ *
++ * mc_io	Pointer to MC portal's I/O object
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dpmng_reset_mc_portal(struct fsl_mc_io *mc_io);
++
++/*
++ * Get container ID associated with a given portal.
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * container_id	Requested container ID
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dpmng_get_container_id(struct fsl_mc_io *mc_io, int *container_id);
++
++#endif /* __FSL_DPMNG_H */
+diff --git a/include/linux/fsl/dprc.h b/include/linux/fsl/dprc.h
+new file mode 100644
+index 0000000..e017c53
+--- /dev/null
++++ b/include/linux/fsl/dprc.h
+@@ -0,0 +1,858 @@
++/* Copyright 2013-2014 Freescale Semiconductor Inc.
++*
++* Redistribution and use in source and binary forms, with or without
++* modification, are permitted provided that the following conditions are met:
++* * Redistributions of source code must retain the above copyright
++* notice, this list of conditions and the following disclaimer.
++* * Redistributions in binary form must reproduce the above copyright
++* notice, this list of conditions and the following disclaimer in the
++* documentation and/or other materials provided with the distribution.
++* * Neither the name of the above-listed copyright holders nor the
++* names of any contributors may be used to endorse or promote products
++* derived from this software without specific prior written permission.
++*
++*
++* ALTERNATIVELY, this software may be distributed under the terms of the
++* GNU General Public License ("GPL") as published by the Free Software
++* Foundation, either version 2 of that License or (at your option) any
++* later version.
++*
++* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
++* LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++* SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++* INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++* CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++* POSSIBILITY OF SUCH DAMAGE.
++*/
++/*
++ *  fsl_dprc.h
++ *  Data Path Resource Container API
++ */
++
++#ifndef _FSL_DPRC_H
++#define _FSL_DPRC_H
++
++struct fsl_mc_io;
++
++/*
++ * Set this value as the icid value in dprc_cfg structure when creating a
++ * container, in case the ICID is not selected by the user and should be
++ * allocated by the DPRC from the pool of ICIDs.
++ */
++#define DPRC_GET_ICID_FROM_POOL			(uint16_t)(~(0))
++
++/*
++ * Set this value as the portal_id value in dprc_cfg structure when creating a
++ * container, in case the portal ID is not specifically selected by the
++ * user and should be allocated by the DPRC from the pool of portal ids.
++ */
++#define DPRC_GET_PORTAL_ID_FROM_POOL	(int)(~(0))
++
++/*
++ * Open DPRC object for use
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * container_id	Container ID to open
++ * token		Token of DPRC object
++ *
++ * returns	'0' on Success; Error code otherwise.
++ *
++ * Required before any operation on the object.
++ */
++int dprc_open(struct fsl_mc_io *mc_io, int container_id, uint16_t *token);
++
++/*
++ * Close the control session of the object
++ *
++ *		After this function is called, no further operations are
++ *		allowed on the object without opening a new control session.
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_close(struct fsl_mc_io *mc_io, uint16_t token);
++
++/*
++ * Container general options
++ *
++ * These options may be selected at container creation by the container creator
++ * and can be retrieved using dprc_get_attributes()
++ */
++
++/*
++ * Spawn Policy Option allowed - Indicates that the new container is allowed
++ * to spawn and have its own child containers.
++ */
++#define DPRC_CFG_OPT_SPAWN_ALLOWED		0x00000001
++/*
++ * General Container allocation policy - Indicates that the new container is
++ * allowed to allocate requested resources from its parent container; if not
++ * set, the container is only allowed to use resources in its own pools; Note
++ * that this is a container's global policy, but the parent container may
++ * override it and set specific quota per resource type.
++ */
++#define DPRC_CFG_OPT_ALLOC_ALLOWED		0x00000002
++/*
++ * Object initialization allowed - software context associated with this
++ * container is allowed to invoke object initialization operations.
++ */
++#define DPRC_CFG_OPT_OBJ_CREATE_ALLOWED	0x00000004
++/*
++ * Topology change allowed - software context associated with this
++ * container is allowed to invoke topology operations, such as attach/detach
++ * of network objects.
++ */
++#define DPRC_CFG_OPT_TOPOLOGY_CHANGES_ALLOWED	0x00000008
++/*
++ * IOMMU bypass - indicates whether objects of this container are permitted
++ * to bypass the IOMMU.
++ */
++#define DPRC_CFG_OPT_IOMMU_BYPASS		0x00000010
++/*
++ * Indicates that container belongs to AIOP.
++ */
++#define DPRC_CFG_OPT_AIOP			0x00000020
++
++/*
++ * Container configuration options
++ */
++struct dprc_cfg {
++	/*
++	 * Container's ICID; if set to 'DPRC_GET_ICID_FROM_POOL', a free
++	 * ICID value is allocated by the DPRC
++	 */
 +	uint16_t icid;
-+	uint16_t mc_handle;
-+	struct fsl_mc_io *mc_io;
-+	struct dprc_obj_desc obj_desc;
-+	struct resource *regions;
++	/*
++	 * Portal ID; if set to 'DPRC_GET_PORTAL_ID_FROM_POOL', a free
++	 * portal ID is allocated by the DPRC
++	 */
++	int portal_id;
++	/* Combination of 'DPRC_CFG_OPT_<X>' options */
++	uint64_t options;
 +};
 +
-+#define to_fsl_mc_device(_dev) \
-+	container_of(_dev, struct fsl_mc_device, dev)
++/*
++ * Create child container
++ *
++ * mc_io			Pointer to MC portal's I/O object
++ * token			Token of DPRC object
++ * cfg			Child container configuration
++ * child_container_id	Child container ID
++ * child_portal_paddr	Base physical address of the
++ *					child portal
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_create_container(struct fsl_mc_io	*mc_io,
++			  uint16_t		token,
++			  struct dprc_cfg	*cfg,
++			  int			*child_container_id,
++			  uint64_t		*child_portal_paddr);
 +
 +/*
-+ * module_fsl_mc_driver() - Helper macro for drivers that don't do
-+ * anything special in module init/exit.  This eliminates a lot of
-+ * boilerplate.  Each module may only use this macro once, and
-+ * calling it replaces module_init() and module_exit()
++ * Destroy child container.
++ *
++ * This function terminates the child container, so following this call the
++ * child container ID becomes invalid.
++ *
++ * Notes:
++ * - All resources and objects of the destroyed container are returned to the
++ * parent container or destroyed if were created be the destroyed container.
++ * - This function destroy all the child containers of the specified
++ *   container prior to destroying the container itself.
++ *
++ * mc_io			Pointer to MC portal's I/O object
++ * token			Token of DPRC object
++ * child_container_id	ID of the container to destroy
++ *
++ * returns	'0' on Success; Error code otherwise.
++ *
++ * Only the parent container is allowed to destroy a child policy
++ *		Container 0 can't be destroyed
 + */
-+#define module_fsl_mc_driver(__fsl_mc_driver) \
-+	module_driver(__fsl_mc_driver, fsl_mc_driver_register, \
-+		      fsl_mc_driver_unregister)
++int dprc_destroy_container(struct fsl_mc_io	*mc_io,
++			   uint16_t		token,
++			   int			child_container_id);
 +
 +/*
-+ * Macro to avoid include chaining to get THIS_MODULE
++ * Reset child container.
++ *
++ * In case a software context crashes or becomes non-responsive, the parent
++ * may wish to reset its resources container before the software context is
++ * restarted.
++ *
++ * This routine informs all objects assigned to the child container that the
++ * container is being reset, so they may perform any cleanup operations that are
++ * needed. All objects handles that were owned by the child container shall be
++ * closed.
++ *
++ * Note that such request may be submitted even if the child software context
++ * has not crashed, but the resulting object cleanup operations will not be
++ * aware of that.
++ *
++ * mc_io			Pointer to MC portal's I/O object
++ * token			Token of DPRC object
++ * child_container_id	ID of the container to reset
++ *
++ * returns	'0' on Success; Error code otherwise.
 + */
-+#define fsl_mc_driver_register(drv) \
-+	__fsl_mc_driver_register(drv, THIS_MODULE)
++int dprc_reset_container(struct fsl_mc_io *mc_io,
++			 uint16_t token,
++			 int child_container_id);
 +
-+int __must_check __fsl_mc_driver_register(struct fsl_mc_driver *fsl_mc_driver,
-+					  struct module *owner);
++/*
++ * IRQ
++ */
 +
-+void fsl_mc_driver_unregister(struct fsl_mc_driver *driver);
++/* Number of dprc's IRQs */
++#define DPRC_NUM_OF_IRQS		1
 +
-+extern struct bus_type fsl_mc_bus_type;
++/*
++ * Object irq events
++ */
 +
-+#endif /* _FSL_MC_H_ */
++/* IRQ event - Indicates that a new object assigned to the container */
++#define DPRC_IRQ_EVENT_OBJ_ASSIGNED		0x00000001
++/* IRQ event - Indicates that an object was unassigned from the container */
++#define DPRC_IRQ_EVENT_OBJ_UNASSIGNED		0x00000002
++/* IRQ event - Indicates that resources assigned to the container */
++#define DPRC_IRQ_EVENT_RES_ASSIGNED		0x00000004
++/* IRQ event - Indicates that resources unassigned from the container */
++#define DPRC_IRQ_EVENT_RES_UNASSIGNED		0x00000008
++/*
++ * IRQ event - Indicates that one of the descendant containers that opened by
++ * this container is destroyed
++ */
++#define DPRC_IRQ_EVENT_CONTAINER_DESTROYED	0x00000010
++/*
++ * IRQ event - Indicates that on one of the container's opened object is
++ * destroyed
++ */
++#define DPRC_IRQ_EVENT_OBJ_DESTROYED		0x00000011
++
++/*
++ * Set IRQ information for the DPRC to trigger an interrupt.
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * irq_index	Identifies the interrupt index to configure
++ * irq_addr	Address that must be written to
++ *				signal a message-based interrupt
++ * irq_val		Value to write into irq_addr address
++ * user_irq_id	A user defined number associated with this IRQ
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_set_irq(struct fsl_mc_io	*mc_io,
++		 uint16_t		token,
++		 uint8_t		irq_index,
++		 uint64_t		irq_addr,
++		 uint32_t		irq_val,
++		 int			user_irq_id);
++
++/*
++ * Get IRQ information from the DPRC.
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * irq_index	The interrupt index to configure
++ * type		Interrupt type: 0 represents message interrupt
++ *				type (both irq_addr and irq_val are valid)
++ * irq_addr	Address that must be written to
++ *				signal the message-based interrupt
++ * irq_val		Value to write into irq_addr address
++ * user_irq_id	A user defined number associated with this IRQ
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_get_irq(struct fsl_mc_io	*mc_io,
++		 uint16_t		token,
++		 uint8_t		irq_index,
++		 int			*type,
++		 uint64_t		*irq_addr,
++		 uint32_t		*irq_val,
++		 int			*user_irq_id);
++
++/*
++ * Set overall interrupt state.
++ *
++ * Allows GPP software to control when interrupts are generated.
++ * Each interrupt can have up to 32 causes.  The enable/disable control's the
++ * overall interrupt state. if the interrupt is disabled no causes will cause
++ * an interrupt.
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * irq_index	The interrupt index to configure
++ * en		Interrupt state - enable = 1, disable = 0
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_set_irq_enable(struct fsl_mc_io	*mc_io,
++			uint16_t		token,
++			uint8_t			irq_index,
++			uint8_t			en);
++
++/*
++ * Get overall interrupt state.
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * irq_index	The interrupt index to configure
++ * en		Interrupt state - enable = 1, disable = 0
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_get_irq_enable(struct fsl_mc_io	*mc_io,
++			uint16_t		token,
++			uint8_t			irq_index,
++			uint8_t			*en);
++
++/*
++ * Set interrupt mask.
++ *
++ * Every interrupt can have up to 32 causes and the interrupt model supports
++ * masking/unmasking each cause independently
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * irq_index	The interrupt index to configure
++ * mask		event mask to trigger interrupt;
++ *				each bit:
++ *					0 = ignore event
++ *					1 = consider event for asserting irq
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_set_irq_mask(struct fsl_mc_io	*mc_io,
++		      uint16_t		token,
++		      uint8_t		irq_index,
++		      uint32_t		mask);
++
++/*
++ * Get interrupt mask.
++ *
++ * Every interrupt can have up to 32 causes and the interrupt model supports
++ * masking/unmasking each cause independently
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * irq_index	The interrupt index to configure
++ * mask		event mask to trigger interrupt
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_get_irq_mask(struct fsl_mc_io	*mc_io,
++		      uint16_t		token,
++		      uint8_t		irq_index,
++		      uint32_t		*mask);
++
++/*
++ * Get the current status of any pending interrupts.
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * irq_index	The interrupt index to configure
++ * status		interrupts status - one bit per cause:
++ *					0 = no interrupt pending
++ *					1 = interrupt pending
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_get_irq_status(struct fsl_mc_io	*mc_io,
++			uint16_t		token,
++			uint8_t			irq_index,
++			uint32_t		*status);
++
++/*
++ * Clear a pending interrupt's status
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * irq_index	The interrupt index to configure
++ * status		bits to clear (W1C) - one bit per cause:
++ *					0 = don't change
++ *					1 = clear status bit
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_clear_irq_status(struct fsl_mc_io	*mc_io,
++			  uint16_t		token,
++			  uint8_t		irq_index,
++			  uint32_t		status);
++
++/*
++ * Container attributes, returned by dprc_get_attributes()
++ */
++struct dprc_attributes {
++	/* Container's ID */
++	int container_id;
++	/* Container's ICID */
++	uint16_t icid;
++	/* Container's portal ID */
++	int portal_id;
++	/* Container's options as set at container's creation */
++	uint64_t options;
++	/* DPRC version */
++	struct {
++		/* DPRC major version */
++		uint16_t major;
++		/* DPRC minor version */
++		uint16_t minor;
++	} version;
++};
++
++/*
++ * Obtains container attributes
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * attributes	Container attributes
++ *
++ * returns     '0' on Success; Error code otherwise.
++ */
++int dprc_get_attributes(struct fsl_mc_io	*mc_io,
++			uint16_t		token,
++			struct dprc_attributes	*attributes);
++
++/*
++ * Set allocation policy for a specific resource/object type in a
++ *		child container
++ *
++ * Allocation policy determines whether or not a container may allocate
++ * resources from its parent. Each container has a 'global' allocation policy
++ * that is set when the container is created.
++ *
++ * This function sets allocation policy for a specific resource type.
++ * The default policy for all resource types matches the container's 'global'
++ * allocation policy.
++ *
++ * mc_io			Pointer to MC portal's I/O object
++ * token			Token of DPRC object
++ * child_container_id		ID of the child container
++ * type				Resource/object type
++ * quota			Sets the maximum number of resources of
++ *					the selected type that the child
++ *					container is allowed to allocate
++ *					from its parent;
++ *					when quota is set to -1, the policy is
++ *					the same as container's general policy.
++ *
++ * returns	'0' on Success; Error code otherwise.
++ *
++ * Only the parent container is allowed to change a child policy.
++ */
++int dprc_set_res_quota(struct fsl_mc_io	*mc_io,
++		       uint16_t		token,
++		       int		child_container_id,
++		       char		*type,
++		       uint16_t		quota);
++
++/*
++ * Gets the allocation policy of a specific resource/object type
++ *		in a child container
++ *
++ * mc_io			Pointer to MC portal's I/O object
++ * token			Token of DPRC object
++ * child_container_id		ID of the child container
++ * type				resource/object type
++ * quota			Holds the maximum number of resources of
++ *					the selected type that the child
++ *					container is allowed to allocate from
++ *					the parent;
++ *					when quota is set to -1, the policy is
++ *					the same as container's general policy.
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_get_res_quota(struct fsl_mc_io	*mc_io,
++		       uint16_t		token,
++		       int		child_container_id,
++		       char		*type,
++		       uint16_t		*quota);
++
++/*
++ * Resource request options
++ */
++
++/*
++ * Explicit resource ID request - The requested objects/resources
++ * are explicit and sequential (in case of resources).
++ * The base ID is given at res_req at base_align field
++ */
++#define DPRC_RES_REQ_OPT_EXPLICIT		0x00000001
++/*
++ * Aligned resources request - Relevant only for resources
++ * request (and not objects). Indicates that resources base ID should be
++ * sequential and aligned to the value given at dprc_res_req base_align field
++ */
++#define DPRC_RES_REQ_OPT_ALIGNED		0x00000002
++/*
++ * Plugged Flag - Relevant only for object assignment request.
++ * Indicates that after all objects assigned. An interrupt will be invoked at
++ * the relevant GPP. The assigned object will be marked as plugged.
++ * plugged objects can't be assigned from their container
++ */
++#define DPRC_RES_REQ_OPT_PLUGGED		0x00000004
++
++/*
++ * Resource request descriptor, to be used in assignment or
++ *		un-assignment of resources and objects.
++ */
++struct dprc_res_req {
++	/*
++	 * Resource/object type: Represent as a NULL terminated string.
++	 * This string may received by using dprc_get_pool() to get resource
++	 * type and dprc_get_obj() to get object type;
++	 * Note: it is not possible to assign/un-assign DPRC objects
++	 */
++	char type[16];
++
++	/* Number of resources */
++	uint32_t num;
++
++	/* Request options: combination of DPRC_RES_REQ_OPT_ options */
++	uint32_t options;
++
++	/*
++	 * In case of explicit assignment (DPRC_RES_REQ_OPT_EXPLICIT is set at
++	 * option), this field represents the required base ID for resource
++	 * allocation;
++	 * In case of aligned assignment (DPRC_RES_REQ_OPT_ALIGNED is set at
++	 * option), this field indicates the required alignment for the
++	 * resource ID(s) - use 0 if there is no alignment or explicit ID
++	 * requirements
++	 */
++	int id_base_align;
++};
++
++/*
++ * Assigns objects or resource to a child container.
++ *
++ * Assignment is usually done by a parent (this DPRC) to one of its child
++ * containers.
++ *
++ * According to the DPRC allocation policy, the assigned resources may be taken
++ * (allocated) from the container's ancestors, if not enough resources are
++ * available in the container itself.
++ *
++ * The type of assignment depends on the dprc_res_req options, as follows:
++ * - DPRC_RES_REQ_OPT_EXPLICIT: indicates that assigned resources should have
++ *   the explicit base ID specified at the id_base_align field of res_req.
++ * - DPRC_RES_REQ_OPT_ALIGNED: indicates that the assigned resources should be
++ *   aligned to the value given at id_base_align field of res_req.
++ * - DPRC_RES_REQ_OPT_PLUGGED: Relevant only for object assignment,
++ *   and indicates that the object must be set to the plugged state.
++ *
++ * A container may use this function with its own ID in order to change a
++ * object state to plugged or unplugged.
++ *
++ * If IRQ information has been set in the child DPRC, it will signal an
++ * interrupt following every change in its object assignment.
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * container_id	ID of the child container
++ * res_req		Describes the type and amount of resources to
++ *				assign to the given container
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_assign(struct fsl_mc_io	*mc_io,
++		uint16_t		token,
++		int			container_id,
++		struct dprc_res_req	*res_req);
++
++/*
++ * Un-assigns objects or resources from a child container
++ *		and moves them into this (parent) DPRC.
++ *
++ * Un-assignment of objects can succeed only if the object is not in the
++ * plugged or opened state.
++ *
++ * mc_io			Pointer to MC portal's I/O object
++ * token			Token of DPRC object
++ * child_container_id	ID of the child container
++ * res_req			Describes the type and amount of
++ *					resources to un-assign from the child
++ *					container
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_unassign(struct fsl_mc_io	*mc_io,
++		  uint16_t		token,
++		  int			child_container_id,
++		  struct dprc_res_req	*res_req);
++
++/*
++ * Get the number of dprc's pools
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * pool_count	Number of resource pools in the dprc
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_get_pool_count(struct fsl_mc_io	*mc_io,
++			uint16_t		token,
++			int			*pool_count);
++
++/*
++ * Get the type (string) of a certain dprc's pool
++ *
++ * The pool types retrieved one by one by incrementing
++ * pool_index up to (not including) the value of pool_count returned
++ * from dprc_get_pool_count(). dprc_get_pool_count() must
++ * be called prior to dprc_get_pool().
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * pool_index	Index of the pool to be queried (< pool_count)
++ * type		The type of the pool
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_get_pool(struct fsl_mc_io	*mc_io,
++		  uint16_t		token,
++		  int			pool_index,
++		  char			*type);
++
++/*
++ * Obtains the number of objects in the DPRC
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * obj_count	Number of objects assigned to the DPRC
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_get_obj_count(struct fsl_mc_io *mc_io, uint16_t token, int *obj_count);
++
++/*
++ * Objects Attributes Flags
++ */
++
++/* Opened state - Indicates that an object is open by at least one owner */
++#define DPRC_OBJ_STATE_OPEN		0x00000001
++/* Plugged state - Indicates that the object is plugged */
++#define DPRC_OBJ_STATE_PLUGGED		0x00000002
++
++/*
++ * Object descriptor, returned from dprc_get_obj()
++ */
++struct dprc_obj_desc {
++	/* Type of object: NULL terminated string */
++	char type[16];
++	/* ID of logical object resource */
++	int id;
++	/* Object vendor identifier */
++	uint16_t vendor;
++	/* Major version number */
++	uint16_t ver_major;
++	/* Minor version number */
++	uint16_t ver_minor;
++	/* Number of interrupts supported by the object */
++	uint8_t irq_count;
++	/* Number of mappable regions supported by the object */
++	uint8_t region_count;
++	/* Object state: combination of DPRC_OBJ_STATE_ states */
++	uint32_t state;
++};
++
++/*
++ * Get general information on an object
++ *
++ * The object descriptors are retrieved one by one by incrementing
++ * obj_index up to (not including) the value of obj_count returned
++ * from dprc_get_obj_count(). dprc_get_obj_count() must
++ * be called prior to dprc_get_obj().
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * obj_index	Index of the object to be queried (< obj_count)
++ * obj_desc	Returns the requested object descriptor
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_get_obj(struct fsl_mc_io	*mc_io,
++		 uint16_t		token,
++		 int			obj_index,
++		 struct dprc_obj_desc	*obj_desc);
++
++/*
++ * Obtains the number of free resources that are assigned
++ *		to this container, by pool type
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * type		pool type
++ * res_count	Number of free resources of the given
++ *				resource type that are assigned to this DPRC
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_get_res_count(struct fsl_mc_io	*mc_io,
++		       uint16_t		token,
++		       char		*type,
++		       int		*res_count);
++
++/*
++ * Iteration status, for use with dprc_get_res_ids() function
++ *
++ */
++enum dprc_iter_status {
++	/* Perform first iteration */
++	DPRC_ITER_STATUS_FIRST = 0,
++	/* Indicates more/next iteration is needed */
++	DPRC_ITER_STATUS_MORE = 1,
++	/* Indicates last iteration */
++	DPRC_ITER_STATUS_LAST = 2
++};
++
++/*
++ * Resource ID range descriptor, Used at dprc_get_res_ids() and
++ *		contains one range details.
++ */
++struct dprc_res_ids_range_desc {
++	/* Base resource ID of this range */
++	int base_id;
++	/* Last resource ID of this range */
++	int last_id;
++	/*
++	 * Iteration status - should be set to DPRC_ITER_STATUS_FIRST at
++	 * first iteration; while the returned marker is DPRC_ITER_STATUS_MORE,
++	 * additional iterations are needed, until the returned marker is
++	 * DPRC_ITER_STATUS_LAST
++	 */
++	enum dprc_iter_status iter_status;
++};
++
++/*
++ * Obtains IDs of free resources in the container
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * type		pool type
++ * range_desc	range descriptor
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_get_res_ids(struct fsl_mc_io			*mc_io,
++		     uint16_t				token,
++		     char				*type,
++		     struct dprc_res_ids_range_desc	*range_desc);
++
++/*
++ * Get the physical address of MC portals
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * portal_id	MC portal ID
++ * portal_addr	The physical address of the MC portal ID
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_get_portal_paddr(struct fsl_mc_io	*mc_io,
++			  uint16_t		token,
++			  int			portal_id,
++			  uint64_t		*portal_addr);
++
++/*
++ * Mappable region descriptor, returned by dprc_get_obj_region()
++ */
++struct dprc_region_desc {
++	/* Region base physical address */
++	uint64_t base_paddr;
++	/* Region size (in bytes) */
++	uint32_t size;
++};
++
++/*
++ * Get region information for a specified object.
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * obj_type	Object type as returned in dprc_get_obj()
++ * obj_id		Unique object instance as returned in
++ *				dprc_get_obj()
++ * region_index	The specific region to query
++ * region_desc	Returns the requested region descriptor
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_get_obj_region(struct fsl_mc_io	*mc_io,
++			uint16_t		token,
++			char			*obj_type,
++			int			obj_id,
++			uint8_t			region_index,
++			struct dprc_region_desc	*region_desc);
++
++/*
++ * Endpoint description for link connect/disconnect operations
++ */
++struct dprc_endpoint {
++	/* Endpoint object type: NULL terminated string */
++	char type[16];
++	/* Endpoint object ID */
++	int id;
++	/*
++	 * Interface ID; should be set for endpoints with multiple interfaces
++	 * ("dpsw", "dpdmux"); for others, always set to 0
++	 */
++	int interface_id;
++};
++
++/*
++ * Connect two endpoints to create a network link between them
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * endpoint1	Endpoint 1 configuration parameters
++ * endpoint2	Endpoint 2 configuration parameters
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_connect(struct fsl_mc_io		*mc_io,
++		 uint16_t			token,
++		 const struct dprc_endpoint	*endpoint1,
++		 const struct dprc_endpoint	*endpoint2);
++
++/*
++ * Disconnect one endpoint to remove its network connection
++ *
++ * mc_io		Pointer to MC portal's I/O object
++ * token		Token of DPRC object
++ * endpoint	Endpoint configuration parameters
++ *
++ * returns	'0' on Success; Error code otherwise.
++ */
++int dprc_disconnect(struct fsl_mc_io		*mc_io,
++		    uint16_t			token,
++		    const struct dprc_endpoint	*endpoint);
++
++/*
++* Get connected endpoint and link status if connection exists
++*
++* mc_io		Pointer to MC portal's I/O object
++* token		Token of DPRC object
++* endpoint1	Endpoint 1 configuration parameters
++* endpoint2	Endpoint 2 configuration parameters
++* state		Link state: 1 - link is up, 0 - link is down
++*
++* returns     '0' on Success; -ENAVAIL if connection does not exist.
++*/
++int dprc_get_connection(struct fsl_mc_io		*mc_io,
++			uint16_t			token,
++			const struct dprc_endpoint	*endpoint1,
++			struct dprc_endpoint		*endpoint2,
++			int				*state);
++
++#endif /* _FSL_DPRC_H */
++
+diff --git a/include/linux/fsl/mc-cmd.h b/include/linux/fsl/mc-cmd.h
+new file mode 100644
+index 0000000..5f87512
+--- /dev/null
++++ b/include/linux/fsl/mc-cmd.h
+@@ -0,0 +1,109 @@
++/* Copyright 2013-2014 Freescale Semiconductor Inc.
++ *
++ * MC commands common declarations
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *     * Redistributions of source code must retain the above copyright
++ *       notice, this list of conditions and the following disclaimer.
++ *     * Redistributions in binary form must reproduce the above copyright
++ *       notice, this list of conditions and the following disclaimer in the
++ *       documentation and/or other materials provided with the distribution.
++ *     * Neither the name of the above-listed copyright holders nor the
++ *       names of any contributors may be used to endorse or promote products
++ *       derived from this software without specific prior written permission.
++ *
++ *
++ * ALTERNATIVELY, this software may be distributed under the terms of the
++ * GNU General Public License ("GPL") as published by the Free Software
++ * Foundation, either version 2 of that License or (at your option) any
++ * later version.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ */
++
++#ifndef __FSL_MC_CMD_H
++#define __FSL_MC_CMD_H
++
++#include <linux/fsl/mc-sys.h>
++
++#define MAKE_UMASK64(_width) \
++	((uint64_t)((_width) < 64 ? ((uint64_t)1 << (_width)) - 1 : -1))
++
++static inline uint64_t mc_enc(int lsoffset, int width, uint64_t val)
++{
++	return (uint64_t)(((uint64_t)val & MAKE_UMASK64(width)) << lsoffset);
++}
++
++static inline uint64_t mc_dec(uint64_t val, int lsoffset, int width)
++{
++	return (uint64_t)((val >> lsoffset) & MAKE_UMASK64(width));
++}
++
++#define MC_CMD_NUM_OF_PARAMS	7
++
++struct mc_command {
++	uint64_t header;
++	uint64_t params[MC_CMD_NUM_OF_PARAMS];
++};
++
++enum mc_cmd_status {
++	MC_CMD_STATUS_OK = 0x0,	/*!< Completed successfully */
++	MC_CMD_STATUS_READY = 0x1,	/*!< Ready to be processed */
++	MC_CMD_STATUS_AUTH_ERR = 0x3,	/*!< Authentication error */
++	MC_CMD_STATUS_NO_PRIVILEGE = 0x4,	/*!< No privilege */
++	MC_CMD_STATUS_DMA_ERR = 0x5,	/*!< DMA or I/O error */
++	MC_CMD_STATUS_CONFIG_ERR = 0x6,	/*!< Configuration error */
++	MC_CMD_STATUS_TIMEOUT = 0x7,	/*!< Operation timed out */
++	MC_CMD_STATUS_NO_RESOURCE = 0x8,	/*!< No resources */
++	MC_CMD_STATUS_NO_MEMORY = 0x9,	/*!< No memory available */
++	MC_CMD_STATUS_BUSY = 0xA,	/*!< Device is busy */
++	MC_CMD_STATUS_UNSUPPORTED_OP = 0xB,	/*!< Unsupported operation */
++	MC_CMD_STATUS_INVALID_STATE = 0xC	/*!< Invalid state */
++};
++
++#define MC_CMD_HDR_CMDID_O	52	/* Command ID field offset */
++#define MC_CMD_HDR_CMDID_S	12	/* Command ID field size */
++#define MC_CMD_HDR_AUTHID_O	38	/* Authentication ID field offset */
++#define MC_CMD_HDR_AUTHID_S	10	/* Authentication ID field size */
++#define MC_CMD_HDR_STATUS_O	16	/* Status field offset */
++#define MC_CMD_HDR_STATUS_S	8	/* Status field size */
++#define MC_CMD_HDR_PRI_O	15	/* Priority field offset */
++#define MC_CMD_HDR_PRI_S	1	/* Priority field size */
++
++#define MC_CMD_HDR_READ_STATUS(_hdr) \
++	((enum mc_cmd_status)mc_dec((_hdr), \
++		MC_CMD_HDR_STATUS_O, MC_CMD_HDR_STATUS_S))
++
++#define MC_CMD_HDR_READ_AUTHID(_hdr) \
++	((uint16_t)mc_dec((_hdr), MC_CMD_HDR_AUTHID_O, MC_CMD_HDR_AUTHID_S))
++
++#define MC_CMD_PRI_LOW		0	/*!< Low Priority command indication */
++#define MC_CMD_PRI_HIGH		1	/*!< High Priority command indication */
++
++static inline uint64_t mc_encode_cmd_header(uint16_t cmd_id,
++					    uint8_t priority,
++					    uint16_t auth_id)
++{
++	uint64_t hdr;
++
++	hdr = mc_enc(MC_CMD_HDR_CMDID_O, MC_CMD_HDR_CMDID_S, cmd_id);
++	hdr |= mc_enc(MC_CMD_HDR_AUTHID_O, MC_CMD_HDR_AUTHID_S, auth_id);
++	hdr |= mc_enc(MC_CMD_HDR_PRI_O, MC_CMD_HDR_PRI_S, priority);
++	hdr |= mc_enc(MC_CMD_HDR_STATUS_O, MC_CMD_HDR_STATUS_S,
++		       MC_CMD_STATUS_READY);
++
++	return hdr;
++}
++
++#endif /* __FSL_MC_CMD_H */
+diff --git a/include/linux/fsl/mc-sys.h b/include/linux/fsl/mc-sys.h
+new file mode 100644
+index 0000000..abfd6a2
+--- /dev/null
++++ b/include/linux/fsl/mc-sys.h
+@@ -0,0 +1,70 @@
++/* Copyright 2013-2014 Freescale Semiconductor Inc.
++ *
++ * Interface of the I/O services to send MC commands to the MC hardware
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *     * Redistributions of source code must retain the above copyright
++ *       notice, this list of conditions and the following disclaimer.
++ *     * Redistributions in binary form must reproduce the above copyright
++ *       notice, this list of conditions and the following disclaimer in the
++ *       documentation and/or other materials provided with the distribution.
++ *     * Neither the name of the above-listed copyright holders nor the
++ *       names of any contributors may be used to endorse or promote products
++ *       derived from this software without specific prior written permission.
++ *
++ *
++ * ALTERNATIVELY, this software may be distributed under the terms of the
++ * GNU General Public License ("GPL") as published by the Free Software
++ * Foundation, either version 2 of that License or (at your option) any
++ * later version.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ */
++
++#ifndef _FSL_MC_SYS_H
++#define _FSL_MC_SYS_H
++
++#include <linux/types.h>
++#include <linux/errno.h>
++#include <linux/io.h>
++#include <linux/dma-mapping.h>
++
++struct mc_command;
++
++/**
++ * struct fsl_mc_io - MC I/O object to be passed-in to mc_send_command()
++ * @dev: device associated with this Mc I/O object
++ * @flags: flags for mc_send_command()
++ * @portal_size: MC command portal size in bytes
++ * @portal_phys_addr: MC command portal physical address
++ * @portal_virt_addr: MC command portal virtual address
++ */
++struct fsl_mc_io {
++	struct device *dev;
++	uint32_t flags;
++	uint32_t portal_size;
++	phys_addr_t portal_phys_addr;
++	void __iomem *portal_virt_addr;
++};
++
++int __must_check fsl_create_mc_io(struct device *dev,
++				  phys_addr_t mc_portal_phys_addr,
++				  uint32_t mc_portal_size,
++				  uint32_t flags, struct fsl_mc_io **new_mc_io);
++
++void fsl_destroy_mc_io(struct fsl_mc_io *mc_io);
++
++int mc_send_command(struct fsl_mc_io *mc_io, struct mc_command *cmd);
++
++#endif /* _FSL_MC_SYS_H */
 --
 2.2.0
 
