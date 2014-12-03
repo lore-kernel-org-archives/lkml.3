@@ -1,158 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751654AbaLCDZt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 22:25:49 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:10225 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077AbaLCDZs (ORCPT
+	id S1751269AbaLCDcN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 22:32:13 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:14176 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750860AbaLCDcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 22:25:48 -0500
-Subject: [PATCH] Revert "MIPS: Remove race window in page fault handling"
-From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-To: <linux-mips@linux-mips.org>, <james.hogan@imgtec.com>,
-        <keescook@chromium.org>, <paul.burton@imgtec.com>,
-        <linux-kernel@vger.kernel.org>, <ralf@linux-mips.org>,
-        <lars.persson@axis.com>, <manuel.lauss@gmail.com>,
-        <pbonzini@redhat.com>, <akpm@linux-foundation.org>,
-        <blogic@openwrt.org>, <markos.chandras@imgtec.com>
-Date: Tue, 2 Dec 2014 19:25:42 -0800
-Message-ID: <20141203032542.15388.17340.stgit@linux-yegoshin>
-User-Agent: StGit/0.17.1-dirty
+	Tue, 2 Dec 2014 22:32:11 -0500
+Message-ID: <547E842E.7030202@sonymobile.com>
+Date: Tue, 2 Dec 2014 19:31:58 -0800
+From: Tim Bird <tim.bird@sonymobile.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Josh Triplett <josh@joshtriplett.org>
+CC: Shuah Khan <shuahkh@osg.samsung.com>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>
+Subject: Re: [PATCH v4] selftest: size: Add size test for Linux kernel
+References: <5476A82B.2060903@sonymobile.com> <20141127060409.GB2773@thin>
+In-Reply-To: <20141127060409.GB2773@thin>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.65.146]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 64f23ab30b1fec86b91a48bf1f088840e5299971
-(commit 2a4a8b1e5d9d343e13ff22e19af7b353f7b52d6f in Linux 'master')
 
-Unfortunately the original commit effectively kills Imagination MIPS CPUs
-performance because it enforces page cache flush each time then PTE is changed
-for our CPUs. Basically - each CoW, each process start, each library attachment
-or detachment. And it happens even in "fully-coherent" systems (in MIPS sense -
-we have non coherent I-cache). Last tendency for increasing page size to 16K-64K
-even exaggerate the performance loss.
 
-Original commit discussion says:
+On 11/26/2014 10:04 PM, Josh Triplett wrote:
+> On Wed, Nov 26, 2014 at 08:27:23PM -0800, Tim Bird wrote:
+>> --- /dev/null
+>> +++ b/tools/testing/selftests/size/Makefile
+> [...]
+>> +LIBGCC=$(shell $(CC) -print-libgcc-file-name)
+>> +
+>> +get_size: get_size.c
+>> +	$(CC) --static -ffreestanding -nostartfiles \
+>> +		-Wl,--entry=_start get_size.c $(LIBGCC) \
+>> +		-o get_size
+> 
+> You don't need -Wl,--entry=_start; that's the default.
+OK - it works without this.  Thanks.
 
-    Kernel call stacks showed one thread handling an illegal instruction
-    exception while another thread was somewhere around the
-    set_pte_at/update_mmu_cache calls for the same page.
+> You shouldn't need to manually find libgcc, either; the compiler should
+> do that for you.  What goes wrong if you don't include that?  If you're
+> trying to link libgcc statically, try -static-libgcc.
+> 
+> Also, static is normally spelled -static, not --static.
 
-If this is taken correct then it points to a major problem unrelated to MIPS -
-if by chance a first thread hits the page just before set_pte_at then it should
-get a non-present PTE: set_pte_at with _PAGE_PRESENT/_PAGE_VALID flags can be
-used only on "disactivated" PTE, after pte_clear* functions, effectively -
-non-present, non-valid. And application can get SIGSEGV. It is a major race
-condition and kernel should not offer it to applications. And in my
-understanding set_pte_at is used in cases then page is available after kernel
-finishes page handling, at least in theory.
+Hmm.  Not sure where I got --static from, but it worked.
+But if -static is the norm I'm fine changing to that.
 
-Test note: I ran MIPS 1004K with 8 VPEs on 4 cores around 1.5 month on SOAK test
-and never seen that problem on 3.10 kernel.
+Upon experimentation, I don't need the explicit libgcc or for that
+matter the -static-libgcc either.
 
-Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
----
- arch/mips/include/asm/pgtable.h |    8 +++++---
- arch/mips/mm/cache.c            |   27 ++++++++-------------------
- 2 files changed, 13 insertions(+), 22 deletions(-)
+>> --- /dev/null
+>> +++ b/tools/testing/selftests/size/get_size.c
+> [...]
+>> +int print(const char *s)
+> 
+> This function, and all the others apart from _start, should be declared
+> static.
 
-diff --git a/arch/mips/include/asm/pgtable.h b/arch/mips/include/asm/pgtable.h
-index d6d1928539b1..cd5fbf42b864 100644
---- a/arch/mips/include/asm/pgtable.h
-+++ b/arch/mips/include/asm/pgtable.h
-@@ -122,9 +122,6 @@ do {									\
- 	}								\
- } while(0)
+OK will do.
+
+>> +void num_to_str(unsigned long num, char *s)
+> 
+> Likewise, static.
+OK
+
+>> +{
+>> +	unsigned long long temp, div;
+>> +	int started;
+>> +
+>> +	temp = num;
+>> +	div = 1000000000000000000LL;
+>> +	started = 0;
+>> +	while (div) {
+>> +		if (temp/div || started) {
+>> +			*s++ = (unsigned char)(temp/div + '0');
+>> +			started = 1;
+>> +		}
+>> +		temp -= (temp/div)*div;
+>> +		div /= 10;
+>> +	}
+>> +	*s = 0;
+>> +}
+> 
+> You'd probably end up with significantly smaller code (and no divisions,
+> and thus no corner cases on architectures that need a special function
+> to do unsigned long long division) if you print in hex.  You could also
+> drop the "no leading zeros" logic, and just *always* print a 64-bit
+> value as 16 hex digits.
+
+I'd like to keep base-10 output.  As far as size is concerned, the
+code is now at well under 2 pages (8k), which is much smaller than
+any actually useful program.  The only noticeable change in size would
+be if I got it under 4096, but I don't want to sacrifice too many
+features to get there (as that's still only 1 page difference in
+memory usage.)
+
+BTW - using sstrip, I can get it to 4096 already, as is.
+
+Unfortunately, 'sstrip -z', which gets it to 2061, makes
+it not work.  I need to check out what the problem is there.
+Also, the ELF file still has an unneeded note section.  I think
+easier reductions, without sacrificing functionality, are available
+by tweaking the ELF header (ie fixing sstrip, for those that
+want to use it).
  
--extern void set_pte_at(struct mm_struct *mm, unsigned long addr, pte_t *ptep,
--	pte_t pteval);
--
- #if defined(CONFIG_64BIT_PHYS_ADDR) && defined(CONFIG_CPU_MIPS32)
+>> +int print_num(unsigned long num)
+> 
+> Likewise, static.
+
+OK
+
+>> +{
+>> +	char num_buf[30];
+>> +
+>> +	num_to_str(num, num_buf);
+>> +	return print(num_buf);
+>> +}
+>> +
+>> +int print_k_value(const char *s, unsigned long num, unsigned long units)
+>> +{
+>> +	unsigned long long temp;
+>> +	int ccode;
+>> +
+>> +	print(s);
+>> +
+>> +	temp = num;
+>> +	temp = (temp * units)/1024;
+>> +	num = temp;
+>> +	ccode = print_num(num);
+>> +	print("\n");
+>> +	return ccode;
+>> +}
+> 
+> I'd suggest dropping this entirely, and just always printing the exact
+> values returned by sysinfo.  Drop the multiply, too, and just print
+> info.mem_unit as well.  It's easy to post-process the value in a more
+> capable environment.
+
+I'd prefer to keep the output easily human-readable.
  
- #define pte_none(pte)		(!(((pte).pte_low | (pte).pte_high) & ~_PAGE_GLOBAL))
-@@ -148,6 +145,7 @@ static inline void set_pte(pte_t *ptep, pte_t pte)
- 		}
- 	}
- }
-+#define set_pte_at(mm, addr, ptep, pteval) set_pte(ptep, pteval)
+>> +/* this program has no main(), as startup libraries are not used */
+>> +void _start(void)
+>> +{
+>> +	int ccode;
+>> +	struct sysinfo info;
+>> +	unsigned long used;
+>> +
+>> +	print("Testing system size.\n");
+>> +	print("1..1\n");
+>> +
+>> +	ccode = sysinfo(&info);
+>> +	if (ccode < 0) {
+>> +		print("not ok 1 get size runtime size\n");
+> 
+> Shouldn't the "not ok" here and the "ok" below have the same test
+> description?
+Yes.  Thanks.  Good catch.
  
- static inline void pte_clear(struct mm_struct *mm, unsigned long addr, pte_t *ptep)
- {
-@@ -185,6 +183,7 @@ static inline void set_pte(pte_t *ptep, pte_t pteval)
- 	}
- #endif
- }
-+#define set_pte_at(mm, addr, ptep, pteval) set_pte(ptep, pteval)
- 
- static inline void pte_clear(struct mm_struct *mm, unsigned long addr, pte_t *ptep)
- {
-@@ -401,12 +400,15 @@ static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
- 
- extern void __update_tlb(struct vm_area_struct *vma, unsigned long address,
- 	pte_t pte);
-+extern void __update_cache(struct vm_area_struct *vma, unsigned long address,
-+	pte_t pte);
- 
- static inline void update_mmu_cache(struct vm_area_struct *vma,
- 	unsigned long address, pte_t *ptep)
- {
- 	pte_t pte = *ptep;
- 	__update_tlb(vma, address, pte);
-+	__update_cache(vma, address, pte);
- }
- 
- static inline void update_mmu_cache_pmd(struct vm_area_struct *vma,
-diff --git a/arch/mips/mm/cache.c b/arch/mips/mm/cache.c
-index 7e3ea7766822..f7b91d3a371d 100644
---- a/arch/mips/mm/cache.c
-+++ b/arch/mips/mm/cache.c
-@@ -119,36 +119,25 @@ void __flush_anon_page(struct page *page, unsigned long vmaddr)
- 
- EXPORT_SYMBOL(__flush_anon_page);
- 
--static void mips_flush_dcache_from_pte(pte_t pteval, unsigned long address)
-+void __update_cache(struct vm_area_struct *vma, unsigned long address,
-+	pte_t pte)
- {
- 	struct page *page;
--	unsigned long pfn = pte_pfn(pteval);
-+	unsigned long pfn, addr;
-+	int exec = (vma->vm_flags & VM_EXEC) && !cpu_has_ic_fills_f_dc;
- 
-+	pfn = pte_pfn(pte);
- 	if (unlikely(!pfn_valid(pfn)))
- 		return;
--
- 	page = pfn_to_page(pfn);
- 	if (page_mapping(page) && Page_dcache_dirty(page)) {
--		unsigned long page_addr = (unsigned long) page_address(page);
--
--		if (!cpu_has_ic_fills_f_dc ||
--		    pages_do_alias(page_addr, address & PAGE_MASK))
--			flush_data_cache_page(page_addr);
-+		addr = (unsigned long) page_address(page);
-+		if (exec || pages_do_alias(addr, address & PAGE_MASK))
-+			flush_data_cache_page(addr);
- 		ClearPageDcacheDirty(page);
- 	}
- }
- 
--void set_pte_at(struct mm_struct *mm, unsigned long addr,
--        pte_t *ptep, pte_t pteval)
--{
--        if (cpu_has_dc_aliases || !cpu_has_ic_fills_f_dc) {
--                if (pte_present(pteval))
--                        mips_flush_dcache_from_pte(pteval, addr);
--        }
--
--        set_pte(ptep, pteval);
--}
--
- unsigned long _page_cachable_default;
- EXPORT_SYMBOL(_page_cachable_default);
- 
+>> +		print("# could not get sysinfo\n");
+>> +		_exit(ccode);
+>> +	}
+>> +	/* ignore cache complexities for now */
+>> +	used = info.totalram - info.freeram - info.bufferram;
+>> +	print_k_value("ok 1 get runtime memory use # size = ", used,
+>> +		info.mem_unit);
+>> +
+>> +	print("# System runtime memory report (units in Kilobytes):\n");
+>> +	print_k_value("#   Total:  ", info.totalram, info.mem_unit);
+>> +	print_k_value("#   Free:   ", info.freeram, info.mem_unit);
+>> +	print_k_value("#   Buffer: ", info.bufferram, info.mem_unit);
+>> +	print_k_value("#   In use: ", used, info.mem_unit);
+>> +
+>> +	_exit(0);
+>> +}
+>> -- 
+>> 1.8.2.2
+
+OK - look for a new version shortly (maybe not today, though).
+ -- Tim
 
