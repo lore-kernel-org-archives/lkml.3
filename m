@@ -1,112 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439AbaLCXhT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 18:37:19 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:62725 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391AbaLCXhR (ORCPT
+	id S1752604AbaLCXh0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 18:37:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57582 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391AbaLCXhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 18:37:17 -0500
-From: Andy Lutomirski <luto@amacapital.net>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
-        Oleg Nesterov <oleg@redhat.com>,
-        =?UTF-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v2] context_tracking: Restore previous state in schedule_user
-Date: Wed,  3 Dec 2014 15:37:08 -0800
-Message-Id: <e840280bba54050816470caa870bd9f561efc545.1417649608.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <20141203220836.GC31369@lerouge>
-References: <20141203220836.GC31369@lerouge>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 3 Dec 2014 18:37:22 -0500
+Date: Wed, 3 Dec 2014 15:37:21 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Richard Weinberger <richard@nod.at>, David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH v2] all arches, signal: Move restart_block to struct
+ task_struct
+Message-Id: <20141203153721.30b32472145aa560921bdc1e@linux-foundation.org>
+In-Reply-To: <CALCETrUZhbx-PN8A168khFr6ve_9vdkSiwOcQ-hZbqu4po8hnQ@mail.gmail.com>
+References: <43c88012a4959cd427ab634906e697fbc524e847.1414604015.git.luto@amacapital.net>
+	<alpine.DEB.2.11.1410291908290.5308@nanos>
+	<CALCETrWtBCFXzwCAh8fpeFv-EvPxYW20oRmFk1iCYwUvpft=Rw@mail.gmail.com>
+	<20141110.211319.1983610686941713044.davem@davemloft.net>
+	<5461EA6B.9020305@nod.at>
+	<CALCETrUZhbx-PN8A168khFr6ve_9vdkSiwOcQ-hZbqu4po8hnQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It appears that some SCHEDULE_USER (asm for schedule_user) callers
-in arch/x86/kernel/entry_64.S are called from RCU kernel context,
-and schedule_user will return in RCU user context.  This causes RCU
-warnings and possible failures.
+On Mon, 1 Dec 2014 06:55:01 -0800 Andy Lutomirski <luto@amacapital.net> wrote:
 
-This is intended to be a minimal fix suitable for 3.18.
+> On Tue, Nov 11, 2014 at 2:52 AM, Richard Weinberger <richard@nod.at> wrote:
+> > Am 11.11.2014 um 03:13 schrieb David Miller:
+> >> From: Andy Lutomirski <luto@amacapital.net>
+> >> Date: Mon, 10 Nov 2014 14:03:23 -0800
+> >>
+> >>> On Wed, Oct 29, 2014 at 11:12 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> >>>> On Wed, 29 Oct 2014, Andy Lutomirski wrote:
+> >>>>
+> >>>>> If an attacker can cause a controlled kernel stack overflow,
+> >>>>> overwriting the restart block is a very juicy exploit target.
+> >>>>> Moving the restart block to struct task_struct prevents this
+> >>>>> exploit.
+> >>>>>
+> >>>>> Note that there are other fields in thread_info that are also easy
+> >>>>> targets, at least on some architectures.
+> >>>>>
+> >>>>> It's also a decent simplification, since the restart code is more or
+> >>>>> less identical on all architectures.
+> >>>>
+> >>>> I think that's the most important change. Moving common stuff into
+> >>>> common code. The side effect of slightly reducing the attack surface
+> >>>> is nice, but as Al pointed out not really the big win here.
+> >>>
+> >>> Having gotten exactly zero feedback from any arch maintainer outside
+> >>> of x86, am I supposed to pester people further?
+> >>
+> >> No objections wrt. sparc and if things break I'll help fix it.
+> >
+> > Same for UML.
+> > Acked-by: Richard Weinberger <richard@nod.at>
+> 
+> akpm, do you consider this appropriate for either 3.19 or 3.20?  If
+> so, can you add it to the appropriate part of -mm?
 
-Reported-and-tested-by: Dave Jones <davej@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
+Yes, I can grab it.  Probably for .20, as the lag times for exposing
+issues in obscures architectures are lengthy.
 
-Hi all-
+One clarification:
 
-This is intended to be a suitable last-minute fix for the RCU issue that
-Dave saw.
+: If an attacker can cause a controlled kernel stack overflow,
+: overwriting the restart block is a very juicy exploit target.
 
-Dave, can you confirm that this fixes it?
+This is because the thread_info actually resides in the memory which
+was allocated for the kernel stack, yes?  Whereas the task_struct is
+separately allocated and is harder to find?
 
-Frédéric, can you confirm that you think that this will have no effect
-on correct callers of schedule_user and that will do the right thing
-for incorrect callers of schedule_user?
+Spelling this out in the changelog would be useful for the ignorant and
+the forgetful ;)
 
-I don't like the x86 asm that calls this at all, and I don't really
-like the fragility of the mechanism is general, but I think that this
-improves the situation enough to avoid problems in the short term.
+: Moving the restart block to struct task_struct prevents this
+: exploit.
 
-With the obvious warning added, I get:
-
-[    0.751022] ------------[ cut here ]------------
-[    0.751937] WARNING: CPU: 0 PID: 72 at kernel/sched/core.c:2883 schedule_user+0xcf/0xe0()
-[    0.753477] Modules linked in:
-[    0.754089] CPU: 0 PID: 72 Comm: mount Not tainted 3.18.0-rc7+ #653
-[    0.755258] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
-[    0.757655]  0000000000000009 ffff880005c13f00 ffffffff81741dca ffff8800069f5a50
-[    0.759228]  0000000000000000 ffff880005c13f40 ffffffff8108e781 0000000000000246
-[    0.760758]  0000000000000000 00007fff970441c8 00007fff97043fd0 00007f67794ebcc8
-[    0.762294] Call Trace:
-[    0.762775]  [<ffffffff81741dca>] dump_stack+0x46/0x58
-[    0.763739]  [<ffffffff8108e781>] warn_slowpath_common+0x81/0xa0
-[    0.764865]  [<ffffffff8108e85a>] warn_slowpath_null+0x1a/0x20
-[    0.765958]  [<ffffffff8174565f>] schedule_user+0xcf/0xe0
-[    0.766974]  [<ffffffff8174ae69>] sysret_careful+0x19/0x1c
-[    0.768011] ---[ end trace 329f34db2b3be966 ]---
-
-So, yes, we have a bug, and this could cause any number of strange
-problems.
-
-Changes from v1:
- - Added Dave's Tested-by.
- - Fixed a comment typo.
-
- kernel/sched/core.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 24beb9bb4c3e..89e7283015a6 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2874,10 +2874,14 @@ asmlinkage __visible void __sched schedule_user(void)
- 	 * or we have been woken up remotely but the IPI has not yet arrived,
- 	 * we haven't yet exited the RCU idle mode. Do it here manually until
- 	 * we find a better solution.
-+	 *
-+	 * NB: There are buggy callers of this function.  Ideally we
-+	 * should warn if prev_state != IN_USER, but that will trigger
-+	 * too frequently to make sense yet.
- 	 */
--	user_exit();
-+	enum ctx_state prev_state = exception_enter();
- 	schedule();
--	user_enter();
-+	exception_exit(prev_state);
- }
- #endif
- 
--- 
-1.9.3
 
