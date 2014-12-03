@@ -1,48 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852AbaLCCeb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Dec 2014 21:34:31 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:63118 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644AbaLCCea (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Dec 2014 21:34:30 -0500
-From: Paul Hedman <paul@mybboard.net>
-X-Google-Original-From: Paul Hedman <paul@mybb.com>
-To: paul@mybb.com, greg@kroah.com, Larry.Finger@lwfinger.net,
-        florian.c.schilhabel@googlemail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: rtl8712: Fixes brace coding style in rtl871x_sta_mgt.c
-Date: Tue,  2 Dec 2014 20:34:13 -0600
-Message-Id: <1417574053-5831-1-git-send-email-paul@mybb.com>
-X-Mailer: git-send-email 2.1.0
+	id S1751876AbaLCCev (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Dec 2014 21:34:51 -0500
+Received: from mga14.intel.com ([192.55.52.115]:45705 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751322AbaLCCet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Dec 2014 21:34:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="424347794"
+Message-ID: <547E76C7.8000907@intel.com>
+Date: Wed, 03 Dec 2014 10:34:47 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Jens Axboe <axboe@kernel.dk>
+CC: Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH] block / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+References: <1836422.FyhARLgxbM@vostro.rjw.lan>
+In-Reply-To: <1836422.FyhARLgxbM@vostro.rjw.lan>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a brace warning in rtl871x_sta_mgt.c found
-by the checkpatch.pl tool.
+On 12/03/2014 09:34 AM, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+> depending on CONFIG_PM_RUNTIME may now be changed to depend on
+> CONFIG_PM.
 
-Signed-off-by: Paul Hedman <paul@mybb.com>
----
- drivers/staging/rtl8712/rtl871x_sta_mgt.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Nice change!
 
-diff --git a/drivers/staging/rtl8712/rtl871x_sta_mgt.c b/drivers/staging/rtl8712/rtl871x_sta_mgt.c
-index 4c9b98e..de8acc1 100644
---- a/drivers/staging/rtl8712/rtl871x_sta_mgt.c
-+++ b/drivers/staging/rtl8712/rtl871x_sta_mgt.c
-@@ -83,9 +83,8 @@ static void mfree_all_stainfo(struct sta_priv *pstapriv)
- 	spin_lock_irqsave(&pstapriv->sta_hash_lock, irqL);
- 	phead = &pstapriv->free_sta_queue.queue;
- 	plist = phead->next;
--	while ((end_of_queue_search(phead, plist)) == false) {
-+	while ((end_of_queue_search(phead, plist)) == false)
- 		plist = plist->next;
--	}
- 
- 	spin_unlock_irqrestore(&pstapriv->sta_hash_lock, irqL);
- }
--- 
-2.1.0
+> 
+> Replace CONFIG_PM_RUNTIME with CONFIG_PM in the block device core.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+
+Reviewed-by: Aaron Lu <aaron.lu@intel.com>
+
+Thanks,
+Aaron
+
+> ---
+> 
+> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
+> PM_SLEEP is selected) which is only in linux-next at the moment (via the
+> linux-pm tree).
+> 
+> Please let me know if it is OK to take this one into linux-pm.
+> 
+> ---
+>  block/blk-core.c       |    6 +++---
+>  block/elevator.c       |    2 +-
+>  include/linux/blkdev.h |    4 ++--
+>  3 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> Index: linux-pm/include/linux/blkdev.h
+> ===================================================================
+> --- linux-pm.orig/include/linux/blkdev.h
+> +++ linux-pm/include/linux/blkdev.h
+> @@ -398,7 +398,7 @@ struct request_queue {
+>  	 */
+>  	struct kobject mq_kobj;
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  	struct device		*dev;
+>  	int			rpm_status;
+>  	unsigned int		nr_pending;
+> @@ -1057,7 +1057,7 @@ extern void blk_put_queue(struct request
+>  /*
+>   * block layer runtime pm functions
+>   */
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  extern void blk_pm_runtime_init(struct request_queue *q, struct device *dev);
+>  extern int blk_pre_runtime_suspend(struct request_queue *q);
+>  extern void blk_post_runtime_suspend(struct request_queue *q, int err);
+> Index: linux-pm/block/blk-core.c
+> ===================================================================
+> --- linux-pm.orig/block/blk-core.c
+> +++ linux-pm/block/blk-core.c
+> @@ -1325,7 +1325,7 @@ void part_round_stats(int cpu, struct hd
+>  }
+>  EXPORT_SYMBOL_GPL(part_round_stats);
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  static void blk_pm_put_request(struct request *rq)
+>  {
+>  	if (rq->q->dev && !(rq->cmd_flags & REQ_PM) && !--rq->q->nr_pending)
+> @@ -2134,7 +2134,7 @@ void blk_account_io_done(struct request
+>  	}
+>  }
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  /*
+>   * Don't process normal requests when queue is suspended
+>   * or in the process of suspending/resuming
+> @@ -3159,7 +3159,7 @@ void blk_finish_plug(struct blk_plug *pl
+>  }
+>  EXPORT_SYMBOL(blk_finish_plug);
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  /**
+>   * blk_pm_runtime_init - Block layer runtime PM initialization routine
+>   * @q: the queue of the device
+> Index: linux-pm/block/elevator.c
+> ===================================================================
+> --- linux-pm.orig/block/elevator.c
+> +++ linux-pm/block/elevator.c
+> @@ -539,7 +539,7 @@ void elv_bio_merged(struct request_queue
+>  		e->type->ops.elevator_bio_merged_fn(q, rq, bio);
+>  }
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  static void blk_pm_requeue_request(struct request *rq)
+>  {
+>  	if (rq->q->dev && !(rq->cmd_flags & REQ_PM))
+> 
 
