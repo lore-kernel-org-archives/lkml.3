@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123AbaLCLrM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 06:47:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54708 "EHLO mx2.suse.de"
+	id S932080AbaLCLsB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 06:48:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54705 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752500AbaLCL13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 06:27:29 -0500
+	id S1752456AbaLCL1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 06:27:24 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Helge Deller <deller@gmx.de>,
-        John David Anglin <dave.anglin@bell.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 044/101] parisc: Use compat layer for msgctl, shmat, shmctl and semtimedop syscalls
-Date: Wed,  3 Dec 2014 12:26:06 +0100
-Message-Id: <e29a7bc42c8ce108b2ffc70a0467c05faea8cc8e.1417605922.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ben Dooks <ben.dooks@codethink.co.uk>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        Wang Nan <wangnan0@huawei.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 065/101] ARM: probes: fix instruction fetch order with <asm/opcodes.h>
+Date: Wed,  3 Dec 2014 12:26:27 +0100
+Message-Id: <612d07862d30f4a08cc1157b82bf94312c63f3ef.1417605922.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
 References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
@@ -22,98 +23,191 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Helge Deller <deller@gmx.de>
+From: Ben Dooks <ben.dooks@codethink.co.uk>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 2fe749f50b0bec07650ef135b29b1f55bf543869 upstream.
+commit 888be25402021a425da3e85e2d5a954d7509286e upstream.
 
-Switch over the msgctl, shmat, shmctl and semtimedop syscalls to use the compat
-layer. The problem was found with the debian procenv package, which called
-	shmctl(0, SHM_INFO, &info);
-in which the shmctl syscall then overwrote parts of the surrounding areas on
-the stack on which the info variable was stored and thus lead to a segfault
-later on.
+If we are running BE8, the data and instruction endianness do not
+match, so use <asm/opcodes.h> to correctly translate memory accesses
+into ARM instructions.
 
-Additionally fix the definition of struct shminfo64 to use unsigned longs like
-the other architectures. This has no impact on userspace since we only have a
-32bit userspace up to now.
-
-Signed-off-by: Helge Deller <deller@gmx.de>
-Cc: John David Anglin <dave.anglin@bell.net>
+Acked-by: Jon Medhurst <tixy@linaro.org>
+Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
+[taras.kondratiuk@linaro.org: fixed Thumb instruction fetch order]
+Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+[wangnan: backport to 3.10 and 3.14:
+ - adjust context
+ - backport all changes on arch/arm/kernel/probes.c to
+   arch/arm/kernel/kprobes-common.c since we don't have
+   commit c18377c303787ded44b7decd7dee694db0f205e9.
+ - After the above adjustments, becomes same to Taras Kondratiuk's
+   original patch:
+     http://lists.linaro.org/pipermail/linaro-kernel/2014-January/010346.html
+]
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/parisc/include/uapi/asm/shmbuf.h | 25 +++++++++----------------
- arch/parisc/kernel/syscall_table.S    |  8 ++++----
- 2 files changed, 13 insertions(+), 20 deletions(-)
+ arch/arm/kernel/kprobes-common.c | 19 +++++++++++--------
+ arch/arm/kernel/kprobes-thumb.c  | 21 +++++++++++++--------
+ arch/arm/kernel/kprobes.c        |  9 +++++----
+ 3 files changed, 29 insertions(+), 20 deletions(-)
 
-diff --git a/arch/parisc/include/uapi/asm/shmbuf.h b/arch/parisc/include/uapi/asm/shmbuf.h
-index 0a3eada1863b..f395cde7b593 100644
---- a/arch/parisc/include/uapi/asm/shmbuf.h
-+++ b/arch/parisc/include/uapi/asm/shmbuf.h
-@@ -36,23 +36,16 @@ struct shmid64_ds {
- 	unsigned int		__unused2;
- };
+diff --git a/arch/arm/kernel/kprobes-common.c b/arch/arm/kernel/kprobes-common.c
+index 18a76282970e..380c20fb9c85 100644
+--- a/arch/arm/kernel/kprobes-common.c
++++ b/arch/arm/kernel/kprobes-common.c
+@@ -14,6 +14,7 @@
+ #include <linux/kernel.h>
+ #include <linux/kprobes.h>
+ #include <asm/system_info.h>
++#include <asm/opcodes.h>
  
--#ifdef CONFIG_64BIT
--/* The 'unsigned int' (formerly 'unsigned long') data types below will
-- * ensure that a 32-bit app calling shmctl(*,IPC_INFO,*) will work on
-- * a wide kernel, but if some of these values are meant to contain pointers
-- * they may need to be 'long long' instead. -PB XXX FIXME
-- */
--#endif
- struct shminfo64 {
--	unsigned int	shmmax;
--	unsigned int	shmmin;
--	unsigned int	shmmni;
--	unsigned int	shmseg;
--	unsigned int	shmall;
--	unsigned int	__unused1;
--	unsigned int	__unused2;
--	unsigned int	__unused3;
--	unsigned int	__unused4;
-+	unsigned long	shmmax;
-+	unsigned long	shmmin;
-+	unsigned long	shmmni;
-+	unsigned long	shmseg;
-+	unsigned long	shmall;
-+	unsigned long	__unused1;
-+	unsigned long	__unused2;
-+	unsigned long	__unused3;
-+	unsigned long	__unused4;
- };
+ #include "kprobes.h"
  
- #endif /* _PARISC_SHMBUF_H */
-diff --git a/arch/parisc/kernel/syscall_table.S b/arch/parisc/kernel/syscall_table.S
-index 10a0c2aad8cf..b24732d1bdbf 100644
---- a/arch/parisc/kernel/syscall_table.S
-+++ b/arch/parisc/kernel/syscall_table.S
-@@ -286,11 +286,11 @@
- 	ENTRY_COMP(msgsnd)
- 	ENTRY_COMP(msgrcv)
- 	ENTRY_SAME(msgget)		/* 190 */
--	ENTRY_SAME(msgctl)
--	ENTRY_SAME(shmat)
-+	ENTRY_COMP(msgctl)
-+	ENTRY_COMP(shmat)
- 	ENTRY_SAME(shmdt)
- 	ENTRY_SAME(shmget)
--	ENTRY_SAME(shmctl)		/* 195 */
-+	ENTRY_COMP(shmctl)		/* 195 */
- 	ENTRY_SAME(ni_syscall)		/* streams1 */
- 	ENTRY_SAME(ni_syscall)		/* streams2 */
- 	ENTRY_SAME(lstat64)
-@@ -323,7 +323,7 @@
- 	ENTRY_SAME(epoll_ctl)		/* 225 */
- 	ENTRY_SAME(epoll_wait)
-  	ENTRY_SAME(remap_file_pages)
--	ENTRY_SAME(semtimedop)
-+	ENTRY_COMP(semtimedop)
- 	ENTRY_COMP(mq_open)
- 	ENTRY_SAME(mq_unlink)		/* 230 */
- 	ENTRY_COMP(mq_timedsend)
+@@ -305,7 +306,8 @@ kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+ 
+ 	if (handler) {
+ 		/* We can emulate the instruction in (possibly) modified form */
+-		asi->insn[0] = (insn & 0xfff00000) | (rn << 16) | reglist;
++		asi->insn[0] = __opcode_to_mem_arm((insn & 0xfff00000) |
++						   (rn << 16) | reglist);
+ 		asi->insn_handler = handler;
+ 		return INSN_GOOD;
+ 	}
+@@ -334,13 +336,14 @@ prepare_emulated_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+ #ifdef CONFIG_THUMB2_KERNEL
+ 	if (thumb) {
+ 		u16 *thumb_insn = (u16 *)asi->insn;
+-		thumb_insn[1] = 0x4770; /* Thumb bx lr */
+-		thumb_insn[2] = 0x4770; /* Thumb bx lr */
++		/* Thumb bx lr */
++		thumb_insn[1] = __opcode_to_mem_thumb16(0x4770);
++		thumb_insn[2] = __opcode_to_mem_thumb16(0x4770);
+ 		return insn;
+ 	}
+-	asi->insn[1] = 0xe12fff1e; /* ARM bx lr */
++	asi->insn[1] = __opcode_to_mem_arm(0xe12fff1e); /* ARM bx lr */
+ #else
+-	asi->insn[1] = 0xe1a0f00e; /* mov pc, lr */
++	asi->insn[1] = __opcode_to_mem_arm(0xe1a0f00e); /* mov pc, lr */
+ #endif
+ 	/* Make an ARM instruction unconditional */
+ 	if (insn < 0xe0000000)
+@@ -360,12 +363,12 @@ set_emulated_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+ 	if (thumb) {
+ 		u16 *ip = (u16 *)asi->insn;
+ 		if (is_wide_instruction(insn))
+-			*ip++ = insn >> 16;
+-		*ip++ = insn;
++			*ip++ = __opcode_to_mem_thumb16(insn >> 16);
++		*ip++ = __opcode_to_mem_thumb16(insn);
+ 		return;
+ 	}
+ #endif
+-	asi->insn[0] = insn;
++	asi->insn[0] = __opcode_to_mem_arm(insn);
+ }
+ 
+ /*
+diff --git a/arch/arm/kernel/kprobes-thumb.c b/arch/arm/kernel/kprobes-thumb.c
+index 6123daf397a7..241222c66a13 100644
+--- a/arch/arm/kernel/kprobes-thumb.c
++++ b/arch/arm/kernel/kprobes-thumb.c
+@@ -11,6 +11,7 @@
+ #include <linux/kernel.h>
+ #include <linux/kprobes.h>
+ #include <linux/module.h>
++#include <asm/opcodes.h>
+ 
+ #include "kprobes.h"
+ 
+@@ -163,9 +164,9 @@ t32_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+ 	enum kprobe_insn ret = kprobe_decode_ldmstm(insn, asi);
+ 
+ 	/* Fixup modified instruction to have halfwords in correct order...*/
+-	insn = asi->insn[0];
+-	((u16 *)asi->insn)[0] = insn >> 16;
+-	((u16 *)asi->insn)[1] = insn & 0xffff;
++	insn = __mem_to_opcode_arm(asi->insn[0]);
++	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(insn >> 16);
++	((u16 *)asi->insn)[1] = __opcode_to_mem_thumb16(insn & 0xffff);
+ 
+ 	return ret;
+ }
+@@ -1153,7 +1154,7 @@ t16_decode_hiregs(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+ {
+ 	insn &= ~0x00ff;
+ 	insn |= 0x001; /* Set Rdn = R1 and Rm = R0 */
+-	((u16 *)asi->insn)[0] = insn;
++	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(insn);
+ 	asi->insn_handler = t16_emulate_hiregs;
+ 	return INSN_GOOD;
+ }
+@@ -1182,8 +1183,10 @@ t16_decode_push(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+ 	 * and call it with R9=SP and LR in the register list represented
+ 	 * by R8.
+ 	 */
+-	((u16 *)asi->insn)[0] = 0xe929;		/* 1st half STMDB R9!,{} */
+-	((u16 *)asi->insn)[1] = insn & 0x1ff;	/* 2nd half (register list) */
++	/* 1st half STMDB R9!,{} */
++	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(0xe929);
++	/* 2nd half (register list) */
++	((u16 *)asi->insn)[1] = __opcode_to_mem_thumb16(insn & 0x1ff);
+ 	asi->insn_handler = t16_emulate_push;
+ 	return INSN_GOOD;
+ }
+@@ -1232,8 +1235,10 @@ t16_decode_pop(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+ 	 * and call it with R9=SP and PC in the register list represented
+ 	 * by R8.
+ 	 */
+-	((u16 *)asi->insn)[0] = 0xe8b9;		/* 1st half LDMIA R9!,{} */
+-	((u16 *)asi->insn)[1] = insn & 0x1ff;	/* 2nd half (register list) */
++	/* 1st half LDMIA R9!,{} */
++	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(0xe8b9);
++	/* 2nd half (register list) */
++	((u16 *)asi->insn)[1] = __opcode_to_mem_thumb16(insn & 0x1ff);
+ 	asi->insn_handler = insn & 0x100 ? t16_emulate_pop_pc
+ 					 : t16_emulate_pop_nopc;
+ 	return INSN_GOOD;
+diff --git a/arch/arm/kernel/kprobes.c b/arch/arm/kernel/kprobes.c
+index 170e9f34003f..1c6ece51781c 100644
+--- a/arch/arm/kernel/kprobes.c
++++ b/arch/arm/kernel/kprobes.c
+@@ -26,6 +26,7 @@
+ #include <linux/stop_machine.h>
+ #include <linux/stringify.h>
+ #include <asm/traps.h>
++#include <asm/opcodes.h>
+ #include <asm/cacheflush.h>
+ 
+ #include "kprobes.h"
+@@ -62,10 +63,10 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+ #ifdef CONFIG_THUMB2_KERNEL
+ 	thumb = true;
+ 	addr &= ~1; /* Bit 0 would normally be set to indicate Thumb code */
+-	insn = ((u16 *)addr)[0];
++	insn = __mem_to_opcode_thumb16(((u16 *)addr)[0]);
+ 	if (is_wide_instruction(insn)) {
+-		insn <<= 16;
+-		insn |= ((u16 *)addr)[1];
++		u16 inst2 = __mem_to_opcode_thumb16(((u16 *)addr)[1]);
++		insn = __opcode_thumb32_compose(insn, inst2);
+ 		decode_insn = thumb32_kprobe_decode_insn;
+ 	} else
+ 		decode_insn = thumb16_kprobe_decode_insn;
+@@ -73,7 +74,7 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+ 	thumb = false;
+ 	if (addr & 0x3)
+ 		return -EINVAL;
+-	insn = *p->addr;
++	insn = __mem_to_opcode_arm(*p->addr);
+ 	decode_insn = arm_kprobe_decode_insn;
+ #endif
+ 
 -- 
 2.1.3
 
