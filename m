@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281AbaLCMDf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 07:03:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54458 "EHLO mx2.suse.de"
+	id S1754242AbaLCMDe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 07:03:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54459 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751609AbaLCL1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751905AbaLCL1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Dec 2014 06:27:06 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Dwight Engen <dwight.engen@oracle.com>,
+Cc: linux-kernel@vger.kernel.org, Allen Pais <allen.pais@oracle.com>,
+        Dwight Engen <dwight.engen@oracle.com>,
         "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 010/101] sunvdc: limit each sg segment to a page
-Date: Wed,  3 Dec 2014 12:25:32 +0100
-Message-Id: <d19343d672650096ab5e5966aaaa4665f9a0fdd9.1417605922.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 008/101] sunvdc: add cdrom and v1.1 protocol support
+Date: Wed,  3 Dec 2014 12:25:30 +0100
+Message-Id: <81e8f4169909dc2b4e3a5c21411d2dc3750d693c.1417605922.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
 References: <f9a3dbb8fd1853c16930b2c95eefa34a324eca19.1417605922.git.jslaby@suse.cz>
@@ -22,47 +23,255 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dwight Engen <dwight.engen@oracle.com>
+From: Allen Pais <allen.pais@oracle.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 5eed69ffd248c9f68f56c710caf07db134aef28b ]
+[ Upstream commit 9bce21828d54a95143f1b74619705c2dd8e88b92 ]
 
-ldc_map_sg() could fail its check that the number of pages referred to
-by the sg scatterlist was <= the number of cookies.
+Interpret the media type from v1.1 protocol to support CDROM/DVD.
 
-This fixes the issue by doing a similar thing to the xen-blkfront driver,
-ensuring that the scatterlist will only ever contain a segment count <=
-port->ring_cookies, and each segment will be page aligned, and <= page
-size. This ensures that the scatterlist is always mappable.
+For v1.0 protocol, a disk's size continues to be calculated from the
+geometry returned by the vdisk server. The geometry returned by the server
+can be less than the actual number of sectors available in the backing
+image/device due to the rounding in the division used to compute the
+geometry in the vdisk server.
 
-Orabug: 19347817
-OraBZ: 15945
+In v1.1 protocol a disk's actual size in sectors is returned during the
+handshake. Use this size when v1.1 protocol is negotiated. Since this size
+will always be larger than the former geometry computed size, disks created
+under v1.0 will be forwards compatible to v1.1, but not vice versa.
 
 Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/block/sunvdc.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/sparc/include/asm/vio.h |  12 +++--
+ drivers/block/sunvdc.c       | 109 ++++++++++++++++++++++++++++++++++++-------
+ 2 files changed, 101 insertions(+), 20 deletions(-)
 
+diff --git a/arch/sparc/include/asm/vio.h b/arch/sparc/include/asm/vio.h
+index 432afa838861..a8210c5e5932 100644
+--- a/arch/sparc/include/asm/vio.h
++++ b/arch/sparc/include/asm/vio.h
+@@ -118,12 +118,18 @@ struct vio_disk_attr_info {
+ 	u8			vdisk_type;
+ #define VD_DISK_TYPE_SLICE	0x01 /* Slice in block device	*/
+ #define VD_DISK_TYPE_DISK	0x02 /* Entire block device	*/
+-	u16			resv1;
++	u8			vdisk_mtype;		/* v1.1 */
++#define VD_MEDIA_TYPE_FIXED	0x01 /* Fixed device */
++#define VD_MEDIA_TYPE_CD	0x02 /* CD Device    */
++#define VD_MEDIA_TYPE_DVD	0x03 /* DVD Device   */
++	u8			resv1;
+ 	u32			vdisk_block_size;
+ 	u64			operations;
+-	u64			vdisk_size;
++	u64			vdisk_size;		/* v1.1 */
+ 	u64			max_xfer_size;
+-	u64			resv2[2];
++	u32			phys_block_size;	/* v1.2 */
++	u32			resv2;
++	u64			resv3[1];
+ };
+ 
+ struct vio_disk_desc {
 diff --git a/drivers/block/sunvdc.c b/drivers/block/sunvdc.c
-index 1616ad091a5e..1a9360da1f54 100644
+index 5814deb6963d..66ddf704ad7f 100644
 --- a/drivers/block/sunvdc.c
 +++ b/drivers/block/sunvdc.c
-@@ -747,6 +747,10 @@ static int probe_disk(struct vdc_port *port)
+@@ -9,6 +9,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/hdreg.h>
+ #include <linux/genhd.h>
++#include <linux/cdrom.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/completion.h>
+@@ -22,8 +23,8 @@
  
- 	port->disk = g;
+ #define DRV_MODULE_NAME		"sunvdc"
+ #define PFX DRV_MODULE_NAME	": "
+-#define DRV_MODULE_VERSION	"1.0"
+-#define DRV_MODULE_RELDATE	"June 25, 2007"
++#define DRV_MODULE_VERSION	"1.1"
++#define DRV_MODULE_RELDATE	"February 13, 2013"
  
-+	/* Each segment in a request is up to an aligned page in size. */
-+	blk_queue_segment_boundary(q, PAGE_SIZE - 1);
-+	blk_queue_max_segment_size(q, PAGE_SIZE);
+ static char version[] =
+ 	DRV_MODULE_NAME ".c:v" DRV_MODULE_VERSION " (" DRV_MODULE_RELDATE ")\n";
+@@ -65,6 +66,7 @@ struct vdc_port {
+ 	u64			operations;
+ 	u32			vdisk_size;
+ 	u8			vdisk_type;
++	u8			vdisk_mtype;
+ 
+ 	char			disk_name[32];
+ 
+@@ -79,9 +81,16 @@ static inline struct vdc_port *to_vdc_port(struct vio_driver_state *vio)
+ 
+ /* Ordered from largest major to lowest */
+ static struct vio_version vdc_versions[] = {
++	{ .major = 1, .minor = 1 },
+ 	{ .major = 1, .minor = 0 },
+ };
+ 
++static inline int vdc_version_supported(struct vdc_port *port,
++					u16 major, u16 minor)
++{
++	return port->vio.ver.major == major && port->vio.ver.minor >= minor;
++}
 +
- 	blk_queue_max_segments(q, port->ring_cookies);
- 	blk_queue_max_hw_sectors(q, port->max_xfer_size);
- 	g->major = vdc_major;
+ #define VDCBLK_NAME	"vdisk"
+ static int vdc_major;
+ #define PARTITION_SHIFT	3
+@@ -103,9 +112,41 @@ static int vdc_getgeo(struct block_device *bdev, struct hd_geometry *geo)
+ 	return 0;
+ }
+ 
++/* Add ioctl/CDROM_GET_CAPABILITY to support cdrom_id in udev
++ * when vdisk_mtype is VD_MEDIA_TYPE_CD or VD_MEDIA_TYPE_DVD.
++ * Needed to be able to install inside an ldom from an iso image.
++ */
++static int vdc_ioctl(struct block_device *bdev, fmode_t mode,
++		     unsigned command, unsigned long argument)
++{
++	int i;
++	struct gendisk *disk;
++
++	switch (command) {
++	case CDROMMULTISESSION:
++		pr_debug(PFX "Multisession CDs not supported\n");
++		for (i = 0; i < sizeof(struct cdrom_multisession); i++)
++			if (put_user(0, (char __user *)(argument + i)))
++				return -EFAULT;
++		return 0;
++
++	case CDROM_GET_CAPABILITY:
++		disk = bdev->bd_disk;
++
++		if (bdev->bd_disk && (disk->flags & GENHD_FL_CD))
++			return 0;
++		return -EINVAL;
++
++	default:
++		pr_debug(PFX "ioctl %08x not supported\n", command);
++		return -EINVAL;
++	}
++}
++
+ static const struct block_device_operations vdc_fops = {
+ 	.owner		= THIS_MODULE,
+ 	.getgeo		= vdc_getgeo,
++	.ioctl		= vdc_ioctl,
+ };
+ 
+ static void vdc_finish(struct vio_driver_state *vio, int err, int waiting_for)
+@@ -165,9 +206,9 @@ static int vdc_handle_attr(struct vio_driver_state *vio, void *arg)
+ 	struct vio_disk_attr_info *pkt = arg;
+ 
+ 	viodbg(HS, "GOT ATTR stype[0x%x] ops[%llx] disk_size[%llu] disk_type[%x] "
+-	       "xfer_mode[0x%x] blksz[%u] max_xfer[%llu]\n",
++	       "mtype[0x%x] xfer_mode[0x%x] blksz[%u] max_xfer[%llu]\n",
+ 	       pkt->tag.stype, pkt->operations,
+-	       pkt->vdisk_size, pkt->vdisk_type,
++	       pkt->vdisk_size, pkt->vdisk_type, pkt->vdisk_mtype,
+ 	       pkt->xfer_mode, pkt->vdisk_block_size,
+ 	       pkt->max_xfer_size);
+ 
+@@ -192,8 +233,11 @@ static int vdc_handle_attr(struct vio_driver_state *vio, void *arg)
+ 		}
+ 
+ 		port->operations = pkt->operations;
+-		port->vdisk_size = pkt->vdisk_size;
+ 		port->vdisk_type = pkt->vdisk_type;
++		if (vdc_version_supported(port, 1, 1)) {
++			port->vdisk_size = pkt->vdisk_size;
++			port->vdisk_mtype = pkt->vdisk_mtype;
++		}
+ 		if (pkt->max_xfer_size < port->max_xfer_size)
+ 			port->max_xfer_size = pkt->max_xfer_size;
+ 		port->vdisk_block_size = pkt->vdisk_block_size;
+@@ -663,18 +707,25 @@ static int probe_disk(struct vdc_port *port)
+ 		return err;
+ 	}
+ 
+-	err = generic_request(port, VD_OP_GET_DISKGEOM,
+-			      &port->geom, sizeof(port->geom));
+-	if (err < 0) {
+-		printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
+-		       "error %d\n", err);
+-		return err;
++	if (vdc_version_supported(port, 1, 1)) {
++		/* vdisk_size should be set during the handshake, if it wasn't
++		 * then the underlying disk is reserved by another system
++		 */
++		if (port->vdisk_size == -1)
++			return -ENODEV;
++	} else {
++		err = generic_request(port, VD_OP_GET_DISKGEOM,
++				      &port->geom, sizeof(port->geom));
++		if (err < 0) {
++			printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
++			       "error %d\n", err);
++			return err;
++		}
++		port->vdisk_size = ((u64)port->geom.num_cyl *
++				    (u64)port->geom.num_hd *
++				    (u64)port->geom.num_sec);
+ 	}
+ 
+-	port->vdisk_size = ((u64)port->geom.num_cyl *
+-			    (u64)port->geom.num_hd *
+-			    (u64)port->geom.num_sec);
+-
+ 	q = blk_init_queue(do_vdc_request, &port->vio.lock);
+ 	if (!q) {
+ 		printk(KERN_ERR PFX "%s: Could not allocate queue.\n",
+@@ -704,9 +755,32 @@ static int probe_disk(struct vdc_port *port)
+ 
+ 	set_capacity(g, port->vdisk_size);
+ 
+-	printk(KERN_INFO PFX "%s: %u sectors (%u MB)\n",
++	if (vdc_version_supported(port, 1, 1)) {
++		switch (port->vdisk_mtype) {
++		case VD_MEDIA_TYPE_CD:
++			pr_info(PFX "Virtual CDROM %s\n", port->disk_name);
++			g->flags |= GENHD_FL_CD;
++			g->flags |= GENHD_FL_REMOVABLE;
++			set_disk_ro(g, 1);
++			break;
++
++		case VD_MEDIA_TYPE_DVD:
++			pr_info(PFX "Virtual DVD %s\n", port->disk_name);
++			g->flags |= GENHD_FL_CD;
++			g->flags |= GENHD_FL_REMOVABLE;
++			set_disk_ro(g, 1);
++			break;
++
++		case VD_MEDIA_TYPE_FIXED:
++			pr_info(PFX "Virtual Hard disk %s\n", port->disk_name);
++			break;
++		}
++	}
++
++	pr_info(PFX "%s: %u sectors (%u MB) protocol %d.%d\n",
+ 	       g->disk_name,
+-	       port->vdisk_size, (port->vdisk_size >> (20 - 9)));
++	       port->vdisk_size, (port->vdisk_size >> (20 - 9)),
++	       port->vio.ver.major, port->vio.ver.minor);
+ 
+ 	add_disk(g);
+ 
+@@ -765,6 +839,7 @@ static int vdc_port_probe(struct vio_dev *vdev, const struct vio_device_id *id)
+ 	else
+ 		snprintf(port->disk_name, sizeof(port->disk_name),
+ 			 VDCBLK_NAME "%c", 'a' + ((int)vdev->dev_no % 26));
++	port->vdisk_size = -1;
+ 
+ 	err = vio_driver_init(&port->vio, vdev, VDEV_DISK,
+ 			      vdc_versions, ARRAY_SIZE(vdc_versions),
 -- 
 2.1.3
 
