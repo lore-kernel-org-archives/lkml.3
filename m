@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063AbaLCHtu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Dec 2014 02:49:50 -0500
+	id S1752102AbaLCHty (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Dec 2014 02:49:54 -0500
 Received: from mga11.intel.com ([192.55.52.93]:60624 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751923AbaLCHts (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Dec 2014 02:49:48 -0500
+	id S1751923AbaLCHtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Dec 2014 02:49:51 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,506,1413270000"; 
-   d="scan'208";a="631852218"
+   d="scan'208";a="631852226"
 From: Feng Wu <feng.wu@intel.com>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
         gleb@kernel.org, pbonzini@redhat.com, dwmw2@infradead.org,
         joro@8bytes.org, alex.williamson@redhat.com, jiang.liu@linux.intel.com
 Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
         kvm@vger.kernel.org, Feng Wu <feng.wu@intel.com>
-Subject: [v2 03/25] iommu, x86: Define new irte structure for VT-d Posted-Interrupts
-Date: Wed,  3 Dec 2014 15:39:32 +0800
-Message-Id: <1417592394-24343-4-git-send-email-feng.wu@intel.com>
+Subject: [v2 04/25] iommu, x86: Implement irq_set_vcpu_affinity for intel_ir_chip
+Date: Wed,  3 Dec 2014 15:39:33 +0800
+Message-Id: <1417592394-24343-5-git-send-email-feng.wu@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1417592394-24343-1-git-send-email-feng.wu@intel.com>
 References: <1417592394-24343-1-git-send-email-feng.wu@intel.com>
@@ -25,57 +25,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new irte_pi structure for VT-d Posted-Interrupts.
+Implement irq_set_vcpu_affinity for intel_ir_chip.
 
 Signed-off-by: Feng Wu <feng.wu@intel.com>
 Reviewed-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- include/linux/dmar.h |   32 ++++++++++++++++++++++++++++++++
- 1 files changed, 32 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/irq_remapping.h |    5 +++++
+ drivers/iommu/intel_irq_remapping.c  |   27 +++++++++++++++++++++++++++
+ 2 files changed, 32 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/dmar.h b/include/linux/dmar.h
-index 8473756..c7f9cda 100644
---- a/include/linux/dmar.h
-+++ b/include/linux/dmar.h
-@@ -212,6 +212,38 @@ struct irte {
- 	};
- };
+diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+index f67ae08..f87ac70 100644
+--- a/arch/x86/include/asm/irq_remapping.h
++++ b/arch/x86/include/asm/irq_remapping.h
+@@ -60,6 +60,11 @@ static inline struct irq_domain *arch_get_ir_parent_domain(void)
+ 	return x86_vector_domain;
+ }
  
-+struct irte_pi {
-+	union {
-+		struct {
-+			__u64   present		: 1,
-+				fpd		: 1,
-+				__reserved_1	: 6,
-+				avail		: 4,
-+				__reserved_2	: 2,
-+				urg		: 1,
-+				pst		: 1,
-+				vector		: 8,
-+				__reserved_3	: 14,
-+				pda_l		: 26;
-+		};
-+		__u64 low;
-+	};
-+
-+	union {
-+		struct {
-+			__u64	sid		: 16,
-+				sq		: 2,
-+				svt		: 2,
-+				__reserved_4	: 12,
-+				pda_h		: 32;
-+		};
-+		__u64 high;
-+	};
++struct vcpu_data {
++	u64 pi_desc_addr;	/* Physical address of PI Descriptor */
++	u32 vector;		/* Guest vector of the interrupt */
 +};
 +
-+#define PDA_LOW_BIT    26
-+#define PDA_HIGH_BIT   32
+ #else  /* CONFIG_IRQ_REMAP */
+ 
+ static inline void setup_irq_remapping_ops(void) { }
+diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+index f6da3b2..749cb93 100644
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -1010,10 +1010,37 @@ static void intel_ir_compose_msi_msg(struct irq_data *irq_data,
+ 	*msg = ir_data->msi_entry;
+ }
+ 
++static int intel_ir_set_vcpu_affinity(struct irq_data *data, void *vcpu_info)
++{
++	struct intel_ir_data *ir_data = data->chip_data;
++	struct irte *irte = &ir_data->irte_entry;
++	struct irte_pi *irte_pi = (struct irte_pi *)irte;
++	struct vcpu_data *vcpu_pi_info = (struct vcpu_data *)vcpu_info;
 +
- enum {
- 	IRQ_REMAP_XAPIC_MODE,
- 	IRQ_REMAP_X2APIC_MODE,
++	irte_pi->urg = 0;
++	irte_pi->vector = vcpu_pi_info->vector;
++	irte_pi->pda_l = (vcpu_pi_info->pi_desc_addr >> (32 - PDA_LOW_BIT)) &
++			 ~(-1UL << PDA_LOW_BIT);
++	irte_pi->pda_h = (vcpu_pi_info->pi_desc_addr >> 32) &
++			 ~(-1UL << PDA_HIGH_BIT);
++
++	irte_pi->__reserved_1 = 0;
++	irte_pi->__reserved_2 = 0;
++	irte_pi->__reserved_3 = 0;
++	irte_pi->__reserved_4 = 0;
++
++	irte_pi->pst = 1;
++
++	modify_irte(&ir_data->irq_2_iommu, irte);
++
++	return 0;
++}
++
+ static struct irq_chip intel_ir_chip = {
+ 	.irq_ack = ir_ack_apic_edge,
+ 	.irq_set_affinity = intel_ir_set_affinity,
+ 	.irq_compose_msi_msg = intel_ir_compose_msi_msg,
++	.irq_set_vcpu_affinity = intel_ir_set_vcpu_affinity,
+ };
+ 
+ static void intel_irq_remapping_prepare_irte(struct intel_ir_data *data,
 -- 
 1.7.1
 
